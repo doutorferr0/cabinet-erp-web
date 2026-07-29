@@ -1,2 +1,13 @@
-# vitra-erp-web
-VITRA front (React+Vite+shadcn). Fase visual com mock — integração só via contrato OpenAPI.
+# VITRA — Front (vitra-erp-web)
+
+SPA React do VITRA (ERP multi-empresa vendido a terceiros). **Fase atual: visual com dados mock** — o backend (`vitra-erp-py`) está na Etapa 0; integração real só quando ele publicar o contrato OpenAPI (tipos via `@hey-api/openapi-ts`).
+
+Instruções dos agentes: **CLAUDE.md** (AGENTS.md aponta pra lá). Roteiro: **docs/fase-visual-tarefas.md**.
+Fonte dos campos das telas: memória `projetos-claude` → `topicos/transcricaosoftlux.md` (20 telas do legado, 8 padrões).
+
+Stack: Vite · React 19 · TS strict · Tailwind v4 · shadcn/ui · TanStack Query/Table/Router · RHF+Zod · pnpm (cooldown 7d) · Biome · vitest.
+
+```bash
+pnpm install && pnpm dev   # http://localhost:5173
+pnpm check && pnpm check-types && pnpm test
+```

@@ -1,0 +1,9 @@
+packages:
+  - '.'
+
+allowBuilds:
+  '@biomejs/biome': true
+  esbuild: true
+
+# 7 dias em minutos (10080) — política de cooldown pós-supply-chain.
+minimumReleaseAge: 10080

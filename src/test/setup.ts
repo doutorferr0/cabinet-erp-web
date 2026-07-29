@@ -14,3 +14,14 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 window.scrollTo = vi.fn()
+
+// jsdom não tem ResizeObserver (cmdk/radix exigem).
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+window.ResizeObserver = window.ResizeObserver ?? ResizeObserverStub
+
+// jsdom não implementa scrollIntoView (cmdk o chama ao selecionar item).
+Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? vi.fn()

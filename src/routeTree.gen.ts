@@ -18,6 +18,8 @@ import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
 import { Route as ComprasIndexRouteImport } from './routes/compras/index'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
+import { Route as CadastrosFornecedoresIndexRouteImport } from './routes/cadastros/fornecedores/index'
+import { Route as CadastrosFornecedoresFornecedorIdRouteImport } from './routes/cadastros/fornecedores/$fornecedorId'
 import { Route as CadastrosProdutosIndexRouteImport } from './routes/cadastros/produtos/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +67,18 @@ const VendasIndexRoute = VendasIndexRouteImport.update({
   path: '/',
   getParentRoute: () => VendasRoute,
 } as any)
+const CadastrosFornecedoresIndexRoute =
+  CadastrosFornecedoresIndexRouteImport.update({
+    id: '/fornecedores/',
+    path: '/fornecedores/',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
+const CadastrosFornecedoresFornecedorIdRoute =
+  CadastrosFornecedoresFornecedorIdRouteImport.update({
+    id: '/fornecedores/$fornecedorId',
+    path: '/fornecedores/$fornecedorId',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
 const CadastrosProdutosIndexRoute = CadastrosProdutosIndexRouteImport.update({
   id: '/produtos/',
   path: '/produtos/',
@@ -81,6 +95,8 @@ export interface FileRoutesByFullPath {
   '/compras/': typeof ComprasIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
+  '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos/': typeof CadastrosProdutosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,6 +105,8 @@ export interface FileRoutesByTo {
   '/compras': typeof ComprasIndexRoute
   '/estoque': typeof EstoqueIndexRoute
   '/vendas': typeof VendasIndexRoute
+  '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/fornecedores': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos': typeof CadastrosProdutosIndexRoute
 }
 export interface FileRoutesById {
@@ -102,6 +120,8 @@ export interface FileRoutesById {
   '/compras/': typeof ComprasIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
+  '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos/': typeof CadastrosProdutosIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +136,8 @@ export interface FileRouteTypes {
     | '/compras/'
     | '/estoque/'
     | '/vendas/'
+    | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/fornecedores/'
     | '/cadastros/produtos/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -124,6 +146,8 @@ export interface FileRouteTypes {
     | '/compras'
     | '/estoque'
     | '/vendas'
+    | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/fornecedores'
     | '/cadastros/produtos'
   id:
     | '__root__'
@@ -136,6 +160,8 @@ export interface FileRouteTypes {
     | '/compras/'
     | '/estoque/'
     | '/vendas/'
+    | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/fornecedores/'
     | '/cadastros/produtos/'
   fileRoutesById: FileRoutesById
 }
@@ -212,6 +238,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendasIndexRouteImport
       parentRoute: typeof VendasRoute
     }
+    '/cadastros/fornecedores/': {
+      id: '/cadastros/fornecedores/'
+      path: '/fornecedores'
+      fullPath: '/cadastros/fornecedores/'
+      preLoaderRoute: typeof CadastrosFornecedoresIndexRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
+    '/cadastros/fornecedores/$fornecedorId': {
+      id: '/cadastros/fornecedores/$fornecedorId'
+      path: '/fornecedores/$fornecedorId'
+      fullPath: '/cadastros/fornecedores/$fornecedorId'
+      preLoaderRoute: typeof CadastrosFornecedoresFornecedorIdRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
     '/cadastros/produtos/': {
       id: '/cadastros/produtos/'
       path: '/produtos'
@@ -224,11 +264,16 @@ declare module '@tanstack/react-router' {
 
 interface CadastrosRouteChildren {
   CadastrosIndexRoute: typeof CadastrosIndexRoute
+  CadastrosFornecedoresFornecedorIdRoute: typeof CadastrosFornecedoresFornecedorIdRoute
+  CadastrosFornecedoresIndexRoute: typeof CadastrosFornecedoresIndexRoute
   CadastrosProdutosIndexRoute: typeof CadastrosProdutosIndexRoute
 }
 
 const CadastrosRouteChildren: CadastrosRouteChildren = {
   CadastrosIndexRoute: CadastrosIndexRoute,
+  CadastrosFornecedoresFornecedorIdRoute:
+    CadastrosFornecedoresFornecedorIdRoute,
+  CadastrosFornecedoresIndexRoute: CadastrosFornecedoresIndexRoute,
   CadastrosProdutosIndexRoute: CadastrosProdutosIndexRoute,
 }
 

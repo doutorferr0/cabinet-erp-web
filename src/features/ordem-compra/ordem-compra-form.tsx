@@ -6,6 +6,7 @@ import {
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/vitra/documento'
+import { FormBlock } from '@/components/vitra/form-block'
 import {
   DateField,
   MoneyField,
@@ -19,6 +20,7 @@ import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { OrdemCompra } from '@/mocks/ordens-compra'
 import { useNavigate } from '@tanstack/react-router'
+import { Search } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -112,8 +114,7 @@ function BlocoTransportadora() {
   useEffect(() => bindShortcut(SHORTCUTS.transportadora, buscar))
 
   return (
-    <fieldset className="rounded-md border p-3">
-      <legend className="px-1 text-sm font-medium">Transportadora</legend>
+    <FormBlock legend="Transportadora">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <span>
           <span className="text-muted-foreground">Nome:</span>{' '}
@@ -130,10 +131,10 @@ function BlocoTransportadora() {
           <output aria-label="UF da transportadora">{transportadora?.uf || '—'}</output>
         </span>
         <Button type="button" variant="outline" size="sm" onClick={buscar}>
-          🔍 Busca ({shortcutLabel(SHORTCUTS.transportadora)})
+          <Search /> Busca ({shortcutLabel(SHORTCUTS.transportadora)})
         </Button>
       </div>
-    </fieldset>
+    </FormBlock>
   )
 }
 

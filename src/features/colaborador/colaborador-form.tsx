@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RedesSociaisBlock } from '@/components/vitra/blocks'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { FormBlock } from '@/components/vitra/form-block'
 import {
   CheckboxField,
   DateField,
@@ -222,8 +223,7 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
         <TextField name="anoChegada" label="Ano de Chegada" className="col-span-6 sm:col-span-2" />
       </div>
 
-      <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Dados Trabalhistas</legend>
+      <FormBlock legend="Dados Trabalhistas">
         <div className="grid grid-cols-12 items-end gap-3">
           <LookupField
             name="cargo"
@@ -249,7 +249,7 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
             className="col-span-6 sm:col-span-2"
           />
         </div>
-      </fieldset>
+      </FormBlock>
 
       <div className="grid grid-cols-12 items-end gap-3">
         <div className="col-span-12 sm:col-span-8">

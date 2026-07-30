@@ -5,6 +5,7 @@ import {
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/vitra/documento'
+import { FormBlock } from '@/components/vitra/form-block'
 import { DateField, SelectField, TextField, TextareaField } from '@/components/vitra/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
 import { tabelas } from '@/data/tabelas'
@@ -101,10 +102,9 @@ export function PedidoCompraForm({
         </div>
 
         {/* Um pedido tem N fornecedores (§7.3): grade própria, não combo único. */}
-        <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">Fornecedores</legend>
+        <FormBlock legend="Fornecedores" className="flex flex-col gap-2">
           <FornecedoresPedido />
-        </fieldset>
+        </FormBlock>
 
         <FormGrid
           name="itens"

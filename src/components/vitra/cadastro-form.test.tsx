@@ -70,4 +70,13 @@ describe('CadastroForm em modo consulta', () => {
     expect(screen.getByLabelText('Quantidade linha 1')).toBeDisabled()
     expect(screen.getByRole('button', { name: /Busca \(Alt\+T\)/ })).toBeDisabled()
   })
+
+  it('rodapé fixo usa régua forte na borda superior (DESIGN.md)', async () => {
+    renderRoute('/cadastros/clientes/1')
+
+    const gravar = await screen.findByRole('button', { name: /Gravar/ })
+    const rodape = gravar.closest('div')
+    expect(rodape?.className).toContain('border-t')
+    expect(rodape?.className).toContain('border-rule-strong')
+  })
 })

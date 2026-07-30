@@ -6,6 +6,7 @@ import {
   TelefonesBlock,
 } from '@/components/vitra/blocks'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { FormBlock } from '@/components/vitra/form-block'
 import {
   CheckboxField,
   DateField,
@@ -168,8 +169,7 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
 
       <ComunicadoresBlock prefix="comunicadores" />
 
-      <fieldset className="flex flex-col gap-3 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Dados Bancários</legend>
+      <FormBlock legend="Dados Bancários" className="flex flex-col gap-3">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="numeroBanco" label="Nº do banco" className="col-span-4 sm:col-span-2" />
           <TextField name="nomeBanco" label="Nome do banco" className="col-span-8 sm:col-span-4" />
@@ -184,7 +184,7 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
           prefix="enderecoBanco"
           onBuscaCidade={() => onBuscaCidade('enderecoBanco')}
         />
-      </fieldset>
+      </FormBlock>
 
       <div className="grid grid-cols-12 items-end gap-3">
         <TextField name="pisPasepNis" label="PIS\PASEP\NIS" className="col-span-6 sm:col-span-3" />

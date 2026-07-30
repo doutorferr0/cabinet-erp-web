@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { FormBlock } from '@/components/vitra/form-block'
 import {
   CheckboxField,
   DateField,
@@ -179,8 +180,7 @@ function AbaDadosPrincipais() {
           />
         </div>
 
-        <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">Fornecedor</legend>
+        <FormBlock legend="Fornecedor" className="flex flex-col gap-2">
           <FormGrid
             name="fornecedores"
             columns={[
@@ -196,7 +196,7 @@ function AbaDadosPrincipais() {
               descricaoFornecedor: '',
             }}
           />
-        </fieldset>
+        </FormBlock>
 
         <div className="grid grid-cols-12 items-end gap-3">
           <DateField
@@ -296,8 +296,7 @@ function AbaDadosPrincipais() {
 
 function BlocoDimensoes({ prefix, legenda }: { prefix: string; legenda: string }) {
   return (
-    <fieldset className="rounded-md border p-3">
-      <legend className="px-1 text-sm font-medium">{legenda}</legend>
+    <FormBlock legend={legenda}>
       <div className="grid grid-cols-12 items-end gap-3">
         <TextField name={`${prefix}.altura`} label="Altura" className="col-span-6 sm:col-span-3" />
         <TextField
@@ -312,7 +311,7 @@ function BlocoDimensoes({ prefix, legenda }: { prefix: string; legenda: string }
         />
         <TextField name={`${prefix}.raio`} label="Raio" className="col-span-6 sm:col-span-3" />
       </div>
-    </fieldset>
+    </FormBlock>
   )
 }
 
@@ -397,8 +396,7 @@ function AbaValoresLocalizacao() {
         }}
       />
 
-      <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Localização do Estoque</legend>
+      <FormBlock legend="Localização do Estoque" className="flex flex-col gap-2">
         <FormGrid
           name="localizacoes"
           columns={[
@@ -416,7 +414,7 @@ function AbaValoresLocalizacao() {
           ]}
           newRow={{ acabamento: '', estoque: '', predio: '', rua: '', numero: '', apto: '' }}
         />
-      </fieldset>
+      </FormBlock>
     </div>
   )
 }
@@ -478,20 +476,19 @@ function AbaTributacao() {
         <TextField name="cest" label="CEST" className="col-span-6 sm:col-span-2" />
       </div>
 
-      <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Impostos para NFe</legend>
+      <FormBlock legend="Impostos para NFe">
         <LookupField
           name="impostoPadrao"
           label="Padrão"
           kind="impostosPadrao"
           className="sm:max-w-md"
         />
-      </fieldset>
+      </FormBlock>
 
-      <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">
-          Busca automática dos Impostos da NFe vinculada ao NCM
-        </legend>
+      <FormBlock
+        legend="Busca automática dos Impostos da NFe vinculada ao NCM"
+        className="flex flex-col gap-2"
+      >
         <FormGrid
           name="impostosNfe"
           columns={[
@@ -513,7 +510,7 @@ function AbaTributacao() {
             ativo: true,
           }}
         />
-      </fieldset>
+      </FormBlock>
     </div>
   )
 }

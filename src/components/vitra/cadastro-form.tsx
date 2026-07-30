@@ -45,8 +45,9 @@ export function CadastroForm<T extends FieldValues>({
         <fieldset disabled={readOnly} className="min-h-0 flex-1 border-0 p-0">
           {children}
         </fieldset>
-        {/* Rodapé é Documento (`bg-card`): senta na folha, não no Papel. */}
-        <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-card pt-3">
+        {/* Rodapé é Documento (`bg-card`): senta na folha; régua superior em
+            Régua Forte (DESIGN.md) — separa a tira de ações do conteúdo. */}
+        <div className="sticky bottom-0 flex justify-end gap-2 border-rule-strong border-t bg-card pt-3">
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
               <X />

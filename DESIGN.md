@@ -406,7 +406,7 @@ Esta especificação é a direção travada; o código ainda é o sistema anteri
 |---|---|---|
 | 1 | `src/index.css` | Todos os tokens de cor (papel, documento, três réguas, tinta quente, alerta AA, carimbos) nos dois temas; `--radius` de `0.625rem` para `4px` — **feito** |
 | 2 | `src/index.css` | Sidebar deixa de ter paleta própria; `--ring` unificado em Régua Forte — **feito** |
-| 3 | `src/app/` (shell) | Moldura `page-frame` em volta da região de conteúdo |
+| 3 | `src/app/` (shell) | Moldura `page-frame` em volta da região de conteúdo — **feito** (`PageFrame` no shell envolve o `<Outlet/>`; rodapé do form, botão outline, aba ativa, diálogo e sheet passaram de `bg-background` para `bg-card` para não vazar Papel na folha) |
 | 4 | `src/components/vitra/data-table.tsx` | **Grade fechada**: caixa em Régua, malha em Fio entre linhas **e colunas**; cabeçalho 36px em Meta com sublinha forte; marcador de 2px na linha selecionada; coluna de numeração opcional; cabeçalho agrupado |
 | 5 | `src/components/vitra/cadastro-form.tsx` | `<legend>` em Meta; bloco como compartimento fechado com goteira; rodapé com régua forte; ícone Lucide no lugar de glifo emoji |
 | 6 | `src/components/vitra/form-grid.tsx` | Mesma malha da DataTable; faixa de seção para agrupamento de linhas |
@@ -414,7 +414,7 @@ Esta especificação é a direção travada; o código ainda é o sistema anteri
 | 8 | novo | Componente `Stamp` |
 | 9 | `src/components/ui/` | Mensagem de validação de `0.8rem` para `0.75rem` |
 
-Itens 1–2 implementados (tokens nos dois temas, raio de 4px, sidebar sem paleta própria, anel em Régua Forte — contrastes verificados por cálculo WCAG antes do commit). Itens 3–9 pendentes. **Não afirmar em nenhum relatório que o sistema "papel funcional" está implementado até que os itens acima existam em código.**
+Itens 1–3 implementados (tokens nos dois temas, raio de 4px, sidebar sem paleta própria, anel em Régua Forte — contrastes verificados por cálculo WCAG; moldura `page-frame` no shell com superfícies Documento corrigidas). Itens 4–9 pendentes. **Não afirmar em nenhum relatório que o sistema "papel funcional" está implementado até que os itens acima existam em código.**
 
 O sidecar `.impeccable/design.json` está **deliberadamente desatualizado** em relação a este arquivo. Ele é gerado a partir do código, e o código ainda é o sistema anterior — regenerá-lo agora reescreveria o sistema antigo por cima da direção nova. Rodar `/impeccable document` só **depois** dos itens 1–9.
 

@@ -65,4 +65,18 @@ describe('AppShell', () => {
       ).toBeInTheDocument()
     })
   })
+
+  it('wraps route content in the page-frame folha (Regra da Folha)', async () => {
+    setup()
+    await waitFor(() => {
+      expect(
+        screen.getByText('Selecione um módulo no menu lateral para começar.'),
+      ).toBeInTheDocument()
+    })
+    const frame = document.querySelector('[data-slot="page-frame"]')
+    expect(frame).toBeInTheDocument()
+    expect(frame).toContainElement(
+      screen.getByText('Selecione um módulo no menu lateral para começar.'),
+    )
+  })
 })

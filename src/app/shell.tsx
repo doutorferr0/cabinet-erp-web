@@ -1,4 +1,5 @@
 import { navGroups } from '@/app/navigation'
+import { PageFrame } from '@/app/page-frame'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -68,7 +69,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ModeToggle />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4">{children}</main>
+        {/* A área de conteúdo é Papel; a folha (PageFrame) é a única superfície de trabalho. */}
+        <main className="flex flex-1 flex-col p-4">
+          <PageFrame>{children}</PageFrame>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )

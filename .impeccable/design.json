@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-30T00:00:00.000Z",
+  "title": "Design System: VITRA",
+  "extensions": {
+    "colorMeta": {
+      "graphite": {
+        "role": "primary",
+        "displayName": "Grafite",
+        "canonical": "hsl(222.2 47.4% 11.2%)",
+        "tonalRamp": [
+          "hsl(222.2 47.4% 8%)",
+          "hsl(222.2 47.4% 15%)",
+          "hsl(222.2 47.4% 26%)",
+          "hsl(222.2 47.4% 37%)",
+          "hsl(222.2 47.4% 48%)",
+          "hsl(222.2 47.4% 62%)",
+          "hsl(222.2 47.4% 80%)",
+          "hsl(222.2 47.4% 95%)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "hsl(222.2 84% 4.9%)",
+        "tonalRamp": [
+          "hsl(222.2 84% 4.9%)",
+          "hsl(222.2 60% 15%)",
+          "hsl(222.2 45% 26%)",
+          "hsl(222.2 35% 37%)",
+          "hsl(222.2 28% 50%)",
+          "hsl(222.2 24% 65%)",
+          "hsl(222.2 22% 82%)",
+          "hsl(222.2 20% 95%)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Tinta Apagada",
+        "canonical": "hsl(215.4 16.3% 46.9%)",
+        "tonalRamp": [
+          "hsl(215.4 16.3% 15%)",
+          "hsl(215.4 16.3% 24%)",
+          "hsl(215.4 16.3% 33%)",
+          "hsl(215.4 16.3% 46.9%)",
+          "hsl(215.4 16.3% 58%)",
+          "hsl(215.4 16.3% 70%)",
+          "hsl(215.4 16.3% 84%)",
+          "hsl(215.4 16.3% 95%)"
+        ]
+      },
+      "bench-tint": {
+        "role": "neutral",
+        "displayName": "Tinta de Bancada",
+        "canonical": "hsl(210 40% 96.1%)",
+        "tonalRamp": [
+          "hsl(210 40% 15%)",
+          "hsl(210 40% 26%)",
+          "hsl(210 40% 37%)",
+          "hsl(210 40% 50%)",
+          "hsl(210 40% 66%)",
+          "hsl(210 40% 82%)",
+          "hsl(210 40% 96.1%)",
+          "hsl(210 40% 99%)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Pauta",
+        "canonical": "hsl(214.3 31.8% 91.4%)",
+        "tonalRamp": [
+          "hsl(214.3 31.8% 15%)",
+          "hsl(214.3 31.8% 26%)",
+          "hsl(214.3 31.8% 38%)",
+          "hsl(214.3 31.8% 52%)",
+          "hsl(214.3 31.8% 66%)",
+          "hsl(214.3 31.8% 80%)",
+          "hsl(214.3 31.8% 91.4%)",
+          "hsl(214.3 31.8% 97%)"
+        ]
+      },
+      "surface-paper": {
+        "role": "neutral",
+        "displayName": "Papel de Bancada",
+        "canonical": "hsl(0 0% 100%)",
+        "tonalRamp": [
+          "hsl(0 0% 15%)",
+          "hsl(0 0% 26%)",
+          "hsl(0 0% 40%)",
+          "hsl(0 0% 55%)",
+          "hsl(0 0% 70%)",
+          "hsl(0 0% 85%)",
+          "hsl(0 0% 96%)",
+          "hsl(0 0% 100%)"
+        ]
+      },
+      "alert-red": {
+        "role": "tertiary",
+        "displayName": "Vermelho de Alerta",
+        "canonical": "hsl(0 84.2% 60.2%)",
+        "tonalRamp": [
+          "hsl(0 84.2% 15%)",
+          "hsl(0 84.2% 25%)",
+          "hsl(0 84.2% 35%)",
+          "hsl(0 84.2% 45%)",
+          "hsl(0 84.2% 60.2%)",
+          "hsl(0 84.2% 72%)",
+          "hsl(0 84.2% 85%)",
+          "hsl(0 84.2% 95%)"
+        ]
+      },
+      "stray-blue": {
+        "role": "neutral",
+        "displayName": "Azul Fora de Lugar (resíduo do scaffold — não replicar)",
+        "canonical": "hsl(217.2 91.2% 59.8%)",
+        "tonalRamp": [
+          "hsl(217.2 91.2% 15%)",
+          "hsl(217.2 91.2% 25%)",
+          "hsl(217.2 91.2% 35%)",
+          "hsl(217.2 91.2% 47%)",
+          "hsl(217.2 91.2% 59.8%)",
+          "hsl(217.2 91.2% 72%)",
+          "hsl(217.2 91.2% 85%)",
+          "hsl(217.2 91.2% 95%)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Uma única ocorrência (título da tela inicial). Praticamente extinto."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título de tela, literal da transcrição do SoftLux."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Reservado ao valor Total da tira de totais — o único número com corpo."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "A fonte real do sistema: célula, valor de campo, apoio. Mais de 90% do texto."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Rótulo de campo, legend de bloco, cabeçalho de coluna, texto de botão."
+      },
+      "numeric": {
+        "displayName": "Numeric",
+        "purpose": "Dinheiro, quantidade, percentual. Sempre tabular, sempre à direita."
+      }
+    },
+    "shadows": [
+      {
+        "name": "control-hairline",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "Resíduo do scaffold em input e botão outline. Não é doutrina; não estender."
+      },
+      {
+        "name": "overlay",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "Único uso legítimo de sombra: elemento que flutua sobre o documento e desaparece (dialog, popover, dropdown, Command do LookupCombo)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Easing padrão herdado do Tailwind. Nenhum token de motion próprio foi definido."
+      },
+      {
+        "name": "duration-state",
+        "value": "150ms",
+        "purpose": "Transição de cor em hover/foco de botão, campo e linha de tabela."
+      },
+      {
+        "name": "duration-sidebar",
+        "value": "200ms",
+        "purpose": "Colapso da barra lateral, com easing linear."
+      },
+      {
+        "name": "debounce-busca",
+        "value": "300ms",
+        "purpose": "Atraso entre digitação e consulta na DataTable. Não é animação, mas é o ritmo percebido da busca."
+      }
+    ],
+    "breakpoints": [{ "name": "sm", "value": "640px" }, { "name": "md", "value": "768px" }]
+  },
+  "components": [
+    {
+      "name": "Botão Primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação afirmativa única da tela: Gravar. Um por formulário.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Gravar</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 8px 16px; border: none; border-radius: 8px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; white-space: nowrap; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: hsl(var(--primary) / 0.9); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Botão de Barra de Ações",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "O cavalo de batalha. Toda a barra Filtro · Incluir · Alterar · Consul. · Excluir · Imprimir. Desabilita sem linha selecionada.",
+      "html": "<div class=\"ds-actionbar\"><button class=\"ds-btn-outline\">Filtro</button><button class=\"ds-btn-outline\">Incluir</button><button class=\"ds-btn-outline\">Alterar</button><button class=\"ds-btn-outline\" disabled>Consul.</button><button class=\"ds-btn-outline\" disabled>Excluir</button><button class=\"ds-btn-outline\">Imprimir</button></div>",
+      "css": ".ds-actionbar { display: flex; flex-wrap: wrap; gap: 8px; } .ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; cursor: pointer; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-outline:hover:not(:disabled) { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); } .ds-btn-outline:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Campo de Formulário",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Rótulo sempre acima, nunca dependente de placeholder. Borda de 1px, fundo herdado.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-f1\">Nossa Descrição</label><input class=\"ds-field-input\" id=\"ds-f1\" value=\"Pendente Cristal 6 Braços\" /></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 8px; } .ds-field-label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; color: hsl(var(--foreground)); } .ds-field-input { height: 36px; width: 100%; padding: 4px 12px; border: 1px solid hsl(var(--input)); border-radius: 8px; background: transparent; color: hsl(var(--foreground)); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: box-shadow 150ms cubic-bezier(0.4,0,0.2,1); } .ds-field-input::placeholder { color: hsl(var(--muted-foreground)); } .ds-field-input:focus-visible { outline: none; box-shadow: 0 0 0 1px hsl(var(--ring)); } .ds-field-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Bloco de Formulário (fieldset + legend)",
+      "kind": "custom",
+      "refersTo": "input-field",
+      "description": "Forma-assinatura do agrupamento: citação direta do groupbox do SoftLux. Grade de 12 colunas, alinhamento inferior.",
+      "html": "<fieldset class=\"ds-block\"><legend class=\"ds-block-legend\">Dimensões do Produto</legend><div class=\"ds-grid12\"><div class=\"ds-field ds-span3\"><label class=\"ds-field-label\" for=\"ds-d1\">Altura</label><input class=\"ds-field-input ds-num\" id=\"ds-d1\" value=\"1,200\" /></div><div class=\"ds-field ds-span3\"><label class=\"ds-field-label\" for=\"ds-d2\">Largura</label><input class=\"ds-field-input ds-num\" id=\"ds-d2\" value=\"0,450\" /></div><div class=\"ds-field ds-span6\"><label class=\"ds-field-label\" for=\"ds-d3\">Observação</label><input class=\"ds-field-input\" id=\"ds-d3\" value=\"\" /></div></div></fieldset>",
+      "css": ".ds-block { border: 1px solid hsl(var(--border)); border-radius: 8px; padding: 12px; } .ds-block-legend { padding: 0 4px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground)); } .ds-grid12 { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); align-items: end; gap: 12px; } .ds-span3 { grid-column: span 3 / span 3; } .ds-span6 { grid-column: span 6 / span 6; } .ds-num { text-align: right; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "DataTable",
+      "kind": "custom",
+      "refersTo": "table-head-cell",
+      "description": "Peça mais reutilizada do sistema: busca com lupa embutida, cabeçalho ordenável, linha inteira clicável, seleção em Tinta de Bancada.",
+      "html": "<div class=\"ds-dt\"><div class=\"ds-dt-search\"><svg class=\"ds-dt-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input class=\"ds-dt-input\" placeholder=\"Busca pelo código:\" /></div><div class=\"ds-dt-frame\"><table class=\"ds-dt-table\"><thead><tr><th>Nosso Código</th><th>Nossa Descrição</th><th>Marca</th><th class=\"ds-num\">Valor de Tabela</th></tr></thead><tbody><tr><td>004512</td><td>Pendente Cristal 6 Braços</td><td>Vertz</td><td class=\"ds-num\">R$ 1.890,00</td></tr><tr class=\"ds-dt-selected\"><td>004518</td><td>Arandela LED 12W</td><td>Vertz</td><td class=\"ds-num\">R$ 249,90</td></tr><tr><td>004530</td><td>Trilho Eletrificado 1m</td><td>Via HF</td><td class=\"ds-num\">R$ 118,00</td></tr></tbody></table></div><div class=\"ds-dt-foot\"><span>3 registros</span><span class=\"ds-dt-pager\">Página 1 de 1</span></div></div>",
+      "css": ".ds-dt { display: flex; flex-direction: column; gap: 12px; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-dt-search { position: relative; width: 288px; } .ds-dt-icon { position: absolute; left: 10px; top: 10px; color: hsl(var(--muted-foreground)); } .ds-dt-input { height: 36px; width: 100%; padding: 4px 12px 4px 32px; border: 1px solid hsl(var(--input)); border-radius: 8px; background: transparent; color: hsl(var(--foreground)); font-size: 0.875rem; font-family: inherit; } .ds-dt-input:focus-visible { outline: none; box-shadow: 0 0 0 1px hsl(var(--ring)); } .ds-dt-frame { border: 1px solid hsl(var(--border)); border-radius: 8px; overflow: hidden; } .ds-dt-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; color: hsl(var(--foreground)); } .ds-dt-table th { height: 40px; padding: 0 8px; text-align: left; font-weight: 500; color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--border)); } .ds-dt-table td { padding: 8px; border-bottom: 1px solid hsl(var(--border)); } .ds-dt-table tbody tr:last-child td { border-bottom: 0; } .ds-dt-table tbody tr { cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-dt-table tbody tr:hover { background: hsl(var(--muted) / 0.5); } .ds-dt-selected { background: hsl(var(--muted)); } .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-dt-foot { display: flex; align-items: center; font-size: 0.875rem; color: hsl(var(--muted-foreground)); } .ds-dt-pager { margin-left: auto; }"
+    },
+    {
+      "name": "FormGrid (grade editável)",
+      "kind": "custom",
+      "refersTo": "grid-cell-input",
+      "description": "Célula é input sem borda e sem sombra — a moldura é a linha da tabela. Trinta bordas de campo criariam malha ilegível.",
+      "html": "<div class=\"ds-fg\"><table class=\"ds-fg-table\"><thead><tr><th>Produto</th><th class=\"ds-num\">Qtd</th><th class=\"ds-num\">Vl. Unitário</th><th class=\"ds-num\">Desc. %</th><th></th></tr></thead><tbody><tr><td><input class=\"ds-fg-cell\" value=\"Pendente Cristal 6 Braços\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"2,000\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"1.890,00\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"5,0000\" /></td><td class=\"ds-fg-act\"><button class=\"ds-fg-del\" aria-label=\"Excluir linha\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/></svg></button></td></tr><tr><td><input class=\"ds-fg-cell\" value=\"Arandela LED 12W\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"6,000\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"249,90\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"0,0000\" /></td><td class=\"ds-fg-act\"><button class=\"ds-fg-del\" aria-label=\"Excluir linha\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/></svg></button></td></tr></tbody></table></div>",
+      "css": ".ds-fg { border: 1px solid hsl(var(--border)); border-radius: 8px; overflow: hidden; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-fg-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; color: hsl(var(--foreground)); } .ds-fg-table th { height: 40px; padding: 0 8px; text-align: left; font-weight: 500; color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--border)); } .ds-fg-table td { padding: 0 4px; border-bottom: 1px solid hsl(var(--border)); } .ds-fg-table tbody tr:last-child td { border-bottom: 0; } .ds-fg-cell { height: 32px; width: 100%; padding: 0 8px; border: 0; background: transparent; color: inherit; font: inherit; box-shadow: none; } .ds-fg-cell:focus-visible { outline: none; background: hsl(var(--muted) / 0.6); } .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-fg-act { width: 40px; text-align: center; } .ds-fg-del { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; } .ds-fg-del:hover { background: hsl(var(--accent)); color: hsl(var(--foreground)); }"
+    },
+    {
+      "name": "Tira de Totais",
+      "kind": "card",
+      "refersTo": "table-row-selected",
+      "description": "Totais derivados dos itens, nunca campo paralelo. Total é o único elemento em Title — o degrau de peso é toda a hierarquia necessária.",
+      "html": "<div class=\"ds-totais\"><div class=\"ds-total\"><span class=\"ds-total-lbl\">SubTotal:</span><output class=\"ds-total-val\">R$ 5.279,40</output></div><div class=\"ds-total\"><span class=\"ds-total-lbl\">Desconto:</span><output class=\"ds-total-val\">R$ 189,00</output></div><div class=\"ds-total\"><span class=\"ds-total-lbl\">Total:</span><output class=\"ds-total-val ds-total-strong\">R$ 5.090,40</output></div></div>",
+      "css": ".ds-totais { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; column-gap: 24px; row-gap: 8px; padding: 12px; border: 1px solid hsl(var(--border)); border-radius: 8px; font-family: ui-sans-serif, system-ui, sans-serif; color: hsl(var(--foreground)); } .ds-total { display: flex; align-items: baseline; gap: 8px; } .ds-total-lbl { font-size: 0.875rem; color: hsl(var(--muted-foreground)); } .ds-total-val { font-size: 0.875rem; font-variant-numeric: tabular-nums; } .ds-total-strong { font-size: 1.125rem; font-weight: 600; }"
+    },
+    {
+      "name": "Item de Navegação",
+      "kind": "nav",
+      "refersTo": "table-row-selected",
+      "description": "Sidebar agrupada por módulo, rótulo de grupo em Tinta Apagada, item ativo em Tinta de Bancada, casamento por prefixo de rota.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-group\">Cadastros</div><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/></svg>Clientes</a><a class=\"ds-nav-item ds-nav-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m7.5 4.27 9 5.15\"/><path d=\"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z\"/><path d=\"m3.3 7 8.7 5 8.7-5\"/><path d=\"M12 22V12\"/></svg>Produtos</a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/></svg>Colaboradores</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 4px; padding: 8px; width: 240px; background: hsl(var(--sidebar)); border: 1px solid hsl(var(--sidebar-border)); border-radius: 8px; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-nav-group { padding: 4px 8px; font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground)); } .ds-nav-item { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 6px; color: hsl(var(--sidebar-foreground)); font-size: 0.875rem; text-decoration: none; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-item:hover { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); } .ds-nav-active { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); font-weight: 500; } .ds-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--sidebar-ring)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A Mesa de Trabalho",
+    "overview": "VITRA não é uma vitrine. É a bancada de quem digita duzentos documentos por dia e precisa que a ferramenta esteja onde a mão espera. O sistema herda a franqueza do SoftLux — tudo à vista, nada escondido atrás de progressive disclosure — sem herdar sua feiura. Densidade aqui não é dívida de design; é requisito. Um vendedor com cliente ao lado, um comprador lançando trinta itens numa ordem, um administrativo abrindo a quinta aba de um cadastro de produto: nenhum deles tem tempo para respiro decorativo.\n\nA superfície é papel de bancada — branco puro, sem textura, sem gradiente. O que estrutura a tela é linha, não sombra: borda de 1px, tom levíssimo, fieldset com legend reencenando o groupbox do legado. Peso visual pertence ao dado, não ao chrome. Número é tabular por princípio, alinhado à direita, para que colunas de dinheiro se leiam verticalmente sem esforço.\n\nO estado atual do sistema é honesto e incompleto: os tokens são os defaults do shadcn (new-york, base slate) e não existe cor de marca. Isso está registrado como pendência explícita, não maquiado como escolha. O que já é autoral vive na camada src/components/vitra/ — a DataTable com barra de ações, o formulário com abas e rodapé fixo, a grade editável, a tira de totais. Essas peças são o sistema; o resto ainda é andaime.",
+    "keyCharacteristics": [
+      "Densidade alta e deliberada: controle de 36px, célula de tabela de 8px, sem espaço morto",
+      "Linha estrutura, sombra não: borda de 1px faz todo o trabalho de separação",
+      "Monocromático por ora — cinza-ardósia, um vermelho de alerta, nenhum acento",
+      "Número sempre tabular, sempre à direita",
+      "Vocabulário do legado é literal e inegociável (rótulo, ordem de campo, título de tela)",
+      "Desktop-only: nenhuma decisão sacrifica largura em nome de tela estreita"
+    ],
+    "rules": [
+      {
+        "name": "A Regra do Matiz Único",
+        "body": "Enquanto não houver acento de marca, matiz aparece na interface em exatamente um lugar: destruição e erro. Qualquer outra cor entrando na tela é ruído até que a Regra do Matiz Único seja explicitamente revogada.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Peso Antes da Cor",
+        "body": "Hierarquia se resolve por tamanho, peso e posição — nesta ordem — antes de qualquer consideração cromática. Um total importante é 1.125rem/600 tabular, não colorido.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra da Escala de Dois Degraus",
+        "body": "O corpo do sistema tem exatamente dois tamanhos: 0.875rem para tudo e 1.25rem para título de tela. Introduzir um terceiro tamanho no meio dessa faixa exige justificar por que peso não resolveu.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra do Número Tabular",
+        "body": "Todo dígito que possa ser comparado verticalmente — dinheiro, quantidade, percentual, contagem — usa tabular-nums e alinhamento à direita. Sem exceção, inclusive dentro de célula editável.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra dos Quatro Degraus",
+        "body": "O espaçamento tem quatro valores: 4, 8, 12 e 16px. Um quinto valor precisa de justificativa estrutural, não estética.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra da Largura Inteira",
+        "body": "Nenhuma tela ganha max-width. Largura desperdiçada é coluna que o usuário terá de rolar horizontalmente para ver.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra dos Doze Avos",
+        "body": "Campo de formulário mede-se em vãos de uma grade de 12 colunas, nunca em largura fixa nem em flex improvisado. Teste: dois blocos vizinhos com contagens de campo diferentes precisam manter as bordas esquerdas alinhadas.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra da Linha Antes da Sombra",
+        "body": "Separação de superfícies coplanares se resolve com borda e tom. Sombra é reservada a elementos que flutuam sobre o documento e desaparecem.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do compor telas a partir de src/components/vitra/ — DataTable, CadastroForm, FormGrid, LookupCombo, blocos. Tela reimplementando tabela ou rodapé é o principal vetor de deriva deste sistema.",
+      "Do usar o rótulo literal da transcrição do SoftLux, incluindo maiúsculas, abreviação e barra invertida (Valores\\Localização do Estoque). O usuário reconhece o sistema pelos termos.",
+      "Do aplicar tabular-nums e alinhamento à direita em todo número comparável.",
+      "Do agrupar campos com fieldset + legend em Label — é a forma-assinatura do bloco.",
+      "Do dimensionar campo em vãos de grid-cols-12 com items-end, para que fileiras vizinhas alinhem.",
+      "Do manter o rodapé de formulário fixo com borda superior e fundo opaco.",
+      "Do mostrar skeleton de cinco linhas no carregamento de tabela.",
+      "Do marcar valores ausentes como [a resolver] em vez de preencher com um plausível."
+    ],
+    "donts": [
+      "Don't usar glifo emoji em controle (✔ Gravar, ✖ Cancelar, hoje presentes no rodapé do CadastroForm). Emoji renderiza diferente por SO, ignora peso e cor do texto e quebra alinhamento óptico. Usar ícone Lucide de 16px à esquerda do rótulo. Corrigir onde já existe.",
+      "Don't introduzir cor de acento antes de a cor institucional da Vertz ser confirmada. O slot está vazio de propósito.",
+      "Don't replicar o azul de fábrica do anel de foco da sidebar — é resíduo do scaffold, não decisão.",
+      "Don't adicionar sombra para separar superfícies coplanares. Borda e tom fazem isso.",
+      "Don't dar borda visível a célula de grade editável. A linha da tabela é a moldura.",
+      "Don't impor max-width a listagem ou formulário.",
+      "Don't substituir estado vazio ou de carregamento por spinner centralizado.",
+      "Don't desenhar para tela estreita. Desktop é o cenário confirmado; esforço em breakpoint móvel é esforço desviado.",
+      "Don't introduzir um terceiro tamanho de texto entre 0.875rem e 1.25rem sem antes provar que peso não resolveu."
+    ]
+  }
+}

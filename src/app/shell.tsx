@@ -18,6 +18,7 @@ import {
 import { CompanySwitcher } from '@/components/vitra/company-switcher'
 import { ModeToggle } from '@/components/vitra/mode-toggle'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { LayoutDashboard } from 'lucide-react'
 
 function AppSidebar() {
   const { location } = useRouterState()
@@ -29,6 +30,20 @@ function AppSidebar() {
         <CompanySwitcher />
       </SidebarHeader>
       <SidebarContent>
+        {/* Boletim é a entrada, não um módulo: fica solto acima dos grupos.
+            Casamento exato — `/` é prefixo de tudo, `startsWith` acenderia sempre. */}
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/'} tooltip="Boletim">
+                <Link to="/">
+                  <LayoutDashboard />
+                  <span>Boletim</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
         {navGroups.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>

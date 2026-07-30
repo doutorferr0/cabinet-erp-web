@@ -1,0 +1,298 @@
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { FormBlock } from '@/components/vitra/form-block'
+import { Stamp } from '@/components/vitra/stamp'
+import {
+  type Boletim,
+  type LinhaCadastro,
+  type LinhaMovimento,
+  type LinhaOrdemSemEnvio,
+  fetchBoletim,
+} from '@/data/boletim'
+import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
+
+/**
+ * BOLETIM — a tela de entrada (`/`).
+ *
+ * O `PRODUCT.md` chama a entrada atual de "menu vazio" e nomeia o dashboard
+ * como uma das quatro superfícies de visibilidade que o legado não tem. Esta
+ * tela é a primeira delas.
+ *
+ * Não é um dashboard de cartões: o norte do `DESIGN.md` é Papel Funcional, e
+ * a forma certa aqui é o **boletim do dia** — a folha que a operação
+ * imprimiria na abertura. Tudo é régua, coluna que fecha e número tabular;
+ * nenhum cartão, nenhuma métrica-herói, nenhuma cor fora dos dois empregos.
+ *
+ * Toda grandeza é derivada de campo que a transcrição captura. Onde o legado
+ * não registra (a enumeração de `Situação`), o boletim mostra a derivação e
+ * marca — não inventa nome.
+ */
+
+/** Um número da apuração: rótulo em Meta acima, valor tabular abaixo. */
+function Grandeza({ rotulo, valor, apoio }: { rotulo: string; valor: string; apoio?: string }) {
+  return (
+    // A coluna fecha: rótulo e valor partilham a mesma borda esquerda, e o
+    // valor é tabular para alinhar verticalmente com as grandezas vizinhas.
+    <div className="flex min-w-0 flex-col gap-1 px-3 first:pl-0 last:pr-0">
+      <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+        {rotulo}
+      </span>
+      <span className="text-lg font-semibold tabular-nums">{valor}</span>
+      {apoio ? <span className="text-sm text-muted-foreground">{apoio}</span> : null}
+    </div>
+  )
+}
+
+/**
+ * Tira de apuração: as grandezas do dia numa fileira só, separadas por régua
+ * vertical. É a tira de totais do invoice, não uma grade de cartões — por
+ * isso divide, não empilha caixas.
+ */
+function Apuracao({ dados }: { dados: Boletim }) {
+  return (
+    <div className="flex flex-wrap gap-y-3 divide-x divide-rule-hair">
+      <Grandeza
+        rotulo="Orçamentos do dia"
+        valor={String(dados.orcamentosDoDia)}
+        apoio={formatMoneyBRL(dados.valorOrcadoCentavos)}
+      />
+      <Grandeza
+        rotulo="Ordens do dia"
+        valor={String(dados.ordensDoDia)}
+        apoio={formatMoneyBRL(dados.valorOrdenadoCentavos)}
+      />
+      <Grandeza
+        rotulo="Ordens sem envio"
+        valor={String(dados.ordensSemEnvio)}
+        apoio="Data Envio em branco"
+      />
+      <Grandeza rotulo="Documentos no dia" valor={String(dados.movimento.length)} />
+    </div>
+  )
+}
+
+/** Movimento do dia — ledger de documentos, valor fechando a coluna. */
+function Movimento({ linhas }: { linhas: LinhaMovimento[] }) {
+  const total = linhas.reduce((soma, l) => soma + l.valorCentavos, 0)
+
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Espécie</TableHead>
+            <TableHead>Número</TableHead>
+            <TableHead>Cliente / Fornecedor</TableHead>
+            <TableHead className="text-right">Valor</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {linhas.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                Nenhum documento na data de referência.
+              </TableCell>
+            </TableRow>
+          ) : (
+            <>
+              {linhas.map((linha) => (
+                <TableRow key={`${linha.especie}-${linha.numero}`} className="hover:bg-muted">
+                  <TableCell>
+                    {/* A linha inteira leva ao documento; o link ocupa a célula. */}
+                    <Link to={linha.href} className="block hover:underline">
+                      {linha.especie}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
+                    {linha.numero}
+                  </TableCell>
+                  <TableCell className="truncate">{linha.contraparte}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatMoneyBRL(linha.valorCentavos)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {/* Total nas fileiras finais da própria grade, sob a coluna de
+                  valor — nunca numa tira à parte (DESIGN.md §DocumentoTotais). */}
+              <TableRow className="border-rule-strong border-t hover:bg-transparent">
+                <TableCell colSpan={2} className="border-l-0" />
+                <TableCell className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+                  Total do dia
+                </TableCell>
+                <TableCell className="text-right text-lg font-semibold tabular-nums">
+                  {formatMoneyBRL(total)}
+                </TableCell>
+              </TableRow>
+            </>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+/**
+ * Ordens paradas. O tom do carimbo vem do tempo parado, e o rótulo é a
+ * própria derivação — `Data Envio` em branco é fato do campo capturado.
+ * TODO(transcricao): substituir pela enumeração real de `Situação` quando ela
+ * existir; o menu `Consultar Situação do Pedido de Venda` prova que existe,
+ * mas a transcrição não registra os valores.
+ */
+function SemEnvio({ linhas }: { linhas: LinhaOrdemSemEnvio[] }) {
+  if (linhas.length === 0) {
+    return <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma ordem parada.</p>
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Código</TableHead>
+            <TableHead>Fornecedor</TableHead>
+            <TableHead>Data Ordem</TableHead>
+            <TableHead className="text-right">Parada há</TableHead>
+            <TableHead>Envio</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {linhas.map((linha) => (
+            <TableRow key={linha.codigo} className="hover:bg-muted">
+              <TableCell className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
+                <Link to={linha.href} className="block hover:underline">
+                  {linha.codigo}
+                </Link>
+              </TableCell>
+              <TableCell className="truncate">{linha.fornecedor}</TableCell>
+              <TableCell className="tabular-nums">{formatDateBR(linha.dataOrdem)}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {linha.diasParado} {linha.diasParado === 1 ? 'dia' : 'dias'}
+              </TableCell>
+              <TableCell>
+                <Stamp tom={linha.diasParado >= 3 ? 'void' : 'open'} label="Em branco" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+/** Cadastro: total e a fatia desativada (§9 padrão 8 — desativar, não excluir). */
+function Cadastros({ linhas }: { linhas: LinhaCadastro[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cadastro</TableHead>
+            <TableHead className="text-right">Registros</TableHead>
+            <TableHead className="text-right">Desativados</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {linhas.map((linha) => (
+            <TableRow key={linha.nome} className="hover:bg-muted">
+              <TableCell>
+                <Link to={linha.href} className="block hover:underline">
+                  {linha.nome}
+                </Link>
+              </TableCell>
+              <TableCell className="text-right tabular-nums">{linha.total}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {linha.inativos === 0 ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  linha.inativos
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+/** Cinco linhas de esqueleto — nunca spinner, nunca tela vazia (DESIGN.md). */
+function BoletimSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      {['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5'].map((chave) => (
+        <Skeleton key={chave} className="h-10 w-full" />
+      ))}
+    </div>
+  )
+}
+
+export function BoletimTela() {
+  const query = useQuery({ queryKey: ['boletim'], queryFn: () => fetchBoletim() })
+  const dados = query.data
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Cabeçalho de boletim: quem é a folha à esquerda, a data de referência
+          em mono à direita — a mesma anatomia do DocumentoHeader, fechada por
+          régua forte. */}
+      <header
+        data-slot="boletim-header"
+        className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3"
+      >
+        <div>
+          <h1 className="text-2xl font-bold">Boletim</h1>
+          <p className="text-sm text-muted-foreground">
+            O movimento da operação na data de referência.
+          </p>
+        </div>
+        {dados ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+              Data de referência
+            </span>
+            <span className="font-mono text-xl font-semibold tracking-[-0.01em] tabular-nums">
+              {dados.dataReferenciaBR}
+            </span>
+          </div>
+        ) : null}
+      </header>
+
+      {query.isPending || !dados ? (
+        <BoletimSkeleton />
+      ) : (
+        <>
+          <Apuracao dados={dados} />
+
+          <FormBlock legend="Movimento do dia">
+            <Movimento linhas={dados.movimento} />
+          </FormBlock>
+
+          <FormBlock legend="Ordens sem Data Envio">
+            <SemEnvio linhas={dados.semEnvio} />
+          </FormBlock>
+
+          <FormBlock legend="Cadastros">
+            <Cadastros linhas={dados.cadastros} />
+          </FormBlock>
+
+          {/* A data de referência é artefato da fase mock: os dados são o
+              retrato do dia da captura. Dizer isso na tela evita que alguém
+              leia o boletim como "hoje". */}
+          <p className="text-sm text-muted-foreground">
+            Fase mock: a data de referência é a mais recente entre os documentos carregados — o
+            retrato do dia da captura do SoftLux, não a data corrente.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}

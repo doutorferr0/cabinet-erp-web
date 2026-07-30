@@ -57,26 +57,22 @@ describe('AppShell', () => {
     expect(document.documentElement.classList.contains('light')).toBe(true)
   })
 
+  // A rota `/` deixou de ser o menu vazio e virou o Boletim (PRODUCT.md
+  // nomeia a entrada atual como buraco: "no lugar do menu vazio atual").
   it('displays dashboard content on home route', async () => {
     setup()
     await waitFor(() => {
-      expect(
-        screen.getByText('Selecione um módulo no menu lateral para começar.'),
-      ).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
     })
   })
 
   it('wraps route content in the page-frame folha (Regra da Folha)', async () => {
     setup()
     await waitFor(() => {
-      expect(
-        screen.getByText('Selecione um módulo no menu lateral para começar.'),
-      ).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
     })
     const frame = document.querySelector('[data-slot="page-frame"]')
     expect(frame).toBeInTheDocument()
-    expect(frame).toContainElement(
-      screen.getByText('Selecione um módulo no menu lateral para começar.'),
-    )
+    expect(frame).toContainElement(screen.getByRole('heading', { name: 'Boletim' }))
   })
 })

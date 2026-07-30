@@ -159,7 +159,10 @@ function FornecedorCorpo() {
   )
 }
 
-export function FornecedorForm({ fornecedor }: { fornecedor: Fornecedor }) {
+export function FornecedorForm({
+  fornecedor,
+  readOnly = false,
+}: { fornecedor: Fornecedor; readOnly?: boolean }) {
   const navigate = useNavigate()
 
   function onGravar(values: Fornecedor) {
@@ -174,6 +177,7 @@ export function FornecedorForm({ fornecedor }: { fornecedor: Fornecedor }) {
       defaultValues={fornecedor}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/fornecedores' })}
+      readOnly={readOnly}
     >
       <FornecedorCorpo />
 

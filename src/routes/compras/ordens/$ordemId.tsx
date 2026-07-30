@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { OrdemCompraForm } from '@/features/ordem-compra/ordem-compra-form'
+import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/compras/ordens/$ordemId')({
   component: OrdemCompraEditPage,
+  validateSearch: validateModoSearch,
 })
 
 function OrdemCompraEditPage() {
   const { ordemId } = Route.useParams()
+  const readOnly = isConsulta(Route.useSearch())
   const isNovo = ordemId === 'novo'
   const id = Number(ordemId)
 
@@ -35,9 +38,9 @@ function OrdemCompraEditPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">
-        Ordem de Compra {isNovo ? '— Incluir' : `— ${query.data.codigo}`}
+        Ordem de Compra {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.codigo}`}
       </h1>
-      <OrdemCompraForm ordem={query.data} />
+      <OrdemCompraForm ordem={query.data} readOnly={readOnly} />
     </div>
   )
 }

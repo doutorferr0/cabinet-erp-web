@@ -518,7 +518,10 @@ function AbaTributacao() {
   )
 }
 
-export function ProdutoForm({ produto }: { produto: Produto }) {
+export function ProdutoForm({
+  produto,
+  readOnly = false,
+}: { produto: Produto; readOnly?: boolean }) {
   const navigate = useNavigate()
 
   function onGravar(values: Produto) {
@@ -533,6 +536,7 @@ export function ProdutoForm({ produto }: { produto: Produto }) {
       defaultValues={produto}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/produtos' })}
+      readOnly={readOnly}
     >
       <Tabs defaultValue="dadosPrincipais">
         <TabsList className="flex-wrap">

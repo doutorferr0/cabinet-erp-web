@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { ProdutoForm } from '@/features/produto/produto-form'
+import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/produtos/$produtoId')({
   component: ProdutoEditPage,
+  validateSearch: validateModoSearch,
 })
 
 function ProdutoEditPage() {
   const { produtoId } = Route.useParams()
+  const readOnly = isConsulta(Route.useSearch())
   const isNovo = produtoId === 'novo'
   const id = Number(produtoId)
 
@@ -35,9 +38,9 @@ function ProdutoEditPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">
         Cadastro de produtos - Banco Principal{' '}
-        {isNovo ? '— Incluir' : `— ${query.data.nossaDescricao}`}
+        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.nossaDescricao}`}
       </h1>
-      <ProdutoForm produto={query.data} />
+      <ProdutoForm produto={query.data} readOnly={readOnly} />
     </div>
   )
 }

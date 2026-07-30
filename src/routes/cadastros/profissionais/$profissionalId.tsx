@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { ProfissionalForm } from '@/features/profissional/profissional-form'
+import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/profissionais/$profissionalId')({
   component: ProfissionalEditPage,
+  validateSearch: validateModoSearch,
 })
 
 function ProfissionalEditPage() {
   const { profissionalId } = Route.useParams()
+  const readOnly = isConsulta(Route.useSearch())
   const isNovo = profissionalId === 'novo'
   const id = Number(profissionalId)
 
@@ -35,9 +38,10 @@ function ProfissionalEditPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">
-        Cadastro de Profissional Externo {isNovo ? '— Incluir' : `— ${query.data.nomeApresentacao}`}
+        Cadastro de Profissional Externo{' '}
+        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.nomeApresentacao}`}
       </h1>
-      <ProfissionalForm profissional={query.data} />
+      <ProfissionalForm profissional={query.data} readOnly={readOnly} />
     </div>
   )
 }

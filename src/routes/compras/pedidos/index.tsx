@@ -35,14 +35,19 @@ const columns: ColumnDef<PedidoCompra>[] = [
 function PedidosCompraPage() {
   const navigate = useNavigate()
 
-  function abrir(pedidoId: string) {
-    void navigate({ to: '/compras/pedidos/$pedidoId', params: { pedidoId } })
+  function abrir(pedidoId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/compras/pedidos/$pedidoId',
+      params: { pedidoId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<PedidoCompra>({
     entidade: 'pedido de compra',
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrir(String(p.id)),
+    onConsultar: (p) => abrir(String(p.id), 'consulta'),
   })
 
   return (

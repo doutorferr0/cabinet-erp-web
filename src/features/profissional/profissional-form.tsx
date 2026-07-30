@@ -200,7 +200,10 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
   )
 }
 
-export function ProfissionalForm({ profissional }: { profissional: Profissional }) {
+export function ProfissionalForm({
+  profissional,
+  readOnly = false,
+}: { profissional: Profissional; readOnly?: boolean }) {
   const navigate = useNavigate()
   const [buscaCidadePrefix, setBuscaCidadePrefix] = useState<PrefixoCidade | null>(null)
 
@@ -216,6 +219,7 @@ export function ProfissionalForm({ profissional }: { profissional: Profissional 
       defaultValues={profissional}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/profissionais' })}
+      readOnly={readOnly}
     >
       <div className="grid grid-cols-12 items-end gap-3">
         <TextField

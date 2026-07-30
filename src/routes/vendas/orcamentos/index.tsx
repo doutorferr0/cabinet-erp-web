@@ -45,14 +45,19 @@ const BOTOES_RODAPE = [
 function OrcamentosPage() {
   const navigate = useNavigate()
 
-  function abrir(orcamentoId: string) {
-    void navigate({ to: '/vendas/orcamentos/$orcamentoId', params: { orcamentoId } })
+  function abrir(orcamentoId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/vendas/orcamentos/$orcamentoId',
+      params: { orcamentoId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<Orcamento>({
     entidade: 'orçamento',
     onIncluir: () => abrir('novo'),
     onAbrir: (o) => abrir(String(o.id)),
+    onConsultar: (o) => abrir(String(o.id), 'consulta'),
   })
 
   // Orçamento não se apaga, se cancela (§8.1).

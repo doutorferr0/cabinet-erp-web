@@ -32,14 +32,19 @@ const columns: ColumnDef<Cliente>[] = [
 function ClientesPage() {
   const navigate = useNavigate()
 
-  function abrir(clienteId: string) {
-    void navigate({ to: '/cadastros/clientes/$clienteId', params: { clienteId } })
+  function abrir(clienteId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/cadastros/clientes/$clienteId',
+      params: { clienteId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<Cliente>({
     entidade: 'cliente',
     onIncluir: () => abrir('novo'),
     onAbrir: (c) => abrir(String(c.id)),
+    onConsultar: (c) => abrir(String(c.id), 'consulta'),
   })
 
   return (

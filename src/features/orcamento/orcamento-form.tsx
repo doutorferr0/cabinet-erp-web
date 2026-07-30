@@ -345,7 +345,10 @@ const ABAS_SEM_CAPTURA = [
   ['outrosDados', 'Outros Dados'],
 ] as const
 
-export function OrcamentoForm({ orcamento }: { orcamento: Orcamento }) {
+export function OrcamentoForm({
+  orcamento,
+  readOnly = false,
+}: { orcamento: Orcamento; readOnly?: boolean }) {
   const navigate = useNavigate()
 
   function onGravar(values: Orcamento) {
@@ -360,6 +363,7 @@ export function OrcamentoForm({ orcamento }: { orcamento: Orcamento }) {
       defaultValues={orcamento}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/vendas/orcamentos' })}
+      readOnly={readOnly}
     >
       <Tabs defaultValue="principal">
         <TabsList className="flex-wrap">

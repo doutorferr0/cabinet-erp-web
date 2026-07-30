@@ -32,14 +32,19 @@ const columns: ColumnDef<Colaborador>[] = [
 function ColaboradoresPage() {
   const navigate = useNavigate()
 
-  function abrir(colaboradorId: string) {
-    void navigate({ to: '/cadastros/colaboradores/$colaboradorId', params: { colaboradorId } })
+  function abrir(colaboradorId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/cadastros/colaboradores/$colaboradorId',
+      params: { colaboradorId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<Colaborador>({
     entidade: 'colaborador',
     onIncluir: () => abrir('novo'),
     onAbrir: (c) => abrir(String(c.id)),
+    onConsultar: (c) => abrir(String(c.id), 'consulta'),
   })
 
   return (

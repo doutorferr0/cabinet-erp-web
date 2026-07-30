@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { ClienteForm } from '@/features/cliente/cliente-form'
+import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/clientes/$clienteId')({
   component: ClienteEditPage,
+  validateSearch: validateModoSearch,
 })
 
 function ClienteEditPage() {
   const { clienteId } = Route.useParams()
+  const readOnly = isConsulta(Route.useSearch())
   const isNovo = clienteId === 'novo'
   const id = Number(clienteId)
 
@@ -34,9 +37,10 @@ function ClienteEditPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">
-        Cadastro de Clientes {isNovo ? '— Incluir' : `— ${query.data.nome}`}
+        Cadastro de Clientes{' '}
+        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.nome}`}
       </h1>
-      <ClienteForm cliente={query.data} />
+      <ClienteForm cliente={query.data} readOnly={readOnly} />
     </div>
   )
 }

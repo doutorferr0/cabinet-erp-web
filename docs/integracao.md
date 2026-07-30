@@ -47,6 +47,8 @@ Regras já assumidas pela UI:
 - **Datas ISO** (`yyyy-mm-dd`) no dado; a formatação pt-BR é da borda.
 - **CPF/CNPJ sem máscara** no dado.
 - Desativação lógica: existe campo `ativo`; a UI nunca exclui de verdade.
+- **Consulta é a mesma tela** (`?modo=consulta`), não um endpoint separado: o
+  backend não precisa de rota read-only, só do mesmo `GET /recurso/{id}`.
 
 ## Passo a passo da troca
 
@@ -108,6 +110,8 @@ precisam ser confirmadas contra o backend:
 | Componente com Query, sem router | `renderWithQuery(<X />)` | `components/vitra/data-table.test.tsx` |
 | Contrato de dados | `provider.list/get/empty` | `data/provider.test.ts` |
 | Semântica do mock (filtro/sort/página) | `pagedMock` direto | `mocks/query.test.ts` |
+| Cálculo puro (dinheiro, %, data) | função direta | `lib/formatters.test.ts`, `components/vitra/documento.test.ts` |
+| Modo consulta (§9 padrão 8) | `renderRoute('/url?modo=consulta')` | `components/vitra/cadastro-form.test.tsx` |
 
 Helpers em `src/test/utils.tsx` (`renderRoute`, `renderWithQuery`, `tableState`).
 Os testes de tela chamam os providers com `delayMs = 0` através das próprias telas.

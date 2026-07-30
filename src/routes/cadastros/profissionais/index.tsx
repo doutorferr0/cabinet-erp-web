@@ -32,14 +32,19 @@ const columns: ColumnDef<Profissional>[] = [
 function ProfissionaisPage() {
   const navigate = useNavigate()
 
-  function abrir(profissionalId: string) {
-    void navigate({ to: '/cadastros/profissionais/$profissionalId', params: { profissionalId } })
+  function abrir(profissionalId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/cadastros/profissionais/$profissionalId',
+      params: { profissionalId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<Profissional>({
     entidade: 'profissional externo',
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrir(String(p.id)),
+    onConsultar: (p) => abrir(String(p.id), 'consulta'),
   })
 
   return (

@@ -236,7 +236,10 @@ function AbaPrincipal() {
   )
 }
 
-export function OrdemCompraForm({ ordem }: { ordem: OrdemCompra }) {
+export function OrdemCompraForm({
+  ordem,
+  readOnly = false,
+}: { ordem: OrdemCompra; readOnly?: boolean }) {
   const navigate = useNavigate()
 
   function onGravar(values: OrdemCompra) {
@@ -251,6 +254,7 @@ export function OrdemCompraForm({ ordem }: { ordem: OrdemCompra }) {
       defaultValues={ordem}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/compras/ordens' })}
+      readOnly={readOnly}
     >
       <Tabs defaultValue="principal">
         <TabsList className="flex-wrap">

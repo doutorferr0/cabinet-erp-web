@@ -173,7 +173,10 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
   )
 }
 
-export function ClienteForm({ cliente }: { cliente: Cliente }) {
+export function ClienteForm({
+  cliente,
+  readOnly = false,
+}: { cliente: Cliente; readOnly?: boolean }) {
   const navigate = useNavigate()
   const [buscaCidadeOpen, setBuscaCidadeOpen] = useState(false)
 
@@ -191,6 +194,7 @@ export function ClienteForm({ cliente }: { cliente: Cliente }) {
       defaultValues={cliente}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/clientes' })}
+      readOnly={readOnly}
     >
       <Tabs defaultValue="principal">
         <TabsList className="flex-wrap">

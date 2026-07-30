@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
+import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')({
   component: ColaboradorEditPage,
+  validateSearch: validateModoSearch,
 })
 
 function ColaboradorEditPage() {
   const { colaboradorId } = Route.useParams()
+  const readOnly = isConsulta(Route.useSearch())
   const isNovo = colaboradorId === 'novo'
   const id = Number(colaboradorId)
 
@@ -35,9 +38,10 @@ function ColaboradorEditPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">
-        Cadastro de Colaboradores {isNovo ? '— Incluir' : `— ${query.data.nome}`}
+        Cadastro de Colaboradores{' '}
+        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.nome}`}
       </h1>
-      <ColaboradorForm colaborador={query.data} />
+      <ColaboradorForm colaborador={query.data} readOnly={readOnly} />
     </div>
   )
 }

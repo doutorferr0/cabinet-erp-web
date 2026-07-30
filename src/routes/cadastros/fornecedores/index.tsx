@@ -28,14 +28,19 @@ const columns: ColumnDef<Fornecedor>[] = [
 function FornecedoresPage() {
   const navigate = useNavigate()
 
-  function abrir(fornecedorId: string) {
-    void navigate({ to: '/cadastros/fornecedores/$fornecedorId', params: { fornecedorId } })
+  function abrir(fornecedorId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/cadastros/fornecedores/$fornecedorId',
+      params: { fornecedorId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<Fornecedor>({
     entidade: 'fornecedor',
     onIncluir: () => abrir('novo'),
     onAbrir: (f) => abrir(String(f.id)),
+    onConsultar: (f) => abrir(String(f.id), 'consulta'),
   })
 
   return (

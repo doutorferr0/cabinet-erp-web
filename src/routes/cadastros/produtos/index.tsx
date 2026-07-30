@@ -32,14 +32,19 @@ const columns: ColumnDef<Produto>[] = [
 function ProdutosPage() {
   const navigate = useNavigate()
 
-  function abrir(produtoId: string) {
-    void navigate({ to: '/cadastros/produtos/$produtoId', params: { produtoId } })
+  function abrir(produtoId: string, modo?: 'consulta') {
+    void navigate({
+      to: '/cadastros/produtos/$produtoId',
+      params: { produtoId },
+      search: modo ? { modo } : {},
+    })
   }
 
   const actions = cadastroActions<Produto>({
     entidade: 'produto',
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrir(String(p.id)),
+    onConsultar: (p) => abrir(String(p.id), 'consulta'),
   })
 
   return (

@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { OrcamentoForm } from '@/features/orcamento/orcamento-form'
+import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/vendas/orcamentos/$orcamentoId')({
   component: OrcamentoEditPage,
+  validateSearch: validateModoSearch,
 })
 
 function OrcamentoEditPage() {
   const { orcamentoId } = Route.useParams()
+  const readOnly = isConsulta(Route.useSearch())
   const isNovo = orcamentoId === 'novo'
   const id = Number(orcamentoId)
 
@@ -35,9 +38,9 @@ function OrcamentoEditPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">
-        Orçamento {isNovo ? '— Incluir' : `— ${query.data.numero}`}
+        Orçamento {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.numero}`}
       </h1>
-      <OrcamentoForm orcamento={query.data} />
+      <OrcamentoForm orcamento={query.data} readOnly={readOnly} />
     </div>
   )
 }

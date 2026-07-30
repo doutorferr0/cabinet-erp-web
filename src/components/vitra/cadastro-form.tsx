@@ -10,6 +10,12 @@ export interface CadastroFormProps<T extends FieldValues> {
   defaultValues: DefaultValues<T>
   onGravar: (values: T) => void
   onCancelar: () => void
+  /**
+   * Modo `Consul.` da barra de ações (§9 padrão 8): mesma tela, sem edição.
+   * Desabilita TODO o conteúdo via `<fieldset disabled>` — inclusive botões de
+   * busca e de incluir linha nas grades — e o rodapé vira só `Fechar`.
+   */
+  readOnly?: boolean
   children: React.ReactNode
 }
 
@@ -22,6 +28,7 @@ export function CadastroForm<T extends FieldValues>({
   defaultValues,
   onGravar,
   onCancelar,
+  readOnly = false,
   children,
 }: CadastroFormProps<T>) {
   const form = useForm<T>({
@@ -33,12 +40,23 @@ export function CadastroForm<T extends FieldValues>({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onGravar)} className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="min-h-0 flex-1">{children}</div>
+        {/* `disabled` no fieldset cobre todo descendente sem prop por campo. */}
+        <fieldset disabled={readOnly} className="min-h-0 flex-1 border-0 p-0">
+          {children}
+        </fieldset>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-background pt-3">
-          <Button type="button" variant="outline" onClick={onCancelar}>
-            ✖ Cancelar
-          </Button>
-          <Button type="submit">✔ Gravar</Button>
+          {readOnly ? (
+            <Button type="button" variant="outline" onClick={onCancelar}>
+              ✖ Fechar
+            </Button>
+          ) : (
+            <>
+              <Button type="button" variant="outline" onClick={onCancelar}>
+                ✖ Cancelar
+              </Button>
+              <Button type="submit">✔ Gravar</Button>
+            </>
+          )}
         </div>
       </form>
     </Form>

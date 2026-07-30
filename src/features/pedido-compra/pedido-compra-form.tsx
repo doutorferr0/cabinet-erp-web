@@ -66,7 +66,10 @@ function Totais() {
   return <DocumentoTotais subtotalCentavos={useSubtotalCentavos('itens')} />
 }
 
-export function PedidoCompraForm({ pedido }: { pedido: PedidoCompra }) {
+export function PedidoCompraForm({
+  pedido,
+  readOnly = false,
+}: { pedido: PedidoCompra; readOnly?: boolean }) {
   const navigate = useNavigate()
 
   function onGravar(values: PedidoCompra) {
@@ -81,6 +84,7 @@ export function PedidoCompraForm({ pedido }: { pedido: PedidoCompra }) {
       defaultValues={pedido}
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/compras/pedidos' })}
+      readOnly={readOnly}
     >
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-12 items-end gap-3">

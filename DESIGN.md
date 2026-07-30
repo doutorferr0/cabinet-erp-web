@@ -28,6 +28,9 @@ colors:
   alert-red-night: "hsl(2 70% 62%)"
   stamp-open-night: "hsl(210 70% 64%)"
   stamp-done-night: "hsl(150 45% 58%)"
+  graphite-night: "hsl(40 20% 95%)"
+  stamp-neutral-night: "hsl(38 10% 66%)"
+  stamp-void-night: "hsl(2 70% 62%)"
 typography:
   display:
     fontFamily: "ui-sans-serif, system-ui, sans-serif"
@@ -125,9 +128,30 @@ components:
     borderColor: "{colors.rule-strong}"
     height: "36px"
     padding: "0 8px"
-  table-row-divider:
+  table-frame:
+    backgroundColor: "{colors.surface-card}"
+    borderColor: "{colors.rule}"
+    borderWidth: "1px"
+    rounded: "{rounded.lg}"
+  table-mesh:
     borderColor: "{colors.rule-hair}"
     borderWidth: "1px"
+    borderStyle: "solid"
+  table-section-band:
+    backgroundColor: "{colors.bench-tint}"
+    textColor: "{colors.ink-muted}"
+    typography: "{typography.meta}"
+    borderColor: "{colors.rule-strong}"
+    borderWidth: "1px 0"
+    height: "28px"
+    padding: "0 8px"
+  table-total-row:
+    textColor: "{colors.ink}"
+    typography: "{typography.title}"
+    borderColor: "{colors.rule-strong}"
+    borderWidth: "1px 0 0 0"
+    height: "40px"
+    padding: "0 8px"
   table-row-selected:
     backgroundColor: "{colors.bench-tint}"
     textColor: "{colors.ink}"
@@ -168,6 +192,7 @@ Matiz é escasso e tem emprego fixo: **carimbo de situação** e **destruição/
 **Key Characteristics:**
 - Papel tintado na página, branco puro no documento — duas superfícies, zero sombra
 - Régua faz todo o trabalho estrutural, em três pesos (fio, régua, régua forte)
+- Tabela é **grade fechada**: célula tem parede dos quatro lados, como no formulário impresso
 - Densidade de comanda: mais linhas visíveis ganha de respiro decorativo
 - Número tabular à direita; metadado em mono de etiqueta, caixa alta pequena
 - Cor só em carimbo de situação e em destruição/erro
@@ -182,37 +207,41 @@ Matiz é escasso e tem emprego fixo: **carimbo de situação** e **destruição/
 Paleta de papel: neutros quentes de baixa saturação para superfície, tinta e régua; matiz reservado a dois empregos nomeados. Não há cor institucional da Vertz registrada — e, com a decisão de acento abaixo, o sistema **não precisa de uma** para ficar completo.
 
 ### Superfícies
-- **Papel** (`{colors.paper}`): fundo da aplicação. Creme discreto — lê como papel sob luz de escritório e some em uso de oito horas. Nunca branco puro, nunca cinza puro.
-- **Documento** (`{colors.surface-card}`): branco puro. É o painel, a tabela, o formulário, o diálogo — tudo que é *conteúdo* pousado sobre o papel. O degrau Papel → Documento é o que substitui a sombra.
-- **Tinta de Bancada** (`{colors.bench-tint}`): hover e seleção de linha, fundo de botão secundário pressionado. Único preenchimento tonal do sistema, exclusivo de estado.
+- **Papel** (`hsl(42 30% 97%)`): fundo da aplicação. Creme discreto — lê como papel sob luz de escritório e some em uso de oito horas. Nunca branco puro, nunca cinza puro.
+- **Documento** (`hsl(0 0% 100%)`): branco puro. É o painel, a tabela, o formulário, o diálogo — tudo que é *conteúdo* pousado sobre o papel. O degrau Papel → Documento é o que substitui a sombra.
+- **Tinta de Bancada** (`hsl(42 35% 92%)`): hover e seleção de linha, fundo de botão secundário pressionado. Único preenchimento tonal do sistema, exclusivo de estado.
 
 ### Tinta
-- **Tinta** (`{colors.ink}`): todo texto de conteúdo e todo dado. Quase-preto quente — 15,5:1 sobre Papel.
-- **Tinta Apagada** (`{colors.ink-muted}`): cabeçalho de coluna, rótulo de total, contagem de registros, texto de estado vazio. Moldura do dado, não o dado. 5,2:1 sobre Papel — passa AA como texto normal, não só como texto grande.
-- **Grafite** (`{colors.graphite}`): única cor de ação afirmativa preenchida. Preenche `Gravar` e mais nada.
-- **Tinta Invertida** (`{colors.ink-inverse}`): texto sobre Grafite.
+- **Tinta** (`hsl(30 12% 12%)`): todo texto de conteúdo e todo dado. Quase-preto quente — 15,5:1 sobre Papel.
+- **Tinta Apagada** (`hsl(35 10% 40%)`): cabeçalho de coluna, rótulo de total, contagem de registros, texto de estado vazio. Moldura do dado, não o dado. 5,2:1 sobre Papel — passa AA como texto normal, não só como texto grande.
+- **Grafite** (`hsl(28 12% 18%)`): única cor de ação afirmativa preenchida. Preenche `Gravar` e mais nada.
+- **Tinta Invertida** (`hsl(40 20% 95%)`): texto sobre Grafite.
 
 ### Réguas — três pesos, e só três
 O material estrutural do sistema. A escolha do peso é semântica, não estética.
-- **Fio** (`{colors.rule-hair}`): divisor entre linhas de uma mesma tabela. Fraco de propósito: a estrutura da tabela já vem do alinhamento das colunas; o fio só evita que a linha escorregue para a vizinha.
-- **Régua** (`{colors.rule}`): a borda de trabalho — campo, painel, contêiner de tabela, moldura do documento. **3,1:1 sobre Papel**, acima do mínimo de 3:1 que WCAG 1.4.11 exige de contorno que identifica um controle. Este valor é piso de acessibilidade, não preferência: clarear a régua quebra a conformidade.
-- **Régua Forte** (`{colors.rule-strong}`): separação de seção, sublinha do cabeçalho de coluna, régua superior do rodapé fixo, marcador da linha selecionada. É a "régua dupla" da comanda: onde ela aparece, terminou um bloco e começou outro.
+- **Fio** (`hsl(40 14% 88%)`): **toda a malha interna da grade** — entre linhas e entre colunas. Fraco de propósito: são muitas linhas na tela ao mesmo tempo, e a malha precisa delimitar a célula sem virar gaiola. É o traço fino do formulário contábil e do cartão de ponto, onde a grade inteira é mais clara que a caixa que a contém.
+- **Régua** (`hsl(34 11% 54%)`): a borda de trabalho — **a caixa em volta** de campo, bloco, grade e folha. É sempre mais forte que a malha que ela encerra: no formulário impresso a moldura chega primeiro ao olho, a malha depois. **3,1:1 sobre Papel**, acima do mínimo de 3:1 que WCAG 1.4.11 exige de contorno que identifica um controle. Este valor é piso de acessibilidade, não preferência: clarear a régua quebra a conformidade.
+- **Régua Forte** (`hsl(32 12% 34%)`): separação de seção, sublinha do cabeçalho de coluna, faixa de seção dentro da grade, régua superior do rodapé fixo, régua acima da linha de Total, marcador da linha selecionada. É a "régua dupla" da comanda: onde ela aparece, terminou um bloco e começou outro.
+
+**Os três pesos são uma hierarquia, não uma paleta:** fio < régua < régua forte, sempre nessa ordem de força e sempre com esse significado — malha, caixa, corte. Uma tabela que use o mesmo peso nos três papéis vira o formulário contábil ilegível da referência `formularios-contabeis-ledger-verde`, onde a grade some dentro de si mesma.
 
 ### Matiz — dois empregos nomeados
-- **Vermelho de Alerta** (`{colors.alert-red}`): ação destrutiva e mensagem de erro de validação. 6,2:1 sobre Papel. **Substitui o vermelho de fábrica do shadcn** (`hsl(0 84.2% 60.2%)`), que reprovava AA como texto (3,0:1 sobre branco) apesar de ser usado exatamente como texto de erro.
-- **Carimbo de situação** — o único lugar onde cor codifica informação de domínio: **Neutro** (`{colors.stamp-neutral}`), **Aberto** (`{colors.stamp-open}`), **Concluído** (`{colors.stamp-done}`), **Anulado** (`{colors.stamp-void}`). Todos ≥ 6,2:1 sobre Papel.
+- **Vermelho de Alerta** (`hsl(0 68% 42%)`): ação destrutiva e mensagem de erro de validação. 6,2:1 sobre Papel. **Substitui o vermelho de fábrica do shadcn** (`hsl(0 84.2% 60.2%)`), que reprovava AA como texto (3,0:1 sobre branco) apesar de ser usado exatamente como texto de erro.
+- **Carimbo de situação** — o único lugar onde cor codifica informação de domínio: **Neutro** (`hsl(35 10% 40%)`), **Aberto** (`hsl(214 70% 34%)`), **Concluído** (`hsl(152 55% 24%)`), **Anulado** (`hsl(0 68% 42%)`). Aberto, Concluído e Anulado ≥ 6,2:1 sobre Papel; o Neutro é a própria Tinta Apagada (5,2:1 — acima do AA de 4,5:1 para texto normal), porque carimbo neutro é moldura, não alerta.
 
 **A lista de situações é `[a resolver]`.** A transcrição do SoftLux tem o item de menu `Consultar Situação do Pedido de Venda`, o que prova que o conceito existe, mas **não transcreve os valores**. Nenhum nome de situação deve ser inventado para preencher a paleta: o carimbo é um mecanismo de quatro tons semânticos esperando a enumeração real vir da transcrição ou do contrato do backend.
 
 ### Modo escuro
-Inversão completa, mesma gramática: **Papel Noturno** (`{colors.paper-night}`) na página, **Documento Noturno** (`{colors.surface-card-night}`) no conteúdo — o degrau de superfície sobrevive à inversão, que era exatamente o defeito do sistema anterior. As três réguas noturnas (`{colors.rule-hair-night}`, `{colors.rule-night}`, `{colors.rule-strong-night}`) mantêm a hierarquia de peso, e `{colors.rule-night}` fica em 3,9:1 sobre o papel noturno. Carimbos e alerta clareiam (`{colors.alert-red-night}`, `{colors.stamp-open-night}`, `{colors.stamp-done-night}`) para segurar ≥ 4,5:1 no escuro.
+Inversão completa, mesma gramática: **Papel Noturno** (`hsl(30 8% 10%)`) na página, **Documento Noturno** (`hsl(30 7% 13%)`) no conteúdo — o degrau de superfície sobrevive à inversão, que era exatamente o defeito do sistema anterior. As três réguas noturnas (`hsl(34 7% 22%)`, `hsl(33 10% 46%)`, `hsl(36 11% 62%)`) mantêm a hierarquia de peso, e `hsl(33 10% 46%)` fica em 3,9:1 sobre o papel noturno. Carimbos e alerta clareiam (`hsl(2 70% 62%)`, `hsl(210 70% 64%)`, `hsl(150 45% 58%)`) para segurar ≥ 4,5:1 no escuro; Neutro e Anulado noturnos não têm tom próprio — derivam de Tinta Apagada Noturna e Alerta Noturno, como no tema claro. O Grafite também não tem versão noturna: a ação afirmativa inverte (`hsl(40 20% 95%)` sobre Papel Noturno, 15,7:1), mesma gramática da inversão geral.
 
 ### Named Rules
 **A Regra do Matiz com Emprego.** Matiz aparece na interface em exatamente dois lugares: carimbo de situação e destruição/erro. Não existe cor de acento decorativa, de módulo ou de marca — a navegação não muda de cor, o header não tem faixa colorida, botão não é azul. Qualquer matiz fora dos dois empregos é ruído até que esta regra seja explicitamente revogada. *(Revoga e substitui a antiga "Regra do Matiz Único", que só admitia destruição.)*
 
 **A Regra do Peso Antes da Cor.** Hierarquia se resolve por tamanho, peso e posição — nesta ordem — antes de qualquer consideração cromática. Um total importante é `1.125rem/600 tabular`, não colorido.
 
-**A Regra da Régua Auditável.** `{colors.rule}` e mais escuro são valores de conformidade: qualquer clareamento precisa ser recalculado contra a superfície de destino e continuar ≥ 3:1. Não ajustar régua "no olho".
+**A Regra da Régua Auditável.** `hsl(34 11% 54%)` e mais escuro são valores de conformidade: qualquer clareamento precisa ser recalculado contra a superfície de destino e continuar ≥ 3:1. Não ajustar régua "no olho".
+
+**A Regra da Grade Fechada.** Toda tabela de dado — listagem, grade de itens, janela de busca — é uma grade fechada: caixa externa em Régua, malha interna em Fio **entre linhas e entre colunas**. Coluna sem parede é coluna que não fecha; é por isso que todo formulário comercial impresso, do cartão de ponto ao invoice, desenha a vertical. Consequência direta: **zebra não existe neste sistema** — a malha já delimita a célula, e faixa alternada em cima de grade é ruído sobre ruído. *(Isto contraria a nota "zebra sutil" do `inspo/README.md` para `formularios-contabeis-ledger-verde`: aquela referência resolve a varredura horizontal com malha OU com faixa, não com as duas. Escolhida a malha, por ser o que o invoice, o print-order e o cartão de ponto fazem. Se o user preferir a faixa, ela substitui a vertical — não se soma a ela.)*
 
 ## Typography
 
@@ -269,10 +298,14 @@ O único ponto de quebra real é **640px**: abaixo dele os vãos colapsam e os c
 | Camada | Superfície | Delimitação |
 |---|---|---|
 | Página | Papel | — |
-| Folha de trabalho (`page-frame`) | Documento | borda 1px em Régua |
-| Cabeçalho de tabela / seção | Documento | sublinha em Régua Forte |
-| Linha de tabela | Documento | fio em Régua-Fio |
+| Folha de trabalho (`page-frame`) | Documento | caixa 1px em Régua |
+| Bloco de formulário (`<fieldset>`) | Documento | caixa 1px em Régua, `<legend>` cavalgando a borda |
+| Grade (contêiner) | Documento | caixa 1px em Régua |
+| Cabeçalho de coluna | Documento | sublinha em Régua Forte |
+| Faixa de seção dentro da grade | Documento | régua acima e abaixo em Régua Forte |
+| Célula | Documento | malha em Fio, horizontal **e vertical** |
 | Linha selecionada | Tinta de Bancada | marcador esquerdo 2px em Régua Forte |
+| Linha de Total | Documento | régua superior em Régua Forte, na largura da coluna de valor |
 | Rodapé fixo do formulário | Documento | régua superior em Régua Forte |
 
 Sombra permanece legítima em exatamente um caso: elemento que **flutua sobre o documento e desaparece** — diálogo, popover, dropdown, o `<Command>` do LookupCombo. Ali ela informa "isto está acima e é temporário". Em qualquer outro lugar é decoração.
@@ -290,7 +323,9 @@ Na prática: `{rounded.md}` (3px) em botão e campo, `{rounded.lg}` (4px) em mol
 
 Não há geometria decorativa: nenhum recorte, nenhuma forma orgânica, nenhum ícone em tile arredondado. A silhueta recorrente é o **retângulo com régua de 1px e canto de 3–4px**, repetido em três escalas — o campo, a folha e a tira.
 
-`<fieldset>` com `<legend>` sobre a borda superior continua sendo a forma-assinatura do agrupamento em formulário: citação direta do groupbox do SoftLux, e agora também do bloco compartimentado da inspo. O `<legend>` passa a usar **Meta** (mono, caixa alta pequena) — é o rótulo de compartimento, não um subtítulo.
+`<fieldset>` com `<legend>` sobre a borda superior continua sendo a forma-assinatura do agrupamento em formulário: citação direta do groupbox do SoftLux, e agora também do compartimento da inspo. O `<legend>` passa a usar **Meta** (mono, caixa alta pequena) — é o rótulo de compartimento, não um subtítulo.
+
+**Compartimento é caixa com goteira, não malha.** Blocos vizinhos de um formulário têm cada um a sua caixa fechada em Régua, separados por `{spacing.md}` de respiro — nunca compartilhando parede como as células de uma grade. A distinção é a da ficha técnica e do cabeçalho do cartão de ponto: o bloco é uma peça inteira que se lê sozinha; a célula é um compartimento de uma malha contínua. Confundir os dois produz ou um formulário que parece planilha, ou uma planilha que parece formulário.
 
 ## Components
 
@@ -318,10 +353,12 @@ Caráter geral: **impresso e inequívoco**. Controles têm contorno real, estado
 A peça mais reutilizada — oito telas e a janela de busca. Estrutura vertical fixa em três faixas separadas por `{spacing.md}`, dentro da moldura:
 
 1. **Barra:** campo de busca de 288px com ícone de lupa embutido, seguido da barra de ações em outline compacto.
-2. **Corpo — o ledger.** Cabeçalho de 36px com rótulo em **Meta** (mono, caixa alta) e **sublinha em Régua Forte**; linhas separadas por Régua-Fio; coluna ordenável é um `<button>` que revela seta só quando ativa. Linha inteira clicável; **linha selecionada recebe Tinta de Bancada mais marcador esquerdo de 2px em Régua Forte** — o marcador existe porque tinta sozinha não alcança 3:1 contra a linha vizinha, e estado não pode depender só de cor. Carregamento mostra cinco linhas de skeleton — nunca spinner, nunca tela vazia. Vazio mostra `Nenhum registro.` centralizado em Tinta Apagada, 96px de altura.
+2. **Corpo — o ledger.** Caixa em Régua em volta da grade inteira. Cabeçalho de 36px com rótulo em **Meta** (mono, caixa alta) e **sublinha em Régua Forte**; coluna ordenável é um `<button>` que revela seta só quando ativa. **Malha em Fio entre linhas e entre colunas** — a célula tem parede dos quatro lados. Linha inteira clicável; **linha selecionada recebe Tinta de Bancada mais marcador esquerdo de 2px em Régua Forte** — o marcador existe porque tinta sozinha não alcança 3:1 contra a linha vizinha, e estado não pode depender só de cor. Carregamento mostra cinco linhas de skeleton — nunca spinner, nunca tela vazia. Vazio mostra `Nenhum registro.` centralizado em Tinta Apagada, 96px de altura.
 3. **Rodapé:** contagem de registros à esquerda em Meta; seletor de itens por página, `Anterior`, `Página X de Y` e `Próxima` à direita.
 
-Zebra (faixa alternada) é **opcional e desligada por padrão**: com Régua-Fio em toda linha, a zebra vira redundância. Ligar só em tabela de mais de 12 colunas, onde a varredura horizontal justifica.
+**Cabeçalho agrupado** quando duas ou mais colunas pertencem à mesma grandeza: uma fileira acima com o rótulo do grupo centralizado sobre as sub-colunas, separada delas por Fio. É o `MORNING ｜ AFTERNOON ｜ OVERTIME` sobre `IN ｜ OUT` do cartão de ponto, e serve direto a pares como `Previsto ｜ Realizado` ou `Quant. ｜ Un.`.
+
+**Coluna de numeração** opcional como primeira coluna, largura fixa de 40px, valor em Meta e alinhado à direita. Existe para o operador dizer "linha 12" em voz alta — é a numeração impressa do cartão de ponto e da comanda, não um índice decorativo. Ligada por padrão em grade de itens de documento, desligada em listagem de cadastro.
 
 ### CadastroForm (componente-assinatura)
 Um único `<form>` por tela, com as abas dentro dele — nunca um form por aba. Rodapé **fixo** (`sticky bottom-0`) com régua superior em Régua Forte e fundo Documento opaco: as ações de gravar nunca saem de vista.
@@ -333,7 +370,9 @@ Navegação entre campos é a nativa do formulário (Tab / Shift+Tab, Enter no c
 ### FormGrid (componente-assinatura)
 Tabela editável dentro do formulário. Células são inputs **sem borda e sem sombra** (`border-0`, `shadow-none`, anel suprimido), de 32px — a moldura é a linha da tabela, não o campo. Numéricos à direita, tabulares. Cada linha termina com botão de remover; a inclusão fica acima da grade, em outline compacto.
 
-Esse apagamento do campo é o oposto do input de formulário e é intencional: em trinta linhas, trinta bordas de campo criariam uma malha ilegível. É a grade da comanda — a linha pautada é o campo.
+Esse apagamento do campo é o oposto do input de formulário e é intencional: em trinta linhas, trinta bordas de campo criariam uma malha dupla — a da grade e a dos campos — e nenhuma das duas se leria. **A malha da grade É o campo**: a célula já tem parede dos quatro lados em Fio, exatamente como a linha pautada da comanda, onde ninguém desenha caixa em volta do que se escreve porque a pauta já é a caixa.
+
+**Faixa de seção** para agrupar linhas dentro da grade (o `Ambiente` do orçamento, quando a captura confirmar que é agrupamento): fileira de largura total, sem colunas, rótulo em Meta alinhado à esquerda, régua acima e abaixo em Régua Forte, fundo Tinta de Bancada. É a banda de seção do menu-comanda — o corte é mais forte que a malha, então o olho entende que ali terminou um bloco.
 
 ### DocumentoHeader
 Cabeçalho de documento (orçamento, pedido, ordem). Fileira única: título literal da transcrição em Headline à esquerda; **número do documento em Número do Documento (mono 1.25rem) à direita**, com o carimbo de situação ao lado. Abaixo, régua forte fechando o bloco. É a anatomia do invoice e da comanda: quem é o documento, qual o número, em que situação está — antes de qualquer campo.
@@ -344,7 +383,11 @@ Retângulo de 20px, canto `{rounded.sm}`, borda de 1px e texto na mesma cor do t
 Os quatro tons semânticos são Neutro / Aberto / Concluído / Anulado. **O mapeamento tom → situação é `[a resolver]`**, dependente da enumeração real; até lá o componente aceita o tom como propriedade e nenhuma tela fixa um nome de situação inventado.
 
 ### DocumentoTotais (componente-assinatura)
-Tira horizontal alinhada à direita, borda em Régua, canto `{rounded.lg}`, padding de `{spacing.md}`. Pares `rótulo: valor` separados por 24px, rótulo em Meta, valor tabular. `Total` é o único elemento em Title, separado dos demais por régua forte — o `TAX / GRAND TOTAL` destacado no rodapé do invoice. Totais são sempre derivados dos itens, nunca campo paralelo.
+**Os totais são as últimas linhas da própria grade de itens, não uma tira separada.** É a correção mais concreta que a releitura da inspo trouxe: no invoice e no print-order, `TAX` e `GRAND TOTAL` ocupam as duas últimas fileiras da mesma tabela, com o valor **caindo exatamente sob a coluna de valor dos itens**. O olho desce a coluna e encontra o total no fim dela — não precisa saltar para um bloco à parte e reencontrar o alinhamento.
+
+Estrutura: fileiras finais da grade, células da esquerda vazias ou mescladas, rótulo em Meta na penúltima coluna, valor tabular na coluna de valor. `Total` leva régua superior em Régua Forte e é o único elemento em Title — o degrau de peso é toda a hierarquia de que precisa. Totais são sempre derivados dos itens, nunca campo paralelo.
+
+Quando não há grade de itens na tela (resumos, consultas), o mesmo conteúdo cai numa tira própria alinhada à direita, com caixa em Régua e canto `{rounded.lg}` — mas essa é a exceção, não a forma padrão.
 
 ### Navigation
 Sidebar colapsável para modo ícone, agrupada por módulo (`Cadastros`, `Estoque`, `Vendas`, `Compras`), rótulo de grupo em Meta. Item ativo casa por prefixo de rota e recebe Tinta de Bancada mais marcador esquerdo de 2px em Régua Forte — mesma gramática da linha de tabela selecionada. Em modo ícone, tooltip com o rótulo completo. O topo é o seletor de empresa ativa — a troca VERTZ ILUMINAÇÃO / VIA HF é decisão de contexto, não configuração enterrada.
@@ -361,18 +404,19 @@ Esta especificação é a direção travada; o código ainda é o sistema anteri
 
 | # | Onde | O que muda |
 |---|---|---|
-| 1 | `src/index.css` | Todos os tokens de cor (papel, documento, três réguas, tinta quente, alerta AA, carimbos) nos dois temas; `--radius` de `0.625rem` para `4px` |
-| 2 | `src/index.css` | Sidebar deixa de ter paleta própria; `--ring` unificado em Régua Forte |
+| 1 | `src/index.css` | Todos os tokens de cor (papel, documento, três réguas, tinta quente, alerta AA, carimbos) nos dois temas; `--radius` de `0.625rem` para `4px` — **feito** |
+| 2 | `src/index.css` | Sidebar deixa de ter paleta própria; `--ring` unificado em Régua Forte — **feito** |
 | 3 | `src/app/` (shell) | Moldura `page-frame` em volta da região de conteúdo |
-| 4 | `src/components/vitra/data-table.tsx` | Cabeçalho 36px em Meta com sublinha forte; fio entre linhas; marcador de 2px na linha selecionada |
-| 5 | `src/components/vitra/cadastro-form.tsx` | `<legend>` em Meta; rodapé com régua forte; ícone Lucide no lugar de glifo emoji |
-| 6 | `src/components/vitra/documento.tsx` | `DocumentoHeader` com número em mono; `Total` separado por régua forte |
-| 7 | novo | Componente `Stamp` |
-| 8 | `src/components/ui/` | Mensagem de validação de `0.8rem` para `0.75rem` |
+| 4 | `src/components/vitra/data-table.tsx` | **Grade fechada**: caixa em Régua, malha em Fio entre linhas **e colunas**; cabeçalho 36px em Meta com sublinha forte; marcador de 2px na linha selecionada; coluna de numeração opcional; cabeçalho agrupado |
+| 5 | `src/components/vitra/cadastro-form.tsx` | `<legend>` em Meta; bloco como compartimento fechado com goteira; rodapé com régua forte; ícone Lucide no lugar de glifo emoji |
+| 6 | `src/components/vitra/form-grid.tsx` | Mesma malha da DataTable; faixa de seção para agrupamento de linhas |
+| 7 | `src/components/vitra/documento.tsx` | `DocumentoHeader` com número em mono; **totais migram de tira separada para as últimas fileiras da grade de itens**, valor sob a coluna de valor |
+| 8 | novo | Componente `Stamp` |
+| 9 | `src/components/ui/` | Mensagem de validação de `0.8rem` para `0.75rem` |
 
-Nada disso está feito. **Não afirmar em nenhum relatório que o sistema "papel funcional" está implementado até que os itens acima existam em código.**
+Itens 1–2 implementados (tokens nos dois temas, raio de 4px, sidebar sem paleta própria, anel em Régua Forte — contrastes verificados por cálculo WCAG antes do commit). Itens 3–9 pendentes. **Não afirmar em nenhum relatório que o sistema "papel funcional" está implementado até que os itens acima existam em código.**
 
-O sidecar `.impeccable/design.json` está **deliberadamente desatualizado** em relação a este arquivo. Ele é gerado a partir do código, e o código ainda é o sistema anterior — regenerá-lo agora reescreveria o sistema antigo por cima da direção nova. Rodar `/impeccable document` só **depois** dos itens 1–8.
+O sidecar `.impeccable/design.json` está **deliberadamente desatualizado** em relação a este arquivo. Ele é gerado a partir do código, e o código ainda é o sistema anterior — regenerá-lo agora reescreveria o sistema antigo por cima da direção nova. Rodar `/impeccable document` só **depois** dos itens 1–9.
 
 ## Do's and Don'ts
 
@@ -382,7 +426,9 @@ O sidecar `.impeccable/design.json` está **deliberadamente desatualizado** em r
 - **Do** usar o rótulo literal da transcrição do SoftLux, incluindo maiúsculas, abreviação e barra invertida (`Valores\Localização do Estoque`).
 - **Do** aplicar `tabular-nums` e alinhamento à direita em todo número comparável.
 - **Do** usar Meta (mono, caixa alta pequena) em cabeçalho de coluna, código, NCM, CNPJ e número de documento.
-- **Do** escolher o peso de régua pelo que ele separa: fio entre linhas, régua em contorno, régua forte entre blocos.
+- **Do** escolher o peso de régua pelo que ele separa: fio na malha (linhas **e** colunas), régua na caixa, régua forte no corte entre blocos.
+- **Do** fechar a grade: célula com parede dos quatro lados, caixa externa mais forte que a malha interna.
+- **Do** ancorar o total na coluna de valor da própria grade de itens, não numa tira à parte.
 - **Do** acompanhar toda indicação de estado por cor com um segundo sinal (marcador, borda, texto).
 - **Do** agrupar campos com `<fieldset>` + `<legend>` — é a forma-assinatura do bloco.
 - **Do** dimensionar campo em vãos de `grid-cols-12` com `items-end`.
@@ -393,10 +439,12 @@ O sidecar `.impeccable/design.json` está **deliberadamente desatualizado** em r
 - **Don't** usar branco puro como fundo de página nem cinza puro em lugar nenhum. Papel é tintado; cinza neutro é de aplicativo, não de documento.
 - **Don't** introduzir cor fora dos dois empregos (carimbo de situação, destruição/erro). Sem acento de módulo, sem header colorido, sem botão azul.
 - **Don't** inventar nome de situação para o carimbo — a enumeração é `[a resolver]`.
-- **Don't** clarear `{colors.rule}` "no olho": é piso de conformidade de 3:1.
+- **Don't** clarear `hsl(34 11% 54%)` "no olho": é piso de conformidade de 3:1.
 - **Don't** adicionar sombra para separar superfícies coplanares. Régua e tom fazem isso.
 - **Don't** usar glifo emoji em controle. Ícone Lucide de 16px.
-- **Don't** dar borda visível a célula de grade editável. A linha da tabela é a moldura.
+- **Don't** dar borda ao *input* dentro da célula de grade editável — a malha da grade já é a moldura. (A célula tem parede; o campo dentro dela, não.)
+- **Don't** usar zebra. A malha da grade fechada já delimita a célula; faixa alternada por cima é ruído sobre ruído.
+- **Don't** deixar bloco de formulário compartilhar parede com o bloco vizinho. Compartimento tem caixa própria e goteira; malha contínua é coisa de grade.
 - **Don't** usar mono para nome, descrição, endereço ou valor monetário — mono é para o que se confere.
 - **Don't** impor `max-width` a listagem ou formulário.
 - **Don't** substituir estado vazio ou de carregamento por spinner centralizado.

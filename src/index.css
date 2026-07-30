@@ -2,71 +2,95 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Papel Funcional — valores travados em DESIGN.md (fonte canônica de token).
+   Contrastes verificados contra WCAG: Tinta 15,5:1 · Tinta Apagada 5,2:1 ·
+   Régua 3,1:1 (piso 1.4.11) · Vermelho de Alerta 6,2:1, todos sobre Papel. */
 :root {
-  --radius: 0.625rem;
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --radius: 4px;
+  --background: 42 30% 97%; /* Papel */
+  --foreground: 30 12% 12%; /* Tinta */
+  --card: 0 0% 100%; /* Documento */
+  --card-foreground: 30 12% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  /* Anel da sidebar acompanha o anel global — o azul de fábrica do shadcn era
-     o único matiz não-destrutivo do sistema (DESIGN.md, Regra do Matiz Único). */
-  --sidebar-ring: hsl(222.2 84% 4.9%);
+  --popover-foreground: 30 12% 12%;
+  --primary: 28 12% 18%; /* Grafite — única ação afirmativa preenchida (Gravar) */
+  --primary-foreground: 40 20% 95%; /* Tinta Invertida */
+  --secondary: 0 0% 100%; /* botão outline: fundo Documento, hover vai p/ Bancada */
+  --secondary-foreground: 30 12% 12%;
+  --muted: 42 35% 92%; /* Tinta de Bancada */
+  --muted-foreground: 35 10% 40%; /* Tinta Apagada */
+  --accent: 42 35% 92%; /* hover/seleção = Bancada, nunca matiz */
+  --accent-foreground: 30 12% 12%;
+  /* Vermelho de Alerta — substitui o vermelho de fábrica do shadcn
+     (0 84.2% 60.2%), que reprovava AA como texto de erro (3,0:1). */
+  --destructive: 0 68% 42%;
+  --destructive-foreground: 40 20% 95%;
+  /* Régua — borda de trabalho. 3,1:1 sobre Papel: piso de conformidade
+     (WCAG 1.4.11), não preferência. Não clarear "no olho". */
+  --border: 34 11% 54%;
+  --input: 34 11% 54%;
+  --ring: 32 12% 34%; /* Régua Forte — anel de foco único do sistema */
+  /* Tokens novos do DESIGN.md: os outros dois pesos de régua, o preenchimento
+     tonal de estado e os quatro carimbos de situação. */
+  --rule-hair: 40 14% 88%; /* Fio — divisor entre linhas de uma mesma tabela */
+  --rule-strong: 32 12% 34%; /* Régua Forte — separação de seção/bloco */
+  --bench-tint: 42 35% 92%;
+  --stamp-neutral: 35 10% 40%;
+  --stamp-open: 214 70% 34%;
+  --stamp-done: 152 55% 24%;
+  --stamp-void: 0 68% 42%;
+  /* Sidebar sem paleta própria: sobre Papel ela é Papel, conteúdo é Documento
+     (DESIGN.md §Navigation — a moldura separa navegação de trabalho). */
+  --sidebar: hsl(42 30% 97%);
+  --sidebar-foreground: hsl(30 12% 12%);
+  --sidebar-primary: hsl(28 12% 18%);
+  --sidebar-primary-foreground: hsl(40 20% 95%);
+  --sidebar-accent: hsl(42 35% 92%);
+  --sidebar-accent-foreground: hsl(30 12% 12%);
+  --sidebar-border: hsl(34 11% 54%);
+  --sidebar-ring: hsl(32 12% 34%);
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  /* Borda precisa ficar ACIMA de --muted (17.5%): no escuro os dois valores
-     eram idênticos e painel, grade e rodapé se fundiam. Borda é o único
-     mecanismo de separação do sistema (DESIGN.md, Regra da Linha Antes da Sombra). */
-  --border: 217.2 32.6% 26%;
-  --input: 217.2 32.6% 26%;
-  --ring: 212.7 26.8% 83.9%;
-  --sidebar: hsl(240 5.9% 10%);
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(0 0% 98%);
-  --sidebar-primary-foreground: hsl(240 5.9% 10%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  /* Mesma colisão do --border: era idêntico a --sidebar-accent (15.9%). */
-  --sidebar-border: hsl(240 3.7% 24%);
-  --sidebar-ring: hsl(212.7 26.8% 83.9%);
+  --background: 30 8% 10%; /* Papel Noturno */
+  --foreground: 40 20% 95%; /* Tinta Noturna */
+  --card: 30 7% 13%; /* Documento Noturno — o degrau de superfície sobrevive à inversão */
+  --card-foreground: 40 20% 95%;
+  --popover: 30 7% 13%;
+  --popover-foreground: 40 20% 95%;
+  /* Grafite não tem versão noturna: a ação afirmativa inverte (tinta clara
+     sobre papel escuro), mesma gramática do tema claro. 15,7:1. */
+  --primary: 40 20% 95%;
+  --primary-foreground: 30 8% 10%;
+  --secondary: 30 7% 13%;
+  --secondary-foreground: 40 20% 95%;
+  --muted: 34 9% 20%; /* Bancada Noturna */
+  --muted-foreground: 38 10% 66%;
+  --accent: 34 9% 20%;
+  --accent-foreground: 40 20% 95%;
+  --destructive: 2 70% 62%; /* Alerta Noturno — 5,0:1 sobre Papel Noturno */
+  --destructive-foreground: 30 8% 10%;
+  /* Régua Noturna — 3,9:1 sobre Papel Noturno, acima do piso de 3:1. */
+  --border: 33 10% 46%;
+  --input: 33 10% 46%;
+  --ring: 36 11% 62%; /* Régua Forte Noturna */
+  --rule-hair: 34 7% 22%;
+  --rule-strong: 36 11% 62%;
+  --bench-tint: 34 9% 20%;
+  /* Neutro e Anulado não têm tom noturno próprio no DESIGN.md: derivam de
+     Tinta Apagada Noturna e Alerta Noturno, como no tema claro. */
+  --stamp-neutral: 38 10% 66%;
+  --stamp-open: 210 70% 64%;
+  --stamp-done: 150 45% 58%;
+  --stamp-void: 2 70% 62%;
+  --sidebar: hsl(30 8% 10%);
+  --sidebar-foreground: hsl(40 20% 95%);
+  --sidebar-primary: hsl(40 20% 95%);
+  --sidebar-primary-foreground: hsl(30 8% 10%);
+  --sidebar-accent: hsl(34 9% 20%);
+  --sidebar-accent-foreground: hsl(40 20% 95%);
+  --sidebar-border: hsl(33 10% 46%);
+  --sidebar-ring: hsl(36 11% 62%);
 }
 
 @theme inline {
@@ -89,10 +113,18 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-rule-hair: hsl(var(--rule-hair));
+  --color-rule-strong: hsl(var(--rule-strong));
+  --color-bench-tint: hsl(var(--bench-tint));
+  --color-stamp-neutral: hsl(var(--stamp-neutral));
+  --color-stamp-open: hsl(var(--stamp-open));
+  --color-stamp-done: hsl(var(--stamp-done));
+  --color-stamp-void: hsl(var(--stamp-void));
+  /* Canto quase reto: raio-base 4px (DESIGN.md §Shapes) — sm 2 · md 3 · lg 4 · xl 6 */
+  --radius-sm: 2px;
+  --radius-md: 3px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: 6px;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

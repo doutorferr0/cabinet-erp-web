@@ -2,7 +2,7 @@ import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { type Produto, fetchProdutos } from '@/mocks/produtos'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
 export const Route = createFileRoute('/cadastros/produtos/')({
@@ -28,18 +28,22 @@ const columns: ColumnDef<Produto>[] = [
   },
 ]
 
-// Sem rota de detalhe ainda: o formulário de produto (§6, 5 abas) vem depois.
-const actions = cadastroActions<Produto>({
-  entidade: 'produto',
-  onIncluir: () => console.info('[mock] Incluir produto'),
-  onAbrir: (p) => console.info('[mock] Alterar produto', p),
-  onConsultar: (p) => console.info('[mock] Consultar produto', p),
-})
-
 function ProdutosPage() {
+  const navigate = useNavigate()
+
+  function abrir(produtoId: string) {
+    void navigate({ to: '/cadastros/produtos/$produtoId', params: { produtoId } })
+  }
+
+  const actions = cadastroActions<Produto>({
+    entidade: 'produto',
+    onIncluir: () => abrir('novo'),
+    onAbrir: (p) => abrir(String(p.id)),
+  })
+
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Produtos</h1>
+      <h1 className="text-xl font-semibold">Cadastro de produtos - Banco Principal</h1>
       <VitraDataTable
         columns={columns}
         queryKey={['produtos']}

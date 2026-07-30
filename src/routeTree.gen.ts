@@ -25,6 +25,7 @@ import { Route as CadastrosColaboradoresColaboradorIdRouteImport } from './route
 import { Route as CadastrosFornecedoresIndexRouteImport } from './routes/cadastros/fornecedores/index'
 import { Route as CadastrosFornecedoresFornecedorIdRouteImport } from './routes/cadastros/fornecedores/$fornecedorId'
 import { Route as CadastrosProdutosIndexRouteImport } from './routes/cadastros/produtos/index'
+import { Route as CadastrosProdutosProdutoIdRouteImport } from './routes/cadastros/produtos/$produtoId'
 import { Route as CadastrosProfissionaisIndexRouteImport } from './routes/cadastros/profissionais/index'
 import { Route as CadastrosProfissionaisProfissionalIdRouteImport } from './routes/cadastros/profissionais/$profissionalId'
 
@@ -113,6 +114,12 @@ const CadastrosProdutosIndexRoute = CadastrosProdutosIndexRouteImport.update({
   path: '/produtos/',
   getParentRoute: () => CadastrosRoute,
 } as any)
+const CadastrosProdutosProdutoIdRoute =
+  CadastrosProdutosProdutoIdRouteImport.update({
+    id: '/produtos/$produtoId',
+    path: '/produtos/$produtoId',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
 const CadastrosProfissionaisIndexRoute =
   CadastrosProfissionaisIndexRouteImport.update({
     id: '/profissionais/',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
   '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/produtos/$produtoId': typeof CadastrosProdutosProdutoIdRoute
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
@@ -155,6 +163,7 @@ export interface FileRoutesByTo {
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
   '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/produtos/$produtoId': typeof CadastrosProdutosProdutoIdRoute
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores': typeof CadastrosColaboradoresIndexRoute
@@ -176,6 +185,7 @@ export interface FileRoutesById {
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
   '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/produtos/$produtoId': typeof CadastrosProdutosProdutoIdRoute
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/cadastros/clientes/$clienteId'
     | '/cadastros/colaboradores/$colaboradorId'
     | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/produtos/$produtoId'
     | '/cadastros/profissionais/$profissionalId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/cadastros/clientes/$clienteId'
     | '/cadastros/colaboradores/$colaboradorId'
     | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/produtos/$produtoId'
     | '/cadastros/profissionais/$profissionalId'
     | '/cadastros/clientes'
     | '/cadastros/colaboradores'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
     | '/cadastros/clientes/$clienteId'
     | '/cadastros/colaboradores/$colaboradorId'
     | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/produtos/$produtoId'
     | '/cadastros/profissionais/$profissionalId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastrosProdutosIndexRouteImport
       parentRoute: typeof CadastrosRoute
     }
+    '/cadastros/produtos/$produtoId': {
+      id: '/cadastros/produtos/$produtoId'
+      path: '/produtos/$produtoId'
+      fullPath: '/cadastros/produtos/$produtoId'
+      preLoaderRoute: typeof CadastrosProdutosProdutoIdRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
     '/cadastros/profissionais/': {
       id: '/cadastros/profissionais/'
       path: '/profissionais'
@@ -386,6 +406,7 @@ interface CadastrosRouteChildren {
   CadastrosClientesClienteIdRoute: typeof CadastrosClientesClienteIdRoute
   CadastrosColaboradoresColaboradorIdRoute: typeof CadastrosColaboradoresColaboradorIdRoute
   CadastrosFornecedoresFornecedorIdRoute: typeof CadastrosFornecedoresFornecedorIdRoute
+  CadastrosProdutosProdutoIdRoute: typeof CadastrosProdutosProdutoIdRoute
   CadastrosProfissionaisProfissionalIdRoute: typeof CadastrosProfissionaisProfissionalIdRoute
   CadastrosClientesIndexRoute: typeof CadastrosClientesIndexRoute
   CadastrosColaboradoresIndexRoute: typeof CadastrosColaboradoresIndexRoute
@@ -401,6 +422,7 @@ const CadastrosRouteChildren: CadastrosRouteChildren = {
     CadastrosColaboradoresColaboradorIdRoute,
   CadastrosFornecedoresFornecedorIdRoute:
     CadastrosFornecedoresFornecedorIdRoute,
+  CadastrosProdutosProdutoIdRoute: CadastrosProdutosProdutoIdRoute,
   CadastrosProfissionaisProfissionalIdRoute:
     CadastrosProfissionaisProfissionalIdRoute,
   CadastrosClientesIndexRoute: CadastrosClientesIndexRoute,

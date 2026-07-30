@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -9,27 +10,109 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Minus, Plus } from 'lucide-react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { Controller, useFieldArray, useFormContext } from 'react-hook-form'
+
+/**
+ * Tipo da célula. `money` guarda centavos (int) e digita em reais;
+ * `check` guarda boolean; `select` é combo puro. Default `text`.
+ */
+export type FormGridCellType = 'text' | 'money' | 'check' | 'select'
 
 export interface FormGridColumn {
   /** Nome do campo dentro da linha do array. */
   key: string
   label: string
+  type?: FormGridCellType
   placeholder?: string
+  /** Só para `type: 'select'`. */
+  options?: readonly string[]
 }
+
+export type FormGridRow = Record<string, string | number | boolean | null>
 
 export interface FormGridProps {
   /** Nome do array no form (RHF useFieldArray). */
   name: string
   columns: FormGridColumn[]
   /** Valores da linha nova ao clicar em Incluir. */
-  newRow: Record<string, string>
+  newRow: FormGridRow
   addLabel?: string
+}
+
+function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
+  return (
+    <Controller
+      name={name}
+      render={({ field }) => (
+        <Input
+          aria-label={ariaLabel}
+          inputMode="decimal"
+          className="h-8 border-0 text-right shadow-none focus-visible:ring-0"
+          value={
+            typeof field.value === 'number' ? (field.value / 100).toFixed(2).replace('.', ',') : ''
+          }
+          onChange={(e) => {
+            const digits = e.target.value.replace(/\D/g, '')
+            field.onChange(digits === '' ? null : Number(digits))
+          }}
+          onBlur={field.onBlur}
+          ref={field.ref}
+        />
+      )}
+    />
+  )
+}
+
+function CheckCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
+  return (
+    <Controller
+      name={name}
+      render={({ field }) => (
+        <Checkbox
+          aria-label={ariaLabel}
+          checked={!!field.value}
+          onCheckedChange={(v) => field.onChange(!!v)}
+        />
+      )}
+    />
+  )
+}
+
+function SelectCell({
+  name,
+  ariaLabel,
+  options,
+}: {
+  name: string
+  ariaLabel: string
+  options: readonly string[]
+}) {
+  return (
+    <Controller
+      name={name}
+      render={({ field }) => (
+        <select
+          aria-label={ariaLabel}
+          className="h-8 w-full rounded-md border-0 bg-transparent px-2 text-sm focus-visible:outline-none"
+          value={field.value ?? ''}
+          onChange={(e) => field.onChange(e.target.value || null)}
+          onBlur={field.onBlur}
+        >
+          <option value="">—</option>
+          {options.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      )}
+    />
+  )
 }
 
 /**
  * Grade editável dentro do formulário — transcrição §9 padrão 3 (10 usos).
- * RHF é o dono do estado; cada célula é um input registrado.
+ * RHF é o dono do estado; cada célula é um campo registrado.
  */
 export function FormGrid({ name, columns, newRow, addLabel = 'Incluir' }: FormGridProps) {
   const { register, control } = useFormContext()
@@ -42,7 +125,7 @@ export function FormGrid({ name, columns, newRow, addLabel = 'Incluir' }: FormGr
           <Plus className="size-4" /> {addLabel}
         </Button>
       </div>
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -65,16 +148,32 @@ export function FormGrid({ name, columns, newRow, addLabel = 'Incluir' }: FormGr
             ) : (
               fields.map((field, index) => (
                 <TableRow key={field.id}>
-                  {columns.map((col) => (
-                    <TableCell key={col.key} className="p-1">
-                      <Input
-                        aria-label={`${col.label} linha ${index + 1}`}
-                        placeholder={col.placeholder}
-                        className="h-8 border-0 shadow-none focus-visible:ring-0"
-                        {...register(`${name}.${index}.${col.key}`)}
-                      />
-                    </TableCell>
-                  ))}
+                  {columns.map((col) => {
+                    const path = `${name}.${index}.${col.key}`
+                    const ariaLabel = `${col.label} linha ${index + 1}`
+                    return (
+                      <TableCell key={col.key} className="p-1">
+                        {col.type === 'money' ? (
+                          <MoneyCell name={path} ariaLabel={ariaLabel} />
+                        ) : col.type === 'check' ? (
+                          <CheckCell name={path} ariaLabel={ariaLabel} />
+                        ) : col.type === 'select' ? (
+                          <SelectCell
+                            name={path}
+                            ariaLabel={ariaLabel}
+                            options={col.options ?? []}
+                          />
+                        ) : (
+                          <Input
+                            aria-label={ariaLabel}
+                            placeholder={col.placeholder}
+                            className="h-8 border-0 shadow-none focus-visible:ring-0"
+                            {...register(path)}
+                          />
+                        )}
+                      </TableCell>
+                    )
+                  })}
                   <TableCell className="p-1">
                     <Button
                       type="button"

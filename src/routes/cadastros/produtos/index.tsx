@@ -20,6 +20,7 @@ const columns: ColumnDef<Produto>[] = [
   {
     accessorKey: 'valorTabelaCentavos',
     header: 'Valor de Tabela',
+    meta: { numeric: true },
     cell: ({ getValue }) => formatMoneyBRL(getValue<number>()),
   },
   {

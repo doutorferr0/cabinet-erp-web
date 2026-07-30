@@ -14,7 +14,15 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
+  // Sublinha em Régua Forte sob o cabeçalho; malha vertical em Fio (grade fechada, DESIGN.md §DataTable).
+  <thead
+    ref={ref}
+    className={cn(
+      '[&_tr]:border-b [&_tr]:border-rule-strong [&_th]:border-l [&_th]:border-rule-hair [&_th:first-child]:border-l-0',
+      className,
+    )}
+    {...props}
+  />
 ))
 TableHeader.displayName = 'TableHeader'
 
@@ -22,7 +30,15 @@ const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props} />
+  // Fio entre linhas e entre colunas — a malha delimita a célula sem virar gaiola.
+  <tbody
+    ref={ref}
+    className={cn(
+      '[&_tr:last-child]:border-0 [&_tr]:border-rule-hair [&_td]:border-l [&_td]:border-rule-hair [&_td:first-child]:border-l-0',
+      className,
+    )}
+    {...props}
+  />
 ))
 TableBody.displayName = 'TableBody'
 
@@ -40,12 +56,10 @@ TableFooter.displayName = 'TableFooter'
 
 const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
   ({ className, ...props }, ref) => (
+    // Hover fica a cargo do consumidor (a DataTable usa Bancada cheia; cabeçalho não tem hover).
     <tr
       ref={ref}
-      className={cn(
-        'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
-        className,
-      )}
+      className={cn('border-b transition-colors data-[state=selected]:bg-muted', className)}
       {...props}
     />
   ),
@@ -56,10 +70,11 @@ const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
+  // 36px, etiqueta Meta: mono 0.75rem, peso 500, caixa alta, tracking 0.06em (DESIGN.md §Typography).
   <th
     ref={ref}
     className={cn(
-      'h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+      'h-9 px-2 text-left align-middle font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}

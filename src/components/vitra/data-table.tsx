@@ -16,6 +16,13 @@ import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tan
 import { ArrowDown, ArrowUp, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData, TValue> {
+    /** Coluna de valor: numerais tabulares alinhados à direita (DESIGN.md, Regra do Número Tabular). */
+    numeric?: boolean
+  }
+}
+
 /** Ação da barra padrão das listagens (transcrição §9, padrão 4). */
 export interface DataTableAction<T> {
   id: string
@@ -133,7 +140,8 @@ export function VitraDataTable<T>({
         ))}
       </div>
 
-      <div className="rounded-md border">
+      {/* Contêiner da tabela: caixa em Régua, canto 4px (a malha interna é Fio). */}
+      <div className="rounded-lg border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -143,12 +151,13 @@ export function VitraDataTable<T>({
                     header.column.columnDef.enableSorting !== false &&
                     'accessorKey' in header.column.columnDef
                   const active = state.sort?.id === header.column.id
+                  const numeric = header.column.columnDef.meta?.numeric === true
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className={cn(numeric && 'text-right')}>
                       {header.isPlaceholder ? null : sortable ? (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 hover:text-foreground"
+                          className="inline-flex items-center gap-1 uppercase hover:text-foreground"
                           onClick={() => toggleSort(header.column.id)}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
@@ -190,14 +199,24 @@ export function VitraDataTable<T>({
               table.getRowModel().rows.map((row) => {
                 const isSelected = selected !== null && row.original === selected
                 return (
+                  // Seleção = Bancada + marcador esquerdo de 2px em Régua Forte — estado
+                  // nunca depende só de cor (a tinta sozinha não alcança 3:1 na vizinha).
                   <TableRow
                     key={row.id}
                     data-state={isSelected ? 'selected' : undefined}
-                    className={cn('cursor-pointer', isSelected && 'bg-muted')}
+                    className={cn(
+                      'cursor-pointer hover:bg-muted',
+                      isSelected && 'bg-muted shadow-[inset_2px_0_0_hsl(var(--rule-strong))]',
+                    )}
                     onClick={() => setSelected(isSelected ? null : row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          cell.column.columnDef.meta?.numeric === true && 'text-right tabular-nums',
+                        )}
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
@@ -210,14 +229,15 @@ export function VitraDataTable<T>({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-        <span>
+        {/* Contagem em Meta (rótulo de rodapé de tabela); paginação em tabular. */}
+        <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
           {total} registro{total === 1 ? '' : 's'}
         </span>
         <div className="ml-auto flex items-center gap-2">
           <label htmlFor="vitra-page-size">Por página:</label>
           <select
             id="vitra-page-size"
-            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm tabular-nums"
             value={state.pageSize}
             onChange={(e) =>
               updateState((s) => ({ ...s, pageSize: Number(e.target.value), page: 1 }))
@@ -237,7 +257,7 @@ export function VitraDataTable<T>({
           >
             Anterior
           </Button>
-          <span>
+          <span className="tabular-nums">
             Página {state.page} de {pageCount}
           </span>
           <Button

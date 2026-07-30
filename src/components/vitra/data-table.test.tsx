@@ -94,4 +94,46 @@ describe('VitraDataTable', () => {
     const selecionado = alterado as Produto | null
     expect(selecionado?.nossaDescricao).toBe('PENDENTE REDONDO ALUMÍNIO PRETO')
   })
+
+  it('cabeçalho usa etiqueta Meta (mono, caixa alta) em 36px', async () => {
+    setup()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const head = screen.getByRole('columnheader', { name: 'Marca' })
+    expect(head.className).toContain('h-9')
+    expect(head.className).toContain('font-mono')
+    expect(head.className).toContain('uppercase')
+    expect(head.className).toContain('tracking-[0.06em]')
+  })
+
+  it('coluna numeric alinha à direita com numerais tabulares', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={[
+          ...columns,
+          {
+            accessorKey: 'valorTabelaCentavos',
+            header: 'Valor de Tabela',
+            meta: { numeric: true },
+          },
+        ]}
+        queryKey={['produtos-test-numeric']}
+        fetcher={(state) => data.produtos.list(state, 0)}
+      />,
+    )
+    const head = await screen.findByRole('columnheader', { name: 'Valor de Tabela' })
+    expect(head.className).toContain('text-right')
+    // Espera o dado carregar — o skeleton inicial também usa <td> (role cell).
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const celula = screen.getAllByRole('cell').find((c) => c.className.includes('tabular-nums'))
+    expect(celula?.className).toContain('text-right')
+  })
+
+  it('linha selecionada recebe marcador de 2px em Régua Forte além da tinta', async () => {
+    const { user } = setup()
+    const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await user.click(descricao)
+    const linha = descricao.closest('tr')
+    expect(linha?.className).toContain('bg-muted')
+    expect(linha?.className).toContain('shadow-[inset_2px_0_0_hsl(var(--rule-strong))]')
+  })
 })

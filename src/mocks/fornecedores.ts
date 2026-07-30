@@ -1,4 +1,5 @@
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
+import { mockDelay, normalize, pagedMock } from '@/mocks/query'
 
 /**
  * Mock de fornecedores — campos LITERAIS da transcrição §4.
@@ -154,35 +155,17 @@ export function fetchFornecedores(
   state: TableQueryState,
   delayMs = 300,
 ): Promise<PagedResult<Fornecedor>> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const q = state.q.trim().toLowerCase()
-      let rows = q
-        ? fornecedores.filter(
-            (f) =>
-              String(f.id).includes(q) ||
-              f.razaoSocial.toLowerCase().includes(q) ||
-              f.nomeFantasia.toLowerCase().includes(q),
-          )
-        : [...fornecedores]
-      if (state.sort) {
-        const key = state.sort.id as keyof Fornecedor
-        const dir = state.sort.desc ? -1 : 1
-        rows = [...rows].sort((a, b) => {
-          const av = a[key]
-          const bv = b[key]
-          if (typeof av === 'number' && typeof bv === 'number') return dir * (av - bv)
-          return dir * String(av).localeCompare(String(bv), 'pt-BR')
-        })
-      }
-      const start = (state.page - 1) * state.pageSize
-      resolve({ rows: rows.slice(start, start + state.pageSize), total: rows.length })
-    }, delayMs)
-  })
+  return pagedMock(
+    fornecedores,
+    state,
+    (f, q) =>
+      String(f.id).includes(q) ||
+      normalize(f.razaoSocial).includes(q) ||
+      normalize(f.nomeFantasia).includes(q),
+    delayMs,
+  )
 }
 
 export function fetchFornecedor(id: number, delayMs = 200): Promise<Fornecedor | null> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(fornecedores.find((f) => f.id === id) ?? null), delayMs)
-  })
+  return mockDelay(fornecedores.find((f) => f.id === id) ?? null, delayMs)
 }

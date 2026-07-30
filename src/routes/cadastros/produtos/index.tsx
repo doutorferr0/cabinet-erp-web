@@ -1,4 +1,5 @@
-import { type DataTableAction, VitraDataTable } from '@/components/vitra/data-table'
+import { cadastroActions } from '@/components/vitra/cadastro-actions'
+import { VitraDataTable } from '@/components/vitra/data-table'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { type Produto, fetchProdutos } from '@/mocks/produtos'
 import { createFileRoute } from '@tanstack/react-router'
@@ -27,36 +28,13 @@ const columns: ColumnDef<Produto>[] = [
   },
 ]
 
-// Barra padrão das listagens (transcrição §9, padrão 4). Handlers reais
-// chegam com as telas de cadastro (V4+).
-const actions: DataTableAction<Produto>[] = [
-  {
-    id: 'filtro',
-    label: 'Filtro',
-    onClick: () => document.querySelector<HTMLInputElement>('input[aria-label="Busca"]')?.focus(),
-  },
-  { id: 'incluir', label: 'Incluir', onClick: () => console.info('[mock] Incluir produto') },
-  {
-    id: 'alterar',
-    label: 'Alterar',
-    needsSelection: true,
-    onClick: (p) => console.info('[mock] Alterar', p),
-  },
-  {
-    id: 'consultar',
-    label: 'Consul.',
-    needsSelection: true,
-    onClick: (p) => console.info('[mock] Consultar', p),
-  },
-  {
-    id: 'excluir',
-    label: 'Excluir',
-    needsSelection: true,
-    variant: 'destructive',
-    onClick: (p) => console.info('[mock] Excluir (desativação lógica)', p),
-  },
-  { id: 'imprimir', label: 'Imprimir', onClick: () => console.info('[mock] Imprimir listagem') },
-]
+// Sem rota de detalhe ainda: o formulário de produto (§6, 5 abas) vem depois.
+const actions = cadastroActions<Produto>({
+  entidade: 'produto',
+  onIncluir: () => console.info('[mock] Incluir produto'),
+  onAbrir: (p) => console.info('[mock] Alterar produto', p),
+  onConsultar: (p) => console.info('[mock] Consultar produto', p),
+})
 
 function ProdutosPage() {
   return (

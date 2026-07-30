@@ -1,4 +1,5 @@
-import { type DataTableAction, VitraDataTable } from '@/components/vitra/data-table'
+import { cadastroActions } from '@/components/vitra/cadastro-actions'
+import { VitraDataTable } from '@/components/vitra/data-table'
 import { type Fornecedor, fetchFornecedores } from '@/mocks/fornecedores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -26,52 +27,15 @@ const columns: ColumnDef<Fornecedor>[] = [
 function FornecedoresPage() {
   const navigate = useNavigate()
 
-  const actions: DataTableAction<Fornecedor>[] = [
-    {
-      id: 'filtro',
-      label: 'Filtro',
-      onClick: () => document.querySelector<HTMLInputElement>('input[aria-label="Busca"]')?.focus(),
-    },
-    {
-      id: 'incluir',
-      label: 'Incluir',
-      onClick: () =>
-        void navigate({
-          to: '/cadastros/fornecedores/$fornecedorId',
-          params: { fornecedorId: 'novo' },
-        }),
-    },
-    {
-      id: 'alterar',
-      label: 'Alterar',
-      needsSelection: true,
-      onClick: (f) =>
-        f &&
-        void navigate({
-          to: '/cadastros/fornecedores/$fornecedorId',
-          params: { fornecedorId: String(f.id) },
-        }),
-    },
-    {
-      id: 'consultar',
-      label: 'Consul.',
-      needsSelection: true,
-      onClick: (f) =>
-        f &&
-        void navigate({
-          to: '/cadastros/fornecedores/$fornecedorId',
-          params: { fornecedorId: String(f.id) },
-        }),
-    },
-    {
-      id: 'excluir',
-      label: 'Excluir',
-      needsSelection: true,
-      variant: 'destructive',
-      onClick: (f) => console.info('[mock] Excluir (desativação lógica)', f),
-    },
-    { id: 'imprimir', label: 'Imprimir', onClick: () => console.info('[mock] Imprimir listagem') },
-  ]
+  function abrir(fornecedorId: string) {
+    void navigate({ to: '/cadastros/fornecedores/$fornecedorId', params: { fornecedorId } })
+  }
+
+  const actions = cadastroActions<Fornecedor>({
+    entidade: 'fornecedor',
+    onIncluir: () => abrir('novo'),
+    onAbrir: (f) => abrir(String(f.id)),
+  })
 
   return (
     <div className="flex flex-col gap-4">

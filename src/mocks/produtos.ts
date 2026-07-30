@@ -1,4 +1,5 @@
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
+import { normalize, pagedMock } from '@/mocks/query'
 
 /**
  * Mock de produtos — campos LITERAIS da transcrição do SoftLux (§6 Produtos).
@@ -88,42 +89,14 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
   }
 })
 
-function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
-}
-
-function compareValues(a: string | number | boolean, b: string | number | boolean): number {
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b)
-  return String(a).localeCompare(String(b), 'pt-BR')
-}
-
-/**
- * Provider mock: aplica q/sort/paginação como se fosse o servidor,
- * com latência simulada (0 em testes).
- */
 export function fetchProdutos(
   state: TableQueryState,
   delayMs = 300,
 ): Promise<PagedResult<Produto>> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const q = normalize(state.q.trim())
-      let rows = q
-        ? produtos.filter(
-            (p) => normalize(p.nossoCodigo).includes(q) || normalize(p.nossaDescricao).includes(q),
-          )
-        : [...produtos]
-
-      if (state.sort) {
-        const key = state.sort.id as keyof Produto
-        const dir = state.sort.desc ? -1 : 1
-        rows = [...rows].sort((a, b) => dir * compareValues(a[key], b[key]))
-      }
-
-      const total = rows.length
-      const start = (state.page - 1) * state.pageSize
-      resolve({ rows: rows.slice(start, start + state.pageSize), total })
-    }, delayMs)
-  })
+  return pagedMock(
+    produtos,
+    state,
+    (p, q) => normalize(p.nossoCodigo).includes(q) || normalize(p.nossaDescricao).includes(q),
+    delayMs,
+  )
 }

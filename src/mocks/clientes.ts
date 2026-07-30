@@ -1,4 +1,5 @@
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
+import { mockDelay, normalize, pagedMock } from '@/mocks/query'
 
 /**
  * Mock de clientes — campos LITERAIS da transcrição §5 (aba Principal).
@@ -142,30 +143,14 @@ export function fetchClientes(
   state: TableQueryState,
   delayMs = 300,
 ): Promise<PagedResult<Cliente>> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const q = state.q.trim().toLowerCase()
-      let rows = q
-        ? clientes.filter((c) => String(c.id).includes(q) || c.nome.toLowerCase().includes(q))
-        : [...clientes]
-      if (state.sort) {
-        const key = state.sort.id as keyof Cliente
-        const dir = state.sort.desc ? -1 : 1
-        rows = [...rows].sort((a, b) => {
-          const av = a[key]
-          const bv = b[key]
-          if (typeof av === 'number' && typeof bv === 'number') return dir * (av - bv)
-          return dir * String(av).localeCompare(String(bv), 'pt-BR')
-        })
-      }
-      const start = (state.page - 1) * state.pageSize
-      resolve({ rows: rows.slice(start, start + state.pageSize), total: rows.length })
-    }, delayMs)
-  })
+  return pagedMock(
+    clientes,
+    state,
+    (c, q) => String(c.id).includes(q) || normalize(c.nome).includes(q),
+    delayMs,
+  )
 }
 
 export function fetchCliente(id: number, delayMs = 200): Promise<Cliente | null> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(clientes.find((c) => c.id === id) ?? null), delayMs)
-  })
+  return mockDelay(clientes.find((c) => c.id === id) ?? null, delayMs)
 }

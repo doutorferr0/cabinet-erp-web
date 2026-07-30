@@ -1,3 +1,4 @@
+import type { FormGridTotalRow } from '@/components/vitra/form-grid'
 import { Stamp, type StampTom } from '@/components/vitra/stamp'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
@@ -85,12 +86,34 @@ export function useSubtotalCentavos(name: string): number {
   return itens.reduce((acc, item) => acc + totalItemCentavos(item), 0)
 }
 
+/**
+ * Fileiras de totais para o pé da grade de itens (DESIGN.md §DocumentoTotais
+ * — a forma padrão): SubTotal, ajustes e Total (destaque), sempre derivados.
+ * A tira (`DocumentoTotais`) é a exceção para tela sem grade de itens.
+ */
+export function fileirasTotais(
+  subtotalCentavos: number,
+  ajustes: { label: string; valorCentavos: number; sinal: 1 | -1 }[] = [],
+): FormGridTotalRow[] {
+  const total = ajustes.reduce((acc, a) => acc + a.sinal * a.valorCentavos, subtotalCentavos)
+  return [
+    { label: 'SubTotal', valorCentavos: subtotalCentavos },
+    ...ajustes.map((a) => ({ label: a.label, valorCentavos: a.valorCentavos })),
+    { label: 'Total', valorCentavos: total, destaque: true },
+  ]
+}
+
 export interface DocumentoTotaisProps {
   subtotalCentavos: number
   /** Linhas extras entre subtotal e total (Desconto, Acréscimo…). */
   ajustes?: { label: string; valorCentavos: number; sinal: 1 | -1 }[]
 }
 
+/**
+ * Tira de totais — a EXCEÇÃO (DESIGN.md §DocumentoTotais): só para tela sem
+ * grade de itens (resumos, consultas). Com grade, os totais são as últimas
+ * fileiras da própria grade via `fileirasTotais` + prop `totals` do FormGrid.
+ */
 export function DocumentoTotais({ subtotalCentavos, ajustes = [] }: DocumentoTotaisProps) {
   const total = ajustes.reduce((acc, a) => acc + a.sinal * a.valorCentavos, subtotalCentavos)
 

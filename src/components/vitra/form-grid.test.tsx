@@ -69,3 +69,68 @@ describe('FormGrid — faixa de seção', () => {
     expect(screen.queryByText('SALA DE ESTAR')).not.toBeInTheDocument()
   })
 })
+
+/**
+ * Totais como últimas fileiras da grade (DESIGN.md §DocumentoTotais): rótulo
+ * em Meta na coluna anterior à de valor, valor sob a coluna de valor, Total
+ * com régua forte acima e único em Title.
+ */
+function HarnessTotais({ vazio = false }) {
+  const form = useForm({
+    defaultValues: { linhas: vazio ? [] : [{ texto: 'item', valor: null }] },
+  })
+  return (
+    <Form {...form}>
+      <form>
+        <FormGrid
+          name="linhas"
+          columns={[
+            { key: 'texto', label: 'Texto' },
+            { key: 'valor', label: 'Valor', type: 'computed', compute: () => '10,00' },
+          ]}
+          newRow={{ texto: '', valor: null }}
+          totals={{
+            valueColumnKey: 'valor',
+            rows: [
+              { label: 'SubTotal', valorCentavos: 1000 },
+              { label: 'Total', valorCentavos: 1000, destaque: true },
+            ],
+          }}
+        />
+      </form>
+    </Form>
+  )
+}
+
+describe('FormGrid — totais no pé da grade', () => {
+  it('rótulo em Meta na penúltima coluna e valor sob a coluna de valor', () => {
+    render(<HarnessTotais />)
+
+    const total = screen.getByLabelText('Total')
+    expect(total).toHaveTextContent('10,00')
+    // O valor cai na coluna `valor`; a célula imediatamente antes é o rótulo.
+    const celulaValor = total.closest('td')
+    expect(celulaValor?.previousElementSibling?.textContent).toBe('Total:')
+    const rotulo = celulaValor?.previousElementSibling
+    expect(rotulo?.className).toContain('font-mono')
+    expect(rotulo?.className).toContain('uppercase')
+  })
+
+  it('Total é o único em Title e leva régua forte acima', () => {
+    render(<HarnessTotais />)
+
+    const total = screen.getByLabelText('Total')
+    expect(total.className).toContain('text-lg')
+    expect(total.className).toContain('font-semibold')
+    expect(total.closest('tr')?.className).toContain('border-rule-strong')
+
+    const subtotal = screen.getByLabelText('SubTotal')
+    expect(subtotal.className).not.toContain('text-lg')
+  })
+
+  it('totais aparecem mesmo com a grade vazia (zero derivado)', () => {
+    render(<HarnessTotais vazio />)
+
+    expect(screen.getByLabelText('Total')).toHaveTextContent('10,00')
+  })
+})

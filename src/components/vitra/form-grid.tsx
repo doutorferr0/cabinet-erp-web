@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatPercent } from '@/lib/formatters'
+import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
+import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
 import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
@@ -34,6 +35,14 @@ export interface FormGridColumn {
 
 export type FormGridRow = Record<string, string | number | boolean | null>
 
+/** Fileira de total no pé da grade (DESIGN.md §DocumentoTotais). */
+export interface FormGridTotalRow {
+  label: string
+  valorCentavos: number
+  /** `Total`: régua forte acima e único em Title (1.125rem/600) — o GRAND TOTAL do invoice. */
+  destaque?: boolean
+}
+
 export interface FormGridProps {
   /** Nome do array no form (RHF useFieldArray). */
   name: string
@@ -57,6 +66,13 @@ export interface FormGridProps {
    * confirmar que o legado agrupa por ambiente.
    */
   sectionKey?: string
+  /**
+   * Totais como últimas fileiras da própria grade (DESIGN.md §DocumentoTotais):
+   * células da esquerda mescladas, rótulo em Meta na coluna anterior à de
+   * valor, valor tabular caindo exatamente sob `valueColumnKey`. Sempre
+   * derivados dos itens — nunca campo paralelo.
+   */
+  totals?: { valueColumnKey: string; rows: FormGridTotalRow[] }
 }
 
 function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
@@ -183,11 +199,14 @@ export function FormGrid({
   actions,
   hideAdd,
   sectionKey,
+  totals,
 }: FormGridProps) {
   const { register, control } = useFormContext()
   const { fields, append, remove } = useFieldArray({ control, name })
   // Linhas vivas para o rótulo da faixa de seção (reativo à edição).
   const rows = useWatch({ control, name }) as FormGridRow[] | undefined
+  // Coluna de valor sob a qual os totais caem (precisa ter uma coluna antes, para o rótulo).
+  const totalsValueIndex = totals ? columns.findIndex((c) => c.key === totals.valueColumnKey) : -1
 
   return (
     // Barra→grade é relação entre partes de um mesmo componente: `{spacing.md}`.
@@ -300,6 +319,40 @@ export function FormGrid({
                 )
               })
             )}
+            {totals && totalsValueIndex >= 1
+              ? totals.rows.map((t, i) => (
+                  // Totais são fileiras da grade: esquerda mesclada, rótulo em
+                  // Meta na coluna anterior, valor sob a coluna de valor.
+                  <TableRow
+                    key={t.label}
+                    className={cn(
+                      // Sem fio duplo: a régua forte do Total substitui o fio da fileira acima.
+                      totals.rows[i + 1]?.destaque === true && 'border-b-0',
+                      t.destaque === true && '[&>td]:border-t [&>td]:border-rule-strong',
+                    )}
+                  >
+                    {totalsValueIndex > 1 ? (
+                      <TableCell colSpan={totalsValueIndex - 1} className="p-1" />
+                    ) : null}
+                    <TableCell className="p-2 text-right font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+                      {t.label}:
+                    </TableCell>
+                    <TableCell className="p-1">
+                      <output
+                        aria-label={t.label}
+                        className={cn(
+                          'block px-2 text-right text-sm tabular-nums',
+                          t.destaque === true && 'text-lg font-semibold',
+                        )}
+                      >
+                        {formatMoneyBRL(t.valorCentavos)}
+                      </output>
+                    </TableCell>
+                    {/* Colunas após a de valor + a coluna do remover, vazias. */}
+                    <TableCell colSpan={columns.length - totalsValueIndex} className="p-1" />
+                  </TableRow>
+                ))
+              : null}
           </TableBody>
         </Table>
       </div>

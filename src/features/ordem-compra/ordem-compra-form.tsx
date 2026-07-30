@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
 import {
-  DocumentoTotais,
+  fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/vitra/documento'
@@ -138,29 +138,61 @@ function BlocoTransportadora() {
   )
 }
 
-function Totais() {
+/** Desconto/Acréscimo são CAMPOS (editáveis) — ficam fora da grade. */
+function Ajustes() {
+  return (
+    <div className="grid grid-cols-12 items-end gap-3">
+      <MoneyField name="descontoCentavos" label="Desconto" className="col-span-6 sm:col-span-2" />
+      <MoneyField name="acrescimoCentavos" label="Acréscimo" className="col-span-6 sm:col-span-2" />
+    </div>
+  )
+}
+
+/** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
+function GradeItens() {
   const subtotal = useSubtotalCentavos('itens')
   const desconto = (useWatch({ name: 'descontoCentavos' }) as number) ?? 0
   const acrescimo = (useWatch({ name: 'acrescimoCentavos' }) as number) ?? 0
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-12 items-end gap-3">
-        <MoneyField name="descontoCentavos" label="Desconto" className="col-span-6 sm:col-span-2" />
-        <MoneyField
-          name="acrescimoCentavos"
-          label="Acréscimo"
-          className="col-span-6 sm:col-span-2"
-        />
-      </div>
-      <DocumentoTotais
-        subtotalCentavos={subtotal}
-        ajustes={[
+    <FormGrid
+      name="itens"
+      columns={[
+        { key: 'codigoProduto', label: 'Código do Produto' },
+        { key: 'descricaoProduto', label: 'Descrição do Produto' },
+        { key: 'acabamento', label: 'Acab.' },
+        { key: 'tamanho', label: 'Tamanho' },
+        { key: 'quantidade', label: 'Quantidade' },
+        { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
+        { key: 'valorUnitarioCentavos', label: 'Vl. Unitário', type: 'money' },
+        {
+          key: 'valorTotal',
+          label: 'Valor Total',
+          type: 'computed',
+          compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
+        },
+        { key: 'pedCompra', label: 'Ped. Compra' },
+        { key: 'data', label: 'Data' },
+      ]}
+      newRow={{
+        codigoProduto: '',
+        descricaoProduto: '',
+        acabamento: '',
+        tamanho: '',
+        quantidade: '',
+        unidade: 'UN',
+        valorUnitarioCentavos: null,
+        pedCompra: '',
+        data: null,
+      }}
+      totals={{
+        valueColumnKey: 'valorTotal',
+        rows: fileirasTotais(subtotal, [
           { label: 'Desconto', valorCentavos: desconto, sinal: -1 },
           { label: 'Acréscimo', valorCentavos: acrescimo, sinal: 1 },
-        ]}
-      />
-    </div>
+        ]),
+      }}
+    />
   )
 }
 
@@ -196,39 +228,9 @@ function AbaPrincipal() {
         </Button>
       </div>
 
-      <FormGrid
-        name="itens"
-        columns={[
-          { key: 'codigoProduto', label: 'Código do Produto' },
-          { key: 'descricaoProduto', label: 'Descrição do Produto' },
-          { key: 'acabamento', label: 'Acab.' },
-          { key: 'tamanho', label: 'Tamanho' },
-          { key: 'quantidade', label: 'Quantidade' },
-          { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
-          { key: 'valorUnitarioCentavos', label: 'Vl. Unitário', type: 'money' },
-          {
-            key: 'valorTotal',
-            label: 'Valor Total',
-            type: 'computed',
-            compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
-          },
-          { key: 'pedCompra', label: 'Ped. Compra' },
-          { key: 'data', label: 'Data' },
-        ]}
-        newRow={{
-          codigoProduto: '',
-          descricaoProduto: '',
-          acabamento: '',
-          tamanho: '',
-          quantidade: '',
-          unidade: 'UN',
-          valorUnitarioCentavos: null,
-          pedCompra: '',
-          data: null,
-        }}
-      />
+      <GradeItens />
 
-      <Totais />
+      <Ajustes />
 
       <BlocoTransportadora />
 

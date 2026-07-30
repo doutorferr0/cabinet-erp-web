@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
 import {
-  DocumentoTotais,
+  fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/vitra/documento'
@@ -215,12 +215,7 @@ function ControlesDesconto() {
 }
 
 function TotaisOrcamento() {
-  const subtotal = useSubtotalCentavos('itens')
-  const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
   const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
-  // Desconto geral incide sobre o subtotal; por produto já saiu na linha.
-  const descontoGeral =
-    modo === 'GERAL' ? Math.round((subtotal * percentual) / (PERCENT_ESCALA * 100)) : 0
 
   return (
     <Tabs defaultValue="venda">
@@ -230,16 +225,12 @@ function TotaisOrcamento() {
         <TabsTrigger value="frete">Frete</TabsTrigger>
       </TabsList>
       <TabsContent value="venda">
-        <div className="flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground">
-            Desconto geral:{' '}
-            <output aria-label="Desconto percentual">{formatPercent(percentual)}</output> %
-          </p>
-          <DocumentoTotais
-            subtotalCentavos={subtotal}
-            ajustes={[{ label: 'Desconto', valorCentavos: descontoGeral, sinal: -1 }]}
-          />
-        </div>
+        {/* Os totais em si são as últimas fileiras da grade (DESIGN.md
+            §DocumentoTotais); aqui fica só o detalhe do desconto geral. */}
+        <p className="text-sm text-muted-foreground">
+          Desconto geral:{' '}
+          <output aria-label="Desconto percentual">{formatPercent(percentual)}</output> %
+        </p>
       </TabsContent>
       <TabsContent value="impostos">
         <p className="py-6 text-sm text-muted-foreground">
@@ -255,6 +246,57 @@ function TotaisOrcamento() {
   )
 }
 
+/** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
+function GradeItens() {
+  const subtotal = useSubtotalCentavos('itens')
+  const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
+  const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
+  // Desconto geral incide sobre o subtotal; por produto já saiu na linha.
+  const descontoGeral =
+    modo === 'GERAL' ? Math.round((subtotal * percentual) / (PERCENT_ESCALA * 100)) : 0
+
+  return (
+    <FormGrid
+      name="itens"
+      hideAdd
+      actions={(append) => <BotoesInsercao append={append} />}
+      columns={[
+        { key: 'item', label: 'Item' },
+        { key: 'codigoFornecedor', label: 'Código Fornecedor' },
+        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
+        { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
+        { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
+        { key: 'tamanho', label: 'Tamanho' },
+        { key: 'quantidade', label: 'Quant.' },
+        { key: 'unidade', label: 'Und.', type: 'select', options: tabelas.unidades },
+        { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
+        { key: 'descontoPercentual', label: 'Desc. %', type: 'percent' },
+        {
+          key: 'valorItem',
+          label: 'Valor Item',
+          type: 'computed',
+          compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
+        },
+        { key: 'grupoProduto', label: 'Grupo Produto' },
+        {
+          key: 'tipoPeca',
+          label: 'Tipo de Peça',
+          type: 'select',
+          options: opcoesLookup('tipoPeca'),
+        },
+        { key: 'fornecedor', label: 'Fornecedor' },
+      ]}
+      newRow={ITEM_VAZIO}
+      totals={{
+        valueColumnKey: 'valorItem',
+        rows: fileirasTotais(subtotal, [
+          { label: 'Desconto', valorCentavos: descontoGeral, sinal: -1 },
+        ]),
+      }}
+    />
+  )
+}
+
 function AbaPrincipal() {
   return (
     <div className="flex flex-col gap-4">
@@ -265,38 +307,7 @@ function AbaPrincipal() {
         Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.
       </p>
 
-      <FormGrid
-        name="itens"
-        hideAdd
-        actions={(append) => <BotoesInsercao append={append} />}
-        columns={[
-          { key: 'item', label: 'Item' },
-          { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-          { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
-          { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
-          { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
-          { key: 'tamanho', label: 'Tamanho' },
-          { key: 'quantidade', label: 'Quant.' },
-          { key: 'unidade', label: 'Und.', type: 'select', options: tabelas.unidades },
-          { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
-          { key: 'descontoPercentual', label: 'Desc. %', type: 'percent' },
-          {
-            key: 'valorItem',
-            label: 'Valor Item',
-            type: 'computed',
-            compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
-          },
-          { key: 'grupoProduto', label: 'Grupo Produto' },
-          {
-            key: 'tipoPeca',
-            label: 'Tipo de Peça',
-            type: 'select',
-            options: opcoesLookup('tipoPeca'),
-          },
-          { key: 'fornecedor', label: 'Fornecedor' },
-        ]}
-        newRow={ITEM_VAZIO}
-      />
+      <GradeItens />
 
       <TotaisOrcamento />
 

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
 import {
-  DocumentoTotais,
+  fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/vitra/documento'
@@ -64,8 +64,34 @@ function BotaoProduto({ onInserir }: { onInserir: () => void }) {
   )
 }
 
-function Totais() {
-  return <DocumentoTotais subtotalCentavos={useSubtotalCentavos('itens')} />
+/** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
+function GradeItens() {
+  const subtotal = useSubtotalCentavos('itens')
+  return (
+    <FormGrid
+      name="itens"
+      hideAdd
+      actions={(append) => <BotaoProduto onInserir={() => append(ITEM_VAZIO)} />}
+      columns={[
+        { key: 'codigoFornecedor', label: 'Código Fornecedor' },
+        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
+        { key: 'acabamento', label: 'Acab.', type: 'select', options: tabelas.acabamentos },
+        { key: 'quantidade', label: 'Quantidade' },
+        { key: 'destino', label: 'Destino', type: 'select', options: tabelas.destinos },
+        { key: 'tamanho', label: 'Tamanho' },
+        { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
+        { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
+        {
+          key: 'valorTotal',
+          label: 'Valor Total',
+          type: 'computed',
+          compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
+        },
+      ]}
+      newRow={ITEM_VAZIO}
+      totals={{ valueColumnKey: 'valorTotal', rows: fileirasTotais(subtotal) }}
+    />
+  )
 }
 
 export function PedidoCompraForm({
@@ -107,32 +133,9 @@ export function PedidoCompraForm({
           <FornecedoresPedido />
         </FormBlock>
 
-        <FormGrid
-          name="itens"
-          hideAdd
-          actions={(append) => <BotaoProduto onInserir={() => append(ITEM_VAZIO)} />}
-          columns={[
-            { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-            { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
-            { key: 'acabamento', label: 'Acab.', type: 'select', options: tabelas.acabamentos },
-            { key: 'quantidade', label: 'Quantidade' },
-            { key: 'destino', label: 'Destino', type: 'select', options: tabelas.destinos },
-            { key: 'tamanho', label: 'Tamanho' },
-            { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
-            { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
-            {
-              key: 'valorTotal',
-              label: 'Valor Total',
-              type: 'computed',
-              compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
-            },
-          ]}
-          newRow={ITEM_VAZIO}
-        />
+        <GradeItens />
 
         <TextareaField name="observacao" label="Observação" rows={3} />
-
-        <Totais />
 
         <div>
           <Button

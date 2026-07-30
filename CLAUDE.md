@@ -24,7 +24,7 @@ O backend ainda não publicou contrato. Portanto:
 ## Convenções
 - **Dinheiro:** trafega em **centavos (int)**; formatar R$ só na borda de exibição (`Intl.NumberFormat('pt-BR')`). NUNCA float em estado/mock.
 - **Quantidade:** até 3 casas. **Datas:** ISO nos dados, exibição pt-BR. **CNPJ/CPF:** sem máscara no dado, máscara só no input.
-- **Atalhos:** NÃO usar F3-F6 (conflito com browser). Padrão: `Ctrl+K` busca global/janela de busca · `Alt+N` incluir · atalhos declarados num registry único (`src/lib/shortcuts.ts`).
+- **Atalhos — interface por clique** (decisão do user, 30/07/2026): toda ação é alcançável por mouse e nenhum fluxo depende de tecla memorizada. Navegação em formulário é a nativa do browser (Tab / Shift+Tab, Enter no controle focado). **NÃO criar atalho customizado novo.** Os que já existem em `src/lib/shortcuts.ts` (`Ctrl+K` busca · `Alt+N` incluir · `Alt+P/A/T/I` nos documentos) ficam como conveniência, não como requisito — não removê-los, não expandi-los, não desenhar tela que só funcione por eles. F3–F6 continuam proibidos (conflito com browser).
 - Componentes compartilhados moram em `src/components/vitra/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
 - Acessibilidade mínima: label em todo campo, foco visível, dialog com focus-trap (shadcn já dá).
 

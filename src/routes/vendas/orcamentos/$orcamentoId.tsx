@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { DocumentoHeader } from '@/components/vitra/documento'
 import { data } from '@/data'
 import { OrcamentoForm } from '@/features/orcamento/orcamento-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -37,9 +38,11 @@ function OrcamentoEditPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Orçamento {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.numero}`}
-      </h1>
+      <DocumentoHeader
+        titulo="Orçamento"
+        modo={readOnly ? '— Consulta' : isNovo ? '— Incluir' : undefined}
+        numero={isNovo ? undefined : query.data.numero}
+      />
       <OrcamentoForm orcamento={query.data} readOnly={readOnly} />
     </div>
   )

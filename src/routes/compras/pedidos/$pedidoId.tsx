@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { DocumentoHeader } from '@/components/vitra/documento'
 import { data } from '@/data'
 import { PedidoCompraForm } from '@/features/pedido-compra/pedido-compra-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -37,9 +38,11 @@ function PedidoCompraEditPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Pedido de Compra {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.codigo}`}
-      </h1>
+      <DocumentoHeader
+        titulo="Pedido de Compra"
+        modo={readOnly ? '— Consulta' : isNovo ? '— Incluir' : undefined}
+        numero={isNovo ? undefined : query.data.codigo}
+      />
       <PedidoCompraForm pedido={query.data} readOnly={readOnly} />
     </div>
   )

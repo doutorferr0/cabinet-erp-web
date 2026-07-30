@@ -43,6 +43,13 @@ export interface VitraDataTableProps<T> {
   /** Barra de ações padrão: Filtro · Incluir · Alterar · Consul. · Excluir/Cancelar · Imprimir. */
   actions?: DataTableAction<T>[]
   pageSizeOptions?: number[]
+  /**
+   * Coluna de numeração (DESIGN.md §DataTable): primeira coluna, 40px, valor
+   * em Meta alinhado à direita, sequencial GLOBAL da consulta (a "linha 12"
+   * que o operador diz em voz alta não muda ao trocar de página). Desligada
+   * por padrão — listagem de cadastro não numera.
+   */
+  rowNumbers?: boolean
 }
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -56,6 +63,7 @@ export function VitraDataTable<T>({
   searchPlaceholder = 'Busca pelo código:',
   actions = [],
   pageSizeOptions = [10, 20, 50],
+  rowNumbers = false,
 }: VitraDataTableProps<T>) {
   const [qInput, setQInput] = useState('')
   const [state, setState] = useState<TableQueryState>({
@@ -102,6 +110,9 @@ export function VitraDataTable<T>({
     manualPagination: true,
   })
 
+  // Folha total de colunas (grupos contam as folhas) + a numeração opcional.
+  const totalColSpan = table.getAllLeafColumns().length + (rowNumbers ? 1 : 0)
+
   function toggleSort(columnId: string) {
     updateState((s) => {
       const next: TableSort | null =
@@ -144,8 +155,16 @@ export function VitraDataTable<T>({
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+            {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
+              // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
+              // por Fio (a sublinha forte fica na fileira das folhas).
+              <TableRow
+                key={headerGroup.id}
+                className={cn(hgIndex < headerGroups.length - 1 && 'border-rule-hair!')}
+              >
+                {rowNumbers && hgIndex === 0 ? (
+                  <TableHead className="w-10" rowSpan={headerGroups.length} />
+                ) : null}
                 {headerGroup.headers.map((header) => {
                   const sortable =
                     header.column.columnDef.enableSorting !== false &&
@@ -153,7 +172,11 @@ export function VitraDataTable<T>({
                   const active = state.sort?.id === header.column.id
                   const numeric = header.column.columnDef.meta?.numeric === true
                   return (
-                    <TableHead key={header.id} className={cn(numeric && 'text-right')}>
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
+                    >
                       {header.isPlaceholder ? null : sortable ? (
                         <button
                           type="button"
@@ -181,7 +204,7 @@ export function VitraDataTable<T>({
             {query.isPending ? (
               SKELETON_ROWS.map((rowKey) => (
                 <TableRow key={rowKey}>
-                  <TableCell colSpan={columns.length}>
+                  <TableCell colSpan={totalColSpan}>
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
                 </TableRow>
@@ -189,14 +212,14 @@ export function VitraDataTable<T>({
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={totalColSpan}
                   className="h-24 text-center text-muted-foreground"
                 >
                   Nenhum registro.
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => {
+              table.getRowModel().rows.map((row, rowIndex) => {
                 const isSelected = selected !== null && row.original === selected
                 return (
                   // Seleção = Bancada + marcador esquerdo de 2px em Régua Forte — estado
@@ -210,6 +233,12 @@ export function VitraDataTable<T>({
                     )}
                     onClick={() => setSelected(isSelected ? null : row.original)}
                   >
+                    {rowNumbers ? (
+                      // Numeração em Meta, sequencial global da consulta.
+                      <TableCell className="w-10 text-right font-mono text-[0.75rem] font-medium tabular-nums tracking-[0.06em] text-muted-foreground">
+                        {(state.page - 1) * state.pageSize + rowIndex + 1}
+                      </TableCell>
+                    ) : null}
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}

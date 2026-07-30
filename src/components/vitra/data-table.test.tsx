@@ -136,4 +136,58 @@ describe('VitraDataTable', () => {
     expect(linha?.className).toContain('bg-muted')
     expect(linha?.className).toContain('shadow-[inset_2px_0_0_hsl(var(--rule-strong))]')
   })
+
+  it('rowNumbers: primeira coluna de 40px em Meta, sequencial global entre páginas', async () => {
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-num']}
+        fetcher={(state) => data.produtos.list(state, 0)}
+        pageSizeOptions={[3]}
+        rowNumbers
+      />,
+    )
+
+    await screen.findByText('Página 1 de 15')
+    // Primeira célula da primeira linha de dados: número em Meta, à direita.
+    const primeiraLinha = screen.getAllByRole('row')[1]
+    const numero = primeiraLinha?.querySelector('td')
+    expect(numero?.textContent).toBe('1')
+    expect(numero?.className).toContain('w-10')
+    expect(numero?.className).toContain('font-mono')
+    expect(numero?.className).toContain('text-[0.75rem]')
+    expect(numero?.className).toContain('text-right')
+
+    // A numeração é da consulta, não da página: "linha 4" na página 2.
+    await user.click(screen.getByRole('button', { name: 'Próxima' }))
+    await screen.findByText('Página 2 de 15')
+    const primeiraPagina2 = screen.getAllByRole('row')[1]
+    expect(primeiraPagina2?.querySelector('td')?.textContent).toBe('4')
+  })
+
+  it('cabeçalho agrupado: rótulo centralizado sobre sub-colunas, separado por Fio', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={[
+          {
+            header: 'Identificação',
+            columns: [
+              { accessorKey: 'nossoCodigo', header: 'Nosso Código' },
+              { accessorKey: 'nossaDescricao', header: 'Nossa Descrição' },
+            ],
+          },
+          { accessorKey: 'marca', header: 'Marca' },
+        ]}
+        queryKey={['produtos-test-grupo']}
+        fetcher={(state) => data.produtos.list(state, 0)}
+      />,
+    )
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const grupo = screen.getByRole('columnheader', { name: 'Identificação' })
+    expect(grupo.getAttribute('colspan')).toBe('2')
+    expect(grupo.className).toContain('text-center')
+    // A fileira do grupo é separada das sub-colunas por Fio, não pela sublinha forte.
+    expect(grupo.closest('tr')?.className).toContain('border-rule-hair')
+  })
 })

@@ -19,9 +19,10 @@ export const navGroups: NavGroup[] = [
     url: '/cadastros',
     icon: BookUser,
     items: [
-      { title: 'Fornecedores', url: '/cadastros/fornecedores', icon: BookUser },
       { title: 'Clientes', url: '/cadastros/clientes', icon: BookUser },
-      { title: 'Profissionais', url: '/cadastros/profissionais', icon: BookUser },
+      { title: 'Fornecedores', url: '/cadastros/fornecedores', icon: BookUser },
+      { title: 'Profissional Externo', url: '/cadastros/profissionais', icon: BookUser },
+      { title: 'Colaboradores', url: '/cadastros/colaboradores', icon: BookUser },
       { title: 'Produtos', url: '/cadastros/produtos', icon: Package },
     ],
   },

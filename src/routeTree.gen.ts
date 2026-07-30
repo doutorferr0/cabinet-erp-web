@@ -20,9 +20,13 @@ import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
 import { Route as CadastrosClientesIndexRouteImport } from './routes/cadastros/clientes/index'
 import { Route as CadastrosClientesClienteIdRouteImport } from './routes/cadastros/clientes/$clienteId'
+import { Route as CadastrosColaboradoresIndexRouteImport } from './routes/cadastros/colaboradores/index'
+import { Route as CadastrosColaboradoresColaboradorIdRouteImport } from './routes/cadastros/colaboradores/$colaboradorId'
 import { Route as CadastrosFornecedoresIndexRouteImport } from './routes/cadastros/fornecedores/index'
 import { Route as CadastrosFornecedoresFornecedorIdRouteImport } from './routes/cadastros/fornecedores/$fornecedorId'
 import { Route as CadastrosProdutosIndexRouteImport } from './routes/cadastros/produtos/index'
+import { Route as CadastrosProfissionaisIndexRouteImport } from './routes/cadastros/profissionais/index'
+import { Route as CadastrosProfissionaisProfissionalIdRouteImport } from './routes/cadastros/profissionais/$profissionalId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -80,6 +84,18 @@ const CadastrosClientesClienteIdRoute =
     path: '/clientes/$clienteId',
     getParentRoute: () => CadastrosRoute,
   } as any)
+const CadastrosColaboradoresIndexRoute =
+  CadastrosColaboradoresIndexRouteImport.update({
+    id: '/colaboradores/',
+    path: '/colaboradores/',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
+const CadastrosColaboradoresColaboradorIdRoute =
+  CadastrosColaboradoresColaboradorIdRouteImport.update({
+    id: '/colaboradores/$colaboradorId',
+    path: '/colaboradores/$colaboradorId',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
 const CadastrosFornecedoresIndexRoute =
   CadastrosFornecedoresIndexRouteImport.update({
     id: '/fornecedores/',
@@ -97,6 +113,18 @@ const CadastrosProdutosIndexRoute = CadastrosProdutosIndexRouteImport.update({
   path: '/produtos/',
   getParentRoute: () => CadastrosRoute,
 } as any)
+const CadastrosProfissionaisIndexRoute =
+  CadastrosProfissionaisIndexRouteImport.update({
+    id: '/profissionais/',
+    path: '/profissionais/',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
+const CadastrosProfissionaisProfissionalIdRoute =
+  CadastrosProfissionaisProfissionalIdRouteImport.update({
+    id: '/profissionais/$profissionalId',
+    path: '/profissionais/$profissionalId',
+    getParentRoute: () => CadastrosRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,10 +137,14 @@ export interface FileRoutesByFullPath {
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
+  '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
+  '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos/': typeof CadastrosProdutosIndexRoute
+  '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -121,10 +153,14 @@ export interface FileRoutesByTo {
   '/estoque': typeof EstoqueIndexRoute
   '/vendas': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
+  '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
+  '/cadastros/colaboradores': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos': typeof CadastrosProdutosIndexRoute
+  '/cadastros/profissionais': typeof CadastrosProfissionaisIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,10 +174,14 @@ export interface FileRoutesById {
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
+  '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
+  '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
+  '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos/': typeof CadastrosProdutosIndexRoute
+  '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -156,10 +196,14 @@ export interface FileRouteTypes {
     | '/estoque/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
+    | '/cadastros/colaboradores/$colaboradorId'
     | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/profissionais/$profissionalId'
     | '/cadastros/clientes/'
+    | '/cadastros/colaboradores/'
     | '/cadastros/fornecedores/'
     | '/cadastros/produtos/'
+    | '/cadastros/profissionais/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -168,10 +212,14 @@ export interface FileRouteTypes {
     | '/estoque'
     | '/vendas'
     | '/cadastros/clientes/$clienteId'
+    | '/cadastros/colaboradores/$colaboradorId'
     | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/profissionais/$profissionalId'
     | '/cadastros/clientes'
+    | '/cadastros/colaboradores'
     | '/cadastros/fornecedores'
     | '/cadastros/produtos'
+    | '/cadastros/profissionais'
   id:
     | '__root__'
     | '/'
@@ -184,10 +232,14 @@ export interface FileRouteTypes {
     | '/estoque/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
+    | '/cadastros/colaboradores/$colaboradorId'
     | '/cadastros/fornecedores/$fornecedorId'
+    | '/cadastros/profissionais/$profissionalId'
     | '/cadastros/clientes/'
+    | '/cadastros/colaboradores/'
     | '/cadastros/fornecedores/'
     | '/cadastros/produtos/'
+    | '/cadastros/profissionais/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -277,6 +329,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastrosClientesClienteIdRouteImport
       parentRoute: typeof CadastrosRoute
     }
+    '/cadastros/colaboradores/': {
+      id: '/cadastros/colaboradores/'
+      path: '/colaboradores'
+      fullPath: '/cadastros/colaboradores/'
+      preLoaderRoute: typeof CadastrosColaboradoresIndexRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
+    '/cadastros/colaboradores/$colaboradorId': {
+      id: '/cadastros/colaboradores/$colaboradorId'
+      path: '/colaboradores/$colaboradorId'
+      fullPath: '/cadastros/colaboradores/$colaboradorId'
+      preLoaderRoute: typeof CadastrosColaboradoresColaboradorIdRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
     '/cadastros/fornecedores/': {
       id: '/cadastros/fornecedores/'
       path: '/fornecedores'
@@ -298,26 +364,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastrosProdutosIndexRouteImport
       parentRoute: typeof CadastrosRoute
     }
+    '/cadastros/profissionais/': {
+      id: '/cadastros/profissionais/'
+      path: '/profissionais'
+      fullPath: '/cadastros/profissionais/'
+      preLoaderRoute: typeof CadastrosProfissionaisIndexRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
+    '/cadastros/profissionais/$profissionalId': {
+      id: '/cadastros/profissionais/$profissionalId'
+      path: '/profissionais/$profissionalId'
+      fullPath: '/cadastros/profissionais/$profissionalId'
+      preLoaderRoute: typeof CadastrosProfissionaisProfissionalIdRouteImport
+      parentRoute: typeof CadastrosRoute
+    }
   }
 }
 
 interface CadastrosRouteChildren {
   CadastrosIndexRoute: typeof CadastrosIndexRoute
   CadastrosClientesClienteIdRoute: typeof CadastrosClientesClienteIdRoute
+  CadastrosColaboradoresColaboradorIdRoute: typeof CadastrosColaboradoresColaboradorIdRoute
   CadastrosFornecedoresFornecedorIdRoute: typeof CadastrosFornecedoresFornecedorIdRoute
+  CadastrosProfissionaisProfissionalIdRoute: typeof CadastrosProfissionaisProfissionalIdRoute
   CadastrosClientesIndexRoute: typeof CadastrosClientesIndexRoute
+  CadastrosColaboradoresIndexRoute: typeof CadastrosColaboradoresIndexRoute
   CadastrosFornecedoresIndexRoute: typeof CadastrosFornecedoresIndexRoute
   CadastrosProdutosIndexRoute: typeof CadastrosProdutosIndexRoute
+  CadastrosProfissionaisIndexRoute: typeof CadastrosProfissionaisIndexRoute
 }
 
 const CadastrosRouteChildren: CadastrosRouteChildren = {
   CadastrosIndexRoute: CadastrosIndexRoute,
   CadastrosClientesClienteIdRoute: CadastrosClientesClienteIdRoute,
+  CadastrosColaboradoresColaboradorIdRoute:
+    CadastrosColaboradoresColaboradorIdRoute,
   CadastrosFornecedoresFornecedorIdRoute:
     CadastrosFornecedoresFornecedorIdRoute,
+  CadastrosProfissionaisProfissionalIdRoute:
+    CadastrosProfissionaisProfissionalIdRoute,
   CadastrosClientesIndexRoute: CadastrosClientesIndexRoute,
+  CadastrosColaboradoresIndexRoute: CadastrosColaboradoresIndexRoute,
   CadastrosFornecedoresIndexRoute: CadastrosFornecedoresIndexRoute,
   CadastrosProdutosIndexRoute: CadastrosProdutosIndexRoute,
+  CadastrosProfissionaisIndexRoute: CadastrosProfissionaisIndexRoute,
 }
 
 const CadastrosRouteWithChildren = CadastrosRoute._addFileChildren(

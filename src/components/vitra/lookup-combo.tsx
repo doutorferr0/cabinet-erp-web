@@ -122,7 +122,7 @@ export function LookupCombo({
               <DialogHeader>
                 <DialogTitle>Cadastrar {label}</DialogTitle>
               </DialogHeader>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 <Label htmlFor="lookup-quick-add-nome">Nome</Label>
                 <Input
                   id="lookup-quick-add-nome"

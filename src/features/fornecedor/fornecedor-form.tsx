@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ComunicadoresBlock, EnderecoBlock, RedesSociaisBlock } from '@/components/vitra/blocks'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { FormBlock } from '@/components/vitra/form-block'
 import {
   CheckboxField,
   LookupField,
@@ -100,61 +101,89 @@ function ConsultaCnpjButton() {
 
 function FornecedorCorpo() {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-12 items-end gap-3">
-        <TextField name="razaoSocial" label="Razão Social" className="col-span-12 sm:col-span-6" />
-        <TextField name="sigla" label="Sigla" className="col-span-4 sm:col-span-2" />
-        <TextField name="nomeFantasia" label="Nome Fantasia" className="col-span-8 sm:col-span-4" />
-        <div className="col-span-8 sm:col-span-4">
-          <div className="flex items-end gap-1">
+    <div className="flex flex-col gap-3">
+      {/* TODO(transcricao): `Identificação` é legenda INFERIDA. A transcrição §4
+          lista o corpo do cadastro em sequência plana, sem groupbox — conferir
+          contra nova captura do SoftLux. */}
+      <FormBlock legend="Identificação">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField
+            name="razaoSocial"
+            label="Razão Social"
+            className="col-span-12 sm:col-span-6"
+          />
+          <TextField name="sigla" label="Sigla" className="col-span-4 sm:col-span-2" />
+          <TextField
+            name="nomeFantasia"
+            label="Nome Fantasia"
+            className="col-span-8 sm:col-span-4"
+          />
+          <div className="col-span-8 flex items-end gap-1 sm:col-span-4">
             <TextField name="cnpjCpf" label="CNPJ/CPF" className="flex-1" />
             <ConsultaCnpjButton />
           </div>
+          <TextField name="inscEst" label="Insc. Est." className="col-span-4 sm:col-span-2" />
         </div>
-        <TextField name="inscEst" label="Insc. Est." className="col-span-4 sm:col-span-2" />
-        <TextField name="fone1" label="Fone 1" className="col-span-6 sm:col-span-2" />
-        <TextField name="fone2" label="Fone 2" className="col-span-6 sm:col-span-2" />
-        <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-2" />
-        <TextField name="email" label="E-mail" className="col-span-6 sm:col-span-6" />
-        <TextField name="site" label="Site" className="col-span-12 sm:col-span-6" />
-      </div>
+      </FormBlock>
 
-      <EnderecoBlock prefix="endereco" />
+      {/* TODO(transcricao): `Telefones e E-mail` é legenda INFERIDA. */}
+      <FormBlock legend="Telefones e E-mail">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField name="fone1" label="Fone 1" className="col-span-6 sm:col-span-2" />
+          <TextField name="fone2" label="Fone 2" className="col-span-6 sm:col-span-2" />
+          <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-2" />
+          <TextField name="email" label="E-mail" className="col-span-12 sm:col-span-6" />
+          <TextField name="site" label="Site" className="col-span-12 sm:col-span-6" />
+        </div>
+      </FormBlock>
 
-      <ComunicadoresBlock prefix="comunicadores" />
+      {/* `Endereço` e `Comunicadores` são nomes da própria transcrição (§10 e §3). */}
+      <FormBlock legend="Endereço">
+        <EnderecoBlock prefix="endereco" />
+      </FormBlock>
 
-      <div className="grid grid-cols-12 items-end gap-3">
-        <CheckboxField
-          name="forneceRevenda"
-          label="Fornece produto para revenda"
-          className="col-span-12 sm:col-span-3"
-        />
-        <LookupField
-          name="materiais"
-          label="Materiais"
-          kind="materiais"
-          className="col-span-12 sm:col-span-3"
-        />
-        <TextField
-          name="prazoEntregaDias"
-          label="Prazo de entrega (dias)"
-          className="col-span-6 sm:col-span-3"
-        />
-        <TextField
-          name="prazoPagamentoDias"
-          label="Prazo de pagamento (dias)"
-          className="col-span-6 sm:col-span-3"
-        />
-        <SelectField
-          name="empresaCompradora"
-          label="Empresa compradora"
-          options={tabelas.empresasCompradoras}
-          className="col-span-12 sm:col-span-4"
-        />
-        <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
-      </div>
+      <FormBlock legend="Comunicadores">
+        <ComunicadoresBlock prefix="comunicadores" />
+      </FormBlock>
 
-      <RedesSociaisBlock prefix="redesSociais" />
+      {/* TODO(transcricao): `Fornecimento` é legenda INFERIDA. */}
+      <FormBlock legend="Fornecimento">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <CheckboxField
+            name="forneceRevenda"
+            label="Fornece produto para revenda"
+            className="col-span-12 sm:col-span-3"
+          />
+          <LookupField
+            name="materiais"
+            label="Materiais"
+            kind="materiais"
+            className="col-span-12 sm:col-span-3"
+          />
+          <TextField
+            name="prazoEntregaDias"
+            label="Prazo de entrega (dias)"
+            className="col-span-6 sm:col-span-3"
+          />
+          <TextField
+            name="prazoPagamentoDias"
+            label="Prazo de pagamento (dias)"
+            className="col-span-6 sm:col-span-3"
+          />
+          <SelectField
+            name="empresaCompradora"
+            label="Empresa compradora"
+            options={tabelas.empresasCompradoras}
+            className="col-span-12 sm:col-span-4"
+          />
+          <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
+        </div>
+      </FormBlock>
+
+      {/* TODO(transcricao): `Redes Sociais` é legenda INFERIDA. */}
+      <FormBlock legend="Redes Sociais">
+        <RedesSociaisBlock prefix="redesSociais" />
+      </FormBlock>
     </div>
   )
 }
@@ -181,7 +210,7 @@ export function FornecedorForm({
     >
       <FornecedorCorpo />
 
-      <Tabs defaultValue="contatos" className="mt-2">
+      <Tabs defaultValue="contatos">
         <TabsList className="flex-wrap">
           <TabsTrigger value="contatos">Contatos</TabsTrigger>
           {ABAS_SEM_CAPTURA.map(([value, label]) => (

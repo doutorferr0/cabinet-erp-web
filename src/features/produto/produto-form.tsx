@@ -129,37 +129,44 @@ export const produtoSchema = z.object({
 /** Coluna direita da aba 1 (§6.1): imagem + marcações do produto. */
 function ControlesLaterais() {
   return (
-    <div className="flex w-40 shrink-0 flex-col gap-2">
-      <div className="flex h-40 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
-        Imagem
+    // A coluna lateral tem duas partes: a peça foto (moldura + seus dois botões,
+    // colados em `{spacing.sm}`) e as marcações do produto, a um degrau real de
+    // distância. Um só valor aqui achataria as duas em uma lista indistinta.
+    <div className="flex w-40 shrink-0 flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <div className="flex h-40 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
+          Imagem
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => console.info('[mock] Incluir Foto')}
+        >
+          Incluir Foto
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => console.info('[mock] Retirar Foto')}
+        >
+          Retirar Foto
+        </Button>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => console.info('[mock] Incluir Foto')}
-      >
-        Incluir Foto
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => console.info('[mock] Retirar Foto')}
-      >
-        Retirar Foto
-      </Button>
-      <CheckboxField name="foraDeLinha" label="Fora de Linha" />
-      <CheckboxField name="consultarValor" label="Consultar Valor" />
-      <CheckboxField name="ativo" label="Ativo" />
-      <CheckboxField name="sobreMedida" label="Sobre Medida" />
+      <div className="flex flex-col gap-2">
+        <CheckboxField name="foraDeLinha" label="Fora de Linha" />
+        <CheckboxField name="consultarValor" label="Consultar Valor" />
+        <CheckboxField name="ativo" label="Ativo" />
+        <CheckboxField name="sobreMedida" label="Sobre Medida" />
+      </div>
     </div>
   )
 }
 
 function AbaDadosPrincipais() {
   return (
-    <div className="flex flex-col gap-4 pt-4 sm:flex-row">
+    <div className="flex flex-col gap-4 sm:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="nossoCodigo" label="Nosso Código" className="col-span-6 sm:col-span-2" />
@@ -180,7 +187,7 @@ function AbaDadosPrincipais() {
           />
         </div>
 
-        <FormBlock legend="Fornecedor" className="flex flex-col gap-2">
+        <FormBlock legend="Fornecedor">
           <FormGrid
             name="fornecedores"
             columns={[
@@ -317,7 +324,7 @@ function BlocoDimensoes({ prefix, legenda }: { prefix: string; legenda: string }
 
 function AbaOutrosDados() {
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-12 items-end gap-3">
         <TextField
           name="qtdLampadasPorReator"
@@ -369,7 +376,7 @@ function AbaOutrosDados() {
 
 function AbaValoresLocalizacao() {
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
         Escolha o acabamento e tecle F3 para inserir localização do estoque.
       </p>
@@ -396,7 +403,7 @@ function AbaValoresLocalizacao() {
         }}
       />
 
-      <FormBlock legend="Localização do Estoque" className="flex flex-col gap-2">
+      <FormBlock legend="Localização do Estoque">
         <FormGrid
           name="localizacoes"
           columns={[
@@ -421,7 +428,7 @@ function AbaValoresLocalizacao() {
 
 function AbaProdutosRelacionados() {
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4">
       <FormGrid
         name="gruposRelacionados"
         columns={[
@@ -464,7 +471,7 @@ function AbaProdutosRelacionados() {
 
 function AbaTributacao() {
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-12 items-end gap-3">
         <SelectField
           name="origemProduto"
@@ -485,10 +492,7 @@ function AbaTributacao() {
         />
       </FormBlock>
 
-      <FormBlock
-        legend="Busca automática dos Impostos da NFe vinculada ao NCM"
-        className="flex flex-col gap-2"
-      >
+      <FormBlock legend="Busca automática dos Impostos da NFe vinculada ao NCM">
         <FormGrid
           name="impostosNfe"
           columns={[

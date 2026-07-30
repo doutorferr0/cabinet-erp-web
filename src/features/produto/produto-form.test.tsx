@@ -47,7 +47,7 @@ describe('tela Produto', () => {
     const { user } = renderRoute('/cadastros/produtos/novo')
 
     await screen.findByLabelText('Nosso Código')
-    expect(screen.getAllByText('No data to display').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Nenhum item.').length).toBeGreaterThan(0)
 
     // A primeira grade da aba Dados Principais é a de Fornecedor.
     await user.click(screen.getAllByRole('button', { name: /Incluir$/ })[0] as HTMLElement)

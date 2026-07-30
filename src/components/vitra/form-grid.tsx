@@ -219,7 +219,7 @@ export function FormGrid({
                   colSpan={columns.length + 1}
                   className="h-16 text-center text-muted-foreground"
                 >
-                  No data to display
+                  Nenhum item.
                 </TableCell>
               </TableRow>
             ) : (

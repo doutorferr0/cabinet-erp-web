@@ -103,7 +103,7 @@ export function PedidoCompraForm({
         </div>
 
         {/* Um pedido tem N fornecedores (§7.3): grade própria, não combo único. */}
-        <FormBlock legend="Fornecedores" className="flex flex-col gap-2">
+        <FormBlock legend="Fornecedores">
           <FornecedoresPedido />
         </FormBlock>
 
@@ -159,7 +159,9 @@ function FornecedoresPedido() {
   })
 
   return (
-    <div className="flex flex-col gap-2">
+    // Barra→lista em `{spacing.md}`, itens irmãos em `{spacing.sm}` — mesmo
+    // ritmo da FormGrid, que é o que esta lista imita.
+    <div className="flex flex-col gap-3">
       <div>
         <Button type="button" variant="outline" size="sm" onClick={() => append('' as never)}>
           Incluir fornecedor
@@ -172,7 +174,7 @@ function FornecedoresPedido() {
           <div key={field.id} className="flex items-center gap-2">
             <select
               aria-label={`Fornecedor ${index + 1}`}
-              className="h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm"
+              className="h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               {...register(`fornecedores.${index}`)}
             >
               <option value="">Selecione…</option>

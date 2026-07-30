@@ -166,7 +166,7 @@ function Totais() {
 
 function AbaPrincipal() {
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4">
       <Cabecalho />
 
       <div className="flex flex-wrap gap-2">
@@ -273,7 +273,8 @@ export function OrdemCompraForm({
         </TabsContent>
       </Tabs>
 
-      <div className="pt-3">
+      {/* O degrau até aqui vem do `gap-4` do CadastroForm — sem padding próprio. */}
+      <div>
         <Button
           type="button"
           variant="outline"

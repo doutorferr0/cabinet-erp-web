@@ -26,4 +26,14 @@ describe('FormBlock', () => {
     expect(legend.className).toContain('tracking-[0.06em]')
     expect(legend.className).toContain('text-muted-foreground')
   })
+
+  // A transcrição §2 registra moldura sem nome ("Bloco separado por moldura"):
+  // o compartimento existe mesmo quando não há legenda para citar.
+  it('sem legend, mantém o compartimento e não renderiza <legend> vazio', () => {
+    render(<FormBlock>conteúdo</FormBlock>)
+
+    const fieldset = screen.getByText('conteúdo').closest('fieldset')
+    expect(fieldset?.className).toContain('rounded-lg')
+    expect(fieldset?.querySelector('legend')).toBeNull()
+  })
 })

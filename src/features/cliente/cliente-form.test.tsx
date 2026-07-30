@@ -20,6 +20,24 @@ describe('tela Cliente', () => {
     })
   })
 
+  // DESIGN.md §Shapes: a aba Principal é uma pilha de compartimentos fechados,
+  // não uma parede de campos. Legendas marcadas `TODO(transcricao)` no código
+  // são inferência — a transcrição §5 não registra groupbox.
+  it('aba Principal agrupa os campos em compartimentos com moldura', async () => {
+    renderRoute('/cadastros/clientes/novo')
+
+    await screen.findByLabelText('Nome')
+    const legendas = screen
+      .getAllByText(/^(Identificação|Endereço|Telefones e E-mail|Redes Sociais)$/)
+      .filter((el) => el.tagName === 'LEGEND')
+    expect(legendas).toHaveLength(4)
+
+    // Compartimento tem caixa própria; blocos irmãos não compartilham parede.
+    const identificacao = legendas[0]?.closest('fieldset')
+    expect(identificacao?.className).toContain('rounded-lg')
+    expect(identificacao).toContainElement(screen.getByLabelText('Nome'))
+  })
+
   it('busca de cidade (janela auxiliar) preenche cidade e UF', async () => {
     const { user } = renderRoute('/cadastros/clientes/novo')
 

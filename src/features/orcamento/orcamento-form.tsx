@@ -193,7 +193,7 @@ function Cabecalho() {
 /** Desconto em 3 níveis (§8.2): por produto, por grupo e geral. */
 function ControlesDesconto() {
   return (
-    <div className="flex flex-wrap items-end gap-4">
+    <div className="flex flex-wrap items-end gap-3">
       <RadioField
         name="modoDesconto"
         label="Desconto"
@@ -230,7 +230,7 @@ function TotaisOrcamento() {
         <TabsTrigger value="frete">Frete</TabsTrigger>
       </TabsList>
       <TabsContent value="venda">
-        <div className="flex flex-col gap-2 pt-3">
+        <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
             Desconto geral:{' '}
             <output aria-label="Desconto percentual">{formatPercent(percentual)}</output> %
@@ -257,7 +257,7 @@ function TotaisOrcamento() {
 
 function AbaPrincipal() {
   return (
-    <div className="flex flex-col gap-4 pt-4">
+    <div className="flex flex-col gap-4">
       <Cabecalho />
       <ControlesDesconto />
 

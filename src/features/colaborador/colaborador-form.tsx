@@ -306,7 +306,7 @@ export function ColaboradorForm({
         <FotoFrame />
       </div>
 
-      <Tabs defaultValue="geral" className="mt-2">
+      <Tabs defaultValue="geral">
         <TabsList className="flex-wrap">
           <TabsTrigger value="geral">Geral</TabsTrigger>
           {ABAS_SEM_CAPTURA.map(([value, label]) => (

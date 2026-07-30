@@ -230,7 +230,7 @@ export function ProfissionalForm({
         <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
       </div>
 
-      <Tabs defaultValue="dadosCadastrais" className="mt-2">
+      <Tabs defaultValue="dadosCadastrais">
         <TabsList className="flex-wrap">
           <TabsTrigger value="dadosCadastrais">Dados Cadastrais</TabsTrigger>
           {ABAS_SEM_CAPTURA.map(([value, label]) => (

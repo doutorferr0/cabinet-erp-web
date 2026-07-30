@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EnderecoBlock, RedesSociaisBlock } from '@/components/vitra/blocks'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { FormBlock } from '@/components/vitra/form-block'
 import {
   CheckboxField,
   DateField,
@@ -100,74 +101,110 @@ function BuscaCidade({
 
 function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-12 items-end gap-3">
-        <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-6" />
-        <RadioField
-          name="tipoPessoa"
-          label="Tipo de pessoa"
-          options={[
-            { value: 'FISICA', label: 'FÍSICA' },
-            { value: 'JURIDICA', label: 'JURÍDICA' },
-          ]}
-          className="col-span-12 sm:col-span-4"
-        />
-        <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
-        <TextField
-          name="cpf"
-          label="CPF"
-          placeholder="___.___.___-__"
-          className="col-span-6 sm:col-span-3"
-        />
-        <SelectField
-          name="sexo"
-          label="Sexo"
-          options={SEXOS}
-          className="col-span-6 sm:col-span-3"
-        />
-        <TextField name="rg" label="RG" className="col-span-4 sm:col-span-2" />
-        <TextField
-          name="orgaoExpedicao"
-          label="Órgão Expedição"
-          className="col-span-4 sm:col-span-2"
-        />
-        <SelectField name="ufRg" label="UF" options={UFS} className="col-span-4 sm:col-span-2" />
-      </div>
+    // Compartimentos irmãos: caixa própria + goteira de `{spacing.md}`, nunca
+    // parede compartilhada (DESIGN.md §Shapes).
+    <div className="flex flex-col gap-3">
+      {/* TODO(transcricao): `Identificação` é legenda INFERIDA. A transcrição §5
+          lista os campos da aba `Principal` em sequência plana e não registra
+          groupbox nenhum — conferir contra nova captura do SoftLux. */}
+      <FormBlock legend="Identificação">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-6" />
+          <RadioField
+            name="tipoPessoa"
+            label="Tipo de pessoa"
+            options={[
+              { value: 'FISICA', label: 'FÍSICA' },
+              { value: 'JURIDICA', label: 'JURÍDICA' },
+            ]}
+            className="col-span-12 sm:col-span-4"
+          />
+          <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
+          <TextField
+            name="cpf"
+            label="CPF"
+            placeholder="___.___.___-__"
+            className="col-span-6 sm:col-span-3"
+          />
+          <SelectField
+            name="sexo"
+            label="Sexo"
+            options={SEXOS}
+            className="col-span-6 sm:col-span-3"
+          />
+          <TextField name="rg" label="RG" className="col-span-4 sm:col-span-2" />
+          <TextField
+            name="orgaoExpedicao"
+            label="Órgão Expedição"
+            className="col-span-4 sm:col-span-2"
+          />
+          <SelectField name="ufRg" label="UF" options={UFS} className="col-span-4 sm:col-span-2" />
+          <DateField
+            name="dtNascimento"
+            label="Dt. de Nasc."
+            className="col-span-6 sm:col-span-3"
+          />
+        </div>
+      </FormBlock>
 
-      <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
+      {/* `Endereço` não é inferência: a transcrição §10 trata o conjunto
+          (Endereço…CEP) como bloco reutilizável, com esse nome. */}
+      <FormBlock legend="Endereço">
+        <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
+      </FormBlock>
 
-      <div className="grid grid-cols-12 items-end gap-3">
-        <TextField name="foneComercial" label="Fone Comer." className="col-span-6 sm:col-span-3" />
-        <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-3" />
-        <TextField
-          name="foneResidencial"
-          label="Fone Resid."
-          className="col-span-6 sm:col-span-3"
-        />
-        <TextField name="celular" label="Celular" className="col-span-6 sm:col-span-3" />
-        <TextField name="email" label="Email" className="col-span-12 sm:col-span-6" />
-        <DateField name="dtNascimento" label="Dt. de Nasc." className="col-span-6 sm:col-span-3" />
-        <LookupField
-          name="profissional"
-          label="Profissional"
-          kind="profissional"
-          className="col-span-12 sm:col-span-4"
-        />
-        <LookupField
-          name="categoria"
-          label="Categoria"
-          kind="categoria"
-          className="col-span-12 sm:col-span-4"
-        />
-        <TextField
-          name="inscEstProdutorRural"
-          label="Inscrição Estadual Produtor Rural"
-          className="col-span-12 sm:col-span-4"
-        />
-      </div>
+      {/* TODO(transcricao): `Telefones e E-mail` é legenda INFERIDA. A §10 nomeia
+          "telefone" como bloco (4 variações fixas), mas não o conjunto com e-mail. */}
+      <FormBlock legend="Telefones e E-mail">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField
+            name="foneComercial"
+            label="Fone Comer."
+            className="col-span-6 sm:col-span-3"
+          />
+          <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-3" />
+          <TextField
+            name="foneResidencial"
+            label="Fone Resid."
+            className="col-span-6 sm:col-span-3"
+          />
+          <TextField name="celular" label="Celular" className="col-span-6 sm:col-span-3" />
+          <TextField name="email" label="Email" className="col-span-12 sm:col-span-6" />
+        </div>
+      </FormBlock>
 
-      <RedesSociaisBlock prefix="redesSociais" />
+      {/* Moldura sem legenda: a transcrição não agrupa estes três e nenhum nome
+          plausível sobrevive sem colidir com aba existente (`Cobrança\Comercial`).
+          Compartimento sem nome continua sendo compartimento. */}
+      <FormBlock>
+        <div className="grid grid-cols-12 items-end gap-3">
+          <LookupField
+            name="profissional"
+            label="Profissional"
+            kind="profissional"
+            className="col-span-12 sm:col-span-4"
+          />
+          <LookupField
+            name="categoria"
+            label="Categoria"
+            kind="categoria"
+            className="col-span-12 sm:col-span-4"
+          />
+          <TextField
+            name="inscEstProdutorRural"
+            label="Inscrição Estadual Produtor Rural"
+            className="col-span-12 sm:col-span-4"
+          />
+        </div>
+      </FormBlock>
 
+      {/* TODO(transcricao): `Redes Sociais` é legenda INFERIDA — a transcrição
+          lista FaceBook e Instagram soltos, sem moldura. */}
+      <FormBlock legend="Redes Sociais">
+        <RedesSociaisBlock prefix="redesSociais" />
+      </FormBlock>
+
+      {/* Campo único não ganha caixa: compartimento com um controle é decoração. */}
       <TextareaField name="observacao" label="Observação" rows={3} />
     </div>
   )

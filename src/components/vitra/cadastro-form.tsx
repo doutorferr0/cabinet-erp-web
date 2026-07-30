@@ -41,8 +41,11 @@ export function CadastroForm<T extends FieldValues>({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onGravar)} className="flex min-h-0 flex-1 flex-col gap-4">
-        {/* `disabled` no fieldset cobre todo descendente sem prop por campo. */}
-        <fieldset disabled={readOnly} className="min-h-0 flex-1 border-0 p-0">
+        {/* `disabled` no fieldset cobre todo descendente sem prop por campo.
+            O `gap-4` mora aqui: regiões da tela (fileira de cabeçalho, tira de
+            abas, barra de rodapé) se separam por `{spacing.lg}` uma vez só, em
+            vez de cada tela repetir `mt-2`/`pt-3` no olho. */}
+        <fieldset disabled={readOnly} className="flex min-h-0 flex-1 flex-col gap-4 border-0 p-0">
           {children}
         </fieldset>
         {/* Rodapé é Documento (`bg-card`): senta na folha; régua superior em

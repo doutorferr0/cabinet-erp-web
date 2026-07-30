@@ -79,7 +79,9 @@ describe('tela Produto', () => {
     await screen.findByLabelText('Nosso Código')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    expect(await screen.findByText('Nosso Código é obrigatório')).toBeInTheDocument()
+    const mensagem = await screen.findByText('Nosso Código é obrigatório')
+    // Mensagem de validação em 0.75rem — DESIGN.md §CadastroForm (item 9).
+    expect(mensagem).toHaveClass('text-xs')
     expect(router.state.location.pathname).toBe('/cadastros/produtos/novo')
   })
 })

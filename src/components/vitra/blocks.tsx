@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { TextField } from '@/components/vitra/form-controls'
 import { fetchCep, maskCep } from '@/mocks/ceps'
 import { Search } from 'lucide-react'
+import { Fragment } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 /**
@@ -39,8 +40,12 @@ export function EnderecoBlock({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-3">
-      <div className="col-span-12 sm:col-span-3">
+    // `items-end` é o que impede a fileira de desalinhar: este bloco mistura
+    // input, input+botão e rótulo derivado (UF), de alturas de rótulo diferentes.
+    <div className="grid grid-cols-12 items-end gap-3">
+      {/* Campos fora do FormField replicam à mão o par rótulo→campo do FormItem
+          (`flex flex-col gap-1`) — senão o rótulo encosta no controle. */}
+      <div className="col-span-12 flex flex-col gap-1 sm:col-span-3">
         <Label htmlFor={`${prefix}.cep`}>CEP</Label>
         <div className="flex items-center gap-1">
           <Input
@@ -74,7 +79,7 @@ export function EnderecoBlock({
         className="col-span-6 sm:col-span-4"
       />
       <TextField name={`${prefix}.bairro`} label="Bairro" className="col-span-12 sm:col-span-4" />
-      <div className="col-span-12 sm:col-span-4">
+      <div className="col-span-12 flex flex-col gap-1 sm:col-span-4">
         <Label htmlFor={`${prefix}.cidadeNome`}>Cidade</Label>
         <div className="flex items-center gap-1">
           {cidadeCodigo && (
@@ -99,7 +104,9 @@ export function EnderecoBlock({
           )}
         </div>
       </div>
-      <div className="col-span-6 sm:col-span-2">
+      {/* UF é rótulo derivado da cidade (transcrição §5), não campo: `h-9` casa a
+          altura do input para a fileira fechar. */}
+      <div className="col-span-6 flex flex-col gap-1 sm:col-span-2">
         <Label>UF</Label>
         <p className="flex h-9 items-center text-sm">{uf ?? '—'}</p>
       </div>
@@ -110,11 +117,21 @@ export function EnderecoBlock({
 /** Telefones — transcrição §9: Comer., Resid., Celular, FAX (4 variações fixas). */
 export function TelefonesBlock({ prefix }: { prefix: string }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <TextField name={`${prefix}.foneComercial`} label="Fone Comer." />
-      <TextField name={`${prefix}.foneResidencial`} label="Fone Resid." />
-      <TextField name={`${prefix}.celular`} label="Celular" />
-      <TextField name={`${prefix}.fax`} label="FAX" />
+    // Doze avos, não `grid-cols-4`: bloco reutilizável precisa alinhar a borda
+    // esquerda com a fileira vizinha da tela (DESIGN.md, Regra dos Doze Avos).
+    <div className="grid grid-cols-12 items-end gap-3">
+      <TextField
+        name={`${prefix}.foneComercial`}
+        label="Fone Comer."
+        className="col-span-6 sm:col-span-3"
+      />
+      <TextField
+        name={`${prefix}.foneResidencial`}
+        label="Fone Resid."
+        className="col-span-6 sm:col-span-3"
+      />
+      <TextField name={`${prefix}.celular`} label="Celular" className="col-span-6 sm:col-span-3" />
+      <TextField name={`${prefix}.fax`} label="FAX" className="col-span-6 sm:col-span-3" />
     </div>
   )
 }
@@ -124,14 +141,16 @@ export function ComunicadoresBlock({ prefix }: { prefix: string }) {
   const { setValue, watch } = useFormContext()
   const tipos = ['WHATSAPP', 'TELEGRAM', 'SMS', 'E-MAIL'] as const
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    // Os dois pares [combo]+[texto] são quatro células de doze avos, não dois
+    // flex com largura fixa: `w-36` não alinhava com fileira nenhuma.
+    <div className="grid grid-cols-12 items-end gap-3">
       {([1, 2] as const).map((n) => (
-        <div key={n} className="flex items-end gap-2">
-          <div className="w-36">
+        <Fragment key={n}>
+          <div className="col-span-5 flex flex-col gap-1 sm:col-span-2">
             <Label htmlFor={`${prefix}.comunicador${n}Tipo`}>Comunicador {n}</Label>
             <select
               id={`${prefix}.comunicador${n}Tipo`}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               value={(watch(`${prefix}.comunicador${n}Tipo`) as string | null) ?? ''}
               onChange={(e) =>
                 setValue(`${prefix}.comunicador${n}Tipo`, e.target.value || null, {
@@ -147,8 +166,12 @@ export function ComunicadoresBlock({ prefix }: { prefix: string }) {
               ))}
             </select>
           </div>
-          <TextField name={`${prefix}.comunicador${n}Valor`} label=" " className="flex-1" />
-        </div>
+          <TextField
+            name={`${prefix}.comunicador${n}Valor`}
+            label=" "
+            className="col-span-7 sm:col-span-4"
+          />
+        </Fragment>
       ))}
     </div>
   )
@@ -157,9 +180,17 @@ export function ComunicadoresBlock({ prefix }: { prefix: string }) {
 /** Redes sociais — presente em TODOS os cadastros de pessoa e empresa (§9). */
 export function RedesSociaisBlock({ prefix }: { prefix: string }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <TextField name={`${prefix}.facebook`} label="FaceBook" />
-      <TextField name={`${prefix}.instagram`} label="Instagram" />
+    <div className="grid grid-cols-12 items-end gap-3">
+      <TextField
+        name={`${prefix}.facebook`}
+        label="FaceBook"
+        className="col-span-12 sm:col-span-6"
+      />
+      <TextField
+        name={`${prefix}.instagram`}
+        label="Instagram"
+        className="col-span-12 sm:col-span-6"
+      />
     </div>
   )
 }

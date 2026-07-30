@@ -18,6 +18,7 @@ import type { Cliente } from '@/mocks/clientes'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { FileText, Home, Lock, Package, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -97,10 +98,10 @@ function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
   return (
     <>
       <Button type="button" variant="outline" size="sm" onClick={inserirAmbiente}>
-        🏠 Ambiente ({shortcutLabel(SHORTCUTS.ambiente)})
+        <Home className="size-4" /> Ambiente ({shortcutLabel(SHORTCUTS.ambiente)})
       </Button>
       <Button type="button" variant="outline" size="sm" onClick={inserirProduto}>
-        📦 Produto ({shortcutLabel(SHORTCUTS.produto)})
+        <Package className="size-4" /> Produto ({shortcutLabel(SHORTCUTS.produto)})
       </Button>
       <Button
         type="button"
@@ -150,7 +151,7 @@ function Cabecalho() {
               size="sm"
               onClick={() => setBuscaClienteOpen(true)}
             >
-              👤 Cliente
+              <User className="size-4" /> Cliente
             </Button>
           </div>
         </div>
@@ -306,7 +307,7 @@ function AbaPrincipal() {
           size="sm"
           onClick={() => console.info('[mock] Imprimir Orçamento')}
         >
-          📄 Orçamento
+          <FileText className="size-4" /> Orçamento
         </Button>
         <Button
           type="button"
@@ -314,7 +315,7 @@ function AbaPrincipal() {
           size="sm"
           onClick={() => console.info('[mock] Estoque')}
         >
-          📦 Estoque
+          <Package className="size-4" /> Estoque
         </Button>
         <Button
           type="button"
@@ -330,7 +331,7 @@ function AbaPrincipal() {
           size="sm"
           onClick={() => console.info('[mock] Permissões')}
         >
-          🔒 Permissões
+          <Lock className="size-4" /> Permissões
         </Button>
       </div>
     </div>

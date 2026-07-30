@@ -20,7 +20,7 @@ import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { OrdemCompra } from '@/mocks/ordens-compra'
 import { useNavigate } from '@tanstack/react-router'
-import { Search } from 'lucide-react'
+import { Package, Search } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -184,7 +184,7 @@ function AbaPrincipal() {
           size="sm"
           onClick={() => console.info('[mock] Produtos Estoque')}
         >
-          📦 Produtos Estoque
+          <Package className="size-4" /> Produtos Estoque
         </Button>
         <Button
           type="button"
@@ -192,7 +192,7 @@ function AbaPrincipal() {
           size="sm"
           onClick={() => console.info('[mock] Produtos Pedidos')}
         >
-          📦 Produtos Pedidos
+          <Package className="size-4" /> Produtos Pedidos
         </Button>
       </div>
 

@@ -47,7 +47,8 @@ export function CadastroForm<T extends FieldValues>({
         </fieldset>
         {/* Rodapé é Documento (`bg-card`): senta na folha; régua superior em
             Régua Forte (DESIGN.md) — separa a tira de ações do conteúdo. */}
-        <div className="sticky bottom-0 flex justify-end gap-2 border-rule-strong border-t bg-card pt-3">
+        {/* Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na moldura. */}
+        <div className="sticky bottom-0 flex justify-end gap-2 border-rule-strong border-t bg-card py-3">
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
               <X />

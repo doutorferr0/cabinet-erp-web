@@ -70,7 +70,7 @@ describe('tela Orçamento', () => {
     const { router, user } = renderRoute('/vendas/orcamentos/novo')
 
     await screen.findByLabelText('Código')
-    await user.click(screen.getByRole('button', { name: '👤 Cliente' }))
+    await user.click(screen.getByRole('button', { name: 'Cliente' }))
 
     // A janela exige marcar a linha e confirmar em Selecionar.
     const dialog = await screen.findByRole('dialog')

@@ -49,6 +49,14 @@ export interface FormGridProps {
   actions?: (append: (row: FormGridRow) => void) => React.ReactNode
   /** Esconde o botão `Incluir` padrão quando `actions` já insere linhas. */
   hideAdd?: boolean
+  /**
+   * Faixa de seção (DESIGN.md §FormGrid): quando presente, a linha cujo valor
+   * desta chave é não-vazio vira banda de agrupamento de largura total — sem
+   * colunas, rótulo em Meta à esquerda, régua forte acima e abaixo, fundo
+   * Tinta de Bancada. Adoção no orçamento (`Ambiente`) aguarda a captura
+   * confirmar que o legado agrupa por ambiente.
+   */
+  sectionKey?: string
 }
 
 function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
@@ -174,12 +182,17 @@ export function FormGrid({
   addLabel = 'Incluir',
   actions,
   hideAdd,
+  sectionKey,
 }: FormGridProps) {
   const { register, control } = useFormContext()
   const { fields, append, remove } = useFieldArray({ control, name })
+  // Linhas vivas para o rótulo da faixa de seção (reativo à edição).
+  const rows = useWatch({ control, name }) as FormGridRow[] | undefined
 
   return (
-    <div className="flex flex-col gap-2">
+    // Barra→grade é relação entre partes de um mesmo componente: `{spacing.md}`.
+    // Dentro da barra, botões irmãos ficam em `{spacing.sm}`.
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
         {hideAdd ? null : (
           <Button type="button" variant="outline" size="sm" onClick={() => append(newRow)}>
@@ -188,7 +201,8 @@ export function FormGrid({
         )}
         {actions?.((row) => append(row))}
       </div>
-      <div className="overflow-x-auto rounded-md border">
+      {/* Caixa em Régua com canto 4px — mesmo contêiner da DataTable (a malha interna é Fio). */}
+      <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -209,55 +223,82 @@ export function FormGrid({
                 </TableCell>
               </TableRow>
             ) : (
-              fields.map((field, index) => (
-                <TableRow key={field.id}>
-                  {columns.map((col) => {
-                    const path = `${name}.${index}.${col.key}`
-                    const ariaLabel = `${col.label} linha ${index + 1}`
-                    return (
-                      <TableCell key={col.key} className="p-1">
-                        {col.type === 'money' ? (
-                          <MoneyCell name={path} ariaLabel={ariaLabel} />
-                        ) : col.type === 'percent' ? (
-                          <PercentCell name={path} ariaLabel={ariaLabel} />
-                        ) : col.type === 'check' ? (
-                          <CheckCell name={path} ariaLabel={ariaLabel} />
-                        ) : col.type === 'select' ? (
-                          <SelectCell
-                            name={path}
-                            ariaLabel={ariaLabel}
-                            options={col.options ?? []}
-                          />
-                        ) : col.type === 'computed' ? (
-                          <ComputedCell
-                            rowName={`${name}.${index}`}
-                            ariaLabel={ariaLabel}
-                            compute={col.compute ?? (() => '')}
-                          />
-                        ) : (
-                          <Input
-                            aria-label={ariaLabel}
-                            placeholder={col.placeholder}
-                            className="h-8 border-0 shadow-none focus-visible:ring-0"
-                            {...register(path)}
-                          />
-                        )}
+              fields.map((field, index) => {
+                const secao = sectionKey ? rows?.[index]?.[sectionKey] : null
+                // Faixa de seção: corte mais forte que a malha — régua forte
+                // acima e abaixo, rótulo em Meta, fundo Bancada (DESIGN.md).
+                if (secao) {
+                  return (
+                    <TableRow key={field.id} className="border-rule-strong bg-muted hover:bg-muted">
+                      <TableCell colSpan={columns.length + 1} className="p-1">
+                        <div className="flex h-8 items-center justify-between px-2">
+                          <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+                            {String(secao)}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Excluir linha ${index + 1}`}
+                            onClick={() => remove(index)}
+                          >
+                            <Minus className="size-4" />
+                          </Button>
+                        </div>
                       </TableCell>
-                    )
-                  })}
-                  <TableCell className="p-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Excluir linha ${index + 1}`}
-                      onClick={() => remove(index)}
-                    >
-                      <Minus className="size-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableRow>
+                  )
+                }
+                return (
+                  <TableRow key={field.id}>
+                    {columns.map((col) => {
+                      const path = `${name}.${index}.${col.key}`
+                      const ariaLabel = `${col.label} linha ${index + 1}`
+                      return (
+                        <TableCell key={col.key} className="p-1">
+                          {col.type === 'money' ? (
+                            <MoneyCell name={path} ariaLabel={ariaLabel} />
+                          ) : col.type === 'percent' ? (
+                            <PercentCell name={path} ariaLabel={ariaLabel} />
+                          ) : col.type === 'check' ? (
+                            <CheckCell name={path} ariaLabel={ariaLabel} />
+                          ) : col.type === 'select' ? (
+                            <SelectCell
+                              name={path}
+                              ariaLabel={ariaLabel}
+                              options={col.options ?? []}
+                            />
+                          ) : col.type === 'computed' ? (
+                            <ComputedCell
+                              rowName={`${name}.${index}`}
+                              ariaLabel={ariaLabel}
+                              compute={col.compute ?? (() => '')}
+                            />
+                          ) : (
+                            <Input
+                              aria-label={ariaLabel}
+                              placeholder={col.placeholder}
+                              className="h-8 border-0 shadow-none focus-visible:ring-0"
+                              {...register(path)}
+                            />
+                          )}
+                        </TableCell>
+                      )
+                    })}
+                    <TableCell className="p-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Excluir linha ${index + 1}`}
+                        onClick={() => remove(index)}
+                      >
+                        <Minus className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>

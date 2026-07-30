@@ -13,6 +13,7 @@ import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { PedidoCompra } from '@/mocks/pedidos-compra'
 import { useNavigate } from '@tanstack/react-router'
+import { Package } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -58,7 +59,7 @@ function BotaoProduto({ onInserir }: { onInserir: () => void }) {
 
   return (
     <Button type="button" variant="outline" size="sm" onClick={onInserir}>
-      📦 Produto ({shortcutLabel(SHORTCUTS.produto)})
+      <Package className="size-4" /> Produto ({shortcutLabel(SHORTCUTS.produto)})
     </Button>
   )
 }

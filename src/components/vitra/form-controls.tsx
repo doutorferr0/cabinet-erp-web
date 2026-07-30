@@ -152,7 +152,8 @@ export function SelectField({
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <select
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              // Sem sombra: campo é coplanar com a folha (Regra da Linha Antes da Sombra).
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               {...field}
               value={field.value ?? ''}
             >

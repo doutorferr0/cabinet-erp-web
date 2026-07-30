@@ -1,5 +1,12 @@
+import { configure } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
+
+// O provider mock simula latência de rede (200-300ms, src/data/index.ts). Com 19
+// arquivos de teste em jsdom paralelo, a espera real de um findBy* passa dos
+// 1000ms padrão e a suíte falha de forma intermitente — arquivo isolado passa,
+// suíte inteira reprova um subconjunto diferente a cada rodada.
+configure({ asyncUtilTimeout: 5000 })
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

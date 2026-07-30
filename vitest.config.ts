@@ -11,5 +11,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Telas esperam o provider mock (latência simulada) várias vezes por teste;
+    // sob paralelismo os 5000ms padrão estouram. Ver nota em src/test/setup.ts.
+    testTimeout: 15000,
   },
 })

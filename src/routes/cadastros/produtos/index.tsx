@@ -1,7 +1,8 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
+import { data } from '@/data'
 import { formatMoneyBRL } from '@/lib/formatters'
-import { type Produto, fetchProdutos } from '@/mocks/produtos'
+import type { Produto } from '@/mocks/produtos'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -47,7 +48,7 @@ function ProdutosPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['produtos']}
-        fetcher={(state) => fetchProdutos(state)}
+        fetcher={data.produtos.list}
         actions={actions}
       />
     </div>

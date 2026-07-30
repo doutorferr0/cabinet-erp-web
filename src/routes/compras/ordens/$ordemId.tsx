@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { OrdemCompraForm } from '@/features/ordem-compra/ordem-compra-form'
-import { fetchOrdemCompra, ordemCompraVazia } from '@/mocks/ordens-compra'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,8 @@ function OrdemCompraEditPage() {
 
   const query = useQuery({
     queryKey: ['ordem-compra', ordemId],
-    queryFn: () => (isNovo ? ordemCompraVazia(Date.now() % 100000) : fetchOrdemCompra(id, 0)),
+    queryFn: () =>
+      isNovo ? data.ordensCompra.empty(Date.now() % 100000) : data.ordensCompra.get(id, 0),
   })
 
   if (query.isPending) {

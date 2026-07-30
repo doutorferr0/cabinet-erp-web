@@ -1,6 +1,3 @@
-import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { mockDelay, normalize, pagedMock } from '@/mocks/query'
-
 /**
  * Mock de orçamentos — campos LITERAIS da transcrição §8.1/§8.2.
  * Tela central do sistema; só a aba `Principal` foi capturada.
@@ -152,23 +149,4 @@ export function orcamentoVazio(id: number): Orcamento {
     descontoPercentual: 0,
     itens: [],
   }
-}
-
-export function fetchOrcamentos(
-  state: TableQueryState,
-  delayMs = 300,
-): Promise<PagedResult<Orcamento>> {
-  return pagedMock(
-    orcamentos,
-    state,
-    (o, q) =>
-      o.numero.includes(q) ||
-      normalize(o.cliente).includes(q) ||
-      normalize(o.descricaoObra).includes(q),
-    delayMs,
-  )
-}
-
-export function fetchOrcamento(id: number, delayMs = 200): Promise<Orcamento | null> {
-  return mockDelay(orcamentos.find((o) => o.id === id) ?? null, delayMs)
 }

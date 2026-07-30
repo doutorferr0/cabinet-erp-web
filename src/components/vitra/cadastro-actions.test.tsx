@@ -1,10 +1,10 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { type Produto, fetchProdutos } from '@/mocks/produtos'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { data } from '@/data'
+import type { Produto } from '@/mocks/produtos'
+import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const columns: ColumnDef<Produto>[] = [
@@ -16,23 +16,15 @@ function setup() {
   const onIncluir = vi.fn()
   const onAbrir = vi.fn()
   const onExcluir = vi.fn()
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  render(
-    <QueryClientProvider client={queryClient}>
-      <VitraDataTable
-        columns={columns}
-        queryKey={['produtos-actions-test']}
-        fetcher={(state) => fetchProdutos(state, 0)}
-        actions={cadastroActions<Produto>({
-          entidade: 'produto',
-          onIncluir,
-          onAbrir,
-          onExcluir,
-        })}
-      />
-    </QueryClientProvider>,
+  const { user } = renderWithQuery(
+    <VitraDataTable
+      columns={columns}
+      queryKey={['produtos-actions-test']}
+      fetcher={(state) => data.produtos.list(state, 0)}
+      actions={cadastroActions<Produto>({ entidade: 'produto', onIncluir, onAbrir, onExcluir })}
+    />,
   )
-  return { onIncluir, onAbrir, onExcluir }
+  return { onIncluir, onAbrir, onExcluir, user }
 }
 
 describe('cadastroActions', () => {
@@ -52,16 +44,14 @@ describe('cadastroActions', () => {
   })
 
   it('Incluir dispara sem seleção', async () => {
-    const user = userEvent.setup()
-    const { onIncluir } = setup()
+    const { onIncluir, user } = setup()
 
     await user.click(screen.getByRole('button', { name: 'Incluir' }))
     expect(onIncluir).toHaveBeenCalledTimes(1)
   })
 
   it('selecionar linha habilita Alterar e entrega o registro', async () => {
-    const user = userEvent.setup()
-    const { onAbrir, onExcluir } = setup()
+    const { onAbrir, onExcluir, user } = setup()
 
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
 

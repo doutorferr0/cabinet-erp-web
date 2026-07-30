@@ -1,27 +1,10 @@
-import { Providers } from '@/app/providers'
-import { routeTree } from '@/routeTree.gen'
-import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { renderRoute } from '@/test/utils'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-
-function setup(initialUrl: string) {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory({ initialEntries: [initialUrl] }),
-  })
-  render(
-    <Providers>
-      <RouterProvider router={router} />
-    </Providers>,
-  )
-  return { router }
-}
 
 describe('tela Produto', () => {
   it('listagem abre o formulário pela ação Incluir', async () => {
-    const user = userEvent.setup()
-    const { router } = setup('/cadastros/produtos')
+    const { router, user } = renderRoute('/cadastros/produtos')
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.click(screen.getByRole('button', { name: 'Incluir' }))
@@ -33,8 +16,7 @@ describe('tela Produto', () => {
   })
 
   it('abrir registro existente carrega os dados das 5 abas', async () => {
-    const user = userEvent.setup()
-    setup('/cadastros/produtos/1')
+    const { user } = renderRoute('/cadastros/produtos/1')
 
     expect(await screen.findByLabelText('Nosso Código')).toHaveValue('1201')
 
@@ -46,8 +28,7 @@ describe('tela Produto', () => {
   })
 
   it('grade de variantes edita valor em centavos e mantém o Ativo da linha', async () => {
-    const user = userEvent.setup()
-    setup('/cadastros/produtos/1')
+    const { user } = renderRoute('/cadastros/produtos/1')
 
     await screen.findByLabelText('Nosso Código')
     await user.click(screen.getByRole('tab', { name: /Valores/ }))
@@ -63,8 +44,7 @@ describe('tela Produto', () => {
   })
 
   it('grade de fornecedores inclui e exclui linha', async () => {
-    const user = userEvent.setup()
-    setup('/cadastros/produtos/novo')
+    const { user } = renderRoute('/cadastros/produtos/novo')
 
     await screen.findByLabelText('Nosso Código')
     expect(screen.getAllByText('No data to display').length).toBeGreaterThan(0)
@@ -82,8 +62,7 @@ describe('tela Produto', () => {
   })
 
   it('grava e volta para a listagem', async () => {
-    const user = userEvent.setup()
-    const { router } = setup('/cadastros/produtos/novo')
+    const { router, user } = renderRoute('/cadastros/produtos/novo')
 
     await user.type(await screen.findByLabelText('Nosso Código'), '9999')
     await user.type(screen.getByLabelText('Nossa Descrição'), 'PENDENTE TESTE')
@@ -95,8 +74,7 @@ describe('tela Produto', () => {
   })
 
   it('bloqueia gravar sem os campos obrigatórios', async () => {
-    const user = userEvent.setup()
-    const { router } = setup('/cadastros/produtos/novo')
+    const { router, user } = renderRoute('/cadastros/produtos/novo')
 
     await screen.findByLabelText('Nosso Código')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))

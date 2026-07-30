@@ -7,10 +7,10 @@ import {
 } from '@/components/vitra/documento'
 import { DateField, SelectField, TextField, TextareaField } from '@/components/vitra/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
+import { tabelas } from '@/data/tabelas'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
-import { DESTINOS, FORNECEDORES_DOC, type PedidoCompra } from '@/mocks/pedidos-compra'
-import { ACABAMENTOS, UNIDADES } from '@/mocks/produtos'
+import type { PedidoCompra } from '@/mocks/pedidos-compra'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -91,7 +91,7 @@ export function PedidoCompraForm({ pedido }: { pedido: PedidoCompra }) {
           <SelectField
             name="codigoProduto"
             label="Código do Produto"
-            options={['Fornecedor', 'Nosso Código', 'Código Reduzido']}
+            options={tabelas.codigoProduto}
             className="col-span-6 sm:col-span-2"
           />
         </div>
@@ -109,11 +109,11 @@ export function PedidoCompraForm({ pedido }: { pedido: PedidoCompra }) {
           columns={[
             { key: 'codigoFornecedor', label: 'Código Fornecedor' },
             { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
-            { key: 'acabamento', label: 'Acab.', type: 'select', options: ACABAMENTOS },
+            { key: 'acabamento', label: 'Acab.', type: 'select', options: tabelas.acabamentos },
             { key: 'quantidade', label: 'Quantidade' },
-            { key: 'destino', label: 'Destino', type: 'select', options: DESTINOS },
+            { key: 'destino', label: 'Destino', type: 'select', options: tabelas.destinos },
             { key: 'tamanho', label: 'Tamanho' },
-            { key: 'unidade', label: 'Unidade', type: 'select', options: UNIDADES },
+            { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
             { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
             {
               key: 'valorTotal',
@@ -171,7 +171,7 @@ function FornecedoresPedido() {
               {...register(`fornecedores.${index}`)}
             >
               <option value="">Selecione…</option>
-              {FORNECEDORES_DOC.map((f) => (
+              {tabelas.fornecedoresDocumento.map((f) => (
                 <option key={f} value={f}>
                   {f}
                 </option>

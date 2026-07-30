@@ -1,6 +1,7 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { type Profissional, fetchProfissionais } from '@/mocks/profissionais'
+import { data } from '@/data'
+import type { Profissional } from '@/mocks/profissionais'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -47,7 +48,7 @@ function ProfissionaisPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['profissionais']}
-        fetcher={(state) => fetchProfissionais(state)}
+        fetcher={data.profissionais.list}
         actions={actions}
       />
     </div>

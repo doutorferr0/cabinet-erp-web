@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { ProdutoForm } from '@/features/produto/produto-form'
-import { fetchProduto, produtoVazio } from '@/mocks/produtos'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,7 @@ function ProdutoEditPage() {
 
   const query = useQuery({
     queryKey: ['produto', produtoId],
-    queryFn: () => (isNovo ? produtoVazio(Date.now() % 100000) : fetchProduto(id, 0)),
+    queryFn: () => (isNovo ? data.produtos.empty(Date.now() % 100000) : data.produtos.get(id, 0)),
   })
 
   if (query.isPending) {

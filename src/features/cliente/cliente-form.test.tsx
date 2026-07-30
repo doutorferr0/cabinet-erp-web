@@ -1,33 +1,16 @@
-import { Providers } from '@/app/providers'
-import { routeTree } from '@/routeTree.gen'
-import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
-import { render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { renderRoute } from '@/test/utils'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-
-function setup(initialUrl: string) {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory({ initialEntries: [initialUrl] }),
-  })
-  render(
-    <Providers>
-      <RouterProvider router={router} />
-    </Providers>,
-  )
-  return { router }
-}
 
 describe('tela Cliente', () => {
   it('listagem mostra clientes mockados', async () => {
-    setup('/cadastros/clientes')
+    renderRoute('/cadastros/clientes')
     expect(await screen.findByText('CONSUMIDOR')).toBeInTheDocument()
     expect(screen.getByText('Cadastro de Clientes')).toBeInTheDocument()
   })
 
   it('formulário grava e volta para a listagem', async () => {
-    const user = userEvent.setup()
-    const { router } = setup('/cadastros/clientes/novo')
+    const { router, user } = renderRoute('/cadastros/clientes/novo')
 
     await user.type(await screen.findByLabelText('Nome'), 'CLIENTE TESTE')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
@@ -38,8 +21,7 @@ describe('tela Cliente', () => {
   })
 
   it('busca de cidade (janela auxiliar) preenche cidade e UF', async () => {
-    const user = userEvent.setup()
-    setup('/cadastros/clientes/novo')
+    const { user } = renderRoute('/cadastros/clientes/novo')
 
     await screen.findByLabelText('Nome')
     await user.click(screen.getByRole('button', { name: 'Buscar cidade' }))

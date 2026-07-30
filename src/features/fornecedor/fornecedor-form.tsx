@@ -9,7 +9,8 @@ import {
   TextField,
 } from '@/components/vitra/form-controls'
 import { FormGrid } from '@/components/vitra/form-grid'
-import { EMPRESAS_COMPRADORAS, type Fornecedor } from '@/mocks/fornecedores'
+import { tabelas } from '@/data/tabelas'
+import type { Fornecedor } from '@/mocks/fornecedores'
 import { useNavigate } from '@tanstack/react-router'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -147,7 +148,7 @@ function FornecedorCorpo() {
         <SelectField
           name="empresaCompradora"
           label="Empresa compradora"
-          options={EMPRESAS_COMPRADORAS}
+          options={tabelas.empresasCompradoras}
           className="col-span-12 sm:col-span-4"
         />
         <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />

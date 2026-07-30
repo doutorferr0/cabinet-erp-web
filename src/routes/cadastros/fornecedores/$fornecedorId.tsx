@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
-import { fetchFornecedor, fornecedorVazio } from '@/mocks/fornecedores'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,8 @@ function FornecedorEditPage() {
 
   const query = useQuery({
     queryKey: ['fornecedor', fornecedorId],
-    queryFn: () => (isNovo ? fornecedorVazio(Date.now() % 100000) : fetchFornecedor(id, 0)),
+    queryFn: () =>
+      isNovo ? data.fornecedores.empty(Date.now() % 100000) : data.fornecedores.get(id, 0),
   })
 
   if (query.isPending) {

@@ -1,6 +1,3 @@
-import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { normalize, pagedMock } from '@/mocks/query'
-
 /** Cidade para `[busca +...]` (transcrição §9 padrão 5). TODO(contract). */
 export interface Cidade {
   codigo: string
@@ -24,12 +21,3 @@ export const cidades: Cidade[] = [
   { codigo: '355', nome: 'CURITIBA', uf: 'PR' },
   { codigo: '120', nome: 'BELO HORIZONTE', uf: 'MG' },
 ]
-
-export function fetchCidades(state: TableQueryState, delayMs = 200): Promise<PagedResult<Cidade>> {
-  return pagedMock(
-    cidades,
-    state,
-    (c, q) => c.codigo.includes(q) || normalize(c.nome).includes(q),
-    delayMs,
-  )
-}

@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { OrcamentoForm } from '@/features/orcamento/orcamento-form'
-import { fetchOrcamento, orcamentoVazio } from '@/mocks/orcamentos'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,8 @@ function OrcamentoEditPage() {
 
   const query = useQuery({
     queryKey: ['orcamento', orcamentoId],
-    queryFn: () => (isNovo ? orcamentoVazio(Date.now() % 100000) : fetchOrcamento(id, 0)),
+    queryFn: () =>
+      isNovo ? data.orcamentos.empty(Date.now() % 100000) : data.orcamentos.get(id, 0),
   })
 
   if (query.isPending) {

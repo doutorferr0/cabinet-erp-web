@@ -15,8 +15,9 @@ import {
   TextField,
 } from '@/components/vitra/form-controls'
 import { SearchDialog } from '@/components/vitra/search-dialog'
-import { type Cidade, fetchCidades } from '@/mocks/cidades'
-import { lookupOptions } from '@/mocks/lookups'
+import { data } from '@/data'
+import { opcoesLookup } from '@/data/tabelas'
+import type { Cidade } from '@/mocks/cidades'
 import type { Profissional } from '@/mocks/profissionais'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -104,7 +105,7 @@ function BuscaCidade({
       title="Busca de Cidade"
       columns={cidadeColumns}
       queryKey={['cidades']}
-      fetcher={(state) => fetchCidades(state, 0)}
+      fetcher={(state) => data.cidades.list(state, 0)}
       onSelect={(c) => {
         if (!prefix) return
         setValue(`${prefix}.cidadeCodigo`, c.codigo, { shouldDirty: true })
@@ -140,7 +141,7 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
         <SelectField
           name="estadoCivil"
           label="Est. Civil"
-          options={lookupOptions('estadoCivil')}
+          options={opcoesLookup('estadoCivil')}
           className="col-span-6 sm:col-span-3"
         />
         <LookupField

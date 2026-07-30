@@ -1,6 +1,7 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { type Colaborador, fetchColaboradores } from '@/mocks/colaboradores'
+import { data } from '@/data'
+import type { Colaborador } from '@/mocks/colaboradores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -47,7 +48,7 @@ function ColaboradoresPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['colaboradores']}
-        fetcher={(state) => fetchColaboradores(state)}
+        fetcher={data.colaboradores.list}
         actions={actions}
       />
     </div>

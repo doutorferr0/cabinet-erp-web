@@ -14,11 +14,10 @@ import {
   TextareaField,
 } from '@/components/vitra/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
+import { tabelas } from '@/data/tabelas'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { OrdemCompra } from '@/mocks/ordens-compra'
-import { FORNECEDORES_DOC } from '@/mocks/pedidos-compra'
-import { EMPRESAS_COMPRADORAS, UNIDADES } from '@/mocks/produtos'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
@@ -67,7 +66,7 @@ function Cabecalho() {
       <SelectField
         name="codigoProduto"
         label="Código do Produto"
-        options={['Fornecedor', 'Nosso Código', 'Código Reduzido']}
+        options={tabelas.codigoProduto}
         className="col-span-6 sm:col-span-2"
       />
       <TextField
@@ -78,13 +77,13 @@ function Cabecalho() {
       <SelectField
         name="empresaCompradora"
         label="Empresa Compradora"
-        options={EMPRESAS_COMPRADORAS}
+        options={tabelas.empresasCompradoras}
         className="col-span-6 sm:col-span-3"
       />
       <SelectField
         name="fornecedor"
         label="Fornecedor"
-        options={FORNECEDORES_DOC}
+        options={tabelas.fornecedoresDocumento}
         className="col-span-12 sm:col-span-4"
       />
       <MoneyField
@@ -204,7 +203,7 @@ function AbaPrincipal() {
           { key: 'acabamento', label: 'Acab.' },
           { key: 'tamanho', label: 'Tamanho' },
           { key: 'quantidade', label: 'Quantidade' },
-          { key: 'unidade', label: 'Unidade', type: 'select', options: UNIDADES },
+          { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
           { key: 'valorUnitarioCentavos', label: 'Vl. Unitário', type: 'money' },
           {
             key: 'valorTotal',

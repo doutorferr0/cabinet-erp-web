@@ -1,6 +1,3 @@
-import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { mockDelay, normalize, pagedMock } from '@/mocks/query'
-
 interface EnderecoMock {
   cep: string
   logradouro: string
@@ -198,23 +195,4 @@ export function profissionalVazio(id: number): Profissional {
     registroProfissional: '',
     redesSociais: { facebook: '', instagram: '' },
   }
-}
-
-export function fetchProfissionais(
-  state: TableQueryState,
-  delayMs = 300,
-): Promise<PagedResult<Profissional>> {
-  return pagedMock(
-    profissionais,
-    state,
-    (p, q) =>
-      String(p.id).includes(q) ||
-      normalize(p.nomeApresentacao).includes(q) ||
-      normalize(p.nome).includes(q),
-    delayMs,
-  )
-}
-
-export function fetchProfissional(id: number, delayMs = 200): Promise<Profissional | null> {
-  return mockDelay(profissionais.find((p) => p.id === id) ?? null, delayMs)
 }

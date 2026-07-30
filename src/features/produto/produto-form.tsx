@@ -10,15 +10,9 @@ import {
   TextareaField,
 } from '@/components/vitra/form-controls'
 import { FormGrid } from '@/components/vitra/form-grid'
-import { lookupOptions } from '@/mocks/lookups'
-import {
-  ACABAMENTOS,
-  EMPRESAS_COMPRADORAS,
-  ORIGENS_PRODUTO,
-  type Produto,
-  TIPOS_VALOR,
-  UNIDADES,
-} from '@/mocks/produtos'
+import { opcoesLookup } from '@/data/tabelas'
+import { tabelas } from '@/data/tabelas'
+import type { Produto } from '@/mocks/produtos'
 import { useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 
@@ -213,7 +207,7 @@ function AbaDadosPrincipais() {
           <SelectField
             name="tipoProduto"
             label="Tipo de Produto"
-            options={lookupOptions('tipoProduto')}
+            options={opcoesLookup('tipoProduto')}
             className="col-span-6 sm:col-span-3"
           />
           <LookupField
@@ -234,7 +228,7 @@ function AbaDadosPrincipais() {
           <SelectField
             name="unidadeEntradaUnidade"
             label="Unid. Entrada"
-            options={UNIDADES}
+            options={tabelas.unidades}
             className="col-span-6 sm:col-span-2"
           />
           <TextField
@@ -245,7 +239,7 @@ function AbaDadosPrincipais() {
           <SelectField
             name="unidadeSaidaUnidade"
             label="Unid. Saída"
-            options={UNIDADES}
+            options={tabelas.unidades}
             className="col-span-6 sm:col-span-2"
           />
           <TextField
@@ -256,7 +250,7 @@ function AbaDadosPrincipais() {
           <SelectField
             name="classificacao"
             label="Classificação do Produto"
-            options={lookupOptions('classificacao')}
+            options={opcoesLookup('classificacao')}
             className="col-span-12 sm:col-span-4"
           />
         </div>
@@ -265,7 +259,7 @@ function AbaDadosPrincipais() {
           <SelectField
             name="empresaCompradora"
             label="Empresa Compradora"
-            options={EMPRESAS_COMPRADORAS}
+            options={tabelas.empresasCompradoras}
             className="col-span-12 sm:col-span-3"
           />
           <LookupField
@@ -385,12 +379,12 @@ function AbaValoresLocalizacao() {
         name="variantes"
         columns={[
           { key: 'ativo', label: 'Ativo', type: 'check' },
-          { key: 'acabamento', label: 'Acabamento', type: 'select', options: ACABAMENTOS },
+          { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
           { key: 'tamanho', label: 'Tamanho' },
           { key: 'valorTabelaCentavos', label: 'Valor de Tabela', type: 'money' },
           { key: 'indice', label: 'Índice' },
           { key: 'estoqueMinimo', label: 'Est.Mínimo' },
-          { key: 'tipoValor', label: 'Tipo de Valor', type: 'select', options: TIPOS_VALOR },
+          { key: 'tipoValor', label: 'Tipo de Valor', type: 'select', options: tabelas.tiposValor },
         ]}
         newRow={{
           ativo: true,
@@ -408,7 +402,12 @@ function AbaValoresLocalizacao() {
         <FormGrid
           name="localizacoes"
           columns={[
-            { key: 'acabamento', label: 'Acabamento', type: 'select', options: ACABAMENTOS },
+            {
+              key: 'acabamento',
+              label: 'Acabamento',
+              type: 'select',
+              options: tabelas.acabamentos,
+            },
             { key: 'estoque', label: 'Estoque' },
             { key: 'predio', label: 'Prédio' },
             { key: 'rua', label: 'Rua' },
@@ -439,7 +438,7 @@ function AbaProdutosRelacionados() {
         <SelectField
           name="codigoProduto"
           label="Código do Produto"
-          options={['Fornecedor', 'Nosso Código', 'Código Reduzido']}
+          options={tabelas.codigoProduto}
           className="col-span-12 sm:col-span-4"
         />
       </div>
@@ -449,7 +448,7 @@ function AbaProdutosRelacionados() {
         columns={[
           { key: 'codFornecedor', label: 'Cód. Fornecedor' },
           { key: 'descricaoFornecedor', label: 'Descrição Forne.' },
-          { key: 'acabamento', label: 'Acabamento', type: 'select', options: ACABAMENTOS },
+          { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
           { key: 'quantidade', label: 'Quantidade' },
           { key: 'padrao', label: 'Padrão', type: 'check' },
         ]}
@@ -472,7 +471,7 @@ function AbaTributacao() {
         <SelectField
           name="origemProduto"
           label="Origem do Produtos"
-          options={ORIGENS_PRODUTO}
+          options={tabelas.origensProduto}
           className="col-span-12 sm:col-span-8"
         />
         <TextField name="ncm" label="NCM" className="col-span-6 sm:col-span-2" />

@@ -1,7 +1,8 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
+import { data } from '@/data'
 import { formatDateBR } from '@/lib/formatters'
-import { type PedidoCompra, fetchPedidosCompra } from '@/mocks/pedidos-compra'
+import type { PedidoCompra } from '@/mocks/pedidos-compra'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -50,7 +51,7 @@ function PedidosCompraPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['pedidos-compra']}
-        fetcher={(state) => fetchPedidosCompra(state)}
+        fetcher={data.pedidosCompra.list}
         actions={actions}
       />
     </div>

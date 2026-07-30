@@ -1,6 +1,7 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { type Fornecedor, fetchFornecedores } from '@/mocks/fornecedores'
+import { data } from '@/data'
+import type { Fornecedor } from '@/mocks/fornecedores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -43,7 +44,7 @@ function FornecedoresPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['fornecedores']}
-        fetcher={(state) => fetchFornecedores(state)}
+        fetcher={data.fornecedores.list}
         actions={actions}
       />
     </div>

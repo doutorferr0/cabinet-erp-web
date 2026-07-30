@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { ProfissionalForm } from '@/features/profissional/profissional-form'
-import { fetchProfissional, profissionalVazio } from '@/mocks/profissionais'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,8 @@ function ProfissionalEditPage() {
 
   const query = useQuery({
     queryKey: ['profissional', profissionalId],
-    queryFn: () => (isNovo ? profissionalVazio(Date.now() % 100000) : fetchProfissional(id, 0)),
+    queryFn: () =>
+      isNovo ? data.profissionais.empty(Date.now() % 100000) : data.profissionais.get(id, 0),
   })
 
   if (query.isPending) {

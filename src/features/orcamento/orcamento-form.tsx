@@ -9,12 +9,13 @@ import {
 import { DateField, RadioField, SelectField, TextField } from '@/components/vitra/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
 import { SearchDialog } from '@/components/vitra/search-dialog'
+import { data } from '@/data'
+import { opcoesLookup } from '@/data/tabelas'
+import { tabelas } from '@/data/tabelas'
 import { PERCENT_ESCALA, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
-import { type Cliente, fetchClientes } from '@/mocks/clientes'
-import { lookupOptions } from '@/mocks/lookups'
-import { AMBIENTES, type Orcamento } from '@/mocks/orcamentos'
-import { ACABAMENTOS, UNIDADES } from '@/mocks/produtos'
+import type { Cliente } from '@/mocks/clientes'
+import type { Orcamento } from '@/mocks/orcamentos'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useState } from 'react'
@@ -84,7 +85,7 @@ function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
 
   function inserirAmbiente() {
     // Ambiente agrupa os itens da obra: entra como linha com ambiente definido.
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1), ambiente: AMBIENTES[0] })
+    append({ ...ITEM_VAZIO, item: String(itens.length + 1), ambiente: tabelas.ambientes[0] })
   }
 
   useEffect(() => bindShortcut(SHORTCUTS.produto, inserirProduto))
@@ -129,7 +130,7 @@ function Cabecalho() {
         <SelectField
           name="serie"
           label="Série"
-          options={['1', '2', '3']}
+          options={tabelas.series}
           className="col-span-6 sm:col-span-1"
         />
         <TextField name="numeroPasta" label="Nº Pasta" className="col-span-6 sm:col-span-2" />
@@ -156,13 +157,13 @@ function Cabecalho() {
         <SelectField
           name="consultor"
           label="Consultor(a)"
-          options={lookupOptions('cargo')}
+          options={opcoesLookup('cargo')}
           className="col-span-6 sm:col-span-3"
         />
         <SelectField
           name="profissionalExterno"
           label="Profissional Externo"
-          options={lookupOptions('profissional')}
+          options={opcoesLookup('profissional')}
           className="col-span-6 sm:col-span-4"
         />
         <TextField
@@ -178,7 +179,7 @@ function Cabecalho() {
         title="Busca de Cliente"
         columns={colunasCliente}
         queryKey={['busca-cliente-orcamento']}
-        fetcher={(state) => fetchClientes(state, 0)}
+        fetcher={(state) => data.clientes.list(state, 0)}
         onSelect={(c) => {
           setValue('cliente', c.nome, { shouldDirty: true })
           setBuscaClienteOpen(false)
@@ -271,11 +272,11 @@ function AbaPrincipal() {
           { key: 'item', label: 'Item' },
           { key: 'codigoFornecedor', label: 'Código Fornecedor' },
           { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
-          { key: 'ambiente', label: 'Ambiente', type: 'select', options: AMBIENTES },
-          { key: 'acabamento', label: 'Acabamento', type: 'select', options: ACABAMENTOS },
+          { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
+          { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
           { key: 'tamanho', label: 'Tamanho' },
           { key: 'quantidade', label: 'Quant.' },
-          { key: 'unidade', label: 'Und.', type: 'select', options: UNIDADES },
+          { key: 'unidade', label: 'Und.', type: 'select', options: tabelas.unidades },
           { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
           { key: 'descontoPercentual', label: 'Desc. %', type: 'percent' },
           {
@@ -289,7 +290,7 @@ function AbaPrincipal() {
             key: 'tipoPeca',
             label: 'Tipo de Peça',
             type: 'select',
-            options: lookupOptions('tipoPeca'),
+            options: opcoesLookup('tipoPeca'),
           },
           { key: 'fornecedor', label: 'Fornecedor' },
         ]}

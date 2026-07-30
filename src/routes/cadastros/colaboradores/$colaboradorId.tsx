@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
-import { colaboradorVazio, fetchColaborador } from '@/mocks/colaboradores'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,8 @@ function ColaboradorEditPage() {
 
   const query = useQuery({
     queryKey: ['colaborador', colaboradorId],
-    queryFn: () => (isNovo ? colaboradorVazio(Date.now() % 100000) : fetchColaborador(id, 0)),
+    queryFn: () =>
+      isNovo ? data.colaboradores.empty(Date.now() % 100000) : data.colaboradores.get(id, 0),
   })
 
   if (query.isPending) {

@@ -1,34 +1,17 @@
-import { Providers } from '@/app/providers'
-import { routeTree } from '@/routeTree.gen'
-import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { renderRoute } from '@/test/utils'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-
-function setup(initialUrl: string) {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory({ initialEntries: [initialUrl] }),
-  })
-  render(
-    <Providers>
-      <RouterProvider router={router} />
-    </Providers>,
-  )
-  return { router }
-}
 
 describe('tela Pedido de Compra', () => {
   it('listagem concatena os N fornecedores do pedido', async () => {
-    setup('/compras/pedidos')
+    renderRoute('/compras/pedidos')
 
     // §7.3: um pedido tem N fornecedores, concatenados por " - ".
     expect(await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')).toBeInTheDocument()
   })
 
   it('abre pedido com múltiplos fornecedores e permite incluir outro', async () => {
-    const user = userEvent.setup()
-    setup('/compras/pedidos/13')
+    const { user } = renderRoute('/compras/pedidos/13')
 
     expect(await screen.findByLabelText('Fornecedor 1')).toHaveValue('DSGNSELO')
     expect(screen.getByLabelText('Fornecedor 2')).toHaveValue('MISTER LED')
@@ -43,8 +26,7 @@ describe('tela Pedido de Compra', () => {
   })
 
   it('item nasce com destino e o total soma as linhas', async () => {
-    const user = userEvent.setup()
-    setup('/compras/pedidos/novo')
+    const { user } = renderRoute('/compras/pedidos/novo')
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: /Produto \(Alt\+P\)/ }))
@@ -61,8 +43,7 @@ describe('tela Pedido de Compra', () => {
   })
 
   it('navega para a ordem de compra relacionada', async () => {
-    const user = userEvent.setup()
-    const { router } = setup('/compras/pedidos/1')
+    const { router, user } = renderRoute('/compras/pedidos/1')
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: 'Ordem de Compra' }))

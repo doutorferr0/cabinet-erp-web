@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { PedidoCompraForm } from '@/features/pedido-compra/pedido-compra-form'
-import { fetchPedidoCompra, pedidoCompraVazio } from '@/mocks/pedidos-compra'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,8 @@ function PedidoCompraEditPage() {
 
   const query = useQuery({
     queryKey: ['pedido-compra', pedidoId],
-    queryFn: () => (isNovo ? pedidoCompraVazio(Date.now() % 100000) : fetchPedidoCompra(id, 0)),
+    queryFn: () =>
+      isNovo ? data.pedidosCompra.empty(Date.now() % 100000) : data.pedidosCompra.get(id, 0),
   })
 
   if (query.isPending) {

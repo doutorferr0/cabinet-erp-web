@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
+import { data } from '@/data'
 import { formatDateBR } from '@/lib/formatters'
-import { type Orcamento, fetchOrcamentos } from '@/mocks/orcamentos'
+import type { Orcamento } from '@/mocks/orcamentos'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -71,7 +72,7 @@ function OrcamentosPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['orcamentos']}
-        fetcher={(state) => fetchOrcamentos(state)}
+        fetcher={data.orcamentos.list}
         actions={actionsOrcamento}
       />
       <div className="flex flex-wrap gap-2">

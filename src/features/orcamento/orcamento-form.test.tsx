@@ -1,26 +1,10 @@
-import { Providers } from '@/app/providers'
-import { routeTree } from '@/routeTree.gen'
-import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
-import { render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { renderRoute } from '@/test/utils'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-
-function setup(initialUrl: string) {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory({ initialEntries: [initialUrl] }),
-  })
-  render(
-    <Providers>
-      <RouterProvider router={router} />
-    </Providers>,
-  )
-  return { router }
-}
 
 describe('tela Orçamento', () => {
   it('listagem mostra orçamentos e usa Cancelar no lugar de Excluir', async () => {
-    setup('/vendas/orcamentos')
+    renderRoute('/vendas/orcamentos')
 
     expect(await screen.findByText('ANDRÉ BATALHA')).toBeInTheDocument()
     // §8.1: orçamento não se apaga, se cancela.
@@ -30,7 +14,7 @@ describe('tela Orçamento', () => {
   })
 
   it('abre registro existente com os itens e o total calculado', async () => {
-    setup('/vendas/orcamentos/2')
+    renderRoute('/vendas/orcamentos/2')
 
     expect(await screen.findByLabelText('Código')).toHaveValue('21654')
     // Item mockado: 2 × R$ 470,00 = R$ 940,00.
@@ -39,8 +23,7 @@ describe('tela Orçamento', () => {
   })
 
   it('inserir item pelo botão Produto soma no total', async () => {
-    const user = userEvent.setup()
-    setup('/vendas/orcamentos/novo')
+    const { user } = renderRoute('/vendas/orcamentos/novo')
 
     await screen.findByLabelText('Código')
     expect(screen.getByLabelText('Total')).toHaveTextContent('0,00')
@@ -58,8 +41,7 @@ describe('tela Orçamento', () => {
   })
 
   it('desconto por linha reduz o valor do item', async () => {
-    const user = userEvent.setup()
-    setup('/vendas/orcamentos/novo')
+    const { user } = renderRoute('/vendas/orcamentos/novo')
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: /Produto \(Alt\+P\)/ }))
@@ -76,8 +58,7 @@ describe('tela Orçamento', () => {
   })
 
   it('ambiente entra na linha inserida pelo botão Ambiente', async () => {
-    const user = userEvent.setup()
-    setup('/vendas/orcamentos/novo')
+    const { user } = renderRoute('/vendas/orcamentos/novo')
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: /Ambiente \(Alt\+A\)/ }))
@@ -86,8 +67,7 @@ describe('tela Orçamento', () => {
   })
 
   it('busca de cliente preenche o campo e grava', async () => {
-    const user = userEvent.setup()
-    const { router } = setup('/vendas/orcamentos/novo')
+    const { router, user } = renderRoute('/vendas/orcamentos/novo')
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: '👤 Cliente' }))

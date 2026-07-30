@@ -44,9 +44,21 @@ src/app/            # shell, providers, router
 src/components/ui/  # shadcn (gerado)
 src/components/vitra/  # DataTable, LookupCombo, blocos, ActionBar...
 src/features/<tela>/   # fornecedor/, cliente/, produto/...
-src/mocks/          # dados fake tipados + provider
+src/data/           # FRONTEIRA de dados: contrato + registry de providers
+src/mocks/          # dados fake tipados (só dado, sem acesso)
 src/lib/            # utils, shortcuts, formatters (money, cnpj, date)
+src/test/           # helpers de teste (renderRoute, renderWithQuery)
+docs/integracao.md  # roteiro da troca mock -> API
 ```
+
+**Regra de acesso a dado:** tela NUNCA importa `fetch*` de `src/mocks/` — pede a
+`data.<recurso>.list/get/empty` (`src/data/index.ts`). De `src/mocks/` só vêm
+**tipos** e **tabelas de apoio estáticas**. Na integração, só `src/data/index.ts`
+muda. Contrato travado por `src/data/provider.test.ts`.
+
+**Regra de teste:** tela usa `renderRoute('/url')` (router real); componente isolado
+usa `renderWithQuery(<X />)`. Ambos em `src/test/utils.tsx` — não recriar `setup()`
+local com `createMemoryHistory`.
 
 ## Comandos
 ```

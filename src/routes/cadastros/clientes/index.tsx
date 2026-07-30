@@ -1,6 +1,7 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { type Cliente, fetchClientes } from '@/mocks/clientes'
+import { data } from '@/data'
+import type { Cliente } from '@/mocks/clientes'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -47,7 +48,7 @@ function ClientesPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['clientes']}
-        fetcher={(state) => fetchClientes(state)}
+        fetcher={data.clientes.list}
         actions={actions}
       />
     </div>

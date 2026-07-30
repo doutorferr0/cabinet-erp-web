@@ -1,9 +1,9 @@
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { type Produto, fetchProdutos } from '@/mocks/produtos'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { data } from '@/data'
+import type { Produto } from '@/mocks/produtos'
+import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 const columns: ColumnDef<Produto>[] = [
@@ -13,18 +13,13 @@ const columns: ColumnDef<Produto>[] = [
 ]
 
 function setup(pageSizeOptions = [10, 20]) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <VitraDataTable
-        columns={columns}
-        queryKey={['produtos-test']}
-        fetcher={(state) => fetchProdutos(state, 0)}
-        pageSizeOptions={pageSizeOptions}
-      />
-    </QueryClientProvider>,
+  return renderWithQuery(
+    <VitraDataTable
+      columns={columns}
+      queryKey={['produtos-test']}
+      fetcher={(state) => data.produtos.list(state, 0)}
+      pageSizeOptions={pageSizeOptions}
+    />,
   )
 }
 
@@ -42,8 +37,7 @@ describe('VitraDataTable', () => {
   })
 
   it('busca filtra registros via provider', async () => {
-    const user = userEvent.setup()
-    setup()
+    const { user } = setup()
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.type(screen.getByLabelText('Busca'), 'cristal')
@@ -57,8 +51,7 @@ describe('VitraDataTable', () => {
   })
 
   it('paginação troca os registros exibidos', async () => {
-    const user = userEvent.setup()
-    setup([3])
+    const { user } = setup([3])
 
     await screen.findByText('Página 1 de 15')
     const firstPageText = screen.getAllByRole('row')[1]?.textContent
@@ -72,27 +65,23 @@ describe('VitraDataTable', () => {
   })
 
   it('seleção habilita ação que exige linha', async () => {
-    const user = userEvent.setup()
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     let alterado: Produto | null = null
-    render(
-      <QueryClientProvider client={queryClient}>
-        <VitraDataTable
-          columns={columns}
-          queryKey={['produtos-test-acao']}
-          fetcher={(state) => fetchProdutos(state, 0)}
-          actions={[
-            {
-              id: 'alterar',
-              label: 'Alterar',
-              needsSelection: true,
-              onClick: (p) => {
-                alterado = p
-              },
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-acao']}
+        fetcher={(state) => data.produtos.list(state, 0)}
+        actions={[
+          {
+            id: 'alterar',
+            label: 'Alterar',
+            needsSelection: true,
+            onClick: (p) => {
+              alterado = p
             },
-          ]}
-        />
-      </QueryClientProvider>,
+          },
+        ]}
+      />,
     )
 
     const alterar = screen.getByRole('button', { name: 'Alterar' })

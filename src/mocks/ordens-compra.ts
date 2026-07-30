@@ -1,6 +1,3 @@
-import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { mockDelay, normalize, pagedMock } from '@/mocks/query'
-
 /**
  * Mock de ordens de compra — campos LITERAIS da transcrição §7.1/§7.2.
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
@@ -132,20 +129,4 @@ export function ordemCompraVazia(id: number): OrdemCompra {
     transportadora: transportadoraVazia(),
     observacao: '',
   }
-}
-
-export function fetchOrdensCompra(
-  state: TableQueryState,
-  delayMs = 300,
-): Promise<PagedResult<OrdemCompra>> {
-  return pagedMock(
-    ordensCompra,
-    state,
-    (o, q) => o.codigo.includes(q) || normalize(o.fornecedor).includes(q),
-    delayMs,
-  )
-}
-
-export function fetchOrdemCompra(id: number, delayMs = 200): Promise<OrdemCompra | null> {
-  return mockDelay(ordensCompra.find((o) => o.id === id) ?? null, delayMs)
 }

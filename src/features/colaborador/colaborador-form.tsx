@@ -14,9 +14,11 @@ import {
   TextField,
 } from '@/components/vitra/form-controls'
 import { SearchDialog } from '@/components/vitra/search-dialog'
-import { type Cidade, fetchCidades } from '@/mocks/cidades'
-import { type Colaborador, EMPRESAS } from '@/mocks/colaboradores'
-import { lookupOptions } from '@/mocks/lookups'
+import { data } from '@/data'
+import { opcoesLookup } from '@/data/tabelas'
+import { tabelas } from '@/data/tabelas'
+import type { Cidade } from '@/mocks/cidades'
+import type { Colaborador } from '@/mocks/colaboradores'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Search } from 'lucide-react'
@@ -113,7 +115,7 @@ function BuscaNaturalidade({
       title="Busca de Naturalidade"
       columns={cidadeColumns}
       queryKey={['cidades']}
-      fetcher={(state) => fetchCidades(state, 0)}
+      fetcher={(state) => data.cidades.list(state, 0)}
       onSelect={(c) => {
         setValue('naturalidade.cidadeCodigo', c.codigo, { shouldDirty: true })
         setValue('naturalidade.cidadeNome', c.nome, { shouldDirty: true })
@@ -176,7 +178,7 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
         <SelectField
           name="grauInstrucao"
           label="Grau de Instrução"
-          options={lookupOptions('grauInstrucao')}
+          options={opcoesLookup('grauInstrucao')}
           className="col-span-12 sm:col-span-3"
         />
         <LookupField
@@ -188,13 +190,13 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
         <SelectField
           name="racaCor"
           label="Raça/Cor"
-          options={lookupOptions('racaCor')}
+          options={opcoesLookup('racaCor')}
           className="col-span-6 sm:col-span-3"
         />
         <SelectField
           name="estadoCivil"
           label="Estado Civil"
-          options={lookupOptions('estadoCivil')}
+          options={opcoesLookup('estadoCivil')}
           className="col-span-6 sm:col-span-3"
         />
         <TextField
@@ -233,7 +235,7 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
           <SelectField
             name="vinculo"
             label="Vínculo"
-            options={lookupOptions('vinculo')}
+            options={opcoesLookup('vinculo')}
             className="col-span-6 sm:col-span-2"
           />
           <DateField
@@ -256,7 +258,7 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
         <SelectField
           name="empresa"
           label="Empresa"
-          options={EMPRESAS}
+          options={tabelas.empresas}
           className="col-span-12 sm:col-span-4"
         />
       </div>

@@ -11,8 +11,9 @@ import {
   TextareaField,
 } from '@/components/vitra/form-controls'
 import { SearchDialog } from '@/components/vitra/search-dialog'
+import { data } from '@/data'
 import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
-import { type Cidade, fetchCidades } from '@/mocks/cidades'
+import type { Cidade } from '@/mocks/cidades'
 import type { Cliente } from '@/mocks/clientes'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -87,7 +88,7 @@ function BuscaCidade({
       title="Busca de Cidade"
       columns={cidadeColumns}
       queryKey={['cidades']}
-      fetcher={(state) => fetchCidades(state, 0)}
+      fetcher={(state) => data.cidades.list(state, 0)}
       onSelect={(c) => {
         setValue('endereco.cidadeCodigo', c.codigo, { shouldDirty: true })
         setValue('endereco.cidadeNome', c.nome, { shouldDirty: true })

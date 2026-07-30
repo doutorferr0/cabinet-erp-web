@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { data } from '@/data'
 import { ClienteForm } from '@/features/cliente/cliente-form'
-import { clienteVazio, fetchCliente } from '@/mocks/clientes'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -15,7 +15,7 @@ function ClienteEditPage() {
 
   const query = useQuery({
     queryKey: ['cliente', clienteId],
-    queryFn: () => (isNovo ? clienteVazio(Date.now() % 100000) : fetchCliente(id, 0)),
+    queryFn: () => (isNovo ? data.clientes.empty(Date.now() % 100000) : data.clientes.get(id, 0)),
   })
 
   if (query.isPending) {

@@ -1,7 +1,8 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
+import { data } from '@/data'
 import { formatDateBR } from '@/lib/formatters'
-import { type OrdemCompra, fetchOrdensCompra } from '@/mocks/ordens-compra'
+import type { OrdemCompra } from '@/mocks/ordens-compra'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -44,7 +45,7 @@ function OrdensCompraPage() {
       <VitraDataTable
         columns={columns}
         queryKey={['ordens-compra']}
-        fetcher={(state) => fetchOrdensCompra(state)}
+        fetcher={data.ordensCompra.list}
         actions={actions}
       />
     </div>

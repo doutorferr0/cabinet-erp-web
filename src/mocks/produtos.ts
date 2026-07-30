@@ -1,6 +1,3 @@
-import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { mockDelay, normalize, pagedMock } from '@/mocks/query'
-
 /**
  * Mock de produtos — campos LITERAIS da transcrição do SoftLux (§6, 5 abas).
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
@@ -348,20 +345,4 @@ export function produtoVazio(id: number): Produto {
     impostoPadrao: null,
     impostosNfe: [],
   }
-}
-
-export function fetchProdutos(
-  state: TableQueryState,
-  delayMs = 300,
-): Promise<PagedResult<Produto>> {
-  return pagedMock(
-    produtos,
-    state,
-    (p, q) => normalize(p.nossoCodigo).includes(q) || normalize(p.nossaDescricao).includes(q),
-    delayMs,
-  )
-}
-
-export function fetchProduto(id: number, delayMs = 200): Promise<Produto | null> {
-  return mockDelay(produtos.find((p) => p.id === id) ?? null, delayMs)
 }

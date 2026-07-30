@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Check, X } from 'lucide-react'
 import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
 import type { z } from 'zod'
 
@@ -47,14 +48,19 @@ export function CadastroForm<T extends FieldValues>({
         <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-background pt-3">
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
-              ✖ Fechar
+              <X />
+              Fechar
             </Button>
           ) : (
             <>
               <Button type="button" variant="outline" onClick={onCancelar}>
-                ✖ Cancelar
+                <X />
+                Cancelar
               </Button>
-              <Button type="submit">✔ Gravar</Button>
+              <Button type="submit">
+                <Check />
+                Gravar
+              </Button>
             </>
           )}
         </div>

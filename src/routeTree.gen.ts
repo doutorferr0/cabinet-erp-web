@@ -28,6 +28,12 @@ import { Route as CadastrosProdutosIndexRouteImport } from './routes/cadastros/p
 import { Route as CadastrosProdutosProdutoIdRouteImport } from './routes/cadastros/produtos/$produtoId'
 import { Route as CadastrosProfissionaisIndexRouteImport } from './routes/cadastros/profissionais/index'
 import { Route as CadastrosProfissionaisProfissionalIdRouteImport } from './routes/cadastros/profissionais/$profissionalId'
+import { Route as ComprasOrdensIndexRouteImport } from './routes/compras/ordens/index'
+import { Route as ComprasOrdensOrdemIdRouteImport } from './routes/compras/ordens/$ordemId'
+import { Route as ComprasPedidosIndexRouteImport } from './routes/compras/pedidos/index'
+import { Route as ComprasPedidosPedidoIdRouteImport } from './routes/compras/pedidos/$pedidoId'
+import { Route as VendasOrcamentosIndexRouteImport } from './routes/vendas/orcamentos/index'
+import { Route as VendasOrcamentosOrcamentoIdRouteImport } from './routes/vendas/orcamentos/$orcamentoId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -132,6 +138,37 @@ const CadastrosProfissionaisProfissionalIdRoute =
     path: '/profissionais/$profissionalId',
     getParentRoute: () => CadastrosRoute,
   } as any)
+const ComprasOrdensIndexRoute = ComprasOrdensIndexRouteImport.update({
+  id: '/ordens/',
+  path: '/ordens/',
+  getParentRoute: () => ComprasRoute,
+} as any)
+const ComprasOrdensOrdemIdRoute = ComprasOrdensOrdemIdRouteImport.update({
+  id: '/ordens/$ordemId',
+  path: '/ordens/$ordemId',
+  getParentRoute: () => ComprasRoute,
+} as any)
+const ComprasPedidosIndexRoute = ComprasPedidosIndexRouteImport.update({
+  id: '/pedidos/',
+  path: '/pedidos/',
+  getParentRoute: () => ComprasRoute,
+} as any)
+const ComprasPedidosPedidoIdRoute = ComprasPedidosPedidoIdRouteImport.update({
+  id: '/pedidos/$pedidoId',
+  path: '/pedidos/$pedidoId',
+  getParentRoute: () => ComprasRoute,
+} as any)
+const VendasOrcamentosIndexRoute = VendasOrcamentosIndexRouteImport.update({
+  id: '/orcamentos/',
+  path: '/orcamentos/',
+  getParentRoute: () => VendasRoute,
+} as any)
+const VendasOrcamentosOrcamentoIdRoute =
+  VendasOrcamentosOrcamentoIdRouteImport.update({
+    id: '/orcamentos/$orcamentoId',
+    path: '/orcamentos/$orcamentoId',
+    getParentRoute: () => VendasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -148,11 +185,17 @@ export interface FileRoutesByFullPath {
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
   '/cadastros/produtos/$produtoId': typeof CadastrosProdutosProdutoIdRoute
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
+  '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
+  '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos/': typeof CadastrosProdutosIndexRoute
   '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
+  '/compras/ordens/': typeof ComprasOrdensIndexRoute
+  '/compras/pedidos/': typeof ComprasPedidosIndexRoute
+  '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -165,11 +208,17 @@ export interface FileRoutesByTo {
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
   '/cadastros/produtos/$produtoId': typeof CadastrosProdutosProdutoIdRoute
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
+  '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
+  '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos': typeof CadastrosProdutosIndexRoute
   '/cadastros/profissionais': typeof CadastrosProfissionaisIndexRoute
+  '/compras/ordens': typeof ComprasOrdensIndexRoute
+  '/compras/pedidos': typeof ComprasPedidosIndexRoute
+  '/vendas/orcamentos': typeof VendasOrcamentosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -187,11 +236,17 @@ export interface FileRoutesById {
   '/cadastros/fornecedores/$fornecedorId': typeof CadastrosFornecedoresFornecedorIdRoute
   '/cadastros/produtos/$produtoId': typeof CadastrosProdutosProdutoIdRoute
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
+  '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
+  '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
   '/cadastros/produtos/': typeof CadastrosProdutosIndexRoute
   '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
+  '/compras/ordens/': typeof ComprasOrdensIndexRoute
+  '/compras/pedidos/': typeof ComprasPedidosIndexRoute
+  '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -210,11 +265,17 @@ export interface FileRouteTypes {
     | '/cadastros/fornecedores/$fornecedorId'
     | '/cadastros/produtos/$produtoId'
     | '/cadastros/profissionais/$profissionalId'
+    | '/compras/ordens/$ordemId'
+    | '/compras/pedidos/$pedidoId'
+    | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
     | '/cadastros/fornecedores/'
     | '/cadastros/produtos/'
     | '/cadastros/profissionais/'
+    | '/compras/ordens/'
+    | '/compras/pedidos/'
+    | '/vendas/orcamentos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -227,11 +288,17 @@ export interface FileRouteTypes {
     | '/cadastros/fornecedores/$fornecedorId'
     | '/cadastros/produtos/$produtoId'
     | '/cadastros/profissionais/$profissionalId'
+    | '/compras/ordens/$ordemId'
+    | '/compras/pedidos/$pedidoId'
+    | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes'
     | '/cadastros/colaboradores'
     | '/cadastros/fornecedores'
     | '/cadastros/produtos'
     | '/cadastros/profissionais'
+    | '/compras/ordens'
+    | '/compras/pedidos'
+    | '/vendas/orcamentos'
   id:
     | '__root__'
     | '/'
@@ -248,11 +315,17 @@ export interface FileRouteTypes {
     | '/cadastros/fornecedores/$fornecedorId'
     | '/cadastros/produtos/$produtoId'
     | '/cadastros/profissionais/$profissionalId'
+    | '/compras/ordens/$ordemId'
+    | '/compras/pedidos/$pedidoId'
+    | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
     | '/cadastros/fornecedores/'
     | '/cadastros/produtos/'
     | '/cadastros/profissionais/'
+    | '/compras/ordens/'
+    | '/compras/pedidos/'
+    | '/vendas/orcamentos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -398,6 +471,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastrosProfissionaisProfissionalIdRouteImport
       parentRoute: typeof CadastrosRoute
     }
+    '/compras/ordens/': {
+      id: '/compras/ordens/'
+      path: '/ordens'
+      fullPath: '/compras/ordens/'
+      preLoaderRoute: typeof ComprasOrdensIndexRouteImport
+      parentRoute: typeof ComprasRoute
+    }
+    '/compras/ordens/$ordemId': {
+      id: '/compras/ordens/$ordemId'
+      path: '/ordens/$ordemId'
+      fullPath: '/compras/ordens/$ordemId'
+      preLoaderRoute: typeof ComprasOrdensOrdemIdRouteImport
+      parentRoute: typeof ComprasRoute
+    }
+    '/compras/pedidos/': {
+      id: '/compras/pedidos/'
+      path: '/pedidos'
+      fullPath: '/compras/pedidos/'
+      preLoaderRoute: typeof ComprasPedidosIndexRouteImport
+      parentRoute: typeof ComprasRoute
+    }
+    '/compras/pedidos/$pedidoId': {
+      id: '/compras/pedidos/$pedidoId'
+      path: '/pedidos/$pedidoId'
+      fullPath: '/compras/pedidos/$pedidoId'
+      preLoaderRoute: typeof ComprasPedidosPedidoIdRouteImport
+      parentRoute: typeof ComprasRoute
+    }
+    '/vendas/orcamentos/': {
+      id: '/vendas/orcamentos/'
+      path: '/orcamentos'
+      fullPath: '/vendas/orcamentos/'
+      preLoaderRoute: typeof VendasOrcamentosIndexRouteImport
+      parentRoute: typeof VendasRoute
+    }
+    '/vendas/orcamentos/$orcamentoId': {
+      id: '/vendas/orcamentos/$orcamentoId'
+      path: '/orcamentos/$orcamentoId'
+      fullPath: '/vendas/orcamentos/$orcamentoId'
+      preLoaderRoute: typeof VendasOrcamentosOrcamentoIdRouteImport
+      parentRoute: typeof VendasRoute
+    }
   }
 }
 
@@ -438,10 +553,18 @@ const CadastrosRouteWithChildren = CadastrosRoute._addFileChildren(
 
 interface ComprasRouteChildren {
   ComprasIndexRoute: typeof ComprasIndexRoute
+  ComprasOrdensOrdemIdRoute: typeof ComprasOrdensOrdemIdRoute
+  ComprasPedidosPedidoIdRoute: typeof ComprasPedidosPedidoIdRoute
+  ComprasOrdensIndexRoute: typeof ComprasOrdensIndexRoute
+  ComprasPedidosIndexRoute: typeof ComprasPedidosIndexRoute
 }
 
 const ComprasRouteChildren: ComprasRouteChildren = {
   ComprasIndexRoute: ComprasIndexRoute,
+  ComprasOrdensOrdemIdRoute: ComprasOrdensOrdemIdRoute,
+  ComprasPedidosPedidoIdRoute: ComprasPedidosPedidoIdRoute,
+  ComprasOrdensIndexRoute: ComprasOrdensIndexRoute,
+  ComprasPedidosIndexRoute: ComprasPedidosIndexRoute,
 }
 
 const ComprasRouteWithChildren =
@@ -460,10 +583,14 @@ const EstoqueRouteWithChildren =
 
 interface VendasRouteChildren {
   VendasIndexRoute: typeof VendasIndexRoute
+  VendasOrcamentosOrcamentoIdRoute: typeof VendasOrcamentosOrcamentoIdRoute
+  VendasOrcamentosIndexRoute: typeof VendasOrcamentosIndexRoute
 }
 
 const VendasRouteChildren: VendasRouteChildren = {
   VendasIndexRoute: VendasIndexRoute,
+  VendasOrcamentosOrcamentoIdRoute: VendasOrcamentosOrcamentoIdRoute,
+  VendasOrcamentosIndexRoute: VendasOrcamentosIndexRoute,
 }
 
 const VendasRouteWithChildren =

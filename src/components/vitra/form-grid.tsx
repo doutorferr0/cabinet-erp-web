@@ -9,14 +9,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatPercent } from '@/lib/formatters'
 import { Minus, Plus } from 'lucide-react'
-import { Controller, useFieldArray, useFormContext } from 'react-hook-form'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
 /**
  * Tipo da célula. `money` guarda centavos (int) e digita em reais;
- * `check` guarda boolean; `select` é combo puro. Default `text`.
+ * `check` guarda boolean; `select` é combo puro; `computed` é derivado da
+ * linha (não vive no form state). Default `text`.
  */
-export type FormGridCellType = 'text' | 'money' | 'check' | 'select'
+export type FormGridCellType = 'text' | 'money' | 'percent' | 'check' | 'select' | 'computed'
 
 export interface FormGridColumn {
   /** Nome do campo dentro da linha do array. */
@@ -26,6 +28,8 @@ export interface FormGridColumn {
   placeholder?: string
   /** Só para `type: 'select'`. */
   options?: readonly string[]
+  /** Só para `type: 'computed'`: calcula o texto exibido a partir da linha. */
+  compute?: (row: FormGridRow) => string
 }
 
 export type FormGridRow = Record<string, string | number | boolean | null>
@@ -37,6 +41,14 @@ export interface FormGridProps {
   /** Valores da linha nova ao clicar em Incluir. */
   newRow: FormGridRow
   addLabel?: string
+  /**
+   * Botões próprios da tela acima da grade (ex.: `Ambiente`, `Produto` do
+   * orçamento). Recebem o `append` DESTA grade — um `useFieldArray` externo
+   * sobre o mesmo array não re-renderiza a tabela.
+   */
+  actions?: (append: (row: FormGridRow) => void) => React.ReactNode
+  /** Esconde o botão `Incluir` padrão quando `actions` já insere linhas. */
+  hideAdd?: boolean
 }
 
 function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
@@ -51,6 +63,29 @@ function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
           value={
             typeof field.value === 'number' ? (field.value / 100).toFixed(2).replace('.', ',') : ''
           }
+          onChange={(e) => {
+            const digits = e.target.value.replace(/\D/g, '')
+            field.onChange(digits === '' ? null : Number(digits))
+          }}
+          onBlur={field.onBlur}
+          ref={field.ref}
+        />
+      )}
+    />
+  )
+}
+
+/** Percentual com 4 casas implícitas (§8.2 `Desc. %`). */
+function PercentCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
+  return (
+    <Controller
+      name={name}
+      render={({ field }) => (
+        <Input
+          aria-label={ariaLabel}
+          inputMode="decimal"
+          className="h-8 border-0 text-right shadow-none focus-visible:ring-0"
+          value={typeof field.value === 'number' ? formatPercent(field.value) : ''}
           onChange={(e) => {
             const digits = e.target.value.replace(/\D/g, '')
             field.onChange(digits === '' ? null : Number(digits))
@@ -110,20 +145,48 @@ function SelectCell({
   )
 }
 
+/** Célula derivada da linha (ex.: Valor Total = Quant. × Vl. Unitário). */
+function ComputedCell({
+  rowName,
+  ariaLabel,
+  compute,
+}: {
+  rowName: string
+  ariaLabel: string
+  compute: (row: FormGridRow) => string
+}) {
+  const row = useWatch({ name: rowName }) as FormGridRow | undefined
+  return (
+    <output aria-label={ariaLabel} className="block px-2 text-right text-sm tabular-nums">
+      {compute(row ?? {})}
+    </output>
+  )
+}
+
 /**
  * Grade editável dentro do formulário — transcrição §9 padrão 3 (10 usos).
  * RHF é o dono do estado; cada célula é um campo registrado.
  */
-export function FormGrid({ name, columns, newRow, addLabel = 'Incluir' }: FormGridProps) {
+export function FormGrid({
+  name,
+  columns,
+  newRow,
+  addLabel = 'Incluir',
+  actions,
+  hideAdd,
+}: FormGridProps) {
   const { register, control } = useFormContext()
   const { fields, append, remove } = useFieldArray({ control, name })
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => append(newRow)}>
-          <Plus className="size-4" /> {addLabel}
-        </Button>
+      <div className="flex flex-wrap gap-2">
+        {hideAdd ? null : (
+          <Button type="button" variant="outline" size="sm" onClick={() => append(newRow)}>
+            <Plus className="size-4" /> {addLabel}
+          </Button>
+        )}
+        {actions?.((row) => append(row))}
       </div>
       <div className="overflow-x-auto rounded-md border">
         <Table>
@@ -155,6 +218,8 @@ export function FormGrid({ name, columns, newRow, addLabel = 'Incluir' }: FormGr
                       <TableCell key={col.key} className="p-1">
                         {col.type === 'money' ? (
                           <MoneyCell name={path} ariaLabel={ariaLabel} />
+                        ) : col.type === 'percent' ? (
+                          <PercentCell name={path} ariaLabel={ariaLabel} />
                         ) : col.type === 'check' ? (
                           <CheckCell name={path} ariaLabel={ariaLabel} />
                         ) : col.type === 'select' ? (
@@ -162,6 +227,12 @@ export function FormGrid({ name, columns, newRow, addLabel = 'Incluir' }: FormGr
                             name={path}
                             ariaLabel={ariaLabel}
                             options={col.options ?? []}
+                          />
+                        ) : col.type === 'computed' ? (
+                          <ComputedCell
+                            rowName={`${name}.${index}`}
+                            ariaLabel={ariaLabel}
+                            compute={col.compute ?? (() => '')}
                           />
                         ) : (
                           <Input

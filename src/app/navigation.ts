@@ -27,30 +27,27 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    // O menu `Movimentação` (onde mora a movimentação de estoque) não foi
+    // capturado na transcrição — §10. Sem itens até a próxima rodada de prints.
     title: 'Estoque',
     url: '/estoque',
     icon: Package,
-    items: [
-      { title: 'Movimentações', url: '/estoque/movimentacoes', icon: Package },
-      { title: 'Saldo', url: '/estoque/saldo', icon: Package },
-    ],
+    items: [],
   },
   {
     title: 'Vendas',
     url: '/vendas',
     icon: Store,
-    items: [
-      { title: 'Orçamentos', url: '/vendas/orcamentos', icon: Store },
-      { title: 'Pedidos', url: '/vendas/pedidos', icon: Store },
-    ],
+    // `Pedido de venda` é fluxo não capturado (§10) — só Orçamento existe.
+    items: [{ title: 'Orçamentos', url: '/vendas/orcamentos', icon: Store }],
   },
   {
     title: 'Compras',
     url: '/compras',
     icon: ShoppingCart,
     items: [
-      { title: 'Pedidos', url: '/compras/pedidos', icon: ShoppingCart },
-      { title: 'Ordens', url: '/compras/ordens', icon: ShoppingCart },
+      { title: 'Ordem de Compra', url: '/compras/ordens', icon: ShoppingCart },
+      { title: 'Pedido de Compra', url: '/compras/pedidos', icon: ShoppingCart },
     ],
   },
 ]

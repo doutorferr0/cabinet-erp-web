@@ -46,6 +46,19 @@ QueryClient) não repete 4xx. Com a repetição padrão do TanStack Query, um 40
 "nenhuma empresa ativa" deixaria a tela ~7s em esqueleto antes de dizer o que o
 servidor respondeu de primeira. 5xx e falha de rede seguem repetindo.
 
+### Como o dev fala com o backend
+
+`vite.config.ts` desvia `/api` e `/auth` para `http://localhost:5251` (perfil
+`http` do `launchSettings.json` do backend; `VITE_API_PROXY` troca o destino).
+
+**A escolha é sobre o COOKIE, não sobre conveniência.** A sessão é um cookie
+opaco (ADR-010, D2). Apontar o front direto para a porta do backend tornaria
+toda chamada cross-origin, e aí o cookie passaria a depender de `SameSite=None;
+Secure` + CORS com `Allow-Credentials` — configuração que teria de valer em
+desenvolvimento e mudaria em produção. Com o proxy, `configurarApi()` fica com
+base `/` e o dev se parece com a implantação. `VITE_API_URL` continua existindo
+para a implantação em que as origens forem mesmo diferentes.
+
 ### Conferir a cópia do contrato
 
 ```bash

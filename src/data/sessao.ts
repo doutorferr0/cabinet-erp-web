@@ -42,7 +42,14 @@ export function useSessao() {
 }
 
 /**
- * Entrar: POST /auth/login e invalida a sessão para a guarda relê-la.
+ * Entrar: POST /auth/login e invalida TUDO, não só a sessão.
+ *
+ * Trocar de usuário é trocar de identidade: os vínculos (`['auth','tenants']`)
+ * e qualquer lista em cache pertencem a quem saiu. Invalidar só a sessão
+ * deixava o seletor exibindo a empresa do usuário ANTERIOR por até 30s
+ * (staleTime) depois de um re-login — furo registrado na memória (pendência
+ * 5), mesma classe de bug que a unificação do `/auth/me` resolveu. A regra é
+ * a do logout: invalidação total.
  *
  * O 401 do contrato traz `detail` pronto para exibição (mensagem do backend,
  * já em PT-BR). Qualquer outra falha vira mensagem genérica — detalhe interno
@@ -56,7 +63,7 @@ export function useLogin() {
       if (!data) throw new Error(error?.detail ?? 'Não foi possível entrar. Tente de novo.')
       return data
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSAO_KEY }),
+    onSuccess: () => queryClient.invalidateQueries(),
   })
 }
 

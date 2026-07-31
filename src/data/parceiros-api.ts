@@ -1,5 +1,5 @@
 import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
-import { updatePartner } from '@/api/gerado'
+import { createPartner, updatePartner } from '@/api/gerado'
 import { ErroDaApi, createApiListProvider, detalheDoProblema } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 
@@ -140,6 +140,53 @@ export async function atualizarParceiro(
   if (error || !data) {
     throw new ErroDaApi(
       `Falha ao gravar o parceiro ${id}.`,
+      response?.status ?? 0,
+      detalheDoProblema(error),
+    )
+  }
+  return data
+}
+
+/**
+ * Corpo do `POST` — o cadastro nasce com O PAPEL DA TELA e nenhum outro.
+ *
+ * O schema exige pelo menos um papel (`partners_papel_check`), e quem sabe qual
+ * é a tela: incluir pela tela de Fornecedores cria fornecedor. Marcar os três
+ * "por precaução" faria todo cadastro novo aparecer nas três listagens.
+ *
+ * `code` e `paymentTerms` nascem nulos: são do VÍNCULO com a empresa e nenhum dos
+ * formulários tem campo para eles. O contrato aceita nulo — inventar um código
+ * aqui competiria com o que o operador espera digitar depois.
+ */
+export function corpoDeInclusao(
+  papel: PapelDeParceiro,
+  editado: CamposEditaveis,
+): PartnerWriteRequest {
+  return {
+    legalName: editado.legalName,
+    tradeName: editado.tradeName,
+    document: editado.document,
+    email: editado.email,
+    active: editado.active,
+    code: null,
+    paymentTerms: null,
+    isCustomer: papel === 'customer',
+    isSupplier: papel === 'supplier',
+    isProfessional: papel === 'professional',
+  }
+}
+
+/**
+ * Cria o parceiro e devolve o registro como o servidor o gravou (`201` com o
+ * `PartnerDto`). `409` é o documento já cadastrado — índice único em
+ * `partners.document` —, e o `detail` é o que diz isso ao operador.
+ */
+export async function incluirParceiro(corpo: PartnerWriteRequest): Promise<PartnerDto> {
+  const { data, error, response } = await createPartner({ body: corpo })
+
+  if (error || !data) {
+    throw new ErroDaApi(
+      'Falha ao incluir o parceiro.',
       response?.status ?? 0,
       detalheDoProblema(error),
     )

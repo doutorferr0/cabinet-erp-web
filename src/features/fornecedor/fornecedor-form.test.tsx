@@ -86,7 +86,8 @@ describe('tela Fornecedor', () => {
   }, 15_000)
 
   it('formulário inclui contato na grade e grava (volta para a listagem)', async () => {
-    const { router, user } = renderRoute('/cadastros/fornecedores/novo')
+    const { stub } = servidorDeParceiros()
+    const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)
 
     const razao = await screen.findByLabelText('Razão Social')
     await user.type(razao, 'FORNECEDOR TESTE LTDA')
@@ -102,6 +103,34 @@ describe('tela Fornecedor', () => {
       expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
     })
   })
+
+  // O papel vem da TELA: incluir por Fornecedores cria fornecedor, e só. Marcar
+  // os três "por precaução" faria o cadastro novo aparecer nas três listagens.
+  it('Incluir manda POST com o papel desta tela', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)
+
+    await user.type(await screen.findByLabelText('Razão Social'), 'NOVA LTDA')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
+      },
+      { timeout: 5000 },
+    )
+
+    const post = chamadas.find((c) => c.metodo === 'POST')
+    expect(post?.corpo).toMatchObject({
+      legalName: 'NOVA LTDA',
+      isSupplier: true,
+      isCustomer: false,
+      isProfessional: false,
+      // Do VÍNCULO com a empresa, e nenhum formulário tem campo para eles.
+      code: null,
+      paymentTerms: null,
+    })
+  }, 15_000)
 
   // Link direto e recarga não têm linha — e sem leitura por id não há de onde
   // tirá-la. A tela manda voltar à listagem em vez de abrir formulário vazio.

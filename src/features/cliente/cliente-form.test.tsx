@@ -1,4 +1,4 @@
-import { parceiro, stubDeParceiros } from '@/test/parceiros'
+import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -17,16 +17,27 @@ describe('tela Cliente', () => {
     expect(urls.find((u) => u.includes('/api/partners'))).toContain('role=customer')
   })
 
-  it('formulário grava e volta para a listagem', async () => {
-    const { router, user } = renderRoute('/cadastros/clientes/novo')
+  it('formulário grava e volta para a listagem, com o papel desta tela', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { router, user } = renderRoute('/cadastros/clientes/novo', stub)
 
     await user.type(await screen.findByLabelText('Nome'), 'CLIENTE TESTE')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/clientes')
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes')
+      },
+      { timeout: 5000 },
+    )
+
+    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toMatchObject({
+      legalName: 'CLIENTE TESTE',
+      isCustomer: true,
+      isSupplier: false,
+      isProfessional: false,
     })
-  })
+  }, 15_000)
 
   // DESIGN.md §Shapes: a aba Principal é uma pilha de compartimentos fechados,
   // não uma parede de campos. Legendas marcadas `TODO(transcricao)` no código

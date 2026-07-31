@@ -209,6 +209,20 @@ export function VitraDataTable<T>({
                   </TableCell>
                 </TableRow>
               ))
+            ) : query.isError ? (
+              // Falhou ≠ vazio: o operador precisa saber se avisa alguém ou se a
+              // consulta não tem resultado mesmo. Com o backend real, essa
+              // distinção é a diferença entre "some" e "não existe".
+              <TableRow>
+                <TableCell colSpan={totalColSpan} className="h-24 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    Não foi possível carregar a consulta.
+                    <Button variant="outline" size="sm" onClick={() => query.refetch()}>
+                      Tentar de novo
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -260,7 +274,9 @@ export function VitraDataTable<T>({
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         {/* Contagem em Meta (rótulo de rodapé de tabela); paginação em tabular. */}
         <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
-          {total} registro{total === 1 ? '' : 's'}
+          {/* Consulta que falhou não tem contagem: "0 registros" seria afirmar
+              que a consulta voltou vazia, que é exatamente o que não se sabe. */}
+          {query.isError ? '— registros' : `${total} registro${total === 1 ? '' : 's'}`}
         </span>
         <div className="ml-auto flex items-center gap-2">
           <label htmlFor="vitra-page-size">Por página:</label>

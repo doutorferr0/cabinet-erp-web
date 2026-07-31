@@ -190,4 +190,43 @@ describe('VitraDataTable', () => {
     // A fileira do grupo é separada das sub-colunas por Fio, não pela sublinha forte.
     expect(grupo.closest('tr')?.className).toContain('border-rule-hair')
   })
+
+  // Com backend real a consulta pode FALHAR. Cair em "Nenhum registro." diria ao
+  // operador que a consulta voltou vazia — que é justamente o que não se sabe.
+  it('falha da consulta NÃO se disfarça de listagem vazia', async () => {
+    const falhar = true
+    renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-falha']}
+        fetcher={(state) =>
+          falhar ? Promise.reject(new Error('500')) : data.produtos.list(state, 0)
+        }
+      />,
+    )
+
+    expect(await screen.findByText(/não foi possível carregar a consulta/i)).toBeInTheDocument()
+    expect(screen.queryByText('Nenhum registro.')).not.toBeInTheDocument()
+    // Contagem não mente sobre uma consulta que não voltou.
+    expect(screen.getByText('— registros')).toBeInTheDocument()
+  })
+
+  it('tentar de novo refaz a consulta que falhou', async () => {
+    let falhar = true
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-retry']}
+        fetcher={(state) =>
+          falhar ? Promise.reject(new Error('500')) : data.produtos.list(state, 0)
+        }
+      />,
+    )
+
+    await screen.findByText(/não foi possível carregar a consulta/i)
+    falhar = false
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+
+    expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
+  })
 })

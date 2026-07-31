@@ -1,5 +1,6 @@
-import { authMe, authSetActiveTenant, authTenants } from '@/api/gerado'
 import type { VinculoDeEmpresa } from '@/api/gerado'
+import { authSetActiveTenant, authTenants } from '@/api/gerado'
+import { useSessao } from '@/data/sessao'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -12,8 +13,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
  * é a ativa") mostraria a empresa errada no dia em que o usuário trocar e voltar.
  */
 
-/** Chave da sessão. TODO(sessao): migra para o módulo de sessão quando ele existir. */
-const CHAVE_SESSAO = ['auth', 'me'] as const
 const CHAVE_VINCULOS = ['auth', 'tenants'] as const
 
 export interface EmpresasDaSessao {
@@ -39,14 +38,11 @@ export function useEmpresasDaSessao(): EmpresasDaSessao {
     },
   })
 
-  const sessao = useQuery({
-    queryKey: CHAVE_SESSAO,
-    queryFn: async () => {
-      const { data, error } = await authMe()
-      if (error || !data) throw new Error('Falha ao carregar a sessão.')
-      return data
-    },
-  })
+  // O contexto vem do módulo de sessão (`useSessao`), não de uma consulta
+  // própria: duas chaves para o mesmo `/auth/me` seriam duas requisições e dois
+  // caches — e a guarda invalidaria um só, deixando o seletor com a empresa
+  // anterior depois de trocar de usuário.
+  const sessao = useSessao()
 
   /**
    * Trocar de empresa muda o escopo de TODO dado da tela — cliente, produto,

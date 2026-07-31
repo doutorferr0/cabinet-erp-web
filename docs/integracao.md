@@ -244,6 +244,13 @@ afterEach(() => vi.unstubAllGlobals())
 Usado hoje em `company-switcher.test.tsx` e `shell.test.tsx`. É o que substitui o
 provider mock nos testes de tela conforme cada recurso for ligado à API.
 
+**Existem dois mecanismos, por enquanto:** `renderRoute` (em `src/test/utils.tsx`)
+já instala um stub próprio de sessão válida, porque a guarda consulta `/auth/me`
+em toda rota; `instalarServidor` é o mapa de rotas para quem precisa de mais
+endpoints ou de estado entre chamadas. Nasceram em paralelo (login × empresa
+ativa) e fazem a mesma coisa por dentro — **unificar é dívida conhecida**: o
+`fetchStub` do `renderRoute` deveria ser montado pelo `instalarServidor`.
+
 ## Armadilhas conhecidas
 
 - `pnpm build` **não** regenera `src/routeTree.gen.ts` quando há rota nova: o script

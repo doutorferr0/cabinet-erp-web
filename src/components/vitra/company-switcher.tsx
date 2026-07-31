@@ -3,6 +3,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -13,7 +14,8 @@ import {
 } from '@/components/ui/sidebar'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
-import { Building2, Check, ChevronsUpDown } from 'lucide-react'
+import { useLogout } from '@/data/sessao'
+import { Building2, Check, ChevronsUpDown, LogOut } from 'lucide-react'
 
 /**
  * Seletor da empresa ativa (`activeTenantId` da sessão).
@@ -30,6 +32,7 @@ import { Building2, Check, ChevronsUpDown } from 'lucide-react'
 export function CompanySwitcher() {
   const { isMobile, state } = useSidebar()
   const { empresas, ativa, carregando, erro, trocar, trocando } = useEmpresasDaSessao()
+  const logout = useLogout()
 
   // Estados distintos: esperar, avisar alguém, ou não ter vínculo mesmo.
   const titulo = carregando
@@ -93,6 +96,20 @@ export function CompanySwitcher() {
                 </DropdownMenuItem>
               ))
             )}
+            {/* Sair mora neste menu: é o lugar onde o usuário já olha para
+                saber "quem/onde estou". O redirect para /login é da guarda —
+                o logout só derruba o cookie e limpa o cache. */}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              disabled={logout.isPending}
+              onClick={() => logout.mutate()}
+              className="gap-2 p-2"
+            >
+              <div className="flex size-6 items-center justify-center rounded-sm border">
+                <LogOut className="size-4 shrink-0" />
+              </div>
+              {logout.isPending ? 'Saindo…' : 'Sair'}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

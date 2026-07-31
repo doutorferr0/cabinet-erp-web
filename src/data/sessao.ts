@@ -3,6 +3,7 @@ import {
   type LoginRequest,
   authChangePassword,
   authLogin,
+  authLogout,
   authMe,
 } from '@/api/gerado'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -56,6 +57,32 @@ export function useLogin() {
       return data
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSAO_KEY }),
+  })
+}
+
+/**
+ * Sair: POST /auth/logout → 204 (o cookie morre no servidor) e TODA consulta é
+ * invalidada — mesma regra da troca de empresa, um nível acima: sessão,
+ * vínculos e listas pertencem a quem saiu e não podem ser reaproveitados.
+ *
+ * Por que `invalidateQueries` e não `clear()`: o `clear()` remove as queries
+ * do cache SEM avisar os observers montados — a guarda fica exibindo o
+ * resultado velho para sempre e o redirect para `/login` nunca acontece
+ * (provado em teste de rota). Com a invalidação total, o `/auth/me` ativo é
+ * reconsultado, recebe 401 e a guarda redireciona sozinha; as inativas ficam
+ * marcadas como velhas e são reconsultadas na próxima montagem — nenhum dado
+ * do usuário que saiu sobrevive reutilizável.
+ */
+export function useLogout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { error, response } = await authLogout()
+      if (error || response?.status !== 204) {
+        throw new Error('Não foi possível sair. Tente de novo.')
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
   })
 }
 

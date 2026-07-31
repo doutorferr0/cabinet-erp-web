@@ -62,6 +62,12 @@ esquecer um só aparecia em runtime.
 
 - **"Carregando" e "falhou" não podem parecer "lista vazia".** Combo mudo faz o
   operador concluir que não há opção cadastrada quando o problema é outro.
+- **Lista cortada no teto de 100 avisa que foi cortada.** `pageSize: 100` é o teto
+  do contrato de listagem; acima dele a consulta volta truncada. No combo, a busca
+  filtra só o que chegou — então "não achei" e "não existe" viram a mesma coisa, e
+  o operador cadastraria duplicado pelo `...`. Quando isso começar a acontecer de
+  verdade, a lista deixou de ser lista de apoio: vira `[busca +...]` (padrão 5), e
+  aí o componente é outro.
 - **O valor gravado é sempre exibível.** A consulta só devolve item ATIVO
   (desativação é lógica, §9 padrão 8); um registro que aponte para item
   desativado DEPOIS de gravado abriria com o campo em branco, e a gravação

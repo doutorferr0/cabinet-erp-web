@@ -100,6 +100,39 @@ describe('LookupCombo', () => {
     expect(screen.queryByRole('option', { name: /STELLA/ })).not.toBeInTheDocument()
   })
 
+  // A busca do combo filtra só o que chegou. Com a lista cortada, o item
+  // procurado pode nem estar ali — e sem aviso o operador cadastraria duplicado
+  // pelo botão "...".
+  it('avisa quando a lista veio cortada no teto do contrato', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              rows: OPCOES.map((name, i) => ({ id: `id-${i}`, kind: 'MARCA', name, active: true })),
+              total: 240,
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          ),
+        ),
+      ),
+    )
+
+    const { user } = renderWithQuery(<Harness />)
+    await user.click(screen.getByRole('combobox'))
+
+    expect(await screen.findByText(/A lista é maior/)).toBeInTheDocument()
+  })
+
+  it('lista inteira NÃO exibe aviso de corte', async () => {
+    const { user } = renderWithQuery(<Harness />)
+    await user.click(screen.getByRole('combobox'))
+
+    await screen.findByRole('option', { name: /STELLA/ })
+    expect(screen.queryByText(/A lista é maior/)).not.toBeInTheDocument()
+  })
+
   it('falha do servidor NÃO se disfarça de lista vazia', async () => {
     // Estados distintos importam: o operador precisa saber se deve esperar,
     // avisar alguém, ou se a lista está mesmo vazia.

@@ -54,7 +54,7 @@ export function LookupCombo({
   const label = lookupLabel(kind)
 
   // As opções vêm do servidor (ADR-011). O rótulo continua local: rótulo é UI, não dado.
-  const { options: doServidor, carregando, erro } = useLookupOptions(kind)
+  const { options: doServidor, truncada, carregando, erro } = useLookupOptions(kind)
   const options = [...doServidor, ...added]
 
   function confirmAdd() {
@@ -112,6 +112,16 @@ export function LookupCombo({
                   {option}
                 </CommandItem>
               ))}
+              {/* A lista veio CORTADA no teto de 100 do contrato, e a busca deste
+                  campo filtra só o que chegou: o item procurado pode nem estar
+                  aqui. Sem este aviso, "não encontrei" e "não existe" viram a
+                  mesma coisa — e o operador cadastraria duplicado pelo "...". */}
+              {truncada && (
+                <p className="border-t px-2 py-1.5 text-[0.75rem] text-muted-foreground">
+                  Mostrando os primeiros {options.length}. A lista é maior — se não achar aqui, o
+                  item pode existir fora deste trecho.
+                </p>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>

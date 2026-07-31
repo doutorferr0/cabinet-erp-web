@@ -2,6 +2,7 @@ import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
+import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -33,6 +34,7 @@ const columns: ColumnDef<PartnerDto>[] = [
 
 function ClientesPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   function abrir(clienteId: string, modo?: 'consulta') {
     void navigate({
@@ -42,13 +44,23 @@ function ClientesPage() {
     })
   }
 
+  /**
+   * A LINHA é o registro. O contrato tem `PUT /api/partners/{id}` e não tem
+   * `GET` por id — o `PartnerWriteRequest` é subconjunto do `PartnerDto`, então
+   * a linha selecionada já traz todo campo gravável. Semear o cache aqui evita
+   * pedir ao servidor o que acabou de chegar; quem abrir por link direto não
+   * tem linha, e a rota diz isso.
+   */
+  function abrirParceiro(p: PartnerDto, modo?: 'consulta') {
+    queryClient.setQueryData(['parceiro', p.id], p)
+    abrir(p.id, modo)
+  }
+
   const actions = cadastroActions<PartnerDto>({
     entidade: 'cliente',
     onIncluir: () => abrir('novo'),
-    // Sem `onAbrir`: a listagem é do servidor e o contrato não tem detalhe
-    // por id. Abrir com o mock casaria uuid do servidor com id inventado.
-    motivoSemAbrir:
-      'O servidor ainda não publica o detalhe de um parceiro (GET /api/partners/{id}).',
+    onAbrir: (p) => abrirParceiro(p),
+    onConsultar: (p) => abrirParceiro(p, 'consulta'),
   })
 
   return (

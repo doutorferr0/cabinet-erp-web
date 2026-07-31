@@ -56,22 +56,40 @@ contrato, porque viaja como `sortBy` — a whitelist é
 `code`/`legalName`/`tradeName`/`document`/`active`, e `paymentTerms`, `email` e
 `registrationActive` estão fora dela.
 
-### SEM detalhe por id — e o que isso fez com a tela
+### Escrita por id, leitura por id não — e a LINHA no lugar do detalhe
 
-Não existe `GET /api/partners/{id}`. A consequência é honesta em vez de
-disfarçada:
+O contrato tem `PUT /api/partners/{id}` e **não** tem `GET /api/partners/{id}`.
+Parece torto e não é: `PartnerWriteRequest` é **subconjunto do `PartnerDto`** da
+listagem, então a linha selecionada já traz todo campo gravável. Buscar de novo
+por id seria pedir ao servidor o que acabou de chegar.
 
-- a entrada do registry tem `list` e `empty`, **sem `get`** — um `get` mock ao
-  lado de uma listagem real casaria uuid do servidor com id inventado e
-  responderia "não encontrado" para registro que existe;
-- `Alterar` e `Consul.` ficam **desabilitados com o motivo no `title`** (botão
-  morto e mudo faz o operador reportar defeito, e ele estaria certo);
-- `Incluir` continua abrindo formulário em branco — não depende do servidor (e o
-  `Gravar` já era inerte: não há escrita no contrato);
-- abrir a rota por URL direta explica o mesmo, em vez de dizer "não encontrado".
+Por isso `Alterar`/`Consul.` **abrem a partir da linha**: a listagem semeia
+`['parceiro', id]` no cache e a rota lê dali (capturando numa `useState`, para o
+corpo do `PUT` sobreviver a uma coleta de cache no meio da edição).
 
-Quando o detalhe existir, o caminho é o de produtos: `itemOuNulo` +
-`ParceiroProvider` ganhando `get`, e `motivoSemAbrir` sai das três telas.
+**O preço é link direto e recarga.** Sem linha em mãos não há o que editar, e a
+rota manda voltar à listagem em vez de abrir formulário vazio. É o que muda
+quando o `GET` por id existir.
+
+**`PUT` substitui o registro inteiro**, então `corpoDeEscrita` devolve
+INALTERADO o que a tela não mostra — `code`, `paymentTerms` e os três papéis.
+Mandá-los nulos porque o formulário não tem campo para eles apagaria dado que
+ninguém pediu para apagar; pior, gravar um Fornecedor tiraria o papel de Cliente
+do mesmo parceiro, e o operador só descobriria na outra listagem.
+
+| Campo | Fornecedor | Cliente | Profissional |
+|---|---|---|---|
+| `legalName` | Razão Social | Nome | Nome |
+| `tradeName` | Nome Fantasia | *(volta como veio)* | Nome de Apresentação |
+| `document` | CNPJ/CPF | CPF | CPF |
+| `email` · `active` | E-mail · Ativo | E-mail · Ativo | E-mail · Ativo |
+
+O sucesso é **`200` com o `PartnerDto`** — não `204`. Corpo vazio é tratado como
+falha: aceitar resposta que o contrato não descreve é aceitar qualquer coisa.
+
+`Incluir` continua sem efeito no servidor: `POST /api/partners` existe no
+contrato, mas ligar a inclusão é outro passo (a tela teria de escolher os papéis,
+e o `code` é do vínculo).
 
 ### Escrita — não existe NENHUMA
 

@@ -213,7 +213,17 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
 export function ClienteForm({
   cliente,
   readOnly = false,
-}: { cliente: Cliente; readOnly?: boolean }) {
+  onGravar: gravarDeFora,
+}: {
+  cliente: Cliente
+  readOnly?: boolean
+  /**
+   * Quem grava, quando há endpoint. Sem isto o formulário cai no comportamento
+   * antigo (sem efeito no servidor) — é o caso do "Incluir", que o contrato
+   * ainda não atende.
+   */
+  onGravar?: (values: Cliente) => void
+}) {
   const navigate = useNavigate()
   const [buscaCidadeOpen, setBuscaCidadeOpen] = useState(false)
 
@@ -221,6 +231,10 @@ export function ClienteForm({
   useEffect(() => bindShortcut(SHORTCUTS.busca, () => setBuscaCidadeOpen(true)), [])
 
   function onGravar(values: Cliente) {
+    if (gravarDeFora) {
+      gravarDeFora(values)
+      return
+    }
     console.info('[mock] Gravar cliente', values)
     void navigate({ to: '/cadastros/clientes' })
   }

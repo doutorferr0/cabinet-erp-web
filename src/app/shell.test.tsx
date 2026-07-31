@@ -1,9 +1,61 @@
+import { configurarApi } from '@/api/cliente'
 import { Providers } from '@/app/providers'
 import { routeTree } from '@/routeTree.gen'
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+/**
+ * O cabeçalho da sidebar mostra a empresa ATIVA da sessão, que vem do backend.
+ * Sem servidor falso, o shell abriria em "Empresas indisponíveis" e o teste do
+ * seletor não diria nada sobre a troca. O contrato dessa fronteira é exercitado
+ * em `company-switcher.test.tsx`; aqui ele só precisa responder.
+ */
+const EMPRESAS = [
+  { tenantId: 'aaaa-1111', name: 'VERTZ ILUMINAÇÃO', role: 'owner' },
+  { tenantId: 'bbbb-2222', name: 'VIA HF', role: 'operator-sales' },
+]
+
+let empresaAtiva = EMPRESAS[0]?.tenantId ?? null
+
+async function servidorDeSessao(entrada: RequestInfo | URL) {
+  const requisicao = entrada instanceof Request ? entrada : null
+  const url = String(requisicao ? requisicao.url : entrada)
+  const caminho = new URL(url).pathname
+  const corpo = requisicao ? await requisicao.clone().text() : ''
+
+  const json = (valor: unknown) =>
+    new Response(JSON.stringify(valor), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+  if (caminho === '/auth/tenants') return json(EMPRESAS)
+  if (caminho === '/auth/me') {
+    return json({
+      organizationId: 'org-1',
+      employeeId: 'emp-1',
+      activeTenantId: empresaAtiva,
+      expiresAt: '2026-08-01T00:00:00Z',
+    })
+  }
+  if (caminho === '/auth/active-tenant') {
+    empresaAtiva = (JSON.parse(corpo) as { tenantId: string }).tenantId
+    return new Response(null, { status: 204 })
+  }
+  return new Response('', { status: 404 })
+}
+
+beforeEach(() => {
+  empresaAtiva = EMPRESAS[0]?.tenantId ?? null
+  configurarApi('http://api.teste')
+  vi.stubGlobal('fetch', vi.fn(servidorDeSessao))
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 function setup(initialUrl = '/') {
   const router = createRouter({

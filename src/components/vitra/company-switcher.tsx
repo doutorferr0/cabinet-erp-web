@@ -3,7 +3,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -12,30 +11,31 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Building2, ChevronsUpDown } from 'lucide-react'
-import { useState } from 'react'
+import { useEmpresasDaSessao } from '@/data/empresas-api'
+import { Building2, Check, ChevronsUpDown } from 'lucide-react'
 
-export interface Company {
-  id: string
-  name: string
-  cnpj: string
-}
-
-const mockCompanies: Company[] = [
-  { id: '1', name: 'VERTZ ILUMINAÇÃO', cnpj: '00.000.000/0001-00' },
-  { id: '2', name: 'VIA HF', cnpj: '00.000.000/0002-00' },
-]
-
-const defaultCompany = mockCompanies[0] as Company
-
+/**
+ * Seletor da empresa ativa (`activeTenantId` da sessão).
+ *
+ * Vínculo ≠ contexto: o menu lista o que o usuário alcança, o rótulo mostra onde
+ * ele está. Trocar aqui é trocar o escopo de todo dado da tela — a invalidação
+ * mora no hook, não neste componente.
+ *
+ * TODO(contract): a transcrição mostra CNPJ junto do nome da empresa; o
+ * `VinculoDeEmpresa` do contrato traz só `tenantId`, `name` e `role`. Enquanto o
+ * CNPJ não vier, a segunda linha mostra o papel — que é dado real — em vez de um
+ * documento inventado.
+ */
 export function CompanySwitcher() {
   const { isMobile, state } = useSidebar()
-  const [active, setActive] = useState<Company>(defaultCompany)
+  const { empresas, ativa, carregando, erro, trocar, trocando } = useEmpresasDaSessao()
 
-  const handleSelect = (id: string) => {
-    const next = mockCompanies.find((c) => c.id === id)
-    if (next) setActive(next)
-  }
+  // Estados distintos: esperar, avisar alguém, ou não ter vínculo mesmo.
+  const titulo = carregando
+    ? 'Carregando…'
+    : erro
+      ? 'Empresas indisponíveis'
+      : (ativa?.name ?? 'Nenhuma empresa ativa')
 
   return (
     <SidebarMenu>
@@ -44,14 +44,19 @@ export function CompanySwitcher() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
+              disabled={carregando || erro}
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Building2 className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{active.name}</span>
-                <span className="truncate text-xs">{active.cnpj}</span>
+                <span className="truncate font-semibold">{titulo}</span>
+                {ativa && (
+                  <span className="truncate font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
+                    {ativa.role}
+                  </span>
+                )}
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -61,28 +66,32 @@ export function CompanySwitcher() {
             align="start"
             side={isMobile ? 'bottom' : state === 'collapsed' ? 'right' : 'bottom'}
           >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
+            <DropdownMenuLabel className="font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
               Empresa ativa
             </DropdownMenuLabel>
-            {mockCompanies.map((company) => (
-              <DropdownMenuItem
-                key={company.id}
-                onClick={() => handleSelect(company.id)}
-                className="gap-2 p-2"
-              >
-                <div className="flex size-6 items-center justify-center rounded-sm border">
-                  <Building2 className="size-4 shrink-0" />
-                </div>
-                {company.name}
+            {empresas.length === 0 ? (
+              <DropdownMenuItem disabled className="gap-2 p-2">
+                Nenhuma empresa vinculada a este usuário.
               </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2" disabled>
-              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                <span className="text-xs">+</span>
-              </div>
-              <div className="font-medium text-muted-foreground">Adicionar empresa</div>
-            </DropdownMenuItem>
+            ) : (
+              empresas.map((empresa) => (
+                <DropdownMenuItem
+                  key={empresa.tenantId}
+                  disabled={trocando}
+                  onClick={() => trocar(empresa.tenantId)}
+                  className="gap-2 p-2"
+                >
+                  <div className="flex size-6 items-center justify-center rounded-sm border">
+                    {empresa.tenantId === ativa?.tenantId ? (
+                      <Check className="size-4 shrink-0" />
+                    ) : (
+                      <Building2 className="size-4 shrink-0" />
+                    )}
+                  </div>
+                  {empresa.name}
+                </DropdownMenuItem>
+              ))
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

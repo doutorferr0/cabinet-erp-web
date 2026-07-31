@@ -1,8 +1,23 @@
 # Integração com o backend — o que muda quando o OpenAPI sair
 
-Estado atual: **mock only** (regra da fase, `CLAUDE.md`). Nenhuma chamada HTTP existe
-no código. Este documento é o roteiro da troca — escrito enquanto a fase mock era
-construída, para que a integração não vire arqueologia.
+Este documento é o roteiro da troca — escrito enquanto a fase mock era construída,
+para que a integração não vire arqueologia.
+
+## Estado atual — a integração começou
+
+O OpenAPI saiu (`contracts/openapi-v1.json`, cópia versionada do contrato do
+`vitra-erp-dotnet`) e o cliente gerado está commitado em `src/api/gerado/`. O que
+já vem do servidor:
+
+| Fronteira | Endpoint | Onde |
+|---|---|---|
+| Listas de apoio do `LookupCombo` | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
+| Empresa ativa da sessão e troca de empresa | `GET /auth/tenants` · `GET /auth/me` · `PUT /auth/active-tenant` | `src/data/empresas-api.ts` |
+
+O resto das telas segue em mock por **falta de contrato**, não por escolha: o
+backend ainda não publicou endpoint de cadastro (cliente, produto, fornecedor…).
+O registry de `src/data/index.ts` continua sendo o único ponto que muda quando
+esses endpoints existirem.
 
 ## Fronteira única
 

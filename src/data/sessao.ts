@@ -1,4 +1,10 @@
-import { type LoginRequest, authLogin, authMe } from '@/api/gerado'
+import {
+  type ChangePasswordRequest,
+  type LoginRequest,
+  authChangePassword,
+  authLogin,
+  authMe,
+} from '@/api/gerado'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -50,5 +56,22 @@ export function useLogin() {
       return data
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSAO_KEY }),
+  })
+}
+
+/**
+ * Trocar a senha: POST /auth/change-password → 204 (sem corpo).
+ *
+ * O 400 do contrato traz `detail` pronto para exibição (senha atual errada,
+ * política de senha nova etc. — a regra é do backend, o front só ecoa).
+ */
+export function useTrocarSenha() {
+  return useMutation({
+    mutationFn: async (body: ChangePasswordRequest) => {
+      const { error, response } = await authChangePassword({ body })
+      if (error || response?.status !== 204) {
+        throw new Error(error?.detail ?? 'Não foi possível trocar a senha. Tente de novo.')
+      }
+    },
   })
 }

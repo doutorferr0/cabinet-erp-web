@@ -13,6 +13,17 @@ function RootComponent() {
   // módulo para navegar) e sem guarda (é ele quem cria a sessão).
   if (pathname === '/login') return <Outlet />
 
+  // Troca de senha: exige sessão (o endpoint responde 401 sem ela) mas ainda
+  // não entra no shell — quem troca a senha provisória não tem sistema para
+  // navegar antes de terminar.
+  if (pathname === '/trocar-senha') {
+    return (
+      <RequireSession>
+        <Outlet />
+      </RequireSession>
+    )
+  }
+
   return (
     <RequireSession>
       <AppShell>

@@ -6,12 +6,12 @@ import {
   CheckboxField,
   DateField,
   LookupField,
+  LookupSelectField,
   SelectField,
   TextField,
   TextareaField,
 } from '@/components/vitra/form-controls'
 import { FormGrid } from '@/components/vitra/form-grid'
-import { opcoesLookup } from '@/data/tabelas'
 import { tabelas } from '@/data/tabelas'
 import type { Produto } from '@/mocks/produtos'
 import { useNavigate } from '@tanstack/react-router'
@@ -216,10 +216,10 @@ function AbaDadosPrincipais() {
             label="Dt de Vigência"
             className="col-span-6 sm:col-span-3"
           />
-          <SelectField
+          <LookupSelectField
             name="tipoProduto"
             label="Tipo de Produto"
-            options={opcoesLookup('tipoProduto')}
+            kind="tipoProduto"
             className="col-span-6 sm:col-span-3"
           />
           <LookupField
@@ -259,10 +259,10 @@ function AbaDadosPrincipais() {
             label="Qtd. Saída"
             className="col-span-6 sm:col-span-2"
           />
-          <SelectField
+          <LookupSelectField
             name="classificacao"
             label="Classificação do Produto"
-            options={opcoesLookup('classificacao')}
+            kind="classificacao"
             className="col-span-12 sm:col-span-4"
           />
         </div>

@@ -6,11 +6,17 @@ import {
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/vitra/documento'
-import { DateField, RadioField, SelectField, TextField } from '@/components/vitra/form-controls'
+import {
+  DateField,
+  LookupSelectField,
+  RadioField,
+  SelectField,
+  TextField,
+} from '@/components/vitra/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
 import { SearchDialog } from '@/components/vitra/search-dialog'
 import { data } from '@/data'
-import { opcoesLookup } from '@/data/tabelas'
+import { useLookupOptions } from '@/data/lookups-api'
 import { tabelas } from '@/data/tabelas'
 import { PERCENT_ESCALA, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
@@ -155,16 +161,16 @@ function Cabecalho() {
             </Button>
           </div>
         </div>
-        <SelectField
+        <LookupSelectField
           name="consultor"
           label="Consultor(a)"
-          options={opcoesLookup('cargo')}
+          kind="cargo"
           className="col-span-6 sm:col-span-3"
         />
-        <SelectField
+        <LookupSelectField
           name="profissionalExterno"
           label="Profissional Externo"
-          options={opcoesLookup('profissional')}
+          kind="profissional"
           className="col-span-6 sm:col-span-4"
         />
         <TextField
@@ -248,6 +254,9 @@ function TotaisOrcamento() {
 
 /** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
 function GradeItens() {
+  // A coluna `Tipo de Peça` é um kind do servidor; as demais são tabelas locais
+  // que o contrato não expõe como lista de apoio.
+  const { options: tiposDePeca } = useLookupOptions('tipoPeca')
   const subtotal = useSubtotalCentavos('itens')
   const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
   const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
@@ -282,7 +291,7 @@ function GradeItens() {
           key: 'tipoPeca',
           label: 'Tipo de Peça',
           type: 'select',
-          options: opcoesLookup('tipoPeca'),
+          options: tiposDePeca,
         },
         { key: 'fornecedor', label: 'Fornecedor' },
       ]}

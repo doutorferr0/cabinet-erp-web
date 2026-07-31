@@ -11,13 +11,12 @@ import {
   CheckboxField,
   DateField,
   LookupField,
+  LookupSelectField,
   RadioField,
-  SelectField,
   TextField,
 } from '@/components/vitra/form-controls'
 import { SearchDialog } from '@/components/vitra/search-dialog'
 import { data } from '@/data'
-import { opcoesLookup } from '@/data/tabelas'
 import type { Cidade } from '@/mocks/cidades'
 import type { Profissional } from '@/mocks/profissionais'
 import { useNavigate } from '@tanstack/react-router'
@@ -139,10 +138,10 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
           className="col-span-6 sm:col-span-2"
         />
         <TextField name="rg" label="RG" className="col-span-6 sm:col-span-2" />
-        <SelectField
+        <LookupSelectField
           name="estadoCivil"
           label="Est. Civil"
-          options={opcoesLookup('estadoCivil')}
+          kind="estadoCivil"
           className="col-span-6 sm:col-span-3"
         />
         <LookupField

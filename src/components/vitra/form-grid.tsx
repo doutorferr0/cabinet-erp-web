@@ -149,22 +149,31 @@ function SelectCell({
   return (
     <Controller
       name={name}
-      render={({ field }) => (
-        <select
-          aria-label={ariaLabel}
-          className="h-8 w-full rounded-md border-0 bg-transparent px-2 text-sm focus-visible:outline-none"
-          value={field.value ?? ''}
-          onChange={(e) => field.onChange(e.target.value || null)}
-          onBlur={field.onBlur}
-        >
-          <option value="">—</option>
-          {options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      )}
+      render={({ field }) => {
+        // O valor da linha entra na lista quando não está nela — item desativado
+        // depois de gravado, ou lista de apoio que veio do servidor e não
+        // carregou. Sem isto a célula apareceria em branco e a próxima gravação
+        // apagaria o valor sem ninguém pedir.
+        const atual = typeof field.value === 'string' ? field.value : ''
+        const lista = atual && !options.includes(atual) ? [atual, ...options] : options
+
+        return (
+          <select
+            aria-label={ariaLabel}
+            className="h-8 w-full rounded-md border-0 bg-transparent px-2 text-sm focus-visible:outline-none"
+            value={atual}
+            onChange={(e) => field.onChange(e.target.value || null)}
+            onBlur={field.onBlur}
+          >
+            <option value="">—</option>
+            {lista.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        )
+      }}
     />
   )
 }

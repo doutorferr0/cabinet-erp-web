@@ -11,3 +11,17 @@ Stack: Vite · React 19 · TS strict · Tailwind v4 · shadcn/ui · TanStack Que
 pnpm install && pnpm dev   # http://localhost:5173
 pnpm check && pnpm check-types && pnpm test
 ```
+
+## Rodar com o backend
+
+`pnpm dev` desvia `/api` e `/auth` para `http://localhost:5251` (perfil `http` do
+`launchSettings.json` do `vitra-erp-dotnet`) — proxy no `vite.config.ts`. Assim o
+front roda **mesma origem** e o cookie de sessão viaja sem `SameSite=None` nem
+CORS; não é preciso `.env` nem `VITE_API_URL`.
+
+```bash
+VITE_API_PROXY=http://localhost:5000 pnpm dev   # backend em outra porta/host
+```
+
+Sem o backend no ar, as telas já ligadas (login, seletor de empresa, produtos)
+mostram o estado de falha — que é o comportamento correto, não um bug.

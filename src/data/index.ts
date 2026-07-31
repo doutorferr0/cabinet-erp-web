@@ -1,3 +1,4 @@
+import { parceiros } from '@/data/parceiros-api'
 import { produtosApi } from '@/data/produtos-api'
 import {
   type ListProvider,
@@ -7,41 +8,42 @@ import {
   normalize,
 } from '@/data/provider'
 import { type Cidade, cidades } from '@/mocks/cidades'
-import { type Cliente, clienteVazio, clientes } from '@/mocks/clientes'
+import { clienteVazio } from '@/mocks/clientes'
 import { type Colaborador, colaboradorVazio, colaboradores } from '@/mocks/colaboradores'
-import { type Fornecedor, fornecedorVazio, fornecedores } from '@/mocks/fornecedores'
+import { fornecedorVazio } from '@/mocks/fornecedores'
 import { type Orcamento, orcamentoVazio, orcamentos } from '@/mocks/orcamentos'
 import { type OrdemCompra, ordemCompraVazia, ordensCompra } from '@/mocks/ordens-compra'
 import { type PedidoCompra, pedidoCompraVazio, pedidosCompra } from '@/mocks/pedidos-compra'
-import { type Profissional, profissionais, profissionalVazio } from '@/mocks/profissionais'
+import { profissionalVazio } from '@/mocks/profissionais'
 
 /**
  * REGISTRY DE PROVIDERS — a fronteira entre as telas e a origem dos dados.
  *
  * A troca mock → API acontece ENTRADA POR ENTRADA, conforme o backend publica o
- * recurso: `produtos` já é HTTP (`src/data/produtos-api.ts`), o resto ainda monta
- * provider sobre os arrays de `src/mocks/` — por falta de endpoint, não por
- * escolha. A assinatura (`list`/`get`/`empty`) é a mesma dos dois lados, então a
- * tela não sabe de qual está lendo.
+ * recurso. Já são HTTP: `produtos` (`produtos-api.ts`) e os três papéis de
+ * parceiro — `clientes`, `fornecedores`, `profissionais` (`parceiros-api.ts`).
+ * O resto ainda monta provider sobre os arrays de `src/mocks/` — por falta de
+ * endpoint, não por escolha.
+ *
+ * **A entrada tem a forma do que o contrato oferece, não a forma que a tela
+ * gostaria.** Produtos tem `list`/`get`/`empty` porque há detalhe por id;
+ * parceiros tem `list`/`empty` porque NÃO há. Um `get` mock ao lado de uma
+ * listagem real casaria uuid do servidor com id inventado e responderia
+ * "não encontrado" para registro que existe.
  *
  * O predicado `matches` some na troca — quem passa a filtrar é o backend
  * (o `q` já viaja no `TableQueryState`).
  */
 export const data = {
-  clientes: createMockProvider<Cliente>({
-    rows: clientes,
-    matches: (c, q) => String(c.id).includes(q) || normalize(c.nome).includes(q),
-    empty: clienteVazio,
-  }),
+  /**
+   * Os três PAPÉIS de `GET /api/partners` — mesma tabela no backend, filtro por
+   * `role`. Listagem do servidor; `empty` continua local (o backend não fornece
+   * registro em branco) e **não há `get`**: o contrato não publicou detalhe por
+   * id, então a tela desabilita `Alterar`/`Consul.` em vez de abrir vazio.
+   */
+  clientes: parceiros('customer', clienteVazio),
 
-  fornecedores: createMockProvider<Fornecedor>({
-    rows: fornecedores,
-    matches: (f, q) =>
-      String(f.id).includes(q) ||
-      normalize(f.razaoSocial).includes(q) ||
-      normalize(f.nomeFantasia).includes(q),
-    empty: fornecedorVazio,
-  }),
+  fornecedores: parceiros('supplier', fornecedorVazio),
 
   colaboradores: createMockProvider<Colaborador>({
     rows: colaboradores,
@@ -49,14 +51,7 @@ export const data = {
     empty: colaboradorVazio,
   }),
 
-  profissionais: createMockProvider<Profissional>({
-    rows: profissionais,
-    matches: (p, q) =>
-      String(p.id).includes(q) ||
-      normalize(p.nomeApresentacao).includes(q) ||
-      normalize(p.nome).includes(q),
-    empty: profissionalVazio,
-  }),
+  profissionais: parceiros('professional', profissionalVazio),
 
   /**
    * Do backend: `GET /api/products` e `GET /api/products/{id}`. As linhas da

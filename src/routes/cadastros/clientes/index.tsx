@@ -1,7 +1,7 @@
+import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
-import type { Cliente } from '@/mocks/clientes'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -9,21 +9,23 @@ export const Route = createFileRoute('/cadastros/clientes/')({
   component: ClientesPage,
 })
 
-const columns: ColumnDef<Cliente>[] = [
-  { accessorKey: 'id', header: 'Código' },
-  { accessorKey: 'nome', header: 'Nome' },
+/**
+ * `Profissional` e `Categoria` saíram: não existem no `PartnerDto`. As duas são
+ * do vínculo comercial que a §2 mostra e o contrato ainda não expõe — voltam
+ * quando o DTO crescer.
+ *
+ * `Ativo` é o `active` do vínculo com a empresa ativa; `accessorKey` é o nome do
+ * campo no contrato porque viaja como `sortBy`.
+ */
+const columns: ColumnDef<PartnerDto>[] = [
   {
-    accessorKey: 'profissional',
-    header: 'Profissional',
+    accessorKey: 'code',
+    header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
+  { accessorKey: 'legalName', header: 'Nome' },
   {
-    accessorKey: 'categoria',
-    header: 'Categoria',
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-  },
-  {
-    accessorKey: 'ativo',
+    accessorKey: 'active',
     header: 'Ativo',
     cell: ({ getValue }) => (getValue<boolean>() ? 'Sim' : 'Não'),
   },
@@ -40,11 +42,13 @@ function ClientesPage() {
     })
   }
 
-  const actions = cadastroActions<Cliente>({
+  const actions = cadastroActions<PartnerDto>({
     entidade: 'cliente',
     onIncluir: () => abrir('novo'),
-    onAbrir: (c) => abrir(String(c.id)),
-    onConsultar: (c) => abrir(String(c.id), 'consulta'),
+    // Sem `onAbrir`: a listagem é do servidor e o contrato não tem detalhe
+    // por id. Abrir com o mock casaria uuid do servidor com id inventado.
+    motivoSemAbrir:
+      'O servidor ainda não publica o detalhe de um parceiro (GET /api/partners/{id}).',
   })
 
   return (

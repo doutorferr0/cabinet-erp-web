@@ -12,7 +12,17 @@ export interface CadastroActionsOptions<T> {
   /** Nome da entidade nas mensagens mock (ex.: 'cliente'). */
   entidade: string
   onIncluir: () => void
-  onAbrir: (row: T) => void
+  /**
+   * Abre o registro selecionado. **Opcional**: recurso cujo backend ainda não
+   * publicou detalhe por id não tem como abrir, e aí vem `motivoSemAbrir`.
+   */
+  onAbrir?: (row: T) => void
+  /**
+   * Por que `Alterar`/`Consul.` estão desabilitados. Some quando o endpoint de
+   * detalhe existir. Desabilitar sem dizer o motivo faria o operador reportar
+   * defeito — e ele estaria certo em achar que é um.
+   */
+  motivoSemAbrir?: string
   /** Consulta somente-leitura (padrão 8). Sem tela dedicada ainda: cai em `onAbrir`. */
   onConsultar?: (row: T) => void
   /** Desativação lógica — nunca exclusão real na UI de cadastros. */
@@ -29,12 +39,16 @@ export function cadastroActions<T>({
   entidade,
   onIncluir,
   onAbrir,
+  motivoSemAbrir,
   onConsultar,
   onExcluir,
   onImprimir,
   onFiltro,
 }: CadastroActionsOptions<T>): DataTableAction<T>[] {
   const consultar = onConsultar ?? onAbrir
+  // As duas ações que precisam do registro inteiro. `Incluir` continua: abrir em
+  // branco não depende de detalhe do servidor.
+  const semDetalhe = onAbrir === undefined
   return [
     { id: 'filtro', label: 'Filtro', onClick: onFiltro ?? focarBusca },
     { id: 'incluir', label: 'Incluir', onClick: onIncluir },
@@ -42,13 +56,19 @@ export function cadastroActions<T>({
       id: 'alterar',
       label: 'Alterar',
       needsSelection: true,
-      onClick: (row) => row && onAbrir(row),
+      disabled: semDetalhe,
+      ...(motivoSemAbrir && semDetalhe ? { title: motivoSemAbrir } : {}),
+      onClick: (row) => row && onAbrir?.(row),
     },
     {
       id: 'consultar',
       label: 'Consul.',
       needsSelection: true,
-      onClick: (row) => row && consultar(row),
+      disabled: semDetalhe && onConsultar === undefined,
+      ...(motivoSemAbrir && semDetalhe && onConsultar === undefined
+        ? { title: motivoSemAbrir }
+        : {}),
+      onClick: (row) => row && consultar?.(row),
     },
     {
       id: 'excluir',

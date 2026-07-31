@@ -15,24 +15,63 @@ já vem do servidor:
 | Empresa ativa da sessão e troca de empresa | `GET /auth/tenants` · `GET /auth/me` · `PUT /auth/active-tenant` | `src/data/empresas-api.ts` |
 | Login, guarda de sessão e troca de senha | `POST /auth/login` · `GET /auth/me` · `POST /auth/change-password` | `src/data/sessao.ts` |
 | **Cadastro de produtos (listagem e detalhe)** | `GET /api/products` · `GET /api/products/{id}` | `src/data/produtos-api.ts` |
+| **Fornecedor, Cliente e Profissional (listagem)** | `GET /api/partners?role=` | `src/data/parceiros-api.ts` |
 
 O resto das telas segue em mock por **falta de contrato**, não por escolha. O
 registry de `src/data/index.ts` continua sendo o único ponto que muda quando esses
 endpoints existirem — a troca acontece entrada por entrada, e `produtos` já é HTTP
 enquanto os vizinhos são mock.
 
-### Publicado e ainda NÃO consumido
+## Parceiros — uma tabela, três telas, e o detalhe que falta
 
-| Endpoint | Serviria | Situação |
+`GET /api/partners` serve **Fornecedor**, **Cliente** e **Profissional Externo**:
+são PAPÉIS do mesmo cadastro (`is_customer`/`is_supplier`/`is_professional` no
+schema), e o filtro `role` decide qual. Não foi o front que unificou — o backend
+publicou o filtro porque "a tela é Fornecedores". Papel inválido é **400**, não
+filtro ignorado: filtro ignorado faria a tela de Fornecedores mostrar clientes
+sem ninguém desconfiar de uma lista cheia.
+
+### A resposta junta duas origens
+
+| Campo | Vem de | Vale para |
 |---|---|---|
-| `GET /api/partners` | listagens de **Fornecedor**, **Cliente** e **Profissional** | contrato copiado e cliente gerado; **nenhuma tela ligada** |
+| `legalName`, `tradeName`, `document`, `email`, os três papéis | cadastro da ORGANIZAÇÃO | o grupo inteiro |
+| `code`, `paymentTerms`, `active` | vínculo com a EMPRESA | a empresa ativa |
+| `registrationActive` | cadastro da organização | o cadastro global está ativo |
 
-`PartnerDto` é uma tabela só, discriminada pelo parâmetro `role` (mesma forma do
-`catalog-lookups`, ADR-011): `isCustomer`, `isSupplier` e `isProfessional` são
-flags do MESMO registro. As três telas do front hoje têm mock separado por
-recurso (`clientes`, `fornecedores`, `profissionais`), então ligar não é trocar
-uma linha do registry — é decidir se os três viram um recurso com filtro. Fica
-registrado aqui em vez de resolvido no susto.
+Por isso `Ativo` na tela é o **`active` do vínculo**: a pergunta do operador é
+"esta empresa trabalha com este fornecedor?", não "este cadastro existe no grupo?".
+
+### Colunas: o que saiu de cada tela
+
+| Tela | Em tela | Removidas (faltam no DTO) |
+|---|---|---|
+| Fornecedor (§10) | Código, Nome Fantasia, Razão Social, Ativo | `Empresa Compradora` |
+| Cliente (§2) | Código, Nome, Ativo | `Profissional`, `Categoria` |
+| Profissional (§3) | Código, Nome de Apresentação, Nome, Ativo | `Profissão`, `Registro Profissional` |
+
+Mesma regra de produtos: coluna vazia em toda linha lê-se como cadastro
+incompleto, quando o incompleto é o contrato. `accessorKey` é o nome do campo no
+contrato, porque viaja como `sortBy` — a whitelist é
+`code`/`legalName`/`tradeName`/`document`/`active`, e `paymentTerms`, `email` e
+`registrationActive` estão fora dela.
+
+### SEM detalhe por id — e o que isso fez com a tela
+
+Não existe `GET /api/partners/{id}`. A consequência é honesta em vez de
+disfarçada:
+
+- a entrada do registry tem `list` e `empty`, **sem `get`** — um `get` mock ao
+  lado de uma listagem real casaria uuid do servidor com id inventado e
+  responderia "não encontrado" para registro que existe;
+- `Alterar` e `Consul.` ficam **desabilitados com o motivo no `title`** (botão
+  morto e mudo faz o operador reportar defeito, e ele estaria certo);
+- `Incluir` continua abrindo formulário em branco — não depende do servidor (e o
+  `Gravar` já era inerte: não há escrita no contrato);
+- abrir a rota por URL direta explica o mesmo, em vez de dizer "não encontrado".
+
+Quando o detalhe existir, o caminho é o de produtos: `itemOuNulo` +
+`ParceiroProvider` ganhando `get`, e `motivoSemAbrir` sai das três telas.
 
 ### Escrita — não existe NENHUMA
 

@@ -32,6 +32,11 @@ export interface DataTableAction<T> {
   onClick?: (row: T | null) => void
   /** Desabilita sem linha selecionada (Alterar, Consul., Excluir/Cancelar). */
   needsSelection?: boolean
+  /** Desabilita SEMPRE — a ação existe na barra mas não é possível aqui. */
+  disabled?: boolean
+  /** Motivo, no `title` do botão. Obrigatório na prática quando `disabled`: botão
+   *  morto e mudo faz o operador achar que é defeito. */
+  title?: string
   variant?: 'default' | 'outline' | 'secondary' | 'destructive' | 'ghost'
 }
 
@@ -144,7 +149,10 @@ export function VitraDataTable<T>({
             key={action.id}
             variant={action.variant ?? 'outline'}
             size="sm"
-            disabled={action.needsSelection === true && selected === null}
+            disabled={
+              action.disabled === true || (action.needsSelection === true && selected === null)
+            }
+            title={action.title}
             onClick={() => action.onClick?.(action.needsSelection ? selected : null)}
           >
             {action.label}

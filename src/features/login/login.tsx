@@ -22,9 +22,11 @@ type LoginValores = z.infer<typeof loginSchema>
  * `DocumentoHeader`: título em Headline, etiqueta em Meta, régua forte
  * fechando o bloco.
  *
- * TODO(contract): `LoginOk.mustChangePassword === true` pede a tela de troca
- * de senha (POST /auth/change-password existe no contrato). Fluxo ainda não
- * desenhado — hoje entra normalmente; registrar quando a tela nascer.
+ * Destino principal é o fluxo de senha provisória: `LoginOk.mustChangePassword
+ * === true` manda para `/trocar-senha` em vez de `/`. O que ainda NÃO há:
+ * `/auth/me` não carrega o flag, então quem pular a troca (fechar e voltar)
+ * entra normal — a guarda não tem como saber. Pergunta ao backend registrada
+ * na memória: o flag precisa vir na `SessaoAtual`.
  */
 export function LoginTela() {
   const navigate = useNavigate()
@@ -35,7 +37,10 @@ export function LoginTela() {
   })
 
   function entrar(valores: LoginValores) {
-    login.mutate(valores, { onSuccess: () => navigate({ to: '/' }) })
+    login.mutate(valores, {
+      onSuccess: (resultado) =>
+        navigate({ to: resultado.mustChangePassword ? '/trocar-senha' : '/' }),
+    })
   }
 
   return (

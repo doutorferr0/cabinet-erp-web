@@ -14,6 +14,7 @@ import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
 import { Route as ComprasIndexRouteImport } from './routes/compras/index'
@@ -59,6 +60,11 @@ const EstoqueRoute = EstoqueRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrocarSenhaRoute = TrocarSenhaRouteImport.update({
+  id: '/trocar-senha',
+  path: '/trocar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendasRoute = VendasRouteImport.update({
@@ -182,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/compras': typeof ComprasRouteWithChildren
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
+  '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/trocar-senha': typeof TrocarSenhaRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/estoque': typeof EstoqueIndexRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/compras': typeof ComprasRouteWithChildren
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
+  '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/compras'
     | '/estoque'
     | '/login'
+    | '/trocar-senha'
     | '/vendas'
     | '/cadastros/'
     | '/compras/'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/trocar-senha'
     | '/cadastros'
     | '/compras'
     | '/estoque'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/compras'
     | '/estoque'
     | '/login'
+    | '/trocar-senha'
     | '/vendas'
     | '/cadastros/'
     | '/compras/'
@@ -346,6 +358,7 @@ export interface RootRouteChildren {
   ComprasRoute: typeof ComprasRouteWithChildren
   EstoqueRoute: typeof EstoqueRouteWithChildren
   LoginRoute: typeof LoginRoute
+  TrocarSenhaRoute: typeof TrocarSenhaRoute
   VendasRoute: typeof VendasRouteWithChildren
 }
 
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trocar-senha': {
+      id: '/trocar-senha'
+      path: '/trocar-senha'
+      fullPath: '/trocar-senha'
+      preLoaderRoute: typeof TrocarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendas': {
@@ -622,6 +642,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComprasRoute: ComprasRouteWithChildren,
   EstoqueRoute: EstoqueRouteWithChildren,
   LoginRoute: LoginRoute,
+  TrocarSenhaRoute: TrocarSenhaRoute,
   VendasRoute: VendasRouteWithChildren,
 }
 export const routeTree = rootRouteImport

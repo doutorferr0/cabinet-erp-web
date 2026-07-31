@@ -16,7 +16,7 @@ interface Chamada {
 }
 
 /** Servidor falso de auth. `loginFalha` simula o 401 do contrato. */
-function servidorDeAuth({ loginFalha = false } = {}) {
+function servidorDeAuth({ loginFalha = false, precisaTrocarSenha = false } = {}) {
   const chamadas: Chamada[] = []
   const stub: FetchStub = async (input) => {
     const requisicao = input instanceof Request ? input : null
@@ -35,7 +35,7 @@ function servidorDeAuth({ loginFalha = false } = {}) {
     if (caminho === '/auth/login') {
       return loginFalha
         ? json({ detail: 'E-mail ou senha incorretos.' }, 401)
-        : json({ mustChangePassword: false })
+        : json({ mustChangePassword: precisaTrocarSenha })
     }
     return new Response('', { status: 404 })
   }
@@ -87,6 +87,18 @@ describe('Login', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou senha incorretos.')
     expect(router.state.location.pathname).toBe('/login')
+  })
+
+  it('senha provisória (mustChangePassword) cai na troca de senha, não no app', async () => {
+    const { stub } = servidorDeAuth({ precisaTrocarSenha: true })
+    const { router, user } = renderRoute('/login', stub)
+
+    await preencherEEntrar(user)
+
+    expect(await screen.findByLabelText('Senha atual')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/trocar-senha')
+    // Fora do shell: quem está trocando a senha provisória não tem módulo para navegar.
+    expect(screen.queryByText('Cadastros')).not.toBeInTheDocument()
   })
 })
 

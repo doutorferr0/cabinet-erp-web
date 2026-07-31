@@ -5,7 +5,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListProductsData, ListProductsErrors, ListProductsResponses } from './types.gen';
+import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -30,6 +30,8 @@ export const listCatalogLookups = <ThrowOnError extends boolean = false>(options
 export const listProducts = <ThrowOnError extends boolean = false>(options?: Options<ListProductsData, ThrowOnError>): RequestResult<ListProductsResponses, ListProductsErrors, ThrowOnError> => (options?.client ?? client).get<ListProductsResponses, ListProductsErrors, ThrowOnError>({ url: '/api/products', ...options });
 
 export const getProduct = <ThrowOnError extends boolean = false>(options: Options<GetProductData, ThrowOnError>): RequestResult<GetProductResponses, GetProductErrors, ThrowOnError> => (options.client ?? client).get<GetProductResponses, GetProductErrors, ThrowOnError>({ url: '/api/products/{id}', ...options });
+
+export const listPartners = <ThrowOnError extends boolean = false>(options?: Options<ListPartnersData, ThrowOnError>): RequestResult<ListPartnersResponses, ListPartnersErrors, ThrowOnError> => (options?.client ?? client).get<ListPartnersResponses, ListPartnersErrors, ThrowOnError>({ url: '/api/partners', ...options });
 
 export const authLogin = <ThrowOnError extends boolean = false>(options: Options<AuthLoginData, ThrowOnError>): RequestResult<AuthLoginResponses, AuthLoginErrors, ThrowOnError> => (options.client ?? client).post<AuthLoginResponses, AuthLoginErrors, ThrowOnError>({
     url: '/auth/login',

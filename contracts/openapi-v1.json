@@ -251,6 +251,90 @@
         }
       }
     },
+    "/api/partners": {
+      "get": {
+        "tags": ["parceiros"],
+        "operationId": "ListPartners",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPartnerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": ["auth"],
@@ -490,6 +574,22 @@
           }
         }
       },
+      "PagedResultOfPartnerDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfProductDto": {
         "required": ["rows", "total"],
         "type": "object",
@@ -503,6 +603,62 @@
           "total": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "PartnerDto": {
+        "required": [
+          "id",
+          "code",
+          "legalName",
+          "tradeName",
+          "document",
+          "email",
+          "isCustomer",
+          "isSupplier",
+          "isProfessional",
+          "paymentTerms",
+          "active",
+          "registrationActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": ["null", "string"]
+          },
+          "legalName": {
+            "type": "string"
+          },
+          "tradeName": {
+            "type": ["null", "string"]
+          },
+          "document": {
+            "type": ["null", "string"]
+          },
+          "email": {
+            "type": ["null", "string"]
+          },
+          "isCustomer": {
+            "type": "boolean"
+          },
+          "isSupplier": {
+            "type": "boolean"
+          },
+          "isProfessional": {
+            "type": "boolean"
+          },
+          "paymentTerms": {
+            "type": ["null", "string"]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "registrationActive": {
+            "type": "boolean"
           }
         }
       },
@@ -674,6 +830,9 @@
     },
     {
       "name": "catalogo"
+    },
+    {
+      "name": "parceiros"
     },
     {
       "name": "auth"

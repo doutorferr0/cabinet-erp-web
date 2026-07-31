@@ -93,18 +93,32 @@ QueryClient) não repete 4xx. Com a repetição padrão do TanStack Query, um 40
 "nenhuma empresa ativa" deixaria a tela ~7s em esqueleto antes de dizer o que o
 servidor respondeu de primeira. 5xx e falha de rede seguem repetindo.
 
-### Como o dev fala com o backend
+### Rodar o par local
 
-`vite.config.ts` desvia `/api` e `/auth` para `http://localhost:5251` (perfil
-`http` do `launchSettings.json` do backend; `VITE_API_PROXY` troca o destino).
+```bash
+dotnet run --project src/Vitra.Api   # vitra-erp-dotnet → http://localhost:5199
+pnpm dev                             # aqui            → http://localhost:5173
+```
 
-**A escolha é sobre o COOKIE, não sobre conveniência.** A sessão é um cookie
-opaco (ADR-010, D2). Apontar o front direto para a porta do backend tornaria
-toda chamada cross-origin, e aí o cookie passaria a depender de `SameSite=None;
-Secure` + CORS com `Allow-Credentials` — configuração que teria de valer em
-desenvolvimento e mudaria em produção. Com o proxy, `configurarApi()` fica com
-base `/` e o dev se parece com a implantação. `VITE_API_URL` continua existindo
-para a implantação em que as origens forem mesmo diferentes.
+O `vite.config.ts` desvia `/api` e `/auth` para `http://localhost:5199` — a porta
+que o `docs/ligar-com-o-front.md` do backend publica (o `launchSettings.json` tem
+dois perfis com portas diferentes; quem manda é o documento escrito para o front).
+`VITE_API_PROXY` troca o destino sem editar arquivo.
+
+Com o proxy, `configurarApi()` fica com a base padrão `/` e **não é preciso `.env`
+nem `VITE_API_URL`**.
+
+**Por que proxy e não `VITE_API_URL` apontando para a porta do backend.** A sessão
+é um cookie opaco (ADR-010, D2). Pelo proxy o navegador enxerga UMA origem: o
+cookie é *same-site*, funciona com `SameSite=Lax` e não há CORS. Cross-origin, o
+navegador só manda o cookie com `SameSite=None; Secure`, o que exige **HTTPS nos
+dois lados** em desenvolvimento. Não é preferência — é menos peça para dar errado.
+O backend recomenda o mesmo em `docs/ligar-com-o-front.md`, embora aceite chamada
+direta (`Vitra:AllowedOrigins` já traz `http://localhost:5173`).
+
+`VITE_API_URL` **continua existindo** — é para a implantação, onde front e API
+ficam em origens diferentes, com HTTPS dos dois lados e o cookie configurado para
+isso. Lá não há servidor de desenvolvimento no meio para fazer o desvio.
 
 ### Conferir a cópia do contrato
 

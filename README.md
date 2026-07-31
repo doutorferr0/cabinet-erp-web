@@ -14,10 +14,14 @@ pnpm check && pnpm check-types && pnpm test
 
 ## Rodar com o backend
 
-`pnpm dev` desvia `/api` e `/auth` para `http://localhost:5251` (perfil `http` do
-`launchSettings.json` do `vitra-erp-dotnet`) — proxy no `vite.config.ts`. Assim o
-front roda **mesma origem** e o cookie de sessão viaja sem `SameSite=None` nem
-CORS; não é preciso `.env` nem `VITE_API_URL`.
+```bash
+dotnet run --project src/Vitra.Api   # no vitra-erp-dotnet → :5199
+pnpm dev                             # aqui → :5173, com proxy para :5199
+```
+
+`pnpm dev` desvia `/api` e `/auth` para `http://localhost:5199` (proxy no
+`vite.config.ts`). Assim o front roda **mesma origem** e o cookie de sessão viaja
+sem `SameSite=None` nem CORS; não é preciso `.env` nem `VITE_API_URL`.
 
 ```bash
 VITE_API_PROXY=http://localhost:5000 pnpm dev   # backend em outra porta/host

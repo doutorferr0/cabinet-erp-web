@@ -202,11 +202,25 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
 export function ProfissionalForm({
   profissional,
   readOnly = false,
-}: { profissional: Profissional; readOnly?: boolean }) {
+  onGravar: gravarDeFora,
+}: {
+  profissional: Profissional
+  readOnly?: boolean
+  /**
+   * Quem grava, quando há endpoint. Sem isto o formulário cai no comportamento
+   * antigo (sem efeito no servidor) — é o caso do "Incluir", que o contrato
+   * ainda não atende.
+   */
+  onGravar?: (values: Profissional) => void
+}) {
   const navigate = useNavigate()
   const [buscaCidadePrefix, setBuscaCidadePrefix] = useState<PrefixoCidade | null>(null)
 
   function onGravar(values: Profissional) {
+    if (gravarDeFora) {
+      gravarDeFora(values)
+      return
+    }
     // Mock only: sem backend. Na integração, mutation do TanStack Query.
     console.info('[mock] Gravar profissional', values)
     void navigate({ to: '/cadastros/profissionais' })

@@ -1,5 +1,6 @@
-import type { PartnerDto } from '@/api/gerado'
-import { createApiListProvider } from '@/data/api-provider'
+import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
+import { updatePartner } from '@/api/gerado'
+import { ErroDaApi, createApiListProvider, detalheDoProblema } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 
 /**
@@ -23,12 +24,16 @@ import type { ListProvider } from '@/data/provider'
  * Por isso `Ativo` na tela é `active` (o VÍNCULO): a pergunta do operador é "esta
  * empresa trabalha com este fornecedor?", não "este cadastro existe no grupo?".
  *
- * ## Sem detalhe por id
+ * ## Sem LEITURA por id, mas com ESCRITA por id
  *
- * O contrato NÃO tem `GET /api/partners/{id}` — só a listagem. Por isso este
- * arquivo não expõe `get`: a rota, o formato de "não encontrado" e o corpo do
- * detalhe seriam invenção. A consequência na tela está em `cadastroActions`
- * (`Alterar`/`Consul.` desabilitados com o motivo).
+ * O contrato tem `PUT /api/partners/{id}` e **não** tem `GET /api/partners/{id}`.
+ * Parece torto e não é: o `PartnerWriteRequest` é SUBCONJUNTO do `PartnerDto` da
+ * listagem, então **a linha já traz todo campo gravável**. Quem faz o papel do
+ * detalhe é a linha selecionada — buscar de novo por id seria pedir ao servidor
+ * o que acabou de chegar.
+ *
+ * O preço está no que a linha não alcança: **link direto e recarga**. Sem row em
+ * mãos não há o que editar, e a rota diz isso em vez de abrir formulário vazio.
  */
 
 export const URL_PARCEIROS = '/api/partners'
@@ -71,4 +76,73 @@ export interface ParceiroProvider<T> extends ListProvider<PartnerDto> {
 
 export function parceiros<T>(role: PapelDeParceiro, empty: (id: number) => T): ParceiroProvider<T> {
   return { ...parceirosDoPapel(role), empty }
+}
+
+/**
+ * O que a tela EDITA de um parceiro.
+ *
+ * Recorte do `PartnerWriteRequest` que os formulários de Fornecedor, Cliente e
+ * Profissional realmente têm campo para mostrar. O resto do corpo (`code`,
+ * `paymentTerms` e os três papéis) viaja INALTERADO a partir da linha — ver
+ * `corpoDeEscrita`.
+ */
+export interface CamposEditaveis {
+  legalName: string
+  tradeName: string | null
+  document: string | null
+  email: string | null
+  active: boolean
+}
+
+/**
+ * Linha original + campos editados → corpo do `PUT`.
+ *
+ * **O que a tela não mostra é devolvido como veio.** `PUT` substitui o registro
+ * inteiro: mandar `code`, `paymentTerms` ou os papéis como `null` porque o
+ * formulário não tem campo para eles apagaria dado que ninguém pediu para apagar
+ * — e o operador só descobriria na próxima listagem.
+ *
+ * Os três papéis vêm da linha pelo mesmo motivo: quem é cliente E fornecedor não
+ * pode deixar de ser fornecedor por ter sido gravado na tela de Clientes.
+ */
+export function corpoDeEscrita(
+  original: PartnerDto,
+  editado: CamposEditaveis,
+): PartnerWriteRequest {
+  return {
+    legalName: editado.legalName,
+    tradeName: editado.tradeName,
+    document: editado.document,
+    email: editado.email,
+    active: editado.active,
+    code: original.code,
+    paymentTerms: original.paymentTerms,
+    isCustomer: original.isCustomer,
+    isSupplier: original.isSupplier,
+    isProfessional: original.isProfessional,
+  }
+}
+
+/**
+ * Grava a alteração e devolve o registro COMO O SERVIDOR o deixou — o contrato
+ * responde `200` com o `PartnerDto`, não `204`. Aceitar corpo vazio aqui seria
+ * aceitar uma resposta que o contrato não descreve.
+ *
+ * `403` é o RLS recusando escopo (a empresa da sessão não é a do registro), e o
+ * `detail` do problem+json é o que explica isso ao operador.
+ */
+export async function atualizarParceiro(
+  id: string,
+  corpo: PartnerWriteRequest,
+): Promise<PartnerDto> {
+  const { data, error, response } = await updatePartner({ path: { id }, body: corpo })
+
+  if (error || !data) {
+    throw new ErroDaApi(
+      `Falha ao gravar o parceiro ${id}.`,
+      response?.status ?? 0,
+      detalheDoProblema(error),
+    )
+  }
+  return data
 }

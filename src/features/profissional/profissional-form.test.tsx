@@ -38,9 +38,9 @@ describe('tela Profissional Externo', () => {
     })
   })
 
-  it('abrir por id direto explica que o detalhe não existe no contrato', async () => {
+  it('abrir por id direto manda usar a listagem', async () => {
     renderRoute('/cadastros/profissionais/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70')
 
-    expect(await screen.findByText(/só pode ser aberto/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Abra o profissional pela listagem/i)).toBeInTheDocument()
   })
 })

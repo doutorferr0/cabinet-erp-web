@@ -191,10 +191,24 @@ function FornecedorCorpo() {
 export function FornecedorForm({
   fornecedor,
   readOnly = false,
-}: { fornecedor: Fornecedor; readOnly?: boolean }) {
+  onGravar: gravarDeFora,
+}: {
+  fornecedor: Fornecedor
+  readOnly?: boolean
+  /**
+   * Quem grava, quando há endpoint. Sem isto o formulário cai no comportamento
+   * antigo (sem efeito no servidor) — é o caso do "Incluir", que o contrato
+   * ainda não atende.
+   */
+  onGravar?: (values: Fornecedor) => void
+}) {
   const navigate = useNavigate()
 
   function onGravar(values: Fornecedor) {
+    if (gravarDeFora) {
+      gravarDeFora(values)
+      return
+    }
     // Mock only: sem backend. Na integração, mutation do TanStack Query.
     console.info('[mock] Gravar fornecedor', values)
     void navigate({ to: '/cadastros/fornecedores' })

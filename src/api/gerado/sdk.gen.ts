@@ -5,7 +5,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses } from './types.gen';
+import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, CreatePartnerData, CreatePartnerErrors, CreatePartnerResponses, CreateProductData, CreateProductErrors, CreateProductResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, UpdatePartnerData, UpdatePartnerErrors, UpdatePartnerResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -29,9 +29,45 @@ export const listCatalogLookups = <ThrowOnError extends boolean = false>(options
 
 export const listProducts = <ThrowOnError extends boolean = false>(options?: Options<ListProductsData, ThrowOnError>): RequestResult<ListProductsResponses, ListProductsErrors, ThrowOnError> => (options?.client ?? client).get<ListProductsResponses, ListProductsErrors, ThrowOnError>({ url: '/api/products', ...options });
 
+export const createProduct = <ThrowOnError extends boolean = false>(options: Options<CreateProductData, ThrowOnError>): RequestResult<CreateProductResponses, CreateProductErrors, ThrowOnError> => (options.client ?? client).post<CreateProductResponses, CreateProductErrors, ThrowOnError>({
+    url: '/api/products',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const getProduct = <ThrowOnError extends boolean = false>(options: Options<GetProductData, ThrowOnError>): RequestResult<GetProductResponses, GetProductErrors, ThrowOnError> => (options.client ?? client).get<GetProductResponses, GetProductErrors, ThrowOnError>({ url: '/api/products/{id}', ...options });
 
+export const updateProduct = <ThrowOnError extends boolean = false>(options: Options<UpdateProductData, ThrowOnError>): RequestResult<UpdateProductResponses, UpdateProductErrors, ThrowOnError> => (options.client ?? client).put<UpdateProductResponses, UpdateProductErrors, ThrowOnError>({
+    url: '/api/products/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const listPartners = <ThrowOnError extends boolean = false>(options?: Options<ListPartnersData, ThrowOnError>): RequestResult<ListPartnersResponses, ListPartnersErrors, ThrowOnError> => (options?.client ?? client).get<ListPartnersResponses, ListPartnersErrors, ThrowOnError>({ url: '/api/partners', ...options });
+
+export const createPartner = <ThrowOnError extends boolean = false>(options: Options<CreatePartnerData, ThrowOnError>): RequestResult<CreatePartnerResponses, CreatePartnerErrors, ThrowOnError> => (options.client ?? client).post<CreatePartnerResponses, CreatePartnerErrors, ThrowOnError>({
+    url: '/api/partners',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const updatePartner = <ThrowOnError extends boolean = false>(options: Options<UpdatePartnerData, ThrowOnError>): RequestResult<UpdatePartnerResponses, UpdatePartnerErrors, ThrowOnError> => (options.client ?? client).put<UpdatePartnerResponses, UpdatePartnerErrors, ThrowOnError>({
+    url: '/api/partners/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const authLogin = <ThrowOnError extends boolean = false>(options: Options<AuthLoginData, ThrowOnError>): RequestResult<AuthLoginResponses, AuthLoginErrors, ThrowOnError> => (options.client ?? client).post<AuthLoginResponses, AuthLoginErrors, ThrowOnError>({
     url: '/auth/login',

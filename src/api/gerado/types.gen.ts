@@ -66,6 +66,19 @@ export type PartnerDto = {
     registrationActive: boolean;
 };
 
+export type PartnerWriteRequest = {
+    document: null | string;
+    legalName: null | string;
+    tradeName: null | string;
+    email: null | string;
+    isCustomer: null | boolean;
+    isSupplier: null | boolean;
+    isProfessional: null | boolean;
+    code: null | string;
+    paymentTerms: null | string;
+    active: null | boolean;
+};
+
 export type ProblemDetails = {
     type?: null | string;
     title?: null | string;
@@ -97,6 +110,12 @@ export type ProductVariantDto = {
     priceCents: null | number;
     stockQty: null | number;
     minStock: null | number;
+};
+
+export type ProductWriteRequest = {
+    code: null | string;
+    description: null | string;
+    active: null | boolean;
 };
 
 export type ReadinessStatus = {
@@ -230,6 +249,39 @@ export type ListProductsResponses = {
 
 export type ListProductsResponse = ListProductsResponses[keyof ListProductsResponses];
 
+export type CreateProductData = {
+    body: ProductWriteRequest;
+    path?: never;
+    query?: never;
+    url: '/api/products';
+};
+
+export type CreateProductErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type CreateProductError = CreateProductErrors[keyof CreateProductErrors];
+
+export type CreateProductResponses = {
+    /**
+     * Created
+     */
+    201: ProductDto;
+};
+
+export type CreateProductResponse = CreateProductResponses[keyof CreateProductResponses];
+
 export type GetProductData = {
     body?: never;
     path: {
@@ -260,6 +312,45 @@ export type GetProductResponses = {
 };
 
 export type GetProductResponse = GetProductResponses[keyof GetProductResponses];
+
+export type UpdateProductData = {
+    body: ProductWriteRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/products/{id}';
+};
+
+export type UpdateProductErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type UpdateProductError = UpdateProductErrors[keyof UpdateProductErrors];
+
+export type UpdateProductResponses = {
+    /**
+     * OK
+     */
+    200: ProductDto;
+};
+
+export type UpdateProductResponse = UpdateProductResponses[keyof UpdateProductResponses];
 
 export type ListPartnersData = {
     body?: never;
@@ -296,6 +387,78 @@ export type ListPartnersResponses = {
 };
 
 export type ListPartnersResponse = ListPartnersResponses[keyof ListPartnersResponses];
+
+export type CreatePartnerData = {
+    body: PartnerWriteRequest;
+    path?: never;
+    query?: never;
+    url: '/api/partners';
+};
+
+export type CreatePartnerErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type CreatePartnerError = CreatePartnerErrors[keyof CreatePartnerErrors];
+
+export type CreatePartnerResponses = {
+    /**
+     * Created
+     */
+    201: PartnerDto;
+};
+
+export type CreatePartnerResponse = CreatePartnerResponses[keyof CreatePartnerResponses];
+
+export type UpdatePartnerData = {
+    body: PartnerWriteRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/partners/{id}';
+};
+
+export type UpdatePartnerErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type UpdatePartnerError = UpdatePartnerErrors[keyof UpdatePartnerErrors];
+
+export type UpdatePartnerResponses = {
+    /**
+     * OK
+     */
+    200: PartnerDto;
+};
+
+export type UpdatePartnerResponse = UpdatePartnerResponses[keyof UpdatePartnerResponses];
 
 export type AuthLoginData = {
     body: LoginRequest;

@@ -1,7 +1,7 @@
+import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
-import type { Profissional } from '@/mocks/profissionais'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -9,21 +9,27 @@ export const Route = createFileRoute('/cadastros/profissionais/')({
   component: ProfissionaisPage,
 })
 
-const columns: ColumnDef<Profissional>[] = [
-  { accessorKey: 'id', header: 'Código' },
-  { accessorKey: 'nomeApresentacao', header: 'Nome de Apresentação' },
+/**
+ * `Profissão` e `Registro Profissional` saíram: não existem no `PartnerDto`. A §3
+ * registra as duas — voltam quando o contrato as expuser.
+ *
+ * `Ativo` é o `active` do vínculo com a empresa ativa; `accessorKey` é o nome do
+ * campo no contrato porque viaja como `sortBy`.
+ */
+const columns: ColumnDef<PartnerDto>[] = [
   {
-    accessorKey: 'profissao',
-    header: 'Profissão',
+    accessorKey: 'code',
+    header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
   {
-    accessorKey: 'registroProfissional',
-    header: 'Registro Profissional',
-    cell: ({ getValue }) => getValue<string>() || '—',
+    accessorKey: 'tradeName',
+    header: 'Nome de Apresentação',
+    cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
+  { accessorKey: 'legalName', header: 'Nome' },
   {
-    accessorKey: 'ativo',
+    accessorKey: 'active',
     header: 'Ativo',
     cell: ({ getValue }) => (getValue<boolean>() ? 'Sim' : 'Não'),
   },
@@ -40,11 +46,13 @@ function ProfissionaisPage() {
     })
   }
 
-  const actions = cadastroActions<Profissional>({
+  const actions = cadastroActions<PartnerDto>({
     entidade: 'profissional externo',
     onIncluir: () => abrir('novo'),
-    onAbrir: (p) => abrir(String(p.id)),
-    onConsultar: (p) => abrir(String(p.id), 'consulta'),
+    // Sem `onAbrir`: a listagem é do servidor e o contrato não tem detalhe
+    // por id. Abrir com o mock casaria uuid do servidor com id inventado.
+    motivoSemAbrir:
+      'O servidor ainda não publica o detalhe de um parceiro (GET /api/partners/{id}).',
   })
 
   return (

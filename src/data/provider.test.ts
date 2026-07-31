@@ -57,15 +57,16 @@ describe('ResourceProvider (contrato)', () => {
 
 describe('registry de providers', () => {
   /**
-   * Os recursos que ainda são MOCK. `produtos` saiu daqui quando virou HTTP —
-   * o contrato dele é asserido contra servidor falso em `produtos-api.test.ts`,
-   * que é onde a mesma promessa (`list`/`get`/`empty`) passa a valer.
+   * Os recursos que ainda são MOCK. Saíram daqui os que viraram HTTP —
+   * `produtos` (`produtos-api.test.ts`) e os três papéis de parceiro
+   * (`parceiros-api.test.ts`), asseridos contra servidor falso.
+   *
+   * `clientes`, `fornecedores` e `profissionais` não voltam a esta lista tal como
+   * estavam: sem `GET /api/partners/{id}` eles não têm `get`, e é essa a forma
+   * que o contrato oferece hoje.
    */
   const recursosComCadastro = [
-    'clientes',
-    'fornecedores',
     'colaboradores',
-    'profissionais',
     'ordensCompra',
     'pedidosCompra',
     'orcamentos',

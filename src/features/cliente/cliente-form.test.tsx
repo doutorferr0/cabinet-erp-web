@@ -1,12 +1,20 @@
+import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 describe('tela Cliente', () => {
-  it('listagem mostra clientes mockados', async () => {
-    renderRoute('/cadastros/clientes')
-    expect(await screen.findByText('CONSUMIDOR')).toBeInTheDocument()
+  it('listagem mostra os clientes do servidor, pedindo só o papel da tela', async () => {
+    const urls: string[] = []
+    const linhas = [parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true })]
+    renderRoute('/cadastros/clientes', (entrada) => {
+      urls.push(String(entrada instanceof Request ? entrada.url : entrada))
+      return stubDeParceiros(linhas)(entrada)
+    })
+
+    expect(await screen.findByText('ANDRÉ BATALHA')).toBeInTheDocument()
     expect(screen.getByText('Cadastro de Clientes')).toBeInTheDocument()
+    expect(urls.find((u) => u.includes('/api/partners'))).toContain('role=customer')
   })
 
   it('formulário grava e volta para a listagem', async () => {

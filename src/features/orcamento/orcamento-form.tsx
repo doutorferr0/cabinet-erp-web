@@ -1,3 +1,4 @@
+import type { PartnerDto } from '@/api/gerado'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CadastroForm } from '@/components/vitra/cadastro-form'
@@ -20,7 +21,6 @@ import { useLookupOptions } from '@/data/lookups-api'
 import { tabelas } from '@/data/tabelas'
 import { PERCENT_ESCALA, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
-import type { Cliente } from '@/mocks/clientes'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -121,9 +121,15 @@ function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
   )
 }
 
-const colunasCliente: ColumnDef<Cliente>[] = [
-  { accessorKey: 'id', header: 'Código' },
-  { accessorKey: 'nome', header: 'Nome' },
+// Busca de cliente = `GET /api/partners?role=customer`. Chaves no nome do
+// contrato porque viajam como `sortBy`.
+const colunasCliente: ColumnDef<PartnerDto>[] = [
+  {
+    accessorKey: 'code',
+    header: 'Código',
+    cell: ({ getValue }) => getValue<string | null>() ?? '—',
+  },
+  { accessorKey: 'legalName', header: 'Nome' },
 ]
 
 function Cabecalho() {
@@ -188,7 +194,7 @@ function Cabecalho() {
         queryKey={['busca-cliente-orcamento']}
         fetcher={(state) => data.clientes.list(state, 0)}
         onSelect={(c) => {
-          setValue('cliente', c.nome, { shouldDirty: true })
+          setValue('cliente', c.legalName, { shouldDirty: true })
           setBuscaClienteOpen(false)
         }}
       />

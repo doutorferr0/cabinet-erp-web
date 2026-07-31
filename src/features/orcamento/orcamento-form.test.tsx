@@ -1,3 +1,4 @@
+import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -67,7 +68,12 @@ describe('tela Orçamento', () => {
   })
 
   it('busca de cliente preenche o campo e grava', async () => {
-    const { router, user } = renderRoute('/vendas/orcamentos/novo')
+    // A janela de busca lê `GET /api/partners?role=customer` — a mesma fronteira
+    // da listagem de Clientes.
+    const { router, user } = renderRoute(
+      '/vendas/orcamentos/novo',
+      stubDeParceiros([parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true })]),
+    )
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: 'Cliente' }))

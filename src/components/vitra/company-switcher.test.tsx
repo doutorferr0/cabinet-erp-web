@@ -1,7 +1,7 @@
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { CompanySwitcher } from '@/components/vitra/company-switcher'
 import { type ServidorFalso, instalarServidor } from '@/test/servidor'
-import { renderWithQuery } from '@/test/utils'
+import { renderRoute, renderWithQuery, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,19 +16,27 @@ const VIA_HF = { tenantId: 'bbbb-2222', name: 'VIA HF', role: 'operator-sales' }
 let servidor: ServidorFalso
 let vinculos = [VERTZ, VIA_HF]
 let ativa: string | null = VIA_HF.tenantId
+let deslogado = false
 
-/** Servidor COM ESTADO: a troca muda o que `/auth/me` responde depois. */
+/** Servidor COM ESTADO: a troca muda o que `/auth/me` responde depois; o logout derruba a sessão. */
 function subirServidor() {
   servidor = instalarServidor({
     '/auth/tenants': () => vinculos,
-    '/auth/me': () => ({
-      organizationId: 'org-1',
-      employeeId: 'emp-1',
-      activeTenantId: ativa,
-      expiresAt: '2026-08-01T00:00:00Z',
-    }),
+    '/auth/me': () => {
+      if (deslogado) return new Response('', { status: 401 })
+      return {
+        organizationId: 'org-1',
+        employeeId: 'emp-1',
+        activeTenantId: ativa,
+        expiresAt: '2026-08-01T00:00:00Z',
+      }
+    },
     '/auth/active-tenant': ({ corpo }) => {
       ativa = (corpo as { tenantId: string }).tenantId
+      return new Response(null, { status: 204 })
+    },
+    '/auth/logout': () => {
+      deslogado = true
       return new Response(null, { status: 204 })
     },
   })
@@ -45,6 +53,7 @@ function montar() {
 beforeEach(() => {
   vinculos = [VERTZ, VIA_HF]
   ativa = VIA_HF.tenantId
+  deslogado = false
   subirServidor()
 })
 
@@ -110,5 +119,43 @@ describe('CompanySwitcher', () => {
 
     await user.click(await screen.findByRole('button', { name: /nenhuma empresa ativa/i }))
     expect(await screen.findByText(/nenhuma empresa vinculada/i)).toBeInTheDocument()
+  })
+
+  it('Sair chama POST /auth/logout e invalida tudo — a sessão é reconsultada', async () => {
+    const { user } = montar()
+
+    await user.click(await screen.findByRole('button', { name: /via hf/i }))
+    await user.click(await screen.findByRole('menuitem', { name: /sair/i }))
+
+    await waitFor(() => expect(servidor.em('/auth/logout')).toHaveLength(1))
+    expect(servidor.em('/auth/logout')[0]?.metodo).toBe('POST')
+    // Invalidação total (NÃO clear() — ele não avisa os observers montados e a
+    // guarda ficaria com o resultado velho): o /auth/me TEM que ser reconsultado.
+    await waitFor(() => expect(servidor.em('/auth/me').length).toBeGreaterThan(1))
+  })
+
+  it('Sair na aplicação inteira leva ao /login (a guarda redireciona no 401)', async () => {
+    let fora = false
+    const { user } = renderRoute('/', (input) => {
+      const url = String(input instanceof Request ? input.url : input)
+      const caminho = new URL(url, 'http://localhost').pathname
+      // Verbo vem do Request: o cliente gerado chama `fetch(new Request(...))`.
+      const metodo = input instanceof Request ? input.method : 'GET'
+      if (caminho === '/auth/me') {
+        return Promise.resolve(fora ? new Response('', { status: 401 }) : respostaSessao())
+      }
+      if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
+      if (caminho === '/auth/logout' && metodo === 'POST') {
+        fora = true
+        return Promise.resolve(new Response(null, { status: 204 }))
+      }
+      return Promise.reject(new Error(`fetch sem stub no teste: ${metodo} ${caminho}`))
+    })
+
+    await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
+    await user.click(await screen.findByRole('menuitem', { name: /sair/i }))
+
+    // A tela de login é a única com heading VITRA fora do shell.
+    expect(await screen.findByRole('heading', { name: 'VITRA' })).toBeInTheDocument()
   })
 })

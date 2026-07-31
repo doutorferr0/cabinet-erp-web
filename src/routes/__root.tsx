@@ -1,4 +1,5 @@
 import { RequireSession } from '@/app/require-session'
+import { RequireTenant } from '@/app/require-tenant'
 import { AppShell } from '@/app/shell'
 import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
 
@@ -26,9 +27,12 @@ function RootComponent() {
 
   return (
     <RequireSession>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      {/* Sessão sem empresa ativa não entra: a escolha acontece antes do shell. */}
+      <RequireTenant>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </RequireTenant>
     </RequireSession>
   )
 }

@@ -56,12 +56,16 @@ describe('ResourceProvider (contrato)', () => {
 })
 
 describe('registry de providers', () => {
+  /**
+   * Os recursos que ainda são MOCK. `produtos` saiu daqui quando virou HTTP —
+   * o contrato dele é asserido contra servidor falso em `produtos-api.test.ts`,
+   * que é onde a mesma promessa (`list`/`get`/`empty`) passa a valer.
+   */
   const recursosComCadastro = [
     'clientes',
     'fornecedores',
     'colaboradores',
     'profissionais',
-    'produtos',
     'ordensCompra',
     'pedidosCompra',
     'orcamentos',

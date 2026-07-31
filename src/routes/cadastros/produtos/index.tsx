@@ -1,8 +1,7 @@
+import type { ProductDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
-import { formatMoneyBRL } from '@/lib/formatters'
-import type { Produto } from '@/mocks/produtos'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -10,21 +9,22 @@ export const Route = createFileRoute('/cadastros/produtos/')({
   component: ProdutosPage,
 })
 
-// Colunas LITERAIS da transcrição §6 (Cadastro de Produtos).
-const columns: ColumnDef<Produto>[] = [
-  { accessorKey: 'nossoCodigo', header: 'Nosso Código' },
-  { accessorKey: 'nossaDescricao', header: 'Nossa Descrição' },
-  { accessorKey: 'marca', header: 'Marca' },
-  { accessorKey: 'fabrica', header: 'Fábrica' },
-  { accessorKey: 'tipoProduto', header: 'Tipo de Produto' },
+/**
+ * Colunas do que o `ProductDto` traz, com os rótulos LITERAIS da §6.
+ *
+ * A §6 registra mais quatro colunas — `Marca`, `Fábrica`, `Tipo de Produto` e
+ * `Valor de Tabela`. Elas NÃO estão no DTO da listagem, e coluna que fica vazia em
+ * toda linha é pior que coluna ausente: parece cadastro incompleto, não contrato
+ * incompleto. Voltam quando o DTO crescer (`docs/integracao.md`).
+ *
+ * O `accessorKey` é o nome do campo NO CONTRATO porque ele viaja como `sortBy`, e
+ * a whitelist do servidor é `code`/`description`/`active`.
+ */
+const columns: ColumnDef<ProductDto>[] = [
+  { accessorKey: 'code', header: 'Nosso Código' },
+  { accessorKey: 'description', header: 'Nossa Descrição' },
   {
-    accessorKey: 'valorTabelaCentavos',
-    header: 'Valor de Tabela',
-    meta: { numeric: true },
-    cell: ({ getValue }) => formatMoneyBRL(getValue<number>()),
-  },
-  {
-    accessorKey: 'ativo',
+    accessorKey: 'active',
     header: 'Ativo',
     cell: ({ getValue }) => (getValue<boolean>() ? 'Sim' : 'Não'),
   },
@@ -41,11 +41,11 @@ function ProdutosPage() {
     })
   }
 
-  const actions = cadastroActions<Produto>({
+  const actions = cadastroActions<ProductDto>({
     entidade: 'produto',
     onIncluir: () => abrir('novo'),
-    onAbrir: (p) => abrir(String(p.id)),
-    onConsultar: (p) => abrir(String(p.id), 'consulta'),
+    onAbrir: (p) => abrir(p.id),
+    onConsultar: (p) => abrir(p.id, 'consulta'),
   })
 
   return (

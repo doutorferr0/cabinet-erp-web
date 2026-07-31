@@ -1,11 +1,17 @@
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { data } from '@/data'
-import type { Produto } from '@/mocks/produtos'
+import { createMockListProvider, normalize } from '@/data/provider'
+import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+
+/** Material de teste local — o registry (`data.produtos`) fala HTTP; ver data-table.test.tsx. */
+const produtosMock = createMockListProvider<Produto>({
+  rows: produtos,
+  matches: (p, q) => normalize(p.nossaDescricao).includes(q),
+})
 
 const columns: ColumnDef<Produto>[] = [
   { accessorKey: 'nossoCodigo', header: 'Nosso Código' },
@@ -20,7 +26,7 @@ function setup() {
     <VitraDataTable
       columns={columns}
       queryKey={['produtos-actions-test']}
-      fetcher={(state) => data.produtos.list(state, 0)}
+      fetcher={(state) => produtosMock.list(state, 0)}
       actions={cadastroActions<Produto>({ entidade: 'produto', onIncluir, onAbrir, onExcluir })}
     />,
   )

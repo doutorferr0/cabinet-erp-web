@@ -1,11 +1,25 @@
 import { VitraDataTable } from '@/components/vitra/data-table'
-import { data } from '@/data'
 import { ErroDaApi } from '@/data/api-provider'
-import type { Produto } from '@/mocks/produtos'
+import { createMockListProvider, normalize } from '@/data/provider'
+import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+
+/**
+ * Provider LOCAL sobre o mock de produtos.
+ *
+ * NÃO usar `data.produtos` do registry: desde que o backend publicou
+ * `GET /api/products`, ele fala HTTP — e este arquivo testa a DataTable, não a
+ * fronteira de rede. Os dados são só material de teste; o que se afirma aqui é o
+ * comportamento do componente diante de um fetcher qualquer.
+ */
+const produtosMock = createMockListProvider<Produto>({
+  rows: produtos,
+  matches: (p, q) =>
+    normalize(p.nossoCodigo).includes(q) || normalize(p.nossaDescricao).includes(q),
+})
 
 const columns: ColumnDef<Produto>[] = [
   { accessorKey: 'nossoCodigo', header: 'Nosso Código' },
@@ -18,7 +32,7 @@ function setup(pageSizeOptions = [10, 20]) {
     <VitraDataTable
       columns={columns}
       queryKey={['produtos-test']}
-      fetcher={(state) => data.produtos.list(state, 0)}
+      fetcher={(state) => produtosMock.list(state, 0)}
       pageSizeOptions={pageSizeOptions}
     />,
   )
@@ -71,7 +85,7 @@ describe('VitraDataTable', () => {
       <VitraDataTable
         columns={columns}
         queryKey={['produtos-test-acao']}
-        fetcher={(state) => data.produtos.list(state, 0)}
+        fetcher={(state) => produtosMock.list(state, 0)}
         actions={[
           {
             id: 'alterar',
@@ -118,7 +132,7 @@ describe('VitraDataTable', () => {
           },
         ]}
         queryKey={['produtos-test-numeric']}
-        fetcher={(state) => data.produtos.list(state, 0)}
+        fetcher={(state) => produtosMock.list(state, 0)}
       />,
     )
     const head = await screen.findByRole('columnheader', { name: 'Valor de Tabela' })
@@ -143,7 +157,7 @@ describe('VitraDataTable', () => {
       <VitraDataTable
         columns={columns}
         queryKey={['produtos-test-num']}
-        fetcher={(state) => data.produtos.list(state, 0)}
+        fetcher={(state) => produtosMock.list(state, 0)}
         pageSizeOptions={[3]}
         rowNumbers
       />,
@@ -180,7 +194,7 @@ describe('VitraDataTable', () => {
           { accessorKey: 'marca', header: 'Marca' },
         ]}
         queryKey={['produtos-test-grupo']}
-        fetcher={(state) => data.produtos.list(state, 0)}
+        fetcher={(state) => produtosMock.list(state, 0)}
       />,
     )
 
@@ -201,7 +215,7 @@ describe('VitraDataTable', () => {
         columns={columns}
         queryKey={['produtos-test-falha']}
         fetcher={(state) =>
-          falhar ? Promise.reject(new Error('500')) : data.produtos.list(state, 0)
+          falhar ? Promise.reject(new Error('500')) : produtosMock.list(state, 0)
         }
       />,
     )
@@ -235,7 +249,7 @@ describe('VitraDataTable', () => {
         columns={columns}
         queryKey={['produtos-test-retry']}
         fetcher={(state) =>
-          falhar ? Promise.reject(new Error('500')) : data.produtos.list(state, 0)
+          falhar ? Promise.reject(new Error('500')) : produtosMock.list(state, 0)
         }
       />,
     )

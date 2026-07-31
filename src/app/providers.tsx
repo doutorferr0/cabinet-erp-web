@@ -1,4 +1,5 @@
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { repetirSeValeAPena } from '@/data/api-provider'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -24,6 +25,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
             // Foco de janela não é sinal de dado velho num ERP de mesa: o
             // operador alterna com planilha e PDF o tempo todo.
             refetchOnWindowFocus: false,
+            /**
+             * Repetir 4xx é esperar por uma resposta que não vai mudar: a tela
+             * ficaria ~7s em esqueleto para exibir o que o servidor já disse na
+             * primeira vez (409 "escolha uma empresa" é o caso do dia). 5xx e
+             * rede continuam repetindo — ver `repetirSeValeAPena`.
+             */
+            retry: repetirSeValeAPena,
           },
         },
       }),

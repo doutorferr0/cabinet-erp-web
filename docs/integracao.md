@@ -13,11 +13,14 @@ já vem do servidor:
 |---|---|---|
 | Listas de apoio do `LookupCombo` | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
 | Empresa ativa da sessão e troca de empresa | `GET /auth/tenants` · `GET /auth/me` · `PUT /auth/active-tenant` | `src/data/empresas-api.ts` |
+| Login, guarda de sessão e troca de senha | `POST /auth/login` · `GET /auth/me` · `POST /auth/change-password` | `src/data/sessao.ts` |
+| **Cadastro de produtos (listagem e detalhe)** | `GET /api/products` · `GET /api/products/{id}` | `src/data/produtos-api.ts` |
 
 O resto das telas segue em mock por **falta de contrato**, não por escolha: o
-backend ainda não publicou endpoint de cadastro (cliente, produto, fornecedor…).
-O registry de `src/data/index.ts` continua sendo o único ponto que muda quando
-esses endpoints existirem.
+backend ainda não publicou endpoint dos outros cadastros (cliente, fornecedor…)
+nem NENHUM endpoint de escrita. O registry de `src/data/index.ts` continua sendo
+o único ponto que muda quando esses endpoints existirem — a troca acontece
+entrada por entrada, e `produtos` já é HTTP enquanto os vizinhos são mock.
 
 ### O adaptador de listagem já existe
 
@@ -32,8 +35,16 @@ clientes: createApiListProvider<Cliente>({ url: '/api/clientes' }),
 A convenção não é suposição — é a forma literal de `GET /api/catalog-lookups`, o
 único endpoint de lista publicado, e é contra ele que `api-provider.test.ts` roda.
 
-**`get(id)` ficou deliberadamente de fora:** não há NENHUM endpoint de item por id
-no contrato, então rota, código de "não encontrado" e tipo do id seriam invenção.
+**`itemOuNulo` (o item por id)** entrou quando o backend publicou
+`GET /api/products/{id}`, o primeiro endpoint de item. A política é a mesma dos
+dois lados: **404 vira `null`** ("não existe" é resposta legítima de uma consulta
+por id) e QUALQUER outro status rejeita — 409 sem empresa ativa tratado junto com
+404 mandaria o operador procurar um registro que está lá.
+
+**Repetição de consulta:** `repetirSeValeAPena` (usado como `retry` padrão do
+QueryClient) não repete 4xx. Com a repetição padrão do TanStack Query, um 409
+"nenhuma empresa ativa" deixaria a tela ~7s em esqueleto antes de dizer o que o
+servidor respondeu de primeira. 5xx e falha de rede seguem repetindo.
 
 ### Conferir a cópia do contrato
 
@@ -48,29 +59,54 @@ do front não tem credencial). A outra metade da guarda está no CI: o passo
 `Codegen is up to date` refaz o codegen e falha se `src/api/gerado` divergir da
 cópia — é a guarda que o contrato do backend pede explicitamente.
 
-## `GET /api/products` — o primeiro cadastro, e o que falta nele
+## Produtos — a tela LIGADA, e o que o contrato v1 ainda não cobre
 
-O backend publicou a listagem de produtos. O `ProductDto` traz **4 campos**; a
-listagem do front (`src/routes/cadastros/produtos/index.tsx`, campos literais da
-§6 da transcrição) mostra 7 colunas:
+`GET /api/products` e `GET /api/products/{id}` estão publicados e a tela consome
+os dois (`src/data/produtos-api.ts`). O mock saiu do caminho: `src/mocks/produtos.ts`
+só fornece o **tipo**, o registro **em branco** do "Incluir" e as tabelas de apoio
+estáticas (mais o array que o boletim ainda lê).
 
-| Coluna da listagem | Campo no `ProductDto` | Situação |
+**O contrato é menor que a tela**, e isso é visível de propósito.
+
+### Listagem — 3 das 7 colunas da §6
+
+| Coluna da §6 | Campo no `ProductDto` | Situação |
 |---|---|---|
-| `Nosso Código` | `code` | mapeável |
-| `Nossa Descrição` | `description` | mapeável |
-| `Ativo` | `active` | mapeável |
-| `Marca` | — | **falta no DTO** |
-| `Fábrica` | — | **falta no DTO** |
-| `Tipo de Produto` | — | **falta no DTO** |
-| `Valor de Tabela` | — | **falta no DTO** (centavos int; a §6.3 põe preço na VARIANTE, não no produto) |
+| `Nosso Código` | `code` | **em tela** |
+| `Nossa Descrição` | `description` | **em tela** |
+| `Ativo` | `active` | **em tela** |
+| `Marca` | — | falta no DTO — coluna REMOVIDA |
+| `Fábrica` | — | falta no DTO — coluna REMOVIDA |
+| `Tipo de Produto` | — | falta no DTO — coluna REMOVIDA |
+| `Valor de Tabela` | — | falta no DTO (a §6.3 põe preço na VARIANTE) — coluna REMOVIDA |
 
-Por isso a tela **não** foi ligada ao endpoint: trocar agora esvaziaria quatro
-colunas que a transcrição registra. Falta também sessão com empresa ativa — o
-próprio contrato do backend anota que `products` depende de `active_tenant_id`.
+Coluna vazia em toda linha é pior que coluna ausente: lê-se como cadastro
+incompleto, quando o incompleto é o contrato. As quatro voltam quando o DTO
+crescer — a mudança é o `columns` de `src/routes/cadastros/produtos/index.tsx`.
 
-Quando o DTO crescer, a troca é uma linha no registry (`createApiListProvider`) e
-os testes de tela passam a precisar de servidor falso, como em
-`company-switcher.test.tsx`.
+O `accessorKey` das colunas é o nome do campo **no contrato** (`code`,
+`description`, `active`), não o nome em português: ele viaja como `sortBy`, e a
+whitelist do servidor (`contrato-http-listagem.md`) é em inglês. Nome traduzido
+voltaria 400 ao clicar no cabeçalho.
+
+### Detalhe — 4 campos das 5 abas
+
+`ProductDetailDto` = `code`, `description`, `active` e `variants[]`. O formulário
+mantém as 5 abas da §6; o que o servidor não conhece aparece **em branco**, e a
+tela DIZ isso ao operador (aviso acima do formulário). Esconder as abas apagaria
+o que o cadastro precisa vir a ter; preenchê-las com mock daria dado de mentira
+com cara de dado do servidor.
+
+Da grade de variantes (§6.3), o mapeamento é `finish`→Acabamento, `size`→Tamanho,
+`active`→Ativo, `priceCents`→Valor de Tabela, `minStock`→Est.Mínimo. Ficam de
+fora: `Índice` e `Tipo de Valor` (não existem no DTO), `stockQty` (existe no DTO e
+não tem coluna na §6.3) e o `id` da variante (sem escrita, não há a quem devolvê-lo).
+
+### Escrita não existe
+
+Não há `POST`/`PUT` de produto no contrato. `Gravar` continua sem efeito no
+servidor (`TODO(contract)` em `produto-form.tsx`), e o "Incluir" abre um
+formulário que ainda não tem para onde enviar.
 
 ## Divergências entre a UI e o contrato (achadas ao ler o OpenAPI)
 
@@ -78,8 +114,8 @@ os testes de tela passam a precisar de servidor falso, como em
 |---|---|---|---|
 | Ordenação | `sort: { id, desc }` | `sortBy` + `sortDesc` | **resolvida** pelo adaptador |
 | Página vazia | `q` omitido quando vazio | `q` opcional | **resolvida** — campo vazio não viaja |
-| **Tipo do id** | `number` em `get(id)`, `empty(id)`, mocks e rota (`$clienteId`) | **uuid (string)**, com `code text` separado — `UNIQUE (tenant_id, code)` | **caminho resolvido, execução pendente** (ver abaixo) |
-| Erro em listagem sem empresa ativa | — | `GET /api/products` declara **409**; o contrato escrito diz **500** para contexto ausente | **a confirmar com o backend** |
+| **Tipo do id** | `number` nos recursos ainda mock | **uuid (string)** | **resolvida em produtos** (ver abaixo); os outros recursos mudam quando seus endpoints saírem |
+| Erro em listagem sem empresa ativa | — | `GET /api/products` declara **409** | **resolvida** — o contrato de listagem revisou 500 → 409 em 2026-07-31, com o motivo: "ainda não escolhi empresa" é estado legítimo do cliente, não defeito |
 
 ### O id: chave técnica × código do operador
 
@@ -95,13 +131,17 @@ CREATE TABLE products (
 
 São **duas coisas diferentes**: `id` é chave técnica (uuid, nunca exibida) e
 `code` é o "Nosso Código" que o operador lê e digita — único por empresa. O front
-já tem os dois separados (`Produto.id` × `Produto.nossoCodigo`), só com o tipo
+já tinha os dois separados (`Produto.id` × `Produto.nossoCodigo`), só com o tipo
 errado no primeiro.
 
-Execução, quando o primeiro `GET /recurso/{id}` existir: `ResourceProvider.get` e
-`empty` passam a `string`, os mocks trocam id numérico por uuid e as rotas
-(`$produtoId`) carregam string. Toca todas as telas; não faz sentido antes,
-porque o formato de "não encontrado" ainda não está publicado.
+**Feito em produtos** (quando `GET /api/products/{id}` saiu): `Produto.id` é
+`string`, `produtoVazio()` nasce com id vazio (a chave é do servidor, não se
+inventa uuid no cliente), a rota `$produtoId` carrega o uuid como veio da URL e o
+mock passou a usar uuid determinístico.
+
+**Pendente nos demais recursos**, cada um quando seu endpoint sair — o
+`ResourceProvider` mock segue com `id: number` porque é o que os mocks têm. Migrar
+todos de uma vez, sem endpoint, seria trocar um id inventado por outro.
 
 Outras confirmações do mesmo arquivo, todas batendo com o que o front assumiu:
 

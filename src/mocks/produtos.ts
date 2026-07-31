@@ -1,6 +1,18 @@
 /**
- * Mock de produtos — campos LITERAIS da transcrição do SoftLux (§6, 5 abas).
- * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
+ * Produto — campos LITERAIS da transcrição do SoftLux (§6, 5 abas).
+ *
+ * A TELA de produtos NÃO usa mais este arquivo como fonte: desde que o backend
+ * publicou `GET /api/products` e `GET /api/products/{id}`, quem serve a listagem
+ * e o formulário é `src/data/produtos-api.ts`. O que sobrou aqui:
+ *
+ * - o **tipo** `Produto` (superconjunto do contrato v1 — a §6 tem 5 abas, o DTO
+ *   tem 4 campos + variantes; ver `docs/integracao.md`);
+ * - `produtoVazio`, que é o registro em branco do formulário e continua local
+ *   depois da integração (o backend não fornece "em branco");
+ * - as **tabelas de apoio estáticas** (acabamentos, unidades, origens…), lidas
+ *   por `src/data/tabelas.ts`;
+ * - o array `produtos`, hoje consumido só pelo **boletim** (`src/data/boletim.ts`),
+ *   que segue mock por não haver endpoint de resumo.
  */
 
 /** Grade `Fornecedor` da aba Dados Principais — §6.1. */
@@ -67,7 +79,11 @@ interface Dimensoes {
 }
 
 export interface Produto {
-  id: number
+  /**
+   * Chave técnica (uuid do `products.id` do backend), nunca exibida. O código que
+   * o operador lê e digita é `nossoCodigo` — `UNIQUE (tenant_id, code)` no schema.
+   */
+  id: string
   // --- Aba 1: Dados Principais (§6.1) ---
   nossoCodigo: string
   codigoEspecial: string
@@ -206,6 +222,11 @@ function dimensoesVazias(): Dimensoes {
   return { altura: '', largura: '', comprimento: '', raio: '' }
 }
 
+/** uuid determinístico — mock precisa ser estável entre execuções, e o id é uuid. */
+function idMock(i: number): string {
+  return `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`
+}
+
 /** Lista determinística (sem faker/seed aleatória) — estável para testes e prints. */
 export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
   const desc = DESCRICOES[i % DESCRICOES.length] as string
@@ -213,7 +234,7 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
   const fabrica = FABRICAS[i % FABRICAS.length] as string
   const valor = 8_990 + ((i * 1_337) % 42_000)
   return {
-    id: i + 1,
+    id: idMock(i + 1),
     nossoCodigo: String(1201 + i),
     codigoEspecial: `E${String(1201 + i)}`,
     codigoReduzido: String(100 + i),
@@ -290,7 +311,12 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
   }
 })
 
-export function produtoVazio(id: number): Produto {
+/**
+ * Registro em branco do formulário. `id` vazio no "Incluir": quem atribui a chave
+ * técnica é o servidor, e inventar um uuid no cliente daria a um registro que
+ * ainda não existe uma identidade que ninguém honraria.
+ */
+export function produtoVazio(id = ''): Produto {
   return {
     id,
     nossoCodigo: '',

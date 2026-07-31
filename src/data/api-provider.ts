@@ -16,9 +16,9 @@ import type { PagedResult, TableQueryState } from '@/lib/table-query'
  * cada recurso teria a sua versão e a divergência apareceria como bug de
  * ordenação numa tela isolada.
  *
- * Deliberadamente ausente: `get(id)`. O contrato ainda não tem NENHUM endpoint de
- * item por id ("não cobre GET/PUT de agregado nem documentos — contrato próprio
- * quando existirem"), então a forma seria invenção.
+ * O item por id (`itemOuNulo`) entrou quando o backend publicou o primeiro
+ * `GET /api/{recurso}/{id}` (produtos, 2026-07-31) — antes disso, rota e código de
+ * "não encontrado" seriam invenção.
  */
 
 /** Teto de `pageSize` do contrato de listagem; acima disso o backend responde 400. */
@@ -80,6 +80,50 @@ export function createApiListProvider<T>({ url, fixa }: ApiListConfig): ListProv
       return { rows: data.rows ?? [], total: data.total ?? 0 }
     },
   }
+}
+
+/**
+ * Política de repetição das consultas HTTP (`retry` do TanStack Query).
+ *
+ * **4xx não se repete.** É a resposta do servidor sobre O PEDIDO: 404 não vai
+ * virar 200, e 409 "nenhuma empresa ativa" espera uma AÇÃO da pessoa. Com a
+ * repetição padrão (3 tentativas com espera crescente), a tela fica ~7s em
+ * esqueleto antes de dizer o que já se sabia na primeira resposta.
+ *
+ * 5xx e falha de rede continuam repetindo — aí repetir resolve mesmo.
+ */
+export function repetirSeValeAPena(tentativa: number, erro: unknown): boolean {
+  if (erro instanceof ErroDaApi && erro.status >= 400 && erro.status < 500) return false
+  return tentativa < 3
+}
+
+/** Retorno do cliente gerado, na forma que o `@hey-api` devolve sem `throwOnError`. */
+export interface RespostaDaApi<T> {
+  data?: T | undefined
+  error?: unknown
+  /** Ausente quando a requisição não chegou a ter resposta (rede fora). */
+  response?: Response | undefined
+}
+
+/**
+ * Item por id: o registro, ou `null` quando não existe.
+ *
+ * **404 é resposta, não falha.** "Não existe" é resultado legítimo de uma consulta
+ * por id (o operador digitou um código morto, o registro foi removido em outra
+ * sessão) e a tela já sabe dizer isso. Qualquer OUTRO status rejeita: 409 sem
+ * empresa ativa e 500 viram "não encontrado" se forem tratados juntos, e aí o
+ * operador procura um registro que está lá.
+ */
+export function itemOuNulo<T>(resposta: RespostaDaApi<T>, onde: string): T | null {
+  if (resposta.response?.status === 404) return null
+  if (resposta.error || !resposta.data) {
+    throw new ErroDaApi(
+      `Falha ao consultar ${onde}.`,
+      resposta.response?.status ?? 0,
+      detalheDoProblema(resposta.error),
+    )
+  }
+  return resposta.data
 }
 
 /**

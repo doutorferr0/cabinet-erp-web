@@ -1,3 +1,4 @@
+import { produtosApi } from '@/data/produtos-api'
 import {
   type ListProvider,
   type ResourceProvider,
@@ -12,16 +13,16 @@ import { type Fornecedor, fornecedorVazio, fornecedores } from '@/mocks/forneced
 import { type Orcamento, orcamentoVazio, orcamentos } from '@/mocks/orcamentos'
 import { type OrdemCompra, ordemCompraVazia, ordensCompra } from '@/mocks/ordens-compra'
 import { type PedidoCompra, pedidoCompraVazio, pedidosCompra } from '@/mocks/pedidos-compra'
-import { type Produto, produtoVazio, produtos } from '@/mocks/produtos'
 import { type Profissional, profissionais, profissionalVazio } from '@/mocks/profissionais'
 
 /**
  * REGISTRY DE PROVIDERS — a fronteira entre as telas e a origem dos dados.
  *
- * Fase mock: cada entrada monta um provider sobre os arrays de `src/mocks/`.
- * Integração: troca-se o corpo de cada entrada pelo cliente do codegen; a
- * assinatura (`list`/`get`/`empty`) e os tipos ficam iguais, então nenhuma
- * tela é tocada. É o único arquivo que precisa mudar.
+ * A troca mock → API acontece ENTRADA POR ENTRADA, conforme o backend publica o
+ * recurso: `produtos` já é HTTP (`src/data/produtos-api.ts`), o resto ainda monta
+ * provider sobre os arrays de `src/mocks/` — por falta de endpoint, não por
+ * escolha. A assinatura (`list`/`get`/`empty`) é a mesma dos dois lados, então a
+ * tela não sabe de qual está lendo.
  *
  * O predicado `matches` some na troca — quem passa a filtrar é o backend
  * (o `q` já viaja no `TableQueryState`).
@@ -57,12 +58,12 @@ export const data = {
     empty: profissionalVazio,
   }),
 
-  produtos: createMockProvider<Produto>({
-    rows: produtos,
-    matches: (p, q) =>
-      normalize(p.nossoCodigo).includes(q) || normalize(p.nossaDescricao).includes(q),
-    empty: produtoVazio,
-  }),
+  /**
+   * Do backend: `GET /api/products` e `GET /api/products/{id}`. As linhas da
+   * listagem são o `ProductDto` cru e o detalhe vira `Produto` — ver
+   * `produtos-api.ts` para o que o contrato v1 ainda não cobre.
+   */
+  produtos: produtosApi,
 
   ordensCompra: createMockProvider<OrdemCompra>({
     rows: ordensCompra,

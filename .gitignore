@@ -8,3 +8,7 @@ dist/
 .idea/
 .DS_Store
 coverage/
+
+# Cache incremental do tsc: artefato de build, muda a cada `pnpm check-types`
+# e conflitava em todo rebase. Nada depende dele estar versionado.
+*.tsbuildinfo

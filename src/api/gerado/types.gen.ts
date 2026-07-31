@@ -41,9 +41,29 @@ export type PagedResultOfCatalogLookupDto = {
     total: number;
 };
 
+export type PagedResultOfPartnerDto = {
+    rows: Array<PartnerDto>;
+    total: number;
+};
+
 export type PagedResultOfProductDto = {
     rows: Array<ProductDto>;
     total: number;
+};
+
+export type PartnerDto = {
+    id: string;
+    code: null | string;
+    legalName: string;
+    tradeName: null | string;
+    document: null | string;
+    email: null | string;
+    isCustomer: boolean;
+    isSupplier: boolean;
+    isProfessional: boolean;
+    paymentTerms: null | string;
+    active: boolean;
+    registrationActive: boolean;
 };
 
 export type ProblemDetails = {
@@ -240,6 +260,42 @@ export type GetProductResponses = {
 };
 
 export type GetProductResponse = GetProductResponses[keyof GetProductResponses];
+
+export type ListPartnersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        role?: string;
+        q?: string;
+        sortBy?: string;
+        sortDesc?: boolean;
+        page?: number;
+        pageSize?: number;
+    };
+    url: '/api/partners';
+};
+
+export type ListPartnersErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ListPartnersError = ListPartnersErrors[keyof ListPartnersErrors];
+
+export type ListPartnersResponses = {
+    /**
+     * OK
+     */
+    200: PagedResultOfPartnerDto;
+};
+
+export type ListPartnersResponse = ListPartnersResponses[keyof ListPartnersResponses];
 
 export type AuthLoginData = {
     body: LoginRequest;

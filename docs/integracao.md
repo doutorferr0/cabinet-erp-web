@@ -16,11 +16,31 @@ já vem do servidor:
 | Login, guarda de sessão e troca de senha | `POST /auth/login` · `GET /auth/me` · `POST /auth/change-password` | `src/data/sessao.ts` |
 | **Cadastro de produtos (listagem e detalhe)** | `GET /api/products` · `GET /api/products/{id}` | `src/data/produtos-api.ts` |
 
-O resto das telas segue em mock por **falta de contrato**, não por escolha: o
-backend ainda não publicou endpoint dos outros cadastros (cliente, fornecedor…)
-nem NENHUM endpoint de escrita. O registry de `src/data/index.ts` continua sendo
-o único ponto que muda quando esses endpoints existirem — a troca acontece
-entrada por entrada, e `produtos` já é HTTP enquanto os vizinhos são mock.
+O resto das telas segue em mock por **falta de contrato**, não por escolha. O
+registry de `src/data/index.ts` continua sendo o único ponto que muda quando esses
+endpoints existirem — a troca acontece entrada por entrada, e `produtos` já é HTTP
+enquanto os vizinhos são mock.
+
+### Publicado e ainda NÃO consumido
+
+| Endpoint | Serviria | Situação |
+|---|---|---|
+| `GET /api/partners` | listagens de **Fornecedor**, **Cliente** e **Profissional** | contrato copiado e cliente gerado; **nenhuma tela ligada** |
+
+`PartnerDto` é uma tabela só, discriminada pelo parâmetro `role` (mesma forma do
+`catalog-lookups`, ADR-011): `isCustomer`, `isSupplier` e `isProfessional` são
+flags do MESMO registro. As três telas do front hoje têm mock separado por
+recurso (`clientes`, `fornecedores`, `profissionais`), então ligar não é trocar
+uma linha do registry — é decidir se os três viram um recurso com filtro. Fica
+registrado aqui em vez de resolvido no susto.
+
+### Escrita — não existe NENHUMA
+
+O contrato tem `POST` apenas em `/auth/login`, `/auth/logout` e
+`/auth/change-password`, e `PUT` apenas em `/auth/active-tenant`. **Nenhum
+cadastro tem endpoint de criação ou alteração** — nem produtos, nem parceiros.
+Todo `Gravar` de formulário segue sem efeito no servidor, marcado com
+`TODO(contract)` no próprio componente.
 
 ### O adaptador de listagem já existe
 
@@ -102,11 +122,12 @@ Da grade de variantes (§6.3), o mapeamento é `finish`→Acabamento, `size`→T
 fora: `Índice` e `Tipo de Valor` (não existem no DTO), `stockQty` (existe no DTO e
 não tem coluna na §6.3) e o `id` da variante (sem escrita, não há a quem devolvê-lo).
 
-### Escrita não existe
+### Escrita de produto não existe
 
-Não há `POST`/`PUT` de produto no contrato. `Gravar` continua sem efeito no
-servidor (`TODO(contract)` em `produto-form.tsx`), e o "Incluir" abre um
-formulário que ainda não tem para onde enviar.
+Não há `POST`/`PUT` de produto no contrato — conferido de novo em 2026-07-31,
+depois de `GET /api/partners` entrar. `Gravar` continua sem efeito no servidor
+(`TODO(contract)` em `produto-form.tsx`), e o "Incluir" abre um formulário que
+ainda não tem para onde enviar.
 
 ## Divergências entre a UI e o contrato (achadas ao ler o OpenAPI)
 

@@ -1,5 +1,12 @@
 import { Checkbox } from '@/components/ui/checkbox'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -197,7 +204,7 @@ export function LookupSelectField({
   kind,
   className,
 }: BaseProps & { kind: LookupKind }) {
-  const { options, carregando, erro } = useLookupOptions(kind)
+  const { options, truncada, carregando, erro } = useLookupOptions(kind)
 
   return (
     <FormField
@@ -230,6 +237,13 @@ export function LookupSelectField({
                 ))}
               </select>
             </FormControl>
+            {/* Lista cortada no teto de 100 do contrato: o `<select>` não tem
+                como mostrar o que não chegou, então ele DIZ que não chegou. */}
+            {truncada && (
+              <FormDescription>
+                Mostrando os primeiros {options.length} — a lista é maior.
+              </FormDescription>
+            )}
             <FormMessage />
           </FormItem>
         )

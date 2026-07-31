@@ -93,6 +93,27 @@ describe('LookupSelectField', () => {
     expect(combo()).toBeEnabled()
   })
 
+  // O teto de 100 é do contrato de listagem. Cortar em silêncio faria "não achei"
+  // e "não existe" virarem a mesma coisa para o operador.
+  it('avisa quando a lista veio cortada no teto do contrato', async () => {
+    instalarServidor({
+      [URL_LOOKUPS]: () => json({ ...linhas([['GERENTE', true]]), total: 137 }),
+    })
+    renderWithQuery(<Harness />)
+
+    expect(
+      await screen.findByText(/Mostrando os primeiros 1 — a lista é maior/),
+    ).toBeInTheDocument()
+  })
+
+  it('lista inteira NÃO exibe aviso de corte', async () => {
+    instalarServidor({ [URL_LOOKUPS]: () => json(linhas([['GERENTE', true]])) })
+    renderWithQuery(<Harness />)
+
+    await screen.findByRole('option', { name: 'GERENTE' })
+    expect(screen.queryByText(/Mostrando os primeiros/)).not.toBeInTheDocument()
+  })
+
   it('valor do registro fora da lista continua exibido', async () => {
     instalarServidor({ [URL_LOOKUPS]: () => json(linhas([['GERENTE', true]])) })
     renderWithQuery(<Harness valor="CARGO APOSENTADO" />)

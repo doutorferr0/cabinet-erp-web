@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ErroDaApi } from '@/data/api-provider'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -217,6 +218,11 @@ export function VitraDataTable<T>({
                 <TableCell colSpan={totalColSpan} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     Não foi possível carregar a consulta.
+                    {/* O `detail` do problem+json é a frase que o backend escolheu
+                        para o caso — é a única informação acionável da resposta. */}
+                    {query.error instanceof ErroDaApi && query.error.detail ? (
+                      <span className="max-w-prose text-[0.75rem]">{query.error.detail}</span>
+                    ) : null}
                     <Button variant="outline" size="sm" onClick={() => query.refetch()}>
                       Tentar de novo
                     </Button>

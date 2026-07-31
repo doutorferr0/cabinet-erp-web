@@ -5,6 +5,15 @@ export function formatMoneyBRL(centavos: number): string {
   return brl.format(centavos / 100)
 }
 
+/**
+ * Quantidade: até 3 casas (CLAUDE.md; `numeric(14,3)` no schema do backend),
+ * separador pt-BR. `null` vira vazio — ausência não é zero.
+ */
+export function formatQuantidade(valor: number | null | undefined): string {
+  if (valor === null || valor === undefined) return ''
+  return valor.toLocaleString('pt-BR', { maximumFractionDigits: 3 })
+}
+
 /** Datas: ISO (yyyy-mm-dd) no dado, pt-BR na exibição (CLAUDE.md). */
 export function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return ''

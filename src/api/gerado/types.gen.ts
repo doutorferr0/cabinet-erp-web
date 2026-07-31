@@ -54,11 +54,29 @@ export type ProblemDetails = {
     instance?: null | string;
 };
 
+export type ProductDetailDto = {
+    id: string;
+    code: string;
+    description: string;
+    active: boolean;
+    variants: Array<ProductVariantDto>;
+};
+
 export type ProductDto = {
     id: string;
     code: string;
     description: string;
     active: boolean;
+};
+
+export type ProductVariantDto = {
+    id: string;
+    finish: string;
+    size: string;
+    active: boolean;
+    priceCents: null | number;
+    stockQty: null | number;
+    minStock: null | number;
 };
 
 export type ReadinessStatus = {
@@ -191,6 +209,37 @@ export type ListProductsResponses = {
 };
 
 export type ListProductsResponse = ListProductsResponses[keyof ListProductsResponses];
+
+export type GetProductData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/products/{id}';
+};
+
+export type GetProductErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GetProductError = GetProductErrors[keyof GetProductErrors];
+
+export type GetProductResponses = {
+    /**
+     * OK
+     */
+    200: ProductDetailDto;
+};
+
+export type GetProductResponse = GetProductResponses[keyof GetProductResponses];
 
 export type AuthLoginData = {
     body: LoginRequest;

@@ -24,9 +24,14 @@ const dimensoesSchema = z.object({
   raio: z.string(),
 })
 
-// TODO(contract): Zod do codegen substituirá este schema na integração.
+/**
+ * O contrato v1 de produtos cobre `code`, `description`, `active` e as variantes;
+ * o resto é campo da §6 que o backend ainda não conhece e continua validado aqui.
+ * TODO(contract): trocar pelo schema do codegen quando o DTO cobrir a tela.
+ */
 export const produtoSchema = z.object({
-  id: z.number(),
+  /** uuid do contrato; vazio no "Incluir" (o servidor atribui). */
+  id: z.string(),
   nossoCodigo: z.string().min(1, 'Nosso Código é obrigatório'),
   codigoEspecial: z.string(),
   codigoReduzido: z.string(),
@@ -526,8 +531,10 @@ export function ProdutoForm({
   const navigate = useNavigate()
 
   function onGravar(values: Produto) {
-    // Mock only: sem backend. Na integração, mutation do TanStack Query.
-    console.info('[mock] Gravar produto', values)
+    // A LEITURA de produtos já é do servidor; a ESCRITA não existe no contrato
+    // (nenhum POST/PUT de produto no OpenAPI). Vira mutation quando existir.
+    // TODO(contract): POST/PUT /api/products.
+    console.info('[sem endpoint de escrita] Gravar produto', values)
     void navigate({ to: '/cadastros/produtos' })
   }
 

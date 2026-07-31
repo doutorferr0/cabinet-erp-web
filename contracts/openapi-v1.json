@@ -202,6 +202,55 @@
         }
       }
     },
+    "/api/products/{id}": {
+      "get": {
+        "tags": ["catalogo"],
+        "operationId": "GetProduct",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": ["auth"],
@@ -478,6 +527,31 @@
           }
         }
       },
+      "ProductDetailDto": {
+        "required": ["id", "code", "description", "active", "variants"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductVariantDto"
+            }
+          }
+        }
+      },
       "ProductDto": {
         "required": ["id", "code", "description", "active"],
         "type": "object",
@@ -494,6 +568,37 @@
           },
           "active": {
             "type": "boolean"
+          }
+        }
+      },
+      "ProductVariantDto": {
+        "required": ["id", "finish", "size", "active", "priceCents", "stockQty", "minStock"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "finish": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "priceCents": {
+            "type": ["null", "integer"],
+            "format": "int64"
+          },
+          "stockQty": {
+            "type": ["null", "number"],
+            "format": "double"
+          },
+          "minStock": {
+            "type": ["null", "number"],
+            "format": "double"
           }
         }
       },

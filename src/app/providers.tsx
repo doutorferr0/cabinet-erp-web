@@ -9,8 +9,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Mock não muda sozinho; evita refetch em foco/remontagem.
-            staleTime: Number.POSITIVE_INFINITY,
+            /**
+             * Era `Infinity` porque mock não muda sozinho. Com backend real isso
+             * passou a ser mentira: sessão expira, empresa ativa muda e lista de
+             * apoio recebe item novo — nada disso chegaria à tela enquanto ela
+             * estivesse montada.
+             *
+             * 30s é o degrau entre "cada montagem de tela refaz a consulta"
+             * (custo por navegação, sem ganho: o operador não trocou de aba nesse
+             * intervalo) e dado velho na mesa. Consulta que precisa ser fresca na
+             * hora usa `invalidateQueries` — é o que a troca de empresa faz.
+             */
+            staleTime: 30_000,
+            // Foco de janela não é sinal de dado velho num ERP de mesa: o
+            // operador alterna com planilha e PDF o tempo todo.
             refetchOnWindowFocus: false,
           },
         },

@@ -12,6 +12,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
+import { papelLabel } from '@/data/papeis'
 import { Building2, Check, ChevronsUpDown } from 'lucide-react'
 
 /**
@@ -54,7 +55,7 @@ export function CompanySwitcher() {
                 <span className="truncate font-semibold">{titulo}</span>
                 {ativa && (
                   <span className="truncate font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
-                    {ativa.role}
+                    {papelLabel(ativa.role)}
                   </span>
                 )}
               </div>

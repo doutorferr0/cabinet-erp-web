@@ -78,13 +78,40 @@ os testes de tela passam a precisar de servidor falso, como em
 |---|---|---|---|
 | Ordenação | `sort: { id, desc }` | `sortBy` + `sortDesc` | **resolvida** pelo adaptador |
 | Página vazia | `q` omitido quando vazio | `q` opcional | **resolvida** — campo vazio não viaja |
-| **Tipo do id** | `number` em `get(id)`, `empty(id)`, mocks e rota (`$clienteId`) | **uuid (string)** em tudo, agora inclusive num recurso de negócio: `ProductDto.id` | **ABERTA — decisão do hub** |
+| **Tipo do id** | `number` em `get(id)`, `empty(id)`, mocks e rota (`$clienteId`) | **uuid (string)**, com `code text` separado — `UNIQUE (tenant_id, code)` | **caminho resolvido, execução pendente** (ver abaixo) |
 | Erro em listagem sem empresa ativa | — | `GET /api/products` declara **409**; o contrato escrito diz **500** para contexto ausente | **a confirmar com o backend** |
 
-A do id é estrutural: se o backend mantiver uuid nos cadastros, `ResourceProvider`
-muda de assinatura, os mocks perdem o id numérico e as rotas passam a carregar
-string. Não é trabalho grande, mas toca todas as telas — e não faz sentido fazer
-antes do primeiro endpoint de cadastro existir, porque hoje seria feito no escuro.
+### O id: chave técnica × código do operador
+
+`docs/contrato/schema-canonico.sql` do backend resolve a dúvida:
+
+```sql
+CREATE TABLE products (
+  tenant_id uuid NOT NULL REFERENCES tenants(id),
+  id uuid NOT NULL, code text NOT NULL, description text NOT NULL,
+  PRIMARY KEY (tenant_id, id), UNIQUE (tenant_id, code)
+);
+```
+
+São **duas coisas diferentes**: `id` é chave técnica (uuid, nunca exibida) e
+`code` é o "Nosso Código" que o operador lê e digita — único por empresa. O front
+já tem os dois separados (`Produto.id` × `Produto.nossoCodigo`), só com o tipo
+errado no primeiro.
+
+Execução, quando o primeiro `GET /recurso/{id}` existir: `ResourceProvider.get` e
+`empty` passam a `string`, os mocks trocam id numérico por uuid e as rotas
+(`$produtoId`) carregam string. Toca todas as telas; não faz sentido antes,
+porque o formato de "não encontrado" ainda não está publicado.
+
+Outras confirmações do mesmo arquivo, todas batendo com o que o front assumiu:
+
+- `product_tenant.price_cents bigint` — **dinheiro em centavos int**, como a UI.
+- `stock_qty numeric(14,3)` — **quantidade com 3 casas**.
+- `product_variants (finish, size)` e preço/estoque em `product_tenant` ligado à
+  **variante**, não ao produto — é a decisão V7 da frente visual, confirmada.
+- `employee_company.role` tem CHECK fechado: `owner`, `admin`, `operator-full`,
+  `operator-sales`, `viewer`. Virou `src/data/papeis.ts` (rótulo PT-BR na UI, o
+  identificador do contrato continua trafegando).
 
 ## Fronteira única
 
@@ -198,9 +225,24 @@ precisam ser confirmadas contra o backend:
 Helpers em `src/test/utils.tsx` (`renderRoute`, `renderWithQuery`, `tableState`).
 Os testes de tela chamam os providers com `delayMs = 0` através das próprias telas.
 
-**Na integração**, os testes de tela precisam de um servidor falso (MSW ou stub do
-cliente gerado) no lugar do provider mock — é o único ponto que muda neles, porque
-nenhum teste conhece `src/mocks/` diretamente.
+**O servidor falso já existe:** `src/test/servidor.ts` (`instalarServidor`,
+`json`, `problema`). Intercepta o `fetch`, não o SDK — assim o teste exercita o
+cliente gerado de verdade e quebra se o codegen mudar URL, parâmetro ou forma da
+resposta. Caminho sem rota declarada responde 404 de propósito: endpoint que a
+tela chama sem o teste saber aparece como falha, em vez de receber dado de outro.
+
+```ts
+beforeEach(() => {
+  servidor = instalarServidor({
+    '/api/produtos': () => ({ rows: [...], total: 1 }),
+    '/api/produtos/erro': () => problema(409, 'Sem empresa ativa.'),
+  })
+})
+afterEach(() => vi.unstubAllGlobals())
+```
+
+Usado hoje em `company-switcher.test.tsx` e `shell.test.tsx`. É o que substitui o
+provider mock nos testes de tela conforme cada recurso for ligado à API.
 
 ## Armadilhas conhecidas
 

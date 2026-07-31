@@ -16,8 +16,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useLookupOptions } from '@/data/lookups-api'
 import { cn } from '@/lib/utils'
-import { type LookupKind, lookupLabel, lookupOptions } from '@/mocks/lookups'
+import { type LookupKind, lookupLabel } from '@/mocks/lookups'
 import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
 import { useId, useState } from 'react'
 
@@ -52,7 +53,10 @@ export function LookupCombo({
   const listId = id ?? fallbackId
 
   const label = lookupLabel(kind)
-  const options = [...lookupOptions(kind), ...added]
+
+  // As opções vêm do servidor (ADR-011). O rótulo continua local: rótulo é UI, não dado.
+  const { options: doServidor, carregando, erro } = useLookupOptions(kind)
+  const options = [...doServidor, ...added]
 
   function confirmAdd() {
     const nome = newItem.trim().toUpperCase()
@@ -86,7 +90,16 @@ export function LookupCombo({
           <Command>
             <CommandInput placeholder={`Buscar ${label.toLowerCase()}…`} />
             <CommandList>
-              <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
+              <CommandEmpty>
+                {/* Estados distintos DE PROPÓSITO: "carregando" e "falhou" não podem
+                    parecer "lista vazia" — o operador precisa saber se deve esperar,
+                    avisar alguém, ou é a lista que está mesmo vazia. */}
+                {carregando
+                  ? 'Carregando…'
+                  : erro
+                    ? 'Não foi possível carregar a lista.'
+                    : 'Nenhum item encontrado.'}
+              </CommandEmpty>
               {options.map((option) => (
                 <CommandItem
                   key={option}

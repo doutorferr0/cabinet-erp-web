@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "check": "biome check --write",
     "check-types": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "codegen": "openapi-ts && node scripts/pos-codegen.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@hey-api/openapi-ts": "^0.99.0",
     "@tailwindcss/vite": "^4.0.14",
     "@tanstack/router-plugin": "^1.114.27",
     "@testing-library/jest-dom": "^6.6.3",

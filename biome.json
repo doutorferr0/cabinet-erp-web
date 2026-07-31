@@ -12,6 +12,7 @@
       "dist",
       ".claude",
       "src/routeTree.gen.ts",
+      "src/api/gerado",
       "tsconfig.json",
       "tsconfig.app.json",
       "tsconfig.node.json"

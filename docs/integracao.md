@@ -19,6 +19,35 @@ backend ainda não publicou endpoint de cadastro (cliente, produto, fornecedor�
 O registry de `src/data/index.ts` continua sendo o único ponto que muda quando
 esses endpoints existirem.
 
+### O adaptador de listagem já existe
+
+`src/data/api-provider.ts` (`createApiListProvider`) traduz o `TableQueryState` da
+UI para a convenção de listagem do backend e devolve `PagedResult<T>`. Quando um
+endpoint de recurso for publicado, a entrada no registry vira uma linha:
+
+```ts
+clientes: createApiListProvider<Cliente>({ url: '/api/clientes' }),
+```
+
+A convenção não é suposição — é a forma literal de `GET /api/catalog-lookups`, o
+único endpoint de lista publicado, e é contra ele que `api-provider.test.ts` roda.
+
+**`get(id)` ficou deliberadamente de fora:** não há NENHUM endpoint de item por id
+no contrato, então rota, código de "não encontrado" e tipo do id seriam invenção.
+
+## Divergências entre a UI e o contrato (achadas ao ler o OpenAPI)
+
+| Assunto | UI hoje | Contrato | Situação |
+|---|---|---|---|
+| Ordenação | `sort: { id, desc }` | `sortBy` + `sortDesc` | **resolvida** pelo adaptador |
+| Página vazia | `q` omitido quando vazio | `q` opcional | **resolvida** — campo vazio não viaja |
+| **Tipo do id** | `number` em `get(id)`, `empty(id)`, mocks e rota (`$clienteId`) | **uuid (string)** em tudo: `CatalogLookupDto.id`, `tenantId`, `employeeId` | **ABERTA — decisão do hub** |
+
+A do id é estrutural: se o backend mantiver uuid nos cadastros, `ResourceProvider`
+muda de assinatura, os mocks perdem o id numérico e as rotas passam a carregar
+string. Não é trabalho grande, mas toca todas as telas — e não faz sentido fazer
+antes do primeiro endpoint de cadastro existir, porque hoje seria feito no escuro.
+
 ## Fronteira única
 
 ```

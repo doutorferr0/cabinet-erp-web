@@ -11,7 +11,7 @@ já vem do servidor:
 
 | Fronteira | Endpoint | Onde |
 |---|---|---|
-| Listas de apoio do `LookupCombo` | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
+| Listas de apoio — **os 19 kinds, em todo formulário** | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
 | Empresa ativa da sessão e troca de empresa | `GET /auth/tenants` · `GET /auth/me` · `PUT /auth/active-tenant` | `src/data/empresas-api.ts` |
 | Login, guarda de sessão e troca de senha | `POST /auth/login` · `GET /auth/me` · `POST /auth/change-password` | `src/data/sessao.ts` |
 | **Cadastro de produtos (listagem e detalhe)** | `GET /api/products` · `GET /api/products/{id}` | `src/data/produtos-api.ts` |
@@ -41,6 +41,33 @@ O contrato tem `POST` apenas em `/auth/login`, `/auth/logout` e
 cadastro tem endpoint de criação ou alteração** — nem produtos, nem parceiros.
 Todo `Gravar` de formulário segue sem efeito no servidor, marcado com
 `TODO(contract)` no próprio componente.
+
+### As listas de apoio: dois controles, uma fonte
+
+Os 19 kinds da §9 padrão 2 vêm todos de `GET /api/catalog-lookups`. A transcrição
+distingue duas formas, e as duas continuam existindo — muda a origem, não o
+controle:
+
+| Na transcrição | Controle | Onde |
+|---|---|---|
+| `[combo +...]` (com cadastro rápido) | `LookupField` → `LookupCombo` | 14 usos |
+| `[combo]` puro | `LookupSelectField` | 10 usos |
+
+`src/data/lookups-api.ts` guarda o vocabulário inteiro: para cada kind, o
+**rótulo** (UI) e o **nome no banco** (`grauInstrucao` → `GRAU_INSTRUCAO`).
+Ficavam em arquivos separados, e acrescentar um kind era lembrar de dois —
+esquecer um só aparecia em runtime.
+
+**Dois cuidados que valem para os dois controles:**
+
+- **"Carregando" e "falhou" não podem parecer "lista vazia".** Combo mudo faz o
+  operador concluir que não há opção cadastrada quando o problema é outro.
+- **O valor gravado é sempre exibível.** A consulta só devolve item ATIVO
+  (desativação é lógica, §9 padrão 8); um registro que aponte para item
+  desativado DEPOIS de gravado abriria com o campo em branco, e a gravação
+  seguinte apagaria o valor sem ninguém pedir. Por isso o valor corrente entra na
+  lista quando não está nela — no `LookupSelectField` e na célula `select` da
+  `FormGrid`.
 
 ### O adaptador de listagem já existe
 
@@ -266,8 +293,10 @@ grep -rn "TODO(contract)" src/
 Categorias:
 - **tipos** (`src/mocks/*.ts`) — viram tipos do codegen;
 - **schemas Zod** (`src/features/*/*-form.tsx`) — viram schemas do codegen;
-- **tabelas de apoio** (`src/mocks/lookups.ts`, `UNIDADES`, `TIPOS_VALOR`) — as
-  opções passam a vir do backend; hoje são listas locais;
+- **tabelas de apoio que o contrato NÃO expõe como kind** (`UNIDADES`,
+  `TIPOS_VALOR`, `ACABAMENTOS`, `AMBIENTES`… em `src/data/tabelas.ts`) — seguem
+  locais. Os 19 **kinds** já vêm do servidor: `src/mocks/lookups.ts` não existe
+  mais;
 - **`TableFetcher`** (`src/lib/table-query.ts`) — o tipo já é o do contrato.
 
 ## Dados inventados (não vieram da transcrição)

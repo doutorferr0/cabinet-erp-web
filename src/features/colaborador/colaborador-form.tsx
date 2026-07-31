@@ -9,6 +9,7 @@ import {
   CheckboxField,
   DateField,
   LookupField,
+  LookupSelectField,
   MoneyField,
   RadioField,
   SelectField,
@@ -16,7 +17,6 @@ import {
 } from '@/components/vitra/form-controls'
 import { SearchDialog } from '@/components/vitra/search-dialog'
 import { data } from '@/data'
-import { opcoesLookup } from '@/data/tabelas'
 import { tabelas } from '@/data/tabelas'
 import type { Cidade } from '@/mocks/cidades'
 import type { Colaborador } from '@/mocks/colaboradores'
@@ -176,10 +176,10 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
           className="col-span-12 sm:col-span-3"
         />
         <DateField name="dtNascimento" label="Dt Nascimento" className="col-span-6 sm:col-span-2" />
-        <SelectField
+        <LookupSelectField
           name="grauInstrucao"
           label="Grau de Instrução"
-          options={opcoesLookup('grauInstrucao')}
+          kind="grauInstrucao"
           className="col-span-12 sm:col-span-3"
         />
         <LookupField
@@ -188,16 +188,16 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
           kind="profissao"
           className="col-span-12 sm:col-span-4"
         />
-        <SelectField
+        <LookupSelectField
           name="racaCor"
           label="Raça/Cor"
-          options={opcoesLookup('racaCor')}
+          kind="racaCor"
           className="col-span-6 sm:col-span-3"
         />
-        <SelectField
+        <LookupSelectField
           name="estadoCivil"
           label="Estado Civil"
-          options={opcoesLookup('estadoCivil')}
+          kind="estadoCivil"
           className="col-span-6 sm:col-span-3"
         />
         <TextField
@@ -232,10 +232,10 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
             className="col-span-12 sm:col-span-4"
           />
           <MoneyField name="salario" label="Salário" className="col-span-6 sm:col-span-2" />
-          <SelectField
+          <LookupSelectField
             name="vinculo"
             label="Vínculo"
-            options={opcoesLookup('vinculo')}
+            kind="vinculo"
             className="col-span-6 sm:col-span-2"
           />
           <DateField

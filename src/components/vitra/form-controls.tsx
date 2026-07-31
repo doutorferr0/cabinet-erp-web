@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { LookupCombo } from '@/components/vitra/lookup-combo'
-import type { LookupKind } from '@/mocks/lookups'
+import { type LookupKind, useLookupOptions } from '@/data/lookups-api'
 import { useFormContext } from 'react-hook-form'
 
 /**
@@ -168,6 +168,72 @@ export function SelectField({
           <FormMessage />
         </FormItem>
       )}
+    />
+  )
+}
+
+/**
+ * `[combo]` puro cujas opções são um **kind do servidor** (`/api/catalog-lookups`).
+ *
+ * Mesma forma do `SelectField` — a transcrição distingue `[combo]` de
+ * `[combo +...]`, e trocar o controle por um combobox de busca mudaria a tela.
+ * O que muda é a origem: em vez de uma lista escrita no front, o kind.
+ *
+ * Três cuidados que o `<select>` cru não tem:
+ *
+ * 1. **Carregando e falhou não parecem "lista vazia".** Select vazio e silencioso
+ *    faria o operador pensar que não há opção cadastrada.
+ * 2. **O valor do registro é sempre exibível.** Um cadastro que aponte para item
+ *    hoje INATIVO (ou salvo antes de a lista falhar) mostraria campo em branco,
+ *    porque não haveria `<option>` correspondente — e gravar de novo apagaria o
+ *    valor sem ninguém pedir. Por isso o valor corrente entra na lista.
+ * 3. **Só desabilita enquanto carrega.** Na falha o campo continua utilizável com
+ *    o valor que já tem; travar o formulário inteiro porque uma lista de apoio
+ *    não veio seria punição desproporcional.
+ */
+export function LookupSelectField({
+  name,
+  label,
+  kind,
+  className,
+}: BaseProps & { kind: LookupKind }) {
+  const { options, carregando, erro } = useLookupOptions(kind)
+
+  return (
+    <FormField
+      name={name}
+      render={({ field }) => {
+        const atual = typeof field.value === 'string' ? field.value : ''
+        const lista = atual && !options.includes(atual) ? [atual, ...options] : options
+
+        return (
+          <FormItem className={className}>
+            <FormLabel>{label}</FormLabel>
+            <FormControl>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                {...field}
+                value={atual}
+                disabled={field.disabled || carregando}
+              >
+                <option value="">
+                  {carregando
+                    ? 'Carregando…'
+                    : erro
+                      ? 'Não foi possível carregar a lista.'
+                      : 'Selecione…'}
+                </option>
+                {lista.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }

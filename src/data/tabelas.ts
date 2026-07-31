@@ -1,5 +1,4 @@
 import { EMPRESAS } from '@/mocks/colaboradores'
-import { type LookupKind, lookupOptions } from '@/mocks/lookups'
 import { AMBIENTES } from '@/mocks/orcamentos'
 import { DESTINOS, FORNECEDORES_DOC } from '@/mocks/pedidos-compra'
 import {
@@ -47,9 +46,7 @@ export const tabelas = {
 } as const satisfies Record<string, readonly string[]>
 
 /**
- * Opções do padrão `[combo +...]` (§9 padrão 2, 19 kinds).
- * Continua vindo de `LOOKUP_KINDS`; na integração vira consulta por kind.
+ * Os 19 kinds do padrão `[combo]`/`[combo +...]` (§9 padrão 2) NÃO moram aqui:
+ * vêm de `GET /api/catalog-lookups` via `useLookupOptions` (`src/data/lookups-api.ts`).
+ * O que sobra neste arquivo são as listas que o contrato não expõe como kind.
  */
-export function opcoesLookup(kind: LookupKind): readonly string[] {
-  return lookupOptions(kind)
-}

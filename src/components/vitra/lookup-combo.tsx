@@ -16,9 +16,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { useLookupOptions } from '@/data/lookups-api'
+import { type LookupKind, lookupLabel, useLookupOptions } from '@/data/lookups-api'
 import { cn } from '@/lib/utils'
-import { type LookupKind, lookupLabel } from '@/mocks/lookups'
 import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
 import { useId, useState } from 'react'
 

@@ -5,12 +5,15 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 /**
- * Backend em desenvolvimento — perfil `http` do `launchSettings.json` do
- * `vitra-erp-dotnet` (é o que `dotnet run` usa na CLI). Quem sobe o backend em
- * outra porta ou host exporta `VITE_API_PROXY` antes do `pnpm dev`; o padrão
- * cobre o caso comum sem exigir `.env`.
+ * Backend em desenvolvimento — a porta que o `docs/ligar-com-o-front.md` do
+ * `vitra-erp-dotnet` publica. É a fonte certa: o `launchSettings.json` tem dois
+ * perfis com portas diferentes, e quem diz onde o backend atende para o front é
+ * o documento que o backend escreveu para o front.
+ *
+ * Quem sobe o backend em outra porta ou host exporta `VITE_API_PROXY` antes do
+ * `pnpm dev`; o padrão cobre o caso comum sem exigir `.env`.
  */
-const BACKEND_DEV = process.env.VITE_API_PROXY ?? 'http://localhost:5251'
+const BACKEND_DEV = process.env.VITE_API_PROXY ?? 'http://localhost:5199'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -30,7 +33,7 @@ export default defineConfig({
      * sessão funcionar.
      *
      * A sessão é um cookie opaco (ADR-010, D2). Apontar o front direto para
-     * `http://localhost:5251` faria toda chamada ser cross-origin, e aí o cookie
+     * `http://localhost:5199` faria toda chamada ser cross-origin, e aí o cookie
      * depende de `SameSite=None; Secure` + CORS com `Allow-Credentials` — três
      * coisas que teriam de valer em desenvolvimento e mudariam em produção.
      * Atravessando o servidor do Vite, `/api` e `/auth` saem da MESMA origem que

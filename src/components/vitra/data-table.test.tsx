@@ -1,5 +1,6 @@
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
+import { ErroDaApi } from '@/data/api-provider'
 import type { Produto } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -209,6 +210,22 @@ describe('VitraDataTable', () => {
     expect(screen.queryByText('Nenhum registro.')).not.toBeInTheDocument()
     // Contagem não mente sobre uma consulta que não voltou.
     expect(screen.getByText('— registros')).toBeInTheDocument()
+  })
+
+  it('mostra o detail que o servidor mandou no problem+json', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-detail']}
+        fetcher={() =>
+          Promise.reject(new ErroDaApi('Falha ao consultar.', 400, 'sortBy inválido.'))
+        }
+      />,
+    )
+
+    await screen.findByText(/não foi possível carregar a consulta/i)
+    // Sem isso o operador lê "algo deu errado" quando o backend explicou o quê.
+    expect(screen.getByText('sortBy inválido.')).toBeInTheDocument()
   })
 
   it('tentar de novo refaz a consulta que falhou', async () => {

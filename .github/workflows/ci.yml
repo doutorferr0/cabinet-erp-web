@@ -27,6 +27,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # O cliente gerado é commitado. Se alguém atualizar o contrato e esquecer
+      # o codegen (ou editar o gerado à mão), o front compila contra tipos velhos
+      # e a divergência só aparece em runtime. O contrato do backend
+      # (docs/contrato/contrato-http-listagem.md) pede exatamente esta guarda.
+      - name: Codegen is up to date
+        run: |
+          pnpm codegen
+          git diff --exit-code -- src/api/gerado \
+            || { echo '::error::src/api/gerado está fora de sincronia com contracts/openapi-v1.json — rode `pnpm codegen` e commite.'; exit 1; }
+
       - name: Lint and format check
         run: pnpm check
 

@@ -1,5 +1,5 @@
 import { configurarApi } from '@/api/cliente'
-import { createApiListProvider, queryDaTabela } from '@/data/api-provider'
+import { ErroDaApi, PAGE_SIZE_MAX, createApiListProvider, queryDaTabela } from '@/data/api-provider'
 import { tableState } from '@/test/utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -66,6 +66,18 @@ describe('queryDaTabela', () => {
       pageSize: 25,
     })
   })
+
+  // As duas condições que o contrato manda o servidor rejeitar com 400. Barrar
+  // aqui evita mandar requisição sabidamente inválida e receber de volta um erro
+  // que pareceria do servidor quando o defeito é de quem chamou.
+  it('barra página menor que 1 antes de chamar o servidor', () => {
+    expect(() => queryDaTabela(tableState({ page: 0 }))).toThrow(/1-based/)
+  })
+
+  it('barra pageSize acima do teto de 100 do contrato', () => {
+    expect(() => queryDaTabela(tableState({ pageSize: PAGE_SIZE_MAX + 1 }))).toThrow(/teto/)
+    expect(() => queryDaTabela(tableState({ pageSize: PAGE_SIZE_MAX }))).not.toThrow()
+  })
 })
 
 describe('createApiListProvider', () => {
@@ -102,5 +114,37 @@ describe('createApiListProvider', () => {
     const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
 
     await expect(provider.list(tableState())).rejects.toThrow(/falha ao consultar/i)
+  })
+
+  // O contrato manda `application/problem+json` (RFC 9457) em toda falha. O
+  // `detail` é a frase que o backend escolheu para o caso — jogá-la fora deixaria
+  // o operador com "algo deu errado" quando o servidor explicou o quê.
+  it('preserva status e detail do problem+json', async () => {
+    stubFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'sortBy inválido para este recurso.',
+          }),
+          { status: 400, headers: { 'content-type': 'application/problem+json' } },
+        ),
+    )
+    const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
+
+    const erro = await provider.list(tableState()).catch((e: unknown) => e)
+    expect(erro).toBeInstanceOf(ErroDaApi)
+    expect((erro as ErroDaApi).status).toBe(400)
+    expect((erro as ErroDaApi).detail).toBe('sortBy inválido para este recurso.')
+  })
+
+  it('erro sem corpo problem+json não inventa detalhe', async () => {
+    stubFetch(() => new Response('', { status: 500 }))
+    const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
+
+    const erro = (await provider.list(tableState()).catch((e: unknown) => e)) as ErroDaApi
+    expect(erro.detail).toBeUndefined()
   })
 })

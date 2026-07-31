@@ -35,13 +35,51 @@ A convenção não é suposição — é a forma literal de `GET /api/catalog-lo
 **`get(id)` ficou deliberadamente de fora:** não há NENHUM endpoint de item por id
 no contrato, então rota, código de "não encontrado" e tipo do id seriam invenção.
 
+### Conferir a cópia do contrato
+
+```bash
+pnpm contrato:conferir     # compara com docs/contrato/openapi-v1.json do backend
+```
+
+Cópia sem conferência envelhece em silêncio: o front geraria cliente de um
+contrato que o backend já mudou, e a divergência apareceria como 404 ou campo
+faltando em runtime. O comando roda **local** (o repo do backend é privado; o CI
+do front não tem credencial). A outra metade da guarda está no CI: o passo
+`Codegen is up to date` refaz o codegen e falha se `src/api/gerado` divergir da
+cópia — é a guarda que o contrato do backend pede explicitamente.
+
+## `GET /api/products` — o primeiro cadastro, e o que falta nele
+
+O backend publicou a listagem de produtos. O `ProductDto` traz **4 campos**; a
+listagem do front (`src/routes/cadastros/produtos/index.tsx`, campos literais da
+§6 da transcrição) mostra 7 colunas:
+
+| Coluna da listagem | Campo no `ProductDto` | Situação |
+|---|---|---|
+| `Nosso Código` | `code` | mapeável |
+| `Nossa Descrição` | `description` | mapeável |
+| `Ativo` | `active` | mapeável |
+| `Marca` | — | **falta no DTO** |
+| `Fábrica` | — | **falta no DTO** |
+| `Tipo de Produto` | — | **falta no DTO** |
+| `Valor de Tabela` | — | **falta no DTO** (centavos int; a §6.3 põe preço na VARIANTE, não no produto) |
+
+Por isso a tela **não** foi ligada ao endpoint: trocar agora esvaziaria quatro
+colunas que a transcrição registra. Falta também sessão com empresa ativa — o
+próprio contrato do backend anota que `products` depende de `active_tenant_id`.
+
+Quando o DTO crescer, a troca é uma linha no registry (`createApiListProvider`) e
+os testes de tela passam a precisar de servidor falso, como em
+`company-switcher.test.tsx`.
+
 ## Divergências entre a UI e o contrato (achadas ao ler o OpenAPI)
 
 | Assunto | UI hoje | Contrato | Situação |
 |---|---|---|---|
 | Ordenação | `sort: { id, desc }` | `sortBy` + `sortDesc` | **resolvida** pelo adaptador |
 | Página vazia | `q` omitido quando vazio | `q` opcional | **resolvida** — campo vazio não viaja |
-| **Tipo do id** | `number` em `get(id)`, `empty(id)`, mocks e rota (`$clienteId`) | **uuid (string)** em tudo: `CatalogLookupDto.id`, `tenantId`, `employeeId` | **ABERTA — decisão do hub** |
+| **Tipo do id** | `number` em `get(id)`, `empty(id)`, mocks e rota (`$clienteId`) | **uuid (string)** em tudo, agora inclusive num recurso de negócio: `ProductDto.id` | **ABERTA — decisão do hub** |
+| Erro em listagem sem empresa ativa | — | `GET /api/products` declara **409**; o contrato escrito diz **500** para contexto ausente | **a confirmar com o backend** |
 
 A do id é estrutural: se o backend mantiver uuid nos cadastros, `ResourceProvider`
 muda de assinatura, os mocks perdem o id numérico e as rotas passam a carregar

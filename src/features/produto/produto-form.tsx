@@ -15,6 +15,7 @@ import { FormGrid } from '@/components/vitra/form-grid'
 import { ErroDaApi } from '@/data/api-provider'
 import { useGravarProduto } from '@/data/produtos-api'
 import { tabelas } from '@/data/tabelas'
+import { parseQuantidade } from '@/lib/formatters'
 import type { Produto } from '@/mocks/produtos'
 import { useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -84,12 +85,19 @@ export const produtoSchema = z.object({
   valorTabelaCentavos: z.number(),
   variantes: z.array(
     z.object({
+      // `null` na linha recém-incluída: é o que manda a gravação fazer POST em
+      // vez de PUT. Não tem coluna na grade — é chave, não campo.
+      id: z.string().nullable(),
       ativo: z.boolean(),
       acabamento: z.string(),
       tamanho: z.string(),
       valorTabelaCentavos: z.number().nullable(),
       indice: z.string(),
-      estoqueMinimo: z.string(),
+      // O contrato quer número; a grade é texto. Recusar aqui é o que impede
+      // "1o2" virar `null` no servidor — apagar o mínimo em silêncio.
+      estoqueMinimo: z
+        .string()
+        .refine((t) => parseQuantidade(t) !== undefined, 'Est.Mínimo precisa ser um número'),
       tipoValor: z.string().nullable(),
     }),
   ),
@@ -400,6 +408,9 @@ function AbaValoresLocalizacao() {
           { key: 'tipoValor', label: 'Tipo de Valor', type: 'select', options: tabelas.tiposValor },
         ]}
         newRow={{
+          // Sem id: a linha ainda não existe no servidor, e é o `null` que faz
+          // o Gravar criar a variante em vez de tentar alterar uma inexistente.
+          id: null,
           ativo: true,
           acabamento: '',
           tamanho: '',
@@ -534,9 +545,12 @@ export function ProdutoForm({
   const gravar = useGravarProduto()
 
   function onGravar(values: Produto) {
-    gravar.mutate(values, {
-      onSuccess: () => void navigate({ to: '/cadastros/produtos' }),
-    })
+    // O registro COMO VEIO do servidor viaja junto: é comparando com ele que a
+    // gravação decide o que da grade mudou — linha intocada não vira escrita.
+    gravar.mutate(
+      { values, original: produto },
+      { onSuccess: () => void navigate({ to: '/cadastros/produtos' }) },
+    )
   }
 
   return (
@@ -550,11 +564,14 @@ export function ProdutoForm({
     >
       {/* Falha do Gravar em destaque, ANTES das abas: o `detail` do problem+json
           é a frase que o backend escolheu (400 validação, 403 escopo, 409
-          conflito). Sem ele o operador não saberia POR QUE o registro não gravou. */}
+          conflito). Sem ele o operador não saberia POR QUE o registro não gravou.
+          A `message` entra junto porque a falha de VARIANTE é a que diz qual
+          linha caiu e que o produto já foi gravado — perder isso deixaria o
+          operador tentando de novo sobre um estado que já mudou. */}
       {gravar.isError ? (
         <p role="alert" className="text-[0.75rem] text-destructive">
-          {gravar.error instanceof ErroDaApi && gravar.error.detail
-            ? gravar.error.detail
+          {gravar.error instanceof ErroDaApi
+            ? [gravar.error.message, gravar.error.detail].filter(Boolean).join(' ')
             : 'Não foi possível gravar o produto. Tente de novo.'}
         </p>
       ) : null}

@@ -67,18 +67,31 @@ function ProdutoEditPage() {
 }
 
 /**
- * O contrato v1 cobre 4 campos das 5 abas da §6 na LEITURA, e a ESCRITA é menor
- * ainda: o `ProductWriteRequest` tem 3 campos (sem a grade de variantes). Sem
- * este aviso, aba em branco se lê como cadastro incompleto e edição na grade se
- * lê como gravada — o operador iria preencher o que o servidor nem guarda. Sai
- * quando o DTO cobrir a tela (`docs/integracao.md`).
+ * O contrato cobre 4 campos das 5 abas da §6 mais a grade de Valores. Sem este
+ * aviso, aba em branco se lê como cadastro incompleto e campo sem destino se lê
+ * como gravado — o operador preencheria o que o servidor não guarda. Sai quando
+ * o DTO cobrir a tela (`docs/integracao.md`).
+ *
+ * Mudou com a escrita de variante: a grade **passou a viajar**, mas não inteira
+ * (`Índice` e `Tipo de Valor` não existem no contrato) e sem exclusão — não há
+ * `DELETE` de variante, então tirar a linha da tela não a tira do servidor.
  */
 function AvisoDeCobertura() {
   return (
-    <p className="max-w-prose text-[0.75rem] text-muted-foreground">
-      O Gravar envia apenas <strong>Nosso Código</strong>, <strong>Nossa Descrição</strong> e{' '}
-      <strong>Ativo</strong>. A grade de <strong>Valores</strong> vem do servidor mas ainda não tem
-      escrita; os demais campos aparecem em branco e <strong>Gravar não os envia</strong>.
-    </p>
+    <div className="flex max-w-prose flex-col gap-1 text-[0.75rem] text-muted-foreground">
+      <p>
+        O Gravar envia <strong>Nosso Código</strong>, <strong>Nossa Descrição</strong>,{' '}
+        <strong>Ativo</strong> e a grade de <strong>Valores</strong> (Acabamento, Tamanho, Valor de
+        Tabela, Est.Mínimo e o Ativo da linha). Os demais campos aparecem em branco e{' '}
+        <strong>Gravar não os envia</strong> — inclusive <strong>Índice</strong> e{' '}
+        <strong>Tipo de Valor</strong>, que a grade mostra e o contrato não tem.
+      </p>
+      <p>
+        <strong>Excluir linha</strong> tira a variante da tela, não do servidor: o contrato não tem
+        exclusão de variante. Para tirá-la de circulação, desmarque o <strong>Ativo</strong> da
+        linha e grave. O <strong>estoque atual</strong> não se edita aqui — ele é saldo de
+        movimento, e o lançamento ainda não tem tela.
+      </p>
+    </div>
   )
 }

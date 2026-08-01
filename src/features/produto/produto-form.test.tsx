@@ -19,11 +19,14 @@ const ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
 
 const LINHA = { id: ID, code: '1201', description: 'PENDENTE REDONDO ALUMÍNIO PRETO', active: true }
 
+/** Id da variante: é ele que separa alterar a linha (PUT) de criar outra (POST). */
+const VARIANTE_ID = '9c858901-8a57-4791-81fe-4c455b099bc9'
+
 const DETALHE = {
   ...LINHA,
   variants: [
     {
-      id: '9c858901-8a57-4791-81fe-4c455b099bc9',
+      id: VARIANTE_ID,
       finish: 'PRETO',
       size: 'ÚNICO',
       active: true,
@@ -60,7 +63,7 @@ function servidorDeProdutos(rotas: Record<string, () => Response> = {}): FetchSt
  * pós-gravação continua respondendo pelo caminho normal.
  */
 function servidorComEscrita(resposta: () => Response, rotas: Record<string, () => Response> = {}) {
-  const chamadas: { metodo: string; corpo: unknown }[] = []
+  const chamadas: { metodo: string; caminho: string; corpo: unknown }[] = []
   const base = servidorDeProdutos(rotas)
 
   const stub: FetchStub = async (entrada) => {
@@ -70,6 +73,9 @@ function servidorComEscrita(resposta: () => Response, rotas: Record<string, () =
       if (caminho.startsWith(URL_PRODUTOS)) {
         chamadas.push({
           metodo: requisicao.method.toUpperCase(),
+          // O caminho separa escrita de PRODUTO de escrita de VARIANTE — as duas
+          // saem do mesmo Gravar e vão para endpoints diferentes.
+          caminho,
           corpo: JSON.parse(await requisicao.clone().text()),
         })
         return resposta()
@@ -143,6 +149,7 @@ describe('listagem de produtos', () => {
       expect(escrita.chamadas).toEqual([
         {
           metodo: 'PUT',
+          caminho: `${URL_PRODUTOS}/${ID}`,
           corpo: {
             code: '1201',
             description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
@@ -305,9 +312,58 @@ describe('formulário de produto', () => {
     // O que a tela GRAVOU, não só para onde ela foi: sem asserir o corpo, o
     // teste passaria de novo com o Gravar sem destino que existia antes.
     expect(escrita.chamadas).toEqual([
-      { metodo: 'POST', corpo: { code: '9999', description: 'PENDENTE TESTE', active: true } },
+      {
+        metodo: 'POST',
+        caminho: URL_PRODUTOS,
+        corpo: { code: '9999', description: 'PENDENTE TESTE', active: true },
+      },
     ])
   }, 15_000)
+
+  // A grade passou a viajar — no endpoint DELA. O Gravar é um clique e vira
+  // duas escritas: produto e variante, nessa ordem (a variante pendura no id).
+  it('editar o Valor de Tabela grava a variante por PUT no endpoint dela', async () => {
+    const escrita = servidorComEscrita(() => json(DETALHE))
+    const { user } = renderRoute(`/cadastros/produtos/${ID}`, escrita.stub)
+
+    await screen.findByLabelText('Nosso Código')
+    await user.click(screen.getByRole('tab', { name: /Valores/ }))
+    const valor = await screen.findByLabelText('Valor de Tabela linha 1')
+    await user.clear(valor)
+    await user.type(valor, '12345')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(() => {
+      expect(escrita.chamadas.some((c) => c.caminho.includes('/variants'))).toBe(true)
+    })
+    const variante = escrita.chamadas.find((c) => c.caminho.includes('/variants'))
+    expect(variante?.metodo).toBe('PUT')
+    expect(variante?.caminho).toBe(`${URL_PRODUTOS}/${ID}/variants/${VARIANTE_ID}`)
+    // `stockQty` não está no corpo: estoque atual é saldo de movimento (kardex),
+    // não campo de cadastro. Mandá-lo aqui seria escrever no que é derivado.
+    expect(variante?.corpo).toEqual({
+      finish: 'PRETO',
+      size: 'ÚNICO',
+      active: true,
+      priceCents: 12345,
+      minStock: 2,
+    })
+  }, 20_000)
+
+  it('grade intocada não vira escrita de variante', async () => {
+    const escrita = servidorComEscrita(() => json(DETALHE))
+    const { user } = renderRoute(`/cadastros/produtos/${ID}`, escrita.stub)
+
+    const descricao = await screen.findByLabelText('Nossa Descrição')
+    await user.clear(descricao)
+    await user.type(descricao, 'SÓ O PRODUTO')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(() => {
+      expect(escrita.chamadas.some((c) => c.caminho === `${URL_PRODUTOS}/${ID}`)).toBe(true)
+    })
+    expect(escrita.chamadas.filter((c) => c.caminho.includes('/variants'))).toEqual([])
+  }, 20_000)
 
   // Escrita recusada não pode virar volta silenciosa para a listagem: o operador
   // acharia que gravou. Fica na tela, com a frase que o backend escolheu.

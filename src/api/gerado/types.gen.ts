@@ -66,6 +66,12 @@ export type PartnerDto = {
     registrationActive: boolean;
 };
 
+export type PartnerLinkRequest = {
+    code: null | string;
+    paymentTerms: null | string;
+    active: null | boolean;
+};
+
 export type PartnerWriteRequest = {
     document: null | string;
     legalName: null | string;
@@ -459,6 +465,41 @@ export type UpdatePartnerResponses = {
 };
 
 export type UpdatePartnerResponse = UpdatePartnerResponses[keyof UpdatePartnerResponses];
+
+export type LinkPartnerData = {
+    body?: null | PartnerLinkRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/partners/{id}/link';
+};
+
+export type LinkPartnerErrors = {
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type LinkPartnerError = LinkPartnerErrors[keyof LinkPartnerErrors];
+
+export type LinkPartnerResponses = {
+    /**
+     * Created
+     */
+    201: PartnerDto;
+};
+
+export type LinkPartnerResponse = LinkPartnerResponses[keyof LinkPartnerResponses];
 
 export type AuthLoginData = {
     body: LoginRequest;

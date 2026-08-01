@@ -43,7 +43,15 @@ export interface ChamadaDeParceiro {
  * CORPO do `PUT`, que é onde mora a promessa de não apagar campo que a tela não
  * mostra.
  */
-export function servidorDeParceiros(linhas: readonly unknown[] = [parceiro()]) {
+export interface OpcoesDoServidor {
+  /** Faz o `POST` responder o 409 de documento repetido, com a extensão da RFC 9457. */
+  documentoRepetido?: string
+}
+
+export function servidorDeParceiros(
+  linhas: readonly unknown[] = [parceiro()],
+  opcoes: OpcoesDoServidor = {},
+) {
   const chamadas: ChamadaDeParceiro[] = []
 
   const stub: FetchStub = async (entrada) => {
@@ -63,8 +71,26 @@ export function servidorDeParceiros(linhas: readonly unknown[] = [parceiro()]) {
     }
     // O contrato responde 201 com o `PartnerDto` criado.
     if (caminho === URL_PARCEIROS && metodo === 'POST') {
+      if (opcoes.documentoRepetido) {
+        // O `existingPartnerId` é MEMBRO DE EXTENSÃO (RFC 9457), fora do schema
+        // do `ProblemDetails` — é ele que tira a tela do beco.
+        return new Response(
+          JSON.stringify({
+            type: 'about:blank',
+            title: 'Documento já cadastrado no grupo',
+            status: 409,
+            detail: 'Já usa este documento. Vincular em vez de criar outro.',
+            existingPartnerId: opcoes.documentoRepetido,
+          }),
+          { status: 409, headers: { 'content-type': 'application/problem+json' } },
+        )
+      }
       const enviado = (chamadas[chamadas.length - 1]?.corpo ?? {}) as Record<string, unknown>
       return json({ ...parceiro(), ...enviado }, 201)
+    }
+    // Vincular a empresa a um cadastro que já existe no grupo.
+    if (caminho.endsWith('/link') && metodo === 'POST') {
+      return json(parceiro(), 201)
     }
     // O contrato responde 200 com o `PartnerDto` atualizado — não 204 vazio.
     if (caminho.startsWith(`${URL_PARCEIROS}/`) && metodo === 'PUT') {

@@ -1,5 +1,5 @@
 import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
-import { createPartner, updatePartner } from '@/api/gerado'
+import { createPartner, linkPartner, updatePartner } from '@/api/gerado'
 import { ErroDaApi, createApiListProvider, detalheDoProblema } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 
@@ -142,6 +142,7 @@ export async function atualizarParceiro(
       `Falha ao gravar o parceiro ${id}.`,
       response?.status ?? 0,
       detalheDoProblema(error),
+      error,
     )
   }
   return data
@@ -189,6 +190,48 @@ export async function incluirParceiro(corpo: PartnerWriteRequest): Promise<Partn
       'Falha ao incluir o parceiro.',
       response?.status ?? 0,
       detalheDoProblema(error),
+      error,
+    )
+  }
+  return data
+}
+
+/**
+ * O id que o 409 de documento repetido carrega — `null` quando o erro é outro.
+ *
+ * O cadastro é da ORGANIZAÇÃO: o documento já existe no grupo, mas o parceiro não
+ * aparece na listagem de quem ainda não o atende. Sem este id a tela ficaria com
+ * uma frase descrevendo a saída sem poder tomá-la.
+ */
+export function idDoParceiroExistente(erro: unknown): string | null {
+  if (!(erro instanceof ErroDaApi) || erro.status !== 409) return null
+  const corpo = erro.corpo
+  if (!corpo || typeof corpo !== 'object') return null
+  const id = (corpo as { existingPartnerId?: unknown }).existingPartnerId
+  return typeof id === 'string' && id ? id : null
+}
+
+/**
+ * Liga a empresa ativa a um cadastro que já existe no grupo — o outro lado do
+ * 409 acima.
+ *
+ * **Vincular NÃO edita**, e o corpo prova: só `code`, `paymentTerms` e `active`,
+ * que são do VÍNCULO. Aceitar os campos do cadastro faria "vincular" virar
+ * caminho para sobrescrever em silêncio a razão social que a empresa vizinha
+ * cadastrou. Ajustar o cadastro depois é o `Alterar`, que é explícito.
+ */
+export async function vincularParceiro(id: string, ativo: boolean): Promise<PartnerDto> {
+  const { data, error, response } = await linkPartner({
+    path: { id },
+    body: { code: null, paymentTerms: null, active: ativo },
+  })
+
+  if (error || !data) {
+    throw new ErroDaApi(
+      `Falha ao vincular o parceiro ${id}.`,
+      response?.status ?? 0,
+      detalheDoProblema(error),
+      error,
     )
   }
   return data

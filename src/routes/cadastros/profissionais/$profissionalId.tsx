@@ -1,11 +1,14 @@
 import type { PartnerDto } from '@/api/gerado'
+import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import { ErroDaApi } from '@/data/api-provider'
 import {
   atualizarParceiro,
   corpoDeEscrita,
   corpoDeInclusao,
+  idDoParceiroExistente,
   incluirParceiro,
+  vincularParceiro,
 } from '@/data/parceiros-api'
 import { ProfissionalForm } from '@/features/profissional/profissional-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -90,6 +93,18 @@ function ProfissionalEditPage() {
     },
   })
 
+  // O 409 de documento repetido não é beco: o cadastro existe no GRUPO e só falta
+  // esta empresa se ligar a ele. Criar outro geraria duplicata do mesmo CNPJ.
+  const jaExiste = idDoParceiroExistente(incluir.error)
+
+  const vincular = useMutation({
+    mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => vincularParceiro(id, ativo),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profissionais'] })
+      void navigate({ to: '/cadastros/profissionais' })
+    },
+  })
+
   const registro = isNovo
     ? data.profissionais.empty(0)
     : linha
@@ -112,7 +127,17 @@ function ProfissionalEditPage() {
         Cadastro de Fornecedores{' '}
         {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${registro.nomeApresentacao}`}
       </h1>
-      <AvisoDeCobertura isNovo={isNovo} erro={isNovo ? incluir.error : gravar.error} />
+      <AvisoDeCobertura
+        isNovo={isNovo}
+        erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+        {...(jaExiste && !vincular.error
+          ? {
+              vincular: () =>
+                vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+              vinculando: vincular.isPending,
+            }
+          : {})}
+      />
       <ProfissionalForm
         profissional={registro}
         readOnly={readOnly}
@@ -126,7 +151,18 @@ function ProfissionalEditPage() {
  * O contrato cobre 5 campos de um cadastro que tem dezenas. Sem este aviso, aba
  * em branco se lê como cadastro incompleto e `Gravar` parece ter guardado tudo.
  */
-function AvisoDeCobertura({ isNovo, erro }: { isNovo: boolean; erro: unknown }) {
+function AvisoDeCobertura({
+  isNovo,
+  erro,
+  vincular,
+  vinculando,
+}: {
+  isNovo: boolean
+  erro: unknown
+  /** Presente quando o 409 trouxe o cadastro que já existe no grupo. */
+  vincular?: () => void
+  vinculando?: boolean
+}) {
   return (
     <div className="flex flex-col gap-1">
       <p className="max-w-prose text-[0.75rem] text-muted-foreground">
@@ -143,9 +179,25 @@ function AvisoDeCobertura({ isNovo, erro }: { isNovo: boolean; erro: unknown }) 
         )}
       </p>
       {erro ? (
-        <p role="alert" className="max-w-prose text-[0.75rem] text-destructive">
-          Não foi possível gravar. {erro instanceof ErroDaApi && erro.detail ? erro.detail : null}
-        </p>
+        <div role="alert" className="flex max-w-prose flex-col items-start gap-2">
+          <p className="text-[0.75rem] text-destructive">
+            Não foi possível gravar. {erro instanceof ErroDaApi && erro.detail ? erro.detail : null}
+          </p>
+          {/* Vincular NÃO edita o cadastro do grupo: liga esta empresa a ele. O
+              que a empresa vizinha cadastrou fica como está — ajustar depois é o
+              Alterar, que é explícito. */}
+          {vincular ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={vincular}
+              disabled={vinculando}
+            >
+              {vinculando ? 'Vinculando…' : 'Vincular esta empresa ao cadastro existente'}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )

@@ -6,8 +6,10 @@ import {
   atualizarParceiro,
   corpoDeEscrita,
   corpoDeInclusao,
+  idDoParceiroExistente,
   incluirParceiro,
   parceiros,
+  vincularParceiro,
 } from '@/data/parceiros-api'
 import { parceiro } from '@/test/parceiros'
 import { instalarServidor, json, problema } from '@/test/servidor'
@@ -180,6 +182,61 @@ describe('escrita', () => {
     await expect(
       atualizarParceiro(parceiro().id, corpoDeEscrita(parceiro(), CAMPOS)),
     ).rejects.toBeInstanceOf(ErroDaApi)
+  })
+})
+
+describe('documento repetido no grupo', () => {
+  const OUTRO = '11111111-1111-4111-8111-111111111111'
+
+  function problemaDeDocumento(id?: string) {
+    return new Response(
+      JSON.stringify({
+        type: 'about:blank',
+        title: 'Documento já cadastrado no grupo',
+        status: 409,
+        detail: 'Vincular em vez de criar outro.',
+        ...(id ? { existingPartnerId: id } : {}),
+      }),
+      { status: 409, headers: { 'content-type': 'application/problem+json' } },
+    )
+  }
+
+  // Sem a extensão da RFC 9457 a tela teria uma frase descrevendo a saída sem
+  // poder tomá-la — o `detail` diz "vincule", mas com quem?
+  it('o 409 entrega o id do cadastro que já existe', async () => {
+    instalarServidor({ [URL_PARCEIROS]: () => problemaDeDocumento(OUTRO) })
+
+    const erro = await incluirParceiro(corpoDeInclusao('supplier', CAMPOS)).catch((e: unknown) => e)
+    expect(idDoParceiroExistente(erro)).toBe(OUTRO)
+  })
+
+  it('409 sem a extensão não inventa id', async () => {
+    instalarServidor({ [URL_PARCEIROS]: () => problemaDeDocumento() })
+
+    const erro = await incluirParceiro(corpoDeInclusao('supplier', CAMPOS)).catch((e: unknown) => e)
+    expect(idDoParceiroExistente(erro)).toBeNull()
+  })
+
+  it('erro que não é 409 não vira convite para vincular', async () => {
+    instalarServidor({ [URL_PARCEIROS]: () => problema(403, 'Sem escopo.') })
+
+    const erro = await incluirParceiro(corpoDeInclusao('supplier', CAMPOS)).catch((e: unknown) => e)
+    expect(idDoParceiroExistente(erro)).toBeNull()
+  })
+
+  // Vincular NÃO edita: o corpo só leva o que é do VÍNCULO. Aceitar campos do
+  // cadastro faria vincular virar caminho para sobrescrever em silêncio a razão
+  // social que a empresa vizinha cadastrou.
+  it('vincular manda só o que é do vínculo', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PARCEIROS}/${OUTRO}/link`]: () => json(parceiro(), 201),
+    })
+
+    await vincularParceiro(OUTRO, true)
+
+    const chamada = servidor.em(`${URL_PARCEIROS}/${OUTRO}/link`)[0]
+    expect(chamada?.metodo).toBe('POST')
+    expect(chamada?.corpo).toEqual({ code: null, paymentTerms: null, active: true })
   })
 })
 

@@ -603,6 +603,81 @@
         }
       }
     },
+    "/api/partners/{id}/link": {
+      "post": {
+        "tags": ["parceiros"],
+        "operationId": "LinkPartner",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PartnerLinkRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": ["auth"],
@@ -930,6 +1005,21 @@
           }
         }
       },
+      "PartnerLinkRequest": {
+        "required": ["code", "paymentTerms", "active"],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": ["null", "string"]
+          },
+          "paymentTerms": {
+            "type": ["null", "string"]
+          },
+          "active": {
+            "type": ["null", "boolean"]
+          }
+        }
+      },
       "PartnerWriteRequest": {
         "required": [
           "document",
@@ -1105,7 +1195,13 @@
         }
       },
       "SessaoAtual": {
-        "required": ["organizationId", "employeeId", "activeTenantId", "expiresAt"],
+        "required": [
+          "organizationId",
+          "employeeId",
+          "activeTenantId",
+          "expiresAt",
+          "mustChangePassword"
+        ],
         "type": "object",
         "properties": {
           "organizationId": {
@@ -1123,6 +1219,9 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "mustChangePassword": {
+            "type": "boolean"
           }
         }
       },

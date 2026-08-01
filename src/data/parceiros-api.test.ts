@@ -21,8 +21,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * Contrato da fronteira de parceiros — uma tabela, três papéis.
  *
  * Vale aqui a mesma promessa que `provider.test.ts` cobra dos providers mock
- * (paginação 1-based, total pós-filtro). O que NÃO vale é `get`: o contrato não
- * publicou `GET /api/partners/{id}`, e isso é asserido, não suposto.
+ * (paginação 1-based, total pós-filtro). O `get` entrou quando o backend
+ * publicou `GET /api/partners/{id}` (`#35`) — antes disso, a AUSÊNCIA dele é que
+ * era asserida, para `get` mock não conviver com listagem real.
  */
 
 /** Campos que as telas editam — o recorte do corpo de escrita. */
@@ -284,17 +285,52 @@ describe('desativação (o Excluir da listagem)', () => {
   })
 })
 
-describe('o que o contrato NÃO oferece', () => {
-  // A LEITURA por id não existe (o caminho `/api/partners/{id}` só tem `PUT`).
-  // Quem faz o papel do detalhe é a linha da listagem.
+describe('leitura por id (link direto e recarga)', () => {
+  // A entrada do registry ficou SEM `get` enquanto o contrato não tinha leitura
+  // por id — `get` mock ao lado de listagem real casaria uuid do servidor com id
+  // inventado. Com o `#35` do backend, o `get` passou a ser de verdade.
   it.each(['clientes', 'fornecedores', 'profissionais'] as const)(
-    '%s não expõe get — não há GET /api/partners/{id}',
+    '%s expõe get, agora que GET /api/partners/{id} existe',
     (recurso) => {
-      expect(data[recurso]).not.toHaveProperty('get')
+      expect(typeof data[recurso].get).toBe('function')
     },
   )
 
-  it('mas o registro em branco do Incluir continua local', () => {
+  it('busca no endpoint do contrato e devolve o PartnerDto', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PARCEIROS}/${parceiro().id}`]: () => json(parceiro({ legalName: 'DO SERVIDOR' })),
+    })
+
+    const achado = await data.clientes.get(parceiro().id)
+
+    expect(servidor.em(`${URL_PARCEIROS}/${parceiro().id}`)[0]?.metodo).toBe('GET')
+    expect(achado?.legalName).toBe('DO SERVIDOR')
+  })
+
+  it('404 devolve null — o parceiro não está lá', async () => {
+    instalarServidor({
+      [`${URL_PARCEIROS}/${parceiro().id}`]: () =>
+        problema(404, 'Parceiro não encontrado.', 'Not Found'),
+    })
+
+    await expect(data.fornecedores.get(parceiro().id)).resolves.toBeNull()
+  })
+
+  // 409 é "nenhuma empresa ativa na sessão". Virar `null` diria "esse parceiro
+  // não existe" a quem só não escolheu empresa.
+  it('409 REJEITA com o detail do servidor, não vira "não encontrado"', async () => {
+    instalarServidor({
+      [`${URL_PARCEIROS}/${parceiro().id}`]: () =>
+        problema(409, 'Nenhuma empresa ativa na sessão.'),
+    })
+
+    const erro = (await data.profissionais.get(parceiro().id).catch((e: unknown) => e)) as ErroDaApi
+    expect(erro).toBeInstanceOf(ErroDaApi)
+    expect(erro.status).toBe(409)
+    expect(erro.detail).toBe('Nenhuma empresa ativa na sessão.')
+  })
+
+  it('o registro em branco do Incluir continua local', () => {
     expect(data.fornecedores.empty(1)).toHaveProperty('id', 1)
     expect(data.clientes.empty(2)).toHaveProperty('id', 2)
     expect(data.profissionais.empty(3)).toHaveProperty('id', 3)

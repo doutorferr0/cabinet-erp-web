@@ -14,10 +14,15 @@ import {
  * ## Por que existe
  *
  * O botão da barra chama-se `Excluir` (transcrição §9), mas na UI de cadastro
- * **nada é apagado**: a desativação é lógica (`Ativo` do vínculo vira `não`) —
- * padrão 8 do CLAUDE.md. O rótulo herdado do legado e o efeito real não batem, e
- * quem clica precisa ler o que vai acontecer ANTES de acontecer. Daí o diálogo
- * dizer "desativar", nomear o registro e apontar a volta (o `Alterar`).
+ * **nada é apagado**: a desativação é lógica (`Ativo` vira `não`) — padrão 8 do
+ * CLAUDE.md. O rótulo herdado do legado e o efeito real não batem, e quem clica
+ * precisa ler o que vai acontecer ANTES de acontecer. Daí o diálogo dizer
+ * "desativar", nomear o registro e apontar a volta (o `Alterar`).
+ *
+ * Genérico por `entidade` — serve as três telas de parceiro e a de produtos. A
+ * frase não diz de ONDE vem o `Ativo` (vínculo com a empresa, no parceiro;
+ * o contrato não afirma o mesmo do produto) porque a pergunta do operador é o
+ * efeito, não a origem do campo.
  *
  * ## Registro já inativo
  *
@@ -64,7 +69,7 @@ export function ConfirmarDesativacao({
               </>
             ) : (
               <>
-                O vínculo deste {entidade} com a empresa ativa já está desativado. Nada será enviado
+                Este {entidade} já está com a situação <strong>Inativo</strong>. Nada será enviado
                 ao servidor.
               </>
             )}

@@ -1,7 +1,7 @@
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json, problema } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -59,9 +59,9 @@ function servidorDeProdutos(rotas: Record<string, () => Response> = {}): FetchSt
  * vazio (ver `src/test/servidor.ts`). Só desvia o que NÃO é `GET`: a listagem
  * pós-gravação continua respondendo pelo caminho normal.
  */
-function servidorComEscrita(resposta: () => Response) {
+function servidorComEscrita(resposta: () => Response, rotas: Record<string, () => Response> = {}) {
   const chamadas: { metodo: string; corpo: unknown }[] = []
-  const base = servidorDeProdutos()
+  const base = servidorDeProdutos(rotas)
 
   const stub: FetchStub = async (entrada) => {
     const requisicao = entrada instanceof Request ? entrada : null
@@ -121,6 +121,87 @@ describe('listagem de produtos', () => {
     })
     expect(await screen.findByRole('tab', { name: 'Dados Principais' })).toBeInTheDocument()
   })
+
+  // `Excluir` na UI de cadastro é DESATIVAÇÃO (padrão 8), e antes disto o botão
+  // era destrutivo na aparência e inerte no efeito: sem `onExcluir`, a ação caía
+  // no `console.info` e o operador concluía que tinha desativado.
+  it('Excluir confirma, desativa por PUT e manda a linha inteira', async () => {
+    const escrita = servidorComEscrita(() => json({ ...LINHA, active: false }))
+    const { user } = renderRoute('/cadastros/produtos', escrita.stub)
+
+    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(dialogo).toHaveTextContent('Desativar produto?')
+    expect(dialogo).toHaveTextContent('não é apagado')
+    await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
+
+    // O `PUT` substitui o registro inteiro: `code` e `description` voltam como
+    // vieram. Corpo com eles nulos apagaria o cadastro para desativá-lo.
+    await waitFor(() => {
+      expect(escrita.chamadas).toEqual([
+        {
+          metodo: 'PUT',
+          corpo: {
+            code: '1201',
+            description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
+            active: false,
+          },
+        },
+      ])
+    })
+  }, 15_000)
+
+  it('Cancelar no diálogo não manda escrita nenhuma', async () => {
+    const escrita = servidorComEscrita(() => json({ ...LINHA, active: false }))
+    const { user } = renderRoute('/cadastros/produtos', escrita.stub)
+
+    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancelar' }),
+    )
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(escrita.chamadas).toEqual([])
+  }, 15_000)
+
+  // `PUT` que não muda nada voltaria 200 e a tela diria "desativado" — o
+  // operador concluiria que a situação mudou nesta hora, quando já era assim.
+  it('linha já inativa não vira PUT: o diálogo só informa', async () => {
+    const escrita = servidorComEscrita(() => json({ ...LINHA, active: false }), {
+      [URL_PRODUTOS]: () => json({ rows: [{ ...LINHA, active: false }], total: 1 }),
+    })
+    const { user } = renderRoute('/cadastros/produtos', escrita.stub)
+
+    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(dialogo).toHaveTextContent('já está inativo')
+    expect(within(dialogo).queryByRole('button', { name: 'Desativar' })).not.toBeInTheDocument()
+    expect(escrita.chamadas).toEqual([])
+  }, 15_000)
+
+  // Recusa do servidor não pode fechar o diálogo: fechar sem escrita valeria
+  // como "desativado" para quem está olhando.
+  it('falha ao desativar mantém o diálogo e mostra o detail', async () => {
+    const escrita = servidorComEscrita(() =>
+      problema(403, 'Sem permissão para gravar nesta empresa.', 'Forbidden'),
+    )
+    const { user } = renderRoute('/cadastros/produtos', escrita.stub)
+
+    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    const dialogo = await screen.findByRole('dialog')
+    await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
+
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent(
+      'Sem permissão para gravar nesta empresa.',
+    )
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  }, 15_000)
 })
 
 describe('formulário de produto', () => {

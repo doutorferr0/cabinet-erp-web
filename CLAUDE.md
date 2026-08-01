@@ -1,21 +1,41 @@
 # CLAUDE.md — vitra-erp-web
 
 Orientação para o agente (claude ou kimi) neste repositório. Ler antes de qualquer tarefa.
-Este repo = **front do VITRA** (React SPA). Backend = `doutorferr0/vitra-erp-py` (NUNCA commitar lá; em Etapa 0, paralelo a este trilho). Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
+Este repo = **front do VITRA** (React SPA). Backend = `doutorferr0/vitra-erp-dotnet` (NUNCA commitar lá). Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
 
 ## Estilo de comunicação
 PT-BR. Comprimir prosa, nunca substância. Cortar filler/cordialidade/preâmbulo. Preservar raciocínio de decisão, trade-offs, causalidade. Não inventar dado — falta = "sem dado". Revisão começa por problemas. Responder só o perguntado.
 
-## REGRA DA FASE — MOCK ONLY (inegociável)
-O backend ainda não publicou contrato. Portanto:
-- **TODA tela usa dados mock tipados** em `src/mocks/`, espelhando os campos LITERAIS de `topicos/transcricaosoftlux.md` da memória (ler o tópico ao modelar cada tela).
-- **PROIBIDO:** inventar chamada HTTP, inventar shape de API, instalar cliente de API, "deixar pronto" endpoint imaginário. Os tipos reais virão do codegen `@hey-api/openapi-ts` quando a Etapa 0 do backend publicar o OpenAPI (passo 9). Estruturar os mocks atrás de uma interface de provider (troca limpa depois).
-- Formulários validam com Zod local (marcar `// TODO(contract):` onde o Zod do codegen substituirá).
+## REGRA DA FASE — INTEGRAÇÃO INCREMENTAL (inegociável)
+**A fase mock ACABOU.** O `vitra-erp-dotnet` publicou o OpenAPI e parte do front já consome
+o servidor. A troca acontece **entrada por entrada** do registry, conforme o backend publica
+o recurso — nunca de uma vez.
+
+- **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos
+  (`/api/products`) e os três papéis de parceiro — cliente, fornecedor, profissional
+  (`/api/partners`, filtro `role`). Ver `docs/integracao.md`, seção `Estado atual`.
+- **Ainda mock:** colaborador, orçamento, pedido de compra, ordem de compra, cidades, boletim
+  — **por falta de endpoint, não por escolha.** Esses seguem a regra antiga: dados tipados em
+  `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API, escrever à mão tipo que
+  o contrato define. Todo tipo de servidor vem do codegen — `pnpm codegen` (`@hey-api/openapi-ts`),
+  saída em `src/api/gerado/`, **commitada**, com `@ts-nocheck` posto pelo passo pós-codegen.
+  **Nunca editar `src/api/gerado/` à mão**; conflito de merge nele se resolve rodando o codegen.
+- **`contracts/openapi-v1.json` é cópia versionada do contrato do backend.** O diff dele é a
+  notificação de que o backend mudou. `pnpm contrato:conferir` compara com o original via `gh api`
+  (roda LOCAL — o repo do backend é privado e o CI do front não tem credencial). **O conferidor
+  compara CAMINHOS, não métodos:** ler o `paths` do OpenAPI antes de concluir que um verbo chegou.
+- **A tela nunca inventa o que o contrato não cobre.** Contrato menor que a transcrição fica
+  VISÍVEL: coluna que o DTO não tem sai da listagem, campo que o servidor não guarda aparece em
+  branco e o `AvisoDeCobertura` avisa o operador. Preencher com mock daria dado de mentira com
+  cara de dado do servidor.
+- Formulários validam com Zod local; `// TODO(contract):` marca o que o codegen ainda vai substituir.
 
 ## Stack (decidida — NÃO trocar sem confirmação do user)
 - **Vite + React 19 + TypeScript strict** · SPA
 - **Tailwind v4 + shadcn/ui** (copy-paste, sem runtime dep de UI kit)
-- **TanStack Query v5** (estado servidor — na fase mock, simula latência) · **TanStack Table v8** · **TanStack Router** (proposta desta fase; user pode vetar → alternativa react-router)
+- **TanStack Query v5** (estado servidor) · **TanStack Table v8** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
+- **`@hey-api/openapi-ts`** (codegen do contrato) · cliente em `src/api/cliente.ts` (`fetch`, `credentials: 'include'` — a sessão é cookie opaco)
 - **react-hook-form + Zod 4**
 - **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome** (lint+format) · **vitest** + Testing Library
 - **Vetos:** Redux · axios · styled-components · MUI/Antd/UI-kits de runtime · form-generator declarativo · SheetJS (`xlsx` npm) · float p/ dinheiro
@@ -28,8 +48,8 @@ O backend ainda não publicou contrato. Portanto:
 - Componentes compartilhados moram em `src/components/vitra/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
 - Acessibilidade mínima: label em todo campo, foco visível, dialog com focus-trap (shadcn já dá).
 
-## Os padrões a construir (fonte: transcricaosoftlux @padroes — 8 padrões, 20 telas)
-1. **DataTable server-ready** — busca, ordenação, paginação com estado tipado `{q, sort, page, pageSize}` COMO SE fosse servidor (provider mock aplica). É o coração: 8+ telas usam.
+## Os 8 padrões — JÁ IMPLEMENTADOS, tela nova COMPÕE (fonte: transcricaosoftlux @padroes, 20 telas)
+1. **DataTable server-ready** — busca, ordenação, paginação com estado tipado `{q, sort, page, pageSize}`. Nos recursos HTTP quem aplica é o backend; nos mock, o provider. É o coração: 8+ telas usam. Coluna que ordena usa `accessorKey` **em inglês**, o nome que a whitelist de `sortBy` do servidor aceita — traduzir quebra a ordenação com 400 só ao clicar no cabeçalho.
 2. **LookupCombo** — Combobox (Command+Popover) + botão `...` abrindo Dialog de cadastro rápido; parametrizado por `kind` (19 usos).
 3. **Blocos compartilhados** — `<EnderecoBlock>` (com busca CEP mockada) · `<TelefonesBlock>` · `<ComunicadoresBlock>` (2 pares combo+texto) · `<RedesSociaisBlock>`.
 4. **Form com abas** — shadcn Tabs + RHF, **1 form por tela** (não por aba), rodapé fixo Gravar/Cancelar.
@@ -40,38 +60,66 @@ O backend ainda não publicou contrato. Portanto:
 
 ## Layout do repo
 ```
-src/app/            # shell, providers, router
+src/app/            # shell, providers, router, guarda de sessão
+src/routes/         # rotas do TanStack Router (árvore gerada em src/routeTree.gen.ts)
 src/components/ui/  # shadcn (gerado)
 src/components/vitra/  # DataTable, LookupCombo, blocos, ActionBar...
 src/features/<tela>/   # fornecedor/, cliente/, produto/...
-src/data/           # FRONTEIRA de dados: contrato + registry de providers
+src/api/            # cliente.ts (configuração) + gerado/ (codegen — NÃO editar)
+src/data/           # FRONTEIRA de dados: contrato, registry, adaptadores HTTP
 src/mocks/          # dados fake tipados (só dado, sem acesso)
 src/lib/            # utils, shortcuts, formatters (money, cnpj, date)
-src/test/           # helpers de teste (renderRoute, renderWithQuery)
-docs/integracao.md  # roteiro da troca mock -> API
+src/test/           # helpers de teste (renderRoute, renderWithQuery, instalarServidor)
+contracts/openapi-v1.json  # cópia versionada do contrato do backend
+docs/integracao.md  # roteiro e estado da troca mock -> API
 ```
 
-**Regra de acesso a dado:** tela NUNCA importa `fetch*` de `src/mocks/` — pede a
-`data.<recurso>.list/get/empty` (`src/data/index.ts`). De `src/mocks/` só vêm
-**tipos** e **tabelas de apoio estáticas**. Na integração, só `src/data/index.ts`
-muda. Contrato travado por `src/data/provider.test.ts`.
+**Regra de acesso a dado:** tela NUNCA importa `fetch*` de `src/mocks/` nem chama o cliente
+gerado direto — pede a `data.<recurso>` (`src/data/index.ts`) ou ao hook da fronteira
+(`useSessao`, `useLookupOptions`…). De `src/mocks/` só vêm **tipos** e **tabelas de apoio
+estáticas**. Trocar mock→HTTP mexe em `src/data/`, não na tela.
+
+**A entrada do registry tem a forma do que o CONTRATO oferece, não a que a tela gostaria.**
+Produtos expõe `list`/`get`/`empty` porque há detalhe por id; parceiro expõe `list`/`empty`
+porque **não existe `GET /api/partners/{id}`**. `get` mock ao lado de listagem real casaria
+uuid do servidor com id inventado e responderia "não encontrado" para registro que existe.
 
 **Regra de teste:** tela usa `renderRoute('/url')` (router real); componente isolado
 usa `renderWithQuery(<X />)`. Ambos em `src/test/utils.tsx` — não recriar `setup()`
-local com `createMemoryHistory`.
+local com `createMemoryHistory`. Recurso HTTP se testa contra **servidor falso**
+(`instalarServidor`/`json`/`problema` em `src/test/servidor.ts`), nunca com mock do módulo:
+o cliente gerado chama `fetch(new Request(...))`, então **verbo e corpo vêm do `Request`** —
+`init.method` dá sempre `GET`, e stub que casa só por caminho deixa `POST` cair na resposta
+do `GET` e o teste passa sem asserir nada. Recurso mock segue travado por
+`src/data/provider.test.ts`; os HTTP, por `src/data/<recurso>-api.test.ts`.
 
 ## Comandos
 ```
 pnpm install
-pnpm dev            # Vite (porta 5173)
+pnpm dev            # Vite (5173) — proxy /api e /auth -> backend em 5199
 pnpm check          # biome check --write
-pnpm check-types    # tsc --noEmit
+pnpm check-types    # tsc -b
 pnpm test           # vitest run
 pnpm build
+pnpm codegen        # regera src/api/gerado/ a partir de contracts/openapi-v1.json
+pnpm contrato:conferir   # compara a cópia local com o contrato do backend (gh api, LOCAL)
 ```
 
+**Par local:** backend `vitra-erp-dotnet` em **5199** + front em 5173. O proxy existe por causa
+do COOKIE (sessão opaca): apontar direto para a porta do backend tornaria tudo cross-origin e
+exigiria `SameSite=None; Secure` só em dev. `VITE_API_PROXY` troca host/porta sem editar arquivo.
+Fonte da porta = `docs/ligar-com-o-front.md` do backend, não `launchSettings.json`.
+
+**Armadilha medida:** `pnpm check-types` (`tsc -b`) já passou verde com erro real de tipo,
+reaproveitando build info. Quando a mudança mexe em assinatura de provider, conferir com
+`npx tsc -p tsconfig.app.json --noEmit`. E **nunca filtrar a saída da suíte com `tail`** na
+primeira rodada — redirecionar para arquivo, senão a falha some.
+
 ## FECHAMENTO — obrigatório antes de encerrar QUALQUER sessão
-1. `pnpm check` → zero erros. 2. `pnpm check-types` → zero erros. 3. `pnpm test` → verde (componente novo = teste novo mínimo: render + interação principal). 4. Commit Conventional ≤50 char, foco no "porquê". 5. Push → CI verde (`gh run watch`). CI vermelho = sessão não terminou. 6. **Registrar progresso em `topicos/frente-visual.md` da memória** (seção MEMÓRIA abaixo) — NUNCA tocar no `next-task.md` (é do trilho backend).
+1. `pnpm check` → zero erros. 2. `pnpm check-types` → zero erros. 3. `pnpm test` → verde (componente novo = teste novo mínimo: render + interação principal). 4. Mexeu no contrato? `pnpm codegen` e **commitar `src/api/gerado/`** — o CI tem passo `Codegen is up to date` e reprova o gerado velho. 5. Commit Conventional ≤50 char, foco no "porquê" — **adicionar por CAMINHO, nunca `git add -A`**: a árvore costuma ter trabalho de outro trilho não commitado. 6. Push → CI verde (`gh run watch`). CI vermelho = sessão não terminou. 7. **Registrar progresso em `topicos/frente-visual.md` da memória** (seção MEMÓRIA abaixo) — NUNCA tocar no `next-task.md` (é do trilho backend).
+
+**Antes de reservar tarefa:** `git branch -r --contains <oid>`. Worktree parada NÃO é trabalho em
+curso — já houve tarefa reservada duas vezes para coisa que estava em `main`.
 
 ---
 

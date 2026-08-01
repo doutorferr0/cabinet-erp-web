@@ -1,6 +1,7 @@
 import { ErroDaApi } from '@/data/api-provider'
 import {
   URL_PRODUTOS,
+  corpoDeDesativacao,
   gravarProduto,
   produtoDoContrato,
   produtoParaContrato,
@@ -168,6 +169,25 @@ describe('escrita de produto', () => {
       code: '1201',
       description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
       active: true,
+    })
+  })
+
+  // A desativação parte da LINHA da listagem, não do detalhe: o
+  // `ProductWriteRequest` é subconjunto do `ProductDto`, então a linha já traz
+  // todo campo gravável. O risco que este teste vigia é o do `PUT` que
+  // substitui tudo — corpo só com `active` apagaria código e descrição.
+  it('desativar devolve a linha inteira com active falso', () => {
+    const corpo = corpoDeDesativacao({
+      id: ID,
+      code: '1201',
+      description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
+      active: true,
+    })
+
+    expect(corpo).toEqual({
+      code: '1201',
+      description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
+      active: false,
     })
   })
 

@@ -1,9 +1,13 @@
 import type { ProductDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
+import { ConfirmarDesativacao } from '@/components/vitra/confirmar-desativacao'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
+import { ErroDaApi } from '@/data/api-provider'
+import { useDesativarProduto } from '@/data/produtos-api'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/produtos/')({
   component: ProdutosPage,
@@ -41,11 +45,22 @@ function ProdutosPage() {
     })
   }
 
+  // O `Excluir` da barra é DESATIVAÇÃO (padrão 8) e passa por confirmação: o
+  // rótulo herdado do legado diz "excluir", o efeito é outro, e quem clica
+  // precisa ler qual antes. Sem `onExcluir` a ação só escrevia no console —
+  // botão destrutivo que não faz nada é pior que botão desabilitado.
+  const [aDesativar, setADesativar] = useState<ProductDto | null>(null)
+  const desativar = useDesativarProduto()
+
   const actions = cadastroActions<ProductDto>({
     entidade: 'produto',
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrir(p.id),
     onConsultar: (p) => abrir(p.id, 'consulta'),
+    onExcluir: (p) => {
+      desativar.reset()
+      setADesativar(p)
+    },
   })
 
   return (
@@ -57,6 +72,24 @@ function ProdutosPage() {
         fetcher={data.produtos.list}
         actions={actions}
       />
+      {aDesativar ? (
+        <ConfirmarDesativacao
+          entidade="produto"
+          nome={aDesativar.description}
+          ativo={aDesativar.active}
+          aberto
+          pendente={desativar.isPending}
+          erro={
+            desativar.error instanceof ErroDaApi
+              ? (desativar.error.detail ?? 'Não foi possível desativar. Tente de novo.')
+              : desativar.error
+                ? 'Não foi possível desativar. Tente de novo.'
+                : null
+          }
+          onFechar={() => setADesativar(null)}
+          onConfirmar={() => desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })}
+        />
+      ) : null}
     </div>
   )
 }

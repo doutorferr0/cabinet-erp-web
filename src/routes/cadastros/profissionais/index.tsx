@@ -1,10 +1,14 @@
 import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
+import { ConfirmarDesativacao } from '@/components/vitra/confirmar-desativacao'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
+import { ErroDaApi } from '@/data/api-provider'
+import { useDesativarParceiro } from '@/data/parceiros-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/profissionais/')({
   component: ProfissionaisPage,
@@ -60,11 +64,22 @@ function ProfissionaisPage() {
     abrir(p.id, modo)
   }
 
+  // O `Excluir` da barra é DESATIVAÇÃO (padrão 8) e passa por confirmação: o
+  // rótulo herdado do legado diz "excluir", o efeito é outro, e quem clica
+  // precisa ler qual antes. Sem `onExcluir` a ação só escrevia no console —
+  // botão destrutivo que não faz nada é pior que botão desabilitado.
+  const [aDesativar, setADesativar] = useState<PartnerDto | null>(null)
+  const desativar = useDesativarParceiro(['profissionais'])
+
   const actions = cadastroActions<PartnerDto>({
     entidade: 'profissional',
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrirParceiro(p),
     onConsultar: (p) => abrirParceiro(p, 'consulta'),
+    onExcluir: (p) => {
+      desativar.reset()
+      setADesativar(p)
+    },
   })
 
   return (
@@ -76,6 +91,24 @@ function ProfissionaisPage() {
         fetcher={data.profissionais.list}
         actions={actions}
       />
+      {aDesativar ? (
+        <ConfirmarDesativacao
+          entidade="profissional"
+          nome={aDesativar.legalName}
+          ativo={aDesativar.active}
+          aberto
+          pendente={desativar.isPending}
+          erro={
+            desativar.error instanceof ErroDaApi
+              ? (desativar.error.detail ?? 'Não foi possível desativar. Tente de novo.')
+              : desativar.error
+                ? 'Não foi possível desativar. Tente de novo.'
+                : null
+          }
+          onFechar={() => setADesativar(null)}
+          onConfirmar={() => desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })}
+        />
+      ) : null}
     </div>
   )
 }

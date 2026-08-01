@@ -1,6 +1,6 @@
 import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 describe('tela Fornecedor', () => {
@@ -170,6 +170,61 @@ describe('tela Fornecedor', () => {
     expect(await screen.findByText('Razão Social é obrigatória')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Vincular esta empresa/ })).not.toBeInTheDocument()
   })
+
+  // `Excluir` na UI de cadastro é DESATIVAÇÃO (padrão 8). O diálogo existe
+  // porque o rótulo herdado do legado e o efeito real não batem: quem clica
+  // precisa ler o que vai acontecer antes de acontecer.
+  it('Excluir confirma, desativa por PUT e a linha volta como Não', async () => {
+    const { stub, chamadas } = servidorDeParceiros([parceiro({ code: 'F001', active: true })])
+    const { user } = renderRoute('/cadastros/fornecedores', stub)
+
+    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(dialogo).toHaveTextContent('Desativar fornecedor?')
+    expect(dialogo).toHaveTextContent('não é apagado')
+    await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
+
+    await waitFor(() => {
+      expect(chamadas.find((c) => c.metodo === 'PUT')).toBeDefined()
+    })
+    // Só a situação muda: `code`, `paymentTerms` e os papéis voltam como vieram.
+    expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
+      active: false,
+      code: 'F001',
+      legalName: 'STELLA ILUMINAÇÃO LTDA',
+    })
+  }, 15_000)
+
+  it('Cancelar no diálogo não manda escrita nenhuma', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { user } = renderRoute('/cadastros/fornecedores', stub)
+
+    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancelar' }),
+    )
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(chamadas.every((c) => c.metodo === 'GET')).toBe(true)
+  }, 15_000)
+
+  // Desativar o que já está desativado gastaria uma escrita para não mudar nada
+  // — e o sucesso faria o operador concluir que a linha mudou de estado.
+  it('linha já inativa não vira PUT: o diálogo só informa', async () => {
+    const { stub, chamadas } = servidorDeParceiros([parceiro({ active: false })])
+    const { user } = renderRoute('/cadastros/fornecedores', stub)
+
+    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(dialogo).toHaveTextContent('já está inativo')
+    expect(within(dialogo).queryByRole('button', { name: 'Desativar' })).not.toBeInTheDocument()
+    expect(chamadas.every((c) => c.metodo === 'GET')).toBe(true)
+  }, 15_000)
 
   // Link direto e recarga não têm linha — e sem leitura por id não há de onde
   // tirá-la. A tela manda voltar à listagem em vez de abrir formulário vazio.

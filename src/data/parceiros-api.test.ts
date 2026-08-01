@@ -4,6 +4,7 @@ import {
   ORDENAVEIS,
   URL_PARCEIROS,
   atualizarParceiro,
+  corpoDeDesativacao,
   corpoDeEscrita,
   corpoDeInclusao,
   idDoParceiroExistente,
@@ -237,6 +238,49 @@ describe('documento repetido no grupo', () => {
     const chamada = servidor.em(`${URL_PARCEIROS}/${OUTRO}/link`)[0]
     expect(chamada?.metodo).toBe('POST')
     expect(chamada?.corpo).toEqual({ code: null, paymentTerms: null, active: true })
+  })
+})
+
+describe('desativação (o Excluir da listagem)', () => {
+  // A promessa do padrão 8: `Excluir` na UI de cadastro NUNCA apaga. E como o
+  // `PUT` substitui o registro inteiro, desativar não pode ser desculpa para
+  // zerar o resto — o corpo tem de ser a linha de volta com `active: false`.
+  it('muda SÓ o active, devolvendo o resto da linha como veio', () => {
+    const linha = parceiro({
+      code: 'C007',
+      paymentTerms: '30/60/90',
+      isCustomer: true,
+      isSupplier: true,
+      tradeName: 'STELLA',
+    })
+
+    const corpo = corpoDeDesativacao(linha)
+
+    expect(corpo).toEqual({
+      legalName: linha.legalName,
+      tradeName: 'STELLA',
+      document: linha.document,
+      email: linha.email,
+      code: 'C007',
+      paymentTerms: '30/60/90',
+      isCustomer: true,
+      isSupplier: true,
+      isProfessional: false,
+      active: false,
+    })
+  })
+
+  it('vai como PUT no id da linha', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PARCEIROS}/${parceiro().id}`]: () => json(parceiro({ active: false })),
+    })
+
+    const salvo = await atualizarParceiro(parceiro().id, corpoDeDesativacao(parceiro()))
+
+    const chamada = servidor.em(`${URL_PARCEIROS}/${parceiro().id}`)[0]
+    expect(chamada?.metodo).toBe('PUT')
+    expect(chamada?.corpo).toMatchObject({ active: false })
+    expect(salvo.active).toBe(false)
   })
 })
 

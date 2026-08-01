@@ -2,6 +2,7 @@ import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
 import { createPartner, linkPartner, updatePartner } from '@/api/gerado'
 import { ErroDaApi, createApiListProvider, detalheDoProblema } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE PARCEIROS — `GET /api/partners`.
@@ -146,6 +147,42 @@ export async function atualizarParceiro(
     )
   }
   return data
+}
+
+/**
+ * Corpo da DESATIVAÇÃO — a linha inteira de volta, com `active: false`.
+ *
+ * O `Excluir` da barra de ações nunca apaga (padrão 8): desativa o VÍNCULO com a
+ * empresa ativa. Passar pela `corpoDeEscrita` com os próprios valores da linha é
+ * o que garante que só `active` muda — o `PUT` substitui o registro inteiro, e
+ * montar o corpo à mão aqui seria a segunda chance de esquecer `code`,
+ * `paymentTerms` ou um dos papéis e apagá-los sem que ninguém tenha pedido.
+ */
+export function corpoDeDesativacao(linha: PartnerDto): PartnerWriteRequest {
+  return corpoDeEscrita(linha, {
+    legalName: linha.legalName,
+    tradeName: linha.tradeName,
+    document: linha.document,
+    email: linha.email,
+    active: false,
+  })
+}
+
+/**
+ * `Excluir` da listagem: desativa o vínculo e recarrega a lista.
+ *
+ * Mora aqui, e não em cada rota, porque as três telas de parceiro fazem a MESMA
+ * escrita mudando só a query key da listagem — a triplicação já custou caro no
+ * `Alterar`. Em sucesso invalida a listagem: a linha continua na tela (é
+ * desativação, não sumiço), mas com `Ativo: Não`, que é a prova visível de que
+ * a escrita valeu.
+ */
+export function useDesativarParceiro(queryKey: readonly unknown[]) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (linha: PartnerDto) => atualizarParceiro(linha.id, corpoDeDesativacao(linha)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  })
 }
 
 /**

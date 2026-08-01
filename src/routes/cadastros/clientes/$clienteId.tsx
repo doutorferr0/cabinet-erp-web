@@ -1,7 +1,12 @@
 import type { PartnerDto } from '@/api/gerado'
 import { data } from '@/data'
 import { ErroDaApi } from '@/data/api-provider'
-import { atualizarParceiro, corpoDeEscrita } from '@/data/parceiros-api'
+import {
+  atualizarParceiro,
+  corpoDeEscrita,
+  corpoDeInclusao,
+  incluirParceiro,
+} from '@/data/parceiros-api'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { type Cliente, clienteVazio } from '@/mocks/clientes'
@@ -69,6 +74,23 @@ function ClienteEditPage() {
     },
   })
 
+  const incluir = useMutation({
+    mutationFn: (values: Cliente) =>
+      incluirParceiro(
+        corpoDeInclusao('customer', {
+          legalName: values.nome,
+          tradeName: null,
+          document: values.cpf,
+          email: values.email,
+          active: values.ativo,
+        }),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['clientes'] })
+      void navigate({ to: '/cadastros/clientes' })
+    },
+  })
+
   const registro = isNovo ? data.clientes.empty(0) : linha ? clienteDoParceiro(linha) : null
 
   if (!registro) {
@@ -87,11 +109,11 @@ function ClienteEditPage() {
         Cadastro de Fornecedores{' '}
         {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${registro.nome}`}
       </h1>
-      <AvisoDeCobertura isNovo={isNovo} erro={gravar.error} />
+      <AvisoDeCobertura isNovo={isNovo} erro={isNovo ? incluir.error : gravar.error} />
       <ClienteForm
         cliente={registro}
         readOnly={readOnly}
-        {...(isNovo ? {} : { onGravar: (v: Cliente) => gravar.mutate(v) })}
+        onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />
     </div>
   )
@@ -107,8 +129,8 @@ function AvisoDeCobertura({ isNovo, erro }: { isNovo: boolean; erro: unknown }) 
       <p className="max-w-prose text-[0.75rem] text-muted-foreground">
         {isNovo ? (
           <>
-            O contrato ainda não atende a inclusão de parceiro por esta tela —{' '}
-            <strong>Gravar não envia nada ao servidor</strong>.
+            <strong>Gravar</strong> cria o cadastro com {'{'}nome, documento, e-mail e situação{'}'}{' '}
+            e o papel desta tela. Os demais campos não são enviados — o contrato ainda não os tem.
           </>
         ) : (
           <>

@@ -1,4 +1,4 @@
-import { parceiro, stubDeParceiros } from '@/test/parceiros'
+import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -25,18 +25,29 @@ describe('tela Profissional Externo', () => {
     expect(urls.find((u) => u.includes('/api/partners'))).toContain('role=professional')
   })
 
-  it('formulário grava novo profissional (volta para a listagem)', async () => {
-    const { router, user } = renderRoute('/cadastros/profissionais/novo')
+  it('formulário grava novo profissional, com o papel desta tela', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { router, user } = renderRoute('/cadastros/profissionais/novo', stub)
 
     const nome = await screen.findByLabelText('Nome de Apresentação')
     await user.type(nome, 'PROFISSIONAL TESTE')
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/profissionais')
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/profissionais')
+      },
+      { timeout: 5000 },
+    )
+
+    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toMatchObject({
+      tradeName: 'PROFISSIONAL TESTE',
+      isProfessional: true,
+      isCustomer: false,
+      isSupplier: false,
     })
-  })
+  }, 15_000)
 
   it('abrir por id direto manda usar a listagem', async () => {
     renderRoute('/cadastros/profissionais/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70')

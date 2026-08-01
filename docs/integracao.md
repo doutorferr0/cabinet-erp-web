@@ -87,9 +87,19 @@ do mesmo parceiro, e o operador só descobriria na outra listagem.
 O sucesso é **`200` com o `PartnerDto`** — não `204`. Corpo vazio é tratado como
 falha: aceitar resposta que o contrato não descreve é aceitar qualquer coisa.
 
-`Incluir` continua sem efeito no servidor: `POST /api/partners` existe no
-contrato, mas ligar a inclusão é outro passo (a tela teria de escolher os papéis,
-e o `code` é do vínculo).
+### Incluir — `POST /api/partners`
+
+O cadastro novo nasce com **o papel da tela e nenhum outro**: incluir por
+Fornecedores cria fornecedor. O schema exige ao menos um papel
+(`partners_papel_check`) e quem sabe qual é a tela — marcar os três "por
+precaução" faria todo cadastro novo aparecer nas três listagens.
+
+`code` e `paymentTerms` nascem **nulos**: são do vínculo com a empresa e nenhum
+dos formulários tem campo para eles. O contrato aceita nulo; inventar um código
+aqui competiria com o que o operador espera digitar depois.
+
+Sucesso é `201` com o `PartnerDto`. `409` é documento já cadastrado (índice único
+em `partners.document`) e o `detail` é o que diz isso ao operador.
 
 ### Escrita — não existe NENHUMA
 

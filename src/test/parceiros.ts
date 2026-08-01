@@ -61,6 +61,11 @@ export function servidorDeParceiros(linhas: readonly unknown[] = [parceiro()]) {
     if (caminho === URL_PARCEIROS && metodo === 'GET') {
       return json({ rows: linhas, total: linhas.length })
     }
+    // O contrato responde 201 com o `PartnerDto` criado.
+    if (caminho === URL_PARCEIROS && metodo === 'POST') {
+      const enviado = (chamadas[chamadas.length - 1]?.corpo ?? {}) as Record<string, unknown>
+      return json({ ...parceiro(), ...enviado }, 201)
+    }
     // O contrato responde 200 com o `PartnerDto` atualizado — não 204 vazio.
     if (caminho.startsWith(`${URL_PARCEIROS}/`) && metodo === 'PUT') {
       const enviado = (chamadas[chamadas.length - 1]?.corpo ?? {}) as Record<string, unknown>

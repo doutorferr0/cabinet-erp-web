@@ -1,7 +1,12 @@
 import type { PartnerDto } from '@/api/gerado'
 import { data } from '@/data'
 import { ErroDaApi } from '@/data/api-provider'
-import { atualizarParceiro, corpoDeEscrita } from '@/data/parceiros-api'
+import {
+  atualizarParceiro,
+  corpoDeEscrita,
+  corpoDeInclusao,
+  incluirParceiro,
+} from '@/data/parceiros-api'
 import { ProfissionalForm } from '@/features/profissional/profissional-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { type Profissional, profissionalVazio } from '@/mocks/profissionais'
@@ -68,6 +73,23 @@ function ProfissionalEditPage() {
     },
   })
 
+  const incluir = useMutation({
+    mutationFn: (values: Profissional) =>
+      incluirParceiro(
+        corpoDeInclusao('professional', {
+          legalName: values.nome,
+          tradeName: values.nomeApresentacao,
+          document: values.cpf,
+          email: values.email,
+          active: values.ativo,
+        }),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profissionais'] })
+      void navigate({ to: '/cadastros/profissionais' })
+    },
+  })
+
   const registro = isNovo
     ? data.profissionais.empty(0)
     : linha
@@ -90,11 +112,11 @@ function ProfissionalEditPage() {
         Cadastro de Fornecedores{' '}
         {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${registro.nomeApresentacao}`}
       </h1>
-      <AvisoDeCobertura isNovo={isNovo} erro={gravar.error} />
+      <AvisoDeCobertura isNovo={isNovo} erro={isNovo ? incluir.error : gravar.error} />
       <ProfissionalForm
         profissional={registro}
         readOnly={readOnly}
-        {...(isNovo ? {} : { onGravar: (v: Profissional) => gravar.mutate(v) })}
+        onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />
     </div>
   )
@@ -110,8 +132,8 @@ function AvisoDeCobertura({ isNovo, erro }: { isNovo: boolean; erro: unknown }) 
       <p className="max-w-prose text-[0.75rem] text-muted-foreground">
         {isNovo ? (
           <>
-            O contrato ainda não atende a inclusão de parceiro por esta tela —{' '}
-            <strong>Gravar não envia nada ao servidor</strong>.
+            <strong>Gravar</strong> cria o cadastro com {'{'}nome, documento, e-mail e situação{'}'}{' '}
+            e o papel desta tela. Os demais campos não são enviados — o contrato ainda não os tem.
           </>
         ) : (
           <>

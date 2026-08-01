@@ -5,6 +5,8 @@ import {
   URL_PARCEIROS,
   atualizarParceiro,
   corpoDeEscrita,
+  corpoDeInclusao,
+  incluirParceiro,
   parceiros,
 } from '@/data/parceiros-api'
 import { parceiro } from '@/test/parceiros'
@@ -139,6 +141,33 @@ describe('escrita', () => {
     expect(erro).toBeInstanceOf(ErroDaApi)
     expect(erro.status).toBe(403)
     expect(erro.detail).toBe('Parceiro fora da empresa ativa.')
+  })
+
+  it.each([
+    ['customer', { isCustomer: true, isSupplier: false, isProfessional: false }],
+    ['supplier', { isCustomer: false, isSupplier: true, isProfessional: false }],
+    ['professional', { isCustomer: false, isSupplier: false, isProfessional: true }],
+  ] as const)('inclusão por %s marca só o papel da tela', (papel, esperado) => {
+    // O schema exige ao menos um papel; marcar os três faria todo cadastro novo
+    // aparecer nas três listagens.
+    expect(corpoDeInclusao(papel, CAMPOS)).toMatchObject(esperado)
+  })
+
+  it('inclusão nasce sem código nem prazo — são do vínculo, e a tela não os tem', () => {
+    expect(corpoDeInclusao('supplier', CAMPOS)).toMatchObject({ code: null, paymentTerms: null })
+  })
+
+  // 409 no POST é documento já cadastrado (índice único em partners.document).
+  it('409 na inclusão chega com o detail do servidor', async () => {
+    instalarServidor({
+      [URL_PARCEIROS]: () => problema(409, 'Documento já cadastrado nesta organização.'),
+    })
+
+    const erro = (await incluirParceiro(corpoDeInclusao('supplier', CAMPOS)).catch(
+      (e: unknown) => e,
+    )) as ErroDaApi
+    expect(erro.status).toBe(409)
+    expect(erro.detail).toBe('Documento já cadastrado nesta organização.')
   })
 
   // Resposta vazia NÃO é sucesso silencioso: o contrato descreve `200` com o

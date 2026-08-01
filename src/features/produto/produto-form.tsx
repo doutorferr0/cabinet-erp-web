@@ -12,6 +12,8 @@ import {
   TextareaField,
 } from '@/components/vitra/form-controls'
 import { FormGrid } from '@/components/vitra/form-grid'
+import { ErroDaApi } from '@/data/api-provider'
+import { useGravarProduto } from '@/data/produtos-api'
 import { tabelas } from '@/data/tabelas'
 import type { Produto } from '@/mocks/produtos'
 import { useNavigate } from '@tanstack/react-router'
@@ -529,13 +531,12 @@ export function ProdutoForm({
   readOnly = false,
 }: { produto: Produto; readOnly?: boolean }) {
   const navigate = useNavigate()
+  const gravar = useGravarProduto()
 
   function onGravar(values: Produto) {
-    // A LEITURA de produtos já é do servidor; a ESCRITA não existe no contrato
-    // (nenhum POST/PUT de produto no OpenAPI). Vira mutation quando existir.
-    // TODO(contract): POST/PUT /api/products.
-    console.info('[sem endpoint de escrita] Gravar produto', values)
-    void navigate({ to: '/cadastros/produtos' })
+    gravar.mutate(values, {
+      onSuccess: () => void navigate({ to: '/cadastros/produtos' }),
+    })
   }
 
   return (
@@ -545,7 +546,18 @@ export function ProdutoForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/produtos' })}
       readOnly={readOnly}
+      gravando={gravar.isPending}
     >
+      {/* Falha do Gravar em destaque, ANTES das abas: o `detail` do problem+json
+          é a frase que o backend escolheu (400 validação, 403 escopo, 409
+          conflito). Sem ele o operador não saberia POR QUE o registro não gravou. */}
+      {gravar.isError ? (
+        <p role="alert" className="text-[0.75rem] text-destructive">
+          {gravar.error instanceof ErroDaApi && gravar.error.detail
+            ? gravar.error.detail
+            : 'Não foi possível gravar o produto. Tente de novo.'}
+        </p>
+      ) : null}
       <Tabs defaultValue="dadosPrincipais">
         <TabsList className="flex-wrap">
           <TabsTrigger value="dadosPrincipais">Dados Principais</TabsTrigger>

@@ -1,10 +1,21 @@
-import type { ProductDetailDto, ProductDto, ProductVariantDto } from '@/api/gerado'
-import { getProduct } from '@/api/gerado'
-import { createApiListProvider, itemOuNulo } from '@/data/api-provider'
+import type {
+  ProductDetailDto,
+  ProductDto,
+  ProductVariantDto,
+  ProductWriteRequest,
+} from '@/api/gerado'
+import { createProduct, getProduct, updateProduct } from '@/api/gerado'
+import {
+  ErroDaApi,
+  createApiListProvider,
+  detalheDoProblema,
+  itemOuNulo,
+} from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { formatQuantidade } from '@/lib/formatters'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 import { type Produto, type ProdutoVariante, produtoVazio } from '@/mocks/produtos'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE PRODUTOS — o primeiro cadastro servido pelo backend.
@@ -21,8 +32,16 @@ import { type Produto, type ProdutoVariante, produtoVazio } from '@/mocks/produt
  * campo-a-campo do que falta está em `docs/integracao.md`; a tela avisa o
  * operador em vez de deixar o branco passar por dado.
  *
- * **Não há endpoint de escrita.** `POST`/`PUT` de produto não estão no contrato,
- * então `Gravar` segue sem efeito no servidor (marcado no formulário).
+ * ## A escrita é MENOR que a leitura
+ *
+ * `POST /api/products` e `PUT /api/products/{id}` chegaram com
+ * `ProductWriteRequest` de 3 campos (`code`, `description`, `active`) — menos
+ * que o detalhe, que também lê a grade de variantes. Gravar envia SÓ os 3; a
+ * grade e as demais abas seguem sem escrita e a tela diz isso. O corpo NÃO leva
+ * `id` nem `tenantId` (decisão do backend: a empresa vem da sessão, o id vem da
+ * rota — campo que o cliente não escolhe não existe no corpo). Na escrita, o
+ * escopo errado não falha em silêncio: o RLS recusa com 403 e o `detail` chega
+ * à tela.
  */
 
 export const URL_PRODUTOS = '/api/products'
@@ -98,4 +117,63 @@ export const produtosApi: ProdutosProvider = {
   },
 
   empty: () => produtoVazio(),
+}
+
+/**
+ * Registro do formulário → corpo da escrita do contrato.
+ *
+ * SÓ os 3 campos do `ProductWriteRequest`. A grade de variantes aparece na
+ * leitura mas NÃO viaja — o DTO de escrita não a tem, e mandá-la seria pedir ao
+ * servidor que ignorasse campo (o backend escolheu o contrário: o que o cliente
+ * não deveria escolher não existe no corpo). `id` e `tenantId` ficam fora pelo
+ * mesmo motivo: o id vai na rota do PUT e a empresa vem da sessão.
+ */
+export function produtoParaContrato(values: Produto): ProductWriteRequest {
+  return {
+    code: values.nossoCodigo,
+    description: values.nossaDescricao,
+    active: values.ativo,
+  }
+}
+
+/**
+ * Grava o produto: `id` vazio = Incluir (POST → 201), senão Alterar (PUT → 200).
+ *
+ * Toda falha vira `ErroDaApi` com o `detail` do problem+json — na escrita o
+ * modo de falhar é ERRO ALTO (400 validação, 403 escopo recusado pelo RLS, 409
+ * conflito/sem empresa ativa), nunca silêncio. A tela mostra o `detail`, que é
+ * a frase que o backend escolheu para o caso.
+ */
+export async function gravarProduto(values: Produto): Promise<ProductDto> {
+  const body = produtoParaContrato(values)
+  const resposta = values.id
+    ? await updateProduct({ path: { id: values.id }, body })
+    : await createProduct({ body })
+
+  if (resposta.error || !resposta.data) {
+    throw new ErroDaApi(
+      'Falha ao gravar o produto.',
+      resposta.response?.status ?? 0,
+      detalheDoProblema(resposta.error),
+    )
+  }
+  return resposta.data
+}
+
+/**
+ * Mutation do Gravar de produtos. Em sucesso, invalida a listagem
+ * (`['produtos']`) e o detalhe (`['produto', id]`) — o registro que voltou do
+ * servidor é a verdade nova, e o cache anterior mostraria o cadastro velho por
+ * até 30s (staleTime).
+ */
+export function useGravarProduto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gravarProduto,
+    onSuccess: (gravado) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['produtos'] }),
+        queryClient.invalidateQueries({ queryKey: ['produto', gravado.id] }),
+      ]),
+  })
 }

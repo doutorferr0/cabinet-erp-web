@@ -67,16 +67,18 @@ function ProdutoEditPage() {
 }
 
 /**
- * O contrato v1 cobre 4 campos das 5 abas da §6. Sem este aviso, aba em branco se
- * lê como cadastro incompleto — o operador iria preencher o que o servidor nem
- * guarda. Sai quando o DTO cobrir a tela (`docs/integracao.md`).
+ * O contrato v1 cobre 4 campos das 5 abas da §6 na LEITURA, e a ESCRITA é menor
+ * ainda: o `ProductWriteRequest` tem 3 campos (sem a grade de variantes). Sem
+ * este aviso, aba em branco se lê como cadastro incompleto e edição na grade se
+ * lê como gravada — o operador iria preencher o que o servidor nem guarda. Sai
+ * quando o DTO cobrir a tela (`docs/integracao.md`).
  */
 function AvisoDeCobertura() {
   return (
     <p className="max-w-prose text-[0.75rem] text-muted-foreground">
-      O servidor ainda guarda apenas <strong>Nosso Código</strong>, <strong>Nossa Descrição</strong>
-      , <strong>Ativo</strong> e a grade de <strong>Valores</strong>. Os demais campos aparecem em
-      branco e <strong>Gravar não os envia</strong>.
+      O Gravar envia apenas <strong>Nosso Código</strong>, <strong>Nossa Descrição</strong> e{' '}
+      <strong>Ativo</strong>. A grade de <strong>Valores</strong> vem do servidor mas ainda não tem
+      escrita; os demais campos aparecem em branco e <strong>Gravar não os envia</strong>.
     </p>
   )
 }

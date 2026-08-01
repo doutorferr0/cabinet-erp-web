@@ -1195,7 +1195,13 @@
         }
       },
       "SessaoAtual": {
-        "required": ["organizationId", "employeeId", "activeTenantId", "expiresAt"],
+        "required": [
+          "organizationId",
+          "employeeId",
+          "activeTenantId",
+          "expiresAt",
+          "mustChangePassword"
+        ],
         "type": "object",
         "properties": {
           "organizationId": {
@@ -1213,6 +1219,9 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "mustChangePassword": {
+            "type": "boolean"
           }
         }
       },

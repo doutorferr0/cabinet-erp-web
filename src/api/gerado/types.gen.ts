@@ -135,6 +135,7 @@ export type SessaoAtual = {
     employeeId: string;
     activeTenantId: null | string;
     expiresAt: string;
+    mustChangePassword: boolean;
 };
 
 export type TrocarEmpresaRequest = {

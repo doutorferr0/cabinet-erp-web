@@ -1,5 +1,11 @@
 import { ErroDaApi } from '@/data/api-provider'
-import { URL_PRODUTOS, produtoDoContrato, produtosApi } from '@/data/produtos-api'
+import {
+  URL_PRODUTOS,
+  gravarProduto,
+  produtoDoContrato,
+  produtoParaContrato,
+  produtosApi,
+} from '@/data/produtos-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -147,5 +153,67 @@ describe('registro em branco', () => {
     expect(novo.id).toBe('')
     expect(novo.ativo).toBe(true)
     expect(novo.variantes).toEqual([])
+  })
+})
+
+describe('escrita de produto', () => {
+  it('corpo leva SÓ os 3 campos do contrato — sem id, tenantId nem variantes', () => {
+    const produto = produtoDoContrato(detalhe())
+
+    const corpo = produtoParaContrato(produto)
+
+    // Nem a grade de variantes (que a LEITURA tem) viaja: o ProductWriteRequest
+    // não a conhece. Chave a mais aqui = campo que o cliente não deveria escolher.
+    expect(corpo).toEqual({
+      code: '1201',
+      description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
+      active: true,
+    })
+  })
+
+  it('Incluir faz POST e devolve o registro com o id do servidor', async () => {
+    const servidor = instalarServidor({
+      [URL_PRODUTOS]: () => json({ id: ID, code: '9999', description: 'X', active: true }, 201),
+    })
+    const novo = { ...produtosApi.empty(), nossoCodigo: '9999', nossaDescricao: 'X' }
+
+    const gravado = await gravarProduto(novo)
+
+    const chamada = servidor.em(URL_PRODUTOS)[0]
+    expect(chamada?.metodo).toBe('POST')
+    expect(chamada?.corpo).toEqual({ code: '9999', description: 'X', active: true })
+    expect(gravado.id).toBe(ID)
+  })
+
+  it('Alterar faz PUT no id da rota — o id NÃO vai no corpo', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PRODUTOS}/${ID}`]: () => json(detalhe()),
+    })
+    const produto = produtoDoContrato(detalhe())
+
+    await gravarProduto({ ...produto, nossaDescricao: 'DESCRIÇÃO NOVA' })
+
+    const chamada = servidor.em(`${URL_PRODUTOS}/${ID}`)[0]
+    expect(chamada?.metodo).toBe('PUT')
+    expect(chamada?.corpo).toEqual({
+      code: '1201',
+      description: 'DESCRIÇÃO NOVA',
+      active: true,
+    })
+  })
+
+  // Na escrita, escopo errado não é tela vazia: é o RLS recusando com 403 e a
+  // frase do backend no detail. Silenciar aqui esconderia a recusa.
+  it('falha do servidor rejeita com o detail do problem+json', async () => {
+    instalarServidor({
+      [`${URL_PRODUTOS}/${ID}`]: () =>
+        problema(403, 'Sem permissão para gravar nesta empresa.', 'Forbidden'),
+    })
+    const produto = produtoDoContrato(detalhe())
+
+    const erro = (await gravarProduto(produto).catch((e: unknown) => e)) as ErroDaApi
+    expect(erro).toBeInstanceOf(ErroDaApi)
+    expect(erro.status).toBe(403)
+    expect(erro.detail).toBe('Sem permissão para gravar nesta empresa.')
   })
 })

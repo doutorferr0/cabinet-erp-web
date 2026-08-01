@@ -52,6 +52,35 @@ function servidorDeProdutos(rotas: Record<string, () => Response> = {}): FetchSt
   }
 }
 
+/**
+ * Servidor de produtos que também ACEITA escrita, guardando verbo e corpo.
+ *
+ * Verbo e corpo vêm do `Request` que o cliente gerado monta — o `init` chega
+ * vazio (ver `src/test/servidor.ts`). Só desvia o que NÃO é `GET`: a listagem
+ * pós-gravação continua respondendo pelo caminho normal.
+ */
+function servidorComEscrita(resposta: () => Response) {
+  const chamadas: { metodo: string; corpo: unknown }[] = []
+  const base = servidorDeProdutos()
+
+  const stub: FetchStub = async (entrada) => {
+    const requisicao = entrada instanceof Request ? entrada : null
+    if (requisicao && requisicao.method.toUpperCase() !== 'GET') {
+      const caminho = new URL(requisicao.url, 'http://localhost').pathname
+      if (caminho.startsWith(URL_PRODUTOS)) {
+        chamadas.push({
+          metodo: requisicao.method.toUpperCase(),
+          corpo: JSON.parse(await requisicao.clone().text()),
+        })
+        return resposta()
+      }
+    }
+    return base(entrada)
+  }
+
+  return { stub, chamadas }
+}
+
 describe('listagem de produtos', () => {
   it('mostra as colunas que o contrato preenche', async () => {
     renderRoute('/cadastros/produtos', servidorDeProdutos())
@@ -179,8 +208,11 @@ describe('formulário de produto', () => {
     })
   })
 
-  it('grava e volta para a listagem', async () => {
-    const { router, user } = renderRoute('/cadastros/produtos/novo', servidorDeProdutos())
+  it('grava mandando POST com os 3 campos e volta para a listagem', async () => {
+    const escrita = servidorComEscrita(() =>
+      json({ id: ID, code: '9999', description: 'PENDENTE TESTE', active: true }, 201),
+    )
+    const { router, user } = renderRoute('/cadastros/produtos/novo', escrita.stub)
 
     await user.type(await screen.findByLabelText('Nosso Código'), '9999')
     await user.type(screen.getByLabelText('Nossa Descrição'), 'PENDENTE TESTE')
@@ -189,7 +221,30 @@ describe('formulário de produto', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/cadastros/produtos')
     })
-  })
+    // O que a tela GRAVOU, não só para onde ela foi: sem asserir o corpo, o
+    // teste passaria de novo com o Gravar sem destino que existia antes.
+    expect(escrita.chamadas).toEqual([
+      { metodo: 'POST', corpo: { code: '9999', description: 'PENDENTE TESTE', active: true } },
+    ])
+  }, 15_000)
+
+  // Escrita recusada não pode virar volta silenciosa para a listagem: o operador
+  // acharia que gravou. Fica na tela, com a frase que o backend escolheu.
+  it('falha ao gravar mantém na tela e mostra o detail do servidor', async () => {
+    const escrita = servidorComEscrita(() =>
+      problema(403, 'Sem permissão para gravar nesta empresa.', 'Forbidden'),
+    )
+    const { router, user } = renderRoute('/cadastros/produtos/novo', escrita.stub)
+
+    await user.type(await screen.findByLabelText('Nosso Código'), '9999')
+    await user.type(screen.getByLabelText('Nossa Descrição'), 'PENDENTE TESTE')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sem permissão para gravar nesta empresa.',
+    )
+    expect(router.state.location.pathname).toBe('/cadastros/produtos/novo')
+  }, 15_000)
 
   it('bloqueia gravar sem os campos obrigatórios', async () => {
     const { router, user } = renderRoute('/cadastros/produtos/novo', servidorDeProdutos())

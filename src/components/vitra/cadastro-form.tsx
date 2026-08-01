@@ -12,6 +12,12 @@ export interface CadastroFormProps<T extends FieldValues> {
   onGravar: (values: T) => void
   onCancelar: () => void
   /**
+   * Gravação em curso (mutation HTTP pendente): o Gravar desabilita para não
+   * mandar a mesma escrita duas vezes — num clique duplo, duas requisições
+   * idênticas virariam dois registros ou um 409 sem explicação.
+   */
+  gravando?: boolean
+  /**
    * Modo `Consul.` da barra de ações (§9 padrão 8): mesma tela, sem edição.
    * Desabilita TODO o conteúdo via `<fieldset disabled>` — inclusive botões de
    * busca e de incluir linha nas grades — e o rodapé vira só `Fechar`.
@@ -29,6 +35,7 @@ export function CadastroForm<T extends FieldValues>({
   defaultValues,
   onGravar,
   onCancelar,
+  gravando = false,
   readOnly = false,
   children,
 }: CadastroFormProps<T>) {
@@ -63,7 +70,7 @@ export function CadastroForm<T extends FieldValues>({
                 <X />
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={gravando}>
                 <Check />
                 Gravar
               </Button>

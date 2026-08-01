@@ -98,8 +98,27 @@ precaução" faria todo cadastro novo aparecer nas três listagens.
 dos formulários tem campo para eles. O contrato aceita nulo; inventar um código
 aqui competiria com o que o operador espera digitar depois.
 
-Sucesso é `201` com o `PartnerDto`. `409` é documento já cadastrado (índice único
-em `partners.document`) e o `detail` é o que diz isso ao operador.
+Sucesso é `201` com o `PartnerDto`.
+
+### O 409 de documento repetido, e a saída dele
+
+O cadastro é da ORGANIZAÇÃO: o documento pode já existir no grupo sem que esta
+empresa atenda o parceiro — e aí ele **não aparece na listagem**. Criar outro
+duplicaria o mesmo CNPJ.
+
+O backend responde `409` com um **membro de extensão** da RFC 9457,
+`existingPartnerId`, fora do schema do `ProblemDetails`. Por isso `ErroDaApi`
+guarda o **corpo cru** (`corpo`): ficar só com `status` e `detail` jogaria fora
+justamente a parte acionável, e a tela teria uma frase descrevendo a saída sem
+poder tomá-la.
+
+Com o id em mãos, o formulário oferece **Vincular esta empresa ao cadastro
+existente** → `POST /api/partners/{id}/link`.
+
+**Vincular NÃO edita**, e o corpo prova: só `code`, `paymentTerms` e `active`,
+que são do vínculo. Se aceitasse os campos do cadastro, "vincular" viraria um
+caminho para sobrescrever em silêncio a razão social que a empresa vizinha
+cadastrou. Ajustar o cadastro depois é o `Alterar`, que é explícito.
 
 ### Escrita — não existe NENHUMA
 

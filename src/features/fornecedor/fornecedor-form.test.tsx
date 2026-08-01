@@ -132,6 +132,45 @@ describe('tela Fornecedor', () => {
     })
   }, 15_000)
 
+  // O 409 de documento repetido não é beco: o cadastro existe no GRUPO e falta
+  // esta empresa se ligar a ele. Criar outro duplicaria o mesmo CNPJ.
+  it('documento repetido oferece vincular, e vincular volta para a listagem', async () => {
+    const OUTRO = '11111111-1111-4111-8111-111111111111'
+    const { stub, chamadas } = servidorDeParceiros([parceiro()], { documentoRepetido: OUTRO })
+    const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)
+
+    await user.type(await screen.findByLabelText('Razão Social'), 'REPETIDA LTDA')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    const vincular = await screen.findByRole('button', {
+      name: /Vincular esta empresa ao cadastro existente/,
+    })
+    // O `detail` do servidor explica o caso; o botão é o que resolve.
+    expect(screen.getByRole('alert')).toHaveTextContent(/Vincular em vez de criar outro/)
+
+    await user.click(vincular)
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
+      },
+      { timeout: 5000 },
+    )
+    expect(chamadas.some((c) => c.caminho === `/api/partners/${OUTRO}/link`)).toBe(true)
+  }, 15_000)
+
+  it('erro comum de gravação NÃO oferece vincular', async () => {
+    const { stub } = servidorDeParceiros()
+    const { user } = renderRoute('/cadastros/fornecedores/novo', stub)
+
+    await screen.findByLabelText('Razão Social')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    // Razão Social vazia: o formulário nem chega ao servidor.
+    expect(await screen.findByText('Razão Social é obrigatória')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Vincular esta empresa/ })).not.toBeInTheDocument()
+  })
+
   // Link direto e recarga não têm linha — e sem leitura por id não há de onde
   // tirá-la. A tela manda voltar à listagem em vez de abrir formulário vazio.
   it('abrir por id direto manda usar a listagem', async () => {

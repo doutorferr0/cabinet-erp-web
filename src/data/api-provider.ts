@@ -34,12 +34,22 @@ export const PAGE_SIZE_MAX = 100
 export class ErroDaApi extends Error {
   readonly status: number
   readonly detail: string | undefined
+  /**
+   * O corpo do problem+json como veio.
+   *
+   * A RFC 9457 permite **membros de extensão**, e o backend usa isso para dizer
+   * o que fazer a seguir (`existingPartnerId` no 409 de documento repetido).
+   * Guardar só `status` e `detail` jogaria fora justamente a parte acionável —
+   * e a tela ficaria com uma frase que descreve a saída sem poder tomá-la.
+   */
+  readonly corpo: unknown
 
-  constructor(mensagem: string, status: number, detail?: string) {
+  constructor(mensagem: string, status: number, detail?: string, corpo?: unknown) {
     super(mensagem)
     this.name = 'ErroDaApi'
     this.status = status
     this.detail = detail
+    this.corpo = corpo
   }
 }
 
@@ -121,6 +131,7 @@ export function itemOuNulo<T>(resposta: RespostaDaApi<T>, onde: string): T | nul
       `Falha ao consultar ${onde}.`,
       resposta.response?.status ?? 0,
       detalheDoProblema(resposta.error),
+      resposta.error,
     )
   }
   return resposta.data

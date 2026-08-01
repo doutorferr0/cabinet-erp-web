@@ -5,7 +5,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, CreatePartnerData, CreatePartnerErrors, CreatePartnerResponses, CreateProductData, CreateProductErrors, CreateProductResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, UpdatePartnerData, UpdatePartnerErrors, UpdatePartnerResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses } from './types.gen';
+import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, CreatePartnerData, CreatePartnerErrors, CreatePartnerResponses, CreateProductData, CreateProductErrors, CreateProductResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, LinkPartnerData, LinkPartnerErrors, LinkPartnerResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, UpdatePartnerData, UpdatePartnerErrors, UpdatePartnerResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -62,6 +62,15 @@ export const createPartner = <ThrowOnError extends boolean = false>(options: Opt
 
 export const updatePartner = <ThrowOnError extends boolean = false>(options: Options<UpdatePartnerData, ThrowOnError>): RequestResult<UpdatePartnerResponses, UpdatePartnerErrors, ThrowOnError> => (options.client ?? client).put<UpdatePartnerResponses, UpdatePartnerErrors, ThrowOnError>({
     url: '/api/partners/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const linkPartner = <ThrowOnError extends boolean = false>(options: Options<LinkPartnerData, ThrowOnError>): RequestResult<LinkPartnerResponses, LinkPartnerErrors, ThrowOnError> => (options.client ?? client).post<LinkPartnerResponses, LinkPartnerErrors, ThrowOnError>({
+    url: '/api/partners/{id}/link',
     ...options,
     headers: {
         'Content-Type': 'application/json',

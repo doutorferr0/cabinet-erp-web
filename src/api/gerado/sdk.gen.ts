@@ -5,7 +5,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, CreatePartnerData, CreatePartnerErrors, CreatePartnerResponses, CreateProductData, CreateProductErrors, CreateProductResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, LinkPartnerData, LinkPartnerErrors, LinkPartnerResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, UpdatePartnerData, UpdatePartnerErrors, UpdatePartnerResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses } from './types.gen';
+import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthSetActiveTenantData, AuthSetActiveTenantErrors, AuthSetActiveTenantResponses, AuthTenantsData, AuthTenantsResponses, CreatePartnerData, CreatePartnerErrors, CreatePartnerResponses, CreateProductData, CreateProductErrors, CreateProductResponses, CreateStockMovementData, CreateStockMovementErrors, CreateStockMovementResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, GetProductData, GetProductErrors, GetProductResponses, HealthData, HealthDbData, HealthDbErrors, HealthDbResponses, HealthResponses, LinkPartnerData, LinkPartnerErrors, LinkPartnerResponses, ListCatalogLookupsData, ListCatalogLookupsErrors, ListCatalogLookupsResponses, ListPartnersData, ListPartnersErrors, ListPartnersResponses, ListProductsData, ListProductsErrors, ListProductsResponses, ListStockMovementsData, ListStockMovementsErrors, ListStockMovementsResponses, UpdatePartnerData, UpdatePartnerErrors, UpdatePartnerResponses, UpdateProductData, UpdateProductErrors, UpdateProductResponses, UpdateVariantData, UpdateVariantErrors, UpdateVariantResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -49,6 +49,24 @@ export const updateProduct = <ThrowOnError extends boolean = false>(options: Opt
     }
 });
 
+export const createVariant = <ThrowOnError extends boolean = false>(options: Options<CreateVariantData, ThrowOnError>): RequestResult<CreateVariantResponses, CreateVariantErrors, ThrowOnError> => (options.client ?? client).post<CreateVariantResponses, CreateVariantErrors, ThrowOnError>({
+    url: '/api/products/{productId}/variants',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const updateVariant = <ThrowOnError extends boolean = false>(options: Options<UpdateVariantData, ThrowOnError>): RequestResult<UpdateVariantResponses, UpdateVariantErrors, ThrowOnError> => (options.client ?? client).put<UpdateVariantResponses, UpdateVariantErrors, ThrowOnError>({
+    url: '/api/products/{productId}/variants/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const listPartners = <ThrowOnError extends boolean = false>(options?: Options<ListPartnersData, ThrowOnError>): RequestResult<ListPartnersResponses, ListPartnersErrors, ThrowOnError> => (options?.client ?? client).get<ListPartnersResponses, ListPartnersErrors, ThrowOnError>({ url: '/api/partners', ...options });
 
 export const createPartner = <ThrowOnError extends boolean = false>(options: Options<CreatePartnerData, ThrowOnError>): RequestResult<CreatePartnerResponses, CreatePartnerErrors, ThrowOnError> => (options.client ?? client).post<CreatePartnerResponses, CreatePartnerErrors, ThrowOnError>({
@@ -71,6 +89,17 @@ export const updatePartner = <ThrowOnError extends boolean = false>(options: Opt
 
 export const linkPartner = <ThrowOnError extends boolean = false>(options: Options<LinkPartnerData, ThrowOnError>): RequestResult<LinkPartnerResponses, LinkPartnerErrors, ThrowOnError> => (options.client ?? client).post<LinkPartnerResponses, LinkPartnerErrors, ThrowOnError>({
     url: '/api/partners/{id}/link',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const listStockMovements = <ThrowOnError extends boolean = false>(options: Options<ListStockMovementsData, ThrowOnError>): RequestResult<ListStockMovementsResponses, ListStockMovementsErrors, ThrowOnError> => (options.client ?? client).get<ListStockMovementsResponses, ListStockMovementsErrors, ThrowOnError>({ url: '/api/variants/{variantId}/stock-movements', ...options });
+
+export const createStockMovement = <ThrowOnError extends boolean = false>(options: Options<CreateStockMovementData, ThrowOnError>): RequestResult<CreateStockMovementResponses, CreateStockMovementErrors, ThrowOnError> => (options.client ?? client).post<CreateStockMovementResponses, CreateStockMovementErrors, ThrowOnError>({
+    url: '/api/variants/{variantId}/stock-movements',
     ...options,
     headers: {
         'Content-Type': 'application/json',

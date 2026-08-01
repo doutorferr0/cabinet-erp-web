@@ -21,14 +21,22 @@ import { vi } from 'vitest'
  * isolado usa `renderWithQuery`, sem router.
  */
 
-/** Resposta de sessão válida, no shape exato do contrato (`SessaoAtual`). */
-export function respostaSessao() {
+/**
+ * Resposta de sessão válida, no shape exato do contrato (`SessaoAtual`).
+ *
+ * `mustChangePassword` é OBRIGATÓRIO no contrato — omiti-lo faria o teste
+ * exercitar uma sessão que o servidor nunca devolve, e a guarda de senha
+ * provisória passaria por sorte (campo ausente também é falso). Padrão `false`
+ * (senha definitiva); quem testa a senha provisória passa `true`.
+ */
+export function respostaSessao({ mustChangePassword = false } = {}) {
   return new Response(
     JSON.stringify({
       organizationId: '00000000-0000-0000-0000-000000000001',
       employeeId: '00000000-0000-0000-0000-000000000002',
       activeTenantId: '00000000-0000-0000-0000-000000000003',
       expiresAt: '2099-01-01T00:00:00Z',
+      mustChangePassword,
     }),
     { status: 200, headers: { 'content-type': 'application/json' } },
   )

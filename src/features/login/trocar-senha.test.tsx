@@ -15,9 +15,17 @@ interface Chamada {
   corpo: string
 }
 
-/** Servidor falso: sessão válida + endpoint de troca. `trocaFalha` simula o 400. */
-function servidorDeTroca({ trocaFalha = false } = {}) {
+/**
+ * Servidor falso: sessão válida + endpoint de troca. `trocaFalha` simula o 400.
+ *
+ * `senhaProvisoria` reproduz o servidor de verdade: o `mustChangePassword` do
+ * `/auth/me` é lido da CREDENCIAL a cada requisição, então a troca bem-sucedida
+ * o vira `false` na consulta seguinte. Servidor que devolvesse `true` para
+ * sempre esconderia o laço de saída em vez de expô-lo.
+ */
+function servidorDeTroca({ trocaFalha = false, senhaProvisoria = false } = {}) {
   const chamadas: Chamada[] = []
+  let provisoria = senhaProvisoria
   const stub: FetchStub = async (input) => {
     const requisicao = input instanceof Request ? input : null
     const url = String(requisicao ? requisicao.url : input)
@@ -25,7 +33,7 @@ function servidorDeTroca({ trocaFalha = false } = {}) {
     const corpo = requisicao ? await requisicao.clone().text() : ''
     chamadas.push({ caminho, metodo: requisicao?.method ?? 'GET', corpo })
 
-    if (caminho === '/auth/me') return respostaSessao()
+    if (caminho === '/auth/me') return respostaSessao({ mustChangePassword: provisoria })
     if (caminho === '/auth/tenants') {
       return new Response(JSON.stringify([]), {
         status: 200,
@@ -33,12 +41,14 @@ function servidorDeTroca({ trocaFalha = false } = {}) {
       })
     }
     if (caminho === '/auth/change-password') {
-      return trocaFalha
-        ? new Response(JSON.stringify({ detail: 'Senha atual incorreta.' }), {
-            status: 400,
-            headers: { 'content-type': 'application/json' },
-          })
-        : new Response(null, { status: 204 })
+      if (trocaFalha) {
+        return new Response(JSON.stringify({ detail: 'Senha atual incorreta.' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      provisoria = false
+      return new Response(null, { status: 204 })
     }
     return new Response('', { status: 404 })
   }
@@ -95,6 +105,30 @@ describe('TrocarSenha', () => {
       await screen.findByText('A confirmação não confere com a senha nova.'),
     ).toBeInTheDocument()
     expect(chamadas.find((c) => c.caminho === '/auth/change-password')).toBeUndefined()
+  })
+
+  // Quem fechou a aba com a senha provisória e voltou tinha cookie válido: o
+  // login não roda de novo, e antes disto a pessoa via o sistema inteiro
+  // enquanto o middleware do backend recusava tudo com 403.
+  it('sessão com senha provisória não entra no sistema: cai na troca', async () => {
+    const { stub } = servidorDeTroca({ senhaProvisoria: true })
+    const { router } = renderRoute('/cadastros/produtos', stub)
+
+    expect(await screen.findByLabelText('Senha atual')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/trocar-senha')
+  })
+
+  // O outro lado do redirect: trocada a senha, a sessão em cache ainda diz
+  // `true`. Sem invalidá-la, a guarda devolveria para cá quem acabou de sair —
+  // laço na SAÍDA, que é o modo de falhar mais fácil de introduzir aqui.
+  it('trocada a senha provisória, a saída não volta para a troca', async () => {
+    const { stub } = servidorDeTroca({ senhaProvisoria: true })
+    const { router, user } = renderRoute('/', stub)
+
+    await preencherETrocar(user)
+
+    expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/')
   })
 
   it('fica fora do shell mas atrás da guarda: sem sessão vai para /login', async () => {

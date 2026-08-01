@@ -10,8 +10,29 @@ import { Navigate } from '@tanstack/react-router'
  * - `null` (401) → `/login`;
  * - erro de verdade (rede, 5xx) → aviso com nova tentativa, NÃO redirect:
  *   mandar para o login com o servidor fora criaria um ciclo que não entra.
+ * - senha provisória (`mustChangePassword`) → `/trocar-senha`.
+ *
+ * ## Por que a senha provisória é assunto da GUARDA
+ *
+ * O login já mandava para `/trocar-senha` quando o `POST /auth/login` respondia
+ * `mustChangePassword: true` — mas quem fechasse a aba e voltasse com o cookie
+ * vivo entrava direto na tela. Só na tela: o middleware do backend sempre
+ * recusou tudo com `403` (`type: .../senha-temporaria`), então o sistema
+ * aparecia inteiro e nada funcionava. Era defeito de UX, não de trava.
+ *
+ * O flag passou a vir no `/auth/me` (backend `#31`), e é lido da CREDENCIAL a
+ * cada requisição — nunca de cópia na sessão, que envelheceria e mandaria
+ * trocar senha já trocada até a sessão expirar.
  */
-export function RequireSession({ children }: { children: React.ReactNode }) {
+export function RequireSession({
+  children,
+  /**
+   * Deixa passar a sessão de senha provisória. Só a rota `/trocar-senha` liga
+   * isto: sem a exceção, a guarda mandaria para `/trocar-senha` a tela que É a
+   * troca de senha — laço de redirecionamento em vez de tela.
+   */
+  permiteSenhaProvisoria = false,
+}: { children: React.ReactNode; permiteSenhaProvisoria?: boolean }) {
   const sessao = useSessao()
 
   if (sessao.isPending) {
@@ -42,6 +63,10 @@ export function RequireSession({ children }: { children: React.ReactNode }) {
   }
 
   if (sessao.data === null) return <Navigate to="/login" />
+
+  if (sessao.data.mustChangePassword && !permiteSenhaProvisoria) {
+    return <Navigate to="/trocar-senha" />
+  }
 
   return children
 }

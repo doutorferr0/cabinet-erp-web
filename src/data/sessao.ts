@@ -98,8 +98,14 @@ export function useLogout() {
  *
  * O 400 do contrato traz `detail` pronto para exibição (senha atual errada,
  * política de senha nova etc. — a regra é do backend, o front só ecoa).
+ *
+ * Sucesso INVALIDA a sessão porque a troca muda o `mustChangePassword` que o
+ * `/auth/me` devolve. Sem isso, a guarda leria o valor velho (`true`) do cache
+ * e mandaria de volta para `/trocar-senha` quem acabou de trocar — laço no
+ * caminho de saída. Só a sessão: nada mais mudou de dono.
  */
 export function useTrocarSenha() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: ChangePasswordRequest) => {
       const { error, response } = await authChangePassword({ body })
@@ -107,5 +113,6 @@ export function useTrocarSenha() {
         throw new Error(error?.detail ?? 'Não foi possível trocar a senha. Tente de novo.')
       }
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSAO_KEY }),
   })
 }

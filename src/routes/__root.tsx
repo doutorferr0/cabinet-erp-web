@@ -16,10 +16,11 @@ function RootComponent() {
 
   // Troca de senha: exige sessão (o endpoint responde 401 sem ela) mas ainda
   // não entra no shell — quem troca a senha provisória não tem sistema para
-  // navegar antes de terminar.
+  // navegar antes de terminar. É a ÚNICA rota que a guarda deixa entrar com
+  // senha provisória: sem a exceção, ela mandaria para cá quem já está aqui.
   if (pathname === '/trocar-senha') {
     return (
-      <RequireSession>
+      <RequireSession permiteSenhaProvisoria>
         <Outlet />
       </RequireSession>
     )

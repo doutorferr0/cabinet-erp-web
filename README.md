@@ -1,6 +1,10 @@
 # VITRA — Front (vitra-erp-web)
 
-SPA React do VITRA (ERP multi-empresa vendido a terceiros). **Fase atual: visual com dados mock** — o backend (`vitra-erp-py`) está na Etapa 0; integração real só quando ele publicar o contrato OpenAPI (tipos via `@hey-api/openapi-ts`).
+SPA React do VITRA (ERP multi-empresa vendido a terceiros). **Fase atual: integração incremental** — o backend é o
+[`vitra-erp-dotnet`](https://github.com/doutorferr0/vitra-erp-dotnet), cujo
+OpenAPI versionado em `contracts/openapi-v1.json` gera os tipos com
+`@hey-api/openapi-ts`. Fronteiras já contratadas usam a API; as demais seguem em
+mock até o contrato correspondente ser publicado.
 
 Instruções dos agentes: **CLAUDE.md** (AGENTS.md aponta pra lá). Roteiro: **docs/fase-visual-tarefas.md**.
 Fonte dos campos das telas: memória `projetos-claude` → `topicos/transcricaosoftlux.md` (20 telas do legado, 8 padrões).

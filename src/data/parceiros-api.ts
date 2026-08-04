@@ -1,6 +1,11 @@
 import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
-import { createPartner, linkPartner, updatePartner } from '@/api/gerado'
-import { ErroDaApi, createApiListProvider, detalheDoProblema } from '@/data/api-provider'
+import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
+import {
+  ErroDaApi,
+  createApiListProvider,
+  detalheDoProblema,
+  itemOuNulo,
+} from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -25,16 +30,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
  * Por isso `Ativo` na tela é `active` (o VÍNCULO): a pergunta do operador é "esta
  * empresa trabalha com este fornecedor?", não "este cadastro existe no grupo?".
  *
- * ## Sem LEITURA por id, mas com ESCRITA por id
+ * ## Leitura por id: a linha primeiro, o servidor como rede
  *
- * O contrato tem `PUT /api/partners/{id}` e **não** tem `GET /api/partners/{id}`.
- * Parece torto e não é: o `PartnerWriteRequest` é SUBCONJUNTO do `PartnerDto` da
- * listagem, então **a linha já traz todo campo gravável**. Quem faz o papel do
- * detalhe é a linha selecionada — buscar de novo por id seria pedir ao servidor
- * o que acabou de chegar.
+ * O contrato passou a ter `GET /api/partners/{id}` (backend `#35`) — antes só
+ * havia `PUT` nesse caminho, e o detalhe era a LINHA da listagem, porque o
+ * `PartnerWriteRequest` é subconjunto do `PartnerDto` e a linha já traz todo
+ * campo gravável. Essa parte continua valendo: quem vem da listagem não gasta
+ * requisição, a linha é semeada no cache e o formulário a usa.
  *
- * O preço está no que a linha não alcança: **link direto e recarga**. Sem row em
- * mãos não há o que editar, e a rota diz isso em vez de abrir formulário vazio.
+ * O que mudou é o caso que a linha não alcança — **link direto e recarga**.
+ * Agora, sem linha em mãos, a tela busca por id em vez de mandar voltar à
+ * listagem. Mesmo DTO nos dois caminhos: não existe DTO de detalhe.
  */
 
 export const URL_PARCEIROS = '/api/partners'
@@ -64,19 +70,42 @@ export function parceirosDoPapel(role: PapelDeParceiro): ListProvider<PartnerDto
 }
 
 /**
- * Entrada do registry: listagem do servidor + `empty` local.
+ * Um parceiro por id; `null` quando não existe (404).
  *
- * Sem `get` — ver acima. O `empty` continua sendo o registro em branco do mock
- * da tela (`clienteVazio`, `fornecedorVazio`, `profissionalVazio`), porque
- * "Incluir" não depende do servidor: abre formulário vazio e o `Gravar` já era
- * inerte antes desta troca (não há escrita no contrato).
+ * Chegou com `GET /api/partners/{id}` (backend `#35`) e fecha o buraco mais
+ * antigo desta fronteira: **link direto e recarga**. Enquanto só existia a linha
+ * da listagem em cache, abrir por URL — ou recarregar a página com o formulário
+ * aberto — não tinha de onde tirar o registro, e a tela mandava voltar à
+ * listagem.
+ *
+ * Responde `PartnerDto`, o MESMO da listagem: não há DTO de detalhe, então o que
+ * a linha traz e o que o id traz são a mesma coisa. Por isso a linha em cache
+ * segue valendo como semente — o `get` é a rede para quando ela não existe.
+ *
+ * O 409 (sem empresa ativa na sessão) NÃO vira `null`: `itemOuNulo` converte só
+ * 404. Dizer "não encontrado" a quem apenas não escolheu empresa mandaria o
+ * operador procurar um registro que está lá.
+ */
+export async function obterParceiro(id: string): Promise<PartnerDto | null> {
+  return itemOuNulo(await getPartner({ path: { id } }), `o parceiro ${id}`)
+}
+
+/**
+ * Entrada do registry: listagem do servidor, detalhe por id e `empty` local.
+ *
+ * O `empty` continua local (`clienteVazio`, `fornecedorVazio`,
+ * `profissionalVazio`) — "Incluir" não depende do servidor. O `get` passou a
+ * existir com o `#35`; antes dele a entrada ficava SEM `get` de propósito,
+ * porque `get` mock ao lado de listagem real casaria uuid do servidor com id
+ * inventado e responderia "não encontrado" para registro que existe.
  */
 export interface ParceiroProvider<T> extends ListProvider<PartnerDto> {
+  get(id: string): Promise<PartnerDto | null>
   empty(id: number): T
 }
 
 export function parceiros<T>(role: PapelDeParceiro, empty: (id: number) => T): ParceiroProvider<T> {
-  return { ...parceirosDoPapel(role), empty }
+  return { ...parceirosDoPapel(role), get: obterParceiro, empty }
 }
 
 /**

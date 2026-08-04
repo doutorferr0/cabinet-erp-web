@@ -69,6 +69,13 @@ export function servidorDeParceiros(
     if (caminho === URL_PARCEIROS && metodo === 'GET') {
       return json({ rows: linhas, total: linhas.length })
     }
+    // `GET /api/partners/{id}`: o detalhe do link direto e da recarga. Responde o
+    // MESMO `PartnerDto` da listagem — não existe DTO de detalhe no contrato.
+    if (caminho.startsWith(`${URL_PARCEIROS}/`) && !caminho.endsWith('/link') && metodo === 'GET') {
+      const id = caminho.slice(URL_PARCEIROS.length + 1)
+      const achado = linhas.find((l) => (l as { id?: string }).id === id)
+      return achado ? json(achado) : problemaDeParceiro(404, 'Parceiro não encontrado.')
+    }
     // O contrato responde 201 com o `PartnerDto` criado.
     if (caminho === URL_PARCEIROS && metodo === 'POST') {
       if (opcoes.documentoRepetido) {
@@ -103,7 +110,15 @@ export function servidorDeParceiros(
   return { stub, chamadas }
 }
 
-/** Sessão válida + listagem de parceiros; qualquer outro caminho rejeita alto. */
+/** `application/problem+json` (RFC 9457), a forma de erro que o contrato exige. */
+function problemaDeParceiro(status: number, detail: string): Response {
+  return new Response(JSON.stringify({ type: 'about:blank', title: 'Erro', status, detail }), {
+    status,
+    headers: { 'content-type': 'application/problem+json' },
+  })
+}
+
+/** Sessão válida + listagem e detalhe de parceiros; outro caminho rejeita alto. */
 export function stubDeParceiros(linhas: readonly unknown[] = [parceiro()]): FetchStub {
   return (entrada) => {
     const url = String(entrada instanceof Request ? entrada.url : entrada)
@@ -113,6 +128,13 @@ export function stubDeParceiros(linhas: readonly unknown[] = [parceiro()]): Fetc
     if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
     if (caminho === URL_PARCEIROS) {
       return Promise.resolve(json({ rows: linhas, total: linhas.length }))
+    }
+    if (caminho.startsWith(`${URL_PARCEIROS}/`)) {
+      const id = caminho.slice(URL_PARCEIROS.length + 1)
+      const achado = linhas.find((l) => (l as { id?: string }).id === id)
+      return Promise.resolve(
+        achado ? json(achado) : problemaDeParceiro(404, 'Parceiro não encontrado.'),
+      )
     }
     return Promise.reject(new Error(`fetch sem stub no teste: ${url}`))
   }

@@ -535,6 +535,37 @@ export type CreatePartnerResponses = {
 
 export type CreatePartnerResponse = CreatePartnerResponses[keyof CreatePartnerResponses];
 
+export type GetPartnerData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/partners/{id}';
+};
+
+export type GetPartnerErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type GetPartnerError = GetPartnerErrors[keyof GetPartnerErrors];
+
+export type GetPartnerResponses = {
+    /**
+     * OK
+     */
+    200: PartnerDto;
+};
+
+export type GetPartnerResponse = GetPartnerResponses[keyof GetPartnerResponses];
+
 export type UpdatePartnerData = {
     body: PartnerWriteRequest;
     path: {

@@ -49,9 +49,10 @@ describe('tela Profissional Externo', () => {
     })
   }, 15_000)
 
-  it('abrir por id direto manda usar a listagem', async () => {
-    renderRoute('/cadastros/profissionais/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70')
+  it('abrir por id direto busca o registro no servidor', async () => {
+    renderRoute('/cadastros/profissionais/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70', stubDeParceiros())
 
-    expect(await screen.findByText(/Abra o profissional pela listagem/i)).toBeInTheDocument()
-  })
+    expect(await screen.findByLabelText('Nome')).toHaveValue('STELLA ILUMINAÇÃO LTDA')
+    expect(screen.queryByText(/Abra o profissional pela listagem/i)).not.toBeInTheDocument()
+  }, 15_000)
 })

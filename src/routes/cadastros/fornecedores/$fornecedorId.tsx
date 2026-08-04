@@ -1,5 +1,6 @@
 import type { PartnerDto } from '@/api/gerado'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
 import { ErroDaApi } from '@/data/api-provider'
 import {
@@ -13,9 +14,8 @@ import {
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { type Fornecedor, fornecedorVazio } from '@/mocks/fornecedores'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/fornecedores/$fornecedorId')({
   component: FornecedorEditPage,
@@ -48,13 +48,19 @@ function FornecedorEditPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  // Capturado UMA vez: a linha veio da listagem pelo cache, e o cache pode ser
-  // recolhido enquanto o formulário está aberto. O corpo do PUT precisa dela
-  // inteira até o fim da edição (`code` e `paymentTerms` viajam de volta sem
-  // passar por campo nenhum da tela).
-  const [linha] = useState<PartnerDto | null>(
-    () => queryClient.getQueryData<PartnerDto>(['parceiro', fornecedorId]) ?? null,
-  )
+  // A listagem semeia a linha em `['parceiro', id]`, então quem chega por lá
+  // não gasta requisição (staleTime de 30s). Link direto e recarga não têm
+  // semente — aí a consulta busca por id, que o contrato passou a oferecer.
+  // O observer da query também segura o registro enquanto o formulário está
+  // aberto: era para isso que aqui havia um `useState`, e o corpo do PUT
+  // precisa da linha inteira até o fim da edição (`code` e `paymentTerms`
+  // viajam de volta sem passar por campo nenhum da tela).
+  const query = useQuery({
+    queryKey: ['parceiro', fornecedorId],
+    queryFn: () => data.fornecedores.get(fornecedorId),
+    enabled: !isNovo,
+  })
+  const linha = query.data ?? null
 
   const gravar = useMutation({
     mutationFn: (values: Fornecedor) => {
@@ -105,16 +111,36 @@ function FornecedorEditPage() {
     },
   })
 
+  if (!isNovo && query.isPending) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    )
+  }
+
+  // Falhou ≠ não existe: 404 chega como `null` (não está lá), qualquer outra
+  // falha chega como erro — 409 é "nenhuma empresa ativa na sessão". Tratar os
+  // dois como "não encontrado" mandaria procurar um registro que existe.
+  if (query.isError) {
+    return (
+      <div className="flex flex-col items-start gap-2 text-muted-foreground">
+        Não foi possível carregar o fornecedor.
+        {query.error instanceof ErroDaApi && query.error.detail ? (
+          <span className="max-w-prose text-[0.75rem]">{query.error.detail}</span>
+        ) : null}
+        <Button variant="outline" size="sm" onClick={() => query.refetch()}>
+          Tentar de novo
+        </Button>
+      </div>
+    )
+  }
+
   const registro = isNovo ? data.fornecedores.empty(0) : linha ? fornecedorDoParceiro(linha) : null
 
   if (!registro) {
-    return (
-      <p className="max-w-prose text-muted-foreground">
-        Abra o fornecedor pela listagem. O contrato tem <code>PUT /api/partners/{'{id}'}</code> mas
-        não tem leitura por id, então é a linha selecionada que traz o registro — link direto e
-        recarga ficam sem ele.
-      </p>
-    )
+    return <p className="text-muted-foreground">Fornecedor não encontrado.</p>
   }
 
   return (

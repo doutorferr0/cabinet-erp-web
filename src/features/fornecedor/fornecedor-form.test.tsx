@@ -226,12 +226,20 @@ describe('tela Fornecedor', () => {
     expect(chamadas.every((c) => c.metodo === 'GET')).toBe(true)
   }, 15_000)
 
-  // Link direto e recarga não têm linha — e sem leitura por id não há de onde
-  // tirá-la. A tela manda voltar à listagem em vez de abrir formulário vazio.
-  it('abrir por id direto manda usar a listagem', async () => {
-    renderRoute('/cadastros/fornecedores/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70')
+  // O buraco mais antigo desta fronteira: link direto e recarga não têm a linha
+  // da listagem em cache. Com GET /api/partners/{id} (#35 do backend), a tela
+  // busca por id em vez de mandar voltar à listagem.
+  it('abrir por id direto busca o registro no servidor', async () => {
+    renderRoute('/cadastros/fornecedores/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70', stubDeParceiros())
 
-    expect(await screen.findByText(/Abra o fornecedor pela listagem/i)).toBeInTheDocument()
-    expect(screen.queryByLabelText('Razão Social')).not.toBeInTheDocument()
+    expect(await screen.findByLabelText('Razão Social')).toHaveValue('STELLA ILUMINAÇÃO LTDA')
+    expect(screen.queryByText(/Abra o fornecedor pela listagem/i)).not.toBeInTheDocument()
+  }, 15_000)
+
+  // Falhou não é o mesmo que não existir: 404 é registro que não está lá.
+  it('id inexistente é "não encontrado", não erro', async () => {
+    renderRoute('/cadastros/fornecedores/11111111-1111-4111-8111-111111111111', stubDeParceiros())
+
+    expect(await screen.findByText('Fornecedor não encontrado.')).toBeInTheDocument()
   })
 })

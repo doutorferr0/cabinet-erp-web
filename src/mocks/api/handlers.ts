@@ -1,0 +1,431 @@
+import type {
+  LoginRequest,
+  PartnerLinkRequest,
+  PartnerWriteRequest,
+  ProductVariantDto,
+  ProductWriteRequest,
+  SessaoAtual,
+  StockMovementRequest,
+  TrocarEmpresaRequest,
+  VariantWriteRequest,
+} from '@/api/gerado'
+import { http, HttpResponse } from 'msw'
+import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
+
+/**
+ * Handlers do modo mock — o "backend" do `VITE_API_MODE=mock`.
+ *
+ * Implementam as SEMÂNTICAS INEGOCIÁVEIS de `docs/integracao.md` sobre o store
+ * em memória. Divergir daqui do que o contrato manda seria treinar as telas
+ * contra um servidor que não existe — os pontos que importam:
+ *
+ * - listagem: `q`/`sortBy`/`sortDesc`/`page` (1-based)/`pageSize` (teto 100) →
+ *   `{ rows, total }`, `total` COM filtro; `sortBy` fora da whitelist → 400;
+ * - erro: `application/problem+json` (RFC 9457), com membro de extensão quando
+ *   o contrato o usa (`existingPartnerId` no 409 de documento repetido);
+ * - sessão sem empresa ativa: domínio responde LISTA VAZIA, não erro; escrita
+ *   sem empresa responde 409;
+ * - estoque não se escreve: movimenta (`stock_movements`), e o saldo é
+ *   derivado — `balanceAfter` sai do saldo novo, saldo negativo é 409;
+ * - `PUT` substitui o registro inteiro.
+ *
+ * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
+ * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
+ */
+
+function problemaJson(status: number, detail: string, extras: Record<string, unknown> = {}) {
+  return HttpResponse.json(
+    { type: 'about:blank', title: 'Erro', status, detail, ...extras },
+    { status, headers: { 'content-type': 'application/problem+json' } },
+  )
+}
+
+const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
+const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
+
+interface ConsultaDeLista {
+  q: string | null
+  sortBy: string | null
+  sortDesc: boolean
+  page: number
+  pageSize: number
+}
+
+function lerConsulta(url: URL): ConsultaDeLista {
+  return {
+    q: url.searchParams.get('q'),
+    sortBy: url.searchParams.get('sortBy'),
+    sortDesc: url.searchParams.get('sortDesc') === 'true',
+    page: Number(url.searchParams.get('page') ?? '1'),
+    pageSize: Number(url.searchParams.get('pageSize') ?? '10'),
+  }
+}
+
+/**
+ * O contrato de listagem, num lugar só: filtro por `q` nos campos de texto,
+ * whitelist de `sortBy` (fora dela → 400), paginação 1-based com teto 100 e
+ * `total` calculado DEPOIS do filtro.
+ */
+function listar<T>(
+  itens: readonly T[],
+  consulta: ConsultaDeLista,
+  ordenaveis: readonly string[],
+  textoDe: (item: T) => (string | null | undefined)[],
+) {
+  if (consulta.page < 1 || consulta.pageSize < 1 || consulta.pageSize > 100) {
+    return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+  }
+  if (consulta.sortBy && !ordenaveis.includes(consulta.sortBy)) {
+    return problemaJson(400, `sortBy inválido: ${consulta.sortBy}.`)
+  }
+
+  let rows = [...itens]
+  if (consulta.q) {
+    const alvo = consulta.q.toLowerCase()
+    rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
+  }
+  if (consulta.sortBy) {
+    const chave = consulta.sortBy as keyof T
+    rows.sort((a, b) => {
+      const va = String(a[chave] ?? '')
+      const vb = String(b[chave] ?? '')
+      return consulta.sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
+    })
+  }
+
+  const total = rows.length
+  const inicio = (consulta.page - 1) * consulta.pageSize
+  return HttpResponse.json({ rows: rows.slice(inicio, inicio + consulta.pageSize), total })
+}
+
+function sessaoAtual(): SessaoAtual {
+  return {
+    organizationId: 'org-vertz',
+    employeeId: 'emp-admin',
+    activeTenantId: store.activeTenantId,
+    expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+    mustChangePassword: store.mustChangePassword,
+  }
+}
+
+export const handlers = [
+  // ---------------- auth ----------------
+  http.post('*/auth/login', async ({ request }) => {
+    const corpo = (await request.json()) as LoginRequest
+    // Senha 'errada' falha de propósito — é o caminho de teste do 401 na tela.
+    if (corpo.password === 'errada') {
+      return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })
+    }
+    store.logado = true
+    // Senha 'temporaria' liga o fluxo de troca obrigatória — exercita a guarda.
+    store.mustChangePassword = corpo.password === 'temporaria'
+    store.activeTenantId = null
+    return HttpResponse.json({ mustChangePassword: store.mustChangePassword })
+  }),
+
+  http.post('*/auth/logout', () => {
+    store.logado = false
+    store.activeTenantId = null
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/auth/me', () => {
+    if (!store.logado) return SEM_SESSAO()
+    return HttpResponse.json(sessaoAtual())
+  }),
+
+  http.post('*/auth/change-password', async ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    const corpo = (await request.json()) as { currentPassword?: string }
+    if (corpo.currentPassword === 'errada') {
+      return problemaJson(400, 'A senha atual não confere.')
+    }
+    store.mustChangePassword = false
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('*/auth/tenants', () => {
+    if (!store.logado) return SEM_SESSAO()
+    return HttpResponse.json(store.empresas)
+  }),
+
+  http.put('*/auth/active-tenant', async ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    const corpo = (await request.json()) as TrocarEmpresaRequest
+    if (!store.empresas.some((e) => e.tenantId === corpo.tenantId)) {
+      return problemaJson(400, 'Empresa fora dos vínculos do usuário.')
+    }
+    store.activeTenantId = corpo.tenantId
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  // ---------------- catalog-lookups (da ORG — respondem sem empresa ativa) ----------------
+  http.get('*/api/catalog-lookups', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    const url = new URL(request.url)
+    const kind = url.searchParams.get('kind')
+    const base = kind ? store.lookups.filter((l) => l.kind === kind) : store.lookups
+    return listar(base, lerConsulta(url), ['name', 'kind'], (l) => [l.name, l.kind])
+  }),
+
+  // ---------------- products ----------------
+  http.get('*/api/products/:id', ({ params }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const produto = store.produtos.find((p) => p.id === params.id)
+    if (!produto) return problemaJson(404, 'Produto não encontrado.')
+    return HttpResponse.json(produto)
+  }),
+
+  http.get('*/api/products', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    const url = new URL(request.url)
+    // Sem empresa ativa o domínio devolve VAZIO, não erro — modo de falhar da
+    // Etapa 0, intacto até no mock.
+    if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
+    const rows = store.produtos.map(({ id, code, description, active }) => ({
+      id,
+      code,
+      description,
+      active,
+    }))
+    return listar(rows, lerConsulta(url), ['code', 'description', 'active'], (p) => [
+      p.code,
+      p.description,
+    ])
+  }),
+
+  http.post('*/api/products', async ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const corpo = (await request.json()) as ProductWriteRequest
+    if (!corpo.code || !corpo.description) {
+      return problemaJson(400, 'Código e descrição são obrigatórios.')
+    }
+    if (store.produtos.some((p) => p.code === corpo.code)) {
+      return problemaJson(409, `Já existe produto com o código ${corpo.code}.`)
+    }
+    const produto = {
+      id: novoId('prod'),
+      code: corpo.code,
+      description: corpo.description,
+      active: corpo.active ?? true,
+      variants: [],
+    }
+    store.produtos.push(produto)
+    const { variants: _, ...dto } = produto
+    return HttpResponse.json(dto, { status: 201 })
+  }),
+
+  http.put('*/api/products/:id', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const produto = store.produtos.find((p) => p.id === params.id)
+    if (!produto) return problemaJson(404, 'Produto não encontrado.')
+    const corpo = (await request.json()) as ProductWriteRequest
+    if (!corpo.code || !corpo.description) {
+      return problemaJson(400, 'Código e descrição são obrigatórios.')
+    }
+    // PUT substitui o registro inteiro — campo ausente APAGA, não preserva.
+    produto.code = corpo.code
+    produto.description = corpo.description
+    produto.active = corpo.active ?? false
+    const { variants: _, ...dto } = produto
+    return HttpResponse.json(dto)
+  }),
+
+  // ---------------- variants ----------------
+  http.post('*/api/products/:productId/variants', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const produto = store.produtos.find((p) => p.id === params.productId)
+    if (!produto) return problemaJson(404, 'Produto não encontrado.')
+    const corpo = (await request.json()) as VariantWriteRequest
+    const variante: ProductVariantDto = {
+      id: novoId('var'),
+      finish: corpo.finish ?? '',
+      size: corpo.size ?? '',
+      active: corpo.active ?? true,
+      priceCents: corpo.priceCents ?? null,
+      stockQty: 0,
+      minStock: corpo.minStock ?? null,
+    }
+    produto.variants.push(variante)
+    return HttpResponse.json(variante, { status: 201 })
+  }),
+
+  http.put('*/api/products/:productId/variants/:id', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const produto = store.produtos.find((p) => p.id === params.productId)
+    const variante = produto?.variants.find((v) => v.id === params.id)
+    if (!produto || !variante) return problemaJson(404, 'Variante não encontrada.')
+    const corpo = (await request.json()) as VariantWriteRequest
+    variante.finish = corpo.finish ?? ''
+    variante.size = corpo.size ?? ''
+    variante.active = corpo.active ?? false
+    variante.priceCents = corpo.priceCents ?? null
+    variante.minStock = corpo.minStock ?? null
+    return HttpResponse.json(variante)
+  }),
+
+  // ---------------- kardex (ADR-009: saldo é DERIVADO do movimento) ----------------
+  http.get('*/api/variants/:variantId/stock-movements', ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
+    const url = new URL(request.url)
+    const rows = store.movimentos.filter((m) => m.variantId === params.variantId).reverse()
+    return listar(rows, lerConsulta(url), ['occurredAt'], (m) => [m.reason])
+  }),
+
+  http.post('*/api/variants/:variantId/stock-movements', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const variante = store.produtos
+      .flatMap((p) => p.variants)
+      .find((v) => v.id === params.variantId)
+    if (!variante) return problemaJson(404, 'Variante não encontrada.')
+    const corpo = (await request.json()) as StockMovementRequest
+    if (!corpo.delta || !corpo.reason) {
+      return problemaJson(400, 'Movimento exige delta diferente de zero e um motivo.')
+    }
+    const saldoNovo = (variante.stockQty ?? 0) + corpo.delta
+    if (saldoNovo < 0) {
+      return problemaJson(409, 'Movimento deixaria o saldo negativo.')
+    }
+    variante.stockQty = saldoNovo
+    const movimento = {
+      id: novoId('mov'),
+      variantId: variante.id,
+      delta: corpo.delta,
+      balanceAfter: saldoNovo,
+      reason: corpo.reason,
+      occurredAt: new Date().toISOString(),
+      employeeId: 'emp-admin',
+    }
+    store.movimentos.push(movimento)
+    return HttpResponse.json(movimento, { status: 201 })
+  }),
+
+  // ---------------- partners ----------------
+  http.get('*/api/partners/:id', ({ params }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const parceiro = store.parceiros.find((p) => p.id === params.id)
+    // Sem vínculo com a empresa ativa = 404: buscar no cadastro da ORG abriria
+    // parceiro da vizinha (mesma regra do backend — 404, não 403).
+    if (!parceiro || !parceiro.vinculos[store.activeTenantId]) {
+      return problemaJson(404, 'Parceiro não encontrado.')
+    }
+    return HttpResponse.json(partnerDto(parceiro, store.activeTenantId))
+  }),
+
+  http.get('*/api/partners', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    const url = new URL(request.url)
+    if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
+    const tenantId = store.activeTenantId
+    const role = url.searchParams.get('role')
+    if (role && !['customer', 'supplier', 'professional'].includes(role)) {
+      return problemaJson(400, `role inválido: ${role}.`)
+    }
+    const doPapel = (p: ParceiroDaOrg) =>
+      role === 'customer'
+        ? p.isCustomer
+        : role === 'supplier'
+          ? p.isSupplier
+          : role === 'professional'
+            ? p.isProfessional
+            : true
+    const rows = store.parceiros
+      .filter((p) => p.vinculos[tenantId] && doPapel(p))
+      .map((p) => partnerDto(p, tenantId))
+    return listar(
+      rows,
+      lerConsulta(url),
+      ['code', 'legalName', 'tradeName', 'document', 'active'],
+      (p) => [p.code, p.legalName, p.tradeName, p.document],
+    )
+  }),
+
+  http.post('*/api/partners', async ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const corpo = (await request.json()) as PartnerWriteRequest
+    if (!corpo.legalName) return problemaJson(400, 'Razão social é obrigatória.')
+    const existente = corpo.document
+      ? store.parceiros.find((p) => p.document === corpo.document)
+      : undefined
+    if (existente) {
+      // O 409 carrega o membro de extensão que a tela usa para oferecer o
+      // vínculo — é a semântica do backend, não invenção do mock.
+      return problemaJson(409, 'Documento já cadastrado no grupo.', {
+        existingPartnerId: existente.id,
+      })
+    }
+    const parceiro: ParceiroDaOrg = {
+      id: novoId('parc'),
+      legalName: corpo.legalName,
+      tradeName: corpo.tradeName ?? null,
+      document: corpo.document ?? null,
+      email: corpo.email ?? null,
+      isCustomer: corpo.isCustomer ?? false,
+      isSupplier: corpo.isSupplier ?? false,
+      isProfessional: corpo.isProfessional ?? false,
+      registrationActive: true,
+      vinculos: {
+        [store.activeTenantId]: {
+          code: corpo.code ?? null,
+          paymentTerms: corpo.paymentTerms ?? null,
+          active: corpo.active ?? true,
+        },
+      },
+    }
+    store.parceiros.push(parceiro)
+    return HttpResponse.json(partnerDto(parceiro, store.activeTenantId), { status: 201 })
+  }),
+
+  http.put('*/api/partners/:id', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const parceiro = store.parceiros.find((p) => p.id === params.id)
+    if (!parceiro || !parceiro.vinculos[store.activeTenantId]) {
+      return problemaJson(404, 'Parceiro não encontrado.')
+    }
+    const corpo = (await request.json()) as PartnerWriteRequest
+    if (!corpo.legalName) return problemaJson(400, 'Razão social é obrigatória.')
+    parceiro.legalName = corpo.legalName
+    parceiro.tradeName = corpo.tradeName ?? null
+    parceiro.document = corpo.document ?? null
+    parceiro.email = corpo.email ?? null
+    parceiro.isCustomer = corpo.isCustomer ?? false
+    parceiro.isSupplier = corpo.isSupplier ?? false
+    parceiro.isProfessional = corpo.isProfessional ?? false
+    parceiro.vinculos[store.activeTenantId] = {
+      code: corpo.code ?? null,
+      paymentTerms: corpo.paymentTerms ?? null,
+      active: corpo.active ?? false,
+    }
+    return HttpResponse.json(partnerDto(parceiro, store.activeTenantId))
+  }),
+
+  http.post('*/api/partners/:id/link', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const parceiro = store.parceiros.find((p) => p.id === params.id)
+    if (!parceiro) return problemaJson(404, 'Parceiro não encontrado.')
+    const corpo = (await request.json()) as PartnerLinkRequest
+    parceiro.vinculos[store.activeTenantId] = {
+      code: corpo.code ?? null,
+      paymentTerms: corpo.paymentTerms ?? null,
+      active: corpo.active ?? true,
+    }
+    return HttpResponse.json(partnerDto(parceiro, store.activeTenantId))
+  }),
+
+  // ---------------- health ----------------
+  http.get('*/health', () => HttpResponse.json({ status: 'ok' })),
+  http.get('*/health/db', () =>
+    HttpResponse.json({ status: 'ok', detail: null, pendingMigrations: null }),
+  ),
+]

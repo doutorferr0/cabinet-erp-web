@@ -2,8 +2,9 @@ import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
 import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
 import {
   ErroDaApi,
+  type RespostaDaApi,
   createApiListProvider,
-  detalheDoProblema,
+  dadosOuErro,
   itemOuNulo,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
@@ -87,7 +88,7 @@ export function parceirosDoPapel(role: PapelDeParceiro): ListProvider<PartnerDto
  * operador procurar um registro que está lá.
  */
 export async function obterParceiro(id: string): Promise<PartnerDto | null> {
-  return itemOuNulo(await getPartner({ path: { id } }), `o parceiro ${id}`)
+  return itemOuNulo<PartnerDto>(await getPartner(id), `o parceiro ${id}`)
 }
 
 /**
@@ -165,17 +166,8 @@ export async function atualizarParceiro(
   id: string,
   corpo: PartnerWriteRequest,
 ): Promise<PartnerDto> {
-  const { data, error, response } = await updatePartner({ path: { id }, body: corpo })
-
-  if (error || !data) {
-    throw new ErroDaApi(
-      `Falha ao gravar o parceiro ${id}.`,
-      response?.status ?? 0,
-      detalheDoProblema(error),
-      error,
-    )
-  }
-  return data
+  const resposta: RespostaDaApi = await updatePartner(id, corpo)
+  return dadosOuErro<PartnerDto>(resposta, `Falha ao gravar o parceiro ${id}.`)
 }
 
 /**
@@ -249,17 +241,8 @@ export function corpoDeInclusao(
  * `partners.document` —, e o `detail` é o que diz isso ao operador.
  */
 export async function incluirParceiro(corpo: PartnerWriteRequest): Promise<PartnerDto> {
-  const { data, error, response } = await createPartner({ body: corpo })
-
-  if (error || !data) {
-    throw new ErroDaApi(
-      'Falha ao incluir o parceiro.',
-      response?.status ?? 0,
-      detalheDoProblema(error),
-      error,
-    )
-  }
-  return data
+  const resposta: RespostaDaApi = await createPartner(corpo)
+  return dadosOuErro<PartnerDto>(resposta, 'Falha ao incluir o parceiro.')
 }
 
 /**
@@ -287,18 +270,10 @@ export function idDoParceiroExistente(erro: unknown): string | null {
  * cadastrou. Ajustar o cadastro depois é o `Alterar`, que é explícito.
  */
 export async function vincularParceiro(id: string, ativo: boolean): Promise<PartnerDto> {
-  const { data, error, response } = await linkPartner({
-    path: { id },
-    body: { code: null, paymentTerms: null, active: ativo },
+  const resposta: RespostaDaApi = await linkPartner(id, {
+    code: null,
+    paymentTerms: null,
+    active: ativo,
   })
-
-  if (error || !data) {
-    throw new ErroDaApi(
-      `Falha ao vincular o parceiro ${id}.`,
-      response?.status ?? 0,
-      detalheDoProblema(error),
-      error,
-    )
-  }
-  return data
+  return dadosOuErro<PartnerDto>(resposta, `Falha ao vincular o parceiro ${id}.`)
 }

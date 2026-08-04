@@ -5,15 +5,21 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 /**
- * Backend em desenvolvimento — a porta que o `docs/ligar-com-o-front.md` do
- * `vitra-erp-dotnet` publica. É a fonte certa: o `launchSettings.json` tem dois
- * perfis com portas diferentes, e quem diz onde o backend atende para o front é
- * o documento que o backend escreveu para o front.
+ * Backend em desenvolvimento — endereço INTEIRAMENTE por env, sem padrão.
  *
- * Quem sobe o backend em outra porta ou host exporta `VITE_API_PROXY` antes do
- * `pnpm dev`; o padrão cobre o caso comum sem exigir `.env`.
+ * O front é o dono do contrato (`contracts/openapi-v1.json`); quem o implementa
+ * é um servidor externo que ainda não existe. Não há porta canônica para chutar,
+ * e padrão inventado dá recusa de conexão com cara de configuração certa. Quem
+ * tem servidor no ar exporta `VITE_API_PROXY` antes do `pnpm dev`; sem ela o
+ * desvio não é montado e `/api` cai na SPA, que é o sintoma honesto de "não há
+ * backend configurado".
+ *
+ * O mecanismo fica de pé porque é a metade `http` do toggle previsto
+ * `VITE_API_MODE=mock|http`: no modo mock a camada em memória responde dentro do
+ * browser e nada sai da origem; no modo http as mesmas rotas atravessam este
+ * proxy. Muda o alvo, não a razão de existir (cookie de mesma origem, abaixo).
  */
-const BACKEND_DEV = process.env.VITE_API_PROXY ?? 'http://localhost:5199'
+const BACKEND_DEV = process.env.VITE_API_PROXY
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -32,8 +38,8 @@ export default defineConfig({
      * PROXY — o dev roda MESMA ORIGEM, e isso não é conveniência: é o que faz a
      * sessão funcionar.
      *
-     * A sessão é um cookie opaco (ADR-010, D2). Apontar o front direto para
-     * `http://localhost:5199` faria toda chamada ser cross-origin, e aí o cookie
+     * A sessão é um cookie opaco (ADR-010, D2). Apontar o front direto para a
+     * porta do backend faria toda chamada ser cross-origin, e aí o cookie
      * depende de `SameSite=None; Secure` + CORS com `Allow-Credentials` — três
      * coisas que teriam de valer em desenvolvimento e mudariam em produção.
      * Atravessando o servidor do Vite, `/api` e `/auth` saem da MESMA origem que
@@ -45,9 +51,11 @@ export default defineConfig({
      * Só `/api` e `/auth` são desviados — são os dois prefixos do contrato. As
      * rotas da SPA (`/login`, `/cadastros/...`) continuam com o Vite.
      */
-    proxy: {
-      '/api': { target: BACKEND_DEV, changeOrigin: true },
-      '/auth': { target: BACKEND_DEV, changeOrigin: true },
-    },
+    proxy: BACKEND_DEV
+      ? {
+          '/api': { target: BACKEND_DEV, changeOrigin: true },
+          '/auth': { target: BACKEND_DEV, changeOrigin: true },
+        }
+      : undefined,
   },
 })

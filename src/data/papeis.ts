@@ -1,10 +1,10 @@
 /**
- * Papéis de acesso — conjunto FECHADO, vindo do backend.
+ * Papéis de acesso — conjunto FECHADO.
  *
- * Fonte: `docs/contrato/schema-canonico.sql` do `vitra-erp-dotnet` —
- * `employee_company.role text NOT NULL CHECK (role IN
- * ('owner','admin','operator-full','operator-sales','viewer'))`. Não é lista
- * inventada: o banco recusa qualquer valor fora dela.
+ * Fonte: o schema canônico do ERP, onde `employee_company.role` é
+ * `text NOT NULL CHECK (role IN ('owner','admin','operator-full',
+ * 'operator-sales','viewer'))`. Não é lista inventada: o banco recusa qualquer
+ * valor fora dela, e quem implementar o contrato herda a mesma restrição.
  *
  * O rótulo em PT-BR é UI, como já vale para os lookups ("rótulo é UI, não dado").
  * O identificador que trafega continua sendo o do contrato.

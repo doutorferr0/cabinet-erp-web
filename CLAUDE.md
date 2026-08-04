@@ -1,30 +1,32 @@
 # CLAUDE.md — vitra-erp-web
 
 Orientação para o agente (claude ou kimi) neste repositório. Ler antes de qualquer tarefa.
-Este repo = **front do VITRA** (React SPA). Backend = `doutorferr0/vitra-erp-dotnet` (NUNCA commitar lá). Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
+Este repo = **front do VITRA** (React SPA) e **dono do contrato** (`contracts/openapi-v1.json`). O backend é trilho de outro desenvolvedor e ainda não existe — não há repositório de servidor a consultar. Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
 
 ## Estilo de comunicação
 PT-BR. Comprimir prosa, nunca substância. Cortar filler/cordialidade/preâmbulo. Preservar raciocínio de decisão, trade-offs, causalidade. Não inventar dado — falta = "sem dado". Revisão começa por problemas. Responder só o perguntado.
 
-## REGRA DA FASE — INTEGRAÇÃO INCREMENTAL (inegociável)
-**A fase mock ACABOU.** O `vitra-erp-dotnet` publicou o OpenAPI e parte do front já consome
-o servidor. A troca acontece **entrada por entrada** do registry, conforme o backend publica
-o recurso — nunca de uma vez.
+## REGRA DA FASE — O FRONT É O DONO DO CONTRATO (inegociável)
+**A fase mock ACABOU e o contrato não vem mais de fora.** `contracts/openapi-v1.json` é a
+especificação de **entrada** que o backend precisa implementar, não cópia que o front recebe.
 
-- **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos
-  (`/api/products`) e os três papéis de parceiro — cliente, fornecedor, profissional
-  (`/api/partners`, filtro `role`). Ver `docs/integracao.md`, seção `Estado atual`.
+- **Contrato muda SÓ por PR neste repositório.** Caminho novo definido pelo front, antes de
+  existir servidor, entra marcado **`Proposto`** — o leitor precisa distinguir o que já foi
+  implementado do que é pedido. Não há repo de backend para conferir contra.
+- **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos e
+  variantes (`/api/products`, `…/variants`) e os três papéis de parceiro — cliente, fornecedor,
+  profissional (`/api/partners`, filtro `role`). Ver `docs/integracao.md`.
 - **Ainda mock:** colaborador, orçamento, pedido de compra, ordem de compra, cidades, boletim
-  — **por falta de endpoint, não por escolha.** Esses seguem a regra antiga: dados tipados em
-  `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
-- **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API, escrever à mão tipo que
-  o contrato define. Todo tipo de servidor vem do codegen — `pnpm codegen` (`@hey-api/openapi-ts`),
-  saída em `src/api/gerado/`, **commitada**, com `@ts-nocheck` posto pelo passo pós-codegen.
-  **Nunca editar `src/api/gerado/` à mão**; conflito de merge nele se resolve rodando o codegen.
-- **`contracts/openapi-v1.json` é cópia versionada do contrato do backend.** O diff dele é a
-  notificação de que o backend mudou. `pnpm contrato:conferir` compara com o original via `gh api`
-  (roda LOCAL — o repo do backend é privado e o CI do front não tem credencial). **O conferidor
-  compara CAMINHOS, não métodos:** ler o `paths` do OpenAPI antes de concluir que um verbo chegou.
+  — **por falta de caminho no contrato, não por escolha.** Esses seguem a regra antiga: dados
+  tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
+  escrever à mão tipo que o contrato define. Todo tipo de servidor vem do codegen —
+  `pnpm codegen` (`@hey-api/openapi-ts`), saída em `src/api/gerado/`, **commitada**, com
+  `@ts-nocheck` posto pelo passo pós-codegen. **Nunca editar `src/api/gerado/` à mão**;
+  conflito de merge nele se resolve rodando o codegen.
+- **A guarda do contrato é o CI:** o passo `Codegen is up to date` refaz o codegen e reprova se
+  `src/api/gerado` divergir de `contracts/`. É a guarda inteira — mexeu no contrato, rodou
+  codegen e commitou o gerado no mesmo PR.
 - **A tela nunca inventa o que o contrato não cobre.** Contrato menor que a transcrição fica
   VISÍVEL: coluna que o DTO não tem sai da listagem, campo que o servidor não guarda aparece em
   branco e o `AvisoDeCobertura` avisa o operador. Preencher com mock daria dado de mentira com
@@ -70,8 +72,8 @@ src/data/           # FRONTEIRA de dados: contrato, registry, adaptadores HTTP
 src/mocks/          # dados fake tipados (só dado, sem acesso)
 src/lib/            # utils, shortcuts, formatters (money, cnpj, date)
 src/test/           # helpers de teste (renderRoute, renderWithQuery, instalarServidor)
-contracts/openapi-v1.json  # cópia versionada do contrato do backend
-docs/integracao.md  # roteiro e estado da troca mock -> API
+contracts/openapi-v1.json  # CONTRATO — spec de entrada do backend, muda só por PR daqui
+docs/integracao.md  # semânticas inegociáveis + estado da troca mock -> HTTP
 ```
 
 **Regra de acesso a dado:** tela NUNCA importa `fetch*` de `src/mocks/` nem chama o cliente
@@ -96,19 +98,19 @@ do `GET` e o teste passa sem asserir nada. Recurso mock segue travado por
 ## Comandos
 ```
 pnpm install
-pnpm dev            # Vite (5173) — proxy /api e /auth -> backend em 5199
+pnpm dev            # Vite (5173) — proxy /api e /auth -> VITE_API_PROXY (sem padrão)
 pnpm check          # biome check --write
 pnpm check-types    # tsc -b
 pnpm test           # vitest run
 pnpm build
 pnpm codegen        # regera src/api/gerado/ a partir de contracts/openapi-v1.json
-pnpm contrato:conferir   # compara a cópia local com o contrato do backend (gh api, LOCAL)
 ```
 
-**Par local:** backend `vitra-erp-dotnet` em **5199** + front em 5173. O proxy existe por causa
-do COOKIE (sessão opaca): apontar direto para a porta do backend tornaria tudo cross-origin e
-exigiria `SameSite=None; Secure` só em dev. `VITE_API_PROXY` troca host/porta sem editar arquivo.
-Fonte da porta = `docs/ligar-com-o-front.md` do backend, não `launchSettings.json`.
+**Par local:** front em 5173 + o que quer que implemente o contrato, no endereço de
+`VITE_API_PROXY` — **não há porta padrão**, porque não há servidor canônico para chutar. Sem a
+variável o desvio não é montado. O proxy existe por causa do COOKIE (sessão opaca): apontar
+direto para a porta do backend tornaria tudo cross-origin e exigiria `SameSite=None; Secure` só
+em dev. O mecanismo é a metade `http` do toggle previsto `VITE_API_MODE=mock|http`.
 
 **Armadilha medida:** `pnpm check-types` (`tsc -b`) já passou verde com erro real de tipo,
 reaproveitando build info. Quando a mudança mexe em assinatura de provider, conferir com

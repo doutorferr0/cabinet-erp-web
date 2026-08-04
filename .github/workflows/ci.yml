@@ -29,8 +29,8 @@ jobs:
 
       # O cliente gerado é commitado. Se alguém atualizar o contrato e esquecer
       # o codegen (ou editar o gerado à mão), o front compila contra tipos velhos
-      # e a divergência só aparece em runtime. O contrato do backend
-      # (docs/contrato/contrato-http-listagem.md) pede exatamente esta guarda.
+      # e a divergência só aparece em runtime. Como o contrato é DESTE repo e muda
+      # por PR daqui, esta é a guarda inteira da fronteira: gerado ⇔ contracts/.
       - name: Codegen is up to date
         run: |
           pnpm codegen

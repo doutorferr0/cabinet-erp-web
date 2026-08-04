@@ -4,21 +4,21 @@ import type { ListProvider } from '@/data/provider'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 
 /**
- * Adaptador de LISTAGEM entre o contrato da UI e a convenção do backend.
+ * Adaptador de LISTAGEM entre o contrato da UI e a convenção de listagem HTTP.
  *
- * Fonte: `docs/contrato/contrato-http-listagem.md` do `vitra-erp-dotnet`
- * (Aceito 2026-07-30) — que por sua vez nasceu do `src/lib/table-query.ts` deste
- * repo. Os dois lados descrevem o MESMO shape; mudança aqui = mudança nos dois.
+ * A convenção nasceu do `src/lib/table-query.ts` deste repo e está registrada em
+ * `docs/integracao.md` (semânticas inegociáveis) — é o front que a define, e quem
+ * implementar o contrato honra o mesmo shape.
  *
  * A UI carrega o estado da consulta como `{ q, sort: {id, desc}, page, pageSize }`.
- * O backend recebe `q`, `sortBy`, `sortDesc`, `page`, `pageSize` e devolve
+ * O servidor recebe `q`, `sortBy`, `sortDesc`, `page`, `pageSize` e devolve
  * `{ rows, total }`. A tradução mora aqui, num lugar só — espalhada pelo registry,
  * cada recurso teria a sua versão e a divergência apareceria como bug de
  * ordenação numa tela isolada.
  *
- * O item por id (`itemOuNulo`) entrou quando o backend publicou o primeiro
- * `GET /api/{recurso}/{id}` (produtos, 2026-07-31) — antes disso, rota e código de
- * "não encontrado" seriam invenção.
+ * O item por id (`itemOuNulo`) entrou com o primeiro `GET /api/{recurso}/{id}` do
+ * contrato (produtos) — antes disso, rota e código de "não encontrado" seriam
+ * invenção.
  */
 
 /** Teto de `pageSize` do contrato de listagem; acima disso o backend responde 400. */

@@ -1,470 +1,140 @@
-# Integração com o backend — o que muda quando o OpenAPI sair
-
-Este documento é o roteiro da troca — escrito enquanto a fase mock era construída,
-para que a integração não vire arqueologia.
-
-## Estado atual — a integração começou
-
-O OpenAPI saiu (`contracts/openapi-v1.json`, cópia versionada do contrato do
-`vitra-erp-dotnet`) e o cliente gerado está commitado em `src/api/gerado/`. O que
-já vem do servidor:
-
-| Fronteira | Endpoint | Onde |
-|---|---|---|
-| Listas de apoio — **os 19 kinds, em todo formulário** | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
-| Empresa ativa da sessão e troca de empresa | `GET /auth/tenants` · `GET /auth/me` · `PUT /auth/active-tenant` | `src/data/empresas-api.ts` |
-| Login, guarda de sessão e troca de senha | `POST /auth/login` · `GET /auth/me` · `POST /auth/change-password` | `src/data/sessao.ts` |
-| **Cadastro de produtos (listagem e detalhe)** | `GET /api/products` · `GET /api/products/{id}` | `src/data/produtos-api.ts` |
-| **Fornecedor, Cliente e Profissional (listagem)** | `GET /api/partners?role=` | `src/data/parceiros-api.ts` |
-
-O resto das telas segue em mock por **falta de contrato**, não por escolha. O
-registry de `src/data/index.ts` continua sendo o único ponto que muda quando esses
-endpoints existirem — a troca acontece entrada por entrada, e `produtos` já é HTTP
-enquanto os vizinhos são mock.
-
-## Parceiros — uma tabela, três telas, e o detalhe que falta
-
-`GET /api/partners` serve **Fornecedor**, **Cliente** e **Profissional Externo**:
-são PAPÉIS do mesmo cadastro (`is_customer`/`is_supplier`/`is_professional` no
-schema), e o filtro `role` decide qual. Não foi o front que unificou — o backend
-publicou o filtro porque "a tela é Fornecedores". Papel inválido é **400**, não
-filtro ignorado: filtro ignorado faria a tela de Fornecedores mostrar clientes
-sem ninguém desconfiar de uma lista cheia.
-
-### A resposta junta duas origens
-
-| Campo | Vem de | Vale para |
-|---|---|---|
-| `legalName`, `tradeName`, `document`, `email`, os três papéis | cadastro da ORGANIZAÇÃO | o grupo inteiro |
-| `code`, `paymentTerms`, `active` | vínculo com a EMPRESA | a empresa ativa |
-| `registrationActive` | cadastro da organização | o cadastro global está ativo |
-
-Por isso `Ativo` na tela é o **`active` do vínculo**: a pergunta do operador é
-"esta empresa trabalha com este fornecedor?", não "este cadastro existe no grupo?".
-
-### Colunas: o que saiu de cada tela
-
-| Tela | Em tela | Removidas (faltam no DTO) |
-|---|---|---|
-| Fornecedor (§10) | Código, Nome Fantasia, Razão Social, Ativo | `Empresa Compradora` |
-| Cliente (§2) | Código, Nome, Ativo | `Profissional`, `Categoria` |
-| Profissional (§3) | Código, Nome de Apresentação, Nome, Ativo | `Profissão`, `Registro Profissional` |
-
-Mesma regra de produtos: coluna vazia em toda linha lê-se como cadastro
-incompleto, quando o incompleto é o contrato. `accessorKey` é o nome do campo no
-contrato, porque viaja como `sortBy` — a whitelist é
-`code`/`legalName`/`tradeName`/`document`/`active`, e `paymentTerms`, `email` e
-`registrationActive` estão fora dela.
-
-### Escrita por id, leitura por id não — e a LINHA no lugar do detalhe
-
-O contrato tem `PUT /api/partners/{id}` e **não** tem `GET /api/partners/{id}`.
-Parece torto e não é: `PartnerWriteRequest` é **subconjunto do `PartnerDto`** da
-listagem, então a linha selecionada já traz todo campo gravável. Buscar de novo
-por id seria pedir ao servidor o que acabou de chegar.
-
-Por isso `Alterar`/`Consul.` **abrem a partir da linha**: a listagem semeia
-`['parceiro', id]` no cache e a rota lê dali (capturando numa `useState`, para o
-corpo do `PUT` sobreviver a uma coleta de cache no meio da edição).
-
-**O preço é link direto e recarga.** Sem linha em mãos não há o que editar, e a
-rota manda voltar à listagem em vez de abrir formulário vazio. É o que muda
-quando o `GET` por id existir.
-
-**`PUT` substitui o registro inteiro**, então `corpoDeEscrita` devolve
-INALTERADO o que a tela não mostra — `code`, `paymentTerms` e os três papéis.
-Mandá-los nulos porque o formulário não tem campo para eles apagaria dado que
-ninguém pediu para apagar; pior, gravar um Fornecedor tiraria o papel de Cliente
-do mesmo parceiro, e o operador só descobriria na outra listagem.
-
-| Campo | Fornecedor | Cliente | Profissional |
-|---|---|---|---|
-| `legalName` | Razão Social | Nome | Nome |
-| `tradeName` | Nome Fantasia | *(volta como veio)* | Nome de Apresentação |
-| `document` | CNPJ/CPF | CPF | CPF |
-| `email` · `active` | E-mail · Ativo | E-mail · Ativo | E-mail · Ativo |
-
-O sucesso é **`200` com o `PartnerDto`** — não `204`. Corpo vazio é tratado como
-falha: aceitar resposta que o contrato não descreve é aceitar qualquer coisa.
-
-### Incluir — `POST /api/partners`
-
-O cadastro novo nasce com **o papel da tela e nenhum outro**: incluir por
-Fornecedores cria fornecedor. O schema exige ao menos um papel
-(`partners_papel_check`) e quem sabe qual é a tela — marcar os três "por
-precaução" faria todo cadastro novo aparecer nas três listagens.
-
-`code` e `paymentTerms` nascem **nulos**: são do vínculo com a empresa e nenhum
-dos formulários tem campo para eles. O contrato aceita nulo; inventar um código
-aqui competiria com o que o operador espera digitar depois.
-
-Sucesso é `201` com o `PartnerDto`.
-
-### O 409 de documento repetido, e a saída dele
-
-O cadastro é da ORGANIZAÇÃO: o documento pode já existir no grupo sem que esta
-empresa atenda o parceiro — e aí ele **não aparece na listagem**. Criar outro
-duplicaria o mesmo CNPJ.
-
-O backend responde `409` com um **membro de extensão** da RFC 9457,
-`existingPartnerId`, fora do schema do `ProblemDetails`. Por isso `ErroDaApi`
-guarda o **corpo cru** (`corpo`): ficar só com `status` e `detail` jogaria fora
-justamente a parte acionável, e a tela teria uma frase descrevendo a saída sem
-poder tomá-la.
-
-Com o id em mãos, o formulário oferece **Vincular esta empresa ao cadastro
-existente** → `POST /api/partners/{id}/link`.
-
-**Vincular NÃO edita**, e o corpo prova: só `code`, `paymentTerms` e `active`,
-que são do vínculo. Se aceitasse os campos do cadastro, "vincular" viraria um
-caminho para sobrescrever em silêncio a razão social que a empresa vizinha
-cadastrou. Ajustar o cadastro depois é o `Alterar`, que é explícito.
-
-### Escrita — não existe NENHUMA
-
-O contrato tem `POST` apenas em `/auth/login`, `/auth/logout` e
-`/auth/change-password`, e `PUT` apenas em `/auth/active-tenant`. **Nenhum
-cadastro tem endpoint de criação ou alteração** — nem produtos, nem parceiros.
-Todo `Gravar` de formulário segue sem efeito no servidor, marcado com
-`TODO(contract)` no próprio componente.
-
-### As listas de apoio: dois controles, uma fonte
-
-Os 19 kinds da §9 padrão 2 vêm todos de `GET /api/catalog-lookups`. A transcrição
-distingue duas formas, e as duas continuam existindo — muda a origem, não o
-controle:
-
-| Na transcrição | Controle | Onde |
-|---|---|---|
-| `[combo +...]` (com cadastro rápido) | `LookupField` → `LookupCombo` | 14 usos |
-| `[combo]` puro | `LookupSelectField` | 10 usos |
-
-`src/data/lookups-api.ts` guarda o vocabulário inteiro: para cada kind, o
-**rótulo** (UI) e o **nome no banco** (`grauInstrucao` → `GRAU_INSTRUCAO`).
-Ficavam em arquivos separados, e acrescentar um kind era lembrar de dois —
-esquecer um só aparecia em runtime.
-
-**Dois cuidados que valem para os dois controles:**
-
-- **"Carregando" e "falhou" não podem parecer "lista vazia".** Combo mudo faz o
-  operador concluir que não há opção cadastrada quando o problema é outro.
-- **Lista cortada no teto de 100 avisa que foi cortada.** `pageSize: 100` é o teto
-  do contrato de listagem; acima dele a consulta volta truncada. No combo, a busca
-  filtra só o que chegou — então "não achei" e "não existe" viram a mesma coisa, e
-  o operador cadastraria duplicado pelo `...`. Quando isso começar a acontecer de
-  verdade, a lista deixou de ser lista de apoio: vira `[busca +...]` (padrão 5), e
-  aí o componente é outro.
-- **O valor gravado é sempre exibível.** A consulta só devolve item ATIVO
-  (desativação é lógica, §9 padrão 8); um registro que aponte para item
-  desativado DEPOIS de gravado abriria com o campo em branco, e a gravação
-  seguinte apagaria o valor sem ninguém pedir. Por isso o valor corrente entra na
-  lista quando não está nela — no `LookupSelectField` e na célula `select` da
-  `FormGrid`.
-
-### O adaptador de listagem já existe
-
-`src/data/api-provider.ts` (`createApiListProvider`) traduz o `TableQueryState` da
-UI para a convenção de listagem do backend e devolve `PagedResult<T>`. Quando um
-endpoint de recurso for publicado, a entrada no registry vira uma linha:
-
-```ts
-clientes: createApiListProvider<Cliente>({ url: '/api/clientes' }),
-```
-
-A convenção não é suposição — é a forma literal de `GET /api/catalog-lookups`, o
-único endpoint de lista publicado, e é contra ele que `api-provider.test.ts` roda.
-
-**`itemOuNulo` (o item por id)** entrou quando o backend publicou
-`GET /api/products/{id}`, o primeiro endpoint de item. A política é a mesma dos
-dois lados: **404 vira `null`** ("não existe" é resposta legítima de uma consulta
-por id) e QUALQUER outro status rejeita — 409 sem empresa ativa tratado junto com
-404 mandaria o operador procurar um registro que está lá.
-
-**Repetição de consulta:** `repetirSeValeAPena` (usado como `retry` padrão do
-QueryClient) não repete 4xx. Com a repetição padrão do TanStack Query, um 409
-"nenhuma empresa ativa" deixaria a tela ~7s em esqueleto antes de dizer o que o
-servidor respondeu de primeira. 5xx e falha de rede seguem repetindo.
-
-### Rodar o par local
-
-```bash
-dotnet run --project src/Vitra.Api   # vitra-erp-dotnet → http://localhost:5199
-pnpm dev                             # aqui            → http://localhost:5173
-```
-
-O `vite.config.ts` desvia `/api` e `/auth` para `http://localhost:5199` — a porta
-que o `docs/ligar-com-o-front.md` do backend publica (o `launchSettings.json` tem
-dois perfis com portas diferentes; quem manda é o documento escrito para o front).
-`VITE_API_PROXY` troca o destino sem editar arquivo.
-
-Com o proxy, `configurarApi()` fica com a base padrão `/` e **não é preciso `.env`
-nem `VITE_API_URL`**.
-
-**Por que proxy e não `VITE_API_URL` apontando para a porta do backend.** A sessão
-é um cookie opaco (ADR-010, D2). Pelo proxy o navegador enxerga UMA origem: o
-cookie é *same-site*, funciona com `SameSite=Lax` e não há CORS. Cross-origin, o
-navegador só manda o cookie com `SameSite=None; Secure`, o que exige **HTTPS nos
-dois lados** em desenvolvimento. Não é preferência — é menos peça para dar errado.
-O backend recomenda o mesmo em `docs/ligar-com-o-front.md`, embora aceite chamada
-direta (`Vitra:AllowedOrigins` já traz `http://localhost:5173`).
-
-`VITE_API_URL` **continua existindo** — é para a implantação, onde front e API
-ficam em origens diferentes, com HTTPS dos dois lados e o cookie configurado para
-isso. Lá não há servidor de desenvolvimento no meio para fazer o desvio.
-
-### Conferir a cópia do contrato
-
-```bash
-pnpm contrato:conferir     # compara com docs/contrato/openapi-v1.json do backend
-```
-
-Cópia sem conferência envelhece em silêncio: o front geraria cliente de um
-contrato que o backend já mudou, e a divergência apareceria como 404 ou campo
-faltando em runtime. O comando roda **local** (o repo do backend é privado; o CI
-do front não tem credencial). A outra metade da guarda está no CI: o passo
-`Codegen is up to date` refaz o codegen e falha se `src/api/gerado` divergir da
-cópia — é a guarda que o contrato do backend pede explicitamente.
-
-## Produtos — a tela LIGADA, e o que o contrato v1 ainda não cobre
-
-`GET /api/products` e `GET /api/products/{id}` estão publicados e a tela consome
-os dois (`src/data/produtos-api.ts`). O mock saiu do caminho: `src/mocks/produtos.ts`
-só fornece o **tipo**, o registro **em branco** do "Incluir" e as tabelas de apoio
-estáticas (mais o array que o boletim ainda lê).
-
-**O contrato é menor que a tela**, e isso é visível de propósito.
-
-### Listagem — 3 das 7 colunas da §6
-
-| Coluna da §6 | Campo no `ProductDto` | Situação |
-|---|---|---|
-| `Nosso Código` | `code` | **em tela** |
-| `Nossa Descrição` | `description` | **em tela** |
-| `Ativo` | `active` | **em tela** |
-| `Marca` | — | falta no DTO — coluna REMOVIDA |
-| `Fábrica` | — | falta no DTO — coluna REMOVIDA |
-| `Tipo de Produto` | — | falta no DTO — coluna REMOVIDA |
-| `Valor de Tabela` | — | falta no DTO (a §6.3 põe preço na VARIANTE) — coluna REMOVIDA |
-
-Coluna vazia em toda linha é pior que coluna ausente: lê-se como cadastro
-incompleto, quando o incompleto é o contrato. As quatro voltam quando o DTO
-crescer — a mudança é o `columns` de `src/routes/cadastros/produtos/index.tsx`.
-
-O `accessorKey` das colunas é o nome do campo **no contrato** (`code`,
-`description`, `active`), não o nome em português: ele viaja como `sortBy`, e a
-whitelist do servidor (`contrato-http-listagem.md`) é em inglês. Nome traduzido
-voltaria 400 ao clicar no cabeçalho.
-
-### Detalhe — 4 campos das 5 abas
-
-`ProductDetailDto` = `code`, `description`, `active` e `variants[]`. O formulário
-mantém as 5 abas da §6; o que o servidor não conhece aparece **em branco**, e a
-tela DIZ isso ao operador (aviso acima do formulário). Esconder as abas apagaria
-o que o cadastro precisa vir a ter; preenchê-las com mock daria dado de mentira
-com cara de dado do servidor.
-
-Da grade de variantes (§6.3), o mapeamento é `finish`→Acabamento, `size`→Tamanho,
-`active`→Ativo, `priceCents`→Valor de Tabela, `minStock`→Est.Mínimo. Ficam de
-fora: `Índice` e `Tipo de Valor` (não existem no DTO), `stockQty` (existe no DTO e
-não tem coluna na §6.3) e o `id` da variante (sem escrita, não há a quem devolvê-lo).
-
-### Escrita de produto não existe
-
-Não há `POST`/`PUT` de produto no contrato — conferido de novo em 2026-07-31,
-depois de `GET /api/partners` entrar. `Gravar` continua sem efeito no servidor
-(`TODO(contract)` em `produto-form.tsx`), e o "Incluir" abre um formulário que
-ainda não tem para onde enviar.
-
-## Divergências entre a UI e o contrato (achadas ao ler o OpenAPI)
-
-| Assunto | UI hoje | Contrato | Situação |
-|---|---|---|---|
-| Ordenação | `sort: { id, desc }` | `sortBy` + `sortDesc` | **resolvida** pelo adaptador |
-| Página vazia | `q` omitido quando vazio | `q` opcional | **resolvida** — campo vazio não viaja |
-| **Tipo do id** | `number` nos recursos ainda mock | **uuid (string)** | **resolvida em produtos** (ver abaixo); os outros recursos mudam quando seus endpoints saírem |
-| Erro em listagem sem empresa ativa | — | `GET /api/products` declara **409** | **resolvida** — o contrato de listagem revisou 500 → 409 em 2026-07-31, com o motivo: "ainda não escolhi empresa" é estado legítimo do cliente, não defeito |
-
-### O id: chave técnica × código do operador
-
-`docs/contrato/schema-canonico.sql` do backend resolve a dúvida:
-
-```sql
-CREATE TABLE products (
-  tenant_id uuid NOT NULL REFERENCES tenants(id),
-  id uuid NOT NULL, code text NOT NULL, description text NOT NULL,
-  PRIMARY KEY (tenant_id, id), UNIQUE (tenant_id, code)
-);
-```
-
-São **duas coisas diferentes**: `id` é chave técnica (uuid, nunca exibida) e
-`code` é o "Nosso Código" que o operador lê e digita — único por empresa. O front
-já tinha os dois separados (`Produto.id` × `Produto.nossoCodigo`), só com o tipo
-errado no primeiro.
-
-**Feito em produtos** (quando `GET /api/products/{id}` saiu): `Produto.id` é
-`string`, `produtoVazio()` nasce com id vazio (a chave é do servidor, não se
-inventa uuid no cliente), a rota `$produtoId` carrega o uuid como veio da URL e o
-mock passou a usar uuid determinístico.
-
-**Pendente nos demais recursos**, cada um quando seu endpoint sair — o
-`ResourceProvider` mock segue com `id: number` porque é o que os mocks têm. Migrar
-todos de uma vez, sem endpoint, seria trocar um id inventado por outro.
-
-Outras confirmações do mesmo arquivo, todas batendo com o que o front assumiu:
-
-- `product_tenant.price_cents bigint` — **dinheiro em centavos int**, como a UI.
-- `stock_qty numeric(14,3)` — **quantidade com 3 casas**.
-- `product_variants (finish, size)` e preço/estoque em `product_tenant` ligado à
-  **variante**, não ao produto — é a decisão V7 da frente visual, confirmada.
-- `employee_company.role` tem CHECK fechado: `owner`, `admin`, `operator-full`,
-  `operator-sales`, `viewer`. Virou `src/data/papeis.ts` (rótulo PT-BR na UI, o
-  identificador do contrato continua trafegando).
-
-## Fronteira única
+# Integração — o front é o dono do contrato
+
+`contracts/openapi-v1.json` **não é cópia de contrato alheio**: é a especificação
+de ENTRADA que o backend precisa implementar. Ele muda **só por PR neste
+repositório**; caminho que o front define antes de existir servidor entra
+marcado `Proposto`.
+
+O cliente é gerado dele (`pnpm codegen`, `@hey-api/openapi-ts`, saída commitada
+em `src/api/gerado/`, **nunca editada à mão**). O CI tem o passo
+`Codegen is up to date`: refaz o codegen e reprova se `src/api/gerado` divergir
+de `contracts/`. É a guarda inteira — não existe mais conferência contra
+repositório de backend.
+
+## Semânticas inegociáveis
+
+Quem implementar o contrato honra isto. Não são preferências: cada uma já está
+codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
+
+- **Envelope de listagem `{ rows, total }`.** `total` é o total **pós-filtro**,
+  não o da página — é dele que sai a paginação.
+- **`page` é 1-based.** Página 1 é a primeira; 0 não existe.
+- **`pageSize` tem teto 100.** Acima do teto a resposta volta truncada, e a UI
+  avisa que foi truncada (combo que corta em silêncio faz "não achei" e "não
+  existe" virarem a mesma coisa, e o operador cadastra duplicado).
+- **`sortBy` é whitelist e recusa com 400.** Campo fora da lista é erro, não
+  ordenação ignorada: ignorar faria a tela mostrar ordem errada sem sintoma. Por
+  isso o `accessorKey` das colunas é o nome **em inglês** do contrato.
+- **Erro é `application/problem+json`** (RFC 9457). O **409 de parceiro com
+  documento já cadastrado carrega `existingPartnerId`** — membro de extensão fora
+  do schema do `ProblemDetails`, e é ele que habilita "Vincular esta empresa ao
+  cadastro existente" (`POST /api/partners/{id}/link`). Sem esse campo o 409 vira
+  beco sem saída. Por isso `ErroDaApi` guarda o corpo cru.
+- **`mustChangePassword` bloqueia o domínio com 403, nunca 401.** 401 significa
+  "não autenticado" e derrubaria a sessão que acabou de ser criada — o usuário
+  está autenticado, só não pode operar antes de trocar a senha. A rota
+  `/trocar-senha` é a única que passa; trocar a senha invalida a sessão anterior.
+- **Empresa ativa vazia = lista vazia, não erro.** Sessão sem empresa escolhida é
+  estado legítimo do cliente. (O 409 documentado em listagem cobre o caso de
+  recurso que exige empresa; lista de escopo vazio devolve `{ rows: [], total: 0 }`.)
+- **`PUT` substitui o registro INTEIRO.** Corpo parcial apaga o que não veio —
+  por isso todo caminho de escrita monta o corpo a partir do registro inteiro
+  (`corpoDeEscrita`, `produtoParaContrato`), inclusive desativar (`active: false`).
+- **Dinheiro em centavos (int).** Nunca float, em lugar nenhum. Percentual com 4
+  casas implícitas (`10000` = 1%). Quantidade com até 3 casas. Datas ISO no dado.
+  CPF/CNPJ sem máscara no dado.
+- **Desativação é lógica.** Existe `active`; nada é excluído de verdade.
+
+## Como o dado chega à tela
 
 ```
 telas (routes/ + features/)
         │  só conhecem  →  data.<recurso>.list / .get / .empty
         ▼
-src/data/index.ts        ← REGISTRY: o único arquivo que muda
+src/data/index.ts        ← REGISTRY: o único arquivo que muda ao ligar um recurso
         │
         ▼
 src/data/provider.ts     ← contrato (ListProvider / ResourceProvider)
-        │  hoje  →  createMockProvider sobre src/mocks/
-        │  depois →  cliente gerado pelo codegen
+        │  mock   →  createMockProvider sobre src/mocks/
+        │  HTTP   →  createApiListProvider + cliente gerado
 ```
 
-Nenhum componente em `src/components/` ou `src/features/` importa de `src/mocks/`
-para buscar dado — só para **tipos** e para **tabelas de apoio estáticas**
-(`lookups.ts`, constantes como `UNIDADES`). Isso é verificável:
+Tela **nunca** importa `fetch*` de `src/mocks/` nem chama o cliente gerado
+direto. De `src/mocks/` só vêm **tipos** e **tabelas de apoio estáticas**.
+Trocar mock→HTTP mexe em `src/data/`, não na tela.
 
-```bash
-grep -rn "from '@/mocks/" src/routes src/features | grep -v "^.*import type"
-```
+**A entrada do registry tem a forma do que o CONTRATO oferece**, não a que a tela
+gostaria: expor um `get` mock ao lado de listagem real casaria uuid do servidor
+com id inventado e responderia "não encontrado" para registro que existe.
 
-## Contrato que o backend precisa honrar
+## Estado — o que já é HTTP
 
-`src/data/provider.ts` define o que a UI espera. `src/data/provider.test.ts` trava
-esse comportamento — **esses testes não devem mudar na integração**:
-
-| Operação | Assinatura | Endpoint esperado |
+| Fronteira | Caminhos | Onde |
 |---|---|---|
-| `list(state)` | `(TableQueryState) => Promise<PagedResult<T>>` | `GET /recurso?q=&sort=&page=&pageSize=` |
-| `get(id)` | `(number) => Promise<T \| null>` | `GET /recurso/{id}` → 404 vira `null` |
-| `empty(id)` | `(number) => T` | **local**, não é endpoint |
+| Sessão, empresa ativa, troca de senha | `/auth/login` · `/auth/logout` · `/auth/me` · `/auth/tenants` · `/auth/active-tenant` · `/auth/change-password` | `src/data/sessao.ts`, `empresas-api.ts` |
+| Listas de apoio (19 kinds) | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
+| Produtos (listagem, detalhe, escrita, desativar) | `GET`/`POST` `/api/products` · `GET`/`PUT` `/api/products/{id}` | `src/data/produtos-api.ts` |
+| Variantes (grade de Valores) | `POST` `/api/products/{productId}/variants` · `PUT` `…/variants/{id}` | `src/data/produtos-api.ts` |
+| Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
+| Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
 
-Regras já assumidas pela UI:
+**Ainda mock, por falta de caminho no contrato:** colaborador · orçamento ·
+pedido e ordem de compra · cidades · resumo do Boletim.
 
-- **Paginação 1-based**; `total` é o total **pós-filtro**, não o da página.
-- **Ordenação e filtro são do servidor** — `VitraDataTable` nunca filtra no cliente
-  (`manualSorting` / `manualPagination`). O `sort` viaja como `{ id, desc }`.
-- **Dinheiro em centavos (int)**, nunca float. Campos terminam em `Centavos`.
-- **Percentual com 4 casas implícitas** (`10000` = 1%) — `PERCENT_ESCALA`.
-- **Datas ISO** (`yyyy-mm-dd`) no dado; a formatação pt-BR é da borda.
-- **CPF/CNPJ sem máscara** no dado.
-- Desativação lógica: existe campo `ativo`; a UI nunca exclui de verdade.
-- **Consulta é a mesma tela** (`?modo=consulta`), não um endpoint separado: o
-  backend não precisa de rota read-only, só do mesmo `GET /recurso/{id}`.
+**Faltas conhecidas do contrato:** sem `DELETE` de variante (excluir linha da
+grade tira da TELA; a saída é desmarcar `Ativo` e gravar) · `Índice` e
+`Tipo de Valor` da §6.3 não existem no DTO · `Marca`, `Fábrica` e
+`Tipo de Produto` não existem no `ProductDto`. Coluna que o DTO não tem **sai da
+listagem** e campo que o servidor não guarda aparece **em branco**, com o
+`AvisoDeCobertura` dizendo isso ao operador — preencher com mock daria dado de
+mentira com cara de dado do servidor.
 
-## Passo a passo da troca
+## Parceiros — uma tabela, três telas
 
-1. **Gerar o cliente** — `@hey-api/openapi-ts` a partir do OpenAPI publicado
-   (Etapa 0 do `vitra-erp-py`, passo 9). Respeitar `minimumReleaseAge` do pnpm.
-2. **Substituir o corpo de cada entrada** em `src/data/index.ts`:
-   ```ts
-   clientes: {
-     list: (state) => api.listClientes({ query: state }),
-     get: (id) => api.getCliente({ path: { id } }).catch(naoEncontrado),
-     empty: clienteVazio,          // continua local
-   },
-   ```
-   O predicado `matches` some — quem filtra passa a ser o backend.
-3. **Trocar os tipos**: `src/mocks/<recurso>.ts` exporta `interface X` marcada com
-   `// TODO(contract)`. Passam a vir do codegen; os arrays de dado somem.
-4. **Trocar os schemas Zod**: cada `features/*/…-form.tsx` tem
-   `// TODO(contract): Zod do codegen substituirá este schema`. As mensagens de
-   validação em PT-BR precisam ser preservadas ou reaplicadas.
-5. **Gravar de verdade**: hoje todo `onGravar` é `console.info`. Vira `useMutation`
-   + `invalidateQueries` da chave do recurso. As chaves já existem
-   (`['clientes']`, `['produto', id]`…).
-6. **Rever `staleTime`**: o provider hoje usa `staleTime: Infinity` porque mock não
-   muda sozinho. Com backend real isso precisa cair.
+`GET /api/partners` serve **Fornecedor**, **Cliente** e **Profissional Externo**:
+são PAPÉIS do mesmo cadastro, e o filtro `role` decide qual. **Papel inválido é
+400**, não filtro ignorado — ignorado faria a tela de Fornecedores mostrar
+clientes sem ninguém desconfiar.
 
-## Onde estão os `TODO(contract)`
+A resposta junta duas origens: `legalName`, `tradeName`, `document`, `email` e os
+três papéis são do cadastro da **organização**; `code`, `paymentTerms` e `active`
+são do vínculo com a **empresa**. Por isso `Ativo` na tela é o `active` do
+vínculo — a pergunta do operador é "esta empresa trabalha com este fornecedor?".
 
-```bash
-grep -rn "TODO(contract)" src/
-```
-
-Categorias:
-- **tipos** (`src/mocks/*.ts`) — viram tipos do codegen;
-- **schemas Zod** (`src/features/*/*-form.tsx`) — viram schemas do codegen;
-- **tabelas de apoio que o contrato NÃO expõe como kind** (`UNIDADES`,
-  `TIPOS_VALOR`, `ACABAMENTOS`, `AMBIENTES`… em `src/data/tabelas.ts`) — seguem
-  locais. Os 19 **kinds** já vêm do servidor: `src/mocks/lookups.ts` não existe
-  mais;
-- **`TableFetcher`** (`src/lib/table-query.ts`) — o tipo já é o do contrato.
-
-## Dados inventados (não vieram da transcrição)
-
-A regra é **não inventar campo**. Onde a transcrição mostrava só o tipo do controle
-(`[combo]`) sem as opções, foram criadas listas locais — todas marcadas, todas
-precisam ser confirmadas contra o backend:
-
-| Constante | Arquivo | Situação |
-|---|---|---|
-| `UNIDADES` | `mocks/produtos.ts` | inventada — §6.1 não capturou as opções |
-| `TIPOS_VALOR` | `mocks/produtos.ts` | inventada — coluna cortada na captura §6.3 |
-| opções de `Código do Produto` | forms | inventadas a partir do valor visto (`Fornecedor`) |
-| `ORIGENS_PRODUTO` | `mocks/produtos.ts` | **não é invenção** — tabela oficial de origem ICMS |
-| `AMBIENTES` | `mocks/orcamentos.ts` | inventada — §8.2 mostra a grade vazia |
-| `DESTINOS` | `mocks/pedidos-compra.ts` | derivada da observação §7.4 (estoque × obra) |
+Incluir cria o cadastro com **o papel da tela e nenhum outro** (o schema exige ao
+menos um papel; marcar os três faria todo cadastro novo aparecer nas três
+listagens). **Vincular não edita:** o corpo do `link` só tem `code`,
+`paymentTerms` e `active`, senão "vincular" viraria caminho para sobrescrever em
+silêncio a razão social que a empresa vizinha cadastrou.
 
 ## Testes
 
-| Alvo | Como | Arquivo de exemplo |
-|---|---|---|
-| Tela inteira (rota + query + form) | `renderRoute('/url')` | `features/*/**.test.tsx` |
-| Componente com Query, sem router | `renderWithQuery(<X />)` | `components/vitra/data-table.test.tsx` |
-| Contrato de dados | `provider.list/get/empty` | `data/provider.test.ts` |
-| Semântica do mock (filtro/sort/página) | `pagedMock` direto | `mocks/query.test.ts` |
-| Cálculo puro (dinheiro, %, data) | função direta | `lib/formatters.test.ts`, `components/vitra/documento.test.ts` |
-| Modo consulta (§9 padrão 8) | `renderRoute('/url?modo=consulta')` | `components/vitra/cadastro-form.test.tsx` |
+Recurso HTTP se testa contra **servidor falso** (`instalarServidor`, `json`,
+`problema` em `src/test/servidor.ts`), nunca com mock do módulo. O cliente gerado
+chama `fetch(new Request(...))`: **verbo e corpo vêm do `Request`** — `init.method`
+dá sempre `GET`, e stub que casa só por caminho deixa `POST` cair na resposta do
+`GET`, com o teste passando sem asserir nada. Caminho sem rota declarada responde
+404 de propósito.
 
-Helpers em `src/test/utils.tsx` (`renderRoute`, `renderWithQuery`, `tableState`).
-Os testes de tela chamam os providers com `delayMs = 0` através das próprias telas.
-
-**O servidor falso já existe:** `src/test/servidor.ts` (`instalarServidor`,
-`json`, `problema`). Intercepta o `fetch`, não o SDK — assim o teste exercita o
-cliente gerado de verdade e quebra se o codegen mudar URL, parâmetro ou forma da
-resposta. Caminho sem rota declarada responde 404 de propósito: endpoint que a
-tela chama sem o teste saber aparece como falha, em vez de receber dado de outro.
-
-```ts
-beforeEach(() => {
-  servidor = instalarServidor({
-    '/api/produtos': () => ({ rows: [...], total: 1 }),
-    '/api/produtos/erro': () => problema(409, 'Sem empresa ativa.'),
-  })
-})
-afterEach(() => vi.unstubAllGlobals())
-```
-
-Usado hoje em `company-switcher.test.tsx` e `shell.test.tsx`. É o que substitui o
-provider mock nos testes de tela conforme cada recurso for ligado à API.
-
-**Existem dois mecanismos, por enquanto:** `renderRoute` (em `src/test/utils.tsx`)
-já instala um stub próprio de sessão válida, porque a guarda consulta `/auth/me`
-em toda rota; `instalarServidor` é o mapa de rotas para quem precisa de mais
-endpoints ou de estado entre chamadas. Nasceram em paralelo (login × empresa
-ativa) e fazem a mesma coisa por dentro — **unificar é dívida conhecida**: o
-`fetchStub` do `renderRoute` deveria ser montado pelo `instalarServidor`.
+Tela usa `renderRoute('/url')` (router real); componente isolado usa
+`renderWithQuery(<X />)` — ambos em `src/test/utils.tsx`. Recurso mock segue
+travado por `src/data/provider.test.ts`; os HTTP, por `src/data/<recurso>-api.test.ts`.
 
 ## Armadilhas conhecidas
 
-- `pnpm build` **não** regenera `src/routeTree.gen.ts` quando há rota nova: o script
-  é `tsc -b && vite build` e o `tsc` falha antes do plugin rodar. Rodar `pnpm dev`
-  uma vez para gerar, depois `pnpm check-types`.
+- **Um `Gravar` pode virar N requisições em endpoints diferentes e não há
+  transação entre elas** (produto + variantes). Falha no meio deixa o anterior
+  gravado: a mensagem tem de dizer qual linha caiu e mandar reabrir.
+- **Texto→número na borda:** vazio é `null` (ausência), texto inválido é
+  `undefined` (recusa). Colapsar os dois faria erro de digitação apagar dado em
+  silêncio (`parseQuantidade`).
+- **Repetição de consulta:** `repetirSeValeAPena` não repete 4xx. Com o retry
+  padrão do TanStack Query, um 409 deixaria a tela ~7s em esqueleto antes de
+  dizer o que o servidor respondeu de primeira.
+- **404 por id vira `null`**; qualquer outro status rejeita. Tratar 409 junto com
+  404 mandaria o operador procurar registro que está lá.
+- `pnpm build` **não** regenera `src/routeTree.gen.ts` quando há rota nova (o
+  script é `tsc -b && vite build` e o `tsc` falha antes do plugin rodar): rodar
+  `pnpm dev` uma vez, depois `pnpm check-types`.
 - Um `useFieldArray` externo sobre o mesmo array de uma `FormGrid` **não**
-  re-renderiza a tabela. Quem precisa inserir linha de fora usa a prop `actions`,
-  que entrega o `append` da própria grade.
+  re-renderiza a tabela. Quem insere linha de fora usa a prop `actions`.

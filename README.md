@@ -1,10 +1,10 @@
 # VITRA — Front (vitra-erp-web)
 
-SPA React do VITRA (ERP multi-empresa vendido a terceiros). **Fase atual: integração incremental** — o backend é o
-[`vitra-erp-dotnet`](https://github.com/doutorferr0/vitra-erp-dotnet), cujo
-OpenAPI versionado em `contracts/openapi-v1.json` gera os tipos com
-`@hey-api/openapi-ts`. Fronteiras já contratadas usam a API; as demais seguem em
-mock até o contrato correspondente ser publicado.
+SPA React do VITRA (ERP multi-empresa vendido a terceiros). **O front é o dono do
+contrato:** `contracts/openapi-v1.json` é a especificação que o backend precisa
+implementar, e é dela que `@hey-api/openapi-ts` gera os tipos. As fronteiras já
+descritas no contrato consomem HTTP; as demais seguem em mock até ganharem
+caminho no contrato. Ver **docs/integracao.md**.
 
 Instruções dos agentes: **CLAUDE.md** (AGENTS.md aponta pra lá). Roteiro: **docs/fase-visual-tarefas.md**.
 Fonte dos campos das telas: memória `projetos-claude` → `topicos/transcricaosoftlux.md` (20 telas do legado, 8 padrões).
@@ -16,20 +16,17 @@ pnpm install && pnpm dev   # http://localhost:5173
 pnpm check && pnpm check-types && pnpm test
 ```
 
-## Rodar com o backend
+## Rodar com um backend
 
 ```bash
-dotnet run --project src/Vitra.Api   # no vitra-erp-dotnet → :5199
-pnpm dev                             # aqui → :5173, com proxy para :5199
+VITE_API_PROXY=http://localhost:3000 pnpm dev   # endereço de quem implementa o contrato
 ```
 
-`pnpm dev` desvia `/api` e `/auth` para `http://localhost:5199` (proxy no
-`vite.config.ts`). Assim o front roda **mesma origem** e o cookie de sessão viaja
-sem `SameSite=None` nem CORS; não é preciso `.env` nem `VITE_API_URL`.
+`VITE_API_PROXY` é a **única** fonte do endereço — não há porta padrão, porque não
+há servidor canônico para chutar. Com ela, `pnpm dev` desvia `/api` e `/auth` para
+lá (proxy no `vite.config.ts`): o front roda **mesma origem** e o cookie de sessão
+viaja sem `SameSite=None` nem CORS, dispensando `.env` e `VITE_API_URL`.
 
-```bash
-VITE_API_PROXY=http://localhost:5000 pnpm dev   # backend em outra porta/host
-```
-
-Sem o backend no ar, as telas já ligadas (login, seletor de empresa, produtos)
-mostram o estado de falha — que é o comportamento correto, não um bug.
+Sem a variável o desvio não é montado. As telas já ligadas (login, seletor de
+empresa, produtos, parceiros) mostram o estado de falha — que é o comportamento
+correto, não um bug.

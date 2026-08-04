@@ -6,6 +6,7 @@ import {
   produtoDoContrato,
   produtoParaContrato,
   produtosApi,
+  varianteParaContrato,
 } from '@/data/produtos-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
@@ -197,7 +198,7 @@ describe('escrita de produto', () => {
     })
     const novo = { ...produtosApi.empty(), nossoCodigo: '9999', nossaDescricao: 'X' }
 
-    const gravado = await gravarProduto(novo)
+    const gravado = await gravarProduto({ values: novo })
 
     const chamada = servidor.em(URL_PRODUTOS)[0]
     expect(chamada?.metodo).toBe('POST')
@@ -211,7 +212,10 @@ describe('escrita de produto', () => {
     })
     const produto = produtoDoContrato(detalhe())
 
-    await gravarProduto({ ...produto, nossaDescricao: 'DESCRIÇÃO NOVA' })
+    await gravarProduto({
+      values: { ...produto, nossaDescricao: 'DESCRIÇÃO NOVA' },
+      original: produto,
+    })
 
     const chamada = servidor.em(`${URL_PRODUTOS}/${ID}`)[0]
     expect(chamada?.metodo).toBe('PUT')
@@ -231,9 +235,135 @@ describe('escrita de produto', () => {
     })
     const produto = produtoDoContrato(detalhe())
 
-    const erro = (await gravarProduto(produto).catch((e: unknown) => e)) as ErroDaApi
+    const erro = (await gravarProduto({ values: produto, original: produto }).catch(
+      (e: unknown) => e,
+    )) as ErroDaApi
     expect(erro).toBeInstanceOf(ErroDaApi)
     expect(erro.status).toBe(403)
     expect(erro.detail).toBe('Sem permissão para gravar nesta empresa.')
+  })
+})
+
+describe('escrita de variante (a grade de Valores)', () => {
+  const VARIANTE = '9c858901-8a57-4791-81fe-4c455b099bc9'
+  const URL_VARIANTES = `${URL_PRODUTOS}/${ID}/variants`
+
+  it('corpo tem os 5 campos do contrato — estoque atual NÃO é um deles', () => {
+    const [linha] = produtoDoContrato(detalhe()).variantes
+
+    const corpo = linha ? varianteParaContrato(linha) : null
+
+    // `stockQty` está no DTO de leitura e fora do de escrita: o saldo é derivado
+    // do kardex (append-only), então não se grava estoque, grava-se movimento.
+    expect(corpo).toEqual({
+      finish: 'PRETO',
+      size: 'ÚNICO',
+      active: true,
+      priceCents: 8990,
+      minStock: 2,
+    })
+  })
+
+  it('Est.Mínimo em pt-BR vira número; vazio vira null', () => {
+    const [linha] = produtoDoContrato(detalhe()).variantes
+    if (!linha) throw new Error('sem linha')
+
+    expect(varianteParaContrato({ ...linha, estoqueMinimo: '1.234,5' }).minStock).toBe(1234.5)
+    expect(varianteParaContrato({ ...linha, estoqueMinimo: '' }).minStock).toBeNull()
+  })
+
+  it('linha nova (sem id) vira POST no produto', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PRODUTOS}/${ID}`]: () => json(detalhe()),
+      [URL_VARIANTES]: () => json({ id: 'nova', finish: 'BRANCO', size: 'P' }, 201),
+    })
+    const produto = produtoDoContrato(detalhe())
+    const comLinhaNova = {
+      ...produto,
+      variantes: [
+        ...produto.variantes,
+        {
+          id: null,
+          ativo: true,
+          acabamento: 'BRANCO',
+          tamanho: 'P',
+          valorTabelaCentavos: 4990,
+          indice: '',
+          estoqueMinimo: '3',
+          tipoValor: null,
+        },
+      ],
+    }
+
+    await gravarProduto({ values: comLinhaNova, original: produto })
+
+    const chamada = servidor.em(URL_VARIANTES)[0]
+    expect(chamada?.metodo).toBe('POST')
+    expect(chamada?.corpo).toEqual({
+      finish: 'BRANCO',
+      size: 'P',
+      active: true,
+      priceCents: 4990,
+      minStock: 3,
+    })
+  })
+
+  it('linha alterada vira PUT no id da variante', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PRODUTOS}/${ID}`]: () => json(detalhe()),
+      [`${URL_VARIANTES}/${VARIANTE}`]: () => json({ id: VARIANTE }),
+    })
+    const produto = produtoDoContrato(detalhe())
+    const editado = {
+      ...produto,
+      variantes: produto.variantes.map((v) => ({ ...v, valorTabelaCentavos: 12345 })),
+    }
+
+    await gravarProduto({ values: editado, original: produto })
+
+    const chamada = servidor.em(`${URL_VARIANTES}/${VARIANTE}`)[0]
+    expect(chamada?.metodo).toBe('PUT')
+    expect(chamada?.corpo).toMatchObject({ priceCents: 12345, finish: 'PRETO' })
+  })
+
+  // A grade tem N linhas e o Gravar é um clique: mandar todas seria N escritas
+  // por gravação, cada uma carimbando alteração em registro que ninguém tocou.
+  it('linha intocada não vira requisição nenhuma', async () => {
+    const servidor = instalarServidor({
+      [`${URL_PRODUTOS}/${ID}`]: () => json(detalhe()),
+    })
+    const produto = produtoDoContrato(detalhe())
+
+    await gravarProduto({
+      values: { ...produto, nossaDescricao: 'SÓ O PRODUTO' },
+      original: produto,
+    })
+
+    expect(servidor.chamadas.filter((c) => c.caminho.includes('/variants'))).toEqual([])
+  })
+
+  // Sem transação entre endpoints: quando a variante falha, o produto JÁ foi
+  // gravado. A mensagem tem de dizer isso, senão o operador tenta de novo sobre
+  // um estado que já mudou.
+  it('falha na variante diz qual linha caiu e que o produto já foi gravado', async () => {
+    instalarServidor({
+      [`${URL_PRODUTOS}/${ID}`]: () => json(detalhe()),
+      [`${URL_VARIANTES}/${VARIANTE}`]: () => problema(409, 'Acabamento repetido.', 'Conflict'),
+    })
+    const produto = produtoDoContrato(detalhe())
+    const editado = {
+      ...produto,
+      variantes: produto.variantes.map((v) => ({ ...v, valorTabelaCentavos: 1 })),
+    }
+
+    const erro = (await gravarProduto({ values: editado, original: produto }).catch(
+      (e: unknown) => e,
+    )) as ErroDaApi
+
+    expect(erro).toBeInstanceOf(ErroDaApi)
+    expect(erro.status).toBe(409)
+    expect(erro.detail).toBe('Acabamento repetido.')
+    expect(erro.message).toContain('PRETO / ÚNICO')
+    expect(erro.message).toContain('reabra o produto')
   })
 })

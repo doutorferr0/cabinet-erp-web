@@ -1,4 +1,11 @@
-import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
+import {
+  PERCENT_ESCALA,
+  formatDateBR,
+  formatMoneyBRL,
+  formatPercent,
+  formatQuantidade,
+  parseQuantidade,
+} from '@/lib/formatters'
 import { describe, expect, it } from 'vitest'
 
 /** Regras de borda do CLAUDE.md: centavos int, ISO no dado, pt-BR na exibição. */
@@ -38,5 +45,31 @@ describe('formatPercent', () => {
     expect(formatPercent(PERCENT_ESCALA)).toBe('1,0000')
     expect(formatPercent(10 * PERCENT_ESCALA)).toBe('10,0000')
     expect(formatPercent(0)).toBe('0,0000')
+  })
+})
+
+describe('parseQuantidade', () => {
+  it('lê o pt-BR que a grade digita', () => {
+    expect(parseQuantidade('2')).toBe(2)
+    expect(parseQuantidade('2,5')).toBe(2.5)
+    expect(parseQuantidade('1.234,5')).toBe(1234.5)
+  })
+
+  // Ausência não é zero: 'estoque mínimo 0' é uma regra, 'não definido' é outra.
+  it('vazio é null, não 0', () => {
+    expect(parseQuantidade('')).toBeNull()
+    expect(parseQuantidade('   ')).toBeNull()
+  })
+
+  // `undefined` para texto inválido é o que impede o formulário de mandar
+  // 'sem valor' ao servidor por causa de um erro de digitação.
+  it('texto que não é número é undefined, distinto de vazio', () => {
+    expect(parseQuantidade('1o2')).toBeUndefined()
+    expect(parseQuantidade('abc')).toBeUndefined()
+  })
+
+  it('é a inversa da formatQuantidade nos casos do contrato', () => {
+    expect(parseQuantidade(formatQuantidade(12.5))).toBe(12.5)
+    expect(parseQuantidade(formatQuantidade(null))).toBeNull()
   })
 })

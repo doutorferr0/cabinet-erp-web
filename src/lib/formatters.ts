@@ -14,6 +14,25 @@ export function formatQuantidade(valor: number | null | undefined): string {
   return valor.toLocaleString('pt-BR', { maximumFractionDigits: 3 })
 }
 
+/**
+ * Inversa da `formatQuantidade`: o que o operador digitou → número do contrato.
+ *
+ * Existe porque a grade guarda quantidade como TEXTO (é campo de digitação) e o
+ * `VariantWriteRequest` a quer como número. Vazio vira `null` — ausência não é
+ * zero, e "estoque mínimo 0" é uma regra diferente de "não definido".
+ *
+ * Texto que não é número devolve `undefined`, não `null`: confundir os dois
+ * mandaria ao servidor um "sem valor" que o operador nunca pediu. Quem recebe
+ * `undefined` recusa a gravação — ver o schema da grade em `produto-form.tsx`.
+ */
+export function parseQuantidade(texto: string): number | null | undefined {
+  const limpo = texto.trim()
+  if (limpo === '') return null
+  // pt-BR: ponto separa milhar, vírgula separa decimal.
+  const numero = Number(limpo.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(numero) ? numero : undefined
+}
+
 /** Datas: ISO (yyyy-mm-dd) no dado, pt-BR na exibição (CLAUDE.md). */
 export function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return ''

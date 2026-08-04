@@ -25,6 +25,14 @@ export interface ProdutoFornecedor {
 
 /** Grade de valores por variante (Acabamento × Tamanho) — §6.3. */
 export interface ProdutoVariante {
+  /**
+   * Id da variante no servidor (uuid), ou `null` na linha que o operador acabou
+   * de incluir na grade. É ele que decide o verbo: `null` vira `POST` (variante
+   * nova), preenchido vira `PUT` naquele id. A leitura descartava este campo
+   * enquanto não havia escrita de variante — mantê-lo fora agora faria alterar
+   * uma linha existente criar outra.
+   */
+  id: string | null
   ativo: boolean
   acabamento: string
   tamanho: string
@@ -290,6 +298,8 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
     valorTabelaCentavos: valor,
     variantes: [
       {
+        // Dado de mock não tem id de servidor — quem lê do contrato preenche.
+        id: null,
         ativo: true,
         acabamento: acab,
         tamanho: 'ÚNICO',

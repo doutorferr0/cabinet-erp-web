@@ -51,6 +51,11 @@ export type PagedResultOfProductDto = {
     total: number;
 };
 
+export type PagedResultOfStockMovementDto = {
+    rows: Array<StockMovementDto>;
+    total: number;
+};
+
 export type PartnerDto = {
     id: string;
     code: null | string;
@@ -138,8 +143,31 @@ export type SessaoAtual = {
     mustChangePassword: boolean;
 };
 
+export type StockMovementDto = {
+    id: string;
+    variantId: string;
+    delta: number;
+    balanceAfter: number;
+    reason: string;
+    occurredAt: string;
+    employeeId: null | string;
+};
+
+export type StockMovementRequest = {
+    delta: null | number;
+    reason: null | string;
+};
+
 export type TrocarEmpresaRequest = {
     tenantId: string;
+};
+
+export type VariantWriteRequest = {
+    finish: null | string;
+    size: null | string;
+    active: null | boolean;
+    priceCents: null | number;
+    minStock: null | number;
 };
 
 export type VinculoDeEmpresa = {
@@ -359,6 +387,85 @@ export type UpdateProductResponses = {
 
 export type UpdateProductResponse = UpdateProductResponses[keyof UpdateProductResponses];
 
+export type CreateVariantData = {
+    body: VariantWriteRequest;
+    path: {
+        productId: string;
+    };
+    query?: never;
+    url: '/api/products/{productId}/variants';
+};
+
+export type CreateVariantErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type CreateVariantError = CreateVariantErrors[keyof CreateVariantErrors];
+
+export type CreateVariantResponses = {
+    /**
+     * Created
+     */
+    201: ProductVariantDto;
+};
+
+export type CreateVariantResponse = CreateVariantResponses[keyof CreateVariantResponses];
+
+export type UpdateVariantData = {
+    body: VariantWriteRequest;
+    path: {
+        productId: string;
+        id: string;
+    };
+    query?: never;
+    url: '/api/products/{productId}/variants/{id}';
+};
+
+export type UpdateVariantErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type UpdateVariantError = UpdateVariantErrors[keyof UpdateVariantErrors];
+
+export type UpdateVariantResponses = {
+    /**
+     * OK
+     */
+    200: ProductVariantDto;
+};
+
+export type UpdateVariantResponse = UpdateVariantResponses[keyof UpdateVariantResponses];
+
 export type ListPartnersData = {
     body?: never;
     path?: never;
@@ -501,6 +608,81 @@ export type LinkPartnerResponses = {
 };
 
 export type LinkPartnerResponse = LinkPartnerResponses[keyof LinkPartnerResponses];
+
+export type ListStockMovementsData = {
+    body?: never;
+    path: {
+        variantId: string;
+    };
+    query?: {
+        sortBy?: string;
+        sortDesc?: boolean;
+        page?: number;
+        pageSize?: number;
+    };
+    url: '/api/variants/{variantId}/stock-movements';
+};
+
+export type ListStockMovementsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type ListStockMovementsError = ListStockMovementsErrors[keyof ListStockMovementsErrors];
+
+export type ListStockMovementsResponses = {
+    /**
+     * OK
+     */
+    200: PagedResultOfStockMovementDto;
+};
+
+export type ListStockMovementsResponse = ListStockMovementsResponses[keyof ListStockMovementsResponses];
+
+export type CreateStockMovementData = {
+    body: StockMovementRequest;
+    path: {
+        variantId: string;
+    };
+    query?: never;
+    url: '/api/variants/{variantId}/stock-movements';
+};
+
+export type CreateStockMovementErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
+};
+
+export type CreateStockMovementError = CreateStockMovementErrors[keyof CreateStockMovementErrors];
+
+export type CreateStockMovementResponses = {
+    /**
+     * Created
+     */
+    201: StockMovementDto;
+};
+
+export type CreateStockMovementResponse = CreateStockMovementResponses[keyof CreateStockMovementResponses];
 
 export type AuthLoginData = {
     body: LoginRequest;

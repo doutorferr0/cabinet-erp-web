@@ -3,8 +3,15 @@ import type {
   ProductDto,
   ProductVariantDto,
   ProductWriteRequest,
+  VariantWriteRequest,
 } from '@/api/gerado'
-import { createProduct, getProduct, updateProduct } from '@/api/gerado'
+import {
+  createProduct,
+  createVariant,
+  getProduct,
+  updateProduct,
+  updateVariant,
+} from '@/api/gerado'
 import {
   ErroDaApi,
   createApiListProvider,
@@ -12,7 +19,7 @@ import {
   itemOuNulo,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
-import { formatQuantidade } from '@/lib/formatters'
+import { formatQuantidade, parseQuantidade } from '@/lib/formatters'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 import { type Produto, type ProdutoVariante, produtoVazio } from '@/mocks/produtos'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -32,16 +39,24 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
  * campo-a-campo do que falta está em `docs/integracao.md`; a tela avisa o
  * operador em vez de deixar o branco passar por dado.
  *
- * ## A escrita é MENOR que a leitura
+ * ## A escrita é REPARTIDA, e continua menor que a tela
  *
- * `POST /api/products` e `PUT /api/products/{id}` chegaram com
- * `ProductWriteRequest` de 3 campos (`code`, `description`, `active`) — menos
- * que o detalhe, que também lê a grade de variantes. Gravar envia SÓ os 3; a
- * grade e as demais abas seguem sem escrita e a tela diz isso. O corpo NÃO leva
- * `id` nem `tenantId` (decisão do backend: a empresa vem da sessão, o id vem da
- * rota — campo que o cliente não escolhe não existe no corpo). Na escrita, o
- * escopo errado não falha em silêncio: o RLS recusa com 403 e o `detail` chega
- * à tela.
+ * O produto grava por `POST /api/products` e `PUT /api/products/{id}`, com
+ * `ProductWriteRequest` de 3 campos (`code`, `description`, `active`). A grade de
+ * Valores grava por endpoint PRÓPRIO — `POST/PUT
+ * /api/products/{productId}/variants[/{id}]` —, então um `Gravar` da tela pode
+ * virar várias requisições, e não há transação entre elas (o contrato não
+ * oferece uma). As demais abas seguem sem escrita, e a tela diz isso.
+ *
+ * Nenhum corpo leva `id` ou `tenantId` (decisão do backend: a empresa vem da
+ * sessão, o id vem da rota — campo que o cliente não escolhe não existe no
+ * corpo). Na escrita, o escopo errado não falha em silêncio: o RLS recusa com
+ * 403 e o `detail` chega à tela.
+ *
+ * **O que NÃO se escreve:** estoque atual. Desde o kardex (`stock_movements`,
+ * append-only), o saldo é derivado de movimento — `POST
+ * /api/variants/{variantId}/stock-movements` existe no contrato e ainda não tem
+ * tela; enquanto não tiver, a grade não finge que ajusta estoque.
  */
 
 export const URL_PRODUTOS = '/api/products'
@@ -59,11 +74,16 @@ export const ORDENAVEIS: readonly string[] = ['code', 'description', 'active']
  *
  * `indice` e `tipoValor` ficam vazios: não existem no `ProductVariantDto`, e
  * preencher com algo plausível seria inventar dado. `stockQty` vem no DTO e não
- * tem coluna na grade — a §6.3 mostra `Est.Mínimo`, não estoque atual.
- * O `id` da variante também se perde: sem endpoint de escrita, não há a quem devolvê-lo.
+ * tem coluna na grade — a §6.3 mostra `Est.Mínimo`, não estoque atual. E desde o
+ * kardex (`/api/variants/{variantId}/stock-movements`) o estoque atual é
+ * DERIVADO: não se escreve nele, escreve-se movimento.
+ *
+ * O `id` da variante agora é PRESERVADO: com `PUT …/variants/{id}` no contrato,
+ * é ele que separa "alterar esta linha" de "criar outra".
  */
 export function varianteDoContrato(dto: ProductVariantDto): ProdutoVariante {
   return {
+    id: dto.id,
     ativo: dto.active,
     acabamento: dto.finish,
     tamanho: dto.size,
@@ -135,13 +155,13 @@ export interface CamposGravaveis {
 }
 
 /**
- * Registro do formulário → corpo da escrita do contrato.
+ * Registro do formulário → corpo da escrita do PRODUTO.
  *
- * SÓ os 3 campos do `ProductWriteRequest`. A grade de variantes aparece na
- * leitura mas NÃO viaja — o DTO de escrita não a tem, e mandá-la seria pedir ao
- * servidor que ignorasse campo (o backend escolheu o contrário: o que o cliente
- * não deveria escolher não existe no corpo). `id` e `tenantId` ficam fora pelo
- * mesmo motivo: o id vai na rota do PUT e a empresa vem da sessão.
+ * SÓ os 3 campos do `ProductWriteRequest`. A grade de variantes NÃO entra aqui —
+ * não porque não se grave (agora se grava), mas porque ela tem endpoint PRÓPRIO:
+ * `POST/PUT /api/products/{productId}/variants[/{id}]`. Empacotá-la neste corpo
+ * seria pedir ao servidor que ignorasse campo. `id` e `tenantId` ficam fora pelo
+ * motivo de sempre: o id vai na rota do PUT e a empresa vem da sessão.
  */
 export function produtoParaContrato(values: CamposGravaveis): ProductWriteRequest {
   return {
@@ -173,7 +193,98 @@ export function corpoDeDesativacao(linha: ProductDto): ProductWriteRequest {
 }
 
 /**
- * A única saída de escrita de produto: `id` vazio = Incluir (POST → 201), senão
+ * Linha da grade → corpo da escrita da VARIANTE.
+ *
+ * Cinco campos, e o que falta importa: **`stockQty` não existe no
+ * `VariantWriteRequest`**. O estoque atual virou saldo derivado do kardex
+ * (`stock_movements`, append-only — ADR-009 do backend), então não se escreve
+ * nele: escreve-se movimento, por outro endpoint. `Est.Mínimo` continua sendo do
+ * cadastro e viaja daqui.
+ *
+ * `indice` e `tipoValor` da §6.3 seguem sem lugar no contrato — a grade os mostra
+ * e eles não vão a lugar nenhum. É o mesmo tipo de buraco das outras abas, e a
+ * tela avisa em vez de fingir que gravou.
+ */
+export function varianteParaContrato(v: ProdutoVariante): VariantWriteRequest {
+  const minStock = parseQuantidade(v.estoqueMinimo)
+  if (minStock === undefined) {
+    // Barrado antes pelo schema do formulário; aqui é rede de segurança —
+    // mandar `null` por texto inválido apagaria o mínimo sem ninguém pedir.
+    throw new Error(`Est.Mínimo inválido na variante ${v.acabamento || '(sem acabamento)'}.`)
+  }
+  return {
+    finish: v.acabamento,
+    size: v.tamanho,
+    active: v.ativo,
+    priceCents: v.valorTabelaCentavos,
+    minStock,
+  }
+}
+
+/** Duas linhas iguais no que o contrato grava — o que não viaja não conta. */
+function varianteMudou(antes: ProdutoVariante, agora: ProdutoVariante): boolean {
+  const a = varianteParaContrato(antes)
+  const b = varianteParaContrato(agora)
+  return (
+    a.finish !== b.finish ||
+    a.size !== b.size ||
+    a.active !== b.active ||
+    a.priceCents !== b.priceCents ||
+    a.minStock !== b.minStock
+  )
+}
+
+/**
+ * Grava a grade de Valores: linha sem `id` vira `POST`, linha alterada vira `PUT`.
+ *
+ * **Linha inalterada não vira requisição.** A grade tem N linhas e o `Gravar` é
+ * um clique: mandar todas seria N escritas por gravação, cada uma com sua chance
+ * de 409 e cada uma carimbando alteração em registro que ninguém tocou.
+ *
+ * **Sequencial, não em paralelo:** o erro precisa apontar QUAL linha falhou, e
+ * disparar as escritas juntas embaralharia a ordem das mensagens.
+ *
+ * **Não há transação entre endpoints** — o contrato não oferece uma. Se a
+ * terceira variante falhar, o produto e as duas anteriores já estão gravados; a
+ * mensagem diz isso e manda reabrir o produto antes de tentar de novo, porque a
+ * grade em tela ainda mostra como novas as linhas que já foram criadas.
+ */
+export async function gravarVariantes(
+  produtoId: string,
+  variantes: readonly ProdutoVariante[],
+  originais: readonly ProdutoVariante[],
+): Promise<void> {
+  const antes = new Map(originais.filter((v) => v.id).map((v) => [v.id, v]))
+
+  for (const variante of variantes) {
+    const anterior = variante.id ? antes.get(variante.id) : undefined
+    if (anterior && !varianteMudou(anterior, variante)) continue
+
+    const body = varianteParaContrato(variante)
+    const resposta = variante.id
+      ? await updateVariant({ path: { productId: produtoId, id: variante.id }, body })
+      : await createVariant({ path: { productId: produtoId }, body })
+
+    if (resposta.error || !resposta.data) {
+      const onde = `${variante.acabamento || '(sem acabamento)'} / ${variante.tamanho || '(sem tamanho)'}`
+      throw new ErroDaApi(
+        `Falha ao gravar a variante ${onde}. O produto já foi gravado — reabra o produto antes de tentar de novo.`,
+        resposta.response?.status ?? 0,
+        detalheDoProblema(resposta.error),
+      )
+    }
+  }
+}
+
+/** O que o `Gravar` manda: o registro editado e o que veio do servidor. */
+export interface GravacaoDeProduto {
+  values: Produto
+  /** Registro como o servidor o devolveu; ausente no Incluir. */
+  original?: Produto | null
+}
+
+/**
+ * A única saída de escrita do PRODUTO: `id` vazio = Incluir (POST → 201), senão
  * Alterar (PUT → 200). Recebe o corpo PRONTO porque nem todo caminho parte do
  * formulário — a desativação parte da linha da listagem.
  *
@@ -195,9 +306,17 @@ export async function escreverProduto(id: string, body: ProductWriteRequest): Pr
   return resposta.data
 }
 
-/** `Gravar` do formulário: o registro inteiro vira corpo e vai pela porta única. */
-export async function gravarProduto(values: Produto): Promise<ProductDto> {
-  return escreverProduto(values.id, produtoParaContrato(values))
+/**
+ * `Gravar` do formulário: o produto pela porta única e, depois, a grade de
+ * Valores no endpoint das variantes.
+ *
+ * O produto vem PRIMEIRO porque a variante pendura no id dele — no Incluir, esse
+ * id só existe depois do 201.
+ */
+export async function gravarProduto({ values, original }: GravacaoDeProduto): Promise<ProductDto> {
+  const gravado = await escreverProduto(values.id, produtoParaContrato(values))
+  await gravarVariantes(gravado.id, values.variantes, original?.variantes ?? [])
+  return gravado
 }
 
 /**

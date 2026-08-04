@@ -14,9 +14,11 @@ import {
 } from '@/api/gerado'
 import {
   ErroDaApi,
+  type RespostaDaApi,
   createApiListProvider,
   detalheDoProblema,
   itemOuNulo,
+  respostaOk,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { formatQuantidade, parseQuantidade } from '@/lib/formatters'
@@ -132,7 +134,7 @@ export const produtosApi: ProdutosProvider = {
   ...createApiListProvider<ProductDto>({ url: URL_PRODUTOS }),
 
   async get(id) {
-    const dto = itemOuNulo(await getProduct({ path: { id } }), `o produto ${id}`)
+    const dto = itemOuNulo<ProductDetailDto>(await getProduct(id), `o produto ${id}`)
     return dto ? produtoDoContrato(dto) : null
   },
 
@@ -261,16 +263,16 @@ export async function gravarVariantes(
     if (anterior && !varianteMudou(anterior, variante)) continue
 
     const body = varianteParaContrato(variante)
-    const resposta = variante.id
-      ? await updateVariant({ path: { productId: produtoId, id: variante.id }, body })
-      : await createVariant({ path: { productId: produtoId }, body })
+    const resposta: RespostaDaApi = variante.id
+      ? await updateVariant(produtoId, variante.id, body)
+      : await createVariant(produtoId, body)
 
-    if (resposta.error || !resposta.data) {
+    if (!respostaOk(resposta) || !resposta.data) {
       const onde = `${variante.acabamento || '(sem acabamento)'} / ${variante.tamanho || '(sem tamanho)'}`
       throw new ErroDaApi(
         `Falha ao gravar a variante ${onde}. O produto já foi gravado — reabra o produto antes de tentar de novo.`,
-        resposta.response?.status ?? 0,
-        detalheDoProblema(resposta.error),
+        resposta.status,
+        detalheDoProblema(resposta.data),
       )
     }
   }
@@ -294,16 +296,16 @@ export interface GravacaoDeProduto {
  * a frase que o backend escolheu para o caso.
  */
 export async function escreverProduto(id: string, body: ProductWriteRequest): Promise<ProductDto> {
-  const resposta = id ? await updateProduct({ path: { id }, body }) : await createProduct({ body })
+  const resposta: RespostaDaApi = id ? await updateProduct(id, body) : await createProduct(body)
 
-  if (resposta.error || !resposta.data) {
+  if (!respostaOk(resposta) || !resposta.data) {
     throw new ErroDaApi(
       'Falha ao gravar o produto.',
-      resposta.response?.status ?? 0,
-      detalheDoProblema(resposta.error),
+      resposta.status,
+      detalheDoProblema(resposta.data),
     )
   }
-  return resposta.data
+  return resposta.data as ProductDto
 }
 
 /**

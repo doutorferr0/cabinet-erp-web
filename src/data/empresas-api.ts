@@ -1,5 +1,6 @@
 import type { VinculoDeEmpresa } from '@/api/gerado'
 import { authSetActiveTenant, authTenants } from '@/api/gerado'
+import { type RespostaDaApi, dadosOuErro, respostaOk } from '@/data/api-provider'
 import { useSessao } from '@/data/sessao'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -32,9 +33,8 @@ export function useEmpresasDaSessao(): EmpresasDaSessao {
   const vinculos = useQuery({
     queryKey: CHAVE_VINCULOS,
     queryFn: async () => {
-      const { data, error } = await authTenants()
-      if (error || !data) throw new Error('Falha ao carregar as empresas do usuário.')
-      return data
+      const resposta: RespostaDaApi = await authTenants()
+      return dadosOuErro<VinculoDeEmpresa[]>(resposta, 'Falha ao carregar as empresas do usuário.')
     },
   })
 
@@ -52,8 +52,8 @@ export function useEmpresasDaSessao(): EmpresasDaSessao {
    */
   const troca = useMutation({
     mutationFn: async (tenantId: string) => {
-      const { error } = await authSetActiveTenant({ body: { tenantId } })
-      if (error) throw new Error('Falha ao trocar de empresa.')
+      const resposta: RespostaDaApi = await authSetActiveTenant({ tenantId })
+      if (!respostaOk(resposta)) throw new Error('Falha ao trocar de empresa.')
     },
     onSuccess: () => queryClient.invalidateQueries(),
   })

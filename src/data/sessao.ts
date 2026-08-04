@@ -1,11 +1,14 @@
 import {
   type ChangePasswordRequest,
+  type LoginOk,
   type LoginRequest,
+  type SessaoAtual,
   authChangePassword,
   authLogin,
   authLogout,
   authMe,
 } from '@/api/gerado'
+import { type RespostaDaApi, detalheDoProblema } from '@/data/api-provider'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -31,12 +34,14 @@ export function useSessao() {
     queryKey: SESSAO_KEY,
     retry: false,
     queryFn: async () => {
-      const { data, response } = await authMe()
-      // Sem `response` a requisição nem saiu (rede) — falha, não "sem sessão".
-      if (!response) throw new Error('Falha ao consultar a sessão.')
-      if (response.status === 401) return null
-      if (!data) throw new Error('Falha ao consultar a sessão.')
-      return data
+      const resposta: RespostaDaApi = await authMe()
+      // `status: 0` = a requisição nem saiu (rede) — falha, não "sem sessão".
+      if (resposta.status === 0) throw new Error('Falha ao consultar a sessão.')
+      if (resposta.status === 401) return null
+      if (resposta.status !== 200 || !resposta.data) {
+        throw new Error('Falha ao consultar a sessão.')
+      }
+      return resposta.data as SessaoAtual
     },
   })
 }
@@ -59,9 +64,13 @@ export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: LoginRequest) => {
-      const { data, error } = await authLogin({ body })
-      if (!data) throw new Error(error?.detail ?? 'Não foi possível entrar. Tente de novo.')
-      return data
+      const resposta: RespostaDaApi = await authLogin(body)
+      if (resposta.status !== 200 || !resposta.data) {
+        throw new Error(
+          detalheDoProblema(resposta.data) ?? 'Não foi possível entrar. Tente de novo.',
+        )
+      }
+      return resposta.data as LoginOk
     },
     onSuccess: () => queryClient.invalidateQueries(),
   })
@@ -84,8 +93,8 @@ export function useLogout() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async () => {
-      const { error, response } = await authLogout()
-      if (error || response?.status !== 204) {
+      const resposta: RespostaDaApi = await authLogout()
+      if (resposta.status !== 204) {
         throw new Error('Não foi possível sair. Tente de novo.')
       }
     },
@@ -108,9 +117,11 @@ export function useTrocarSenha() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (body: ChangePasswordRequest) => {
-      const { error, response } = await authChangePassword({ body })
-      if (error || response?.status !== 204) {
-        throw new Error(error?.detail ?? 'Não foi possível trocar a senha. Tente de novo.')
+      const resposta: RespostaDaApi = await authChangePassword(body)
+      if (resposta.status !== 204) {
+        throw new Error(
+          detalheDoProblema(resposta.data) ?? 'Não foi possível trocar a senha. Tente de novo.',
+        )
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSAO_KEY }),

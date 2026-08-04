@@ -1,5 +1,5 @@
 import type { ProblemDetails } from '@/api/gerado'
-import { client } from '@/api/gerado/client.gen'
+import { apiFetch } from '@/api/http'
 import type { ListProvider } from '@/data/provider'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 
@@ -16,9 +16,13 @@ import type { PagedResult, TableQueryState } from '@/lib/table-query'
  * cada recurso teria a sua versão e a divergência apareceria como bug de
  * ordenação numa tela isolada.
  *
- * O item por id (`itemOuNulo`) entrou com o primeiro `GET /api/{recurso}/{id}` do
- * contrato (produtos) — antes disso, rota e código de "não encontrado" seriam
- * invenção.
+ * ## A porta única decide o que é falha
+ *
+ * O cliente gerado (Orval) devolve `{ data, status, headers }` e NUNCA lança por
+ * status HTTP — quem converte status em decisão são os helpers daqui
+ * (`dadosOuErro`, `itemOuNulo`, `respostaOk`). Espalhar `if (status...)` pelos
+ * módulos recriaria em cada um a chance de tratar 404 como erro ou 409 como
+ * "não encontrado".
  */
 
 /** Teto de `pageSize` do contrato de listagem; acima disso o backend responde 400. */
@@ -53,6 +57,52 @@ export class ErroDaApi extends Error {
   }
 }
 
+/**
+ * Resposta do transporte (`apiFetch`), na convenção do cliente gerado.
+ *
+ * Os tipos gerados por operação (`getProductResponse` etc.) são uniões
+ * discriminadas por `status` — todos assinam esta forma estrutural, e é ela que
+ * os helpers recebem. `status: 0` = a requisição nem chegou a ter resposta
+ * (rede fora); o union gerado não o declara porque o gerador só conhece o
+ * contrato.
+ */
+export interface RespostaDaApi {
+  data?: unknown
+  status: number
+  headers?: Headers
+}
+
+/** 2xx. `status: 0` (rede fora) e qualquer 4xx/5xx ficam de fora. */
+export function respostaOk(resposta: RespostaDaApi): boolean {
+  return resposta.status >= 200 && resposta.status < 300
+}
+
+/**
+ * O corpo do sucesso, ou `ErroDaApi` — o caminho padrão de toda leitura/escrita
+ * que espera corpo. O `corpo` do erro viaja inteiro no `ErroDaApi`: é dele que
+ * sai o membro de extensão do problem+json (`idDoParceiroExistente`).
+ */
+export function dadosOuErro<T>(resposta: RespostaDaApi, mensagem: string): T {
+  if (!respostaOk(resposta) || resposta.data === undefined) {
+    throw new ErroDaApi(mensagem, resposta.status, detalheDoProblema(resposta.data), resposta.data)
+  }
+  return resposta.data as T
+}
+
+/**
+ * Item por id: o registro, ou `null` quando não existe.
+ *
+ * **404 é resposta, não falha.** "Não existe" é resultado legítimo de uma consulta
+ * por id (o operador digitou um código morto, o registro foi removido em outra
+ * sessão) e a tela já sabe dizer isso. Qualquer OUTRO status rejeita: 409 sem
+ * empresa ativa e 500 viram "não encontrado" se forem tratados juntos, e aí o
+ * operador procura um registro que está lá.
+ */
+export function itemOuNulo<T>(resposta: RespostaDaApi, onde: string): T | null {
+  if (resposta.status === 404) return null
+  return dadosOuErro<T>(resposta, `Falha ao consultar ${onde}.`)
+}
+
 export interface ApiListConfig {
   /** Caminho do recurso, ex.: `/api/catalog-lookups`. */
   url: string
@@ -73,20 +123,14 @@ export interface ApiListConfig {
 export function createApiListProvider<T>({ url, fixa }: ApiListConfig): ListProvider<T> {
   return {
     list: async (state: TableQueryState): Promise<PagedResult<T>> => {
-      const { data, error, response } = await client.get<PagedResult<T>>({
-        url,
-        query: { ...fixa, ...queryDaTabela(state) },
-      })
+      const resposta = await apiFetch<RespostaDaApi>(
+        urlComQuery(url, { ...fixa, ...queryDaTabela(state) }),
+        { method: 'GET' },
+      )
 
       // Falha do servidor NUNCA pode virar lista vazia: "deu erro" e "não há
       // registro" pedem reações opostas do operador.
-      if (error || !data) {
-        throw new ErroDaApi(
-          `Falha ao consultar ${url}.`,
-          response?.status ?? 0,
-          detalheDoProblema(error),
-        )
-      }
+      const data = dadosOuErro<PagedResult<T>>(resposta, `Falha ao consultar ${url}.`)
       return { rows: data.rows ?? [], total: data.total ?? 0 }
     },
   }
@@ -105,36 +149,6 @@ export function createApiListProvider<T>({ url, fixa }: ApiListConfig): ListProv
 export function repetirSeValeAPena(tentativa: number, erro: unknown): boolean {
   if (erro instanceof ErroDaApi && erro.status >= 400 && erro.status < 500) return false
   return tentativa < 3
-}
-
-/** Retorno do cliente gerado, na forma que o `@hey-api` devolve sem `throwOnError`. */
-export interface RespostaDaApi<T> {
-  data?: T | undefined
-  error?: unknown
-  /** Ausente quando a requisição não chegou a ter resposta (rede fora). */
-  response?: Response | undefined
-}
-
-/**
- * Item por id: o registro, ou `null` quando não existe.
- *
- * **404 é resposta, não falha.** "Não existe" é resultado legítimo de uma consulta
- * por id (o operador digitou um código morto, o registro foi removido em outra
- * sessão) e a tela já sabe dizer isso. Qualquer OUTRO status rejeita: 409 sem
- * empresa ativa e 500 viram "não encontrado" se forem tratados juntos, e aí o
- * operador procura um registro que está lá.
- */
-export function itemOuNulo<T>(resposta: RespostaDaApi<T>, onde: string): T | null {
-  if (resposta.response?.status === 404) return null
-  if (resposta.error || !resposta.data) {
-    throw new ErroDaApi(
-      `Falha ao consultar ${onde}.`,
-      resposta.response?.status ?? 0,
-      detalheDoProblema(resposta.error),
-      resposta.error,
-    )
-  }
-  return resposta.data
 }
 
 /**
@@ -171,10 +185,24 @@ export function queryDaTabela(state: TableQueryState): Record<string, string | n
   return query
 }
 
+/**
+ * Query string na MESMA serialização do cliente gerado (`URLSearchParams`,
+ * valores por `String()`): o provider genérico de lista não pode montar URL
+ * diferente da que as operações geradas montam para os mesmos parâmetros.
+ */
+function urlComQuery(url: string, query: Record<string, string | number | boolean>): string {
+  const params = new URLSearchParams()
+  for (const [chave, valor] of Object.entries(query)) {
+    params.append(chave, String(valor))
+  }
+  const texto = params.toString()
+  return texto.length > 0 ? `${url}?${texto}` : url
+}
+
 /** `detail` do problem+json, quando o corpo do erro seguiu a RFC 9457. */
-export function detalheDoProblema(erro: unknown): string | undefined {
-  if (!erro || typeof erro !== 'object') return undefined
-  const problema = erro as ProblemDetails
+export function detalheDoProblema(corpo: unknown): string | undefined {
+  if (!corpo || typeof corpo !== 'object') return undefined
+  const problema = corpo as ProblemDetails
   const texto = problema.detail ?? problema.title
   return typeof texto === 'string' && texto.trim() ? texto : undefined
 }

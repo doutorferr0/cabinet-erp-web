@@ -1,4 +1,5 @@
-import { listCatalogLookups } from '@/api/gerado'
+import { type PagedResultOfCatalogLookupDto, listCatalogLookups } from '@/api/gerado'
+import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
 import { useQuery } from '@tanstack/react-query'
 
 /**
@@ -69,12 +70,16 @@ export function useLookupOptions(kind: LookupKind): LookupOptions {
   const query = useQuery({
     queryKey: ['catalog-lookups', kindDoBackend],
     queryFn: async () => {
-      const { data, error } = await listCatalogLookups({
-        query: { kind: kindDoBackend, pageSize: 100, sortBy: 'name' },
+      const resposta: RespostaDaApi = await listCatalogLookups({
+        kind: kindDoBackend,
+        pageSize: 100,
+        sortBy: 'name',
       })
 
-      if (error || !data) throw new Error(`Falha ao carregar a lista ${kindDoBackend}.`)
-      return data
+      return dadosOuErro<PagedResultOfCatalogLookupDto>(
+        resposta,
+        `Falha ao carregar a lista ${kindDoBackend}.`,
+      )
     },
   })
 

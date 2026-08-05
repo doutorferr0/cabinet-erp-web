@@ -56,12 +56,12 @@ function ProdutoEditPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Cadastro de produtos - Banco Principal{' '}
-        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.nossaDescricao}`}
-      </h1>
       <AvisoDeCobertura />
-      <ProdutoForm produto={query.data} readOnly={readOnly} />
+      <ProdutoForm
+        produto={query.data}
+        readOnly={readOnly}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nossaDescricao}
+      />
     </div>
   )
 }

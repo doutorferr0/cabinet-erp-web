@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { TextField } from '@/components/vitra/form-controls'
+import { Stipple } from '@/components/vitra/stipple'
 import { useLogin } from '@/data/sessao'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
@@ -44,13 +46,13 @@ export function LoginTela() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm rounded-lg border bg-card p-4">
-        <div className="mb-4 border-b border-rule-strong pb-3">
-          <h1 className="text-xl font-semibold">VITRA</h1>
-          <p className="font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
-            Entrar
-          </p>
+    // Papel com grade + folha em caixa preta e sombra dura: a tela de sessão é
+    // uma folha como qualquer outra, e o Stipple é permitido aqui (§Stipple).
+    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-sm border-2 border-border bg-card p-4 shadow-hard">
+        <div className="mb-4 flex items-center gap-3">
+          <Stipple className="size-10" />
+          <BandaDeIdentidade titulo="VITRA" contexto="Entrar" className="flex-1" />
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(entrar)} className="flex flex-col gap-3">

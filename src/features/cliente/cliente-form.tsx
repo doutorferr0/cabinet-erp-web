@@ -213,10 +213,13 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
 export function ClienteForm({
   cliente,
   readOnly = false,
+  contexto,
   onGravar: gravarDeFora,
 }: {
   cliente: Cliente
   readOnly?: boolean
+  /** Modo ou registro aberto, ao lado do título na banda. */
+  contexto?: string
   /**
    * Quem grava, quando há endpoint. Sem isto o formulário cai no comportamento
    * antigo (sem efeito no servidor) — é o caso do "Incluir", que o contrato
@@ -246,6 +249,8 @@ export function ClienteForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/clientes' })}
       readOnly={readOnly}
+      titulo="Cadastro de Clientes"
+      {...(contexto ? { contexto } : {})}
     >
       <Tabs defaultValue="principal">
         <TabsList className="flex-wrap">

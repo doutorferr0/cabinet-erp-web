@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
@@ -73,7 +74,7 @@ function OrcamentosPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Orçamento</h1>
+      <BandaDeIdentidade titulo="Orçamento" />
       <VitraDataTable
         columns={columns}
         queryKey={['orcamentos']}

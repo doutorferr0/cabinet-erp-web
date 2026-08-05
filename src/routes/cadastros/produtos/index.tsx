@@ -1,4 +1,5 @@
 import type { ProductDto } from '@/api/gerado'
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { ConfirmarDesativacao } from '@/components/vitra/confirmar-desativacao'
 import { VitraDataTable } from '@/components/vitra/data-table'
@@ -65,7 +66,9 @@ function ProdutosPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Cadastro de produtos - Banco Principal</h1>
+      {/* O legado escrevia "Cadastro de produtos - Banco Principal" numa linha
+          só; o banco é CONTEXTO do cadastro, não parte do nome dele. */}
+      <BandaDeIdentidade titulo="Cadastro de produtos" contexto="Banco Principal" />
       <VitraDataTable
         columns={columns}
         queryKey={['produtos']}

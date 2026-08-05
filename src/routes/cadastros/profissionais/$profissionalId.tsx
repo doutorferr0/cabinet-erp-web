@@ -149,10 +149,6 @@ function ProfissionalEditPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Cadastro de Fornecedores{' '}
-        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${registro.nomeApresentacao}`}
-      </h1>
       <AvisoDeCobertura
         isNovo={isNovo}
         erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
@@ -167,6 +163,7 @@ function ProfissionalEditPage() {
       <ProfissionalForm
         profissional={registro}
         readOnly={readOnly}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeApresentacao}
         onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />
     </div>

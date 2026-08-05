@@ -202,10 +202,13 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
 export function ProfissionalForm({
   profissional,
   readOnly = false,
+  contexto,
   onGravar: gravarDeFora,
 }: {
   profissional: Profissional
   readOnly?: boolean
+  /** Modo ou registro aberto, ao lado do título na banda. */
+  contexto?: string
   /**
    * Quem grava, quando há endpoint. Sem isto o formulário cai no comportamento
    * antigo (sem efeito no servidor) — é o caso do "Incluir", que o contrato
@@ -233,6 +236,8 @@ export function ProfissionalForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/profissionais' })}
       readOnly={readOnly}
+      titulo="Cadastro de Profissional Externo"
+      {...(contexto ? { contexto } : {})}
     >
       <div className="grid grid-cols-12 items-end gap-3">
         <TextField

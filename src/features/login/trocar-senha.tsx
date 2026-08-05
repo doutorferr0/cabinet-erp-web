@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { TextField } from '@/components/vitra/form-controls'
 import { useTrocarSenha } from '@/data/sessao'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -45,13 +46,12 @@ export function TrocarSenhaTela() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm rounded-lg border bg-card p-4">
-        <div className="mb-4 border-b border-rule-strong pb-3">
-          <h1 className="text-xl font-semibold">VITRA</h1>
-          <p className="font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
-            Trocar senha
-          </p>
+    // Mesma folha da tela de entrar — sem Stipple: aqui o operador está no meio
+    // de uma tarefa obrigatória, não na porta de entrada.
+    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-sm border-2 border-border bg-card p-4 shadow-hard">
+        <div className="mb-4">
+          <BandaDeIdentidade titulo="VITRA" contexto="Trocar senha" />
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(confirmar)} className="flex flex-col gap-3">

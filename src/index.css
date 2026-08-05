@@ -153,6 +153,16 @@
   background-color: hsl(var(--background));
 }
 
+/* Textura pontilhada dos folhetos De School (DESIGN.md §Stipple): pontos de
+   1px numa célula de 7px. É ACENTO GRÁFICO — vale em tela de login, estado
+   vazio de módulo e tela inicial, e nunca atrás de dado: ponto sob número é
+   ruído em cima da informação. A tinta vem do token, como a grade do Papel. */
+@utility bg-stipple {
+  background-image: radial-gradient(hsl(var(--foreground) / 0.8) 1px, transparent 1.3px);
+  background-size: 7px 7px;
+  background-position: 0 0, 3px 4px;
+}
+
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).
    Utility, e não `border-t-[3px] border-rule-strong` na tela: a espessura é
    parte da régua, e a recalibração de tokens prevista tem que mudá-la num

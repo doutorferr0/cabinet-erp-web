@@ -1,25 +1,37 @@
 import { cn } from '@/lib/utils'
-import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
-import { Check } from 'lucide-react'
-import * as React from 'react'
+import { CheckIcon } from 'lucide-react'
+import {
+  Checkbox as CheckboxPrimitive,
+  type CheckboxProps,
+  composeRenderProps,
+} from 'react-aria-components'
 
-const Checkbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      'peer size-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
-      className,
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator className={cn('flex items-center justify-center text-current')}>
-      <Check className="size-4" />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-))
-Checkbox.displayName = CheckboxPrimitive.Root.displayName
+/** Checkbox brut: caixa preta 2px, canto reto, marcado = Tinta sólida. */
+function Checkbox({ className, children, ...props }: CheckboxProps) {
+  return (
+    <CheckboxPrimitive
+      data-slot="checkbox"
+      className={composeRenderProps(className, (className) =>
+        cn(
+          'group/checkbox flex items-center gap-2 text-sm outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
+          className,
+        ),
+      )}
+      {...props}
+    >
+      {composeRenderProps(children, (children, { isSelected, isIndeterminate }) => (
+        <>
+          <span
+            data-slot="checkbox-indicator"
+            className="grid size-4 shrink-0 place-content-center border-2 border-input bg-card text-primary-foreground transition-colors group-data-focus-visible/checkbox:ring-3 group-data-focus-visible/checkbox:ring-ring group-data-selected/checkbox:border-primary group-data-selected/checkbox:bg-primary [&>svg]:size-3"
+          >
+            {(isSelected || isIndeterminate) && <CheckIcon />}
+          </span>
+          {children}
+        </>
+      ))}
+    </CheckboxPrimitive>
+  )
+}
 
 export { Checkbox }

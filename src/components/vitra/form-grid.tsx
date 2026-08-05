@@ -129,8 +129,8 @@ function CheckCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
       render={({ field }) => (
         <Checkbox
           aria-label={ariaLabel}
-          checked={!!field.value}
-          onCheckedChange={(v) => field.onChange(!!v)}
+          isSelected={!!field.value}
+          onChange={(v: boolean) => field.onChange(v)}
         />
       )}
     />
@@ -305,8 +305,11 @@ export function FormGrid({
                           ) : (
                             <Input
                               aria-label={ariaLabel}
-                              placeholder={col.placeholder}
-                              className="h-8 border-0 shadow-none focus-visible:ring-0"
+                              {...(col.placeholder !== undefined && {
+                                placeholder: col.placeholder,
+                              })}
+                              // Célula editável sem borda: a malha É o campo; foco = anel amarelo interno.
+                              className="h-8 border-0 bg-transparent focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
                               {...register(path)}
                             />
                           )}

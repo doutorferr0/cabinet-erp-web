@@ -1,6 +1,12 @@
 import { cn } from '@/lib/utils'
 import * as React from 'react'
 
+/**
+ * Tabela brut, ainda em HTML puro: a versão RAC (grid navegável do spike)
+ * entra na fase 2 junto com a reescrita da DataTable. O contêiner de fora
+ * (caixa preta 2px) é do consumidor; aqui mora a malha interna em Fio e a
+ * barra preta do cabeçalho (DESIGN.md §DataTable).
+ */
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
     <div className="relative w-full overflow-auto">
@@ -14,11 +20,11 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  // Sublinha em Régua Forte sob o cabeçalho; malha vertical em Fio (grade fechada, DESIGN.md §DataTable).
+  // Barra preta sólida: fundo Tinta, células separadas por 1px de tinta clara.
   <thead
     ref={ref}
     className={cn(
-      '[&_tr]:border-b [&_tr]:border-rule-strong [&_th]:border-l [&_th]:border-rule-hair [&_th:first-child]:border-l-0',
+      '[&_tr]:border-0 [&_th]:border-l [&_th]:border-l-white/20 [&_th:first-child]:border-l-0',
       className,
     )}
     {...props}
@@ -30,7 +36,7 @@ const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  // Fio entre linhas e entre colunas — a malha delimita a célula sem virar gaiola.
+  // Malha interna em Fio (linhas E colunas) — a caixa grita, a malha sussurra.
   <tbody
     ref={ref}
     className={cn(
@@ -48,7 +54,7 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
+    className={cn('border-t-2 border-border font-medium [&>tr]:last:border-b-0', className)}
     {...props}
   />
 ))
@@ -70,11 +76,11 @@ const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
-  // 36px, etiqueta Meta: mono 0.75rem, peso 500, caixa alta, tracking 0.06em (DESIGN.md §Typography).
+  // Cabeçalho de coluna = barra preta: Meta em cream sobre Tinta, 34px.
   <th
     ref={ref}
     className={cn(
-      'h-9 px-2 text-left align-middle font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground [&:has([role=checkbox])]:pr-0',
+      'h-[34px] bg-primary px-2 text-left align-middle font-mono text-[0.75rem] font-semibold uppercase tracking-[0.07em] text-primary-foreground [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}
@@ -88,7 +94,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn('p-2 align-middle [&:has([role=checkbox])]:pr-0', className)}
+    className={cn('h-[33px] px-2 py-0 align-middle [&:has([role=checkbox])]:pr-0', className)}
     {...props}
   />
 ))

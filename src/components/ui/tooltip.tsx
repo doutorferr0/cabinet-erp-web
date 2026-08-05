@@ -1,27 +1,53 @@
 import { cn } from '@/lib/utils'
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import * as React from 'react'
+import {
+  Focusable,
+  Tooltip as TooltipPrimitive,
+  TooltipTrigger as TooltipTriggerPrimitive,
+} from 'react-aria-components'
 
-const TooltipProvider = TooltipPrimitive.Provider
-const Tooltip = TooltipPrimitive.Root
-const TooltipTrigger = TooltipPrimitive.Trigger
+function TooltipTrigger({
+  delay = 0,
+  children,
+  ...props
+}: React.ComponentProps<typeof TooltipTriggerPrimitive>) {
+  const [trigger, tooltip] = React.Children.toArray(children)
 
-const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Portal>
-    <TooltipPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
+  return (
+    <TooltipTriggerPrimitive data-slot="tooltip-trigger" delay={delay} {...props}>
+      <Focusable>{trigger as React.ComponentProps<typeof Focusable>['children']}</Focusable>
+      {tooltip}
+    </TooltipTriggerPrimitive>
+  )
+}
+
+/** Tooltip brut: Tinta sólida, texto cream, canto reto, sem seta arredondada. */
+function Tooltip({
+  className,
+  placement = 'top',
+  offset = 6,
+  crossOffset = 0,
+  children,
+  ...props
+}: Omit<React.ComponentProps<typeof TooltipPrimitive>, 'children' | 'className'> & {
+  className?: string
+  children?: React.ReactNode
+}) {
+  return (
+    <TooltipPrimitive
+      data-slot="tooltip-content"
+      placement={placement}
+      offset={offset}
+      crossOffset={crossOffset}
       className={cn(
-        'z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95',
+        'z-50 inline-flex w-fit max-w-xs origin-(--trigger-anchor-point) items-center gap-1.5 bg-foreground px-2.5 py-1 font-mono text-xs font-semibold tracking-[0.05em] text-background uppercase data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0',
         className,
       )}
       {...props}
-    />
-  </TooltipPrimitive.Portal>
-))
-TooltipContent.displayName = TooltipPrimitive.Content.displayName
+    >
+      {children}
+    </TooltipPrimitive>
+  )
+}
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipTrigger }

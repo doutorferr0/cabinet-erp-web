@@ -8,7 +8,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { LookupCombo } from '@/components/vitra/lookup-combo'
@@ -31,7 +30,7 @@ export function TextField({
   label,
   className,
   ...inputProps
-}: BaseProps & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'name'>) {
+}: BaseProps & Omit<React.ComponentProps<typeof Input>, 'name'>) {
   return (
     <FormField
       name={name}
@@ -53,7 +52,7 @@ export function TextareaField({
   label,
   className,
   ...textareaProps
-}: BaseProps & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'name'>) {
+}: BaseProps & Omit<React.ComponentProps<typeof Textarea>, 'name'>) {
   return (
     <FormField
       name={name}
@@ -131,12 +130,17 @@ export function CheckboxField({ name, label, className }: BaseProps) {
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <div className="flex items-center gap-2">
-            <FormControl>
-              <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} />
-            </FormControl>
-            <FormLabel className="!mt-0 font-normal">{label}</FormLabel>
-          </div>
+          {/* Na RAC o rótulo é filho do Checkbox — a associação é automática;
+              um <label htmlFor> externo apontaria para o <label> da própria RAC. */}
+          <FormControl>
+            <Checkbox
+              isSelected={!!field.value}
+              onChange={(v: boolean) => field.onChange(v)}
+              className="font-normal"
+            >
+              {label}
+            </Checkbox>
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -160,7 +164,7 @@ export function SelectField({
           <FormControl>
             <select
               // Sem sombra: campo é coplanar com a folha (Regra da Linha Antes da Sombra).
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring"
               {...field}
               value={field.value ?? ''}
             >
@@ -218,7 +222,7 @@ export function LookupSelectField({
             <FormLabel>{label}</FormLabel>
             <FormControl>
               <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring"
                 {...field}
                 value={atual}
                 disabled={field.disabled || carregando}
@@ -298,15 +302,14 @@ export function RadioField({
             <RadioGroup
               className="flex flex-row flex-wrap gap-4"
               value={field.value ?? ''}
-              onValueChange={field.onChange}
+              onChange={field.onChange}
+              aria-label={label}
             >
+              {/* Rótulo como filho do Radio: a RAC associa sozinha. */}
               {options.map((o) => (
-                <div key={o.value} className="flex items-center gap-2">
-                  <RadioGroupItem value={o.value} id={`${name}-${o.value}`} />
-                  <Label htmlFor={`${name}-${o.value}`} className="font-normal">
-                    {o.label}
-                  </Label>
-                </div>
+                <RadioGroupItem key={o.value} value={o.value} className="font-normal">
+                  {o.label}
+                </RadioGroupItem>
               ))}
             </RadioGroup>
           </FormControl>

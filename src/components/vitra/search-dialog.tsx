@@ -1,10 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import type { TableFetcher } from '@/lib/table-query'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -34,31 +28,29 @@ export function SearchDialog<T>({
   onSelect,
 }: SearchDialogProps<T>) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Busque, clique na linha e confirme em Selecionar.</DialogDescription>
-        </DialogHeader>
-        <VitraDataTable
-          columns={columns}
-          queryKey={queryKey}
-          fetcher={fetcher}
-          actions={[
-            {
-              id: 'selecionar',
-              label: 'Selecionar',
-              variant: 'default',
-              needsSelection: true,
-              onClick: (row) => {
-                if (!row) return
-                onSelect(row)
-                onOpenChange(false)
-              },
+    <Dialog isOpen={open} onOpenChange={onOpenChange} className="sm:max-w-3xl">
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>Busque, clique na linha e confirme em Selecionar.</DialogDescription>
+      </DialogHeader>
+      <VitraDataTable
+        columns={columns}
+        queryKey={queryKey}
+        fetcher={fetcher}
+        actions={[
+          {
+            id: 'selecionar',
+            label: 'Selecionar',
+            variant: 'default',
+            needsSelection: true,
+            onClick: (row) => {
+              if (!row) return
+              onSelect(row)
+              onOpenChange(false)
             },
-          ]}
-        />
-      </DialogContent>
+          },
+        ]}
+      />
     </Dialog>
   )
 }

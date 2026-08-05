@@ -160,8 +160,8 @@ export function VitraDataTable<T>({
         ))}
       </div>
 
-      {/* Contêiner da tabela: caixa em Régua, canto 4px (a malha interna é Fio). */}
-      <div className="rounded-lg border">
+      {/* Contêiner da tabela: caixa preta 2px (a malha interna é Fio). */}
+      <div className="border-2 border-border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
@@ -250,14 +250,15 @@ export function VitraDataTable<T>({
               table.getRowModel().rows.map((row, rowIndex) => {
                 const isSelected = selected !== null && row.original === selected
                 return (
-                  // Seleção = Bancada + marcador esquerdo de 2px em Régua Forte — estado
-                  // nunca depende só de cor (a tinta sozinha não alcança 3:1 na vizinha).
+                  // Seleção = Bancada + marcador esquerdo duplo (4px amarelo + 1px tinta) —
+                  // estado nunca depende só de cor (mockup tr.sel).
                   <TableRow
                     key={row.id}
                     data-state={isSelected ? 'selected' : undefined}
                     className={cn(
                       'cursor-pointer hover:bg-muted',
-                      isSelected && 'bg-muted shadow-[inset_2px_0_0_hsl(var(--rule-strong))]',
+                      isSelected &&
+                        'bg-muted [&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
                     )}
                     onClick={() => setSelected(isSelected ? null : row.original)}
                   >

@@ -8,3 +8,16 @@ allowBuilds:
 
 # 7 dias em minutos (10080) — política de cooldown pós-supply-chain.
 minimumReleaseAge: 10080
+
+# Exceção pontual do reface fase 1: react-aria-components pinado EXATO em
+# 1.20.0 (decisão pós-spike RAC) saiu em 2026-07-31 e ainda não venceu o
+# cooldown. Versão exata + publisher Adobe react-spectrum. Remover a lista
+# quando a release passar dos 7 dias.
+minimumReleaseAgeExclude:
+  - react-aria-components
+  - react-aria
+  - react-stately
+  - '@react-aria/*'
+  - '@react-stately/*'
+  - '@react-types/*'
+  - '@internationalized/*'

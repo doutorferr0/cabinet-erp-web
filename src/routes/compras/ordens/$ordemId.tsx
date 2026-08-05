@@ -40,7 +40,7 @@ function OrdemCompraEditPage() {
     <div className="flex flex-col gap-4">
       <DocumentoHeader
         titulo="Ordem de Compra"
-        modo={readOnly ? '— Consulta' : isNovo ? '— Incluir' : undefined}
+        modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
         numero={isNovo ? undefined : query.data.codigo}
       />
       <OrdemCompraForm ordem={query.data} readOnly={readOnly} />

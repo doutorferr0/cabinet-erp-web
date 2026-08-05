@@ -1,3 +1,4 @@
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import type { FormGridTotalRow } from '@/components/vitra/form-grid'
 import { Stamp, type StampTom } from '@/components/vitra/stamp'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
@@ -13,14 +14,14 @@ import { useWatch } from 'react-hook-form'
  */
 
 export interface DocumentoHeaderProps {
-  /** Título literal da transcrição, em Headline (sans 600, 1.25rem). */
+  /** Título literal da transcrição, em Headline (800, caps) dentro da banda. */
   titulo: string
-  /** Modo da tela (`— Incluir`, `— Consulta`), junto ao título. */
+  /** Modo da tela (`Incluir`, `Consulta`) — vai em Meta AO LADO do título, sem traço. */
   modo?: string | undefined
   /**
-   * Número do documento — a âncora visual do cabeçalho: Número do Documento
-   * (mono 600, 1.25rem, tracking -0.01em) à direita, como o `591890` da
-   * comanda. Ausente em documento novo.
+   * Número do documento — a âncora visual do cabeçalho: Nº do Documento
+   * (mono 700, 1.5rem) à direita, como o `591890` da comanda. Ausente em
+   * documento novo.
    */
   numero?: string | number | undefined
   /** Carimbo de situação ao lado do número — só quando a enumeração real chegar. */
@@ -28,32 +29,28 @@ export interface DocumentoHeaderProps {
 }
 
 /**
- * Cabeçalho de documento (DESIGN.md §DocumentoHeader): fileira única com o
- * título à esquerda e número + carimbo à direita, régua forte fechando o
- * bloco. É a anatomia do invoice e da comanda: quem é o documento, qual o
- * número, em que situação está — antes de qualquer campo.
+ * Cabeçalho de documento (DESIGN.md §DocumentoHeader): é a MESMA banda de
+ * identidade do cadastro, com número e carimbo no fim da faixa.
+ *
+ * Era um `<header>` próprio, com régua de 1px e título 1.25rem — a mesma ideia
+ * dita com outros valores. Duas faixas de identidade divergindo é o vetor de
+ * deriva que o DESIGN.md nomeia: agora quem muda a banda muda os dois, e o
+ * documento só acrescenta o que é dele (o número é a âncora, o carimbo é a
+ * situação).
  */
 export function DocumentoHeader({ titulo, modo, numero, stamp }: DocumentoHeaderProps) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-rule-strong pb-3">
-      <h1 className="text-xl font-semibold">
-        {titulo}
-        {modo ? ` ${modo}` : ''}
-      </h1>
-      {(numero !== undefined || stamp) && (
-        <div className="flex items-center gap-3">
-          {numero !== undefined && (
-            <span
-              data-slot="documento-numero"
-              className="font-mono text-xl font-semibold tracking-[-0.01em] tabular-nums"
-            >
-              {numero}
-            </span>
-          )}
-          {stamp && <Stamp tom={stamp.tom} label={stamp.label} />}
-        </div>
+    <BandaDeIdentidade titulo={titulo} {...(modo ? { contexto: modo } : {})}>
+      {numero !== undefined && (
+        <span
+          data-slot="documento-numero"
+          className="font-bold font-mono text-2xl tracking-[-0.01em] tabular-nums"
+        >
+          {numero}
+        </span>
       )}
-    </header>
+      {stamp && <Stamp tom={stamp.tom} label={stamp.label} />}
+    </BandaDeIdentidade>
   )
 }
 

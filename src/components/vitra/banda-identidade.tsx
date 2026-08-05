@@ -42,7 +42,7 @@ export function BandaDeIdentidade({
       {/* Headline 800 caps: o degrau mais alto da rampa, um por tela. */}
       <h1 className="font-extrabold text-2xl uppercase tracking-[-0.02em]">{titulo}</h1>
       {contexto ? (
-        <span className="font-medium font-mono text-[0.75rem] uppercase tracking-[0.06em] text-muted-foreground">
+        <span className="font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em] text-muted-foreground">
           {contexto}
         </span>
       ) : null}

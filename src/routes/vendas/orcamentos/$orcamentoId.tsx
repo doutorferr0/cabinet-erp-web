@@ -40,7 +40,7 @@ function OrcamentoEditPage() {
     <div className="flex flex-col gap-4">
       <DocumentoHeader
         titulo="Orçamento"
-        modo={readOnly ? '— Consulta' : isNovo ? '— Incluir' : undefined}
+        modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
         numero={isNovo ? undefined : query.data.numero}
       />
       <OrcamentoForm orcamento={query.data} readOnly={readOnly} />

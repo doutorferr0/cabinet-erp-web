@@ -40,7 +40,7 @@ function PedidoCompraEditPage() {
     <div className="flex flex-col gap-4">
       <DocumentoHeader
         titulo="Pedido de Compra"
-        modo={readOnly ? '— Consulta' : isNovo ? '— Incluir' : undefined}
+        modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
         numero={isNovo ? undefined : query.data.codigo}
       />
       <PedidoCompraForm pedido={query.data} readOnly={readOnly} />

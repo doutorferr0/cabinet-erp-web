@@ -36,12 +36,12 @@ function ColaboradorEditPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Cadastro de Colaboradores{' '}
-        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${query.data.nome}`}
-      </h1>
-      <ColaboradorForm colaborador={query.data} readOnly={readOnly} />
-    </div>
+    // O título deixou de ser montado aqui: quem o diz é a banda do CadastroForm.
+    // A rota só informa o CONTEXTO, que é o que ela sabe (modo e registro).
+    <ColaboradorForm
+      colaborador={query.data}
+      readOnly={readOnly}
+      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nome}
+    />
   )
 }

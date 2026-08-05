@@ -153,6 +153,14 @@
   background-color: hsl(var(--background));
 }
 
+/* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).
+   Utility, e não `border-t-[3px] border-rule-strong` na tela: a espessura é
+   parte da régua, e a recalibração de tokens prevista tem que mudá-la num
+   ponto só — literal espalhado por consumidor é o que sobrevive à mudança. */
+@utility rule-strong-top {
+  border-top: 3px solid hsl(var(--rule-strong));
+}
+
 * {
   border-color: hsl(var(--border));
 }

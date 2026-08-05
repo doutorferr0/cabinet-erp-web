@@ -20,7 +20,10 @@ export type StampTom = 'neutral' | 'open' | 'done' | 'void'
 
 const TONS: Record<StampTom, string> = {
   neutral: 'border-stamp-neutral text-stamp-neutral bg-transparent',
-  open: 'border-stamp-open bg-stamp-open text-foreground',
+  // Borda TINTA, não amarela: no mockup o `open` é caixa preta PREENCHIDA de
+  // amarelo. Amarelo sobre amarelo apagaria a caixa — e a Regra da Caixa Preta
+  // vale para o carimbo como para todo o resto.
+  open: 'border-border bg-stamp-open text-foreground',
   done: 'border-stamp-done bg-stamp-done text-primary-foreground',
   void: 'border-stamp-void text-stamp-void bg-transparent',
 }
@@ -38,7 +41,7 @@ export function Stamp({ tom, label, className }: StampProps) {
       data-slot="stamp"
       data-tom={tom}
       className={cn(
-        'inline-flex h-6 items-center border-2 px-1.5 font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em]',
+        'inline-flex h-6 items-center border-2 px-2 font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em]',
         TONS[tom],
         className,
       )}

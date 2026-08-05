@@ -25,11 +25,15 @@ describe('Stamp', () => {
       </div>,
     )
 
-    // Amarelo NUNCA é cor de texto (DESIGN.md §Don'ts): é fundo, com Tinta em cima.
+    // Amarelo NUNCA é cor de texto (DESIGN.md §Don'ts): é fundo, com Tinta em
+    // cima — e a BORDA continua Tinta, senão a caixa preta some no amarelo
+    // (é o que o mockup mostra: caixa preta preenchida, não bloco amarelo).
     const aberto = screen.getByText('aberto')
     expect(aberto.className).toContain('bg-stamp-open')
     expect(aberto.className).toContain('text-foreground')
+    expect(aberto.className).toContain('border-border')
     expect(aberto.className).not.toContain('text-stamp-open')
+    expect(aberto.className).not.toContain('border-stamp-open')
 
     const concluido = screen.getByText('concluído')
     expect(concluido.className).toContain('bg-stamp-done')

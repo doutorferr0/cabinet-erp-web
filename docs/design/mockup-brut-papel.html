@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VITRA — Mockup "BRUT sobre papel"</title>
+<style>
+  :root{
+    /* superfícies */
+    --paper: hsl(42 30% 96%);
+    --doc: #ffffff;
+    --bench: hsl(44 45% 90%);
+    /* tinta */
+    --ink: hsl(30 15% 10%);
+    --ink-muted: hsl(32 10% 38%);
+    --ink-inverse: hsl(42 30% 96%);
+    /* réguas */
+    --hair: hsl(38 14% 84%);
+    --rule: var(--ink);          /* a caixa agora é PRETA */
+    /* acentos — emprego fixo */
+    --yellow: hsl(45 96% 54%);   /* âncora/atenção: nº de seção, carimbo ABERTO, seleção */
+    --red: hsl(4 74% 44%);       /* destruição/erro/anulado/valor negativo */
+    --green: hsl(152 60% 26%);   /* carimbo concluído */
+    --money: hsl(152 65% 24%);   /* tinta de DINHEIRO — tradição do ledger */
+    /* preenchimentos tintados — áreas com cor, tonalidade creme */
+    --cream-green: hsl(110 24% 88%);  /* zona de dinheiro/totais */
+    --cream-red: hsl(8 36% 89%);      /* banda de identidade: título de tela/documento */
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;
+    padding:52px 52px 104px; /* padding = 1 célula → conteúdo nasce ENQUADRADO na grade */
+    /* grade de fundo — De School: malha de células percorrendo o papel, linha FORTE */
+    background:
+      linear-gradient(to right, hsl(30 15% 10% / .38) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(30 15% 10% / .38) 1px, transparent 1px),
+      var(--paper);
+    background-size:52px 52px;
+    background-position:0 0;
+  }
+  /* link cru — Utrecht: texto sublinhado, sem chrome */
+  .link{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px;}
+  .link:hover{background:var(--yellow);}
+  /* tinta de dinheiro */
+  .money{color:var(--money);}
+  .money-neg{color:var(--red);}
+  /* stipple pontilhado — célula de textura dos folhetos De School */
+  .stipple{
+    background-image:radial-gradient(hsl(30 15% 10% / .8) 1px, transparent 1.3px);
+    background-size:7px 7px;
+    background-position:0 0, 3px 4px;
+    border:2px solid var(--ink);
+  }
+
+  /* ---------- gramática BRUT ---------- */
+  .frame{background:var(--doc);border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);}
+  .meta{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;}
+  .num{font-variant-numeric:tabular-nums;text-align:right;}
+
+  /* nº de seção — gesto BRUT · alturas em múltiplos da célula de 52px */
+  .secao{display:flex;align-items:center;gap:16px;margin:52px 0 26px;height:52px;}
+  .secao:first-of-type{margin-top:26px;}
+  .secao .bloco{background:var(--yellow);border:2px solid var(--ink);font-family:var(--mono);font-weight:700;font-size:26px;padding:6px 14px;box-shadow:4px 4px 0 var(--ink);}
+  .secao h2{font-size:30px;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;}
+  .secao .desc{margin-left:auto;color:var(--ink-muted);max-width:380px;font-size:12.5px;background:var(--paper);padding:6px 10px;border:1px solid var(--hair);}
+
+  /* cabeçalho do mockup */
+  .capa{border-bottom:3px solid var(--ink);padding-bottom:24px;display:flex;align-items:flex-end;gap:24px;}
+  .capa h1{font-size:56px;font-weight:900;letter-spacing:-.03em;line-height:1;text-transform:uppercase;}
+  .capa h1 span{background:var(--yellow);padding:0 10px;border:2px solid var(--ink);display:inline-block;}
+  .capa .stipple{width:158px;height:104px;align-self:stretch;}
+  .capa .tag{text-align:right;color:var(--ink-muted);margin-left:auto;background:var(--paper);padding:4px 8px;border:1px solid var(--hair);}
+
+  /* ---------- 01 SPECIMEN ---------- */
+  .spec{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;}
+  .spec .cel{border:2px solid var(--ink);background:var(--doc);padding:14px;}
+  .sw{display:flex;flex-direction:column;gap:6px;}
+  .sw .chip{height:44px;border:2px solid var(--ink);}
+  .stamp{display:inline-flex;align-items:center;height:24px;padding:0 8px;border:2px solid var(--ink);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.07em;background:var(--doc);}
+  .stamp.aberto{background:var(--yellow);}
+  .stamp.concluido{background:var(--ink);color:var(--ink-inverse);border-color:var(--ink);}
+  .stamp.anulado{color:var(--red);border-color:var(--red);}
+  .stamp.neutro{color:var(--ink-muted);border-color:var(--ink-muted);}
+
+  /* botões */
+  .btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border:2px solid var(--ink);background:var(--doc);font:600 13px var(--sans);cursor:pointer;transition:transform .1s, box-shadow .1s;}
+  .btn:hover{background:var(--bench);}
+  .btn.primario{background:var(--ink);color:var(--ink-inverse);box-shadow:3px 3px 0 hsl(38 14% 74%);}
+  .btn.primario:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 hsl(38 14% 74%);}
+  .btn.compacto{height:31px;padding:0 12px;font-size:12.5px;}
+  .btn.destrutivo{color:var(--red);border-color:var(--red);}
+  .btn.destrutivo:hover{background:var(--red);color:#fff;}
+
+  .campo label{display:block;font-weight:600;font-size:13px;margin-bottom:4px;}
+  .campo input, .campo select{width:100%;height:36px;border:2px solid var(--ink);background:var(--doc);padding:0 10px;font:400 14px var(--sans);}
+  .campo input:focus{outline:3px solid var(--yellow);outline-offset:0;}
+  .campo .cod{font-family:var(--mono);font-size:13px;letter-spacing:.04em;}
+
+  /* ---------- shell ---------- */
+  .tela{display:grid;grid-template-columns:216px 1fr;min-height:620px;}
+  .sidebar{background:var(--paper);border-right:2px solid var(--ink);display:flex;flex-direction:column;}
+  .empresa{border-bottom:2px solid var(--ink);padding:12px;background:var(--yellow);}
+  .empresa .meta{font-size:10px;color:var(--ink);}
+  .empresa strong{display:block;font-size:14px;font-weight:800;letter-spacing:-.01em;}
+  .navgrp{border-bottom:1px solid var(--hair);padding:10px 0 8px;}
+  .navgrp .meta{padding:0 12px;color:var(--ink-muted);display:block;margin-bottom:4px;}
+  .navitem{display:block;padding:7px 12px;font-size:13.5px;text-decoration:none;color:var(--ink);border-left:3px solid transparent;}
+  .navitem:hover{background:var(--bench);}
+  .navitem.ativo{background:var(--doc);border-left:3px solid var(--ink);font-weight:700;}
+  .header{grid-column:2;border-bottom:2px solid var(--ink);height:52px;display:flex;align-items:center;padding:0 16px;gap:16px;background:var(--doc);}
+  .header .meta{color:var(--ink-muted);}
+  .header .user{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .conteudo{
+    padding:20px;
+    /* o Papel do próprio ERP carrega a grade — a folha pousa opaca por cima */
+    background:
+      linear-gradient(to right, hsl(30 15% 10% / .28) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(30 15% 10% / .28) 1px, transparent 1px),
+      var(--paper);
+    background-size:52px 52px;
+  }
+  .shellwrap{display:grid;grid-template-columns:216px 1fr;grid-template-rows:52px 1fr;}
+  .shellwrap .sidebar{grid-row:1 / 3;}
+
+  /* ---------- listagem ---------- */
+  .folha{background:var(--doc);border:2px solid var(--ink);padding:16px;}
+  /* banda de identidade — área PREENCHIDA em creme-avermelhado */
+  .titulo-tela{display:flex;align-items:center;gap:14px;border:2px solid var(--ink);background:var(--cream-red);padding:10px 14px;margin-bottom:14px;}
+  .titulo-tela h3{font-size:24px;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;}
+  .titulo-tela .meta{color:var(--ink-muted);}
+  .barra{display:flex;gap:8px;margin-bottom:12px;align-items:center;}
+  .busca{position:relative;width:300px;}
+  .busca input{width:100%;height:31px;border:2px solid var(--ink);padding:0 10px 0 30px;font:400 13.5px var(--sans);background:var(--doc);}
+  .busca svg{position:absolute;left:8px;top:7px;}
+
+  table{border-collapse:collapse;width:100%;background:var(--doc);}
+  .grade{border:2px solid var(--ink);}
+  thead th{background:var(--ink);color:var(--ink-inverse);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;height:34px;padding:0 8px;text-align:left;border-right:1px solid hsl(30 10% 30%);}
+  thead th.num{text-align:right;}
+  tbody td{border:1px solid var(--hair);height:33px;padding:0 8px;font-size:13.5px;}
+  tbody tr:hover td{background:var(--bench);}
+  tbody tr.sel td{background:var(--bench);}
+  tbody tr.sel td:first-child{box-shadow:inset 4px 0 0 var(--yellow), inset 5px 0 0 var(--ink);}
+  td.cod{font-family:var(--mono);font-size:12px;letter-spacing:.03em;}
+  .rodape-tabela{display:flex;align-items:center;margin-top:10px;}
+  .rodape-tabela .meta{color:var(--ink-muted);}
+  .paginacao{margin-left:auto;display:flex;gap:6px;align-items:center;}
+
+  /* ---------- documento ---------- */
+  .dochead{display:flex;align-items:center;gap:16px;border:2px solid var(--ink);background:var(--cream-red);padding:10px 14px;margin-bottom:16px;}
+  .dochead h3{font-size:24px;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;}
+  .docnum{margin-left:auto;font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:-.01em;}
+  .bloco-form{border:2px solid var(--ink);padding:16px 14px 14px;position:relative;margin-top:10px;}
+  .bloco-form legend{position:absolute;top:-11px;left:10px;background:var(--ink);color:var(--ink-inverse);font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;}
+  .grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:end;}
+  .c2{grid-column:span 2;} .c3{grid-column:span 3;} .c4{grid-column:span 4;} .c6{grid-column:span 6;}
+
+  .faixa td{background:var(--bench);border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;height:28px;}
+  /* zona de dinheiro — fileiras de total em creme-esverdeado */
+  tr.total-parcial td.zona, tr.total-geral td.zona{background:var(--cream-green);}
+  td.input-cel{padding:0;}
+  td.input-cel input{width:100%;height:100%;border:0;background:transparent;font:400 13.5px var(--sans);padding:0 8px;}
+  td.input-cel input.num{text-align:right;font-variant-numeric:tabular-nums;}
+  td.input-cel input:focus{outline:3px solid var(--yellow);outline-offset:-3px;}
+  tr.total-parcial td{border-top:2px solid var(--ink);font-weight:600;}
+  tr.total-geral td{border-top:3px solid var(--ink);font-size:16px;font-weight:800;height:42px;background:var(--doc);}
+  tr.total-geral td .meta{color:var(--ink-muted);}
+  .rodape-doc{display:flex;gap:8px;border-top:3px solid var(--ink);margin-top:16px;padding-top:12px;justify-content:flex-end;}
+
+  .nota{color:var(--ink-muted);font-size:12px;margin-top:10px;max-width:720px;}
+  .legenda-mini{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
+  .legenda-mini .item{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink-muted);background:var(--paper);padding:4px 10px;border:1px solid var(--hair);}
+  .quadr{width:14px;height:14px;border:2px solid var(--ink);display:inline-block;}
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <h1>VITRA<br><span>Brut sobre papel</span></h1>
+  <div class="stipple"></div>
+  <div class="tag meta">
+    Mockup de direção — 2026-08-04<br>
+    papel cream · grade de fundo · borda preta · amarelo/vermelho<br>
+    refs: BRUT · De School · Utrecht · Low-tech Mag · Bergen Assembly
+  </div>
+</div>
+
+<!-- ============ 01 SPECIMEN ============ -->
+<div class="secao">
+  <div class="bloco">01</div>
+  <h2>Tokens</h2>
+  <div class="desc">Régua da caixa PRETA 2px, sombra dura na moldura, grade de 52px forte no papel. Zonas tintadas: creme-esverdeado (dinheiro) e creme-avermelhado (identidade). Dinheiro escreve em verde. Malha interna continua fio claro — a densidade sobrevive.</div>
+</div>
+
+<div class="spec">
+  <div class="cel" style="grid-column:span 4;">
+    <span class="meta" style="color:var(--ink-muted)">Superfícies + acentos + zonas tintadas</span>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
+      <div class="sw"><div class="chip" style="background:var(--paper)"></div><span class="meta">papel</span></div>
+      <div class="sw"><div class="chip" style="background:var(--doc)"></div><span class="meta">doc</span></div>
+      <div class="sw"><div class="chip" style="background:var(--ink)"></div><span class="meta">tinta</span></div>
+      <div class="sw"><div class="chip" style="background:var(--yellow)"></div><span class="meta">âncora</span></div>
+      <div class="sw"><div class="chip" style="background:var(--red)"></div><span class="meta">alerta</span></div>
+      <div class="sw"><div class="chip" style="background:var(--cream-green)"></div><span class="meta">zona $</span></div>
+      <div class="sw"><div class="chip" style="background:var(--cream-red)"></div><span class="meta">banda id</span></div>
+      <div class="sw"><div class="chip" style="background:var(--doc);display:flex;align-items:center;justify-content:center;"><span class="num money" style="font-weight:700;">1.284,00</span></div><span class="meta">tinta $</span></div>
+    </div>
+    <div class="nota">Dinheiro escreve em VERDE (tradição do ledger); negativo em vermelho. Zona de totais = creme-esverdeado; banda de identidade da tela = creme-avermelhado.</div>
+  </div>
+  <div class="cel" style="grid-column:span 4;">
+    <span class="meta" style="color:var(--ink-muted)">Carimbos</span>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <span class="stamp neutro">Neutro</span>
+      <span class="stamp aberto">Aberto</span>
+      <span class="stamp concluido">Concluído</span>
+      <span class="stamp anulado">Anulado</span>
+    </div>
+    <div class="nota">Aberto = amarelo (pede ação). Concluído = tinta sólida (encerrado). Anulado = vermelho.</div>
+  </div>
+  <div class="cel" style="grid-column:span 4;">
+    <span class="meta" style="color:var(--ink-muted)">Botões</span>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">
+      <button class="btn primario">Gravar</button>
+      <button class="btn">Incluir</button>
+      <button class="btn compacto">Filtro</button>
+      <button class="btn destrutivo compacto">Excluir</button>
+    </div>
+    <div class="nota">Primário = tinta sólida com sombra dura. Foco de campo = anel amarelo 3px.</div>
+  </div>
+</div>
+
+<!-- ============ 02 LISTAGEM ============ -->
+<div class="secao">
+  <div class="bloco">02</div>
+  <h2>Listagem</h2>
+  <div class="desc">Cabeçalho de coluna vira BARRA PRETA — o gesto mais forte do BRUT que transfere pra ERP sem custo de densidade. Linha selecionada: marcador amarelo+preto.</div>
+</div>
+
+<div class="frame">
+  <div class="shellwrap">
+    <div class="sidebar">
+      <div class="empresa">
+        <span class="meta">Empresa ativa</span>
+        <strong>VERTZ ILUMINAÇÃO</strong>
+      </div>
+      <div class="navgrp">
+        <span class="meta">Cadastros</span>
+        <a class="navitem ativo" href="#">Produtos</a>
+        <a class="navitem" href="#">Clientes</a>
+        <a class="navitem" href="#">Fornecedores</a>
+        <a class="navitem" href="#">Colaboradores</a>
+      </div>
+      <div class="navgrp">
+        <span class="meta">Estoque</span>
+        <a class="navitem" href="#">Movimentos</a>
+        <a class="navitem" href="#">Saldos</a>
+      </div>
+      <div class="navgrp">
+        <span class="meta">Vendas</span>
+        <a class="navitem" href="#">Orçamentos</a>
+        <a class="navitem" href="#">Pedidos</a>
+      </div>
+    </div>
+    <div class="header">
+      <span class="meta">VITRA</span>
+      <span class="meta" style="color:var(--ink-muted)">/ Cadastros / Produtos</span>
+      <div class="user">
+        <span class="meta" style="color:var(--ink-muted)">HENRIQUE</span>
+        <button class="btn compacto">Sair</button>
+      </div>
+    </div>
+    <div class="conteudo">
+      <div class="folha">
+        <div class="titulo-tela">
+          <h3>Cadastro de produtos</h3>
+          <span class="meta">Banco Principal</span>
+        </div>
+        <div class="barra">
+          <div class="busca">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            <input placeholder="Buscar por código ou descrição…">
+          </div>
+          <button class="btn compacto">Filtro</button>
+          <button class="btn compacto">Incluir</button>
+          <button class="btn compacto">Alterar</button>
+          <button class="btn compacto">Consul.</button>
+          <button class="btn destrutivo compacto">Excluir</button>
+          <button class="btn compacto">Imprimir</button>
+        </div>
+        <div class="grade">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:110px;">Código</th>
+                <th>Descrição</th>
+                <th style="width:120px;">NCM</th>
+                <th class="num" style="width:90px;">Estoque</th>
+                <th class="num" style="width:110px;">Preço</th>
+                <th style="width:110px;">Situação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="cod">PRD-00284</td><td>Pendente linear LED 1200mm embutir</td><td class="cod">9405.11.99</td><td class="num">14,000</td><td class="num money">1.284,00</td><td><span class="stamp concluido" style="height:20px;font-size:10px;">Ativo</span></td></tr>
+              <tr class="sel"><td class="cod">PRD-00291</td><td>Arandela externa IP65 cubo alumínio</td><td class="cod">9405.11.10</td><td class="num">6,000</td><td class="num money">412,50</td><td><span class="stamp concluido" style="height:20px;font-size:10px;">Ativo</span></td></tr>
+              <tr><td class="cod">PRD-00292</td><td>Spot embutir quadrado orientável PAR20</td><td class="cod">9405.11.99</td><td class="num">128,000</td><td class="num money">96,90</td><td><span class="stamp concluido" style="height:20px;font-size:10px;">Ativo</span></td></tr>
+              <tr><td class="cod">PRD-00297</td><td>Fita LED 24V 2700K IP20 — rolo 5m</td><td class="cod">9405.42.90</td><td class="num">61,500</td><td class="num money">238,00</td><td><span class="stamp concluido" style="height:20px;font-size:10px;">Ativo</span></td></tr>
+              <tr><td class="cod">PRD-00301</td><td>Perfil sobrepor alumínio difusor leitoso 2m</td><td class="cod">7604.21.00</td><td class="num">0,000</td><td class="num money">187,20</td><td><span class="stamp neutro" style="height:20px;font-size:10px;">Inativo</span></td></tr>
+              <tr><td class="cod">PRD-00305</td><td>Trilho eletrificado bivolt 1m preto</td><td class="cod">9405.99.00</td><td class="num">32,000</td><td class="num money">142,00</td><td><span class="stamp concluido" style="height:20px;font-size:10px;">Ativo</span></td></tr>
+              <tr><td class="cod">PRD-00310</td><td>Balizador de parede LED 3000K</td><td class="cod">9405.11.99</td><td class="num">240,000</td><td class="num money">58,40</td><td><span class="stamp concluido" style="height:20px;font-size:10px;">Ativo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="rodape-tabela">
+          <span class="meta">7 de 1.284 registros</span>
+          <a class="link" href="#" style="margin-left:20px;">Exportar lista →</a>
+          <div class="paginacao">
+            <button class="btn compacto">Anterior</button>
+            <span class="meta">Página 1 de 184</span>
+            <button class="btn compacto">Próxima</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 03 DOCUMENTO ============ -->
+<div class="secao">
+  <div class="bloco">03</div>
+  <h2>Documento</h2>
+  <div class="desc">Orçamento como invoice BRUT: nº do documento grande em mono, carimbo amarelo, legend do bloco vira ETIQUETA PRETA cavalgando a borda, totais nas últimas fileiras da grade.</div>
+</div>
+
+<div class="frame" style="padding:20px;">
+  <div class="dochead">
+    <h3>Orçamento de venda</h3>
+    <span class="stamp aberto">Aberto</span>
+    <span class="docnum">ORÇ-2026-00184</span>
+  </div>
+
+  <fieldset class="bloco-form" style="border:2px solid var(--ink);">
+    <legend>Cabeçalho</legend>
+    <div class="grid12">
+      <div class="campo c2"><label>Código</label><input class="cod" value="00184" readonly></div>
+      <div class="campo c6"><label>Cliente</label><input value="Residência Alameda dos Jasmins — Marcelo T."></div>
+      <div class="campo c2"><label>Data</label><input value="04/08/2026"></div>
+      <div class="campo c2"><label>Validade</label><input value="30 dias"></div>
+    </div>
+  </fieldset>
+
+  <fieldset class="bloco-form">
+    <legend>Itens</legend>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn compacto">Incluir item</button>
+      <button class="btn compacto">Buscar produto</button>
+    </div>
+    <div class="grade">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px;" class="num">Nº</th>
+            <th style="width:110px;">Código</th>
+            <th>Descrição</th>
+            <th class="num" style="width:80px;">Quant.</th>
+            <th style="width:56px;">Un.</th>
+            <th class="num" style="width:110px;">Unitário</th>
+            <th class="num" style="width:120px;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="faixa"><td colspan="7">Ambiente — Sala de estar</td></tr>
+          <tr>
+            <td class="num cod">1</td><td class="cod">PRD-00284</td>
+            <td class="input-cel"><input value="Pendente linear LED 1200mm embutir"></td>
+            <td class="input-cel"><input class="num" value="2,000"></td>
+            <td class="cod">PC</td>
+            <td class="input-cel"><input class="num money" value="1.284,00" style="color:var(--money);"></td>
+            <td class="num money" style="font-weight:600;">2.568,00</td>
+          </tr>
+          <tr>
+            <td class="num cod">2</td><td class="cod">PRD-00297</td>
+            <td class="input-cel"><input value="Fita LED 24V 2700K IP20 — rolo 5m"></td>
+            <td class="input-cel"><input class="num" value="3,000"></td>
+            <td class="cod">RL</td>
+            <td class="input-cel"><input class="num money" value="238,00" style="color:var(--money);"></td>
+            <td class="num money" style="font-weight:600;">714,00</td>
+          </tr>
+          <tr class="faixa"><td colspan="7">Ambiente — Varanda gourmet</td></tr>
+          <tr>
+            <td class="num cod">3</td><td class="cod">PRD-00291</td>
+            <td class="input-cel"><input value="Arandela externa IP65 cubo alumínio"></td>
+            <td class="input-cel"><input class="num" value="4,000"></td>
+            <td class="cod">PC</td>
+            <td class="input-cel"><input class="num money" value="412,50" style="color:var(--money);"></td>
+            <td class="num money" style="font-weight:600;">1.650,00</td>
+          </tr>
+          <tr>
+            <td class="num cod">4</td><td class="cod">PRD-00310</td>
+            <td class="input-cel"><input value="Balizador de parede LED 3000K"></td>
+            <td class="input-cel"><input class="num" value="6,000"></td>
+            <td class="cod">PC</td>
+            <td class="input-cel"><input class="num money" value="58,40" style="color:var(--money);"></td>
+            <td class="num money" style="font-weight:600;">350,40</td>
+          </tr>
+          <tr class="total-parcial">
+            <td colspan="5" style="border-left:none;border-bottom:none;background:var(--doc);"></td>
+            <td class="meta zona" style="color:var(--ink-muted);">Subtotal</td>
+            <td class="num money zona">5.282,40</td>
+          </tr>
+          <tr class="total-parcial" style="font-weight:400;">
+            <td colspan="5" style="border:none;background:var(--doc);"></td>
+            <td class="meta zona" style="color:var(--ink-muted);border-top:1px solid var(--hair);">Desconto</td>
+            <td class="num money-neg zona" style="border-top:1px solid var(--hair);">−282,40</td>
+          </tr>
+          <tr class="total-geral">
+            <td colspan="5" style="border:none;background:var(--doc);"></td>
+            <td class="meta zona">Total</td>
+            <td class="num money zona" style="border-left:2px solid var(--ink);">5.000,00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </fieldset>
+
+  <div class="rodape-doc">
+    <button class="btn">Fechar</button>
+    <button class="btn">Imprimir</button>
+    <button class="btn primario">Gravar</button>
+  </div>
+</div>
+
+<div class="legenda-mini">
+  <div class="item"><span class="quadr" style="background:var(--yellow)"></span> amarelo = âncora/atenção: nº de seção, carimbo ABERTO, seleção, foco</div>
+  <div class="item"><span class="quadr" style="background:var(--red)"></span> vermelho = destruição/erro/anulado/valor negativo</div>
+  <div class="item"><span class="quadr" style="background:var(--ink)"></span> tinta sólida = cabeçalho de coluna, legend, primário, CONCLUÍDO</div>
+  <div class="item"><span class="quadr" style="background:var(--cream-green)"></span> creme-esverdeado = zona de dinheiro/totais · <span class="money" style="font-weight:700;">verde = tinta de dinheiro</span></div>
+  <div class="item"><span class="quadr" style="background:var(--cream-red)"></span> creme-avermelhado = banda de identidade (título de tela/documento)</div>
+  <div class="item"><span class="quadr" style="background:var(--paper)"></span> papel cream com grade de 52px; branco continua o documento</div>
+</div>
+
+</body>
+</html>

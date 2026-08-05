@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -56,41 +55,39 @@ export function ConfirmarDesativacao({
   erro = null,
 }: ConfirmarDesativacaoProps) {
   return (
-    <Dialog open={aberto} onOpenChange={(open) => !open && onFechar()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{ativo ? `Desativar ${entidade}?` : `${nome} já está inativo`}</DialogTitle>
-          <DialogDescription>
-            {ativo ? (
-              <>
-                <strong>{nome}</strong> deixa de aparecer nas telas que usam este cadastro. O
-                registro <strong>não é apagado</strong>: para voltar atrás, abra em{' '}
-                <strong>Alterar</strong> e marque <strong>Ativo</strong>.
-              </>
-            ) : (
-              <>
-                Este {entidade} já está com a situação <strong>Inativo</strong>. Nada será enviado
-                ao servidor.
-              </>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        {erro ? (
-          <p role="alert" className="text-[0.75rem] text-destructive">
-            {erro}
-          </p>
-        ) : null}
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onFechar}>
-            {ativo ? 'Cancelar' : 'Fechar'}
-          </Button>
+    <Dialog isOpen={aberto} onOpenChange={(open) => !open && onFechar()} className="max-w-sm">
+      <DialogHeader>
+        <DialogTitle>{ativo ? `Desativar ${entidade}?` : `${nome} já está inativo`}</DialogTitle>
+        <DialogDescription>
           {ativo ? (
-            <Button type="button" variant="destructive" onClick={onConfirmar} disabled={pendente}>
-              {pendente ? 'Desativando…' : 'Desativar'}
-            </Button>
-          ) : null}
-        </DialogFooter>
-      </DialogContent>
+            <>
+              <strong>{nome}</strong> deixa de aparecer nas telas que usam este cadastro. O registro{' '}
+              <strong>não é apagado</strong>: para voltar atrás, abra em <strong>Alterar</strong> e
+              marque <strong>Ativo</strong>.
+            </>
+          ) : (
+            <>
+              Este {entidade} já está com a situação <strong>Inativo</strong>. Nada será enviado ao
+              servidor.
+            </>
+          )}
+        </DialogDescription>
+      </DialogHeader>
+      {erro ? (
+        <p role="alert" className="text-[0.75rem] text-destructive">
+          {erro}
+        </p>
+      ) : null}
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onFechar}>
+          {ativo ? 'Cancelar' : 'Fechar'}
+        </Button>
+        {ativo ? (
+          <Button type="button" variant="destructive" onClick={onConfirmar} disabled={pendente}>
+            {pendente ? 'Desativando…' : 'Desativar'}
+          </Button>
+        ) : null}
+      </DialogFooter>
     </Dialog>
   )
 }

@@ -2,83 +2,85 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Papel Funcional — valores travados em DESIGN.md (fonte canônica de token).
-   Contrastes verificados contra WCAG: Tinta 15,5:1 · Tinta Apagada 5,2:1 ·
-   Régua 3,1:1 (piso 1.4.11) · Vermelho de Alerta 6,2:1, todos sobre Papel. */
+/* Brut sobre papel — valores travados no frontmatter do DESIGN.md (fonte canônica).
+   Em divergência doc × mockup (docs/design/mockup-brut-papel.html), o mockup vence.
+   Contrastes: Tinta 15,9:1 sobre Papel · Tinta Apagada 6,8:1 · Tinta de Dinheiro
+   6,9:1 sobre branco · Vermelho de Alerta 5,9:1. Amarelo Âncora NUNCA é texto. */
 :root {
-  --radius: 4px;
-  --background: 42 30% 97%; /* Papel */
-  --foreground: 30 12% 12%; /* Tinta */
-  --card: 0 0% 100%; /* Documento */
-  --card-foreground: 30 12% 12%;
+  --radius: 0px; /* brut não arredonda */
+  --background: 42 30% 96%; /* Papel */
+  --foreground: 30 15% 10%; /* Tinta */
+  --card: 0 0% 100%; /* Documento — folha opaca sobre a grade */
+  --card-foreground: 30 15% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 30 12% 12%;
-  --primary: 28 12% 18%; /* Grafite — única ação afirmativa preenchida (Gravar) */
-  --primary-foreground: 40 20% 95%; /* Tinta Invertida */
-  --secondary: 0 0% 100%; /* botão outline: fundo Documento, hover vai p/ Bancada */
-  --secondary-foreground: 30 12% 12%;
-  --muted: 42 35% 92%; /* Tinta de Bancada */
-  --muted-foreground: 35 10% 40%; /* Tinta Apagada */
-  --accent: 42 35% 92%; /* hover/seleção = Bancada, nunca matiz */
-  --accent-foreground: 30 12% 12%;
-  /* Vermelho de Alerta — substitui o vermelho de fábrica do shadcn
-     (0 84.2% 60.2%), que reprovava AA como texto de erro (3,0:1). */
-  --destructive: 0 68% 42%;
-  --destructive-foreground: 40 20% 95%;
-  /* Régua — borda de trabalho. 3,1:1 sobre Papel: piso de conformidade
-     (WCAG 1.4.11), não preferência. Não clarear "no olho". */
-  --border: 34 11% 54%;
-  --input: 34 11% 54%;
-  --ring: 32 12% 34%; /* Régua Forte — anel de foco único do sistema */
-  /* Tokens novos do DESIGN.md: os outros dois pesos de régua, o preenchimento
-     tonal de estado e os quatro carimbos de situação. */
-  --rule-hair: 40 14% 88%; /* Fio — divisor entre linhas de uma mesma tabela */
-  --rule-strong: 32 12% 34%; /* Régua Forte — separação de seção/bloco */
-  --bench-tint: 42 35% 92%;
-  --stamp-neutral: 35 10% 40%;
-  --stamp-open: 214 70% 34%;
-  --stamp-done: 152 55% 24%;
-  --stamp-void: 0 68% 42%;
-  /* Sidebar sem paleta própria: sobre Papel ela é Papel, conteúdo é Documento
-     (DESIGN.md §Navigation — a moldura separa navegação de trabalho). */
-  --sidebar: hsl(42 30% 97%);
-  --sidebar-foreground: hsl(30 12% 12%);
-  --sidebar-primary: hsl(28 12% 18%);
-  --sidebar-primary-foreground: hsl(40 20% 95%);
-  --sidebar-accent: hsl(42 35% 92%);
-  --sidebar-accent-foreground: hsl(30 12% 12%);
-  --sidebar-border: hsl(34 11% 54%);
-  --sidebar-ring: hsl(32 12% 34%);
+  --popover-foreground: 30 15% 10%;
+  --primary: 30 15% 10%; /* ação primária = Tinta sólida (Gravar) */
+  --primary-foreground: 42 30% 96%; /* texto cream sobre Tinta */
+  --secondary: 0 0% 100%; /* botão outline: fundo Documento, hover Bancada */
+  --secondary-foreground: 30 15% 10%;
+  --muted: 44 45% 90%; /* Tinta de Bancada — hover de linha e de botão outline */
+  --muted-foreground: 32 10% 38%; /* Tinta Apagada */
+  --accent: 44 45% 90%;
+  --accent-foreground: 30 15% 10%;
+  --destructive: 4 74% 44%; /* Vermelho de Alerta */
+  --destructive-foreground: 0 0% 100%;
+  /* Regra da Caixa Preta: toda caixa estrutural é Tinta. A malha interna de
+     tabela é a ÚNICA linha em Fio — quem quer Fio pede border-rule-hair. */
+  --border: 30 15% 10%;
+  --input: 30 15% 10%;
+  --ring: 45 96% 54%; /* anel de foco = Amarelo Âncora, 3px, offset 0 */
+  --rule-hair: 38 14% 84%; /* Fio — malha interna (linhas E colunas) */
+  --rule-strong: 30 15% 10%; /* separador de seção: Tinta, 3px */
+  --bench-tint: 44 45% 90%;
+  /* Acentos de emprego fixo (Regra do Emprego Fixo — DESIGN.md §Colors). */
+  --anchor: 45 96% 54%; /* Amarelo Âncora: SEMPRE fundo/borda, nunca texto */
+  --money: 152 65% 24%; /* Tinta de Dinheiro — todo valor monetário */
+  --zone-money: 110 24% 88%; /* creme-esverdeado: fileiras de total */
+  --zone-id: 8 36% 89%; /* creme-avermelhado: banda de identidade */
+  --stamp-neutral: 32 10% 38%;
+  --stamp-open: 45 96% 54%; /* ABERTO = fundo amarelo, texto Tinta */
+  --stamp-done: 30 15% 10%; /* CONCLUÍDO = fundo Tinta, texto cream */
+  --stamp-void: 4 74% 44%; /* ANULADO = borda+texto vermelho */
+  /* Grade de 52px no Papel (De School). Vive no fundo do app, nunca na folha. */
+  --grid-line: hsl(30 15% 10% / 0.28);
+  /* Sidebar: sobre Papel ela é Papel; item ativo = Documento + borda 3px Tinta. */
+  --sidebar: hsl(42 30% 96%);
+  --sidebar-foreground: hsl(30 15% 10%);
+  --sidebar-primary: hsl(30 15% 10%);
+  --sidebar-primary-foreground: hsl(42 30% 96%);
+  --sidebar-accent: hsl(44 45% 90%);
+  --sidebar-accent-foreground: hsl(30 15% 10%);
+  --sidebar-border: hsl(30 15% 10%);
+  --sidebar-ring: hsl(45 96% 54%);
 }
 
+/* Modo escuro: [a resolver — fase 3]. Valores abaixo são da direção anterior
+   ("Papel Funcional") e ficam como estavam até o recálculo com contraste
+   verificado — não improvisar tom a tom (DESIGN.md §Modo escuro). Os tokens
+   novos (anchor/money/zonas/grid-line) herdam o valor claro por enquanto. */
 .dark {
-  --background: 30 8% 10%; /* Papel Noturno */
-  --foreground: 40 20% 95%; /* Tinta Noturna */
-  --card: 30 7% 13%; /* Documento Noturno — o degrau de superfície sobrevive à inversão */
+  --background: 30 8% 10%;
+  --foreground: 40 20% 95%;
+  --card: 30 7% 13%;
   --card-foreground: 40 20% 95%;
   --popover: 30 7% 13%;
   --popover-foreground: 40 20% 95%;
-  /* Grafite não tem versão noturna: a ação afirmativa inverte (tinta clara
-     sobre papel escuro), mesma gramática do tema claro. 15,7:1. */
   --primary: 40 20% 95%;
   --primary-foreground: 30 8% 10%;
   --secondary: 30 7% 13%;
   --secondary-foreground: 40 20% 95%;
-  --muted: 34 9% 20%; /* Bancada Noturna */
+  --muted: 34 9% 20%;
   --muted-foreground: 38 10% 66%;
   --accent: 34 9% 20%;
   --accent-foreground: 40 20% 95%;
-  --destructive: 2 70% 62%; /* Alerta Noturno — 5,0:1 sobre Papel Noturno */
+  --destructive: 2 70% 62%;
   --destructive-foreground: 30 8% 10%;
-  /* Régua Noturna — 3,9:1 sobre Papel Noturno, acima do piso de 3:1. */
   --border: 33 10% 46%;
   --input: 33 10% 46%;
-  --ring: 36 11% 62%; /* Régua Forte Noturna */
+  --ring: 36 11% 62%;
   --rule-hair: 34 7% 22%;
   --rule-strong: 36 11% 62%;
   --bench-tint: 34 9% 20%;
-  /* Neutro e Anulado não têm tom noturno próprio no DESIGN.md: derivam de
-     Tinta Apagada Noturna e Alerta Noturno, como no tema claro. */
   --stamp-neutral: 38 10% 66%;
   --stamp-open: 210 70% 64%;
   --stamp-done: 150 45% 58%;
@@ -116,15 +118,22 @@
   --color-rule-hair: hsl(var(--rule-hair));
   --color-rule-strong: hsl(var(--rule-strong));
   --color-bench-tint: hsl(var(--bench-tint));
+  --color-anchor: hsl(var(--anchor));
+  --color-money: hsl(var(--money));
+  --color-zone-money: hsl(var(--zone-money));
+  --color-zone-id: hsl(var(--zone-id));
   --color-stamp-neutral: hsl(var(--stamp-neutral));
   --color-stamp-open: hsl(var(--stamp-open));
   --color-stamp-done: hsl(var(--stamp-done));
   --color-stamp-void: hsl(var(--stamp-void));
-  /* Canto quase reto: raio-base 4px (DESIGN.md §Shapes) — sm 2 · md 3 · lg 4 · xl 6 */
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: var(--radius);
-  --radius-xl: 6px;
+  /* Canto RETO: radius 0 é lei (DESIGN.md §Don'ts). */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  /* Sombra dura — deslocamento sem blur (moldura 5px; botão primário 3px). */
+  --shadow-hard: 5px 5px 0 hsl(var(--foreground));
+  --shadow-hard-sm: 3px 3px 0 hsl(var(--foreground));
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -133,6 +142,15 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+}
+
+/* Grade de células de 52px percorrendo o Papel (Regra da Grade de Fundo).
+   Só no fundo do app — a folha (Documento) pousa OPACA por cima. */
+@utility bg-paper-grid {
+  background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 52px 52px;
+  background-color: hsl(var(--background));
 }
 
 * {

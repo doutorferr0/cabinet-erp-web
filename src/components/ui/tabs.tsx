@@ -1,57 +1,103 @@
 import { cn } from '@/lib/utils'
-import * as TabsPrimitive from '@radix-ui/react-tabs'
-import * as React from 'react'
+import { type VariantProps, cva } from 'class-variance-authority'
+import type * as React from 'react'
+import {
+  TabList as TabListPrimitive,
+  TabPanel as TabPanelPrimitive,
+  Tab as TabPrimitive,
+  Tabs as TabsPrimitive,
+} from 'react-aria-components'
 
-const Tabs = TabsPrimitive.Root
+/** Compat shadcn→RAC: `defaultValue`/`value` viram `defaultSelectedKey`/`selectedKey`. */
+function Tabs({
+  className,
+  defaultValue,
+  value,
+  onValueChange,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive> & {
+  defaultValue?: string | undefined
+  value?: string | undefined
+  onValueChange?: ((value: string) => void) | undefined
+}) {
+  return (
+    <TabsPrimitive
+      data-slot="tabs"
+      // RAC marca a orientação em `data-orientation` (não em `data-horizontal`):
+      // com o atalho errado a tira de abas caía ao LADO do painel, em coluna.
+      className={cn('group/tabs flex gap-3 data-[orientation=horizontal]:flex-col', className)}
+      {...(defaultValue !== undefined && { defaultSelectedKey: defaultValue })}
+      {...(value !== undefined && { selectedKey: value })}
+      {...(onValueChange !== undefined && {
+        onSelectionChange: (key: React.Key) => onValueChange(String(key)),
+      })}
+      {...props}
+    />
+  )
+}
 
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      'inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground',
-      className,
-    )}
-    {...props}
-  />
-))
-TabsList.displayName = TabsPrimitive.List.displayName
+/** Tira de abas brut: régua inferior 2px Tinta; aba ativa = Tinta sólida. */
+const tabsListVariants = cva(
+  'group/tabs-list inline-flex w-fit items-end gap-1 border-b-2 border-border text-muted-foreground group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col',
+  {
+    variants: {
+      variant: {
+        default: '',
+        line: '',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  },
+)
 
-const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      // Aba ativa se destaca por superfície + régua, nunca por sombra — as duas
-      // são coplanares (DESIGN.md, Regra da Linha Antes da Sombra).
-      // A borda transparente nasce em toda aba para a ativa não deslocar a fileira em 1px.
-      'inline-flex items-center justify-center whitespace-nowrap rounded-md border border-transparent px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-border data-[state=active]:bg-card data-[state=active]:text-foreground',
-      className,
-    )}
-    {...props}
-  />
-))
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+function TabsList({
+  className,
+  variant = 'default',
+  ...props
+}: React.ComponentProps<typeof TabListPrimitive> & VariantProps<typeof tabsListVariants>) {
+  return (
+    <TabListPrimitive
+      data-slot="tabs-list"
+      data-variant={variant}
+      className={cn(tabsListVariants({ variant }), className)}
+      {...props}
+    />
+  )
+}
 
-const TabsContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      // Troca de aba é troca de região: `{spacing.lg}`. A tela não repete padding
-      // próprio em cima disto — o degrau mora aqui, uma vez só.
-      'mt-4 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-      className,
-    )}
-    {...props}
-  />
-))
-TabsContent.displayName = TabsPrimitive.Content.displayName
+function TabsTrigger({
+  className,
+  value,
+  ...props
+}: React.ComponentProps<typeof TabPrimitive> & { value?: string | undefined }) {
+  return (
+    <TabPrimitive
+      data-slot="tabs-trigger"
+      {...(value !== undefined && { id: value })}
+      className={cn(
+        'inline-flex h-8 cursor-default items-center justify-center gap-1.5 px-3 text-sm font-semibold whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-selected:bg-primary data-selected:text-primary-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
 
-export { Tabs, TabsContent, TabsList, TabsTrigger }
+function TabsContent({
+  className,
+  value,
+  ...props
+}: React.ComponentProps<typeof TabPanelPrimitive> & { value?: string | undefined }) {
+  return (
+    <TabPanelPrimitive
+      data-slot="tabs-content"
+      {...(value !== undefined && { id: value })}
+      className={cn('flex-1 text-sm outline-none', className)}
+      {...props}
+    />
+  )
+}
+
+export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }

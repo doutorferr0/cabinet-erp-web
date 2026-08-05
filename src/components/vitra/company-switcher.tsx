@@ -1,6 +1,5 @@
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -44,48 +43,47 @@ export function CompanySwitcher() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              disabled={carregando || erro}
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Building2 className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{titulo}</span>
-                {ativa && (
-                  <span className="truncate font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
-                    {papelLabel(ativa.role)}
-                  </span>
-                )}
-              </div>
-              <ChevronsUpDown className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            align="start"
-            side={isMobile ? 'bottom' : state === 'collapsed' ? 'right' : 'bottom'}
+        {/* RAC: o trigger envolve botão E menu; o conteúdo é o próprio DropdownMenu. */}
+        <DropdownMenuTrigger>
+          <SidebarMenuButton
+            size="lg"
+            isDisabled={carregando || Boolean(erro)}
+            // Bloco da empresa ativa = fundo amarelo com borda preta (mockup .empresa).
+            className="border-2 border-border bg-anchor font-bold aria-expanded:bg-anchor"
           >
-            <DropdownMenuLabel className="font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
-              Empresa ativa
-            </DropdownMenuLabel>
+            <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
+              <Building2 className="size-4" />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-extrabold">{titulo}</span>
+              {ativa && (
+                <span className="truncate font-mono text-xs uppercase tracking-[0.06em] text-foreground/70">
+                  {papelLabel(ativa.role)}
+                </span>
+              )}
+            </div>
+            <ChevronsUpDown className="ml-auto size-4" />
+          </SidebarMenuButton>
+          <DropdownMenu
+            className="min-w-56"
+            placement={
+              isMobile ? 'bottom start' : state === 'collapsed' ? 'right top' : 'bottom start'
+            }
+          >
+            <DropdownMenuLabel>Empresa ativa</DropdownMenuLabel>
             {empresas.length === 0 ? (
-              <DropdownMenuItem disabled className="gap-2 p-2">
+              <DropdownMenuItem isDisabled className="gap-2 p-2">
                 Nenhuma empresa vinculada a este usuário.
               </DropdownMenuItem>
             ) : (
               empresas.map((empresa) => (
                 <DropdownMenuItem
                   key={empresa.tenantId}
-                  disabled={trocando}
-                  onClick={() => trocar(empresa.tenantId)}
+                  isDisabled={trocando}
+                  onAction={() => trocar(empresa.tenantId)}
                   className="gap-2 p-2"
                 >
-                  <div className="flex size-6 items-center justify-center rounded-sm border">
+                  <div className="flex size-6 items-center justify-center border">
                     {empresa.tenantId === ativa?.tenantId ? (
                       <Check className="size-4 shrink-0" />
                     ) : (
@@ -101,17 +99,17 @@ export function CompanySwitcher() {
                 o logout só derruba o cookie e limpa o cache. */}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              disabled={logout.isPending}
-              onClick={() => logout.mutate()}
+              isDisabled={logout.isPending}
+              onAction={() => logout.mutate()}
               className="gap-2 p-2"
             >
-              <div className="flex size-6 items-center justify-center rounded-sm border">
+              <div className="flex size-6 items-center justify-center border">
                 <LogOut className="size-4 shrink-0" />
               </div>
               {logout.isPending ? 'Saindo…' : 'Sair'}
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </DropdownMenuTrigger>
       </SidebarMenuItem>
     </SidebarMenu>
   )

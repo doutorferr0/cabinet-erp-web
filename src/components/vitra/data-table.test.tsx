@@ -110,14 +110,15 @@ describe('VitraDataTable', () => {
     expect(selecionado?.nossaDescricao).toBe('PENDENTE REDONDO ALUMÍNIO PRETO')
   })
 
-  it('cabeçalho usa etiqueta Meta (mono, caixa alta) em 36px', async () => {
+  it('cabeçalho usa etiqueta Meta (mono, caixa alta) em 34px sobre Tinta', async () => {
     setup()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const head = screen.getByRole('columnheader', { name: 'Marca' })
-    expect(head.className).toContain('h-9')
+    expect(head.className).toContain('h-[34px]')
+    expect(head.className).toContain('bg-primary')
     expect(head.className).toContain('font-mono')
     expect(head.className).toContain('uppercase')
-    expect(head.className).toContain('tracking-[0.06em]')
+    expect(head.className).toContain('tracking-[0.07em]')
   })
 
   it('coluna numeric alinha à direita com numerais tabulares', async () => {
@@ -143,13 +144,15 @@ describe('VitraDataTable', () => {
     expect(celula?.className).toContain('text-right')
   })
 
-  it('linha selecionada recebe marcador de 2px em Régua Forte além da tinta', async () => {
+  it('linha selecionada recebe marcador Âncora na primeira célula além da tinta', async () => {
     const { user } = setup()
     const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.click(descricao)
     const linha = descricao.closest('tr')
     expect(linha?.className).toContain('bg-muted')
-    expect(linha?.className).toContain('shadow-[inset_2px_0_0_hsl(var(--rule-strong))]')
+    expect(linha?.className).toContain(
+      '[&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
+    )
   })
 
   it('rowNumbers: primeira coluna de 40px em Meta, sequencial global entre páginas', async () => {

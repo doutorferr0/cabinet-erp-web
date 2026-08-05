@@ -1,19 +1,22 @@
 import { cn } from '@/lib/utils'
-import * as React from 'react'
+import type * as React from 'react'
+import { Input as InputPrimitive, composeRenderProps } from 'react-aria-components'
 
-const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, type, ...props }, ref) => (
-    <input
+/** Campo brut: caixa preta 2px sobre Documento, foco = anel 3px Amarelo Âncora. */
+function Input({ className, type, ...props }: React.ComponentProps<typeof InputPrimitive>) {
+  return (
+    <InputPrimitive
       type={type}
-      className={cn(
-        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-        className,
+      data-slot="input"
+      className={composeRenderProps(className, (className) =>
+        cn(
+          'h-9 w-full min-w-0 border-2 border-input bg-card px-2.5 py-1 text-sm transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-50 aria-invalid:border-destructive',
+          className,
+        ),
       )}
-      ref={ref}
       {...props}
     />
-  ),
-)
-Input.displayName = 'Input'
+  )
+}
 
 export { Input }

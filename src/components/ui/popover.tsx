@@ -1,28 +1,68 @@
 import { cn } from '@/lib/utils'
-import * as PopoverPrimitive from '@radix-ui/react-popover'
-import * as React from 'react'
+import type * as React from 'react'
+import {
+  DialogTrigger,
+  type DialogTriggerProps,
+  Heading,
+  Popover as PopoverPrimitive,
+  type PopoverProps as PopoverPrimitiveProps,
+} from 'react-aria-components'
 
-const Popover = PopoverPrimitive.Root
-const PopoverTrigger = PopoverPrimitive.Trigger
-const PopoverAnchor = PopoverPrimitive.Anchor
+function PopoverTrigger({ children, ...props }: DialogTriggerProps) {
+  return (
+    <DialogTrigger data-slot="popover-trigger" {...props}>
+      {children}
+    </DialogTrigger>
+  )
+}
 
-const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = 'center', sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
+/** Popover brut: folha opaca com caixa preta 2px + sombra dura 3px. */
+function Popover({
+  className,
+  placement = 'bottom',
+  offset = 4,
+  crossOffset = 0,
+  ...props
+}: Omit<PopoverPrimitiveProps, 'className'> & {
+  className?: string
+}) {
+  return (
+    <PopoverPrimitive
+      data-slot="popover-content"
+      placement={placement}
+      offset={offset}
+      crossOffset={crossOffset}
       className={cn(
-        'z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+        'z-50 flex w-72 origin-(--trigger-anchor-point) flex-col gap-2.5 border-2 border-border bg-popover p-2.5 text-sm text-popover-foreground shadow-hard-sm outline-hidden duration-100 data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0',
         className,
       )}
       {...props}
     />
-  </PopoverPrimitive.Portal>
-))
-PopoverContent.displayName = PopoverPrimitive.Content.displayName
+  )
+}
 
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger }
+function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="popover-header"
+      className={cn('flex flex-col gap-0.5 text-sm', className)}
+      {...props}
+    />
+  )
+}
+
+function PopoverTitle({ className, ...props }: React.ComponentProps<typeof Heading>) {
+  return <Heading data-slot="popover-title" className={cn('font-semibold', className)} {...props} />
+}
+
+function PopoverDescription({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="popover-description"
+      className={cn('text-muted-foreground', className)}
+      {...props}
+    />
+  )
+}
+
+export { Popover, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger }

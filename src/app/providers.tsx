@@ -1,4 +1,3 @@
-import { TooltipProvider } from '@/components/ui/tooltip'
 import { repetirSeValeAPena } from '@/data/api-provider'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -38,9 +37,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>{children}</TooltipProvider>
-      </ThemeProvider>
+      {/* RAC não precisa de provider de tooltip — o TooltipTrigger é local. */}
+      <ThemeProvider>{children}</ThemeProvider>
     </QueryClientProvider>
   )
 }

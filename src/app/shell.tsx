@@ -75,7 +75,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-14">
+        {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
+        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
@@ -84,8 +85,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ModeToggle />
           </div>
         </header>
-        {/* A área de conteúdo é Papel; a folha (PageFrame) é a única superfície de trabalho. */}
-        <main className="flex flex-1 flex-col p-4">
+        {/* A área de conteúdo é Papel COM a grade de 52px; a folha (PageFrame)
+            pousa opaca por cima (Regra da Grade de Fundo). */}
+        <main className="bg-paper-grid flex flex-1 flex-col p-5">
           <PageFrame>{children}</PageFrame>
         </main>
       </SidebarInset>

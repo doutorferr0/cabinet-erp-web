@@ -16,6 +16,28 @@ pnpm install && pnpm dev   # http://localhost:5173
 pnpm check && pnpm check-types && pnpm test
 ```
 
+## Rodar em mock (padrão do dev)
+
+```bash
+pnpm dev                          # entra direto no app, sem passar pelo login
+VITE_MOCK_AUTOLOGIN=0 pnpm dev    # nasce deslogado: tela de login → home
+```
+
+Sem `VITE_API_MODE`, o `pnpm dev` sobe em **mock**: o MSW (`src/mocks/api`)
+responde `/api` e `/auth` dentro do browser, com as semânticas do contrato sobre
+um store em memória — duas empresas, produtos, parceiros e lookups no seed.
+
+O **autologin** vem ligado: o store nasce com a sessão aberta (colaborador
+admin, os dois vínculos, a primeira empresa como ativa), então `pnpm dev` cai
+numa tela do sistema em vez da tela de login. A autorização não é afrouxada — a
+guarda continua exigindo o `200` do `/auth/me`; o que muda é o mock ter uma
+sessão para devolver. `VITE_MOCK_AUTOLOGIN=0` devolve o `401` e o fluxo de login
+inteiro (senha `errada` → 401 de teste; senha `temporaria` → troca obrigatória).
+
+A chave vale **só no modo mock**: ela mora em `src/mocks/browser.ts`, que só é
+importado quando o modo está ligado — com API de verdade (`VITE_API_MODE=http`)
+não há o que semear.
+
 ## Rodar com um backend
 
 ```bash

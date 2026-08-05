@@ -184,6 +184,17 @@ export function VitraDataTable<T>({
                     <TableHead
                       key={header.id}
                       colSpan={header.colSpan}
+                      // A setinha diz a ordem só para quem enxerga; `aria-sort` é
+                      // a mesma informação para quem ouve.
+                      aria-sort={
+                        sortable
+                          ? active
+                            ? state.sort?.desc
+                              ? 'descending'
+                              : 'ascending'
+                            : 'none'
+                          : undefined
+                      }
                       className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
                     >
                       {header.isPlaceholder ? null : sortable ? (
@@ -255,12 +266,25 @@ export function VitraDataTable<T>({
                   <TableRow
                     key={row.id}
                     data-state={isSelected ? 'selected' : undefined}
+                    // A linha É o controle de seleção da listagem: parada de
+                    // foco, estado anunciado e Enter/Espaço com a mesma regra do
+                    // clique (bater de novo solta). Não é atalho — nenhuma tecla
+                    // memorizada entra aqui, é o teclado nativo do controle.
+                    tabIndex={0}
+                    aria-selected={isSelected}
                     className={cn(
-                      'cursor-pointer hover:bg-muted',
+                      'cursor-pointer outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset',
                       isSelected &&
                         'bg-muted [&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
                     )}
                     onClick={() => setSelected(isSelected ? null : row.original)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      // Espaço rolaria a página; Enter dentro de célula com
+                      // controle não deve chegar aqui duas vezes.
+                      e.preventDefault()
+                      setSelected(isSelected ? null : row.original)
+                    }}
                   >
                     {rowNumbers ? (
                       // Numeração em Meta, sequencial global da consulta.
@@ -297,7 +321,8 @@ export function VitraDataTable<T>({
           <label htmlFor="vitra-page-size">Por página:</label>
           <select
             id="vitra-page-size"
-            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm tabular-nums"
+            // Mesma caixa preta 2px dos selects do formulário (radius 0 é lei).
+            className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring"
             value={state.pageSize}
             onChange={(e) =>
               updateState((s) => ({ ...s, pageSize: Number(e.target.value), page: 1 }))

@@ -110,6 +110,81 @@ describe('VitraDataTable', () => {
     expect(selecionado?.nossaDescricao).toBe('PENDENTE REDONDO ALUMÍNIO PRETO')
   })
 
+  // A linha é o controle de seleção da listagem inteira (Alterar/Excluir/Consul.
+  // dependem dela). Como `<tr onClick>` ela só existia para o mouse: sem parada
+  // de foco, sem estado anunciado, invisível para quem navega por teclado ou
+  // leitor de tela. A interface continua sendo por clique — isto não cria
+  // atalho, só devolve à linha o que um controle precisa ter.
+  it('linha é parada de foco e anuncia o estado de seleção', async () => {
+    const { user } = setup()
+    const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const linha = descricao.closest('tr')
+
+    expect(linha).toHaveAttribute('tabindex', '0')
+    expect(linha).toHaveAttribute('aria-selected', 'false')
+    await user.click(descricao)
+    expect(linha).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('teclado seleciona a linha focada e devolve a seleção à ação', async () => {
+    let alterado: unknown = 'nada'
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-teclado']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        actions={[
+          {
+            id: 'alterar',
+            label: 'Alterar',
+            needsSelection: true,
+            onClick: (p) => {
+              alterado = p
+            },
+          },
+        ]}
+      />,
+    )
+
+    const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const linha = descricao.closest('tr') as HTMLElement
+    linha.focus()
+    await user.keyboard('{Enter}')
+    expect(linha).toHaveAttribute('aria-selected', 'true')
+
+    // Espaço alterna de volta — a mesma regra do clique (clicar de novo solta).
+    await user.keyboard(' ')
+    expect(linha).toHaveAttribute('aria-selected', 'false')
+
+    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Alterar' }))
+    expect((alterado as Produto | null)?.nossaDescricao).toBe('PENDENTE REDONDO ALUMÍNIO PRETO')
+  })
+
+  // Ordenação anunciada: quem usa leitor de tela ouve "ordenado crescente" em vez
+  // de descobrir pela setinha, que é informação só visual.
+  it('cabeçalho ordenável anuncia a ordem em aria-sort', async () => {
+    const { user } = setup()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const head = screen.getByRole('columnheader', { name: /Marca/ })
+
+    expect(head).toHaveAttribute('aria-sort', 'none')
+    await user.click(screen.getByRole('button', { name: /Marca/ }))
+    await waitFor(() => expect(head).toHaveAttribute('aria-sort', 'ascending'))
+    await user.click(screen.getByRole('button', { name: /Marca/ }))
+    await waitFor(() => expect(head).toHaveAttribute('aria-sort', 'descending'))
+  })
+
+  // Radius 0 é lei (DESIGN.md): o select do rodapé ficou de fora da fase 1 e era
+  // o único canto arredondado dentro da caixa da listagem.
+  it('select do rodapé usa a caixa preta 2px, sem canto arredondado', async () => {
+    setup()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const select = screen.getByLabelText('Por página:')
+    expect(select.className).toContain('border-2')
+    expect(select.className).not.toContain('rounded')
+  })
+
   it('cabeçalho usa etiqueta Meta (mono, caixa alta) em 34px sobre Tinta', async () => {
     setup()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')

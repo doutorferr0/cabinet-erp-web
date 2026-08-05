@@ -73,8 +73,8 @@ describe('LookupCombo', () => {
   it('seleciona uma opção vinda do servidor', async () => {
     const { user } = renderWithQuery(<Harness />)
 
-    await user.click(screen.getByRole('combobox'))
-    await user.click(await screen.findByRole('option', { name: /STELLA/ }))
+    await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
+    await user.click(await screen.findByRole('menuitem', { name: /STELLA/ }))
 
     expect(screen.getByTestId('valor')).toHaveTextContent('STELLA')
   })
@@ -93,11 +93,11 @@ describe('LookupCombo', () => {
   it('busca filtra as opções', async () => {
     const { user } = renderWithQuery(<Harness />)
 
-    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
     await user.type(screen.getByPlaceholderText(/buscar marca/i), 'evo')
 
-    expect(await screen.findByRole('option', { name: /EVOLED/ })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: /STELLA/ })).not.toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: /EVOLED/ })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /STELLA/ })).not.toBeInTheDocument()
   })
 
   // A busca do combo filtra só o que chegou. Com a lista cortada, o item
@@ -120,16 +120,16 @@ describe('LookupCombo', () => {
     )
 
     const { user } = renderWithQuery(<Harness />)
-    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
 
     expect(await screen.findByText(/A lista é maior/)).toBeInTheDocument()
   })
 
   it('lista inteira NÃO exibe aviso de corte', async () => {
     const { user } = renderWithQuery(<Harness />)
-    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
 
-    await screen.findByRole('option', { name: /STELLA/ })
+    await screen.findByRole('menuitem', { name: /STELLA/ })
     expect(screen.queryByText(/A lista é maior/)).not.toBeInTheDocument()
   })
 
@@ -142,7 +142,7 @@ describe('LookupCombo', () => {
     )
 
     const { user } = renderWithQuery(<Harness />)
-    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
 
     expect(await screen.findByText(/não foi possível carregar/i)).toBeInTheDocument()
   })

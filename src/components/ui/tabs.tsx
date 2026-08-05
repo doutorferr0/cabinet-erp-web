@@ -23,7 +23,9 @@ function Tabs({
   return (
     <TabsPrimitive
       data-slot="tabs"
-      className={cn('group/tabs flex gap-3 data-horizontal:flex-col', className)}
+      // RAC marca a orientação em `data-orientation` (não em `data-horizontal`):
+      // com o atalho errado a tira de abas caía ao LADO do painel, em coluna.
+      className={cn('group/tabs flex gap-3 data-[orientation=horizontal]:flex-col', className)}
       {...(defaultValue !== undefined && { defaultSelectedKey: defaultValue })}
       {...(value !== undefined && { selectedKey: value })}
       {...(onValueChange !== undefined && {
@@ -36,7 +38,7 @@ function Tabs({
 
 /** Tira de abas brut: régua inferior 2px Tinta; aba ativa = Tinta sólida. */
 const tabsListVariants = cva(
-  'group/tabs-list inline-flex w-fit items-end gap-1 border-b-2 border-border text-muted-foreground group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col',
+  'group/tabs-list inline-flex w-fit items-end gap-1 border-b-2 border-border text-muted-foreground group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col',
   {
     variants: {
       variant: {

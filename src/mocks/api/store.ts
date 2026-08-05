@@ -201,6 +201,31 @@ export function resetStore(): void {
   Object.assign(store, criarStore())
 }
 
+/**
+ * Abre a sessão do store SEM passar pelo login — o autologin de dev
+ * (`VITE_MOCK_AUTOLOGIN`, ligado por padrão no modo mock; ver `browser.ts`).
+ *
+ * Semeia o que uma sessão de verdade traria depois de login + escolha de
+ * empresa: colaborador admin, os dois vínculos do seed e a PRIMEIRA empresa
+ * como ativa. Sem a empresa ativa a sessão existiria mas o domínio responderia
+ * lista vazia (semântica da Etapa 0) — cair no app com tudo em branco não é
+ * "entrar sem login", é entrar pela metade.
+ *
+ * Isto NÃO afrouxa autorização: quem responde continua sendo o handler do
+ * `/auth/me`, e a guarda continua exigindo o 200. O que muda é o estado do
+ * store de onde o handler tira a resposta — nenhuma linha de código de
+ * autorização sabe que existe modo de desenvolvimento.
+ *
+ * Fora do `criarStore()` de propósito: o seed é o estado DESLOGADO que
+ * `resetStore()` devolve a cada teste dos handlers, e é o que a tela de login
+ * do modo mock precisa encontrar quando o autologin está desligado.
+ */
+export function semearSessaoAutenticada(): void {
+  store.logado = true
+  store.mustChangePassword = false
+  store.activeTenantId = store.empresas[0]?.tenantId ?? null
+}
+
 export function novoId(prefixo: string): string {
   store.proximoId += 1
   return `${prefixo}-${String(store.proximoId).padStart(4, '0')}`

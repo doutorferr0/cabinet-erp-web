@@ -148,25 +148,25 @@ function ProfissionalEditPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <AvisoDeCobertura
-        isNovo={isNovo}
-        erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-        {...(jaExiste && !vincular.error
-          ? {
-              vincular: () =>
-                vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-              vinculando: vincular.isPending,
-            }
-          : {})}
-      />
-      <ProfissionalForm
-        profissional={registro}
-        readOnly={readOnly}
-        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeApresentacao}
-        onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
-      />
-    </div>
+    <ProfissionalForm
+      profissional={registro}
+      readOnly={readOnly}
+      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeApresentacao}
+      aviso={
+        <AvisoDeCobertura
+          isNovo={isNovo}
+          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+          {...(jaExiste && !vincular.error
+            ? {
+                vincular: () =>
+                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                vinculando: vincular.isPending,
+              }
+            : {})}
+        />
+      }
+      onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+    />
   )
 }
 

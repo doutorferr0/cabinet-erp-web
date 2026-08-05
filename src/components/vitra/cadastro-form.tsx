@@ -36,6 +36,16 @@ export interface CadastroFormProps<T extends FieldValues> {
    * `<h1>`, o que fazia o leitor de tela anunciar modo e nome como uma coisa só.
    */
   contexto?: string
+  /**
+   * Aviso que vale para a tela inteira (cobertura do contrato, erro de
+   * gravação): entra SOB o título e SOBRE os campos.
+   *
+   * Existe como lugar nomeado porque, solto na rota, ele era irmão do
+   * formulário — e como a banda mora aqui dentro, o aviso acabava impresso
+   * ANTES do nome da tela. Aviso antes do título faz o operador ler a ressalva
+   * sem saber ainda do que ela fala.
+   */
+  aviso?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -52,6 +62,7 @@ export function CadastroForm<T extends FieldValues>({
   readOnly = false,
   titulo,
   contexto,
+  aviso,
   children,
 }: CadastroFormProps<T>) {
   const form = useForm<T>({
@@ -70,6 +81,7 @@ export function CadastroForm<T extends FieldValues>({
         {/* Fora do `<fieldset disabled>`: a banda é identidade, não campo — em
             modo consulta ela continua legível, não apagada com o formulário. */}
         {titulo ? <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
+        {aviso}
         <fieldset disabled={readOnly} className="flex min-h-0 flex-1 flex-col gap-4 border-0 p-0">
           {children}
         </fieldset>

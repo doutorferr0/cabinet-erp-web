@@ -55,14 +55,12 @@ function ProdutoEditPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <AvisoDeCobertura />
-      <ProdutoForm
-        produto={query.data}
-        readOnly={readOnly}
-        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nossaDescricao}
-      />
-    </div>
+    <ProdutoForm
+      produto={query.data}
+      readOnly={readOnly}
+      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nossaDescricao}
+      aviso={<AvisoDeCobertura />}
+    />
   )
 }
 

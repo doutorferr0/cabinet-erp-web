@@ -117,6 +117,28 @@ reaproveitando build info. Quando a mudança mexe em assinatura de provider, con
 `npx tsc -p tsconfig.app.json --noEmit`. E **nunca filtrar a saída da suíte com `tail`** na
 primeira rodada — redirecionar para arquivo, senão a falha some.
 
+## Skills — situação → qual usar
+Skills vivem em `~/.claude/skills/` (globais) e `.claude/skills/` (só `impeccable`, deste repo).
+Disparam pela descrição, sem o user precisar digitar; `/nome` força.
+
+| situação | skill |
+|---|---|
+| tela feia, layout/hierarquia/acessibilidade, fase de reface | `impeccable` |
+| construir comportamento novo test-first (vitest + TL) | `tdd` |
+| revisar o diff da branch antes de commitar | `code-review` |
+| bug que resiste ao primeiro olhar, flake, regressão, lentidão | `diagnosing-bugs` |
+| tocar o ticket já escrito de ponta a ponta | `implement` |
+| dúvida de UI/estado que só se responde vendo rodar | `prototype` |
+| ler doc externa (Tailwind v4, TanStack, shadcn) em fonte primária | `research` |
+| conflito de merge/rebase **fora** de `src/api/gerado/` | `resolving-merge-conflicts` |
+
+**Não usar aqui:** `to-spec`/`to-tickets`/`grill-with-docs`/`setup-matt-pocock-skills` — criam
+estado local (`.scratch/`, `CONTEXT.md`, ADR) que duplicaria o tracker real, que é
+`topicos/frente-visual.md` na memória. `domain-modeling` também não: nome de campo vem de
+`transcricaosoftlux.md`, renomear conceito aqui é inventar campo. `wayfinder` é caro e o mapa
+já existe (20 telas, 8 padrões). Conflito em `src/api/gerado/` se resolve com `pnpm codegen`,
+nunca hunk a hunk.
+
 ## FECHAMENTO — obrigatório antes de encerrar QUALQUER sessão
 1. `pnpm check` → zero erros. 2. `pnpm check-types` → zero erros. 3. `pnpm test` → verde (componente novo = teste novo mínimo: render + interação principal). 4. Mexeu no contrato? `pnpm codegen` e **commitar `src/api/gerado/`** — o CI tem passo `Codegen is up to date` e reprova o gerado velho. 5. Commit Conventional ≤50 char, foco no "porquê" — **adicionar por CAMINHO, nunca `git add -A`**: a árvore costuma ter trabalho de outro trilho não commitado. 6. Push → CI verde (`gh run watch`). CI vermelho = sessão não terminou. 7. **Registrar progresso em `topicos/frente-visual.md` da memória** (seção MEMÓRIA abaixo) — NUNCA tocar no `next-task.md` (é do trilho backend).
 

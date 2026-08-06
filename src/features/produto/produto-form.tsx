@@ -540,7 +540,16 @@ function AbaTributacao() {
 export function ProdutoForm({
   produto,
   readOnly = false,
-}: { produto: Produto; readOnly?: boolean }) {
+  contexto,
+  aviso,
+}: {
+  produto: Produto
+  readOnly?: boolean
+  /** Modo ou registro aberto, ao lado do título na banda. */
+  contexto?: string
+  /** Aviso da tela — vai sob o título, acima dos campos. */
+  aviso?: React.ReactNode
+}) {
   const navigate = useNavigate()
   const gravar = useGravarProduto()
 
@@ -561,6 +570,9 @@ export function ProdutoForm({
       onCancelar={() => void navigate({ to: '/cadastros/produtos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      titulo="Cadastro de produtos"
+      {...(contexto ? { contexto } : {})}
+      {...(aviso ? { aviso } : {})}
     >
       {/* Falha do Gravar em destaque, ANTES das abas: o `detail` do problem+json
           é a frase que o backend escolheu (400 validação, 403 escopo, 409

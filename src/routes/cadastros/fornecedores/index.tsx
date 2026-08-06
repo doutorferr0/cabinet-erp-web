@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { ConfirmarDesativacao } from '@/components/vitra/confirmar-desativacao'
 import { VitraDataTable } from '@/components/vitra/data-table'
@@ -88,7 +89,7 @@ function FornecedoresPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Cadastro de Fornecedores</h1>
+      <BandaDeIdentidade titulo="Cadastro de Fornecedores" />
       <VitraDataTable
         columns={columns}
         queryKey={['fornecedores']}

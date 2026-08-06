@@ -22,7 +22,21 @@ describe('CadastroForm em modo consulta', () => {
 
     expect(screen.queryByRole('button', { name: /Gravar/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Fechar/ })).toBeInTheDocument()
-    expect(screen.getByText(/— Consulta/)).toBeInTheDocument()
+    // O modo é CONTEXTO da banda, não sufixo do título: o `<h1>` diz a tela, o
+    // Meta ao lado diz em que modo ela está.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cadastro de Colaboradores')
+    expect(screen.getByText('Consulta')).toBeInTheDocument()
+  })
+
+  // A banda é identidade, não campo: `<fieldset disabled>` apaga o formulário
+  // inteiro no modo consulta, e apagar junto o nome da tela deixaria o operador
+  // sem saber onde está.
+  it('banda de identidade não é desabilitada com o formulário', async () => {
+    renderRoute('/cadastros/colaboradores/1?modo=consulta')
+
+    await screen.findByLabelText('Nome')
+    const banda = screen.getByRole('heading', { level: 1 }).closest('div')
+    expect(banda?.closest('fieldset')).toBeNull()
   })
 
   it('desabilita também os botões de dentro do formulário', async () => {
@@ -82,7 +96,8 @@ describe('CadastroForm em modo consulta', () => {
 
     const gravar = await screen.findByRole('button', { name: /Gravar/ })
     const rodape = gravar.closest('div')
-    expect(rodape?.className).toContain('border-t')
-    expect(rodape?.className).toContain('border-rule-strong')
+    // A régua é utility (`rule-strong-top`), não `border-t` + cor na tela: a
+    // espessura de 3px é parte dela e muda num ponto só na recalibração.
+    expect(rodape?.className).toContain('rule-strong-top')
   })
 })

@@ -191,10 +191,16 @@ function FornecedorCorpo() {
 export function FornecedorForm({
   fornecedor,
   readOnly = false,
+  contexto,
+  aviso,
   onGravar: gravarDeFora,
 }: {
   fornecedor: Fornecedor
   readOnly?: boolean
+  /** Modo ou registro aberto, ao lado do título na banda. */
+  contexto?: string
+  /** Aviso da tela — vai sob o título, acima dos campos. */
+  aviso?: React.ReactNode
   /**
    * Quem grava, quando há endpoint. Sem isto o formulário cai no comportamento
    * antigo (sem efeito no servidor) — é o caso do "Incluir", que o contrato
@@ -221,6 +227,9 @@ export function FornecedorForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/fornecedores' })}
       readOnly={readOnly}
+      titulo="Cadastro de Fornecedores"
+      {...(contexto ? { contexto } : {})}
+      {...(aviso ? { aviso } : {})}
     >
       <FornecedorCorpo />
 

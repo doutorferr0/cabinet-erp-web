@@ -43,6 +43,21 @@ describe('tela Fornecedor', () => {
     expect(screen.getByText(/envia ao servidor apenas/)).toBeInTheDocument()
   })
 
+  // Ordem da tela: nome primeiro, ressalva depois. O aviso de cobertura fala do
+  // que a tela NÃO grava — lido antes do título, é ressalva sobre assunto que o
+  // operador ainda não sabe qual é.
+  it('o título vem antes do aviso de cobertura', async () => {
+    const { user } = renderRoute('/cadastros/fornecedores', stubDeParceiros())
+
+    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
+    await user.click(screen.getByRole('button', { name: 'Alterar' }))
+
+    const titulo = await screen.findByRole('heading', { level: 1 })
+    const aviso = screen.getByText(/envia ao servidor apenas/)
+    // DOCUMENT_POSITION_FOLLOWING = o aviso vem DEPOIS do título no documento.
+    expect(titulo.compareDocumentPosition(aviso) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('Gravar manda PUT e devolve intacto o que a tela não mostra', async () => {
     const { stub, chamadas } = servidorDeParceiros([
       parceiro({ code: 'F001', paymentTerms: '30/60/90', isCustomer: true, isSupplier: true }),

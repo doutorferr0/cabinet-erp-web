@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useSessao } from '@/data/sessao'
 import { useQueryClient } from '@tanstack/react-query'
@@ -46,13 +47,10 @@ function SelecionarEmpresa() {
   const { empresas, carregando, erro, trocar, trocando, falhaAoTrocar } = useEmpresasDaSessao()
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm rounded-lg border bg-card p-4">
-        <div className="mb-4 border-b border-rule-strong pb-3">
-          <h1 className="text-xl font-semibold">Escolha a empresa</h1>
-          <p className="font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
-            Empresa ativa
-          </p>
+    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-sm border-2 border-border bg-card p-4 shadow-hard">
+        <div className="mb-4">
+          <BandaDeIdentidade titulo="Escolha a empresa" contexto="Empresa ativa" />
         </div>
 
         {carregando ? (

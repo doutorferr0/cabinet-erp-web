@@ -145,28 +145,25 @@ function ClienteEditPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Cadastro de Fornecedores{' '}
-        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${registro.nome}`}
-      </h1>
-      <AvisoDeCobertura
-        isNovo={isNovo}
-        erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-        {...(jaExiste && !vincular.error
-          ? {
-              vincular: () =>
-                vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-              vinculando: vincular.isPending,
-            }
-          : {})}
-      />
-      <ClienteForm
-        cliente={registro}
-        readOnly={readOnly}
-        onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
-      />
-    </div>
+    <ClienteForm
+      cliente={registro}
+      readOnly={readOnly}
+      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
+      aviso={
+        <AvisoDeCobertura
+          isNovo={isNovo}
+          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+          {...(jaExiste && !vincular.error
+            ? {
+                vincular: () =>
+                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                vinculando: vincular.isPending,
+              }
+            : {})}
+        />
+      }
+      onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+    />
   )
 }
 

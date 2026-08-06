@@ -10,23 +10,35 @@ import { describe, expect, it } from 'vitest'
 describe('DocumentoHeader', () => {
   it('título em Headline à esquerda e número em Número do Documento à direita', () => {
     render(<DocumentoHeader titulo="Orçamento" numero="ORÇ-2026-00184" />)
-    expect(screen.getByRole('heading', { name: 'Orçamento' }).className).toContain('text-xl')
+    // Headline da banda: 800, caixa alta (DESIGN.md §Typography).
+    const titulo = screen.getByRole('heading', { name: 'Orçamento' })
+    expect(titulo.className).toContain('font-extrabold')
+    expect(titulo.className).toContain('uppercase')
+    // Nº do Documento: mono 700, 1.5rem — a âncora do cabeçalho.
     const numero = screen.getByText('ORÇ-2026-00184')
     expect(numero.className).toContain('font-mono')
-    expect(numero.className).toContain('font-semibold')
-    expect(numero.className).toContain('tracking-[-0.01em]')
+    expect(numero.className).toContain('font-bold')
+    expect(numero.className).toContain('text-2xl')
+    expect(numero.className).toContain('tabular-nums')
   })
 
-  it('fecha o bloco com régua forte', () => {
+  // O cabeçalho de documento é a MESMA banda de identidade do cadastro: quem
+  // muda a faixa muda os dois. Antes era um `<header>` com régua de 1px que
+  // repetia, com outros valores, o que a banda já dizia.
+  it('é a banda de identidade, não um cabeçalho paralelo', () => {
     const { container } = render(<DocumentoHeader titulo="Pedido de Compra" numero="PC-001" />)
-    const header = container.querySelector('header')
-    expect(header?.className).toContain('border-b')
-    expect(header?.className).toContain('border-rule-strong')
+    const banda = screen.getByRole('heading', { level: 1 }).closest('div')
+    expect(banda?.className).toContain('bg-zone-id')
+    expect(banda?.className).toContain('border-2')
+    expect(container.querySelector('header')).toBeNull()
   })
 
-  it('documento novo não tem número nem fileira direita', () => {
-    const { container } = render(<DocumentoHeader titulo="Orçamento" modo="— Incluir" />)
-    expect(screen.getByRole('heading', { name: 'Orçamento — Incluir' })).toBeInTheDocument()
+  it('modo é contexto ao lado do título, não sufixo dentro dele', () => {
+    const { container } = render(<DocumentoHeader titulo="Orçamento" modo="Incluir" />)
+    // O `<h1>` diz o documento; o Meta ao lado diz o modo. Colados, o leitor de
+    // tela anunciava "Orçamento — Incluir" como se fosse o nome do documento.
+    expect(screen.getByRole('heading', { name: 'Orçamento' })).toBeInTheDocument()
+    expect(screen.getByText('Incluir')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="documento-numero"]')).toBeNull()
   })
 

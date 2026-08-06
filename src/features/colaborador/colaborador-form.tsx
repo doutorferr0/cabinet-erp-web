@@ -269,7 +269,8 @@ function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) 
 export function ColaboradorForm({
   colaborador,
   readOnly = false,
-}: { colaborador: Colaborador; readOnly?: boolean }) {
+  contexto,
+}: { colaborador: Colaborador; readOnly?: boolean; contexto?: string }) {
   const navigate = useNavigate()
   const [buscaNaturalidadeOpen, setBuscaNaturalidadeOpen] = useState(false)
 
@@ -286,6 +287,8 @@ export function ColaboradorForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/colaboradores' })}
       readOnly={readOnly}
+      titulo="Cadastro de Colaboradores"
+      {...(contexto ? { contexto } : {})}
     >
       <div className="flex items-start gap-4">
         <div className="grid flex-1 grid-cols-12 items-end gap-3">

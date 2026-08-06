@@ -83,7 +83,10 @@ function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
         <Input
           aria-label={ariaLabel}
           inputMode="decimal"
-          className="h-8 border-0 text-right shadow-none focus-visible:ring-0"
+          // Célula sem borda (a malha É o campo), mas COM anel: o anel amarelo
+          // interno é o único sinal de onde o cursor está — `ring-0` deixava a
+          // célula de valor sem foco visível nenhum.
+          className="h-8 border-0 text-right shadow-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
           value={
             typeof field.value === 'number' ? (field.value / 100).toFixed(2).replace('.', ',') : ''
           }
@@ -108,7 +111,10 @@ function PercentCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
         <Input
           aria-label={ariaLabel}
           inputMode="decimal"
-          className="h-8 border-0 text-right shadow-none focus-visible:ring-0"
+          // Célula sem borda (a malha É o campo), mas COM anel: o anel amarelo
+          // interno é o único sinal de onde o cursor está — `ring-0` deixava a
+          // célula de valor sem foco visível nenhum.
+          className="h-8 border-0 text-right shadow-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
           value={typeof field.value === 'number' ? formatPercent(field.value) : ''}
           onChange={(e) => {
             const digits = e.target.value.replace(/\D/g, '')
@@ -160,7 +166,7 @@ function SelectCell({
         return (
           <select
             aria-label={ariaLabel}
-            className="h-8 w-full rounded-md border-0 bg-transparent px-2 text-sm focus-visible:outline-none"
+            className="h-8 w-full border-0 bg-transparent px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
             value={atual}
             onChange={(e) => field.onChange(e.target.value || null)}
             onBlur={field.onBlur}
@@ -229,8 +235,8 @@ export function FormGrid({
         )}
         {actions?.((row) => append(row))}
       </div>
-      {/* Caixa em Régua com canto 4px — mesmo contêiner da DataTable (a malha interna é Fio). */}
-      <div className="overflow-x-auto rounded-lg border">
+      {/* Caixa preta 2px — o mesmo contêiner da DataTable (a malha interna é Fio). */}
+      <div data-slot="form-grid-box" className="overflow-x-auto border-2 border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -257,7 +263,10 @@ export function FormGrid({
                 // acima e abaixo, rótulo em Meta, fundo Bancada (DESIGN.md).
                 if (secao) {
                   return (
-                    <TableRow key={field.id} className="border-rule-strong bg-muted hover:bg-muted">
+                    <TableRow
+                      key={field.id}
+                      className="border-y-2 border-border bg-muted hover:bg-muted"
+                    >
                       <TableCell colSpan={columns.length + 1} className="p-1">
                         <div className="flex h-8 items-center justify-between px-2">
                           <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
@@ -338,9 +347,13 @@ export function FormGrid({
                   <TableRow
                     key={t.label}
                     className={cn(
+                      // Zona de dinheiro: creme-esverdeado é exclusivo das
+                      // fileiras de total — dado comum da malha fica em tinta
+                      // normal, senão a cor deixa de significar.
+                      'bg-zone-money hover:bg-zone-money',
                       // Sem fio duplo: a régua forte do Total substitui o fio da fileira acima.
                       totals.rows[i + 1]?.destaque === true && 'border-b-0',
-                      t.destaque === true && '[&>td]:border-t [&>td]:border-rule-strong',
+                      t.destaque === true && 'rule-strong-top',
                     )}
                   >
                     {totalsValueIndex > 1 ? (
@@ -354,7 +367,11 @@ export function FormGrid({
                         aria-label={t.label}
                         className={cn(
                           'block px-2 text-right text-sm tabular-nums',
-                          t.destaque === true && 'text-lg font-semibold',
+                          // Convenção do ledger: dinheiro escreve em verde, o
+                          // que subtrai escreve em vermelho. Sem isso, um
+                          // desconto se lê igualzinho a uma soma.
+                          t.valorCentavos < 0 ? 'text-destructive' : 'text-money',
+                          t.destaque === true && 'text-lg font-extrabold',
                         )}
                       >
                         {formatMoneyBRL(t.valorCentavos)}

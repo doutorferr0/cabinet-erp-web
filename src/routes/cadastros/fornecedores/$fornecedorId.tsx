@@ -144,28 +144,25 @@ function FornecedorEditPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        Cadastro de Fornecedores{' '}
-        {readOnly ? '— Consulta' : isNovo ? '— Incluir' : `— ${registro.nomeFantasia}`}
-      </h1>
-      <AvisoDeCobertura
-        isNovo={isNovo}
-        erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-        {...(jaExiste && !vincular.error
-          ? {
-              vincular: () =>
-                vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-              vinculando: vincular.isPending,
-            }
-          : {})}
-      />
-      <FornecedorForm
-        fornecedor={registro}
-        readOnly={readOnly}
-        onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
-      />
-    </div>
+    <FornecedorForm
+      fornecedor={registro}
+      readOnly={readOnly}
+      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeFantasia}
+      aviso={
+        <AvisoDeCobertura
+          isNovo={isNovo}
+          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+          {...(jaExiste && !vincular.error
+            ? {
+                vincular: () =>
+                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                vinculando: vincular.isPending,
+              }
+            : {})}
+        />
+      }
+      onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+    />
   )
 }
 

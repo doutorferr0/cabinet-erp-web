@@ -1,3 +1,4 @@
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
@@ -49,7 +50,7 @@ function ColaboradoresPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Cadastro de Colaboradores</h1>
+      <BandaDeIdentidade titulo="Cadastro de Colaboradores" />
       <VitraDataTable
         columns={columns}
         queryKey={['colaboradores']}

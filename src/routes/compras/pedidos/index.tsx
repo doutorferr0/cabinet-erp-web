@@ -1,3 +1,4 @@
+import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { cadastroActions } from '@/components/vitra/cadastro-actions'
 import { VitraDataTable } from '@/components/vitra/data-table'
 import { data } from '@/data'
@@ -52,7 +53,7 @@ function PedidosCompraPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Pedido de Compra</h1>
+      <BandaDeIdentidade titulo="Pedido de Compra" />
       <VitraDataTable
         columns={columns}
         queryKey={['pedidos-compra']}

@@ -1,5 +1,5 @@
+import { VitraDataTable } from '@/components/cabinet/data-table'
 import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { VitraDataTable } from '@/components/vitra/data-table'
 import type { TableFetcher } from '@/lib/table-query'
 import type { ColumnDef } from '@tanstack/react-table'
 

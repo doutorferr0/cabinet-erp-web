@@ -1,4 +1,4 @@
-import { Stipple } from '@/components/vitra/stipple'
+import { Stipple } from '@/components/cabinet/stipple'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/vendas/')({

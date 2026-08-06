@@ -1,4 +1,4 @@
-import type { DataTableAction } from '@/components/vitra/data-table'
+import type { DataTableAction } from '@/components/cabinet/data-table'
 
 /**
  * Barra de ações padrão das listagens — transcrição §9, padrão 4:

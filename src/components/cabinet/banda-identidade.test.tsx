@@ -1,4 +1,4 @@
-import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
+import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 

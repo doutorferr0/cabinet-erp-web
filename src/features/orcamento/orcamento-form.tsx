@@ -1,21 +1,21 @@
 import type { PartnerDto } from '@/api/gerado'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import {
   fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
-} from '@/components/vitra/documento'
+} from '@/components/cabinet/documento'
 import {
   DateField,
   LookupSelectField,
   RadioField,
   SelectField,
   TextField,
-} from '@/components/vitra/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
-import { SearchDialog } from '@/components/vitra/search-dialog'
+} from '@/components/cabinet/form-controls'
+import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import { SearchDialog } from '@/components/cabinet/search-dialog'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
 import { useLookupOptions } from '@/data/lookups-api'
 import { tabelas } from '@/data/tabelas'

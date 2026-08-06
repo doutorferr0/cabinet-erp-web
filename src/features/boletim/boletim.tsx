@@ -1,3 +1,5 @@
+import { FormBlock } from '@/components/cabinet/form-block'
+import { Stamp } from '@/components/cabinet/stamp'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -7,8 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { FormBlock } from '@/components/vitra/form-block'
-import { Stamp } from '@/components/vitra/stamp'
 import {
   type Boletim,
   type LinhaCadastro,

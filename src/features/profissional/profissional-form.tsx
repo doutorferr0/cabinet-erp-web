@@ -1,12 +1,11 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ComunicadoresBlock,
   EnderecoBlock,
   RedesSociaisBlock,
   TelefonesBlock,
-} from '@/components/vitra/blocks'
-import { CadastroForm } from '@/components/vitra/cadastro-form'
-import { FormBlock } from '@/components/vitra/form-block'
+} from '@/components/cabinet/blocks'
+import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
   DateField,
@@ -14,8 +13,9 @@ import {
   LookupSelectField,
   RadioField,
   TextField,
-} from '@/components/vitra/form-controls'
-import { SearchDialog } from '@/components/vitra/search-dialog'
+} from '@/components/cabinet/form-controls'
+import { SearchDialog } from '@/components/cabinet/search-dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
 import type { Cidade } from '@/mocks/cidades'
 import type { Profissional } from '@/mocks/profissionais'

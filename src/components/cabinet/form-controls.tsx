@@ -1,3 +1,4 @@
+import { LookupCombo } from '@/components/cabinet/lookup-combo'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   FormControl,
@@ -10,7 +11,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
-import { LookupCombo } from '@/components/vitra/lookup-combo'
 import { type LookupKind, useLookupOptions } from '@/data/lookups-api'
 import { useFormContext } from 'react-hook-form'
 

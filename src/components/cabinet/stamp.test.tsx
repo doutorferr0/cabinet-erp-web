@@ -1,4 +1,4 @@
-import { Stamp } from '@/components/vitra/stamp'
+import { Stamp } from '@/components/cabinet/stamp'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 

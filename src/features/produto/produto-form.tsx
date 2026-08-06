@@ -1,7 +1,5 @@
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CadastroForm } from '@/components/vitra/cadastro-form'
-import { FormBlock } from '@/components/vitra/form-block'
+import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
   DateField,
@@ -10,8 +8,10 @@ import {
   SelectField,
   TextField,
   TextareaField,
-} from '@/components/vitra/form-controls'
-import { FormGrid } from '@/components/vitra/form-grid'
+} from '@/components/cabinet/form-controls'
+import { FormGrid } from '@/components/cabinet/form-grid'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErroDaApi } from '@/data/api-provider'
 import { useGravarProduto } from '@/data/produtos-api'
 import { tabelas } from '@/data/tabelas'

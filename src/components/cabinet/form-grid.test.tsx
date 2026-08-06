@@ -1,5 +1,5 @@
+import { FormGrid } from '@/components/cabinet/form-grid'
 import { Form } from '@/components/ui/form'
-import { FormGrid } from '@/components/vitra/form-grid'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'

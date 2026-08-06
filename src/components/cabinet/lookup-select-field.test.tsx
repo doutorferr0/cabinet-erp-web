@@ -1,5 +1,5 @@
+import { LookupSelectField } from '@/components/cabinet/form-controls'
 import { Form } from '@/components/ui/form'
-import { LookupSelectField } from '@/components/vitra/form-controls'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'

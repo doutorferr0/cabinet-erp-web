@@ -1,4 +1,4 @@
-import { Stipple } from '@/components/vitra/stipple'
+import { Stipple } from '@/components/cabinet/stipple'
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 

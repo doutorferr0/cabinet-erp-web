@@ -11,8 +11,9 @@ export interface BandaDeIdentidadeProps {
 }
 
 /**
- * Banda de identidade (DESIGN.md §CadastroForm): a faixa creme-avermelhada em
- * caixa preta onde a tela diz o próprio nome.
+ * Banda de identidade (DESIGN.md §CadastroForm): a faixa em caixa preta onde a
+ * tela diz o próprio nome, pintada com a ZONA DE IDENTIDADE — desde a 1.6, o
+ * lilás Primary/02 da paleta no lugar do creme-avermelhado tingido.
  *
  * Substitui o `<h1 className="text-xl font-semibold">` que estava copiado em 19
  * rotas: mesma classe repetida, sem dono e sem a zona. Duas consequências:

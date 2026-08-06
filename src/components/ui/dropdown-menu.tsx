@@ -42,7 +42,7 @@ function DropdownMenu({
       offset={offset}
       crossOffset={crossOffset}
       className={cn(
-        'z-50 w-(--trigger-width) min-w-32 origin-(--trigger-anchor-point) overflow-x-hidden overflow-y-auto rounded-card border-2 border-border bg-popover p-1 text-popover-foreground shadow-el3 duration-100 outline-none data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:overflow-hidden data-exiting:fade-out-0',
+        'z-50 w-(--trigger-width) min-w-32 origin-(--trigger-anchor-point) overflow-x-hidden overflow-y-auto rounded-card border-2 border-border bg-popover p-1 text-popover-foreground pop-spring shadow-el3 outline-none data-exiting:overflow-hidden',
         className,
       )}
     >

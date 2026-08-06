@@ -329,6 +329,130 @@
   background-position: 0 0, 3px 4px;
 }
 
+/* PEÇA QUE APARECE — popover, menu, diálogo, dica, toast (DESIGN.md §Motion).
+   Entra com fade + escala 0,96 → 1 na mola `{stiffness:400, damping:30}` da
+   fase 1.6; sai com fade curto e sem mola.
+
+   **A mola está escrita em `linear()`, não aproximada por `cubic-bezier`.** Os
+   30 pontos abaixo são x(t) da equação da mola subamortecida amostrada até
+   360ms — ζ = 0,75, passada de 2,8% no meio do caminho, que é o "peso" que
+   distingue uma mola de um fade. Uma bezier de 4 pontos não representa
+   ultrapassar o alvo e voltar.
+
+   **Por que não a lib `motion` aqui:** quem monta e desmonta estas peças é a
+   `react-aria-components`, que mantém o nó vivo enquanto houver animação CSS
+   correndo (`data-exiting`) e só então desmonta. Trocar isso por
+   `AnimatePresence` significaria tirar da RAC o controle da desmontagem — e
+   com ela o foco que ela devolve ao trigger. A física é a mesma; muda só quem
+   a executa. A lib entra onde não há essa disputa: entrada de tela.
+
+   Ela também repara uma coisa que estava quebrada em silêncio: os quatro
+   componentes traziam `data-entering:animate-in fade-in-0` do shadcn, mas
+   `tw-animate-css` nunca foi importado no CSS — as classes não existiam no
+   bundle e nenhuma delas animava nada.
+
+   Saída é 120ms de fade e ponto: quem fecha um menu já decidiu, e mola na
+   saída atrasa a próxima ação. */
+/* `scale`, e não `transform: scale()`: o conteúdo do diálogo já se centraliza
+   com `-translate-x-1/2 -translate-y-1/2`, e um `transform` no keyframe
+   substituiria o translate inteiro — o diálogo saltaria para o canto inferior
+   direito durante a animação. A propriedade independente compõe com o
+   `transform` que já estiver lá, e obedece ao mesmo `transform-origin`. */
+@keyframes pop-spring-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes pop-spring-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@utility pop-spring {
+  &[data-entering] {
+    animation: pop-spring-in 360ms
+      linear(
+        0,
+        0.027,
+        0.096,
+        0.189,
+        0.295,
+        0.404,
+        0.51,
+        0.608,
+        0.695,
+        0.771,
+        0.835,
+        0.888,
+        0.93,
+        0.962,
+        0.987,
+        1.004,
+        1.016,
+        1.023,
+        1.027,
+        1.028,
+        1.028,
+        1.026,
+        1.023,
+        1.02,
+        1.017,
+        1.014,
+        1.011,
+        1.009,
+        1.007,
+        1
+      );
+  }
+
+  &[data-exiting] {
+    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* `<MotionConfig reducedMotion="user">` só governa a lib; animação escrita em
+     CSS precisa da sua própria rede. Some o movimento, fica o corte seco — a
+     peça continua aparecendo e sumindo, sem viagem. */
+  @media (prefers-reduced-motion: reduce) {
+    &[data-entering],
+    &[data-exiting] {
+      animation-duration: 1ms;
+    }
+  }
+}
+
+/* A CORTINA do diálogo. Não é `pop-spring`: a cortina cobre a janela inteira, e
+   escalar de 0,96 mostraria uma faixa de tela sem cobertura em volta dela.
+   Cortina só varia opacidade — e depressa, porque ela não é o que o operador
+   veio ver; o que ele veio ver é o diálogo por cima. */
+@utility fade-veil {
+  &[data-entering] {
+    animation: pop-spring-out 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
+  }
+
+  &[data-exiting] {
+    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-entering],
+    &[data-exiting] {
+      animation-duration: 1ms;
+    }
+  }
+}
+
 /* LIFT DE CONTROLE — A microinteração do sistema (DESIGN.md §Motion).
    A peça repousa em `el-2`, LEVANTA para `el-3` no hover e AFUNDA para `el-1`
    no press. Os deslocamentos não são enfeite, são a geometria da elevação: a

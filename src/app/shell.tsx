@@ -98,7 +98,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {...(modulo && { 'data-modulo': modulo })}
           className="bg-paper-grid flex flex-1 flex-col p-5"
         >
-          <PageFrame>{children}</PageFrame>
+          {/* `key` por CAMINHO: trocar de tela remonta a folha e a entrada
+              anima; paginar e ordenar mexem em search params, não no caminho,
+              e por isso não remontam nem animam. */}
+          <PageFrame key={location.pathname}>{children}</PageFrame>
         </main>
       </SidebarInset>
     </SidebarProvider>

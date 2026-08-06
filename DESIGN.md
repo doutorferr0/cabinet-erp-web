@@ -3,7 +3,8 @@ name: Cabinet
 description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfície creme, elevação em degraus e acento saturado.
 colors:
   bench: "hsl(41 25% 85%)"
-  sheet: "hsl(42 50% 96%)"
+  sheet: "hsl(0 0% 100%)"
+  sheet-sunken: "hsl(60 20% 98%)"
   neutral: "hsl(44 35% 92%)"
   ink: "hsl(0 0% 0%)"
   ink-muted: "hsl(37 16% 36%)"
@@ -12,16 +13,16 @@ colors:
   main-hover: "hsl(241 77% 57%)"
   main-foreground: "hsl(0 0% 100%)"
   accent: "hsl(262 97% 76%)"
-  info: "hsl(219 90% 69%)"
+  info: "hsl(225 71% 75%)"
   money: "hsl(155 81% 26%)"
   danger: "hsl(357 84% 42%)"
   warn: "hsl(47 100% 50%)"
   ring: "hsl(47 100% 50%)"
-  zone-money: "hsl(78 32% 90%)"
-  zone-id: "hsl(30 36% 91%)"
-  zone-info: "hsl(213 21% 92%)"
-  zone-warn: "hsl(46 63% 89%)"
-  zone-danger: "hsl(14 49% 90%)"
+  zone-money: "hsl(154 96% 91%)"
+  zone-id: "hsl(263 94% 93%)"
+  zone-info: "hsl(223 69% 95%)"
+  zone-warn: "hsl(48 100% 95%)"
+  zone-danger: "hsl(6 76% 95%)"
   shadow-1: "hsl(41 14% 61%)"
   shadow-2: "hsl(39 13% 47%)"
   shadow-3: "hsl(37 16% 36%)"
@@ -89,14 +90,14 @@ spacing:
 effects:
   el-1: "2px 2px 0 0 hsl(41 14% 61%)"
   el-2: "3px 3px 0 0 hsl(39 13% 47%)"
-  el-3: "5px 5px 0 0 hsl(37 16% 36%)"
-  el-4: "7px 7px 0 0 hsl(36 18% 27%)"
-  el-5: "10px 10px 0 0 hsl(35 20% 19%)"
+  el-3: "4px 4px 0 0 hsl(37 16% 36%)"
+  el-4: "6px 6px 0 0 hsl(36 18% 27%)"
+  el-5: "8px 8px 0 0 hsl(35 20% 19%)"
   border-strong: "2px solid hsl(0 0% 0%)"
   border-heavy: "3px solid hsl(0 0% 0%)"
 ---
 
-# Design System: Cabinet — fase 1.5
+# Design System: Cabinet — fase 1.6
 
 > **Supersede a fundação "Brut sobre papel" (fases 1 e 2).** Amostra de referência aprovada pelo user:
 > `docs/design/amostra-fase-1.5.html` (v5, 2026-08-06). **Em divergência entre este doc e a amostra, a AMOSTRA vence.**
@@ -124,8 +125,15 @@ Princípios que NÃO mudaram: densidade de comanda vence respiro decorativo · v
 legado SoftLux · desktop-only, largura inteira · número tabular à direita · mono para identificador ·
 interação por clique · nada anima na entrada de tela.
 
+**O que a 1.6 acrescentou** (a 1.5 continua valendo no que ela não contradiz): a queixa era
+"escuro/triste/sem cor", e a resposta tem três partes. **Cor** — folha branca sobre bancada creme,
+as cinco zonas viram os pastéis /02 da paleta, e cada módulo ganha um par fixo trocado por escopo.
+**Movimento** — entrada de tela numa mola, peça que aparece com outra, e o hover que PULA (§3b),
+porque o da 1.5 foi avaliado como fraco. **Ornamento** — uma forma colorida por módulo, recortada
+por máscara, jamais preta.
+
 **Key characteristics:**
-- Bancada creme com grade de 52px no fundo; folhas de trabalho pousam OPACAS por cima
+- Bancada creme com grade de 52px no fundo; folhas de trabalho BRANCAS pousam OPACAS por cima
 - Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra
 - **Elevação em 5 degraus** com sombra quente (`el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal)
 - **Etiqueta invertida**: rótulo de seção, rótulo de campo e cabeçalho de coluna são **caixa clara com letra preta**. A força vem da borda, da caixa alta e do tracking — não do fundo cheio
@@ -137,17 +145,55 @@ interação por clique · nada anima na entrada de tela.
 
 ## Colors
 
-### Superfícies
+### Superfícies — fundo MEIO-TERMO (1.6)
 | papel | uso |
 |---|---|
-| Bancada `hsl(41 25% 85%)` | fundo do app, atrás das folhas |
-| Folha `hsl(42 50% 96%)` | superfície de trabalho: painel, cartão, campo, tabela |
-| Neutro `hsl(44 35% 92%)` | trilho, skeleton, hover de item de menu |
+| Bancada `hsl(41 25% 85%)` | fundo do app, atrás das folhas — **segue creme** |
+| Folha `#FFFFFF` | superfície de trabalho: painel, cartão, campo, tabela |
+| Afundado `#FBFBF9` (Gray-50) | degrau INTERNO da folha: compartimento de formulário, trilho |
+| Neutro `hsl(44 35% 92%)` | hover de item, skeleton |
 
-### Zonas por conteúdo
-Valor `hsl(78 32% 90%)` · Identidade `hsl(30 36% 91%)` · Apoio `hsl(213 21% 92%)` · Pendência
-`hsl(46 63% 89%)` · Bloqueio `hsl(14 49% 90%)`. A zona diz do que a área trata **antes de o operador
-ler o rótulo**; por isso é exclusiva — zona espalhada em dado comum deixa de significar.
+Creme sobre creme fazia a folha sumir contra a bancada — era metade da queixa de "escuro e sem
+cor": não havia degrau entre fundo e superfície de trabalho. Com a folha branca, caixa dentro de
+caixa passa a depender só do traço, e é para isso que existe o **Afundado**: meio grau de luz,
+sem gastar cor. Degrau ≠ zona — quem tem cor de verdade é o bloco cujo CONTEÚDO tem dono.
+
+### Zonas por conteúdo — os pastéis /02 da paleta (1.6)
+Valor `#D2FEEB` · Identidade `#E9DCFE` · Apoio `#E9EEFB` · Pendência `#FFFAE5` · Bloqueio
+`#FCEBE9`. Eram cremes tingidos a ~30% de saturação, que sobre folha creme mudavam o tom do papel
+sem nomear conteúdo nenhum. A zona diz do que a área trata **antes de o operador ler o rótulo**;
+por isso é exclusiva — zona espalhada em dado comum deixa de significar.
+
+Nenhum par piorou na troca: dinheiro sobe de 4,65:1 para **5,02:1** sobre a zona de valor,
+negativo para **5,25:1** sobre a de bloqueio, e preto fica entre 16:1 e 20:1 em todas as cinco.
+
+### Cor de MÓDULO — /02 pinta a seção, /01 pinta o dado
+Cada módulo tem um par fixo, trocado por **escopo** (`data-modulo` no shell) e lido pelas
+utilities `bg-modulo` (pastel /02), `bg-modulo-cheia` (cheia /01) e `text-modulo`.
+
+| Módulo | Cor /01 | /02 | Shape do ornamento |
+|---|---|---|---|
+| Produtos | Cyan `#22D2ED` | `#CEF9FD` | `brutalist-shape-159` (etiqueta serrilhada) |
+| Estoque | Maya blue `#61BCFF` | `#D1ECFF` | `brutalist-072` (empilhamento) |
+| Vendas / Orçamento | Purple mimosa `#A68AF8` | `#ECE8FD` | `brutalist-shape-128` (documento) |
+| Compras / Pedidos | Violet `#E779F8` | `#F9E7FE` | `brutalist-022` (sacola) |
+| Clientes | Lavender blue `#C7B9FF` | `#F0E3FF` | `brutalist-064` (pessoa) |
+| Fornecedores | Soft blue `#828DF9` | `#E0E7FF` | `brutalist-029` (galpão) |
+| Profissionais | Easter purple `#D47FFB` | `#F7E8FF` | `brutalist-shape-133` (crachá) |
+| Boletim | Fusion coral `#FF8577` | `#FFDFDB` | `brutalist-shape-135` (anéis) |
+
+**Colaboradores fica `[a atribuir]`** — a tabela travada pelo user cobre oito módulos e esse não
+é um deles. Cai no par padrão (marca do sistema) até haver decisão; inventar a nona cor seria
+decidir identidade visual por conta própria.
+
+Os pares **não passam pelo `@theme inline`**: ali `--color-x: hsl(var(--y))` é substituído no
+`:root`, e o valor já resolvido é o que os filhos herdam — redefinir `--modulo-01` num
+descendente não mudaria nada. A troca por escopo só funciona porque as utilities leem a `var()`
+no elemento que pinta.
+
+Risco conhecido e aceito: cyan, maya blue, soft blue e lavender são vizinhos e só se distinguem
+lado a lado. Quem carrega a identidade é o SHAPE; a cor reforça. Se ficarem indistintos na tela,
+troca-se a cor de UM módulo — não o sistema.
 
 ### Acentos — emprego fixo
 - **Violeta `hsl(241 100% 66%)`** — AÇÃO: botão primário, linha selecionada, aba/página ativa, item de menu ativo, barra de progresso.
@@ -166,7 +212,30 @@ Folha; vermelho 5,10:1 e 5,65:1. Efeito colateral bem-vindo: o branco do botão 
 
 ### Sombra
 Cinco degraus de `hsl(41 14% 61%)` a `hsl(35 20% 19%)` — todos sem blur, todos da família quente.
-**Nenhuma sombra preta.**
+**Nenhuma sombra preta.** A escada é **2/3/4/6/8** desde a 1.6: a 10px a sombra do modal virava
+uma segunda peça na tela, do tamanho de uma borda grossa. Ela cresce devagar embaixo, onde os
+degraus se distinguem, e para em 8px, onde ainda se lê como sombra.
+
+### Ornamento — a forma decorativa do módulo
+520 SVGs brutalist no staging; **só os usados entram no repo**. Regras duras:
+- **Sempre colorido. Nunca preto, nunca cinza** — preto é a tinta do dado e da borda, e ornamento
+  na mesma tinta compete com o conteúdo em vez de emoldurá-lo.
+- **Fora as três cores com dono** (verde/dinheiro, amarelo/foco, vermelho/erro), exceto onde o
+  significado É aquele estado — o 404 usa vermelho porque 404 é erro.
+- **Recolorir por `mask-image` + `background-color` de token, nunca editando o `fill`**: os
+  arquivos trazem `fill="white"` e máscaras de luminância do Figma, e trocar o fill quebra a forma.
+- **Um componente só** (`<Ornamento>`); `mask-image` solto pelos arquivos é proibido.
+- **`aria-hidden` sempre** — é decoração; quem informa é o texto ao lado.
+- **Teto de densidade: 1 por região visível**, nunca 2 no mesmo cartão. Três juntos numa tela real
+  → cortar o de menor hierarquia, não diminuir os três.
+
+Escala: **18px** item de menu · **20px** cabeçalho de seção · **24px** banda de identidade ·
+**96–128px** estado vazio.
+
+No item de menu o par entra **invertido** em relação ao fundo: item inativo é liso e leva a cheia
+/01 (a fileira vira um mapa de cores); item ativo já tem fundo /01 e leva a pastel /02, senão a
+forma sumiria. Estado de sistema não usa a cor do módulo: busca sem resultado é Info/01
+`#93AAED` — vazio de busca não é módulo vazio.
 
 ### Modo escuro
 `[a resolver — pós 1.5]`. A amostra não define tema escuro; recalcular só depois que a 1.5 estiver
@@ -265,16 +334,59 @@ pendência ou bloqueio.
 Abas, paginação e itens de menu são ITENS: raio 0, encostados (margem negativa de 2px para o traço não
 dobrar), ativo em violeta. Menu é cartão com `el-3`. Migalha em mono.
 
+### Peças acrescentadas na 1.6
+Todas sobre `react-aria-components`, com a pele daqui. A referência do neobrutalism.dev é **visual**
+— o código de lá é Radix/base-ui e não se copia (§Components).
+
+- **Accordion** — `Disclosure`/`DisclosureGroup` da RAC, que já entrega `aria-expanded`/
+  `aria-controls` amarrados e cabeçalho de verdade (`<h3><button>`). Seções são ITENS: raio 0,
+  coladas, separadas por régua de 2px. Serve para dobrar seção de formulário longo; **não** para
+  esconder campo obrigatório — dado que o operador precisa conferir não pode depender de ele
+  lembrar de abrir uma gaveta.
+- **Menubar** — barra de COMANDOS. É `Toolbar` com botões de menu, **não `role="menubar"`**: a RAC
+  não tem menubar, e o padrão exige gerência de foco própria; um `role="menubar"` mal implementado
+  é pior que nenhum, porque o leitor de tela entra em modo de aplicação e passa a esperar um
+  teclado que não existe.
+- **NavigationMenu** — barra que leva a LUGAR. `<nav>` com nome acessível, itens em `<a href>`,
+  tela atual em `aria-current="page"`. É arquivo separado do Menubar de propósito: navegação que
+  dispara ação surpreende quem abre em outra aba.
+- **HoverCard** — cartão de apoio no hover. Abre só com ponteiro de mouse (em toque abriria por
+  cima do que o dedo foi tocar), abre também no foco, e demora a fechar — é a ponte para atravessar
+  até ele e clicar. **Nada que só exista dentro dele pode ser necessário para operar.**
+- **Carousel** — trilho que ROLA (`overflow-x` + scroll-snap); os botões só chamam `scrollBy`.
+  Assim roda do mouse, gesto e setas continuam de graça e o `Ctrl+F` acha o que está fora da vista.
+  Sem autoplay. Não serve para o que se compara — aí a peça é tabela.
+- **Gaveta para mudança forte** — trocar de empresa é gaveta (`Sheet`), não menu suspenso: menu é a
+  peça de escolha barata e trataria "muda o escopo de todo dado da tela" com o mesmo peso de
+  escolher uma coluna de ordenação. A gaveta para a tela, diz por escrito o que vai acontecer e
+  cobra um clique a mais.
+
 ### Gráfico
 Contorno preto de 2px em cada forma, preenchimento de cor cheia dos acentos. Eixo em traço de 2px.
 Rótulo em mono 10px. Sem gradiente, sem sombra interna.
 
-### Lift
-A microinteração do sistema, na utility `lift-control` (`src/index.css`). A peça repousa em `el-2`,
-levanta para `el-3` no hover (`translate(-2px,-2px)`) e afunda para `el-1` no press
-(`translate(1px,1px)`). Os deslocamentos são a **geometria da elevação**, não enfeite: a borda externa
-da sombra fica parada nos 3px, e só a distância entre peça e sombra muda. Sombra que escorrega junto
-com a peça é o que denuncia lift falso.
+### Lift — o "pulo" (§3b da fase 1.6)
+A microinteração do sistema, nas utilities `lift-control` (peça que já tem sombra) e `lift-flat`
+(peça lisa que a GANHA no hover). O hover da 1.5 foi avaliado como fraco pelo user — "sidebar sem
+reação nenhuma, botões sem pulo" — e a mecânica passou a ser:
+
+| estado | peça | sombra |
+|---|---|---|
+| repouso | 0 | `el-2` (ou nenhuma, em `lift-flat`) |
+| hover | `translate(-2px,-2px)` | um degrau acima |
+| press | `translate(2px,2px)` | **nenhuma** — a peça entra na própria sombra |
+
+Isto **substitui a geometria da 1.5**, que mantinha a borda externa da sombra parada nos 3px e por
+isso limitava o hover a -1px: aquela regra fazia a peça crescer sem sair do lugar, e o pedido é que
+ela saia. Press com sombra zero e não `el-1` porque com a sombra pequena o elemento ainda parece
+flutuar meio pixel e o gesto perde o fim.
+
+`ease-out` em 140ms: sai rápido e assenta devagar, que é como o olho lê "respondeu ao meu mouse".
+`:active` e `[data-pressed]` valem juntos — o `usePress` da RAC chama `preventDefault` no
+pointerdown e em parte dos browsers isso engole o `:active`.
+
+**Item de menu da sidebar agora levanta** (revoga a decisão da 1.5): ganha traço de Tinta, pastel
+/02 do módulo e o pulo; ativo é a cheia /01. Linha e célula de grade seguem sem levantar.
 
 **Foco cancela o lift** (`transform: none`) — peça focada e sob o mouse ao mesmo tempo ficaria
 deslocada com o halo em volta, duas leituras de estado brigando. Enquanto há foco, quem manda é a
@@ -287,8 +399,35 @@ e em parte dos browsers isso engole o `:active`.
 Nunca escrever a receita à mão no componente.
 
 ## Motion
-`cubic-bezier(0.4,0,0.2,1)`, 100–150ms, só em estado (hover/foco/press). O lift é A microinteração do
-sistema (§Lift). Nada anima na entrada de tela.
+
+Movimento aqui serve para dizer que a tela trocou, não para enfeitar — é ferramenta de oito horas.
+Três receitas, e a lista do que NÃO anima vale tanto quanto elas.
+
+| o quê | receita | onde mora |
+|---|---|---|
+| Entrada de tela | fade + sobe 16px, mola `{120,30}`, escalonamento ≤80ms (teto de 6 regiões) | `<Entrada>` (lib `motion`) |
+| Peça que aparece (popover, menu, diálogo, dica) | fade + escala 0,96→1, mola `{400,30}` | `pop-spring` (CSS) |
+| Cortina do diálogo | só opacidade, 160ms | `fade-veil` (CSS) |
+| Hover e press | §Lift, 140ms `ease-out` | `lift-control` / `lift-flat` (CSS) |
+
+**A entrada anima na MONTAGEM e só.** Quem garante "uma vez por navegação" é a `key` por caminho
+que o shell dá à folha: trocar de tela remonta e anima; paginar, ordenar e digitar mexem em search
+params ou estado, não no caminho, e não animam. Animação que se repete a cada re-render é a que faz
+o operador esperar a tela parar de se mexer.
+
+**Popover e companhia NÃO usam a lib**, e é decisão: quem os monta e desmonta é a
+`react-aria-components`, que segura o nó vivo enquanto houver animação CSS correndo e só então
+devolve o foco ao trigger. Trocar isso por `AnimatePresence` seria tirar dela a desmontagem. A mola
+`{400,30}` está escrita em `linear()` de 30 pontos — uma bezier de 4 pontos não representa passar do
+alvo e voltar.
+
+**Nunca animam:** linha de tabela · célula de grade · campo · anel de foco.
+
+`<MotionConfig reducedMotion="user">` fica na raiz e é item de DoD, não sugestão. Animação escrita
+em CSS tem a própria rede: `@media (prefers-reduced-motion: reduce)` em cada receita.
+
+Em teste, `MotionGlobalConfig.instantAnimations` salta para o estado final no primeiro quadro —
+primeiro quadro, não mesmo tick: quem asserta visibilidade dentro da folha usa `findBy*`/`waitFor`.
 
 ## Roteiro de implementação (PR por fatia, na ordem)
 
@@ -311,6 +450,9 @@ DataTable (cabeçalho claro, 42/52px, seleção violeta), banda com faixa de ace
 - **Do** rodar a guarda v4 em todo componente tocado.
 
 ### Don't:
+- **Don't** deixar ornamento preto ou cinza, nem editar o `fill` de um SVG à mão.
+- **Don't** pôr mais de um ornamento por região visível.
+- **Don't** animar linha, célula, campo ou anel de foco.
 - **Don't** usar sombra preta, nem sombra com blur.
 - **Don't** arredondar item (chip, aba, página, célula, item de menu, etiqueta).
 - **Don't** usar amarelo como cor de texto, nem violeta como cor de fundo de área grande.

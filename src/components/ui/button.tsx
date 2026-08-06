@@ -14,7 +14,7 @@ import {
  * (translate + sombra) — A microinteração do sistema (§Motion).
  */
 const buttonVariants = cva(
-  'group/button inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-2 text-[13px] font-semibold transition-[transform,box-shadow,background-color,color] duration-100 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+  'group/button inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-2 text-[13px] font-semibold transition-[transform,box-shadow,background-color,color] duration-100 outline-none select-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
   {
     variants: {
       variant: {

@@ -164,7 +164,7 @@ export function SelectField({
           <FormControl>
             <select
               // Sem sombra: campo é coplanar com a folha (Regra da Linha Antes da Sombra).
-              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring"
+              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
               {...field}
               value={field.value ?? ''}
             >
@@ -222,7 +222,7 @@ export function LookupSelectField({
             <FormLabel>{label}</FormLabel>
             <FormControl>
               <select
-                className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
                 {...field}
                 value={atual}
                 disabled={field.disabled || carregando}

@@ -44,14 +44,22 @@
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
   --info: 219 90% 69%;
-  --money: 155 81% 35%; /* verde de dinheiro */
-  --destructive: 357 84% 52%;
+  /* Verde de dinheiro. A amostra pedia L 35%, que sobre a zona de valor
+     (`--zone-money`) dá 2,79:1 — dinheiro é o dado que a tela existe para
+     mostrar e estava ilegível justo no fundo feito para ele. L 26% mantém
+     matiz e saturação e sobe para 4,65:1 sobre a zona / 5,15:1 sobre a Folha. */
+  --money: 155 81% 26%;
+  /* Vermelho: destruição, erro e VALOR NEGATIVO. Desce de L 52% pelo mesmo
+     motivo do verde — negativo mora na mesma fileira de totais, sobre a mesma
+     zona de valor, e a 52% dava 3,72:1. A 42% dá 5,10:1 sobre a zona; de
+     quebra, o branco do botão destrutivo sai de 4,41:1 para 6,05:1. */
+  --destructive: 357 84% 42%;
   --destructive-foreground: 0 0% 100%;
   --warn: 47 100% 50%; /* amarelo: pendência e FOCO, não ação */
   /* Traço: 2px preto em tudo que é caixa. */
   --border: 0 0% 0%;
   --input: 0 0% 0%;
-  --ring: 47 100% 50%; /* anel de foco = amarelo, 3px, offset 2px */
+  --ring: 47 100% 50%; /* amarelo do anel de foco — receita em `focus-ring` */
   --rule-hair: 42 17% 70%; /* linha da grade de fundo e divisórias finas */
   --rule-strong: 0 0% 0%;
   /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata). */
@@ -71,8 +79,10 @@
      segue `[a resolver]` até a enumeração real do backend). */
   --stamp-neutral: 37 16% 36%;
   --stamp-open: 47 100% 50%;
-  --stamp-done: 155 81% 35%;
-  --stamp-void: 357 84% 52%;
+  /* Acompanham `--money` e `--destructive`: `done` é PREENCHIDO com letra
+     branca em cima (3,31:1 no verde antigo) e `void` é letra sobre papel. */
+  --stamp-done: 155 81% 26%;
+  --stamp-void: 357 84% 42%;
   --grid-line: hsl(42 17% 70%);
   /* Sidebar: é Bancada; item ativo = Folha com traço preto. */
   --sidebar: hsl(41 25% 85%);
@@ -221,6 +231,34 @@
   background-image: radial-gradient(hsl(var(--foreground) / 0.8) 1px, transparent 1.3px);
   background-size: 7px 7px;
   background-position: 0 0, 3px 4px;
+}
+
+/* ANEL DE FOCO — receita ÚNICA (DESIGN.md §Foco).
+   O amarelo sozinho não sobrevive ao creme: `--ring` sobre a Folha dá 1,45:1,
+   e sobre a Bancada 1,14:1 — abaixo dos 3:1 que a WCAG 1.4.11 pede de um
+   indicador de foco. Quem carrega o contraste é um FIO PRETO por fora do
+   amarelo; o amarelo continua sendo a identidade do foco, como manda a amostra.
+   Ordem de pintura: o `box-shadow` (fio) sai da caixa antes, o `outline`
+   (amarelo) é pintado por cima — resultado lido de dentro para fora: borda
+   preta do controle · 3px amarelos · 1px preto · papel.
+   A elevação NÃO compõe com o anel: no foco o halo É o destaque, e um `el-*`
+   de 3px de deslocamento ficaria escondido atrás dele.
+   Aplicar sempre por variante (`focus-visible:focus-ring`,
+   `group-data-focus-visible/x:focus-ring`), nunca solta. */
+@utility focus-ring {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px hsl(var(--foreground));
+}
+
+/* Variante para peça SEM borda própria, onde o anel por fora invadiria o
+   vizinho: célula editável da FormGrid (a malha É o campo) e linha da
+   DataTable. Mesma leitura, virada para dentro — `outline-offset` negativo
+   põe o fio preto encostado na face interna do amarelo. */
+@utility focus-ring-inset {
+  outline: 1px solid hsl(var(--foreground));
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 3px hsl(var(--ring));
 }
 
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).

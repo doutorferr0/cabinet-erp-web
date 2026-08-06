@@ -13,8 +13,8 @@ colors:
   main-foreground: "hsl(0 0% 100%)"
   accent: "hsl(262 97% 76%)"
   info: "hsl(219 90% 69%)"
-  money: "hsl(155 81% 35%)"
-  danger: "hsl(357 84% 52%)"
+  money: "hsl(155 81% 26%)"
+  danger: "hsl(357 84% 42%)"
   warn: "hsl(47 100% 50%)"
   ring: "hsl(47 100% 50%)"
   zone-money: "hsl(78 32% 90%)"
@@ -132,7 +132,7 @@ interação por clique · nada anima na entrada de tela.
 - **Superfície tintada por conteúdo**: valor (creme-esverdeado) · identidade (creme-avermelhado) · apoio (creme-azulado) · pendência (creme-amarelado) · bloqueio (creme-avermelhado forte)
 - **Faixa de acento**: painel importante ganha barra de 8px na lateral esquerda, com traço à direita
 - Dinheiro escreve em VERDE, negativo em vermelho; célula de valor ganha fundo da zona
-- Foco = **contorno amarelo 3px com offset 2px**, em todo controle
+- Foco = **amarelo 3px com fio preto de 1px por fora**, em todo controle (§Foco)
 - Três famílias, todas **self-hosted**: Sora (título) · Inter (corpo) · PT Mono (identificador e etiqueta)
 
 ## Colors
@@ -153,9 +153,16 @@ ler o rótulo**; por isso é exclusiva — zona espalhada em dado comum deixa de
 - **Violeta `hsl(241 100% 66%)`** — AÇÃO: botão primário, linha selecionada, aba/página ativa, item de menu ativo, barra de progresso.
 - **Roxo `hsl(262 97% 76%)`** — marca e realce (avatar, badge de destaque). Nunca ação.
 - **Azul `hsl(219 90% 69%)`** — informação/apoio.
-- **Verde `hsl(155 81% 35%)`** — dinheiro, e só.
-- **Vermelho `hsl(357 84% 52%)`** — destruição, erro, valor negativo, carimbo anulado.
+- **Verde `hsl(155 81% 26%)`** — dinheiro, e só.
+- **Vermelho `hsl(357 84% 42%)`** — destruição, erro, valor negativo, carimbo anulado.
 - **Amarelo `hsl(47 100% 50%)`** — foco e pendência. Continua proibido como cor de texto.
+
+**Verde e vermelho descem da luz da amostra** (35% e 52%) porque os dois moram sobre a **zona de
+valor**, que é justamente onde o operador lê o número que a tela existe para mostrar: a 35% o verde
+dava 2,79:1 sobre a zona e a 52% o vermelho dava 3,72:1 — ambos abaixo dos 4,5:1 de texto. Matiz e
+saturação são os da amostra; só a luz mudou. Depois: verde 4,65:1 sobre a zona e 5,15:1 sobre a
+Folha; vermelho 5,10:1 e 5,65:1. Efeito colateral bem-vindo: o branco do botão destrutivo sai de
+4,41:1 para 6,05:1, e o do carimbo `done` (preenchido de verde) de 3,31:1 para 5,52:1.
 
 ### Sombra
 Cinco degraus de `hsl(41 14% 61%)` a `hsl(35 20% 19%)` — todos sem blur, todos da família quente.
@@ -190,8 +197,29 @@ Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
 1. Primitivos de `src/components/ui/` re-estilizados pelos tokens desta spec.
 2. **Guarda Tailwind v4 obrigatória**: `pnpm build` + `grep -o 'width:--[a-z-]*' dist/assets/*.css` = zero.
-3. Receita: traço 2px preto · raio pela natureza · elevação por degrau · foco amarelo 3px offset 2px · hover levanta `translate(-2px,-2px)` e ganha um degrau de sombra · press afunda `translate(1px,1px)` e perde.
+3. Receita: traço 2px preto · raio pela natureza · elevação por degrau · foco pela utility `focus-ring` (§Foco) · hover levanta `translate(-2px,-2px)` e ganha um degrau de sombra · press afunda `translate(1px,1px)` e perde.
 4. **Hover-lift é de controle** — botão, item de menu, cartão clicável. Linha e célula de grade NÃO levantam: lá o amarelo marca foco e o violeta marca seleção.
+
+### Foco
+**Amarelo sozinho não sobrevive ao creme.** O `--ring` da amostra dá **1,45:1** sobre a Folha e
+**1,14:1** sobre a Bancada — a WCAG 1.4.11 pede 3:1 de um indicador de foco, e um anel que só o
+operador de vista boa enxerga não é indicador. Quem carrega o contraste é um **fio preto de 1px por
+fora do amarelo**; o amarelo continua sendo a identidade do foco, como manda a amostra.
+
+Leitura de dentro para fora: borda preta do controle · 3px amarelos · 1px preto · papel.
+
+A receita mora num ponto só, em `src/index.css`:
+- **`focus-ring`** — peça com borda própria (botão, campo, aba, item de menu). `outline` amarelo de
+  3px + `box-shadow` preto de 4px de spread. Aplicar sempre por variante: `focus-visible:focus-ring`,
+  `group-data-focus-visible/checkbox:focus-ring`.
+- **`focus-ring-inset`** — peça SEM borda própria, onde o anel externo invadiria o vizinho: célula
+  editável da FormGrid (a malha É o campo) e linha da DataTable. Mesma leitura, virada para dentro.
+  Vence a versão externa por ordem de definição no CSS, então **fica definida depois dela**.
+
+**A elevação não compõe com o anel**: no foco o halo É o destaque, e um `el-*` de 3px de
+deslocamento ficaria escondido atrás dele. Onde este doc dizia "foco + `el-2`", vale o halo.
+
+Nunca escrever a receita à mão no componente — recalibração de foco tem que mudar tudo de um ponto só.
 
 ### Button
 Fundo Folha, traço 2px, raio de controle. Primário = violeta com texto branco (hover `main-hover`).
@@ -203,14 +231,18 @@ bloqueio (vermelho) · pendência (amarelo) · neutro (Folha). O mapeamento tom 
 continua `[a resolver]` até a enumeração real do backend.
 
 ### Campo (input · select · textarea)
-Fundo Folha, traço 2px, raio de controle, foco com contorno amarelo + `el-2`. **Rótulo é etiqueta**:
+Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco). **Rótulo é etiqueta**:
 caixa clara com traço 2px, mono 10px, caixa alta — não texto solto acima do campo.
 
 ### DataTable (assinatura)
 Caixa de dado (raio 2px, `el-3`, `overflow:hidden`). **Cabeçalho: caixa clara, letra preta, mono 11px
 tracking 0.12em, 42px, régua inferior 3px** — a barra preta sólida sai. Célula 52px com régua de 2px
-entre linhas. Linha selecionada = **violeta com texto branco**; linha focada = contorno amarelo interno
-de 3px. Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
+entre linhas. Linha selecionada = **violeta com texto branco**; linha focada = `focus-ring-inset`.
+**Aberto na fatia C:** a tabela herda `border-collapse: collapse` do preflight, e sob `collapse` o
+`box-shadow` de um `<tr>` não pinta de forma confiável — o amarelo do anel de linha pode não aparecer
+(o fio preto, que é `outline`, aparece). Conferir no browser e, se for o caso, passar a tabela para
+`border-separate border-spacing-0`, medindo a borda dobrada que isso traz.
+Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 
 ### CadastroForm / BandaDeIdentidade (assinatura)
@@ -219,7 +251,7 @@ Título em Display; contexto em Meta. Rodapé fixo com régua superior de 3px. M
 `<fieldset disabled>`: inalterado.
 
 ### FormGrid (assinatura)
-Mesma malha da DataTable; célula editável sem borda (a malha É o campo), foco = contorno amarelo.
+Mesma malha da DataTable; célula editável sem borda (a malha É o campo), foco pela `focus-ring-inset`.
 Faixa de seção com fundo Neutro e réguas de 2px. Totais na zona de valor, `Total` em Display com régua
 de 3px acima. Negativo em vermelho.
 

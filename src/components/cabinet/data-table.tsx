@@ -273,7 +273,7 @@ export function VitraDataTable<T>({
                     tabIndex={0}
                     aria-selected={isSelected}
                     className={cn(
-                      'cursor-pointer outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset',
+                      'cursor-pointer outline-none hover:bg-muted focus-visible:focus-ring-inset',
                       isSelected &&
                         'bg-muted [&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
                     )}
@@ -322,7 +322,7 @@ export function VitraDataTable<T>({
           <select
             id="vitra-page-size"
             // Mesma caixa preta 2px dos selects do formulário (radius 0 é lei).
-            className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:focus-ring"
             value={state.pageSize}
             onChange={(e) =>
               updateState((s) => ({ ...s, pageSize: Number(e.target.value), page: 1 }))

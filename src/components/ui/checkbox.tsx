@@ -23,7 +23,7 @@ function Checkbox({ className, children, ...props }: CheckboxProps) {
         <>
           <span
             data-slot="checkbox-indicator"
-            className="grid size-4 shrink-0 place-content-center border-2 border-input bg-card text-primary-foreground transition-colors group-data-focus-visible/checkbox:ring-3 group-data-focus-visible/checkbox:ring-ring group-data-selected/checkbox:border-primary group-data-selected/checkbox:bg-primary [&>svg]:size-3"
+            className="grid size-4 shrink-0 place-content-center border-2 border-input bg-card text-primary-foreground transition-colors group-data-focus-visible/checkbox:focus-ring group-data-selected/checkbox:border-primary group-data-selected/checkbox:bg-primary [&>svg]:size-3"
           >
             {(isSelected || isIndeterminate) && <CheckIcon />}
           </span>

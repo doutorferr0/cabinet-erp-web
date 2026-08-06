@@ -79,7 +79,7 @@ function NavigationMenuLink({
       {...(isCurrent && { 'aria-current': 'page' })}
       className={composeRenderProps(className, (className) =>
         cn(
-          'rounded-item px-2.5 py-1 font-semibold text-sm no-underline outline-none transition-colors',
+          'cursor-pointer rounded-item px-2.5 py-1 font-semibold text-sm no-underline outline-none transition-colors',
           'hover:bg-neutral data-pressed:bg-neutral',
           // A tela ATUAL é violeta cheio, o mesmo sinal do item de menu ativo
           // na sidebar. `aria-current` carrega o estado para quem não vê a cor.
@@ -112,7 +112,7 @@ function NavigationMenuTrigger({
       data-slot="navigation-menu-trigger"
       className={composeRenderProps(className, (className) =>
         cn(
-          'group/navigation-menu-trigger flex items-center gap-1 rounded-item px-2.5 py-1 font-semibold text-sm outline-none transition-colors',
+          'group/navigation-menu-trigger flex cursor-pointer items-center gap-1 rounded-item px-2.5 py-1 font-semibold text-sm outline-none transition-colors',
           'hover:bg-neutral data-pressed:bg-neutral',
           'aria-expanded:bg-primary aria-expanded:text-primary-foreground',
           'focus-visible:focus-ring',

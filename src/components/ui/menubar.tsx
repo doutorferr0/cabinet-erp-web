@@ -84,7 +84,7 @@ function MenubarTrigger({
         cn(
           // ITEM (raio 0): os gatilhos encostam uns nos outros na barra.
           // Não levanta no hover pelo mesmo motivo — lift é de peça solta.
-          'rounded-item px-2.5 py-1 font-semibold text-sm outline-none transition-colors',
+          'cursor-pointer rounded-item px-2.5 py-1 font-semibold text-sm outline-none transition-colors',
           'hover:bg-neutral data-pressed:bg-neutral',
           // Menu ABERTO = violeta, a cor do que está ativo (§Acentos). É o
           // mesmo sinal da aba ativa e do item de menu ativo.

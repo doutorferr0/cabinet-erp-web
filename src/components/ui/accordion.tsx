@@ -63,9 +63,11 @@ function AccordionItem({
       data-slot="accordion-item"
       className={composeRenderProps(className, (className) =>
         cn(
-          // Régua de 2px entre irmãs, nunca na última: a caixa do grupo já
-          // fecha embaixo, e a régua ali dobraria o traço.
-          'border-b-2 border-border last:border-b-0',
+          // `group/accordion-item` NÃO é decoração: é o que permite ao gatilho
+          // e à seta lerem o `data-expanded`, que mora AQUI (no `Disclosure`) e
+          // não no botão. Sem esta classe o seletor não casa com nada e a seta
+          // fica parada — falha silenciosa, porque nada quebra.
+          'group/accordion-item border-b-2 border-border last:border-b-0',
           className,
         ),
       )}
@@ -91,8 +93,12 @@ function AccordionTrigger({
         data-slot="accordion-trigger"
         className={composeRenderProps(className, (className) =>
           cn(
-            'group/accordion-trigger flex w-full items-center gap-2 rounded-item px-3 py-2.5 text-left font-semibold text-sm outline-none transition-colors',
+            'group/accordion-trigger flex w-full cursor-pointer items-center gap-2 rounded-item px-3.5 py-3 text-left font-semibold text-sm outline-none transition-colors',
             'hover:bg-neutral data-pressed:bg-neutral',
+            // Seção ABERTA fica com o cabeçalho tingido. A seta girada já diz,
+            // mas ela é pequena e some no canto — o fundo é o sinal que se lê
+            // de longe, correndo o olho por uma pilha de seções.
+            'group-data-[expanded]/accordion-item:bg-neutral',
             'focus-visible:focus-ring-inset',
             'data-disabled:pointer-events-none data-disabled:opacity-50',
             className,

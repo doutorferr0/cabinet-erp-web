@@ -39,6 +39,22 @@ describe('Accordion', () => {
     expect(gatilho).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('a seção aberta carrega `data-expanded` no grupo — é dele que a seta e o fundo dependem', async () => {
+    const user = userEvent.setup()
+    render(<Exemplo />)
+
+    const secao = screen
+      .getByRole('button', { name: 'Endereço' })
+      .closest('[data-slot="accordion-item"]')
+    expect(secao).toHaveClass('group/accordion-item')
+    expect(secao).not.toHaveAttribute('data-expanded')
+
+    await user.click(screen.getByRole('button', { name: 'Endereço' }))
+    // Sem a classe de grupo acima, `group-data-[expanded]/accordion-item:` não
+    // casa e a seta fica parada sem nada quebrar — falha silenciosa.
+    expect(secao).toHaveAttribute('data-expanded')
+  })
+
   it('o gatilho é cabeçalho de verdade — a lista de seções tem que existir para o leitor de tela', () => {
     render(<Exemplo />)
     expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)

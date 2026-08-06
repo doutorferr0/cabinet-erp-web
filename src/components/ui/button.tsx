@@ -21,7 +21,11 @@ import {
  * lê como tremor.
  */
 const buttonVariants = cva(
-  'group/button inline-flex shrink-0 rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+  // `cursor-pointer` porque `<button>` nasce com `cursor: default` — o mesmo
+  // ponteiro do texto morto ao lado. É a afirmação mais barata de "isto
+  // responde ao clique", e é o que o operador confere sem pensar antes de
+  // mirar. (Trazido da referência do neobrutalism.dev; a pele continua nossa.)
+  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
   {
     variants: {
       variant: {

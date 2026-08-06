@@ -22,6 +22,18 @@ const modoDaApi = import.meta.env.VITE_API_MODE ?? (import.meta.env.DEV ? 'mock'
 if (modoDaApi === 'mock') {
   const { worker } = await import('@/mocks/browser')
   await worker.start({ onUnhandledRequest: 'bypass' })
+  // 1ª visita a uma origem nova: o SW instala mas ainda NÃO controla a página.
+  // Qualquer fetch nessa janela vaza pra rede e o fallback SPA do hosting
+  // responde index.html 200 — o login "não acontece", em silêncio (medido no
+  // demo público em 2026-08-06). Um reload único entrega a página já
+  // controlada; a flag de sessão impede loop (ex: Ctrl+Shift+R, que carrega
+  // sem controller por design do navegador).
+  if (!navigator.serviceWorker.controller && !sessionStorage.getItem('msw-primeira-visita')) {
+    sessionStorage.setItem('msw-primeira-visita', '1')
+    window.location.reload()
+    // Trava o boot: nada deve montar por cima de um reload já disparado.
+    await new Promise(() => {})
+  }
 }
 
 const router = createRouter({ routeTree })

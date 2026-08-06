@@ -237,11 +237,12 @@ caixa clara com traço 2px, mono 10px, caixa alta — não texto solto acima do 
 ### DataTable (assinatura)
 Caixa de dado (raio 2px, `el-3`, `overflow:hidden`). **Cabeçalho: caixa clara, letra preta, mono 11px
 tracking 0.12em, 42px, régua inferior 3px** — a barra preta sólida sai. Célula 52px com régua de 2px
-entre linhas. Linha selecionada = **violeta com texto branco**; linha focada = `focus-ring-inset`.
-**Aberto na fatia C:** a tabela herda `border-collapse: collapse` do preflight, e sob `collapse` o
-`box-shadow` de um `<tr>` não pinta de forma confiável — o amarelo do anel de linha pode não aparecer
-(o fio preto, que é `outline`, aparece). Conferir no browser e, se for o caso, passar a tabela para
-`border-separate border-spacing-0`, medindo a borda dobrada que isso traz.
+entre linhas, e **sem malha vertical** — a régua horizontal já delimita, e coluna fechada dos dois
+lados vira gaiola. Linha selecionada = **violeta com texto branco**, mais peso 600 e `aria-selected`:
+cor sozinha não diz estado (1.4.1). Linha focada = utility `focus-ring-row`, que monta UM anel com as
+partes que cada célula pode desenhar (topo e base em todas, lateral só na primeira e na última) —
+`box-shadow` no `<tr>` não pinta sob o `border-collapse` que a tabela herda do preflight, e anel por
+célula desenharia uma moldura por coluna.
 Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 

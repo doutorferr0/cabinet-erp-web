@@ -160,8 +160,10 @@ export function VitraDataTable<T>({
         ))}
       </div>
 
-      {/* Contêiner da tabela: caixa preta 2px (a malha interna é Fio). */}
-      <div className="border-2 border-border">
+      {/* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e
+          `overflow-hidden` — sem o overflow, o canto arredondado do contêiner
+          apareceria por baixo do cabeçalho quadrado da primeira fileira. */}
+      <div className="overflow-hidden rounded-data border-2 border-border shadow-el3">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
@@ -240,7 +242,7 @@ export function VitraDataTable<T>({
                     {/* O `detail` do problem+json é a frase que o backend escolheu
                         para o caso — é a única informação acionável da resposta. */}
                     {query.error instanceof ErroDaApi && query.error.detail ? (
-                      <span className="max-w-prose text-[0.75rem]">{query.error.detail}</span>
+                      <span className="max-w-prose text-sm">{query.error.detail}</span>
                     ) : null}
                     <Button variant="outline" size="sm" onClick={() => query.refetch()}>
                       Tentar de novo
@@ -261,8 +263,11 @@ export function VitraDataTable<T>({
               table.getRowModel().rows.map((row, rowIndex) => {
                 const isSelected = selected !== null && row.original === selected
                 return (
-                  // Seleção = Bancada + marcador esquerdo duplo (4px amarelo + 1px tinta) —
-                  // estado nunca depende só de cor (mockup tr.sel).
+                  // Seleção = VIOLETA cheio com texto branco (§DataTable): o
+                  // violeta é a cor da AÇÃO, e a linha selecionada é sobre o
+                  // que as ações da barra vão agir. O marcador amarelo saiu com
+                  // ele — amarelo agora é foco, e foco e seleção são estados
+                  // diferentes que precisam de sinais diferentes.
                   <TableRow
                     key={row.id}
                     data-state={isSelected ? 'selected' : undefined}
@@ -273,9 +278,16 @@ export function VitraDataTable<T>({
                     tabIndex={0}
                     aria-selected={isSelected}
                     className={cn(
-                      'cursor-pointer outline-none hover:bg-muted focus-visible:focus-ring-inset',
+                      // O anel de foco é de LINHA, montado nas células: sob
+                      // `border-collapse` o `<tr>` não pinta box-shadow, e um
+                      // anel por célula viraria uma moldura por coluna.
+                      'cursor-pointer outline-none hover:bg-muted focus-visible:focus-ring-row',
+                      // Seleção não depende só de cor: além do violeta, a linha
+                      // fica em negrito e `aria-selected` diz o estado a quem
+                      // ouve. Dinheiro perde a zona aqui — verde sobre violeta
+                      // não se lê, e a linha inteira já está marcada.
                       isSelected &&
-                        'bg-muted [&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
+                        'font-semibold [&>td]:bg-primary [&>td]:text-primary-foreground [&>td_.bg-zone-money]:bg-transparent',
                     )}
                     onClick={() => setSelected(isSelected ? null : row.original)}
                     onKeyDown={(e) => {
@@ -288,7 +300,7 @@ export function VitraDataTable<T>({
                   >
                     {rowNumbers ? (
                       // Numeração em Meta, sequencial global da consulta.
-                      <TableCell className="w-10 text-right font-mono text-[0.75rem] font-medium tabular-nums tracking-[0.06em] text-muted-foreground">
+                      <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">
                         {(state.page - 1) * state.pageSize + rowIndex + 1}
                       </TableCell>
                     ) : null}
@@ -312,7 +324,7 @@ export function VitraDataTable<T>({
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         {/* Contagem em Meta (rótulo de rodapé de tabela); paginação em tabular. */}
-        <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em]">
           {/* Consulta que falhou não tem contagem: "0 registros" seria afirmar
               que a consulta voltou vazia, que é exatamente o que não se sabe. */}
           {query.isError ? '— registros' : `${total} registro${total === 1 ? '' : 's'}`}

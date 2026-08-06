@@ -320,6 +320,54 @@
   box-shadow: inset 0 0 0 3px hsl(var(--ring));
 }
 
+/* ANEL DE FOCO DA LINHA — o caso que nem `focus-ring` nem `focus-ring-inset`
+   resolvem, e por dois motivos somados:
+
+   1. A tabela herda `border-collapse: collapse` do preflight, e sob `collapse`
+      o `box-shadow` de um `<tr>` não pinta de forma confiável. Anel no `tr`
+      seria indicador de foco que existe no CSS e não na tela.
+   2. Anel em cada `<td>`, que é o que a amostra faz, pinta — mas desenha um
+      retângulo POR CÉLULA. Cinco colunas viram cinco molduras, e o operador
+      lê cinco coisas focadas em vez de uma linha.
+
+   A saída é montar UM anel com as partes que cada célula pode desenhar: topo e
+   base em todas, lateral esquerda só na primeira, direita só na última. O
+   resultado é contínuo e não depende do `tr` pintar nada.
+
+   O fio preto vem junto pelo motivo de sempre (§Foco): amarelo sozinho dá
+   1,45:1 sobre a Folha. Ele é declarado DEPOIS do amarelo em cada lista e com
+   1px a mais de espessura, então fica por baixo — de dentro para fora lê-se
+   3px amarelos e 1px preto. */
+@utility focus-ring-row {
+  & > td,
+  & > th {
+    box-shadow: inset 0 3px 0 0 hsl(var(--ring)), inset 0 -3px 0 0 hsl(var(--ring)), inset 0 4px 0 0
+      hsl(var(--foreground)), inset 0 -4px 0 0 hsl(var(--foreground));
+  }
+
+  & > td:first-child,
+  & > th:first-child {
+    box-shadow:
+      inset 0 3px 0 0 hsl(var(--ring)),
+      inset 0 -3px 0 0 hsl(var(--ring)),
+      inset 3px 0 0 0 hsl(var(--ring)),
+      inset 0 4px 0 0 hsl(var(--foreground)),
+      inset 0 -4px 0 0 hsl(var(--foreground)),
+      inset 4px 0 0 0 hsl(var(--foreground));
+  }
+
+  & > td:last-child,
+  & > th:last-child {
+    box-shadow:
+      inset 0 3px 0 0 hsl(var(--ring)),
+      inset 0 -3px 0 0 hsl(var(--ring)),
+      inset -3px 0 0 0 hsl(var(--ring)),
+      inset 0 4px 0 0 hsl(var(--foreground)),
+      inset 0 -4px 0 0 hsl(var(--foreground)),
+      inset -4px 0 0 0 hsl(var(--foreground));
+  }
+}
+
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).
    Utility, e não `border-t-[3px] border-rule-strong` na tela: a espessura é
    parte da régua, e a recalibração de tokens prevista tem que mudá-la num

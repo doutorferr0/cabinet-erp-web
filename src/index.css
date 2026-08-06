@@ -1,63 +1,95 @@
 @import "tailwindcss";
 
+/* Fontes SELF-HOSTED (@fontsource) — a amostra da fase 1.5 as puxava do CDN do
+   Google; em produção isso é dependência externa e IP do operador vazando para
+   terceiro a cada carga. Só os pesos que a rampa usa. */
+@import "@fontsource/sora/600.css";
+@import "@fontsource/sora/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/pt-mono/400.css";
+
 @custom-variant dark (&:is(.dark *));
 
-/* Brut sobre papel — valores travados no frontmatter do DESIGN.md (fonte canônica).
-   Em divergência doc × mockup (docs/design/mockup-brut-papel.html), o mockup vence.
-   Contrastes: Tinta 15,9:1 sobre Papel · Tinta Apagada 6,8:1 · Tinta de Dinheiro
-   6,9:1 sobre branco · Vermelho de Alerta 5,9:1. Amarelo Âncora NUNCA é texto. */
+/* FASE 1.5 — fonte canônica: `amostra-fase-1.5.html` (v5). Ela SUPERSEDE a
+   fundação "Brut sobre papel" nos pontos abaixo, e o DESIGN.md foi reescrito
+   para acompanhar:
+   - canto POR NATUREZA (painel 10 · cartão 6 · controle 4 · dado 2 · item 0),
+     no lugar do "radius 0 é lei";
+   - elevação em 6 níveis com sombra da FAMÍLIA QUENTE do papel — nunca preta;
+   - acento saturado (violeta) como cor de ação; o amarelo recua para foco e
+     pendência;
+   - etiqueta e cabeçalho de coluna INVERTIDOS: caixa clara com letra preta, no
+     lugar da barra preta sólida.
+   Cor em HSL-triplet (não hex) porque é o que `@theme inline` consome — trocar
+   a notação quebraria todo `bg-*`/`text-*` do repo. */
 :root {
-  --radius: 0px; /* brut não arredonda */
-  --background: 42 30% 96%; /* Papel */
-  --foreground: 30 15% 10%; /* Tinta */
-  --card: 0 0% 100%; /* Documento — folha opaca sobre a grade */
-  --card-foreground: 30 15% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 30 15% 10%;
-  --primary: 30 15% 10%; /* ação primária = Tinta sólida (Gravar) */
-  --primary-foreground: 42 30% 96%; /* texto cream sobre Tinta */
-  --secondary: 0 0% 100%; /* botão outline: fundo Documento, hover Bancada */
-  --secondary-foreground: 30 15% 10%;
-  --muted: 44 45% 90%; /* Tinta de Bancada — hover de linha e de botão outline */
-  --muted-foreground: 32 10% 38%; /* Tinta Apagada */
-  --accent: 44 45% 90%;
-  --accent-foreground: 30 15% 10%;
-  --destructive: 4 74% 44%; /* Vermelho de Alerta */
+  /* Superfícies — creme acinzentado, viés conforme o conteúdo. */
+  --background: 41 25% 85%; /* Bancada — fundo do app */
+  --foreground: 0 0% 0%; /* traço e texto: preto puro */
+  --card: 42 50% 96%; /* Folha — superfície de trabalho */
+  --card-foreground: 0 0% 0%;
+  --popover: 42 50% 96%;
+  --popover-foreground: 0 0% 0%;
+  --neutral: 44 35% 92%; /* creme neutro — trilho, skeleton, hover de item */
+  /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
+  --primary: 241 100% 66%;
+  --primary-hover: 241 77% 57%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 42 50% 96%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 44 35% 92%;
+  --muted-foreground: 37 16% 36%;
+  --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
+  --accent-foreground: 0 0% 0%;
+  --info: 219 90% 69%;
+  --money: 155 81% 35%; /* verde de dinheiro */
+  --destructive: 357 84% 52%;
   --destructive-foreground: 0 0% 100%;
-  /* Regra da Caixa Preta: toda caixa estrutural é Tinta. A malha interna de
-     tabela é a ÚNICA linha em Fio — quem quer Fio pede border-rule-hair. */
-  --border: 30 15% 10%;
-  --input: 30 15% 10%;
-  --ring: 45 96% 54%; /* anel de foco = Amarelo Âncora, 3px, offset 0 */
-  --rule-hair: 38 14% 84%; /* Fio — malha interna (linhas E colunas) */
-  --rule-strong: 30 15% 10%; /* separador de seção: Tinta, 3px */
-  --bench-tint: 44 45% 90%;
-  /* Acentos de emprego fixo (Regra do Emprego Fixo — DESIGN.md §Colors). */
-  --anchor: 45 96% 54%; /* Amarelo Âncora: SEMPRE fundo/borda, nunca texto */
-  --money: 152 65% 24%; /* Tinta de Dinheiro — todo valor monetário */
-  --zone-money: 110 24% 88%; /* creme-esverdeado: fileiras de total */
-  --zone-id: 8 36% 89%; /* creme-avermelhado: banda de identidade */
-  --stamp-neutral: 32 10% 38%;
-  --stamp-open: 45 96% 54%; /* ABERTO = fundo amarelo, texto Tinta */
-  --stamp-done: 30 15% 10%; /* CONCLUÍDO = fundo Tinta, texto cream */
-  --stamp-void: 4 74% 44%; /* ANULADO = borda+texto vermelho */
-  /* Grade de 52px no Papel (De School). Vive no fundo do app, nunca na folha. */
-  --grid-line: hsl(30 15% 10% / 0.28);
-  /* Sidebar: sobre Papel ela é Papel; item ativo = Documento + borda 3px Tinta. */
-  --sidebar: hsl(42 30% 96%);
-  --sidebar-foreground: hsl(30 15% 10%);
-  --sidebar-primary: hsl(30 15% 10%);
-  --sidebar-primary-foreground: hsl(42 30% 96%);
-  --sidebar-accent: hsl(44 45% 90%);
-  --sidebar-accent-foreground: hsl(30 15% 10%);
-  --sidebar-border: hsl(30 15% 10%);
-  --sidebar-ring: hsl(45 96% 54%);
+  --warn: 47 100% 50%; /* amarelo: pendência e FOCO, não ação */
+  /* Traço: 2px preto em tudo que é caixa. */
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 47 100% 50%; /* anel de foco = amarelo, 3px, offset 2px */
+  --rule-hair: 42 17% 70%; /* linha da grade de fundo e divisórias finas */
+  --rule-strong: 0 0% 0%;
+  /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata). */
+  --zone-money: 78 32% 90%;
+  --zone-id: 30 36% 91%;
+  --zone-info: 213 21% 92%;
+  --zone-warn: 46 63% 89%;
+  --zone-danger: 14 49% 90%;
+  /* Sombra: família quente do papel, 5 profundidades. NUNCA preta — preto vira
+     buraco, o papel projeta sombra de papel. */
+  --shadow-1: 41 14% 61%;
+  --shadow-2: 39 13% 47%;
+  --shadow-3: 37 16% 36%;
+  --shadow-4: 36 18% 27%;
+  --shadow-5: 35 20% 19%;
+  /* Carimbo: os quatro tons continuam semânticos (o mapeamento tom → situação
+     segue `[a resolver]` até a enumeração real do backend). */
+  --stamp-neutral: 37 16% 36%;
+  --stamp-open: 47 100% 50%;
+  --stamp-done: 155 81% 35%;
+  --stamp-void: 357 84% 52%;
+  --grid-line: hsl(42 17% 70%);
+  /* Sidebar: é Bancada; item ativo = Folha com traço preto. */
+  --sidebar: hsl(41 25% 85%);
+  --sidebar-foreground: hsl(0 0% 0%);
+  --sidebar-primary: hsl(241 100% 66%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(44 35% 92%);
+  --sidebar-accent-foreground: hsl(0 0% 0%);
+  --sidebar-border: hsl(0 0% 0%);
+  --sidebar-ring: hsl(47 100% 50%);
 }
 
-/* Modo escuro: [a resolver — fase 3]. Valores abaixo são da direção anterior
-   ("Papel Funcional") e ficam como estavam até o recálculo com contraste
-   verificado — não improvisar tom a tom (DESIGN.md §Modo escuro). Os tokens
-   novos (anchor/money/zonas/grid-line) herdam o valor claro por enquanto. */
+/* Modo escuro: `[a resolver — pós 1.5]`. A amostra da fase 1.5 não define tema
+   escuro, e a fundação inteira acabou de mudar: recalcular agora seria derivar
+   de valores que ainda vão assentar. Os valores abaixo são os da direção
+   ANTERIOR e sobrevivem só para a tela não quebrar com `.dark` no html.
+   Recalcular quando a 1.5 estiver aplicada nas telas. */
 .dark {
   --background: 30 8% 10%;
   --foreground: 40 20% 95%;
@@ -117,23 +149,51 @@
   --color-ring: hsl(var(--ring));
   --color-rule-hair: hsl(var(--rule-hair));
   --color-rule-strong: hsl(var(--rule-strong));
-  --color-bench-tint: hsl(var(--bench-tint));
-  --color-anchor: hsl(var(--anchor));
+  --color-neutral: hsl(var(--neutral));
+  --color-primary-hover: hsl(var(--primary-hover));
+  --color-info: hsl(var(--info));
+  --color-warn: hsl(var(--warn));
   --color-money: hsl(var(--money));
   --color-zone-money: hsl(var(--zone-money));
   --color-zone-id: hsl(var(--zone-id));
+  --color-zone-info: hsl(var(--zone-info));
+  --color-zone-warn: hsl(var(--zone-warn));
+  --color-zone-danger: hsl(var(--zone-danger));
   --color-stamp-neutral: hsl(var(--stamp-neutral));
   --color-stamp-open: hsl(var(--stamp-open));
   --color-stamp-done: hsl(var(--stamp-done));
   --color-stamp-void: hsl(var(--stamp-void));
-  /* Canto RETO: radius 0 é lei (DESIGN.md §Don'ts). */
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  /* Sombra dura — deslocamento sem blur (moldura 5px; botão primário 3px). */
-  --shadow-hard: 5px 5px 0 hsl(var(--foreground));
-  --shadow-hard-sm: 3px 3px 0 hsl(var(--foreground));
+  /* Alias de transição: `bg-anchor`/`bg-bench-tint` ainda vivem em componentes
+     que a fatia C reescreve. Apontam para o token novo em vez de sumirem — a
+     fundação troca sem quebrar a tela no meio do caminho. */
+  --color-anchor: hsl(var(--warn));
+  --color-bench-tint: hsl(var(--neutral));
+  /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
+     aba, página, item de menu, célula, etiqueta — continua reto, porque itens
+     encostam uns nos outros e canto arredondado abre fresta entre eles. */
+  --radius-item: 0px;
+  --radius-data: 2px;
+  --radius-control: 4px;
+  --radius-card: 6px;
+  --radius-panel: 10px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+  /* ELEVAÇÃO em 5 degraus, sombra sem blur da família quente do papel.
+     `el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal. */
+  --shadow-el1: 2px 2px 0 0 hsl(var(--shadow-1));
+  --shadow-el2: 3px 3px 0 0 hsl(var(--shadow-2));
+  --shadow-el3: 5px 5px 0 0 hsl(var(--shadow-3));
+  --shadow-el4: 7px 7px 0 0 hsl(var(--shadow-4));
+  --shadow-el5: 10px 10px 0 0 hsl(var(--shadow-5));
+  /* Aliases de transição da sombra antiga (Tinta) para a nova (quente). */
+  --shadow-hard: var(--shadow-el3);
+  --shadow-hard-sm: var(--shadow-el1);
+  /* Três famílias, todas self-hosted: Display (Sora) · Corpo (Inter) · Mono (PT Mono). */
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "PT Mono", ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -178,4 +238,18 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Display (Sora 700) em título — a rampa da fase 1.5 separa VOZ de tamanho:
+   quem titula fala em Display, quem informa fala em Inter, quem identifica
+   fala em Mono. Sem isto, `<h1>` herdaria Inter e a distinção sumiria. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.012em;
 }

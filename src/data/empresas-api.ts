@@ -5,7 +5,7 @@ import { useSessao } from '@/data/sessao'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
- * Empresa ativa da sessão — os dois níveis de multi-tenancy do VITRA aparecem aqui.
+ * Empresa ativa da sessão — os dois níveis de multi-tenancy do Cabinet aparecem aqui.
  *
  * `GET /auth/tenants` devolve os VÍNCULOS (plural, o que o usuário alcança) e
  * `GET /auth/me` devolve o CONTEXTO (singular, em qual empresa ele está agora).

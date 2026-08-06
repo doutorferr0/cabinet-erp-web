@@ -52,7 +52,7 @@ export function LoginTela() {
       <div className="w-full max-w-sm border-2 border-border bg-card p-4 shadow-hard">
         <div className="mb-4 flex items-center gap-3">
           <Stipple className="size-10" />
-          <BandaDeIdentidade titulo="VITRA" contexto="Entrar" className="flex-1" />
+          <BandaDeIdentidade titulo="Cabinet" contexto="Entrar" className="flex-1" />
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(entrar)} className="flex flex-col gap-3">

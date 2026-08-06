@@ -51,7 +51,7 @@ export function TrocarSenhaTela() {
     <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm border-2 border-border bg-card p-4 shadow-hard">
         <div className="mb-4">
-          <BandaDeIdentidade titulo="VITRA" contexto="Trocar senha" />
+          <BandaDeIdentidade titulo="Cabinet" contexto="Trocar senha" />
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(confirmar)} className="flex flex-col gap-3">

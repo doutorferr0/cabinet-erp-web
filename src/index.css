@@ -54,7 +54,10 @@
   --muted-foreground: 37 16% 36%;
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
-  --info: 219 90% 69%;
+  /* Info/01 `#93AAED` da paleta. Era o cornflower `#689BF7`, que a paleta
+     reserva para AÇÃO primária — dois empregos na mesma cor apagam os dois.
+     Sem consumidor até aqui; o primeiro é o ornamento de busca sem resultado. */
+  --info: 225 71% 75%;
   /* Verde de dinheiro. A amostra pedia L 35%, que sobre a zona de valor
      (`--zone-money`) dá 2,79:1 — dinheiro é o dado que a tela existe para
      mostrar e estava ilegível justo no fundo feito para ele. L 26% mantém

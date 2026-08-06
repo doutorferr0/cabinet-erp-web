@@ -1,3 +1,4 @@
+import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -252,11 +253,23 @@ export function VitraDataTable<T>({
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={totalColSpan}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Nenhum registro.
+                <TableCell colSpan={totalColSpan} className="text-center text-muted-foreground">
+                  {/* Vazio de MÓDULO leva o shape do módulo; vazio de BUSCA
+                      leva o shape de busca, na cor de apoio. São situações
+                      diferentes e a tela não pode dizer a mesma coisa nas duas:
+                      "não existe registro" pede cadastrar, "a busca não achou"
+                      pede corrigir o termo. O desenho é decoração — quem
+                      informa é a frase abaixo dele. */}
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    {state.q ? (
+                      <Ornamento shape="busca-vazia" tom="info" tamanho={96} />
+                    ) : (
+                      <OrnamentoDoModulo tamanho={128} />
+                    )}
+                    <span>
+                      {state.q ? `Nenhum registro para “${state.q}”.` : 'Nenhum registro.'}
+                    </span>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (

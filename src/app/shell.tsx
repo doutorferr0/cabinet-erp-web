@@ -3,6 +3,7 @@ import { type NavGroup, navGroups } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
+import { Ornamento } from '@/components/cabinet/ornamento'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -111,7 +112,26 @@ function AppSidebar() {
                       })}
                     >
                       <Link to={item.url}>
-                        <item.icon />
+                        {/* O shape do módulo no lugar do ícone genérico: é ele
+                            que o operador aprende como marca do módulo, e o
+                            mesmo desenho reaparece na banda e no estado vazio.
+
+                            O par entra INVERTIDO em relação ao fundo: item
+                            inativo é liso, então o ornamento vai de cheia /01 e
+                            a fileira inteira vira um mapa de cores; item ativo
+                            já tem fundo /01 pelo §3b, e ali a cheia sobre cheia
+                            sumiria — nele o ornamento vai de pastel /02. As
+                            duas regras (memória §@ornamentos e §3b) só coexistem
+                            assim, e a família da cor é a mesma nos dois casos. */}
+                        {moduloDoItem ? (
+                          <Ornamento
+                            shape={moduloDoItem}
+                            tom={active ? 'modulo-suave' : 'modulo'}
+                            tamanho={18}
+                          />
+                        ) : (
+                          <item.icon />
+                        )}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>

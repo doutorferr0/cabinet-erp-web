@@ -91,8 +91,15 @@ function AppSidebar() {
             <SidebarMenu>
               {group.items.map((item) => {
                 const active = pathname === item.url || pathname.startsWith(`${item.url}/`)
+                // Cada item carrega a cor do SEU módulo, não a da tela no ar:
+                // é o que faz a fileira inteira ficar legível como um mapa de
+                // cores, e não só o item aceso (memória §@ornamentos).
+                const moduloDoItem = moduloDaRota(item.url)
                 return (
-                  <SidebarMenuItem key={item.url}>
+                  <SidebarMenuItem
+                    key={item.url}
+                    {...(moduloDoItem && { 'data-modulo': moduloDoItem })}
+                  >
                     <SidebarMenuButton
                       asChild
                       isActive={active}

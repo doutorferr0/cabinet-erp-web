@@ -125,6 +125,12 @@ function CarouselTrack({
       // `tabIndex=0` porque o trilho ROLA: região rolável que não recebe foco
       // é conteúdo inalcançável por teclado (WCAG 2.1.1). Com foco, as setas
       // do teclado rolam sozinhas, sem código nenhum.
+      //
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: duas regras de a11y em
+      // conflito, e aqui quem vale é a outra. A do Biome protege contra pôr no
+      // caminho do Tab um elemento que não faz nada; a `scrollable-region-focusable`
+      // do axe EXIGE foco em região que rola, senão quem não usa mouse não
+      // alcança o conteúdo. Este `<ul>` rola de verdade (`overflow-x-auto`).
       tabIndex={0}
       className={cn(
         'flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth p-1 outline-none focus-visible:focus-ring',

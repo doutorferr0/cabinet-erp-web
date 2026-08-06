@@ -424,8 +424,19 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  // Item ativo brut: fundo Documento + borda esquerda 3px Tinta (mockup .navitem.ativo).
-  'peer/menu-button group/menu-button flex w-full cursor-pointer items-center gap-2 overflow-hidden border-l-[3px] border-transparent p-2 text-left text-sm outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-foreground data-active:bg-card data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  // FASE 1.6 §3b — o item de menu era o exemplo que o user deu de "sem reação
+  // nenhuma": só trocava de fundo. Agora ele PULA, ganha traço de Tinta e se
+  // pinta com a cor do próprio módulo.
+  //
+  // Repouso: liso, borda transparente nos 4 lados — a borda já existe apagada
+  // para que aparecer no hover não empurre o texto meio pixel.
+  // Hover: traço de Tinta + pastel /02 do módulo + lift (`lift-flat`).
+  // Ativo: cheia /01 do módulo. É elemento compacto, que é onde a /01 pode
+  // entrar (§2); a barra esquerda de 3px continua marcando a linha.
+  //
+  // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
+  // sem ele, o par cai no padrão do `:root` e nada quebra.
+  'peer/menu-button group/menu-button lift-flat flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {

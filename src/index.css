@@ -454,20 +454,24 @@
 }
 
 /* LIFT DE CONTROLE — A microinteração do sistema (DESIGN.md §Motion).
-   A peça repousa em `el-2`, LEVANTA para `el-3` no hover e AFUNDA para `el-1`
-   no press. Os deslocamentos não são enfeite, são a geometria da elevação: a
-   borda EXTERNA da sombra fica parada nos 3px e só a distância entre peça e
-   sombra muda.
-     repouso: peça em 0,   sombra 3px → borda externa a 3px
-     hover:   peça em -1,  sombra 4px → -1 + 4 = 3px
-     press:   peça em +1,  sombra 2px →  1 + 2 = 3px
-   Sem isso a sombra escorregaria pela tela junto com a peça, que é o que
-   denuncia lift falso.
 
-   **O deslocamento é AMARRADO à escada de sombra**: é sempre a diferença entre
-   o degrau de destino e o de repouso. A 1.6 encurtou `el-3` de 5px para 4px, e
-   por isso o hover desceu de -2px (valor da amostra da 1.5) para -1px. Mexeu na
-   escada, refaz a conta — os dois números são um só mecanismo.
+   **REESCRITA NA 1.6 §3b, a pedido do user:** o hover da 1.5 foi avaliado como
+   fraco — "sidebar sem reação nenhuma, botões sem pulo". A mecânica agora é a
+   do neobrutalism.dev, calibrada para os nossos 2px e para a sombra QUENTE:
+
+     repouso: peça em 0,       sombra `el-2`
+     hover:   peça em -2, -2,  sombra `el-3`  → a peça PULA
+     press:   peça em +2, +2,  sombra NENHUMA → a peça entra na própria sombra
+
+   Isto **substitui a geometria da 1.5**, que mantinha a borda externa da sombra
+   parada nos 3px e por isso limitava o hover a -1px. Aquela regra fazia a peça
+   crescer sem sair do lugar; o pedido é que ela saia do lugar. O par
+   lift/press continua sendo um mecanismo só: o press é o inverso exato do
+   hover, e é o que dá a sensação de botão físico — sobe quando o dedo se
+   aproxima, afunda quando ele encosta.
+
+   Press com sombra ZERO, e não `el-1`: com a sombra pequena o elemento ainda
+   parece flutuar meio pixel, e o gesto perde o fim. Sem sombra, ele encosta.
 
    `:active` E `[data-pressed]`: a RAC chama `preventDefault` no pointerdown
    pelo `usePress`, e em parte dos browsers isso engole o `:active` — o
@@ -475,26 +479,27 @@
 
    A transição mora aqui porque `transition-property` é uma só: consumidor com
    `transition-[...]` próprio apagaria esta. Quem usa a utility não declara
-   transição de novo.
+   transição de novo. `ease-out` (e não `ease-in-out`): o movimento sai rápido
+   e assenta devagar, que é como o olho lê "respondeu ao meu mouse".
 
-   É de CONTROLE — botão, item de menu, cartão clicável. Linha e célula de
-   grade NUNCA levantam (§Do's and Don'ts): lá o amarelo marca foco e o violeta
-   marca seleção. */
+   É de CONTROLE — botão, item de menu da sidebar, cartão clicável, aba, chip.
+   Linha e célula de grade NUNCA levantam (§3b repete a proibição do §3): lá o
+   amarelo marca foco e o violeta marca seleção. */
 @utility lift-control {
   box-shadow: var(--shadow-el2);
-  transition-property: transform, box-shadow, background-color, color;
-  transition-duration: 120ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: transform, box-shadow, background-color, color, border-color;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 
   &:hover {
-    transform: translate(-1px, -1px);
+    transform: translate(-2px, -2px);
     box-shadow: var(--shadow-el3);
   }
 
   &:active,
   &[data-pressed] {
-    transform: translate(1px, 1px);
-    box-shadow: var(--shadow-el1);
+    transform: translate(2px, 2px);
+    box-shadow: none;
   }
 
   /* Foco CANCELA o lift (`.btn:focus-visible` da amostra: `transform:none`).
@@ -510,6 +515,44 @@
   &[data-disabled] {
     transform: none;
     box-shadow: var(--shadow-el2);
+  }
+}
+
+/* LIFT DE PEÇA LISA — a outra metade do §3b.
+   Para o que repousa SEM sombra e a GANHA no hover: item de menu da sidebar,
+   aba, chip clicável. Mesmo movimento do `lift-control` (pula 2px, afunda 2px),
+   um degrau abaixo na escada, porque a peça parte do plano.
+
+   Existe separada e não como `variant` porque a diferença é o REPOUSO: aqui o
+   repouso é ausência de sombra, e uma utility que declarasse `box-shadow: none`
+   no estado normal sobrescreveria a sombra de quem já tem.
+
+   `border-color` entra na transição por causa do item de menu, que no hover
+   ganha traço de Tinta onde antes não havia nada (§3b). */
+@utility lift-flat {
+  transition-property: transform, box-shadow, background-color, color, border-color;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-el2);
+  }
+
+  &:active,
+  &[data-pressed] {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    transform: none;
+  }
+
+  &:disabled,
+  &[data-disabled] {
+    transform: none;
+    box-shadow: none;
   }
 }
 

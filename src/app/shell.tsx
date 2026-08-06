@@ -1,5 +1,5 @@
 import { moduloDaRota } from '@/app/modulo'
-import { navGroups } from '@/app/navigation'
+import { type NavGroup, navGroups } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
@@ -18,8 +18,48 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard } from 'lucide-react'
+
+/**
+ * O que o cartão de hover mostra ao pousar num item da sidebar: as OUTRAS
+ * telas do mesmo módulo, com a atual marcada.
+ *
+ * Vale porque é o pulo que a sidebar não dá sozinha — de `Clientes` para
+ * `Produtos` são dois movimentos e uma lida na lista inteira; aqui é um. É
+ * acréscimo, nunca caminho único: tudo que está no cartão está na sidebar
+ * logo abaixo, que é o que mantém o sistema operável no toque e no teclado
+ * (§HoverCard).
+ */
+function OpcoesDoModulo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* Mesma receita do rótulo de menu do sistema (`DropdownMenuLabel`): é
+          o mesmo papel — nomear a lista que vem abaixo. */}
+      <span className="font-mono text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+        {grupo.title}
+      </span>
+      <ul className="flex flex-col">
+        {grupo.items.map((irma) => (
+          <li key={irma.url}>
+            <Link
+              to={irma.url}
+              className={cn(
+                'flex items-center gap-2 rounded-item px-1.5 py-1 text-sm no-underline transition-colors hover:bg-neutral',
+                irma.url === atual && 'bg-primary font-semibold text-primary-foreground',
+              )}
+              {...(irma.url === atual && { 'aria-current': 'page' })}
+            >
+              <irma.icon className="size-3.5 shrink-0" />
+              {irma.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 function AppSidebar() {
   const { location } = useRouterState()
@@ -53,7 +93,16 @@ function AppSidebar() {
                 const active = pathname === item.url || pathname.startsWith(`${item.url}/`)
                 return (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      // Grupo de uma tela só não tem irmã para oferecer — ali o
+                      // cartão repetiria o rótulo, que é trabalho da dica.
+                      {...(group.items.length > 1 && {
+                        hoverCard: <OpcoesDoModulo grupo={group} atual={item.url} />,
+                      })}
+                    >
                       <Link to={item.url}>
                         <item.icon />
                         <span>{item.title}</span>

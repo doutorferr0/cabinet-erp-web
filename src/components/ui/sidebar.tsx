@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -449,11 +450,23 @@ function SidebarMenuButton({
   variant = 'default',
   size = 'default',
   tooltip,
+  hoverCard,
   className,
   ...props
 }: SidebarButtonProps & {
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof Tooltip>
+  /**
+   * Cartão de apoio no hover, para quando o item merece mais que um rótulo —
+   * as telas irmãs do módulo, por exemplo. VENCE o `tooltip` quando os dois
+   * vêm juntos: dois balões sobre a mesma peça é ruído, não redundância.
+   *
+   * Vale nos dois estados da sidebar, e não só na colapsada como o `tooltip`:
+   * o cartão não existe para repetir o nome que sumiu, existe para oferecer
+   * atalho. Nada que só exista dentro dele pode ser necessário para operar —
+   * conteúdo de hover é inalcançável no toque (§HoverCard).
+   */
+  hoverCard?: React.ReactNode
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
   const shared = {
@@ -474,6 +487,16 @@ function SidebarMenuButton({
     ) : (
       <ButtonPrimitive {...shared} {...(props as ButtonProps)} />
     )
+
+  // O cartão vem antes da dica: onde há cartão, a dica não aparece.
+  if (hoverCard) {
+    return (
+      <HoverCard>
+        <HoverCardTrigger>{comp}</HoverCardTrigger>
+        <HoverCardContent placement="right top">{hoverCard}</HoverCardContent>
+      </HoverCard>
+    )
+  }
 
   if (!tooltip) {
     return comp

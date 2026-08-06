@@ -32,9 +32,11 @@ const buttonVariants = cva(
         ghost: 'border-transparent transition-colors hover:bg-muted',
         destructive:
           'lift-control border-destructive bg-card text-destructive hover:bg-destructive hover:text-white',
-        // Link cru (Utrecht): mono caps sublinhado 2px. O fundo do hover ainda
-        // é amarelo — reatribuir esse emprego é decisão de cor, e cor é a 1.6.
-        link: 'border-transparent font-mono text-xs uppercase tracking-[0.07em] underline decoration-2 underline-offset-[3px] transition-colors hover:bg-anchor',
+        // Link cru (Utrecht): mono caps sublinhado 2px. O hover era amarelo,
+        // que é o anel de foco: link sob o mouse ficava com a cara de link
+        // focado, e os dois estados deixavam de se distinguir. Neutro é o tom
+        // de hover de item desde a 1.5.
+        link: 'border-transparent font-mono text-xs uppercase tracking-[0.07em] underline decoration-2 underline-offset-[3px] transition-colors hover:bg-neutral',
       },
       size: {
         default: 'h-9 px-4',

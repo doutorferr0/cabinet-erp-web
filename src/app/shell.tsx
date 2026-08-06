@@ -1,3 +1,4 @@
+import { moduloDaRota } from '@/app/modulo'
 import { navGroups } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
@@ -71,6 +72,8 @@ function AppSidebar() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { location } = useRouterState()
+  const modulo = moduloDaRota(location.pathname)
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -86,8 +89,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         {/* A área de conteúdo é Papel COM a grade de 52px; a folha (PageFrame)
-            pousa opaca por cima (Regra da Grade de Fundo). */}
-        <main className="bg-paper-grid flex flex-1 flex-col p-5">
+            pousa opaca por cima (Regra da Grade de Fundo).
+            `data-modulo` é declarado UMA vez, aqui: tudo que a tela montar
+            dentro dele lê o par de cor do módulo pelas utilities `bg-modulo*`
+            sem precisar saber em que módulo está. Rota sem cor atribuída não
+            escreve o atributo — o par padrão do `:root` é o que vale. */}
+        <main
+          {...(modulo && { 'data-modulo': modulo })}
+          className="bg-paper-grid flex flex-1 flex-col p-5"
+        >
           <PageFrame>{children}</PageFrame>
         </main>
       </SidebarInset>

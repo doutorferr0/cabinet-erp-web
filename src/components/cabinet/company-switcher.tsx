@@ -48,8 +48,11 @@ export function CompanySwitcher() {
           <SidebarMenuButton
             size="lg"
             isDisabled={carregando || Boolean(erro)}
-            // Bloco da empresa ativa = fundo amarelo com borda preta (mockup .empresa).
-            className="border-2 border-border bg-anchor font-bold aria-expanded:bg-anchor"
+            // Bloco da empresa ativa = ZONA DE IDENTIDADE com borda preta. Era
+            // amarelo (mockup .empresa), mas amarelo é o anel de foco desde a
+            // 1.5 e a empresa ativa é o dado de identidade mais alto da tela —
+            // a mesma zona que a banda de identidade usa nos cadastros.
+            className="border-2 border-border bg-zone-id font-bold aria-expanded:bg-zone-id"
           >
             <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
               <Building2 className="size-4" />

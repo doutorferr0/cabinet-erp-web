@@ -13,7 +13,7 @@ export function PageFrame({ children }: { children: React.ReactNode }) {
   return (
     <div
       data-slot="page-frame"
-      className="flex min-h-0 flex-1 flex-col border-2 border-border bg-card p-4 shadow-hard"
+      className="flex min-h-0 flex-1 flex-col rounded-panel border-2 border-border bg-card p-4 shadow-el3"
     >
       {children}
     </div>

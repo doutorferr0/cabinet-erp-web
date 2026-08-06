@@ -12,7 +12,7 @@ function InputGroup({ className, ...props }: GroupProps) {
     <Group
       data-slot="input-group"
       className={cn(
-        'group/input-group relative flex h-9 w-full min-w-0 items-center border-2 border-input bg-card transition-colors outline-none has-disabled:opacity-50 has-[[data-slot=input-group-control]:focus-visible]:focus-ring has-[[data-slot][aria-invalid=true]]:border-destructive has-[>textarea]:h-auto',
+        'group/input-group relative flex h-9 w-full min-w-0 items-center rounded-control border-2 border-input bg-card transition-colors outline-none has-disabled:opacity-50 has-[[data-slot=input-group-control]:focus-visible]:focus-ring has-[[data-slot][aria-invalid=true]]:border-destructive has-[>textarea]:h-auto',
         className,
       )}
       {...props}

@@ -173,9 +173,13 @@
   --color-stamp-open: hsl(var(--stamp-open));
   --color-stamp-done: hsl(var(--stamp-done));
   --color-stamp-void: hsl(var(--stamp-void));
-  /* Alias de transição: `bg-anchor`/`bg-bench-tint` ainda vivem em componentes
-     que a fatia C reescreve. Apontam para o token novo em vez de sumirem — a
-     fundação troca sem quebrar a tela no meio do caminho. */
+  /* Aliases de transição que SOBREVIVEM à 1.5 de propósito. Restam dois
+     consumidores de `bg-anchor` — o bloco da empresa ativa e o hover do link
+     cru — e os dois usam amarelo como IDENTIDADE, emprego que a 1.5 tirou dele
+     (amarelo recuou para foco e pendência). Trocar os dois é decisão de COR, e
+     cor é a fase 1.6, que repinta superfície por conteúdo com a paleta pastel.
+     Ficam apontando para o token novo até lá — some o alias quando a 1.6
+     reatribuir os dois empregos. */
   --color-anchor: hsl(var(--warn));
   --color-bench-tint: hsl(var(--neutral));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
@@ -197,9 +201,6 @@
   --shadow-el3: 5px 5px 0 0 hsl(var(--shadow-3));
   --shadow-el4: 7px 7px 0 0 hsl(var(--shadow-4));
   --shadow-el5: 10px 10px 0 0 hsl(var(--shadow-5));
-  /* Aliases de transição da sombra antiga (Tinta) para a nova (quente). */
-  --shadow-hard: var(--shadow-el3);
-  --shadow-hard-sm: var(--shadow-el1);
   /* Três famílias, todas self-hosted: Display (Sora) · Corpo (Inter) · Mono (PT Mono). */
   --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -233,6 +234,61 @@
   background-position: 0 0, 3px 4px;
 }
 
+/* LIFT DE CONTROLE — A microinteração do sistema (DESIGN.md §Motion).
+   A peça repousa em `el-2`, LEVANTA para `el-3` no hover e AFUNDA para `el-1`
+   no press. Os deslocamentos não são enfeite, são a geometria da elevação: a
+   borda EXTERNA da sombra fica parada nos 3px e só a distância entre peça e
+   sombra muda.
+     repouso: peça em 0,   sombra 3px → borda externa a 3px
+     hover:   peça em -2,  sombra 5px → -2 + 5 = 3px
+     press:   peça em +1,  sombra 2px →  1 + 2 = 3px
+   Sem isso a sombra escorregaria pela tela junto com a peça, que é o que
+   denuncia lift falso.
+
+   `:active` E `[data-pressed]`: a RAC chama `preventDefault` no pointerdown
+   pelo `usePress`, e em parte dos browsers isso engole o `:active` — o
+   atributo dela é a rede de segurança. Os dois seletores dizem a mesma coisa.
+
+   A transição mora aqui porque `transition-property` é uma só: consumidor com
+   `transition-[...]` próprio apagaria esta. Quem usa a utility não declara
+   transição de novo.
+
+   É de CONTROLE — botão, item de menu, cartão clicável. Linha e célula de
+   grade NUNCA levantam (§Do's and Don'ts): lá o amarelo marca foco e o violeta
+   marca seleção. */
+@utility lift-control {
+  box-shadow: var(--shadow-el2);
+  transition-property: transform, box-shadow, background-color, color;
+  transition-duration: 120ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-el3);
+  }
+
+  &:active,
+  &[data-pressed] {
+    transform: translate(1px, 1px);
+    box-shadow: var(--shadow-el1);
+  }
+
+  /* Foco CANCELA o lift (`.btn:focus-visible` da amostra: `transform:none`).
+     Sem isto, botão focado E sob o mouse fica deslocado 2px com o halo do foco
+     em volta — duas leituras de estado brigando na mesma peça. Quem manda no
+     desenho enquanto há foco é a `focus-ring`; por isso ela é definida DEPOIS
+     desta utility, e ganha o `box-shadow` por ordem de cascata. */
+  &:focus-visible {
+    transform: none;
+  }
+
+  &:disabled,
+  &[data-disabled] {
+    transform: none;
+    box-shadow: var(--shadow-el2);
+  }
+}
+
 /* ANEL DE FOCO — receita ÚNICA (DESIGN.md §Foco).
    O amarelo sozinho não sobrevive ao creme: `--ring` sobre a Folha dá 1,45:1,
    e sobre a Bancada 1,14:1 — abaixo dos 3:1 que a WCAG 1.4.11 pede de um
@@ -243,6 +299,9 @@
    preta do controle · 3px amarelos · 1px preto · papel.
    A elevação NÃO compõe com o anel: no foco o halo É o destaque, e um `el-*`
    de 3px de deslocamento ficaria escondido atrás dele.
+   **Definida DEPOIS da `lift-control` de propósito**: as duas escrevem
+   `box-shadow` com a mesma especificidade, e no controle focado quem tem de
+   mandar é o halo. Ordem no arquivo é o que decide — não reordenar.
    Aplicar sempre por variante (`focus-visible:focus-ring`,
    `group-data-focus-visible/x:focus-ring`), nunca solta. */
 @utility focus-ring {

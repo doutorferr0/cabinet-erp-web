@@ -197,8 +197,8 @@ Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
 1. Primitivos de `src/components/ui/` re-estilizados pelos tokens desta spec.
 2. **Guarda Tailwind v4 obrigatória**: `pnpm build` + `grep -o 'width:--[a-z-]*' dist/assets/*.css` = zero.
-3. Receita: traço 2px preto · raio pela natureza · elevação por degrau · foco pela utility `focus-ring` (§Foco) · hover levanta `translate(-2px,-2px)` e ganha um degrau de sombra · press afunda `translate(1px,1px)` e perde.
-4. **Hover-lift é de controle** — botão, item de menu, cartão clicável. Linha e célula de grade NÃO levantam: lá o amarelo marca foco e o violeta marca seleção.
+3. Receita: traço 2px preto · raio pela natureza · elevação por degrau · foco pela utility `focus-ring` (§Foco) · lift pela utility `lift-control` (§Lift).
+4. **Hover-lift é de PEÇA SOLTA** — botão e cartão clicável, o que tem caixa e sombra próprias e espaço em volta para se mover. **Item de menu NÃO levanta**: `.menu-item:hover` da amostra troca fundo e cor de borda, e só. Item encosta em item — levantar um abre fresta na fileira, que é o mesmo motivo de item não arredondar. Linha e célula de grade também não: lá o amarelo marca foco e o violeta marca seleção.
 
 ### Foco
 **Amarelo sozinho não sobrevive ao creme.** O `--ring` da amostra dá **1,45:1** sobre a Folha e
@@ -268,9 +268,26 @@ dobrar), ativo em violeta. Menu é cartão com `el-3`. Migalha em mono.
 Contorno preto de 2px em cada forma, preenchimento de cor cheia dos acentos. Eixo em traço de 2px.
 Rótulo em mono 10px. Sem gradiente, sem sombra interna.
 
+### Lift
+A microinteração do sistema, na utility `lift-control` (`src/index.css`). A peça repousa em `el-2`,
+levanta para `el-3` no hover (`translate(-2px,-2px)`) e afunda para `el-1` no press
+(`translate(1px,1px)`). Os deslocamentos são a **geometria da elevação**, não enfeite: a borda externa
+da sombra fica parada nos 3px, e só a distância entre peça e sombra muda. Sombra que escorrega junto
+com a peça é o que denuncia lift falso.
+
+**Foco cancela o lift** (`transform: none`) — peça focada e sob o mouse ao mesmo tempo ficaria
+deslocada com o halo em volta, duas leituras de estado brigando. Enquanto há foco, quem manda é a
+`focus-ring`; por isso ela é definida DEPOIS da `lift-control` no `index.css`, e a ordem no arquivo
+é o que decide a cascata.
+
+`:active` e `[data-pressed]` valem juntos: o `usePress` da RAC chama `preventDefault` no pointerdown
+e em parte dos browsers isso engole o `:active`.
+
+Nunca escrever a receita à mão no componente.
+
 ## Motion
-`cubic-bezier(0.4,0,0.2,1)`, 100–150ms, só em estado (hover/foco/press). O lift do controle é A
-microinteração do sistema. Nada anima na entrada de tela.
+`cubic-bezier(0.4,0,0.2,1)`, 100–150ms, só em estado (hover/foco/press). O lift é A microinteração do
+sistema (§Lift). Nada anima na entrada de tela.
 
 ## Roteiro de implementação (PR por fatia, na ordem)
 

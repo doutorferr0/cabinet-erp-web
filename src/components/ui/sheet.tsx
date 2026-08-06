@@ -77,6 +77,11 @@ function Sheet({
       <ModalPrimitive
         data-slot="sheet-content"
         data-side={side}
+        // EXCEÇÃO ao raio por natureza, deliberada: a gaveta encosta em três
+        // bordas da janela e tem UMA borda visível (a de dentro). Arredondar
+        // canto que está fora da tela não aparece, e arredondar só o de dentro
+        // pediria um raio por lado por `data-side` — muita máquina para um
+        // canto. Fica reta, como item que encosta em item.
         className={cn(
           'fixed z-50 flex flex-col gap-4 border-border bg-card text-sm text-card-foreground transition duration-200 ease-in-out data-entering:opacity-0 data-exiting:opacity-0 data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t-2 data-[side=bottom]:data-entering:translate-y-[2.5rem] data-[side=bottom]:data-exiting:translate-y-[2.5rem] data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r-2 data-[side=left]:data-entering:translate-x-[-2.5rem] data-[side=left]:data-exiting:translate-x-[-2.5rem] data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l-2 data-[side=right]:data-entering:translate-x-[2.5rem] data-[side=right]:data-exiting:translate-x-[2.5rem] data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b-2 data-[side=top]:data-entering:translate-y-[-2.5rem] data-[side=top]:data-exiting:translate-y-[-2.5rem] data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm',
           className,

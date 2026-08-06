@@ -77,7 +77,7 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       {...(value !== undefined && { id: value })}
       className={cn(
-        'inline-flex h-8 cursor-default items-center justify-center gap-1.5 px-3 text-sm font-semibold whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:focus-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-selected:bg-primary data-selected:text-primary-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        'inline-flex h-8 cursor-default items-center justify-center gap-1.5 rounded-item px-3 text-sm font-semibold whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:focus-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-selected:bg-primary data-selected:text-primary-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
         className,
       )}
       {...props}

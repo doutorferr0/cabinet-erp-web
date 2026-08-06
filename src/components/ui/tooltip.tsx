@@ -40,7 +40,7 @@ function Tooltip({
       offset={offset}
       crossOffset={crossOffset}
       className={cn(
-        'z-50 inline-flex w-fit max-w-xs origin-(--trigger-anchor-point) items-center gap-1.5 bg-foreground px-2.5 py-1 font-mono text-xs font-semibold tracking-[0.05em] text-background uppercase data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0',
+        'z-50 inline-flex w-fit max-w-xs origin-(--trigger-anchor-point) items-center gap-1.5 rounded-control bg-foreground px-2.5 py-1 font-mono text-xs font-semibold tracking-[0.05em] text-background uppercase data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0',
         className,
       )}
       {...props}

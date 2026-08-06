@@ -1,7 +1,7 @@
-# CLAUDE.md — vitra-erp-web
+# CLAUDE.md — cabinet-erp-web
 
 Orientação para o agente (claude ou kimi) neste repositório. Ler antes de qualquer tarefa.
-Este repo = **front do VITRA** (React SPA) e **dono do contrato** (`contracts/openapi-v1.json`). O backend é trilho de outro desenvolvedor e ainda não existe — não há repositório de servidor a consultar. Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
+Este repo = **front do Cabinet** (React SPA) e **dono do contrato** (`contracts/openapi-v1.json`). O backend é trilho de outro desenvolvedor e ainda não existe — não há repositório de servidor a consultar. Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
 
 ## Estilo de comunicação
 PT-BR. Comprimir prosa, nunca substância. Cortar filler/cordialidade/preâmbulo. Preservar raciocínio de decisão, trade-offs, causalidade. Não inventar dado — falta = "sem dado". Revisão começa por problemas. Responder só o perguntado.

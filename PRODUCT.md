@@ -19,13 +19,13 @@ Cenário de uso: **desktop, na prática**. Mobile e tablet não são cenário re
 
 ## Product Purpose
 
-VITRA substitui o **SoftLux — Brasil** (sistema desktop legado, fabricante FÁCIL IT SOFTWARE, versão 1.0.2.1521), usado pela **Vertz**. Cobre o mesmo domínio de ERP: cadastros, vendas, compras, estoque, movimentação, financeiro, CRM.
+Cabinet substitui o **SoftLux — Brasil** (sistema desktop legado, fabricante FÁCIL IT SOFTWARE, versão 1.0.2.1521), usado pela **Vertz**. Cobre o mesmo domínio de ERP: cadastros, vendas, compras, estoque, movimentação, financeiro, CRM.
 
 Sucesso = a operação inteira migra do legado sem perder campo, termo ou documento, **e** passa a enxergar em tempo real o que o legado só registrava.
 
 ## Positioning
 
-O legado **registra mas não mostra**. Ele guarda estoque, posição de documento e resultado de venda, mas só devolve isso em relatório fechado, tela a tela. A diferença do VITRA é a visibilidade: o mesmo dado, disponível no momento da decisão.
+O legado **registra mas não mostra**. Ele guarda estoque, posição de documento e resultado de venda, mas só devolve isso em relatório fechado, tela a tela. A diferença do Cabinet é a visibilidade: o mesmo dado, disponível no momento da decisão.
 
 Quatro superfícies de visibilidade confirmadas — **nenhuma existe na transcrição do legado**, portanto são superfícies novas e não têm campo herdado para copiar:
 
@@ -58,7 +58,7 @@ Convenções técnicas travadas: dinheiro em **centavos (int)**, nunca float; qu
 
 ## Brand Commitments
 
-- Nome do produto: **VITRA**. Cliente: **Vertz** (VERTZ ILUMINAÇÃO · VIA HF).
+- Nome do produto: **Cabinet**. Cliente: **Vertz** (VERTZ ILUMINAÇÃO · VIA HF).
 - Interface inteira em **PT-BR**.
 - O vocabulário do legado é compromisso de identidade tanto quanto de treinamento — o usuário reconhece o sistema pelos termos.
 

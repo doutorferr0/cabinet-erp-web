@@ -1,4 +1,4 @@
-  # SoftLux — transcrição literal das telas (base para o VITRA)
+  # SoftLux — transcrição literal das telas (base para o Cabinet)
 
 > Transcrito em 2026-07-27 a partir de 20 capturas de tela do sistema legado.
 > **Sistema:** SoftLux - Brasil · **Versão:** 1.0.2.1521 · **Data das capturas:** 05/08/2025
@@ -162,7 +162,7 @@ Consultar Situação do Pedido de Venda
 **Botões:** `✔ Gravar` · `✖ Cancelar`
 
 > **`[OBSERVAÇÃO]`** Este cadastro mistura dado cadastral simples (nome, setor) com **dado
-> sensível de RH** (salário, raça/cor, cônjuge, filiação, admissão/demissão). No VITRA isso
+> sensível de RH** (salário, raça/cor, cônjuge, filiação, admissão/demissão). No Cabinet isso
 > provavelmente precisa ser separado em dois blocos com permissão distinta — e trava na
 > pergunta aberta sobre responsabilidade formal de LGPD.
 
@@ -645,7 +645,7 @@ Botões `➕ Incluir` · `➖ Excluir`
 > (MARIANA, ARIADINE, ANA ELIZA, MALU, GIORDANA, FLAVIO COSSA, SILVANIA, RICARDO), mais os
 > valores `OBRA INDEFINIDA` e um vazio. Isso sugere que na prática o campo está sendo usado
 > para registrar **o arquiteto/profissional da obra**, não a obra. Se for isso, é desvio de uso
-> do legado e o VITRA precisa decidir se separa os dois conceitos.
+> do legado e o Cabinet precisa decidir se separa os dois conceitos.
 > Também: dois orçamentos para o mesmo cliente no mesmo dia (21638 e 21639, PATRICIA E MARCELO
 > ROSSI) — versão/revisão de orçamento é caso real.
 > A numeração é sequencial global com `Série` separada, e **não é cronológica** (21653-21655

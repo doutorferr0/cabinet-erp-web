@@ -1,5 +1,5 @@
 ---
-name: VITRA
+name: Cabinet
 description: Sistema visual de um ERP denso, desktop, em PT-BR — "Brut sobre papel": documento comercial com estrutura neo-brutalista.
 colors:
   paper: "hsl(42 30% 96%)"
@@ -81,7 +81,7 @@ effects:
   border-heavy: "3px solid hsl(30 15% 10%)"
 ---
 
-# Design System: VITRA — "Brut sobre papel"
+# Design System: Cabinet — "Brut sobre papel"
 
 > Supersede a direção "Papel Funcional" (V1-V20). Mockup de referência aprovado pelo user:
 > `docs/design/mockup-brut-papel.html` (2026-08-04). Em divergência entre este doc e o mockup, o mockup vence.

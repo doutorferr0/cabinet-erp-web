@@ -1,6 +1,6 @@
-# VITRA — Front (vitra-erp-web)
+# Cabinet — Front (cabinet-erp-web)
 
-SPA React do VITRA (ERP multi-empresa vendido a terceiros). **O front é o dono do
+SPA React do Cabinet (ERP multi-empresa vendido a terceiros). **O front é o dono do
 contrato:** `contracts/openapi-v1.json` é a especificação que o backend precisa
 implementar, e é dela que `@hey-api/openapi-ts` gera os tipos. As fronteiras já
 descritas no contrato consomem HTTP; as demais seguem em mock até ganharem

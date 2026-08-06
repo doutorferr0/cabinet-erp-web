@@ -55,7 +55,7 @@ describe('Login', () => {
     const { stub } = servidorDeAuth()
     renderRoute('/login', stub)
 
-    expect(await screen.findByRole('heading', { name: 'VITRA' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()
     expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
     expect(screen.getByLabelText('Senha')).toBeInTheDocument()
     // Fora do shell: nenhuma navegação de módulo na tela.

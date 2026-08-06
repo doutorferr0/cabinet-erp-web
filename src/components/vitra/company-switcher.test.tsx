@@ -155,7 +155,7 @@ describe('CompanySwitcher', () => {
     await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
     await user.click(await screen.findByRole('menuitem', { name: /sair/i }))
 
-    // A tela de login é a única com heading VITRA fora do shell.
-    expect(await screen.findByRole('heading', { name: 'VITRA' })).toBeInTheDocument()
+    // A tela de login é a única com heading Cabinet fora do shell.
+    expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()
   })
 })

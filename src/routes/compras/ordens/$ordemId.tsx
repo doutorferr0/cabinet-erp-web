@@ -1,5 +1,5 @@
+import { DocumentoHeader } from '@/components/cabinet/documento'
 import { Skeleton } from '@/components/ui/skeleton'
-import { DocumentoHeader } from '@/components/vitra/documento'
 import { data } from '@/data'
 import { OrdemCompraForm } from '@/features/ordem-compra/ordem-compra-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'

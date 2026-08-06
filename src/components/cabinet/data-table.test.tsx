@@ -1,4 +1,4 @@
-import { VitraDataTable } from '@/components/vitra/data-table'
+import { VitraDataTable } from '@/components/cabinet/data-table'
 import { ErroDaApi } from '@/data/api-provider'
 import { createMockListProvider, normalize } from '@/data/provider'
 import { type Produto, produtos } from '@/mocks/produtos'

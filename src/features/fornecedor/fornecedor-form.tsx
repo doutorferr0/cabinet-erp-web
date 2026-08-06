@@ -1,15 +1,15 @@
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ComunicadoresBlock, EnderecoBlock, RedesSociaisBlock } from '@/components/vitra/blocks'
-import { CadastroForm } from '@/components/vitra/cadastro-form'
-import { FormBlock } from '@/components/vitra/form-block'
+import { ComunicadoresBlock, EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
+import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
   LookupField,
   SelectField,
   TextField,
-} from '@/components/vitra/form-controls'
-import { FormGrid } from '@/components/vitra/form-grid'
+} from '@/components/cabinet/form-controls'
+import { FormGrid } from '@/components/cabinet/form-grid'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { tabelas } from '@/data/tabelas'
 import type { Fornecedor } from '@/mocks/fornecedores'
 import { useNavigate } from '@tanstack/react-router'

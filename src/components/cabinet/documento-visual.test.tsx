@@ -1,4 +1,4 @@
-import { DocumentoHeader, DocumentoTotais } from '@/components/vitra/documento'
+import { DocumentoHeader, DocumentoTotais } from '@/components/cabinet/documento'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 

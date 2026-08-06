@@ -210,7 +210,7 @@ Célula de textura pontilhada (radial-gradient 1px/7px) com caixa preta — acen
 
 ### Do:
 - **Do** pousar toda folha OPACA sobre a grade do Papel, com caixa preta e sombra dura.
-- **Do** compor telas a partir de `src/components/vitra/` — reimplementar tabela/rodapé na tela é o vetor de deriva.
+- **Do** compor telas a partir de `src/components/cabinet/` — reimplementar tabela/rodapé na tela é o vetor de deriva.
 - **Do** escrever dinheiro em verde, negativo em vermelho, e manter quantidade/percentual em tinta.
 - **Do** usar rótulo literal da transcrição SoftLux; Meta em identificador; tabular à direita em número comparável.
 - **Do** usar o press físico (translate+sombra) em todo botão.

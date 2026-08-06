@@ -1,5 +1,5 @@
+import { DocumentoHeader } from '@/components/cabinet/documento'
 import { Skeleton } from '@/components/ui/skeleton'
-import { DocumentoHeader } from '@/components/vitra/documento'
 import { data } from '@/data'
 import { OrcamentoForm } from '@/features/orcamento/orcamento-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'

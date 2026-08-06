@@ -1,4 +1,4 @@
-import { parseQuantidade, totalItemCentavos } from '@/components/vitra/documento'
+import { parseQuantidade, totalItemCentavos } from '@/components/cabinet/documento'
 import { PERCENT_ESCALA } from '@/lib/formatters'
 import { describe, expect, it } from 'vitest'
 

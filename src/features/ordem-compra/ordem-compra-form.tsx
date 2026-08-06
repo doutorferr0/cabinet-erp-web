@@ -1,20 +1,20 @@
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CadastroForm } from '@/components/vitra/cadastro-form'
+import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import {
   fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
-} from '@/components/vitra/documento'
-import { FormBlock } from '@/components/vitra/form-block'
+} from '@/components/cabinet/documento'
+import { FormBlock } from '@/components/cabinet/form-block'
 import {
   DateField,
   MoneyField,
   SelectField,
   TextField,
   TextareaField,
-} from '@/components/vitra/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/vitra/form-grid'
+} from '@/components/cabinet/form-controls'
+import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { tabelas } from '@/data/tabelas'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'

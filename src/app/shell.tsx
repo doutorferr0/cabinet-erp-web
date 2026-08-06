@@ -1,5 +1,7 @@
 import { navGroups } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
+import { CompanySwitcher } from '@/components/cabinet/company-switcher'
+import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -15,8 +17,6 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-import { CompanySwitcher } from '@/components/vitra/company-switcher'
-import { ModeToggle } from '@/components/vitra/mode-toggle'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard } from 'lucide-react'
 

@@ -1,5 +1,5 @@
 import { configurarApi } from '@/api/cliente'
-import { LookupCombo } from '@/components/vitra/lookup-combo'
+import { LookupCombo } from '@/components/cabinet/lookup-combo'
 import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'

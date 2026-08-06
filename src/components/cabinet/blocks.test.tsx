@@ -1,4 +1,4 @@
-import { EnderecoBlock, RedesSociaisBlock, TelefonesBlock } from '@/components/vitra/blocks'
+import { EnderecoBlock, RedesSociaisBlock, TelefonesBlock } from '@/components/cabinet/blocks'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FormProvider, useForm } from 'react-hook-form'

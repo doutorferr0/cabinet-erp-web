@@ -1,5 +1,5 @@
+import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { SidebarProvider } from '@/components/ui/sidebar'
-import { CompanySwitcher } from '@/components/vitra/company-switcher'
 import { type ServidorFalso, instalarServidor } from '@/test/servidor'
 import { renderRoute, renderWithQuery, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'

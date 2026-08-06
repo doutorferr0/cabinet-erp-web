@@ -1,6 +1,6 @@
+import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
-import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, X } from 'lucide-react'
 import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'

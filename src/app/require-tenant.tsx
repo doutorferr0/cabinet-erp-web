@@ -1,6 +1,6 @@
+import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BandaDeIdentidade } from '@/components/vitra/banda-identidade'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useSessao } from '@/data/sessao'
 import { useQueryClient } from '@tanstack/react-query'

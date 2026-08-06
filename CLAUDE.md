@@ -47,7 +47,7 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 - **Dinheiro:** trafega em **centavos (int)**; formatar R$ só na borda de exibição (`Intl.NumberFormat('pt-BR')`). NUNCA float em estado/mock.
 - **Quantidade:** até 3 casas. **Datas:** ISO nos dados, exibição pt-BR. **CNPJ/CPF:** sem máscara no dado, máscara só no input.
 - **Atalhos — interface por clique** (decisão do user, 30/07/2026): toda ação é alcançável por mouse e nenhum fluxo depende de tecla memorizada. Navegação em formulário é a nativa do browser (Tab / Shift+Tab, Enter no controle focado). **NÃO criar atalho customizado novo.** Os que já existem em `src/lib/shortcuts.ts` (`Ctrl+K` busca · `Alt+N` incluir · `Alt+P/A/T/I` nos documentos) ficam como conveniência, não como requisito — não removê-los, não expandi-los, não desenhar tela que só funcione por eles. F3–F6 continuam proibidos (conflito com browser).
-- Componentes compartilhados moram em `src/components/vitra/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
+- Componentes compartilhados moram em `src/components/cabinet/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
 - Acessibilidade mínima: label em todo campo, foco visível, dialog com focus-trap (shadcn já dá).
 
 ## Os 8 padrões — JÁ IMPLEMENTADOS, tela nova COMPÕE (fonte: transcricaosoftlux @padroes, 20 telas)
@@ -65,7 +65,7 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 src/app/            # shell, providers, router, guarda de sessão
 src/routes/         # rotas do TanStack Router (árvore gerada em src/routeTree.gen.ts)
 src/components/ui/  # shadcn (gerado)
-src/components/vitra/  # DataTable, LookupCombo, blocos, ActionBar...
+src/components/cabinet/  # DataTable, LookupCombo, blocos, ActionBar...
 src/features/<tela>/   # fornecedor/, cliente/, produto/...
 src/api/            # cliente.ts (configuração) + gerado/ (codegen — NÃO editar)
 src/data/           # FRONTEIRA de dados: contrato, registry, adaptadores HTTP

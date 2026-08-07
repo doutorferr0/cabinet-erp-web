@@ -162,10 +162,18 @@ query {
     state: object(expression: "main:projetosClaude/vertz-erp/current-state.md") { ... on Blob { text } }
     visual: object(expression: "main:projetosClaude/vertz-erp/topicos/frente-visual.md") { ... on Blob { text } }
     telas: object(expression: "main:projetosClaude/vertz-erp/topicos/transcricaosoftlux.md") { ... on Blob { text } }
+    dash: object(expression: "main:projetosClaude/vertz-erp/topicos/dashboard.md") { ... on Blob { text } }
   }
 }'
 ```
 Guardar `head.target.oid`. Ecoar 2 linhas: `▸ Frente visual: <status do frente-visual.md>` · `▸ Próxima tarefa: <a colada pelo user>`.
+
+**`topicos/dashboard.md` é a ESPECIFICAÇÃO da seção Dashboard** (páginas Dashboard e Planner):
+diagramação e inventário de elementos, vindos de mockup aprovado. Está na leitura porque é a
+fonte de campo/elemento dessas duas telas — o mesmo papel que `transcricaosoftlux.md` faz para as
+20 telas transcritas, que não as cobrem. **É LEITURA, não escrita:** quem o mantém é o chat com o
+user; o handoff dele passa só diagramação e elementos, e a decisão de componente, token e sidebar
+é daqui. Progresso da implementação vai para `frente-visual.md`, como todo o resto.
 
 ## ESCRITA — fim de sessão (SÓ o tópico da frente visual)
 Conteúdo COMPLETO novo de `/tmp/frente-visual.md` (estado por tarefa: feito · em curso · decisões · tentativas falhas "tentou X → falhou porque Y") →
@@ -187,7 +195,9 @@ Head divergente (trilho backend commitou antes) → reler head, reaplicar, retry
 
 ## Regras de trabalho
 - Decisão estrutural (router, dep nova fora da stack, padrão novo) → **propor antes**, 1 parágrafo com trade-off.
-- Campo de tela: fonte é `transcricaosoftlux.md` — NÃO inventar campo.
+- Campo de tela: fonte é `transcricaosoftlux.md` — NÃO inventar campo. Exceção de origem, não de
+  regra: Dashboard e Planner não estão na transcrição e vêm de `topicos/dashboard.md`. Tela fora
+  das duas fontes = perguntar ao user, nunca inferir.
 - Commits AQUI: git normal. Memória: gh api. NÃO confundir.
 - Empacou → registrar erro literal em frente-visual.md `## Blockers` e parar. Nunca fingir sucesso.
 

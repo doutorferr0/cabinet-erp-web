@@ -1,4 +1,5 @@
 import { rotaLiberada } from '@/app/navigation'
+import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { Stamp } from '@/components/cabinet/stamp'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -285,18 +286,19 @@ export function BoletimTela() {
       {/* Cabeçalho de boletim: quem é a folha à esquerda, a data de referência
           em mono à direita — a mesma anatomia do DocumentoHeader, fechada por
           régua forte. */}
-      <header
-        data-slot="boletim-header"
-        className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3"
-      >
-        <div>
-          <h1 className="text-2xl font-bold">Boletim</h1>
-          <p className="text-sm text-muted-foreground">
-            O movimento da operação na data de referência.
-          </p>
-        </div>
+      {/* A MESMA banda das 19 outras telas, e não um `<h1>` próprio: o Boletim
+          era a única folha do sistema que dizia o próprio nome em tinta preta
+          solta — o operador chegava aqui e a tela não se apresentava como as
+          outras. A banda traz junto a zona de identidade e o ornamento do
+          módulo (coral, anéis concêntricos = panorama), que é o que faz a
+          entrada se distinguir de uma listagem ao trocar de tela.
+
+          A data de referência entra como `children`: é DADO, e por isso vem
+          antes da marca d'água na ordem de leitura, exatamente como o carimbo
+          e o número do documento fazem nas outras telas. */}
+      <BandaDeIdentidade titulo="Boletim" contexto="Movimento do dia">
         {dados ? (
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-end gap-0.5">
             <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
               Data de referência
             </span>
@@ -305,7 +307,10 @@ export function BoletimTela() {
             </span>
           </div>
         ) : null}
-      </header>
+      </BandaDeIdentidade>
+      <p className="text-sm text-muted-foreground">
+        O movimento da operação na data de referência.
+      </p>
 
       {query.isPending || !dados ? (
         <BoletimSkeleton />

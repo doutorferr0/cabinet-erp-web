@@ -29,8 +29,10 @@ describe('tela Boletim', () => {
     const dados = boletim()
     await compartimento('Movimento do dia')
 
-    const cabecalho = document.querySelector('[data-slot="boletim-header"]')
-    expect(cabecalho).toHaveTextContent(dados.dataReferenciaBR)
+    // A data de referência mora na BANDA, junto do nome da tela — é o mesmo
+    // arranjo do carimbo e do número nas outras 19 folhas.
+    const banda = screen.getByRole('heading', { name: 'Boletim' }).closest('div')
+    expect(banda).toHaveTextContent(dados.dataReferenciaBR)
     expect(screen.getByText('Orçamentos do dia')).toBeInTheDocument()
   })
 

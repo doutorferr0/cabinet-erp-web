@@ -94,7 +94,10 @@ describe('listagem de produtos', () => {
     expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
     expect(screen.getByText('Nosso Código')).toBeInTheDocument()
     expect(screen.getByText('1201')).toBeInTheDocument()
-    expect(screen.getByText('Sim')).toBeInTheDocument()
+    // A situação é carimbo, não "Sim"/"Não": a palavra continua escrita, e é
+    // por ela que se asserta — cor sozinha não diria nada aqui nem na tela. O
+    // seletor é o do carimbo porque o cabeçalho da coluna também diz "Ativo".
+    expect(screen.getByText('Ativo', { selector: '[data-slot="stamp"]' })).toBeInTheDocument()
   })
 
   // A whitelist do servidor é `code`/`description`/`active`: mandar o nome em

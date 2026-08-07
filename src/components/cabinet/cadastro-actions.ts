@@ -1,4 +1,5 @@
 import type { DataTableAction } from '@/components/cabinet/data-table'
+import { Ban, Eye, Filter, Pencil, Plus, Printer } from 'lucide-react'
 
 /**
  * Barra de ações padrão das listagens — transcrição §9, padrão 4:
@@ -50,11 +51,12 @@ export function cadastroActions<T>({
   // branco não depende de detalhe do servidor.
   const semDetalhe = onAbrir === undefined
   return [
-    { id: 'filtro', label: 'Filtro', onClick: onFiltro ?? focarBusca },
-    { id: 'incluir', label: 'Incluir', onClick: onIncluir },
+    { id: 'filtro', label: 'Filtro', icon: Filter, onClick: onFiltro ?? focarBusca },
+    { id: 'incluir', label: 'Incluir', icon: Plus, onClick: onIncluir },
     {
       id: 'alterar',
       label: 'Alterar',
+      icon: Pencil,
       needsSelection: true,
       disabled: semDetalhe,
       ...(motivoSemAbrir && semDetalhe ? { title: motivoSemAbrir } : {}),
@@ -63,6 +65,7 @@ export function cadastroActions<T>({
     {
       id: 'consultar',
       label: 'Consul.',
+      icon: Eye,
       needsSelection: true,
       disabled: semDetalhe && onConsultar === undefined,
       ...(motivoSemAbrir && semDetalhe && onConsultar === undefined
@@ -73,6 +76,12 @@ export function cadastroActions<T>({
     {
       id: 'excluir',
       label: 'Excluir',
+      // PROIBIDA a lixeira, e não é preciosismo: na UI de cadastro nada é
+      // apagado — `Excluir` desativa (padrão 8), e o próprio diálogo de
+      // confirmação diz isso. Uma lixeira ao lado do rótulo prometeria o
+      // contrário do que o botão faz, e prometeria em desenho, que é o que o
+      // olho lê primeiro. `Ban` é o círculo cortado: "deixa de valer".
+      icon: Ban,
       needsSelection: true,
       variant: 'destructive',
       onClick: (row) =>
@@ -84,6 +93,7 @@ export function cadastroActions<T>({
     {
       id: 'imprimir',
       label: 'Imprimir',
+      icon: Printer,
       onClick: onImprimir ?? (() => console.info(`[mock] Imprimir listagem de ${entidade}`)),
     },
   ]

@@ -1,6 +1,7 @@
 import type { PartnerDto } from '@/api/gerado'
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { data } from '@/data'
@@ -33,7 +34,7 @@ const columns: ColumnDef<PartnerDto>[] = [
   {
     accessorKey: 'active',
     header: 'Ativo',
-    cell: ({ getValue }) => (getValue<boolean>() ? 'Sim' : 'Não'),
+    cell: ({ getValue }) => <CelulaAtivo ativo={getValue<boolean>()} />,
   },
 ]
 

@@ -62,14 +62,17 @@ describe('Login', () => {
     expect(screen.queryByText('Cadastros')).not.toBeInTheDocument()
   })
 
-  it('entra com e-mail e senha e cai no Boletim', async () => {
+  it('entra com e-mail e senha e cai no Dashboard', async () => {
     const { chamadas, stub } = servidorDeAuth()
     const { router, user } = renderRoute('/login', stub)
 
     await preencherEEntrar(user)
 
-    expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/')
+    // A entrada é o Dashboard, não o Boletim (decisão do user). A asserção é
+    // pelo BOTÃO e não pelo título: o título é a saudação, que muda com a hora
+    // do dia e faria o teste falhar de tarde.
+    expect(await screen.findByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/dashboard')
 
     const login = chamadas.find((c) => c.caminho === '/auth/login')
     expect(login?.metodo).toBe('POST')

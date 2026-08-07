@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as ComprasRouteImport } from './routes/compras'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
@@ -52,6 +54,11 @@ const ComprasRoute = ComprasRouteImport.update({
   path: '/compras',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EstoqueRoute = EstoqueRouteImport.update({
   id: '/estoque',
   path: '/estoque',
@@ -60,6 +67,11 @@ const EstoqueRoute = EstoqueRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrocarSenhaRoute = TrocarSenhaRouteImport.update({
@@ -186,8 +198,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
+  '/dashboard': typeof DashboardRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
   '/cadastros/': typeof CadastrosIndexRoute
@@ -213,7 +227,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
@@ -241,8 +257,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
+  '/dashboard': typeof DashboardRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
+  '/planner': typeof PlannerRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
   '/cadastros/': typeof CadastrosIndexRoute
@@ -272,8 +290,10 @@ export interface FileRouteTypes {
     | '/'
     | '/cadastros'
     | '/compras'
+    | '/dashboard'
     | '/estoque'
     | '/login'
+    | '/planner'
     | '/trocar-senha'
     | '/vendas'
     | '/cadastros/'
@@ -299,7 +319,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard'
     | '/login'
+    | '/planner'
     | '/trocar-senha'
     | '/cadastros'
     | '/compras'
@@ -326,8 +348,10 @@ export interface FileRouteTypes {
     | '/'
     | '/cadastros'
     | '/compras'
+    | '/dashboard'
     | '/estoque'
     | '/login'
+    | '/planner'
     | '/trocar-senha'
     | '/vendas'
     | '/cadastros/'
@@ -356,8 +380,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CadastrosRoute: typeof CadastrosRouteWithChildren
   ComprasRoute: typeof ComprasRouteWithChildren
+  DashboardRoute: typeof DashboardRoute
   EstoqueRoute: typeof EstoqueRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PlannerRoute: typeof PlannerRoute
   TrocarSenhaRoute: typeof TrocarSenhaRoute
   VendasRoute: typeof VendasRouteWithChildren
 }
@@ -385,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComprasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/estoque': {
       id: '/estoque'
       path: '/estoque'
@@ -397,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/trocar-senha': {
@@ -640,8 +680,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CadastrosRoute: CadastrosRouteWithChildren,
   ComprasRoute: ComprasRouteWithChildren,
+  DashboardRoute: DashboardRoute,
   EstoqueRoute: EstoqueRouteWithChildren,
   LoginRoute: LoginRoute,
+  PlannerRoute: PlannerRoute,
   TrocarSenhaRoute: TrocarSenhaRoute,
   VendasRoute: VendasRouteWithChildren,
 }

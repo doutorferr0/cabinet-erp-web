@@ -89,6 +89,38 @@ com id inventado e responderia "não encontrado" para registro que existe.
 **Ainda mock, por falta de caminho no contrato:** colaborador · orçamento ·
 pedido e ordem de compra · cidades · resumo do Boletim.
 
+### Dashboard e Planner — caminhos `Proposto`, sem servidor ainda
+
+Entraram no contrato pelo front (nenhum backend os implementa) e no
+`VITE_API_MODE=mock` quem responde é `src/mocks/api/handlers.ts` sobre o store em
+memória. Do ponto de vista da tela **já são HTTP**: passam pelo cliente gerado,
+pelos helpers de `src/data/api-provider.ts` e pelo mesmo tratamento de
+`problem+json` do resto. Trocar o mock pelo backend não mexe em tela nenhuma.
+
+| Fronteira | Caminhos | Onde |
+|---|---|---|
+| Indicadores do Dashboard | `GET /api/dashboard/summary` | `src/data/dashboard-api.ts` |
+| Agenda (calendário do mês + dia) | `GET /api/dashboard/agenda?from&to` | idem |
+| Quadro de tarefas | `GET`/`POST` `/api/tasks` · `PATCH /api/tasks/{taskId}` | idem |
+| Lista A fazer | `GET /api/todos` · `PATCH /api/todos/{todoId}` | idem |
+| Planner — projetos e plano | `GET /api/projects` · `GET /api/projects/{projectId}/plan` | `src/data/planner-api.ts` |
+| Nome do operador na saudação | `SessaoAtual.displayName` (nullable) | `src/data/sessao.ts` |
+
+Três decisões que quem implementar o backend precisa honrar:
+
+1. **`GET /api/tasks` NÃO é `PagedResult`.** O quadro mostra as quatro colunas de
+   uma vez; página de 10 cortaria coluna no meio e daria contagem de coluna
+   errada. Crescendo o volume, o corte é por período/responsável, não por página.
+2. **`PATCH /api/tasks/{taskId}` é a única exceção à regra do `PUT` inteiro**, e
+   ela existe porque o cartão do quadro não carrega o registro completo — um
+   `PUT` a partir dele apagaria o que a tela não mostra. Campo **ausente** fica
+   como está; campo **`null`** apaga.
+3. **`from`/`to` são obrigatórios na agenda.** Sem eles a resposta seria a agenda
+   inteira, e a tela pediria um mês achando que recebeu um mês.
+
+O `displayName` é `null` quando o servidor não sabe — a tela cumprimenta sem
+nome, em vez de exibir e-mail ou id, que são identificador de sistema.
+
 **Faltas conhecidas do contrato:** sem `DELETE` de variante (excluir linha da
 grade tira da TELA; a saída é desmarcar `Ativo` e gravar) · `Índice` e
 `Tipo de Valor` da §6.3 não existem no DTO · `Marca`, `Fábrica` e

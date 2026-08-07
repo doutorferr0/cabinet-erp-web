@@ -6,9 +6,14 @@ import type {
   ProductWriteRequest,
   SessaoAtual,
   StockMovementRequest,
+  TaskDto,
+  TaskPatchRequest,
+  TaskWriteRequest,
+  TodoPatchRequest,
   TrocarEmpresaRequest,
   VariantWriteRequest,
 } from '@/api/gerado'
+import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -102,6 +107,7 @@ function sessaoAtual(): SessaoAtual {
   return {
     organizationId: 'org-vertz',
     employeeId: 'emp-admin',
+    displayName: 'Henrique',
     activeTenantId: store.activeTenantId,
     expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
     mustChangePassword: store.mustChangePassword,
@@ -435,6 +441,170 @@ export const handlers = [
       active: corpo.active ?? true,
     }
     return HttpResponse.json(partnerDto(parceiro, store.activeTenantId))
+  }),
+
+  // ---------------- dashboard ----------------
+
+  /**
+   * Os quatro indicadores. Três dos quatro são DERIVADOS do próprio store — a
+   * contagem de estoque crítico sai das variantes com saldo abaixo do mínimo, e
+   * o quadro de tarefas alimenta o que está em aberto. Número constante aqui
+   * mentiria de um jeito específico: continuaria igual depois de o operador
+   * mexer no cadastro, e ninguém desconfia de um KPI parado.
+   */
+  http.get('*/api/dashboard/summary', () => {
+    if (!store.logado) return SEM_SESSAO()
+    // Sem empresa ativa o domínio responde VAZIO, não erro (semântica da Etapa
+    // 0) — e vazio, para número, é zero.
+    if (!store.activeTenantId) {
+      return HttpResponse.json({
+        openQuotes: 0,
+        openQuotesDueThisWeek: 0,
+        incomingOrders: 0,
+        incomingOrdersToday: 0,
+        criticalStockItems: 0,
+        monthSalesCents: 0,
+        previousMonthSalesCents: 0,
+      })
+    }
+
+    const criticos = store.produtos
+      .flatMap((p) => p.variants ?? [])
+      .filter((v) => v.active && (v.stockQty ?? 0) < (v.minStock ?? 0)).length
+    const emAberto = store.tarefas.filter((t) => t.status !== 'done')
+    const hoje = diaLocalISO()
+    const emUmaSemana = diaLocalISO(new Date(Date.now() + 7 * 86400000))
+
+    return HttpResponse.json({
+      openQuotes: emAberto.length,
+      openQuotesDueThisWeek: emAberto.filter((t) => t.dueOn && t.dueOn <= emUmaSemana).length,
+      incomingOrders: store.tarefas.filter((t) => t.status === 'doing').length,
+      incomingOrdersToday: store.tarefas.filter((t) => t.dueOn === hoje).length,
+      criticalStockItems: criticos,
+      monthSalesCents: 18_240_000,
+      previousMonthSalesCents: 16_285_000,
+    })
+  }),
+
+  http.get('*/api/dashboard/agenda', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return HttpResponse.json([])
+    const url = new URL(request.url)
+    const de = url.searchParams.get('from')
+    const ate = url.searchParams.get('to')
+    // `from`/`to` são obrigatórios no contrato: sem eles a resposta seria a
+    // agenda inteira, e a tela pediria um mês achando que recebeu um mês.
+    if (!de || !ate) return problemaJson(400, 'Informe from e to (datas ISO).')
+
+    // O dia é o LOCAL do operador, não o de UTC: `startsAt.slice(0,10)` jogaria
+    // todo compromisso da noite para o dia seguinte no fuso do Brasil.
+    const dentro = store.agenda
+      .filter((ev) => {
+        const dia = diaDoInstante(ev.startsAt)
+        return dia >= de && dia <= ate
+      })
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+    return HttpResponse.json(dentro)
+  }),
+
+  http.get('*/api/tasks', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return HttpResponse.json([])
+    const url = new URL(request.url)
+    const status = url.searchParams.get('status')
+    const q = url.searchParams.get('q')?.toLowerCase()
+
+    let tarefas = [...store.tarefas]
+    if (status) tarefas = tarefas.filter((t) => t.status === status)
+    if (q) {
+      tarefas = tarefas.filter(
+        (t) => t.title.toLowerCase().includes(q) || (t.description ?? '').toLowerCase().includes(q),
+      )
+    }
+    return HttpResponse.json(tarefas)
+  }),
+
+  http.post('*/api/tasks', async ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const corpo = (await request.json()) as TaskWriteRequest
+    if (!corpo.title?.trim()) return problemaJson(400, 'Título é obrigatório.')
+
+    const tarefa: TaskDto = {
+      id: novoId('task'),
+      title: corpo.title,
+      description: corpo.description ?? null,
+      status: corpo.status,
+      priority: corpo.priority,
+      dueOn: corpo.dueOn ?? null,
+      commentCount: 0,
+      attachmentCount: 0,
+      assignees: [],
+    }
+    store.tarefas.push(tarefa)
+    return HttpResponse.json(tarefa, { status: 201 })
+  }),
+
+  /**
+   * PATCH parcial: campo AUSENTE fica como está, campo `null` apaga. É a
+   * distinção que o contrato promete, e ela só existe se o handler olhar a
+   * presença da chave em vez do valor — `corpo.dueOn ?? tarefa.dueOn` trataria
+   * `null` como ausente e tornaria impossível limpar um prazo.
+   */
+  http.patch('*/api/tasks/:taskId', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const tarefa = store.tarefas.find((t) => t.id === params.taskId)
+    if (!tarefa) return problemaJson(404, 'Tarefa não encontrada.')
+
+    const corpo = (await request.json()) as TaskPatchRequest
+    if ('title' in corpo) {
+      if (!corpo.title?.trim()) return problemaJson(400, 'Título é obrigatório.')
+      tarefa.title = corpo.title
+    }
+    if ('description' in corpo) tarefa.description = corpo.description ?? null
+    if ('status' in corpo && corpo.status) tarefa.status = corpo.status
+    if ('priority' in corpo && corpo.priority) tarefa.priority = corpo.priority
+    if ('dueOn' in corpo) tarefa.dueOn = corpo.dueOn ?? null
+    return HttpResponse.json(tarefa)
+  }),
+
+  http.get('*/api/todos', () => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return HttpResponse.json([])
+    return HttpResponse.json(store.todos)
+  }),
+
+  http.patch('*/api/todos/:todoId', async ({ params, request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const item = store.todos.find((t) => t.id === params.todoId)
+    if (!item) return problemaJson(404, 'Item não encontrado.')
+    const corpo = (await request.json()) as TodoPatchRequest
+    if (typeof corpo.done !== 'boolean') return problemaJson(400, 'done é obrigatório.')
+    item.done = corpo.done
+    return HttpResponse.json(item)
+  }),
+
+  // ---------------- planner ----------------
+
+  http.get('*/api/projects', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return HttpResponse.json([])
+    const status = new URL(request.url).searchParams.get('status')
+    if (!status) return HttpResponse.json(store.projetos)
+    // Lista separada por vírgula: o toggle do Planner manda dois status de uma
+    // vez (`active,proposed`), e é assim que o contrato o descreve.
+    const aceitos = status.split(',').map((s) => s.trim())
+    return HttpResponse.json(store.projetos.filter((p) => aceitos.includes(p.status)))
+  }),
+
+  http.get('*/api/projects/:projectId/plan', ({ params }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+    const plano = store.planos[String(params.projectId)]
+    if (!plano) return problemaJson(404, 'Projeto não encontrado.')
+    return HttpResponse.json(plano)
   }),
 
   // ---------------- health ----------------

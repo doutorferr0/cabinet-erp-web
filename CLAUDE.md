@@ -16,6 +16,9 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 - **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos e
   variantes (`/api/products`, `…/variants`) e os três papéis de parceiro — cliente, fornecedor,
   profissional (`/api/partners`, filtro `role`). Ver `docs/integracao.md`.
+- **Também HTTP, por caminho `Proposto` que o front escreveu:** dashboard (indicadores, agenda,
+  tarefas, A fazer) e planner (projetos, plano). Nenhum backend os implementa ainda — no modo
+  mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a diferença.
 - **Ainda mock:** colaborador, orçamento, pedido de compra, ordem de compra, cidades, boletim
   — **por falta de caminho no contrato, não por escolha.** Esses seguem a regra antiga: dados
   tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.

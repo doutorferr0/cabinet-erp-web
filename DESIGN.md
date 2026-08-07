@@ -453,6 +453,35 @@ Todas sobre `react-aria-components`, com a pele daqui. A referência do neobruta
   escolher uma coluna de ordenação. A gaveta para a tela, diz por escrito o que vai acontecer e
   cobra um clique a mais.
 
+### Quadro de tarefas e gantt (Dashboard · Planner)
+
+Três decisões de cor destas duas telas, registradas porque abrem exceção ou
+escolhem entre caminhos que a paleta permitia igualmente:
+
+- **`Alta` na pill de prioridade usa a zona de BLOQUEIO (vermelho).** É uso da
+  cor de erro fora de erro, e vale porque prioridade alta é o que trava a fila
+  do dia — mesma família de significado. A exceção termina aí: **nada de
+  ornamento vermelho ao lado**, e nenhum outro vermelho nas duas telas. `Média`
+  fica na zona de pendência, `Baixa` na de apoio. O rótulo é sempre escrito —
+  três chips que só diferem de tom são mudos para daltônico e para leitor de
+  tela.
+- **A barra do gantt é colorida pelo TIPO do item, não pela fase.** A fase já é
+  lida na coluna da esquerda, que agrupa e nomeia; repeti-la na cor gastaria o
+  único canal que sobra. Pelo tipo, a barra reusa o par de módulo que o sistema
+  já ensinou: pedido → Compras, entrega → Estoque, tarefa → Vendas — o mesmo mapa
+  da agenda do Dashboard.
+- **Progresso é VIOLETA, nunca verde.** Verde é dinheiro; barra de progresso já
+  pertence ao violeta de ação (§Acentos). A marca de HOJE no gantt é a mesma
+  tinta, pelo mesmo motivo — é o "onde estamos" do sistema.
+
+**O KPI de dinheiro não leva ornamento.** O número dele não é de módulo nenhum:
+é verde, e verde é cor com dono, que ornamento não pode usar. Emprestar o shape
+de Produtos ou de Vendas diria que o total do mês pertence àquele cadastro —
+quem marca o cartão é a zona de valor mais o verde do número. Os outros três KPIs
+levam o shape do módulo a que o número se refere, em papel de ÍCONE (20px): a
+fileira se lê como mapa, exatamente como a fileira da sidebar, e é por isso que
+ela não viola o teto de um ornamento por região.
+
 ### Gráfico
 Contorno preto de 2px em cada forma, preenchimento de cor cheia dos acentos. Eixo em traço de 2px.
 Rótulo em mono 10px. Sem gradiente, sem sombra interna.

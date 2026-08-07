@@ -12,6 +12,8 @@ import {
 } from '@faker-js/faker';
 
 import type {
+  AgendaEventDto,
+  DashboardSummaryDto,
   HealthStatus,
   LoginOk,
   PagedResultOfCatalogLookupDto,
@@ -22,9 +24,13 @@ import type {
   ProductDetailDto,
   ProductDto,
   ProductVariantDto,
+  ProjectDto,
+  ProjectPlanDto,
   ReadinessStatus,
   SessaoAtual,
   StockMovementDto,
+  TaskDto,
+  TodoDto,
   VinculoDeEmpresa
 } from './index.schemas';
 
@@ -63,7 +69,25 @@ export const getListStockMovementsResponseMock = (overrideResponse: Partial<Extr
 
 export const getAuthLoginResponseMock = (overrideResponse: Partial<Extract<LoginOk, object>> = {}): LoginOk => ({mustChangePassword: faker.datatype.boolean(), ...overrideResponse})
 
-export const getAuthMeResponseMock = (overrideResponse: Partial<Extract<SessaoAtual, object>> = {}): SessaoAtual => ({organizationId: faker.string.uuid(), employeeId: faker.string.uuid(), activeTenantId: faker.helpers.arrayElement([faker.string.uuid(), null]), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', mustChangePassword: faker.datatype.boolean(), ...overrideResponse})
+export const getAuthMeResponseMock = (overrideResponse: Partial<Extract<SessaoAtual, object>> = {}): SessaoAtual => ({organizationId: faker.string.uuid(), employeeId: faker.string.uuid(), activeTenantId: faker.helpers.arrayElement([faker.string.uuid(), null]), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', mustChangePassword: faker.datatype.boolean(), displayName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), ...overrideResponse})
 
 export const getAuthTenantsResponseMock = (): VinculoDeEmpresa[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), role: faker.string.alpha({length: {min: 10, max: 20}}), features: faker.helpers.arrayElements(['suppliers','professionals','employees'] as const)})))
+
+export const getGetDashboardSummaryResponseMock = (overrideResponse: Partial<Extract<DashboardSummaryDto, object>> = {}): DashboardSummaryDto => ({openQuotes: faker.number.int(), openQuotesDueThisWeek: faker.number.int(), incomingOrders: faker.number.int(), incomingOrdersToday: faker.number.int(), criticalStockItems: faker.number.int(), monthSalesCents: faker.number.int(), previousMonthSalesCents: faker.number.int(), ...overrideResponse})
+
+export const getListAgendaEventsResponseMock = (): AgendaEventDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), startsAt: faker.date.past().toISOString().slice(0, 19) + 'Z', title: faker.string.alpha({length: {min: 10, max: 20}}), context: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), kind: faker.helpers.arrayElement(['delivery','quote','meeting','payment'] as const)})))
+
+export const getListTasksResponseMock = (): TaskDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), title: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), status: faker.helpers.arrayElement(['todo','doing','review','done'] as const), priority: faker.helpers.arrayElement(['high','medium','low'] as const), dueOn: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), commentCount: faker.number.int(), attachmentCount: faker.number.int(), assignees: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), initials: faker.string.alpha({length: {min: 10, max: 20}})}))})))
+
+export const getCreateTaskResponseMock = (overrideResponse: Partial<Extract<TaskDto, object>> = {}): TaskDto => ({id: faker.string.uuid(), title: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), status: faker.helpers.arrayElement(['todo','doing','review','done'] as const), priority: faker.helpers.arrayElement(['high','medium','low'] as const), dueOn: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), commentCount: faker.number.int(), attachmentCount: faker.number.int(), assignees: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), initials: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getPatchTaskResponseMock = (overrideResponse: Partial<Extract<TaskDto, object>> = {}): TaskDto => ({id: faker.string.uuid(), title: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), status: faker.helpers.arrayElement(['todo','doing','review','done'] as const), priority: faker.helpers.arrayElement(['high','medium','low'] as const), dueOn: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), commentCount: faker.number.int(), attachmentCount: faker.number.int(), assignees: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), initials: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getListTodosResponseMock = (): TodoDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), title: faker.string.alpha({length: {min: 10, max: 20}}), done: faker.datatype.boolean()})))
+
+export const getPatchTodoResponseMock = (overrideResponse: Partial<Extract<TodoDto, object>> = {}): TodoDto => ({id: faker.string.uuid(), title: faker.string.alpha({length: {min: 10, max: 20}}), done: faker.datatype.boolean(), ...overrideResponse})
+
+export const getListProjectsResponseMock = (): ProjectDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['active','proposed','closed'] as const)})))
+
+export const getGetProjectPlanResponseMock = (overrideResponse: Partial<Extract<ProjectPlanDto, object>> = {}): ProjectPlanDto => ({projectId: faker.string.uuid(), phases: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), startsOn: faker.date.past().toISOString().slice(0, 10), endsOn: faker.date.past().toISOString().slice(0, 10), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), label: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(['task','order','delivery'] as const), startsOn: faker.date.past().toISOString().slice(0, 10), endsOn: faker.date.past().toISOString().slice(0, 10), progressPercent: faker.number.int()}))})), ...overrideResponse})
 

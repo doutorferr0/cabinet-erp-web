@@ -42,7 +42,11 @@ export function TrocarSenhaTela() {
   })
 
   function confirmar({ currentPassword, newPassword }: TrocaSenhaValores) {
-    trocar.mutate({ currentPassword, newPassword }, { onSuccess: () => navigate({ to: '/' }) })
+    // Mesmo destino do login: trocada a senha, o operador entra onde entraria.
+    trocar.mutate(
+      { currentPassword, newPassword },
+      { onSuccess: () => navigate({ to: '/dashboard' }) },
+    )
   }
 
   return (

@@ -66,14 +66,16 @@ async function preencherETrocar(
 }
 
 describe('TrocarSenha', () => {
-  it('troca a senha e cai no Boletim — confirmação NÃO viaja no contrato', async () => {
+  it('troca a senha e cai no Dashboard — confirmação NÃO viaja no contrato', async () => {
     const { chamadas, stub } = servidorDeTroca()
     const { router, user } = renderRoute('/trocar-senha', stub)
 
     await preencherETrocar(user)
 
-    expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/')
+    // Mesmo destino do login: o Dashboard. Asserção pelo botão, não pelo
+    // título — o título é a saudação e muda com a hora.
+    expect(await screen.findByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/dashboard')
 
     const troca = chamadas.find((c) => c.caminho === '/auth/change-password')
     expect(troca?.metodo).toBe('POST')
@@ -127,8 +129,8 @@ describe('TrocarSenha', () => {
 
     await preencherETrocar(user)
 
-    expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/')
+    expect(await screen.findByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/dashboard')
   })
 
   it('fica fora do shell mas atrás da guarda: sem sessão vai para /login', async () => {

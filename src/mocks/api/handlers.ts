@@ -112,6 +112,20 @@ export const handlers = [
   // ---------------- auth ----------------
   http.post('*/auth/login', async ({ request }) => {
     const corpo = (await request.json()) as LoginRequest
+    // Credencial única do build demo (site público de preview): definida em
+    // tempo de build via VITE_DEMO_USER/VITE_DEMO_PASS. Sem as duas (dev,
+    // testes), o bloco não existe e o comportamento histórico segue intacto.
+    const demoUser = import.meta.env.VITE_DEMO_USER
+    const demoPass = import.meta.env.VITE_DEMO_PASS
+    if (demoUser && demoPass) {
+      if (corpo.email !== demoUser || corpo.password !== demoPass) {
+        return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })
+      }
+      store.logado = true
+      store.mustChangePassword = false
+      store.activeTenantId = null
+      return HttpResponse.json({ mustChangePassword: false })
+    }
     // Senha 'errada' falha de propósito — é o caminho de teste do 401 na tela.
     if (corpo.password === 'errada') {
       return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })

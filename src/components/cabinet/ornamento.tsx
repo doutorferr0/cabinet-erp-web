@@ -12,6 +12,7 @@ import shape140 from '@/assets/brutalist/brutalist-shape-140.svg?url'
 import shape159 from '@/assets/brutalist/brutalist-shape-159.svg?url'
 import shape160 from '@/assets/brutalist/brutalist-shape-160.svg?url'
 import shape182 from '@/assets/brutalist/brutalist-shape-182.svg?url'
+import shape185 from '@/assets/brutalist/brutalist-shape-185.svg?url'
 import shape193 from '@/assets/brutalist/brutalist-shape-193.svg?url'
 import { cn } from '@/lib/utils'
 import { useRouter, useRouterState } from '@tanstack/react-router'
@@ -87,6 +88,26 @@ const SHAPE_DE_ESTADO = {
   marca: shape182, // estrela radiada: a marca do sistema, fora de módulo
   'marca-apoio': shape140, // acompanha a marca na composição do login
   'marca-base': brutalist011, // idem
+  /**
+   * Losango dentro de círculo — a marca do sistema DENTRO da interface (topo da
+   * sidebar), e depois no cabeçalho de documento impresso.
+   *
+   * Não reusa a chave `marca`, e a diferença não é capricho: `marca` é a
+   * composição de BOAS-VINDAS (estrela radiada + apoio + base), que ocupa meia
+   * tela no login e some assim que o operador entra. Este é o selo que fica no
+   * canto durante as oito horas seguintes — tem de se ler a 28px e não pode
+   * competir com o conteúdo. Dois empregos, dois desenhos, duas chaves.
+   */
+  emblema: shape185,
+  /**
+   * Galpão — a EMPRESA ATIVA. Aponta para o mesmo arquivo do módulo
+   * Fornecedores, pelo mesmo motivo de `rota-inexistente`/`alerta`: é a mesma
+   * ideia (uma empresa), vista de dois lugares. Fornecedores é a empresa do
+   * outro; esta é a empresa de dentro. Chave própria porque quem escreve o
+   * rodapé pensa em "empresa ativa", não em "o shape de Fornecedores" — e no
+   * dia em que os desenhos se separarem, muda aqui e em nenhum consumidor.
+   */
+  empresa: brutalist029,
 } as const
 
 export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO
@@ -113,6 +134,12 @@ const TONS = {
   offline: 'bg-offline',
   /** Roxo de marca — o sistema falando de si (login, splash). Fora de módulo. */
   marca: 'bg-accent',
+  /**
+   * Soft blue — a EMPRESA ATIVA. Fixo de propósito: é o único ornamento que não
+   * pode mudar de cor ao navegar, porque ele responde "de qual empresa é o que
+   * estou vendo" — pergunta cuja resposta não depende da tela aberta.
+   */
+  empresa: 'bg-empresa',
   /**
    * ÍCONE — a cor NÃO é escolhida aqui: `bg-current` resolve para
    * `background-color: currentColor` e o shape passa a herdar o `color` do

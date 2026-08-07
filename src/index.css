@@ -76,6 +76,21 @@
      Pintar os dois de vermelho faria o operador tratar queda de rede como
      defeito de cadastro. */
   --offline: 11 100% 66%;
+  /* Soft blue — a EMPRESA ATIVA, no rodapé da sidebar.
+     É o azul do módulo Fornecedores, e de propósito: o galpão é o desenho de
+     "empresa" neste sistema, e a empresa em que o operador ESTÁ é a mesma ideia
+     vista de dentro. Token próprio, e não `[data-modulo]`, porque o rodapé não
+     pertence a módulo nenhum: ele é igual nas 19 telas, e ler o par do escopo
+     faria a empresa ativa piscar de cor a cada navegação — o oposto de
+     identidade.
+
+     A LUZ DESCE de 74% para 60%, e isso foi MEDIDO, não escolhido: o galpão
+     pousa sobre a zona de identidade (`--zone-id`, Primary/02 clara), e a 74% o
+     par dá **2,29:1** — na vitrine o ornamento simplesmente sumia. A 60% dá
+     4,45:1. Matiz e saturação são os do `#828DF9` da paleta; só a luz mudou,
+     que é o mesmo remédio que a 1.5 aplicou ao verde e ao vermelho quando eles
+     caíram sobre a zona de valor. No escuro ele volta a 74% (ver `.dark`). */
+  --empresa: 234 91% 60%;
   /* Traço: 2px preto em tudo que é caixa. */
   --border: 0 0% 0%;
   --input: 0 0% 0%;
@@ -257,6 +272,11 @@
   --warn: 47 100% 55%;
   /* Tomato segue igual: a L 66 ele ja se le sobre o papel escuro. */
   --offline: 11 100% 66%;
+  /* Empresa ativa SOBE de volta para 74%, que é a luz da paleta. No claro ela
+     desceu para 60% porque a zona de identidade clara a apagava; aqui a zona é
+     escura (`263 38% 22%`) e a 74% o par dá 4,75:1. Mesma inversão do violeta
+     de ação logo acima: sobre papel escuro, a cor precisa CLAREAR. */
+  --empresa: 234 91% 74%;
   /* O TRAÇO. É ele que desenha a caixa, e no escuro ele é claro — a Regra da
      Caixa Preta vira a regra do traço: muda a tinta, não o papel dela. */
   --border: 40 10% 66%;
@@ -388,6 +408,7 @@
   --color-surface-sunken: hsl(var(--surface-sunken));
   --color-veil: hsl(var(--veil));
   --color-offline: hsl(var(--offline));
+  --color-empresa: hsl(var(--empresa));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */

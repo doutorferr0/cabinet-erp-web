@@ -135,6 +135,8 @@ describe('AppShell', () => {
     // Gaveta, não menu suspenso: trocar de empresa muda o escopo de tudo que
     // está aberto, e a escolha é um botão de alvo grande dentro dela.
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
+    // E a escolha não é a troca: o alerta é onde o operador responde "sim".
+    await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
     expect(screen.getByText('VIA HF')).toBeInTheDocument()
   })
 
@@ -158,6 +160,8 @@ describe('AppShell', () => {
 
     await user.click(screen.getByRole('button', { name: /vertz iluminação/i }))
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
+    // Escolher na gaveta PROPÕE; quem troca é o alerta.
+    await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
 
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: 'Fornecedores' })).not.toBeInTheDocument()

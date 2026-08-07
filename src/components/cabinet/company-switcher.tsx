@@ -1,4 +1,14 @@
 import { Ornamento } from '@/components/cabinet/ornamento'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -40,6 +50,11 @@ export function CompanySwitcher() {
   const [aberta, setAberta] = useState(false)
   const { empresas, ativa, carregando, erro, trocar, trocando } = useEmpresasDaSessao()
   const logout = useLogout()
+  // Alvo da confirmação. A GAVETA CONTINUA ABERTA por baixo do alerta:
+  // cancelar devolve o operador à lista de onde ele saiu, não a lugar
+  // nenhum. Fechar a gaveta antes de perguntar transformaria `Cancelar` em
+  // "comece de novo".
+  const [confirmando, setConfirmando] = useState<(typeof empresas)[number] | null>(null)
 
   // Estados distintos: esperar, avisar alguém, ou não ter vínculo mesmo.
   const titulo = carregando
@@ -110,8 +125,11 @@ export function CompanySwitcher() {
                       disabled={trocando}
                       onClick={() => {
                         // Escolher a que já está ativa não é troca: só fecha.
-                        if (!eAtiva) trocar(empresa.tenantId)
-                        setAberta(false)
+                        if (eAtiva) {
+                          setAberta(false)
+                          return
+                        }
+                        setConfirmando(empresa)
                       }}
                       className={cn(
                         'h-auto w-full justify-start gap-2 px-3 py-2.5 text-left',
@@ -157,6 +175,54 @@ export function CompanySwitcher() {
             </Button>
           </SheetFooter>
         </Sheet>
+
+        {/* CONFIRMAÇÃO DA TROCA.
+            A gaveta é o SELETOR, não a confirmação: até aqui, clicar num nome
+            trocava o escopo de tudo que estava aberto no mesmo gesto de escolher
+            — a lista dizia por escrito o que ia acontecer, mas não havia onde
+            responder "sim". O alerta é esse lugar.
+
+            `role="alertdialog"` (§alert-dialog): a consequência é lida JUNTO do
+            título, antes do foco chegar nos botões. Clicar fora não cancela; a
+            saída é sempre por botão nomeado.
+
+            O ornamento é `empresa`, não `alerta`/`erro`: trocar de empresa é
+            forte, não é engano nem destruição, e a cor de estado num ornamento
+            só é permitida quando o significado É erro (memória §@ornamentos).
+            Pela mesma razão o botão de ação é o padrão, não `destructive`. */}
+        {confirmando ? (
+          <AlertDialog isOpen onOpenChange={(open) => !open && setConfirmando(null)}>
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <AlertDialogMedia>
+                  <Ornamento shape="empresa" tom="empresa" tamanho={40} />
+                </AlertDialogMedia>
+                <AlertDialogTitle>Trocar para {confirmando.name}?</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription>
+                Tudo que está aberto passa a ser de <strong>{confirmando.name}</strong>: listagens,
+                documentos e totais são recarregados no escopo da nova empresa. Nada é apagado — dá
+                para voltar por aqui.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel type="button" onClick={() => setConfirmando(null)}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                type="button"
+                disabled={trocando}
+                onClick={() => {
+                  trocar(confirmando.tenantId)
+                  setConfirmando(null)
+                  setAberta(false)
+                }}
+              >
+                {trocando ? 'Trocando…' : 'Trocar empresa'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialog>
+        ) : null}
       </SidebarMenuItem>
     </SidebarMenu>
   )

@@ -89,6 +89,8 @@ describe('CompanySwitcher', () => {
 
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
     await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
+    // A lista PROPÕE; quem troca é o alerta.
+    await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
 
     await waitFor(() => expect(servidor.em('/auth/active-tenant')).toHaveLength(1))
     const troca = servidor.em('/auth/active-tenant')[0]
@@ -101,10 +103,27 @@ describe('CompanySwitcher', () => {
 
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
     await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
+    // A lista PROPÕE; quem troca é o alerta.
+    await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
 
     // Dado é escopado por empresa: sem reconsulta, a tela mostraria a anterior.
     expect(await screen.findByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
     await waitFor(() => expect(servidor.em('/auth/me').length).toBeGreaterThan(1))
+  })
+
+  // Escolher na gaveta deixou de ser trocar. Este teste é o que impede alguém
+  // de "simplificar" o fluxo religando o `trocar()` no clique da lista: sem o
+  // alerta, um clique perdido reescreveria o escopo de tudo que está aberto.
+  it('cancelar no alerta não troca de empresa', async () => {
+    const { user } = montar()
+
+    await user.click(await screen.findByRole('button', { name: /via hf/i }))
+    await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
+    await user.click(await screen.findByRole('button', { name: /cancelar/i }))
+
+    expect(servidor.em('/auth/active-tenant')).toHaveLength(0)
+    // A gaveta continua aberta: cancelar devolve à lista, não a lugar nenhum.
+    expect(await screen.findByRole('button', { name: /vertz iluminação/i })).toBeInTheDocument()
   })
 
   it('falha do servidor NÃO se disfarça de empresa ausente', async () => {

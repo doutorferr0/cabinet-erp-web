@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -371,7 +370,7 @@ function SidebarGroupLabel({
       data-sidebar="group-label"
       // Rótulo de grupo em Meta (mono caps) — vocabulário do mockup.
       className={cn(
-        'flex h-8 shrink-0 items-center px-2 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:focus-ring [&>svg]:size-4 [&>svg]:shrink-0',
+        'flex h-8 shrink-0 items-center px-2 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 focus-visible:focus-ring [&>svg]:size-4 [&>svg]:shrink-0',
         className,
       )}
       {...props}
@@ -409,7 +408,10 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="sidebar-menu"
       data-sidebar="menu"
-      className={cn('flex w-full min-w-0 flex-col gap-0', className)}
+      className={cn(
+        'flex w-full min-w-0 flex-col gap-0 group-data-[collapsible=icon]:gap-1.5',
+        className,
+      )}
       {...props}
     />
   )
@@ -439,7 +441,7 @@ const sidebarMenuButtonVariants = cva(
   //
   // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
   // sem ele, o par cai no padrão do `:root` e nada quebra.
-  'peer/menu-button group/menu-button lift-flat rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button group/menu-button lift-flat rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {
@@ -464,23 +466,11 @@ function SidebarMenuButton({
   variant = 'default',
   size = 'default',
   tooltip,
-  hoverCard,
   className,
   ...props
 }: SidebarButtonProps & {
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof Tooltip>
-  /**
-   * Cartão de apoio no hover, para quando o item merece mais que um rótulo —
-   * as telas irmãs do módulo, por exemplo. VENCE o `tooltip` quando os dois
-   * vêm juntos: dois balões sobre a mesma peça é ruído, não redundância.
-   *
-   * Vale nos dois estados da sidebar, e não só na colapsada como o `tooltip`:
-   * o cartão não existe para repetir o nome que sumiu, existe para oferecer
-   * atalho. Nada que só exista dentro dele pode ser necessário para operar —
-   * conteúdo de hover é inalcançável no toque (§HoverCard).
-   */
-  hoverCard?: React.ReactNode
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
   const shared = {
@@ -509,16 +499,6 @@ function SidebarMenuButton({
     ) : (
       <ButtonPrimitive {...shared} {...(props as ButtonProps)} />
     )
-
-  // O cartão vem antes da dica: onde há cartão, a dica não aparece.
-  if (hoverCard) {
-    return (
-      <HoverCard>
-        <HoverCardTrigger>{comp}</HoverCardTrigger>
-        <HoverCardContent placement="right top">{hoverCard}</HoverCardContent>
-      </HoverCard>
-    )
-  }
 
   if (!tooltip) {
     return comp

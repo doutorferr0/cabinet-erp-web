@@ -90,7 +90,7 @@ function AppSidebar() {
         {/* Colapsada, o `px-2` daqui somava com o `p-2` do grupo e jogava o
             emblema 8px à esquerda da fileira de ícones. Sem rótulo para
             equilibrar, a marca ficava visivelmente fora do eixo da coluna. */}
-        <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+        <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0">
           <Ornamento shape="emblema" tom="marca" tamanho={28} />
           {/* Some no modo colapsado, junto com todo rótulo: sobra a coluna de
               ícone, e o selo sozinho continua identificando o produto. */}
@@ -110,7 +110,7 @@ function AppSidebar() {
       <SidebarContent>
         {/* Boletim é a entrada, não um módulo: fica solto acima dos grupos.
             Casamento exato — `/` é prefixo de tudo, `startsWith` acenderia sempre. */}
-        <SidebarGroup>
+        <SidebarGroup className="group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-2">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/'} tooltip="Boletim">
@@ -129,7 +129,7 @@ function AppSidebar() {
               // Colapsada, o rótulo é zerado (`-mt-8 opacity-0`) e os grupos
               // viram uma fileira contínua de ícones sem fronteira. A régua
               // ocupa o lugar que o nome do módulo deixou: separa sem nomear.
-              'group-data-[collapsible=icon]:mt-1 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-3',
+              'group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-2',
               // Grupo sem tela (Estoque, §10) não tem o que separar: expandido
               // o rótulo ainda declara que o módulo existe, colapsado sobraria
               // só uma régua solta sobre espaço vazio.
@@ -144,7 +144,7 @@ function AppSidebar() {
                 (`collapsible=icon` zera a opacidade dele) e o atalho some
                 junto; o que volta ali é a dica de cada ícone, que é justamente
                 o que falta no estado de ícone. */}
-            {group.items.length > 1 ? (
+            {!colapsada && group.items.length > 1 ? (
               <HoverCard>
                 <HoverCardTrigger>
                   <SidebarGroupLabel>{group.title}</SidebarGroupLabel>

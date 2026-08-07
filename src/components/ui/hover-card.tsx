@@ -55,7 +55,7 @@ export interface HoverCardProps {
   children: React.ReactNode
 }
 
-function HoverCard({ delayAbrir = 500, delayFechar = 200, children }: HoverCardProps) {
+function HoverCard({ delayAbrir = 200, delayFechar = 300, children }: HoverCardProps) {
   const [aberto, setAberto] = React.useState(false)
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -130,7 +130,7 @@ function HoverCardTrigger({ children }: { children: React.ReactElement }) {
 function HoverCardContent({
   className,
   placement = 'right top',
-  offset = 8,
+  offset = 2,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof PopoverPrimitive>, 'className' | 'children'> & {
@@ -158,13 +158,15 @@ function HoverCardContent({
         'z-50 w-64 max-w-xs rounded-card border-2 border-border bg-popover p-3 text-popover-foreground text-sm pop-spring shadow-el3 outline-none',
         className,
       )}
+      // Enquanto o ponteiro estiver sobre o CARTÃO — padding incluído — ele não
+      // fecha. Estes handlers já moraram num `div` interno, e o `p-3` virava
+      // faixa morta: o ponteiro entrava no cartão e o fechamento seguia
+      // agendado. Ponte tem de começar na borda, não depois dela.
+      onPointerEnter={cancelarAgenda}
+      onPointerLeave={agendarFechamento}
       {...props}
     >
-      {/* Enquanto o ponteiro estiver AQUI o cartão não fecha: é o que dá tempo
-          de atravessar o vão e clicar no que ele oferece. */}
-      <div onPointerEnter={cancelarAgenda} onPointerLeave={agendarFechamento} role="presentation">
-        {children}
-      </div>
+      {children}
     </PopoverPrimitive>
   )
 }

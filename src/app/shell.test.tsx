@@ -67,6 +67,21 @@ describe('AppShell', () => {
     }
   })
 
+  // `data-active={false}` vira `data-active="false"` no DOM — React não omite
+  // `false` em `data-*` — e a variante do Tailwind casa por PRESENÇA. Com o
+  // atributo sempre escrito, os nove itens se pintavam de ativo e a sidebar
+  // inteira ficava acesa. CONTAR é o que pega: asserção sobre o item certo
+  // passaria igual com todos ligados.
+  it('só o módulo da rota fica aceso na sidebar', async () => {
+    setup('/cadastros/fornecedores')
+    await waitFor(() => {
+      expect(screen.getByText('Fornecedores')).toBeInTheDocument()
+    })
+    const acesos = document.querySelectorAll('[data-sidebar="menu-button"][data-active]')
+    expect(acesos).toHaveLength(1)
+    expect(acesos[0]).toHaveTextContent('Fornecedores')
+  })
+
   // A marca no topo e a empresa ativa no rodapé são UM arranjo, não duas
   // escolhas: o teto de densidade é de 1 ornamento por região visível, e as
   // duas no mesmo cabeçalho o estouravam. Afirmar as duas juntas é o que

@@ -10,9 +10,13 @@ allowBuilds:
 minimumReleaseAge: 10080
 
 # Exceção pontual do reface fase 1: react-aria-components pinado EXATO em
-# 1.20.0 (decisão pós-spike RAC) saiu em 2026-07-31 e ainda não venceu o
-# cooldown. Versão exata + publisher Adobe react-spectrum. Remover a lista
-# quando a release passar dos 7 dias.
+# 1.20.0 (decisão pós-spike RAC). Versão exata + publisher Adobe react-spectrum.
+#
+# **Vence em 2026-08-07 às 15:26 UTC** — a HORA importa e já custou uma
+# tentativa: o pacote foi publicado em 2026-07-31T15:26, e os 7 dias contam a
+# partir dali, não da meia-noite do dia 7. Tirar a lista antes disso faz o
+# `pnpm install` reprovar o lockfile inteiro com "within the minimumReleaseAge
+# cutoff". Remover depois desse horário — e conferir rodando `pnpm install`.
 minimumReleaseAgeExclude:
   - react-aria-components
   - react-aria

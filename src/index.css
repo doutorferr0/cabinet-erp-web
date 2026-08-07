@@ -108,6 +108,11 @@
      branca em cima (3,31:1 no verde antigo) e `void` é letra sobre papel. */
   --stamp-done: 155 81% 26%;
   --stamp-void: 357 84% 42%;
+  /* CORTINA do modal. Era `bg-black/20` literal em três componentes, e literal
+     não sabe em que tema está: sobre a bancada escura (L 9) um preto a 20% é
+     quase invisível, e a cortina existe justamente para dizer "o que está atrás
+     não recebe clique agora". No escuro ela precisa ser bem mais densa. */
+  --veil: 0 0% 0% / 0.2;
   --grid-line: hsl(42 17% 70%);
   /* Sidebar: é Bancada; item ativo = Folha com traço preto. */
   --sidebar: hsl(41 25% 85%);
@@ -272,6 +277,9 @@
   --stamp-open: 47 100% 55%;
   --stamp-done: 155 65% 62%;
   --stamp-void: 357 90% 70%;
+  /* Sobre papel escuro a cortina precisa de muito mais densidade para separar
+     o modal do resto: 20% de preto ali some. */
+  --veil: 0 0% 0% / 0.65;
   --grid-line: hsl(40 8% 18%);
   --sidebar: hsl(40 12% 9%);
   --sidebar-foreground: hsl(42 25% 94%);
@@ -370,6 +378,7 @@
      virou Neutro, que é o tom de hover de item desde a 1.5. Alias sem
      consumidor é convite para o emprego velho voltar por descuido. */
   --color-surface-sunken: hsl(var(--surface-sunken));
+  --color-veil: hsl(var(--veil));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */

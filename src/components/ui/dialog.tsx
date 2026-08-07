@@ -46,7 +46,7 @@ function DialogOverlay({
   return (
     <ModalOverlayPrimitive
       data-slot="dialog-overlay"
-      className={cn('fixed inset-0 isolate z-50 fade-veil bg-black/20', className)}
+      className={cn('fixed inset-0 isolate z-50 fade-veil bg-veil', className)}
       {...props}
     >
       {children}

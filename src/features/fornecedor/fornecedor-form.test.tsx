@@ -196,7 +196,7 @@ describe('tela Fornecedor', () => {
     await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
 
-    const dialogo = await screen.findByRole('dialog')
+    const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('Desativar fornecedor?')
     expect(dialogo).toHaveTextContent('não é apagado')
     await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
@@ -219,10 +219,10 @@ describe('tela Fornecedor', () => {
     await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
     await user.click(
-      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancelar' }),
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }),
     )
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
     expect(chamadas.every((c) => c.metodo === 'GET')).toBe(true)
   }, 15_000)
 
@@ -235,7 +235,7 @@ describe('tela Fornecedor', () => {
     await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
 
-    const dialogo = await screen.findByRole('dialog')
+    const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('já está inativo')
     expect(within(dialogo).queryByRole('button', { name: 'Desativar' })).not.toBeInTheDocument()
     expect(chamadas.every((c) => c.metodo === 'GET')).toBe(true)

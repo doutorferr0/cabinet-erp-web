@@ -361,6 +361,13 @@ Todas sobre `react-aria-components`, com a pele daqui. A referência do neobruta
   lugar de `outline-primary` — o original não estilizava foco, e migalha é caminho de volta. O
   separador é responsabilidade do ITEM (o `isCurrent` que a RAC entrega), não de um componente
   solto que obrigaria a tela a contar posições na mão.
+- **AlertDialog** — a confirmação que interrompe. A diferença para o `Dialog` não é visual: tem
+  `role="alertdialog"` (o leitor anuncia como alerta e lê a consequência JUNTO do título, em vez de
+  deixá-la depois do foco), **não fecha ao clicar fora** — sumir ao primeiro clique perdido é
+  ambíguo, o operador não sabe se cancelou ou se a ação foi embora — e não tem "x" mudo: quem fecha
+  é `Cancelar`, que diz o que faz. `Escape` continua valendo como cancelar. A descrição usa
+  `slot="description"`, que é o que amarra o `aria-describedby`. Leva o ornamento de alerta a 40px
+  em Danger/01 — o único lugar onde ornamento usa cor de estado, porque aqui o significado É erro.
 - **Empty** — a anatomia única do estado vazio (ornamento · título · descrição · ação), copiada do
   staging sem a caixa própria: o vazio quase sempre mora dentro de algo que já é caixa. Existe
   porque a memória lista **seis** vazios diferentes, e escritos à mão eles divergem — e o que separa

@@ -52,10 +52,19 @@ const SHAPE_DO_MODULO: Record<Modulo, string> = {
   boletim: shape135, // anéis concêntricos = panorama
 }
 
-/** Shapes de ESTADO — não pertencem a módulo nenhum. */
+/**
+ * Shapes de ESTADO — não pertencem a módulo nenhum.
+ *
+ * `rota-inexistente` e `alerta` apontam para o MESMO arquivo de propósito: a
+ * memória dá a bandeira torta aos dois usos (404 e confirmação destrutiva), e
+ * os dois são a mesma ideia — algo saiu do trilho. Ficam com nomes separados
+ * porque quem escreve a tela pensa no ESTADO, não no número do SVG; e se um dia
+ * a memória separar os dois desenhos, muda aqui e em nenhum consumidor.
+ */
 const SHAPE_DE_ESTADO = {
   'busca-vazia': shape160, // círculos que não se cruzam
   'rota-inexistente': shape193, // bandeira torta
+  alerta: shape193, // a mesma bandeira: confirmação destrutiva
 } as const
 
 export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO

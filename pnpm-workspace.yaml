@@ -7,21 +7,10 @@ allowBuilds:
   msw: false
 
 # 7 dias em minutos (10080) — política de cooldown pós-supply-chain.
-minimumReleaseAge: 10080
-
-# Exceção pontual do reface fase 1: react-aria-components pinado EXATO em
-# 1.20.0 (decisão pós-spike RAC). Versão exata + publisher Adobe react-spectrum.
 #
-# **Vence em 2026-08-07 às 15:26 UTC** — a HORA importa e já custou uma
-# tentativa: o pacote foi publicado em 2026-07-31T15:26, e os 7 dias contam a
-# partir dali, não da meia-noite do dia 7. Tirar a lista antes disso faz o
-# `pnpm install` reprovar o lockfile inteiro com "within the minimumReleaseAge
-# cutoff". Remover depois desse horário — e conferir rodando `pnpm install`.
-minimumReleaseAgeExclude:
-  - react-aria-components
-  - react-aria
-  - react-stately
-  - '@react-aria/*'
-  - '@react-stately/*'
-  - '@react-types/*'
-  - '@internationalized/*'
+# Sem exceção nenhuma desde 2026-08-07: a lista temporária do reface fase 1
+# (react-aria-components e o resto do guarda-chuva RAC, pinados em 1.20.0)
+# existia só para atravessar os 7 dias do cooldown, contados de
+# 2026-07-31T15:26 — a publicação do pacote, não a meia-noite do dia. Vencido o
+# prazo, a exceção sai: cooldown com furo permanente não é cooldown.
+minimumReleaseAge: 10080

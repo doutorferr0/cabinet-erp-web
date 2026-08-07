@@ -37,6 +37,14 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
 - **Empresa ativa vazia = lista vazia, não erro.** Sessão sem empresa escolhida é
   estado legítimo do cliente. (O 409 documentado em listagem cobre o caso de
   recurso que exige empresa; lista de escopo vazio devolve `{ rows: [], total: 0 }`.)
+- **`features` do vínculo (`Proposto`) é o que a EMPRESA opera, não o que a
+  pessoa pode.** Papel (`role`) e recurso (`features`) são eixos diferentes: um
+  `owner` de empresa que só vende continua sem Fornecedores. Enum fechado
+  (`suppliers` · `professionals` · `employees`), **sempre presente** — empresa
+  sem recurso opcional devolve `[]`, nunca omite o campo, porque ausência viraria
+  "não sei" e o front teria de escolher entre esconder tudo e oferecer tela que
+  não existe. É de `features` que saem o menu lateral (`gruposVisiveis`), a
+  guarda de rota (`RequireRecurso`) e as linhas de cadastro do boletim.
 - **`PUT` substitui o registro INTEIRO.** Corpo parcial apaga o que não veio —
   por isso todo caminho de escrita monta o corpo a partir do registro inteiro
   (`corpoDeEscrita`, `produtoParaContrato`), inclusive desativar (`active: false`).

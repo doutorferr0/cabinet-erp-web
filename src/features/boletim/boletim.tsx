@@ -1,3 +1,4 @@
+import { rotaLiberada } from '@/app/navigation'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { Stamp } from '@/components/cabinet/stamp'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,6 +17,7 @@ import {
   type LinhaOrdemSemEnvio,
   fetchBoletim,
 } from '@/data/boletim'
+import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
@@ -216,8 +218,19 @@ function SemEnvio({ linhas }: { linhas: LinhaOrdemSemEnvio[] }) {
   )
 }
 
-/** Cadastro: total e a fatia desativada (§9 padrão 8 — desativar, não excluir). */
+/**
+ * Cadastro: total e a fatia desativada (§9 padrão 8 — desativar, não excluir).
+ *
+ * A tabela é da EMPRESA ATIVA como o menu é: linha de cadastro que ela não
+ * opera sai daqui também. O boletim é caminho de entrada — deixá-lo oferecendo
+ * `Fornecedores` numa empresa que não compra levaria o operador, por um clique,
+ * ao aviso de recurso indisponível, e ainda exibiria uma contagem de registros
+ * que não são dela.
+ */
 function Cadastros({ linhas }: { linhas: LinhaCadastro[] }) {
+  const { tem } = useRecursosDaEmpresa()
+  const visiveis = linhas.filter((linha) => rotaLiberada(linha.href, tem))
+
   return (
     <div className="overflow-x-auto rounded-lg border">
       <Table>
@@ -229,7 +242,7 @@ function Cadastros({ linhas }: { linhas: LinhaCadastro[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {linhas.map((linha) => (
+          {visiveis.map((linha) => (
             <TableRow key={linha.nome} className="hover:bg-muted">
               <TableCell>
                 <Link to={linha.href} className="block hover:underline">

@@ -1,9 +1,17 @@
+import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import { BookUser, type LucideIcon, Package, ShoppingCart, Store } from 'lucide-react'
 
 export interface NavItem {
   title: string
   url: string
   icon: LucideIcon
+  /**
+   * Recurso que a EMPRESA ATIVA precisa ter para este item existir. Item sem
+   * `recurso` está em toda empresa — é o padrão, e continua sendo o caso da
+   * maioria. Ver `src/data/recursos-da-empresa.ts`: é capacidade da empresa,
+   * não permissão da pessoa.
+   */
+  recurso?: RecursoDaEmpresa
 }
 
 export interface NavGroup {
@@ -20,9 +28,24 @@ export const navGroups: NavGroup[] = [
     icon: BookUser,
     items: [
       { title: 'Clientes', url: '/cadastros/clientes', icon: BookUser },
-      { title: 'Fornecedores', url: '/cadastros/fornecedores', icon: BookUser },
-      { title: 'Profissional Externo', url: '/cadastros/profissionais', icon: BookUser },
-      { title: 'Colaboradores', url: '/cadastros/colaboradores', icon: BookUser },
+      {
+        title: 'Fornecedores',
+        url: '/cadastros/fornecedores',
+        icon: BookUser,
+        recurso: RECURSOS.suppliers,
+      },
+      {
+        title: 'Profissional Externo',
+        url: '/cadastros/profissionais',
+        icon: BookUser,
+        recurso: RECURSOS.professionals,
+      },
+      {
+        title: 'Colaboradores',
+        url: '/cadastros/colaboradores',
+        icon: BookUser,
+        recurso: RECURSOS.employees,
+      },
       { title: 'Produtos', url: '/cadastros/produtos', icon: Package },
     ],
   },
@@ -51,3 +74,40 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ]
+
+/** Item cuja tela responde por este caminho (o próprio ou um detalhe dele). */
+export function itemDaRota(pathname: string): NavItem | undefined {
+  return navGroups
+    .flatMap((grupo) => grupo.items)
+    .find((item) => pathname === item.url || pathname.startsWith(`${item.url}/`))
+}
+
+/**
+ * Se a empresa ativa alcança este caminho. Caminho fora do menu é liberado —
+ * quem decide sobre ele é o roteador (404), não o recurso.
+ */
+export function rotaLiberada(pathname: string, tem: (recurso: RecursoDaEmpresa) => boolean) {
+  const item = itemDaRota(pathname)
+  return !item?.recurso || tem(item.recurso)
+}
+
+/**
+ * O menu da empresa ativa: os grupos sem os itens cujo recurso ela não tem.
+ *
+ * Função pura, e não `filter` espalhado no shell, pelo mesmo motivo de
+ * `moduloDaRota`: dá para testar sem montar rota, e o menu e a guarda de rota
+ * leem a MESMA regra — item escondido na barra e URL digitada na mão não podem
+ * discordar.
+ *
+ * Grupo que fica vazio some; grupo que JÁ nascia vazio fica. Não é detalhe:
+ * `Estoque` não tem item nenhum (§10, telas não capturadas) e continua na barra
+ * anunciando o módulo — some só o grupo que a empresa perdeu.
+ */
+export function gruposVisiveis(tem: (recurso: RecursoDaEmpresa) => boolean): NavGroup[] {
+  return navGroups
+    .map((grupo) => ({
+      ...grupo,
+      items: grupo.items.filter((item) => !item.recurso || tem(item.recurso)),
+    }))
+    .filter((grupo, i) => grupo.items.length > 0 || navGroups[i]?.items.length === 0)
+}

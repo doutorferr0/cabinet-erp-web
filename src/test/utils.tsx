@@ -42,14 +42,30 @@ export function respostaSessao({ mustChangePassword = false } = {}) {
   )
 }
 
-/** Resposta de vínculos, no shape exato do contrato (`VinculoDeEmpresa[]`). */
-export function respostaVinculos() {
+/**
+ * Todos os recursos opcionais do contrato — o que uma empresa COMPLETA opera.
+ *
+ * É o padrão do `respostaVinculos` porque a maioria dos testes de tela não fala
+ * de recurso nenhum: eles querem a tela no ar. Empresa sem o recurso é caso
+ * ESPECÍFICO e quem o testa passa a própria lista (ver `shell.test.tsx`).
+ */
+export const RECURSOS_TODOS = ['suppliers', 'professionals', 'employees'] as const
+
+/**
+ * Resposta de vínculos, no shape exato do contrato (`VinculoDeEmpresa[]`).
+ *
+ * `features` é obrigatório no contrato: omiti-lo faria o teste exercitar um
+ * vínculo que o servidor nunca devolve — e as telas dos três cadastros gated
+ * cairiam no aviso de recurso indisponível por defeito do teste, não da tela.
+ */
+export function respostaVinculos(features: readonly string[] = RECURSOS_TODOS) {
   return new Response(
     JSON.stringify([
       {
         tenantId: '00000000-0000-0000-0000-000000000003',
         name: 'VERTZ ILUMINAÇÃO',
         role: 'owner',
+        features,
       },
     ]),
     { status: 200, headers: { 'content-type': 'application/json' } },

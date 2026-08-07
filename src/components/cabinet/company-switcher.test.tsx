@@ -10,8 +10,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * para `/auth/active-tenant`. O servidor falso intercepta o `fetch` (e não o SDK)
  * para exercitar o cliente gerado de verdade — ver `src/test/servidor.ts`.
  */
-const VERTZ = { tenantId: 'aaaa-1111', name: 'VERTZ ILUMINAÇÃO', role: 'owner' }
-const VIA_HF = { tenantId: 'bbbb-2222', name: 'VIA HF', role: 'operator-sales' }
+const VERTZ = {
+  tenantId: 'aaaa-1111',
+  name: 'VERTZ ILUMINAÇÃO',
+  role: 'owner',
+  features: ['suppliers', 'professionals', 'employees'],
+}
+const VIA_HF = { tenantId: 'bbbb-2222', name: 'VIA HF', role: 'operator-sales', features: [] }
 
 let servidor: ServidorFalso
 let vinculos = [VERTZ, VIA_HF]

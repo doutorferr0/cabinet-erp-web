@@ -1,98 +1,364 @@
 @import "tailwindcss";
 
+/* Fontes SELF-HOSTED (@fontsource) — a amostra da fase 1.5 as puxava do CDN do
+   Google; em produção isso é dependência externa e IP do operador vazando para
+   terceiro a cada carga. Só os pesos que a rampa usa. */
+@import "@fontsource/sora/600.css";
+@import "@fontsource/sora/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/pt-mono/400.css";
+
 @custom-variant dark (&:is(.dark *));
 
-/* Brut sobre papel — valores travados no frontmatter do DESIGN.md (fonte canônica).
-   Em divergência doc × mockup (docs/design/mockup-brut-papel.html), o mockup vence.
-   Contrastes: Tinta 15,9:1 sobre Papel · Tinta Apagada 6,8:1 · Tinta de Dinheiro
-   6,9:1 sobre branco · Vermelho de Alerta 5,9:1. Amarelo Âncora NUNCA é texto. */
+/* FASE 1.5 — fonte canônica: `amostra-fase-1.5.html` (v5). Ela SUPERSEDE a
+   fundação "Brut sobre papel" nos pontos abaixo, e o DESIGN.md foi reescrito
+   para acompanhar:
+   - canto POR NATUREZA (painel 10 · cartão 6 · controle 4 · dado 2 · item 0),
+     no lugar do "radius 0 é lei";
+   - elevação em 6 níveis com sombra da FAMÍLIA QUENTE do papel — nunca preta;
+   - acento saturado (violeta) como cor de ação; o amarelo recua para foco e
+     pendência;
+   - etiqueta e cabeçalho de coluna INVERTIDOS: caixa clara com letra preta, no
+     lugar da barra preta sólida.
+   Cor em HSL-triplet (não hex) porque é o que `@theme inline` consome — trocar
+   a notação quebraria todo `bg-*`/`text-*` do repo. */
 :root {
-  --radius: 0px; /* brut não arredonda */
-  --background: 42 30% 96%; /* Papel */
-  --foreground: 30 15% 10%; /* Tinta */
-  --card: 0 0% 100%; /* Documento — folha opaca sobre a grade */
-  --card-foreground: 30 15% 10%;
+  /* Superfícies — creme acinzentado, viés conforme o conteúdo. */
+  --background: 41 25% 85%; /* Bancada — fundo do app */
+  --foreground: 0 0% 0%; /* traço e texto: preto puro */
+  /* FASE 1.6 — fundo MEIO-TERMO: o app continua creme, a folha vira BRANCA.
+     Creme sobre creme fazia a folha desaparecer contra a bancada, e era metade
+     da queixa de "escuro e sem cor": não havia degrau entre o que é fundo e o
+     que é superfície de trabalho. Branco também é o que dá contraste para as
+     zonas pastel da 1.6 pousarem por cima e se lerem como zona. */
+  --card: 0 0% 100%; /* Folha — superfície de trabalho */
+  --card-foreground: 0 0% 0%;
   --popover: 0 0% 100%;
-  --popover-foreground: 30 15% 10%;
-  --primary: 30 15% 10%; /* ação primária = Tinta sólida (Gravar) */
-  --primary-foreground: 42 30% 96%; /* texto cream sobre Tinta */
-  --secondary: 0 0% 100%; /* botão outline: fundo Documento, hover Bancada */
-  --secondary-foreground: 30 15% 10%;
-  --muted: 44 45% 90%; /* Tinta de Bancada — hover de linha e de botão outline */
-  --muted-foreground: 32 10% 38%; /* Tinta Apagada */
-  --accent: 44 45% 90%;
-  --accent-foreground: 30 15% 10%;
-  --destructive: 4 74% 44%; /* Vermelho de Alerta */
+  --popover-foreground: 0 0% 0%;
+  /* Degrau INTERNO da folha branca (Gray-50 da paleta). A folha ficou branca e
+     com isso perdeu o degrau que o creme dava de graça: caixa dentro de caixa
+     branca só se separa pelo traço. Este é o tom de "afundado" — trilho de
+     rolagem, faixa de seção, área de leitura dentro do formulário. Quase-branco
+     de propósito: degrau, não zona. Zona tem cor e a cor tem significado. */
+  --surface-sunken: 60 20% 98%;
+  --neutral: 44 35% 92%; /* creme neutro — trilho, skeleton, hover de item */
+  /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
+  --primary: 241 100% 66%;
+  --primary-hover: 241 77% 57%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 100%; /* acompanha a Folha — é a mesma superfície */
+  --secondary-foreground: 0 0% 0%;
+  --muted: 44 35% 92%;
+  --muted-foreground: 37 16% 36%;
+  --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
+  --accent-foreground: 0 0% 0%;
+  /* Info/01 `#93AAED` da paleta. Era o cornflower `#689BF7`, que a paleta
+     reserva para AÇÃO primária — dois empregos na mesma cor apagam os dois.
+     Sem consumidor até aqui; o primeiro é o ornamento de busca sem resultado. */
+  --info: 225 71% 75%;
+  /* Verde de dinheiro. A amostra pedia L 35%, que sobre a zona de valor
+     (`--zone-money`) dá 2,79:1 — dinheiro é o dado que a tela existe para
+     mostrar e estava ilegível justo no fundo feito para ele. L 26% mantém
+     matiz e saturação e sobe para 4,65:1 sobre a zona / 5,15:1 sobre a Folha. */
+  --money: 155 81% 26%;
+  /* Vermelho: destruição, erro e VALOR NEGATIVO. Desce de L 52% pelo mesmo
+     motivo do verde — negativo mora na mesma fileira de totais, sobre a mesma
+     zona de valor, e a 52% dava 3,72:1. A 42% dá 5,10:1 sobre a zona; de
+     quebra, o branco do botão destrutivo sai de 4,41:1 para 6,05:1. */
+  --destructive: 357 84% 42%;
   --destructive-foreground: 0 0% 100%;
-  /* Regra da Caixa Preta: toda caixa estrutural é Tinta. A malha interna de
-     tabela é a ÚNICA linha em Fio — quem quer Fio pede border-rule-hair. */
-  --border: 30 15% 10%;
-  --input: 30 15% 10%;
-  --ring: 45 96% 54%; /* anel de foco = Amarelo Âncora, 3px, offset 0 */
-  --rule-hair: 38 14% 84%; /* Fio — malha interna (linhas E colunas) */
-  --rule-strong: 30 15% 10%; /* separador de seção: Tinta, 3px */
-  --bench-tint: 44 45% 90%;
-  /* Acentos de emprego fixo (Regra do Emprego Fixo — DESIGN.md §Colors). */
-  --anchor: 45 96% 54%; /* Amarelo Âncora: SEMPRE fundo/borda, nunca texto */
-  --money: 152 65% 24%; /* Tinta de Dinheiro — todo valor monetário */
-  --zone-money: 110 24% 88%; /* creme-esverdeado: fileiras de total */
-  --zone-id: 8 36% 89%; /* creme-avermelhado: banda de identidade */
-  --stamp-neutral: 32 10% 38%;
-  --stamp-open: 45 96% 54%; /* ABERTO = fundo amarelo, texto Tinta */
-  --stamp-done: 30 15% 10%; /* CONCLUÍDO = fundo Tinta, texto cream */
-  --stamp-void: 4 74% 44%; /* ANULADO = borda+texto vermelho */
-  /* Grade de 52px no Papel (De School). Vive no fundo do app, nunca na folha. */
-  --grid-line: hsl(30 15% 10% / 0.28);
-  /* Sidebar: sobre Papel ela é Papel; item ativo = Documento + borda 3px Tinta. */
-  --sidebar: hsl(42 30% 96%);
-  --sidebar-foreground: hsl(30 15% 10%);
-  --sidebar-primary: hsl(30 15% 10%);
-  --sidebar-primary-foreground: hsl(42 30% 96%);
-  --sidebar-accent: hsl(44 45% 90%);
-  --sidebar-accent-foreground: hsl(30 15% 10%);
-  --sidebar-border: hsl(30 15% 10%);
-  --sidebar-ring: hsl(45 96% 54%);
+  --warn: 47 100% 50%; /* amarelo: pendência e FOCO, não ação */
+  /* Tomato `#FF7051` da paleta, para INDISPONIBILIDADE — a consulta não chegou.
+     Não é o vermelho de erro de propósito: erro é coisa que o sistema recusou e
+     que alguém precisa resolver; rede fora é estado do mundo, e some sozinho.
+     Pintar os dois de vermelho faria o operador tratar queda de rede como
+     defeito de cadastro. */
+  --offline: 11 100% 66%;
+  /* Soft blue — a EMPRESA ATIVA, no rodapé da sidebar.
+     É o azul do módulo Fornecedores, e de propósito: o galpão é o desenho de
+     "empresa" neste sistema, e a empresa em que o operador ESTÁ é a mesma ideia
+     vista de dentro. Token próprio, e não `[data-modulo]`, porque o rodapé não
+     pertence a módulo nenhum: ele é igual nas 19 telas, e ler o par do escopo
+     faria a empresa ativa piscar de cor a cada navegação — o oposto de
+     identidade.
+
+     A LUZ DESCE de 74% para 60%, e isso foi MEDIDO, não escolhido: o galpão
+     pousa sobre a zona de identidade (`--zone-id`, Primary/02 clara), e a 74% o
+     par dá **2,29:1** — na vitrine o ornamento simplesmente sumia. A 60% dá
+     4,45:1. Matiz e saturação são os do `#828DF9` da paleta; só a luz mudou,
+     que é o mesmo remédio que a 1.5 aplicou ao verde e ao vermelho quando eles
+     caíram sobre a zona de valor. No escuro ele volta a 74% (ver `.dark`). */
+  --empresa: 234 91% 60%;
+  /* Traço: 2px preto em tudo que é caixa. */
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 47 100% 50%; /* amarelo do anel de foco — receita em `focus-ring` */
+  --rule-hair: 42 17% 70%; /* linha da grade de fundo e divisórias finas */
+  --rule-strong: 0 0% 0%;
+  /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata).
+     FASE 1.6 — as cinco deixam de ser CREMES TINGIDOS e passam a ser os pastéis
+     /02 da paleta (`paleta-vitra.md` §2). Era daqui que vinha metade do "sem
+     cor": zona de valor a 32% de saturação sobre folha creme mudava o tom do
+     papel sem nomear conteúdo nenhum — a 90%+ de luz e saturação alta, sobre
+     folha BRANCA, a área diz "isto é dinheiro" antes de o operador ler o
+     rótulo, que é a razão de a zona existir.
+     Medido, com preto de texto: valor 19,1:1 · identidade 16,1:1 · apoio
+     18,1:1 · pendência 20,1:1 · bloqueio 18,2:1. Dinheiro (`--money`) sobre a
+     zona de valor SOBE de 4,65:1 para 5,02:1 e o negativo (`--destructive`)
+     sobre a de bloqueio, para 5,25:1 — a paleta é mais clara que os cremes que
+     ela substitui, então nenhum par piorou. */
+  --zone-money: 154 96% 91%; /* Success/02 #D2FEEB */
+  --zone-id: 263 94% 93%; /* Primary/02 #E9DCFE */
+  --zone-info: 223 69% 95%; /* Info/02 #E9EEFB */
+  --zone-warn: 48 100% 95%; /* Warning/02 #FFFAE5 */
+  --zone-danger: 6 76% 95%; /* Danger/03 #FCEBE9 */
+  /* Sombra: família quente do papel, 5 profundidades. NUNCA preta — preto vira
+     buraco, o papel projeta sombra de papel. */
+  --shadow-1: 41 14% 61%;
+  --shadow-2: 39 13% 47%;
+  --shadow-3: 37 16% 36%;
+  --shadow-4: 36 18% 27%;
+  --shadow-5: 35 20% 19%;
+  /* Carimbo: os quatro tons continuam semânticos (o mapeamento tom → situação
+     segue `[a resolver]` até a enumeração real do backend). */
+  --stamp-neutral: 37 16% 36%;
+  --stamp-open: 47 100% 50%;
+  /* Acompanham `--money` e `--destructive`: `done` é PREENCHIDO com letra
+     branca em cima (3,31:1 no verde antigo) e `void` é letra sobre papel. */
+  --stamp-done: 155 81% 26%;
+  --stamp-void: 357 84% 42%;
+  /* CORTINA do modal. Era `bg-black/20` literal em três componentes, e literal
+     não sabe em que tema está: sobre a bancada escura (L 9) um preto a 20% é
+     quase invisível, e a cortina existe justamente para dizer "o que está atrás
+     não recebe clique agora". No escuro ela precisa ser bem mais densa. */
+  --veil: 0 0% 0% / 0.2;
+  --grid-line: hsl(42 17% 70%);
+  /* Sidebar: é Bancada; item ativo = Folha com traço preto. */
+  --sidebar: hsl(41 25% 85%);
+  --sidebar-foreground: hsl(0 0% 0%);
+  --sidebar-primary: hsl(241 100% 66%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(44 35% 92%);
+  --sidebar-accent-foreground: hsl(0 0% 0%);
+  --sidebar-border: hsl(0 0% 0%);
+  --sidebar-ring: hsl(47 100% 50%);
 }
 
-/* Modo escuro: [a resolver — fase 3]. Valores abaixo são da direção anterior
-   ("Papel Funcional") e ficam como estavam até o recálculo com contraste
-   verificado — não improvisar tom a tom (DESIGN.md §Modo escuro). Os tokens
-   novos (anchor/money/zonas/grid-line) herdam o valor claro por enquanto. */
+/* COR DE MÓDULO — um par por módulo, trocado por ESCOPO e não por classe.
+   A tela declara `data-modulo="produtos"` uma vez, no alto; tudo que estiver
+   dentro (banda de identidade, ornamento, cabeçalho de seção, estado vazio)
+   lê `--modulo-01`/`--modulo-02` e se pinta sozinho. A alternativa — uma classe
+   de cor por módulo em cada peça — espalharia oito condicionais por componente
+   e garantiria que um dia um deles ficasse com a cor de outro.
+
+   **Por que estes pares NÃO passam pelo `@theme inline`:** ali `--color-x:
+   hsl(var(--y))` é substituído no `:root`, onde a declaração mora, e o valor já
+   resolvido é o que os filhos herdam — redefinir `--modulo-01` num descendente
+   não mudaria nada. A troca por escopo só funciona se a `var()` for lida no
+   elemento que pinta, e é isso que as utilities `bg-modulo*`/`text-modulo`
+   fazem lá embaixo.
+
+   /01 é a CHEIA (ornamento, chip, cabeçalho de card de item) e /02 é a PASTEL
+   (superfície de seção) — a regra da fase: /02 pinta a seção, /01 pinta o dado.
+   A atribuição é FIXA: mesmo módulo, mesma cor, sempre. Cor que muda por visita
+   não é identidade, é ruído. Fonte: `paleta-vitra.md` §3 e a tabela de
+   shape×módulo travada pelo user em 2026-08-06.
+
+   Risco conhecido, registrado e aceito: cyan, maya blue, soft blue e lavender
+   são vizinhos e só se distinguem lado a lado. Quem carrega a identidade é o
+   SHAPE do ornamento; a cor reforça. Se na tela ficarem indistintos, troca-se a
+   cor de UM módulo — não o sistema. */
+:root {
+  --modulo-01: 262 97% 76%; /* Primary/01 — marca do sistema, o padrão */
+  --modulo-02: 263 94% 93%; /* Primary/02 */
+}
+
+[data-modulo="produtos"] {
+  --modulo-01: 188 85% 53%; /* Cyan #22D2ED */
+  --modulo-02: 185 92% 90%; /* #CEF9FD */
+}
+
+[data-modulo="estoque"] {
+  --modulo-01: 205 100% 69%; /* Maya blue #61BCFF */
+  --modulo-02: 205 100% 91%; /* #D1ECFF */
+}
+
+[data-modulo="vendas"] {
+  --modulo-01: 255 89% 76%; /* Purple mimosa #A68AF8 */
+  --modulo-02: 251 84% 95%; /* #ECE8FD */
+}
+
+[data-modulo="compras"] {
+  --modulo-01: 292 90% 72%; /* Violet #E779F8 */
+  --modulo-02: 287 92% 95%; /* #F9E7FE */
+}
+
+[data-modulo="clientes"] {
+  --modulo-01: 252 100% 86%; /* Lavender blue #C7B9FF */
+  --modulo-02: 268 100% 95%; /* #F0E3FF */
+}
+
+[data-modulo="fornecedores"] {
+  --modulo-01: 234 91% 74%; /* Soft blue #828DF9 */
+  --modulo-02: 226 100% 94%; /* #E0E7FF */
+}
+
+[data-modulo="profissionais"] {
+  --modulo-01: 281 94% 74%; /* Easter purple #D47FFB */
+  --modulo-02: 279 100% 95%; /* #F7E8FF */
+}
+
+[data-modulo="boletim"] {
+  --modulo-01: 6 100% 73%; /* Fusion coral #FF8577 */
+  --modulo-02: 7 100% 93%; /* #FFDFDB */
+}
+
+/* MODO ESCURO — recalculado na fase 3 sobre a paleta da 1.6.
+   Substitui os valores da direção ANTERIOR à 1.5, que sobreviviam só para a
+   tela não quebrar com `.dark` no html e que já estavam ERRADOS de três
+   formas: a ação tinha virado branca (perdendo o violeta), o anel de foco
+   tinha virado cinza (perdendo o dono do amarelo) e nenhum token da 1.6
+   existia aqui — as cinco zonas herdavam os pastéis CLAROS do `:root` e
+   ficariam com texto claro sobre fundo claro.
+
+   **O escuro não inverte a cor, inverte a RELAÇÃO.** A bancada continua sendo
+   o fundo e a folha continua pousando por cima; o que muda é que agora a folha
+   é mais clara que a bancada, e a tinta que desenha a caixa é clara em vez de
+   preta. A matiz quente do papel (35–42) fica em todas as superfícies — sem
+   ela o creme vira cinza e o sistema perde a identidade que a 1.5 construiu.
+
+   Cada par abaixo foi MEDIDO (mesmo método da 1.6, luminância relativa):
+     tinta sobre bancada 15,8:1 · sobre folha 13,6:1 · sobre hover 10,1:1
+     apoio sobre folha 7,6:1 · traço sobre folha 6,7:1 (piso 3:1 de não-texto)
+     dinheiro sobre a zona de valor 6,8:1 · negativo sobre a de bloqueio 4,9:1
+     amarelo do foco sobre a bancada 11,9:1
+     tinta sobre as cinco zonas: 10,2 · 12,5 · 12,0 · 10,3 · 12,2
+
+   **A inversão que o cálculo obrigou:** no claro o violeta é escuro (L 66) e
+   leva texto BRANCO; no escuro ele precisa clarear (L 74) para se ver sobre a
+   folha, e aí o branco em cima cai para 3,05:1. O texto da ação vira ESCURO —
+   5,34:1. É o mesmo violeta cumprindo o mesmo papel, com o contraste na mão
+   certa. */
 .dark {
-  --background: 30 8% 10%;
-  --foreground: 40 20% 95%;
-  --card: 30 7% 13%;
-  --card-foreground: 40 20% 95%;
-  --popover: 30 7% 13%;
-  --popover-foreground: 40 20% 95%;
-  --primary: 40 20% 95%;
-  --primary-foreground: 30 8% 10%;
-  --secondary: 30 7% 13%;
-  --secondary-foreground: 40 20% 95%;
-  --muted: 34 9% 20%;
-  --muted-foreground: 38 10% 66%;
-  --accent: 34 9% 20%;
-  --accent-foreground: 40 20% 95%;
-  --destructive: 2 70% 62%;
-  --destructive-foreground: 30 8% 10%;
-  --border: 33 10% 46%;
-  --input: 33 10% 46%;
-  --ring: 36 11% 62%;
-  --rule-hair: 34 7% 22%;
-  --rule-strong: 36 11% 62%;
-  --bench-tint: 34 9% 20%;
-  --stamp-neutral: 38 10% 66%;
-  --stamp-open: 210 70% 64%;
-  --stamp-done: 150 45% 58%;
-  --stamp-void: 2 70% 62%;
-  --sidebar: hsl(30 8% 10%);
-  --sidebar-foreground: hsl(40 20% 95%);
-  --sidebar-primary: hsl(40 20% 95%);
-  --sidebar-primary-foreground: hsl(30 8% 10%);
-  --sidebar-accent: hsl(34 9% 20%);
-  --sidebar-accent-foreground: hsl(40 20% 95%);
-  --sidebar-border: hsl(33 10% 46%);
-  --sidebar-ring: hsl(36 11% 62%);
+  /* Superfícies: bancada escura, folha um degrau ACIMA (nunca branca). */
+  --background: 40 12% 9%;
+  --foreground: 42 25% 94%;
+  --card: 40 10% 14%;
+  --card-foreground: 42 25% 94%;
+  --popover: 40 10% 14%;
+  --popover-foreground: 42 25% 94%;
+  /* Afundar no escuro é ESCURECER: o degrau interno desce, não sobe. */
+  --surface-sunken: 40 10% 11%;
+  --neutral: 40 8% 22%;
+  /* Ação: o mesmo violeta, clareado para se ver sobre a folha escura. O texto
+     em cima dele fica escuro — ver a nota da inversão acima. */
+  --primary: 241 100% 74%;
+  --primary-hover: 241 90% 82%;
+  --primary-foreground: 40 12% 9%;
+  --secondary: 40 10% 14%;
+  --secondary-foreground: 42 25% 94%;
+  --muted: 40 8% 22%;
+  --muted-foreground: 40 14% 70%;
+  --accent: 262 90% 78%;
+  --accent-foreground: 40 12% 9%;
+  --info: 225 71% 75%;
+  /* Dinheiro e negativo sobem de luz: no claro eles escureciam para se ver
+     sobre pastel claro; aqui clareiam pelo motivo espelhado. */
+  --money: 155 65% 62%;
+  --destructive: 357 90% 70%;
+  --destructive-foreground: 40 12% 9%;
+  --warn: 47 100% 55%;
+  /* Tomato segue igual: a L 66 ele ja se le sobre o papel escuro. */
+  --offline: 11 100% 66%;
+  /* Empresa ativa SOBE de volta para 74%, que é a luz da paleta. No claro ela
+     desceu para 60% porque a zona de identidade clara a apagava; aqui a zona é
+     escura (`263 38% 22%`) e a 74% o par dá 4,75:1. Mesma inversão do violeta
+     de ação logo acima: sobre papel escuro, a cor precisa CLAREAR. */
+  --empresa: 234 91% 74%;
+  /* O TRAÇO. É ele que desenha a caixa, e no escuro ele é claro — a Regra da
+     Caixa Preta vira a regra do traço: muda a tinta, não o papel dela. */
+  --border: 40 10% 66%;
+  --input: 40 10% 66%;
+  --ring: 47 100% 55%;
+  --rule-hair: 40 8% 30%;
+  --rule-strong: 40 10% 70%;
+  /* Zonas: a MESMA matiz dos pastéis /02, com a luz virada de 91–95% para
+     18–22%. A cor continua nomeando o conteúdo; só o papel escureceu. */
+  --zone-money: 154 40% 18%;
+  --zone-id: 263 38% 22%;
+  --zone-info: 223 34% 21%;
+  --zone-warn: 48 40% 18%;
+  --zone-danger: 6 40% 20%;
+  /* Sombra: continua da família quente e continua sem blur, mas agora precisa
+     ser MAIS ESCURA que a bancada para existir — sombra clara sobre papel
+     escuro seria luz, não sombra. Os cinco degraus ficam sutis de propósito:
+     no escuro quem carrega a elevação é o degrau de superfície e o traço
+     claro, e a sombra só confirma. */
+  --shadow-1: 40 14% 6%;
+  --shadow-2: 39 16% 5%;
+  --shadow-3: 37 18% 4%;
+  --shadow-4: 36 20% 3%;
+  --shadow-5: 35 22% 2%;
+  --stamp-neutral: 40 14% 70%;
+  --stamp-open: 47 100% 55%;
+  --stamp-done: 155 65% 62%;
+  --stamp-void: 357 90% 70%;
+  /* Sobre papel escuro a cortina precisa de muito mais densidade para separar
+     o modal do resto: 20% de preto ali some. */
+  --veil: 0 0% 0% / 0.65;
+  --grid-line: hsl(40 8% 18%);
+  --sidebar: hsl(40 12% 9%);
+  --sidebar-foreground: hsl(42 25% 94%);
+  --sidebar-primary: hsl(241 100% 74%);
+  --sidebar-primary-foreground: hsl(40 12% 9%);
+  --sidebar-accent: hsl(40 8% 22%);
+  --sidebar-accent-foreground: hsl(42 25% 94%);
+  --sidebar-border: hsl(40 10% 66%);
+  --sidebar-ring: hsl(47 100% 55%);
+  /* Par de módulo padrão, escuro. */
+  --modulo-01: 262 90% 78%;
+  --modulo-02: 263 38% 22%;
+}
+
+/* COR DE MÓDULO NO ESCURO — só a /02 muda.
+   A cheia /01 já é clara e continua servindo de tinta sobre o papel escuro
+   (medido: entre 5,15:1 e 8,5:1 sobre a folha, todas acima do piso de 3:1 de
+   elemento não-textual). A pastel /02, que no claro é superfície, aqui teria
+   91–95% de luz e viraria um bloco branco no meio do escuro: ela desce para a
+   mesma matiz com 20% de luz, e a tinta clara por cima fica entre 9,7:1 e
+   13,4:1. */
+.dark [data-modulo="produtos"] {
+  --modulo-02: 185 35% 20%;
+}
+
+.dark [data-modulo="estoque"] {
+  --modulo-02: 205 35% 20%;
+}
+
+.dark [data-modulo="vendas"] {
+  --modulo-02: 251 35% 20%;
+}
+
+.dark [data-modulo="compras"] {
+  --modulo-02: 287 35% 20%;
+}
+
+.dark [data-modulo="clientes"] {
+  --modulo-02: 268 35% 20%;
+}
+
+.dark [data-modulo="fornecedores"] {
+  --modulo-02: 226 35% 20%;
+}
+
+.dark [data-modulo="profissionais"] {
+  --modulo-02: 279 35% 20%;
+}
+
+.dark [data-modulo="boletim"] {
+  --modulo-02: 7 35% 20%;
 }
 
 @theme inline {
@@ -117,23 +383,59 @@
   --color-ring: hsl(var(--ring));
   --color-rule-hair: hsl(var(--rule-hair));
   --color-rule-strong: hsl(var(--rule-strong));
-  --color-bench-tint: hsl(var(--bench-tint));
-  --color-anchor: hsl(var(--anchor));
+  --color-neutral: hsl(var(--neutral));
+  --color-primary-hover: hsl(var(--primary-hover));
+  --color-info: hsl(var(--info));
+  --color-warn: hsl(var(--warn));
   --color-money: hsl(var(--money));
   --color-zone-money: hsl(var(--zone-money));
   --color-zone-id: hsl(var(--zone-id));
+  --color-zone-info: hsl(var(--zone-info));
+  --color-zone-warn: hsl(var(--zone-warn));
+  --color-zone-danger: hsl(var(--zone-danger));
   --color-stamp-neutral: hsl(var(--stamp-neutral));
   --color-stamp-open: hsl(var(--stamp-open));
   --color-stamp-done: hsl(var(--stamp-done));
   --color-stamp-void: hsl(var(--stamp-void));
-  /* Canto RETO: radius 0 é lei (DESIGN.md §Don'ts). */
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  /* Sombra dura — deslocamento sem blur (moldura 5px; botão primário 3px). */
-  --shadow-hard: 5px 5px 0 hsl(var(--foreground));
-  --shadow-hard-sm: 3px 3px 0 hsl(var(--foreground));
+  /* `--color-anchor` e `--color-bench-tint` MORRERAM aqui. Eram os dois aliases
+     que a 1.5 deixou vivos porque reatribuir emprego de cor era trabalho desta
+     fase: `bg-anchor` pintava de amarelo o bloco da empresa ativa e o hover do
+     link cru, usando o amarelo como IDENTIDADE — emprego que a 1.5 já tinha
+     tirado dele (amarelo é foco e pendência, e mais nada). O bloco da empresa
+     ativa é identidade, então foi para a zona de identidade; o hover do link
+     virou Neutro, que é o tom de hover de item desde a 1.5. Alias sem
+     consumidor é convite para o emprego velho voltar por descuido. */
+  --color-surface-sunken: hsl(var(--surface-sunken));
+  --color-veil: hsl(var(--veil));
+  --color-offline: hsl(var(--offline));
+  --color-empresa: hsl(var(--empresa));
+  /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
+     aba, página, item de menu, célula, etiqueta — continua reto, porque itens
+     encostam uns nos outros e canto arredondado abre fresta entre eles. */
+  --radius-item: 0px;
+  --radius-data: 2px;
+  --radius-control: 4px;
+  --radius-card: 6px;
+  --radius-panel: 10px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+  /* ELEVAÇÃO em 5 degraus, sombra sem blur da família quente do papel.
+     `el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal. */
+  /* FASE 1.6 — escada 2/3/4/6/8 no lugar de 2/3/5/7/10. Os degraus de cima
+     encurtam: a 10px a sombra do modal virava uma segunda peça na tela, do
+     tamanho de uma borda grossa. A escada nova cresce devagar embaixo, onde os
+     degraus se distinguem, e para em 8px, onde ainda se lê como sombra. */
+  --shadow-el1: 2px 2px 0 0 hsl(var(--shadow-1));
+  --shadow-el2: 3px 3px 0 0 hsl(var(--shadow-2));
+  --shadow-el3: 4px 4px 0 0 hsl(var(--shadow-3));
+  --shadow-el4: 6px 6px 0 0 hsl(var(--shadow-4));
+  --shadow-el5: 8px 8px 0 0 hsl(var(--shadow-5));
+  /* Três famílias, todas self-hosted: Display (Sora) · Corpo (Inter) · Mono (PT Mono). */
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "PT Mono", ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -163,6 +465,340 @@
   background-position: 0 0, 3px 4px;
 }
 
+/* PEÇA QUE APARECE — popover, menu, diálogo, dica, toast (DESIGN.md §Motion).
+   Entra com fade + escala 0,96 → 1 na mola `{stiffness:400, damping:30}` da
+   fase 1.6; sai com fade curto e sem mola.
+
+   **A mola está escrita em `linear()`, não aproximada por `cubic-bezier`.** Os
+   30 pontos abaixo são x(t) da equação da mola subamortecida amostrada até
+   360ms — ζ = 0,75, passada de 2,8% no meio do caminho, que é o "peso" que
+   distingue uma mola de um fade. Uma bezier de 4 pontos não representa
+   ultrapassar o alvo e voltar.
+
+   **Por que não a lib `motion` aqui:** quem monta e desmonta estas peças é a
+   `react-aria-components`, que mantém o nó vivo enquanto houver animação CSS
+   correndo (`data-exiting`) e só então desmonta. Trocar isso por
+   `AnimatePresence` significaria tirar da RAC o controle da desmontagem — e
+   com ela o foco que ela devolve ao trigger. A física é a mesma; muda só quem
+   a executa. A lib entra onde não há essa disputa: entrada de tela.
+
+   Ela também repara uma coisa que estava quebrada em silêncio: os quatro
+   componentes traziam `data-entering:animate-in fade-in-0` do shadcn, mas
+   `tw-animate-css` nunca foi importado no CSS — as classes não existiam no
+   bundle e nenhuma delas animava nada.
+
+   Saída é 120ms de fade e ponto: quem fecha um menu já decidiu, e mola na
+   saída atrasa a próxima ação. */
+/* `scale`, e não `transform: scale()`: o conteúdo do diálogo já se centraliza
+   com `-translate-x-1/2 -translate-y-1/2`, e um `transform` no keyframe
+   substituiria o translate inteiro — o diálogo saltaria para o canto inferior
+   direito durante a animação. A propriedade independente compõe com o
+   `transform` que já estiver lá, e obedece ao mesmo `transform-origin`. */
+@keyframes pop-appear {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* `veil-fade` e `pop-appear` já se chamaram `pop-spring-out`/`-in`. O nome
+   mudou por precisão, não por gosto: a SAÍDA é fade puro, sem mola nenhuma, e
+   chamá-la de "spring" descrevia errado o que ela faz. De quebra, o detector
+   de design casava a string "spring" na declaração `animation` e acusava
+   bounce easing em quatro lugares — sendo que três deles eram este fade. */
+@keyframes veil-fade {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@utility pop-spring {
+  &[data-entering] {
+    animation: pop-appear 360ms
+      linear(
+        0,
+        0.027,
+        0.096,
+        0.189,
+        0.295,
+        0.404,
+        0.51,
+        0.608,
+        0.695,
+        0.771,
+        0.835,
+        0.888,
+        0.93,
+        0.962,
+        0.987,
+        1.004,
+        1.016,
+        1.023,
+        1.027,
+        1.028,
+        1.028,
+        1.026,
+        1.023,
+        1.02,
+        1.017,
+        1.014,
+        1.011,
+        1.009,
+        1.007,
+        1
+      );
+  }
+
+  &[data-exiting] {
+    animation: veil-fade 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* `<MotionConfig reducedMotion="user">` só governa a lib; animação escrita em
+     CSS precisa da sua própria rede. Some o movimento, fica o corte seco — a
+     peça continua aparecendo e sumindo, sem viagem. */
+  @media (prefers-reduced-motion: reduce) {
+    &[data-entering],
+    &[data-exiting] {
+      animation-duration: 1ms;
+    }
+  }
+}
+
+/* A CORTINA do diálogo. Não é `pop-spring`: a cortina cobre a janela inteira, e
+   escalar de 0,96 mostraria uma faixa de tela sem cobertura em volta dela.
+   Cortina só varia opacidade — e depressa, porque ela não é o que o operador
+   veio ver; o que ele veio ver é o diálogo por cima. */
+@utility fade-veil {
+  &[data-entering] {
+    animation: veil-fade 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
+  }
+
+  &[data-exiting] {
+    animation: veil-fade 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-entering],
+    &[data-exiting] {
+      animation-duration: 1ms;
+    }
+  }
+}
+
+/* LIFT DE CONTROLE — A microinteração do sistema (DESIGN.md §Motion).
+
+   **REESCRITA NA 1.6 §3b, a pedido do user:** o hover da 1.5 foi avaliado como
+   fraco — "sidebar sem reação nenhuma, botões sem pulo". A mecânica agora é a
+   do neobrutalism.dev, calibrada para os nossos 2px e para a sombra QUENTE:
+
+     repouso: peça em 0,       sombra `el-2`
+     hover:   peça em -2, -2,  sombra `el-3`  → a peça PULA
+     press:   peça em +2, +2,  sombra NENHUMA → a peça entra na própria sombra
+
+   Isto **substitui a geometria da 1.5**, que mantinha a borda externa da sombra
+   parada nos 3px e por isso limitava o hover a -1px. Aquela regra fazia a peça
+   crescer sem sair do lugar; o pedido é que ela saia do lugar. O par
+   lift/press continua sendo um mecanismo só: o press é o inverso exato do
+   hover, e é o que dá a sensação de botão físico — sobe quando o dedo se
+   aproxima, afunda quando ele encosta.
+
+   Press com sombra ZERO, e não `el-1`: com a sombra pequena o elemento ainda
+   parece flutuar meio pixel, e o gesto perde o fim. Sem sombra, ele encosta.
+
+   `:active` E `[data-pressed]`: a RAC chama `preventDefault` no pointerdown
+   pelo `usePress`, e em parte dos browsers isso engole o `:active` — o
+   atributo dela é a rede de segurança. Os dois seletores dizem a mesma coisa.
+
+   A transição mora aqui porque `transition-property` é uma só: consumidor com
+   `transition-[...]` próprio apagaria esta. Quem usa a utility não declara
+   transição de novo. `ease-out` (e não `ease-in-out`): o movimento sai rápido
+   e assenta devagar, que é como o olho lê "respondeu ao meu mouse".
+
+   É de CONTROLE — botão, item de menu da sidebar, cartão clicável, aba, chip.
+   Linha e célula de grade NUNCA levantam (§3b repete a proibição do §3): lá o
+   amarelo marca foco e o violeta marca seleção. */
+@utility lift-control {
+  box-shadow: var(--shadow-el2);
+  transition-property: transform, box-shadow, background-color, color, border-color;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-el3);
+  }
+
+  &:active,
+  &[data-pressed] {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  /* Foco CANCELA o lift (`.btn:focus-visible` da amostra: `transform:none`).
+     Sem isto, botão focado E sob o mouse fica deslocado 2px com o halo do foco
+     em volta — duas leituras de estado brigando na mesma peça. Quem manda no
+     desenho enquanto há foco é a `focus-ring`; por isso ela é definida DEPOIS
+     desta utility, e ganha o `box-shadow` por ordem de cascata. */
+  &:focus-visible {
+    transform: none;
+  }
+
+  &:disabled,
+  &[data-disabled] {
+    transform: none;
+    box-shadow: var(--shadow-el2);
+  }
+}
+
+/* LIFT DE PEÇA LISA — a outra metade do §3b.
+   Para o que repousa SEM sombra e a GANHA no hover: item de menu da sidebar,
+   aba, chip clicável. Mesmo movimento do `lift-control` (pula 2px, afunda 2px),
+   um degrau abaixo na escada, porque a peça parte do plano.
+
+   Existe separada e não como `variant` porque a diferença é o REPOUSO: aqui o
+   repouso é ausência de sombra, e uma utility que declarasse `box-shadow: none`
+   no estado normal sobrescreveria a sombra de quem já tem.
+
+   `border-color` entra na transição por causa do item de menu, que no hover
+   ganha traço de Tinta onde antes não havia nada (§3b). */
+@utility lift-flat {
+  transition-property: transform, box-shadow, background-color, color, border-color;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-el2);
+  }
+
+  &:active,
+  &[data-pressed] {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    transform: none;
+  }
+
+  &:disabled,
+  &[data-disabled] {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* ANEL DE FOCO — receita ÚNICA (DESIGN.md §Foco).
+   O amarelo sozinho não sobrevive ao creme: `--ring` sobre a Folha dá 1,45:1,
+   e sobre a Bancada 1,14:1 — abaixo dos 3:1 que a WCAG 1.4.11 pede de um
+   indicador de foco. Quem carrega o contraste é um FIO PRETO por fora do
+   amarelo; o amarelo continua sendo a identidade do foco, como manda a amostra.
+   Ordem de pintura: o `box-shadow` (fio) sai da caixa antes, o `outline`
+   (amarelo) é pintado por cima — resultado lido de dentro para fora: borda
+   preta do controle · 3px amarelos · 1px preto · papel.
+   A elevação NÃO compõe com o anel: no foco o halo É o destaque, e um `el-*`
+   de 3px de deslocamento ficaria escondido atrás dele.
+   **Definida DEPOIS da `lift-control` de propósito**: as duas escrevem
+   `box-shadow` com a mesma especificidade, e no controle focado quem tem de
+   mandar é o halo. Ordem no arquivo é o que decide — não reordenar.
+   Aplicar sempre por variante (`focus-visible:focus-ring`,
+   `group-data-focus-visible/x:focus-ring`), nunca solta. */
+@utility focus-ring {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px hsl(var(--foreground));
+}
+
+/* Variante para peça SEM borda própria, onde o anel por fora invadiria o
+   vizinho: célula editável da FormGrid (a malha É o campo) e linha da
+   DataTable. Mesma leitura, virada para dentro — `outline-offset` negativo
+   põe o fio preto encostado na face interna do amarelo. */
+@utility focus-ring-inset {
+  outline: 1px solid hsl(var(--foreground));
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 3px hsl(var(--ring));
+}
+
+/* ANEL DE FOCO DA LINHA — o caso que nem `focus-ring` nem `focus-ring-inset`
+   resolvem, e por dois motivos somados:
+
+   1. A tabela herda `border-collapse: collapse` do preflight, e sob `collapse`
+      o `box-shadow` de um `<tr>` não pinta de forma confiável. Anel no `tr`
+      seria indicador de foco que existe no CSS e não na tela.
+   2. Anel em cada `<td>`, que é o que a amostra faz, pinta — mas desenha um
+      retângulo POR CÉLULA. Cinco colunas viram cinco molduras, e o operador
+      lê cinco coisas focadas em vez de uma linha.
+
+   A saída é montar UM anel com as partes que cada célula pode desenhar: topo e
+   base em todas, lateral esquerda só na primeira, direita só na última. O
+   resultado é contínuo e não depende do `tr` pintar nada.
+
+   O fio preto vem junto pelo motivo de sempre (§Foco): amarelo sozinho dá
+   1,45:1 sobre a Folha. Ele é declarado DEPOIS do amarelo em cada lista e com
+   1px a mais de espessura, então fica por baixo — de dentro para fora lê-se
+   3px amarelos e 1px preto. */
+@utility focus-ring-row {
+  & > td,
+  & > th {
+    box-shadow: inset 0 3px 0 0 hsl(var(--ring)), inset 0 -3px 0 0 hsl(var(--ring)), inset 0 4px 0 0
+      hsl(var(--foreground)), inset 0 -4px 0 0 hsl(var(--foreground));
+  }
+
+  & > td:first-child,
+  & > th:first-child {
+    box-shadow:
+      inset 0 3px 0 0 hsl(var(--ring)),
+      inset 0 -3px 0 0 hsl(var(--ring)),
+      inset 3px 0 0 0 hsl(var(--ring)),
+      inset 0 4px 0 0 hsl(var(--foreground)),
+      inset 0 -4px 0 0 hsl(var(--foreground)),
+      inset 4px 0 0 0 hsl(var(--foreground));
+  }
+
+  & > td:last-child,
+  & > th:last-child {
+    box-shadow:
+      inset 0 3px 0 0 hsl(var(--ring)),
+      inset 0 -3px 0 0 hsl(var(--ring)),
+      inset -3px 0 0 0 hsl(var(--ring)),
+      inset 0 4px 0 0 hsl(var(--foreground)),
+      inset 0 -4px 0 0 hsl(var(--foreground)),
+      inset -4px 0 0 0 hsl(var(--foreground));
+  }
+}
+
+/* COR DE MÓDULO — as três utilities que leem o par do escopo (§Cor de módulo).
+   Existem como utility, e não como cor de tema, porque a `var()` precisa ser
+   resolvida no elemento que pinta para o `[data-modulo]` de cima valer; pelo
+   `@theme inline` ela seria resolvida no `:root` e o escopo não faria efeito.
+
+   `bg-modulo` é a SUPERFÍCIE de seção (pastel /02) · `bg-modulo-cheia` é o
+   elemento COMPACTO (cheia /01: chip, cabeçalho de card de item, marcador) e
+   nunca área grande · `text-modulo` é o traço.
+
+   Sobre a /01 e a /02 o texto é sempre PRETO: medido, o pior par da tabela é o
+   soft blue a 7,1:1 — todas passam AA com folga, e preto é a tinta do sistema. */
+@utility bg-modulo {
+  background-color: hsl(var(--modulo-02));
+}
+
+@utility bg-modulo-cheia {
+  background-color: hsl(var(--modulo-01));
+}
+
+@utility text-modulo {
+  color: hsl(var(--modulo-01));
+}
+
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).
    Utility, e não `border-t-[3px] border-rule-strong` na tela: a espessura é
    parte da régua, e a recalibração de tokens prevista tem que mudá-la num
@@ -178,4 +814,18 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Display (Sora 700) em título — a rampa da fase 1.5 separa VOZ de tamanho:
+   quem titula fala em Display, quem informa fala em Inter, quem identifica
+   fala em Mono. Sem isto, `<h1>` herdaria Inter e a distinção sumiria. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.012em;
 }

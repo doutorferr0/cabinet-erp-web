@@ -33,7 +33,7 @@ function Popover({
       offset={offset}
       crossOffset={crossOffset}
       className={cn(
-        'z-50 flex w-72 origin-(--trigger-anchor-point) flex-col gap-2.5 border-2 border-border bg-popover p-2.5 text-sm text-popover-foreground shadow-hard-sm outline-hidden duration-100 data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0',
+        'z-50 flex w-72 origin-(--trigger-anchor-point) flex-col gap-2.5 rounded-card border-2 border-border bg-popover p-2.5 text-sm text-popover-foreground shadow-el3 pop-spring outline-hidden',
         className,
       )}
       {...props}

@@ -138,7 +138,7 @@ describe('listagem de produtos', () => {
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
 
-    const dialogo = await screen.findByRole('dialog')
+    const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('Desativar produto?')
     expect(dialogo).toHaveTextContent('não é apagado')
     await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
@@ -167,10 +167,10 @@ describe('listagem de produtos', () => {
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
     await user.click(
-      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancelar' }),
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }),
     )
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
     expect(escrita.chamadas).toEqual([])
   }, 15_000)
 
@@ -185,7 +185,7 @@ describe('listagem de produtos', () => {
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
 
-    const dialogo = await screen.findByRole('dialog')
+    const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('já está inativo')
     expect(within(dialogo).queryByRole('button', { name: 'Desativar' })).not.toBeInTheDocument()
     expect(escrita.chamadas).toEqual([])
@@ -201,13 +201,13 @@ describe('listagem de produtos', () => {
 
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
-    const dialogo = await screen.findByRole('dialog')
+    const dialogo = await screen.findByRole('alertdialog')
     await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
 
     expect(await within(dialogo).findByRole('alert')).toHaveTextContent(
       'Sem permissão para gravar nesta empresa.',
     )
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
   }, 15_000)
 })
 

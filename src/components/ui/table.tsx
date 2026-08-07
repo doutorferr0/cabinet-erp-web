@@ -20,15 +20,12 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  // Barra preta sólida: fundo Tinta, células separadas por 1px de tinta clara.
-  <thead
-    ref={ref}
-    className={cn(
-      '[&_tr]:border-0 [&_th]:border-l [&_th]:border-l-white/20 [&_th:first-child]:border-l-0',
-      className,
-    )}
-    {...props}
-  />
+  // A barra preta sólida da fundação anterior SAIU (DESIGN.md §Don'ts). O
+  // cabeçalho é caixa clara com letra preta: a força vem da régua de 3px, da
+  // caixa alta e do tracking, não de um bloco de tinta atravessando a tela.
+  // Sem separador vertical entre colunas — a amostra tirou a malha vertical, e
+  // a régua horizontal já delimita.
+  <thead ref={ref} className={cn('[&_tr]:border-0', className)} {...props} />
 ))
 TableHeader.displayName = 'TableHeader'
 
@@ -36,13 +33,13 @@ const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  // Malha interna em Fio (linhas E colunas) — a caixa grita, a malha sussurra.
+  // A malha VERTICAL saiu (a amostra não tem separador entre colunas: a
+  // régua horizontal já delimita, e coluna fechada dos dois lados vira gaiola).
+  // A régua entre linhas sobe de 1px de Fio para 2px de Tinta, acompanhando a
+  // célula de 52px — régua fina sob célula alta some.
   <tbody
     ref={ref}
-    className={cn(
-      '[&_tr:last-child]:border-0 [&_tr]:border-rule-hair [&_td]:border-l [&_td]:border-rule-hair [&_td:first-child]:border-l-0',
-      className,
-    )}
+    className={cn('[&_tr:last-child]:border-0 [&_tr]:border-b-2 [&_tr]:border-border', className)}
     {...props}
   />
 ))
@@ -76,11 +73,14 @@ const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
-  // Cabeçalho de coluna = barra preta: Meta em cream sobre Tinta, 34px.
+  // Cabeçalho de coluna = ETIQUETA INVERTIDA: fundo Neutro, letra preta, Meta
+  // (mono 11px, tracking .12em), 42px, régua inferior de 3px. Peso 400 e não
+  // 600 — quem dá a força é a régua e a caixa alta; negrito por cima disso
+  // vira grito duplo (valores do `thead th` da amostra).
   <th
     ref={ref}
     className={cn(
-      'h-[34px] bg-primary px-2 text-left align-middle font-mono text-[0.75rem] font-semibold uppercase tracking-[0.07em] text-primary-foreground [&:has([role=checkbox])]:pr-0',
+      'h-[42px] border-b-[3px] border-border bg-neutral px-3 text-left align-middle font-mono text-[11px] font-normal tracking-[0.12em] text-foreground uppercase [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}
@@ -94,7 +94,10 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn('h-[33px] px-2 py-0 align-middle [&:has([role=checkbox])]:pr-0', className)}
+    // 52px é o pedido da amostra: a listagem é onde o operador mira com o
+    // mouse, e ganha ar. A densidade de comanda segue valendo no FORMULÁRIO —
+    // a célula editável da FormGrid continua em 32px.
+    className={cn('h-[52px] px-3 py-0 align-middle [&:has([role=checkbox])]:pr-0', className)}
     {...props}
   />
 ))

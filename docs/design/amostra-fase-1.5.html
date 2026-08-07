@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VITRA — amostra da fase 1.5 (v5)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=PT+Mono&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   MAQUETE — não é código de produção. Fontes do CDN só aqui.
+   v5: elevação em 6 níveis e mais funda · item não arredonda ·
+       cobertura dos componentes do neobrutalism.dev que o ERP usa.
+   ========================================================================= */
+:root{
+  --font-display:"Sora",system-ui,sans-serif;
+  --font-sans:"Inter",system-ui,sans-serif;
+  --font-mono:"PT Mono",ui-monospace,monospace;
+
+  /* superfícies — creme acinzentado, viés conforme o conteúdo */
+  --creme-bancada:#E3DDD0;
+  --creme-folha:#FAF7F0;
+  --creme-neutro:#F1EDE2;
+  --creme-money:#E8EDDC;
+  --creme-id:#F1E9E1;
+  --creme-info:#E5E9EE;
+  --creme-warn:#F5EDD3;
+  --creme-danger:#F2DFD9;
+  --creme-linha:#BFB7A4;
+
+  /* sombra — família quente, nunca preta */
+  --sombra-1:#A9A08C; --sombra-2:#877C68; --sombra-3:#6A5F4D;
+  --sombra-4:#514738; --sombra-5:#3A3227;
+
+  /* acento saturado */
+  --main:#5551FF; --main-hover:#3F3BE6; --main-foreground:#FFFFFF;
+  --accent:#B286FD; --info:#689BF7;
+  --money:#11A365; --danger:#EB1C26; --warn:#FFC900; --ring:#FFC900;
+
+  --background:var(--creme-bancada);
+  --secondary-background:var(--creme-folha);
+  --foreground:#000000;
+  --border:#000000;
+
+  /* canto por natureza — ITEM NÃO ARREDONDA */
+  --r-panel:10px; --r-card:6px; --r-control:4px; --r-data:2px; --r-item:0;
+
+  /* elevação — 6 níveis, funda */
+  --el-0:none;
+  --el-1:2px 2px 0 0 var(--sombra-1);   /* apoio    */
+  --el-2:3px 3px 0 0 var(--sombra-2);   /* campo    */
+  --el-3:5px 5px 0 0 var(--sombra-3);   /* padrão   */
+  --el-4:7px 7px 0 0 var(--sombra-4);   /* destaque */
+  --el-5:10px 10px 0 0 var(--sombra-5); /* modal    */
+
+  --heading-font-weight:700;
+  --base-font-weight:400;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font-sans);font-weight:var(--base-font-weight);
+  background-color:var(--background);color:var(--foreground);
+  font-size:14px;line-height:1.45;padding:26px;
+  background-image:
+    linear-gradient(var(--creme-linha) 1px,transparent 1px),
+    linear-gradient(90deg,var(--creme-linha) 1px,transparent 1px);
+  background-size:52px 52px;
+}
+h1,h2,h3,.display{font-family:var(--font-display);font-weight:var(--heading-font-weight);letter-spacing:-.012em}
+.mono{font-family:var(--font-mono)}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+
+/* superfícies */
+.panel{background:var(--secondary-background);border:2px solid var(--border);border-radius:var(--r-panel);box-shadow:var(--el-3)}
+.card{background:var(--secondary-background);border:2px solid var(--border);border-radius:var(--r-card);box-shadow:var(--el-1)}
+.data{background:var(--secondary-background);border:2px solid var(--border);border-radius:var(--r-data);box-shadow:var(--el-3)}
+.hero{box-shadow:var(--el-4)}
+.quiet{box-shadow:var(--el-0)}
+.pad{padding:18px}
+.t-money{background:var(--creme-money)} .t-id{background:var(--creme-id)}
+.t-info{background:var(--creme-info)}   .t-warn{background:var(--creme-warn)}
+.t-danger{background:var(--creme-danger)} .t-neutral{background:var(--creme-neutro)}
+
+/* faixa de acento na lateral do painel — detalhe que dá acabamento */
+.faixa{position:relative;overflow:hidden}
+.faixa::before{content:"";position:absolute;inset:0 auto 0 0;width:8px;background:var(--accent);border-right:2px solid var(--border)}
+.faixa>*{margin-left:12px}
+.faixa-main::before{background:var(--main)}
+.faixa-money::before{background:var(--money)}
+
+/* etiqueta: caixa CLARA com letra preta forte — a força vem do traço e da caixa alta */
+.sec{display:inline-flex;align-items:center;gap:6px;background:var(--creme-folha);color:var(--foreground);
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:6px 11px;border:2px solid var(--border);border-radius:var(--r-item);box-shadow:var(--el-1);margin-bottom:10px}
+.nota{background:var(--creme-neutro);border:2px solid var(--border);border-radius:var(--r-card);
+  padding:10px 14px;font-size:12.5px;box-shadow:var(--el-1)}
+.nota-in{font-size:12.5px;opacity:.8}
+code{font-family:var(--font-mono);font-size:12px;background:var(--creme-folha);border:1px solid var(--border);padding:0 4px;border-radius:var(--r-item)}
+
+/* botão */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:.00714em;
+  padding:10px 20px;border:2px solid var(--border);border-radius:var(--r-control);background:var(--creme-folha);color:var(--foreground);
+  cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:var(--el-3)}
+.btn:focus-visible{outline:3px solid var(--ring);outline-offset:2px;transform:none;box-shadow:none}
+.btn:active{transform:translate(1px,1px);box-shadow:var(--el-1)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}.btn[disabled]:hover{transform:none;box-shadow:none}
+.btn-primary{background:var(--main);color:var(--main-foreground)}.btn-primary:hover{background:var(--main-hover)}
+.btn-accent{background:var(--accent)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+.forced-focus{outline:3px solid var(--ring);outline-offset:2px}
+
+/* chip / badge — é ITEM: canto reto */
+.badge{display:inline-flex;align-items:center;gap:5px;border:2px solid var(--border);border-radius:var(--r-item);
+  padding:3px 9px;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  background:var(--creme-folha);box-shadow:var(--el-1)}
+.b-main{background:var(--main);color:#fff} .b-accent{background:var(--accent)}
+.b-money{background:var(--money);color:#fff} .b-danger{background:var(--danger);color:#fff}
+.b-warn{background:var(--warn)}
+.alert{border:2px solid var(--border);border-radius:var(--r-card);box-shadow:var(--el-2);padding:12px 16px}
+
+/* controles de formulário */
+.campo{display:flex;flex-direction:column;gap:5px}
+.rot{display:inline-block;align-self:flex-start;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--creme-folha);color:var(--foreground);padding:2px 7px;border:2px solid var(--border);border-radius:var(--r-item)}
+.input,select.input,textarea.input{font-family:var(--font-sans);font-size:14px;padding:9px 11px;background:var(--creme-folha);
+  border:2px solid var(--border);border-radius:var(--r-control);color:var(--foreground);width:100%}
+.input:focus{outline:3px solid var(--ring);outline-offset:2px;box-shadow:var(--el-2)}
+.check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.box-check{width:18px;height:18px;border:2px solid var(--border);border-radius:var(--r-item);background:var(--creme-folha);display:grid;place-items:center;font-size:12px;line-height:1}
+.box-check.on{background:var(--main);color:#fff}
+.box-radio{width:18px;height:18px;border:2px solid var(--border);border-radius:999px;background:var(--creme-folha);display:grid;place-items:center}
+.box-radio.on::after{content:"";width:8px;height:8px;border-radius:999px;background:var(--main)}
+.switch{width:42px;height:22px;border:2px solid var(--border);border-radius:999px;background:var(--creme-neutro);position:relative}
+.switch.on{background:var(--main)}
+.switch::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:999px;background:var(--creme-folha);border:2px solid var(--border)}
+.switch.on::after{left:auto;right:1px}
+
+/* navegação — itens sem canto */
+.tabs{display:flex;gap:-2px}
+.tab{padding:8px 16px;border:2px solid var(--border);border-radius:var(--r-item);background:var(--creme-folha);
+  font-weight:600;font-size:13px;margin-right:-2px;cursor:pointer}
+.tab.on{background:var(--main);color:#fff}
+.crumb{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.crumb .mono{opacity:.7}
+.pag{display:flex;gap:-2px}
+.pag a{display:grid;place-items:center;min-width:34px;height:34px;border:2px solid var(--border);border-radius:var(--r-item);
+  background:var(--creme-folha);margin-right:-2px;font-weight:600;font-size:13px;text-decoration:none;color:inherit}
+.pag a.on{background:var(--main);color:#fff}
+.menu{border:2px solid var(--border);border-radius:var(--r-card);background:var(--creme-folha);box-shadow:var(--el-3);padding:5px;min-width:190px}
+.menu-item{padding:8px 10px;border:2px solid transparent;border-radius:var(--r-item);font-size:13.5px;cursor:pointer}
+.menu-item:hover{border-color:var(--border);background:var(--creme-neutro)}
+.menu-item.on{background:var(--main);color:#fff;border-color:var(--border)}
+.avatar{width:36px;height:36px;border:2px solid var(--border);border-radius:999px;background:var(--accent);display:grid;place-items:center;
+  font-family:var(--font-display);font-weight:700;box-shadow:var(--el-1)}
+.bar{height:16px;border:2px solid var(--border);border-radius:var(--r-item);background:var(--creme-neutro);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--main);border-right:2px solid var(--border)}
+.skel{height:14px;background:var(--creme-neutro);border:2px solid var(--border);border-radius:var(--r-item)}
+
+/* grade — item não arredonda */
+table{width:100%;border-collapse:collapse;background:var(--creme-folha)}
+thead th{background:var(--creme-neutro);color:var(--foreground);font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;text-align:left;padding:0 12px;height:42px;font-weight:400;
+  border-bottom:3px solid var(--border)}
+tbody td{padding:0 12px;height:52px;border-bottom:2px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr[data-selected] td{background:var(--main);color:#fff}
+tbody tr[data-focused] td{box-shadow:inset 0 0 0 3px var(--ring)}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.money{color:var(--money);font-weight:600;font-variant-numeric:tabular-nums;text-align:right;background:var(--creme-money)}
+tbody tr[data-selected] .money{background:transparent;color:#fff}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{border:2px solid var(--border);border-radius:var(--r-card);padding:14px;background:var(--creme-folha);box-shadow:var(--el-1)}
+.kpi.destaque{box-shadow:var(--el-4)}
+.kpi .val{font-family:var(--font-display);font-weight:700;font-size:1.7rem;line-height:1.1;margin-top:8px}
+.kpi .delta{font-size:12px;margin-top:2px;opacity:.85}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.el{background:var(--creme-folha);border:2px solid var(--border);border-radius:var(--r-card);
+  padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.el b{font-family:var(--font-display);font-weight:700;font-size:1.05rem;line-height:1}
+.el span{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="panel hero faixa t-id pad" style="display:flex;justify-content:space-between;align-items:center;gap:16px">
+    <div>
+      <span class="badge b-accent">Amostra · fase 1.5 · v5</span>
+      <h1 style="font-size:1.85rem;margin-top:8px">Elevação em 6 · item sem canto · cobertura de componentes</h1>
+    </div>
+    <div class="avatar">V</div>
+  </div>
+
+  <div class="card t-info pad">
+    <div class="stack">
+      <div><strong>Elevação: 6 níveis, mais funda.</strong> <span class="nota-in">De
+      <code>2px/#A9A08C</code> a <code>10px/#3A3227</code>. Nenhum preto — a sombra é sempre da
+      família quente do papel, só mais profunda.</span></div>
+      <div><strong>Canto por natureza.</strong> <span class="nota-in">Painel <code>10px</code> ·
+      cartão <code>6px</code> · controle <code>4px</code> · <strong>item <code>0</code></strong>.
+      Chip, aba, página, item de menu, célula e etiqueta são <em>itens</em>: canto reto, porque
+      encostam uns nos outros e o canto arredondado abre fresta.</span></div>
+      <div><strong>Faixa de acento.</strong> <span class="nota-in">Painel importante ganha barra
+      colorida de 8px na lateral esquerda — dá acabamento sem gastar cor no fundo.</span></div>
+      <div><strong>Etiqueta invertida.</strong> <span class="nota-in">Rótulo de seção, rótulo de
+      campo e cabeçalho de coluna deixam de ser barra preta com texto claro: agora são
+      <strong>caixa clara com letra preta</strong>. A força vem da borda de 2px, da caixa alta e
+      do tracking — não do fundo cheio. <em>Supersede a "barra preta sólida" do DESIGN.md.</em></span></div>
+    </div>
+  </div>
+
+  <!-- ELEVAÇÃO -->
+  <section>
+    <div class="sec">Elevação — 6 níveis</div>
+    <div class="panel pad">
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:20px 12px">
+        <div class="el" style="box-shadow:var(--el-0)"><b>0</b><span>embutido</span></div>
+        <div class="el" style="box-shadow:var(--el-1)"><b>1</b><span>apoio</span></div>
+        <div class="el" style="box-shadow:var(--el-2)"><b>2</b><span>campo</span></div>
+        <div class="el" style="box-shadow:var(--el-3)"><b>3</b><span>padrão</span></div>
+        <div class="el" style="box-shadow:var(--el-4)"><b>4</b><span>destaque</span></div>
+        <div class="el" style="box-shadow:var(--el-5)"><b>5</b><span>modal</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTÕES -->
+  <section>
+    <div class="sec">Botão · badge · alerta</div>
+    <div class="panel pad">
+      <div class="row">
+        <button class="btn btn-primary">Gravar</button>
+        <button class="btn btn-accent">Novo</button>
+        <button class="btn">Cancelar</button>
+        <button class="btn btn-danger">Desativar</button>
+        <button class="btn btn-sm">Pequeno</button>
+        <button class="btn" disabled>Indisponível</button>
+        <button class="btn btn-primary forced-focus">Foco</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <span class="badge b-main">Primária</span>
+        <span class="badge b-accent">Marca</span>
+        <span class="badge b-money">R$ 1.240,00</span>
+        <span class="badge b-danger">Atrasado</span>
+        <span class="badge b-warn">Aguardando</span>
+        <span class="badge">Neutro</span>
+      </div>
+      <div class="row" style="margin-top:14px;align-items:stretch">
+        <div class="alert t-warn" style="flex:1"><strong>Pendência.</strong> Prazo de envio vencido.</div>
+        <div class="alert t-danger" style="flex:1"><strong>Bloqueio.</strong> Saldo insuficiente.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULÁRIO -->
+  <div class="cols">
+    <section>
+      <div class="sec">Controles de formulário</div>
+      <div class="panel pad">
+        <div class="stack">
+          <div class="campo"><span class="rot">Descrição</span><input class="input" value="Pendente Orbis 60cm"></div>
+          <div class="campo"><span class="rot">Fornecedor</span>
+            <select class="input"><option>Selecione…</option><option selected>Lumini</option></select></div>
+          <div class="campo"><span class="rot">Observação</span><textarea class="input" rows="2">Entrega parcial autorizada.</textarea></div>
+          <div class="row" style="gap:18px;margin-top:2px">
+            <span class="check"><span class="box-check on">✓</span> Ativo</span>
+            <span class="check"><span class="box-check"></span> Descontinuado</span>
+            <span class="check"><span class="box-radio on"></span> Unidade</span>
+            <span class="check"><span class="box-radio"></span> Caixa</span>
+            <span class="check"><span class="switch on"></span> Fiscal</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec">Navegação e estado</div>
+      <div class="panel pad">
+        <div class="stack">
+          <div class="crumb"><span class="mono">CADASTROS</span> › <span class="mono">PRODUTOS</span> › <strong>Orbis 60cm</strong></div>
+          <div class="tabs"><span class="tab on">Dados</span><span class="tab">Valores</span><span class="tab">Fiscal</span><span class="tab">Estoque</span></div>
+          <div class="row" style="align-items:flex-start;gap:16px">
+            <div class="menu">
+              <div class="menu-item on">Editar</div>
+              <div class="menu-item">Duplicar</div>
+              <div class="menu-item">Desativar</div>
+            </div>
+            <div class="stack" style="flex:1">
+              <div class="bar"><i style="width:64%"></i></div>
+              <div class="skel" style="width:100%"></div>
+              <div class="skel" style="width:70%"></div>
+              <div class="pag"><a href="#" class="on">1</a><a href="#">2</a><a href="#">3</a><a href="#">›</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- KPI -->
+  <section>
+    <div class="sec">Indicadores</div>
+    <div class="kpis">
+      <div class="kpi"><span class="rot">Orçamentos do dia</span><div class="val">38</div><div class="delta">+12% vs ontem</div></div>
+      <div class="kpi t-money destaque faixa faixa-money"><span class="rot">Valor emitido</span><div class="val" style="color:var(--money)">R$ 84.200</div><div class="delta">+5,2%</div></div>
+      <div class="kpi t-warn"><span class="rot">Ordens sem envio</span><div class="val">7</div><div class="delta">−2</div></div>
+      <div class="kpi t-danger"><span class="rot">Itens sem saldo</span><div class="val" style="color:var(--danger)">15</div><div class="delta">+3</div></div>
+    </div>
+  </section>
+
+  <!-- GRÁFICO -->
+  <div class="cols">
+    <section>
+      <div class="sec">Gráfico — contorno 2px, cor cheia</div>
+      <div class="panel pad">
+        <svg viewBox="0 0 420 175" width="100%" height="175" role="img" aria-label="Barras de exemplo">
+          <line x1="34" y1="148" x2="410" y2="148" stroke="var(--border)" stroke-width="2"/>
+          <line x1="34" y1="8" x2="34" y2="148" stroke="var(--border)" stroke-width="2"/>
+          <g stroke="var(--border)" stroke-width="2">
+            <rect x="52"  y="84"  width="40" height="64"  fill="var(--main)"/>
+            <rect x="112" y="50"  width="40" height="98"  fill="var(--main)"/>
+            <rect x="172" y="104" width="40" height="44"  fill="var(--money)"/>
+            <rect x="232" y="32"  width="40" height="116" fill="var(--accent)"/>
+            <rect x="292" y="72"  width="40" height="76"  fill="var(--info)"/>
+            <rect x="352" y="118" width="40" height="30"  fill="var(--danger)"/>
+          </g>
+          <g font-family="PT Mono, monospace" font-size="10" fill="var(--foreground)">
+            <text x="52" y="164">SEG</text><text x="112" y="164">TER</text>
+            <text x="172" y="164">QUA</text><text x="232" y="164">QUI</text>
+            <text x="292" y="164">SEX</text><text x="352" y="164">SÁB</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec">Superfície creme por conteúdo</div>
+      <div class="panel pad">
+        <div class="stack">
+          <div class="card t-money pad" style="padding:10px 14px"><strong>Valor</strong> <span class="nota-in">— <code>#E8EDDC</code></span></div>
+          <div class="card t-id pad" style="padding:10px 14px"><strong>Identidade</strong> <span class="nota-in">— <code>#F1E9E1</code></span></div>
+          <div class="card t-info pad" style="padding:10px 14px"><strong>Apoio</strong> <span class="nota-in">— <code>#E5E9EE</code></span></div>
+          <div class="card t-warn pad" style="padding:10px 14px"><strong>Pendência</strong> <span class="nota-in">— <code>#F5EDD3</code></span></div>
+          <div class="card t-danger pad" style="padding:10px 14px"><strong>Bloqueio</strong> <span class="nota-in">— <code>#F2DFD9</code></span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- GRADE -->
+  <section>
+    <div class="sec">Grade — canto reto, célula 52px</div>
+    <div class="data" style="padding:0;overflow:hidden">
+      <table>
+        <thead>
+          <tr><th>Código</th><th>Produto</th><th>Acabamento</th><th style="text-align:right">Saldo</th><th style="text-align:right">Preço</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">LUM-0142</td><td>Pendente Orbis 40cm</td><td>Preto fosco</td><td class="num">12,000</td><td class="money">R$ 1.240,00</td></tr>
+          <tr data-selected><td class="mono">LUM-0143</td><td>Pendente Orbis 60cm</td><td>Latão escovado</td><td class="num">4,000</td><td class="money">R$ 1.980,00</td></tr>
+          <tr data-focused><td class="mono">LUM-0210</td><td>Arandela Vega</td><td>Branco</td><td class="num">0,000</td><td class="money">R$ 640,00</td></tr>
+          <tr><td class="mono">LUM-0211</td><td>Arandela Vega</td><td>Cobre</td><td class="num">23,000</td><td class="money">R$ 705,00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="nota">
+    <strong>Cobertura do neobrutalism.dev nesta amostra:</strong> button · badge · card · alert ·
+    table/data-table · skeleton · progress · input · textarea · select · checkbox · radio-group ·
+    switch · tabs · breadcrumb · pagination · avatar · dropdown-menu (visual) · chart.
+    <br><strong>Faltam, e importam depois:</strong> combobox (é o <code>LookupCombo</code>) ·
+    calendar (data) · dialog/sheet · accordion · tooltip · command.
+    <br><strong>Faltam e não interessam:</strong> carousel · marquee · drawer · resizable ·
+    input-otp · sonner · context-menu · menubar · navigation-menu · hover-card · image-card.
+  </div>
+
+</div>
+</body>
+</html>

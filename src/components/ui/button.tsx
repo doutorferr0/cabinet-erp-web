@@ -9,26 +9,50 @@ import {
 } from 'react-aria-components'
 
 /**
- * Botão brut (DESIGN.md §Buttons): borda 2px, canto reto, foco = anel 3px
- * Amarelo Âncora. O primário carrega a sombra dura e o press físico
- * (translate + sombra) — A microinteração do sistema (§Motion).
+ * Botão da fase 1.5 (DESIGN.md §Button): traço 2px, raio de CONTROLE, foco pela
+ * `focus-ring`, e o lift pela `lift-control` — repousa em `el-2`, levanta no
+ * hover, afunda no press. A sombra literal que o primário carregava
+ * (`shadow-[3px_3px_0_hsl(38_14%_74%)]`) saiu: era o valor da fundação preta,
+ * escrito à mão, e a recalibração de tokens prevista não o alcançaria.
+ *
+ * `ghost` e `link` NÃO levantam, e não é esquecimento: lift é o movimento de
+ * uma peça que tem caixa e sombra. Os dois são texto — um sobre hover de
+ * fundo, o outro sublinhado. Levantar texto sem caixa não lê como elevação,
+ * lê como tremor.
  */
 const buttonVariants = cva(
-  'group/button inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-2 text-[13px] font-semibold transition-[transform,box-shadow,background-color,color] duration-100 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+  // `cursor-pointer` porque `<button>` nasce com `cursor: default` — o mesmo
+  // ponteiro do texto morto ao lado. É a afirmação mais barata de "isto
+  // responde ao clique", e é o que o operador confere sem pensar antes de
+  // mirar. (Trazido da referência do neobrutalism.dev; a pele continua nossa.)
+  // `disabled:cursor-not-allowed` no lugar de `disabled:pointer-events-none`
+  // (staging `neobrutalism-aria`), e a troca conserta uma armadilha: com
+  // `pointer-events: none` o elemento não recebe evento de mouse NENHUM, e o
+  // browser deixa de mostrar o `title` nativo. A barra de ações da DataTable
+  // promete exatamente isso — "Motivo, no `title` do botão. Obrigatório na
+  // prática quando `disabled`: botão morto e mudo faz o operador achar que é
+  // defeito". A promessa não teria como ser cumprida. Não clicar continua
+  // garantido pelo atributo `disabled`, que a RAC escreve de verdade.
+  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
   {
     variants: {
       variant: {
-        // A sombra do primário é rebaixada (não Tinta): sombra Tinta sumiria
-        // contra o próprio fundo Tinta do botão — valor do mockup aprovado.
         default:
-          'border-border bg-primary text-primary-foreground shadow-[3px_3px_0_hsl(38_14%_74%)] hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_hsl(38_14%_74%)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none',
-        outline: 'border-border bg-card hover:bg-muted',
-        secondary: 'border-border bg-card hover:bg-muted',
-        ghost: 'border-transparent hover:bg-muted',
+          'lift-control border-border bg-primary text-primary-foreground hover:bg-primary-hover',
+        outline: 'lift-control border-border bg-card hover:bg-muted',
+        secondary: 'lift-control border-border bg-card hover:bg-muted',
+        ghost: 'border-transparent transition-colors hover:bg-muted',
         destructive:
-          'border-destructive bg-card text-destructive hover:bg-destructive hover:text-white',
-        // Link cru (Utrecht): mono caps sublinhado 2px, hover fundo amarelo.
-        link: 'border-transparent font-mono text-xs uppercase tracking-[0.07em] underline decoration-2 underline-offset-[3px] hover:bg-anchor',
+          // `text-destructive-foreground`, NUNCA `text-white` literal: no tema
+          // escuro o vermelho clareia (L 42 → 70) e o branco em cima cai para
+          // 2,82:1 — reprova AA no estado mais perigoso da interface. O token
+          // vira escuro junto com o tema e devolve 6,29:1. Medido.
+          'lift-control border-destructive bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground',
+        // Link cru (Utrecht): mono caps sublinhado 2px. O hover era amarelo,
+        // que é o anel de foco: link sob o mouse ficava com a cara de link
+        // focado, e os dois estados deixavam de se distinguir. Neutro é o tom
+        // de hover de item desde a 1.5.
+        link: 'border-transparent font-mono text-xs uppercase tracking-[0.07em] underline decoration-2 underline-offset-[3px] transition-colors hover:bg-neutral',
       },
       size: {
         default: 'h-9 px-4',

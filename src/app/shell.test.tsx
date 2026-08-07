@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * O cabeçalho da sidebar mostra a empresa ATIVA da sessão, que vem do backend.
+ * O RODAPÉ da sidebar mostra a empresa ATIVA da sessão, que vem do backend.
  * Sem servidor falso, o shell abriria em "Empresas indisponíveis". O contrato
  * dessa fronteira é exercitado em `company-switcher.test.tsx`; aqui ele só
  * precisa responder.
@@ -67,14 +67,61 @@ describe('AppShell', () => {
     }
   })
 
-  it('switches active company via dropdown', async () => {
+  // `data-active={false}` vira `data-active="false"` no DOM — React não omite
+  // `false` em `data-*` — e a variante do Tailwind casa por PRESENÇA. Com o
+  // atributo sempre escrito, os nove itens se pintavam de ativo e a sidebar
+  // inteira ficava acesa. CONTAR é o que pega: asserção sobre o item certo
+  // passaria igual com todos ligados.
+  it('só o módulo da rota fica aceso na sidebar', async () => {
+    setup('/cadastros/fornecedores')
+    await waitFor(() => {
+      expect(screen.getByText('Fornecedores')).toBeInTheDocument()
+    })
+    const acesos = document.querySelectorAll('[data-sidebar="menu-button"][data-active]')
+    expect(acesos).toHaveLength(1)
+    expect(acesos[0]).toHaveTextContent('Fornecedores')
+  })
+
+  // A marca no topo e a empresa ativa no rodapé são UM arranjo, não duas
+  // escolhas: o teto de densidade é de 1 ornamento por região visível, e as
+  // duas no mesmo cabeçalho o estouravam. Afirmar as duas juntas é o que
+  // impede alguém de "arrumar" a sidebar devolvendo a empresa para o topo.
+  it('marca no topo, empresa ativa no rodapé — um ornamento por região', async () => {
+    setup()
+    await waitFor(() => {
+      expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
+    })
+
+    const topo = document.querySelector('[data-slot="sidebar-header"]')
+    const rodape = document.querySelector('[data-slot="sidebar-footer"]')
+    expect(topo).toBeInTheDocument()
+    expect(rodape).toBeInTheDocument()
+
+    // O selo do sistema fica no topo, e é o `emblema` (shape-185) — não o
+    // `marca` (shape-182), que é a composição de boas-vindas do login.
+    const noTopo = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
+    expect(noTopo).toHaveLength(1)
+    expect(noTopo[0]).toHaveAttribute('data-shape', 'emblema')
+    expect(topo).toHaveTextContent('Cabinet')
+
+    // A empresa ativa desceu inteira: nome E ornamento.
+    const noRodape = rodape?.querySelectorAll('[data-slot="ornamento"]') ?? []
+    expect(noRodape).toHaveLength(1)
+    expect(noRodape[0]).toHaveAttribute('data-shape', 'empresa')
+    expect(rodape).toHaveTextContent('VERTZ ILUMINAÇÃO')
+    expect(topo).not.toHaveTextContent('VERTZ ILUMINAÇÃO')
+  })
+
+  it('switches active company via drawer', async () => {
     setup()
     const user = userEvent.setup()
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /vertz iluminação/i })).toBeInTheDocument()
     })
     await user.click(screen.getByRole('button', { name: /vertz iluminação/i }))
-    await user.click(screen.getByRole('menuitem', { name: /via hf/i }))
+    // Gaveta, não menu suspenso: trocar de empresa muda o escopo de tudo que
+    // está aberto, e a escolha é um botão de alvo grande dentro dela.
+    await user.click(await screen.findByRole('button', { name: /via hf/i }))
     expect(screen.getByText('VIA HF')).toBeInTheDocument()
   })
 

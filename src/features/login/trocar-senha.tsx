@@ -49,7 +49,7 @@ export function TrocarSenhaTela() {
     // Mesma folha da tela de entrar — sem Stipple: aqui o operador está no meio
     // de uma tarefa obrigatória, não na porta de entrada.
     <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm border-2 border-border bg-card p-4 shadow-hard">
+      <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
         <div className="mb-4">
           <BandaDeIdentidade titulo="Cabinet" contexto="Trocar senha" />
         </div>

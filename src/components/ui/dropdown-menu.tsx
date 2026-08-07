@@ -42,7 +42,7 @@ function DropdownMenu({
       offset={offset}
       crossOffset={crossOffset}
       className={cn(
-        'z-50 w-(--trigger-width) min-w-32 origin-(--trigger-anchor-point) overflow-x-hidden overflow-y-auto border-2 border-border bg-popover p-1 text-popover-foreground shadow-hard-sm duration-100 outline-none data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:overflow-hidden data-exiting:fade-out-0',
+        'z-50 w-(--trigger-width) min-w-32 origin-(--trigger-anchor-point) overflow-x-hidden overflow-y-auto rounded-card border-2 border-border bg-popover p-1 text-popover-foreground pop-spring shadow-el3 outline-none data-exiting:overflow-hidden',
         className,
       )}
     >
@@ -85,11 +85,11 @@ function DropdownMenuLabel({
 }
 
 const dropdownMenuItemVariants = cva(
-  'group/dropdown-menu-item relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'group/dropdown-menu-item relative flex cursor-default items-center rounded-item outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       selectionMode: {
-        none: 'gap-1.5 px-1.5 py-1 text-sm focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-white [&_svg:not([class*="size-"])]:size-4',
+        none: 'gap-1.5 px-1.5 py-1 text-sm focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-destructive-foreground [&_svg:not([class*="size-"])]:size-4',
         single:
           'gap-1.5 py-1 pr-8 pl-1.5 text-sm focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
         multiple:

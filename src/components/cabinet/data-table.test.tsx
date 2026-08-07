@@ -161,6 +161,19 @@ describe('VitraDataTable', () => {
     expect((alterado as Produto | null)?.nossaDescricao).toBe('PENDENTE REDONDO ALUMÍNIO PRETO')
   })
 
+  it('foco da linha usa o anel de LINHA, não o de peça sem borda', async () => {
+    setup()
+    const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const linha = descricao.closest('tr')
+
+    // `focus-ring-inset` põe `box-shadow` no próprio elemento, e sob o
+    // `border-collapse` que a tabela herda do preflight um `<tr>` não pinta
+    // sombra — o anel existiria no CSS e não na tela. `focus-ring-row` monta o
+    // anel nas CÉLULAS, que pintam, e emenda as partes numa moldura só.
+    expect(linha?.className).toContain('focus-visible:focus-ring-row')
+    expect(linha?.className).not.toContain('focus-ring-inset')
+  })
+
   // Ordenação anunciada: quem usa leitor de tela ouve "ordenado crescente" em vez
   // de descobrir pela setinha, que é informação só visual.
   it('cabeçalho ordenável anuncia a ordem em aria-sort', async () => {
@@ -185,15 +198,20 @@ describe('VitraDataTable', () => {
     expect(select.className).not.toContain('rounded')
   })
 
-  it('cabeçalho usa etiqueta Meta (mono, caixa alta) em 34px sobre Tinta', async () => {
+  it('cabeçalho é etiqueta INVERTIDA em 42px: caixa clara, letra preta, régua de 3px', async () => {
     setup()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const head = screen.getByRole('columnheader', { name: 'Marca' })
-    expect(head.className).toContain('h-[34px]')
-    expect(head.className).toContain('bg-primary')
+    expect(head.className).toContain('h-[42px]')
+    // A barra preta sólida da fundação anterior é o que sai (DESIGN.md §Don'ts):
+    // a força vem da régua e da caixa alta, não de um bloco de tinta.
+    expect(head.className).toContain('bg-neutral')
+    expect(head.className).toContain('text-foreground')
+    expect(head.className).toContain('border-b-[3px]')
+    expect(head.className).not.toContain('bg-primary')
     expect(head.className).toContain('font-mono')
     expect(head.className).toContain('uppercase')
-    expect(head.className).toContain('tracking-[0.07em]')
+    expect(head.className).toContain('tracking-[0.12em]')
   })
 
   it('coluna numeric alinha à direita com numerais tabulares', async () => {
@@ -219,15 +237,22 @@ describe('VitraDataTable', () => {
     expect(celula?.className).toContain('text-right')
   })
 
-  it('linha selecionada recebe marcador Âncora na primeira célula além da tinta', async () => {
+  it('linha selecionada é violeta cheio, e o estado não depende só de cor', async () => {
     const { user } = setup()
     const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.click(descricao)
     const linha = descricao.closest('tr')
-    expect(linha?.className).toContain('bg-muted')
-    expect(linha?.className).toContain(
-      '[&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
-    )
+
+    // Violeta é a cor da AÇÃO, e a linha selecionada é sobre o que as ações da
+    // barra vão agir. O marcador amarelo saiu junto: amarelo virou foco, e foco
+    // e seleção são estados diferentes que precisam de sinais diferentes.
+    expect(linha?.className).toContain('[&>td]:bg-primary')
+    expect(linha?.className).toContain('[&>td]:text-primary-foreground')
+    expect(linha?.className).not.toContain('anchor')
+
+    // Cor sozinha não basta (WCAG 1.4.1): peso e `aria-selected` dizem o mesmo.
+    expect(linha?.className).toContain('font-semibold')
+    expect(linha).toHaveAttribute('aria-selected', 'true')
   })
 
   it('rowNumbers: primeira coluna de 40px em Meta, sequencial global entre páginas', async () => {
@@ -248,7 +273,7 @@ describe('VitraDataTable', () => {
     expect(numero?.textContent).toBe('1')
     expect(numero?.className).toContain('w-10')
     expect(numero?.className).toContain('font-mono')
-    expect(numero?.className).toContain('text-[0.75rem]')
+    expect(numero?.className).toContain('text-[11px]')
     expect(numero?.className).toContain('text-right')
 
     // A numeração é da consulta, não da página: "linha 4" na página 2.
@@ -299,9 +324,33 @@ describe('VitraDataTable', () => {
     )
 
     expect(await screen.findByText(/não foi possível carregar a consulta/i)).toBeInTheDocument()
-    expect(screen.queryByText('Nenhum registro.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Nenhum registro')).not.toBeInTheDocument()
     // Contagem não mente sobre uma consulta que não voltou.
     expect(screen.getByText('— registros')).toBeInTheDocument()
+  })
+
+  it('vazio de BUSCA e vazio de MÓDULO não dizem a mesma coisa', async () => {
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-vazio']}
+        fetcher={(state) =>
+          // Sempre vazio, mas o `state.q` distingue as duas situações.
+          Promise.resolve({ rows: [] as Produto[], total: 0, page: state.page })
+        }
+      />,
+    )
+
+    // Sem busca: não existe registro — o caminho é cadastrar.
+    expect(await screen.findByText('Nenhum registro')).toBeInTheDocument()
+    expect(screen.getByText(/ainda não há nada cadastrado/i)).toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: 'Busca' }), 'parafuso')
+
+    // Com busca: o termo é que não achou — o caminho é corrigir o termo.
+    expect(await screen.findByText('Nenhum registro encontrado')).toBeInTheDocument()
+    expect(screen.getByText(/“parafuso”/)).toBeInTheDocument()
+    expect(screen.queryByText(/ainda não há nada cadastrado/i)).not.toBeInTheDocument()
   })
 
   it('mostra o detail que o servidor mandou no problem+json', async () => {

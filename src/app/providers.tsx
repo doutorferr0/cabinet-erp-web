@@ -1,6 +1,7 @@
 import { repetirSeValeAPena } from '@/data/api-provider'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MotionConfig } from 'motion/react'
 import { useState } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -37,8 +38,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
   return (
     <QueryClientProvider client={queryClient}>
-      {/* RAC não precisa de provider de tooltip — o TooltipTrigger é local. */}
-      <ThemeProvider>{children}</ThemeProvider>
+      {/*
+       * `reducedMotion="user"` é OBRIGATÓRIO e fica na raiz de propósito
+       * (DoD da fase 1.6): com ele, quem marcou "reduzir movimento" no sistema
+       * recebe a animação com duração zero, e nenhum componente precisa
+       * lembrar de checar a preferência. Deixar a cargo de cada tela é como
+       * se perde acessibilidade — basta um esquecimento.
+       *
+       * Este ERP é ferramenta de oito horas: movimento aqui é para dizer que
+       * a tela trocou, não para enfeitar. Entrada de tela anima UMA vez; linha,
+       * célula e input não animam nunca (§Motion).
+       */}
+      <MotionConfig reducedMotion="user">
+        {/* RAC não precisa de provider de tooltip — o TooltipTrigger é local. */}
+        <ThemeProvider>{children}</ThemeProvider>
+      </MotionConfig>
     </QueryClientProvider>
   )
 }

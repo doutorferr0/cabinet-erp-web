@@ -14,6 +14,12 @@ import { cn } from '@/lib/utils'
  * Blocos irmãos NUNCA compartilham parede — cada um tem caixa própria e são
  * separados por goteira de 12px (`{spacing.md}`). Parede compartilhada é
  * gramática de grade, não de compartimento.
+ *
+ * **Fundo afundado (1.6):** o compartimento é quase-branco, não branco. A folha
+ * virou branca nesta fase e com isso caixa dentro de caixa passou a se separar
+ * só pelo traço; meio grau de luz devolve o degrau sem gastar cor. E é degrau,
+ * não zona: quem tem cor de verdade aqui é o bloco cujo CONTEÚDO tem dono
+ * (valor, identidade, pendência), e esse recebe a zona por cima desta classe.
  */
 export function FormBlock({
   legend,
@@ -25,7 +31,7 @@ export function FormBlock({
   children: React.ReactNode
 }) {
   return (
-    <fieldset className={cn('rounded-lg border p-3', className)}>
+    <fieldset className={cn('rounded-lg border bg-surface-sunken p-3', className)}>
       {legend ? (
         <legend className="px-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
           {legend}

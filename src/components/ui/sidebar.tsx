@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -367,7 +368,7 @@ function SidebarGroupLabel({
       data-sidebar="group-label"
       // Rótulo de grupo em Meta (mono caps) — vocabulário do mockup.
       className={cn(
-        'flex h-8 shrink-0 items-center px-2 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'flex h-8 shrink-0 items-center px-2 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:focus-ring [&>svg]:size-4 [&>svg]:shrink-0',
         className,
       )}
       {...props}
@@ -381,7 +382,7 @@ function SidebarGroupAction({ className, ...props }: React.ComponentProps<'butto
       data-slot="sidebar-group-action"
       data-sidebar="group-action"
       className={cn(
-        'absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
+        'absolute top-3.5 right-3 flex aspect-square w-5 cursor-pointer items-center justify-center border-2 border-transparent p-0 text-sidebar-foreground outline-hidden transition-colors hover:border-border group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
         className,
       )}
       {...props}
@@ -423,8 +424,19 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  // Item ativo brut: fundo Documento + borda esquerda 3px Tinta (mockup .navitem.ativo).
-  'peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden border-l-[3px] border-transparent p-2 text-left text-sm outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-foreground data-active:bg-card data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  // FASE 1.6 §3b — o item de menu era o exemplo que o user deu de "sem reação
+  // nenhuma": só trocava de fundo. Agora ele PULA, ganha traço de Tinta e se
+  // pinta com a cor do próprio módulo.
+  //
+  // Repouso: liso, borda transparente nos 4 lados — a borda já existe apagada
+  // para que aparecer no hover não empurre o texto meio pixel.
+  // Hover: traço de Tinta + pastel /02 do módulo + lift (`lift-flat`).
+  // Ativo: cheia /01 do módulo. É elemento compacto, que é onde a /01 pode
+  // entrar (§2); a barra esquerda de 3px continua marcando a linha.
+  //
+  // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
+  // sem ele, o par cai no padrão do `:root` e nada quebra.
+  'peer/menu-button group/menu-button lift-flat flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {
@@ -449,18 +461,38 @@ function SidebarMenuButton({
   variant = 'default',
   size = 'default',
   tooltip,
+  hoverCard,
   className,
   ...props
 }: SidebarButtonProps & {
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof Tooltip>
+  /**
+   * Cartão de apoio no hover, para quando o item merece mais que um rótulo —
+   * as telas irmãs do módulo, por exemplo. VENCE o `tooltip` quando os dois
+   * vêm juntos: dois balões sobre a mesma peça é ruído, não redundância.
+   *
+   * Vale nos dois estados da sidebar, e não só na colapsada como o `tooltip`:
+   * o cartão não existe para repetir o nome que sumiu, existe para oferecer
+   * atalho. Nada que só exista dentro dele pode ser necessário para operar —
+   * conteúdo de hover é inalcançável no toque (§HoverCard).
+   */
+  hoverCard?: React.ReactNode
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
   const shared = {
     'data-slot': 'sidebar-menu-button',
     'data-sidebar': 'menu-button',
     'data-size': size,
-    'data-active': isActive,
+    // Só ESCREVE o atributo quando é verdade. `data-active={false}` vira
+    // `data-active="false"` no DOM — React não omite `false` em `data-*`, só
+    // `null`/`undefined` — e a variante `data-active:` do Tailwind casa por
+    // PRESENÇA (`[data-active]`), não por valor. Com o atributo sempre escrito,
+    // TODO item de menu se pintava de ativo e a sidebar inteira ficava acesa:
+    // o estado mais visível do shell não existia. É a irmã da armadilha já
+    // registrada sobre atributo de estado da RAC — lá o valor sobrava, aqui a
+    // presença sobra.
+    ...(isActive && { 'data-active': true }),
     className: cn(sidebarMenuButtonVariants({ variant, size }), className),
   }
   const comp =
@@ -474,6 +506,16 @@ function SidebarMenuButton({
     ) : (
       <ButtonPrimitive {...shared} {...(props as ButtonProps)} />
     )
+
+  // O cartão vem antes da dica: onde há cartão, a dica não aparece.
+  if (hoverCard) {
+    return (
+      <HoverCard>
+        <HoverCardTrigger>{comp}</HoverCardTrigger>
+        <HoverCardContent placement="right top">{hoverCard}</HoverCardContent>
+      </HoverCard>
+    )
+  }
 
   if (!tooltip) {
     return comp
@@ -505,7 +547,7 @@ function SidebarMenuAction({
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
       className={cn(
-        'absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
+        'absolute top-1.5 right-1 flex aspect-square w-5 cursor-pointer items-center justify-center border-2 border-transparent p-0 text-sidebar-foreground outline-hidden transition-colors hover:border-border group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
         showOnHover &&
           'group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 md:opacity-0',
         className,
@@ -521,7 +563,10 @@ function SidebarMenuBadge({ className, ...props }: React.ComponentProps<'div'>) 
       data-slot="sidebar-menu-badge"
       data-sidebar="menu-badge"
       className={cn(
-        'pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center px-1 text-xs font-medium text-sidebar-foreground tabular-nums select-none group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 peer-data-active/menu-button:text-sidebar-accent-foreground',
+        // Caixa preta de 2px também aqui (staging + Regra da Caixa Preta): o
+        // contador é um DADO, e dado neste sistema mora dentro de caixa. Sem o
+        // traço ele boiava sobre o item como um número solto.
+        'pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center border-2 border-border bg-card px-1 font-mono text-xs font-bold text-sidebar-foreground tabular-nums select-none group-data-[collapsible=icon]:hidden peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1',
         className,
       )}
       {...props}
@@ -599,9 +644,14 @@ function SidebarMenuSubButton({
     'data-slot': 'sidebar-menu-sub-button',
     'data-sidebar': 'menu-sub-button',
     'data-size': size,
-    'data-active': isActive,
+    // Mesma regra do botão de menu acima: escrever só quando é verdade.
+    ...(isActive && { 'data-active': true }),
     className: cn(
-      'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden border-l-[3px] border-transparent px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-foreground data-active:bg-card data-active:font-bold [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+      // Subitem segue o pai (§3b): liso em repouso com a borda já reservada
+      // apagada, pula no hover, e ATIVO é violeta cheio com traço de Tinta —
+      // do staging `neobrutalism-aria`, com `outline-primary` trocado pelo
+      // nosso anel amarelo e `shadow-md` pela escada quente.
+      'lift-flat flex h-7 min-w-0 -translate-x-px cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-border data-active:border-l-foreground data-active:bg-primary data-active:font-bold data-active:text-primary-foreground data-active:shadow-el2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
       className,
     ),
   }

@@ -1,4 +1,13 @@
+import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -160,8 +169,10 @@ export function VitraDataTable<T>({
         ))}
       </div>
 
-      {/* Contêiner da tabela: caixa preta 2px (a malha interna é Fio). */}
-      <div className="border-2 border-border">
+      {/* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e
+          `overflow-hidden` — sem o overflow, o canto arredondado do contêiner
+          apareceria por baixo do cabeçalho quadrado da primeira fileira. */}
+      <div className="overflow-hidden rounded-data border-2 border-border shadow-el3">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
@@ -234,35 +245,77 @@ export function VitraDataTable<T>({
               // consulta não tem resultado mesmo. Com o backend real, essa
               // distinção é a diferença entre "some" e "não existe".
               <TableRow>
-                <TableCell colSpan={totalColSpan} className="h-24 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    Não foi possível carregar a consulta.
-                    {/* O `detail` do problem+json é a frase que o backend escolheu
-                        para o caso — é a única informação acionável da resposta. */}
-                    {query.error instanceof ErroDaApi && query.error.detail ? (
-                      <span className="max-w-prose text-[0.75rem]">{query.error.detail}</span>
-                    ) : null}
-                    <Button variant="outline" size="sm" onClick={() => query.refetch()}>
-                      Tentar de novo
-                    </Button>
-                  </div>
+                <TableCell colSpan={totalColSpan} className="py-8">
+                  {/* Mesma anatomia dos vazios, com o ornamento de FALHA — o
+                      triângulo partido em Tomato, que não é o vermelho de erro:
+                      a consulta não chegou, ninguém fez nada errado e não há
+                      cadastro para consertar. Vermelho aqui mandaria o operador
+                      procurar culpa onde só houve rede. */}
+                  <Empty>
+                    <EmptyMedia>
+                      <Ornamento shape="falha-rede" tom="offline" tamanho={96} />
+                    </EmptyMedia>
+                    <EmptyHeader>
+                      <EmptyTitle>Não foi possível carregar a consulta</EmptyTitle>
+                      <EmptyDescription>
+                        {/* O `detail` do problem+json é a frase que o backend
+                            escolheu para o caso — é a única informação acionável
+                            da resposta. Sem ela, a orientação genérica. */}
+                        {query.error instanceof ErroDaApi && query.error.detail
+                          ? query.error.detail
+                          : 'A consulta não chegou ao servidor. Tente de novo em instantes.'}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button variant="outline" size="sm" onClick={() => query.refetch()}>
+                        Tentar de novo
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={totalColSpan}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  Nenhum registro.
+                <TableCell colSpan={totalColSpan} className="py-8">
+                  {/* Os dois vazios NÃO dizem a mesma coisa, e essa é a razão
+                      de existirem separados: "não existe registro" pede
+                      cadastrar; "a busca não achou" pede corrigir o termo.
+                      Tratar os dois com uma frase só é o que faz o operador
+                      procurar defeito onde não há.
+                      O ornamento acompanha: shape do módulo num caso, shape de
+                      busca na cor de apoio no outro — vazio de busca não é
+                      módulo vazio. Ele é `aria-hidden`; quem informa é o
+                      título. */}
+                  <Empty>
+                    <EmptyMedia>
+                      {state.q ? (
+                        <Ornamento shape="busca-vazia" tom="info" tamanho={96} />
+                      ) : (
+                        <OrnamentoDoModulo tamanho={128} />
+                      )}
+                    </EmptyMedia>
+                    <EmptyHeader>
+                      <EmptyTitle>
+                        {state.q ? 'Nenhum registro encontrado' : 'Nenhum registro'}
+                      </EmptyTitle>
+                      <EmptyDescription>
+                        {state.q
+                          ? `A busca por “${state.q}” não trouxe resultado. Confira o termo ou limpe a busca.`
+                          : 'Ainda não há nada cadastrado aqui.'}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row, rowIndex) => {
                 const isSelected = selected !== null && row.original === selected
                 return (
-                  // Seleção = Bancada + marcador esquerdo duplo (4px amarelo + 1px tinta) —
-                  // estado nunca depende só de cor (mockup tr.sel).
+                  // Seleção = VIOLETA cheio com texto branco (§DataTable): o
+                  // violeta é a cor da AÇÃO, e a linha selecionada é sobre o
+                  // que as ações da barra vão agir. O marcador amarelo saiu com
+                  // ele — amarelo agora é foco, e foco e seleção são estados
+                  // diferentes que precisam de sinais diferentes.
                   <TableRow
                     key={row.id}
                     data-state={isSelected ? 'selected' : undefined}
@@ -273,9 +326,16 @@ export function VitraDataTable<T>({
                     tabIndex={0}
                     aria-selected={isSelected}
                     className={cn(
-                      'cursor-pointer outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset',
+                      // O anel de foco é de LINHA, montado nas células: sob
+                      // `border-collapse` o `<tr>` não pinta box-shadow, e um
+                      // anel por célula viraria uma moldura por coluna.
+                      'cursor-pointer outline-none hover:bg-muted focus-visible:focus-ring-row',
+                      // Seleção não depende só de cor: além do violeta, a linha
+                      // fica em negrito e `aria-selected` diz o estado a quem
+                      // ouve. Dinheiro perde a zona aqui — verde sobre violeta
+                      // não se lê, e a linha inteira já está marcada.
                       isSelected &&
-                        'bg-muted [&>td:first-child]:shadow-[inset_4px_0_0_hsl(var(--anchor)),inset_5px_0_0_hsl(var(--foreground))]',
+                        'font-semibold [&>td]:bg-primary [&>td]:text-primary-foreground [&>td_.bg-zone-money]:bg-transparent',
                     )}
                     onClick={() => setSelected(isSelected ? null : row.original)}
                     onKeyDown={(e) => {
@@ -288,7 +348,7 @@ export function VitraDataTable<T>({
                   >
                     {rowNumbers ? (
                       // Numeração em Meta, sequencial global da consulta.
-                      <TableCell className="w-10 text-right font-mono text-[0.75rem] font-medium tabular-nums tracking-[0.06em] text-muted-foreground">
+                      <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">
                         {(state.page - 1) * state.pageSize + rowIndex + 1}
                       </TableCell>
                     ) : null}
@@ -312,7 +372,7 @@ export function VitraDataTable<T>({
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         {/* Contagem em Meta (rótulo de rodapé de tabela); paginação em tabular. */}
-        <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em]">
           {/* Consulta que falhou não tem contagem: "0 registros" seria afirmar
               que a consulta voltou vazia, que é exatamente o que não se sabe. */}
           {query.isError ? '— registros' : `${total} registro${total === 1 ? '' : 's'}`}
@@ -322,7 +382,7 @@ export function VitraDataTable<T>({
           <select
             id="vitra-page-size"
             // Mesma caixa preta 2px dos selects do formulário (radius 0 é lei).
-            className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:focus-ring"
             value={state.pageSize}
             onChange={(e) =>
               updateState((s) => ({ ...s, pageSize: Number(e.target.value), page: 1 }))

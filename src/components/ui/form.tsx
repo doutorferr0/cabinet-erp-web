@@ -74,8 +74,14 @@ FormItem.displayName = 'FormItem'
 
 function FormLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
   const { error, formItemId } = useFormField()
+  // Campo inválido: a etiqueta é uma CAIXA, então o vermelho vai na borda além
+  // do texto — texto vermelho sozinho dentro de moldura preta lê como enfeite.
   return (
-    <Label className={cn(error && 'text-destructive', className)} htmlFor={formItemId} {...props} />
+    <Label
+      className={cn(error && 'border-destructive text-destructive', className)}
+      htmlFor={formItemId}
+      {...props}
+    />
   )
 }
 

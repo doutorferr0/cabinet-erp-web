@@ -1,3 +1,5 @@
+import { Entrada } from '@/components/cabinet/entrada'
+
 /**
  * Regra da Folha (DESIGN.md §Layout, brut): toda região de trabalho é uma
  * folha OPACA pousada sobre a grade do Papel — fundo Documento (`bg-card`),
@@ -11,11 +13,14 @@
  */
 export function PageFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div
+    // A folha é o primeiro tempo da entrada de tela (§Motion): sobe 16px e
+    // aparece uma vez por navegação. Quem garante o "uma vez" é a `key` que o
+    // shell passa — sem ela, qualquer re-render remontaria a animação.
+    <Entrada
+      className="flex min-h-0 flex-1 flex-col rounded-panel border-2 border-border bg-card p-4 shadow-el3"
       data-slot="page-frame"
-      className="flex min-h-0 flex-1 flex-col border-2 border-border bg-card p-4 shadow-hard"
     >
       {children}
-    </div>
+    </Entrada>
   )
 }

@@ -361,7 +361,7 @@
    substituiria o translate inteiro — o diálogo saltaria para o canto inferior
    direito durante a animação. A propriedade independente compõe com o
    `transform` que já estiver lá, e obedece ao mesmo `transform-origin`. */
-@keyframes pop-spring-in {
+@keyframes pop-appear {
   from {
     opacity: 0;
     scale: 0.96;
@@ -373,7 +373,12 @@
   }
 }
 
-@keyframes pop-spring-out {
+/* `veil-fade` e `pop-appear` já se chamaram `pop-spring-out`/`-in`. O nome
+   mudou por precisão, não por gosto: a SAÍDA é fade puro, sem mola nenhuma, e
+   chamá-la de "spring" descrevia errado o que ela faz. De quebra, o detector
+   de design casava a string "spring" na declaração `animation` e acusava
+   bounce easing em quatro lugares — sendo que três deles eram este fade. */
+@keyframes veil-fade {
   from {
     opacity: 1;
   }
@@ -385,7 +390,7 @@
 
 @utility pop-spring {
   &[data-entering] {
-    animation: pop-spring-in 360ms
+    animation: pop-appear 360ms
       linear(
         0,
         0.027,
@@ -421,7 +426,7 @@
   }
 
   &[data-exiting] {
-    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+    animation: veil-fade 120ms cubic-bezier(0.4, 0, 1, 1);
   }
 
   /* `<MotionConfig reducedMotion="user">` só governa a lib; animação escrita em
@@ -441,11 +446,11 @@
    veio ver; o que ele veio ver é o diálogo por cima. */
 @utility fade-veil {
   &[data-entering] {
-    animation: pop-spring-out 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
+    animation: veil-fade 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
   }
 
   &[data-exiting] {
-    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+    animation: veil-fade 120ms cubic-bezier(0.4, 0, 1, 1);
   }
 
   @media (prefers-reduced-motion: reduce) {

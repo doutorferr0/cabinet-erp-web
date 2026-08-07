@@ -137,7 +137,8 @@ por máscara, jamais preta.
 - Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra
 - **Elevação em 5 degraus** com sombra quente (`el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal)
 - **Etiqueta invertida**: rótulo de seção, rótulo de campo e cabeçalho de coluna são **caixa clara com letra preta**. A força vem da borda, da caixa alta e do tracking — não do fundo cheio
-- **Superfície tintada por conteúdo**: valor (creme-esverdeado) · identidade (creme-avermelhado) · apoio (creme-azulado) · pendência (creme-amarelado) · bloqueio (creme-avermelhado forte)
+- **Superfície tintada por conteúdo**, nos pastéis /02 da paleta: valor · identidade · apoio · pendência · bloqueio. A cheia /01 só entra em elemento compacto
+- **Um par de cor fixo por módulo**, trocado por escopo (`data-modulo`), com um shape de ornamento fixo
 - **Faixa de acento**: painel importante ganha barra de 8px na lateral esquerda, com traço à direita
 - Dinheiro escreve em VERDE, negativo em vermelho; célula de valor ganha fundo da zona
 - Foco = **amarelo 3px com fio preto de 1px por fora**, em todo controle (§Foco)

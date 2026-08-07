@@ -1,513 +1,729 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-30T00:00:00.000Z",
-  "title": "Design System: VITRA",
+  "generatedAt": "2026-08-07T00:33:10.000Z",
+  "title": "Design System: Cabinet — fase 1.6",
   "extensions": {
     "colorMeta": {
-      "paper": {
+      "bench": {
         "role": "neutral",
-        "displayName": "Papel",
-        "canonical": "hsl(42 30% 97%)",
-        "dark": "hsl(30 8% 10%)",
+        "displayName": "Bancada Creme",
+        "canonical": "hsl(41 25% 85%)",
+        "purpose": "Fundo do app, atrás das folhas. Recebe a grade de 52px.",
         "tonalRamp": [
-          "hsl(42 30% 15%)",
-          "hsl(42 30% 26%)",
-          "hsl(42 30% 37%)",
-          "hsl(42 30% 50%)",
-          "hsl(42 30% 66%)",
-          "hsl(42 30% 82%)",
-          "hsl(42 30% 97%)",
-          "hsl(42 30% 99%)"
+          "hsl(41 25% 15%)",
+          "hsl(41 25% 26%)",
+          "hsl(41 25% 37%)",
+          "hsl(41 25% 48%)",
+          "hsl(41 25% 59%)",
+          "hsl(41 25% 70%)",
+          "hsl(41 25% 84%)",
+          "hsl(41 25% 95%)"
         ]
       },
-      "document": {
+      "sheet": {
         "role": "neutral",
-        "displayName": "Documento",
+        "displayName": "Folha Branca",
         "canonical": "hsl(0 0% 100%)",
-        "dark": "hsl(30 7% 13%)",
+        "purpose": "Superfície de trabalho: painel, cartão, campo, tabela. Branca desde a 1.6.",
         "tonalRamp": [
           "hsl(0 0% 15%)",
           "hsl(0 0% 26%)",
-          "hsl(0 0% 40%)",
-          "hsl(0 0% 55%)",
+          "hsl(0 0% 37%)",
+          "hsl(0 0% 48%)",
+          "hsl(0 0% 59%)",
           "hsl(0 0% 70%)",
-          "hsl(0 0% 85%)",
-          "hsl(0 0% 96%)",
-          "hsl(0 0% 100%)"
+          "hsl(0 0% 84%)",
+          "hsl(0 0% 95%)"
+        ]
+      },
+      "sheet-sunken": {
+        "role": "neutral",
+        "displayName": "Folha Afundada",
+        "canonical": "hsl(60 20% 98%)",
+        "purpose": "Degrau INTERNO da folha branca: compartimento de formulário, painel do acordeão, rodapé de alerta.",
+        "tonalRamp": [
+          "hsl(60 20% 15%)",
+          "hsl(60 20% 26%)",
+          "hsl(60 20% 37%)",
+          "hsl(60 20% 48%)",
+          "hsl(60 20% 59%)",
+          "hsl(60 20% 70%)",
+          "hsl(60 20% 84%)",
+          "hsl(60 20% 95%)"
+        ]
+      },
+      "neutral": {
+        "role": "neutral",
+        "displayName": "Creme Neutro",
+        "canonical": "hsl(44 35% 92%)",
+        "purpose": "Hover de item, skeleton, trilho.",
+        "tonalRamp": [
+          "hsl(44 35% 15%)",
+          "hsl(44 35% 26%)",
+          "hsl(44 35% 37%)",
+          "hsl(44 35% 48%)",
+          "hsl(44 35% 59%)",
+          "hsl(44 35% 70%)",
+          "hsl(44 35% 84%)",
+          "hsl(44 35% 95%)"
         ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Tinta",
-        "canonical": "hsl(30 12% 12%)",
-        "dark": "hsl(40 20% 95%)",
+        "canonical": "hsl(0 0% 0%)",
+        "purpose": "Traço de 2px, texto e borda. Nunca preenchimento de área, nunca sombra.",
         "tonalRamp": [
-          "hsl(30 12% 12%)",
-          "hsl(30 12% 15%)",
-          "hsl(30 12% 26%)",
-          "hsl(30 12% 37%)",
-          "hsl(30 12% 48%)",
-          "hsl(30 12% 62%)",
-          "hsl(30 12% 80%)",
-          "hsl(30 12% 95%)"
+          "hsl(0 0% 15%)",
+          "hsl(0 0% 26%)",
+          "hsl(0 0% 37%)",
+          "hsl(0 0% 48%)",
+          "hsl(0 0% 59%)",
+          "hsl(0 0% 70%)",
+          "hsl(0 0% 84%)",
+          "hsl(0 0% 95%)"
         ]
       },
       "ink-muted": {
         "role": "neutral",
         "displayName": "Tinta Apagada",
-        "canonical": "hsl(35 10% 40%)",
-        "dark": "hsl(38 10% 66%)",
+        "canonical": "hsl(37 16% 36%)",
+        "purpose": "Texto de apoio, rótulo em Meta, contexto.",
         "tonalRamp": [
-          "hsl(35 10% 15%)",
-          "hsl(35 10% 24%)",
-          "hsl(35 10% 33%)",
-          "hsl(35 10% 40%)",
-          "hsl(35 10% 58%)",
-          "hsl(35 10% 70%)",
-          "hsl(35 10% 84%)",
-          "hsl(35 10% 95%)"
-        ]
-      },
-      "graphite": {
-        "role": "primary",
-        "displayName": "Grafite",
-        "canonical": "hsl(28 12% 18%)",
-        "dark": "hsl(40 20% 95%)",
-        "tonalRamp": [
-          "hsl(28 12% 8%)",
-          "hsl(28 12% 15%)",
-          "hsl(28 12% 26%)",
-          "hsl(28 12% 37%)",
-          "hsl(28 12% 48%)",
-          "hsl(28 12% 62%)",
-          "hsl(28 12% 80%)",
-          "hsl(28 12% 95%)"
-        ]
-      },
-      "ink-inverse": {
-        "role": "neutral",
-        "displayName": "Tinta Invertida",
-        "canonical": "hsl(40 20% 95%)",
-        "dark": "hsl(30 8% 10%)",
-        "tonalRamp": [
-          "hsl(40 20% 15%)",
-          "hsl(40 20% 26%)",
-          "hsl(40 20% 37%)",
-          "hsl(40 20% 50%)",
-          "hsl(40 20% 66%)",
-          "hsl(40 20% 82%)",
-          "hsl(40 20% 95%)",
-          "hsl(40 20% 99%)"
-        ]
-      },
-      "bench-tint": {
-        "role": "neutral",
-        "displayName": "Tinta de Bancada",
-        "canonical": "hsl(42 35% 92%)",
-        "dark": "hsl(34 9% 20%)",
-        "tonalRamp": [
-          "hsl(42 35% 15%)",
-          "hsl(42 35% 26%)",
-          "hsl(42 35% 37%)",
-          "hsl(42 35% 50%)",
-          "hsl(42 35% 66%)",
-          "hsl(42 35% 82%)",
-          "hsl(42 35% 92%)",
-          "hsl(42 35% 97%)"
+          "hsl(37 16% 15%)",
+          "hsl(37 16% 26%)",
+          "hsl(37 16% 37%)",
+          "hsl(37 16% 48%)",
+          "hsl(37 16% 59%)",
+          "hsl(37 16% 70%)",
+          "hsl(37 16% 84%)",
+          "hsl(37 16% 95%)"
         ]
       },
       "rule-hair": {
         "role": "neutral",
-        "displayName": "Fio",
-        "canonical": "hsl(40 14% 88%)",
-        "dark": "hsl(34 7% 22%)",
+        "displayName": "Fio da Régua",
+        "canonical": "hsl(42 17% 70%)",
+        "purpose": "Fio: grade de fundo e divisória fina.",
         "tonalRamp": [
-          "hsl(40 14% 15%)",
-          "hsl(40 14% 26%)",
-          "hsl(40 14% 37%)",
-          "hsl(40 14% 50%)",
-          "hsl(40 14% 66%)",
-          "hsl(40 14% 80%)",
-          "hsl(40 14% 88%)",
-          "hsl(40 14% 96%)"
+          "hsl(42 17% 15%)",
+          "hsl(42 17% 26%)",
+          "hsl(42 17% 37%)",
+          "hsl(42 17% 48%)",
+          "hsl(42 17% 59%)",
+          "hsl(42 17% 70%)",
+          "hsl(42 17% 84%)",
+          "hsl(42 17% 95%)"
         ]
       },
-      "rule": {
+      "main": {
+        "role": "primary",
+        "displayName": "Violeta de Ação",
+        "canonical": "hsl(241 100% 66%)",
+        "purpose": "AÇÃO: botão primário, linha selecionada, aba ativa, item de menu ativo.",
+        "tonalRamp": [
+          "hsl(241 100% 15%)",
+          "hsl(241 100% 26%)",
+          "hsl(241 100% 37%)",
+          "hsl(241 100% 48%)",
+          "hsl(241 100% 59%)",
+          "hsl(241 100% 70%)",
+          "hsl(241 100% 84%)",
+          "hsl(241 100% 95%)"
+        ]
+      },
+      "main-hover": {
+        "role": "primary",
+        "displayName": "Violeta Pressionado",
+        "canonical": "hsl(241 77% 57%)",
+        "purpose": "Estado pressionado da ação.",
+        "tonalRamp": [
+          "hsl(241 77% 15%)",
+          "hsl(241 77% 26%)",
+          "hsl(241 77% 37%)",
+          "hsl(241 77% 48%)",
+          "hsl(241 77% 59%)",
+          "hsl(241 77% 70%)",
+          "hsl(241 77% 84%)",
+          "hsl(241 77% 95%)"
+        ]
+      },
+      "main-foreground": {
+        "role": "primary",
+        "displayName": "Branco sobre Violeta",
+        "canonical": "hsl(0 0% 100%)",
+        "purpose": "Texto sobre a ação.",
+        "tonalRamp": [
+          "hsl(0 0% 15%)",
+          "hsl(0 0% 26%)",
+          "hsl(0 0% 37%)",
+          "hsl(0 0% 48%)",
+          "hsl(0 0% 59%)",
+          "hsl(0 0% 70%)",
+          "hsl(0 0% 84%)",
+          "hsl(0 0% 95%)"
+        ]
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Roxo de Marca",
+        "canonical": "hsl(262 97% 76%)",
+        "purpose": "Marca e realce; par /01 da zona de identidade. Nunca ação.",
+        "tonalRamp": [
+          "hsl(262 97% 15%)",
+          "hsl(262 97% 26%)",
+          "hsl(262 97% 37%)",
+          "hsl(262 97% 48%)",
+          "hsl(262 97% 59%)",
+          "hsl(262 97% 70%)",
+          "hsl(262 97% 84%)",
+          "hsl(262 97% 95%)"
+        ]
+      },
+      "info": {
+        "role": "tertiary",
+        "displayName": "Azul de Apoio",
+        "canonical": "hsl(225 71% 75%)",
+        "purpose": "Apoio. Primeiro consumidor: o ornamento de busca sem resultado.",
+        "tonalRamp": [
+          "hsl(225 71% 15%)",
+          "hsl(225 71% 26%)",
+          "hsl(225 71% 37%)",
+          "hsl(225 71% 48%)",
+          "hsl(225 71% 59%)",
+          "hsl(225 71% 70%)",
+          "hsl(225 71% 84%)",
+          "hsl(225 71% 95%)"
+        ]
+      },
+      "money": {
+        "role": "tertiary",
+        "displayName": "Verde de Dinheiro",
+        "canonical": "hsl(155 81% 26%)",
+        "purpose": "Dinheiro, e só. Valor monetário e positivo.",
+        "tonalRamp": [
+          "hsl(155 81% 15%)",
+          "hsl(155 81% 26%)",
+          "hsl(155 81% 37%)",
+          "hsl(155 81% 48%)",
+          "hsl(155 81% 59%)",
+          "hsl(155 81% 70%)",
+          "hsl(155 81% 84%)",
+          "hsl(155 81% 95%)"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Vermelho de Erro",
+        "canonical": "hsl(357 84% 42%)",
+        "purpose": "Destruição, erro, valor negativo, carimbo anulado.",
+        "tonalRamp": [
+          "hsl(357 84% 15%)",
+          "hsl(357 84% 26%)",
+          "hsl(357 84% 37%)",
+          "hsl(357 84% 48%)",
+          "hsl(357 84% 59%)",
+          "hsl(357 84% 70%)",
+          "hsl(357 84% 84%)",
+          "hsl(357 84% 95%)"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Amarelo de Pendência",
+        "canonical": "hsl(47 100% 50%)",
+        "purpose": "Pendência. Proibido como cor de texto.",
+        "tonalRamp": [
+          "hsl(47 100% 15%)",
+          "hsl(47 100% 26%)",
+          "hsl(47 100% 37%)",
+          "hsl(47 100% 48%)",
+          "hsl(47 100% 59%)",
+          "hsl(47 100% 70%)",
+          "hsl(47 100% 84%)",
+          "hsl(47 100% 95%)"
+        ]
+      },
+      "ring": {
+        "role": "tertiary",
+        "displayName": "Amarelo de Foco",
+        "canonical": "hsl(47 100% 50%)",
+        "purpose": "Anel de foco de 3px, sempre com fio preto por fora.",
+        "tonalRamp": [
+          "hsl(47 100% 15%)",
+          "hsl(47 100% 26%)",
+          "hsl(47 100% 37%)",
+          "hsl(47 100% 48%)",
+          "hsl(47 100% 59%)",
+          "hsl(47 100% 70%)",
+          "hsl(47 100% 84%)",
+          "hsl(47 100% 95%)"
+        ]
+      },
+      "zone-money": {
         "role": "neutral",
-        "displayName": "Régua",
-        "canonical": "hsl(34 11% 54%)",
-        "dark": "hsl(33 10% 46%)",
+        "displayName": "Zona de Valor",
+        "canonical": "hsl(154 96% 91%)",
+        "purpose": "Superfície de valor, total e preço (Success/02 da paleta).",
         "tonalRamp": [
-          "hsl(34 11% 15%)",
-          "hsl(34 11% 24%)",
-          "hsl(34 11% 34%)",
-          "hsl(34 11% 44%)",
-          "hsl(34 11% 54%)",
-          "hsl(34 11% 68%)",
-          "hsl(34 11% 82%)",
-          "hsl(34 11% 94%)"
+          "hsl(154 96% 15%)",
+          "hsl(154 96% 26%)",
+          "hsl(154 96% 37%)",
+          "hsl(154 96% 48%)",
+          "hsl(154 96% 59%)",
+          "hsl(154 96% 70%)",
+          "hsl(154 96% 84%)",
+          "hsl(154 96% 95%)"
         ]
       },
-      "rule-strong": {
+      "zone-id": {
         "role": "neutral",
-        "displayName": "Régua Forte",
-        "canonical": "hsl(32 12% 34%)",
-        "dark": "hsl(36 11% 62%)",
+        "displayName": "Zona de Identidade",
+        "canonical": "hsl(263 94% 93%)",
+        "purpose": "Banda de identidade, bloco de cadastro, empresa ativa (Primary/02).",
         "tonalRamp": [
-          "hsl(32 12% 12%)",
-          "hsl(32 12% 22%)",
-          "hsl(32 12% 34%)",
-          "hsl(32 12% 44%)",
-          "hsl(32 12% 56%)",
-          "hsl(32 12% 70%)",
-          "hsl(32 12% 84%)",
-          "hsl(32 12% 94%)"
+          "hsl(263 94% 15%)",
+          "hsl(263 94% 26%)",
+          "hsl(263 94% 37%)",
+          "hsl(263 94% 48%)",
+          "hsl(263 94% 59%)",
+          "hsl(263 94% 70%)",
+          "hsl(263 94% 84%)",
+          "hsl(263 94% 95%)"
         ]
       },
-      "alert-red": {
-        "role": "tertiary",
-        "displayName": "Vermelho de Alerta",
-        "canonical": "hsl(0 68% 42%)",
-        "dark": "hsl(2 70% 62%)",
-        "tonalRamp": [
-          "hsl(0 68% 15%)",
-          "hsl(0 68% 24%)",
-          "hsl(0 68% 33%)",
-          "hsl(0 68% 42%)",
-          "hsl(0 68% 56%)",
-          "hsl(0 68% 70%)",
-          "hsl(0 68% 84%)",
-          "hsl(0 68% 95%)"
-        ]
-      },
-      "stamp-neutral": {
+      "zone-info": {
         "role": "neutral",
-        "displayName": "Carimbo Neutro (deriva de Tinta Apagada)",
-        "canonical": "hsl(35 10% 40%)",
-        "dark": "hsl(38 10% 66%)",
+        "displayName": "Zona de Apoio",
+        "canonical": "hsl(223 69% 95%)",
+        "purpose": "Bloco informativo e de apoio (Info/02).",
         "tonalRamp": [
-          "hsl(35 10% 15%)",
-          "hsl(35 10% 24%)",
-          "hsl(35 10% 33%)",
-          "hsl(35 10% 40%)",
-          "hsl(35 10% 58%)",
-          "hsl(35 10% 70%)",
-          "hsl(35 10% 84%)",
-          "hsl(35 10% 95%)"
+          "hsl(223 69% 15%)",
+          "hsl(223 69% 26%)",
+          "hsl(223 69% 37%)",
+          "hsl(223 69% 48%)",
+          "hsl(223 69% 59%)",
+          "hsl(223 69% 70%)",
+          "hsl(223 69% 84%)",
+          "hsl(223 69% 95%)"
         ]
       },
-      "stamp-open": {
-        "role": "tertiary",
-        "displayName": "Carimbo Aberto",
-        "canonical": "hsl(214 70% 34%)",
-        "dark": "hsl(210 70% 64%)",
+      "zone-warn": {
+        "role": "neutral",
+        "displayName": "Zona de Pendência",
+        "canonical": "hsl(48 100% 95%)",
+        "purpose": "Pendência e prazo (Warning/02).",
         "tonalRamp": [
-          "hsl(214 70% 14%)",
-          "hsl(214 70% 24%)",
-          "hsl(214 70% 34%)",
-          "hsl(214 70% 44%)",
-          "hsl(214 70% 56%)",
-          "hsl(214 70% 70%)",
-          "hsl(214 70% 84%)",
-          "hsl(214 70% 94%)"
+          "hsl(48 100% 15%)",
+          "hsl(48 100% 26%)",
+          "hsl(48 100% 37%)",
+          "hsl(48 100% 48%)",
+          "hsl(48 100% 59%)",
+          "hsl(48 100% 70%)",
+          "hsl(48 100% 84%)",
+          "hsl(48 100% 95%)"
         ]
       },
-      "stamp-done": {
-        "role": "tertiary",
-        "displayName": "Carimbo Concluído",
-        "canonical": "hsl(152 55% 24%)",
-        "dark": "hsl(150 45% 58%)",
+      "zone-danger": {
+        "role": "neutral",
+        "displayName": "Zona de Bloqueio",
+        "canonical": "hsl(6 76% 95%)",
+        "purpose": "Erro e bloqueio (Danger/03).",
         "tonalRamp": [
-          "hsl(152 55% 10%)",
-          "hsl(152 55% 17%)",
-          "hsl(152 55% 24%)",
-          "hsl(152 55% 34%)",
-          "hsl(152 55% 46%)",
-          "hsl(152 55% 62%)",
-          "hsl(152 55% 80%)",
-          "hsl(152 55% 93%)"
+          "hsl(6 76% 15%)",
+          "hsl(6 76% 26%)",
+          "hsl(6 76% 37%)",
+          "hsl(6 76% 48%)",
+          "hsl(6 76% 59%)",
+          "hsl(6 76% 70%)",
+          "hsl(6 76% 84%)",
+          "hsl(6 76% 95%)"
         ]
       },
-      "stamp-void": {
-        "role": "tertiary",
-        "displayName": "Carimbo Anulado (deriva de Vermelho de Alerta)",
-        "canonical": "hsl(0 68% 42%)",
-        "dark": "hsl(2 70% 62%)",
+      "shadow-1": {
+        "role": "neutral",
+        "displayName": "Sombra 1 (apoio)",
+        "canonical": "hsl(41 14% 61%)",
+        "purpose": "Degrau de apoio; press do lift.",
         "tonalRamp": [
-          "hsl(0 68% 15%)",
-          "hsl(0 68% 24%)",
-          "hsl(0 68% 33%)",
-          "hsl(0 68% 42%)",
-          "hsl(0 68% 56%)",
-          "hsl(0 68% 70%)",
-          "hsl(0 68% 84%)",
-          "hsl(0 68% 95%)"
+          "hsl(41 14% 15%)",
+          "hsl(41 14% 26%)",
+          "hsl(41 14% 37%)",
+          "hsl(41 14% 48%)",
+          "hsl(41 14% 59%)",
+          "hsl(41 14% 70%)",
+          "hsl(41 14% 84%)",
+          "hsl(41 14% 95%)"
+        ]
+      },
+      "shadow-2": {
+        "role": "neutral",
+        "displayName": "Sombra 2 (campo)",
+        "canonical": "hsl(39 13% 47%)",
+        "purpose": "Repouso do controle.",
+        "tonalRamp": [
+          "hsl(39 13% 15%)",
+          "hsl(39 13% 26%)",
+          "hsl(39 13% 37%)",
+          "hsl(39 13% 48%)",
+          "hsl(39 13% 59%)",
+          "hsl(39 13% 70%)",
+          "hsl(39 13% 84%)",
+          "hsl(39 13% 95%)"
+        ]
+      },
+      "shadow-3": {
+        "role": "neutral",
+        "displayName": "Sombra 3 (padrão)",
+        "canonical": "hsl(37 16% 36%)",
+        "purpose": "Degrau padrão: folha, caixa de dado, menu. Hover do controle.",
+        "tonalRamp": [
+          "hsl(37 16% 15%)",
+          "hsl(37 16% 26%)",
+          "hsl(37 16% 37%)",
+          "hsl(37 16% 48%)",
+          "hsl(37 16% 59%)",
+          "hsl(37 16% 70%)",
+          "hsl(37 16% 84%)",
+          "hsl(37 16% 95%)"
+        ]
+      },
+      "shadow-4": {
+        "role": "neutral",
+        "displayName": "Sombra 4 (destaque)",
+        "canonical": "hsl(36 18% 27%)",
+        "purpose": "Destaque.",
+        "tonalRamp": [
+          "hsl(36 18% 15%)",
+          "hsl(36 18% 26%)",
+          "hsl(36 18% 37%)",
+          "hsl(36 18% 48%)",
+          "hsl(36 18% 59%)",
+          "hsl(36 18% 70%)",
+          "hsl(36 18% 84%)",
+          "hsl(36 18% 95%)"
+        ]
+      },
+      "shadow-5": {
+        "role": "neutral",
+        "displayName": "Sombra 5 (modal)",
+        "canonical": "hsl(35 20% 19%)",
+        "purpose": "Modal e gaveta.",
+        "tonalRamp": [
+          "hsl(35 20% 15%)",
+          "hsl(35 20% 26%)",
+          "hsl(35 20% 37%)",
+          "hsl(35 20% 48%)",
+          "hsl(35 20% 59%)",
+          "hsl(35 20% 70%)",
+          "hsl(35 20% 84%)",
+          "hsl(35 20% 95%)"
         ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "sans 700, 1.5rem/2rem. Título da tela inicial — ocorrência única."
+        "purpose": "Título de tela e de painel; valor de indicador. Sora 700."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "sans 600, 1.25rem/1.75rem. Título de tela, literal da transcrição do SoftLux."
+        "purpose": "Título de seção dentro da folha."
       },
-      "numero-documento": {
-        "displayName": "Número do Documento",
-        "purpose": "mono 600, 1.25rem, tracking -0.01em. A âncora do cabeçalho de documento, à direita — o 591890 da comanda."
-      },
-      "title": {
-        "displayName": "Title",
-        "purpose": "sans 600, 1.125rem. Reservado ao valor Total nas fileiras da grade — o único número com corpo."
+      "value": {
+        "displayName": "Value",
+        "purpose": "O número que a tela existe para mostrar."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "sans 400, 0.875rem/1.25rem. A fonte real do sistema: célula, valor de campo, apoio. Mais de 90% do texto."
+        "purpose": "Texto corrido e dado de célula. Inter 400."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "sans 500, 0.875rem. Rótulo de campo e texto de botão — mesmo tamanho do corpo, distinto por peso."
+        "purpose": "Rótulo de campo em corpo."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Texto de botão, aba e item de menu. Inter 600."
       },
       "numeric": {
         "displayName": "Numeric",
-        "purpose": "sans 400, 0.875rem, tabular-nums. Dinheiro, quantidade, percentual — sempre tabular, sempre à direita."
+        "purpose": "Número em coluna: tabular, alinhado à direita."
+      },
+      "tag": {
+        "displayName": "Tag",
+        "purpose": "Etiqueta de campo: mono 10px, caixa alta, invertida (caixa clara, letra preta)."
       },
       "meta": {
-        "displayName": "Meta / Etiqueta",
-        "purpose": "mono 500, 0.75rem, caixa alta, tracking 0.06em. Cabeçalho de coluna, código, NCM, CNPJ, número inline, carimbo, legend de bloco, rótulo de total e de rodapé de tabela."
+        "displayName": "Meta",
+        "purpose": "Identificador, cabeçalho de coluna, migalha, carimbo. PT Mono 11px."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Etiqueta de seção: mono 10,5px com tracking 0.16em."
       }
     },
     "shadows": [
       {
-        "name": "control-hairline",
-        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-        "purpose": "Resíduo do scaffold em input e botão outline. Não é doutrina; não estender."
+        "name": "el-1",
+        "value": "2px 2px 0 0 hsl(41 14% 61%)",
+        "purpose": "Apoio. Também o degrau do carimbo e do badge."
       },
       {
-        "name": "overlay",
-        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-        "purpose": "Único uso legítimo de sombra: elemento que flutua sobre o documento e desaparece (dialog, popover, dropdown, Command do LookupCombo)."
+        "name": "el-2",
+        "value": "3px 3px 0 0 hsl(39 13% 47%)",
+        "purpose": "Repouso do controle que levanta, e da aba selecionada."
+      },
+      {
+        "name": "el-3",
+        "value": "4px 4px 0 0 hsl(37 16% 36%)",
+        "purpose": "Padrão: folha, caixa de dado, menu. Destino do hover."
+      },
+      {
+        "name": "el-4",
+        "value": "6px 6px 0 0 hsl(36 18% 27%)",
+        "purpose": "Destaque — o indicador que a tela existe para mostrar."
+      },
+      {
+        "name": "el-5",
+        "value": "8px 8px 0 0 hsl(35 20% 19%)",
+        "purpose": "Modal, gaveta e diálogo de alerta."
       }
     ],
     "motion": [
       {
-        "name": "ease-standard",
-        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
-        "purpose": "Easing único do sistema. Nunca bounce, nunca overshoot, nunca entrada encenada."
+        "name": "lift-hover",
+        "value": "translate(-2px, -2px) + sombra um degrau acima",
+        "purpose": "§3b: a peça PULA sob o mouse. Vale em botão, item de menu, aba e chip."
       },
       {
-        "name": "duration-state",
-        "value": "150ms",
-        "purpose": "Transição de estado: hover, foco, seleção."
+        "name": "lift-press",
+        "value": "translate(2px, 2px) + box-shadow: none",
+        "purpose": "Inverso do hover: a peça entra na própria sombra. Sombra ZERO, não el-1."
       },
       {
-        "name": "duration-sidebar",
-        "value": "200ms",
-        "purpose": "Colapso da barra lateral."
+        "name": "ease-lift",
+        "value": "cubic-bezier(0, 0, 0.2, 1) 140ms",
+        "purpose": "Sai rápido e assenta devagar — é como o olho lê \"respondeu ao meu mouse\"."
+      },
+      {
+        "name": "spring-entrada",
+        "value": "spring(stiffness 120, damping 30)",
+        "purpose": "Entrada de tela: fade + sobe 16px, UMA vez por navegação (lib motion)."
+      },
+      {
+        "name": "spring-pop",
+        "value": "linear() de 30 pontos, 360ms (spring 400/30)",
+        "purpose": "Popover, menu, diálogo e dica: fade + escala 0,96 → 1. Escrito em CSS, não na lib — quem desmonta essas peças é a react-aria-components."
+      },
+      {
+        "name": "stagger-entrada",
+        "value": "80ms, teto de 6 regiões",
+        "purpose": "Escalonamento entre regiões irmãs na entrada de tela."
+      },
+      {
+        "name": "fade-veil",
+        "value": "160ms in / 120ms out, só opacidade",
+        "purpose": "Cortina do diálogo: nunca escala, senão mostra faixa de tela sem cobertura."
       },
       {
         "name": "debounce-busca",
         "value": "300ms",
-        "purpose": "Atraso entre digitação e consulta na DataTable. Não é animação, mas é o ritmo percebido da busca."
+        "purpose": "Espera antes de a busca da DataTable virar consulta."
       }
     ],
-    "breakpoints": [{ "name": "sm", "value": "640px" }, { "name": "md", "value": "768px" }]
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "Único ponto real: abaixo dele a sidebar vira gaveta. O produto é desktop (PRODUCT.md) — não há grade responsiva além disso."
+      }
+    ]
   },
   "components": [
-    {
-      "name": "Moldura de Página (page-frame)",
-      "kind": "custom",
-      "refersTo": "surface-card",
-      "description": "A Regra da Folha: toda região de trabalho senta numa moldura Documento com borda Régua, canto 4px e padding 16px sobre o Papel. Nada solto no Papel.",
-      "html": "<div class=\"ds-page\"><div class=\"ds-frame\"><p class=\"ds-frame-hint\">Conteúdo da tela — sempre Documento sobre Papel, nunca direto no Papel.</p></div></div>",
-      "css": ".ds-page { background: hsl(var(--background)); padding: 16px; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-frame { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 4px; padding: 16px; min-height: 240px; } .ds-frame-hint { font-size: 0.875rem; color: hsl(var(--muted-foreground)); }"
-    },
     {
       "name": "Botão Primário",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Ação afirmativa única da tela: Gravar. Grafite preenchido com Tinta Invertida — a única superfície escura do tema claro. Um por formulário.",
-      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Gravar</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 8px 16px; border: none; border-radius: 4px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; white-space: nowrap; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: hsl(var(--primary) / 0.9); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+      "description": "A ação da tela. Violeta com traço preto; pula no hover e afunda no press.",
+      "html": "<button class=\"ds-btn-primary\">Gravar</button>",
+      "css": ".ds-btn-primary{background:hsl(241 100% 66%);color:#fff;border:2px solid #000;border-radius:4px;padding:0 16px;height:36px;font:600 .875rem/1 Inter,sans-serif;cursor:pointer;box-shadow: 3px 3px 0 0 hsl(39 13% 47%); transition: transform 140ms cubic-bezier(0,0,.2,1), box-shadow 140ms cubic-bezier(0,0,.2,1), background-color 140ms, border-color 140ms;}.ds-btn-primary:hover{background:hsl(241 77% 57%);transform:translate(-2px,-2px);box-shadow:4px 4px 0 0 hsl(37 16% 36%)}.ds-btn-primary:active{transform:translate(2px,2px);box-shadow:none}.ds-btn-primary:focus-visible{transform:none;outline:3px solid hsl(47 100% 50%);outline-offset:0;box-shadow:0 0 0 4px #000}"
     },
     {
-      "name": "Botão de Barra de Ações",
+      "name": "Botão da Barra de Ações",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "O cavalo de batalha. Toda a barra Filtro · Incluir · Alterar · Consul. · Excluir/Cancelar · Imprimir. Fundo Documento (senta na folha), borda Régua; desabilita sem linha selecionada.",
-      "html": "<div class=\"ds-actionbar\"><button class=\"ds-btn-outline\">Filtro</button><button class=\"ds-btn-outline\">Incluir</button><button class=\"ds-btn-outline\">Alterar</button><button class=\"ds-btn-outline\" disabled>Consul.</button><button class=\"ds-btn-outline\" disabled>Excluir</button><button class=\"ds-btn-outline\">Imprimir</button></div>",
-      "css": ".ds-actionbar { display: flex; flex-wrap: wrap; gap: 8px; } .ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 4px; background: hsl(var(--card)); color: hsl(var(--foreground)); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; white-space: nowrap; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-outline:hover:not(:disabled) { background: hsl(var(--muted)); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); } .ds-btn-outline:disabled { opacity: 0.5; pointer-events: none; }"
+      "description": "Filtro · Incluir · Alterar · Excluir. Folha com traço; desabilitado explica-se pelo title.",
+      "html": "<button class=\"ds-btn-outline\">Incluir</button>\n<button class=\"ds-btn-outline\" disabled title=\"Selecione uma linha\">Alterar</button>",
+      "css": ".ds-btn-outline{background:#fff;color:#000;border:2px solid #000;border-radius:4px;padding:0 12px;height:31px;font:600 .75rem/1 Inter,sans-serif;cursor:pointer;box-shadow:3px 3px 0 0 hsl(39 13% 47%);transition:transform 140ms cubic-bezier(0,0,.2,1),box-shadow 140ms}.ds-btn-outline:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:4px 4px 0 0 hsl(37 16% 36%);background:hsl(44 35% 92%)}.ds-btn-outline:active:not(:disabled){transform:translate(2px,2px);box-shadow:none}.ds-btn-outline:focus-visible{transform:none;outline:3px solid hsl(47 100% 50%);box-shadow:0 0 0 4px #000}.ds-btn-outline:disabled{opacity:.5;cursor:not-allowed}"
     },
     {
-      "name": "Campo de Formulário",
+      "name": "Campo com Etiqueta Invertida",
       "kind": "input",
-      "refersTo": "input-field",
-      "description": "Rótulo sempre acima, nunca dependente de placeholder. Borda em Régua (3,1:1 — piso WCAG 1.4.11), canto 4px, anel de foco em Régua Forte. Erro em Vermelho de Alerta, 0.75rem, abaixo do campo.",
-      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-f1\">Nossa Descrição</label><input class=\"ds-field-input\" id=\"ds-f1\" value=\"Pendente Cristal 6 Braços\" /></div>",
-      "css": ".ds-field { display: flex; flex-direction: column; gap: 8px; } .ds-field-label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; color: hsl(var(--foreground)); } .ds-field-input { height: 36px; width: 100%; padding: 4px 12px; border: 1px solid hsl(var(--input)); border-radius: 4px; background: transparent; color: hsl(var(--foreground)); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; transition: box-shadow 150ms cubic-bezier(0.4,0,0.2,1); } .ds-field-input::placeholder { color: hsl(var(--muted-foreground)); } .ds-field-input:focus-visible { outline: none; box-shadow: 0 0 0 1px hsl(var(--ring)); } .ds-field-input:disabled { opacity: 0.5; cursor: not-allowed; } .ds-field-error { font-size: 0.75rem; font-weight: 500; color: hsl(var(--destructive)); }"
+      "refersTo": "field",
+      "description": "O rótulo é uma etiqueta: caixa clara, traço, mono em caixa alta — não texto solto.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-tag\">Razão Social</span><input class=\"ds-field-input\" value=\"VERTZ ILUMINACAO LTDA\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:4px;align-items:flex-start}.ds-field-tag{background:hsl(44 35% 92%);color:#000;border:2px solid #000;padding:1px 6px;font:400 10px/1.4 \"PT Mono\",monospace;letter-spacing:.12em;text-transform:uppercase}.ds-field-input{background:#fff;color:#000;border:2px solid #000;border-radius:4px;height:36px;padding:0 8px;font:400 .875rem/1 Inter,sans-serif;width:260px;box-shadow:3px 3px 0 0 hsl(39 13% 47%)}.ds-field-input:focus-visible{outline:3px solid hsl(47 100% 50%);outline-offset:0;box-shadow:0 0 0 4px #000}"
     },
     {
-      "name": "FormBlock (fieldset + legend)",
+      "name": "Ledger (DataTable)",
+      "kind": "card",
+      "refersTo": "data-table",
+      "description": "Cabeçalho claro de 42px com régua de 3px, célula de 52px, sem malha vertical. Dinheiro em verde sobre a zona de valor.",
+      "html": "<table class=\"ds-ledger\"><thead><tr><th>Código</th><th>Descrição</th><th class=\"ds-num\">Valor</th></tr></thead><tbody><tr><td>000123</td><td>PENDENTE REDONDO</td><td class=\"ds-num ds-money\">R$ 1.240,00</td></tr><tr class=\"ds-sel\"><td>000124</td><td>ARANDELA TUBULAR</td><td class=\"ds-num\">R$ 890,00</td></tr></tbody></table>",
+      "css": ".ds-ledger{border-collapse:collapse;border:2px solid #000;border-radius:2px;overflow:hidden;background:#fff;box-shadow:4px 4px 0 0 hsl(37 16% 36%);font:400 .875rem/1 Inter,sans-serif}.ds-ledger th{height:42px;background:hsl(44 35% 92%);color:#000;text-align:left;padding:0 10px;font:400 11px/1 \"PT Mono\",monospace;letter-spacing:.12em;text-transform:uppercase;border-bottom:3px solid #000}.ds-ledger td{height:52px;padding:0 10px;border-bottom:2px solid #000}.ds-ledger tbody tr:last-child td{border-bottom:0}.ds-num{text-align:right;font-variant-numeric:tabular-nums}.ds-money{background:hsl(154 96% 91%);color:hsl(155 81% 26%);font-weight:600}.ds-sel td{background:hsl(241 100% 66%);color:#fff;font-weight:600}"
+    },
+    {
+      "name": "Banda de Identidade",
       "kind": "custom",
-      "refersTo": "input-field",
-      "description": "Forma-assinatura do agrupamento: compartimento fechado com borda Régua, canto 4px e goteira de 12px; legend em Meta sobre a borda — o groupbox do SoftLux. Compartimento não compartilha parede com o vizinho.",
-      "html": "<fieldset class=\"ds-block\"><legend class=\"ds-block-legend\">Dimensões do Produto</legend><div class=\"ds-grid12\"><div class=\"ds-field ds-span3\"><label class=\"ds-field-label\" for=\"ds-d1\">Altura</label><input class=\"ds-field-input ds-num\" id=\"ds-d1\" value=\"1,200\" /></div><div class=\"ds-field ds-span3\"><label class=\"ds-field-label\" for=\"ds-d2\">Largura</label><input class=\"ds-field-input ds-num\" id=\"ds-d2\" value=\"0,450\" /></div><div class=\"ds-field ds-span6\"><label class=\"ds-field-label\" for=\"ds-d3\">Observação</label><input class=\"ds-field-input\" id=\"ds-d3\" value=\"\" /></div></div></fieldset>",
-      "css": ".ds-block { border: 1px solid hsl(var(--border)); border-radius: 4px; padding: 12px; } .ds-block-legend { padding: 0 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: hsl(var(--muted-foreground)); } .ds-grid12 { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); align-items: end; gap: 12px; } .ds-span3 { grid-column: span 3 / span 3; } .ds-span6 { grid-column: span 6 / span 6; } .ds-num { text-align: right; font-variant-numeric: tabular-nums; }"
-    },
-    {
-      "name": "DataTable (grade fechada)",
-      "kind": "custom",
-      "refersTo": "table-head-cell",
-      "description": "A peça mais reutilizada. Caixa em Régua; malha em Fio entre linhas E colunas; cabeçalho de 36px em Meta com sublinha em Régua Forte; linha inteira clicável; seleção = Tinta de Bancada + marcador esquerdo de 2px em Régua Forte. Zebra não existe.",
-      "html": "<div class=\"ds-dt\"><div class=\"ds-dt-search\"><svg class=\"ds-dt-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input class=\"ds-dt-input\" placeholder=\"Busca pelo código:\" /></div><div class=\"ds-dt-frame\"><table class=\"ds-dt-table\"><thead><tr><th>Nosso Código</th><th>Nossa Descrição</th><th>Marca</th><th class=\"ds-num\">Valor de Tabela</th></tr></thead><tbody><tr><td>004512</td><td>Pendente Cristal 6 Braços</td><td>Vertz</td><td class=\"ds-num\">R$ 1.890,00</td></tr><tr class=\"ds-dt-selected\"><td>004518</td><td>Arandela LED 12W</td><td>Vertz</td><td class=\"ds-num\">R$ 249,90</td></tr><tr><td>004530</td><td>Trilho Eletrificado 1m</td><td>Via HF</td><td class=\"ds-num\">R$ 118,00</td></tr></tbody></table></div><div class=\"ds-dt-foot\"><span class=\"ds-dt-count\">3 registros</span><span class=\"ds-dt-pager\">Página 1 de 1</span></div></div>",
-      "css": ".ds-dt { display: flex; flex-direction: column; gap: 12px; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-dt-search { position: relative; width: 288px; } .ds-dt-icon { position: absolute; left: 10px; top: 10px; color: hsl(var(--muted-foreground)); } .ds-dt-input { height: 36px; width: 100%; padding: 4px 12px 4px 32px; border: 1px solid hsl(var(--input)); border-radius: 4px; background: transparent; color: hsl(var(--foreground)); font-size: 0.875rem; font-family: inherit; } .ds-dt-input:focus-visible { outline: none; box-shadow: 0 0 0 1px hsl(var(--ring)); } .ds-dt-frame { border: 1px solid hsl(var(--border)); border-radius: 4px; overflow: hidden; } .ds-dt-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; color: hsl(var(--foreground)); } .ds-dt-table th { height: 36px; padding: 0 8px; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--rule-strong)); border-left: 1px solid hsl(var(--rule-hair)); } .ds-dt-table th:first-child { border-left: 0; } .ds-dt-table td { padding: 8px; border-bottom: 1px solid hsl(var(--rule-hair)); border-left: 1px solid hsl(var(--rule-hair)); } .ds-dt-table td:first-child { border-left: 0; } .ds-dt-table tbody tr:last-child td { border-bottom: 0; } .ds-dt-table tbody tr { cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-dt-table tbody tr:hover { background: hsl(var(--muted)); } .ds-dt-selected { background: hsl(var(--muted)); box-shadow: inset 2px 0 0 hsl(var(--rule-strong)); } .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-dt-foot { display: flex; align-items: center; font-size: 0.875rem; color: hsl(var(--muted-foreground)); } .ds-dt-count { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; } .ds-dt-pager { margin-left: auto; font-variant-numeric: tabular-nums; }"
-    },
-    {
-      "name": "FormGrid (grade editável)",
-      "kind": "custom",
-      "refersTo": "grid-cell-input",
-      "description": "Mesma malha fechada da DataTable. Célula é input de 32px sem borda e sem sombra — a malha da grade É o campo. Numéricos à direita, tabulares. Inclusão acima da grade, remoção na última coluna.",
-      "html": "<div class=\"ds-fg\"><table class=\"ds-fg-table\"><thead><tr><th>Produto</th><th class=\"ds-num\">Qtd</th><th class=\"ds-num\">Vl. Unitário</th><th class=\"ds-num\">Desc. %</th><th></th></tr></thead><tbody><tr><td><input class=\"ds-fg-cell\" value=\"Pendente Cristal 6 Braços\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"2,000\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"1.890,00\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"5,0000\" /></td><td class=\"ds-fg-act\"><button class=\"ds-fg-del\" aria-label=\"Excluir linha\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/></svg></button></td></tr><tr><td><input class=\"ds-fg-cell\" value=\"Arandela LED 12W\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"6,000\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"249,90\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"0,0000\" /></td><td class=\"ds-fg-act\"><button class=\"ds-fg-del\" aria-label=\"Excluir linha\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/></svg></button></td></tr></tbody></table></div>",
-      "css": ".ds-fg { border: 1px solid hsl(var(--border)); border-radius: 4px; overflow: hidden; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-fg-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; color: hsl(var(--foreground)); } .ds-fg-table th { height: 36px; padding: 0 8px; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--rule-strong)); border-left: 1px solid hsl(var(--rule-hair)); } .ds-fg-table th:first-child { border-left: 0; } .ds-fg-table td { padding: 0 4px; border-bottom: 1px solid hsl(var(--rule-hair)); border-left: 1px solid hsl(var(--rule-hair)); } .ds-fg-table td:first-child { border-left: 0; } .ds-fg-table tbody tr:last-child td { border-bottom: 0; } .ds-fg-cell { height: 32px; width: 100%; padding: 0 8px; border: 0; background: transparent; color: inherit; font: inherit; box-shadow: none; } .ds-fg-cell:focus-visible { outline: none; background: hsl(var(--muted) / 0.6); } .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-fg-act { width: 40px; text-align: center; } .ds-fg-del { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; border-radius: 3px; background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; } .ds-fg-del:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }"
-    },
-    {
-      "name": "Fileiras de Totais (pé da grade)",
-      "kind": "custom",
-      "refersTo": "table-row-selected",
-      "description": "Os totais são as últimas fileiras da própria grade de itens: esquerda mesclada, rótulo em Meta na coluna anterior, valor tabular caindo exatamente sob a coluna de valor. Total leva régua forte acima e é o único em Title. Sempre derivados dos itens. (Sem grade na tela, a exceção é a tira alinhada à direita com caixa em Régua.)",
-      "html": "<div class=\"ds-fg\"><table class=\"ds-fg-table\"><tbody><tr><td><input class=\"ds-fg-cell\" value=\"Pendente Cristal 6 Braços\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"2,000\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"1.890,00\" /></td><td class=\"ds-num ds-fg-out\">R$ 3.780,00</td></tr><tr><td><input class=\"ds-fg-cell\" value=\"Arandela LED 12W\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"6,000\" /></td><td><input class=\"ds-fg-cell ds-num\" value=\"249,90\" /></td><td class=\"ds-num ds-fg-out\">R$ 1.499,40</td></tr><tr class=\"ds-tot-row\"><td colspan=\"2\"></td><td class=\"ds-tot-lbl\">SubTotal:</td><td class=\"ds-num ds-fg-out\">R$ 5.279,40</td></tr><tr class=\"ds-tot-row ds-tot-strong\"><td colspan=\"2\"></td><td class=\"ds-tot-lbl\">Total:</td><td class=\"ds-num ds-fg-out ds-tot-val\">R$ 5.279,40</td></tr></tbody></table></div>",
-      "css": ".ds-fg { border: 1px solid hsl(var(--border)); border-radius: 4px; overflow: hidden; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-fg-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; color: hsl(var(--foreground)); } .ds-fg-table td { padding: 0 4px; border-bottom: 1px solid hsl(var(--rule-hair)); border-left: 1px solid hsl(var(--rule-hair)); } .ds-fg-table td:first-child { border-left: 0; } .ds-fg-table tbody tr:last-child td { border-bottom: 0; } .ds-fg-cell { height: 32px; width: 100%; padding: 0 8px; border: 0; background: transparent; color: inherit; font: inherit; box-shadow: none; } .ds-fg-out { padding: 4px 8px; text-align: right; font-variant-numeric: tabular-nums; } .ds-num { text-align: right; font-variant-numeric: tabular-nums; } .ds-tot-lbl { padding: 8px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: hsl(var(--muted-foreground)); } .ds-tot-strong td { border-top: 1px solid hsl(var(--rule-strong)); } .ds-tot-val { font-size: 1.125rem; font-weight: 600; }"
-    },
-    {
-      "name": "DocumentoHeader",
-      "kind": "custom",
-      "refersTo": "text-heading",
-      "description": "Cabeçalho de documento: título literal da transcrição em Headline à esquerda; número em Número do Documento (mono 600, 1.25rem) à direita, com o carimbo ao lado; régua forte fechando o bloco.",
-      "html": "<header class=\"ds-dochead\"><h1 class=\"ds-dochead-title\">Orçamento</h1><div class=\"ds-dochead-right\"><span class=\"ds-dochead-num\">ORÇ-2026-00184</span><span class=\"ds-stamp ds-stamp-open\">ABERTO</span></div></header>",
-      "css": ".ds-dochead { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 16px; padding-bottom: 12px; border-bottom: 1px solid hsl(var(--rule-strong)); font-family: ui-sans-serif, system-ui, sans-serif; } .ds-dochead-title { font-size: 1.25rem; font-weight: 600; color: hsl(var(--foreground)); margin: 0; } .ds-dochead-right { display: flex; align-items: center; gap: 12px; } .ds-dochead-num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: hsl(var(--foreground)); }"
-    },
-    {
-      "name": "Stamp (carimbo de situação)",
-      "kind": "badge",
-      "refersTo": "status-badge",
-      "description": "Retângulo de 20px, canto 2px, borda de 1px e texto na mesma cor do tom, fundo transparente — tinta sobre papel. Conteúdo em Meta. Quatro tons: Neutro, Aberto, Concluído, Anulado. A enumeração real das situações é [a resolver].",
-      "html": "<div class=\"ds-stamps\"><span class=\"ds-stamp ds-stamp-neutral\">RASCUNHO</span><span class=\"ds-stamp ds-stamp-open\">ABERTO</span><span class=\"ds-stamp ds-stamp-done\">CONCLUÍDO</span><span class=\"ds-stamp ds-stamp-void\">ANULADO</span></div>",
-      "css": ".ds-stamps { display: flex; gap: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; } .ds-stamp { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border: 1px solid currentColor; border-radius: 2px; background: transparent; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; } .ds-stamp-neutral { color: hsl(var(--stamp-neutral)); } .ds-stamp-open { color: hsl(var(--stamp-open)); } .ds-stamp-done { color: hsl(var(--stamp-done)); } .ds-stamp-void { color: hsl(var(--stamp-void)); }"
+      "refersTo": "banda-identidade",
+      "description": "Onde a tela diz o próprio nome. Zona de identidade em caixa preta, com a marca d'água do módulo à direita.",
+      "html": "<div class=\"ds-banda\"><h1 class=\"ds-banda-titulo\">Cadastro de Fornecedores</h1><span class=\"ds-banda-ctx\">VERTZ ILUMINAÇÃO</span><span class=\"ds-banda-orn\"></span></div>",
+      "css": ".ds-banda{display:flex;align-items:center;gap:14px;background:hsl(263 94% 93%);border:2px solid #000;padding:10px 14px}.ds-banda-titulo{margin:0;font:800 1.35rem/1.1 Sora,sans-serif;letter-spacing:-.02em;text-transform:uppercase}.ds-banda-ctx{font:700 .75rem/1 \"PT Mono\",monospace;letter-spacing:.07em;text-transform:uppercase;color:hsl(37 16% 36%)}.ds-banda-orn{margin-left:auto;width:24px;height:24px;background:hsl(234 91% 74%);-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat}"
     },
     {
       "name": "Item de Navegação",
       "kind": "nav",
-      "refersTo": "table-row-selected",
-      "description": "Sidebar sem paleta própria: sobre Papel ela é Papel, o conteúdo é Documento. Rótulo de grupo em Meta; item ativo casa por prefixo de rota e recebe Tinta de Bancada + marcador esquerdo de 2px em Régua Forte — a gramática da linha selecionada.",
-      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-group\">Cadastros</div><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/></svg>Clientes</a><a class=\"ds-nav-item ds-nav-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m7.5 4.27 9 5.15\"/><path d=\"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z\"/><path d=\"m3.3 7 8.7 5 8.7-5\"/><path d=\"M12 22V12\"/></svg>Produtos</a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/></svg>Colaboradores</a></nav>",
-      "css": ".ds-nav { display: flex; flex-direction: column; gap: 4px; padding: 8px; width: 240px; background: hsl(var(--background)); border-right: 1px solid hsl(var(--border)); font-family: ui-sans-serif, system-ui, sans-serif; } .ds-nav-group { padding: 4px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: hsl(var(--muted-foreground)); } .ds-nav-item { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 3px; color: hsl(var(--foreground)); font-size: 0.875rem; text-decoration: none; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-item:hover { background: hsl(var(--muted)); } .ds-nav-active { background: hsl(var(--muted)); font-weight: 500; box-shadow: inset 2px 0 0 hsl(var(--rule-strong)); } .ds-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); }"
+      "refersTo": "sidebar-item",
+      "description": "Liso em repouso, pula e ganha traço no hover. Ativo = cheia /01 do módulo. Cada item carrega a cor do SEU módulo.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-ativo\" href=\"#\"><span class=\"ds-nav-orn\"></span>Produtos</a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-nav-orn ds-nav-orn-cheia\"></span>Clientes</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:2px;background:hsl(41 25% 85%);padding:8px;width:220px}.ds-nav-item{display:flex;align-items:center;gap:8px;padding:8px;border:2px solid transparent;border-left-width:3px;color:#000;text-decoration:none;font:400 .875rem/1 Inter,sans-serif;cursor:pointer;transition:transform 140ms cubic-bezier(0,0,.2,1),box-shadow 140ms,background-color 140ms,border-color 140ms}.ds-nav-item:hover{border-color:#000;background:hsl(185 92% 90%);transform:translate(-2px,-2px);box-shadow:3px 3px 0 0 hsl(39 13% 47%)}.ds-nav-item:active{transform:translate(2px,2px);box-shadow:none}.ds-nav-item:focus-visible{transform:none;outline:3px solid hsl(47 100% 50%);box-shadow:0 0 0 4px #000}.ds-nav-ativo{background:hsl(188 85% 53%);border-left-color:#000;font-weight:700}.ds-nav-orn{width:18px;height:18px;background:hsl(185 92% 90%);-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat}.ds-nav-orn-cheia{background:hsl(252 100% 86%)}"
+    },
+    {
+      "name": "Carimbo de Situação",
+      "kind": "chip",
+      "refersTo": "stamp",
+      "description": "Item de raio 0 em mono. Os tons NÃO têm o mesmo peso — aberto e concluído são preenchidos porque são os que se procuram correndo o olho.",
+      "html": "<span class=\"ds-stamp ds-stamp-open\">Aberto</span> <span class=\"ds-stamp ds-stamp-done\">Concluído</span> <span class=\"ds-stamp ds-stamp-void\">Cancelado</span>",
+      "css": ".ds-stamp{display:inline-flex;align-items:center;height:24px;padding:0 8px;border:2px solid;font:700 .75rem/1 \"PT Mono\",monospace;letter-spacing:.07em;text-transform:uppercase;box-shadow:2px 2px 0 0 hsl(41 14% 61%)}.ds-stamp-open{background:hsl(47 100% 50%);border-color:#000;color:#000}.ds-stamp-done{background:hsl(155 81% 26%);border-color:hsl(155 81% 26%);color:#fff}.ds-stamp-void{background:transparent;border-color:hsl(357 84% 42%);color:hsl(357 84% 42%)}"
+    },
+    {
+      "name": "Estado Vazio",
+      "kind": "custom",
+      "refersTo": "empty",
+      "description": "Ornamento do módulo + título + o que fazer. \"Não existe registro\" pede cadastrar; \"a busca não achou\" pede corrigir o termo — nunca a mesma frase.",
+      "html": "<div class=\"ds-empty\"><span class=\"ds-empty-orn\"></span><p class=\"ds-empty-titulo\">Nenhum registro</p><p class=\"ds-empty-desc\">Ainda não há nada cadastrado aqui.</p></div>",
+      "css": ".ds-empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 24px;text-align:center;background:#fff}.ds-empty-orn{width:128px;height:128px;background:hsl(188 85% 53%);-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat}.ds-empty-titulo{margin:0;font:700 1rem/1.2 Sora,sans-serif}.ds-empty-desc{margin:0;font:400 .875rem/1.5 Inter,sans-serif;color:hsl(37 16% 36%)}"
     }
   ],
   "narrative": {
-    "northStar": "Papel Funcional",
-    "overview": "O ERP como documento impresso bem diagramado, na tela. Orçamento parece invoice. Listagem parece ledger contábil. Produto parece ficha técnica. A referência não é o software de gestão contemporâneo — é o formulário comercial que a operação já sabe ler antes de alguém explicar: colunas que fecham, réguas que separam, numeração grande no canto, carimbo de situação.\n\nIsso não é nostalgia, é ergonomia. Quem digita duzentos documentos por dia não lê a tela, escaneia: procura a coluna do valor, a linha do item, o número do documento. O papel comercial teve um século para resolver esse problema e resolveu com estrutura — régua, alinhamento, tipografia de etiqueta — não com sombra, cartão flutuante ou hierarquia por respiro. VITRA herda a estrutura e devolve em software o que o papel nunca teve: contraste garantido, estado ao vivo, busca.\n\nA superfície é papel tintado, nunca branco clínico nem cinza de aplicativo. O documento em si — painel, tabela, formulário — é branco puro sobre esse papel, emoldurado por régua de 1px. Esse degrau de duas superfícies é a hierarquia de profundidade inteira do sistema; sombra não participa. Peso visual pertence ao dado. Número é tabular e alinhado à direita para que a coluna feche verticalmente sem esforço; código, número de documento e metadado são monoespaçados em caixa alta pequena, porque etiqueta não é prosa.\n\nOs itens 1–9 do DESIGN.md estão implementados: tokens nos dois temas com contrastes verificados (Tinta 15,5:1, Tinta Apagada 5,2:1, Régua 3,1:1, Alerta 6,2:1), moldura page-frame no shell, DataTable ledger completa, FormBlock com legend em Meta, FormGrid com faixa de seção e totais no pé, DocumentoHeader com número em mono, Stamp de quatro tons, validação em 0.75rem. A fonte canônica da direção é o DESIGN.md; este arquivo é o retrato do código que a realizou.",
+    "northStar": "Brut sobre papel",
+    "overview": "O ERP é documento comercial: orçamento é invoice, listagem é ledger, produto é ficha técnica. A estrutura é neo-brutalista — traço preto de 2px, sombra sem blur, densidade de comanda — mas o acabamento não é maquete de protesto: a sombra é quente como papel sobre papel, o canto diz o que a peça é, e o violeta saturado carrega a ação.\n\nA fase 1.6 respondeu à queixa de \"escuro, triste e sem cor\" com três coisas: cor por conteúdo (folha branca sobre bancada creme, zonas nos pastéis da paleta, um par fixo por módulo), movimento que informa (entrada de tela, peça que aparece, e o hover que pula) e ornamento (uma forma colorida por módulo, recortada por máscara, jamais preta).\n\nÉ ferramenta de oito horas para quatro perfis que dividem as mesmas peças. Densidade vence respiro decorativo, vocabulário do legado é literal, e tudo é alcançável por clique — nenhum fluxo depende de tecla memorizada.",
     "keyCharacteristics": [
-      "Grade fechada em toda tabela de dado: caixa em Régua, malha em Fio entre linhas e colunas — zebra não existe",
-      "Três pesos de régua e só três: Fio na malha, Régua na caixa, Régua Forte no corte entre blocos",
-      "Papel tintado + Documento branco: a hierarquia de profundidade inteira são duas superfícies, sem sombra",
-      "Meta (mono 0.75rem caixa alta) é a voz do sistema: cabeçalho de coluna, código, carimbo, legend, rótulo de total",
-      "Matiz com emprego nomeado: carimbo de situação e destruição/erro — nenhum acento decorativo",
-      "Densidade alta e deliberada: controle de 36px, célula de grade editável de 32px, sem espaço morto",
-      "Número sempre tabular, sempre à direita; totais são as últimas fileiras da grade, valor sob a coluna de valor",
-      "Desktop-only: nenhuma decisão sacrifica largura em nome de tela estreita"
+      "Bancada creme com grade de 52px no fundo; folhas de trabalho BRANCAS pousam OPACAS por cima",
+      "Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra",
+      "Elevação em 5 degraus (2/3/4/6/8) com sombra QUENTE, nunca preta",
+      "Hover que PULA 2px e press que afunda 2px zerando a sombra (§3b)",
+      "Etiqueta invertida: rótulo e cabeçalho de coluna são caixa clara com letra preta",
+      "Zona tintada por conteúdo com os pastéis /02 da paleta; a cheia /01 só em elemento compacto",
+      "Um par de cor fixo por módulo, trocado por escopo (`data-modulo`), com um shape de ornamento fixo",
+      "Dinheiro em VERDE sobre a zona de valor; negativo em vermelho",
+      "Foco = amarelo 3px com fio preto de 1px por fora, em todo controle",
+      "Três famílias self-hosted: Sora (título) · Inter (corpo) · PT Mono (identificador)",
+      "Movimento só onde informa: entrada de tela e peça que aparece; nunca em linha, célula ou campo"
     ],
     "rules": [
       {
-        "name": "A Regra do Matiz com Emprego",
-        "body": "Matiz aparece na interface em exatamente dois lugares: carimbo de situação e destruição/erro. Não existe cor de acento decorativa, de módulo ou de marca — a navegação não muda de cor, o header não tem faixa colorida, botão não é azul.",
-        "section": "colors"
+        "name": "A Regra da Caixa Preta",
+        "section": "shapes",
+        "body": "Toda caixa leva traço PRETO de 2px. O preto ficou no traço: saiu do preenchimento de área e saiu da sombra."
       },
       {
-        "name": "A Regra do Peso Antes da Cor",
-        "body": "Hierarquia se resolve por tamanho, peso e posição — nesta ordem — antes de qualquer consideração cromática. Um total importante é 1.125rem/600 tabular, não colorido.",
-        "section": "colors"
+        "name": "A Regra do Canto por Natureza",
+        "section": "shapes",
+        "body": "O raio diz o que a coisa é — painel 10px, cartão 6px, controle 4px, dado 2px, ITEM 0. Item é o que encosta em item (chip, aba, página, célula, item de menu, etiqueta): canto arredondado ali abre fresta e desmancha a fileira."
       },
       {
-        "name": "A Regra da Régua Auditável",
-        "body": "hsl(34 11% 54%) e mais escuro são valores de conformidade: qualquer clareamento precisa ser recalculado contra a superfície de destino e continuar ≥ 3:1. Não ajustar régua no olho.",
-        "section": "colors"
+        "name": "A Regra da Sombra Quente",
+        "section": "elevation",
+        "body": "Cinco degraus, todos sem blur, todos da família quente do papel. Sombra preta vira buraco na tela; sombra cor-de-papel projeta como papel sobre papel. Nenhuma sombra preta, em lugar nenhum."
       },
       {
-        "name": "A Regra da Grade Fechada",
-        "body": "Toda tabela de dado — listagem, grade de itens, janela de busca — é uma grade fechada: caixa externa em Régua, malha interna em Fio entre linhas e entre colunas. Consequência direta: zebra não existe neste sistema.",
-        "section": "colors"
+        "name": "A Regra do Pulo",
+        "section": "elevation",
+        "body": "Hover levanta a peça 2px e sobe um degrau de sombra; press afunda 2px e zera a sombra. O par é um mecanismo só — sobe quando o dedo se aproxima, afunda quando ele encosta."
       },
       {
-        "name": "A Regra da Escala de Três Degraus",
-        "body": "O texto do sistema tem três tamanhos: 0.75rem para etiqueta e mensagem de validação, 0.875rem para todo o corpo, 1.25rem para título de tela e número de documento. 1.125rem (Total) e 1.5rem (Display) são exceções nomeadas, de ocorrência única cada.",
-        "section": "typography"
+        "name": "A Regra da Cor com Dono",
+        "section": "colors",
+        "body": "Verde é dinheiro. Amarelo é foco e pendência. Vermelho é erro. Violeta é ação. Nenhum desses empregos se empresta, nem para decoração."
+      },
+      {
+        "name": "A Regra da Zona por Conteúdo",
+        "section": "colors",
+        "body": "A área é tintada pelo que ela CONTÉM — valor, identidade, apoio, pendência, bloqueio — e só ela. Zona espalhada em dado comum deixa de significar."
+      },
+      {
+        "name": "A Regra do /02 e do /01",
+        "section": "colors",
+        "body": "O pastel /02 pinta a SEÇÃO; a cheia /01 pinta o DADO e só entra em elemento compacto — chip, cabeçalho de card, item ativo, botão. Cheia em área grande é o que a fase 1.6 recusou."
+      },
+      {
+        "name": "A Regra do Ornamento Colorido",
+        "section": "colors",
+        "body": "Ornamento é SEMPRE colorido, nunca preto nem cinza — preto é a tinta do dado, e ornamento na mesma tinta compete com o conteúdo. Recolorir por máscara; editar o fill do SVG quebra a forma."
+      },
+      {
+        "name": "A Regra de Um por Região",
+        "section": "colors",
+        "body": "No máximo um ornamento por região visível, nunca dois no mesmo cartão. Três juntos numa tela real: corta-se o de menor hierarquia, não se diminuem os três."
+      },
+      {
+        "name": "A Regra do Foco Legível",
+        "section": "colors",
+        "body": "Amarelo sozinho não sobrevive ao creme (1,45:1). O anel é amarelo de 3px COM fio preto de 1px por fora — o preto é quem carrega os 3:1 da WCAG 1.4.11."
+      },
+      {
+        "name": "A Regra da Etiqueta Invertida",
+        "section": "typography",
+        "body": "Rótulo de seção, rótulo de campo e cabeçalho de coluna são caixa CLARA com letra preta. A força vem da borda, da caixa alta e do tracking — nunca do fundo cheio."
       },
       {
         "name": "A Regra do Número Tabular",
-        "body": "Todo dígito que possa ser comparado verticalmente — dinheiro, quantidade, percentual, contagem — usa tabular-nums e alinhamento à direita. Sem exceção, inclusive dentro de célula editável.",
-        "section": "typography"
+        "section": "typography",
+        "body": "Todo número em coluna é tabular e alinhado à direita. Coluna de número que não alinha não se confere de relance."
       },
       {
         "name": "A Regra da Mono para Identificador",
-        "body": "Mono é para o que se confere, não para o que se lê: código, NCM, CNPJ/CPF, número de documento, chave. Nunca para nome, descrição, endereço ou valor monetário.",
-        "section": "typography"
-      },
-      {
-        "name": "A Regra dos Quatro Degraus",
-        "body": "O espaçamento tem quatro valores: 4, 8, 12 e 16px. Um quinto valor precisa de justificativa estrutural, não estética.",
-        "section": "layout"
+        "section": "typography",
+        "body": "Código, CNPJ, NCM, migalha e cabeçalho de coluna falam em PT Mono. Quem titula fala em Sora, quem informa fala em Inter, quem identifica fala em Mono."
       },
       {
         "name": "A Regra da Folha",
-        "body": "Toda região de trabalho está dentro de uma moldura (page-frame) sobre Papel. Conteúdo solto direto no Papel é bug de composição, não estilo.",
-        "section": "layout"
+        "section": "layout",
+        "body": "Toda região de trabalho é uma folha OPACA pousada sobre a bancada. Conteúdo solto direto na bancada é bug de composição."
       },
       {
-        "name": "A Regra da Largura Inteira",
-        "body": "Nenhuma tela ganha max-width. Largura desperdiçada é coluna que o usuário terá de rolar horizontalmente para ver.",
-        "section": "layout"
+        "name": "A Regra da Grade de Fundo",
+        "section": "layout",
+        "body": "A bancada leva a grade de 52px — a mesma medida da linha do ledger. A folha pousa opaca por cima."
       },
       {
-        "name": "A Regra dos Doze Avos",
-        "body": "Campo de formulário mede-se em vãos de uma grade de 12 colunas, nunca em largura fixa nem em flex improvisado. Código curto ocupa 2, descrição ocupa 6, endereço ocupa a fileira inteira.",
-        "section": "layout"
-      },
-      {
-        "name": "A Regra da Linha Antes da Sombra",
-        "body": "Separação de superfícies coplanares se resolve com borda e tom. Sombra é reservada a elementos que flutuam sobre o documento e desaparecem.",
-        "section": "elevation"
+        "name": "A Regra do Movimento que Informa",
+        "section": "elevation",
+        "body": "Anima o que TROCOU: entrada de tela uma vez por navegação, e peça que aparece. Linha, célula, campo e anel de foco não animam nunca — num sistema de oito horas, movimento que não informa é atrito."
       }
     ],
     "dos": [
-      "Do pousar toda região de trabalho numa moldura (page-frame) sobre Papel.",
-      "Do compor telas a partir de src/components/vitra/ — DataTable, CadastroForm, FormGrid, LookupCombo, blocos. Tela reimplementando tabela ou rodapé é o principal vetor de deriva.",
-      "Do usar o rótulo literal da transcrição do SoftLux, incluindo maiúsculas, abreviação e barra invertida (Valores\\Localização do Estoque).",
-      "Do aplicar tabular-nums e alinhamento à direita em todo número comparável.",
-      "Do usar Meta (mono, caixa alta pequena) em cabeçalho de coluna, código, NCM, CNPJ e número de documento.",
-      "Do escolher o peso de régua pelo que ele separa: fio na malha (linhas e colunas), régua na caixa, régua forte no corte entre blocos.",
-      "Do fechar a grade: célula com parede dos quatro lados, caixa externa mais forte que a malha interna.",
-      "Do ancorar o total na coluna de valor da própria grade de itens, não numa tira à parte.",
-      "Do acompanhar toda indicação de estado por cor com um segundo sinal (marcador, borda, texto).",
-      "Do agrupar campos com fieldset + legend — é a forma-assinatura do bloco.",
-      "Do marcar valores ausentes como [a resolver] em vez de preencher com um plausível."
+      "Do dar à sombra a família quente do papel, sempre sem blur.",
+      "Do escolher o raio pela natureza da peça — item encosta em item, e item não arredonda.",
+      "Do usar violeta para o que MOVE e amarelo para o que PEDE ATENÇÃO (foco, pendência).",
+      "Do escrever dinheiro em verde, negativo em vermelho, e manter quantidade em tinta.",
+      "Do compor telas a partir de `src/components/cabinet/` — reimplementar tabela na tela é o vetor de deriva.",
+      "Do tintar a área pelo conteúdo (valor/identidade/apoio/pendência/bloqueio) e só ela.",
+      "Do rodar a guarda v4 em todo componente tocado."
     ],
     "donts": [
-      "Don't usar branco puro como fundo de página nem cinza puro em lugar nenhum. Papel é tintado; cinza neutro é de aplicativo, não de documento.",
-      "Don't introduzir cor fora dos dois empregos (carimbo de situação, destruição/erro). Sem acento de módulo, sem header colorido, sem botão azul.",
-      "Don't inventar nome de situação para o carimbo — a enumeração é [a resolver].",
-      "Don't clarear hsl(34 11% 54%) no olho: é piso de conformidade de 3:1.",
-      "Don't adicionar sombra para separar superfícies coplanares. Régua e tom fazem isso.",
-      "Don't usar glifo emoji em controle. Ícone Lucide de 16px.",
-      "Don't dar borda ao input dentro da célula de grade editável — a malha da grade já é a moldura.",
-      "Don't usar zebra. A malha da grade fechada já delimita a célula; faixa alternada por cima é ruído sobre ruído.",
-      "Don't deixar bloco de formulário compartilhar parede com o bloco vizinho. Compartimento tem caixa própria e goteira.",
-      "Don't usar mono para nome, descrição, endereço ou valor monetário — mono é para o que se confere.",
-      "Don't impor max-width a listagem ou formulário.",
-      "Don't substituir estado vazio ou de carregamento por spinner centralizado.",
-      "Don't desenhar para tela estreita. Desktop é o cenário confirmado.",
-      "Don't animar entrada de tela, usar bounce ou encenar transição."
+      "Don't deixar ornamento preto ou cinza, nem editar o `fill` de um SVG à mão.",
+      "Don't pôr mais de um ornamento por região visível.",
+      "Don't animar linha, célula, campo ou anel de foco.",
+      "Don't usar sombra preta, nem sombra com blur.",
+      "Don't arredondar item (chip, aba, página, célula, item de menu, etiqueta).",
+      "Don't usar amarelo como cor de texto, nem violeta como cor de fundo de área grande.",
+      "Don't voltar à barra preta sólida no cabeçalho de coluna ou na etiqueta.",
+      "Don't carregar fonte de CDN.",
+      "Don't levantar linha ou célula de grade no hover — lift é de controle.",
+      "Don't improvisar o modo escuro tom a tom."
     ]
   }
 }

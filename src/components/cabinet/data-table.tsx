@@ -23,7 +23,14 @@ import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import { ArrowDown, ArrowUp, type LucideIcon, Search } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+  Search,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 declare module '@tanstack/react-table' {
@@ -412,6 +419,10 @@ export function VitraDataTable<T>({
             disabled={state.page <= 1}
             onClick={() => updateState((s) => ({ ...s, page: s.page - 1 }))}
           >
+            {/* A seta é a DIREÇÃO, e vem do lado para onde ela leva: à esquerda
+                no Anterior, à direita no Próxima. O rótulo continua escrito —
+                paginação por seta muda é o clássico que obriga a adivinhar. */}
+            <ChevronLeft aria-hidden="true" />
             Anterior
           </Button>
           <span className="tabular-nums">
@@ -424,6 +435,7 @@ export function VitraDataTable<T>({
             onClick={() => updateState((s) => ({ ...s, page: s.page + 1 }))}
           >
             Próxima
+            <ChevronRight aria-hidden="true" />
           </Button>
         </div>
       </div>

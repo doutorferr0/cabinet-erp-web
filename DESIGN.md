@@ -230,8 +230,28 @@ degraus se distinguem, e para em 8px, onde ainda se lê como sombra.
 - **Teto de densidade: 1 por região visível**, nunca 2 no mesmo cartão. Três juntos numa tela real
   → cortar o de menor hierarquia, não diminuir os três.
 
-Escala: **18px** item de menu · **20px** cabeçalho de seção · **24px** banda de identidade ·
-**96–128px** estado vazio.
+#### Os dois papéis do mesmo shape — decoração × ícone
+O desenho é um só; o que muda é **de onde vem a cor**.
+
+| Papel | Cor | Onde | Tamanho |
+|---|---|---|---|
+| **Decoração** | token FIXO da região (`tom="modulo"`, `"info"`, `"erro"`) | vazio de módulo, banda de identidade, modal de alerta, splash | 24–128px |
+| **Ícone** | HERDADA do container (`tom="icone"` → `currentColor`) | migalha, item de menu, cabeçalho de seção, aba | 12–20px |
+
+No papel de ícone o ornamento **não escolhe cor**: hover, ativo e desabilitado já mexem no `color`
+do container e o shape acompanha sozinho. Sem isso cada um desses estados precisaria de uma
+**segunda regra de cor** só para o ornamento — estado duplicado, que um dia diverge. É a mesma
+técnica dos outros tons (máscara + `background-color`), só que o `background-color` é
+`currentColor`. Corolário: o papel de ícone só entra onde o container **já pinta em cor** —
+herdar o preto do texto violaria a regra de nunca preto nem cinza.
+
+**Fronteira com o lucide: `shape = onde estou` (lugar/entidade) · `lucide = o que faço`
+(ação/controle).** Chevron, x, check e busca continuam do lucide; o acervo brutalist não tem esses
+desenhos, e misturar as duas famílias dentro do mesmo botão é pior do que duas famílias com a
+fronteira escrita.
+
+Escala: **12–16px** migalha · **18px** item de menu · **20px** cabeçalho de seção · **24px** banda
+de identidade · **96–128px** estado vazio.
 
 No item de menu o par entra **invertido** em relação ao fundo: item inativo é liso e leva a cheia
 /01 (a fileira vira um mapa de cores); item ativo já tem fundo /01 e leva a pastel /02, senão a

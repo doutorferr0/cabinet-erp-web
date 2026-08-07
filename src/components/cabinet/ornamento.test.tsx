@@ -24,6 +24,19 @@ describe('Ornamento', () => {
     expect(peca).toHaveClass('bg-modulo-cheia')
   })
 
+  // Guarda de uma falha que ficou VERDE por semanas e apagou o ornamento no
+  // app inteiro: o data URI do Vite traz aspas SIMPLES (`xmlns='...'`), e um
+  // `url()` sem aspas não pode conter aspas — o browser considera a declaração
+  // inválida e a descarta, sobrando o `background-color` a pintar o retângulo.
+  // O jsdom aceita a forma inválida, então só asserção sobre a STRING pega.
+  it('a URL da máscara vai entre aspas — sem elas o browser descarta', () => {
+    const { container } = render(<Ornamento shape="fornecedores" tom="modulo" tamanho={16} />)
+    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
+    expect(peca.style.maskImage.startsWith('url("')).toBe(true)
+    // E a razão de precisarem existir: há aspas simples cruas dentro da URL.
+    expect(peca.style.maskImage).toContain("'")
+  })
+
   it('cada módulo tem o SEU shape, sempre o mesmo', () => {
     const { container: a } = render(<Ornamento shape="produtos" tom="modulo" tamanho={18} />)
     const { container: b } = render(<Ornamento shape="estoque" tom="modulo" tamanho={18} />)

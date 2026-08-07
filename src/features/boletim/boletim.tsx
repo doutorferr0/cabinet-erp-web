@@ -17,6 +17,7 @@ import {
   fetchBoletim,
 } from '@/data/boletim'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 
@@ -37,8 +38,32 @@ import { Link } from '@tanstack/react-router'
  * marca — não inventa nome.
  */
 
+/**
+ * DINHEIRO — verde; o que SUBTRAI — vermelho (DESIGN.md §Acentos, e a mesma
+ * receita que os totais do `FormGrid` já usam).
+ *
+ * Não é enfeite: neste boletim toda linha é "R$ alguma coisa", e num ledger
+ * assim a cor é o que separa entrada de desconto ANTES de o olho chegar ao
+ * sinal. Escrito num lugar só para a regra não divergir entre a tira de
+ * apuração e a grade — foi divergindo assim que o valor daqui ficou preto
+ * enquanto o do formulário já saía verde.
+ */
+function Valor({ centavos, className }: { centavos: number; className?: string }) {
+  return (
+    <span
+      className={cn('tabular-nums', centavos < 0 ? 'text-destructive' : 'text-money', className)}
+    >
+      {formatMoneyBRL(centavos)}
+    </span>
+  )
+}
+
 /** Um número da apuração: rótulo em Meta acima, valor tabular abaixo. */
-function Grandeza({ rotulo, valor, apoio }: { rotulo: string; valor: string; apoio?: string }) {
+function Grandeza({
+  rotulo,
+  valor,
+  apoio,
+}: { rotulo: string; valor: string; apoio?: React.ReactNode }) {
   return (
     // A coluna fecha: rótulo e valor partilham a mesma borda esquerda, e o
     // valor é tabular para alinhar verticalmente com as grandezas vizinhas.
@@ -63,12 +88,12 @@ function Apuracao({ dados }: { dados: Boletim }) {
       <Grandeza
         rotulo="Orçamentos do dia"
         valor={String(dados.orcamentosDoDia)}
-        apoio={formatMoneyBRL(dados.valorOrcadoCentavos)}
+        apoio={<Valor centavos={dados.valorOrcadoCentavos} className="text-sm" />}
       />
       <Grandeza
         rotulo="Ordens do dia"
         valor={String(dados.ordensDoDia)}
-        apoio={formatMoneyBRL(dados.valorOrdenadoCentavos)}
+        apoio={<Valor centavos={dados.valorOrdenadoCentavos} className="text-sm" />}
       />
       <Grandeza
         rotulo="Ordens sem envio"
@@ -116,8 +141,11 @@ function Movimento({ linhas }: { linhas: LinhaMovimento[] }) {
                     {linha.numero}
                   </TableCell>
                   <TableCell className="truncate">{linha.contraparte}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatMoneyBRL(linha.valorCentavos)}
+                  {/* A célula de valor leva o fundo da ZONA (DESIGN.md
+                      §Superfície tintada): a coluna que o operador soma é a
+                      que ele encontra sem procurar. */}
+                  <TableCell className="bg-zone-money text-right">
+                    <Valor centavos={linha.valorCentavos} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -128,8 +156,8 @@ function Movimento({ linhas }: { linhas: LinhaMovimento[] }) {
                 <TableCell className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
                   Total do dia
                 </TableCell>
-                <TableCell className="text-right text-lg font-semibold tabular-nums">
-                  {formatMoneyBRL(total)}
+                <TableCell className="bg-zone-money text-right">
+                  <Valor centavos={total} className="text-lg font-extrabold" />
                 </TableCell>
               </TableRow>
             </>

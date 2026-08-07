@@ -484,7 +484,15 @@ function SidebarMenuButton({
     'data-slot': 'sidebar-menu-button',
     'data-sidebar': 'menu-button',
     'data-size': size,
-    'data-active': isActive,
+    // Só ESCREVE o atributo quando é verdade. `data-active={false}` vira
+    // `data-active="false"` no DOM — React não omite `false` em `data-*`, só
+    // `null`/`undefined` — e a variante `data-active:` do Tailwind casa por
+    // PRESENÇA (`[data-active]`), não por valor. Com o atributo sempre escrito,
+    // TODO item de menu se pintava de ativo e a sidebar inteira ficava acesa:
+    // o estado mais visível do shell não existia. É a irmã da armadilha já
+    // registrada sobre atributo de estado da RAC — lá o valor sobrava, aqui a
+    // presença sobra.
+    ...(isActive && { 'data-active': true }),
     className: cn(sidebarMenuButtonVariants({ variant, size }), className),
   }
   const comp =
@@ -636,7 +644,8 @@ function SidebarMenuSubButton({
     'data-slot': 'sidebar-menu-sub-button',
     'data-sidebar': 'menu-sub-button',
     'data-size': size,
-    'data-active': isActive,
+    // Mesma regra do botão de menu acima: escrever só quando é verdade.
+    ...(isActive && { 'data-active': true }),
     className: cn(
       // Subitem segue o pai (§3b): liso em repouso com a borda já reservada
       // apagada, pula no hover, e ATIVO é violeta cheio com traço de Tinta —

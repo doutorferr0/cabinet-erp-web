@@ -230,7 +230,17 @@ export function Ornamento({ shape, tom, tamanho, className }: OrnamentoProps) {
       style={{
         width: tamanho,
         height: tamanho,
-        maskImage: `url(${url})`,
+        // ASPAS DUPLAS OBRIGATÓRIAS em volta da URL. O Vite inlineia SVG
+        // pequeno como data URI e mantém as aspas SIMPLES do markup
+        // (`xmlns='...'`); um `url()` SEM aspas não pode conter aspas, então a
+        // declaração inteira é inválida e o browser a DESCARTA — o ornamento
+        // some e sobra o `background-color` pintando o retângulo inteiro. Era
+        // isso que fazia todo shape da 1.6 aparecer como quadrado colorido.
+        //
+        // Não deu erro em lugar nenhum: o jsdom aceita a forma inválida, então
+        // a suíte passava verde. É a mesma família da lição "contraste de tema
+        // se confere renderizando" — CSS malformado é mudo.
+        maskImage: `url("${url}")`,
         maskSize: 'contain',
         maskRepeat: 'no-repeat',
         maskPosition: 'center',

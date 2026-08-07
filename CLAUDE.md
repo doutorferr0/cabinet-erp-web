@@ -21,7 +21,7 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
 - **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
   escrever à mão tipo que o contrato define. Todo tipo de servidor vem do codegen —
-  `pnpm codegen` (`@hey-api/openapi-ts`), saída em `src/api/gerado/`, **commitada**, com
+  `pnpm codegen` (Orval + pós-codegen), saída em `src/api/gerado/`, **commitada**, com
   `@ts-nocheck` posto pelo passo pós-codegen. **Nunca editar `src/api/gerado/` à mão**;
   conflito de merge nele se resolve rodando o codegen.
 - **A guarda do contrato é o CI:** o passo `Codegen is up to date` refaz o codegen e reprova se
@@ -37,7 +37,7 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 - **Vite + React 19 + TypeScript strict** · SPA
 - **Tailwind v4 + shadcn/ui** (copy-paste, sem runtime dep de UI kit)
 - **TanStack Query v5** (estado servidor) · **TanStack Table v8** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
-- **`@hey-api/openapi-ts`** (codegen do contrato) · cliente em `src/api/cliente.ts` (`fetch`, `credentials: 'include'` — a sessão é cookie opaco)
+- **Orval** (codegen do contrato: tipos + hooks TanStack + Zod + handlers MSW) · cliente em `src/api/cliente.ts` (`fetch`, `credentials: 'include'` — a sessão é cookie opaco)
 - **react-hook-form + Zod 4**
 - **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome** (lint+format) · **vitest** + Testing Library
 - **Vetos:** Redux · axios · styled-components · MUI/Antd/UI-kits de runtime · form-generator declarativo · SheetJS (`xlsx` npm) · float p/ dinheiro

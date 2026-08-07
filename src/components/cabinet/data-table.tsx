@@ -1,6 +1,13 @@
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -238,18 +245,33 @@ export function VitraDataTable<T>({
               // consulta não tem resultado mesmo. Com o backend real, essa
               // distinção é a diferença entre "some" e "não existe".
               <TableRow>
-                <TableCell colSpan={totalColSpan} className="h-24 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    Não foi possível carregar a consulta.
-                    {/* O `detail` do problem+json é a frase que o backend escolheu
-                        para o caso — é a única informação acionável da resposta. */}
-                    {query.error instanceof ErroDaApi && query.error.detail ? (
-                      <span className="max-w-prose text-sm">{query.error.detail}</span>
-                    ) : null}
-                    <Button variant="outline" size="sm" onClick={() => query.refetch()}>
-                      Tentar de novo
-                    </Button>
-                  </div>
+                <TableCell colSpan={totalColSpan} className="py-8">
+                  {/* Mesma anatomia dos vazios, com o ornamento de FALHA — o
+                      triângulo partido em Tomato, que não é o vermelho de erro:
+                      a consulta não chegou, ninguém fez nada errado e não há
+                      cadastro para consertar. Vermelho aqui mandaria o operador
+                      procurar culpa onde só houve rede. */}
+                  <Empty>
+                    <EmptyMedia>
+                      <Ornamento shape="falha-rede" tom="offline" tamanho={96} />
+                    </EmptyMedia>
+                    <EmptyHeader>
+                      <EmptyTitle>Não foi possível carregar a consulta</EmptyTitle>
+                      <EmptyDescription>
+                        {/* O `detail` do problem+json é a frase que o backend
+                            escolheu para o caso — é a única informação acionável
+                            da resposta. Sem ela, a orientação genérica. */}
+                        {query.error instanceof ErroDaApi && query.error.detail
+                          ? query.error.detail
+                          : 'A consulta não chegou ao servidor. Tente de novo em instantes.'}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button variant="outline" size="sm" onClick={() => query.refetch()}>
+                        Tentar de novo
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (

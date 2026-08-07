@@ -1,6 +1,6 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { TextField } from '@/components/cabinet/form-controls'
-import { Stipple } from '@/components/cabinet/stipple'
+import { Ornamento } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useLogin } from '@/data/sessao'
@@ -47,11 +47,33 @@ export function LoginTela() {
 
   return (
     // Papel com grade + folha em caixa preta e sombra dura: a tela de sessão é
-    // uma folha como qualquer outra, e o Stipple é permitido aqui (§Stipple).
+    // uma folha como qualquer outra.
     <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
         <div className="mb-4 flex items-center gap-3">
-          <Stipple className="size-10" />
+          {/* A MARCA do sistema, no lugar do Stipple. O login é a única tela
+              onde a memória prevê composição de ornamentos — e é onde ela cabe:
+              não há módulo (a sessão ainda não existe, então `data-modulo` não
+              foi declarado), não há dado com que competir, e é aqui que o
+              operador vê o sistema se apresentar.
+              Três shapes empilhados, em roxo de marca com dois pastéis por trás
+              — a única cor possível fora de módulo. `aria-hidden` vem do próprio
+              `<Ornamento>`: quem diz o nome é a banda ao lado. */}
+          <span className="relative inline-flex size-10 shrink-0 items-center justify-center">
+            <Ornamento
+              shape="marca-base"
+              tom="modulo-suave"
+              tamanho={40}
+              className="absolute inset-0"
+            />
+            <Ornamento
+              shape="marca-apoio"
+              tom="info"
+              tamanho={28}
+              className="absolute opacity-70"
+            />
+            <Ornamento shape="marca" tom="marca" tamanho={22} className="relative" />
+          </span>
           <BandaDeIdentidade titulo="Cabinet" contexto="Entrar" className="flex-1" />
         </div>
         <Form {...form}>

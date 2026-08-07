@@ -52,7 +52,7 @@ function AlertDialogOverlay({
     <ModalOverlayPrimitive
       data-slot="alert-dialog-overlay"
       // `isDismissable` NÃO entra aqui: a cortina não cancela a decisão.
-      className={cn('fade-veil fixed inset-0 isolate z-50 bg-black/20', className)}
+      className={cn('fade-veil fixed inset-0 isolate z-50 bg-veil', className)}
       {...props}
     >
       {children}

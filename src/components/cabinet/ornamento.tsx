@@ -1,13 +1,17 @@
 import { type Modulo, moduloDaRota } from '@/app/modulo'
+import brutalist011 from '@/assets/brutalist/brutalist-011.svg?url'
 import brutalist022 from '@/assets/brutalist/brutalist-022.svg?url'
 import brutalist029 from '@/assets/brutalist/brutalist-029.svg?url'
 import brutalist064 from '@/assets/brutalist/brutalist-064.svg?url'
 import brutalist072 from '@/assets/brutalist/brutalist-072.svg?url'
+import brutalist097 from '@/assets/brutalist/brutalist-097.svg?url'
 import shape128 from '@/assets/brutalist/brutalist-shape-128.svg?url'
 import shape133 from '@/assets/brutalist/brutalist-shape-133.svg?url'
 import shape135 from '@/assets/brutalist/brutalist-shape-135.svg?url'
+import shape140 from '@/assets/brutalist/brutalist-shape-140.svg?url'
 import shape159 from '@/assets/brutalist/brutalist-shape-159.svg?url'
 import shape160 from '@/assets/brutalist/brutalist-shape-160.svg?url'
+import shape182 from '@/assets/brutalist/brutalist-shape-182.svg?url'
 import shape193 from '@/assets/brutalist/brutalist-shape-193.svg?url'
 import { cn } from '@/lib/utils'
 import { useRouter, useRouterState } from '@tanstack/react-router'
@@ -65,6 +69,10 @@ const SHAPE_DE_ESTADO = {
   'busca-vazia': shape160, // círculos que não se cruzam
   'rota-inexistente': shape193, // bandeira torta
   alerta: shape193, // a mesma bandeira: confirmação destrutiva
+  'falha-rede': brutalist097, // triângulo partido — a consulta não chegou
+  marca: shape182, // estrela radiada: a marca do sistema, fora de módulo
+  'marca-apoio': shape140, // acompanha a marca na composição do login
+  'marca-base': brutalist011, // idem
 } as const
 
 export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO
@@ -83,6 +91,14 @@ const TONS = {
   info: 'bg-info',
   /** Danger/01 — só onde o significado É erro. */
   erro: 'bg-destructive',
+  /**
+   * Tomato — INDISPONIBILIDADE, que não é erro. A consulta não chegou; ninguém
+   * fez nada errado e ninguém precisa consertar cadastro. Vermelho aqui faria o
+   * operador tratar queda de rede como defeito.
+   */
+  offline: 'bg-offline',
+  /** Roxo de marca — o sistema falando de si (login, splash). Fora de módulo. */
+  marca: 'bg-accent',
 } as const
 
 export type TomDeOrnamento = keyof typeof TONS

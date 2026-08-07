@@ -89,7 +89,7 @@ const dropdownMenuItemVariants = cva(
   {
     variants: {
       selectionMode: {
-        none: 'gap-1.5 px-1.5 py-1 text-sm focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-white [&_svg:not([class*="size-"])]:size-4',
+        none: 'gap-1.5 px-1.5 py-1 text-sm focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-destructive-foreground [&_svg:not([class*="size-"])]:size-4',
         single:
           'gap-1.5 py-1 pr-8 pl-1.5 text-sm focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
         multiple:

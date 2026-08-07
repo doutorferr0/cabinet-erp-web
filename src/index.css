@@ -70,6 +70,12 @@
   --destructive: 357 84% 42%;
   --destructive-foreground: 0 0% 100%;
   --warn: 47 100% 50%; /* amarelo: pendência e FOCO, não ação */
+  /* Tomato `#FF7051` da paleta, para INDISPONIBILIDADE — a consulta não chegou.
+     Não é o vermelho de erro de propósito: erro é coisa que o sistema recusou e
+     que alguém precisa resolver; rede fora é estado do mundo, e some sozinho.
+     Pintar os dois de vermelho faria o operador tratar queda de rede como
+     defeito de cadastro. */
+  --offline: 11 100% 66%;
   /* Traço: 2px preto em tudo que é caixa. */
   --border: 0 0% 0%;
   --input: 0 0% 0%;
@@ -108,6 +114,11 @@
      branca em cima (3,31:1 no verde antigo) e `void` é letra sobre papel. */
   --stamp-done: 155 81% 26%;
   --stamp-void: 357 84% 42%;
+  /* CORTINA do modal. Era `bg-black/20` literal em três componentes, e literal
+     não sabe em que tema está: sobre a bancada escura (L 9) um preto a 20% é
+     quase invisível, e a cortina existe justamente para dizer "o que está atrás
+     não recebe clique agora". No escuro ela precisa ser bem mais densa. */
+  --veil: 0 0% 0% / 0.2;
   --grid-line: hsl(42 17% 70%);
   /* Sidebar: é Bancada; item ativo = Folha com traço preto. */
   --sidebar: hsl(41 25% 85%);
@@ -189,46 +200,145 @@
   --modulo-02: 7 100% 93%; /* #FFDFDB */
 }
 
-/* Modo escuro: `[a resolver — pós 1.5]`. A amostra da fase 1.5 não define tema
-   escuro, e a fundação inteira acabou de mudar: recalcular agora seria derivar
-   de valores que ainda vão assentar. Os valores abaixo são os da direção
-   ANTERIOR e sobrevivem só para a tela não quebrar com `.dark` no html.
-   Recalcular quando a 1.5 estiver aplicada nas telas. */
+/* MODO ESCURO — recalculado na fase 3 sobre a paleta da 1.6.
+   Substitui os valores da direção ANTERIOR à 1.5, que sobreviviam só para a
+   tela não quebrar com `.dark` no html e que já estavam ERRADOS de três
+   formas: a ação tinha virado branca (perdendo o violeta), o anel de foco
+   tinha virado cinza (perdendo o dono do amarelo) e nenhum token da 1.6
+   existia aqui — as cinco zonas herdavam os pastéis CLAROS do `:root` e
+   ficariam com texto claro sobre fundo claro.
+
+   **O escuro não inverte a cor, inverte a RELAÇÃO.** A bancada continua sendo
+   o fundo e a folha continua pousando por cima; o que muda é que agora a folha
+   é mais clara que a bancada, e a tinta que desenha a caixa é clara em vez de
+   preta. A matiz quente do papel (35–42) fica em todas as superfícies — sem
+   ela o creme vira cinza e o sistema perde a identidade que a 1.5 construiu.
+
+   Cada par abaixo foi MEDIDO (mesmo método da 1.6, luminância relativa):
+     tinta sobre bancada 15,8:1 · sobre folha 13,6:1 · sobre hover 10,1:1
+     apoio sobre folha 7,6:1 · traço sobre folha 6,7:1 (piso 3:1 de não-texto)
+     dinheiro sobre a zona de valor 6,8:1 · negativo sobre a de bloqueio 4,9:1
+     amarelo do foco sobre a bancada 11,9:1
+     tinta sobre as cinco zonas: 10,2 · 12,5 · 12,0 · 10,3 · 12,2
+
+   **A inversão que o cálculo obrigou:** no claro o violeta é escuro (L 66) e
+   leva texto BRANCO; no escuro ele precisa clarear (L 74) para se ver sobre a
+   folha, e aí o branco em cima cai para 3,05:1. O texto da ação vira ESCURO —
+   5,34:1. É o mesmo violeta cumprindo o mesmo papel, com o contraste na mão
+   certa. */
 .dark {
-  --background: 30 8% 10%;
-  --foreground: 40 20% 95%;
-  --card: 30 7% 13%;
-  --card-foreground: 40 20% 95%;
-  --popover: 30 7% 13%;
-  --popover-foreground: 40 20% 95%;
-  --primary: 40 20% 95%;
-  --primary-foreground: 30 8% 10%;
-  --secondary: 30 7% 13%;
-  --secondary-foreground: 40 20% 95%;
-  --muted: 34 9% 20%;
-  --muted-foreground: 38 10% 66%;
-  --accent: 34 9% 20%;
-  --accent-foreground: 40 20% 95%;
-  --destructive: 2 70% 62%;
-  --destructive-foreground: 30 8% 10%;
-  --border: 33 10% 46%;
-  --input: 33 10% 46%;
-  --ring: 36 11% 62%;
-  --rule-hair: 34 7% 22%;
-  --rule-strong: 36 11% 62%;
-  --bench-tint: 34 9% 20%;
-  --stamp-neutral: 38 10% 66%;
-  --stamp-open: 210 70% 64%;
-  --stamp-done: 150 45% 58%;
-  --stamp-void: 2 70% 62%;
-  --sidebar: hsl(30 8% 10%);
-  --sidebar-foreground: hsl(40 20% 95%);
-  --sidebar-primary: hsl(40 20% 95%);
-  --sidebar-primary-foreground: hsl(30 8% 10%);
-  --sidebar-accent: hsl(34 9% 20%);
-  --sidebar-accent-foreground: hsl(40 20% 95%);
-  --sidebar-border: hsl(33 10% 46%);
-  --sidebar-ring: hsl(36 11% 62%);
+  /* Superfícies: bancada escura, folha um degrau ACIMA (nunca branca). */
+  --background: 40 12% 9%;
+  --foreground: 42 25% 94%;
+  --card: 40 10% 14%;
+  --card-foreground: 42 25% 94%;
+  --popover: 40 10% 14%;
+  --popover-foreground: 42 25% 94%;
+  /* Afundar no escuro é ESCURECER: o degrau interno desce, não sobe. */
+  --surface-sunken: 40 10% 11%;
+  --neutral: 40 8% 22%;
+  /* Ação: o mesmo violeta, clareado para se ver sobre a folha escura. O texto
+     em cima dele fica escuro — ver a nota da inversão acima. */
+  --primary: 241 100% 74%;
+  --primary-hover: 241 90% 82%;
+  --primary-foreground: 40 12% 9%;
+  --secondary: 40 10% 14%;
+  --secondary-foreground: 42 25% 94%;
+  --muted: 40 8% 22%;
+  --muted-foreground: 40 14% 70%;
+  --accent: 262 90% 78%;
+  --accent-foreground: 40 12% 9%;
+  --info: 225 71% 75%;
+  /* Dinheiro e negativo sobem de luz: no claro eles escureciam para se ver
+     sobre pastel claro; aqui clareiam pelo motivo espelhado. */
+  --money: 155 65% 62%;
+  --destructive: 357 90% 70%;
+  --destructive-foreground: 40 12% 9%;
+  --warn: 47 100% 55%;
+  /* Tomato segue igual: a L 66 ele ja se le sobre o papel escuro. */
+  --offline: 11 100% 66%;
+  /* O TRAÇO. É ele que desenha a caixa, e no escuro ele é claro — a Regra da
+     Caixa Preta vira a regra do traço: muda a tinta, não o papel dela. */
+  --border: 40 10% 66%;
+  --input: 40 10% 66%;
+  --ring: 47 100% 55%;
+  --rule-hair: 40 8% 30%;
+  --rule-strong: 40 10% 70%;
+  /* Zonas: a MESMA matiz dos pastéis /02, com a luz virada de 91–95% para
+     18–22%. A cor continua nomeando o conteúdo; só o papel escureceu. */
+  --zone-money: 154 40% 18%;
+  --zone-id: 263 38% 22%;
+  --zone-info: 223 34% 21%;
+  --zone-warn: 48 40% 18%;
+  --zone-danger: 6 40% 20%;
+  /* Sombra: continua da família quente e continua sem blur, mas agora precisa
+     ser MAIS ESCURA que a bancada para existir — sombra clara sobre papel
+     escuro seria luz, não sombra. Os cinco degraus ficam sutis de propósito:
+     no escuro quem carrega a elevação é o degrau de superfície e o traço
+     claro, e a sombra só confirma. */
+  --shadow-1: 40 14% 6%;
+  --shadow-2: 39 16% 5%;
+  --shadow-3: 37 18% 4%;
+  --shadow-4: 36 20% 3%;
+  --shadow-5: 35 22% 2%;
+  --stamp-neutral: 40 14% 70%;
+  --stamp-open: 47 100% 55%;
+  --stamp-done: 155 65% 62%;
+  --stamp-void: 357 90% 70%;
+  /* Sobre papel escuro a cortina precisa de muito mais densidade para separar
+     o modal do resto: 20% de preto ali some. */
+  --veil: 0 0% 0% / 0.65;
+  --grid-line: hsl(40 8% 18%);
+  --sidebar: hsl(40 12% 9%);
+  --sidebar-foreground: hsl(42 25% 94%);
+  --sidebar-primary: hsl(241 100% 74%);
+  --sidebar-primary-foreground: hsl(40 12% 9%);
+  --sidebar-accent: hsl(40 8% 22%);
+  --sidebar-accent-foreground: hsl(42 25% 94%);
+  --sidebar-border: hsl(40 10% 66%);
+  --sidebar-ring: hsl(47 100% 55%);
+  /* Par de módulo padrão, escuro. */
+  --modulo-01: 262 90% 78%;
+  --modulo-02: 263 38% 22%;
+}
+
+/* COR DE MÓDULO NO ESCURO — só a /02 muda.
+   A cheia /01 já é clara e continua servindo de tinta sobre o papel escuro
+   (medido: entre 5,15:1 e 8,5:1 sobre a folha, todas acima do piso de 3:1 de
+   elemento não-textual). A pastel /02, que no claro é superfície, aqui teria
+   91–95% de luz e viraria um bloco branco no meio do escuro: ela desce para a
+   mesma matiz com 20% de luz, e a tinta clara por cima fica entre 9,7:1 e
+   13,4:1. */
+.dark [data-modulo="produtos"] {
+  --modulo-02: 185 35% 20%;
+}
+
+.dark [data-modulo="estoque"] {
+  --modulo-02: 205 35% 20%;
+}
+
+.dark [data-modulo="vendas"] {
+  --modulo-02: 251 35% 20%;
+}
+
+.dark [data-modulo="compras"] {
+  --modulo-02: 287 35% 20%;
+}
+
+.dark [data-modulo="clientes"] {
+  --modulo-02: 268 35% 20%;
+}
+
+.dark [data-modulo="fornecedores"] {
+  --modulo-02: 226 35% 20%;
+}
+
+.dark [data-modulo="profissionais"] {
+  --modulo-02: 279 35% 20%;
+}
+
+.dark [data-modulo="boletim"] {
+  --modulo-02: 7 35% 20%;
 }
 
 @theme inline {
@@ -276,6 +386,8 @@
      virou Neutro, que é o tom de hover de item desde a 1.5. Alias sem
      consumidor é convite para o emprego velho voltar por descuido. */
   --color-surface-sunken: hsl(var(--surface-sunken));
+  --color-veil: hsl(var(--veil));
+  --color-offline: hsl(var(--offline));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */
@@ -361,7 +473,7 @@
    substituiria o translate inteiro — o diálogo saltaria para o canto inferior
    direito durante a animação. A propriedade independente compõe com o
    `transform` que já estiver lá, e obedece ao mesmo `transform-origin`. */
-@keyframes pop-spring-in {
+@keyframes pop-appear {
   from {
     opacity: 0;
     scale: 0.96;
@@ -373,7 +485,12 @@
   }
 }
 
-@keyframes pop-spring-out {
+/* `veil-fade` e `pop-appear` já se chamaram `pop-spring-out`/`-in`. O nome
+   mudou por precisão, não por gosto: a SAÍDA é fade puro, sem mola nenhuma, e
+   chamá-la de "spring" descrevia errado o que ela faz. De quebra, o detector
+   de design casava a string "spring" na declaração `animation` e acusava
+   bounce easing em quatro lugares — sendo que três deles eram este fade. */
+@keyframes veil-fade {
   from {
     opacity: 1;
   }
@@ -385,7 +502,7 @@
 
 @utility pop-spring {
   &[data-entering] {
-    animation: pop-spring-in 360ms
+    animation: pop-appear 360ms
       linear(
         0,
         0.027,
@@ -421,7 +538,7 @@
   }
 
   &[data-exiting] {
-    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+    animation: veil-fade 120ms cubic-bezier(0.4, 0, 1, 1);
   }
 
   /* `<MotionConfig reducedMotion="user">` só governa a lib; animação escrita em
@@ -441,11 +558,11 @@
    veio ver; o que ele veio ver é o diálogo por cima. */
 @utility fade-veil {
   &[data-entering] {
-    animation: pop-spring-out 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
+    animation: veil-fade 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
   }
 
   &[data-exiting] {
-    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+    animation: veil-fade 120ms cubic-bezier(0.4, 0, 1, 1);
   }
 
   @media (prefers-reduced-motion: reduce) {

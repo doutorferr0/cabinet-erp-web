@@ -43,7 +43,11 @@ const buttonVariants = cva(
         secondary: 'lift-control border-border bg-card hover:bg-muted',
         ghost: 'border-transparent transition-colors hover:bg-muted',
         destructive:
-          'lift-control border-destructive bg-card text-destructive hover:bg-destructive hover:text-white',
+          // `text-destructive-foreground`, NUNCA `text-white` literal: no tema
+          // escuro o vermelho clareia (L 42 → 70) e o branco em cima cai para
+          // 2,82:1 — reprova AA no estado mais perigoso da interface. O token
+          // vira escuro junto com o tema e devolve 6,29:1. Medido.
+          'lift-control border-destructive bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground',
         // Link cru (Utrecht): mono caps sublinhado 2px. O hover era amarelo,
         // que é o anel de foco: link sob o mouse ficava com a cara de link
         // focado, e os dois estados deixavam de se distinguir. Neutro é o tom

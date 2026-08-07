@@ -1,228 +1,320 @@
 ---
 name: Cabinet
-description: Sistema visual de um ERP denso, desktop, em PT-BR — "Brut sobre papel": documento comercial com estrutura neo-brutalista.
+description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfície creme, elevação em degraus e acento saturado.
 colors:
-  paper: "hsl(42 30% 96%)"
-  surface-card: "hsl(0 0% 100%)"
-  bench-tint: "hsl(44 45% 90%)"
-  ink: "hsl(30 15% 10%)"
-  ink-muted: "hsl(32 10% 38%)"
-  ink-inverse: "hsl(42 30% 96%)"
-  rule-hair: "hsl(38 14% 84%)"
-  rule: "hsl(30 15% 10%)"
-  grid-line: "hsl(30 15% 10% / 0.28)"
-  grid-line-page: "hsl(30 15% 10% / 0.38)"
-  anchor-yellow: "hsl(45 96% 54%)"
-  alert-red: "hsl(4 74% 44%)"
-  money-ink: "hsl(152 65% 24%)"
-  zone-money: "hsl(110 24% 88%)"
-  zone-id: "hsl(8 36% 89%)"
-  stamp-neutral: "hsl(32 10% 38%)"
-  stamp-open-bg: "hsl(45 96% 54%)"
-  stamp-done-bg: "hsl(30 15% 10%)"
-  stamp-void: "hsl(4 74% 44%)"
+  bench: "hsl(41 25% 85%)"
+  sheet: "hsl(42 50% 96%)"
+  neutral: "hsl(44 35% 92%)"
+  ink: "hsl(0 0% 0%)"
+  ink-muted: "hsl(37 16% 36%)"
+  rule-hair: "hsl(42 17% 70%)"
+  main: "hsl(241 100% 66%)"
+  main-hover: "hsl(241 77% 57%)"
+  main-foreground: "hsl(0 0% 100%)"
+  accent: "hsl(262 97% 76%)"
+  info: "hsl(219 90% 69%)"
+  money: "hsl(155 81% 26%)"
+  danger: "hsl(357 84% 42%)"
+  warn: "hsl(47 100% 50%)"
+  ring: "hsl(47 100% 50%)"
+  zone-money: "hsl(78 32% 90%)"
+  zone-id: "hsl(30 36% 91%)"
+  zone-info: "hsl(213 21% 92%)"
+  zone-warn: "hsl(46 63% 89%)"
+  zone-danger: "hsl(14 49% 90%)"
+  shadow-1: "hsl(41 14% 61%)"
+  shadow-2: "hsl(39 13% 47%)"
+  shadow-3: "hsl(37 16% 36%)"
+  shadow-4: "hsl(36 18% 27%)"
+  shadow-5: "hsl(35 20% 19%)"
 typography:
   display:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.75rem"
-    fontWeight: 800
-    letterSpacing: "-0.02em"
-    textTransform: "uppercase"
+    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.85rem"
+    fontWeight: 700
+    letterSpacing: "-0.012em"
   headline:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.5rem"
-    fontWeight: 800
-    letterSpacing: "-0.02em"
-    textTransform: "uppercase"
-  title:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 800
+    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.35rem"
+    fontWeight: 700
+    letterSpacing: "-0.012em"
+  value:
+    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.7rem"
+    fontWeight: 700
   body:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
   label:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 500
+  control:
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 600
-  control:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "13px"
-    fontWeight: 600
   numeric:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
     fontFeature: "tabular-nums"
-  meta:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-    fontSize: "0.75rem"
-    fontWeight: 700
-    letterSpacing: "0.07em"
+  tag:
+    fontFamily: "PT Mono, ui-monospace, monospace"
+    fontSize: "10px"
+    letterSpacing: "0.12em"
     textTransform: "uppercase"
-  doc-number:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-    fontSize: "1.5rem"
-    fontWeight: 700
-    letterSpacing: "-0.01em"
+  meta:
+    fontFamily: "PT Mono, ui-monospace, monospace"
+    fontSize: "11px"
+    letterSpacing: "0.12em"
+    textTransform: "uppercase"
+  section:
+    fontFamily: "PT Mono, ui-monospace, monospace"
+    fontSize: "10.5px"
+    letterSpacing: "0.16em"
+    textTransform: "uppercase"
 rounded:
-  none: "0px"
+  item: "0px"
+  data: "2px"
+  control: "4px"
+  card: "6px"
+  panel: "10px"
 spacing:
   xs: "4px"
   sm: "8px"
   md: "12px"
-  lg: "16px"
+  lg: "18px"
   cell: "52px"
 effects:
-  shadow-hard: "5px 5px 0 hsl(30 15% 10%)"
-  shadow-hard-sm: "3px 3px 0 hsl(30 15% 10%)"
-  border-strong: "2px solid hsl(30 15% 10%)"
-  border-heavy: "3px solid hsl(30 15% 10%)"
+  el-1: "2px 2px 0 0 hsl(41 14% 61%)"
+  el-2: "3px 3px 0 0 hsl(39 13% 47%)"
+  el-3: "5px 5px 0 0 hsl(37 16% 36%)"
+  el-4: "7px 7px 0 0 hsl(36 18% 27%)"
+  el-5: "10px 10px 0 0 hsl(35 20% 19%)"
+  border-strong: "2px solid hsl(0 0% 0%)"
+  border-heavy: "3px solid hsl(0 0% 0%)"
 ---
 
-# Design System: Cabinet — "Brut sobre papel"
+# Design System: Cabinet — fase 1.5
 
-> Supersede a direção "Papel Funcional" (V1-V20). Mockup de referência aprovado pelo user:
-> `docs/design/mockup-brut-papel.html` (2026-08-04). Em divergência entre este doc e o mockup, o mockup vence.
-> Refs: BRUT./neo-brutalismo · De School Amsterdam (grade de fundo) · utrecht.jp (cru, links sublinhados)
-> · Low-tech Magazine · neobrutalism.dev (referência visual da receita neo-brut) · brutalism.tailwinddashboard.com (padroes de tela admin neo-brut, Tailwind 4).
+> **Supersede a fundação "Brut sobre papel" (fases 1 e 2).** Amostra de referência aprovada pelo user:
+> `docs/design/amostra-fase-1.5.html` (v5, 2026-08-06). **Em divergência entre este doc e a amostra, a AMOSTRA vence.**
+> O mockup anterior (`docs/design/mockup-brut-papel.html`) vira histórico: o que ele decidiu e a amostra
+> não contradiz continua valendo (densidade, vocabulário, zonas por conteúdo, dinheiro em verde).
+> Refs: neobrutalism.dev · `ekmas/neobrutalism-components` (**referência VISUAL apenas** — o código é
+> Radix/shadcn e a base de primitivos aqui é `react-aria-components`, decisão do spike de 2026-08-04).
 
 ## Overview
 
-O ERP continua documento comercial — orçamento é invoice, listagem é ledger, produto é ficha técnica —
-mas o documento agora tem estrutura neo-brutalista: **caixa preta de 2px, sombra dura, grade de células
-no papel, zonas preenchidas de cor, tipografia display com peso real**. A timidez da direção anterior
-(réguas quase invisíveis, zero acento, hierarquia por sussurro) foi o motivo da revisão.
+O ERP continua documento comercial — orçamento é invoice, listagem é ledger, produto é ficha técnica.
+O que muda na 1.5 é o **acabamento**: a fundação anterior era preta e chapada (caixa preta, sombra preta,
+canto reto em tudo, cabeçalho em barra preta). Ela lia como maquete de protesto, não como ferramenta de
+trabalho de oito horas. A 1.5 mantém o traço de 2px e a densidade, e troca o resto por três decisões:
+
+1. **Elevação de verdade** — 5 degraus de sombra, sem blur, na **família quente do papel**. Sombra preta
+   vira buraco na tela; sombra cor-de-papel projeta como papel sobre papel.
+2. **Canto por natureza** — o raio diz o que a coisa é: painel 10px, cartão 6px, controle 4px, dado 2px,
+   **item 0**. Item é o que encosta em item (chip, aba, página, célula, item de menu, etiqueta): canto
+   arredondado ali abre fresta e desmancha a fileira.
+3. **Cor que move** — violeta saturado é a AÇÃO (primária, seleção, aba ativa). O amarelo recua para o
+   que ele sempre foi bom: foco e pendência.
 
 Princípios que NÃO mudaram: densidade de comanda vence respiro decorativo · vocabulário literal do
 legado SoftLux · desktop-only, largura inteira · número tabular à direita · mono para identificador ·
 interação por clique · nada anima na entrada de tela.
 
 **Key characteristics:**
-- Papel cream com **grade de células de 52px** percorrendo o fundo (De School); folhas de trabalho pousam OPACAS por cima
-- Caixa PRETA 2px em moldura, bloco e grade; **sombra dura 5px/3px** (deslocamento, sem blur) na moldura e no botão primário
-- Malha interna da grade continua FIO CLARO — a caixa grita, a malha sussurra; 30 linhas seguem legíveis
-- **Cabeçalho de coluna = barra preta sólida** com texto cream em mono caps
-- **Zonas tintadas em creme**: creme-esverdeado = zona de dinheiro/totais · creme-avermelhado = banda de identidade (título de tela/documento)
-- **Tinta de dinheiro**: valor monetário escreve em VERDE; valor negativo em vermelho (tradição do ledger)
-- Amarelo = âncora/atenção: nº de seção, carimbo ABERTO, marcador de seleção, anel de foco
-- Canto RETO (radius 0) — brut não arredonda
-- Título de tela em display 800 caps dentro de banda; nº de documento grande em mono
-- Legend de bloco = etiqueta preta cavalgando a borda
-- Link secundário cru estilo Utrecht: mono caps sublinhado 2px, hover com fundo amarelo
+- Bancada creme com grade de 52px no fundo; folhas de trabalho pousam OPACAS por cima
+- Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra
+- **Elevação em 5 degraus** com sombra quente (`el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal)
+- **Etiqueta invertida**: rótulo de seção, rótulo de campo e cabeçalho de coluna são **caixa clara com letra preta**. A força vem da borda, da caixa alta e do tracking — não do fundo cheio
+- **Superfície tintada por conteúdo**: valor (creme-esverdeado) · identidade (creme-avermelhado) · apoio (creme-azulado) · pendência (creme-amarelado) · bloqueio (creme-avermelhado forte)
+- **Faixa de acento**: painel importante ganha barra de 8px na lateral esquerda, com traço à direita
+- Dinheiro escreve em VERDE, negativo em vermelho; célula de valor ganha fundo da zona
+- Foco = **amarelo 3px com fio preto de 1px por fora**, em todo controle (§Foco)
+- Três famílias, todas **self-hosted**: Sora (título) · Inter (corpo) · PT Mono (identificador e etiqueta)
 
 ## Colors
 
 ### Superfícies
-- **Papel** `hsl(42 30% 96%)`: fundo da aplicação, com a grade de 52px em `grid-line` (0.28 dentro do app). Nunca branco puro.
-- **Documento** `#fff`: folha, tabela, formulário, diálogo — sempre opaco sobre a grade.
-- **Tinta de Bancada** `hsl(44 45% 90%)`: hover de linha e de botão outline.
-- **Zona de Dinheiro** `hsl(110 24% 88%)`: fundo das fileiras de total e células de resumo financeiro.
-- **Banda de Identidade** `hsl(8 36% 89%)`: fundo da banda de título de tela e do cabeçalho de documento.
+| papel | uso |
+|---|---|
+| Bancada `hsl(41 25% 85%)` | fundo do app, atrás das folhas |
+| Folha `hsl(42 50% 96%)` | superfície de trabalho: painel, cartão, campo, tabela |
+| Neutro `hsl(44 35% 92%)` | trilho, skeleton, hover de item de menu |
 
-### Tinta
-- **Tinta** `hsl(30 15% 10%)`: texto, dado, e agora TODA caixa estrutural (a régua da caixa é preta).
-- **Tinta Apagada** `hsl(32 10% 38%)`: rótulo de moldura, contagem, estado vazio.
-- **Tinta de Dinheiro** `hsl(152 65% 24%)`: TODO valor monetário (célula, campo, total). 6,9:1 sobre branco. Quantidade e percentual continuam em Tinta — só dinheiro é verde.
-- **Fio** `hsl(38 14% 84%)`: malha interna da grade (linhas E colunas), única linha que não é preta.
+### Zonas por conteúdo
+Valor `hsl(78 32% 90%)` · Identidade `hsl(30 36% 91%)` · Apoio `hsl(213 21% 92%)` · Pendência
+`hsl(46 63% 89%)` · Bloqueio `hsl(14 49% 90%)`. A zona diz do que a área trata **antes de o operador
+ler o rótulo**; por isso é exclusiva — zona espalhada em dado comum deixa de significar.
 
 ### Acentos — emprego fixo
-- **Amarelo Âncora** `hsl(45 96% 54%)`: SEMPRE fundo com texto/borda Tinta por cima (amarelo como cor de texto é proibido — não passa AA). Empregos: bloco de nº de seção, carimbo ABERTO, marcador de linha selecionada, anel de foco (3px), hover do link cru.
-- **Vermelho de Alerta** `hsl(4 74% 44%)`: destruição, erro de validação, carimbo ANULADO, valor negativo.
-- Verde-dinheiro e zonas tintadas acima completam a paleta. **Nenhuma outra cor entra.**
+- **Violeta `hsl(241 100% 66%)`** — AÇÃO: botão primário, linha selecionada, aba/página ativa, item de menu ativo, barra de progresso.
+- **Roxo `hsl(262 97% 76%)`** — marca e realce (avatar, badge de destaque). Nunca ação.
+- **Azul `hsl(219 90% 69%)`** — informação/apoio.
+- **Verde `hsl(155 81% 26%)`** — dinheiro, e só.
+- **Vermelho `hsl(357 84% 42%)`** — destruição, erro, valor negativo, carimbo anulado.
+- **Amarelo `hsl(47 100% 50%)`** — foco e pendência. Continua proibido como cor de texto.
 
-### Named Rules
-**Regra do Emprego Fixo.** Cada cor tem emprego nomeado acima. Cor nova ou emprego novo = revisão desta spec, não decisão de tela.
-**Regra da Caixa Preta.** Toda caixa estrutural (moldura, bloco, contêiner de grade, banda, campo) é `2px solid` Tinta. Separador de seção interna é `3px`. A malha interna é a única linha em Fio.
-**Regra do Amarelo de Fundo.** Amarelo nunca é cor de texto; é fundo ou borda com Tinta por cima.
-**Regra da Grade de Fundo.** A grade de 52px vive no Papel (fundo do app), NUNCA dentro da folha branca. Elementos de página se alinham à célula onde for barato (padding do shell = 1 célula; alturas de banda em múltiplos/frações da célula).
+**Verde e vermelho descem da luz da amostra** (35% e 52%) porque os dois moram sobre a **zona de
+valor**, que é justamente onde o operador lê o número que a tela existe para mostrar: a 35% o verde
+dava 2,79:1 sobre a zona e a 52% o vermelho dava 3,72:1 — ambos abaixo dos 4,5:1 de texto. Matiz e
+saturação são os da amostra; só a luz mudou. Depois: verde 4,65:1 sobre a zona e 5,15:1 sobre a
+Folha; vermelho 5,10:1 e 5,65:1. Efeito colateral bem-vindo: o branco do botão destrutivo sai de
+4,41:1 para 6,05:1, e o do carimbo `done` (preenchido de verde) de 3,31:1 para 5,52:1.
+
+### Sombra
+Cinco degraus de `hsl(41 14% 61%)` a `hsl(35 20% 19%)` — todos sem blur, todos da família quente.
+**Nenhuma sombra preta.**
 
 ### Modo escuro
-`[a resolver — fase 3]`. Gramática igual (papel escuro + folha + caixa clara + zonas tintadas escuras), valores recalculados com contraste verificado. Não improvisar tom a tom.
+`[a resolver — pós 1.5]`. A amostra não define tema escuro; recalcular só depois que a 1.5 estiver
+aplicada nas telas. Não improvisar tom a tom.
 
 ## Typography
 
-Duas famílias de sistema, zero webfont (inalterado). O que muda é PESO e CAIXA:
-- **Display/Headline** (800, caps, tracking -0.02em): título de tela dentro da banda de identidade.
-- **Nº do Documento** (mono 700, 1.5rem): âncora do cabeçalho de documento.
-- **Meta** (mono 700, 0.75rem, caps, tracking 0.07em): cabeçalho de coluna (agora cream sobre preto), legend, código, NCM, CNPJ, carimbo, rodapé.
-- **Body/Label/Numeric**: inalterados (0.875rem; label sobe pra 600).
-- **Control** (13px, 600): texto de botão — valor do mockup (`.btn`), degrau próprio entre Body e Meta.
-- **Link cru** (Utrecht): mono 700 caps sublinhado `text-decoration-thickness: 2px`, hover fundo amarelo. Para ações secundárias de navegação ("Exportar lista →", "Ver todos →").
-Regras do Número Tabular e da Mono para Identificador: inalteradas. Dinheiro é sans tabular VERDE, não mono.
+Três famílias self-hosted (`@fontsource`), **zero CDN** — CDN em produção é dependência externa e IP do
+operador vazando a cada carga.
+- **Display (Sora 700)** — título de tela e de painel, valor de indicador. `letter-spacing: -0.012em`.
+- **Corpo (Inter 400/500/600)** — texto, rótulo, controle. Número tabular à direita, como sempre.
+- **Mono (PT Mono)** — identificador (código, CNPJ, NCM), etiqueta de seção, rótulo de campo,
+  cabeçalho de coluna, badge, migalha. Tracking largo (0.12em; 0.16em na etiqueta de seção).
+
+Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
 ## Layout
 
-- Shell 3 zonas inalterado (sidebar colapsável, header 52px, conteúdo). **Bloco da empresa ativa no topo da sidebar = fundo amarelo com borda preta.** Item de navegação ativo: fundo Documento + borda esquerda 3px Tinta.
-- Área de conteúdo = Papel COM grade de 52px; padding = 1 célula (52px) para o conteúdo nascer enquadrado.
-- Folha de trabalho: Documento + caixa preta 2px + **sombra dura 5px**.
-- Grade de campos 12 colunas com `items-end`: inalterada. Quatro degraus de espaçamento (4/8/12/16): inalterados.
-- Largura inteira, sem max-width: inalterado.
-- Densidade: cabeçalho de tabela 34px, célula 33px, célula editável 32px.
+- Shell de 3 zonas inalterado (sidebar colapsável, header, conteúdo). Bloco da empresa ativa no topo da sidebar; item de navegação ativo = Folha com traço preto.
+- Área de conteúdo = Bancada com grade de 52px; a folha pousa opaca por cima.
+- Grade de campos 12 colunas com `items-end`: inalterada.
+- Densidade da tabela SOBE (é o pedido da amostra): cabeçalho **42px**, célula **52px**. A densidade de comanda continua valendo no formulário; a listagem ganha ar porque é onde o operador mira com o mouse.
 
 ## Components — método de construção
 
-**Base: aria oficial do shadcn** (`react-aria-components` pin 1.20.0, via CLI `shadcn --base aria`) —
-decisão pós-spike RAC de 2026-08-04, que matou o copy-paste do neobrutalism.dev (Radix); a receita
-visual neo-brut fica, a fonte dos primitivos muda. Adoção:
-1. Primitivos de `src/components/ui/` SUBSTITUÍDOS pelas versões da base aria, com o esquema de tokens deles remapeado pra ESTA paleta no `index.css`. O default deles não entra.
-2. **Guarda Tailwind v4 obrigatória em cada componente copiado**: `pnpm build` + `grep -o 'width:--[a-z-]*' dist/assets/*.css` = zero acerto (armadilha v3→v4 já paga; ver CLAUDE.md).
-3. Receita neo-brut dos controles: borda 2px, sombra dura 3px, `hover:translate(-1px,-1px)` com sombra crescendo, `active:translate(2px,2px)` com sombra sumindo, radius 0.
-4. Componentes-assinatura (abaixo) mantêm API e lógica; só a pele muda.
+**Base: `react-aria-components`** (pin 1.20.0), como nas fases 1 e 2 — a 1.5 muda a PELE, não a base.
+`ekmas/neobrutalism-components` entra como referência visual; seu código é Radix e não se copia aqui.
 
-### Buttons
-- **Primary** (`Gravar`): Tinta sólida, texto cream, sombra dura 3px, um por tela.
-- **Outline**: fundo Documento, borda preta 2px, hover Bancada. Barra de ações da listagem em compacto (31px).
-- **Destructive**: borda/texto vermelho, hover fundo vermelho texto branco.
-- **Foco**: anel 3px Amarelo Âncora, offset 0 — em TODO controle focável.
-- Desabilitado 50% + ponteiro morto; ícone Lucide 16px, nunca emoji: inalterados.
+1. Primitivos de `src/components/ui/` re-estilizados pelos tokens desta spec.
+2. **Guarda Tailwind v4 obrigatória**: `pnpm build` + `grep -o 'width:--[a-z-]*' dist/assets/*.css` = zero.
+3. Receita: traço 2px preto · raio pela natureza · elevação por degrau · foco pela utility `focus-ring` (§Foco) · lift pela utility `lift-control` (§Lift).
+4. **Hover-lift é de PEÇA SOLTA** — botão e cartão clicável, o que tem caixa e sombra próprias e espaço em volta para se mover. **Item de menu NÃO levanta**: `.menu-item:hover` da amostra troca fundo e cor de borda, e só. Item encosta em item — levantar um abre fresta na fileira, que é o mesmo motivo de item não arredondar. Linha e célula de grade também não: lá o amarelo marca foco e o violeta marca seleção.
+
+### Foco
+**Amarelo sozinho não sobrevive ao creme.** O `--ring` da amostra dá **1,45:1** sobre a Folha e
+**1,14:1** sobre a Bancada — a WCAG 1.4.11 pede 3:1 de um indicador de foco, e um anel que só o
+operador de vista boa enxerga não é indicador. Quem carrega o contraste é um **fio preto de 1px por
+fora do amarelo**; o amarelo continua sendo a identidade do foco, como manda a amostra.
+
+Leitura de dentro para fora: borda preta do controle · 3px amarelos · 1px preto · papel.
+
+A receita mora num ponto só, em `src/index.css`:
+- **`focus-ring`** — peça com borda própria (botão, campo, aba, item de menu). `outline` amarelo de
+  3px + `box-shadow` preto de 4px de spread. Aplicar sempre por variante: `focus-visible:focus-ring`,
+  `group-data-focus-visible/checkbox:focus-ring`.
+- **`focus-ring-inset`** — peça SEM borda própria, onde o anel externo invadiria o vizinho: célula
+  editável da FormGrid (a malha É o campo) e linha da DataTable. Mesma leitura, virada para dentro.
+  Vence a versão externa por ordem de definição no CSS, então **fica definida depois dela**.
+
+**A elevação não compõe com o anel**: no foco o halo É o destaque, e um `el-*` de 3px de
+deslocamento ficaria escondido atrás dele. Onde este doc dizia "foco + `el-2`", vale o halo.
+
+Nunca escrever a receita à mão no componente — recalibração de foco tem que mudar tudo de um ponto só.
+
+### Button
+Fundo Folha, traço 2px, raio de controle. Primário = violeta com texto branco (hover `main-hover`).
+Destrutivo = vermelho com texto branco. Compacto para barra de ações. Desabilitado 40% e ponteiro morto.
+
+### Badge / Stamp
+Item (raio 0), traço 2px, mono 11px, `el-1`. Tons: primária (violeta) · marca (roxo) · dinheiro (verde) ·
+bloqueio (vermelho) · pendência (amarelo) · neutro (Folha). O mapeamento tom → situação do carimbo
+continua `[a resolver]` até a enumeração real do backend.
+
+### Campo (input · select · textarea)
+Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco). **Rótulo é etiqueta**:
+caixa clara com traço 2px, mono 10px, caixa alta — não texto solto acima do campo.
 
 ### DataTable (assinatura)
-Ledger brut: caixa preta 2px em volta · **thead com fundo Tinta, texto cream, Meta, 34px, células separadas por 1px de tinta clara** · malha interna em Fio (linhas E colunas) · linha selecionada = fundo Bancada + **marcador esquerdo duplo: 4px amarelo + 1px tinta** · hover Bancada · skeleton 5 linhas · vazio "Nenhum registro." · rodapé com contagem em Meta + paginação em outline compacto + link cru opcional. `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
+Caixa de dado (raio 2px, `el-3`, `overflow:hidden`). **Cabeçalho: caixa clara, letra preta, mono 11px
+tracking 0.12em, 42px, régua inferior 3px** — a barra preta sólida sai. Célula 52px com régua de 2px
+entre linhas, e **sem malha vertical** — a régua horizontal já delimita, e coluna fechada dos dois
+lados vira gaiola. Linha selecionada = **violeta com texto branco**, mais peso 600 e `aria-selected`:
+cor sozinha não diz estado (1.4.1). Linha focada = utility `focus-ring-row`, que monta UM anel com as
+partes que cada célula pode desenhar (topo e base em todas, lateral só na primeira e na última) —
+`box-shadow` no `<tr>` não pinta sob o `border-collapse` que a tabela herda do preflight, e anel por
+célula desenharia uma moldura por coluna.
+Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
+`rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 
-### CadastroForm (assinatura)
-Banda de identidade no topo: fundo creme-avermelhado, caixa preta 2px, título em Headline 800 caps + contexto em Meta. Bloco `<fieldset>` com caixa preta 2px e **`<legend>` = etiqueta com fundo Tinta e texto cream** cavalgando a borda. Rodapé fixo com régua superior 3px. Modo consulta via `<fieldset disabled>`: inalterado.
+### CadastroForm / BandaDeIdentidade (assinatura)
+Painel (raio 10px, `el-3`) com **faixa de acento** de 8px à esquerda e zona de identidade no fundo.
+Título em Display; contexto em Meta. Rodapé fixo com régua superior de 3px. Modo consulta via
+`<fieldset disabled>`: inalterado.
 
 ### FormGrid (assinatura)
-Mesma malha da DataTable; célula editável sem borda (a malha É o campo — inalterado), foco = anel amarelo interno. Faixa de seção (`sectionKey`): fundo Bancada, réguas 2px pretas acima/abaixo. **Totais (prop `totals`): células da zona com fundo creme-esverdeado, valores em Tinta de Dinheiro, `Total` com régua 3px acima e peso 800.** Negativo em vermelho.
+Mesma malha da DataTable; célula editável sem borda (a malha É o campo), foco pela `focus-ring-inset`.
+Faixa de seção com fundo Neutro e réguas de 2px. Totais na zona de valor, `Total` em Display com régua
+de 3px acima. Negativo em vermelho.
 
-### DocumentoHeader (assinatura)
-Banda creme-avermelhada com caixa preta: título 800 caps + carimbo + nº do documento em mono 1.5rem à direita.
+### Indicadores (KPI)
+Cartão (raio 6px, `el-1`; `el-4` quando é o número que a tela existe para mostrar), rótulo em etiqueta,
+valor em Display 1.7rem, delta em corpo pequeno. Zona por conteúdo quando o número for dinheiro,
+pendência ou bloqueio.
 
-### Stamp
-Retângulo 24px, borda 2px, Meta. **ABERTO = fundo amarelo/texto tinta · CONCLUÍDO = fundo tinta/texto cream · ANULADO = borda+texto vermelho · NEUTRO = borda+texto tinta apagada.** Mapeamento tom→situação continua `[a resolver]` (enumeração real do backend).
+### Navegação
+Abas, paginação e itens de menu são ITENS: raio 0, encostados (margem negativa de 2px para o traço não
+dobrar), ativo em violeta. Menu é cartão com `el-3`. Migalha em mono.
 
-### Stipple
-Célula de textura pontilhada (radial-gradient 1px/7px) com caixa preta — acento gráfico De School. Empregos permitidos: tela de login, estado vazio de módulo, tela inicial. NUNCA atrás de dado.
+### Gráfico
+Contorno preto de 2px em cada forma, preenchimento de cor cheia dos acentos. Eixo em traço de 2px.
+Rótulo em mono 10px. Sem gradiente, sem sombra interna.
+
+### Lift
+A microinteração do sistema, na utility `lift-control` (`src/index.css`). A peça repousa em `el-2`,
+levanta para `el-3` no hover (`translate(-2px,-2px)`) e afunda para `el-1` no press
+(`translate(1px,1px)`). Os deslocamentos são a **geometria da elevação**, não enfeite: a borda externa
+da sombra fica parada nos 3px, e só a distância entre peça e sombra muda. Sombra que escorrega junto
+com a peça é o que denuncia lift falso.
+
+**Foco cancela o lift** (`transform: none`) — peça focada e sob o mouse ao mesmo tempo ficaria
+deslocada com o halo em volta, duas leituras de estado brigando. Enquanto há foco, quem manda é a
+`focus-ring`; por isso ela é definida DEPOIS da `lift-control` no `index.css`, e a ordem no arquivo
+é o que decide a cascata.
+
+`:active` e `[data-pressed]` valem juntos: o `usePress` da RAC chama `preventDefault` no pointerdown
+e em parte dos browsers isso engole o `:active`.
+
+Nunca escrever a receita à mão no componente.
 
 ## Motion
-`cubic-bezier(0.4,0,0.2,1)`, 100-150ms, só em estado (hover/foco/press/colapso). O press físico do botão (translate + sombra) é A microinteração do sistema. Nada anima na entrada de tela.
+`cubic-bezier(0.4,0,0.2,1)`, 100–150ms, só em estado (hover/foco/press). O lift é A microinteração do
+sistema (§Lift). Nada anima na entrada de tela.
 
-## Roteiro de implementação (PR por fase, fases na ordem)
+## Roteiro de implementação (PR por fatia, na ordem)
 
-**Fase 1 — fundação:** tokens novos no `index.css` (tema claro; escuro fica pro fim) · grade de 52px no Papel do shell · substituição dos primitivos `ui/` pela base aria re-estilizada (guarda v4 em cada um) · radius 0 global · sombra dura na folha.
-**Fase 2 — assinatura:** DataTable → CadastroForm → FormGrid/totais → DocumentoHeader → Stamp → Stipple, na ordem (DataTable primeiro: é a peça mais reutilizada).
-**Fase 3 — varredura:** todas as telas conferidas contra o mockup · modo escuro recalculado · regenerar `.impeccable/design.json` do código novo.
-**DoD por fase:** lint + types + testes verdes · `pnpm build` + grep `width:--` zero · CI verde · nenhuma mudança de contrato/API de componente sem registro.
+**A — fundação:** tokens novos no `index.css` (superfícies, acentos, zonas, elevação, raio por natureza),
+fontes self-hosted, este DESIGN.md. **B — primitivos `ui/`** na pele nova (button, badge, input, select,
+textarea, checkbox/radio/switch, tabs, menu, table, skeleton, progress, avatar). **C — assinatura:**
+DataTable (cabeçalho claro, 42/52px, seleção violeta), banda com faixa de acento, FormGrid, Stamp, KPI.
+**D — varredura:** telas conferidas contra a amostra. **E — modo escuro** recalculado.
+**DoD por fatia:** lint + types + testes verdes · guarda v4 zero · CI verde.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** pousar toda folha OPACA sobre a grade do Papel, com caixa preta e sombra dura.
-- **Do** compor telas a partir de `src/components/cabinet/` — reimplementar tabela/rodapé na tela é o vetor de deriva.
-- **Do** escrever dinheiro em verde, negativo em vermelho, e manter quantidade/percentual em tinta.
-- **Do** usar rótulo literal da transcrição SoftLux; Meta em identificador; tabular à direita em número comparável.
-- **Do** usar o press físico (translate+sombra) em todo botão.
-- **Do** rodar a guarda v4 em todo componente copiado da base aria.
-- **Do** marcar valor ausente como `[a resolver]`.
+- **Do** dar à sombra a família quente do papel, sempre sem blur.
+- **Do** escolher o raio pela natureza da peça — item encosta em item, e item não arredonda.
+- **Do** usar violeta para o que MOVE e amarelo para o que PEDE ATENÇÃO (foco, pendência).
+- **Do** escrever dinheiro em verde, negativo em vermelho, e manter quantidade em tinta.
+- **Do** compor telas a partir de `src/components/cabinet/` — reimplementar tabela na tela é o vetor de deriva.
+- **Do** tintar a área pelo conteúdo (valor/identidade/apoio/pendência/bloqueio) e só ela.
+- **Do** rodar a guarda v4 em todo componente tocado.
 
 ### Don't:
-- **Don't** arredondar canto (radius 0 é lei) nem usar sombra com blur.
-- **Don't** usar amarelo como cor de texto, nem cor fora dos empregos nomeados.
-- **Don't** pôr a grade de 52px dentro da folha branca ou atrás de tabela.
-- **Don't** deixar a malha interna da grade virar preta — fio claro é o que segura a densidade.
-- **Don't** usar zebra (malha fechada já delimita), max-width, spinner central, emoji em controle.
-- **Don't** copiar componente da base aria com a paleta default — tokens desta spec sempre.
-- **Don't** inventar nome de situação de carimbo, nem improvisar modo escuro tom a tom.
-- **Don't** animar entrada de tela.
+- **Don't** usar sombra preta, nem sombra com blur.
+- **Don't** arredondar item (chip, aba, página, célula, item de menu, etiqueta).
+- **Don't** usar amarelo como cor de texto, nem violeta como cor de fundo de área grande.
+- **Don't** voltar à barra preta sólida no cabeçalho de coluna ou na etiqueta.
+- **Don't** carregar fonte de CDN.
+- **Don't** levantar linha ou célula de grade no hover — lift é de controle.
+- **Don't** improvisar o modo escuro tom a tom.

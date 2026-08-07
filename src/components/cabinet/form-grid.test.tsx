@@ -108,9 +108,10 @@ describe('FormGrid — foco da célula editável', () => {
       render(<HarnessFoco />)
 
       const celula = screen.getByLabelText(rotulo)
-      expect(celula.className).toContain('focus-visible:ring-3')
-      expect(celula.className).toContain('focus-visible:ring-ring')
-      expect(celula.className).toContain('focus-visible:ring-inset')
+      // A receita do anel mora num ponto só (`@utility focus-ring-inset`); o
+      // teste afirma que a célula CONSOME a receita, não que ela repete os
+      // valores — literal aqui obrigaria a mexer no teste a cada recalibração.
+      expect(celula.className).toContain('focus-visible:focus-ring-inset')
       // Anel zerado = célula sem foco visível; é o defeito que este teste tranca.
       expect(celula.className).not.toContain('focus-visible:ring-0')
     },

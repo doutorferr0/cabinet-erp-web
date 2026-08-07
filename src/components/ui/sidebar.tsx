@@ -367,7 +367,7 @@ function SidebarGroupLabel({
       data-sidebar="group-label"
       // Rótulo de grupo em Meta (mono caps) — vocabulário do mockup.
       className={cn(
-        'flex h-8 shrink-0 items-center px-2 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'flex h-8 shrink-0 items-center px-2 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:focus-ring [&>svg]:size-4 [&>svg]:shrink-0',
         className,
       )}
       {...props}
@@ -381,7 +381,7 @@ function SidebarGroupAction({ className, ...props }: React.ComponentProps<'butto
       data-slot="sidebar-group-action"
       data-sidebar="group-action"
       className={cn(
-        'absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
+        'absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
         className,
       )}
       {...props}
@@ -424,7 +424,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'div'>) {
 
 const sidebarMenuButtonVariants = cva(
   // Item ativo brut: fundo Documento + borda esquerda 3px Tinta (mockup .navitem.ativo).
-  'peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden border-l-[3px] border-transparent p-2 text-left text-sm outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-sidebar-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-foreground data-active:bg-card data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden border-l-[3px] border-transparent p-2 text-left text-sm outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-foreground data-active:bg-card data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {
@@ -505,7 +505,7 @@ function SidebarMenuAction({
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
       className={cn(
-        'absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
+        'absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
         showOnHover &&
           'group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 md:opacity-0',
         className,
@@ -601,7 +601,7 @@ function SidebarMenuSubButton({
     'data-size': size,
     'data-active': isActive,
     className: cn(
-      'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden border-l-[3px] border-transparent px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-foreground data-active:bg-card data-active:font-bold [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+      'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden border-l-[3px] border-transparent px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-foreground data-active:bg-card data-active:font-bold [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
       className,
     ),
   }

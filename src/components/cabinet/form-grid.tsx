@@ -86,7 +86,7 @@ function MoneyCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
           // Célula sem borda (a malha É o campo), mas COM anel: o anel amarelo
           // interno é o único sinal de onde o cursor está — `ring-0` deixava a
           // célula de valor sem foco visível nenhum.
-          className="h-8 border-0 text-right shadow-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
+          className="h-8 border-0 text-right shadow-none focus-visible:focus-ring-inset"
           value={
             typeof field.value === 'number' ? (field.value / 100).toFixed(2).replace('.', ',') : ''
           }
@@ -114,7 +114,7 @@ function PercentCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
           // Célula sem borda (a malha É o campo), mas COM anel: o anel amarelo
           // interno é o único sinal de onde o cursor está — `ring-0` deixava a
           // célula de valor sem foco visível nenhum.
-          className="h-8 border-0 text-right shadow-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
+          className="h-8 border-0 text-right shadow-none focus-visible:focus-ring-inset"
           value={typeof field.value === 'number' ? formatPercent(field.value) : ''}
           onChange={(e) => {
             const digits = e.target.value.replace(/\D/g, '')
@@ -166,7 +166,7 @@ function SelectCell({
         return (
           <select
             aria-label={ariaLabel}
-            className="h-8 w-full border-0 bg-transparent px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
+            className="h-8 w-full border-0 bg-transparent px-2 text-sm outline-none focus-visible:focus-ring-inset"
             value={atual}
             onChange={(e) => field.onChange(e.target.value || null)}
             onBlur={field.onBlur}
@@ -318,7 +318,7 @@ export function FormGrid({
                                 placeholder: col.placeholder,
                               })}
                               // Célula editável sem borda: a malha É o campo; foco = anel amarelo interno.
-                              className="h-8 border-0 bg-transparent focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-inset"
+                              className="h-8 border-0 bg-transparent focus-visible:focus-ring-inset"
                               {...register(path)}
                             />
                           )}

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-07T00:33:10.000Z",
+  "generatedAt": "2026-08-07T00:39:24.000Z",
   "title": "Design System: Cabinet — fase 1.6",
   "extensions": {
     "colorMeta": {
@@ -40,7 +40,7 @@
         "role": "neutral",
         "displayName": "Folha Afundada",
         "canonical": "hsl(60 20% 98%)",
-        "purpose": "Degrau INTERNO da folha branca: compartimento de formulário, painel do acordeão, rodapé de alerta.",
+        "purpose": "Degrau INTERNO da folha branca: compartimento de formulário, painel do acordeão, rodapé de alerta. No escuro, afundar é ESCURECER — o degrau desce.",
         "tonalRamp": [
           "hsl(60 20% 15%)",
           "hsl(60 20% 26%)",
@@ -697,6 +697,11 @@
         "name": "A Regra da Grade de Fundo",
         "section": "layout",
         "body": "A bancada leva a grade de 52px — a mesma medida da linha do ledger. A folha pousa opaca por cima."
+      },
+      {
+        "name": "A Regra da Relação Invertida",
+        "section": "colors",
+        "body": "O modo escuro não inverte a COR, inverte a RELAÇÃO: a folha continua pousando sobre a bancada, só que agora ela é mais clara que o fundo, e a tinta que desenha a caixa é clara. A matiz quente do papel fica — sem ela o creme vira cinza. Consequências medidas: o texto da ação vira escuro, afundar vira escurecer, e dinheiro e negativo sobem de luz."
       },
       {
         "name": "A Regra do Movimento que Informa",

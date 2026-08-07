@@ -239,8 +239,26 @@ forma sumiria. Estado de sistema não usa a cor do módulo: busca sem resultado 
 `#93AAED` — vazio de busca não é módulo vazio.
 
 ### Modo escuro
-`[a resolver — pós 1.5]`. A amostra não define tema escuro; recalcular só depois que a 1.5 estiver
-aplicada nas telas. Não improvisar tom a tom.
+Recalculado na fase 3 sobre esta paleta. **O escuro não inverte a cor, inverte a RELAÇÃO:** a
+bancada continua sendo o fundo e a folha continua pousando por cima — só que a folha agora é mais
+clara que a bancada (`hsl(40 10% 14%)` sobre `hsl(40 12% 9%)`), e a tinta que desenha a caixa é
+clara em vez de preta. A matiz quente do papel (35–42) fica em todas as superfícies; sem ela o creme
+vira cinza e o sistema perde a identidade.
+
+Três inversões que o cálculo obrigou, e que valem como regra:
+- **O texto da ação vira escuro.** No claro o violeta é L 66 e leva branco; no escuro precisa clarear
+  para L 74 e aí o branco cai para 3,05:1. Com texto escuro dá 5,34:1 — o mesmo violeta no mesmo
+  papel, com o contraste na mão certa.
+- **Afundar é escurecer.** O degrau interno da folha desce em vez de subir.
+- **Dinheiro e negativo sobem de luz** pelo motivo espelhado do que os fez descer na 1.6.
+
+As cinco zonas mantêm a MATIZ dos pastéis /02 e viram a luz de 91–95% para 18–22%: a cor continua
+nomeando o conteúdo, só o papel escureceu. Nos módulos, a cheia /01 já é clara e continua servindo
+de tinta; só a /02 desce.
+
+A sombra continua quente e sem blur, mas precisa ser **mais escura que a bancada** para existir —
+sombra clara sobre papel escuro seria luz. Os cinco degraus ficam sutis de propósito: no escuro quem
+carrega a elevação é o degrau de superfície e o traço claro, e a sombra só confirma.
 
 ## Typography
 
@@ -493,4 +511,5 @@ DataTable (cabeçalho claro, 42/52px, seleção violeta), banda com faixa de ace
 - **Don't** voltar à barra preta sólida no cabeçalho de coluna ou na etiqueta.
 - **Don't** carregar fonte de CDN.
 - **Don't** levantar linha ou célula de grade no hover — lift é de controle.
-- **Don't** improvisar o modo escuro tom a tom.
+- **Don't** improvisar o modo escuro tom a tom — ele é derivado desta paleta, com cada par medido.
+- **Don't** deixar a folha branca no escuro: lá ela é um degrau ACIMA da bancada, não o extremo.

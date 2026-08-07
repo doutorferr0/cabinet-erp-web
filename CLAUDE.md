@@ -190,3 +190,10 @@ Head divergente (trilho backend commitou antes) → reler head, reaplicar, retry
 - Campo de tela: fonte é `transcricaosoftlux.md` — NÃO inventar campo.
 - Commits AQUI: git normal. Memória: gh api. NÃO confundir.
 - Empacou → registrar erro literal em frente-visual.md `## Blockers` e parar. Nunca fingir sucesso.
+
+## Site demo público — COMO PUBLICAR (regra simples)
+- **https://cabinetonline.cc** publica AUTOMATICAMENTE da **`main`**: todo merge/push na `main` com CI verde está no ar em ~2 min. Não existe passo manual de deploy.
+- Mecânica: Cloudflare Pages (projeto `cabinet-erp-web`) conectado ao GitHub; build `pnpm build` roda nos servidores da Cloudflare com env fixadas no painel (modo mock + credencial demo). O que é servido = `dist/` buildado, nunca o fonte.
+- Push em QUALQUER outra branch → preview isolado com URL própria (aba Deployments no painel, ou status do commit no GitHub). Use pra mostrar trabalho em andamento.
+- Branch `demo-site` é LEGADO (foi a branch de publicação até 2026-08-06). Não publicar por ela.
+- Login do demo: `demo@vertziluminacao.com.br` / `senha1234` (gate só existe no build com as env; dev/testes não mudam).

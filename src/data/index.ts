@@ -26,10 +26,11 @@ import { profissionalVazio } from '@/mocks/profissionais'
  * endpoint, não por escolha.
  *
  * **A entrada tem a forma do que o contrato oferece, não a forma que a tela
- * gostaria.** Produtos tem `list`/`get`/`empty` porque há detalhe por id;
- * parceiros tem `list`/`empty` porque NÃO há. Um `get` mock ao lado de uma
- * listagem real casaria uuid do servidor com id inventado e responderia
- * "não encontrado" para registro que existe.
+ * gostaria.** Produtos e parceiros têm `list`/`get`/`empty` porque o contrato
+ * publica detalhe por id nos dois. A regra é sobre a ORIGEM, não sobre o
+ * conjunto de métodos: `get` mock ao lado de listagem real casaria uuid do
+ * servidor com id inventado e responderia "não encontrado" para registro que
+ * existe — por isso `get` só entra quando o caminho existe de verdade.
  *
  * O predicado `matches` some na troca — quem passa a filtrar é o backend
  * (o `q` já viaja no `TableQueryState`).
@@ -37,9 +38,9 @@ import { profissionalVazio } from '@/mocks/profissionais'
 export const data = {
   /**
    * Os três PAPÉIS de `GET /api/partners` — mesma tabela no backend, filtro por
-   * `role`. Listagem do servidor; `empty` continua local (o backend não fornece
-   * registro em branco) e **não há `get`**: o contrato não publicou detalhe por
-   * id, então a tela desabilita `Alterar`/`Consul.` em vez de abrir vazio.
+   * `role`. Listagem e detalhe são do servidor (`GET /api/partners/{id}`, que
+   * entrou no #35); `empty` continua local, porque o backend não fornece
+   * registro em branco e "Incluir" não precisa esperar rede.
    */
   clientes: parceiros('customer', clienteVazio),
 

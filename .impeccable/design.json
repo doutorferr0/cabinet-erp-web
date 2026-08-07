@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-07T01:13:25.000Z",
+  "generatedAt": "2026-08-07T17:02:37.213Z",
   "title": "Design System: Cabinet — fase 1.6",
   "extensions": {
     "colorMeta": {
@@ -615,8 +615,11 @@
       "Elevação em 5 degraus (2/3/4/6/8) com sombra QUENTE, nunca preta",
       "Hover que PULA 2px e press que afunda 2px zerando a sombra (§3b)",
       "Etiqueta invertida: rótulo e cabeçalho de coluna são caixa clara com letra preta",
+      "Faixa de acento: painel importante ganha barra de 8px na lateral esquerda, com traço à direita",
       "Zona tintada por conteúdo com os pastéis /02 da paleta; a cheia /01 só em elemento compacto",
       "Um par de cor fixo por módulo, trocado por escopo (`data-modulo`), com um shape de ornamento fixo",
+      "O mesmo shape tem dois papéis: decoração (cor de token fixo, 24–128px) e ícone (herda `currentColor` do container, 12–20px)",
+      "Sidebar em duas pontas: emblema da marca no topo (28px, roxo) e empresa ativa no rodapé (16px, soft blue)",
       "Dinheiro em VERDE sobre a zona de valor; negativo em vermelho",
       "Foco = amarelo 3px com fio preto de 1px por fora, em todo controle",
       "Três famílias self-hosted: Sora (título) · Inter (corpo) · PT Mono (identificador)",
@@ -667,6 +670,26 @@
         "name": "A Regra de Um por Região",
         "section": "colors",
         "body": "No máximo um ornamento por região visível, nunca dois no mesmo cartão. Três juntos numa tela real: corta-se o de menor hierarquia, não se diminuem os três."
+      },
+      {
+        "name": "A Regra dos Dois Papéis",
+        "body": "O desenho é um só; o que muda é de onde vem a cor. Como decoração o ornamento usa um token FIXO da região (24–128px); como ícone ele não escolhe cor nenhuma e herda `currentColor` do container (12–20px), para que hover, ativo e desabilitado o arrastem junto sem uma segunda regra de cor que um dia diverge. Corolário: o papel de ícone só entra onde o container já pinta em cor — herdar o preto do texto violaria a regra de nunca preto nem cinza.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra da Fronteira com o Lucide",
+        "body": "shape = onde estou (lugar/entidade) · lucide = o que faço (ação/controle). Chevron, x, check e busca continuam do lucide; o acervo brutalist não tem esses desenhos, e misturar as duas famílias dentro do mesmo botão é pior do que duas famílias com a fronteira escrita.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra das Duas Pontas da Sidebar",
+        "body": "Marca no topo (emblema, 28px, roxo de marca) e empresa ativa no rodapé (galpão, 16px, soft blue) são um arranjo só, não duas escolhas soltas: as duas no mesmo cabeçalho estouram o teto de um ornamento por região e empilham as duas perguntas de identidade no mesmo canto do olho. A empresa ativa é o ESCOPO de tudo que a sidebar lista acima, e escopo se lê depois do que ele governa. Ela é o único ornamento de cor FIXA fora dos estados de sistema — lê-la do `[data-modulo]` faria a marca da empresa piscar de cor a cada navegação.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Emblema e da Marca",
+        "body": "`emblema` ≠ `marca`. `marca` é a composição de BOAS-VINDAS do login, que ocupa meia tela e some quando o operador entra. `emblema` é o selo que fica no canto as oito horas seguintes, e tem de se ler a 28px sem competir com o conteúdo. Dois empregos, dois desenhos, duas chaves.",
+        "section": "colors"
       },
       {
         "name": "A Regra do Foco Legível",
@@ -728,7 +751,8 @@
       "Don't voltar à barra preta sólida no cabeçalho de coluna ou na etiqueta.",
       "Don't carregar fonte de CDN.",
       "Don't levantar linha ou célula de grade no hover — lift é de controle.",
-      "Don't improvisar o modo escuro tom a tom."
+      "Don't improvisar o modo escuro tom a tom — ele é derivado desta paleta, com cada par medido.",
+      "Don't deixar a folha branca no escuro: lá ela é um degrau ACIMA da bancada, não o extremo."
     ]
   }
 }

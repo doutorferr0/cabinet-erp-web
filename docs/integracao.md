@@ -5,8 +5,8 @@ de ENTRADA que o backend precisa implementar. Ele muda **só por PR neste
 repositório**; caminho que o front define antes de existir servidor entra
 marcado `Proposto`.
 
-O cliente é gerado dele (`pnpm codegen`, `@hey-api/openapi-ts`, saída commitada
-em `src/api/gerado/`, **nunca editada à mão**). O CI tem o passo
+O cliente é gerado dele (`pnpm codegen`, **Orval** + passo pós-codegen, saída
+commitada em `src/api/gerado/`, **nunca editada à mão**). O CI tem o passo
 `Codegen is up to date`: refaz o codegen e reprova se `src/api/gerado` divergir
 de `contracts/`. É a guarda inteira — não existe mais conferência contra
 repositório de backend.

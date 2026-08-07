@@ -82,9 +82,12 @@ gerado direto — pede a `data.<recurso>` (`src/data/index.ts`) ou ao hook da fr
 estáticas**. Trocar mock→HTTP mexe em `src/data/`, não na tela.
 
 **A entrada do registry tem a forma do que o CONTRATO oferece, não a que a tela gostaria.**
-Produtos expõe `list`/`get`/`empty` porque há detalhe por id; parceiro expõe `list`/`empty`
-porque **não existe `GET /api/partners/{id}`**. `get` mock ao lado de listagem real casaria
-uuid do servidor com id inventado e responderia "não encontrado" para registro que existe.
+Produtos e parceiro expõem `list`/`get`/`empty` porque o contrato publica detalhe por id nos
+dois (`GET /api/products/{id}` · `GET /api/partners/{id}`). A regra é sobre a ORIGEM de cada
+método, não sobre o conjunto: **`get` só entra quando o caminho existe de verdade**, porque
+`get` mock ao lado de listagem real casaria uuid do servidor com id inventado e responderia
+"não encontrado" para registro que existe. Recurso ainda sem detalhe no contrato expõe
+`list`/`empty` e a tela desabilita `Alterar`/`Consul.` — em branco é pior que indisponível.
 
 **Regra de teste:** tela usa `renderRoute('/url')` (router real); componente isolado
 usa `renderWithQuery(<X />)`. Ambos em `src/test/utils.tsx` — não recriar `setup()`

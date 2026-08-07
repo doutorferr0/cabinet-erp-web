@@ -5,6 +5,7 @@ import { RequireRecurso } from '@/app/require-recurso'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -27,41 +28,41 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard } from 'lucide-react'
 
 /**
- * O que o cartão de hover mostra ao pousar num item da sidebar: as OUTRAS
- * telas do mesmo módulo, com a atual marcada.
+ * O que o cartão de hover mostra ao pousar no RÓTULO de um grupo: as telas
+ * daquele grupo, com a atual marcada.
  *
- * Vale porque é o pulo que a sidebar não dá sozinha — de `Clientes` para
- * `Produtos` são dois movimentos e uma lida na lista inteira; aqui é um. É
- * acréscimo, nunca caminho único: tudo que está no cartão está na sidebar
- * logo abaixo, que é o que mantém o sistema operável no toque e no teclado
- * (§HoverCard).
+ * Mora no rótulo, e não em cada item, porque no item o cartão listava as
+ * IRMÃS — que já estão logo abaixo, na mesma coluna, a um palmo do ponteiro.
+ * Era a seção reescrita ao lado dela mesma. No rótulo a relação passa a ser a
+ * que o operador já espera de um menu: o pai abre os filhos.
+ *
+ * Segue sendo acréscimo, nunca caminho único: tudo que está no cartão está na
+ * sidebar logo abaixo (§HoverCard). Por isso o rótulo NÃO vira parada de
+ * teclado — seria um tab a mais por grupo para revelar exatamente o que o tab
+ * seguinte já mostra. Quem navega por teclado entra direto nos itens.
  */
-function OpcoesDoModulo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
+function TelasDoGrupo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      {/* Mesma receita do rótulo de menu do sistema (`DropdownMenuLabel`): é
-          o mesmo papel — nomear a lista que vem abaixo. */}
-      <span className="font-mono text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">
-        {grupo.title}
-      </span>
-      <ul className="flex flex-col">
-        {grupo.items.map((irma) => (
-          <li key={irma.url}>
+    <ul className="flex flex-col">
+      {grupo.items.map((tela) => {
+        const naTela = atual === tela.url || atual.startsWith(`${tela.url}/`)
+        return (
+          <li key={tela.url}>
             <Link
-              to={irma.url}
+              to={tela.url}
               className={cn(
                 'flex items-center gap-2 rounded-item px-1.5 py-1 text-sm no-underline transition-colors hover:bg-neutral',
-                irma.url === atual && 'bg-primary font-semibold text-primary-foreground',
+                naTela && 'bg-primary font-semibold text-primary-foreground',
               )}
-              {...(irma.url === atual && { 'aria-current': 'page' })}
+              {...(naTela && { 'aria-current': 'page' })}
             >
-              <irma.icon className="size-3.5 shrink-0" />
-              {irma.title}
+              <tela.icon className="size-3.5 shrink-0" />
+              {tela.title}
             </Link>
           </li>
-        ))}
-      </ul>
-    </div>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -113,7 +114,26 @@ function AppSidebar() {
         </SidebarGroup>
         {grupos.map((group) => (
           <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            {/* O rótulo do grupo é o gatilho do cartão: pousar em CADASTROS
+                abre as telas de cadastro. Grupo de uma tela só não tem o que
+                abrir — ali o cartão repetiria o próprio rótulo.
+
+                Só existe na sidebar expandida. Colapsada, o rótulo some
+                (`collapsible=icon` zera a opacidade dele) e o atalho some
+                junto; o que volta ali é a dica de cada ícone, que é justamente
+                o que falta no estado de ícone. */}
+            {group.items.length > 1 ? (
+              <HoverCard>
+                <HoverCardTrigger>
+                  <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+                </HoverCardTrigger>
+                <HoverCardContent placement="right top">
+                  <TelasDoGrupo grupo={group} atual={pathname} />
+                </HoverCardContent>
+              </HoverCard>
+            ) : (
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            )}
             <SidebarMenu>
               {group.items.map((item) => {
                 const active = pathname === item.url || pathname.startsWith(`${item.url}/`)
@@ -126,16 +146,7 @@ function AppSidebar() {
                     key={item.url}
                     {...(moduloDoItem && { 'data-modulo': moduloDoItem })}
                   >
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={item.title}
-                      // Grupo de uma tela só não tem irmã para oferecer — ali o
-                      // cartão repetiria o rótulo, que é trabalho da dica.
-                      {...(group.items.length > 1 && {
-                        hoverCard: <OpcoesDoModulo grupo={group} atual={item.url} />,
-                      })}
-                    >
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
                       <Link to={item.url}>
                         {/* O shape do módulo no lugar do ícone genérico: é ele
                             que o operador aprende como marca do módulo, e o

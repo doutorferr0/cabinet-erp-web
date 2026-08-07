@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -21,6 +20,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
@@ -75,20 +75,22 @@ function AppSidebar() {
   // lista seria dar caminho para tela que a guarda vai recusar.
   const { tem } = useRecursosDaEmpresa()
   const grupos = gruposVisiveis(tem)
+  // O ornamento cresce quando o rótulo some. No colapsado ele é a ÚNICA
+  // coisa que identifica a tela, e 18px de shape numa coluna de 56px lia
+  // como ícone de aviso, não como marca do módulo.
+  const { state } = useSidebar()
+  const colapsada = state === 'collapsed'
 
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         {/* MARCA — o selo do sistema, e o único ornamento da sidebar que não
             fala nem de módulo nem de empresa. Fica no topo porque é o nó mais
-            alto da hierarquia: acima de qualquer módulo está o produto.
-
-            O par topo/rodapé é o que mantém o teto de densidade. A EMPRESA
-            ATIVA morava aqui e desceu para o rodapé: as duas no mesmo cabeçalho
-            seriam dois ornamentos na mesma região visível, o que a regra
-            proíbe, e empilhariam as duas perguntas de identidade — "que sistema
-            é este" e "de que empresa é este dado" — no mesmo canto do olho. */}
-        <div className="flex items-center gap-2 px-2 py-1">
+            alto da hierarquia: acima de qualquer módulo está o produto. */}
+        {/* Colapsada, o `px-2` daqui somava com o `p-2` do grupo e jogava o
+            emblema 8px à esquerda da fileira de ícones. Sem rótulo para
+            equilibrar, a marca ficava visivelmente fora do eixo da coluna. */}
+        <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <Ornamento shape="emblema" tom="marca" tamanho={28} />
           {/* Some no modo colapsado, junto com todo rótulo: sobra a coluna de
               ícone, e o selo sozinho continua identificando o produto. */}
@@ -96,6 +98,14 @@ function AppSidebar() {
             Cabinet
           </span>
         </div>
+        {/* EMPRESA ATIVA logo abaixo da marca (decisão do user, 2026-08-07).
+            REVOGA o rodapé de §@ornamentos: o argumento de lá era que escopo
+            se lê depois do que ele governa. Na prática o operador procura
+            "de que empresa é isto" ANTES de ler a lista, não depois, e no
+            rodapé a peça ficava fora do caminho do olho. As duas perguntas
+            de identidade seguem separadas por serem duas linhas distintas —
+            selo do produto em cima, escopo do dado embaixo. */}
+        <CompanySwitcher />
       </SidebarHeader>
       <SidebarContent>
         {/* Boletim é a entrada, não um módulo: fica solto acima dos grupos.
@@ -113,7 +123,19 @@ function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
         {grupos.map((group) => (
-          <SidebarGroup key={group.title}>
+          <SidebarGroup
+            key={group.title}
+            className={cn(
+              // Colapsada, o rótulo é zerado (`-mt-8 opacity-0`) e os grupos
+              // viram uma fileira contínua de ícones sem fronteira. A régua
+              // ocupa o lugar que o nome do módulo deixou: separa sem nomear.
+              'group-data-[collapsible=icon]:mt-1 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-3',
+              // Grupo sem tela (Estoque, §10) não tem o que separar: expandido
+              // o rótulo ainda declara que o módulo existe, colapsado sobraria
+              // só uma régua solta sobre espaço vazio.
+              group.items.length === 0 && 'group-data-[collapsible=icon]:hidden',
+            )}
+          >
             {/* O rótulo do grupo é o gatilho do cartão: pousar em CADASTROS
                 abre as telas de cadastro. Grupo de uma tela só não tem o que
                 abrir — ali o cartão repetiria o próprio rótulo.
@@ -163,7 +185,7 @@ function AppSidebar() {
                           <Ornamento
                             shape={moduloDoItem}
                             tom={active ? 'modulo-suave' : 'modulo'}
-                            tamanho={18}
+                            tamanho={colapsada ? 22 : 18}
                           />
                         ) : (
                           <item.icon />
@@ -178,14 +200,6 @@ function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      {/* EMPRESA ATIVA no rodapé (memória §@ornamentos). Não é só arrumação: a
-          empresa ativa é o escopo de TUDO que a sidebar lista acima, e escopo
-          se lê depois do que ele governa, não antes. No topo ela competia com a
-          marca pela mesma leitura; aqui ela fecha a coluna, que é onde o
-          operador já procura "quem sou / onde estou". */}
-      <SidebarFooter>
-        <CompanySwitcher />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

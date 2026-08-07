@@ -22,7 +22,10 @@ const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
-const SIDEBAR_WIDTH_ICON = '3rem'
+// 3.5rem, não 3rem: a coluna colapsada precisa caber um ornamento que se
+// leia como marca do módulo. Em 3rem o botão fechava em 32px e o shape
+// sobrava 16px de área útil — tamanho de ícone de aviso, não de módulo.
+const SIDEBAR_WIDTH_ICON = '3.5rem'
 // Sem atalho de teclado: interface por clique (CLAUDE.md §Convenções).
 
 type SidebarContextProps = {
@@ -436,7 +439,7 @@ const sidebarMenuButtonVariants = cva(
   //
   // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
   // sem ele, o par cai no padrão do `:root` e nada quebra.
-  'peer/menu-button group/menu-button lift-flat flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button group/menu-button lift-flat rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {

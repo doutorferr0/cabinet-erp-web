@@ -95,34 +95,34 @@ describe('AppShell', () => {
     expect(acesos[0]).toHaveTextContent('Fornecedores')
   })
 
-  // A marca no topo e a empresa ativa no rodapé são UM arranjo, não duas
-  // escolhas: o teto de densidade é de 1 ornamento por região visível, e as
-  // duas no mesmo cabeçalho o estouravam. Afirmar as duas juntas é o que
-  // impede alguém de "arrumar" a sidebar devolvendo a empresa para o topo.
-  it('marca no topo, empresa ativa no rodapé — um ornamento por região', async () => {
+  // Marca e empresa ativa agora dividem o CABEÇALHO, em linhas distintas
+  // (decisão do user, 2026-08-07 — revoga o rodapé). O teto de densidade segue
+  // valendo: o que ele proíbe é dois ornamentos disputando a mesma leitura, não
+  // dois em linhas separadas. O que este teste trava é a separação — o selo do
+  // produto NÃO pode ser absorvido pelo botão que abre a gaveta de empresa.
+  it('marca e empresa ativa no topo, em linhas distintas', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
     })
 
     const topo = document.querySelector('[data-slot="sidebar-header"]')
-    const rodape = document.querySelector('[data-slot="sidebar-footer"]')
     expect(topo).toBeInTheDocument()
-    expect(rodape).toBeInTheDocument()
+    // O rodapé deixou de existir: não sobrou nada para pousar lá.
+    expect(document.querySelector('[data-slot="sidebar-footer"]')).toBeNull()
 
-    // O selo do sistema fica no topo, e é o `emblema` (shape-185) — não o
-    // `marca` (shape-182), que é a composição de boas-vindas do login.
-    const noTopo = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
-    expect(noTopo).toHaveLength(1)
-    expect(noTopo[0]).toHaveAttribute('data-shape', 'emblema')
+    // Selo do sistema em cima, escopo do dado embaixo — nesta ordem. O emblema
+    // (shape-185) é o selo; `marca` (shape-182) é a composição do login.
+    const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
+    expect(ornamentos).toHaveLength(2)
+    expect(ornamentos[0]).toHaveAttribute('data-shape', 'emblema')
+    expect(ornamentos[1]).toHaveAttribute('data-shape', 'empresa')
     expect(topo).toHaveTextContent('Cabinet')
+    expect(topo).toHaveTextContent('VERTZ ILUMINAÇÃO')
 
-    // A empresa ativa desceu inteira: nome E ornamento.
-    const noRodape = rodape?.querySelectorAll('[data-slot="ornamento"]') ?? []
-    expect(noRodape).toHaveLength(1)
-    expect(noRodape[0]).toHaveAttribute('data-shape', 'empresa')
-    expect(rodape).toHaveTextContent('VERTZ ILUMINAÇÃO')
-    expect(topo).not.toHaveTextContent('VERTZ ILUMINAÇÃO')
+    // Linhas distintas: só a empresa mora dentro do botão que abre a gaveta.
+    expect(ornamentos[0]?.closest('[data-sidebar="menu-button"]')).toBeNull()
+    expect(ornamentos[1]?.closest('[data-sidebar="menu-button"]')).not.toBeNull()
   })
 
   it('switches active company via drawer', async () => {

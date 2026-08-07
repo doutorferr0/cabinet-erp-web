@@ -361,6 +361,11 @@ Todas sobre `react-aria-components`, com a pele daqui. A referência do neobruta
   lugar de `outline-primary` — o original não estilizava foco, e migalha é caminho de volta. O
   separador é responsabilidade do ITEM (o `isCurrent` que a RAC entrega), não de um componente
   solto que obrigaria a tela a contar posições na mão.
+- **Empty** — a anatomia única do estado vazio (ornamento · título · descrição · ação), copiada do
+  staging sem a caixa própria: o vazio quase sempre mora dentro de algo que já é caixa. Existe
+  porque a memória lista **seis** vazios diferentes, e escritos à mão eles divergem — e o que separa
+  um bom vazio de um ruim é dizer a coisa certa: "não existe registro" pede cadastrar, "a busca não
+  achou" pede corrigir o termo.
 - **Gaveta para mudança forte** — trocar de empresa é gaveta (`Sheet`), não menu suspenso: menu é a
   peça de escolha barata e trataria "muda o escopo de todo dado da tela" com o mesmo peso de
   escolher uma coluna de ordenação. A gaveta para a tela, diz por escrito o que vai acontecer e
@@ -394,11 +399,20 @@ pointerdown e em parte dos browsers isso engole o `:active`.
 /02 do módulo e o pulo; ativo é a cheia /01. **Subitem** segue o pai, com ativo em violeta cheio,
 traço e `el-2`. Linha e célula de grade seguem sem levantar.
 
-Do staging `neobrutalism-aria/` vieram, além do subitem: **borda reservada transparente** nas ações
-da sidebar (a borda já existe apagada, então aparecer no hover não empurra o conteúdo meio pixel) e
-**caixa preta de 2px no contador** — ele é dado, e dado mora dentro de caixa. Ficou de FORA o
-`SidebarInset` com moldura própria (`border-2` + `m-2` + sombra): ele acrescentaria uma caixa entre
-a bancada e a folha, e caixa a mais é decisão que se confere vendo rodar.
+**Aba também pula** — §3b a lista junto do chip clicável. Ela ganha `lift-flat`, borda reservada
+transparente (aparecer no hover sem empurrar a fileira 2px) e, quando selecionada, violeta cheio
+**com traço de Tinta** e `el-2`.
+
+Do staging `neobrutalism-aria/` vieram, além do subitem e da aba: **borda reservada transparente**
+nas ações da sidebar, **caixa preta de 2px no contador** (ele é dado, e dado mora dentro de caixa),
+a **seta do tooltip** — com vários controles a 8px um do outro, a caixa preta sozinha não diz de
+qual deles ela fala — e `disabled:cursor-not-allowed` no botão. Este último **conserta uma
+armadilha**: o `disabled:pointer-events-none` que estava lá faz o browser parar de mostrar o `title`
+nativo, e a barra de ações da DataTable promete exatamente explicar pelo `title` por que uma ação
+está morta. Não clicar segue garantido pelo atributo `disabled`.
+
+Ficou de FORA o `SidebarInset` com moldura própria (`border-2` + `m-2` + sombra): ele acrescentaria
+uma caixa entre a bancada e a folha, e caixa a mais é decisão que se confere vendo rodar.
 
 **Foco cancela o lift** (`transform: none`) — peça focada e sob o mouse ao mesmo tempo ficaria
 deslocada com o halo em volta, duas leituras de estado brigando. Enquanto há foco, quem manda é a

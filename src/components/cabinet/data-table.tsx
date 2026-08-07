@@ -1,5 +1,6 @@
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -253,23 +254,35 @@ export function VitraDataTable<T>({
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={totalColSpan} className="text-center text-muted-foreground">
-                  {/* Vazio de MÓDULO leva o shape do módulo; vazio de BUSCA
-                      leva o shape de busca, na cor de apoio. São situações
-                      diferentes e a tela não pode dizer a mesma coisa nas duas:
-                      "não existe registro" pede cadastrar, "a busca não achou"
-                      pede corrigir o termo. O desenho é decoração — quem
-                      informa é a frase abaixo dele. */}
-                  <div className="flex flex-col items-center gap-3 py-8">
-                    {state.q ? (
-                      <Ornamento shape="busca-vazia" tom="info" tamanho={96} />
-                    ) : (
-                      <OrnamentoDoModulo tamanho={128} />
-                    )}
-                    <span>
-                      {state.q ? `Nenhum registro para “${state.q}”.` : 'Nenhum registro.'}
-                    </span>
-                  </div>
+                <TableCell colSpan={totalColSpan} className="py-8">
+                  {/* Os dois vazios NÃO dizem a mesma coisa, e essa é a razão
+                      de existirem separados: "não existe registro" pede
+                      cadastrar; "a busca não achou" pede corrigir o termo.
+                      Tratar os dois com uma frase só é o que faz o operador
+                      procurar defeito onde não há.
+                      O ornamento acompanha: shape do módulo num caso, shape de
+                      busca na cor de apoio no outro — vazio de busca não é
+                      módulo vazio. Ele é `aria-hidden`; quem informa é o
+                      título. */}
+                  <Empty>
+                    <EmptyMedia>
+                      {state.q ? (
+                        <Ornamento shape="busca-vazia" tom="info" tamanho={96} />
+                      ) : (
+                        <OrnamentoDoModulo tamanho={128} />
+                      )}
+                    </EmptyMedia>
+                    <EmptyHeader>
+                      <EmptyTitle>
+                        {state.q ? 'Nenhum registro encontrado' : 'Nenhum registro'}
+                      </EmptyTitle>
+                      <EmptyDescription>
+                        {state.q
+                          ? `A busca por “${state.q}” não trouxe resultado. Confira o termo ou limpe a busca.`
+                          : 'Ainda não há nada cadastrado aqui.'}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
                 </TableCell>
               </TableRow>
             ) : (

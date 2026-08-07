@@ -25,7 +25,15 @@ const buttonVariants = cva(
   // ponteiro do texto morto ao lado. É a afirmação mais barata de "isto
   // responde ao clique", e é o que o operador confere sem pensar antes de
   // mirar. (Trazido da referência do neobrutalism.dev; a pele continua nossa.)
-  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+  // `disabled:cursor-not-allowed` no lugar de `disabled:pointer-events-none`
+  // (staging `neobrutalism-aria`), e a troca conserta uma armadilha: com
+  // `pointer-events: none` o elemento não recebe evento de mouse NENHUM, e o
+  // browser deixa de mostrar o `title` nativo. A barra de ações da DataTable
+  // promete exatamente isso — "Motivo, no `title` do botão. Obrigatório na
+  // prática quando `disabled`: botão morto e mudo faz o operador achar que é
+  // defeito". A promessa não teria como ser cumprida. Não clicar continua
+  // garantido pelo atributo `disabled`, que a RAC escreve de verdade.
+  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
   {
     variants: {
       variant: {

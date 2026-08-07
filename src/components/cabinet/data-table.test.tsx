@@ -324,9 +324,33 @@ describe('VitraDataTable', () => {
     )
 
     expect(await screen.findByText(/não foi possível carregar a consulta/i)).toBeInTheDocument()
-    expect(screen.queryByText('Nenhum registro.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Nenhum registro')).not.toBeInTheDocument()
     // Contagem não mente sobre uma consulta que não voltou.
     expect(screen.getByText('— registros')).toBeInTheDocument()
+  })
+
+  it('vazio de BUSCA e vazio de MÓDULO não dizem a mesma coisa', async () => {
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-vazio']}
+        fetcher={(state) =>
+          // Sempre vazio, mas o `state.q` distingue as duas situações.
+          Promise.resolve({ rows: [] as Produto[], total: 0, page: state.page })
+        }
+      />,
+    )
+
+    // Sem busca: não existe registro — o caminho é cadastrar.
+    expect(await screen.findByText('Nenhum registro')).toBeInTheDocument()
+    expect(screen.getByText(/ainda não há nada cadastrado/i)).toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: 'Busca' }), 'parafuso')
+
+    // Com busca: o termo é que não achou — o caminho é corrigir o termo.
+    expect(await screen.findByText('Nenhum registro encontrado')).toBeInTheDocument()
+    expect(screen.getByText(/“parafuso”/)).toBeInTheDocument()
+    expect(screen.queryByText(/ainda não há nada cadastrado/i)).not.toBeInTheDocument()
   })
 
   it('mostra o detail que o servidor mandou no problem+json', async () => {

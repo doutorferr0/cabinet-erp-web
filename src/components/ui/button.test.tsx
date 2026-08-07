@@ -55,4 +55,13 @@ describe('Button — elevação por utility, não por literal', () => {
   it('raio é o de CONTROLE, pela natureza da peça', () => {
     expect(buttonVariants({ variant: 'default' })).toContain('rounded-control')
   })
+
+  it('botão desabilitado NÃO mata os eventos de mouse — senão o `title` some', () => {
+    // A barra de ações da DataTable explica pelo `title` por que a ação está
+    // morta, e `pointer-events: none` faz o browser parar de mostrar o título
+    // nativo: a explicação existiria no DOM e nunca na tela. Não clicar já é
+    // garantido pelo atributo `disabled`.
+    expect(buttonVariants({ variant: 'default' })).not.toContain('disabled:pointer-events-none')
+    expect(buttonVariants({ variant: 'default' })).toContain('disabled:cursor-not-allowed')
+  })
 })

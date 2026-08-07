@@ -32,6 +32,20 @@ import { useRouter, useRouterState } from '@tanstack/react-router'
  * dinheiro, amarelo é foco, vermelho é erro — exceto onde o significado É
  * aquele estado, que é o caso do 404.
  *
+ * **O MESMO shape faz dois trabalhos, e a diferença é a cor, não o desenho:**
+ *
+ * - **decoração** — cor de TOKEN fixo (`modulo`, `info`, `erro`). O ornamento é
+ *   a peça grande que dá cara à região: vazio de módulo, banda de identidade,
+ *   modal de alerta. 24–128px.
+ * - **ícone** — cor HERDADA do container (`icone`). O shape marca um LUGAR ao
+ *   lado de um texto: migalha, cabeçalho de seção, aba. 12–20px.
+ *
+ * A fronteira com o lucide é o que decide qual família desenha o quê:
+ * **shape = onde estou (lugar/entidade) · lucide = o que faço (ação/controle)**.
+ * Chevron, x, check e busca continuam do lucide — o acervo não tem esses
+ * desenhos, e misturar as duas famílias dentro do mesmo botão é pior do que
+ * duas famílias com fronteira escrita.
+ *
  * **É decoração, e se declara como tal:** `aria-hidden`. Quem carrega o sentido
  * é o texto ao lado. Estado vazio cuja única explicação fosse o desenho seria
  * uma tela muda para quem usa leitor.
@@ -99,6 +113,23 @@ const TONS = {
   offline: 'bg-offline',
   /** Roxo de marca — o sistema falando de si (login, splash). Fora de módulo. */
   marca: 'bg-accent',
+  /**
+   * ÍCONE — a cor NÃO é escolhida aqui: `bg-current` resolve para
+   * `background-color: currentColor` e o shape passa a herdar o `color` do
+   * container.
+   *
+   * É o que separa o papel de ícone do de decoração. Um ícone acompanha o
+   * texto ao lado em hover, ativo e desabilitado; com token fixo, cada um
+   * desses estados precisaria de uma SEGUNDA regra de cor só para o ornamento,
+   * e estado duplicado é estado que um dia diverge — foi isso que obrigou o par
+   * /01//02 do item de menu a entrar invertido na 1.6.
+   *
+   * Sem custo de técnica: continua a mesma máscara das outras cinco, só muda
+   * de onde vem o `background-color`. Não confundir com "sem cor" — herdar
+   * preto do texto violaria a regra dura, então o papel de ícone só entra onde
+   * o container já pinta em cor.
+   */
+  icone: 'bg-current',
 } as const
 
 export type TomDeOrnamento = keyof typeof TONS
@@ -107,7 +138,10 @@ export interface OrnamentoProps {
   /** Módulo (usa o shape fixo dele) ou um shape de estado. */
   shape: Modulo | ShapeDeEstado
   tom: TomDeOrnamento
-  /** Lado em px. A escala da fase: 18 item de menu · 20 seção · 24 banda · 96/128 vazio. */
+  /**
+   * Lado em px. A escala segue o PAPEL: 12–20 no de ícone (migalha, item de
+   * menu, seção, aba) · 24–128 no de decoração (banda, modal, estado vazio).
+   */
   tamanho: number
   className?: string
 }

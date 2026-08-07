@@ -40,6 +40,34 @@ describe('Ornamento', () => {
     expect(peca).not.toHaveClass('bg-modulo-cheia')
   })
 
+  it('no papel de ÍCONE a cor é herdada, não escolhida', () => {
+    const { container } = render(<Ornamento shape="fornecedores" tom="icone" tamanho={16} />)
+    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
+    // `bg-current` = `background-color: currentColor`: o shape segue o `color`
+    // do container. É o que permite hover/ativo/desabilitado mexerem numa cor
+    // só — sem isto, cada estado precisaria repintar o ornamento à parte.
+    expect(peca).toHaveClass('bg-current')
+    // E não pode sobrar token FIXO no caminho de ícone: um `bg-*` de token
+    // venceria a herança em silêncio e o defeito só apareceria no hover.
+    for (const fixo of ['bg-modulo-cheia', 'bg-modulo', 'bg-info', 'bg-destructive']) {
+      expect(peca).not.toHaveClass(fixo)
+    }
+    // Nem `background-color` inline, que venceria a classe pela especificidade.
+    expect(peca.style.backgroundColor).toBe('')
+  })
+
+  it('ícone e decoração são o MESMO desenho — muda a cor, não a técnica', () => {
+    const { container: dec } = render(<Ornamento shape="vendas" tom="modulo" tamanho={24} />)
+    const { container: ico } = render(<Ornamento shape="vendas" tom="icone" tamanho={14} />)
+    const decoracao = dec.querySelector('[data-slot="ornamento"]') as HTMLElement
+    const icone = ico.querySelector('[data-slot="ornamento"]') as HTMLElement
+    // Mesma máscara: o papel de ícone não trocou `mask-image` por `fill`, que é
+    // a proposta descartada em §@ornamentos — o ganho seria bicolor, que
+    // ninguém pediu, e o custo seria inline/svgr para os 320 shapes.
+    expect(icone.style.maskImage).toBe(decoracao.style.maskImage)
+    expect(icone.style.maskImage).toMatch(/^url\(/)
+  })
+
   it('o tamanho é o da escala pedida, em px', () => {
     const { container } = render(<Ornamento shape="boletim" tom="modulo" tamanho={24} />)
     const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement

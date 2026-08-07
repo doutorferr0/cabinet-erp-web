@@ -2,7 +2,27 @@ import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { type Plugin, defineConfig } from 'vite'
+
+/**
+ * O título só ganha " — demo" no BUILD DEMO, e o gate é o MESMO que liga a
+ * credencial única em `src/mocks/api/handlers.ts`: `VITE_DEMO_USER`.
+ *
+ * Escrever o sufixo direto no `index.html` deixaria "Cabinet — demo" na aba de
+ * produção, porque `index.html` é um só para os dois builds. Um `%VITE_X%` no
+ * HTML também não serve: quando a variável não existe o Vite deixa o literal na
+ * página. Daqui o sufixo é condicional de verdade — sem a variável, o HTML sai
+ * exatamente como está no arquivo.
+ */
+function sufixoDeDemo(): Plugin {
+  return {
+    name: 'cabinet-sufixo-de-demo',
+    transformIndexHtml(html) {
+      if (!process.env.VITE_DEMO_USER) return html
+      return html.replace('<title>Cabinet</title>', '<title>Cabinet — demo</title>')
+    },
+  }
+}
 
 /**
  * Backend em desenvolvimento — endereço INTEIRAMENTE por env, sem padrão.
@@ -27,6 +47,7 @@ export default defineConfig({
     TanStackRouterVite({ target: 'react', autoCodeSplitting: true }),
     react(),
     tailwindcss(),
+    sufixoDeDemo(),
   ],
   resolve: {
     alias: {

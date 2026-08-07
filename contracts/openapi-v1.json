@@ -1699,7 +1699,7 @@
         }
       },
       "VinculoDeEmpresa": {
-        "required": ["tenantId", "name", "role"],
+        "required": ["tenantId", "name", "role", "features"],
         "type": "object",
         "properties": {
           "tenantId": {
@@ -1711,6 +1711,14 @@
           },
           "role": {
             "type": "string"
+          },
+          "features": {
+            "description": "Proposto. Recursos CONTRATADOS por esta empresa — o que ela opera, não o que o usuário pode fazer nela (isso é `role`). Conjunto fechado; valor fora dele é ignorado pelo cliente. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo — ausência viraria 'não sei' e o front teria de adivinhar entre esconder tudo e mostrar tudo.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["suppliers", "professionals", "employees"]
+            }
           }
         }
       }

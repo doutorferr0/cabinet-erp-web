@@ -183,9 +183,23 @@ export function criarStore(): StoreDaApi {
     logado: false,
     mustChangePassword: false,
     activeTenantId: null,
+    // As duas empresas diferem no que OPERAM, não só no nome: a Matriz compra e
+    // emprega (fornecedor, profissional externo, colaborador), a Filial só
+    // vende. É o que torna o `features` exercitável em dev — trocar de empresa
+    // no rodapé encolhe e devolve o menu de Cadastros diante do operador.
     empresas: [
-      { tenantId: TENANT_MATRIZ, name: 'Vertz Iluminação — Matriz', role: 'admin' },
-      { tenantId: TENANT_FILIAL, name: 'Vertz Iluminação — Filial', role: 'member' },
+      {
+        tenantId: TENANT_MATRIZ,
+        name: 'Vertz Iluminação — Matriz',
+        role: 'admin',
+        features: ['suppliers', 'professionals', 'employees'],
+      },
+      {
+        tenantId: TENANT_FILIAL,
+        name: 'Vertz Iluminação — Filial',
+        role: 'member',
+        features: [],
+      },
     ],
     lookups: lookupsDoSeed(),
     produtos: produtosDoSeed(),

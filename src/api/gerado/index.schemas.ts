@@ -210,10 +210,21 @@ export interface VariantWriteRequest {
   minStock: number | null;
 }
 
+export type VinculoDeEmpresaFeaturesItem = typeof VinculoDeEmpresaFeaturesItem[keyof typeof VinculoDeEmpresaFeaturesItem];
+
+
+export const VinculoDeEmpresaFeaturesItem = {
+  suppliers: 'suppliers',
+  professionals: 'professionals',
+  employees: 'employees',
+} as const;
+
 export interface VinculoDeEmpresa {
   tenantId: string;
   name: string;
   role: string;
+  /** Proposto. Recursos CONTRATADOS por esta empresa — o que ela opera, não o que o usuário pode fazer nela (isso é `role`). Conjunto fechado; valor fora dele é ignorado pelo cliente. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo — ausência viraria 'não sei' e o front teria de adivinhar entre esconder tudo e mostrar tudo. */
+  features: VinculoDeEmpresaFeaturesItem[];
 }
 
 export type ListCatalogLookupsParams = {

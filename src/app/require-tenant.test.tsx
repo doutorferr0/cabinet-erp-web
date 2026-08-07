@@ -1,4 +1,4 @@
-import { renderRoute } from '@/test/utils'
+import { RECURSOS_TODOS, renderRoute } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -22,8 +22,13 @@ function respostaSessaoCom(activeTenantId: string | null) {
 function respostaVinculosDuas() {
   return new Response(
     JSON.stringify([
-      { tenantId: VERTZ, name: 'VERTZ ILUMINAÇÃO', role: 'owner' },
-      { tenantId: VIA_HF, name: 'VIA HF IMPORTADORA', role: 'operator-sales' },
+      { tenantId: VERTZ, name: 'VERTZ ILUMINAÇÃO', role: 'owner', features: RECURSOS_TODOS },
+      {
+        tenantId: VIA_HF,
+        name: 'VIA HF IMPORTADORA',
+        role: 'operator-sales',
+        features: RECURSOS_TODOS,
+      },
     ]),
     { status: 200, headers: { 'content-type': 'application/json' } },
   )

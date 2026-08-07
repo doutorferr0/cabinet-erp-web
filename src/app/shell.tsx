@@ -1,6 +1,7 @@
 import { moduloDaRota } from '@/app/modulo'
-import { type NavGroup, navGroups } from '@/app/navigation'
+import { type NavGroup, gruposVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
+import { RequireRecurso } from '@/app/require-recurso'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
@@ -20,6 +21,7 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard } from 'lucide-react'
@@ -66,6 +68,12 @@ function OpcoesDoModulo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
 function AppSidebar() {
   const { location } = useRouterState()
   const pathname = location.pathname
+  // O MENU É DA EMPRESA ATIVA, não do sistema: item cujo recurso a empresa não
+  // tem some da barra — e some do cartão de hover junto, porque o cartão é
+  // montado do mesmo grupo já filtrado. Oferecer no cartão o que a barra não
+  // lista seria dar caminho para tela que a guarda vai recusar.
+  const { tem } = useRecursosDaEmpresa()
+  const grupos = gruposVisiveis(tem)
 
   return (
     <Sidebar collapsible="icon" variant="inset">
@@ -103,7 +111,7 @@ function AppSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
-        {navGroups.map((group) => (
+        {grupos.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarMenu>
@@ -202,7 +210,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* `key` por CAMINHO: trocar de tela remonta a folha e a entrada
               anima; paginar e ordenar mexem em search params, não no caminho,
               e por isso não remontam nem animam. */}
-          <PageFrame key={location.pathname}>{children}</PageFrame>
+          <PageFrame key={location.pathname}>
+            {/* A guarda mora DENTRO da folha: quem chega por URL a uma tela que
+                a empresa não opera continua vendo o sistema inteiro em volta —
+                barra, empresa ativa, saída — em vez de uma tela nua. */}
+            <RequireRecurso>{children}</RequireRecurso>
+          </PageFrame>
         </main>
       </SidebarInset>
     </SidebarProvider>

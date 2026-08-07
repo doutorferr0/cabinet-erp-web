@@ -65,5 +65,5 @@ export const getAuthLoginResponseMock = (overrideResponse: Partial<Extract<Login
 
 export const getAuthMeResponseMock = (overrideResponse: Partial<Extract<SessaoAtual, object>> = {}): SessaoAtual => ({organizationId: faker.string.uuid(), employeeId: faker.string.uuid(), activeTenantId: faker.helpers.arrayElement([faker.string.uuid(), null]), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', mustChangePassword: faker.datatype.boolean(), ...overrideResponse})
 
-export const getAuthTenantsResponseMock = (): VinculoDeEmpresa[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), role: faker.string.alpha({length: {min: 10, max: 20}})})))
+export const getAuthTenantsResponseMock = (): VinculoDeEmpresa[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), role: faker.string.alpha({length: {min: 10, max: 20}}), features: faker.helpers.arrayElements(['suppliers','professionals','employees'] as const)})))
 

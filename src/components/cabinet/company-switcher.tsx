@@ -1,3 +1,4 @@
+import { Ornamento } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -60,9 +61,20 @@ export function CompanySwitcher() {
           // a mesma zona que a banda de identidade usa nos cadastros.
           className="border-2 border-border bg-zone-id font-bold"
         >
-          <div className="flex aspect-square size-8 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground">
-            <Building2 className="size-4" />
-          </div>
+          {/* O galpão no lugar do `Building2`: pela fronteira do sistema, shape
+              marca ENTIDADE e lucide marca AÇÃO — e "a empresa em que estou" é
+              entidade. O quadrado violeta preenchido saiu junto: ele existia
+              para dar contraste ao ícone branco, e o ornamento já traz a própria
+              cor. Sem ele, some também um roxo que competia com a AÇÃO, que é o
+              único emprego do violeta neste sistema.
+
+              A cor é fixa (`tom="empresa"`), não a do módulo: esta peça responde
+              "de qual empresa é o que estou vendo", e a resposta não muda de
+              tela para tela. Ornamento piscando de cor a cada navegação seria
+              ruído no exato canto onde o operador procura estabilidade. */}
+          <span className="flex aspect-square size-8 shrink-0 items-center justify-center">
+            <Ornamento shape="empresa" tom="empresa" tamanho={16} />
+          </span>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-extrabold">{titulo}</span>
             {ativa && (

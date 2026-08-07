@@ -203,6 +203,7 @@ troca-se a cor de UM módulo — não o sistema.
 - **Verde `hsl(155 81% 26%)`** — dinheiro, e só.
 - **Vermelho `hsl(357 84% 42%)`** — destruição, erro, valor negativo, carimbo anulado.
 - **Amarelo `hsl(47 100% 50%)`** — foco e pendência. Continua proibido como cor de texto.
+- **Soft blue `--empresa`** — a EMPRESA ATIVA, no rodapé da sidebar, e nada mais. Claro `hsl(234 91% 60%)` · escuro `hsl(234 91% 74%)`.
 
 **Verde e vermelho descem da luz da amostra** (35% e 52%) porque os dois moram sobre a **zona de
 valor**, que é justamente onde o operador lê o número que a tela existe para mostrar: a 35% o verde
@@ -210,6 +211,21 @@ dava 2,79:1 sobre a zona e a 52% o vermelho dava 3,72:1 — ambos abaixo dos 4,5
 saturação são os da amostra; só a luz mudou. Depois: verde 4,65:1 sobre a zona e 5,15:1 sobre a
 Folha; vermelho 5,10:1 e 5,65:1. Efeito colateral bem-vindo: o branco do botão destrutivo sai de
 4,41:1 para 6,05:1, e o do carimbo `done` (preenchido de verde) de 3,31:1 para 5,52:1.
+
+**`--empresa` desce pela mesma razão, e é o único /01 da paleta que foi recalibrado.** O galpão da
+empresa ativa pousa sobre a **zona de identidade**, e a 74% (a luz do `#828DF9` da paleta) o par dá
+**2,29:1** — na conferência renderizada o ornamento sumia contra o pastel. A 60% dá 4,45:1. No
+escuro a zona é escura e ele volta aos 74%, com 4,75:1: sobre papel escuro a cor precisa CLAREAR,
+a mesma inversão do violeta de ação.
+
+> **Medida que vale para o resto da paleta, e que ainda é decisão em aberto:** sobre as superfícies
+> CLARAS (bancada creme e folha branca) **nenhum dos oito /01 de módulo alcança 3:1** — a faixa vai
+> de 1,32:1 (Lavender) a 2,97:1 (Soft blue sobre a folha), e o roxo de marca fica em 1,99:1 sobre a
+> bancada. Não é regressão de nenhuma fase: é a paleta /01 como foi travada, e ela foi escolhida
+> para elemento COMPACTO e para preencher fundo com texto preto por cima (aí ela mede 7:1 a 20:1).
+> Como ornamento é decoração `aria-hidden`, a WCAG 1.4.11 não o obriga — mas a legibilidade em tema
+> claro é real e fica fraca. Mexer nisso é mexer na paleta travada: decisão do user, junto da
+> colisão dos quatro azuis vizinhos.
 
 ### Sombra
 Cinco degraus de `hsl(41 14% 61%)` a `hsl(35 20% 19%)` — todos sem blur, todos da família quente.
@@ -257,6 +273,26 @@ No item de menu o par entra **invertido** em relação ao fundo: item inativo é
 /01 (a fileira vira um mapa de cores); item ativo já tem fundo /01 e leva a pastel /02, senão a
 forma sumiria. Estado de sistema não usa a cor do módulo: busca sem resultado é Info/01
 `#93AAED` — vazio de busca não é módulo vazio.
+
+#### A sidebar: marca no topo, empresa ativa no rodapé
+Os dois são **um arranjo só**, não duas escolhas soltas. O teto de densidade é de 1 ornamento por
+região visível, e as duas peças no mesmo cabeçalho o estouravam — além de empilharem as duas
+perguntas de identidade ("que sistema é este" e "de que empresa é este dado") no mesmo canto do olho.
+
+| Lugar | Shape | Tamanho | Cor |
+|---|---|---|---|
+| Topo — marca do sistema | `emblema` (`brutalist-shape-185`, losango em círculo) | 28px | Roxo de marca (`--accent`) |
+| Rodapé — empresa ativa | `empresa` (`brutalist-029`, galpão) | 16px | Soft blue (`--empresa`) |
+
+**A empresa ativa é o escopo de tudo que a sidebar lista acima**, e escopo se lê depois do que ele
+governa. Ela também é o único ornamento de cor FIXA fora dos estados de sistema: responde "de qual
+empresa é o que estou vendo", resposta que não muda de tela para tela — lê-la do `[data-modulo]`
+faria a marca da empresa piscar de cor a cada navegação.
+
+**`emblema` ≠ `marca`.** `marca` (`shape-182` + apoio + base) é a composição de BOAS-VINDAS do
+login, que ocupa meia tela e some quando o operador entra. `emblema` é o selo que fica no canto as
+oito horas seguintes, e tem de se ler a 28px sem competir com o conteúdo. Dois empregos, dois
+desenhos, duas chaves.
 
 ### Modo escuro
 Recalculado na fase 3 sobre esta paleta. **O escuro não inverte a cor, inverte a RELAÇÃO:** a

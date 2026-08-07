@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -69,7 +70,23 @@ function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
-        <CompanySwitcher />
+        {/* MARCA — o selo do sistema, e o único ornamento da sidebar que não
+            fala nem de módulo nem de empresa. Fica no topo porque é o nó mais
+            alto da hierarquia: acima de qualquer módulo está o produto.
+
+            O par topo/rodapé é o que mantém o teto de densidade. A EMPRESA
+            ATIVA morava aqui e desceu para o rodapé: as duas no mesmo cabeçalho
+            seriam dois ornamentos na mesma região visível, o que a regra
+            proíbe, e empilhariam as duas perguntas de identidade — "que sistema
+            é este" e "de que empresa é este dado" — no mesmo canto do olho. */}
+        <div className="flex items-center gap-2 px-2 py-1">
+          <Ornamento shape="emblema" tom="marca" tamanho={28} />
+          {/* Some no modo colapsado, junto com todo rótulo: sobra a coluna de
+              ícone, e o selo sozinho continua identificando o produto. */}
+          <span className="truncate font-display font-bold text-lg tracking-[-0.012em] group-data-[collapsible=icon]:hidden">
+            Cabinet
+          </span>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         {/* Boletim é a entrada, não um módulo: fica solto acima dos grupos.
@@ -142,6 +159,14 @@ function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+      {/* EMPRESA ATIVA no rodapé (memória §@ornamentos). Não é só arrumação: a
+          empresa ativa é o escopo de TUDO que a sidebar lista acima, e escopo
+          se lê depois do que ele governa, não antes. No topo ela competia com a
+          marca pela mesma leitura; aqui ela fecha a coluna, que é onde o
+          operador já procura "quem sou / onde estou". */}
+      <SidebarFooter>
+        <CompanySwitcher />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

@@ -68,6 +68,28 @@ describe('Ornamento', () => {
     expect(icone.style.maskImage).toMatch(/^url\(/)
   })
 
+  it('a empresa ativa tem cor FIXA — não a do módulo', () => {
+    const { container } = render(<Ornamento shape="empresa" tom="empresa" tamanho={16} />)
+    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
+    // O rodapé responde "de qual empresa é o que estou vendo", e a resposta não
+    // muda de tela para tela. Ler o par do `[data-modulo]` faria a marca da
+    // empresa trocar de cor a cada navegação.
+    expect(peca).toHaveClass('bg-empresa')
+    expect(peca).not.toHaveClass('bg-modulo-cheia')
+    expect(peca).not.toHaveClass('bg-modulo')
+  })
+
+  it('emblema e marca são desenhos DIFERENTES', () => {
+    const { container: a } = render(<Ornamento shape="emblema" tom="marca" tamanho={28} />)
+    const { container: b } = render(<Ornamento shape="marca" tom="marca" tamanho={128} />)
+    const emblema = (a.querySelector('[data-slot="ornamento"]') as HTMLElement).style.maskImage
+    const marca = (b.querySelector('[data-slot="ornamento"]') as HTMLElement).style.maskImage
+    // `emblema` é o selo que fica na sidebar as oito horas; `marca` é a
+    // composição de boas-vindas do login. Colapsar os dois numa chave só
+    // devolveria a estrela de meia tela para um canto de 28px.
+    expect(emblema).not.toBe(marca)
+  })
+
   it('o tamanho é o da escala pedida, em px', () => {
     const { container } = render(<Ornamento shape="boletim" tom="modulo" tamanho={24} />)
     const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement

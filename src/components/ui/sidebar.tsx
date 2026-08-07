@@ -382,7 +382,7 @@ function SidebarGroupAction({ className, ...props }: React.ComponentProps<'butto
       data-slot="sidebar-group-action"
       data-sidebar="group-action"
       className={cn(
-        'absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
+        'absolute top-3.5 right-3 flex aspect-square w-5 cursor-pointer items-center justify-center border-2 border-transparent p-0 text-sidebar-foreground outline-hidden transition-colors hover:border-border group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
         className,
       )}
       {...props}
@@ -539,7 +539,7 @@ function SidebarMenuAction({
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
       className={cn(
-        'absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center p-0 text-sidebar-foreground outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
+        'absolute top-1.5 right-1 flex aspect-square w-5 cursor-pointer items-center justify-center border-2 border-transparent p-0 text-sidebar-foreground outline-hidden transition-colors hover:border-border group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0',
         showOnHover &&
           'group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 md:opacity-0',
         className,
@@ -555,7 +555,10 @@ function SidebarMenuBadge({ className, ...props }: React.ComponentProps<'div'>) 
       data-slot="sidebar-menu-badge"
       data-sidebar="menu-badge"
       className={cn(
-        'pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center px-1 text-xs font-medium text-sidebar-foreground tabular-nums select-none group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 peer-data-active/menu-button:text-sidebar-accent-foreground',
+        // Caixa preta de 2px também aqui (staging + Regra da Caixa Preta): o
+        // contador é um DADO, e dado neste sistema mora dentro de caixa. Sem o
+        // traço ele boiava sobre o item como um número solto.
+        'pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center border-2 border-border bg-card px-1 font-mono text-xs font-bold text-sidebar-foreground tabular-nums select-none group-data-[collapsible=icon]:hidden peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1',
         className,
       )}
       {...props}
@@ -635,7 +638,11 @@ function SidebarMenuSubButton({
     'data-size': size,
     'data-active': isActive,
     className: cn(
-      'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden border-l-[3px] border-transparent px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:focus-ring active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-foreground data-active:bg-card data-active:font-bold [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+      // Subitem segue o pai (§3b): liso em repouso com a borda já reservada
+      // apagada, pula no hover, e ATIVO é violeta cheio com traço de Tinta —
+      // do staging `neobrutalism-aria`, com `outline-primary` trocado pelo
+      // nosso anel amarelo e `shadow-md` pela escada quente.
+      'lift-flat flex h-7 min-w-0 -translate-x-px cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-border data-active:border-l-foreground data-active:bg-primary data-active:font-bold data-active:text-primary-foreground data-active:shadow-el2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
       className,
     ),
   }

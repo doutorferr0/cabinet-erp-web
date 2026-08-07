@@ -356,6 +356,11 @@ Todas sobre `react-aria-components`, com a pele daqui. A referência do neobruta
 - **Carousel** — trilho que ROLA (`overflow-x` + scroll-snap); os botões só chamam `scrollBy`.
   Assim roda do mouse, gesto e setas continuam de graça e o `Ctrl+F` acha o que está fora da vista.
   Sem autoplay. Não serve para o que se compara — aí a peça é tabela.
+- **Breadcrumb** — `Breadcrumbs` da RAC, **copiado do staging `neobrutalism-aria/`** com o mapa de
+  tokens aplicado: mono no lugar de `font-head` (migalha é identificador de lugar), anel amarelo no
+  lugar de `outline-primary` — o original não estilizava foco, e migalha é caminho de volta. O
+  separador é responsabilidade do ITEM (o `isCurrent` que a RAC entrega), não de um componente
+  solto que obrigaria a tela a contar posições na mão.
 - **Gaveta para mudança forte** — trocar de empresa é gaveta (`Sheet`), não menu suspenso: menu é a
   peça de escolha barata e trataria "muda o escopo de todo dado da tela" com o mesmo peso de
   escolher uma coluna de ordenação. A gaveta para a tela, diz por escrito o que vai acontecer e
@@ -386,7 +391,14 @@ flutuar meio pixel e o gesto perde o fim.
 pointerdown e em parte dos browsers isso engole o `:active`.
 
 **Item de menu da sidebar agora levanta** (revoga a decisão da 1.5): ganha traço de Tinta, pastel
-/02 do módulo e o pulo; ativo é a cheia /01. Linha e célula de grade seguem sem levantar.
+/02 do módulo e o pulo; ativo é a cheia /01. **Subitem** segue o pai, com ativo em violeta cheio,
+traço e `el-2`. Linha e célula de grade seguem sem levantar.
+
+Do staging `neobrutalism-aria/` vieram, além do subitem: **borda reservada transparente** nas ações
+da sidebar (a borda já existe apagada, então aparecer no hover não empurra o conteúdo meio pixel) e
+**caixa preta de 2px no contador** — ele é dado, e dado mora dentro de caixa. Ficou de FORA o
+`SidebarInset` com moldura própria (`border-2` + `m-2` + sombra): ele acrescentaria uma caixa entre
+a bancada e a folha, e caixa a mais é decisão que se confere vendo rodar.
 
 **Foco cancela o lift** (`transform: none`) — peça focada e sob o mouse ao mesmo tempo ficaria
 deslocada com o halo em volta, duas leituras de estado brigando. Enquanto há foco, quem manda é a

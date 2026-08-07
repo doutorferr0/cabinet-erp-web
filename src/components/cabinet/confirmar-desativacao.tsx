@@ -1,11 +1,14 @@
-import { Button } from '@/components/ui/button'
+import { Ornamento } from '@/components/cabinet/ornamento'
 import {
-  Dialog,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 /**
  * Confirmação do `Excluir` das listagens de cadastro.
@@ -55,10 +58,21 @@ export function ConfirmarDesativacao({
   erro = null,
 }: ConfirmarDesativacaoProps) {
   return (
-    <Dialog isOpen={aberto} onOpenChange={(open) => !open && onFechar()} className="max-w-sm">
-      <DialogHeader>
-        <DialogTitle>{ativo ? `Desativar ${entidade}?` : `${nome} já está inativo`}</DialogTitle>
-        <DialogDescription>
+    <AlertDialog isOpen={aberto} onOpenChange={(open) => !open && onFechar()}>
+      <AlertDialogHeader>
+        <div className="flex items-center gap-3">
+          {/* Ornamento de alerta (memória §@ornamentos: `brutalist-shape-193`,
+              40px, Danger/01). É a única cor de estado permitida a um
+              ornamento — aqui o significado É erro. `aria-hidden`: quem diz o
+              que houve é o título ao lado. */}
+          <AlertDialogMedia>
+            <Ornamento shape="alerta" tom="erro" tamanho={40} />
+          </AlertDialogMedia>
+          <AlertDialogTitle>
+            {ativo ? `Desativar ${entidade}?` : `${nome} já está inativo`}
+          </AlertDialogTitle>
+        </div>
+        <AlertDialogDescription>
           {ativo ? (
             <>
               <strong>{nome}</strong> deixa de aparecer nas telas que usam este cadastro. O registro{' '}
@@ -71,23 +85,28 @@ export function ConfirmarDesativacao({
               servidor.
             </>
           )}
-        </DialogDescription>
-      </DialogHeader>
+        </AlertDialogDescription>
+      </AlertDialogHeader>
       {erro ? (
-        <p role="alert" className="text-[0.75rem] text-destructive">
+        <p role="alert" className="text-xs text-destructive">
           {erro}
         </p>
       ) : null}
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onFechar}>
+      <AlertDialogFooter>
+        <AlertDialogCancel type="button" onClick={onFechar}>
           {ativo ? 'Cancelar' : 'Fechar'}
-        </Button>
+        </AlertDialogCancel>
         {ativo ? (
-          <Button type="button" variant="destructive" onClick={onConfirmar} disabled={pendente}>
+          <AlertDialogAction
+            type="button"
+            variant="destructive"
+            onClick={onConfirmar}
+            disabled={pendente}
+          >
             {pendente ? 'Desativando…' : 'Desativar'}
-          </Button>
+          </AlertDialogAction>
         ) : null}
-      </DialogFooter>
-    </Dialog>
+      </AlertDialogFooter>
+    </AlertDialog>
   )
 }

@@ -67,14 +67,16 @@ describe('AppShell', () => {
     }
   })
 
-  it('switches active company via dropdown', async () => {
+  it('switches active company via drawer', async () => {
     setup()
     const user = userEvent.setup()
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /vertz iluminação/i })).toBeInTheDocument()
     })
     await user.click(screen.getByRole('button', { name: /vertz iluminação/i }))
-    await user.click(screen.getByRole('menuitem', { name: /via hf/i }))
+    // Gaveta, não menu suspenso: trocar de empresa muda o escopo de tudo que
+    // está aberto, e a escolha é um botão de alvo grande dentro dela.
+    await user.click(await screen.findByRole('button', { name: /via hf/i }))
     expect(screen.getByText('VIA HF')).toBeInTheDocument()
   })
 

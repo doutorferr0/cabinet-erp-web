@@ -28,22 +28,36 @@
   /* Superfícies — creme acinzentado, viés conforme o conteúdo. */
   --background: 41 25% 85%; /* Bancada — fundo do app */
   --foreground: 0 0% 0%; /* traço e texto: preto puro */
-  --card: 42 50% 96%; /* Folha — superfície de trabalho */
+  /* FASE 1.6 — fundo MEIO-TERMO: o app continua creme, a folha vira BRANCA.
+     Creme sobre creme fazia a folha desaparecer contra a bancada, e era metade
+     da queixa de "escuro e sem cor": não havia degrau entre o que é fundo e o
+     que é superfície de trabalho. Branco também é o que dá contraste para as
+     zonas pastel da 1.6 pousarem por cima e se lerem como zona. */
+  --card: 0 0% 100%; /* Folha — superfície de trabalho */
   --card-foreground: 0 0% 0%;
-  --popover: 42 50% 96%;
+  --popover: 0 0% 100%;
   --popover-foreground: 0 0% 0%;
+  /* Degrau INTERNO da folha branca (Gray-50 da paleta). A folha ficou branca e
+     com isso perdeu o degrau que o creme dava de graça: caixa dentro de caixa
+     branca só se separa pelo traço. Este é o tom de "afundado" — trilho de
+     rolagem, faixa de seção, área de leitura dentro do formulário. Quase-branco
+     de propósito: degrau, não zona. Zona tem cor e a cor tem significado. */
+  --surface-sunken: 60 20% 98%;
   --neutral: 44 35% 92%; /* creme neutro — trilho, skeleton, hover de item */
   /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
   --primary: 241 100% 66%;
   --primary-hover: 241 77% 57%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 42 50% 96%;
+  --secondary: 0 0% 100%; /* acompanha a Folha — é a mesma superfície */
   --secondary-foreground: 0 0% 0%;
   --muted: 44 35% 92%;
   --muted-foreground: 37 16% 36%;
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
-  --info: 219 90% 69%;
+  /* Info/01 `#93AAED` da paleta. Era o cornflower `#689BF7`, que a paleta
+     reserva para AÇÃO primária — dois empregos na mesma cor apagam os dois.
+     Sem consumidor até aqui; o primeiro é o ornamento de busca sem resultado. */
+  --info: 225 71% 75%;
   /* Verde de dinheiro. A amostra pedia L 35%, que sobre a zona de valor
      (`--zone-money`) dá 2,79:1 — dinheiro é o dado que a tela existe para
      mostrar e estava ilegível justo no fundo feito para ele. L 26% mantém
@@ -62,12 +76,23 @@
   --ring: 47 100% 50%; /* amarelo do anel de foco — receita em `focus-ring` */
   --rule-hair: 42 17% 70%; /* linha da grade de fundo e divisórias finas */
   --rule-strong: 0 0% 0%;
-  /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata). */
-  --zone-money: 78 32% 90%;
-  --zone-id: 30 36% 91%;
-  --zone-info: 213 21% 92%;
-  --zone-warn: 46 63% 89%;
-  --zone-danger: 14 49% 90%;
+  /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata).
+     FASE 1.6 — as cinco deixam de ser CREMES TINGIDOS e passam a ser os pastéis
+     /02 da paleta (`paleta-vitra.md` §2). Era daqui que vinha metade do "sem
+     cor": zona de valor a 32% de saturação sobre folha creme mudava o tom do
+     papel sem nomear conteúdo nenhum — a 90%+ de luz e saturação alta, sobre
+     folha BRANCA, a área diz "isto é dinheiro" antes de o operador ler o
+     rótulo, que é a razão de a zona existir.
+     Medido, com preto de texto: valor 19,1:1 · identidade 16,1:1 · apoio
+     18,1:1 · pendência 20,1:1 · bloqueio 18,2:1. Dinheiro (`--money`) sobre a
+     zona de valor SOBE de 4,65:1 para 5,02:1 e o negativo (`--destructive`)
+     sobre a de bloqueio, para 5,25:1 — a paleta é mais clara que os cremes que
+     ela substitui, então nenhum par piorou. */
+  --zone-money: 154 96% 91%; /* Success/02 #D2FEEB */
+  --zone-id: 263 94% 93%; /* Primary/02 #E9DCFE */
+  --zone-info: 223 69% 95%; /* Info/02 #E9EEFB */
+  --zone-warn: 48 100% 95%; /* Warning/02 #FFFAE5 */
+  --zone-danger: 6 76% 95%; /* Danger/03 #FCEBE9 */
   /* Sombra: família quente do papel, 5 profundidades. NUNCA preta — preto vira
      buraco, o papel projeta sombra de papel. */
   --shadow-1: 41 14% 61%;
@@ -93,6 +118,75 @@
   --sidebar-accent-foreground: hsl(0 0% 0%);
   --sidebar-border: hsl(0 0% 0%);
   --sidebar-ring: hsl(47 100% 50%);
+}
+
+/* COR DE MÓDULO — um par por módulo, trocado por ESCOPO e não por classe.
+   A tela declara `data-modulo="produtos"` uma vez, no alto; tudo que estiver
+   dentro (banda de identidade, ornamento, cabeçalho de seção, estado vazio)
+   lê `--modulo-01`/`--modulo-02` e se pinta sozinho. A alternativa — uma classe
+   de cor por módulo em cada peça — espalharia oito condicionais por componente
+   e garantiria que um dia um deles ficasse com a cor de outro.
+
+   **Por que estes pares NÃO passam pelo `@theme inline`:** ali `--color-x:
+   hsl(var(--y))` é substituído no `:root`, onde a declaração mora, e o valor já
+   resolvido é o que os filhos herdam — redefinir `--modulo-01` num descendente
+   não mudaria nada. A troca por escopo só funciona se a `var()` for lida no
+   elemento que pinta, e é isso que as utilities `bg-modulo*`/`text-modulo`
+   fazem lá embaixo.
+
+   /01 é a CHEIA (ornamento, chip, cabeçalho de card de item) e /02 é a PASTEL
+   (superfície de seção) — a regra da fase: /02 pinta a seção, /01 pinta o dado.
+   A atribuição é FIXA: mesmo módulo, mesma cor, sempre. Cor que muda por visita
+   não é identidade, é ruído. Fonte: `paleta-vitra.md` §3 e a tabela de
+   shape×módulo travada pelo user em 2026-08-06.
+
+   Risco conhecido, registrado e aceito: cyan, maya blue, soft blue e lavender
+   são vizinhos e só se distinguem lado a lado. Quem carrega a identidade é o
+   SHAPE do ornamento; a cor reforça. Se na tela ficarem indistintos, troca-se a
+   cor de UM módulo — não o sistema. */
+:root {
+  --modulo-01: 262 97% 76%; /* Primary/01 — marca do sistema, o padrão */
+  --modulo-02: 263 94% 93%; /* Primary/02 */
+}
+
+[data-modulo="produtos"] {
+  --modulo-01: 188 85% 53%; /* Cyan #22D2ED */
+  --modulo-02: 185 92% 90%; /* #CEF9FD */
+}
+
+[data-modulo="estoque"] {
+  --modulo-01: 205 100% 69%; /* Maya blue #61BCFF */
+  --modulo-02: 205 100% 91%; /* #D1ECFF */
+}
+
+[data-modulo="vendas"] {
+  --modulo-01: 255 89% 76%; /* Purple mimosa #A68AF8 */
+  --modulo-02: 251 84% 95%; /* #ECE8FD */
+}
+
+[data-modulo="compras"] {
+  --modulo-01: 292 90% 72%; /* Violet #E779F8 */
+  --modulo-02: 287 92% 95%; /* #F9E7FE */
+}
+
+[data-modulo="clientes"] {
+  --modulo-01: 252 100% 86%; /* Lavender blue #C7B9FF */
+  --modulo-02: 268 100% 95%; /* #F0E3FF */
+}
+
+[data-modulo="fornecedores"] {
+  --modulo-01: 234 91% 74%; /* Soft blue #828DF9 */
+  --modulo-02: 226 100% 94%; /* #E0E7FF */
+}
+
+[data-modulo="profissionais"] {
+  --modulo-01: 281 94% 74%; /* Easter purple #D47FFB */
+  --modulo-02: 279 100% 95%; /* #F7E8FF */
+}
+
+[data-modulo="boletim"] {
+  --modulo-01: 6 100% 73%; /* Fusion coral #FF8577 */
+  --modulo-02: 7 100% 93%; /* #FFDFDB */
 }
 
 /* Modo escuro: `[a resolver — pós 1.5]`. A amostra da fase 1.5 não define tema
@@ -173,15 +267,15 @@
   --color-stamp-open: hsl(var(--stamp-open));
   --color-stamp-done: hsl(var(--stamp-done));
   --color-stamp-void: hsl(var(--stamp-void));
-  /* Aliases de transição que SOBREVIVEM à 1.5 de propósito. Restam dois
-     consumidores de `bg-anchor` — o bloco da empresa ativa e o hover do link
-     cru — e os dois usam amarelo como IDENTIDADE, emprego que a 1.5 tirou dele
-     (amarelo recuou para foco e pendência). Trocar os dois é decisão de COR, e
-     cor é a fase 1.6, que repinta superfície por conteúdo com a paleta pastel.
-     Ficam apontando para o token novo até lá — some o alias quando a 1.6
-     reatribuir os dois empregos. */
-  --color-anchor: hsl(var(--warn));
-  --color-bench-tint: hsl(var(--neutral));
+  /* `--color-anchor` e `--color-bench-tint` MORRERAM aqui. Eram os dois aliases
+     que a 1.5 deixou vivos porque reatribuir emprego de cor era trabalho desta
+     fase: `bg-anchor` pintava de amarelo o bloco da empresa ativa e o hover do
+     link cru, usando o amarelo como IDENTIDADE — emprego que a 1.5 já tinha
+     tirado dele (amarelo é foco e pendência, e mais nada). O bloco da empresa
+     ativa é identidade, então foi para a zona de identidade; o hover do link
+     virou Neutro, que é o tom de hover de item desde a 1.5. Alias sem
+     consumidor é convite para o emprego velho voltar por descuido. */
+  --color-surface-sunken: hsl(var(--surface-sunken));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */
@@ -196,11 +290,15 @@
   --radius-xl: 10px;
   /* ELEVAÇÃO em 5 degraus, sombra sem blur da família quente do papel.
      `el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal. */
+  /* FASE 1.6 — escada 2/3/4/6/8 no lugar de 2/3/5/7/10. Os degraus de cima
+     encurtam: a 10px a sombra do modal virava uma segunda peça na tela, do
+     tamanho de uma borda grossa. A escada nova cresce devagar embaixo, onde os
+     degraus se distinguem, e para em 8px, onde ainda se lê como sombra. */
   --shadow-el1: 2px 2px 0 0 hsl(var(--shadow-1));
   --shadow-el2: 3px 3px 0 0 hsl(var(--shadow-2));
-  --shadow-el3: 5px 5px 0 0 hsl(var(--shadow-3));
-  --shadow-el4: 7px 7px 0 0 hsl(var(--shadow-4));
-  --shadow-el5: 10px 10px 0 0 hsl(var(--shadow-5));
+  --shadow-el3: 4px 4px 0 0 hsl(var(--shadow-3));
+  --shadow-el4: 6px 6px 0 0 hsl(var(--shadow-4));
+  --shadow-el5: 8px 8px 0 0 hsl(var(--shadow-5));
   /* Três famílias, todas self-hosted: Display (Sora) · Corpo (Inter) · Mono (PT Mono). */
   --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -234,16 +332,149 @@
   background-position: 0 0, 3px 4px;
 }
 
+/* PEÇA QUE APARECE — popover, menu, diálogo, dica, toast (DESIGN.md §Motion).
+   Entra com fade + escala 0,96 → 1 na mola `{stiffness:400, damping:30}` da
+   fase 1.6; sai com fade curto e sem mola.
+
+   **A mola está escrita em `linear()`, não aproximada por `cubic-bezier`.** Os
+   30 pontos abaixo são x(t) da equação da mola subamortecida amostrada até
+   360ms — ζ = 0,75, passada de 2,8% no meio do caminho, que é o "peso" que
+   distingue uma mola de um fade. Uma bezier de 4 pontos não representa
+   ultrapassar o alvo e voltar.
+
+   **Por que não a lib `motion` aqui:** quem monta e desmonta estas peças é a
+   `react-aria-components`, que mantém o nó vivo enquanto houver animação CSS
+   correndo (`data-exiting`) e só então desmonta. Trocar isso por
+   `AnimatePresence` significaria tirar da RAC o controle da desmontagem — e
+   com ela o foco que ela devolve ao trigger. A física é a mesma; muda só quem
+   a executa. A lib entra onde não há essa disputa: entrada de tela.
+
+   Ela também repara uma coisa que estava quebrada em silêncio: os quatro
+   componentes traziam `data-entering:animate-in fade-in-0` do shadcn, mas
+   `tw-animate-css` nunca foi importado no CSS — as classes não existiam no
+   bundle e nenhuma delas animava nada.
+
+   Saída é 120ms de fade e ponto: quem fecha um menu já decidiu, e mola na
+   saída atrasa a próxima ação. */
+/* `scale`, e não `transform: scale()`: o conteúdo do diálogo já se centraliza
+   com `-translate-x-1/2 -translate-y-1/2`, e um `transform` no keyframe
+   substituiria o translate inteiro — o diálogo saltaria para o canto inferior
+   direito durante a animação. A propriedade independente compõe com o
+   `transform` que já estiver lá, e obedece ao mesmo `transform-origin`. */
+@keyframes pop-spring-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes pop-spring-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@utility pop-spring {
+  &[data-entering] {
+    animation: pop-spring-in 360ms
+      linear(
+        0,
+        0.027,
+        0.096,
+        0.189,
+        0.295,
+        0.404,
+        0.51,
+        0.608,
+        0.695,
+        0.771,
+        0.835,
+        0.888,
+        0.93,
+        0.962,
+        0.987,
+        1.004,
+        1.016,
+        1.023,
+        1.027,
+        1.028,
+        1.028,
+        1.026,
+        1.023,
+        1.02,
+        1.017,
+        1.014,
+        1.011,
+        1.009,
+        1.007,
+        1
+      );
+  }
+
+  &[data-exiting] {
+    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* `<MotionConfig reducedMotion="user">` só governa a lib; animação escrita em
+     CSS precisa da sua própria rede. Some o movimento, fica o corte seco — a
+     peça continua aparecendo e sumindo, sem viagem. */
+  @media (prefers-reduced-motion: reduce) {
+    &[data-entering],
+    &[data-exiting] {
+      animation-duration: 1ms;
+    }
+  }
+}
+
+/* A CORTINA do diálogo. Não é `pop-spring`: a cortina cobre a janela inteira, e
+   escalar de 0,96 mostraria uma faixa de tela sem cobertura em volta dela.
+   Cortina só varia opacidade — e depressa, porque ela não é o que o operador
+   veio ver; o que ele veio ver é o diálogo por cima. */
+@utility fade-veil {
+  &[data-entering] {
+    animation: pop-spring-out 160ms cubic-bezier(0, 0, 0.2, 1) reverse;
+  }
+
+  &[data-exiting] {
+    animation: pop-spring-out 120ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-entering],
+    &[data-exiting] {
+      animation-duration: 1ms;
+    }
+  }
+}
+
 /* LIFT DE CONTROLE — A microinteração do sistema (DESIGN.md §Motion).
-   A peça repousa em `el-2`, LEVANTA para `el-3` no hover e AFUNDA para `el-1`
-   no press. Os deslocamentos não são enfeite, são a geometria da elevação: a
-   borda EXTERNA da sombra fica parada nos 3px e só a distância entre peça e
-   sombra muda.
-     repouso: peça em 0,   sombra 3px → borda externa a 3px
-     hover:   peça em -2,  sombra 5px → -2 + 5 = 3px
-     press:   peça em +1,  sombra 2px →  1 + 2 = 3px
-   Sem isso a sombra escorregaria pela tela junto com a peça, que é o que
-   denuncia lift falso.
+
+   **REESCRITA NA 1.6 §3b, a pedido do user:** o hover da 1.5 foi avaliado como
+   fraco — "sidebar sem reação nenhuma, botões sem pulo". A mecânica agora é a
+   do neobrutalism.dev, calibrada para os nossos 2px e para a sombra QUENTE:
+
+     repouso: peça em 0,       sombra `el-2`
+     hover:   peça em -2, -2,  sombra `el-3`  → a peça PULA
+     press:   peça em +2, +2,  sombra NENHUMA → a peça entra na própria sombra
+
+   Isto **substitui a geometria da 1.5**, que mantinha a borda externa da sombra
+   parada nos 3px e por isso limitava o hover a -1px. Aquela regra fazia a peça
+   crescer sem sair do lugar; o pedido é que ela saia do lugar. O par
+   lift/press continua sendo um mecanismo só: o press é o inverso exato do
+   hover, e é o que dá a sensação de botão físico — sobe quando o dedo se
+   aproxima, afunda quando ele encosta.
+
+   Press com sombra ZERO, e não `el-1`: com a sombra pequena o elemento ainda
+   parece flutuar meio pixel, e o gesto perde o fim. Sem sombra, ele encosta.
 
    `:active` E `[data-pressed]`: a RAC chama `preventDefault` no pointerdown
    pelo `usePress`, e em parte dos browsers isso engole o `:active` — o
@@ -251,16 +482,17 @@
 
    A transição mora aqui porque `transition-property` é uma só: consumidor com
    `transition-[...]` próprio apagaria esta. Quem usa a utility não declara
-   transição de novo.
+   transição de novo. `ease-out` (e não `ease-in-out`): o movimento sai rápido
+   e assenta devagar, que é como o olho lê "respondeu ao meu mouse".
 
-   É de CONTROLE — botão, item de menu, cartão clicável. Linha e célula de
-   grade NUNCA levantam (§Do's and Don'ts): lá o amarelo marca foco e o violeta
-   marca seleção. */
+   É de CONTROLE — botão, item de menu da sidebar, cartão clicável, aba, chip.
+   Linha e célula de grade NUNCA levantam (§3b repete a proibição do §3): lá o
+   amarelo marca foco e o violeta marca seleção. */
 @utility lift-control {
   box-shadow: var(--shadow-el2);
-  transition-property: transform, box-shadow, background-color, color;
-  transition-duration: 120ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: transform, box-shadow, background-color, color, border-color;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 
   &:hover {
     transform: translate(-2px, -2px);
@@ -269,8 +501,8 @@
 
   &:active,
   &[data-pressed] {
-    transform: translate(1px, 1px);
-    box-shadow: var(--shadow-el1);
+    transform: translate(2px, 2px);
+    box-shadow: none;
   }
 
   /* Foco CANCELA o lift (`.btn:focus-visible` da amostra: `transform:none`).
@@ -286,6 +518,44 @@
   &[data-disabled] {
     transform: none;
     box-shadow: var(--shadow-el2);
+  }
+}
+
+/* LIFT DE PEÇA LISA — a outra metade do §3b.
+   Para o que repousa SEM sombra e a GANHA no hover: item de menu da sidebar,
+   aba, chip clicável. Mesmo movimento do `lift-control` (pula 2px, afunda 2px),
+   um degrau abaixo na escada, porque a peça parte do plano.
+
+   Existe separada e não como `variant` porque a diferença é o REPOUSO: aqui o
+   repouso é ausência de sombra, e uma utility que declarasse `box-shadow: none`
+   no estado normal sobrescreveria a sombra de quem já tem.
+
+   `border-color` entra na transição por causa do item de menu, que no hover
+   ganha traço de Tinta onde antes não havia nada (§3b). */
+@utility lift-flat {
+  transition-property: transform, box-shadow, background-color, color, border-color;
+  transition-duration: 140ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-el2);
+  }
+
+  &:active,
+  &[data-pressed] {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    transform: none;
+  }
+
+  &:disabled,
+  &[data-disabled] {
+    transform: none;
+    box-shadow: none;
   }
 }
 
@@ -366,6 +636,29 @@
       inset 0 -4px 0 0 hsl(var(--foreground)),
       inset -4px 0 0 0 hsl(var(--foreground));
   }
+}
+
+/* COR DE MÓDULO — as três utilities que leem o par do escopo (§Cor de módulo).
+   Existem como utility, e não como cor de tema, porque a `var()` precisa ser
+   resolvida no elemento que pinta para o `[data-modulo]` de cima valer; pelo
+   `@theme inline` ela seria resolvida no `:root` e o escopo não faria efeito.
+
+   `bg-modulo` é a SUPERFÍCIE de seção (pastel /02) · `bg-modulo-cheia` é o
+   elemento COMPACTO (cheia /01: chip, cabeçalho de card de item, marcador) e
+   nunca área grande · `text-modulo` é o traço.
+
+   Sobre a /01 e a /02 o texto é sempre PRETO: medido, o pior par da tabela é o
+   soft blue a 7,1:1 — todas passam AA com folga, e preto é a tinta do sistema. */
+@utility bg-modulo {
+  background-color: hsl(var(--modulo-02));
+}
+
+@utility bg-modulo-cheia {
+  background-color: hsl(var(--modulo-01));
+}
+
+@utility text-modulo {
+  color: hsl(var(--modulo-01));
 }
 
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).

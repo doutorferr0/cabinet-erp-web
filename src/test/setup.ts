@@ -1,6 +1,18 @@
 import { configure } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
+import { MotionGlobalConfig } from 'motion/react'
 import { vi } from 'vitest'
+
+// A entrada de tela da fase 1.6 (`components/cabinet/entrada.tsx`) parte de
+// `opacity: 0` e sobe até 1 numa mola de ~300ms. Sem esta linha cada teste de
+// tela pagaria a mola inteira antes de o conteúdo ficar visível; com ela, o
+// motion salta para o estado final no PRIMEIRO quadro.
+//
+// Primeiro quadro, não mesmo tick: logo depois de `render()` o elemento ainda
+// está em `opacity: 0`, e uma asserção SÍNCRONA de `toBeVisible` reprova. Quem
+// asserta visibilidade dentro da folha usa `findBy*`/`waitFor` — que é o que a
+// suíte já faz, por causa da latência do provider mock.
+MotionGlobalConfig.instantAnimations = true
 
 // O provider mock simula latência de rede (200-300ms, src/data/index.ts). Com 19
 // arquivos de teste em jsdom paralelo, a espera real de um findBy* passa dos

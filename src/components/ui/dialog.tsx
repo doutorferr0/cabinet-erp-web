@@ -46,10 +46,7 @@ function DialogOverlay({
   return (
     <ModalOverlayPrimitive
       data-slot="dialog-overlay"
-      className={cn(
-        'fixed inset-0 isolate z-50 bg-black/20 duration-100 data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0',
-        className,
-      )}
+      className={cn('fixed inset-0 isolate z-50 fade-veil bg-black/20', className)}
       {...props}
     >
       {children}
@@ -80,7 +77,7 @@ function Dialog({
         className={cn(
           // Raio de PAINEL e `el-5`: o diálogo é a superfície mais alta da
           // tela, e é o degrau que a escada de elevação reserva para modal.
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border-2 border-border bg-card p-4 text-sm text-card-foreground shadow-el5 duration-100 outline-none data-entering:animate-in data-entering:fade-in-0 data-exiting:animate-out data-exiting:fade-out-0 sm:max-w-sm',
+          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border-2 border-border bg-card p-4 text-sm text-card-foreground pop-spring shadow-el5 outline-none sm:max-w-sm',
           className,
         )}
       >

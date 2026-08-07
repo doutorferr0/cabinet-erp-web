@@ -83,7 +83,7 @@ describe('CompanySwitcher', () => {
     const { user } = montar()
 
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
-    await user.click(await screen.findByRole('menuitem', { name: /vertz iluminação/i }))
+    await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
 
     await waitFor(() => expect(servidor.em('/auth/active-tenant')).toHaveLength(1))
     const troca = servidor.em('/auth/active-tenant')[0]
@@ -95,7 +95,7 @@ describe('CompanySwitcher', () => {
     const { user } = montar()
 
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
-    await user.click(await screen.findByRole('menuitem', { name: /vertz iluminação/i }))
+    await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
 
     // Dado é escopado por empresa: sem reconsulta, a tela mostraria a anterior.
     expect(await screen.findByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
@@ -125,7 +125,7 @@ describe('CompanySwitcher', () => {
     const { user } = montar()
 
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
-    await user.click(await screen.findByRole('menuitem', { name: /sair/i }))
+    await user.click(await screen.findByRole('button', { name: /sair/i }))
 
     await waitFor(() => expect(servidor.em('/auth/logout')).toHaveLength(1))
     expect(servidor.em('/auth/logout')[0]?.metodo).toBe('POST')
@@ -153,7 +153,7 @@ describe('CompanySwitcher', () => {
     })
 
     await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
-    await user.click(await screen.findByRole('menuitem', { name: /sair/i }))
+    await user.click(await screen.findByRole('button', { name: /sair/i }))
 
     // A tela de login é a única com heading Cabinet fora do shell.
     expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()

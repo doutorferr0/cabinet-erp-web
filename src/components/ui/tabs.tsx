@@ -77,7 +77,16 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       {...(value !== undefined && { id: value })}
       className={cn(
-        'inline-flex h-8 cursor-default items-center justify-center gap-1.5 rounded-item px-3 text-sm font-semibold whitespace-nowrap outline-none transition-colors hover:text-foreground focus-visible:focus-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-selected:bg-primary data-selected:text-primary-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        // §3b lista a aba junto do chip clicável: ela PULA no hover e afunda no
+        // press, como o resto dos controles. Era `cursor-default`, que é o
+        // ponteiro do texto morto — aba é controle.
+        //
+        // A borda de 2px já existe TRANSPARENTE em repouso: ela só aparece no
+        // hover e na aba selecionada, e reservar o espaço desde o começo evita
+        // que a fileira inteira ande 2px quando o mouse passa. Selecionada é
+        // violeta cheio COM traço de Tinta (Regra da Caixa Preta) — do staging
+        // `neobrutalism-aria`, com `shadow-sm` traduzido para a escada quente.
+        'lift-flat inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-item border-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap outline-none hover:border-border hover:text-foreground focus-visible:focus-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-selected:border-border data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-el2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
         className,
       )}
       {...props}

@@ -40,8 +40,11 @@ export function LoginTela() {
 
   function entrar(valores: LoginValores) {
     login.mutate(valores, {
+      // A entrada do sistema é o DASHBOARD (decisão do user): o que está em
+      // curso, não o fechamento do dia. O Boletim continua em `/` e na barra —
+      // o que mudou é qual dos dois recebe quem acabou de entrar.
       onSuccess: (resultado) =>
-        navigate({ to: resultado.mustChangePassword ? '/trocar-senha' : '/' }),
+        navigate({ to: resultado.mustChangePassword ? '/trocar-senha' : '/dashboard' }),
     })
   }
 

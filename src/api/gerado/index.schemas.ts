@@ -184,6 +184,11 @@ export interface SessaoAtual {
   activeTenantId: string | null;
   expiresAt: string;
   mustChangePassword: boolean;
+  /**
+     * Proposto. Como o operador se chama na tela — a saudação do Dashboard. `null` quando o servidor não sabe: a tela então cumprimenta sem nome, em vez de exibir e-mail ou id, que é identificador de sistema e não nome de gente.
+     * @nullable
+     */
+  displayName?: string | null;
 }
 
 export interface StockMovementRequest {
@@ -227,6 +232,267 @@ export interface VinculoDeEmpresa {
   features: VinculoDeEmpresaFeaturesItem[];
 }
 
+/**
+ * Proposto. Os quatro números da faixa de KPI. Dinheiro em CENTAVOS, inteiro — a regra do repo vale no contrato.
+ */
+export interface DashboardSummaryDto {
+  /** Orçamentos abertos. */
+  openQuotes: number;
+  /** Destes, quantos vencem nos próximos 7 dias. */
+  openQuotesDueThisWeek: number;
+  /** Pedidos de compra a receber. */
+  incomingOrders: number;
+  /** Destes, quantos com previsão para hoje. */
+  incomingOrdersToday: number;
+  /** Variantes com saldo abaixo do mínimo. */
+  criticalStockItems: number;
+  /** Vendas do mês corrente, em centavos. */
+  monthSalesCents: number;
+  /** Vendas do mês anterior fechado, em centavos. O front deriva a variação dos dois — percentual pronto no DTO seria número que ninguém consegue conferir na tela. */
+  previousMonthSalesCents: number;
+}
+
+/**
+ * Conjunto fechado — é ele que dá a cor da barra e a legenda do calendário.
+ */
+export type AgendaEventDtoKind = typeof AgendaEventDtoKind[keyof typeof AgendaEventDtoKind];
+
+
+export const AgendaEventDtoKind = {
+  delivery: 'delivery',
+  quote: 'quote',
+  meeting: 'meeting',
+  payment: 'payment',
+} as const;
+
+/**
+ * Proposto. Um compromisso da agenda.
+ */
+export interface AgendaEventDto {
+  id: string;
+  /** Início, com hora (ISO 8601). */
+  startsAt: string;
+  title: string;
+  /**
+     * A quem o compromisso se refere (cliente, obra, fornecedor).
+     * @nullable
+     */
+  context?: string | null;
+  /** Conjunto fechado — é ele que dá a cor da barra e a legenda do calendário. */
+  kind: AgendaEventDtoKind;
+}
+
+/**
+ * Proposto. Quem responde pela tarefa.
+ */
+export interface TaskAssigneeDto {
+  id: string;
+  name: string;
+  /** As iniciais que o avatar mostra. Vêm do servidor porque quem sabe partir 'Maria da Silva' em 'MS' é quem guarda o nome — o front partindo string faria 'DS' em nome com preposição. */
+  initials: string;
+}
+
+/**
+ * A coluna do quadro.
+ */
+export type TaskDtoStatus = typeof TaskDtoStatus[keyof typeof TaskDtoStatus];
+
+
+export const TaskDtoStatus = {
+  todo: 'todo',
+  doing: 'doing',
+  review: 'review',
+  done: 'done',
+} as const;
+
+export type TaskDtoPriority = typeof TaskDtoPriority[keyof typeof TaskDtoPriority];
+
+
+export const TaskDtoPriority = {
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+/**
+ * Proposto. Um cartão do quadro.
+ */
+export interface TaskDto {
+  id: string;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** A coluna do quadro. */
+  status: TaskDtoStatus;
+  priority: TaskDtoPriority;
+  /**
+     * Prazo (data, sem hora).
+     * @nullable
+     */
+  dueOn?: string | null;
+  commentCount: number;
+  attachmentCount: number;
+  assignees: TaskAssigneeDto[];
+}
+
+/**
+ * A coluna do quadro.
+ */
+export type TaskWriteRequestStatus = typeof TaskWriteRequestStatus[keyof typeof TaskWriteRequestStatus];
+
+
+export const TaskWriteRequestStatus = {
+  todo: 'todo',
+  doing: 'doing',
+  review: 'review',
+  done: 'done',
+} as const;
+
+export type TaskWriteRequestPriority = typeof TaskWriteRequestPriority[keyof typeof TaskWriteRequestPriority];
+
+
+export const TaskWriteRequestPriority = {
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+/**
+ * Proposto. Corpo de criação de tarefa.
+ */
+export interface TaskWriteRequest {
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** A coluna do quadro. */
+  status: TaskWriteRequestStatus;
+  priority: TaskWriteRequestPriority;
+  /**
+     * Prazo (data, sem hora).
+     * @nullable
+     */
+  dueOn?: string | null;
+}
+
+/**
+ * A coluna do quadro.
+ */
+export type TaskPatchRequestStatus = typeof TaskPatchRequestStatus[keyof typeof TaskPatchRequestStatus];
+
+
+export const TaskPatchRequestStatus = {
+  todo: 'todo',
+  doing: 'doing',
+  review: 'review',
+  done: 'done',
+} as const;
+
+export type TaskPatchRequestPriority = typeof TaskPatchRequestPriority[keyof typeof TaskPatchRequestPriority];
+
+
+export const TaskPatchRequestPriority = {
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+/**
+ * Proposto. Corpo do PATCH: só o que muda. Campo ausente fica como está — ausente NÃO é o mesmo que `null`, que apaga.
+ */
+export interface TaskPatchRequest {
+  title?: string;
+  /** @nullable */
+  description?: string | null;
+  /** A coluna do quadro. */
+  status?: TaskPatchRequestStatus;
+  priority?: TaskPatchRequestPriority;
+  /**
+     * Prazo (data, sem hora).
+     * @nullable
+     */
+  dueOn?: string | null;
+}
+
+/**
+ * Proposto. Um item da lista A fazer.
+ */
+export interface TodoDto {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+/**
+ * Proposto. Marca ou desmarca.
+ */
+export interface TodoPatchRequest {
+  done: boolean;
+}
+
+export type ProjectDtoStatus = typeof ProjectDtoStatus[keyof typeof ProjectDtoStatus];
+
+
+export const ProjectDtoStatus = {
+  active: 'active',
+  proposed: 'proposed',
+  closed: 'closed',
+} as const;
+
+/**
+ * Proposto. Um projeto do Planner.
+ */
+export interface ProjectDto {
+  id: string;
+  name: string;
+  status: ProjectDtoStatus;
+}
+
+/**
+ * O que a barra é — dá o rótulo da pill.
+ */
+export type PlanItemDtoKind = typeof PlanItemDtoKind[keyof typeof PlanItemDtoKind];
+
+
+export const PlanItemDtoKind = {
+  task: 'task',
+  order: 'order',
+  delivery: 'delivery',
+} as const;
+
+/**
+ * Proposto. Uma barra do gantt.
+ */
+export interface PlanItemDto {
+  id: string;
+  label: string;
+  /** O que a barra é — dá o rótulo da pill. */
+  kind: PlanItemDtoKind;
+  startsOn: string;
+  /** Previsão de término, inclusiva. */
+  endsOn: string;
+  /** 0 a 100. Progresso NÃO é dinheiro — a tela não o pinta de verde. */
+  progressPercent: number;
+}
+
+/**
+ * Proposto. Uma fase do projeto, com as barras que moram nela.
+ */
+export interface PlanPhaseDto {
+  id: string;
+  name: string;
+  startsOn: string;
+  endsOn: string;
+  items: PlanItemDto[];
+}
+
+/**
+ * Proposto. O plano inteiro de um projeto.
+ */
+export interface ProjectPlanDto {
+  projectId: string;
+  phases: PlanPhaseDto[];
+}
+
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;
@@ -258,5 +524,44 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+};
+
+export type ListAgendaEventsParams = {
+/**
+ * Início do intervalo, inclusivo (data ISO).
+ */
+from: string;
+/**
+ * Fim do intervalo, inclusivo (data ISO).
+ */
+to: string;
+};
+
+export type ListTasksParams = {
+/**
+ * Filtra uma coluna só. Ausente = o quadro inteiro.
+ */
+status?: ListTasksStatus;
+/**
+ * Busca em título e descrição.
+ */
+q?: string;
+};
+
+export type ListTasksStatus = typeof ListTasksStatus[keyof typeof ListTasksStatus];
+
+
+export const ListTasksStatus = {
+  todo: 'todo',
+  doing: 'doing',
+  review: 'review',
+  done: 'done',
+} as const;
+
+export type ListProjectsParams = {
+/**
+ * Ausente = todos. O toggle do Planner manda `active,proposed` ou `closed`.
+ */
+status?: string;
 };
 

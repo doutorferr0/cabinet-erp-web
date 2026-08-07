@@ -22,22 +22,33 @@ import {
   getCreatePartnerResponseMock,
   getCreateProductResponseMock,
   getCreateStockMovementResponseMock,
+  getCreateTaskResponseMock,
   getCreateVariantResponseMock,
+  getGetDashboardSummaryResponseMock,
   getGetPartnerResponseMock,
   getGetProductResponseMock,
+  getGetProjectPlanResponseMock,
   getHealthDbResponseMock,
   getHealthResponseMock,
   getLinkPartnerResponseMock,
+  getListAgendaEventsResponseMock,
   getListCatalogLookupsResponseMock,
   getListPartnersResponseMock,
   getListProductsResponseMock,
+  getListProjectsResponseMock,
   getListStockMovementsResponseMock,
+  getListTasksResponseMock,
+  getListTodosResponseMock,
+  getPatchTaskResponseMock,
+  getPatchTodoResponseMock,
   getUpdatePartnerResponseMock,
   getUpdateProductResponseMock,
   getUpdateVariantResponseMock
 } from './index.faker';
 
 import type {
+  AgendaEventDto,
+  DashboardSummaryDto,
   HealthStatus,
   LoginOk,
   PagedResultOfCatalogLookupDto,
@@ -48,13 +59,17 @@ import type {
   ProductDetailDto,
   ProductDto,
   ProductVariantDto,
+  ProjectDto,
+  ProjectPlanDto,
   ReadinessStatus,
   SessaoAtual,
   StockMovementDto,
+  TaskDto,
+  TodoDto,
   VinculoDeEmpresa
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -314,6 +329,114 @@ export const getAuthSetActiveTenantMockHandler = (overrideResponse?: void | ((in
       })
   }, options)
 }
+
+export const getGetDashboardSummaryMockHandler = (overrideResponse?: DashboardSummaryDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<DashboardSummaryDto> | DashboardSummaryDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/dashboard/summary', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetDashboardSummaryResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListAgendaEventsMockHandler = (overrideResponse?: AgendaEventDto[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<AgendaEventDto[]> | AgendaEventDto[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/dashboard/agenda', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListAgendaEventsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListTasksMockHandler = (overrideResponse?: TaskDto[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<TaskDto[]> | TaskDto[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/tasks', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListTasksResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateTaskMockHandler = (overrideResponse?: TaskDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TaskDto> | TaskDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/tasks', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateTaskResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getPatchTaskMockHandler = (overrideResponse?: TaskDto | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<TaskDto> | TaskDto), options?: RequestHandlerOptions) => {
+  return http.patch('*/api/tasks/:taskId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPatchTaskResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListTodosMockHandler = (overrideResponse?: TodoDto[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<TodoDto[]> | TodoDto[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/todos', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListTodosResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPatchTodoMockHandler = (overrideResponse?: TodoDto | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<TodoDto> | TodoDto), options?: RequestHandlerOptions) => {
+  return http.patch('*/api/todos/:todoId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPatchTodoResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListProjectsMockHandler = (overrideResponse?: ProjectDto[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ProjectDto[]> | ProjectDto[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/projects', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListProjectsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetProjectPlanMockHandler = (overrideResponse?: ProjectPlanDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ProjectPlanDto> | ProjectPlanDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/projects/:projectId/plan', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetProjectPlanResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getVitraERPMock = () => [
   getHealthMockHandler(),
   getHealthDbMockHandler(),
@@ -336,5 +459,14 @@ export const getVitraERPMock = () => [
   getAuthChangePasswordMockHandler(),
   getAuthMeMockHandler(),
   getAuthTenantsMockHandler(),
-  getAuthSetActiveTenantMockHandler()
+  getAuthSetActiveTenantMockHandler(),
+  getGetDashboardSummaryMockHandler(),
+  getListAgendaEventsMockHandler(),
+  getListTasksMockHandler(),
+  getCreateTaskMockHandler(),
+  getPatchTaskMockHandler(),
+  getListTodosMockHandler(),
+  getPatchTodoMockHandler(),
+  getListProjectsMockHandler(),
+  getGetProjectPlanMockHandler()
 ]

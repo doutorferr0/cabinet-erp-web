@@ -1,10 +1,16 @@
 import type {
+  AgendaEventDto,
   CatalogLookupDto,
   PartnerDto,
   ProductDetailDto,
+  ProjectDto,
+  ProjectPlanDto,
   StockMovementDto,
+  TaskDto,
+  TodoDto,
   VinculoDeEmpresa,
 } from '@/api/gerado'
+import { diaLocalISO } from '@/lib/datas'
 
 /**
  * Estado em memória do modo mock (`VITE_API_MODE=mock`).
@@ -53,6 +59,12 @@ export interface StoreDaApi {
   produtos: ProductDetailDto[]
   parceiros: ParceiroDaOrg[]
   movimentos: StockMovementDto[]
+  tarefas: TaskDto[]
+  todos: TodoDto[]
+  agenda: AgendaEventDto[]
+  projetos: ProjectDto[]
+  /** Plano por projeto (`projectId` → plano). Sem entrada = projeto sem plano. */
+  planos: Record<string, ProjectPlanDto>
   proximoId: number
 }
 
@@ -178,6 +190,309 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
   ]
 }
 
+/**
+ * SEMENTE DO DASHBOARD — datas RELATIVAS ao dia em que o mock roda.
+ *
+ * Datas fixas envelheceriam: uma agenda semeada em agosto mostraria "hoje" vazio
+ * em setembro, e o mini-calendário marcaria dias de um mês que ninguém está
+ * olhando. O Boletim tem o problema oposto e o assume por escrito (a data de
+ * referência dele é a da captura do SoftLux); aqui a tela É sobre hoje, então o
+ * mock precisa acompanhar o relógio.
+ */
+function diaISO(deslocamento: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + deslocamento)
+  return diaLocalISO(d)
+}
+
+/** Hoje, na hora cheia informada, no fuso local — como o servidor mandaria. */
+function hojeAs(hora: number, minuto: number): string {
+  const d = new Date()
+  d.setHours(hora, minuto, 0, 0)
+  return d.toISOString()
+}
+
+function tarefasDoSeed(): TaskDto[] {
+  const RA = { id: 'user-ra', name: 'Rafael Alves', initials: 'RA' }
+  const LM = { id: 'user-lm', name: 'Lívia Moreira', initials: 'LM' }
+  const HF = { id: 'user-hf', name: 'Henrique Ferro', initials: 'HF' }
+  const JP = { id: 'user-jp', name: 'João Pedro', initials: 'JP' }
+
+  return [
+    {
+      id: 'task-0001',
+      title: 'Orçamento — Casa Jardim Botânico',
+      description: 'Projeto luminotécnico completo, 3 pavimentos.',
+      status: 'todo',
+      priority: 'high',
+      dueOn: diaISO(3),
+      commentCount: 4,
+      attachmentCount: 2,
+      assignees: [RA, LM],
+    },
+    {
+      id: 'task-0002',
+      title: 'Cotação trilhos — 3 fornecedores',
+      description: 'Comparar prazo e preço antes da ordem.',
+      status: 'todo',
+      priority: 'medium',
+      dueOn: diaISO(5),
+      commentCount: 2,
+      attachmentCount: 1,
+      assignees: [HF],
+    },
+    {
+      id: 'task-0003',
+      title: 'Follow-up cliente Mendes',
+      description: 'Retomar proposta enviada no mês passado.',
+      status: 'todo',
+      priority: 'low',
+      dueOn: diaISO(7),
+      commentCount: 1,
+      attachmentCount: 0,
+      assignees: [JP],
+    },
+    {
+      id: 'task-0004',
+      title: 'Pedido de compra #479 — Stella',
+      description: 'Aguardando confirmação de frete.',
+      status: 'doing',
+      priority: 'medium',
+      dueOn: diaISO(1),
+      commentCount: 6,
+      attachmentCount: 3,
+      assignees: [RA, HF],
+    },
+    {
+      id: 'task-0005',
+      title: 'Conferência de estoque — galpão 2',
+      description: 'Contagem cíclica das luminárias de trilho.',
+      status: 'doing',
+      priority: 'low',
+      dueOn: diaISO(2),
+      commentCount: 3,
+      attachmentCount: 1,
+      assignees: [LM],
+    },
+    {
+      id: 'task-0006',
+      title: 'Orçamento — loja Iguatemi (v3)',
+      description: 'Revisão final antes do envio ao cliente.',
+      status: 'review',
+      priority: 'high',
+      dueOn: diaISO(1),
+      commentCount: 9,
+      attachmentCount: 5,
+      assignees: [LM, JP],
+    },
+    {
+      id: 'task-0007',
+      title: 'Orçamento aprovado — loft Cambuí',
+      description: null,
+      status: 'done',
+      priority: 'low',
+      dueOn: diaISO(-2),
+      commentCount: 12,
+      attachmentCount: 4,
+      assignees: [HF],
+    },
+    {
+      id: 'task-0008',
+      title: 'Entrada NF 1204 no estoque',
+      description: null,
+      status: 'done',
+      priority: 'low',
+      dueOn: diaISO(-1),
+      commentCount: 2,
+      attachmentCount: 1,
+      assignees: [RA],
+    },
+  ]
+}
+
+function agendaDoSeed(): AgendaEventDto[] {
+  return [
+    {
+      id: 'ev-0001',
+      startsAt: hojeAs(9, 0),
+      title: 'Revisar orçamento',
+      context: 'Residência Alphaville',
+      kind: 'quote',
+    },
+    {
+      id: 'ev-0002',
+      startsAt: hojeAs(11, 30),
+      title: 'Receber pedido #482',
+      context: 'fornecedor Interlight',
+      kind: 'delivery',
+    },
+    {
+      id: 'ev-0003',
+      startsAt: hojeAs(15, 0),
+      title: 'Reunião com arquiteta',
+      context: 'projeto Galleria',
+      kind: 'meeting',
+    },
+    {
+      id: 'ev-0004',
+      startsAt: `${diaISO(3)}T10:00:00.000Z`,
+      title: 'Entrega — trilhos eletrificados',
+      context: 'obra Vila Nova',
+      kind: 'delivery',
+    },
+    {
+      id: 'ev-0005',
+      startsAt: `${diaISO(5)}T14:00:00.000Z`,
+      title: 'Vencimento — duplicata Stella',
+      context: null,
+      kind: 'payment',
+    },
+    {
+      id: 'ev-0006',
+      startsAt: `${diaISO(8)}T09:30:00.000Z`,
+      title: 'Apresentação de orçamento',
+      context: 'loja Iguatemi',
+      kind: 'quote',
+    },
+    {
+      id: 'ev-0007',
+      startsAt: `${diaISO(-4)}T16:00:00.000Z`,
+      title: 'Reunião de fechamento',
+      context: 'loft Cambuí',
+      kind: 'meeting',
+    },
+  ]
+}
+
+function todosDoSeed(): TodoDto[] {
+  return [
+    { id: 'todo-0001', title: 'Atualizar tabela de preços Lumini', done: true },
+    { id: 'todo-0002', title: 'Cadastrar 8 produtos novos no estoque', done: false },
+    { id: 'todo-0003', title: 'Enviar orçamento revisado ao cliente Braga', done: false },
+    { id: 'todo-0004', title: 'Conferir NF 1207 pendente', done: false },
+  ]
+}
+
+function projetosDoSeed(): ProjectDto[] {
+  return [
+    { id: 'proj-0001', name: 'Residência Alphaville', status: 'active' },
+    { id: 'proj-0002', name: 'Loja Iguatemi', status: 'proposed' },
+    { id: 'proj-0003', name: 'Loft Cambuí', status: 'closed' },
+  ]
+}
+
+function planosDoSeed(): Record<string, ProjectPlanDto> {
+  return {
+    'proj-0001': {
+      projectId: 'proj-0001',
+      phases: [
+        {
+          id: 'fase-0001',
+          name: 'Levantamento',
+          startsOn: diaISO(-60),
+          endsOn: diaISO(-20),
+          items: [
+            {
+              id: 'plan-0001',
+              label: 'Visita técnica e medições',
+              kind: 'task',
+              startsOn: diaISO(-60),
+              endsOn: diaISO(-45),
+              progressPercent: 100,
+            },
+            {
+              id: 'plan-0002',
+              label: 'Orçamento preliminar',
+              kind: 'task',
+              startsOn: diaISO(-44),
+              endsOn: diaISO(-20),
+              progressPercent: 100,
+            },
+          ],
+        },
+        {
+          id: 'fase-0002',
+          name: 'Aquisição',
+          startsOn: diaISO(-19),
+          endsOn: diaISO(25),
+          items: [
+            {
+              id: 'plan-0003',
+              label: 'Pedido de compra #479',
+              kind: 'order',
+              startsOn: diaISO(-19),
+              endsOn: diaISO(6),
+              progressPercent: 60,
+            },
+            {
+              id: 'plan-0004',
+              label: 'Entrega de trilhos',
+              kind: 'delivery',
+              startsOn: diaISO(7),
+              endsOn: diaISO(25),
+              progressPercent: 0,
+            },
+          ],
+        },
+        {
+          id: 'fase-0003',
+          name: 'Instalação',
+          startsOn: diaISO(26),
+          endsOn: diaISO(90),
+          items: [
+            {
+              id: 'plan-0005',
+              label: 'Montagem dos pavimentos 1 e 2',
+              kind: 'task',
+              startsOn: diaISO(26),
+              endsOn: diaISO(70),
+              progressPercent: 0,
+            },
+            {
+              id: 'plan-0006',
+              label: 'Entrega final',
+              kind: 'delivery',
+              startsOn: diaISO(71),
+              endsOn: diaISO(90),
+              progressPercent: 0,
+            },
+          ],
+        },
+      ],
+    },
+    'proj-0002': {
+      projectId: 'proj-0002',
+      phases: [
+        {
+          id: 'fase-0004',
+          name: 'Proposta',
+          startsOn: diaISO(-5),
+          endsOn: diaISO(30),
+          items: [
+            {
+              id: 'plan-0007',
+              label: 'Orçamento v3',
+              kind: 'task',
+              startsOn: diaISO(-5),
+              endsOn: diaISO(10),
+              progressPercent: 80,
+            },
+            {
+              id: 'plan-0008',
+              label: 'Aprovação do cliente',
+              kind: 'task',
+              startsOn: diaISO(11),
+              endsOn: diaISO(30),
+              progressPercent: 0,
+            },
+          ],
+        },
+      ],
+    },
+    'proj-0003': { projectId: 'proj-0003', phases: [] },
+  }
+}
+
 export function criarStore(): StoreDaApi {
   return {
     logado: false,
@@ -205,6 +520,11 @@ export function criarStore(): StoreDaApi {
     produtos: produtosDoSeed(),
     parceiros: parceirosDoSeed(),
     movimentos: [],
+    tarefas: tarefasDoSeed(),
+    todos: todosDoSeed(),
+    agenda: agendaDoSeed(),
+    projetos: projetosDoSeed(),
+    planos: planosDoSeed(),
     proximoId: 1,
   }
 }

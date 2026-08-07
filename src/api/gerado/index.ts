@@ -8,12 +8,17 @@
  * OpenAPI spec version: v1
  */
 import type {
+  AgendaEventDto,
   ChangePasswordRequest,
+  DashboardSummaryDto,
   HealthStatus,
+  ListAgendaEventsParams,
   ListCatalogLookupsParams,
   ListPartnersParams,
   ListProductsParams,
+  ListProjectsParams,
   ListStockMovementsParams,
+  ListTasksParams,
   LoginFalhou,
   LoginOk,
   LoginRequest,
@@ -29,10 +34,17 @@ import type {
   ProductDto,
   ProductVariantDto,
   ProductWriteRequest,
+  ProjectDto,
+  ProjectPlanDto,
   ReadinessStatus,
   SessaoAtual,
   StockMovementDto,
   StockMovementRequest,
+  TaskDto,
+  TaskPatchRequest,
+  TaskWriteRequest,
+  TodoDto,
+  TodoPatchRequest,
   TrocarEmpresaRequest,
   VariantWriteRequest,
   VinculoDeEmpresa
@@ -1055,6 +1067,424 @@ export const authSetActiveTenant = async (trocarEmpresaRequest: TrocarEmpresaReq
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(trocarEmpresaRequest)
+  }
+);}
+
+
+
+export type getDashboardSummaryResponse200 = {
+  data: DashboardSummaryDto
+  status: 200
+}
+
+export type getDashboardSummaryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getDashboardSummaryResponseSuccess = (getDashboardSummaryResponse200) & {
+  headers: Headers;
+};
+export type getDashboardSummaryResponseError = (getDashboardSummaryResponse409) & {
+  headers: Headers;
+};
+
+export type getDashboardSummaryResponse = (getDashboardSummaryResponseSuccess | getDashboardSummaryResponseError)
+
+export const getGetDashboardSummaryUrl = () => {
+
+
+
+
+  return `/api/dashboard/summary`
+}
+
+/**
+ * Proposto. Os quatro indicadores da faixa de KPI do Dashboard, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata. Sessão sem empresa ativa responde tudo em zero, pela mesma regra das listagens (lista vazia, não erro).
+ */
+export const getDashboardSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getDashboardSummaryResponse> => {
+
+  return apiFetch<getDashboardSummaryResponse>(getGetDashboardSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listAgendaEventsResponse200 = {
+  data: AgendaEventDto[]
+  status: 200
+}
+
+export type listAgendaEventsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listAgendaEventsResponseSuccess = (listAgendaEventsResponse200) & {
+  headers: Headers;
+};
+export type listAgendaEventsResponseError = (listAgendaEventsResponse400) & {
+  headers: Headers;
+};
+
+export type listAgendaEventsResponse = (listAgendaEventsResponseSuccess | listAgendaEventsResponseError)
+
+export const getListAgendaEventsUrl = (params: ListAgendaEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/dashboard/agenda?${stringifiedParams}` : `/api/dashboard/agenda`
+}
+
+/**
+ * Proposto. Compromissos com data dentro do intervalo [from, to], da empresa ativa. UMA consulta serve o mini-calendário (o mês inteiro, para marcar os dias) e a Agenda de hoje (o recorte do dia) — dois caminhos devolveriam a mesma coisa em granularidades diferentes e sairiam do ar em desacordo.
+ */
+export const listAgendaEvents = async (params: ListAgendaEventsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listAgendaEventsResponse> => {
+
+  return apiFetch<listAgendaEventsResponse>(getListAgendaEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listTasksResponse200 = {
+  data: TaskDto[]
+  status: 200
+}
+
+export type listTasksResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listTasksResponseSuccess = (listTasksResponse200) & {
+  headers: Headers;
+};
+export type listTasksResponseError = (listTasksResponse400) & {
+  headers: Headers;
+};
+
+export type listTasksResponse = (listTasksResponseSuccess | listTasksResponseError)
+
+export const getListTasksUrl = (params?: ListTasksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tasks?${stringifiedParams}` : `/api/tasks`
+}
+
+/**
+ * Proposto. As tarefas do quadro da empresa ativa. NÃO é `PagedResult`, e é decisão: um quadro kanban mostra as quatro colunas de uma vez e uma página de 10 cortaria coluna no meio, dando contagem de coluna errada. Se o volume crescer, o corte certo é por período/responsável, não por página.
+ */
+export const listTasks = async (params?: ListTasksParams, options?: Parameters<typeof apiFetch>[1]): Promise<listTasksResponse> => {
+
+  return apiFetch<listTasksResponse>(getListTasksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createTaskResponse201 = {
+  data: TaskDto
+  status: 201
+}
+
+export type createTaskResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createTaskResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createTaskResponseSuccess = (createTaskResponse201) & {
+  headers: Headers;
+};
+export type createTaskResponseError = (createTaskResponse400 | createTaskResponse409) & {
+  headers: Headers;
+};
+
+export type createTaskResponse = (createTaskResponseSuccess | createTaskResponseError)
+
+export const getCreateTaskUrl = () => {
+
+
+
+
+  return `/api/tasks`
+}
+
+/**
+ * Proposto. Cria tarefa no quadro da empresa ativa.
+ */
+export const createTask = async (taskWriteRequest: TaskWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createTaskResponse> => {
+
+  return apiFetch<createTaskResponse>(getCreateTaskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(taskWriteRequest)
+  }
+);}
+
+
+
+export type patchTaskResponse200 = {
+  data: TaskDto
+  status: 200
+}
+
+export type patchTaskResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type patchTaskResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type patchTaskResponseSuccess = (patchTaskResponse200) & {
+  headers: Headers;
+};
+export type patchTaskResponseError = (patchTaskResponse400 | patchTaskResponse404) & {
+  headers: Headers;
+};
+
+export type patchTaskResponse = (patchTaskResponseSuccess | patchTaskResponseError)
+
+export const getPatchTaskUrl = (taskId: string,) => {
+
+
+
+
+  return `/api/tasks/${taskId}`
+}
+
+/**
+ * Proposto. Mudança PARCIAL de uma tarefa — é o verbo do quadro: mover de coluna muda `status` e nada mais. É a única exceção ao `PUT` substitui o registro inteiro que vale no resto do contrato, e ela existe porque o cartão do quadro não carrega o registro completo; um `PUT` a partir dele apagaria o que a tela não mostra.
+ */
+export const patchTask = async (taskId: string,
+    taskPatchRequest: TaskPatchRequest, options?: Parameters<typeof apiFetch>[1]): Promise<patchTaskResponse> => {
+
+  return apiFetch<patchTaskResponse>(getPatchTaskUrl(taskId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(taskPatchRequest)
+  }
+);}
+
+
+
+export type listTodosResponse200 = {
+  data: TodoDto[]
+  status: 200
+}
+
+export type listTodosResponseSuccess = (listTodosResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listTodosResponse = (listTodosResponseSuccess)
+
+export const getListTodosUrl = () => {
+
+
+
+
+  return `/api/todos`
+}
+
+/**
+ * Proposto. A lista A fazer — lembrete curto do OPERADOR na empresa ativa, sem responsável, sem prazo e sem coluna. Recurso separado de `tasks` de propósito: fundir os dois obrigaria todo lembrete a carregar prioridade, prazo e responsável em branco, e a tela teria de adivinhar o que é lembrete e o que é tarefa de quadro.
+ */
+export const listTodos = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listTodosResponse> => {
+
+  return apiFetch<listTodosResponse>(getListTodosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type patchTodoResponse200 = {
+  data: TodoDto
+  status: 200
+}
+
+export type patchTodoResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type patchTodoResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type patchTodoResponseSuccess = (patchTodoResponse200) & {
+  headers: Headers;
+};
+export type patchTodoResponseError = (patchTodoResponse400 | patchTodoResponse404) & {
+  headers: Headers;
+};
+
+export type patchTodoResponse = (patchTodoResponseSuccess | patchTodoResponseError)
+
+export const getPatchTodoUrl = (todoId: string,) => {
+
+
+
+
+  return `/api/todos/${todoId}`
+}
+
+/**
+ * Proposto. Marca ou desmarca o item da lista A fazer.
+ */
+export const patchTodo = async (todoId: string,
+    todoPatchRequest: TodoPatchRequest, options?: Parameters<typeof apiFetch>[1]): Promise<patchTodoResponse> => {
+
+  return apiFetch<patchTodoResponse>(getPatchTodoUrl(todoId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(todoPatchRequest)
+  }
+);}
+
+
+
+export type listProjectsResponse200 = {
+  data: ProjectDto[]
+  status: 200
+}
+
+export type listProjectsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listProjectsResponseSuccess = (listProjectsResponse200) & {
+  headers: Headers;
+};
+export type listProjectsResponseError = (listProjectsResponse400) & {
+  headers: Headers;
+};
+
+export type listProjectsResponse = (listProjectsResponseSuccess | listProjectsResponseError)
+
+export const getListProjectsUrl = (params?: ListProjectsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects?${stringifiedParams}` : `/api/projects`
+}
+
+/**
+ * Proposto. Projetos da empresa ativa — o que o seletor do Planner lista.
+ */
+export const listProjects = async (params?: ListProjectsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listProjectsResponse> => {
+
+  return apiFetch<listProjectsResponse>(getListProjectsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getProjectPlanResponse200 = {
+  data: ProjectPlanDto
+  status: 200
+}
+
+export type getProjectPlanResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getProjectPlanResponseSuccess = (getProjectPlanResponse200) & {
+  headers: Headers;
+};
+export type getProjectPlanResponseError = (getProjectPlanResponse404) & {
+  headers: Headers;
+};
+
+export type getProjectPlanResponse = (getProjectPlanResponseSuccess | getProjectPlanResponseError)
+
+export const getGetProjectPlanUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/plan`
+}
+
+/**
+ * Proposto. O plano do projeto: fases e, dentro delas, os itens com data de início e fim — é o que o gantt do Planner desenha. Vem em UMA resposta porque a tela desenha a grade inteira de uma vez; fases e itens em caminhos separados fariam a linha aparecer depois da faixa.
+ */
+export const getProjectPlan = async (projectId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getProjectPlanResponse> => {
+
+  return apiFetch<getProjectPlanResponse>(getGetProjectPlanUrl(projectId),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

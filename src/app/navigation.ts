@@ -1,5 +1,13 @@
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
-import { BookUser, type LucideIcon, Package, ShoppingCart, Store } from 'lucide-react'
+import {
+  BookUser,
+  GanttChart,
+  LayoutDashboard,
+  type LucideIcon,
+  Package,
+  ShoppingCart,
+  Store,
+} from 'lucide-react'
 
 export interface NavItem {
   title: string
@@ -22,6 +30,25 @@ export interface NavGroup {
 }
 
 export const navGroups: NavGroup[] = [
+  {
+    /**
+     * A seção da VISÃO — o que está em curso, antes dos módulos que guardam
+     * cadastro e documento. Sem `recurso` nos itens: acompanhar o próprio
+     * trabalho é de toda empresa, não é módulo contratado.
+     *
+     * O **Boletim** NÃO mora aqui, e não é esquecimento: ele continua solto
+     * acima dos grupos, como entrada. Boletim é o fechamento do movimento do
+     * dia; Dashboard e Planner são o que ainda vai acontecer. Empilhá-los na
+     * mesma seção diria que são a mesma pergunta.
+     */
+    title: 'Dashboard',
+    url: '/dashboard',
+    icon: LayoutDashboard,
+    items: [
+      { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+      { title: 'Planner', url: '/planner', icon: GanttChart },
+    ],
+  },
   {
     title: 'Cadastros',
     url: '/cadastros',

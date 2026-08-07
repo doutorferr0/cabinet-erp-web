@@ -1197,6 +1197,411 @@
           }
         }
       }
+    },
+    "/api/dashboard/summary": {
+      "get": {
+        "tags": ["dashboard"],
+        "operationId": "GetDashboardSummary",
+        "description": "Proposto. Os quatro indicadores da faixa de KPI do Dashboard, da EMPRESA ATIVA da sess\u00e3o. N\u00fameros derivados do movimento \u2014 o servidor apura, o front s\u00f3 formata. Sess\u00e3o sem empresa ativa responde tudo em zero, pela mesma regra das listagens (lista vazia, n\u00e3o erro).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummaryDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/agenda": {
+      "get": {
+        "tags": ["dashboard"],
+        "operationId": "ListAgendaEvents",
+        "description": "Proposto. Compromissos com data dentro do intervalo [from, to], da empresa ativa. UMA consulta serve o mini-calend\u00e1rio (o m\u00eas inteiro, para marcar os dias) e a Agenda de hoje (o recorte do dia) \u2014 dois caminhos devolveriam a mesma coisa em granularidades diferentes e sairiam do ar em desacordo.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "In\u00edcio do intervalo, inclusivo (data ISO).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "description": "Fim do intervalo, inclusivo (data ISO).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgendaEventDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "tags": ["dashboard"],
+        "operationId": "ListTasks",
+        "description": "Proposto. As tarefas do quadro da empresa ativa. N\u00c3O \u00e9 `PagedResult`, e \u00e9 decis\u00e3o: um quadro kanban mostra as quatro colunas de uma vez e uma p\u00e1gina de 10 cortaria coluna no meio, dando contagem de coluna errada. Se o volume crescer, o corte certo \u00e9 por per\u00edodo/respons\u00e1vel, n\u00e3o por p\u00e1gina.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra uma coluna s\u00f3. Ausente = o quadro inteiro.",
+            "schema": {
+              "type": "string",
+              "enum": ["todo", "doing", "review", "done"]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca em t\u00edtulo e descri\u00e7\u00e3o.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["dashboard"],
+        "operationId": "CreateTask",
+        "description": "Proposto. Cria tarefa no quadro da empresa ativa.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{taskId}": {
+      "patch": {
+        "tags": ["dashboard"],
+        "operationId": "PatchTask",
+        "description": "Proposto. Mudan\u00e7a PARCIAL de uma tarefa \u2014 \u00e9 o verbo do quadro: mover de coluna muda `status` e nada mais. \u00c9 a \u00fanica exce\u00e7\u00e3o ao `PUT` substitui o registro inteiro que vale no resto do contrato, e ela existe porque o cart\u00e3o do quadro n\u00e3o carrega o registro completo; um `PUT` a partir dele apagaria o que a tela n\u00e3o mostra.",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/todos": {
+      "get": {
+        "tags": ["dashboard"],
+        "operationId": "ListTodos",
+        "description": "Proposto. A lista A fazer \u2014 lembrete curto do OPERADOR na empresa ativa, sem respons\u00e1vel, sem prazo e sem coluna. Recurso separado de `tasks` de prop\u00f3sito: fundir os dois obrigaria todo lembrete a carregar prioridade, prazo e respons\u00e1vel em branco, e a tela teria de adivinhar o que \u00e9 lembrete e o que \u00e9 tarefa de quadro.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TodoDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/todos/{todoId}": {
+      "patch": {
+        "tags": ["dashboard"],
+        "operationId": "PatchTodo",
+        "description": "Proposto. Marca ou desmarca o item da lista A fazer.",
+        "parameters": [
+          {
+            "name": "todoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "tags": ["planner"],
+        "operationId": "ListProjects",
+        "description": "Proposto. Projetos da empresa ativa \u2014 o que o seletor do Planner lista.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Ausente = todos. O toggle do Planner manda `active,proposed` ou `closed`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/plan": {
+      "get": {
+        "tags": ["planner"],
+        "operationId": "GetProjectPlan",
+        "description": "Proposto. O plano do projeto: fases e, dentro delas, os itens com data de in\u00edcio e fim \u2014 \u00e9 o que o gantt do Planner desenha. Vem em UMA resposta porque a tela desenha a grade inteira de uma vez; fases e itens em caminhos separados fariam a linha aparecer depois da faixa.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPlanDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1608,6 +2013,10 @@
           },
           "mustChangePassword": {
             "type": "boolean"
+          },
+          "displayName": {
+            "description": "Proposto. Como o operador se chama na tela \u2014 a sauda\u00e7\u00e3o do Dashboard. `null` quando o servidor n\u00e3o sabe: a tela ent\u00e3o cumprimenta sem nome, em vez de exibir e-mail ou id, que \u00e9 identificador de sistema e n\u00e3o nome de gente.",
+            "type": ["string", "null"]
           }
         }
       },
@@ -1713,11 +2122,336 @@
             "type": "string"
           },
           "features": {
-            "description": "Proposto. Recursos CONTRATADOS por esta empresa — o que ela opera, não o que o usuário pode fazer nela (isso é `role`). Conjunto fechado; valor fora dele é ignorado pelo cliente. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo — ausência viraria 'não sei' e o front teria de adivinhar entre esconder tudo e mostrar tudo.",
+            "description": "Proposto. Recursos CONTRATADOS por esta empresa \u2014 o que ela opera, n\u00e3o o que o usu\u00e1rio pode fazer nela (isso \u00e9 `role`). Conjunto fechado; valor fora dele \u00e9 ignorado pelo cliente. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo \u2014 aus\u00eancia viraria 'n\u00e3o sei' e o front teria de adivinhar entre esconder tudo e mostrar tudo.",
             "type": "array",
             "items": {
               "type": "string",
               "enum": ["suppliers", "professionals", "employees"]
+            }
+          }
+        }
+      },
+      "DashboardSummaryDto": {
+        "description": "Proposto. Os quatro n\u00fameros da faixa de KPI. Dinheiro em CENTAVOS, inteiro \u2014 a regra do repo vale no contrato.",
+        "required": [
+          "openQuotes",
+          "openQuotesDueThisWeek",
+          "incomingOrders",
+          "incomingOrdersToday",
+          "criticalStockItems",
+          "monthSalesCents",
+          "previousMonthSalesCents"
+        ],
+        "type": "object",
+        "properties": {
+          "openQuotes": {
+            "description": "Or\u00e7amentos abertos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openQuotesDueThisWeek": {
+            "description": "Destes, quantos vencem nos pr\u00f3ximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "incomingOrders": {
+            "description": "Pedidos de compra a receber.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "incomingOrdersToday": {
+            "description": "Destes, quantos com previs\u00e3o para hoje.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "criticalStockItems": {
+            "description": "Variantes com saldo abaixo do m\u00ednimo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthSalesCents": {
+            "description": "Vendas do m\u00eas corrente, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthSalesCents": {
+            "description": "Vendas do m\u00eas anterior fechado, em centavos. O front deriva a varia\u00e7\u00e3o dos dois \u2014 percentual pronto no DTO seria n\u00famero que ningu\u00e9m consegue conferir na tela.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AgendaEventDto": {
+        "description": "Proposto. Um compromisso da agenda.",
+        "required": ["id", "startsAt", "title", "kind"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "description": "In\u00edcio, com hora (ISO 8601).",
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string"
+          },
+          "context": {
+            "description": "A quem o compromisso se refere (cliente, obra, fornecedor).",
+            "type": ["string", "null"]
+          },
+          "kind": {
+            "description": "Conjunto fechado \u2014 \u00e9 ele que d\u00e1 a cor da barra e a legenda do calend\u00e1rio.",
+            "type": "string",
+            "enum": ["delivery", "quote", "meeting", "payment"]
+          }
+        }
+      },
+      "TaskAssigneeDto": {
+        "description": "Proposto. Quem responde pela tarefa.",
+        "required": ["id", "name", "initials"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "description": "As iniciais que o avatar mostra. V\u00eam do servidor porque quem sabe partir 'Maria da Silva' em 'MS' \u00e9 quem guarda o nome \u2014 o front partindo string faria 'DS' em nome com preposi\u00e7\u00e3o.",
+            "type": "string"
+          }
+        }
+      },
+      "TaskDto": {
+        "description": "Proposto. Um cart\u00e3o do quadro.",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "priority",
+          "commentCount",
+          "attachmentCount",
+          "assignees"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "A coluna do quadro.",
+            "type": "string",
+            "enum": ["todo", "doing", "review", "done"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "dueOn": {
+            "description": "Prazo (data, sem hora).",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "commentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "attachmentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskAssigneeDto"
+            }
+          }
+        }
+      },
+      "TaskWriteRequest": {
+        "description": "Proposto. Corpo de cria\u00e7\u00e3o de tarefa.",
+        "required": ["title", "status", "priority"],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "A coluna do quadro.",
+            "type": "string",
+            "enum": ["todo", "doing", "review", "done"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "dueOn": {
+            "description": "Prazo (data, sem hora).",
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "TaskPatchRequest": {
+        "description": "Proposto. Corpo do PATCH: s\u00f3 o que muda. Campo ausente fica como est\u00e1 \u2014 ausente N\u00c3O \u00e9 o mesmo que `null`, que apaga.",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "A coluna do quadro.",
+            "type": "string",
+            "enum": ["todo", "doing", "review", "done"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "dueOn": {
+            "description": "Prazo (data, sem hora).",
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "TodoDto": {
+        "description": "Proposto. Um item da lista A fazer.",
+        "required": ["id", "title", "done"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TodoPatchRequest": {
+        "description": "Proposto. Marca ou desmarca.",
+        "required": ["done"],
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProjectDto": {
+        "description": "Proposto. Um projeto do Planner.",
+        "required": ["id", "name", "status"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "proposed", "closed"]
+          }
+        }
+      },
+      "PlanItemDto": {
+        "description": "Proposto. Uma barra do gantt.",
+        "required": ["id", "label", "kind", "startsOn", "endsOn", "progressPercent"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "description": "O que a barra \u00e9 \u2014 d\u00e1 o r\u00f3tulo da pill.",
+            "type": "string",
+            "enum": ["task", "order", "delivery"]
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "endsOn": {
+            "description": "Previs\u00e3o de t\u00e9rmino, inclusiva.",
+            "type": "string",
+            "format": "date"
+          },
+          "progressPercent": {
+            "description": "0 a 100. Progresso N\u00c3O \u00e9 dinheiro \u2014 a tela n\u00e3o o pinta de verde.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PlanPhaseDto": {
+        "description": "Proposto. Uma fase do projeto, com as barras que moram nela.",
+        "required": ["id", "name", "startsOn", "endsOn", "items"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "endsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanItemDto"
+            }
+          }
+        }
+      },
+      "ProjectPlanDto": {
+        "description": "Proposto. O plano inteiro de um projeto.",
+        "required": ["projectId", "phases"],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanPhaseDto"
             }
           }
         }
@@ -1739,6 +2473,12 @@
     },
     {
       "name": "auth"
+    },
+    {
+      "name": "dashboard"
+    },
+    {
+      "name": "planner"
     }
   ]
 }

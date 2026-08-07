@@ -1,5 +1,6 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { data } from '@/data'
 import type { Colaborador } from '@/mocks/colaboradores'
@@ -26,7 +27,7 @@ const columns: ColumnDef<Colaborador>[] = [
   {
     accessorKey: 'ativo',
     header: 'Ativo',
-    cell: ({ getValue }) => (getValue<boolean>() ? 'Sim' : 'Não'),
+    cell: ({ getValue }) => <CelulaAtivo ativo={getValue<boolean>()} />,
   },
 ]
 

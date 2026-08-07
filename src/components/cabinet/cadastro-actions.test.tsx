@@ -75,4 +75,24 @@ describe('cadastroActions', () => {
     await user.click(screen.getByRole('button', { name: 'Excluir' }))
     expect(onExcluir).toHaveBeenCalledTimes(1)
   })
+
+  it('toda ação leva ícone E texto — nunca só o desenho', async () => {
+    setup()
+
+    // O rótulo é o que identifica a ação: `Alterar` e `Consul.` são vocabulário
+    // do legado, e dois olhos parecidos não distinguiriam um do outro. O botão
+    // continua sendo achado por nome acessível, que é o que o teste prova.
+    for (const nome of ['Filtro', 'Incluir', 'Alterar', 'Consul.', 'Excluir', 'Imprimir']) {
+      const botao = await screen.findByRole('button', { name: nome })
+      expect(botao.querySelector('svg')).not.toBeNull()
+    }
+  })
+
+  // A lixeira prometeria o contrário do que o botão faz: na UI de cadastro
+  // `Excluir` DESATIVA (padrão 8), e o desenho é lido antes da palavra.
+  it('Excluir não usa lixeira', async () => {
+    setup()
+    const excluir = await screen.findByRole('button', { name: 'Excluir' })
+    expect(excluir.querySelector('svg')?.classList.toString()).not.toContain('trash')
+  })
 })

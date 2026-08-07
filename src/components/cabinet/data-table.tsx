@@ -23,7 +23,7 @@ import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import { ArrowDown, ArrowUp, Search } from 'lucide-react'
+import { ArrowDown, ArrowUp, type LucideIcon, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 declare module '@tanstack/react-table' {
@@ -37,6 +37,17 @@ declare module '@tanstack/react-table' {
 export interface DataTableAction<T> {
   id: string
   label: string
+  /**
+   * Ícone do lucide à esquerda do rótulo. Sempre acompanhado do TEXTO, nunca no
+   * lugar dele: a barra é a mesma em 8 telas e o operador a lê por palavra —
+   * `Consul.` e `Alterar` são vocabulário do legado, e um olho sozinho não diz
+   * qual dos dois é. O desenho serve para achar o botão de longe depois de já
+   * ter aprendido onde ele fica.
+   *
+   * Família LUCIDE, não os shapes brutalist: aqui é AÇÃO ("o que eu faço"), e a
+   * fronteira do sistema dá ação ao lucide e lugar ao shape.
+   */
+  icon?: LucideIcon
   /** Recebe a linha selecionada (null quando `needsSelection` é false). */
   onClick?: (row: T | null) => void
   /** Desabilita sem linha selecionada (Alterar, Consul., Excluir/Cancelar). */
@@ -164,6 +175,7 @@ export function VitraDataTable<T>({
             title={action.title}
             onClick={() => action.onClick?.(action.needsSelection ? selected : null)}
           >
+            {action.icon ? <action.icon aria-hidden="true" /> : null}
             {action.label}
           </Button>
         ))}

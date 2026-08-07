@@ -1,3 +1,4 @@
+import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
@@ -59,7 +60,7 @@ function ProdutoEditPage() {
       produto={query.data}
       readOnly={readOnly}
       contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nossaDescricao}
-      aviso={<AvisoDeCobertura />}
+      aviso={<CoberturaDaTela />}
     />
   )
 }
@@ -74,9 +75,9 @@ function ProdutoEditPage() {
  * (`Índice` e `Tipo de Valor` não existem no contrato) e sem exclusão — não há
  * `DELETE` de variante, então tirar a linha da tela não a tira do servidor.
  */
-function AvisoDeCobertura() {
+function CoberturaDaTela() {
   return (
-    <div className="flex max-w-prose flex-col gap-1 text-[0.75rem] text-muted-foreground">
+    <AvisoDeCobertura>
       <p>
         O Gravar envia <strong>Nosso Código</strong>, <strong>Nossa Descrição</strong>,{' '}
         <strong>Ativo</strong> e a grade de <strong>Valores</strong> (Acabamento, Tamanho, Valor de
@@ -90,6 +91,6 @@ function AvisoDeCobertura() {
         linha e grave. O <strong>estoque atual</strong> não se edita aqui — ele é saldo de
         movimento, e o lançamento ainda não tem tela.
       </p>
-    </div>
+    </AvisoDeCobertura>
   )
 }

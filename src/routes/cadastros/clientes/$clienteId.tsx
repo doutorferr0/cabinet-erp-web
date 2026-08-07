@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
@@ -150,7 +151,7 @@ function ClienteEditPage() {
       readOnly={readOnly}
       contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
       aviso={
-        <AvisoDeCobertura
+        <CoberturaDaTela
           isNovo={isNovo}
           erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
           {...(jaExiste && !vincular.error
@@ -171,7 +172,7 @@ function ClienteEditPage() {
  * O contrato cobre 5 campos de um cadastro que tem dezenas. Sem este aviso, aba
  * em branco se lê como cadastro incompleto e `Gravar` parece ter guardado tudo.
  */
-function AvisoDeCobertura({
+function CoberturaDaTela({
   isNovo,
   erro,
   vincular,
@@ -183,9 +184,25 @@ function AvisoDeCobertura({
   vincular?: () => void
   vinculando?: boolean
 }) {
+  const falha = erro ? (
+    <div role="alert" className="flex flex-col items-start gap-2">
+      <p className="text-sm text-destructive">
+        Não foi possível gravar. {erro instanceof ErroDaApi && erro.detail ? erro.detail : null}
+      </p>
+      {/* Vincular NÃO edita o cadastro do grupo: liga esta empresa a ele. O
+          que a empresa vizinha cadastrou fica como está — ajustar depois é o
+          Alterar, que é explícito. */}
+      {vincular ? (
+        <Button type="button" variant="outline" size="sm" onClick={vincular} disabled={vinculando}>
+          {vinculando ? 'Vinculando…' : 'Vincular esta empresa ao cadastro existente'}
+        </Button>
+      ) : null}
+    </div>
+  ) : null
+
   return (
-    <div className="flex flex-col gap-1">
-      <p className="max-w-prose text-[0.75rem] text-muted-foreground">
+    <AvisoDeCobertura {...(falha ? { erro: falha } : {})}>
+      <p>
         {isNovo ? (
           <>
             <strong>Gravar</strong> cria o cadastro com {'{'}nome, documento, e-mail e situação{'}'}{' '}
@@ -198,27 +215,6 @@ function AvisoDeCobertura({
           </>
         )}
       </p>
-      {erro ? (
-        <div role="alert" className="flex max-w-prose flex-col items-start gap-2">
-          <p className="text-[0.75rem] text-destructive">
-            Não foi possível gravar. {erro instanceof ErroDaApi && erro.detail ? erro.detail : null}
-          </p>
-          {/* Vincular NÃO edita o cadastro do grupo: liga esta empresa a ele. O
-              que a empresa vizinha cadastrou fica como está — ajustar depois é o
-              Alterar, que é explícito. */}
-          {vincular ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={vincular}
-              disabled={vinculando}
-            >
-              {vinculando ? 'Vinculando…' : 'Vincular esta empresa ao cadastro existente'}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+    </AvisoDeCobertura>
   )
 }

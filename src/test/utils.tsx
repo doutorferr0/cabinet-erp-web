@@ -1,6 +1,6 @@
 import { configurarApi } from '@/api/cliente'
 import { Providers } from '@/app/providers'
-import { routeTree } from '@/routeTree.gen'
+import { opcoesDoRouter } from '@/app/router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   type AnyRouter,
@@ -92,8 +92,11 @@ export function renderRoute(
   const user = userEvent.setup()
   configurarApi('http://api.teste')
   vi.stubGlobal('fetch', vi.fn(fetchStub))
+  // `opcoesDoRouter` é a MESMA config do app (`src/app/router.ts`): sem ela o
+  // teste montaria um router diferente do que o operador usa, e passaria a
+  // afirmar coisas sobre uma configuração que não existe em produção.
   const router = createRouter({
-    routeTree,
+    ...opcoesDoRouter,
     history: createMemoryHistory({ initialEntries: [initialUrl] }),
   })
   const result = render(

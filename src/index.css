@@ -70,6 +70,12 @@
   --destructive: 357 84% 42%;
   --destructive-foreground: 0 0% 100%;
   --warn: 47 100% 50%; /* amarelo: pendência e FOCO, não ação */
+  /* Tomato `#FF7051` da paleta, para INDISPONIBILIDADE — a consulta não chegou.
+     Não é o vermelho de erro de propósito: erro é coisa que o sistema recusou e
+     que alguém precisa resolver; rede fora é estado do mundo, e some sozinho.
+     Pintar os dois de vermelho faria o operador tratar queda de rede como
+     defeito de cadastro. */
+  --offline: 11 100% 66%;
   /* Traço: 2px preto em tudo que é caixa. */
   --border: 0 0% 0%;
   --input: 0 0% 0%;
@@ -249,6 +255,8 @@
   --destructive: 357 90% 70%;
   --destructive-foreground: 40 12% 9%;
   --warn: 47 100% 55%;
+  /* Tomato segue igual: a L 66 ele ja se le sobre o papel escuro. */
+  --offline: 11 100% 66%;
   /* O TRAÇO. É ele que desenha a caixa, e no escuro ele é claro — a Regra da
      Caixa Preta vira a regra do traço: muda a tinta, não o papel dela. */
   --border: 40 10% 66%;
@@ -379,6 +387,7 @@
      consumidor é convite para o emprego velho voltar por descuido. */
   --color-surface-sunken: hsl(var(--surface-sunken));
   --color-veil: hsl(var(--veil));
+  --color-offline: hsl(var(--offline));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */

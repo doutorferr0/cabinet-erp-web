@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { configurarApi } from '@/api/cliente'
 import { Providers } from '@/app/providers'
-import { routeTree } from './routeTree.gen'
+import { opcoesDoRouter } from '@/app/router'
 
 // URL base + cookie de sessão (credentials: 'include') — sem isso o cliente
 // gerado bateria na origem errada e o backend não veria a sessão.
@@ -36,7 +36,9 @@ if (modoDaApi === 'mock') {
   }
 }
 
-const router = createRouter({ routeTree })
+// A configuração mora em `@/app/router` para o TESTE montar o mesmo router que
+// o app (ver o comentário de lá). Aqui entra só o que é do navegador.
+const router = createRouter({ ...opcoesDoRouter })
 
 declare module '@tanstack/react-router' {
   interface Register {

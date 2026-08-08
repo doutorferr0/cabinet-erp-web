@@ -1,4 +1,5 @@
 import { data } from '@/data'
+import { PAGE_SIZE_MAX } from '@/data/api-provider'
 import { formatDateBR } from '@/lib/formatters'
 import type { TableQueryState } from '@/lib/table-query'
 import { colaboradores } from '@/mocks/colaboradores'
@@ -70,9 +71,12 @@ export interface LinhaOrdemSemEnvio {
 /** Contagem de um cadastro, com a fatia desativada (§9 padrão 8: nunca excluir). */
 export interface LinhaCadastro {
   nome: string
-  total: number
-  inativos: number
   href: string
+  /** `null` = a consulta HTTP falhou (409 sem empresa ativa, 401, proxy fora do ar…). */
+  total: number | null
+  inativos: number | null
+  /** `inativos` é PISO, não contagem exata — a listagem paginou antes de contar todos. */
+  inativosParcial: boolean
 }
 
 export interface Boletim {
@@ -145,21 +149,40 @@ function movimentoDoDia(referencia: string): LinhaMovimento[] {
 }
 
 /**
- * Página única no teto do contrato (`pageSize: 100`): o Boletim precisa do
- * `total` (pós-filtro, vem pronto na resposta) E da fatia inativa, que só dá
- * para contar olhando as linhas — por isso pede a página inteira em vez de
- * `pageSize: 1`. Mesmo limite de escala que o resto desta apuração: o
- * TODO(contract) no topo do arquivo já cobre o caso de crescer além disso.
+ * Página única no teto do contrato (`pageSize: PAGE_SIZE_MAX`): o Boletim
+ * precisa do `total` (pós-filtro, vem pronto na resposta) E da fatia inativa,
+ * que só dá para contar olhando as linhas — por isso pede a página inteira em
+ * vez de `pageSize: 1`.
+ *
+ * Acima do teto, `total` continua exato (é contagem do servidor) mas
+ * `inativos` vira PISO: sobra registro inativo fora da página que
+ * `linhaDeCadastro` nunca viu. `inativosParcial` marca esse caso para a tela
+ * não exibir número exato com cara de exato — mesma regra do resto do
+ * boletim, "nunca dado de mentira com cara de dado do servidor". O
+ * TODO(contract) no topo do arquivo cobre o caso de crescer além disso.
  */
-const CONSULTA_CADASTRO: TableQueryState = { q: '', sort: null, page: 1, pageSize: 100 }
+const CONSULTA_CADASTRO: TableQueryState = { q: '', sort: null, page: 1, pageSize: PAGE_SIZE_MAX }
 
 async function linhaDeCadastro(
   nome: string,
   href: string,
   lista: (state: TableQueryState) => Promise<{ rows: { active: boolean }[]; total: number }>,
 ): Promise<LinhaCadastro> {
-  const { rows, total } = await lista(CONSULTA_CADASTRO)
-  return { nome, href, total, inativos: rows.filter((r) => !r.active).length }
+  try {
+    const { rows, total } = await lista(CONSULTA_CADASTRO)
+    return {
+      nome,
+      href,
+      total,
+      inativos: rows.filter((r) => !r.active).length,
+      inativosParcial: rows.length < total,
+    }
+  } catch {
+    // Uma lista de parceiro/produto fora do ar não pode apagar o boletim
+    // inteiro (Movimento do dia e Ordens sem envio são mock puro e
+    // renderizariam bem) — só esta linha de Cadastros fica indisponível.
+    return { nome, href, total: null, inativos: null, inativosParcial: false }
+  }
 }
 
 export async function boletim(): Promise<Boletim> {
@@ -200,9 +223,10 @@ export async function boletim(): Promise<Boletim> {
       // Colaboradores é mock nos dois lados (Boletim e listagem): não há
       // divergência a corrigir, então continua contando pelo array direto.
       nome: 'Colaboradores',
+      href: '/cadastros/colaboradores',
       total: colaboradores.length,
       inativos: colaboradores.filter((c) => !c.ativo).length,
-      href: '/cadastros/colaboradores',
+      inativosParcial: false,
     },
     linhaProfissionais,
   ]

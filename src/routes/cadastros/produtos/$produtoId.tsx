@@ -1,9 +1,10 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ErroDeCarregamento,
+  EsqueletoDeCarregamento,
+} from '@/components/cabinet/estado-de-consulta'
 import { data } from '@/data'
 import { ProdutoForm } from '@/features/produto/produto-form'
-import { detalheDoErro } from '@/lib/erros'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -26,12 +27,7 @@ function ProdutoEditPage() {
   })
 
   if (query.isPending) {
-    return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
+    return <EsqueletoDeCarregamento />
   }
 
   // Falhou ≠ não existe: 404 chega como `null` (o produto não está lá), qualquer
@@ -39,15 +35,11 @@ function ProdutoEditPage() {
   // operador procurar um registro que existe.
   if (query.isError) {
     return (
-      <div className="flex flex-col items-start gap-2 text-muted-foreground">
-        Não foi possível carregar o produto.
-        {detalheDoErro(query.error) ? (
-          <span className="max-w-prose text-[0.75rem]">{detalheDoErro(query.error)}</span>
-        ) : null}
-        <Button variant="outline" size="sm" onClick={() => query.refetch()}>
-          Tentar de novo
-        </Button>
-      </div>
+      <ErroDeCarregamento
+        mensagem="Não foi possível carregar o produto."
+        erro={query.error}
+        refazer={() => query.refetch()}
+      />
     )
   }
 

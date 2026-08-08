@@ -23,6 +23,7 @@ function OrcamentoEditPage() {
       modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
       numero={(o) => o.numero}
       naoEncontrado="Orçamento não encontrado."
+      erroAoCarregar="Não foi possível carregar o orçamento."
     >
       {(orcamento) => <OrcamentoForm orcamento={orcamento} readOnly={readOnly} />}
     </TelaDeDocumento>

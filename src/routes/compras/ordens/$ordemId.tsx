@@ -23,6 +23,7 @@ function OrdemCompraEditPage() {
       modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
       numero={(o) => o.codigo}
       naoEncontrado="Ordem de compra não encontrada."
+      erroAoCarregar="Não foi possível carregar a ordem de compra."
     >
       {(ordem) => <OrdemCompraForm ordem={ordem} readOnly={readOnly} />}
     </TelaDeDocumento>

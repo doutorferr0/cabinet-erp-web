@@ -1,10 +1,13 @@
 import { type Modulo, moduloDaRota } from '@/app/modulo'
 import brutalist011 from '@/assets/brutalist/brutalist-011.svg?raw'
+import brutalist014 from '@/assets/brutalist/brutalist-014.svg?raw'
 import brutalist022 from '@/assets/brutalist/brutalist-022.svg?raw'
 import brutalist029 from '@/assets/brutalist/brutalist-029.svg?raw'
 import brutalist064 from '@/assets/brutalist/brutalist-064.svg?raw'
 import brutalist072 from '@/assets/brutalist/brutalist-072.svg?raw'
 import brutalist097 from '@/assets/brutalist/brutalist-097.svg?raw'
+import shape101 from '@/assets/brutalist/brutalist-shape-101.svg?raw'
+import shape120 from '@/assets/brutalist/brutalist-shape-120.svg?raw'
 import shape128 from '@/assets/brutalist/brutalist-shape-128.svg?raw'
 import shape133 from '@/assets/brutalist/brutalist-shape-133.svg?raw'
 import shape135 from '@/assets/brutalist/brutalist-shape-135.svg?raw'
@@ -132,11 +135,14 @@ function lerDesenho(raw: string, cobertura: number): Desenho {
  */
 const DESENHOS = {
   brutalist011: lerDesenho(brutalist011, 55.6),
+  brutalist014: lerDesenho(brutalist014, 43.8),
   brutalist022: lerDesenho(brutalist022, 72.3),
   brutalist029: lerDesenho(brutalist029, 5.0),
   brutalist064: lerDesenho(brutalist064, 78.8),
   brutalist072: lerDesenho(brutalist072, 60.2),
   brutalist097: lerDesenho(brutalist097, 50.3),
+  shape101: lerDesenho(shape101, 12.3),
+  shape120: lerDesenho(shape120, 56.8),
   shape128: lerDesenho(shape128, 80.2),
   shape133: lerDesenho(shape133, 43.4),
   shape135: lerDesenho(shape135, 12.5),
@@ -200,6 +206,38 @@ const SHAPE_DE_ESTADO = {
 } as const
 
 export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO
+
+/**
+ * Shapes de LUGAR sem módulo — as três telas que a tabela de cor não cobre.
+ *
+ * A tabela de shape×cor travada pelo user cobre oito módulos, e Dashboard,
+ * Planner e Colaboradores não estão nela. Ficavam com ícone lucide cinza no meio
+ * de uma fileira colorida, e a memória registrava isso como decisão pendente do
+ * user desde a PR #45 — a alternativa que eu me proibia era inventar a nona cor.
+ *
+ * **`mockup-dashboard-cores.html` resolveu sem cor nova:** os três EMPRESTAM o
+ * par de um módulo vizinho e se distinguem pelo DESENHO. Por isso os shapes
+ * moram aqui e não em `SHAPE_DO_MODULO`: a chave é o LUGAR, e a cor vem de fora,
+ * do `[data-modulo]` que a entrada do menu declara.
+ *
+ * Sem isto, os três teriam de compartilhar o desenho de quem empresta a cor —
+ * três anéis concêntricos idênticos na sidebar, e a fileira deixaria de ser mapa.
+ *
+ * **Sobre a `cobertura` destes três:** medida por rasterização, como manda o
+ * comentário do campo, mas por um método que NÃO reproduziu os valores já
+ * gravados — rodando os dois controles, `shape135` deu 10,8 contra os 12,5 do
+ * repo e `shape160` deu 5,3 contra 10,1. O número aqui é o que eu medi, e não
+ * finge a precisão que não tenho. O que ele decide é binário (o corte de 35% do
+ * `temPeso`) e os três estão longe da linha nos dois métodos: 12,3 é vazado com
+ * folga, 43,8 e 56,8 são cheios com folga. Conferido rasterizado a 18px.
+ */
+const SHAPE_DE_LUGAR = {
+  dashboard: DESENHOS.brutalist014, // quatro pontas convergindo — o painel que reúne
+  planner: DESENHOS.shape120, // faixas paralelas deitadas = a linha do tempo
+  colaboradores: DESENHOS.shape101, // corpo dentro de moldura = a pessoa de dentro
+} as const
+
+export type ShapeDeLugar = keyof typeof SHAPE_DE_LUGAR
 
 /**
  * O tom é o PAPEL da cor, não a cor. `modulo`/`modulo-suave` leem o par que o
@@ -289,8 +327,8 @@ function temPeso(desenho: Desenho): boolean {
 }
 
 export interface OrnamentoProps {
-  /** Módulo (usa o shape fixo dele) ou um shape de estado. */
-  shape: Modulo | ShapeDeEstado
+  /** Módulo (usa o shape fixo dele), um shape de estado ou um lugar sem módulo. */
+  shape: Modulo | ShapeDeEstado | ShapeDeLugar
   tom: TomDeOrnamento
   /**
    * Lado em px. A escala segue o PAPEL: 12–20 no de ícone (migalha, item de
@@ -345,7 +383,9 @@ export function Ornamento({ shape, tom, tamanho, className }: OrnamentoProps) {
   const desenho =
     shape in SHAPE_DE_ESTADO
       ? SHAPE_DE_ESTADO[shape as ShapeDeEstado]
-      : SHAPE_DO_MODULO[shape as Modulo]
+      : shape in SHAPE_DE_LUGAR
+        ? SHAPE_DE_LUGAR[shape as ShapeDeLugar]
+        : SHAPE_DO_MODULO[shape as Modulo]
 
   const peso = pesoPara(tamanho)
   const comPeso = temPeso(desenho)

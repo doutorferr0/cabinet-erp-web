@@ -1,3 +1,4 @@
+import { moduloDaRota } from '@/app/modulo'
 import { gruposVisiveis, itemDaRota, navGroups } from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import { describe, expect, it } from 'vitest'
@@ -52,5 +53,38 @@ describe('itemDaRota', () => {
     expect(itemDaRota('/')).toBeUndefined()
     expect(itemDaRota('/cadastros')).toBeUndefined()
     expect(itemDaRota('/cadastros/fornecedores-antigos')).toBeUndefined()
+  })
+})
+
+describe('aparência emprestada', () => {
+  // As três telas fora da tabela de shape×cor travada pelo user. O que este
+  // teste guarda é a REGRA, não a estética: só quem não tem módulo próprio
+  // empresta, e cada uma leva desenho seu — mesma cor com mesmo desenho faria a
+  // fileira da sidebar deixar de ser um mapa.
+  it('só tela sem módulo próprio empresta cor, e o desenho é dela', () => {
+    const itens = navGroups.flatMap((grupo) => grupo.items)
+    const comEmprestimo = itens.filter((item) => item.aparencia)
+
+    expect(comEmprestimo.map((item) => [item.url, item.aparencia])).toEqual([
+      ['/dashboard', { modulo: 'boletim', shape: 'dashboard' }],
+      ['/planner', { modulo: 'boletim', shape: 'planner' }],
+      ['/cadastros/colaboradores', { modulo: 'clientes', shape: 'colaboradores' }],
+    ])
+
+    // Nenhuma delas é conhecida por `moduloDaRota`, e é o que mantém o
+    // empréstimo dentro do item: se fosse, a folha inteira seria tingida e a
+    // banda de identidade anunciaria o módulo errado.
+    for (const item of comEmprestimo) {
+      expect(moduloDaRota(item.url)).toBeUndefined()
+    }
+
+    // E o inverso: quem TEM módulo não empresta nada.
+    for (const item of itens) {
+      if (moduloDaRota(item.url)) expect(item.aparencia).toBeUndefined()
+    }
+
+    // Desenhos distintos entre si.
+    const shapes = comEmprestimo.map((item) => item.aparencia?.shape)
+    expect(new Set(shapes).size).toBe(shapes.length)
   })
 })

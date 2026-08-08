@@ -49,6 +49,26 @@ describe('tela Profissional Externo', () => {
     })
   }, 15_000)
 
+  // `Nº do banco` era `TextField` livre, sem busca nenhuma — o único dos 10
+  // `[busca +...]` da transcrição sem janela por trás (§3, §9 padrão 3;
+  // mapa em `frente-visual.md` §@mapa-softlux). Vira `SearchDialog` contra
+  // `data.bancos` (código COMPE, dado público).
+  it('busca de banco preenche número e nome, com código COMPE público', async () => {
+    const { user } = renderRoute('/cadastros/profissionais/novo', stubDeParceiros())
+
+    await user.click(await screen.findByRole('button', { name: 'Buscar banco' }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('Busca de Banco')
+    await user.click(await screen.findByText('BANCO BRADESCO S.A.'))
+    await user.click(screen.getByRole('button', { name: 'Selecionar' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nº do banco')).toHaveValue('237')
+    })
+    expect(screen.getByLabelText('Nome do banco')).toHaveValue('BANCO BRADESCO S.A.')
+  })
+
   it('abrir por id direto busca o registro no servidor', async () => {
     renderRoute('/cadastros/profissionais/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70', stubDeParceiros())
 

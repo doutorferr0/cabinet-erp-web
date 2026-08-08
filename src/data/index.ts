@@ -7,6 +7,7 @@ import {
   createMockProvider,
   normalize,
 } from '@/data/provider'
+import { type Banco, bancos } from '@/mocks/bancos'
 import { type Cidade, cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
 import { type Colaborador, colaboradorVazio, colaboradores } from '@/mocks/colaboradores'
@@ -90,6 +91,16 @@ export const data = {
   cidades: createMockListProvider<Cidade>({
     rows: cidades,
     matches: (c, q) => c.codigo.includes(q) || normalize(c.nome).includes(q),
+    delayMs: 200,
+  }),
+
+  /**
+   * Tabela de apoio: busca de `Nº do banco` em Dados Bancários (transcrição
+   * §3). Código COMPE oficial — dado público, não é cadastro operado aqui.
+   */
+  bancos: createMockListProvider<Banco>({
+    rows: bancos,
+    matches: (b, q) => b.codigo.includes(q) || normalize(b.nome).includes(q),
     delayMs: 200,
   }),
 

@@ -30,7 +30,27 @@ import { Prioridade } from './prioridade'
  * Isto também é o que dispensa uma dependência nova (`dnd-kit` e parentes) num
  * repo com trava de idade de pacote — a alternativa não é "kanban pior", é
  * kanban operável.
+ *
+ * ## A cor da coluna vem da SITUAÇÃO, não de módulo emprestado
+ *
+ * `mockup-dashboard-cores.html` pinta as quatro colunas com pastéis de módulo
+ * (laranja de Boletim, azul de Estoque, roxo de Vendas, verde). O preenchimento
+ * entra, a FONTE da cor não: coluna é situação da tarefa, e uma coluna roxa de
+ * Vendas diria ao operador que `Em revisão` pertence àquele módulo — que é
+ * exatamente a leitura que o par por módulo ensina no resto do sistema.
+ *
+ * As quatro leem as ZONAS, que é a família que já significa estado aqui:
+ * informação · o violeta do que está ATIVO (o mesmo do "hoje" no calendário) ·
+ * o amarelo de FOCO, que é o que uma revisão pede · e o verde, que já é a cor
+ * do carimbo `done`. O efeito do mockup fica de pé — quatro colunas, quatro
+ * preenchimentos distintos — e nenhuma cor mente sobre o que significa.
  */
+const ZONA_DA_COLUNA: Record<TaskDtoStatus, string> = {
+  todo: 'bg-zone-info',
+  doing: 'bg-zone-id',
+  review: 'bg-zone-warn',
+  done: 'bg-zone-money',
+}
 
 /**
  * Avatares empilhados. Roxo de MARCA é o tom de avatar no DESIGN.md (§Acentos:
@@ -154,7 +174,17 @@ function Coluna({
   aoIncluir: (status: TaskDtoStatus) => void
 }) {
   return (
-    <section data-slot="coluna" data-status={status} className="flex min-w-0 flex-col gap-2">
+    <section
+      data-slot="coluna"
+      data-status={status}
+      // A coluna vira caixa própria com o preenchimento da situação. Os cartões
+      // ficam em `bg-card` por cima — é o contraste que separa a tarefa da
+      // coluna, e sem ele a pilha some dentro da pastel.
+      className={cn(
+        'flex min-w-0 flex-col gap-2 rounded-panel border-2 p-2.5 shadow-el1',
+        ZONA_DA_COLUNA[status],
+      )}
+    >
       <header className="flex items-center gap-2 rounded-card border-2 bg-card px-2 py-1.5">
         <h3 className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
           {titulo}
@@ -225,9 +255,17 @@ export function Quadro({
   }
 
   return (
-    // A bancada do quadro: as colunas pousam sobre a superfície afundada, que é
-    // o degrau interno da folha — sem ela as quatro colunas flutuariam soltas.
-    <div className="grid gap-4 rounded-panel border-2 bg-surface-sunken p-4 lg:grid-cols-4">
+    // A bancada afundada SAIU: ela existia para as quatro colunas não flutuarem
+    // soltas, e agora cada coluna tem caixa, contorno e preenchimento próprios.
+    // Mantida, seria um cinza atrás de quatro pastéis — o degrau que separava
+    // viraria a sujeira que aproxima.
+    //
+    // `items-start`: cada coluna para onde os cartões dela param. Sem isto o
+    // grid estica as quatro até a altura da mais cheia, e o que antes era um
+    // vazio branco invisível virou um bloco de pastel do tamanho da diferença —
+    // medido na conferência renderizada, com `Em andamento` de um cartão só ao
+    // lado de `A fazer` com dois.
+    <div className="grid items-start gap-4 lg:grid-cols-4">
       {COLUNAS.map((coluna) => (
         <Coluna
           key={coluna.status}

@@ -1,5 +1,5 @@
 import type { Modulo } from '@/app/modulo'
-import { Ornamento } from '@/components/cabinet/ornamento'
+import { Selo } from '@/components/cabinet/selo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
 import { formatMoneyBRL } from '@/lib/formatters'
@@ -16,7 +16,8 @@ import { FalhaDoPainel } from './falha'
  * disputando a mesma leitura. A fileira de KPIs é o outro caso, o mesmo da
  * fileira da sidebar — cada shape marca um LUGAR diferente (Vendas, Compras,
  * Estoque), e é justamente a variação que faz a fileira se ler como um mapa. É
- * papel de ÍCONE, não de decoração: 20px, ao lado do rótulo.
+ * papel de ÍCONE, não de decoração — agora dentro de um `Selo`, que é a caixa
+ * que devolve contraste ao shape depois que o fundo do cartão virou pastel.
  *
  * A cor vem do `data-modulo` do próprio cartão, e não do módulo da rota: o
  * Dashboard não é módulo nenhum (a tabela de cor travada pelo user cobre oito, e
@@ -54,27 +55,34 @@ interface Indicador {
 function Cartao({ indicador }: { indicador: Indicador }) {
   const conteudo = (
     <>
-      <div className="flex items-center gap-2">
-        {indicador.modulo ? <Ornamento shape={indicador.modulo} tom="modulo" tamanho={20} /> : null}
+      {/* O selo sai do meio do texto e vira a âncora do cartão, como no mockup:
+          com o fundo agora colorido, um shape de 20px em linha com o rótulo
+          desaparecia dentro da própria pastel. Fica de fora o cartão de
+          dinheiro — a regra de que ornamento não usa as cores com dono não
+          mudou, e é ela que decide, não o alinhamento da fileira. */}
+      {indicador.modulo ? <Selo shape={indicador.modulo} tamanho="lg" /> : null}
+      <span className="flex min-w-0 flex-col gap-1">
         <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
           {indicador.rotulo}
         </span>
-      </div>
-      <span
-        className={cn(
-          'font-display text-2xl font-bold tracking-[-0.012em] tabular-nums',
-          indicador.dinheiro && 'text-money',
-        )}
-      >
-        {indicador.valor}
+        <span
+          className={cn(
+            'font-display text-2xl font-bold tracking-[-0.012em] tabular-nums',
+            indicador.dinheiro && 'text-money',
+          )}
+        >
+          {indicador.valor}
+        </span>
+        <span className="text-sm text-muted-foreground">{indicador.apoio}</span>
       </span>
-      <span className="text-sm text-muted-foreground">{indicador.apoio}</span>
     </>
   )
 
+  // A pastel /02 do próprio módulo do número — o preenchimento que o mockup
+  // pede. Dinheiro segue na zona de valor, que é a superfície que ele já tinha.
   const classe = cn(
-    'flex flex-col gap-1 rounded-card border-2 p-4 no-underline',
-    indicador.dinheiro ? 'bg-zone-money' : 'bg-card',
+    'flex items-center gap-3 rounded-card border-2 p-4 no-underline',
+    indicador.dinheiro ? 'bg-zone-money' : 'bg-modulo',
   )
 
   if (!indicador.href) {

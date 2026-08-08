@@ -7,6 +7,9 @@ export function detalheDoErro(erro: unknown): string | undefined {
 
 /** Mensagem para exibir ao operador: `detail` do servidor, ou o fallback da tela. */
 export function mensagemDoErro(erro: unknown, fallback: string): string | null {
-  if (erro instanceof ErroDaApi) return erro.detail ?? fallback
+  // `detail` truthy, não só não-`null` — problem+json com `"detail": ""` (backend
+  // que sempre emite o membro) tem que cair no fallback, senão a tela mostra
+  // título de erro com descrição em branco.
+  if (erro instanceof ErroDaApi) return erro.detail ? erro.detail : fallback
   return erro ? fallback : null
 }

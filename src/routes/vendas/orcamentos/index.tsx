@@ -1,6 +1,5 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
-import { VitraDataTable } from '@/components/cabinet/data-table'
+import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import { formatDateBR } from '@/lib/formatters'
@@ -43,6 +42,24 @@ const BOTOES_RODAPE = [
   'Quadro',
 ] as const
 
+function RodapeDeOrcamento() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {BOTOES_RODAPE.map((label) => (
+        <Button
+          key={label}
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => console.info(`[mock] ${label}`)}
+        >
+          {label}
+        </Button>
+      ))}
+    </div>
+  )
+}
+
 function OrcamentosPage() {
   const navigate = useNavigate()
 
@@ -73,27 +90,13 @@ function OrcamentosPage() {
   )
 
   return (
-    <div className="flex flex-col gap-4">
-      <BandaDeIdentidade titulo="Orçamento" />
-      <VitraDataTable
-        columns={columns}
-        queryKey={['orcamentos']}
-        fetcher={data.orcamentos.list}
-        actions={actionsOrcamento}
-      />
-      <div className="flex flex-wrap gap-2">
-        {BOTOES_RODAPE.map((label) => (
-          <Button
-            key={label}
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => console.info(`[mock] ${label}`)}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
-    </div>
+    <TelaDeListagem
+      titulo="Orçamento"
+      columns={columns}
+      queryKey={['orcamentos']}
+      fetcher={data.orcamentos.list}
+      actions={actionsOrcamento}
+      rodape={<RodapeDeOrcamento />}
+    />
   )
 }

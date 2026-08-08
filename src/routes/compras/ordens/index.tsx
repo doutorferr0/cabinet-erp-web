@@ -1,6 +1,5 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
-import { VitraDataTable } from '@/components/cabinet/data-table'
+import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { formatDateBR } from '@/lib/formatters'
 import type { OrdemCompra } from '@/mocks/ordens-compra'
@@ -46,14 +45,12 @@ function OrdensCompraPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <BandaDeIdentidade titulo="Ordem de Compra" />
-      <VitraDataTable
-        columns={columns}
-        queryKey={['ordens-compra']}
-        fetcher={data.ordensCompra.list}
-        actions={actions}
-      />
-    </div>
+    <TelaDeListagem
+      titulo="Ordem de Compra"
+      columns={columns}
+      queryKey={['ordens-compra']}
+      fetcher={data.ordensCompra.list}
+      actions={actions}
+    />
   )
 }

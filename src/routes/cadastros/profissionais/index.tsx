@@ -1,12 +1,9 @@
 import type { PartnerDto } from '@/api/gerado'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
-import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
-import { VitraDataTable } from '@/components/cabinet/data-table'
+import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
-import { mensagemDoErro } from '@/lib/erros'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -85,26 +82,25 @@ function ProfissionaisPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <BandaDeIdentidade titulo="Cadastro de Profissional Externo" />
-      <VitraDataTable
-        columns={columns}
-        queryKey={['profissionais']}
-        fetcher={data.profissionais.list}
-        actions={actions}
-      />
-      {aDesativar ? (
-        <ConfirmarDesativacao
-          entidade="profissional"
-          nome={aDesativar.legalName}
-          ativo={aDesativar.active}
-          aberto
-          pendente={desativar.isPending}
-          erro={mensagemDoErro(desativar.error, 'Não foi possível desativar. Tente de novo.')}
-          onFechar={() => setADesativar(null)}
-          onConfirmar={() => desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })}
-        />
-      ) : null}
-    </div>
+    <TelaDeListagem
+      titulo="Cadastro de Profissional Externo"
+      columns={columns}
+      queryKey={['profissionais']}
+      fetcher={data.profissionais.list}
+      actions={actions}
+      desativacao={{
+        entidade: 'profissional',
+        registro: aDesativar,
+        nome: (p) => p.legalName,
+        ativo: (p) => p.active,
+        pendente: desativar.isPending,
+        erro: desativar.error,
+        onFechar: () => setADesativar(null),
+        onConfirmar: () => {
+          if (!aDesativar) return
+          desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })
+        },
+      }}
+    />
   )
 }

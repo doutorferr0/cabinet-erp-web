@@ -27,24 +27,16 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard } from 'lucide-react'
 
 /**
- * O conteúdo do cartão de hover de UM item: o nome da tela e a linha que diz o
- * que ela faz (§Regra da explicação no hover no DESIGN.md).
+ * O conteúdo do cartão de hover de UM item: só a linha que diz o que a tela FAZ
+ * (§Regra da explicação no hover no DESIGN.md).
  *
- * Já foi o cartão do GRUPO, listando as telas irmãs — e era a duplicata que o
- * user recusou duas vezes: a seção reescrita ao lado dela mesma. O cartão só
- * ganha o direito de existir quando ACRESCENTA, e o que ele acrescenta é o
- * propósito da tela, que não cabe no rótulo do menu.
+ * **Sem o nome, de propósito.** O nome está no próprio item que disparou o
+ * cartão — imprimi-lo aqui repetiria o que o olho acabou de ler. Já foi o
+ * cartão do GRUPO, listando as telas irmãs, e essa duplicata foi recusada duas
+ * vezes: o cartão só ganha o direito de existir pelo que ACRESCENTA.
  */
 function ExplicacaoDaTela({ tela }: { tela: NavItem }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-2 font-semibold text-sm">
-        <tela.icon className="size-3.5 shrink-0" />
-        {tela.title}
-      </span>
-      <span className="text-muted-foreground text-xs leading-snug">{tela.descricao}</span>
-    </div>
-  )
+  return <p className="text-sm leading-snug">{tela.descricao}</p>
 }
 
 function AppSidebar() {
@@ -138,10 +130,22 @@ function AppSidebar() {
                     key={item.url}
                     {...(moduloDoItem && { 'data-modulo': moduloDoItem })}
                   >
+                    {/* CARTÃO no expandido, DICA no colapsado — e a razão é o que
+                        cada estado já mostra. Expandido: o nome está no item, a um
+                        centímetro do ponteiro; repeti-lo no cartão seria a mesma
+                        duplicata que tirou o cartão do rótulo do grupo. Colapsado: o
+                        nome NÃO existe na tela, então ali a peça certa é a dica, que
+                        é justamente o que ela sempre fez.
+
+                        O cartão nunca convive com a dica: quando existe, vence. Por
+                        isso ele não pode aparecer no colapsado sem o nome — seria
+                        trocar a única identificação do ícone por uma frase solta. */}
                     <SidebarMenuButton
                       asChild
                       isActive={active}
-                      hoverCard={<ExplicacaoDaTela tela={item} />}
+                      {...(colapsada
+                        ? { tooltip: item.title }
+                        : { hoverCard: <ExplicacaoDaTela tela={item} /> })}
                     >
                       <Link to={item.url}>
                         {/* O shape do módulo no lugar do ícone genérico: é ele

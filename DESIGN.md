@@ -565,9 +565,12 @@ Fornecedores — não abre a lista do grupo. Uma versão anterior pendurou o car
 mostrava as telas irmãs: era a seção reescrita ao lado dela mesma, e foi recusada duas vezes antes
 de a leitura certa aparecer. Cartão de item explica o item.
 
-**Cartão que substitui a dica tem de dizer o que a dica dizia.** Onde há cartão, o `tooltip` não
-aparece — então o cartão carrega o NOME da tela junto da explicação. Sem isso, a barra colapsada
-perde a única identificação que o ícone tinha.
+**O cartão traz SÓ a explicação — o nome já está no item que o disparou.** Repetir o rótulo dentro
+do cartão é a mesma duplicata que o tirou do rótulo do grupo.
+
+**Por isso ele vale no EXPANDIDO e a dica vale no COLAPSADO.** O cartão vence a dica onde os dois
+poderiam aparecer; num estado em que o nome não está na tela, um cartão sem nome trocaria a única
+identificação do ícone por uma frase solta. Onde o rótulo sumiu, a peça é a dica.
 
 ## Motion
 

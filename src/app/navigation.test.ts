@@ -35,11 +35,18 @@ describe('gruposVisiveis', () => {
     expect(visiveis).not.toContain('Colaboradores')
   })
 
-  // `Estoque` nasce sem item (§10, telas não capturadas) e continua anunciando
-  // o módulo. Some só o grupo que a EMPRESA esvaziou — a distinção some junto
-  // se alguém "simplificar" o filtro para `items.length > 0`.
-  it('grupo que já nascia vazio permanece; grupo esvaziado pelo recurso sumiria', () => {
-    expect(gruposVisiveis(empresaCom()).map((g) => g.title)).toContain('Estoque')
+  // Item sem `recurso` (`Movimentação`, único item de Estoque desde que o
+  // menu ganhou a rota-placeholder — §10) nunca some, mesmo pra empresa sem
+  // recurso nenhum. `Estoque` deixou de ser o grupo "nasce vazio" que este
+  // teste travava (tinha zero itens até a rota `/estoque/movimentacao`
+  // entrar): a distinção "grupo que nasce vazio permanece · grupo esvaziado
+  // pelo recurso some" segue viva no código (`gruposVisiveis`), mas não há
+  // mais grupo real que nasça vazio para exercitá-la — nenhum dos quatro
+  // grupos tem `items: []` hoje.
+  it('grupo sem recurso nenhum nos itens nunca esvazia, mesmo pra empresa sem recurso', () => {
+    const visiveis = gruposVisiveis(empresaCom())
+    const estoque = visiveis.find((g) => g.title === 'Estoque')
+    expect(estoque?.items.map((i) => i.title)).toContain('Movimentação')
   })
 })
 

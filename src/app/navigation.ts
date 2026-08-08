@@ -2,6 +2,7 @@ import type { Modulo } from '@/app/modulo'
 import type { ShapeDeLugar } from '@/components/cabinet/ornamento'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
+  ArrowLeftRight,
   BookUser,
   GanttChart,
   LayoutDashboard,
@@ -149,12 +150,21 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    // O menu `Movimentação` (onde mora a movimentação de estoque) não foi
-    // capturado na transcrição — §10. Sem itens até a próxima rodada de prints.
     title: 'Estoque',
     url: '/estoque',
     icon: Package,
-    items: [],
+    items: [
+      {
+        title: 'Movimentação',
+        url: '/estoque/movimentacao',
+        icon: ArrowLeftRight,
+        descricao: 'Entrada, saída e transferência do estoque.',
+        // Menu inteiro não capturado na transcrição — §10. Sem shape/cor
+        // próprios: herda o par de Estoque por `moduloDaRota('/estoque')`
+        // (prefixo), não precisa de `aparencia` — não é caso de "tela sem
+        // módulo", é filha de um módulo que já tem cor.
+      },
+    ],
   },
   {
     title: 'Vendas',

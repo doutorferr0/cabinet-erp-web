@@ -15,6 +15,7 @@ import { type Orcamento, orcamentoVazio, orcamentos } from '@/mocks/orcamentos'
 import { type OrdemCompra, ordemCompraVazia, ordensCompra } from '@/mocks/ordens-compra'
 import { type PedidoCompra, pedidoCompraVazio, pedidosCompra } from '@/mocks/pedidos-compra'
 import { profissionalVazio } from '@/mocks/profissionais'
+import { type Transportadora, transportadoras } from '@/mocks/transportadoras'
 
 /**
  * REGISTRY DE PROVIDERS — a fronteira entre as telas e a origem dos dados.
@@ -89,6 +90,17 @@ export const data = {
   cidades: createMockListProvider<Cidade>({
     rows: cidades,
     matches: (c, q) => c.codigo.includes(q) || normalize(c.nome).includes(q),
+    delayMs: 200,
+  }),
+
+  /**
+   * Tabela de apoio, mesma fronteira de `cidades`: busca da Ordem de Compra
+   * (transcrição §7.2), sem cadastro completo por falta de captura do menu
+   * `Transportadoras` (§1, §10).
+   */
+  transportadoras: createMockListProvider<Transportadora>({
+    rows: transportadoras,
+    matches: (t, q) => t.codigo.includes(q) || normalize(t.nome).includes(q),
     delayMs: 200,
   }),
 } satisfies Record<string, ListProvider<unknown>>

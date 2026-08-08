@@ -25,7 +25,7 @@ import {
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard } from 'lucide-react'
+import { ChevronRight, LayoutDashboard } from 'lucide-react'
 
 /**
  * O que o cartão de hover mostra ao pousar no RÓTULO de um grupo: as telas
@@ -43,7 +43,7 @@ import { LayoutDashboard } from 'lucide-react'
  */
 function TelasDoGrupo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
   return (
-    <ul className="flex flex-col">
+    <ul className="flex flex-col gap-0.5">
       {grupo.items.map((tela) => {
         const naTela = atual === tela.url || atual.startsWith(`${tela.url}/`)
         return (
@@ -51,13 +51,26 @@ function TelasDoGrupo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
             <Link
               to={tela.url}
               className={cn(
-                'flex items-center gap-2 rounded-item px-1.5 py-1 text-sm no-underline transition-colors hover:bg-neutral',
-                naTela && 'bg-primary font-semibold text-primary-foreground',
+                'flex flex-col gap-0.5 rounded-control px-2 py-1.5 no-underline transition-colors hover:bg-neutral',
+                naTela && 'bg-primary text-primary-foreground',
               )}
               {...(naTela && { 'aria-current': 'page' })}
             >
-              <tela.icon className="size-3.5 shrink-0" />
-              {tela.title}
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <tela.icon className="size-3.5 shrink-0" />
+                {tela.title}
+              </span>
+              {/* Recuo de 22px = ícone (14) + gap (8): a frase começa embaixo do
+                  NOME, não embaixo do ícone, e as descrições formam uma coluna
+                  de leitura própria. */}
+              <span
+                className={cn(
+                  'pl-[22px] text-xs leading-snug text-muted-foreground',
+                  naTela && 'text-primary-foreground/85',
+                )}
+              >
+                {tela.descricao}
+              </span>
             </Link>
           </li>
         )
@@ -147,9 +160,12 @@ function AppSidebar() {
             {!colapsada && group.items.length > 1 ? (
               <HoverCard>
                 <HoverCardTrigger>
-                  <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+                  <SidebarGroupLabel className="cursor-pointer gap-1 rounded-control transition-colors hover:bg-neutral hover:text-foreground">
+                    {group.title}
+                    <ChevronRight aria-hidden className="ml-auto size-3.5 opacity-50" />
+                  </SidebarGroupLabel>
                 </HoverCardTrigger>
-                <HoverCardContent placement="right top">
+                <HoverCardContent className="w-80" placement="right top">
                   <TelasDoGrupo grupo={group} atual={pathname} />
                 </HoverCardContent>
               </HoverCard>

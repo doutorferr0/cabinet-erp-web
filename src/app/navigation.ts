@@ -14,6 +14,21 @@ export interface NavItem {
   url: string
   icon: LucideIcon
   /**
+   * Uma linha dizendo O QUE A TELA FAZ — não o que ela contém. É o conteúdo do
+   * cartão de hover do grupo, e a razão de ele existir: sem isto o cartão só
+   * repetia a lista que já está na barra logo abaixo.
+   *
+   * **Obrigatório de propósito.** Tela nova sem descrição não compila, senão o
+   * cartão volta a ser uma lista de nomes com buracos no meio.
+   *
+   * REDAÇÃO PROVISÓRIA (2026-08-07): escrita pelo agente a pedido do user, NÃO
+   * extraída de `topicos/transcricaosoftlux.md`. A transcrição do legado
+   * descreve campos e barra de ações, não propósito. Rever com quem opera —
+   * `Ordem de Compra` vs `Pedido de Compra` e `Planner` são as mais expostas a
+   * erro de leitura minha.
+   */
+  descricao: string
+  /**
    * Recurso que a EMPRESA ATIVA precisa ter para este item existir. Item sem
    * `recurso` está em toda empresa — é o padrão, e continua sendo o caso da
    * maioria. Ver `src/data/recursos-da-empresa.ts`: é capacidade da empresa,
@@ -45,8 +60,19 @@ export const navGroups: NavGroup[] = [
     url: '/dashboard',
     icon: LayoutDashboard,
     items: [
-      { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-      { title: 'Planner', url: '/planner', icon: GanttChart },
+      {
+        title: 'Dashboard',
+        url: '/dashboard',
+        icon: LayoutDashboard,
+        descricao: 'O que está em curso agora: números do dia e o que pede atenção.',
+      },
+      {
+        title: 'Planner',
+        url: '/planner',
+        icon: GanttChart,
+        descricao:
+          'O que ainda vai acontecer, na linha do tempo: prazos, entregas e reagendamentos.',
+      },
     ],
   },
   {
@@ -54,26 +80,39 @@ export const navGroups: NavGroup[] = [
     url: '/cadastros',
     icon: BookUser,
     items: [
-      { title: 'Clientes', url: '/cadastros/clientes', icon: BookUser },
+      {
+        title: 'Clientes',
+        url: '/cadastros/clientes',
+        icon: BookUser,
+        descricao: 'Quem compra. Obra, cobrança, contato e situação financeira.',
+      },
       {
         title: 'Fornecedores',
+        descricao: 'Quem fornece. Razão social, prazo de entrega e contatos.',
         url: '/cadastros/fornecedores',
         icon: BookUser,
         recurso: RECURSOS.suppliers,
       },
       {
         title: 'Profissional Externo',
+        descricao: 'Arquiteto ou lighting designer que especifica o projeto.',
         url: '/cadastros/profissionais',
         icon: BookUser,
         recurso: RECURSOS.professionals,
       },
       {
         title: 'Colaboradores',
+        descricao: 'O quadro interno. Setor, cargo, vínculo e admissão.',
         url: '/cadastros/colaboradores',
         icon: BookUser,
         recurso: RECURSOS.employees,
       },
-      { title: 'Produtos', url: '/cadastros/produtos', icon: Package },
+      {
+        title: 'Produtos',
+        url: '/cadastros/produtos',
+        icon: Package,
+        descricao: 'O catálogo. Variantes, valores, localização de estoque e tributação.',
+      },
     ],
   },
   {
@@ -89,15 +128,32 @@ export const navGroups: NavGroup[] = [
     url: '/vendas',
     icon: Store,
     // `Pedido de venda` é fluxo não capturado (§10) — só Orçamento existe.
-    items: [{ title: 'Orçamentos', url: '/vendas/orcamentos', icon: Store }],
+    items: [
+      {
+        title: 'Orçamentos',
+        url: '/vendas/orcamentos',
+        icon: Store,
+        descricao: 'A proposta ao cliente. Se cancela, nunca se apaga.',
+      },
+    ],
   },
   {
     title: 'Compras',
     url: '/compras',
     icon: ShoppingCart,
     items: [
-      { title: 'Ordem de Compra', url: '/compras/ordens', icon: ShoppingCart },
-      { title: 'Pedido de Compra', url: '/compras/pedidos', icon: ShoppingCart },
+      {
+        title: 'Ordem de Compra',
+        url: '/compras/ordens',
+        icon: ShoppingCart,
+        descricao: 'O combinado com o fornecedor: itens, prazo previsto e reagendamento.',
+      },
+      {
+        title: 'Pedido de Compra',
+        url: '/compras/pedidos',
+        icon: ShoppingCart,
+        descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
+      },
     ],
   },
 ]

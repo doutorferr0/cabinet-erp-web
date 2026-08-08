@@ -1,5 +1,4 @@
 import type { AgendaEventDto } from '@/api/gerado'
-import { FormBlock } from '@/components/cabinet/form-block'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -18,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { FalhaDoPainel } from './falha'
+import { Painel } from './painel'
 import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-evento'
 
 /**
@@ -32,9 +32,38 @@ import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-eve
 function Contador({ n }: { n: number }) {
   // Contador é DADO, e dado mora dentro de caixa (staging neobrutalism-aria).
   return (
-    <span className="ml-auto rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium tabular-nums">
+    <span className="rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium tabular-nums">
       {n}
     </span>
+  )
+}
+
+/**
+ * As duas setas do mês. Ficam no `acao` do painel, e o MÊS é o título dele —
+ * antes o nome do mês era um terceiro elemento no meio das setas, competindo
+ * com a legenda do compartimento, que dizia "Calendário". Duas coisas nomeando
+ * a mesma região.
+ */
+function NavegacaoDoMes({ mes, aoTrocarMes }: { mes: Mes; aoTrocarMes: (novo: Mes) => void }) {
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="icon-sm"
+        onClick={() => aoTrocarMes(mesDeslocado(mes, -1))}
+        aria-label="Mês anterior"
+      >
+        <ChevronLeft />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon-sm"
+        onClick={() => aoTrocarMes(mesDeslocado(mes, 1))}
+        aria-label="Próximo mês"
+      >
+        <ChevronRight />
+      </Button>
+    </>
   )
 }
 
@@ -53,30 +82,7 @@ function Calendario({
   const celulas = gradeDoMes(mes)
 
   return (
-    <FormBlock legend="Calendário">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => aoTrocarMes(mesDeslocado(mes, -1))}
-          aria-label="Mês anterior"
-        >
-          <ChevronLeft />
-        </Button>
-        {/* `first-letter`, nunca `capitalize`: o `Intl` devolve "agosto de
-            2026" e o `capitalize` do Tailwind sobe TODA palavra — saía "Agosto
-            De 2026", com a preposição em maiúscula. */}
-        <span className="font-semibold first-letter:uppercase">{nomeDoMes(mes)}</span>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => aoTrocarMes(mesDeslocado(mes, 1))}
-          aria-label="Próximo mês"
-        >
-          <ChevronRight />
-        </Button>
-      </div>
-
+    <Painel titulo={nomeDoMes(mes)} acao={<NavegacaoDoMes mes={mes} aoTrocarMes={aoTrocarMes} />}>
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {DIAS_DA_SEMANA.map((dia) => (
           <abbr
@@ -119,9 +125,9 @@ function Calendario({
       </div>
 
       {carregando ? (
-        <Skeleton className="mt-2 h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
       ) : (
-        <ul className="mt-3 grid grid-cols-2 gap-1 border-t pt-2">
+        <ul className="grid grid-cols-2 gap-1 border-t pt-3">
           {TIPOS_NA_ORDEM.map((kind) => (
             <li key={kind} className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <MarcaDeTipo kind={kind} className="size-2.5" />
@@ -130,7 +136,7 @@ function Calendario({
           ))}
         </ul>
       )}
-    </FormBlock>
+    </Painel>
   )
 }
 
@@ -138,12 +144,7 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
   const doDia = eventosDoDia(eventos, diaLocalISO())
 
   return (
-    <FormBlock legend="Agenda de hoje">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="font-semibold">Compromissos</span>
-        <Contador n={doDia.length} />
-      </div>
-
+    <Painel titulo="Agenda de hoje" acao={<Contador n={doDia.length} />}>
       {carregando ? (
         <div className="flex flex-col gap-2">
           {['a1', 'a2', 'a3'].map((chave) => (
@@ -177,7 +178,7 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
           ))}
         </ul>
       )}
-    </FormBlock>
+    </Painel>
   )
 }
 
@@ -188,12 +189,7 @@ function AFazer() {
   const pendentes = itens.filter((item) => !item.done).length
 
   return (
-    <FormBlock legend="A fazer">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="font-semibold">Pendentes</span>
-        <Contador n={pendentes} />
-      </div>
-
+    <Painel titulo="A fazer" acao={<Contador n={pendentes} />}>
       {query.isPending ? (
         <div className="flex flex-col gap-2">
           {['t1', 't2', 't3'].map((chave) => (
@@ -227,7 +223,7 @@ function AFazer() {
           ))}
         </ul>
       )}
-    </FormBlock>
+    </Painel>
   )
 }
 
@@ -251,7 +247,7 @@ export function LinhaDeHoje() {
   }
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(260px,320px)_1fr_1fr]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(260px,320px)_1fr_1fr]">
       <Calendario mes={mes} aoTrocarMes={setMes} eventos={eventos} carregando={agenda.isPending} />
       <Agenda eventos={eventos} carregando={agenda.isPending} />
       <AFazer />

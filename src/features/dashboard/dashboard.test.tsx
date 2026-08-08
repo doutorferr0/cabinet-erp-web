@@ -192,7 +192,10 @@ describe('tela Dashboard', () => {
     await user.click(await screen.findByRole('tab', { name: 'Lista' }))
 
     expect(await screen.findByRole('columnheader', { name: 'Prazo' })).toBeInTheDocument()
-    expect(screen.getByText('Rafael Alves')).toBeInTheDocument()
+    // Dentro da TABELA: o nome também aparece na carga por responsável, que lê
+    // a mesma consulta — procurar solto casaria os dois.
+    const tabela = screen.getByRole('columnheader', { name: 'Prazo' }).closest('table')
+    expect(within(tabela as HTMLElement).getByText('Rafael Alves')).toBeInTheDocument()
   })
 
   it('marcar item da lista A fazer manda `done` ao servidor', async () => {

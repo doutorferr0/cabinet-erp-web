@@ -196,7 +196,7 @@ export function Quadro({
 
   if (query.isPending) {
     return (
-      <div className="grid gap-3 lg:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-4">
         {COLUNAS.map((coluna) => (
           <Skeleton key={coluna.status} className="h-64 w-full" />
         ))}
@@ -227,7 +227,7 @@ export function Quadro({
   return (
     // A bancada do quadro: as colunas pousam sobre a superfície afundada, que é
     // o degrau interno da folha — sem ela as quatro colunas flutuariam soltas.
-    <div className="grid gap-3 rounded-panel border-2 bg-surface-sunken p-3 lg:grid-cols-4">
+    <div className="grid gap-4 rounded-panel border-2 bg-surface-sunken p-4 lg:grid-cols-4">
       {COLUNAS.map((coluna) => (
         <Coluna
           key={coluna.status}

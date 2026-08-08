@@ -1,7 +1,12 @@
 import type { DashboardSummaryDto, TaskDto } from '@/api/gerado'
 import { createTask, listTasks, patchTask, patchTodo } from '@/api/gerado'
 import { ErroDaApi, dadosOuErro } from '@/data/api-provider'
-import { agruparPorColuna, variacaoDoMes } from '@/data/dashboard-api'
+import {
+  agruparPorColuna,
+  cargaPorPessoa,
+  progressoDoQuadro,
+  variacaoDoMes,
+} from '@/data/dashboard-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -128,5 +133,51 @@ describe('regras puras do quadro', () => {
     expect(variacaoDoMes({ ...RESUMO, monthSalesCents: 8_000_000 })).toBe(-51)
     // Não existe "cresceu 100%" sobre base zero.
     expect(variacaoDoMes({ ...RESUMO, previousMonthSalesCents: 0 })).toBeNull()
+  })
+})
+
+describe('progresso e carga', () => {
+  const RA = { id: 'u1', name: 'Rafael Alves', initials: 'RA' }
+  const LM = { id: 'u2', name: 'Lívia Moreira', initials: 'LM' }
+
+  it('conta concluídas, em aberto e o total', () => {
+    const p = progressoDoQuadro([
+      tarefa({ id: 'a', status: 'done' }),
+      tarefa({ id: 'b', status: 'doing' }),
+      tarefa({ id: 'c', status: 'todo' }),
+      tarefa({ id: 'd', status: 'done' }),
+    ])
+    expect(p).toEqual({ concluidas: 2, emAberto: 2, total: 4, percentual: 50 })
+  })
+
+  it('quadro vazio não tem percentual — 0 de 0 não é "0% concluído"', () => {
+    expect(progressoDoQuadro([]).percentual).toBeNull()
+  })
+
+  it('tarefa com dois responsáveis conta para os DOIS', () => {
+    const carga = cargaPorPessoa([
+      tarefa({ id: 'a', status: 'done', assignees: [RA, LM] }),
+      tarefa({ id: 'b', status: 'todo', assignees: [RA] }),
+    ])
+
+    // A pergunta é "quanto cada um tem na mão", não como o trabalho se reparte:
+    // por isso a soma das linhas (3) passa do total de tarefas (2).
+    expect(carga.map((c) => [c.nome, c.total, c.concluidas])).toEqual([
+      ['Rafael Alves', 2, 1],
+      ['Lívia Moreira', 1, 1],
+    ])
+  })
+
+  it('tarefa sem responsável não vira uma pessoa', () => {
+    expect(cargaPorPessoa([tarefa({ assignees: [] })])).toEqual([])
+  })
+
+  it('ordena por quem tem mais EM ABERTO', () => {
+    const carga = cargaPorPessoa([
+      tarefa({ id: 'a', status: 'done', assignees: [RA] }),
+      tarefa({ id: 'b', status: 'todo', assignees: [LM] }),
+      tarefa({ id: 'c', status: 'todo', assignees: [LM] }),
+    ])
+    expect(carga[0]?.nome).toBe('Lívia Moreira')
   })
 })

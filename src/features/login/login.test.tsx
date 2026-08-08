@@ -1,5 +1,5 @@
 import { type FetchStub, renderRoute, respostaSessao } from '@/test/utils'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -69,9 +69,11 @@ describe('Login', () => {
     await preencherEEntrar(user)
 
     // A entrada é o Dashboard, não o Boletim (decisão do user). A asserção é
-    // pelo BOTÃO e não pelo título: o título é a saudação, que muda com a hora
-    // do dia e faria o teste falhar de tarde.
-    expect(await screen.findByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+    // pelo `data-slot` do cabeçalho, e não pelo título dele: o título é a
+    // saudação, que muda com a hora do dia e faria o teste falhar de tarde.
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="dashboard-header"]')).not.toBeNull(),
+    )
     expect(router.state.location.pathname).toBe('/dashboard')
 
     const login = chamadas.find((c) => c.caminho === '/auth/login')

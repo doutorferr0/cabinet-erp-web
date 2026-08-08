@@ -97,8 +97,11 @@ export function Painel({
       )}
     >
       <header
+        // `py-3.25` (13px), respiro do Dashboard (§@casca-global) — 3px a mais
+        // que a régua padrão de cabeçalho do sistema; a horizontal (`px-4`)
+        // não mudou, o mockup só espaça o eixo vertical.
         className={cn(
-          'flex items-center gap-2 border-b-2 px-4 py-2.5',
+          'flex items-center gap-2 border-b-2 px-4 py-3.25',
           modulo ? 'bg-modulo' : tinta ? TINTAS[tinta] : 'bg-surface-sunken',
         )}
       >
@@ -111,8 +114,9 @@ export function Painel({
         {acao ? <div className="ml-auto flex items-center gap-2">{acao}</div> : null}
       </header>
       {/* `flex-1` no corpo, e não no `section`: é o que deixa o `mt-auto` de um
-          filho empurrar a peça para o rodapé do painel. */}
-      <div className="flex flex-1 flex-col gap-3 p-5">{children}</div>
+          filho empurrar a peça para o rodapé do painel. `p-4.5` (18px) é o
+          respiro do Dashboard (§@casca-global). */}
+      <div className="flex flex-1 flex-col gap-3 p-4.5">{children}</div>
     </section>
   )
 }

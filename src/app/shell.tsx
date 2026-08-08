@@ -1,3 +1,5 @@
+import { Appbar } from '@/app/appbar'
+import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
 import { type NavItem, gruposVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
@@ -23,7 +25,9 @@ import {
 } from '@/components/ui/sidebar'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
+import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { useState } from 'react'
 
 /**
  * O conteúdo do cartão de hover de UM item: só a linha que diz o que a tela FAZ
@@ -200,10 +204,23 @@ function AppSidebar() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { location } = useRouterState()
   const modulo = moduloDaRota(location.pathname)
+
+  // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
+  // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
+  // vive no shell porque é ele que também guarda se a gaveta está aberta; as
+  // duas coisas nascem e morrem juntas com a navegação da sessão.
+  const [notificacoes, setNotificacoes] = useState(NOTIFICACOES_MOCK)
+  const [gavetaAberta, setGavetaAberta] = useState(false)
+  const naoLidas = notificacoes.filter((n) => !n.lida).length
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
+        {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
+            (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
+        <Appbar naoLidas={naoLidas} aoAbrirGaveta={() => setGavetaAberta(true)} />
+
         {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">
           <div className="flex items-center gap-2">
@@ -235,6 +252,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </PageFrame>
         </main>
       </SidebarInset>
+
+      {/* Coluna IRMÃ do `<SidebarInset>` (que já é `flex-1`), dentro do mesmo
+          wrapper flex do `SidebarProvider` — é isso que faz a gaveta EMPURRAR
+          o conteúdo ao abrir, em vez de flutuar por cima dele (decisão do
+          user, §@casca-global: "não quero que sobreponha, e sim empurre"). */}
+      <GavetaDeNotificacoes
+        aberta={gavetaAberta}
+        onOpenChange={setGavetaAberta}
+        notificacoes={notificacoes}
+        aoMarcarLida={(id) =>
+          setNotificacoes((atual) => atual.map((n) => (n.id === id ? { ...n, lida: !n.lida } : n)))
+        }
+      />
     </SidebarProvider>
   )
 }

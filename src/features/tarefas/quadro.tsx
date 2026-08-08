@@ -1,4 +1,5 @@
 import type { TaskDto, TaskDtoStatus } from '@/api/gerado'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,7 +12,6 @@ import { COLUNAS, agruparPorColuna, useAlterarTarefa, useTarefas } from '@/data/
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { Calendar, MessageSquare, MoreHorizontal, Paperclip } from 'lucide-react'
-import { FalhaDoPainel } from './falha'
 import { Prioridade } from './prioridade'
 
 /**
@@ -226,7 +226,7 @@ export function Quadro({
 
   if (query.isPending) {
     return (
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
         {COLUNAS.map((coluna) => (
           <Skeleton key={coluna.status} className="h-64 w-full" />
         ))}
@@ -265,7 +265,11 @@ export function Quadro({
     // vazio branco invisível virou um bloco de pastel do tamanho da diferença —
     // medido na conferência renderizada, com `Em andamento` de um cartão só ao
     // lado de `A fazer` com dois.
-    <div className="grid items-start gap-4 lg:grid-cols-4">
+    // `auto-fit`/`minmax(238px,1fr)`, nunca `@media` (§@casca-global — regra
+    // de quebra): as quatro colunas espremem antes de quebrar em duas linhas,
+    // e a quebra reage ao espaço real — inclusive à gaveta de notificações
+    // aberta encolhendo o `<main>`, que um breakpoint fixo não veria.
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] items-start gap-4">
       {COLUNAS.map((coluna) => (
         <Coluna
           key={coluna.status}

@@ -1,11 +1,11 @@
 import type { Modulo } from '@/app/modulo'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Selo } from '@/components/cabinet/selo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
-import { FalhaDoPainel } from './falha'
 
 /**
  * FAIXA DE INDICADORES — os quatro números do topo do Dashboard.
@@ -80,8 +80,12 @@ function Cartao({ indicador }: { indicador: Indicador }) {
 
   // A pastel /02 do próprio módulo do número — o preenchimento que o mockup
   // pede. Dinheiro segue na zona de valor, que é a superfície que ele já tinha.
+  // `p-5` (20px), respiro do Dashboard (§@casca-global): o cartão de KPI é a
+  // âncora da fileira, e a folga confirmada no mockup é maior que a densidade
+  // padrão do sistema — a mesma exceção que `Painel` já registra pra tela de
+  // visão.
   const classe = cn(
-    'flex items-center gap-3 rounded-card border-2 p-4 no-underline',
+    'flex items-center gap-3 rounded-card border-2 p-5 no-underline',
     indicador.dinheiro ? 'bg-zone-money' : 'bg-modulo',
   )
 
@@ -116,7 +120,12 @@ export function Indicadores() {
 
   if (query.isPending) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      // `auto-fit`/`minmax(208px,1fr)`, nunca `@media` (§@casca-global — regra
+      // de quebra): a fileira espreme antes de quebrar, e quebra sozinha quando
+      // o espaço não cabe mais um cartão de 208px — sem depender de breakpoint
+      // fixo, que erra assim que a gaveta de notificações abre e encolhe o
+      // `<main>`.
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(208px,1fr))] gap-5.5">
         {['k1', 'k2', 'k3', 'k4'].map((chave) => (
           <Skeleton key={chave} className="h-[104px] w-full" />
         ))}
@@ -184,7 +193,12 @@ export function Indicadores() {
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    // `auto-fit`/`minmax(208px,1fr)`, nunca `@media` (§@casca-global — regra
+    // de quebra): a fileira espreme antes de quebrar, e quebra sozinha quando
+    // o espaço não cabe mais um cartão de 208px — sem depender de breakpoint
+    // fixo, que erra assim que a gaveta de notificações abre e encolhe o
+    // `<main>`.
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(208px,1fr))] gap-5.5">
       {indicadores.map((indicador) => (
         <Cartao key={indicador.rotulo} indicador={indicador} />
       ))}

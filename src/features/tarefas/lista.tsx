@@ -1,3 +1,4 @@
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -10,7 +11,6 @@ import {
 import { COLUNAS, useTarefas } from '@/data/dashboard-api'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { FalhaDoPainel } from './falha'
 import { Prioridade } from './prioridade'
 
 /**

@@ -1,5 +1,5 @@
 import { type FetchStub, renderRoute, respostaSessao } from '@/test/utils'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -72,9 +72,11 @@ describe('TrocarSenha', () => {
 
     await preencherETrocar(user)
 
-    // Mesmo destino do login: o Dashboard. Asserção pelo botão, não pelo
-    // título — o título é a saudação e muda com a hora.
-    expect(await screen.findByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+    // Mesmo destino do login: o Dashboard. Asserção pelo `data-slot` do
+    // cabeçalho, não pelo título — o título é a saudação e muda com a hora.
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="dashboard-header"]')).not.toBeNull(),
+    )
     expect(router.state.location.pathname).toBe('/dashboard')
 
     const troca = chamadas.find((c) => c.caminho === '/auth/change-password')
@@ -129,7 +131,9 @@ describe('TrocarSenha', () => {
 
     await preencherETrocar(user)
 
-    expect(await screen.findByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="dashboard-header"]')).not.toBeNull(),
+    )
     expect(router.state.location.pathname).toBe('/dashboard')
   })
 

@@ -256,4 +256,78 @@ describe('AppShell', () => {
     expect(frame).toBeInTheDocument()
     expect(frame).toContainElement(screen.getByRole('heading', { name: 'Boletim' }))
   })
+
+  // APPBAR GLOBAL (§@casca-global): vive no LAYOUT, não na página — o mesmo
+  // teste em duas rotas sem módulo em comum é o que prova isso, em vez de só
+  // conferir numa tela só.
+  describe('appbar global', () => {
+    it('aparece em toda rota, com busca, engrenagem desabilitada e sino', async () => {
+      for (const rota of ['/', '/cadastros/clientes']) {
+        const { unmount } = setup(rota)
+        await waitFor(() => {
+          expect(document.querySelector('[data-slot="appbar"]')).toBeInTheDocument()
+        })
+        expect(screen.getByLabelText('Pesquisar')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Configurações' })).toBeDisabled()
+        expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+        unmount()
+      }
+    })
+
+    it('o sino abre a gaveta, que EMPURRA — sem fixed, sem véu', async () => {
+      setup()
+      const user = userEvent.setup()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+      })
+
+      const gaveta = () => document.querySelector('[data-slot="gaveta-notificacoes"]')
+      expect(gaveta()).toHaveAttribute('data-aberta', 'false')
+
+      await user.click(screen.getByRole('button', { name: /Notificações/ }))
+
+      expect(gaveta()).toHaveAttribute('data-aberta', 'true')
+      // Coluna flex de verdade, não overlay: nunca `fixed`.
+      expect(getComputedStyle(gaveta() as Element).position).not.toBe('fixed')
+      expect(await screen.findByText('Notificações')).toBeInTheDocument()
+
+      // X fecha.
+      await user.click(screen.getByRole('button', { name: 'Fechar notificações' }))
+      expect(gaveta()).toHaveAttribute('data-aberta', 'false')
+    })
+
+    it('Esc fecha a gaveta', async () => {
+      setup()
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: /Notificações/ }))
+      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toHaveAttribute(
+        'data-aberta',
+        'true',
+      )
+
+      await user.keyboard('{Escape}')
+
+      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toHaveAttribute(
+        'data-aberta',
+        'false',
+      )
+    })
+
+    it('o badge conta as não lidas, e marcar como lida abate o contador', async () => {
+      setup()
+      const user = userEvent.setup()
+      // Dado de mock (`src/mocks/notificacoes.ts`): 3 de 4 nascem não lidas.
+      expect(
+        await screen.findByRole('button', { name: 'Notificações, 3 não lidas' }),
+      ).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /Notificações/ }))
+      const primeiraNaoLida = screen.getAllByRole('button', { name: 'Marcar como lida' })[0]
+      await user.click(primeiraNaoLida as HTMLElement)
+
+      expect(
+        await screen.findByRole('button', { name: 'Notificações, 2 não lidas' }),
+      ).toBeInTheDocument()
+    })
+  })
 })

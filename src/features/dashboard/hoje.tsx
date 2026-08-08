@@ -1,4 +1,6 @@
 import type { AgendaEventDto } from '@/api/gerado'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { Painel } from '@/components/cabinet/painel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,8 +18,6 @@ import {
 import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
-import { FalhaDoPainel } from './falha'
-import { Painel } from './painel'
 import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-evento'
 
 /**
@@ -95,10 +95,14 @@ function Calendario({
   const celulas = gradeDoMes(mes)
 
   return (
+    // `flex-[0_1_300px]`: encolhe (`shrink`) antes dos outros dois, mas nunca
+    // CRESCE (`grow:0`) além de 300px — é o painel mais estreito da fileira, e
+    // o mockup não quer que ele vire o mais largo só porque sobrou espaço.
     <Painel
       titulo={nomeDoMes(mes)}
       modulo="estoque"
       acao={<NavegacaoDoMes mes={mes} aoTrocarMes={aoTrocarMes} />}
+      className="min-w-0 flex-[0_1_300px]"
     >
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {DIAS_DA_SEMANA.map((dia) => (
@@ -118,8 +122,9 @@ function Calendario({
             <div
               key={celula.iso}
               // Célula do calendário é ITEM: canto reto, encostada na vizinha.
+              // `py-2` (8px) é o respiro do Dashboard (§@casca-global).
               className={cn(
-                'flex min-h-8 flex-col items-center justify-center gap-0.5 rounded-item py-1 text-sm tabular-nums',
+                'flex min-h-8 flex-col items-center justify-center gap-0.5 rounded-item py-2 text-sm tabular-nums',
                 celula.deFora && 'text-muted-foreground opacity-60',
                 // Hoje é o único estado FORTE da grade — violeta é a cor do que
                 // está ativo no sistema (§Acentos).
@@ -144,7 +149,9 @@ function Calendario({
       {carregando ? (
         <Skeleton className="h-4 w-full" />
       ) : (
-        <ul className="grid grid-cols-2 gap-1 border-t pt-3">
+        // `gap-2.75` (11px) e `pt-4.5` (18px): respiro do Dashboard
+        // (§@casca-global).
+        <ul className="grid grid-cols-2 gap-2.75 border-t pt-4.5">
           {TIPOS_NA_ORDEM.map((kind) => (
             <li key={kind} className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <MarcaDeTipo kind={kind} className="size-2.5" />
@@ -161,7 +168,14 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
   const doDia = eventosDoDia(eventos, diaLocalISO())
 
   return (
-    <Painel titulo="Agenda de hoje" modulo="compras" acao={<Contador n={doDia.length} />}>
+    // `flex-[1_1_330px]`: cresce e encolhe a partir de 330px, igual ao painel
+    // de pendentes — os dois dividem o espaço que sobra depois do calendário.
+    <Painel
+      titulo="Agenda de hoje"
+      modulo="compras"
+      acao={<Contador n={doDia.length} />}
+      className="min-w-0 flex-[1_1_330px]"
+    >
       {carregando ? (
         <div className="flex flex-col gap-2">
           {['a1', 'a2', 'a3'].map((chave) => (
@@ -173,7 +187,9 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
           Nenhum compromisso para hoje.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        // `gap-3.5` entre linhas e `p-3.5` dentro de cada uma (14px): respiro
+        // do Dashboard (§@casca-global).
+        <ul className="flex flex-col gap-3.5">
           {doDia.map((evento) => {
             const tipo = TIPOS[evento.kind]
             return (
@@ -186,7 +202,7 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
                 // a legenda do calendário ensina.
                 {...(tipo.modulo && { 'data-modulo': tipo.modulo })}
                 className={cn(
-                  'flex items-center gap-3 rounded-card border-2 p-2',
+                  'flex items-center gap-3 rounded-card border-2 p-3.5',
                   tipo.modulo ? 'bg-modulo' : 'bg-zone-money',
                 )}
               >
@@ -218,7 +234,13 @@ function AFazer() {
   const pendentes = itens.filter((item) => !item.done).length
 
   return (
-    <Painel titulo="A fazer" tinta="warn" acao={<Contador n={pendentes} />}>
+    // `flex-[1_1_330px]`: mesma base da Agenda — os dois se ajustam juntos.
+    <Painel
+      titulo="A fazer"
+      tinta="warn"
+      acao={<Contador n={pendentes} />}
+      className="min-w-0 flex-[1_1_330px]"
+    >
       {query.isPending ? (
         <div className="flex flex-col gap-2">
           {['t1', 't2', 't3'].map((chave) => (
@@ -239,7 +261,8 @@ function AFazer() {
             // Divisória TRACEJADA (mockup): dentro de um painel de pendência a
             // régua cheia lia como separador de seção. Tracejada é a mesma
             // separação com menos voz.
-            <li key={item.id} className="border-b border-dashed py-1.5 last:border-b-0">
+            // `py-3.5` (14px): respiro do Dashboard (§@casca-global).
+            <li key={item.id} className="border-b border-dashed py-3.5 last:border-b-0">
               {/* O rótulo é o próprio texto do item: clicar na frase marca, que
                   é o alvo que o dedo e o mouse procuram. */}
               <Checkbox
@@ -279,7 +302,14 @@ export function LinhaDeHoje() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(260px,320px)_1fr_1fr]">
+    // `flex flex-wrap`, nunca `@media` (§@casca-global — regra de quebra):
+    // os três painéis espremem primeiro, dentro dos limites de `flex-basis` de
+    // cada um, e só quebram pra baixo quando nem espremendo cabem mais — o que
+    // acontece antes com a gaveta de notificações aberta do que sem ela, e o
+    // grid de breakpoint fixo (`lg:`) não sabia disso.
+    // `gap-5.5` (22px): respiro do Dashboard (§@casca-global) — o mesmo salto
+    // que a fileira de KPIs recebeu.
+    <div className="flex flex-wrap gap-5.5">
       <Calendario mes={mes} aoTrocarMes={setMes} eventos={eventos} carregando={agenda.isPending} />
       <Agenda eventos={eventos} carregando={agenda.isPending} />
       <AFazer />

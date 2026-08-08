@@ -16,6 +16,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
@@ -72,6 +73,11 @@ const LoginRoute = LoginRouteImport.update({
 const PlannerRoute = PlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TarefasRoute = TarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrocarSenhaRoute = TrocarSenhaRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
+  '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
   '/cadastros/': typeof CadastrosIndexRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
+  '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
+  '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
   '/cadastros/': typeof CadastrosIndexRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
     | '/estoque'
     | '/login'
     | '/planner'
+    | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
     | '/cadastros/'
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/planner'
+    | '/tarefas'
     | '/trocar-senha'
     | '/cadastros'
     | '/compras'
@@ -352,6 +363,7 @@ export interface FileRouteTypes {
     | '/estoque'
     | '/login'
     | '/planner'
+    | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
     | '/cadastros/'
@@ -384,6 +396,7 @@ export interface RootRouteChildren {
   EstoqueRoute: typeof EstoqueRouteWithChildren
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRoute
+  TarefasRoute: typeof TarefasRoute
   TrocarSenhaRoute: typeof TrocarSenhaRoute
   VendasRoute: typeof VendasRouteWithChildren
 }
@@ -437,6 +450,13 @@ declare module '@tanstack/react-router' {
       path: '/planner'
       fullPath: '/planner'
       preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tarefas': {
+      id: '/tarefas'
+      path: '/tarefas'
+      fullPath: '/tarefas'
+      preLoaderRoute: typeof TarefasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/trocar-senha': {
@@ -684,6 +704,7 @@ const rootRouteChildren: RootRouteChildren = {
   EstoqueRoute: EstoqueRouteWithChildren,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRoute,
+  TarefasRoute: TarefasRoute,
   TrocarSenhaRoute: TrocarSenhaRoute,
   VendasRoute: VendasRouteWithChildren,
 }

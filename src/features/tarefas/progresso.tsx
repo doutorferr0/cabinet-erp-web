@@ -1,7 +1,7 @@
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { Barra, Painel } from '@/components/cabinet/painel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cargaPorPessoa, progressoDoQuadro, useTarefas } from '@/data/dashboard-api'
-import { FalhaDoPainel } from './falha'
-import { Barra, Painel } from './painel'
 
 /**
  * PROGRESSO DO QUADRO e CARGA POR PESSOA.

@@ -161,6 +161,23 @@ describe('tela Dashboard', () => {
     ).toBeInTheDocument()
   })
 
+  it('a cor da coluna vem da SITUAÇÃO, nunca de um módulo emprestado', async () => {
+    // O mockup de cores pinta as colunas com pastéis de módulo. O preenchimento
+    // entra; a fonte da cor não — coluna roxa de Vendas diria que `Em revisão`
+    // pertence àquele cadastro. As quatro leem zona de estado, e nenhuma delas
+    // declara `data-modulo`.
+    const { stub } = servidor()
+    renderRoute('/dashboard', stub)
+
+    const colunaDone = (await screen.findByText('Concluído')).closest('[data-slot="coluna"]')
+    expect(colunaDone).toHaveClass('bg-zone-money')
+
+    for (const status of ['todo', 'doing', 'review', 'done']) {
+      const coluna = document.querySelector(`[data-slot="coluna"][data-status="${status}"]`)
+      expect(coluna).not.toHaveAttribute('data-modulo')
+    }
+  })
+
   it('mover de coluna é um PATCH com só o status — a interação é por CLIQUE', async () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/dashboard', stub)

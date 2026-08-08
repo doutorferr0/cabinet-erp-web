@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -466,11 +467,23 @@ function SidebarMenuButton({
   variant = 'default',
   size = 'default',
   tooltip,
+  hoverCard,
   className,
   ...props
 }: SidebarButtonProps & {
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof Tooltip>
+  /**
+   * Cartão de hover do item — o que a tela FAZ (§Regra da explicação no hover).
+   *
+   * SUBSTITUI o `tooltip` quando presente, nos dois estados da barra, e isso
+   * é seguro porque o cartão carrega o NOME da tela junto da explicação. A
+   * versão anterior desta prop mostrava as telas IRMÃS e não o nome do
+   * próprio item: no estado de ícone ela apagava a única identificação que
+   * havia. Cartão que substitui dica tem de dizer, no mínimo, o que a dica
+   * dizia.
+   */
+  hoverCard?: React.ReactNode
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
   const shared = {
@@ -499,6 +512,16 @@ function SidebarMenuButton({
     ) : (
       <ButtonPrimitive {...shared} {...(props as ButtonProps)} />
     )
+
+  // O cartão vem antes da dica: onde há cartão, a dica não aparece.
+  if (hoverCard) {
+    return (
+      <HoverCard>
+        <HoverCardTrigger>{comp}</HoverCardTrigger>
+        <HoverCardContent placement="right top">{hoverCard}</HoverCardContent>
+      </HoverCard>
+    )
+  }
 
   if (!tooltip) {
     return comp

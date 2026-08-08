@@ -1,10 +1,13 @@
 import { type Modulo, moduloDaRota } from '@/app/modulo'
 import brutalist011 from '@/assets/brutalist/brutalist-011.svg?url'
+import brutalist014 from '@/assets/brutalist/brutalist-014.svg?url'
 import brutalist022 from '@/assets/brutalist/brutalist-022.svg?url'
 import brutalist029 from '@/assets/brutalist/brutalist-029.svg?url'
 import brutalist064 from '@/assets/brutalist/brutalist-064.svg?url'
 import brutalist072 from '@/assets/brutalist/brutalist-072.svg?url'
 import brutalist097 from '@/assets/brutalist/brutalist-097.svg?url'
+import shape101 from '@/assets/brutalist/brutalist-shape-101.svg?url'
+import shape120 from '@/assets/brutalist/brutalist-shape-120.svg?url'
 import shape128 from '@/assets/brutalist/brutalist-shape-128.svg?url'
 import shape133 from '@/assets/brutalist/brutalist-shape-133.svg?url'
 import shape135 from '@/assets/brutalist/brutalist-shape-135.svg?url'
@@ -113,6 +116,31 @@ const SHAPE_DE_ESTADO = {
 export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO
 
 /**
+ * Shapes de LUGAR sem módulo — as três telas que a tabela de cor não cobre.
+ *
+ * A tabela de shape×cor travada pelo user cobre oito módulos, e Dashboard,
+ * Planner e Colaboradores não estão nela. Ficavam com ícone lucide cinza no meio
+ * de uma fileira colorida, e a memória registrava isso como decisão pendente do
+ * user desde a PR #45 — a alternativa que eu me proibia era inventar a nona cor.
+ *
+ * **`mockup-dashboard-cores.html` resolveu sem cor nova:** os três EMPRESTAM o
+ * par de um módulo vizinho (Dashboard e Planner ficam com o coral do Boletim,
+ * Colaboradores com o par de Clientes) e se distinguem pelo DESENHO. Por isso os
+ * shapes moram aqui e não em `SHAPE_DO_MODULO`: a chave é o lugar, e a cor vem
+ * de fora, do `[data-modulo]` que a entrada do menu declara.
+ *
+ * Sem isto, os três teriam de compartilhar o desenho de quem empresta a cor —
+ * três anéis concêntricos idênticos na sidebar, e a fileira deixaria de ser mapa.
+ */
+const SHAPE_DE_LUGAR = {
+  dashboard: brutalist014, // quatro pontas convergindo — o painel que reúne
+  planner: shape120, // faixas paralelas deitadas = a linha do tempo
+  colaboradores: shape101, // corpo dentro de moldura = pessoa de dentro da casa
+} as const
+
+export type ShapeDeLugar = keyof typeof SHAPE_DE_LUGAR
+
+/**
  * O tom é o PAPEL da cor, não a cor. `modulo`/`modulo-suave` leem o par que o
  * `[data-modulo]` do ancestral definiu — por isso o mesmo componente pinta de
  * cyan em Produtos e de coral no Boletim sem receber cor nenhuma.
@@ -162,8 +190,8 @@ const TONS = {
 export type TomDeOrnamento = keyof typeof TONS
 
 export interface OrnamentoProps {
-  /** Módulo (usa o shape fixo dele) ou um shape de estado. */
-  shape: Modulo | ShapeDeEstado
+  /** Módulo (usa o shape fixo dele), um shape de estado ou um lugar sem módulo. */
+  shape: Modulo | ShapeDeEstado | ShapeDeLugar
   tom: TomDeOrnamento
   /**
    * Lado em px. A escala segue o PAPEL: 12–20 no de ícone (migalha, item de
@@ -218,7 +246,9 @@ export function Ornamento({ shape, tom, tamanho, className }: OrnamentoProps) {
   const url =
     shape in SHAPE_DE_ESTADO
       ? SHAPE_DE_ESTADO[shape as ShapeDeEstado]
-      : SHAPE_DO_MODULO[shape as Modulo]
+      : shape in SHAPE_DE_LUGAR
+        ? SHAPE_DE_LUGAR[shape as ShapeDeLugar]
+        : SHAPE_DO_MODULO[shape as Modulo]
 
   return (
     <span

@@ -95,6 +95,44 @@ describe('AppShell', () => {
     expect(acesos[0]).toHaveTextContent('Fornecedores')
   })
 
+  it('tela sem módulo próprio empresta a cor do vizinho e leva desenho seu', async () => {
+    // Dashboard, Planner e Colaboradores estão fora da tabela de shape×cor
+    // travada pelo user. Antes saíam em lucide cinza no meio de uma fileira
+    // colorida; `mockup-dashboard-cores.html` resolveu sem inventar cor nova.
+    setup()
+    await waitFor(() => {
+      expect(screen.getByText('Planner')).toBeInTheDocument()
+    })
+
+    // Busca pela URL, não pelo texto: `Dashboard` nomeia o GRUPO e o item, e
+    // `getByText` acharia os dois. Colaboradores não entra aqui porque a
+    // empresa padrão do teste não opera o recurso — a atribuição dele está
+    // travada em `navigation.test.ts`, sobre o dado.
+    const esperado: Array<[string, string, string]> = [
+      ['/dashboard', 'boletim', 'dashboard'],
+      ['/planner', 'boletim', 'planner'],
+    ]
+
+    for (const [url, modulo, shape] of esperado) {
+      const item = document.querySelector(`a[href="${url}"]`)?.closest('[data-sidebar="menu-item"]')
+      // A cor emprestada vale para o ITEM e para no item: `moduloDaRota`
+      // continua sem conhecer essas rotas, senão a folha inteira seria tingida.
+      expect(item).toHaveAttribute('data-modulo', modulo)
+      expect(item?.querySelector('[data-slot="ornamento"]')).toHaveAttribute('data-shape', shape)
+    }
+
+    // Quem empresta a cor mantém o PRÓPRIO desenho: três shapes iguais em
+    // coral fariam a fileira deixar de ser mapa. O Boletim também prova que a
+    // entrada solta no topo entrou na fileira colorida — ela ficava de fora do
+    // laço dos grupos e caía num lucide cinza.
+    const boletim = document.querySelector('a[href="/"]')?.closest('[data-sidebar="menu-item"]')
+    expect(boletim).toHaveAttribute('data-modulo', 'boletim')
+    expect(boletim?.querySelector('[data-slot="ornamento"]')).toHaveAttribute(
+      'data-shape',
+      'boletim',
+    )
+  })
+
   // Marca e empresa ativa agora dividem o CABEÇALHO, em linhas distintas
   // (decisão do user, 2026-08-07 — revoga o rodapé). O teto de densidade segue
   // valendo: o que ele proíbe é dois ornamentos disputando a mesma leitura, não

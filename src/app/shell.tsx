@@ -25,7 +25,6 @@ import {
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard } from 'lucide-react'
 
 /**
  * O que o cartão de hover mostra ao pousar no RÓTULO de um grupo: as telas
@@ -112,10 +111,19 @@ function AppSidebar() {
             Casamento exato — `/` é prefixo de tudo, `startsWith` acenderia sempre. */}
         <SidebarGroup className="group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-2">
           <SidebarMenu>
-            <SidebarMenuItem>
+            {/* Boletim É módulo na tabela de cor (coral), mas ficava de fora
+                da fileira colorida por acidente de montagem: por morar neste
+                grupo à parte, não passava pelo `moduloDaRota` do laço abaixo e
+                caía num lucide cinza. Era o único item com shape atribuído que
+                não o mostrava — e logo o primeiro da barra. */}
+            <SidebarMenuItem data-modulo="boletim">
               <SidebarMenuButton asChild isActive={pathname === '/'} tooltip="Boletim">
                 <Link to="/">
-                  <LayoutDashboard />
+                  <Ornamento
+                    shape="boletim"
+                    tom={pathname === '/' ? 'modulo-suave' : 'modulo'}
+                    tamanho={colapsada ? 22 : 18}
+                  />
                   <span>Boletim</span>
                 </Link>
               </SidebarMenuButton>
@@ -162,7 +170,13 @@ function AppSidebar() {
                 // Cada item carrega a cor do SEU módulo, não a da tela no ar:
                 // é o que faz a fileira inteira ficar legível como um mapa de
                 // cores, e não só o item aceso (memória §@ornamentos).
-                const moduloDoItem = moduloDaRota(item.url)
+                //
+                // Tela fora da tabela de cor (Dashboard, Planner,
+                // Colaboradores) traz a atribuição na própria entrada do menu:
+                // empresta o par de um vizinho e leva desenho próprio. Sem
+                // isso, três itens saíam em lucide cinza no meio da fileira.
+                const moduloDoItem = moduloDaRota(item.url) ?? item.aparencia?.modulo
+                const shapeDoItem = moduloDaRota(item.url) ?? item.aparencia?.shape
                 return (
                   <SidebarMenuItem
                     key={item.url}
@@ -181,9 +195,9 @@ function AppSidebar() {
                             sumiria — nele o ornamento vai de pastel /02. As
                             duas regras (memória §@ornamentos e §3b) só coexistem
                             assim, e a família da cor é a mesma nos dois casos. */}
-                        {moduloDoItem ? (
+                        {shapeDoItem ? (
                           <Ornamento
-                            shape={moduloDoItem}
+                            shape={shapeDoItem}
                             tom={active ? 'modulo-suave' : 'modulo'}
                             tamanho={colapsada ? 22 : 18}
                           />

@@ -2,111 +2,157 @@ import { Ornamento } from '@/components/cabinet/ornamento'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+function pecaDe(container: HTMLElement) {
+  return container.querySelector('[data-slot="ornamento"]') as SVGSVGElement
+}
+
+/** A camada de TRAÇO: desenhada primeiro, atrás. */
+function primeiroPath(container: HTMLElement) {
+  return container.querySelector('[data-slot="ornamento"] path[fill="none"]') as SVGPathElement
+}
+
+/** A camada de COR: desenhada depois, por cima do traço. */
+function pathDeCor(container: HTMLElement) {
+  return container.querySelector(
+    '[data-slot="ornamento"] path[fill="currentColor"]',
+  ) as SVGPathElement
+}
+
 describe('Ornamento', () => {
   it('é decoração — não entra na árvore de acessibilidade', () => {
     const { container } = render(<Ornamento shape="produtos" tom="modulo" tamanho={128} />)
-    const peca = container.querySelector('[data-slot="ornamento"]')
-    expect(peca).toHaveAttribute('aria-hidden', 'true')
+    expect(pecaDe(container)).toHaveAttribute('aria-hidden', 'true')
     // Nada de texto: quem explica o estado é a frase ao lado.
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('recolore por MÁSCARA — o `fill` do SVG nunca é tocado', () => {
-    const { container } = render(<Ornamento shape="clientes" tom="modulo" tamanho={24} />)
-    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
-    // A forma entra como RECORTE e a cor vem da classe de token. O SVG chega
-    // intacto — `fill="white"` preservado, que é a prova de que ninguém editou
-    // o arquivo à mão: editar o fill quebraria as máscaras internas do Figma.
-    // (Vem como data URI: o Vite inlineia asset pequeno em vez de servir arquivo.)
-    expect(peca.style.maskImage).toMatch(/^url\(/)
-    // Aspas simples: ao inlinear, o Vite troca `"` por `'` para caber na URL.
-    expect(decodeURIComponent(peca.style.maskImage)).toMatch(/fill=['"]white['"]/)
-    expect(peca).toHaveClass('bg-modulo-cheia')
+  it('desenha INLINE e mantém todos os subcaminhos do arquivo', () => {
+    // O empilhamento de camadas do Estoque são 4 elipses. Com máscara elas
+    // viravam uma silhueta só; inline, cada uma é um `path` e o traço passa a
+    // separá-las — é metade do motivo de a técnica ter mudado.
+    const { container } = render(<Ornamento shape="estoque" tom="modulo" tamanho={128} />)
+    expect(pecaDe(container).tagName.toLowerCase()).toBe('svg')
+    // 4 elipses × 2 camadas (traço atrás, cor por cima) = 8 caminhos.
+    expect(container.querySelectorAll('[data-slot="ornamento"] path[fill="none"]')).toHaveLength(4)
+    expect(
+      container.querySelectorAll('[data-slot="ornamento"] path[fill="currentColor"]'),
+    ).toHaveLength(4)
   })
 
-  // Guarda de uma falha que ficou VERDE por semanas e apagou o ornamento no
-  // app inteiro: o data URI do Vite traz aspas SIMPLES (`xmlns='...'`), e um
-  // `url()` sem aspas não pode conter aspas — o browser considera a declaração
-  // inválida e a descarta, sobrando o `background-color` a pintar o retângulo.
-  // O jsdom aceita a forma inválida, então só asserção sobre a STRING pega.
-  it('a URL da máscara vai entre aspas — sem elas o browser descarta', () => {
-    const { container } = render(<Ornamento shape="fornecedores" tom="modulo" tamanho={16} />)
-    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
-    expect(peca.style.maskImage.startsWith('url("')).toBe(true)
-    // E a razão de precisarem existir: há aspas simples cruas dentro da URL.
-    expect(peca.style.maskImage).toContain("'")
+  // Guarda do defeito que só apareceu ao RASTERIZAR, com a suíte verde: traço é
+  // centrado na borda, então metade dele invade a forma. Num shape de LINHA (o
+  // galpão dos Fornecedores, os anéis do Boletim) a faixa pintada tem ~1,5px na
+  // tela e um traço de 3,5px a engole — o desenho fica preto e a cor some.
+  // Desenhar o traço ATRÁS e a cor POR CIMA esconde a metade de dentro.
+  it('o traço vai ATRÁS da cor — senão ele engole o shape de linha', () => {
+    const { container } = render(<Ornamento shape="boletim" tom="modulo" tamanho={128} />)
+    const caminhos = [...container.querySelectorAll('[data-slot="ornamento"] path')]
+    const primeiroDeCor = caminhos.findIndex((p) => p.getAttribute('fill') === 'currentColor')
+    const ultimoDeTraco = caminhos.map((p) => p.getAttribute('fill')).lastIndexOf('none')
+    expect(ultimoDeTraco).toBeLessThan(primeiroDeCor)
+  })
+
+  it('todo shape sai contornado, em qualquer tamanho', () => {
+    for (const tamanho of [16, 24, 128]) {
+      const { container } = render(<Ornamento shape="clientes" tom="modulo" tamanho={tamanho} />)
+      const path = primeiroPath(container)
+      expect(path).toHaveAttribute('stroke', 'hsl(var(--foreground))')
+      expect(Number(path.getAttribute('stroke-width'))).toBeGreaterThan(0)
+    }
+  })
+
+  // Guarda de um defeito que seria MUDO: com o traço em unidade de `viewBox`,
+  // 1,1 num `viewBox` de ~250 renderiza a 0,08px e o contorno simplesmente não
+  // aparece — sem erro, sem teste vermelho, sem nada no console.
+  it('o traço é px de TELA — sem isso ele some no viewBox de 250 unidades', () => {
+    const { container } = render(<Ornamento shape="produtos" tom="modulo" tamanho={16} />)
+    expect(primeiroPath(container)).toHaveAttribute('vector-effect', 'non-scaling-stroke')
+  })
+
+  it('o traço afina conforme o shape encolhe', () => {
+    const { container: g } = render(<Ornamento shape="produtos" tom="modulo" tamanho={128} />)
+    const { container: p } = render(<Ornamento shape="produtos" tom="modulo" tamanho={16} />)
+    const grosso = Number(primeiroPath(g).getAttribute('stroke-width'))
+    const fino = Number(primeiroPath(p).getAttribute('stroke-width'))
+    expect(grosso).toBeGreaterThan(fino)
+  })
+
+  // O `viewBox` do Figma vem colado na forma; o traço é centrado na borda do
+  // caminho, então sem folga metade dele é recortada e o contorno aparece
+  // comido de um lado. Também é defeito mudo.
+  it('o viewBox ganha folga, senão o contorno é recortado pela borda', () => {
+    const { container } = render(<Ornamento shape="produtos" tom="modulo" tamanho={128} />)
+    const [, , largura] = (pecaDe(container).getAttribute('viewBox') ?? '').split(' ').map(Number)
+    // O arquivo do shape-159 tem 243.7 de largura; com 12% de folga de cada
+    // lado, o desenhado tem de ser maior que o original.
+    expect(largura).toBeGreaterThan(243.7)
+  })
+
+  it('shape CHEIO ganha peso; shape VAZADO não', () => {
+    // Produtos (94,7% de cobertura) é massa: o peso dá volume.
+    const { container: cheio } = render(<Ornamento shape="produtos" tom="modulo" tamanho={128} />)
+    expect(pecaDe(cheio)).toHaveAttribute('data-peso', 'sim')
+    expect(pecaDe(cheio).style.filter).toContain('drop-shadow')
+
+    // Fornecedores é o galpão em contorno fino (5,0%) e o Boletim são cinco
+    // anéis concêntricos (12,5%): neles o deslocamento FECHA os vãos e o
+    // desenho vira mancha. Por isso a regra é medida, não escolhida no olho.
+    for (const vazado of ['fornecedores', 'boletim'] as const) {
+      const { container } = render(<Ornamento shape={vazado} tom="modulo" tamanho={128} />)
+      expect(pecaDe(container)).toHaveAttribute('data-peso', 'nao')
+      expect(pecaDe(container).style.filter).toBe('')
+    }
+  })
+
+  // Preto literal sumiria na bancada escura — é a mesma família do `text-white`
+  // que a fase 3 pagou. Traço e peso saem do token que VIRA com o tema.
+  it('traço e peso saem de TOKEN, nunca de literal', () => {
+    const { container } = render(<Ornamento shape="produtos" tom="modulo" tamanho={128} />)
+    expect(pecaDe(container).style.filter).toContain('hsl(var(--foreground))')
+    expect(primeiroPath(container).getAttribute('stroke')).not.toMatch(/#|black|rgb/)
   })
 
   it('cada módulo tem o SEU shape, sempre o mesmo', () => {
     const { container: a } = render(<Ornamento shape="produtos" tom="modulo" tamanho={18} />)
     const { container: b } = render(<Ornamento shape="estoque" tom="modulo" tamanho={18} />)
-    const shapeA = (a.querySelector('[data-slot="ornamento"]') as HTMLElement).style.maskImage
-    const shapeB = (b.querySelector('[data-slot="ornamento"]') as HTMLElement).style.maskImage
-    expect(shapeA).not.toBe(shapeB)
+    expect(primeiroPath(a).getAttribute('d')).not.toBe(primeiroPath(b).getAttribute('d'))
   })
 
   it('estado de sistema não usa a cor do módulo', () => {
     const { container } = render(<Ornamento shape="busca-vazia" tom="info" tamanho={96} />)
-    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
     // Vazio de BUSCA não é módulo vazio: mesma tela, significados diferentes.
-    expect(peca).toHaveClass('bg-info')
-    expect(peca).not.toHaveClass('bg-modulo-cheia')
+    expect(pecaDe(container)).toHaveClass('text-info')
+    expect(pecaDe(container)).not.toHaveClass('text-modulo')
   })
 
   it('no papel de ÍCONE a cor é herdada, não escolhida', () => {
     const { container } = render(<Ornamento shape="fornecedores" tom="icone" tamanho={16} />)
-    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
-    // `bg-current` = `background-color: currentColor`: o shape segue o `color`
-    // do container. É o que permite hover/ativo/desabilitado mexerem numa cor
-    // só — sem isto, cada estado precisaria repintar o ornamento à parte.
-    expect(peca).toHaveClass('bg-current')
-    // E não pode sobrar token FIXO no caminho de ícone: um `bg-*` de token
+    // O `path` preenche com `currentColor` e o componente NÃO põe classe de
+    // cor: o shape segue o `color` do container. É o que permite hover, ativo e
+    // desabilitado mexerem numa cor só — sem isto, cada estado precisaria
+    // repintar o ornamento à parte.
+    expect(pathDeCor(container)).toHaveAttribute('fill', 'currentColor')
+    // E não pode sobrar token FIXO no caminho de ícone: uma classe de cor
     // venceria a herança em silêncio e o defeito só apareceria no hover.
-    for (const fixo of ['bg-modulo-cheia', 'bg-modulo', 'bg-info', 'bg-destructive']) {
-      expect(peca).not.toHaveClass(fixo)
+    for (const fixo of ['text-modulo', 'text-modulo-suave', 'text-info', 'text-destructive']) {
+      expect(pecaDe(container)).not.toHaveClass(fixo)
     }
-    // Nem `background-color` inline, que venceria a classe pela especificidade.
-    expect(peca.style.backgroundColor).toBe('')
   })
 
   it('ícone e decoração são o MESMO desenho — muda a cor, não a técnica', () => {
     const { container: dec } = render(<Ornamento shape="vendas" tom="modulo" tamanho={24} />)
     const { container: ico } = render(<Ornamento shape="vendas" tom="icone" tamanho={14} />)
-    const decoracao = dec.querySelector('[data-slot="ornamento"]') as HTMLElement
-    const icone = ico.querySelector('[data-slot="ornamento"]') as HTMLElement
-    // Mesma máscara: o papel de ícone não trocou `mask-image` por `fill`, que é
-    // a proposta descartada em §@ornamentos — o ganho seria bicolor, que
-    // ninguém pediu, e o custo seria inline/svgr para os 320 shapes.
-    expect(icone.style.maskImage).toBe(decoracao.style.maskImage)
-    expect(icone.style.maskImage).toMatch(/^url\(/)
+    expect(primeiroPath(ico).getAttribute('d')).toBe(primeiroPath(dec).getAttribute('d'))
+    // O que separa os dois é só de onde vem a cor.
+    expect(pecaDe(dec)).toHaveClass('text-modulo')
+    expect(pecaDe(ico)).not.toHaveClass('text-modulo')
   })
 
-  it('a empresa ativa tem cor FIXA — não a do módulo', () => {
-    const { container } = render(<Ornamento shape="empresa" tom="empresa" tamanho={16} />)
-    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
-    // O rodapé responde "de qual empresa é o que estou vendo", e a resposta não
-    // muda de tela para tela. Ler o par do `[data-modulo]` faria a marca da
-    // empresa trocar de cor a cada navegação.
-    expect(peca).toHaveClass('bg-empresa')
-    expect(peca).not.toHaveClass('bg-modulo-cheia')
-    expect(peca).not.toHaveClass('bg-modulo')
-  })
-
-  it('emblema e marca são desenhos DIFERENTES', () => {
-    const { container: a } = render(<Ornamento shape="emblema" tom="marca" tamanho={28} />)
-    const { container: b } = render(<Ornamento shape="marca" tom="marca" tamanho={128} />)
-    const emblema = (a.querySelector('[data-slot="ornamento"]') as HTMLElement).style.maskImage
-    const marca = (b.querySelector('[data-slot="ornamento"]') as HTMLElement).style.maskImage
-    // `emblema` é o selo que fica na sidebar as oito horas; `marca` é a
-    // composição de boas-vindas do login. Colapsar os dois numa chave só
-    // devolveria a estrela de meia tela para um canto de 28px.
-    expect(emblema).not.toBe(marca)
-  })
-
-  it('o tamanho é o da escala pedida, em px', () => {
-    const { container } = render(<Ornamento shape="boletim" tom="modulo" tamanho={24} />)
-    const peca = container.querySelector('[data-slot="ornamento"]') as HTMLElement
-    expect(peca.style.width).toBe('24px')
-    expect(peca.style.height).toBe('24px')
+  // Os furos do Figma (o miolo do losango do crachá, os anéis do Boletim) só
+  // existem com `evenodd`; no preenchimento padrão eles fecham e o desenho
+  // vira um bloco sólido.
+  it('preserva os furos da forma', () => {
+    const { container } = render(<Ornamento shape="profissionais" tom="modulo" tamanho={128} />)
+    expect(pathDeCor(container)).toHaveAttribute('fill-rule', 'evenodd')
   })
 })

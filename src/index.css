@@ -176,42 +176,42 @@
 }
 
 [data-modulo="produtos"] {
-  --modulo-01: 188 85% 53%; /* Cyan #22D2ED */
+  --modulo-01: 186 100% 50%; /* Cyan neon #00E5FF — era Cyan #22D2ED */
   --modulo-02: 185 92% 90%; /* #CEF9FD */
 }
 
 [data-modulo="estoque"] {
-  --modulo-01: 205 100% 69%; /* Maya blue #61BCFF */
+  --modulo-01: 206 100% 50%; /* Azure neon #0091FF — era Maya blue #61BCFF */
   --modulo-02: 205 100% 91%; /* #D1ECFF */
 }
 
 [data-modulo="vendas"] {
-  --modulo-01: 255 89% 76%; /* Purple mimosa #A68AF8 */
+  --modulo-01: 260 100% 62%; /* Violeta neon #7C3DFF — era Purple mimosa #A68AF8 */
   --modulo-02: 251 84% 95%; /* #ECE8FD */
 }
 
 [data-modulo="compras"] {
-  --modulo-01: 292 90% 72%; /* Violet #E779F8 */
+  --modulo-01: 330 100% 59%; /* Magenta neon #FF2D95 — era Violet #E779F8 */
   --modulo-02: 287 92% 95%; /* #F9E7FE */
 }
 
 [data-modulo="clientes"] {
-  --modulo-01: 252 100% 86%; /* Lavender blue #C7B9FF */
+  --modulo-01: 293 100% 56%; /* Fúcsia neon #E620FF — era Lavender blue #C7B9FF */
   --modulo-02: 268 100% 95%; /* #F0E3FF */
 }
 
 [data-modulo="fornecedores"] {
-  --modulo-01: 234 91% 74%; /* Soft blue #828DF9 */
+  --modulo-01: 231 99% 62%; /* Índigo neon #3D5AFE — era Soft blue #828DF9 */
   --modulo-02: 226 100% 94%; /* #E0E7FF */
 }
 
 [data-modulo="profissionais"] {
-  --modulo-01: 281 94% 74%; /* Easter purple #D47FFB */
+  --modulo-01: 278 100% 57%; /* Púrpura neon #B026FF — era Easter purple #D47FFB */
   --modulo-02: 279 100% 95%; /* #F7E8FF */
 }
 
 [data-modulo="boletim"] {
-  --modulo-01: 6 100% 73%; /* Fusion coral #FF8577 */
+  --modulo-01: 18 100% 59%; /* Laranja neon #FF6B2C — era Fusion coral #FF8577 */
   --modulo-02: 7 100% 93%; /* #FFDFDB */
 }
 
@@ -797,6 +797,9 @@
 
 @utility text-modulo {
   color: hsl(var(--modulo-01));
+}
+@utility text-modulo-suave {
+  color: hsl(var(--modulo-02));
 }
 
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).

@@ -8,11 +8,16 @@ import {
   TextField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
+import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { data } from '@/data'
 import { tabelas } from '@/data/tabelas'
+import type { Cidade } from '@/mocks/cidades'
 import type { Fornecedor } from '@/mocks/fornecedores'
 import { useNavigate } from '@tanstack/react-router'
+import type { ColumnDef } from '@tanstack/react-table'
+import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -99,7 +104,41 @@ function ConsultaCnpjButton() {
   )
 }
 
-function FornecedorCorpo() {
+const cidadeColumns: ColumnDef<Cidade>[] = [
+  { accessorKey: 'codigo', header: 'Código' },
+  { accessorKey: 'nome', header: 'Cidade' },
+  { accessorKey: 'uf', header: 'UF' },
+]
+
+/**
+ * Busca de Cidade (§4, §9 padrão 3) — `EnderecoBlock` já suporta a busca
+ * (prop `onBuscaCidade`, usada por Cliente/Colaborador/Profissional), mas
+ * Fornecedor nunca passava a prop: a cidade ficava em digitação livre, ao
+ * contrário do que a transcrição documenta ("Cidade `[busca +...]`").
+ */
+function BuscaCidade({
+  open,
+  onOpenChange,
+}: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { setValue } = useFormContext<Fornecedor>()
+  return (
+    <SearchDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Busca de Cidade"
+      columns={cidadeColumns}
+      queryKey={['cidades']}
+      fetcher={(state) => data.cidades.list(state, 0)}
+      onSelect={(c) => {
+        setValue('endereco.cidadeCodigo', c.codigo, { shouldDirty: true })
+        setValue('endereco.cidadeNome', c.nome, { shouldDirty: true })
+        setValue('endereco.uf', c.uf, { shouldDirty: true })
+      }}
+    />
+  )
+}
+
+function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
   return (
     <div className="flex flex-col gap-3">
       {/* TODO(transcricao): `Identificação` é legenda INFERIDA. A transcrição §4
@@ -139,7 +178,7 @@ function FornecedorCorpo() {
 
       {/* `Endereço` e `Comunicadores` são nomes da própria transcrição (§10 e §3). */}
       <FormBlock legend="Endereço">
-        <EnderecoBlock prefix="endereco" />
+        <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
       </FormBlock>
 
       <FormBlock legend="Comunicadores">
@@ -209,6 +248,7 @@ export function FornecedorForm({
   onGravar?: (values: Fornecedor) => void
 }) {
   const navigate = useNavigate()
+  const [buscaCidadeOpen, setBuscaCidadeOpen] = useState(false)
 
   function onGravar(values: Fornecedor) {
     if (gravarDeFora) {
@@ -231,7 +271,7 @@ export function FornecedorForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <FornecedorCorpo />
+      <FornecedorCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} />
 
       <Tabs defaultValue="contatos">
         <TabsList className="flex-wrap">
@@ -263,6 +303,8 @@ export function FornecedorForm({
           </TabsContent>
         ))}
       </Tabs>
+
+      <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>
   )
 }

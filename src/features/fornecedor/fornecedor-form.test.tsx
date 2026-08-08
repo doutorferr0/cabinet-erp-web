@@ -119,6 +119,27 @@ describe('tela Fornecedor', () => {
     })
   })
 
+  // `Cidade` era digitação livre — `EnderecoBlock` já suportava a busca, mas
+  // Fornecedor nunca passava `onBuscaCidade` (transcrição §4: "Cidade
+  // `[busca +...]`"). Mapa em `frente-visual.md` §@mapa-softlux.
+  it('busca de cidade preenche cidade e UF (era digitação livre)', async () => {
+    const { user } = renderRoute('/cadastros/fornecedores/novo', servidorDeParceiros().stub)
+
+    await screen.findByLabelText('Razão Social')
+    await user.click(screen.getByRole('button', { name: 'Buscar cidade' }))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('Busca de Cidade')
+    await user.type(within(dialog).getByLabelText('Busca'), 'curitiba')
+    const linha = await screen.findByText('CURITIBA')
+    await user.click(linha)
+    await user.click(screen.getByRole('button', { name: 'Selecionar' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Cidade')).toHaveValue('CURITIBA')
+    })
+  })
+
   // O papel vem da TELA: incluir por Fornecedores cria fornecedor, e só. Marcar
   // os três "por precaução" faria o cadastro novo aparecer nas três listagens.
   it('Incluir manda POST com o papel desta tela', async () => {

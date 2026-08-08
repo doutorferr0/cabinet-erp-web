@@ -91,6 +91,42 @@ no `RadioGroup` para a mensagem de erro (`FormMessage`) continuar associada via
 - `pnpm test` — `colaborador-form.test.tsx` e qualquer teste que use `RadioField` (conferir se
   algum usa `getByLabelText('Sexo')`, que deve continuar funcionando via `aria-label`).
 
+## Status — aplicado, com uma ressalva
+
+**Corrigido e verificado:** trocado `<FormLabel>` (que herdava `htmlFor={formItemId}` de
+`useFormField`) por `<Label>` simples em `RadioField` (`src/components/cabinet/form-controls.tsx`).
+Depois da mudança, `[...document.querySelectorAll('label[for]')].map(...)` não retorna mais
+nenhum `label[for]` apontando para tag fora de `INPUT/SELECT/TEXTAREA/BUTTON` — o Issue
+`Incorrect use of <label for=FORM_ELEMENT>` não aparece mais em nenhuma tela navegada
+(`/cadastros/colaboradores/1?modo=consulta`, `/cadastros/clientes/novo`), confirmado com reload
+limpo do Chrome.
+
+**Ressalva — Issue separado que sobrou, não é o mesmo defeito:** `No label associated with a form
+field` continua aparecendo, com contagem igual ao número de opções de rádio na tela (2 em Sexo, 2
+em Tipo de Pessoa). Investigado a fundo:
+
+- `take_snapshot --verbose` (árvore de acessibilidade REAL do Chrome) mostra nome acessível
+  correto em todo campo: `radio "Masculino"`, `radio "Feminino"`, `radiogroup "Sexo"`,
+  `checkbox "Atendimento ao cliente"` — o navegador computa a associação certa.
+- Varredura de todo `input/select/textarea` da página checando `labels.length`, `aria-label`,
+  `aria-labelledby` e `label[for]` não encontra nenhum campo realmente sem nome acessível.
+- Nenhum `id` duplicado na página (descartada a hipótese de `label[for]` colidindo com dois
+  elementos de mesmo id).
+
+A causa mais provável é um falso positivo do lint estático do Chrome contra o padrão de rótulo do
+React Aria Components: `RadioGroupItem` envolve o texto visível num `<span>` com
+`clip-path: inset(50%)` (técnica padrão de "visualmente oculto, presente para leitor de tela") —
+`textContent` enxerga esse texto (por isso a árvore de acessibilidade acerta), mas o auditor
+estático do Chrome parece usar uma checagem mais simples (possivelmente `innerText`, que respeita
+visibilidade CSS) e não encontra texto "visível" ali, mesmo o elemento sendo corretamente
+anunciado por leitor de tela de verdade.
+
+**Não mexer além disto sem confirmar em leitor de tela real** (NVDA/VoiceOver): a estrutura atual
+já é gerada pelo React Aria Components, testada e usada nos outros campos do mesmo padrão; forçar
+uma correção contra um heurístico de lint que a própria árvore de acessibilidade do Chrome
+contradiz arriscaria trocar código correto por código que só agrada o linter. Registrar como
+conhecido, não perseguir mais sem evidência de que afeta usuário real.
+
 ## Observação relacionada (não é bug, é nota)
 
 Inputs `type="date"` seguem o locale do sistema operacional/browser — no Chrome em `en-US`

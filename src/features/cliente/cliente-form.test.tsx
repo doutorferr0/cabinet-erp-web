@@ -81,4 +81,27 @@ describe('tela Cliente', () => {
     // código da cidade aparece ao lado do campo; UF (PR) no rótulo derivado
     expect(screen.getByText('355')).toBeInTheDocument()
   })
+
+  // O buraco mais antigo desta fronteira: link direto e recarga não têm a linha
+  // da listagem em cache. Com GET /api/partners/{id} (#35 do backend), a tela
+  // busca por id em vez de mandar voltar à listagem. Fornecedor e Profissional
+  // já cobriam isto — Cliente não tinha teste de detalhe por id nenhum.
+  it('abrir por id direto busca o registro no servidor', async () => {
+    renderRoute(
+      '/cadastros/clientes/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70',
+      stubDeParceiros([
+        parceiro({ isCustomer: true, legalName: 'ANDRÉ BATALHA', document: '11122233344' }),
+      ]),
+    )
+
+    expect(await screen.findByLabelText('Nome')).toHaveValue('ANDRÉ BATALHA')
+    expect(screen.getByLabelText('CPF')).toHaveValue('11122233344')
+  }, 15_000)
+
+  // Falhou não é o mesmo que não existir: 404 é registro que não está lá.
+  it('id inexistente é "não encontrado", não erro', async () => {
+    renderRoute('/cadastros/clientes/11111111-1111-4111-8111-111111111111', stubDeParceiros())
+
+    expect(await screen.findByText('Cliente não encontrado.')).toBeInTheDocument()
+  })
 })

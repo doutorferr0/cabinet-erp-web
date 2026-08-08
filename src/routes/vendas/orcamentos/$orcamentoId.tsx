@@ -1,9 +1,7 @@
-import { DocumentoHeader } from '@/components/cabinet/documento'
-import { Skeleton } from '@/components/ui/skeleton'
+import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { data } from '@/data'
 import { OrcamentoForm } from '@/features/orcamento/orcamento-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/vendas/orcamentos/$orcamentoId')({
@@ -15,35 +13,18 @@ function OrcamentoEditPage() {
   const { orcamentoId } = Route.useParams()
   const readOnly = isConsulta(Route.useSearch())
   const isNovo = orcamentoId === 'novo'
-  const id = Number(orcamentoId)
-
-  const query = useQuery({
-    queryKey: ['orcamento', orcamentoId],
-    queryFn: () =>
-      isNovo ? data.orcamentos.empty(Date.now() % 100000) : data.orcamentos.get(id, 0),
-  })
-
-  if (query.isPending) {
-    return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
-
-  if (!query.data) {
-    return <p className="text-muted-foreground">Orçamento não encontrado.</p>
-  }
 
   return (
-    <div className="flex flex-col gap-4">
-      <DocumentoHeader
-        titulo="Orçamento"
-        modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
-        numero={isNovo ? undefined : query.data.numero}
-      />
-      <OrcamentoForm orcamento={query.data} readOnly={readOnly} />
-    </div>
+    <TelaDeDocumento
+      provider={data.orcamentos}
+      queryKeyBase="orcamento"
+      idParam={orcamentoId}
+      titulo="Orçamento"
+      modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
+      numero={(o) => o.numero}
+      naoEncontrado="Orçamento não encontrado."
+    >
+      {(orcamento) => <OrcamentoForm orcamento={orcamento} readOnly={readOnly} />}
+    </TelaDeDocumento>
   )
 }

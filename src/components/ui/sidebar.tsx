@@ -285,7 +285,12 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
   return (
     <main
       data-slot="sidebar-inset"
-      className={cn('relative flex w-full flex-1 flex-col bg-background', className)}
+      // `min-w-0`: item de `flex-row` (sidebar + conteúdo) nasce com
+      // `min-width: auto` — uma tela com tabela larga (Orçamento, 14 colunas)
+      // empurrava a página inteira mais larga que a viewport em vez de rolar
+      // dentro de si, porque este `<main>` não conseguia encolher abaixo do
+      // conteúdo.
+      className={cn('relative flex w-full min-w-0 flex-1 flex-col bg-background', className)}
       {...props}
     />
   )

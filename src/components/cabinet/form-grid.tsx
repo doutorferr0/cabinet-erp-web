@@ -226,7 +226,13 @@ export function FormGrid({
   return (
     // Barra→grade é relação entre partes de um mesmo componente: `{spacing.md}`.
     // Dentro da barra, botões irmãos ficam em `{spacing.sm}`.
-    <div className="flex flex-col gap-3">
+    //
+    // `min-w-0`: sem isso, um item de `flex-col` (o `<fieldset>` do
+    // `CadastroForm`, por exemplo) nasce com `min-width: auto` — a grade
+    // muitas colunas (Orçamento, 14) empurra a página inteira mais larga que a
+    // viewport em vez de rolar dentro de si mesma, porque o `overflow-x-auto`
+    // do `form-grid-box` só passa a valer quando este contêiner PODE encolher.
+    <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap gap-2">
         {hideAdd ? null : (
           <Button type="button" variant="outline" size="sm" onClick={() => append(newRow)}>

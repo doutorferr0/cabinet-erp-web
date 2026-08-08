@@ -9,6 +9,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { type LookupKind, useLookupOptions } from '@/data/lookups-api'
@@ -297,7 +298,12 @@ export function RadioField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          {/* `RadioGroup` não é um campo único — é um GRUPO, e já dá o próprio
+              nome acessível via `aria-label` na linha abaixo. Um `<FormLabel
+              htmlFor>` por cima apontaria para um `<div role="radiogroup">`,
+              que não é elemento "labelable": o Chrome acusa `Incorrect use of
+              <label for=FORM_ELEMENT>`. `<Label>` aqui é só visual. */}
+          <Label>{label}</Label>
           <FormControl>
             <RadioGroup
               className="flex flex-row flex-wrap gap-4"

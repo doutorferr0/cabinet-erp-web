@@ -1,11 +1,8 @@
 import type { ProductDto } from '@/api/gerado'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
-import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
-import { VitraDataTable } from '@/components/cabinet/data-table'
+import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
-import { ErroDaApi } from '@/data/api-provider'
 import { useDesativarProduto } from '@/data/produtos-api'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -66,34 +63,28 @@ function ProdutosPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* O legado escrevia "Cadastro de produtos - Banco Principal" numa linha
-          só; o banco é CONTEXTO do cadastro, não parte do nome dele. */}
-      <BandaDeIdentidade titulo="Cadastro de produtos" contexto="Banco Principal" />
-      <VitraDataTable
-        columns={columns}
-        queryKey={['produtos']}
-        fetcher={data.produtos.list}
-        actions={actions}
-      />
-      {aDesativar ? (
-        <ConfirmarDesativacao
-          entidade="produto"
-          nome={aDesativar.description}
-          ativo={aDesativar.active}
-          aberto
-          pendente={desativar.isPending}
-          erro={
-            desativar.error instanceof ErroDaApi
-              ? (desativar.error.detail ?? 'Não foi possível desativar. Tente de novo.')
-              : desativar.error
-                ? 'Não foi possível desativar. Tente de novo.'
-                : null
-          }
-          onFechar={() => setADesativar(null)}
-          onConfirmar={() => desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })}
-        />
-      ) : null}
-    </div>
+    <TelaDeListagem
+      // O legado escrevia "Cadastro de produtos - Banco Principal" numa linha
+      // só; o banco é CONTEXTO do cadastro, não parte do nome dele.
+      titulo="Cadastro de produtos"
+      contexto="Banco Principal"
+      columns={columns}
+      queryKey={['produtos']}
+      fetcher={data.produtos.list}
+      actions={actions}
+      desativacao={{
+        entidade: 'produto',
+        registro: aDesativar,
+        nome: (p) => p.description,
+        ativo: (p) => p.active,
+        pendente: desativar.isPending,
+        erro: desativar.error,
+        onFechar: () => setADesativar(null),
+        onConfirmar: () => {
+          if (!aDesativar) return
+          desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })
+        },
+      }}
+    />
   )
 }

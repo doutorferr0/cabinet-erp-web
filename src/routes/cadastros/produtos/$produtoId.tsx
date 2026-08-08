@@ -2,8 +2,8 @@ import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
-import { ErroDaApi } from '@/data/api-provider'
 import { ProdutoForm } from '@/features/produto/produto-form'
+import { detalheDoErro } from '@/lib/erros'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -41,8 +41,8 @@ function ProdutoEditPage() {
     return (
       <div className="flex flex-col items-start gap-2 text-muted-foreground">
         Não foi possível carregar o produto.
-        {query.error instanceof ErroDaApi && query.error.detail ? (
-          <span className="max-w-prose text-[0.75rem]">{query.error.detail}</span>
+        {detalheDoErro(query.error) ? (
+          <span className="max-w-prose text-[0.75rem]">{detalheDoErro(query.error)}</span>
         ) : null}
         <Button variant="outline" size="sm" onClick={() => query.refetch()}>
           Tentar de novo

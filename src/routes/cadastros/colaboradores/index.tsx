@@ -1,7 +1,6 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
-import { VitraDataTable } from '@/components/cabinet/data-table'
+import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import type { Colaborador } from '@/mocks/colaboradores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -50,14 +49,12 @@ function ColaboradoresPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <BandaDeIdentidade titulo="Cadastro de Colaboradores" />
-      <VitraDataTable
-        columns={columns}
-        queryKey={['colaboradores']}
-        fetcher={data.colaboradores.list}
-        actions={actions}
-      />
-    </div>
+    <TelaDeListagem
+      titulo="Cadastro de Colaboradores"
+      columns={columns}
+      queryKey={['colaboradores']}
+      fetcher={data.colaboradores.list}
+      actions={actions}
+    />
   )
 }

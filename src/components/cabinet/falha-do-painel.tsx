@@ -1,6 +1,6 @@
 import { Ornamento } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
-import { ErroDaApi } from '@/data/api-provider'
+import { detalheDoErro } from '@/lib/erros'
 
 /**
  * O painel que não carregou.
@@ -26,7 +26,7 @@ export function FalhaDoPainel({
   erro: unknown
   aoTentar: () => void
 }) {
-  const detalhe = erro instanceof ErroDaApi ? erro.detail : undefined
+  const detalhe = detalheDoErro(erro)
 
   return (
     <div

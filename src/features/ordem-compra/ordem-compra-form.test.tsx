@@ -1,5 +1,5 @@
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 describe('tela Ordem de Compra', () => {
@@ -24,7 +24,7 @@ describe('tela Ordem de Compra', () => {
     })
   })
 
-  it('busca de transportadora preenche os rótulos do bloco', async () => {
+  it('busca de transportadora (janela auxiliar) preenche os rótulos do bloco', async () => {
     const { user } = renderRoute('/compras/ordens/1')
 
     await screen.findByLabelText('Código')
@@ -32,9 +32,19 @@ describe('tela Ordem de Compra', () => {
 
     await user.click(screen.getByRole('button', { name: /Busca \(Alt\+T\)/ }))
 
-    expect(screen.getByLabelText('Nome da transportadora')).toHaveTextContent(
-      'TRANSPORTES CAMPINAS LTDA',
-    )
+    // janela de busca com a MESMA DataTable, contra `data.transportadoras`.
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('Busca de Transportadora')
+
+    const linha = await within(dialog).findByText('TRANSPORTES CAMPINAS LTDA')
+    await user.click(linha)
+    await user.click(screen.getByRole('button', { name: 'Selecionar' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome da transportadora')).toHaveTextContent(
+        'TRANSPORTES CAMPINAS LTDA',
+      )
+    })
     expect(screen.getByLabelText('UF da transportadora')).toHaveTextContent('SP')
   })
 

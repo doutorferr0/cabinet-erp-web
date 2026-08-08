@@ -87,4 +87,10 @@ describe('registry de providers', () => {
     expect(r.rows[0]).toMatchObject({ nome: 'CAMPINAS', uf: 'SP' })
     expect(data.cidades).not.toHaveProperty('empty')
   })
+
+  it('transportadoras é só consulta (busca da Ordem de Compra, sem cadastro)', async () => {
+    const r = await data.transportadoras.list(tableState({ q: 'campinas' }), 0)
+    expect(r.rows[0]).toMatchObject({ nome: 'TRANSPORTES CAMPINAS LTDA', uf: 'SP' })
+    expect(data.transportadoras).not.toHaveProperty('empty')
+  })
 })

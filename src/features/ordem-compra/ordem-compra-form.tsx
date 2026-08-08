@@ -13,15 +13,19 @@ import {
   TextareaField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { data } from '@/data'
 import { tabelas } from '@/data/tabelas'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { OrdemCompra } from '@/mocks/ordens-compra'
+import type { Transportadora } from '@/mocks/transportadoras'
 import { useNavigate } from '@tanstack/react-router'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Package, Search } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -97,21 +101,28 @@ function Cabecalho() {
   )
 }
 
-/** Bloco `Transportadora` (§7.2) — busca era F4; aqui Alt+T (F3-F6 vetados). */
+const transportadoraColumns: ColumnDef<Transportadora>[] = [
+  { accessorKey: 'codigo', header: 'Código' },
+  { accessorKey: 'nome', header: 'Transportadora' },
+  { accessorKey: 'municipio', header: 'Município' },
+  { accessorKey: 'uf', header: 'UF' },
+]
+
+/**
+ * Bloco `Transportadora` (§7.2) — busca era F4; aqui Alt+T (F3-F6 vetados).
+ *
+ * A janela é a MESMA `SearchDialog` das outras 9 buscas da transcrição (§9
+ * padrão 3), contra `data.transportadoras` — não é mais fixa. O cadastro
+ * completo de Transportadoras (item do menu Cadastros, §1) segue sem
+ * captura; só os três campos que este bloco lê de volta existem em
+ * `mocks/transportadoras.ts`.
+ */
 function BlocoTransportadora() {
   const { setValue } = useFormContext<OrdemCompra>()
   const transportadora = useWatch({ name: 'transportadora' }) as OrdemCompra['transportadora']
+  const [buscaAberta, setBuscaAberta] = useState(false)
 
-  function buscar() {
-    // Mock da janela de busca de transportadora.
-    setValue(
-      'transportadora',
-      { nome: 'TRANSPORTES CAMPINAS LTDA', municipio: 'CAMPINAS', uf: 'SP' },
-      { shouldDirty: true },
-    )
-  }
-
-  useEffect(() => bindShortcut(SHORTCUTS.transportadora, buscar))
+  useEffect(() => bindShortcut(SHORTCUTS.transportadora, () => setBuscaAberta(true)))
 
   return (
     <FormBlock legend="Transportadora">
@@ -130,10 +141,25 @@ function BlocoTransportadora() {
           <span className="text-muted-foreground">UF:</span>{' '}
           <output aria-label="UF da transportadora">{transportadora?.uf || '—'}</output>
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={buscar}>
+        <Button type="button" variant="outline" size="sm" onClick={() => setBuscaAberta(true)}>
           <Search /> Busca ({shortcutLabel(SHORTCUTS.transportadora)})
         </Button>
       </div>
+      <SearchDialog
+        open={buscaAberta}
+        onOpenChange={setBuscaAberta}
+        title="Busca de Transportadora"
+        columns={transportadoraColumns}
+        queryKey={['transportadoras']}
+        fetcher={(state) => data.transportadoras.list(state, 0)}
+        onSelect={(t) =>
+          setValue(
+            'transportadora',
+            { nome: t.nome, municipio: t.municipio, uf: t.uf },
+            { shouldDirty: true },
+          )
+        }
+      />
     </FormBlock>
   )
 }

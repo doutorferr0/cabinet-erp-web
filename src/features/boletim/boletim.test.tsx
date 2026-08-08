@@ -1,5 +1,8 @@
 import { boletim } from '@/data/boletim'
-import { renderRoute } from '@/test/utils'
+import { URL_PARCEIROS } from '@/data/parceiros-api'
+import { URL_PRODUTOS } from '@/data/produtos-api'
+import { json } from '@/test/servidor'
+import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -17,16 +20,48 @@ async function compartimento(legenda: string): Promise<HTMLElement> {
   return fieldset
 }
 
+/**
+ * `renderRoute` sem stub próprio rejeita qualquer caminho fora de `/auth/*` —
+ * e desde que o Boletim conta Clientes/Fornecedores/Profissional Externo/
+ * Produtos pela MESMA fonte HTTP da listagem (fase 6), `/` passou a chamar
+ * `/api/partners` (3x, um por papel) e `/api/products`. `boletim()` chamado
+ * de novo dentro do teste usa o MESMO `fetch` global que `renderRoute` trocou,
+ * então cai no stub abaixo também.
+ */
+function stubDoBoletim(): FetchStub {
+  return (entrada) => {
+    const url = String(entrada instanceof Request ? entrada.url : entrada)
+    const caminho = new URL(url, 'http://localhost').pathname
+    if (caminho === '/auth/me') return Promise.resolve(respostaSessao())
+    if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
+    if (caminho === URL_PARCEIROS) {
+      return Promise.resolve(
+        json({
+          rows: [
+            { id: 'p1', active: true },
+            { id: 'p2', active: false },
+          ],
+          total: 2,
+        }),
+      )
+    }
+    if (caminho === URL_PRODUTOS) {
+      return Promise.resolve(json({ rows: [{ id: 'pr1', active: true }], total: 1 }))
+    }
+    return Promise.reject(new Error(`fetch sem stub no teste: ${url}`))
+  }
+}
+
 describe('tela Boletim', () => {
   it('substitui o menu vazio pela apuração do dia', async () => {
-    renderRoute('/')
+    renderRoute('/', stubDoBoletim())
 
     expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
     // A entrada antiga era só "Selecione um módulo no menu lateral".
     expect(screen.queryByText(/Selecione um módulo/)).not.toBeInTheDocument()
 
     // O cabeçalho nasce junto com o skeleton; a apuração só depois do fetch.
-    const dados = boletim()
+    const dados = await boletim()
     await compartimento('Movimento do dia')
 
     // A data de referência mora na BANDA, junto do nome da tela — é o mesmo
@@ -37,9 +72,9 @@ describe('tela Boletim', () => {
   })
 
   it('movimento do dia lista os documentos e fecha o total na coluna de valor', async () => {
-    renderRoute('/')
+    renderRoute('/', stubDoBoletim())
 
-    const dados = boletim()
+    const dados = await boletim()
     const bloco = await compartimento('Movimento do dia')
 
     const totalEsperado = dados.movimento.reduce((s, l) => s + l.valorCentavos, 0)
@@ -49,14 +84,16 @@ describe('tela Boletim', () => {
     expect(linhaTotal).toHaveTextContent(
       new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
         .format(totalEsperado / 100)
+        // `Intl.NumberFormat` separa "R$" do valor com NBSP (U+00A0); a borda de
+        // exibição do app usa espaço comum — normaliza para comparar igual.
         .replace(/ /g, ' '),
     )
   })
 
   it('ordem parada leva ao documento por clique', async () => {
-    const { router, user } = renderRoute('/')
+    const { router, user } = renderRoute('/', stubDoBoletim())
 
-    const dados = boletim()
+    const dados = await boletim()
     const primeira = dados.semEnvio[0]
     if (!primeira) throw new Error('mock sem ordem parada — o teste perdeu o objeto')
 
@@ -69,13 +106,13 @@ describe('tela Boletim', () => {
   })
 
   it('cadastros mostram total e desativados, com travessão quando zero', async () => {
-    renderRoute('/')
+    renderRoute('/', stubDoBoletim())
 
     const bloco = await compartimento('Cadastros')
     const linha = within(bloco).getByRole('link', { name: 'Clientes' }).closest('tr')
     expect(linha).not.toBeNull()
 
-    const dados = boletim()
+    const dados = await boletim()
     const clientes = dados.cadastros.find((c) => c.nome === 'Clientes')
     if (!clientes) throw new Error('boletim sem linha de Clientes')
 

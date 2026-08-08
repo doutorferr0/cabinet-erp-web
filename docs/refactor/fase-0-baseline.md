@@ -17,18 +17,26 @@ diferente antes.
    - Um detalhe de cada: `/cadastros/produtos/novo`, `/cadastros/colaboradores/1?modo=consulta`,
      `/vendas/orcamentos/novo`
 4. Para cada rota, registrar `document.documentElement.scrollWidth - clientWidth` (estouro
-   horizontal). Guardar os números medidos nesta sessão como referência:
+   horizontal). Medido nesta sessão (Chrome, 1440×900, `pnpm dev` porta 5174):
 
-| Rota | Estouro a 1440px |
+| Rota | Estouro |
 |---|---|
-| `/cadastros/produtos/novo` | 0px |
-| `/compras/ordens/1` | 0px |
-| `/compras/pedidos/1` | 0px |
-| `/vendas/orcamentos/2` | 119px |
-| `/vendas/orcamentos/novo` | 76px |
-| demais telas testadas | 0px |
+| Todas as 15 listagens/módulos (`/`, `/dashboard`, `/planner`, as 5 de cadastro, `/vendas`,
+  `/vendas/orcamentos`, `/compras`, `/compras/ordens`, `/compras/pedidos`, `/estoque`, `/cadastros`) | 0px |
+| `/cadastros/clientes/novo`, `/fornecedores/novo`, `/profissionais/novo`, `/produtos/novo`, `/compras/ordens/novo`, `/compras/pedidos/novo` | 0px |
+| `/cadastros/colaboradores/novo` | 2px |
+| `/cadastros/colaboradores/1?modo=consulta` | 2px |
+| `/vendas/orcamentos/novo` | **76px** |
+| `/vendas/orcamentos/2` | **119px** |
 
-5. Registrar console limpo (zero erro) como baseline.
+Confirma os números do levantamento anterior. Os 2px do Colaborador são residuais (possível
+rolagem/arredondamento) — o `bug-colaborador-layout.md` foca no vão vertical e nos campos
+mal-posicionados, que é o problema visível de verdade.
+
+5. Console: **zero erro**, mas 2 Issues de acessibilidade em toda tela com `RadioField` (campo
+   "Sexo"): `Incorrect use of <label for=FORM_ELEMENT>` e `No label associated with a form
+   field`. Causa raiz identificada e documentada em `bug-a11y-form-fields.md` (reescrito com o
+   achado exato, substituindo a investigação especulativa original).
 6. Fluxo funcional de referência: desativar um produto pela listagem (`/cadastros/produtos` →
    selecionar linha → Excluir → confirmar) deve terminar com a linha `INATIVO` e sem erro de
    console. Abrir `/cadastros/clientes/parc-0002` por link direto deve carregar o formulário

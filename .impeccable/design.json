@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-07T17:02:37.213Z",
+  "generatedAt": "2026-08-08T21:15:48.639Z",
   "title": "Design System: Cabinet — fase 1.6",
   "extensions": {
     "colorMeta": {
@@ -577,17 +577,17 @@
       "name": "Banda de Identidade",
       "kind": "custom",
       "refersTo": "banda-identidade",
-      "description": "Onde a tela diz o próprio nome. Zona de identidade em caixa preta, com a marca d'água do módulo à direita.",
-      "html": "<div class=\"ds-banda\"><h1 class=\"ds-banda-titulo\">Cadastro de Fornecedores</h1><span class=\"ds-banda-ctx\">VERTZ ILUMINAÇÃO</span><span class=\"ds-banda-orn\"></span></div>",
-      "css": ".ds-banda{display:flex;align-items:center;gap:14px;background:hsl(var(--zone-id));border:2px solid hsl(var(--border));padding:10px 14px}.ds-banda-titulo{margin:0;font:800 1.35rem/1.1 Sora,sans-serif;letter-spacing:-.02em;text-transform:uppercase}.ds-banda-ctx{font:700 .75rem/1 \"PT Mono\",monospace;letter-spacing:.07em;text-transform:uppercase;color:hsl(var(--shadow-3))}.ds-banda-orn{margin-left:auto;width:24px;height:24px;background:hsl(var(--modulo-01));-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat}"
+      "description": "Onde a tela diz o próprio nome. Zona de identidade em caixa preta, com o ornamento do módulo à direita — traço preto + preenchimento na cor cheia do módulo (nunca mais mask-image).",
+      "html": "<div class=\"ds-banda\"><h1 class=\"ds-banda-titulo\">Cadastro de Fornecedores</h1><span class=\"ds-banda-ctx\">VERTZ ILUMINAÇÃO</span><svg class=\"ds-banda-orn\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg></div>",
+      "css": ".ds-banda{display:flex;align-items:center;gap:14px;background:hsl(var(--zone-id));border:2px solid hsl(var(--border));padding:10px 14px}.ds-banda-titulo{margin:0;font:800 1.35rem/1.1 Sora,sans-serif;letter-spacing:-.02em;text-transform:uppercase}.ds-banda-ctx{font:700 .75rem/1 \"PT Mono\",monospace;letter-spacing:.07em;text-transform:uppercase;color:hsl(var(--shadow-3))}.ds-banda-orn{margin-left:auto;overflow:visible;color:hsl(var(--modulo-01))}"
     },
     {
       "name": "Item de Navegação",
       "kind": "nav",
       "refersTo": "sidebar-item",
-      "description": "Liso em repouso, pula e ganha traço no hover. Ativo = cheia /01 do módulo. Cada item carrega a cor do SEU módulo.",
-      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-ativo\" href=\"#\"><span class=\"ds-nav-orn\"></span>Produtos</a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-nav-orn ds-nav-orn-cheia\"></span>Clientes</a></nav>",
-      "css": ".ds-nav{display:flex;flex-direction:column;gap:2px;background:hsl(var(--background));padding:8px;width:220px}.ds-nav-item{display:flex;align-items:center;gap:8px;padding:8px;border:2px solid transparent;border-left-width:3px;color:hsl(var(--foreground));text-decoration:none;font:400 .875rem/1 Inter,sans-serif;cursor:pointer;transition:transform 140ms cubic-bezier(0,0,.2,1),box-shadow 140ms,background-color 140ms,border-color 140ms}.ds-nav-item:hover{border-color:hsl(var(--border));background:hsl(var(--modulo-02));transform:translate(-2px,-2px);box-shadow:3px 3px 0 0 hsl(var(--shadow-2))}.ds-nav-item:active{transform:translate(2px,2px);box-shadow:none}.ds-nav-item:focus-visible{transform:none;outline:3px solid hsl(var(--ring));box-shadow:0 0 0 4px hsl(var(--foreground))}.ds-nav-ativo{background:hsl(var(--modulo-01));border-left-color:hsl(var(--foreground));font-weight:700}.ds-nav-orn{width:18px;height:18px;background:hsl(var(--modulo-02));-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat}.ds-nav-orn-cheia{background:hsl(var(--modulo-02))}"
+      "description": "Liso em repouso, pula e ganha traço no hover. Ativo = cheia /01 do módulo. Cada item carrega a cor do SEU módulo — o ornamento é traço preto + preenchimento, nunca mask-image.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-ativo\" href=\"#\"><svg class=\"ds-nav-orn\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg>Produtos</a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-nav-orn\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg>Clientes</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:2px;background:hsl(var(--background));padding:8px;width:220px}.ds-nav-item{display:flex;align-items:center;gap:8px;padding:8px;border:2px solid transparent;border-left-width:3px;color:hsl(var(--foreground));text-decoration:none;font:400 .875rem/1 Inter,sans-serif;cursor:pointer;transition:transform 140ms cubic-bezier(0,0,.2,1),box-shadow 140ms,background-color 140ms,border-color 140ms}.ds-nav-item:hover{border-color:hsl(var(--border));background:hsl(var(--modulo-02));transform:translate(-2px,-2px);box-shadow:3px 3px 0 0 hsl(var(--shadow-2))}.ds-nav-item:active{transform:translate(2px,2px);box-shadow:none}.ds-nav-item:focus-visible{transform:none;outline:3px solid hsl(var(--ring));box-shadow:0 0 0 4px hsl(var(--foreground))}.ds-nav-ativo{background:hsl(var(--modulo-01));border-left-color:hsl(var(--foreground));font-weight:700}.ds-nav-ativo .ds-nav-orn{color:hsl(var(--modulo-02))}.ds-nav-orn{overflow:visible;color:hsl(var(--modulo-01))}"
     },
     {
       "name": "Carimbo de Situação",
@@ -601,9 +601,41 @@
       "name": "Estado Vazio",
       "kind": "custom",
       "refersTo": "empty",
-      "description": "Ornamento do módulo + título + o que fazer. \"Não existe registro\" pede cadastrar; \"a busca não achou\" pede corrigir o termo — nunca a mesma frase.",
-      "html": "<div class=\"ds-empty\"><span class=\"ds-empty-orn\"></span><p class=\"ds-empty-titulo\">Nenhum registro</p><p class=\"ds-empty-desc\">Ainda não há nada cadastrado aqui.</p></div>",
-      "css": ".ds-empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 24px;text-align:center;background:hsl(var(--card))}.ds-empty-orn{width:128px;height:128px;background:hsl(var(--modulo-01));-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h18v16l-3-2-3 2-3-2-3 2-3-2z' fill='white'/%3E%3C/svg%3E\") center/contain no-repeat}.ds-empty-titulo{margin:0;font:700 1rem/1.2 Sora,sans-serif}.ds-empty-desc{margin:0;font:400 .875rem/1.5 Inter,sans-serif;color:hsl(var(--shadow-3))}"
+      "description": "Ornamento do módulo (com PESO — cobertura de tinta acima de 35%) + título + o que fazer. \"Não existe registro\" pede cadastrar; \"a busca não achou\" pede corrigir o termo — nunca a mesma frase.",
+      "html": "<div class=\"ds-empty\"><svg class=\"ds-empty-orn\" width=\"96\" height=\"96\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" style=\"filter:drop-shadow(2px 2px 0 hsl(var(--foreground)))\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg><p class=\"ds-empty-titulo\">Nenhum registro</p><p class=\"ds-empty-desc\">Ainda não há nada cadastrado aqui.</p></div>",
+      "css": ".ds-empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 24px;text-align:center;background:hsl(var(--card))}.ds-empty-orn{overflow:visible;color:hsl(var(--modulo-01))}.ds-empty-titulo{margin:0;font:700 1rem/1.2 Sora,sans-serif}.ds-empty-desc{margin:0;font:400 .875rem/1.5 Inter,sans-serif;color:hsl(var(--shadow-3))}"
+    },
+    {
+      "name": "Selo",
+      "kind": "custom",
+      "refersTo": "selo",
+      "description": "Ornamento dentro de caixa de papel branco com contorno — devolve ao shape o contraste que a superfície tingida (pastel /02) tirou. Três tamanhos: sm (chip/coluna), md (cabeçalho de painel), lg (âncora de KPI).",
+      "html": "<span class=\"ds-selo ds-selo-lg\"><svg class=\"ds-selo-orn\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg></span>",
+      "css": ".ds-selo{display:grid;place-content:center;flex-shrink:0;border:2px solid hsl(var(--border));background:hsl(var(--card))}.ds-selo-lg{width:42px;height:42px;border-radius:6px;box-shadow:2px 2px 0 0 hsl(var(--shadow-1))}.ds-selo-orn{overflow:visible;color:hsl(var(--modulo-01))}"
+    },
+    {
+      "name": "Painel com Faixa Tingida",
+      "kind": "card",
+      "refersTo": "painel",
+      "description": "A caixa que agrupa um assunto da tela de visão (Dashboard/Tarefas). Cabeçalho tingido por UMA fonte só: `modulo` (pastel /02 + Selo em /01) ou `tinta` de zona (pendência/valor/apoio) para região sem módulo. Nunca as duas ao mesmo tempo.",
+      "html": "<section class=\"ds-painel\"><header class=\"ds-painel-head\"><span class=\"ds-selo ds-selo-md\"><svg class=\"ds-selo-orn\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg></span><h2 class=\"ds-painel-titulo\">Agenda de hoje</h2><span class=\"ds-painel-conta\">3</span></header><div class=\"ds-painel-corpo\">Conteúdo do painel.</div></section>",
+      "css": ".ds-painel{display:flex;flex-direction:column;overflow:hidden;border:2px solid hsl(var(--border));border-radius:10px;background:hsl(var(--card));box-shadow:3px 3px 0 0 hsl(var(--shadow-2))}.ds-painel-head{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:2px solid hsl(var(--border));background:hsl(var(--modulo-02))}.ds-selo-md{width:26px;height:26px;border-radius:0}.ds-painel-titulo{margin:0;font:800 1.125rem/1.1 Sora,sans-serif;letter-spacing:-.012em}.ds-painel-conta{margin-left:auto;font:700 .6875rem/1 \"PT Mono\",monospace;border:1.5px solid hsl(var(--border));border-radius:7px;padding:1px 8px;background:hsl(var(--card))}.ds-painel-corpo{padding:20px;font:400 .875rem/1.4 Inter,sans-serif;color:hsl(var(--shadow-3))}"
+    },
+    {
+      "name": "Appbar Global",
+      "kind": "custom",
+      "refersTo": "appbar",
+      "description": "Faixa acima do cabeçalho de página, em TODA rota (vive no shell, nunca na tela). Busca chrome (não filtra) · engrenagem desabilitada (sem tela de configurações) · sino com badge, abre a gaveta · divisor · usuário. Ícones de AÇÃO vêm do lucide, nunca do acervo — fronteira shape=lugar/lucide=ação.",
+      "html": "<div class=\"ds-appbar\"><div class=\"ds-appbar-busca\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.6-3.6\"/></svg><input placeholder=\"Pesquisar…\"></div><div class=\"ds-appbar-dir\"><button class=\"ds-icone-btn\" disabled title=\"Configurações — ainda não existe\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12h2m12 0h2M12 4v2m0 12v2\"/></svg></button><button class=\"ds-icone-btn ds-sino\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M6 8a6 6 0 0 1 12 0c0 4 2 5 2 5H4s2-1 2-5\"/><path d=\"M9 18a3 3 0 0 0 6 0\"/></svg><span class=\"ds-badge\">3</span></button><span class=\"ds-divisor\"></span><button class=\"ds-usuario\"><span class=\"ds-usuario-avatar\">HF</span><span class=\"ds-usuario-nome\">Henrique Ferro<small>Proprietário</small></span></button></div></div>",
+      "css": ".ds-appbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;border-bottom:2px solid hsl(var(--border));background:hsl(var(--card));padding:10px 16px;font-family:Inter,sans-serif}.ds-appbar-busca{display:flex;align-items:center;gap:8px;width:240px;border:2px solid hsl(var(--border));border-radius:4px;padding:8px 10px;color:hsl(var(--shadow-3))}.ds-appbar-busca input{border:0;outline:0;background:transparent;font:600 .8125rem/1 Inter,sans-serif;color:hsl(var(--foreground));width:100%}.ds-appbar-dir{margin-left:auto;display:flex;align-items:center;gap:10px}.ds-icone-btn{position:relative;width:36px;height:36px;border:2px solid hsl(var(--border));border-radius:8px;background:hsl(var(--card));display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:2px 2px 0 0 hsl(var(--shadow-1))}.ds-icone-btn:disabled{opacity:.5;cursor:not-allowed}.ds-icone-btn:not(:disabled):hover{transform:translate(1px,1px);box-shadow:none}.ds-badge{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 3px;border:2px solid hsl(var(--border));border-radius:8px;background:hsl(var(--destructive));color:#fff;font:900 9px/16px Sora,sans-serif;text-align:center}.ds-divisor{width:2px;height:26px;background:hsl(var(--border))}.ds-usuario{display:flex;align-items:center;gap:8px;border:2px solid hsl(var(--border));border-radius:4px;background:hsl(var(--zone-id));padding:4px 10px 4px 4px;cursor:pointer}.ds-usuario-avatar{width:28px;height:28px;border-radius:0;border:2px solid hsl(var(--border));background:hsl(var(--accent));display:flex;align-items:center;justify-content:center;font:900 10px/1 Sora,sans-serif}.ds-usuario-nome{font:700 .75rem/1.2 Inter,sans-serif;text-align:left}.ds-usuario-nome small{display:block;font:700 .625rem/1 \"PT Mono\",monospace;color:hsl(var(--shadow-3));text-transform:uppercase}"
+    },
+    {
+      "name": "Gaveta de Notificações",
+      "kind": "custom",
+      "refersTo": "gaveta-notificacoes",
+      "description": "Coluna flex IRMÃ do <main> — nunca position:fixed, nunca véu. Anima width 0↔312px e EMPURRA o conteúdo. Fundo laranja cheia do Boletim (mesmo par do item ativo da sidebar), texto no token de foreground padrão (nunca preto fixo — vira no escuro). Não-lida é bolinha, nunca corte lateral.",
+      "html": "<aside class=\"ds-gaveta\"><div class=\"ds-gaveta-topo\"><span class=\"ds-gaveta-titulo\">Notificações</span><button class=\"ds-gav-x\">✕</button></div><div class=\"ds-gav-nota\"><span class=\"ds-selo\" style=\"width:22px;height:22px;border-radius:0\"><svg class=\"ds-selo-orn\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg></span><span class=\"ds-gav-nota-titulo\">Orçamento vence em 2 dias</span><span class=\"ds-gav-ponto\"></span></div></aside>",
+      "css": ".ds-gaveta{width:280px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:hsl(var(--modulo-01));border-left:2px solid hsl(var(--border));transition:width 200ms ease-out}.ds-gaveta-topo{display:flex;align-items:center;gap:8px;border-bottom:2px solid hsl(var(--border));padding:14px 16px}.ds-gaveta-titulo{font:800 1.125rem/1.1 Sora,sans-serif;letter-spacing:-.012em;color:hsl(var(--foreground))}.ds-gav-x{margin-left:auto;width:28px;height:28px;border:2px solid hsl(var(--border));border-radius:8px;background:hsl(var(--card));cursor:pointer}.ds-gav-nota{display:flex;align-items:flex-start;gap:8px;margin:14px;padding:12px;border:2px solid hsl(var(--border));border-radius:6px;background:hsl(var(--card));box-shadow:2px 2px 0 0 hsl(var(--shadow-1))}.ds-gav-nota-titulo{font:800 .8125rem/1.3 Sora,sans-serif;flex:1}.ds-gav-ponto{width:8px;height:8px;border-radius:50%;border:1.5px solid hsl(var(--border));background:hsl(var(--destructive));flex-shrink:0;margin-top:4px}"
     }
   ],
   "narrative": {
@@ -623,7 +655,9 @@
       "Dinheiro em VERDE sobre a zona de valor; negativo em vermelho",
       "Foco = amarelo 3px com fio preto de 1px por fora, em todo controle",
       "Três famílias self-hosted: Sora (título) · Inter (corpo) · PT Mono (identificador)",
-      "Movimento só onde informa: entrada de tela e peça que aparece; nunca em linha, célula ou campo"
+      "Movimento só onde informa: entrada de tela e peça que aparece; nunca em linha, célula ou campo",
+      "Ornamento contornado: traço preto ~20:1 delimita a forma, preenchimento livre pra ser NEON (PR #49)",
+      "Casca global (appbar + gaveta) vive no shell, em toda rota — nunca duplicada por tela"
     ],
     "rules": [
       {
@@ -730,6 +764,36 @@
         "name": "A Regra do Movimento que Informa",
         "section": "elevation",
         "body": "Anima o que TROCOU: entrada de tela uma vez por navegação, e peça que aparece. Linha, célula, campo e anel de foco não animam nunca — num sistema de oito horas, movimento que não informa é atrito."
+      },
+      {
+        "name": "A Regra do Contorno",
+        "section": "colors",
+        "body": "O traço preto (~20:1) delimita a forma; o preenchimento fica LIVRE para ser neon, mesmo com contraste baixo contra a folha branca — quem garante a leitura é o traço, não o preenchimento. Substitui a técnica de recolorir por mask-image: a máscara é silhueta de uma cor só e não aceita traço. O SVG entra INLINE, com o `d` de cada path extraído do arquivo (que continua intocado em disco) e remontado com traço + preenchimento em duas camadas."
+      },
+      {
+        "name": "A Regra do Traço Atrás",
+        "section": "colors",
+        "body": "O traço vai ATRÁS do preenchimento, nunca junto num path só. Traço é centrado na borda — metade invade a forma — e num shape de LINHA (anel, contorno) essa metade de dentro cobre o preenchimento inteiro se as duas camadas forem uma só. Traço atrás + preenchimento na frente esconde a metade de dentro do traço; a metade de fora continua visível como contorno."
+      },
+      {
+        "name": "A Regra do Peso Condicionado à Cobertura",
+        "section": "elevation",
+        "body": "Peso (drop-shadow sólido, sem blur, no mesmo token do traço) só entra em shape CHEIO — cobertura de tinta acima de 35% da bbox, medida por rasterização, nunca estimada. Shape vazado (linha, anel) fica sem peso: o deslocamento fecharia os vãos e viraria mancha em vez de ganhar volume."
+      },
+      {
+        "name": "A Regra da Gaveta que Empurra",
+        "section": "layout",
+        "body": "Painel lateral que precisa aparecer sem cobrir o conteúdo é coluna FLEX irmã da área principal, nunca `position:fixed` com véu. Anima `width` 0↔valor-final; o conteúdo ao lado cede espaço sozinho porque já é `flex-1`. Zero trava de scroll do body — a gaveta não é modal."
+      },
+      {
+        "name": "A Regra do Selo",
+        "section": "components",
+        "body": "Quando o fundo de uma região vira a pastel /02 de um módulo, um ornamento em cheia /01 pousado direto nela perde o recorte — é a mesma matiz duas vezes. O Selo é a caixa de papel branco com contorno que devolve esse contraste: existe só por causa do preenchimento colorido, não é decoração à toa."
+      },
+      {
+        "name": "A Regra da Cor Emprestada por Lugar",
+        "section": "colors",
+        "body": "Tela sem módulo próprio na tabela travada (Dashboard, Planner, Tarefas, Colaboradores) EMPRESTA o par de cor de um módulo vizinho e se distingue pelo DESENHO, nunca inventando uma nona cor. O empréstimo mora na entrada de menu do item (`aparencia`), nunca em `moduloDaRota` — a folha inteira não pode ser tingida pelo empréstimo, só o item que empresta."
       }
     ],
     "dos": [
@@ -739,7 +803,9 @@
       "Do escrever dinheiro em verde, negativo em vermelho, e manter quantidade em tinta.",
       "Do compor telas a partir de `src/components/cabinet/` — reimplementar tabela na tela é o vetor de deriva.",
       "Do tintar a área pelo conteúdo (valor/identidade/apoio/pendência/bloqueio) e só ela.",
-      "Do rodar a guarda v4 em todo componente tocado."
+      "Do rodar a guarda v4 em todo componente tocado.",
+      "Do delimitar o ornamento pelo traço preto e deixar o preenchimento livre para ser neon — o traço garante a leitura, não o preenchimento.",
+      "Do usar `auto-fit`/`flex-wrap` pra quebra de grade, nunca `@media` — a gaveta abrindo muda o espaço do container sem mudar a viewport."
     ],
     "donts": [
       "Don't deixar ornamento preto ou cinza, nem editar o `fill` de um SVG à mão.",
@@ -752,7 +818,10 @@
       "Don't carregar fonte de CDN.",
       "Don't levantar linha ou célula de grade no hover — lift é de controle.",
       "Don't improvisar o modo escuro tom a tom — ele é derivado desta paleta, com cada par medido.",
-      "Don't deixar a folha branca no escuro: lá ela é um degrau ACIMA da bancada, não o extremo."
+      "Don't deixar a folha branca no escuro: lá ela é um degrau ACIMA da bancada, não o extremo.",
+      "Don't recolorir ornamento por `mask-image` — a técnica atual é SVG inline com traço atrás do preenchimento, em duas camadas.",
+      "Don't dar peso (drop-shadow) a shape vazado (cobertura de tinta < 35%) — fecha os vãos e vira mancha.",
+      "Don't fazer painel lateral com `position:fixed` + véu quando o pedido é ele EMPURRAR o conteúdo — é coluna flex irmã, animando `width`."
     ]
   }
 }

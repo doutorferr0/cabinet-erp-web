@@ -73,7 +73,7 @@ function Cartao({ indicador }: { indicador: Indicador }) {
   )
 
   const classe = cn(
-    'flex flex-col gap-1 rounded-card border-2 p-3 no-underline',
+    'flex flex-col gap-1 rounded-card border-2 p-4 no-underline',
     indicador.dinheiro ? 'bg-zone-money' : 'bg-card',
   )
 
@@ -108,7 +108,7 @@ export function Indicadores() {
 
   if (query.isPending) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {['k1', 'k2', 'k3', 'k4'].map((chave) => (
           <Skeleton key={chave} className="h-[104px] w-full" />
         ))}
@@ -176,7 +176,7 @@ export function Indicadores() {
   ]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {indicadores.map((indicador) => (
         <Cartao key={indicador.rotulo} indicador={indicador} />
       ))}

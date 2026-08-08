@@ -128,3 +128,42 @@ export function periodoDaFase(fase: PlanPhaseDto): string {
 export function totalDeItens(plano: ProjectPlanDto): number {
   return plano.phases.reduce((soma, fase) => soma + fase.items.length, 0)
 }
+
+export interface ProgressoDoProjeto {
+  concluidos: number
+  emAndamento: number
+  naoIniciados: number
+  total: number
+  /** Média simples do progresso dos itens; `null` no plano sem item nenhum. */
+  percentual: number | null
+}
+
+/**
+ * O andamento do projeto inteiro, derivado das barras do plano.
+ *
+ * **Média SIMPLES, e a tela diz que é dos itens.** Ponderar por duração daria um
+ * número mais "certo" e menos conferível: o operador olha a grade, conta as
+ * barras cheias e espera que a conta bata. Média ponderada bate com uma conta
+ * que ele não tem como fazer no olho, e número que não se confere é número em
+ * que ninguém confia.
+ *
+ * `null` no plano vazio: 0 de 0 não é "0% concluído" — é projeto sem plano, que
+ * é outra frase e outra tela.
+ */
+export function progressoDoProjeto(plano: ProjectPlanDto): ProgressoDoProjeto {
+  const itens = plano.phases.flatMap((fase) => fase.items)
+  const total = itens.length
+  const concluidos = itens.filter((i) => i.progressPercent >= 100).length
+  const naoIniciados = itens.filter((i) => i.progressPercent <= 0).length
+
+  return {
+    concluidos,
+    emAndamento: total - concluidos - naoIniciados,
+    naoIniciados,
+    total,
+    percentual:
+      total === 0
+        ? null
+        : Math.round(itens.reduce((soma, i) => soma + i.progressPercent, 0) / total),
+  }
+}

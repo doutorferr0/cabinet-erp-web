@@ -182,3 +182,79 @@ export function variacaoDoMes(resumo: DashboardSummaryDto): number | null {
     (resumo.monthSalesCents - resumo.previousMonthSalesCents) / resumo.previousMonthSalesCents
   return Math.round(razao * 100)
 }
+
+/**
+ * PROGRESSO DO QUADRO — concluídas, em aberto e total.
+ *
+ * Derivação pura das tarefas que a tela já carregou; nenhuma consulta nova e
+ * nenhum campo inventado. `percentual` é `null` no quadro vazio: 0 de 0 não é
+ * "0% concluído", é "não há o que concluir", e uma barra zerada ali diria que o
+ * time está atrasado num projeto que não começou.
+ */
+export interface ProgressoDoQuadro {
+  concluidas: number
+  emAberto: number
+  total: number
+  percentual: number | null
+}
+
+export function progressoDoQuadro(tarefas: TaskDto[]): ProgressoDoQuadro {
+  const concluidas = tarefas.filter((t) => t.status === 'done').length
+  const total = tarefas.length
+  return {
+    concluidas,
+    emAberto: total - concluidas,
+    total,
+    percentual: total === 0 ? null : Math.round((concluidas / total) * 100),
+  }
+}
+
+/**
+ * CARGA POR PESSOA — quantas tarefas cada responsável tem e quantas fechou.
+ *
+ * Uma tarefa com dois responsáveis conta para os DOIS: a pergunta é "quanto
+ * cada um tem na mão", não "como se reparte o trabalho". Somar as linhas desta
+ * lista, portanto, não dá o total do quadro — e é por isso que a tela não
+ * mostra soma nenhuma aqui.
+ *
+ * Tarefa sem responsável fica de fora: ela é carga de ninguém, e uma linha
+ * "sem responsável" no meio de nomes viraria uma pessoa que não existe. Quem
+ * responde por ela é a coluna do quadro.
+ *
+ * Ordem: quem tem mais EM ABERTO primeiro — é a leitura que a lista existe para
+ * dar. Empate desempata por nome, para a lista não dançar entre renderizações.
+ */
+export interface CargaDaPessoa {
+  id: string
+  nome: string
+  iniciais: string
+  total: number
+  concluidas: number
+  percentual: number
+}
+
+export function cargaPorPessoa(tarefas: TaskDto[]): CargaDaPessoa[] {
+  const porPessoa = new Map<string, CargaDaPessoa>()
+
+  for (const tarefa of tarefas) {
+    for (const pessoa of tarefa.assignees) {
+      const atual = porPessoa.get(pessoa.id) ?? {
+        id: pessoa.id,
+        nome: pessoa.name,
+        iniciais: pessoa.initials,
+        total: 0,
+        concluidas: 0,
+        percentual: 0,
+      }
+      atual.total += 1
+      if (tarefa.status === 'done') atual.concluidas += 1
+      porPessoa.set(pessoa.id, atual)
+    }
+  }
+
+  return [...porPessoa.values()]
+    .map((p) => ({ ...p, percentual: Math.round((p.concluidas / p.total) * 100) }))
+    .sort(
+      (a, b) => b.total - b.concluidas - (a.total - a.concluidas) || a.nome.localeCompare(b.nome),
+    )
+}

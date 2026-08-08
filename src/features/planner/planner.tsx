@@ -1,14 +1,22 @@
-import type { PlanItemDto, PlanItemDtoKind, PlanPhaseDto } from '@/api/gerado'
+import type { PlanItemDto, PlanItemDtoKind, PlanPhaseDto, ProjectPlanDto } from '@/api/gerado'
 import type { Modulo } from '@/app/modulo'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FILTROS, type FiltroDeProjeto, usePlanoDoProjeto, useProjetos } from '@/data/planner-api'
 import { FalhaDoPainel } from '@/features/dashboard/falha'
+import { Barra as BarraDeProgresso, Painel } from '@/features/dashboard/painel'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
-import { type Escala, escalaDoPlano, faixaDoItem, periodoDaFase, posicaoDeHoje } from './escala'
+import {
+  type Escala,
+  escalaDoPlano,
+  faixaDoItem,
+  periodoDaFase,
+  posicaoDeHoje,
+  progressoDoProjeto,
+} from './escala'
 
 /**
  * PLANNER — o gantt do projeto, em LEITURA.
@@ -172,10 +180,10 @@ export function PlannerTela() {
   const escala = plano.data ? escalaDoPlano(plano.data.phases) : null
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3">
         <div>
-          <h1 className="text-2xl font-bold">Planner</h1>
+          <h1 className="font-display text-3xl font-bold tracking-[-0.012em]">Planner</h1>
           <p className="text-sm text-muted-foreground">As fases do projeto na linha do tempo.</p>
         </div>
 
@@ -251,20 +259,69 @@ export function PlannerTela() {
           Este projeto ainda não tem fases planejadas.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-panel border-2 bg-card">
-          <div className="min-w-[840px]">
-            <div className="grid grid-cols-[minmax(180px,240px)_1fr]">
-              <span className="border-r-2 border-b-2 px-2 py-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                Fase
-              </span>
-              <CabecalhoDeMeses escala={escala} />
+        <>
+          {plano.data ? <AndamentoDoProjeto plano={plano.data} /> : null}
+          <div className="overflow-x-auto rounded-panel border-2 bg-card">
+            <div className="min-w-[840px]">
+              <div className="grid grid-cols-[minmax(180px,240px)_1fr]">
+                <span className="border-r-2 border-b-2 px-2 py-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+                  Fase
+                </span>
+                <CabecalhoDeMeses escala={escala} />
+              </div>
+              {plano.data?.phases.map((fase) => (
+                <Fase key={fase.id} fase={fase} escala={escala} />
+              ))}
             </div>
-            {plano.data?.phases.map((fase) => (
-              <Fase key={fase.id} fase={fase} escala={escala} />
-            ))}
           </div>
-        </div>
+        </>
       )}
+    </div>
+  )
+}
+
+/**
+ * ANDAMENTO — o mesmo bloco de "Task Progress" da referência de dashboard, com
+ * os números que ESTE plano tem: itens concluídos, em andamento e não
+ * iniciados, mais a média de progresso.
+ *
+ * Fica ACIMA da grade porque responde a pergunta que se faz antes de olhar as
+ * barras ("como está o projeto?"); a grade responde a seguinte ("o que acontece
+ * quando?").
+ */
+function AndamentoDoProjeto({ plano }: { plano: ProjectPlanDto }) {
+  const p = progressoDoProjeto(plano)
+  if (p.percentual === null) return null
+
+  return (
+    <Painel titulo="Andamento">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap gap-y-3 divide-x divide-rule-hair">
+          <Grandeza rotulo="Concluídos" valor={p.concluidos} />
+          <Grandeza rotulo="Em andamento" valor={p.emAndamento} />
+          <Grandeza rotulo="Não iniciados" valor={p.naoIniciados} />
+          <Grandeza rotulo="Itens" valor={p.total} />
+        </div>
+        <div className="flex min-w-[200px] flex-1 items-center gap-3">
+          <BarraDeProgresso percentual={p.percentual} />
+          <span className="shrink-0 font-mono text-sm font-medium tabular-nums">
+            {p.percentual}%
+          </span>
+        </div>
+      </div>
+    </Painel>
+  )
+}
+
+function Grandeza({ rotulo, valor }: { rotulo: string; valor: number }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1 px-4 first:pl-0 last:pr-0">
+      <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+        {rotulo}
+      </span>
+      <span className="font-display text-3xl font-bold tracking-[-0.012em] tabular-nums">
+        {valor}
+      </span>
     </div>
   )
 }

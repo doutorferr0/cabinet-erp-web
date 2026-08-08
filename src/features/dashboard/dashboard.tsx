@@ -10,6 +10,7 @@ import { LinhaDeHoje } from './hoje'
 import { Indicadores } from './indicadores'
 import { ListaDeTarefas } from './lista'
 import { NovaTarefa } from './nova-tarefa'
+import { ProgressoDoQuadro } from './progresso'
 import { Quadro } from './quadro'
 
 /**
@@ -47,13 +48,13 @@ export function DashboardTela() {
   const nome = sessao?.displayName?.trim()
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
       <header
         data-slot="dashboard-header"
         className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3"
       >
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="font-display text-3xl font-bold tracking-[-0.012em]">
             {saudacao()}
             {nome ? `, ${nome}` : ''}
           </h1>
@@ -67,6 +68,8 @@ export function DashboardTela() {
       </header>
 
       <Indicadores />
+
+      <ProgressoDoQuadro />
 
       <LinhaDeHoje />
 

@@ -535,6 +535,43 @@ e em parte dos browsers isso engole o `:active`.
 
 Nunca escrever a receita à mão no componente.
 
+## Regra da explicação no hover
+
+**Todo DESTINO de navegação diz, no hover, o que a tela faz.** Item de menu, atalho do Boletim,
+link de card — o que leva a algum lugar carrega uma linha de propósito, não só o nome. No menu isso
+é `descricao` no `NavItem`, **obrigatória no tipo**: tela nova sem descrição não compila, senão o
+cartão volta a ter buracos conforme o sistema cresce.
+
+Por que existe: nome de tela de ERP raramente é auto-explicativo para quem chegou agora — `Ordem de
+Compra` e `Pedido de Compra` são o exemplo em casa. E o operador aprende o sistema navegando, não
+lendo manual.
+
+**Onde NÃO vale — e a lista importa tanto quanto a regra:**
+
+- **Botão de ação cujo rótulo já é o verbo** (`Incluir`, `Alterar`, `Imprimir`). A explicação
+  repetiria o rótulo. Ali a peça é a DICA (`tooltip`), e só quando o rótulo some — botão de ícone,
+  barra colapsada.
+- **Confirmação destrutiva.** A consequência vai no corpo do diálogo, onde é lida antes da resposta.
+  Nunca em hover.
+- **Mecânica de tela** — paginar, ordenar, fechar, alternar tema. Não são destino.
+
+**A regra que vem junto continua valendo:** nada que só exista no hover pode ser necessário para
+operar. Conteúdo de hover é inalcançável no toque e cansativo no teclado — a explicação ACRESCENTA,
+nunca substitui um caminho. É por isso que o cartão do menu mostra telas que já estão listadas na
+barra: o que ele adiciona é o PROPÓSITO delas, não o acesso.
+
+**O gatilho é o PRÓPRIO item, e o cartão fala só dele.** Pousar em `Fornecedores` explica
+Fornecedores — não abre a lista do grupo. Uma versão anterior pendurou o cartão no rótulo do grupo e
+mostrava as telas irmãs: era a seção reescrita ao lado dela mesma, e foi recusada duas vezes antes
+de a leitura certa aparecer. Cartão de item explica o item.
+
+**O cartão traz SÓ a explicação — o nome já está no item que o disparou.** Repetir o rótulo dentro
+do cartão é a mesma duplicata que o tirou do rótulo do grupo.
+
+**Por isso ele vale no EXPANDIDO e a dica vale no COLAPSADO.** O cartão vence a dica onde os dois
+poderiam aparecer; num estado em que o nome não está na tela, um cartão sem nome trocaria a única
+identificação do ícone por uma frase solta. Onde o rótulo sumiu, a peça é a dica.
+
 ## Motion
 
 Movimento aqui serve para dizer que a tela trocou, não para enfeitar — é ferramenta de oito horas.
@@ -585,13 +622,17 @@ DataTable (cabeçalho claro, 42/52px, seleção violeta), banda com faixa de ace
 - **Do** compor telas a partir de `src/components/cabinet/` — reimplementar tabela na tela é o vetor de deriva.
 - **Do** tintar a área pelo conteúdo (valor/identidade/apoio/pendência/bloqueio) e só ela.
 - **Do** rodar a guarda v4 em todo componente tocado.
+- **Do** dar a todo destino de navegação uma linha dizendo o que a tela FAZ, mostrada no hover.
 
 ### Don't:
 - **Don't** deixar ornamento preto ou cinza, nem editar o `fill` de um SVG à mão.
 - **Don't** pôr mais de um ornamento por região visível.
 - **Don't** animar linha, célula, campo ou anel de foco.
 - **Don't** usar sombra preta, nem sombra com blur.
-- **Don't** arredondar item (chip, aba, página, célula, item de menu, etiqueta).
+- **Don't** arredondar item (chip, aba, página, célula, etiqueta) — **o motivo é que item
+  encosta em item e o canto abre fresta.** EXCEÇÃO registrada (2026-08-07, pedido do user): o
+  item da SIDEBAR usa `rounded-control`, porque ali eles não encostam — há folga entre eles, e no
+  estado colapsado `gap-1.5`. Onde a premissa não vale, a proibição não vale.
 - **Don't** usar amarelo como cor de texto, nem violeta como cor de fundo de área grande.
 - **Don't** voltar à barra preta sólida no cabeçalho de coluna ou na etiqueta.
 - **Don't** carregar fonte de CDN.

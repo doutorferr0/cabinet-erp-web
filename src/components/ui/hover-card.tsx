@@ -155,7 +155,12 @@ function HoverCardContent({
       placement={placement}
       offset={offset}
       className={cn(
-        'z-50 w-64 max-w-xs rounded-card border-2 border-border bg-popover p-3 text-popover-foreground text-sm pop-spring shadow-el3 outline-none',
+        // Translúcido a 85% com desfoque leve: o cartão é APOIO, e deixar a tela
+        // aparecer por baixo diz isso sem precisar de outra borda. A borda de 2px
+        // e a sombra sem blur continuam — a peça não vira vidro, só para de ser
+        // uma parede opaca sobre o que o operador estava lendo. O desfoque é o
+        // que segura a legibilidade sobre a grade do papel.
+        'z-50 w-64 max-w-xs rounded-card border-2 border-border bg-popover/85 p-3 text-popover-foreground text-sm pop-spring shadow-el3 outline-none backdrop-blur-sm',
         className,
       )}
       // Enquanto o ponteiro estiver sobre o CARTÃO — padding incluído — ele não

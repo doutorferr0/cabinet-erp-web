@@ -7,12 +7,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  useFormField,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { type LookupKind, useLookupOptions } from '@/data/lookups-api'
+import { cn } from '@/lib/utils'
 import { useFormContext } from 'react-hook-form'
 
 /**
@@ -296,32 +298,37 @@ export function RadioField({
   return (
     <FormField
       name={name}
-      render={({ field }) => (
-        <FormItem className={className}>
-          {/* `RadioGroup` não é um campo único — é um GRUPO, e já dá o próprio
-              nome acessível via `aria-label` na linha abaixo. Um `<FormLabel
-              htmlFor>` por cima apontaria para um `<div role="radiogroup">`,
-              que não é elemento "labelable": o Chrome acusa `Incorrect use of
-              <label for=FORM_ELEMENT>`. `<Label>` aqui é só visual. */}
-          <Label>{label}</Label>
-          <FormControl>
-            <RadioGroup
-              className="flex flex-row flex-wrap gap-4"
-              value={field.value ?? ''}
-              onChange={field.onChange}
-              aria-label={label}
-            >
-              {/* Rótulo como filho do Radio: a RAC associa sozinha. */}
-              {options.map((o) => (
-                <RadioGroupItem key={o.value} value={o.value} className="font-normal">
-                  {o.label}
-                </RadioGroupItem>
-              ))}
-            </RadioGroup>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        // `RadioGroup` não é um campo único — é um GRUPO, e já dá o próprio
+        // nome acessível via `aria-label` abaixo. Um `<FormLabel htmlFor>` por
+        // cima apontaria para um `<div role="radiogroup">`, que não é elemento
+        // "labelable": o Chrome acusa `Incorrect use of <label for=FORM_ELEMENT>`.
+        // `<Label>` aqui é só visual — mas ainda lê o mesmo `error` que
+        // `FormLabel` leria, senão o grupo é o único campo que não avisa em
+        // vermelho quando a validação falha.
+        const { error } = useFormField()
+        return (
+          <FormItem className={className}>
+            <Label className={cn(error && 'border-destructive text-destructive')}>{label}</Label>
+            <FormControl>
+              <RadioGroup
+                className="flex flex-row flex-wrap gap-4"
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                aria-label={label}
+              >
+                {/* Rótulo como filho do Radio: a RAC associa sozinha. */}
+                {options.map((o) => (
+                  <RadioGroupItem key={o.value} value={o.value} className="font-normal">
+                    {o.label}
+                  </RadioGroupItem>
+                ))}
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }

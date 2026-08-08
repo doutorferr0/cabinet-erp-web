@@ -27,6 +27,19 @@ import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-eve
  * decisão: são duas vistas do mesmo dado, e duas consultas fariam o dia marcado
  * no calendário e a linha da agenda virem de instantes diferentes — o operador
  * veria um ponto no dia 12 e uma agenda que não o conhece.
+ *
+ * ## De onde vem a cor de cada um dos três painéis
+ *
+ * O mockup de cores dá ao calendário o azul de Estoque e à agenda o par de
+ * Compras. É EMPRÉSTIMO de cor de módulo para uma região temática, e não é
+ * novidade nesta tela: `tipos-de-evento.tsx` já empresta os mesmos pares aos
+ * tipos de compromisso (entrega é Estoque, reunião é Compras), e o Planner faz
+ * o mesmo com os tipos de item. A faixa do painel passa a repetir a cor que a
+ * marca de cada linha já usa por baixo, em vez de introduzir uma cor nova.
+ *
+ * `A fazer` é o que quebra o padrão, e de propósito: pendência é ESTADO, não
+ * assunto, então a faixa lê a zona de foco. Sem selo — amarelo é cor com dono, e
+ * ornamento não usa as três cores com dono.
  */
 
 function Contador({ n }: { n: number }) {
@@ -82,7 +95,11 @@ function Calendario({
   const celulas = gradeDoMes(mes)
 
   return (
-    <Painel titulo={nomeDoMes(mes)} acao={<NavegacaoDoMes mes={mes} aoTrocarMes={aoTrocarMes} />}>
+    <Painel
+      titulo={nomeDoMes(mes)}
+      modulo="estoque"
+      acao={<NavegacaoDoMes mes={mes} aoTrocarMes={aoTrocarMes} />}
+    >
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {DIAS_DA_SEMANA.map((dia) => (
           <abbr
@@ -144,7 +161,7 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
   const doDia = eventosDoDia(eventos, diaLocalISO())
 
   return (
-    <Painel titulo="Agenda de hoje" acao={<Contador n={doDia.length} />}>
+    <Painel titulo="Agenda de hoje" modulo="compras" acao={<Contador n={doDia.length} />}>
       {carregando ? (
         <div className="flex flex-col gap-2">
           {['a1', 'a2', 'a3'].map((chave) => (
@@ -157,25 +174,37 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {doDia.map((evento) => (
-            <li
-              key={evento.id}
-              className="flex items-center gap-3 rounded-card border-2 bg-card p-2"
-            >
-              <MarcaDeTipo kind={evento.kind} className="h-8 w-1.5" />
-              <span className="font-mono text-sm font-semibold tabular-nums">
-                {horaLocal(evento.startsAt)}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate font-semibold">{evento.title}</span>
-                {evento.context ? (
-                  <span className="block truncate text-sm text-muted-foreground">
-                    {evento.context}
-                  </span>
-                ) : null}
-              </span>
-            </li>
-          ))}
+          {doDia.map((evento) => {
+            const tipo = TIPOS[evento.kind]
+            return (
+              <li
+                key={evento.id}
+                // A linha inteira passa a levar a pastel do TIPO — antes a cor do
+                // compromisso cabia só na barrinha de 6px da esquerda, e a agenda
+                // inteira se lia como uma pilha de linhas brancas iguais. A barra
+                // fica: é ela que dá a cheia /01 ao lado da pastel, e é o par que
+                // a legenda do calendário ensina.
+                {...(tipo.modulo && { 'data-modulo': tipo.modulo })}
+                className={cn(
+                  'flex items-center gap-3 rounded-card border-2 p-2',
+                  tipo.modulo ? 'bg-modulo' : 'bg-zone-money',
+                )}
+              >
+                <MarcaDeTipo kind={evento.kind} className="h-8 w-1.5" />
+                <span className="font-mono text-sm font-semibold tabular-nums">
+                  {horaLocal(evento.startsAt)}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{evento.title}</span>
+                  {evento.context ? (
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {evento.context}
+                    </span>
+                  ) : null}
+                </span>
+              </li>
+            )
+          })}
         </ul>
       )}
     </Painel>
@@ -189,7 +218,7 @@ function AFazer() {
   const pendentes = itens.filter((item) => !item.done).length
 
   return (
-    <Painel titulo="A fazer" acao={<Contador n={pendentes} />}>
+    <Painel titulo="A fazer" tinta="warn" acao={<Contador n={pendentes} />}>
       {query.isPending ? (
         <div className="flex flex-col gap-2">
           {['t1', 't2', 't3'].map((chave) => (
@@ -207,7 +236,10 @@ function AFazer() {
       ) : (
         <ul className="flex flex-col">
           {itens.map((item) => (
-            <li key={item.id} className="border-b py-1.5 last:border-b-0">
+            // Divisória TRACEJADA (mockup): dentro de um painel de pendência a
+            // régua cheia lia como separador de seção. Tracejada é a mesma
+            // separação com menos voz.
+            <li key={item.id} className="border-b border-dashed py-1.5 last:border-b-0">
               {/* O rótulo é o próprio texto do item: clicar na frase marca, que
                   é o alvo que o dedo e o mouse procuram. */}
               <Checkbox

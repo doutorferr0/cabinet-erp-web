@@ -1,6 +1,6 @@
+import { Painel } from '@/components/cabinet/painel'
 import { renderWithQuery } from '@/test/utils'
 import { describe, expect, it } from 'vitest'
-import { Painel } from './painel'
 
 describe('Painel', () => {
   it('sem módulo e sem tinta, o cabeçalho fica na superfície afundada', () => {

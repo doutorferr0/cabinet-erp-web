@@ -17,6 +17,7 @@ import shape160 from '@/assets/brutalist/brutalist-shape-160.svg?raw'
 import shape182 from '@/assets/brutalist/brutalist-shape-182.svg?raw'
 import shape185 from '@/assets/brutalist/brutalist-shape-185.svg?raw'
 import shape193 from '@/assets/brutalist/brutalist-shape-193.svg?raw'
+import spark020 from '@/assets/brutalist/spark-020.svg?raw'
 import { cn } from '@/lib/utils'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 
@@ -135,14 +136,14 @@ function lerDesenho(raw: string, cobertura: number): Desenho {
  */
 const DESENHOS = {
   brutalist011: lerDesenho(brutalist011, 55.6),
-  brutalist014: lerDesenho(brutalist014, 43.8),
+  brutalist014: lerDesenho(brutalist014, 47.4),
   brutalist022: lerDesenho(brutalist022, 72.3),
   brutalist029: lerDesenho(brutalist029, 5.0),
   brutalist064: lerDesenho(brutalist064, 78.8),
   brutalist072: lerDesenho(brutalist072, 60.2),
   brutalist097: lerDesenho(brutalist097, 50.3),
-  shape101: lerDesenho(shape101, 12.3),
-  shape120: lerDesenho(shape120, 56.8),
+  shape101: lerDesenho(shape101, 15.3),
+  shape120: lerDesenho(shape120, 86.3),
   shape128: lerDesenho(shape128, 80.2),
   shape133: lerDesenho(shape133, 43.4),
   shape135: lerDesenho(shape135, 12.5),
@@ -152,6 +153,7 @@ const DESENHOS = {
   shape182: lerDesenho(shape182, 41.2),
   shape185: lerDesenho(shape185, 66.0),
   shape193: lerDesenho(shape193, 42.0),
+  spark020: lerDesenho(spark020, 41.3),
 } as const
 
 /** Shape por MÓDULO — fixo. Mesmo módulo, mesmo desenho, sempre. */
@@ -208,33 +210,41 @@ const SHAPE_DE_ESTADO = {
 export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO
 
 /**
- * Shapes de LUGAR sem módulo — as três telas que a tabela de cor não cobre.
+ * Shapes de LUGAR sem módulo — as quatro telas que a tabela de cor não cobre.
  *
  * A tabela de shape×cor travada pelo user cobre oito módulos, e Dashboard,
- * Planner e Colaboradores não estão nela. Ficavam com ícone lucide cinza no meio
- * de uma fileira colorida, e a memória registrava isso como decisão pendente do
- * user desde a PR #45 — a alternativa que eu me proibia era inventar a nona cor.
+ * Planner, Tarefas e Colaboradores não estão nela. Ficavam com ícone lucide
+ * cinza no meio de uma fileira colorida, e a memória registrava isso como
+ * decisão pendente do user desde a PR #45 — a alternativa que eu me proibia era
+ * inventar a nona cor.
  *
- * **`mockup-dashboard-cores.html` resolveu sem cor nova:** os três EMPRESTAM o
- * par de um módulo vizinho e se distinguem pelo DESENHO. Por isso os shapes
+ * **`mockup-dashboard-cores.html` resolveu sem cor nova:** os quatro EMPRESTAM
+ * o par de um módulo vizinho e se distinguem pelo DESENHO. Por isso os shapes
  * moram aqui e não em `SHAPE_DO_MODULO`: a chave é o LUGAR, e a cor vem de fora,
  * do `[data-modulo]` que a entrada do menu declara.
  *
- * Sem isto, os três teriam de compartilhar o desenho de quem empresta a cor —
- * três anéis concêntricos idênticos na sidebar, e a fileira deixaria de ser mapa.
+ * Sem isto, os quatro teriam de compartilhar o desenho de quem empresta a cor —
+ * quatro anéis concêntricos idênticos na sidebar, e a fileira deixaria de ser mapa.
  *
- * **Sobre a `cobertura` destes três:** medida por rasterização, como manda o
- * comentário do campo, mas por um método que NÃO reproduziu os valores já
- * gravados — rodando os dois controles, `shape135` deu 10,8 contra os 12,5 do
- * repo e `shape160` deu 5,3 contra 10,1. O número aqui é o que eu medi, e não
- * finge a precisão que não tenho. O que ele decide é binário (o corte de 35% do
- * `temPeso`) e os três estão longe da linha nos dois métodos: 12,3 é vazado com
- * folga, 43,8 e 56,8 são cheios com folga. Conferido rasterizado a 18px.
+ * **Sobre a `cobertura` destes quatro:** medida por rasterização (canvas +
+ * `fill(path, 'evenodd')`, tinta ÷ bbox tight da própria tinta), não estimada.
+ * Rodando os controles do arquivo (`brutalist-029`, `shape135`) o método bate
+ * quase exato com os números já gravados no repo (4,9 contra 5,0 · 11,8 contra
+ * 12,5) — a pequena sobra é arredondamento, não erro de método. O que a
+ * cobertura decide é binário (o corte de 35% do `temPeso`) e os quatro estão
+ * longe da linha: 47,4 e 86,3 são cheios com folga, 15,3 é vazado com folga.
+ * `spark020` (41,3) é o mais próximo do corte — na mesma faixa do `shape182`
+ * (41,2) já aceito como cheio.
  */
 const SHAPE_DE_LUGAR = {
   dashboard: DESENHOS.brutalist014, // quatro pontas convergindo — o painel que reúne
   planner: DESENHOS.shape120, // faixas paralelas deitadas = a linha do tempo
   colaboradores: DESENHOS.shape101, // corpo dentro de moldura = a pessoa de dentro
+  // Faísca: o mesmo desenho que o mockup usa pro item "Tarefas" da sidebar
+  // (`o-k020` = `spark/spark-020.svg`) — família nova no acervo (`spark`, ainda
+  // sem nenhum outro membro no repo), auto-intersectante, o que faz o cartão
+  // "em curso" ao lado dos anéis do Boletim e do painel do Dashboard.
+  tarefas: DESENHOS.spark020,
 } as const
 
 export type ShapeDeLugar = keyof typeof SHAPE_DE_LUGAR

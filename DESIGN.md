@@ -535,6 +535,78 @@ e em parte dos browsers isso engole o `:active`.
 
 Nunca escrever a receita à mão no componente.
 
+## Casca global — appbar, gaveta e regra de quebra
+
+Cromo que aparece em **toda rota**, vive no `AppShell` (`src/app/shell.tsx`) e nunca na página —
+igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, sessão Cowork
+2026-08-08.
+
+### Appbar
+
+Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente em toda rota. Cluster
+à direita: busca 240px (`Pesquisar…`, chrome puro — não filtra nada, não há busca global no
+sistema) · engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
+lugar nenhum é pior que apagado, a mesma razão que desabilita `Alterar`/`Consul.` sem `get` no
+contrato) · sino com badge de não-lidas (abre a gaveta) · divisor · usuário (avatar + nome + papel +
+chevron, menu com `Sair`).
+
+**Fronteira lucide × shape continua valendo aqui**: busca, engrenagem, sino e chevron são AÇÃO de
+sistema, não lugar — vêm do lucide, não do acervo brutalist. Um "segundo vocabulário" de ícone
+customizado (SVG de traço 2.2px, como no mockup) ficou proposto e SEM resposta do user; usar lucide
+é a opção já aprovada e reversível, não uma antecipação da decisão pendente.
+
+### Gaveta de notificações (`src/app/gaveta-notificacoes.tsx`)
+
+**Empurra, nunca sobrepõe** (decisão do user — "não quero que sobreponha, e sim empurre"). É coluna
+FLEX IRMÃ do `<SidebarInset>`, dentro do wrapper do `SidebarProvider` — não `position: fixed`, sem
+véu, sem trava de scroll do `body`. Anima `width` 0↔312px; o conteúdo só MONTA aberta (não é só
+`overflow-hidden`) — fechada, nem o botão "Fechar" nem as notas ficam no tab order, e o texto
+acessível "Fechar" não colide com o do `Dialog`.
+
+Fundo laranja **cheia** do Boletim (`bg-modulo-cheia` + `data-modulo="boletim"` no `<aside>`), texto
+no `text-foreground` padrão — o MESMO par que o item ativo da sidebar já usa
+(`data-active:bg-modulo-cheia`, `sidebar.tsx`), sem token novo. Não-lida é bolinha (nunca corte
+lateral — reprovado 2× no mockup: 7px no kanban em 07/08, de novo na própria gaveta em 08/08). `Esc`
+fecha de qualquer lugar dentro dela; foco entra no X ao abrir.
+
+Notificação é **casca com dado de mock** (`src/mocks/notificacoes.ts`) — não há
+`/api/notifications` no contrato, e esta fatia é sobre o CROMO, não sobre notificação de verdade.
+Contagem real, push e "marcar lida" persistente ficam para quando o caminho existir.
+
+### Regra de quebra — `auto-fit`/`flex-wrap`, nunca `@media`
+
+Toda grade do Dashboard e Tarefas responde ao espaço real em vez de um breakpoint fixo — o que
+importa porque a gaveta aberta encolhe o `<main>` de um jeito que nenhum `lg:`/`xl:` prevê:
+
+- **KPIs** (`indicadores.tsx`) — `grid-cols-[repeat(auto-fit,minmax(208px,1fr))]`.
+- **Painéis do meio** (calendário/agenda/pendentes, `hoje.tsx`) — `flex flex-wrap`; calendário leva
+  `flex-[0_1_300px]` (não cresce além de 300px), agenda e pendentes levam `flex-[1_1_330px]` cada.
+- **Colunas do quadro** (`quadro.tsx`, agora em `/tarefas`) — mesma técnica do KPI,
+  `grid-cols-[repeat(auto-fit,minmax(238px,1fr))]`.
+- **Appbar, cabeçalho de página e barra de abas** — `flex flex-wrap` (já eram, na appbar por
+  construção).
+
+Os valores decimais (`gap-5.5` = 22px, `p-4.5` = 18px, `py-3.25` = 13px…) são o TOKEN de espaçamento
+do Tailwind v4 (`calc(var(--spacing) * N)`, gerado para qualquer N) batendo os alvos do mockup em
+vez de `px` solto — `gap-[22px]` seria a mesma coisa cravada fora do sistema.
+
+**Conferido rasterizado (§@comorodar), 1280px, gaveta ABERTA, claro e escuro:** zero scroll
+horizontal, KPIs e colunas do quadro quebram em vez de esmagar.
+
+### Dashboard ≠ Tarefas
+
+O quadro (kanban), a lista e "Progresso das tarefas"/"Carga por responsável" SAÍRAM do Dashboard e
+viraram rota própria `/tarefas` (`src/features/tarefas/`, item de sidebar entre Dashboard e
+Planner, shape `spark-020` do acervo emprestando o coral do Boletim — mesma técnica de
+`SHAPE_DE_LUGAR` do Planner/Colaboradores). O Dashboard fica só com o panorama do dia: KPIs,
+calendário, agenda, pendentes. Motivo: o user reclamou "está muita coisa/poluído" depois de aprovar
+o preenchimento por cor — a resposta é uma tela por assunto, não mais densidade na mesma tela.
+
+`Painel`/`Barra` (ex-`features/dashboard/painel.tsx`) e `FalhaDoPainel` (ex-`falha.tsx`) subiram
+para `src/components/cabinet/`: viraram compartilhados de fato quando Tarefas passou a precisar
+deles ao lado de Dashboard e Planner (Planner já importava os dois de dentro de `dashboard/`, uma
+violação de fronteira que a mudança também corrige).
+
 ## Regra da explicação no hover
 
 **Todo DESTINO de navegação diz, no hover, o que a tela faz.** Item de menu, atalho do Boletim,

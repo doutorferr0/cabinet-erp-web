@@ -93,4 +93,10 @@ describe('registry de providers', () => {
     expect(r.rows[0]).toMatchObject({ nome: 'TRANSPORTES CAMPINAS LTDA', uf: 'SP' })
     expect(data.transportadoras).not.toHaveProperty('empty')
   })
+
+  it('bancos é só consulta (código COMPE público, sem cadastro)', async () => {
+    const r = await data.bancos.list(tableState({ q: 'bradesco' }), 0)
+    expect(r.rows[0]).toMatchObject({ codigo: '237', nome: 'BANCO BRADESCO S.A.' })
+    expect(data.bancos).not.toHaveProperty('empty')
+  })
 })

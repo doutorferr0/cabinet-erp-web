@@ -15,12 +15,15 @@ import {
   TextField,
 } from '@/components/cabinet/form-controls'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
+import type { Banco } from '@/mocks/bancos'
 import type { Cidade } from '@/mocks/cidades'
 import type { Profissional } from '@/mocks/profissionais'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -116,7 +119,39 @@ function BuscaCidade({
   )
 }
 
-function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidade) => void }) {
+const bancoColumns: ColumnDef<Banco>[] = [
+  { accessorKey: 'codigo', header: 'Código' },
+  { accessorKey: 'nome', header: 'Banco' },
+]
+
+/**
+ * Busca de Banco (§3, §9 padrão 3) — estava como `TextField` livre, sem busca
+ * nenhuma (nem mockada): o único dos 10 `[busca +...]` da transcrição que não
+ * tinha janela alguma por trás. Mesma `SearchDialog` das outras, contra
+ * `data.bancos` (código COMPE, dado público).
+ */
+function BuscaBanco({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { setValue } = useFormContext<Profissional>()
+  return (
+    <SearchDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Busca de Banco"
+      columns={bancoColumns}
+      queryKey={['bancos']}
+      fetcher={(state) => data.bancos.list(state, 0)}
+      onSelect={(b) => {
+        setValue('numeroBanco', b.codigo, { shouldDirty: true })
+        setValue('nomeBanco', b.nome, { shouldDirty: true })
+      }}
+    />
+  )
+}
+
+function AbaDadosCadastrais({
+  onBuscaCidade,
+  onBuscaBanco,
+}: { onBuscaCidade: (p: PrefixoCidade) => void; onBuscaBanco: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-12 items-end gap-3">
@@ -170,8 +205,23 @@ function AbaDadosCadastrais({ onBuscaCidade }: { onBuscaCidade: (p: PrefixoCidad
 
       <FormBlock legend="Dados Bancários" className="flex flex-col gap-3">
         <div className="grid grid-cols-12 items-end gap-3">
-          <TextField name="numeroBanco" label="Nº do banco" className="col-span-4 sm:col-span-2" />
-          <TextField name="nomeBanco" label="Nome do banco" className="col-span-8 sm:col-span-4" />
+          <div className="col-span-4 sm:col-span-2">
+            <TextField name="numeroBanco" label="Nº do banco" readOnly />
+          </div>
+          <div className="col-span-8 sm:col-span-4">
+            <div className="flex items-end gap-1">
+              <TextField name="nomeBanco" label="Nome do banco" readOnly className="flex-1" />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Buscar banco"
+                onClick={onBuscaBanco}
+              >
+                <Search className="size-4" />
+              </Button>
+            </div>
+          </div>
           <TextField
             name="numeroAgencia"
             label="Nº da agência"
@@ -221,6 +271,7 @@ export function ProfissionalForm({
 }) {
   const navigate = useNavigate()
   const [buscaCidadePrefix, setBuscaCidadePrefix] = useState<PrefixoCidade | null>(null)
+  const [buscaBancoOpen, setBuscaBancoOpen] = useState(false)
 
   function onGravar(values: Profissional) {
     if (gravarDeFora) {
@@ -262,7 +313,10 @@ export function ProfissionalForm({
           ))}
         </TabsList>
         <TabsContent value="dadosCadastrais">
-          <AbaDadosCadastrais onBuscaCidade={setBuscaCidadePrefix} />
+          <AbaDadosCadastrais
+            onBuscaCidade={setBuscaCidadePrefix}
+            onBuscaBanco={() => setBuscaBancoOpen(true)}
+          />
         </TabsContent>
         {ABAS_SEM_CAPTURA.map(([value, label]) => (
           <TabsContent key={value} value={value}>
@@ -275,6 +329,7 @@ export function ProfissionalForm({
       </Tabs>
 
       <BuscaCidade prefix={buscaCidadePrefix} onOpenChange={setBuscaCidadePrefix} />
+      <BuscaBanco open={buscaBancoOpen} onOpenChange={setBuscaBancoOpen} />
     </CadastroForm>
   )
 }

@@ -250,14 +250,33 @@ function Cadastros({ linhas }: { linhas: LinhaCadastro[] }) {
                   {linha.nome}
                 </Link>
               </TableCell>
-              <TableCell className="text-right tabular-nums">{linha.total}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {linha.inativos === 0 ? (
-                  <span className="text-muted-foreground">—</span>
-                ) : (
-                  linha.inativos
-                )}
-              </TableCell>
+              {linha.total === null ? (
+                // A lista deste cadastro falhou (409 sem empresa ativa, 401,
+                // proxy fora do ar…) — dizer isso é melhor que fingir zero.
+                <TableCell colSpan={2} className="text-right text-sm text-muted-foreground italic">
+                  Indisponível
+                </TableCell>
+              ) : (
+                <>
+                  <TableCell className="text-right tabular-nums">{linha.total}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {linha.inativos === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <span
+                        title={
+                          linha.inativosParcial
+                            ? 'Piso: a consulta não cobre todos os registros, pode haver mais inativos'
+                            : undefined
+                        }
+                      >
+                        {linha.inativos}
+                        {linha.inativosParcial ? '+' : ''}
+                      </span>
+                    )}
+                  </TableCell>
+                </>
+              )}
             </TableRow>
           ))}
         </TableBody>

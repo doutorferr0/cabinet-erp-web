@@ -1,9 +1,10 @@
 import { boletim } from '@/data/boletim'
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { URL_PRODUTOS } from '@/data/produtos-api'
+import { colaboradores } from '@/mocks/colaboradores'
 import { orcamentos } from '@/mocks/orcamentos'
 import { ordensCompra } from '@/mocks/ordens-compra'
-import { instalarServidor, json } from '@/test/servidor'
+import { instalarServidor, json, problema } from '@/test/servidor'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
@@ -14,29 +15,49 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * As linhas de CADASTROS (Clientes, Fornecedores, Profissional Externo,
  * Produtos) pedem `data.<recurso>.list`, que é HTTP de verdade — por isso o
  * teste precisa do servidor falso (`docs/integracao.md`), não só dos arrays
- * de `src/mocks/`. `/api/partners` responde igual para os três papéis: o que
- * varia por papel é o FILTRO da consulta, não a resposta, e o boletim só soma
- * total/inativos — não precisa diferenciar quem é cliente de quem é fornecedor.
+ * de `src/mocks/`. `/api/partners` filtra por `role` (query param) e o stub
+ * abaixo responde DIFERENTE por papel — se o boletim um dia pedir dois papéis
+ * com a mesma consulta (bug de `fixa: { role }` perdido), o teste quebra em
+ * vez de passar com número igual por coincidência.
  */
 
 function servidorDeCadastros() {
   return instalarServidor({
-    [URL_PARCEIROS]: () =>
-      json({
-        rows: [
-          { id: 'p1', active: true },
-          { id: 'p2', active: false },
-        ],
-        total: 2,
-      }),
+    [URL_PARCEIROS]: ({ url }) => {
+      const role = new URL(url).searchParams.get('role')
+      if (role === 'customer') {
+        return json({
+          rows: [
+            { id: 'c1', active: true },
+            { id: 'c2', active: false },
+          ],
+          total: 2,
+        })
+      }
+      if (role === 'supplier') {
+        return json({
+          rows: [
+            { id: 's1', active: true },
+            { id: 's2', active: true },
+            { id: 's3', active: false },
+          ],
+          total: 3,
+        })
+      }
+      if (role === 'professional') {
+        return json({ rows: [{ id: 'pf1', active: true }], total: 1 })
+      }
+      throw new Error(`role inesperado na consulta de parceiros: ${role}`)
+    },
     [URL_PRODUTOS]: () =>
       json({
         rows: [
           { id: 'pr1', active: true },
           { id: 'pr2', active: true },
           { id: 'pr3', active: false },
+          { id: 'pr4', active: true },
         ],
-        total: 3,
+        total: 4,
       }),
   })
 }
@@ -97,22 +118,67 @@ describe('boletim', () => {
   })
 
   it('cadastros de parceiro e produto contam pela MESMA fonte da listagem (HTTP)', async () => {
-    servidorDeCadastros()
+    const servidor = servidorDeCadastros()
     const b = await boletim()
 
     expect(b.cadastros.length).toBeGreaterThan(0)
     for (const linha of b.cadastros) {
       expect(linha.total).toBeGreaterThan(0)
-      expect(linha.inativos).toBeLessThanOrEqual(linha.total)
+      expect(linha.inativos).toBeLessThanOrEqual(linha.total ?? Number.POSITIVE_INFINITY)
     }
 
-    // Clientes, Fornecedores e Profissional Externo pedem `/api/partners`
-    // (total: 2, 1 inativo no stub); Produtos pede `/api/products` (total: 3,
-    // 1 inativo). Colaboradores segue mock (array direto), sem chamada HTTP.
+    // Clientes (customer, total 2/1 inativo), Fornecedores (supplier, 3/1) e
+    // Profissional Externo (professional, 1/0) pedem `/api/partners` com
+    // `role` distinto — resposta diferente por papel prova que o filtro
+    // chegou ao servidor, não só que o boletim leu de algum lugar HTTP.
     const porNome = Object.fromEntries(b.cadastros.map((l) => [l.nome, l]))
-    expect(porNome.Clientes).toMatchObject({ total: 2, inativos: 1 })
-    expect(porNome.Fornecedores).toMatchObject({ total: 2, inativos: 1 })
-    expect(porNome['Profissional Externo']).toMatchObject({ total: 2, inativos: 1 })
-    expect(porNome.Produtos).toMatchObject({ total: 3, inativos: 1 })
+    expect(porNome.Clientes).toMatchObject({ total: 2, inativos: 1, inativosParcial: false })
+    expect(porNome.Fornecedores).toMatchObject({ total: 3, inativos: 1, inativosParcial: false })
+    expect(porNome['Profissional Externo']).toMatchObject({
+      total: 1,
+      inativos: 0,
+      inativosParcial: false,
+    })
+    expect(porNome.Produtos).toMatchObject({ total: 4, inativos: 1, inativosParcial: false })
+
+    const chamadasDeParceiro = servidor.em(URL_PARCEIROS)
+    const roles = chamadasDeParceiro.map((c) => new URL(c.url).searchParams.get('role')).sort()
+    expect(roles).toEqual(['customer', 'professional', 'supplier'])
+  })
+
+  it('cadastro cuja listagem falha fica indisponível, sem apagar o resto do boletim', async () => {
+    instalarServidor({
+      [URL_PARCEIROS]: () => problema(409, 'Nenhuma empresa ativa na sessão.'),
+      [URL_PRODUTOS]: () => json({ rows: [{ id: 'pr1', active: true }], total: 1 }),
+    })
+
+    const b = await boletim()
+
+    const porNome = Object.fromEntries(b.cadastros.map((l) => [l.nome, l]))
+    expect(porNome.Clientes).toMatchObject({ total: null, inativos: null })
+    expect(porNome.Fornecedores).toMatchObject({ total: null, inativos: null })
+    expect(porNome['Profissional Externo']).toMatchObject({ total: null, inativos: null })
+    // Produtos respondeu — não é o `Promise.all` derrubando tudo junto.
+    expect(porNome.Produtos).toMatchObject({ total: 1, inativos: 0 })
+    // Colaboradores é mock puro — nem passa perto do servidor falso.
+    expect(porNome.Colaboradores).toMatchObject({ total: colaboradores.length })
+  })
+
+  it('inativos vira piso (`inativosParcial`) quando a listagem pagina antes do total', async () => {
+    instalarServidor({
+      [URL_PARCEIROS]: ({ url }) => {
+        const role = new URL(url).searchParams.get('role')
+        if (role !== 'customer') return json({ rows: [], total: 0 })
+        // `total` do servidor é maior que o teto de página do boletim: as
+        // linhas devolvidas não são o cadastro inteiro.
+        return json({ rows: [{ id: 'c1', active: false }], total: 150 })
+      },
+      [URL_PRODUTOS]: () => json({ rows: [], total: 0 }),
+    })
+
+    const b = await boletim()
+    const clientes = b.cadastros.find((l) => l.nome === 'Clientes')
+
+    expect(clientes).toMatchObject({ total: 150, inativos: 1, inativosParcial: true })
   })
 })

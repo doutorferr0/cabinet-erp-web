@@ -3,7 +3,6 @@ import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { data } from '@/data'
-import { ErroDaApi } from '@/data/api-provider'
 import {
   atualizarParceiro,
   corpoDeEscrita,
@@ -13,6 +12,7 @@ import {
   vincularParceiro,
 } from '@/data/parceiros-api'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
+import { detalheDoErro } from '@/lib/erros'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { type Fornecedor, fornecedorVazio } from '@/mocks/fornecedores'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -128,8 +128,8 @@ function FornecedorEditPage() {
     return (
       <div className="flex flex-col items-start gap-2 text-muted-foreground">
         Não foi possível carregar o fornecedor.
-        {query.error instanceof ErroDaApi && query.error.detail ? (
-          <span className="max-w-prose text-[0.75rem]">{query.error.detail}</span>
+        {detalheDoErro(query.error) ? (
+          <span className="max-w-prose text-[0.75rem]">{detalheDoErro(query.error)}</span>
         ) : null}
         <Button variant="outline" size="sm" onClick={() => query.refetch()}>
           Tentar de novo
@@ -185,9 +185,7 @@ function CoberturaDaTela({
 }) {
   const falha = erro ? (
     <div role="alert" className="flex flex-col items-start gap-2">
-      <p className="text-sm text-destructive">
-        Não foi possível gravar. {erro instanceof ErroDaApi && erro.detail ? erro.detail : null}
-      </p>
+      <p className="text-sm text-destructive">Não foi possível gravar. {detalheDoErro(erro)}</p>
       {/* Vincular NÃO edita o cadastro do grupo: liga esta empresa a ele. O
           que a empresa vizinha cadastrou fica como está — ajustar depois é o
           Alterar, que é explícito. */}

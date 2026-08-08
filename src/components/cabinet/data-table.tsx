@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ErroDaApi } from '@/data/api-provider'
+import { mensagemDoErro } from '@/lib/erros'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -280,9 +280,10 @@ export function VitraDataTable<T>({
                         {/* O `detail` do problem+json é a frase que o backend
                             escolheu para o caso — é a única informação acionável
                             da resposta. Sem ela, a orientação genérica. */}
-                        {query.error instanceof ErroDaApi && query.error.detail
-                          ? query.error.detail
-                          : 'A consulta não chegou ao servidor. Tente de novo em instantes.'}
+                        {mensagemDoErro(
+                          query.error,
+                          'A consulta não chegou ao servidor. Tente de novo em instantes.',
+                        )}
                       </EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>

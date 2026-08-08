@@ -5,8 +5,8 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { data } from '@/data'
-import { ErroDaApi } from '@/data/api-provider'
 import { useDesativarParceiro } from '@/data/parceiros-api'
+import { mensagemDoErro } from '@/lib/erros'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -96,13 +96,7 @@ function ClientesPage() {
           ativo={aDesativar.active}
           aberto
           pendente={desativar.isPending}
-          erro={
-            desativar.error instanceof ErroDaApi
-              ? (desativar.error.detail ?? 'Não foi possível desativar. Tente de novo.')
-              : desativar.error
-                ? 'Não foi possível desativar. Tente de novo.'
-                : null
-          }
+          erro={mensagemDoErro(desativar.error, 'Não foi possível desativar. Tente de novo.')}
           onFechar={() => setADesativar(null)}
           onConfirmar={() => desativar.mutate(aDesativar, { onSuccess: () => setADesativar(null) })}
         />

@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   Package,
   ShoppingCart,
+  SquareKanban,
   Store,
 } from 'lucide-react'
 
@@ -86,6 +87,13 @@ export const navGroups: NavGroup[] = [
         // Coral do Boletim nas duas: a seção da VISÃO fala do mesmo assunto que
         // ele — o dia — e o mockup as põe sob o mesmo par. Desenhos distintos.
         aparencia: { modulo: 'boletim', shape: 'dashboard' },
+      },
+      {
+        title: 'Tarefas',
+        url: '/tarefas',
+        icon: SquareKanban,
+        descricao: 'O quadro do que precisa ser feito, em colunas por andamento.',
+        aparencia: { modulo: 'boletim', shape: 'tarefas' },
       },
       {
         title: 'Planner',

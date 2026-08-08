@@ -57,7 +57,7 @@ describe('itemDaRota', () => {
 })
 
 describe('aparência emprestada', () => {
-  // As três telas fora da tabela de shape×cor travada pelo user. O que este
+  // As quatro telas fora da tabela de shape×cor travada pelo user. O que este
   // teste guarda é a REGRA, não a estética: só quem não tem módulo próprio
   // empresta, e cada uma leva desenho seu — mesma cor com mesmo desenho faria a
   // fileira da sidebar deixar de ser um mapa.
@@ -67,6 +67,7 @@ describe('aparência emprestada', () => {
 
     expect(comEmprestimo.map((item) => [item.url, item.aparencia])).toEqual([
       ['/dashboard', { modulo: 'boletim', shape: 'dashboard' }],
+      ['/tarefas', { modulo: 'boletim', shape: 'tarefas' }],
       ['/planner', { modulo: 'boletim', shape: 'planner' }],
       ['/cadastros/colaboradores', { modulo: 'clientes', shape: 'colaboradores' }],
     ])

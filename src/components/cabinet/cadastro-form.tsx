@@ -73,7 +73,10 @@ export function CadastroForm<T extends FieldValues>({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onGravar)} className="flex min-h-0 flex-1 flex-col gap-4">
+      <form
+        onSubmit={form.handleSubmit(onGravar)}
+        className="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
+      >
         {/* `disabled` no fieldset cobre todo descendente sem prop por campo.
             O `gap-4` mora aqui: regiões da tela (fileira de cabeçalho, tira de
             abas, barra de rodapé) se separam por `{spacing.lg}` uma vez só, em
@@ -82,7 +85,13 @@ export function CadastroForm<T extends FieldValues>({
             modo consulta ela continua legível, não apagada com o formulário. */}
         {titulo ? <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
         {aviso}
-        <fieldset disabled={readOnly} className="flex min-h-0 flex-1 flex-col gap-4 border-0 p-0">
+        {/* `min-w-0` nos dois: sem ele, um item de `flex-col` nasce com
+            `min-width: auto` e uma grade larga (Orçamento, 14 colunas) empurra
+            a página inteira em vez de rolar dentro de si — ver form-grid.tsx. */}
+        <fieldset
+          disabled={readOnly}
+          className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 border-0 p-0"
+        >
           {children}
         </fieldset>
         {/* Rodapé é Documento (`bg-card`): senta na folha; régua superior em

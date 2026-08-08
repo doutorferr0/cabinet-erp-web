@@ -290,46 +290,52 @@ export function ColaboradorForm({
       titulo="Cadastro de Colaboradores"
       {...(contexto ? { contexto } : {})}
     >
+      {/* FotoFrame (~224px) é coluna lateral do bloco campos+abas, não sibling
+          de só uma fileira — assim a altura da linha vem do conteúdo da aba
+          (bem mais alto que a foto), sem vão vazio nem sobreposição. */}
       <div className="flex items-start gap-4">
-        <div className="grid flex-1 grid-cols-12 items-end gap-3">
-          <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-6" />
-          <LookupField
-            name="setor"
-            label="Setor"
-            kind="setor"
-            className="col-span-8 sm:col-span-3"
-          />
-          <CheckboxField
-            name="atendimentoCliente"
-            label="Atendimento ao cliente"
-            className="col-span-6 sm:col-span-2"
-          />
-          <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-1" />
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <div className="grid grid-cols-12 items-end gap-3">
+            <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-5" />
+            <LookupField
+              name="setor"
+              label="Setor"
+              kind="setor"
+              className="col-span-8 sm:col-span-3"
+            />
+            <CheckboxField
+              name="atendimentoCliente"
+              label="Atendimento ao cliente"
+              className="col-span-6 sm:col-span-3"
+            />
+            <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-1" />
+          </div>
+
+          <Tabs defaultValue="geral">
+            <TabsList className="flex-wrap">
+              <TabsTrigger value="geral">Geral</TabsTrigger>
+              {ABAS_SEM_CAPTURA.map(([value, label]) => (
+                <TabsTrigger key={value} value={value}>
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent value="geral">
+              <AbaGeral onBuscaNaturalidade={() => setBuscaNaturalidadeOpen(true)} />
+            </TabsContent>
+            {ABAS_SEM_CAPTURA.map(([value, label]) => (
+              <TabsContent key={value} value={value}>
+                <p className="py-6 text-sm text-muted-foreground">
+                  Aba {label} não capturada na transcrição do SoftLux — aguardando nova rodada de
+                  prints (transcrição §10).
+                </p>
+              </TabsContent>
+            ))}
+          </Tabs>
         </div>
+
         <FotoFrame />
       </div>
-
-      <Tabs defaultValue="geral">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="geral">Geral</TabsTrigger>
-          {ABAS_SEM_CAPTURA.map(([value, label]) => (
-            <TabsTrigger key={value} value={value}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="geral">
-          <AbaGeral onBuscaNaturalidade={() => setBuscaNaturalidadeOpen(true)} />
-        </TabsContent>
-        {ABAS_SEM_CAPTURA.map(([value, label]) => (
-          <TabsContent key={value} value={value}>
-            <p className="py-6 text-sm text-muted-foreground">
-              Aba {label} não capturada na transcrição do SoftLux — aguardando nova rodada de prints
-              (transcrição §10).
-            </p>
-          </TabsContent>
-        ))}
-      </Tabs>
 
       <BuscaNaturalidade open={buscaNaturalidadeOpen} onOpenChange={setBuscaNaturalidadeOpen} />
     </CadastroForm>

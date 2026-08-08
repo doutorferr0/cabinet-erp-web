@@ -64,7 +64,10 @@ export function LookupCombo({
           type="button"
           variant="outline"
           disabled={disabled ?? false}
-          className={cn('w-full justify-between font-normal', !value && 'text-muted-foreground')}
+          className={cn(
+            'w-full min-w-0 shrink justify-between font-normal',
+            !value && 'text-muted-foreground',
+          )}
         >
           <span className="truncate">{value ?? `Selecione ${label.toLowerCase()}…`}</span>
           <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />

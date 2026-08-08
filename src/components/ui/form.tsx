@@ -65,7 +65,7 @@ const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
     return (
       <FormItemContext.Provider value={{ id }}>
         {/* Rótulo→campo é o vínculo mais apertado do sistema: `{spacing.xs}` (Regra dos Quatro Degraus). */}
-        <div ref={ref} className={cn('flex flex-col gap-1', className)} {...props} />
+        <div ref={ref} className={cn('flex min-w-0 flex-col gap-1', className)} {...props} />
       </FormItemContext.Provider>
     )
   },

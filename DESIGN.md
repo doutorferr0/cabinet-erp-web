@@ -560,9 +560,17 @@ operar. Conteúdo de hover é inalcançável no toque e cansativo no teclado —
 nunca substitui um caminho. É por isso que o cartão do menu mostra telas que já estão listadas na
 barra: o que ele adiciona é o PROPÓSITO delas, não o acesso.
 
-**O gatilho tem de se anunciar.** O rótulo de grupo carrega o cartão e é o elemento menos interativo
-da barra — por isso leva cursor, fundo no hover e um chevron apontando para onde o cartão abre. O
-chevron só aparece onde há cartão: grupo de uma tela só não promete o que não abre.
+**O gatilho é o PRÓPRIO item, e o cartão fala só dele.** Pousar em `Fornecedores` explica
+Fornecedores — não abre a lista do grupo. Uma versão anterior pendurou o cartão no rótulo do grupo e
+mostrava as telas irmãs: era a seção reescrita ao lado dela mesma, e foi recusada duas vezes antes
+de a leitura certa aparecer. Cartão de item explica o item.
+
+**O cartão traz SÓ a explicação — o nome já está no item que o disparou.** Repetir o rótulo dentro
+do cartão é a mesma duplicata que o tirou do rótulo do grupo.
+
+**Por isso ele vale no EXPANDIDO e a dica vale no COLAPSADO.** O cartão vence a dica onde os dois
+poderiam aparecer; num estado em que o nome não está na tela, um cartão sem nome trocaria a única
+identificação do ícone por uma frase solta. Onde o rótulo sumiu, a peça é a dica.
 
 ## Motion
 

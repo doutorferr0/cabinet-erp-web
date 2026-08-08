@@ -1,11 +1,10 @@
 import { moduloDaRota } from '@/app/modulo'
-import { type NavGroup, gruposVisiveis } from '@/app/navigation'
+import { type NavItem, gruposVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { RequireRecurso } from '@/app/require-recurso'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -25,58 +24,19 @@ import {
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { ChevronRight, LayoutDashboard } from 'lucide-react'
+import { LayoutDashboard } from 'lucide-react'
 
 /**
- * O que o cartão de hover mostra ao pousar no RÓTULO de um grupo: as telas
- * daquele grupo, com a atual marcada.
+ * O conteúdo do cartão de hover de UM item: só a linha que diz o que a tela FAZ
+ * (§Regra da explicação no hover no DESIGN.md).
  *
- * Mora no rótulo, e não em cada item, porque no item o cartão listava as
- * IRMÃS — que já estão logo abaixo, na mesma coluna, a um palmo do ponteiro.
- * Era a seção reescrita ao lado dela mesma. No rótulo a relação passa a ser a
- * que o operador já espera de um menu: o pai abre os filhos.
- *
- * Segue sendo acréscimo, nunca caminho único: tudo que está no cartão está na
- * sidebar logo abaixo (§HoverCard). Por isso o rótulo NÃO vira parada de
- * teclado — seria um tab a mais por grupo para revelar exatamente o que o tab
- * seguinte já mostra. Quem navega por teclado entra direto nos itens.
+ * **Sem o nome, de propósito.** O nome está no próprio item que disparou o
+ * cartão — imprimi-lo aqui repetiria o que o olho acabou de ler. Já foi o
+ * cartão do GRUPO, listando as telas irmãs, e essa duplicata foi recusada duas
+ * vezes: o cartão só ganha o direito de existir pelo que ACRESCENTA.
  */
-function TelasDoGrupo({ grupo, atual }: { grupo: NavGroup; atual: string }) {
-  return (
-    <ul className="flex flex-col gap-0.5">
-      {grupo.items.map((tela) => {
-        const naTela = atual === tela.url || atual.startsWith(`${tela.url}/`)
-        return (
-          <li key={tela.url}>
-            <Link
-              to={tela.url}
-              className={cn(
-                'flex flex-col gap-0.5 rounded-control px-2 py-1.5 no-underline transition-colors hover:bg-neutral',
-                naTela && 'bg-primary text-primary-foreground',
-              )}
-              {...(naTela && { 'aria-current': 'page' })}
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <tela.icon className="size-3.5 shrink-0" />
-                {tela.title}
-              </span>
-              {/* Recuo de 22px = ícone (14) + gap (8): a frase começa embaixo do
-                  NOME, não embaixo do ícone, e as descrições formam uma coluna
-                  de leitura própria. */}
-              <span
-                className={cn(
-                  'pl-[22px] text-xs leading-snug text-muted-foreground',
-                  naTela && 'text-primary-foreground/85',
-                )}
-              >
-                {tela.descricao}
-              </span>
-            </Link>
-          </li>
-        )
-      })}
-    </ul>
-  )
+function ExplicacaoDaTela({ tela }: { tela: NavItem }) {
+  return <p className="text-sm leading-snug">{tela.descricao}</p>
 }
 
 function AppSidebar() {
@@ -157,21 +117,7 @@ function AppSidebar() {
                 (`collapsible=icon` zera a opacidade dele) e o atalho some
                 junto; o que volta ali é a dica de cada ícone, que é justamente
                 o que falta no estado de ícone. */}
-            {!colapsada && group.items.length > 1 ? (
-              <HoverCard>
-                <HoverCardTrigger>
-                  <SidebarGroupLabel className="cursor-pointer gap-1 rounded-control transition-colors hover:bg-neutral hover:text-foreground">
-                    {group.title}
-                    <ChevronRight aria-hidden className="ml-auto size-3.5 opacity-50" />
-                  </SidebarGroupLabel>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80" placement="right top">
-                  <TelasDoGrupo grupo={group} atual={pathname} />
-                </HoverCardContent>
-              </HoverCard>
-            ) : (
-              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            )}
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarMenu>
               {group.items.map((item) => {
                 const active = pathname === item.url || pathname.startsWith(`${item.url}/`)
@@ -184,7 +130,23 @@ function AppSidebar() {
                     key={item.url}
                     {...(moduloDoItem && { 'data-modulo': moduloDoItem })}
                   >
-                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                    {/* CARTÃO no expandido, DICA no colapsado — e a razão é o que
+                        cada estado já mostra. Expandido: o nome está no item, a um
+                        centímetro do ponteiro; repeti-lo no cartão seria a mesma
+                        duplicata que tirou o cartão do rótulo do grupo. Colapsado: o
+                        nome NÃO existe na tela, então ali a peça certa é a dica, que
+                        é justamente o que ela sempre fez.
+
+                        O cartão nunca convive com a dica: quando existe, vence. Por
+                        isso ele não pode aparecer no colapsado sem o nome — seria
+                        trocar a única identificação do ícone por uma frase solta. */}
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      {...(colapsada
+                        ? { tooltip: item.title }
+                        : { hoverCard: <ExplicacaoDaTela tela={item} /> })}
+                    >
                       <Link to={item.url}>
                         {/* O shape do módulo no lugar do ícone genérico: é ele
                             que o operador aprende como marca do módulo, e o

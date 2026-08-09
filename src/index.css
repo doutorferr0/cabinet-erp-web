@@ -141,7 +141,7 @@
      quase invisível, e a cortina existe justamente para dizer "o que está atrás
      não recebe clique agora". No escuro ela precisa ser bem mais densa. */
   --veil: 0 0% 0% / 0.2;
-  --grid-line: hsl(210 10% 86%); /* #CCD1D9 — acompanha `--rule-hair` */
+  --grid-line: hsl(40 18% 82%); /* quente — a grade pousa sobre o fundo creme */
   /* Sidebar: mesmo creme quente da bancada; item ativo = Folha com traço preto. */
   --sidebar: hsl(40 33% 91%); /* #FAF6EE — creme quente */
   --sidebar-foreground: hsl(0 0% 0%);

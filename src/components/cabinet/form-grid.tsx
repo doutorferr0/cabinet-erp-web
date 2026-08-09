@@ -236,7 +236,7 @@ export function FormGrid({
       <div className="flex flex-wrap gap-2">
         {hideAdd ? null : (
           <Button type="button" variant="outline" size="sm" onClick={() => append(newRow)}>
-            <Plus className="size-4" /> {addLabel}
+            <Plus className="size-4 text-modulo" /> {addLabel}
           </Button>
         )}
         {actions?.((row) => append(row))}
@@ -285,7 +285,7 @@ export function FormGrid({
                             aria-label={`Excluir linha ${index + 1}`}
                             onClick={() => remove(index)}
                           >
-                            <Minus className="size-4" />
+                            <Minus className="size-4 text-modulo" />
                           </Button>
                         </div>
                       </TableCell>
@@ -339,7 +339,7 @@ export function FormGrid({
                         aria-label={`Excluir linha ${index + 1}`}
                         onClick={() => remove(index)}
                       >
-                        <Minus className="size-4" />
+                        <Minus className="size-4 text-modulo" />
                       </Button>
                     </TableCell>
                   </TableRow>

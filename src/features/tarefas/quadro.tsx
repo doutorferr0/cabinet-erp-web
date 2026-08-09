@@ -113,7 +113,7 @@ function Cartao({ tarefa }: { tarefa: TaskDto }) {
             className="ml-auto"
             aria-label={`Ações de ${tarefa.title}`}
           >
-            <MoreHorizontal />
+            <MoreHorizontal className="text-modulo" />
           </Button>
           <DropdownMenu placement="bottom end">
             <DropdownMenuLabel>Mover para</DropdownMenuLabel>

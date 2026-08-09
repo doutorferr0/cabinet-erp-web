@@ -182,7 +182,7 @@ export function VitraDataTable<T>({
             title={action.title}
             onClick={() => action.onClick?.(action.needsSelection ? selected : null)}
           >
-            {action.icon ? <action.icon aria-hidden="true" /> : null}
+            {action.icon ? <action.icon aria-hidden="true" className="text-modulo" /> : null}
             {action.label}
           </Button>
         ))}

@@ -184,7 +184,7 @@ function AppSidebar() {
                             tamanho={colapsada ? 22 : 18}
                           />
                         ) : (
-                          <item.icon />
+                          <item.icon className={active ? 'text-modulo-suave' : 'text-modulo'} />
                         )}
                         <span>{item.title}</span>
                       </Link>

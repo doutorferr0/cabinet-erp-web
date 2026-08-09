@@ -151,7 +151,7 @@ function BlocoTransportadora() {
         title="Busca de Transportadora"
         columns={transportadoraColumns}
         queryKey={['transportadoras']}
-        fetcher={(state) => data.transportadoras.list(state, 0)}
+        fetcher={(state) => data.transportadoras.list(state)}
         onSelect={(t) =>
           setValue(
             'transportadora',

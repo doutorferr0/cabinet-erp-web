@@ -1,8 +1,6 @@
-import { Providers } from '@/app/providers'
-import { routeTree } from '@/routeTree.gen'
 import { instalarServidor } from '@/test/servidor'
-import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { type FetchStub, renderRoute } from '@/test/utils'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,10 +29,11 @@ const EMPRESAS = [
 const GATED = ['Fornecedores', 'Profissional Externo', 'Colaboradores']
 
 let empresaAtiva: string | null = EMPRESAS[0]?.tenantId ?? null
+let fetchStub: FetchStub
 
 beforeEach(() => {
   empresaAtiva = EMPRESAS[0]?.tenantId ?? null
-  instalarServidor({
+  const servidor = instalarServidor({
     '/auth/tenants': () => EMPRESAS,
     '/auth/me': () => ({
       organizationId: 'org-1',
@@ -47,6 +46,7 @@ beforeEach(() => {
       return new Response(null, { status: 204 })
     },
   })
+  fetchStub = servidor.fetch
 })
 
 afterEach(() => {
@@ -54,17 +54,7 @@ afterEach(() => {
 })
 
 function setup(initialUrl = '/') {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory({ initialEntries: [initialUrl] }),
-    defaultPreload: 'intent',
-  })
-  const view = render(
-    <Providers>
-      <RouterProvider router={router} />
-    </Providers>,
-  )
-  return { router, ...view }
+  return renderRoute(initialUrl, fetchStub)
 }
 
 describe('AppShell', () => {

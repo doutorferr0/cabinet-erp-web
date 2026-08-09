@@ -1,4 +1,7 @@
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ErroDeCarregamento,
+  EsqueletoDeCarregamento,
+} from '@/components/cabinet/estado-de-consulta'
 import { data } from '@/data'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -23,11 +26,19 @@ function ColaboradorEditPage() {
   })
 
   if (query.isPending) {
+    return <EsqueletoDeCarregamento />
+  }
+
+  // `data.colaboradores` é mock (nunca rejeita hoje) — o braço existe para o
+  // dia em que colaborador ganhar caminho HTTP no contrato, seguindo a mesma
+  // regra dos outros 5 cadastros de detalhe.
+  if (query.isError) {
     return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ErroDeCarregamento
+        mensagem="Não foi possível carregar o colaborador."
+        erro={query.error}
+        refazer={() => query.refetch()}
+      />
     )
   }
 

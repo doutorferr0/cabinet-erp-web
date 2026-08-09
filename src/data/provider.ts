@@ -51,6 +51,18 @@ export function createMockListProvider<T>({
   }
 }
 
+export function tabelaDeApoio<T extends { codigo: string; nome: string }>({
+  rows,
+}: {
+  rows: readonly T[]
+}): ListProvider<T> {
+  return createMockListProvider({
+    rows,
+    matches: (row, q) => row.codigo.includes(q) || normalize(row.nome).includes(q),
+    delayMs: 200,
+  })
+}
+
 export interface MockResourceConfig<T> extends MockListConfig<T> {
   empty: (id: number) => T
   /** Como achar o registro pelo id (default: campo `id`). */

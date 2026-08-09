@@ -1,10 +1,13 @@
+import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import {
   ComunicadoresBlock,
   EnderecoBlock,
   RedesSociaisBlock,
   TelefonesBlock,
 } from '@/components/cabinet/blocks'
+import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
@@ -15,15 +18,13 @@ import {
   TextField,
 } from '@/components/cabinet/form-controls'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Tabs } from '@/components/ui/tabs'
 import { data } from '@/data'
 import type { Banco } from '@/mocks/bancos'
-import type { Cidade } from '@/mocks/cidades'
 import type { Profissional } from '@/mocks/profissionais'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -88,32 +89,23 @@ const ABAS_SEM_CAPTURA = [
 
 type PrefixoCidade = 'endereco' | 'enderecoBanco'
 
-const cidadeColumns: ColumnDef<Cidade>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
-  { accessorKey: 'nome', header: 'Cidade' },
-  { accessorKey: 'uf', header: 'UF' },
-]
-
 function BuscaCidade({
   prefix,
   onOpenChange,
 }: { prefix: PrefixoCidade | null; onOpenChange: (p: PrefixoCidade | null) => void }) {
   const { setValue } = useFormContext<Profissional>()
   return (
-    <SearchDialog
+    <BuscaDeCidade
       open={prefix !== null}
       onOpenChange={(o) => {
         if (!o) onOpenChange(null)
       }}
-      title="Busca de Cidade"
-      columns={cidadeColumns}
-      queryKey={['cidades']}
-      fetcher={(state) => data.cidades.list(state, 0)}
-      onSelect={(c) => {
+      titulo="Busca de Cidade"
+      onSelect={(cidade) => {
         if (!prefix) return
-        setValue(`${prefix}.cidadeCodigo`, c.codigo, { shouldDirty: true })
-        setValue(`${prefix}.cidadeNome`, c.nome, { shouldDirty: true })
-        setValue(`${prefix}.uf`, c.uf, { shouldDirty: true })
+        setValue(`${prefix}.cidadeCodigo`, cidade.codigo, { shouldDirty: true })
+        setValue(`${prefix}.cidadeNome`, cidade.nome, { shouldDirty: true })
+        setValue(`${prefix}.uf`, cidade.uf, { shouldDirty: true })
       }}
     />
   )
@@ -139,7 +131,7 @@ function BuscaBanco({ open, onOpenChange }: { open: boolean; onOpenChange: (o: b
       title="Busca de Banco"
       columns={bancoColumns}
       queryKey={['bancos']}
-      fetcher={(state) => data.bancos.list(state, 0)}
+      fetcher={(state) => data.bancos.list(state)}
       onSelect={(b) => {
         setValue('numeroBanco', b.codigo, { shouldDirty: true })
         setValue('nomeBanco', b.nome, { shouldDirty: true })
@@ -152,6 +144,7 @@ function AbaDadosCadastrais({
   onBuscaCidade,
   onBuscaBanco,
 }: { onBuscaCidade: (p: PrefixoCidade) => void; onBuscaBanco: () => void }) {
+  const { register } = useFormContext<Profissional>()
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-12 items-end gap-3">
@@ -208,20 +201,15 @@ function AbaDadosCadastrais({
           <div className="col-span-4 sm:col-span-2">
             <TextField name="numeroBanco" label="Nº do banco" readOnly />
           </div>
-          <div className="col-span-8 sm:col-span-4">
-            <div className="flex items-end gap-1">
-              <TextField name="nomeBanco" label="Nome do banco" readOnly className="flex-1" />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Buscar banco"
-                onClick={onBuscaBanco}
-              >
-                <Search className="size-4" />
-              </Button>
-            </div>
-          </div>
+          <CampoComBusca
+            label="Nome do banco"
+            inputId="nomeBanco"
+            ariaLabel="Buscar banco"
+            onBuscar={onBuscaBanco}
+            className="col-span-8 sm:col-span-4"
+          >
+            <Input id="nomeBanco" {...register('nomeBanco')} readOnly className="flex-1" />
+          </CampoComBusca>
           <TextField
             name="numeroAgencia"
             label="Nº da agência"
@@ -304,28 +292,12 @@ export function ProfissionalForm({
       </div>
 
       <Tabs defaultValue="dadosCadastrais">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="dadosCadastrais">Dados Cadastrais</TabsTrigger>
-          {ABAS_SEM_CAPTURA.map(([value, label]) => (
-            <TabsTrigger key={value} value={value}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="dadosCadastrais">
+        <AbasSemCaptura capturada={['dadosCadastrais', 'Dados Cadastrais']} abas={ABAS_SEM_CAPTURA}>
           <AbaDadosCadastrais
             onBuscaCidade={setBuscaCidadePrefix}
             onBuscaBanco={() => setBuscaBancoOpen(true)}
           />
-        </TabsContent>
-        {ABAS_SEM_CAPTURA.map(([value, label]) => (
-          <TabsContent key={value} value={value}>
-            <p className="py-6 text-sm text-muted-foreground">
-              Aba {label} não capturada na transcrição do SoftLux — aguardando nova rodada de prints
-              (transcrição §10).
-            </p>
-          </TabsContent>
-        ))}
+        </AbasSemCaptura>
       </Tabs>
 
       <BuscaCidade prefix={buscaCidadePrefix} onOpenChange={setBuscaCidadePrefix} />

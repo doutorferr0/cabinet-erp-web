@@ -3,12 +3,12 @@ import { produtosApi } from '@/data/produtos-api'
 import {
   type ListProvider,
   type ResourceProvider,
-  createMockListProvider,
   createMockProvider,
   normalize,
+  tabelaDeApoio,
 } from '@/data/provider'
-import { type Banco, bancos } from '@/mocks/bancos'
-import { type Cidade, cidades } from '@/mocks/cidades'
+import { bancos } from '@/mocks/bancos'
+import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
 import { type Colaborador, colaboradorVazio, colaboradores } from '@/mocks/colaboradores'
 import { fornecedorVazio } from '@/mocks/fornecedores'
@@ -16,7 +16,7 @@ import { type Orcamento, orcamentoVazio, orcamentos } from '@/mocks/orcamentos'
 import { type OrdemCompra, ordemCompraVazia, ordensCompra } from '@/mocks/ordens-compra'
 import { type PedidoCompra, pedidoCompraVazio, pedidosCompra } from '@/mocks/pedidos-compra'
 import { profissionalVazio } from '@/mocks/profissionais'
-import { type Transportadora, transportadoras } from '@/mocks/transportadoras'
+import { transportadoras } from '@/mocks/transportadoras'
 
 /**
  * REGISTRY DE PROVIDERS — a fronteira entre as telas e a origem dos dados.
@@ -88,32 +88,20 @@ export const data = {
   }),
 
   /** Tabela de apoio: só consulta, chave é `codigo` e não há "Incluir". */
-  cidades: createMockListProvider<Cidade>({
-    rows: cidades,
-    matches: (c, q) => c.codigo.includes(q) || normalize(c.nome).includes(q),
-    delayMs: 200,
-  }),
+  cidades: tabelaDeApoio({ rows: cidades }),
 
   /**
    * Tabela de apoio: busca de `Nº do banco` em Dados Bancários (transcrição
    * §3). Código COMPE oficial — dado público, não é cadastro operado aqui.
    */
-  bancos: createMockListProvider<Banco>({
-    rows: bancos,
-    matches: (b, q) => b.codigo.includes(q) || normalize(b.nome).includes(q),
-    delayMs: 200,
-  }),
+  bancos: tabelaDeApoio({ rows: bancos }),
 
   /**
    * Tabela de apoio, mesma fronteira de `cidades`: busca da Ordem de Compra
    * (transcrição §7.2), sem cadastro completo por falta de captura do menu
    * `Transportadoras` (§1, §10).
    */
-  transportadoras: createMockListProvider<Transportadora>({
-    rows: transportadoras,
-    matches: (t, q) => t.codigo.includes(q) || normalize(t.nome).includes(q),
-    delayMs: 200,
-  }),
+  transportadoras: tabelaDeApoio({ rows: transportadoras }),
 } satisfies Record<string, ListProvider<unknown>>
 
 /** Nome do recurso — útil para chaves de query e mensagens. */

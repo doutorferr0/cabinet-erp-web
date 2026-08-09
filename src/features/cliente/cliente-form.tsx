@@ -1,4 +1,6 @@
+import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
+import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { FormBlock } from '@/components/cabinet/form-block'
 import {
@@ -10,14 +12,10 @@ import {
   TextField,
   TextareaField,
 } from '@/components/cabinet/form-controls'
-import { SearchDialog } from '@/components/cabinet/search-dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { data } from '@/data'
+import { Tabs } from '@/components/ui/tabs'
 import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
-import type { Cidade } from '@/mocks/cidades'
 import type { Cliente } from '@/mocks/clientes'
 import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -71,29 +69,20 @@ const ABAS_SEM_CAPTURA = [
 const UFS = ['SP', 'RJ', 'MG', 'PR', 'RS', 'SC', 'ES', 'GO', 'DF'] as const
 const SEXOS = ['MASCULINO', 'FEMININO'] as const
 
-const cidadeColumns: ColumnDef<Cidade>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
-  { accessorKey: 'nome', header: 'Cidade' },
-  { accessorKey: 'uf', header: 'UF' },
-]
-
 function BuscaCidade({
   open,
   onOpenChange,
-}: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { setValue } = useFormContext()
+}: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { setValue } = useFormContext<Cliente>()
   return (
-    <SearchDialog
+    <BuscaDeCidade
       open={open}
       onOpenChange={onOpenChange}
-      title="Busca de Cidade"
-      columns={cidadeColumns}
-      queryKey={['cidades']}
-      fetcher={(state) => data.cidades.list(state, 0)}
-      onSelect={(c) => {
-        setValue('endereco.cidadeCodigo', c.codigo, { shouldDirty: true })
-        setValue('endereco.cidadeNome', c.nome, { shouldDirty: true })
-        setValue('endereco.uf', c.uf, { shouldDirty: true })
+      titulo="Busca de Cidade"
+      onSelect={(cidade) => {
+        setValue('endereco.cidadeCodigo', cidade.codigo, { shouldDirty: true })
+        setValue('endereco.cidadeNome', cidade.nome, { shouldDirty: true })
+        setValue('endereco.uf', cidade.uf, { shouldDirty: true })
       }}
     />
   )
@@ -257,25 +246,9 @@ export function ClienteForm({
       {...(aviso ? { aviso } : {})}
     >
       <Tabs defaultValue="principal">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="principal">Principal</TabsTrigger>
-          {ABAS_SEM_CAPTURA.map(([value, label]) => (
-            <TabsTrigger key={value} value={value}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="principal">
+        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
           <ClientePrincipal onBuscaCidade={() => setBuscaCidadeOpen(true)} />
-        </TabsContent>
-        {ABAS_SEM_CAPTURA.map(([value, label]) => (
-          <TabsContent key={value} value={value}>
-            <p className="py-6 text-sm text-muted-foreground">
-              Aba {label} não capturada na transcrição do SoftLux — aguardando nova rodada de prints
-              (transcrição §10).
-            </p>
-          </TabsContent>
-        ))}
+        </AbasSemCaptura>
       </Tabs>
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />

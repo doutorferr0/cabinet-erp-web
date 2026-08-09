@@ -37,7 +37,7 @@ import { ErroDaApi } from '@/data/api-provider'
 
 /** Mensagem para exibir ao operador: `detail` do servidor, ou o fallback da tela. */
 export function mensagemDoErro(erro: unknown, fallback: string): string | null {
-  if (erro instanceof ErroDaApi) return erro.detail ?? fallback
+  if (erro instanceof ErroDaApi) return erro.detail || fallback
   return erro ? fallback : null
 }
 ```
@@ -55,7 +55,13 @@ sítio.
 
 - `pnpm check-types && pnpm test` — os testes que já cobrem os fluxos de erro (desativação
   falhando, etc.) continuam verdes sem alteração, porque a mensagem produzida é idêntica.
-- Grep de confirmação: `grep -rn "instanceof ErroDaApi" src` deve voltar só o arquivo do helper.
+- Cobrir `ErroDaApi` com `detail: ''`: detalhe vazio não é mensagem para o operador e deve cair no
+  fallback. É diferente de `null` só na implementação; para a interface, ambos significam
+  "sem detalhe útil".
+- Grep de confirmação: os ternários de mensagem do operador foram removidos das telas. As
+  ocorrências restantes de `instanceof ErroDaApi` são usos semânticos de `detalheDoErro`, regras
+  específicas de status 4xx/409 ou a mensagem especial da variante — não duplicam
+  `mensagemDoErro`.
 - Nenhuma tela muda visualmente — é puro refactor de lógica.
 
 ## Critério de saída

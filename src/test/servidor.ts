@@ -30,6 +30,8 @@ export interface ServidorFalso {
   chamadas: ChamadaFalsa[]
   /** Chamadas de um caminho (`/auth/me`), na ordem. */
   em(caminho: string): ChamadaFalsa[]
+  /** Handler instalado, para testes que usam `renderRoute` como montagem. */
+  fetch: (entrada: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 }
 
 export function json(valor: unknown, status = 200): Response {
@@ -58,31 +60,30 @@ export function instalarServidor(rotas: Record<string, Rota>, baseUrl = 'http://
   const chamadas: ChamadaFalsa[] = []
   configurarApi(baseUrl)
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) => {
-      const requisicao = entrada instanceof Request ? entrada : null
-      const url = String(requisicao ? requisicao.url : entrada)
-      const texto = requisicao ? await requisicao.clone().text() : String(init?.body ?? '')
+  const fetch = async (entrada: RequestInfo | URL, init?: RequestInit) => {
+    const requisicao = entrada instanceof Request ? entrada : null
+    const url = String(requisicao ? requisicao.url : entrada)
+    const texto = requisicao ? await requisicao.clone().text() : String(init?.body ?? '')
 
-      const chamada: ChamadaFalsa = {
-        url,
-        caminho: new URL(url).pathname,
-        metodo: (requisicao?.method ?? init?.method ?? 'GET').toUpperCase(),
-        corpo: texto ? JSON.parse(texto) : null,
-      }
-      chamadas.push(chamada)
+    const chamada: ChamadaFalsa = {
+      url,
+      caminho: new URL(url).pathname,
+      metodo: (requisicao?.method ?? init?.method ?? 'GET').toUpperCase(),
+      corpo: texto ? JSON.parse(texto) : null,
+    }
+    chamadas.push(chamada)
 
-      const rota = rotas[chamada.caminho]
-      if (!rota) return new Response('', { status: 404 })
+    const rota = rotas[chamada.caminho]
+    if (!rota) return new Response('', { status: 404 })
 
-      const resposta = rota(chamada)
-      return resposta instanceof Response ? resposta : json(resposta)
-    }),
-  )
+    const resposta = rota(chamada)
+    return resposta instanceof Response ? resposta : json(resposta)
+  }
+  vi.stubGlobal('fetch', vi.fn(fetch))
 
   return {
     chamadas,
     em: (caminho: string) => chamadas.filter((c) => c.caminho === caminho),
+    fetch,
   } satisfies ServidorFalso
 }

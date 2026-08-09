@@ -43,6 +43,7 @@ custo de quando o contrato mudar de verdade (cada fronteira passa a ser 1 arquiv
 | `fase-4-tela-de-listagem.md` | 8 listagens → 1 componente |
 | `fase-5-parceiro.md` | 3 rotas de detalhe de parceiro → hook + 3 mapas de campo |
 | `fase-6-boletim-conta-do-mesmo-lugar.md` | Boletim deixa de divergir da listagem |
+| `fase-7-pos-merge-da-main.md` | Levantamento pós-merge: buraco do `TelaDeDocumento` + o que os PRs #55–#58 duplicaram |
 | `bug-orcamento-overflow.md` | Estouro horizontal em `/vendas/orcamentos` |
 | `bug-colaborador-layout.md` | Layout quebrado em `/cadastros/colaboradores/:id` |
 | `bug-a11y-form-fields.md` | Campo sem `id`/`name` acusado pelo Chrome |
@@ -51,3 +52,19 @@ custo de quando o contrato mudar de verdade (cada fronteira passa a ser 1 arquiv
 
 Fase 0 → 1 → 2 → 3 → 4 → 5 → 6, bugs podem entrar em paralelo a qualquer momento (são
 independentes entre si e das fases). Cada fase é comitável e revertível isoladamente.
+
+A Fase 7 é posterior ao merge da `main` na branch (2026-08-08) e tem ordem interna própria — ver
+o arquivo. Ela recolhe duas coisas de origens diferentes: um buraco deixado pela Fase 3
+(`TelaDeDocumento` sem braço de erro) e a duplicação que os PRs #55–#58 criaram em paralelo,
+sem enxergar esta branch.
+
+## Situação atual
+
+- Fases 0–6 e as três correções de bug foram concluídas no PR #60 (`1f99fe3`). A Fase 6 ganhou
+  ainda proteção contra falha parcial e contra contagem incompleta acima do teto de página
+  (`d289217`), registradas no arquivo da fase.
+- Os itens 1 e 2 da Fase 7 foram concluídos em `2fc29ce`: `TelaDeDocumento` agora separa erro de
+  ausência, e `EstadoDaConsulta` concentra o markup compartilhado das telas de detalhe.
+- Os itens 3–6 da Fase 7 foram concluídos nesta frente: busca de cidade, campo+lupa, tabela de
+  apoio e moldura de abas agora têm componentes/providers compartilhados, com testes próprios.
+- A Fase 7 está encerrada; não reabrir itens concluídos sem regressão nova.

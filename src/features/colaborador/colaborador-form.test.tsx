@@ -1,5 +1,5 @@
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 describe('tela Colaborador', () => {
@@ -25,5 +25,21 @@ describe('tela Colaborador', () => {
   it('abrir registro existente carrega os dados', async () => {
     renderRoute('/cadastros/colaboradores/1')
     expect(await screen.findByDisplayValue('CARLA SOUZA')).toBeInTheDocument()
+  })
+
+  it('busca de naturalidade preserva título e preenche cidade, código e UF', async () => {
+    const { user } = renderRoute('/cadastros/colaboradores/novo')
+
+    await screen.findByLabelText('Nome')
+    await user.click(screen.getByRole('button', { name: 'Buscar naturalidade' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('Busca de Naturalidade')
+
+    await user.click(await within(dialog).findByText('CAMPINAS'))
+    await user.click(within(dialog).getByRole('button', { name: 'Selecionar' }))
+
+    await waitFor(() => expect(screen.getByLabelText('Naturalidade')).toHaveValue('CAMPINAS'))
+    expect(screen.getByText('354')).toBeInTheDocument()
+    expect(screen.getByText('SP')).toBeInTheDocument()
   })
 })

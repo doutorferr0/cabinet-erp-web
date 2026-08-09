@@ -1,5 +1,8 @@
 import { DocumentoHeader } from '@/components/cabinet/documento'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ErroDeCarregamento,
+  EsqueletoDeCarregamento,
+} from '@/components/cabinet/estado-de-consulta'
 import type { ResourceProvider } from '@/data/provider'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -14,6 +17,8 @@ export interface TelaDeDocumentoProps<T> {
   modo?: string | undefined
   numero: (doc: T) => string | number | undefined
   naoEncontrado: string
+  /** Mensagem do braço de erro — "Não foi possível carregar o X." */
+  erroAoCarregar: string
   children: (doc: T) => ReactNode
 }
 
@@ -31,6 +36,7 @@ export function TelaDeDocumento<T>({
   modo,
   numero,
   naoEncontrado,
+  erroAoCarregar,
   children,
 }: TelaDeDocumentoProps<T>) {
   const isNovo = idParam === 'novo'
@@ -42,11 +48,16 @@ export function TelaDeDocumento<T>({
   })
 
   if (query.isPending) {
+    return <EsqueletoDeCarregamento />
+  }
+
+  if (query.isError) {
     return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ErroDeCarregamento
+        mensagem={erroAoCarregar}
+        erro={query.error}
+        refazer={() => query.refetch()}
+      />
     )
   }
 

@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import {
   fileirasTotais,
@@ -431,25 +432,9 @@ export function OrcamentoForm({
       readOnly={readOnly}
     >
       <Tabs defaultValue="principal">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="principal">Principal</TabsTrigger>
-          {ABAS_SEM_CAPTURA.map(([value, label]) => (
-            <TabsTrigger key={value} value={value}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="principal">
+        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
           <AbaPrincipal />
-        </TabsContent>
-        {ABAS_SEM_CAPTURA.map(([value, label]) => (
-          <TabsContent key={value} value={value}>
-            <p className="py-6 text-sm text-muted-foreground">
-              Aba {label} não capturada na transcrição do SoftLux — aguardando nova rodada de prints
-              (transcrição §10).
-            </p>
-          </TabsContent>
-        ))}
+        </AbasSemCaptura>
       </Tabs>
     </CadastroForm>
   )

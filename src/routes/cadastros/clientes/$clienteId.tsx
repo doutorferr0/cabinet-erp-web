@@ -1,10 +1,11 @@
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ErroDeCarregamento,
+  EsqueletoDeCarregamento,
+} from '@/components/cabinet/estado-de-consulta'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
-import { detalheDoErro } from '@/lib/erros'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Cliente } from '@/mocks/clientes'
 import { createFileRoute } from '@tanstack/react-router'
@@ -23,12 +24,7 @@ function ClienteEditPage() {
   )
 
   if (!isNovo && query.isPending) {
-    return (
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
+    return <EsqueletoDeCarregamento />
   }
 
   // Falhou ≠ não existe: 404 chega como `null` (não está lá), qualquer outra
@@ -36,15 +32,11 @@ function ClienteEditPage() {
   // dois como "não encontrado" mandaria procurar um registro que existe.
   if (query.isError) {
     return (
-      <div className="flex flex-col items-start gap-2 text-muted-foreground">
-        Não foi possível carregar o cliente.
-        {detalheDoErro(query.error) ? (
-          <span className="max-w-prose text-[0.75rem]">{detalheDoErro(query.error)}</span>
-        ) : null}
-        <Button variant="outline" size="sm" onClick={() => query.refetch()}>
-          Tentar de novo
-        </Button>
-      </div>
+      <ErroDeCarregamento
+        mensagem="Não foi possível carregar o cliente."
+        erro={query.error}
+        refazer={() => query.refetch()}
+      />
     )
   }
 

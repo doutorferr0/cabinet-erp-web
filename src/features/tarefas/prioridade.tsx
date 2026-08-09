@@ -4,8 +4,11 @@ import { cn } from '@/lib/utils'
 /**
  * A PILL DE PRIORIDADE — a mesma no cartão do quadro e na linha da lista.
  *
- * Leva a ZONA por conteúdo, não a cor cheia: é um chip pequeno dentro de peça
- * que já tem caixa, e cheia ali brigaria com o título ao lado.
+ * Leva o PREENCHIMENTO FLAT com contorno preto (decisão user 2026-08-09,
+ * §@paleta-flat): o degrau do meio entre a tinta /01 e a pastel /02.
+ * Chip pequeno dentro de peça que já tem caixa — o fill mais saturado
+ * destaca sem competir com o título ao lado, e o contorno preto (~20:1)
+ * mantém a forma legível mesmo com a cor viva.
  *
  * **Vermelho em `Alta` é exceção registrada.** A cor de bloqueio tem dono —
  * erro — e a memória prevê exatamente este caso ("se usar vermelho para alta,
@@ -16,10 +19,14 @@ import { cn } from '@/lib/utils'
  *
  * O rótulo é escrito, nunca só a cor: três chips que só diferem de tom seriam
  * ilegíveis para daltônico e mudos no leitor de tela (WCAG 1.4.1).
+ *
+ * `Baixa` mantém a zona pastel: não há fill flat para info na paleta, e
+ * baixa prioridade é o que MENOS pede atenção — o fill saturado aqui
+ * gritaria onde não precisa.
  */
 const PRIORIDADES: Record<TaskDtoPriority, { rotulo: string; classe: string }> = {
-  high: { rotulo: 'Alta', classe: 'bg-zone-danger' },
-  medium: { rotulo: 'Média', classe: 'bg-zone-warn' },
+  high: { rotulo: 'Alta', classe: 'bg-fill-error' },
+  medium: { rotulo: 'Média', classe: 'bg-fill-focus' },
   low: { rotulo: 'Baixa', classe: 'bg-zone-info' },
 }
 

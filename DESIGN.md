@@ -172,29 +172,64 @@ negativo para **5,25:1** sobre a de bloqueio, e preto fica entre 16:1 e 20:1 em 
 Cada módulo tem um par fixo, trocado por **escopo** (`data-modulo` no shell) e lido pelas
 utilities `bg-modulo` (pastel /02), `bg-modulo-cheia` (cheia /01) e `text-modulo`.
 
+**Atualizado 2026-08-09:** cores NEON (decisão do user, mockup-dashboard-cores.html).
+
 | Módulo | Cor /01 | /02 | Shape do ornamento |
 |---|---|---|---|
-| Produtos | Cyan `#22D2ED` | `#CEF9FD` | `brutalist-shape-159` (etiqueta serrilhada) |
-| Estoque | Maya blue `#61BCFF` | `#D1ECFF` | `brutalist-072` (empilhamento) |
-| Vendas / Orçamento | Purple mimosa `#A68AF8` | `#ECE8FD` | `brutalist-shape-128` (documento) |
-| Compras / Pedidos | Violet `#E779F8` | `#F9E7FE` | `brutalist-022` (sacola) |
-| Clientes | Lavender blue `#C7B9FF` | `#F0E3FF` | `brutalist-064` (pessoa) |
-| Fornecedores | Soft blue `#828DF9` | `#E0E7FF` | `brutalist-029` (galpão) |
-| Profissionais | Easter purple `#D47FFB` | `#F7E8FF` | `brutalist-shape-133` (crachá) |
-| Boletim | Fusion coral `#FF8577` | `#FFDFDB` | `brutalist-shape-135` (anéis) |
+| Produtos | Cyan neon `#00E5FF` | `#CEF9FD` | `brutalist-shape-159` (etiqueta serrilhada) |
+| Estoque | Azure neon `#0091FF` | `#D1ECFF` | `brutalist-072` (empilhamento) |
+| Vendas / Orçamento | Violeta neon `#7C3DFF` | `#ECE8FD` | `brutalist-shape-128` (documento) |
+| Compras / Pedidos | Magenta neon `#FF2D95` | `#F9E7FE` | `brutalist-022` (sacola) |
+| Clientes | Fúcsia neon `#E620FF` | `#F0E3FF` | `brutalist-064` (pessoa) |
+| Fornecedores | Índigo neon `#3D5AFE` | `#E0E7FF` | `brutalist-029` (galpão) |
+| Profissionais | Púrpura neon `#B026FF` | `#F7E8FF` | `brutalist-shape-133` (crachá) |
+| Boletim | Laranja neon `#FF6B2C` | `#FFDFDB` | `brutalist-shape-135` (anéis) |
 
-**Colaboradores fica `[a atribuir]`** — a tabela travada pelo user cobre oito módulos e esse não
-é um deles. Cai no par padrão (marca do sistema) até haver decisão; inventar a nona cor seria
-decidir identidade visual por conta própria.
+**Dashboard, Planner e Tarefas** emprestam o laranja do Boletim (`#FF6B2C`) com shapes
+próprios (`b014`, `s120`, `b011`). **Colaboradores** empresta o rosa de Clientes (`#E620FF`)
+com shape `s101`. Nenhuma nona cor foi inventada — a decisão do user (2026-08-09) foi pelo
+REÚSO, e a cor passa a ler-se como FAMÍLIA (laranja = zona de acompanhamento, rosa = cadastro
+de pessoa). O empréstimo vale no ITEM DE MENU; `moduloDaRota` continua sem conhecer essas
+rotas para não tingir a folha inteira.
 
 Os pares **não passam pelo `@theme inline`**: ali `--color-x: hsl(var(--y))` é substituído no
 `:root`, e o valor já resolvido é o que os filhos herdam — redefinir `--modulo-01` num
 descendente não mudaria nada. A troca por escopo só funciona porque as utilities leem a `var()`
 no elemento que pinta.
 
-Risco conhecido e aceito: cyan, maya blue, soft blue e lavender são vizinhos e só se distinguem
-lado a lado. Quem carrega a identidade é o SHAPE; a cor reforça. Se ficarem indistintos na tela,
-troca-se a cor de UM módulo — não o sistema.
+Risco das cores neon: têm baixo contraste contra branco POR CONSTRUÇÃO. Quem delimita a forma
+é o traço preto (~20:1), e o preenchimento fica livre para ser neon.
+
+### Ícone lucide colorido por módulo (2026-08-09)
+Ícones de ação do lucide (Plus, Pencil, Eye, Trash2, MoreHorizontal, Minus) em DataTable,
+FormGrid, LookupCombo e Tarefas recebem `text-modulo` e herdam a cor do módulo via
+`currentColor`. O ícone não escolhe cor — o CONTAINER (barra de ações, aba, cabeçalho de
+seção) é quem carrega `text-modulo`. Hover, ativo e desabilitado saem de graça sem estado
+duplicado.
+
+### Paleta flat (2026-08-09)
+Camada de **cinzas frios, preenchimentos e estados** — NUNCA cor de módulo, NUNCA tinta dos
+donos. Fundo creme quente `#FAF6EE` na bancada, sidebar e header; folhas em cinza frio
+`#F5F7FA` (Light Gray). O degrau térmico (quente × frio) separa fundo de conteúdo.
+
+**Preenchimentos flat** (com contorno preto, para elementos compactos):
+
+| Nome | Hex | Papel |
+|---|---|---|
+| Grass | `#A0D468` | Dinheiro (bg-fill-money) |
+| Sunflower | `#FFCE54` | Foco/pendência (bg-fill-focus) |
+| Grapefruit | `#ED5565` | Erro/bloqueio (bg-fill-error) |
+
+**Escala de cinzas:**
+
+| Hex | Papel |
+|---|---|
+| `#F5F7FA` | Superfície de folha |
+| `#E6E9ED` | Superfície secundária, zebra |
+| `#CCD1D9` | Separador leve |
+| `#AAB2BD` | Traço desabilitado |
+| `#656D78` | Texto secundário (AA) |
+| `#434A54` | Texto forte alternativo |
 
 ### Acentos — emprego fixo
 - **Violeta `hsl(241 100% 66%)`** — AÇÃO: botão primário, linha selecionada, aba/página ativa, item de menu ativo, barra de progresso.

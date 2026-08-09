@@ -1,3 +1,4 @@
+import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -79,31 +80,23 @@ export function EnderecoBlock({
         className="col-span-6 sm:col-span-4"
       />
       <TextField name={`${prefix}.bairro`} label="Bairro" className="col-span-12 sm:col-span-4" />
-      <div className="col-span-12 flex flex-col gap-1 sm:col-span-4">
-        <Label htmlFor={`${prefix}.cidadeNome`}>Cidade</Label>
-        <div className="flex items-center gap-1">
-          {cidadeCodigo && (
-            <span className="w-12 shrink-0 text-sm text-muted-foreground">{cidadeCodigo}</span>
-          )}
-          <Input
-            id={`${prefix}.cidadeNome`}
-            {...register(`${prefix}.cidadeNome`)}
-            value={cidadeNome ?? ''}
-            readOnly={!!onBuscaCidade}
-          />
-          {onBuscaCidade && (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Buscar cidade"
-              onClick={onBuscaCidade}
-            >
-              <Search className="size-4" />
-            </Button>
-          )}
-        </div>
-      </div>
+      <CampoComBusca
+        label="Cidade"
+        inputId={`${prefix}.cidadeNome`}
+        ariaLabel="Buscar cidade"
+        onBuscar={onBuscaCidade}
+        className="col-span-12 sm:col-span-4"
+      >
+        {cidadeCodigo && (
+          <span className="w-12 shrink-0 text-sm text-muted-foreground">{cidadeCodigo}</span>
+        )}
+        <Input
+          id={`${prefix}.cidadeNome`}
+          {...register(`${prefix}.cidadeNome`)}
+          value={cidadeNome ?? ''}
+          readOnly={!!onBuscaCidade}
+        />
+      </CampoComBusca>
       {/* UF é rótulo derivado da cidade (transcrição §5), não campo: `h-9` casa a
           altura do input para a fileira fechar. */}
       <div className="col-span-6 flex flex-col gap-1 sm:col-span-2">

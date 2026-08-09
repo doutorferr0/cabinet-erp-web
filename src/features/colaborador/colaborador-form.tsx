@@ -1,5 +1,8 @@
+import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { RedesSociaisBlock } from '@/components/cabinet/blocks'
+import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
@@ -11,18 +14,13 @@ import {
   SelectField,
   TextField,
 } from '@/components/cabinet/form-controls'
-import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { data } from '@/data'
+import { Tabs } from '@/components/ui/tabs'
 import { tabelas } from '@/data/tabelas'
-import type { Cidade } from '@/mocks/cidades'
 import type { Colaborador } from '@/mocks/colaboradores'
 import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -71,12 +69,6 @@ const ABAS_SEM_CAPTURA = [
   ['financeiro', 'Financeiro'],
 ] as const
 
-const cidadeColumns: ColumnDef<Cidade>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
-  { accessorKey: 'nome', header: 'Cidade' },
-  { accessorKey: 'uf', header: 'UF' },
-]
-
 /** Moldura de foto + botões (visual apenas — sem upload real na fase mock). */
 function FotoFrame() {
   return (
@@ -110,17 +102,14 @@ function BuscaNaturalidade({
 }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { setValue } = useFormContext<Colaborador>()
   return (
-    <SearchDialog
+    <BuscaDeCidade
       open={open}
       onOpenChange={onOpenChange}
-      title="Busca de Naturalidade"
-      columns={cidadeColumns}
-      queryKey={['cidades']}
-      fetcher={(state) => data.cidades.list(state, 0)}
-      onSelect={(c) => {
-        setValue('naturalidade.cidadeCodigo', c.codigo, { shouldDirty: true })
-        setValue('naturalidade.cidadeNome', c.nome, { shouldDirty: true })
-        setValue('naturalidade.uf', c.uf, { shouldDirty: true })
+      titulo="Busca de Naturalidade"
+      onSelect={(cidade) => {
+        setValue('naturalidade.cidadeCodigo', cidade.codigo, { shouldDirty: true })
+        setValue('naturalidade.cidadeNome', cidade.nome, { shouldDirty: true })
+        setValue('naturalidade.uf', cidade.uf, { shouldDirty: true })
       }}
     />
   )
@@ -132,22 +121,16 @@ function NaturalidadeField({ onBusca, className }: { onBusca: () => void; classN
   const codigo = watch('naturalidade.cidadeCodigo')
   const nome = watch('naturalidade.cidadeNome')
   return (
-    <div className={className}>
-      <Label htmlFor="naturalidade.cidadeNome">Naturalidade</Label>
-      <div className="flex items-center gap-1">
-        {codigo && <span className="w-12 shrink-0 text-sm text-muted-foreground">{codigo}</span>}
-        <Input id="naturalidade.cidadeNome" value={nome ?? ''} readOnly />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="Buscar naturalidade"
-          onClick={onBusca}
-        >
-          <Search className="size-4" />
-        </Button>
-      </div>
-    </div>
+    <CampoComBusca
+      label="Naturalidade"
+      inputId="naturalidade.cidadeNome"
+      ariaLabel="Buscar naturalidade"
+      onBuscar={onBusca}
+      className={className}
+    >
+      {codigo && <span className="w-12 shrink-0 text-sm text-muted-foreground">{codigo}</span>}
+      <Input id="naturalidade.cidadeNome" value={nome ?? ''} readOnly />
+    </CampoComBusca>
   )
 }
 
@@ -312,25 +295,9 @@ export function ColaboradorForm({
           </div>
 
           <Tabs defaultValue="geral">
-            <TabsList className="flex-wrap">
-              <TabsTrigger value="geral">Geral</TabsTrigger>
-              {ABAS_SEM_CAPTURA.map(([value, label]) => (
-                <TabsTrigger key={value} value={value}>
-                  {label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <TabsContent value="geral">
+            <AbasSemCaptura capturada={['geral', 'Geral']} abas={ABAS_SEM_CAPTURA}>
               <AbaGeral onBuscaNaturalidade={() => setBuscaNaturalidadeOpen(true)} />
-            </TabsContent>
-            {ABAS_SEM_CAPTURA.map(([value, label]) => (
-              <TabsContent key={value} value={value}>
-                <p className="py-6 text-sm text-muted-foreground">
-                  Aba {label} não capturada na transcrição do SoftLux — aguardando nova rodada de
-                  prints (transcrição §10).
-                </p>
-              </TabsContent>
-            ))}
+            </AbasSemCaptura>
           </Tabs>
         </div>
 

@@ -1,5 +1,5 @@
 import { data } from '@/data'
-import { createMockProvider, normalize } from '@/data/provider'
+import { createMockProvider, normalize, tabelaDeApoio } from '@/data/provider'
 import { tableState } from '@/test/utils'
 import { describe, expect, it } from 'vitest'
 
@@ -52,6 +52,22 @@ describe('ResourceProvider (contrato)', () => {
 
   it('empty devolve registro em branco com o id pedido', () => {
     expect(provider.empty(42)).toEqual({ id: 42, nome: '' })
+  })
+})
+
+describe('tabelaDeApoio', () => {
+  it('filtra tabelas por código ou nome normalizado', async () => {
+    const provider = tabelaDeApoio({
+      rows: [
+        { codigo: '001', nome: 'SÃO PAULO' },
+        { codigo: '002', nome: 'CAMPINAS' },
+      ],
+    })
+
+    await expect(provider.list(tableState({ q: 'sao' }), 0)).resolves.toMatchObject({
+      rows: [{ codigo: '001', nome: 'SÃO PAULO' }],
+      total: 1,
+    })
   })
 })
 

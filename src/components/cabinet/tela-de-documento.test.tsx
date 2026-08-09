@@ -39,6 +39,35 @@ describe('TelaDeDocumento', () => {
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
   })
 
+  it('tentar de novo refaz a consulta e mostra o documento quando ela resolve', async () => {
+    let tentativas = 0
+    const { user } = renderWithQuery(
+      <TelaDeDocumento
+        provider={{
+          list: () => Promise.reject(new Error('não usado neste teste')),
+          get: async () => {
+            tentativas += 1
+            if (tentativas === 1) throw new Error('sem servidor')
+            return { id: 7 }
+          },
+          empty: (id: number) => ({ id }),
+        }}
+        queryKeyBase="teste-retry"
+        idParam="7"
+        titulo="Teste"
+        numero={(doc) => doc.id}
+        naoEncontrado="Teste não encontrado."
+        erroAoCarregar="Não foi possível carregar o teste."
+      >
+        {(doc) => <p>documento {doc.id}</p>}
+      </TelaDeDocumento>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Tentar de novo' }))
+    expect(await screen.findByText('documento 7')).toBeInTheDocument()
+    expect(tentativas).toBe(2)
+  })
+
   it('get que resolve null mostra "não encontrado", não erro', async () => {
     renderWithQuery(
       <TelaDeDocumento

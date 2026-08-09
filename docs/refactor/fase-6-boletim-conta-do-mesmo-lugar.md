@@ -59,3 +59,17 @@ geral que aparece linkado).
 
 Nenhum link do Boletim promete um número que a tela de destino não confirma. Commit:
 `fix: boletim conta cadastros pela mesma fonte da listagem`.
+
+## Proteções acrescentadas depois da fase
+
+O uso da mesma fonte introduz quatro consultas HTTP no Boletim. A falha de uma não pode apagar
+as apurações mock que continuam disponíveis, nem as outras linhas de cadastro: cada consulta
+passa a produzir sua própria linha indisponível (`total` e `inativos` nulos), em vez de rejeitar o
+`Promise.all` inteiro.
+
+Também não basta pedir `pageSize: 1` se a tela mostra desativados. A consulta usa o teto permitido
+do contrato: `total` continua exato e a contagem de inativos só é exibida como exata quando todas
+as linhas cabem na página. Acima do teto, ela é um piso e a interface a marca como tal (`N+`).
+
+Verificar os dois cenários com servidor falso: uma lista HTTP rejeita enquanto outra responde, e
+uma resposta traz `total` maior que as linhas devolvidas. Implementado em `d289217`.

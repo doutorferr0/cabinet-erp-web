@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-08T21:15:48.639Z",
-  "title": "Design System: Cabinet — fase 1.6",
+  "generatedAt": "2026-08-09T22:10:49.000Z",
+  "title": "Design System: Cabinet — paleta flat (2026-08-09)",
   "extensions": {
     "colorMeta": {
       "bench": {
         "role": "neutral",
-        "displayName": "Bancada Creme",
-        "canonical": "hsl(41 25% 85%)",
-        "purpose": "Fundo do app, atrás das folhas. Recebe a grade de 52px.",
+        "displayName": "Creme Quente",
+        "canonical": "hsl(40 33% 91%)",
+        "purpose": "Fundo do app, sidebar e header. Creme #FAF6EE da paleta flat — quente por baixo.",
         "tonalRamp": [
           "hsl(41 25% 15%)",
           "hsl(41 25% 26%)",
@@ -22,9 +22,9 @@
       },
       "sheet": {
         "role": "neutral",
-        "displayName": "Folha Branca",
-        "canonical": "hsl(0 0% 100%)",
-        "purpose": "Superfície de trabalho: painel, cartão, campo, tabela. Branca desde a 1.6.",
+        "displayName": "Folha Cinza Frio",
+        "canonical": "hsl(210 17% 98%)",
+        "purpose": "Superficie de trabalho em Light Gray #F5F7FA — fria sobre fundo quente. Degrau termico, nao so de luz.",
         "tonalRamp": [
           "hsl(0 0% 15%)",
           "hsl(0 0% 26%)",
@@ -38,9 +38,9 @@
       },
       "sheet-sunken": {
         "role": "neutral",
-        "displayName": "Folha Afundada",
-        "canonical": "hsl(60 20% 98%)",
-        "purpose": "Degrau INTERNO da folha branca: compartimento de formulário, painel do acordeão, rodapé de alerta. No escuro, afundar é ESCURECER — o degrau desce.",
+        "displayName": "Folha Afundada Fria",
+        "canonical": "hsl(210 14% 94%)",
+        "purpose": "Degrau interno da folha em #E6E9ED. Zebra, trilho, area de leitura.",
         "tonalRamp": [
           "hsl(60 20% 15%)",
           "hsl(60 20% 26%)",
@@ -54,9 +54,9 @@
       },
       "neutral": {
         "role": "neutral",
-        "displayName": "Creme Neutro",
-        "canonical": "hsl(44 35% 92%)",
-        "purpose": "Hover de item, skeleton, trilho.",
+        "displayName": "Cinza Neutro Frio",
+        "canonical": "hsl(210 14% 94%)",
+        "purpose": "Hover de item, skeleton, trilho. Acompanha sheet-sunken.",
         "tonalRamp": [
           "hsl(44 35% 15%)",
           "hsl(44 35% 26%)",
@@ -86,9 +86,9 @@
       },
       "ink-muted": {
         "role": "neutral",
-        "displayName": "Tinta Apagada",
-        "canonical": "hsl(37 16% 36%)",
-        "purpose": "Texto de apoio, rótulo em Meta, contexto.",
+        "displayName": "Texto Secundario Frio",
+        "canonical": "hsl(213 10% 43%)",
+        "purpose": "Texto de apoio, rotulo em Meta, contexto. #656D78 da paleta flat (AA).",
         "tonalRamp": [
           "hsl(37 16% 15%)",
           "hsl(37 16% 26%)",
@@ -102,9 +102,9 @@
       },
       "rule-hair": {
         "role": "neutral",
-        "displayName": "Fio da Régua",
-        "canonical": "hsl(42 17% 70%)",
-        "purpose": "Fio: grade de fundo e divisória fina.",
+        "displayName": "Separador Frio",
+        "canonical": "hsl(210 10% 86%)",
+        "purpose": "Separador leve #CCD1D9. Fio: divisoria fina em folha fria.",
         "tonalRamp": [
           "hsl(42 17% 15%)",
           "hsl(42 17% 26%)",
@@ -419,6 +419,86 @@
           "hsl(35 20% 84%)",
           "hsl(35 20% 95%)"
         ]
+      },
+      "text-disabled": {
+        "role": "neutral",
+        "displayName": "Traco Desabilitado",
+        "canonical": "hsl(210 8% 74%)",
+        "purpose": "Traco e texto desabilitado #AAB2BD da paleta flat.",
+        "tonalRamp": [
+          "hsl(210 8% 15%)",
+          "hsl(210 8% 26%)",
+          "hsl(210 8% 37%)",
+          "hsl(210 8% 48%)",
+          "hsl(210 8% 59%)",
+          "hsl(210 8% 70%)",
+          "hsl(210 8% 84%)",
+          "hsl(210 8% 95%)"
+        ]
+      },
+      "text-strong": {
+        "role": "neutral",
+        "displayName": "Texto Forte Alternativo",
+        "canonical": "hsl(215 13% 30%)",
+        "purpose": "Alternativa ao preto para texto forte #434A54 da paleta flat.",
+        "tonalRamp": [
+          "hsl(215 13% 15%)",
+          "hsl(215 13% 26%)",
+          "hsl(215 13% 37%)",
+          "hsl(215 13% 48%)",
+          "hsl(215 13% 59%)",
+          "hsl(215 13% 70%)",
+          "hsl(215 13% 84%)",
+          "hsl(215 13% 95%)"
+        ]
+      },
+      "fill-money": {
+        "role": "tertiary",
+        "displayName": "Fill Dinheiro (Grass)",
+        "canonical": "hsl(88 51% 71%)",
+        "purpose": "Preenchimento compacto com contorno preto para dinheiro. Grass #A0D468 da paleta flat.",
+        "tonalRamp": [
+          "hsl(88 51% 15%)",
+          "hsl(88 51% 26%)",
+          "hsl(88 51% 37%)",
+          "hsl(88 51% 48%)",
+          "hsl(88 51% 59%)",
+          "hsl(88 51% 70%)",
+          "hsl(88 51% 84%)",
+          "hsl(88 51% 95%)"
+        ]
+      },
+      "fill-focus": {
+        "role": "tertiary",
+        "displayName": "Fill Foco (Sunflower)",
+        "canonical": "hsl(44 87% 64%)",
+        "purpose": "Preenchimento compacto com contorno preto para foco/pendencia. Sunflower #FFCE54 da paleta flat.",
+        "tonalRamp": [
+          "hsl(44 87% 15%)",
+          "hsl(44 87% 26%)",
+          "hsl(44 87% 37%)",
+          "hsl(44 87% 48%)",
+          "hsl(44 87% 59%)",
+          "hsl(44 87% 70%)",
+          "hsl(44 87% 84%)",
+          "hsl(44 87% 95%)"
+        ]
+      },
+      "fill-error": {
+        "role": "tertiary",
+        "displayName": "Fill Erro (Grapefruit)",
+        "canonical": "hsl(355 76% 64%)",
+        "purpose": "Preenchimento compacto com contorno preto para erro/bloqueio. Grapefruit #ED5565 da paleta flat.",
+        "tonalRamp": [
+          "hsl(355 76% 15%)",
+          "hsl(355 76% 26%)",
+          "hsl(355 76% 37%)",
+          "hsl(355 76% 48%)",
+          "hsl(355 76% 59%)",
+          "hsl(355 76% 70%)",
+          "hsl(355 76% 84%)",
+          "hsl(355 76% 95%)"
+        ]
       }
     },
     "typographyMeta": {
@@ -642,7 +722,7 @@
     "northStar": "Brut sobre papel",
     "overview": "O ERP é documento comercial: orçamento é invoice, listagem é ledger, produto é ficha técnica. A estrutura é neo-brutalista — traço preto de 2px, sombra sem blur, densidade de comanda — mas o acabamento não é maquete de protesto: a sombra é quente como papel sobre papel, o canto diz o que a peça é, e o violeta saturado carrega a ação.\n\nA fase 1.6 respondeu à queixa de \"escuro, triste e sem cor\" com três coisas: cor por conteúdo (folha branca sobre bancada creme, zonas nos pastéis da paleta, um par fixo por módulo), movimento que informa (entrada de tela, peça que aparece, e o hover que pula) e ornamento (uma forma colorida por módulo, recortada por máscara, jamais preta).\n\nÉ ferramenta de oito horas para quatro perfis que dividem as mesmas peças. Densidade vence respiro decorativo, vocabulário do legado é literal, e tudo é alcançável por clique — nenhum fluxo depende de tecla memorizada.",
     "keyCharacteristics": [
-      "Bancada creme com grade de 52px no fundo; folhas de trabalho BRANCAS pousam OPACAS por cima",
+      "Bancada creme quente #FAF6EE com grade de 52px; folhas em cinza frio #F5F7FA — degrau termico quente x frio",
       "Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra",
       "Elevação em 5 degraus (2/3/4/6/8) com sombra QUENTE, nunca preta",
       "Hover que PULA 2px e press que afunda 2px zerando a sombra (§3b)",
@@ -657,7 +737,9 @@
       "Três famílias self-hosted: Sora (título) · Inter (corpo) · PT Mono (identificador)",
       "Movimento só onde informa: entrada de tela e peça que aparece; nunca em linha, célula ou campo",
       "Ornamento contornado: traço preto ~20:1 delimita a forma, preenchimento livre pra ser NEON (PR #49)",
-      "Casca global (appbar + gaveta) vive no shell, em toda rota — nunca duplicada por tela"
+      "Casca global (appbar + gaveta) vive no shell, em toda rota — nunca duplicada por tela",
+      "Preenchimentos flat (Grass/Sunflower/Grapefruit) com contorno preto para elementos compactos — o degrau do meio entre /01 e /02",
+      "Icone lucide de acao herda cor do modulo via currentColor — o container leva text-modulo, o icone so herda"
     ],
     "rules": [
       {

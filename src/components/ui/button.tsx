@@ -33,7 +33,7 @@ const buttonVariants = cva(
   // prática quando `disabled`: botão morto e mudo faz o operador achar que é
   // defeito". A promessa não teria como ser cumprida. Não clicar continua
   // garantido pelo atributo `disabled`, que a RAC escreve de verdade.
-  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:text-text-disabled [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
   {
     variants: {
       variant: {

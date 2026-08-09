@@ -24,7 +24,7 @@ describe('FormBlock', () => {
     expect(legend.className).toContain('text-[0.75rem]')
     expect(legend.className).toContain('uppercase')
     expect(legend.className).toContain('tracking-[0.06em]')
-    expect(legend.className).toContain('text-muted-foreground')
+    expect(legend.className).toContain('text-text-strong')
   })
 
   // A transcrição §2 registra moldura sem nome ("Bloco separado por moldura"):

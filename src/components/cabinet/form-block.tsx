@@ -33,7 +33,7 @@ export function FormBlock({
   return (
     <fieldset className={cn('rounded-lg border bg-surface-sunken p-3', className)}>
       {legend ? (
-        <legend className="px-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+        <legend className="px-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-text-strong">
           {legend}
         </legend>
       ) : null}

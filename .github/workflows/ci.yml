@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -38,10 +45,40 @@ jobs:
             || { echo '::error::src/api/gerado está fora de sincronia com contracts/openapi-v1.json — rode `pnpm codegen` e commite.'; exit 1; }
 
       - name: Lint and format check
-        run: pnpm check
+        run: pnpm exec biome ci .
+
+      - name: Fronteira de dados (tela não chama o cliente gerado)
+        shell: bash
+        run: |
+          set -euo pipefail
+          violacoes="$(
+            grep -RIn '@/api/gerado' src --include='*.ts' --include='*.tsx' || true
+          )"
+          violacoes="$(printf '%s\n' "$violacoes" | grep -v 'import type' || true)"
+          violacoes="$(printf '%s\n' "$violacoes" | grep -Ev '^src/(data|api|mocks/api)/' | sed '/^$/d' || true)"
+          if [ -n "$violacoes" ]; then
+            printf '%s\n' "$violacoes"
+            echo '::error::import de valor de @/api/gerado fora da fronteira de dados — a tela pede data.<recurso>.'
+            exit 1
+          fi
+
+      - name: Testes de rota usam os helpers de src/test
+        shell: bash
+        run: |
+          set -euo pipefail
+          violacoes="$(rg -l 'createMemoryHistory' src --glob '*.ts' --glob '*.tsx' || true)"
+          violacoes="$(printf '%s\n' "$violacoes" | grep -v '^src/test/' | sed '/^$/d' || true)"
+          if [ -n "$violacoes" ]; then
+            printf '%s\n' "$violacoes"
+            echo '::error::teste de rota cria history local — use renderRoute/renderWithQuery de src/test/utils.tsx.'
+            exit 1
+          fi
 
       - name: Type check
         run: pnpm check-types
 
       - name: Test
         run: pnpm test
+
+      - name: Build
+        run: pnpm build

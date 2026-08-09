@@ -91,8 +91,13 @@ export function Painel({
       {...(modulo && { 'data-modulo': modulo })}
       // `overflow-hidden`: a faixa do cabeçalho vai até a borda, e sem isso o
       // canto colorido escapa por fora do raio do painel.
+      //
+      // `border-double-modulo`: moldura dupla colorida (REFACE Boletim,
+      // decisão user 2026-08-07). O `outline` do utility desenha POR FORA da
+      // caixa de clipping do `overflow-hidden` — não some.
       className={cn(
         'flex flex-col overflow-hidden rounded-panel border-2 bg-card shadow-el2',
+        modulo && 'border-double-modulo',
         className,
       )}
     >

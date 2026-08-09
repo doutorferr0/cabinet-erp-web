@@ -823,6 +823,15 @@
   color: hsl(var(--modulo-02));
 }
 
+/* Moldura dupla colorida — borda 2px + filete externo 1px offset 3px na cor
+   do módulo (REFACE Boletim, decisão user 2026-08-07). Aplica dentro de
+   elemento com `data-modulo`: a cor lida de `--modulo-01` no escopo. */
+@utility border-double-modulo {
+  border: 2px solid hsl(var(--modulo-01));
+  outline: 1px solid hsl(var(--modulo-01));
+  outline-offset: 3px;
+}
+
 /* Régua forte de separação de seção: 3px de Tinta (DESIGN.md §Named Rules).
    Utility, e não `border-t-[3px] border-rule-strong` na tela: a espessura é
    parte da régua, e a recalibração de tokens prevista tem que mudá-la num

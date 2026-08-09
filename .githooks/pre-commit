@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+
+pnpm exec biome ci .
+pnpm check-types
+pnpm test

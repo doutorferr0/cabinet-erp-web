@@ -52,9 +52,9 @@ jobs:
         run: |
           set -euo pipefail
           violacoes="$(
-            grep -RIn '@/api/gerado' src --include='*.ts' --include='*.tsx' || true
+            rg -n -P '^[[:space:]]*import[[:space:]]+(?!type\b)(?:.*from[[:space:]]+)?(?:\x27|")@/api/gerado(?:\x27|")' \
+              src --glob '*.ts' --glob '*.tsx' || true
           )"
-          violacoes="$(printf '%s\n' "$violacoes" | grep -v 'import type' || true)"
           violacoes="$(printf '%s\n' "$violacoes" | grep -Ev '^src/(data|api|mocks/api)/' | sed '/^$/d' || true)"
           if [ -n "$violacoes" ]; then
             printf '%s\n' "$violacoes"

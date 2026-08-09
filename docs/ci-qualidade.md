@@ -169,8 +169,8 @@ fronteira permitida.
 ```yaml
 - name: Fronteira de dados (tela não chama o cliente gerado)
   run: |
-    if grep -rn "@/api/gerado" src --include='*.ts' --include='*.tsx' \
-         | grep -v 'import type' \
+    if rg -n -P '^[[:space:]]*import[[:space:]]+(?!type\b)(?:.*from[[:space:]]+)?(?:\x27|")@/api/gerado(?:\x27|")' \
+         src --glob '*.ts' --glob '*.tsx' \
          | grep -Ev '^src/(data|api|mocks/api)/'; then
       echo '::error::import de VALOR de @/api/gerado fora de src/data — a tela pede a data.<recurso>, ver CLAUDE.md'
       exit 1

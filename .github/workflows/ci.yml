@@ -17,16 +17,21 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
+      # pnpm ANTES do setup-node, e a ordem é requisito: o `cache: pnpm` do passo
+      # seguinte roda `pnpm store path`, que não existe sem o pnpm instalado.
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
           run_install: false
 
+      # `cache: pnpm` explícito continua valendo. O que o setup-node v6 restringiu
+      # foi o cache AUTOMÁTICO por `packageManager` no package.json (que este repo
+      # não declara) — a entrada explícita não mudou.
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm

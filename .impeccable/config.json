@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "0.75rem",
+        "createdAt": "2026-08-09T20:58:26.090Z",
+        "reason": "Meta style (mono, caps, uppercase) — established pattern across FormBlock, Stamp, BandaDeIdentidade, PainelBoletim, and table cells. DESIGN.md typography section defines this as the Meta size."
+      }
+    ]
+  }
+}

@@ -12,3 +12,13 @@ coverage/
 # Cache incremental do tsc: artefato de build, muda a cada `pnpm check-types`
 # e conflitava em todo rebase. Nada depende dele estar versionado.
 *.tsbuildinfo
+
+# Impeccable: o que é da MÁQUINA e o que é do PROJETO.
+# `config.json` (ignores do detector, com a razão de cada um) e `design.json`
+# (sidecar do DESIGN.md) são decisão do projeto e ficam versionados — o detector
+# tem de reprovar a mesma coisa para todo mundo. O resto é local: consentimento
+# do hook por desenvolvedor, cache por sessão e relatório de crítica avulso.
+# `*.local` acima não pega `config.local.json` — o padrão exige o fim do nome.
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/critique/

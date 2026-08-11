@@ -21,7 +21,8 @@ Análise em prosa e as decisões tiradas dela ficam na memória do projeto, em
 docs/legado/
 ├─ README.md                        ← este arquivo
 ├─ engenharia-reversa-softlux.md    análise em prosa da 1ª rodada (11 KB)
-├─ softlux-fluxograma.html          fluxograma clicável do negócio (25 KB, abre no browser)
+├─ softlux-fluxo-banco.html         ÍNDICE por estágio: 11 estágios, 70 tabelas (134 KB)
+├─ softlux-fluxograma.html          DIAGRAMA de setas por domínio (25 KB)
 └─ schema/                          dumps brutos do catálogo, 3 bancos × 6 arquivos
    ├─ bdprincipal-*.csv|.sql        o banco que importa
    ├─ bdprodutos-*.csv|.sql         staging de importação por planilha — descartável
@@ -46,15 +47,29 @@ para menos (`Venda` 34.135 vs 34.136, `VendaProduto` 549.829 vs 549.830, `VendaD
 300.325 vs 300.337, `VendaIndicacaoGrupProd` 232.409 vs 232.415, `VendaAmbiente` 144.673 vs
 144.674). Base viva, dias de diferença. **Fonte de número é o CSV**, não o `.md`.
 
-### `softlux-fluxograma.html`
-Página estática, sem dependência externa — abrir direto no browser. Desenha o caminho
-do negócio em **18 caixas agrupadas em 9 domínios**; clicar numa caixa lista, no painel
-lateral, as tabelas que ela usa com PK, nº de colunas e nº de linhas. Ponto azul = tabela
-com `Emp_codigo`. Os números do painel batem 1:1 com `schema/bdprincipal-linhas.csv`
-(conferido tabela a tabela, zero divergência).
+### Os dois HTML — para que serve cada um
+Os dois são páginas estáticas, sem dependência externa: abrir direto no browser. Cobrem o
+mesmo caminho principal por ângulos diferentes, e **os dois batem com os CSVs** (conferido
+tabela a tabela, zero divergência).
 
-O cabeçalho diz "70 tabelas": 68 estão nas caixas, `Funcionario` (111 linhas) e `Ambiente`
-(346 linhas) estão no índice interno mas não em nenhuma caixa.
+**`softlux-fluxo-banco.html` — o ÍNDICE, use este primeiro.** Lista de cima a baixo os
+**11 estágios do negócio com as 70 tabelas do caminho principal** já agrupadas (§3 aqui
+embaixo é o mesmo agrupamento em texto). Tem busca por nome de tabela ou de coluna, filtro por
+estágio, e clicar numa tabela abre um painel com **a lista completa de colunas com tipo e
+nulidade, a PK, para quem ela aponta e quem aponta para ela**. É o jeito rápido de responder
+"que tabela guarda X" sem grepar CSV. Regra de negócio em texto por estágio (a fórmula do
+preço, a conversão de 46,1%, o que decide se gera financeiro).
+
+**`softlux-fluxograma.html` — o DIAGRAMA, use para ver a direção do fluxo.** Desenho SVG com
+**18 caixas em 9 domínios coloridos** e as setas entre elas — o que o índice não mostra: que a
+seta orçamento→pedido é troca de `Ven_Tipo`, que a de pedido→financeiro é condicional
+("só se `CategoriaVenda` gera"), que a de pedido→compra sai por "sem estoque". Clicar numa
+caixa lista as tabelas daquele passo com PK, nº de colunas e nº de linhas; ponto azul = tabela
+com `Emp_codigo`.
+
+Os dois recortam as mesmas 70 tabelas. O diagrama põe 68 delas em caixas — `Funcionario`
+(111 linhas) e `Ambiente` (346 linhas) ficam de fora das caixas mas estão no índice interno
+dele; no `fluxo-banco` as duas aparecem no estágio 1.
 
 ### `schema/` — 6 arquivos por banco
 | Arquivo | Conteúdo | Uma linha por |
@@ -214,109 +229,143 @@ de sistema do SQL Server está no dump porque a consulta não a filtrou. Mesmo c
 
 ---
 
-## 3. Caminho principal do negócio
+## 3. Caminho principal do negócio — os 11 estágios
 
-Agrupamento e contagens vêm do `softlux-fluxograma.html`, reconferidos contra
-`bdprincipal-linhas.csv` e `bdprincipal-colunas.csv`. **18 caixas, 9 domínios, 68 tabelas,
-14.821.013 linhas** — de 360 tabelas e ~15 milhões de linhas no banco inteiro. O resto é
-apoio, entulho ou funcionalidade nunca usada.
+Agrupamento, ordem e os textos em itálico/citação vêm de **`softlux-fluxo-banco.html`**; o
+`softlux-fluxograma.html` mostra as mesmas tabelas com as **setas** entre os estágios. São
+**11 estágios, 70 tabelas, 14.821.470 linhas** — de 360 tabelas e 14.971.695 linhas no banco
+inteiro. Todo o resto é apoio, entulho ou funcionalidade nunca usada.
 
-> Nota: o fluxograma não rotula "11 estágios" em lugar nenhum — o arquivo tem 18 caixas em
-> 9 domínios. O que está abaixo é a estrutura literal do arquivo.
+Linhas e colunas abaixo foram reconferidas contra `bdprincipal-linhas.csv` e
+`bdprincipal-colunas.csv`: **zero divergência** com o que os dois HTML mostram.
 
-### Cadastros (roxo) — a base que tudo referencia
-| Caixa | Tabela | Linhas | Col |
-|---|---|---:|---:|
-| Clientes | `Clientes` | 9.322 | 97 |
-| | `Obras` | 9.454 | 18 |
-| Profissional externo | `Indicacoes` | 1.316 | 40 |
-| | `Indicacoes_Detalhe` | 1.344 | 53 |
-| | `IndicacaoGrupProd` | 7.569 | 10 |
-| Fornecedor | `fornecedor` | 868 | 58 |
-| | `ProdutosFornecedores` | 108.604 | 18 |
-| Produto | `produtos` | 108.992 | 86 |
-| | `GrupoProduto` | 12 | 9 |
+### 1. Cadastros base
+*Quem, o quê e para onde. Nada acontece sem estes.*
 
-### Formação de preço (âmbar) — a regra central do sistema
-| Caixa | Tabela | Linhas | Col |
-|---|---|---:|---:|
-| Perfil de custo | `Custo` | 385 | 40 |
-| | `custo_log` | 719 | 31 |
-| Índice de venda | `Indice_preco` | 376 | 18 |
-| | `Indice_precoGrupoUsuario` | 2.059 | 7 |
-| | `Indice_preco_log` | 1.976 | 20 |
-| **PREÇO DO PRODUTO** | `Preco_Produto` | 169.764 | 25 |
-| | `Preco_Produto_Log` | 3.158.263 | 17 (**sem PK**) |
-
-`Custo` e `Indice_preco` são **por fornecedor**, não por produto nem por categoria. A fórmula
-inteira está em `engenharia-reversa-softlux.md` §4 — resumo: `VENDA = round(líquido_de_compra
-× Ipr_Indice, 2)`, aplicado **antes** de qualquer imposto de saída; imposto entra só no custo,
-para apurar lucro.
-
-### Vendas (azul) — orçamento e pedido são o MESMO registro
-| Caixa | Tabela | Linhas | Col |
-|---|---|---:|---:|
-| **ORÇAMENTO** (`Ven_Tipo='O'`, 23.033) | `Venda` | 34.136 | 90 |
-| | `VendaProduto` | 549.830 | 53 |
-| | `VendaAmbiente` | 144.674 | 9 |
-| | `VendaServico` | 4.450 | 17 |
-| | `VendaDesconto` | 300.337 | 13 |
-| | `VendaAtendente` | 37.707 | 11 |
-| | `VendaIndicacao` | 34.666 | 11 |
-| | `VendaIndicacaoGrupProd` | 232.415 | 8 |
-| **PEDIDO DE VENDA** (`Ven_Tipo='P'`, 11.103) | `Venda` | (a mesma tabela) | |
-| | `VendaEstoque` | **0** | 13 |
-| | `VendaEstoqueVendido` | 20.335 | 14 |
-| | `Reserva_Estoque` | 3.183 | 11 |
-
-As satélites referenciam o documento pelo par `TpDoc` + `NDocPre`, não por FK para `Venda`.
-
-### Compras (vermelho) — fluxo puxado, venda sob encomenda
-| Caixa | Tabela | Linhas | Col |
-|---|---|---:|---:|
-| Pedido de compra | `pedido_compra` | 8.306 | 14 |
-| | `Pedido_compra_det` | 34.863 | 17 |
-| Ordem de compra | `ordem_compra` | 5.444 | 26 |
-| | `ordem_compra_det` | 30.623 | 35 |
-| Nota do fornecedor | `Nota_entrada` | 6.343 | 42 |
-| | `nota_entrada_det` | 31.873 | 93 |
-| | `Nota_Entrada_Dif` | 86 | 7 |
-| | `DevolucaoProduto` | 11.557 | 30 |
-
-### Estoque (verde)
-| Caixa | Tabela | Linhas | Col |
-|---|---|---:|---:|
-| **ESTOQUE** | `Estoque_produto` | 141.043 | 7 |
-| | `EstoqueTipo` | 4 | 9 |
-| | `Lancamento_estoque` | 3.614 | 10 |
-| | `lancamento_estoque_det` | 10.646 | 13 |
-| | `BalancoEstoque` | 324 | 11 |
-| | `BalancoEstoqueProdutos` | 7.412 | 11 |
-| | `TransferenciaEstoque` | 88 | 14 |
-| | `TransferenciaEstoqueProduto` | 302 | 9 |
-| Razão e foto diária | `estoque_log` | 402.161 | 16 |
-| | `estoque_produto_dia` | **8.678.690** | 9 |
-
-`estoque_produto_dia` sozinho é 58% de todas as linhas do banco. `EstoqueTipo` tem 4 locais
-e entra na PK de `Estoque_produto`: **estoque é multi-DEPÓSITO, não só multi-empresa.**
-
-### Financeiro (verde-escuro)
 | Tabela | Linhas | Col |
 |---|---:|---:|
-| `contas_receber` | 9.076 | 36 |
-| `contas_Receber_det` | 18.555 | 32 |
-| `Contas_receber_pag` | 17.885 | 42 |
-| `contas_apagar` | 30.043 | 31 |
-| `contas_apagar_det` | 42.161 | 28 |
-| `Contas_apagar_pag` | 41.981 | 42 |
-| `Movimento_bancario` | 61.046 | 28 |
-| `Contas_Bancarias` | 19 | 20 |
-| `Plano_Contas` | 140 | 18 |
+| `Clientes` | 9.322 | 97 |
+| `fornecedor` | 868 | 58 |
+| `Indicacoes` | 1.316 | 40 |
+| `Funcionario` | 111 | 90 |
+| `Obras` | 9.454 | 18 |
+| `produtos` | 108.992 | 86 |
+| `ProdutosFornecedores` | 108.604 | 18 |
+| `GrupoProduto` | 12 | 9 |
+| `Ambiente` | 346 | 8 |
 
-O fluxograma marca a seta pedido→financeiro como condicional: **"só se `CategoriaVenda` gera"**
-(ver §5).
+> O produto nasce aqui, mas ainda sem preço.
 
-### Fiscal (vermelho-escuro)
+### 2. Formação de preço
+*O custo do fornecedor vira preço de venda.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `Custo` | 385 | 40 |
+| `Indice_preco` | 376 | 18 |
+| `Indice_precoGrupoUsuario` | 2.059 | 7 |
+| `Preco_Produto` | 169.764 | 25 |
+| `Preco_Produto_Log` | 3.158.263 | 17 |
+| `Indice_preco_log` | 1.976 | 20 |
+| `custo_log` | 719 | 31 |
+
+> VENDA = líquido de compra × Índice. Índice é POR FORNECEDOR.
+
+`Custo` e `Indice_preco` são **por fornecedor**, não por produto nem por categoria — as duas
+têm `for_codigo` na PK. A cadeia completa (4 descontos em cascata, créditos, IPI, frete, os
+7 ramos de ICMS) está em `engenharia-reversa-softlux.md` §4, extraída das procs
+`CalcularProduto`/`CalcularPorProduto` de `schema/bdprincipal-rotinas.sql`.
+
+### 3. Orçamento  (Venda, Ven_Tipo='O')
+*23.033 documentos. Validade ~5 dias.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `Venda` | 34.136 | 90 |
+| `VendaProduto` | 549.830 | 53 |
+| `VendaAmbiente` | 144.674 | 9 |
+| `VendaServico` | 4.450 | 17 |
+| `VendaDesconto` | 300.337 | 13 |
+| `VendaAtendente` | 37.707 | 11 |
+| `VendaIndicacao` | 34.666 | 11 |
+| `VendaIndicacaoGrupProd` | 232.415 | 8 |
+
+> 46,1% dos orçamentos viram pedido. Conversão = troca de Ven_Tipo, não cópia.
+
+`Venda` (34.136 = 23.033 orçamentos + 11.103 pedidos) aparece só aqui, mas **serve aos dois
+estágios** — é o mesmo registro físico. As satélites referenciam o documento pelo par
+`TpDoc` + `NDocPre`, não por FK para `Venda`.
+
+### 4. Pedido de venda  (mesma Venda, Ven_Tipo='P')
+*11.103 pedidos — 99,8% nascem de um orçamento.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `VendaEstoque` | 0 | 13 |
+| `VendaEstoqueVendido` | 20.335 | 14 |
+| `Reserva_Estoque` | 3.183 | 11 |
+
+> CategoriaVenda decide se gera financeiro. Mostra, doação e venda a funcionário NÃO geram.
+
+Só as 3 tabelas que existem **exclusivamente** no pedido. `VendaEstoque` está zerada apesar de
+ter PK de 8 colunas — estrutura sem uso. No diagrama, é daqui que saem as setas para Financeiro
+(condicional), Fiscal, RT e Estoque ("reserva e baixa").
+
+### 5. Compra sob encomenda
+*O que não tem em estoque vira pedido ao fornecedor.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `pedido_compra` | 8.306 | 14 |
+| `Pedido_compra_det` | 34.863 | 17 |
+| `ordem_compra` | 5.444 | 26 |
+| `ordem_compra_det` | 30.623 | 35 |
+
+> CompraEstoque() = ordem aberta − reserva − já recebido.
+
+### 6. Entrada de mercadoria
+*Nota do fornecedor dá baixa na ordem e sobe estoque.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `Nota_entrada` | 6.343 | 42 |
+| `nota_entrada_det` | 31.873 | 93 |
+| `Nota_Entrada_Dif` | 86 | 7 |
+| `DevolucaoProduto` | 11.557 | 30 |
+
+### 7. Estoque
+*Saldo, razão e foto diária. Multi-depósito (4 locais) e multi-empresa.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `Estoque_produto` | 141.043 | 7 |
+| `EstoqueTipo` | 4 | 9 |
+| `estoque_log` | 402.161 | 16 |
+| `estoque_produto_dia` | 8.678.690 | 9 |
+| `Lancamento_estoque` | 3.614 | 10 |
+| `lancamento_estoque_det` | 10.646 | 13 |
+| `BalancoEstoque` | 324 | 11 |
+| `BalancoEstoqueProdutos` | 7.412 | 11 |
+| `TransferenciaEstoque` | 88 | 14 |
+| `TransferenciaEstoqueProduto` | 302 | 9 |
+
+> Único trigger do banco vive aqui — e lê só a 1ª linha de inserted.
+
+`estoque_produto_dia` sozinho é **58% de todas as linhas do banco**. `EstoqueTipo` tem 4 locais
+e entra na PK de `Estoque_produto`: **estoque é multi-DEPÓSITO, não só multi-empresa.**
+
+### 8. Entrega
+*Separação, carga e confirmação.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `Controle_entrega` | 9.381 | 14 |
+| `controle_entrega_data` | 145.480 | 21 |
+| `controle_entrega_prod` | 77.835 | 21 |
+
+### 9. Fiscal
+*NF-e, NFS-e e MDF-e — muito mais completo do que o menu deixa ver.*
+
 | Tabela | Linhas | Col |
 |---|---:|---:|
 | `NotaFiscal` | 2.984 | 174 |
@@ -329,24 +378,38 @@ O fluxograma marca a seta pedido→financeiro como condicional: **"só se `Categ
 2.984 notas para 11.103 pedidos = **27%**. `NFSe` (69 col), `MDFe` (52 col) e `ECFCupom`
 (51 col) existem no schema e têm **0 linhas** — módulos entregues pelo fabricante, nunca usados.
 
-### RT / comissão (lilás)
+### 10. Financeiro
+*Contas a receber e a pagar, banco e plano de contas.*
+
+| Tabela | Linhas | Col |
+|---|---:|---:|
+| `contas_receber` | 9.076 | 36 |
+| `contas_Receber_det` | 18.555 | 32 |
+| `Contas_receber_pag` | 17.885 | 42 |
+| `contas_apagar` | 30.043 | 31 |
+| `contas_apagar_det` | 42.161 | 28 |
+| `Contas_apagar_pag` | 41.981 | 42 |
+| `Movimento_bancario` | 61.046 | 28 |
+| `Contas_Bancarias` | 19 | 20 |
+| `Plano_Contas` | 140 | 18 |
+
+### 11. RT e comissão
+*Reserva Técnica do arquiteto e comissão do atendente.*
+
 | Tabela | Linhas | Col |
 |---|---:|---:|
 | `Reserva_tecnica` | 1.212 | 18 |
 | `Reserva_tecnica_GrupoProd` | 12.108 | 9 |
-| `ParametrosRTGrupoProdutos` | 7 | 5 |
+| `Indicacoes_Detalhe` | 1.344 | 53 |
+| `IndicacaoGrupProd` | 7.569 | 10 |
 | `FornecedorRTGrupProd` | 7.504 | 8 |
+| `ParametrosRTGrupoProdutos` | 7 | 5 |
 | `CategoriaRemuneracao` | 1 | 9 |
 
-**RT = Reserva Técnica**, a comissão do arquiteto. Percentual **por grupo de produto**, não
-por documento — a regra é mais fina do que os prints das telas sugerem.
+> Percentual por GRUPO DE PRODUTO, com operador. Serviço (1000) e frete (1001) são pseudo-produtos.
 
-### Entrega (azul-petróleo)
-| Tabela | Linhas | Col |
-|---|---:|---:|
-| `Controle_entrega` | 9.381 | 14 |
-| `controle_entrega_data` | 145.480 | 21 |
-| `controle_entrega_prod` | 77.835 | 21 |
+**RT = Reserva Técnica**, a comissão do arquiteto. A regra é mais fina do que os prints das
+telas sugerem: o percentual é por grupo de produto dentro da indicação, não por documento.
 
 ---
 

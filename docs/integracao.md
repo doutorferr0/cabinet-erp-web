@@ -86,8 +86,59 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
 | Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
 
-**Ainda mock, por falta de caminho no contrato:** colaborador · orçamento ·
-pedido e ordem de compra · cidades · resumo do Boletim.
+**Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
+cidades · resumo do Boletim.
+
+**Caminho no contrato, tela ainda mock:** orçamento e colaborador. Os caminhos
+existem (ver abaixo), o cliente gerado existe, mas `src/data/` ainda não os
+consome — a troca é a rodada seguinte, e mexe em `src/data/`, não na tela.
+
+### Orçamento — `/api/quotes`, caminhos `Proposto`
+
+Escritos pelo front a partir da transcrição §8.1/§8.2 e da engenharia reversa do
+banco do legado (`docs/legado/`). Cinco decisões que quem implementar honra:
+
+1. **`number` é do servidor.** Sequência **global do grupo**, não por empresa —
+   decisão registrada em `project-core` @decisoes, apoiada nos 34.136 documentos
+   do legado, onde `Ven_CodigoPre` já é única entre as duas empresas. Não existe
+   na escrita: cliente que escolhe número colide entre empresas. A chave continua
+   composta com tenant; numeração global não é PK sem tenant.
+2. **Orçamento e Pedido são agregados distintos.** No legado são o mesmo registro
+   com `Ven_Tipo` O/P — uma tabela de 90 colunas com metade nula conforme o tipo.
+   Aqui Pedido **não** é um campo do orçamento; entra como recurso próprio quando
+   tiver tela, e a conversão será operação explícita.
+3. **Itens e ambientes viajam embutidos, `PUT` substitui o documento inteiro.**
+   Sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre
+   elas (a armadilha que produto+variantes já tem, registrada no fim deste
+   arquivo) — numa grade de dezenas de linhas, falha no meio deixaria metade
+   gravada. Item de documento não tem identidade fora do documento.
+4. **Ambiente tem TRÊS camadas, e o contrato tem duas delas.** Catálogo por
+   empresa em `GET /api/catalog-lookups?kind=AMBIENTE`; instância no documento em
+   `QuoteDetailDto.environments[]`, com `name` **congelado**; item aponta por
+   `environmentCode`. É o desenho do legado (`Ambiente` → `VendaAmbiente`, que já
+   guarda `VenAmb_Descricao` própria → `VendaProduto.CodAmbiente`). String livre no
+   item não serve: renomear ambiente reescreveria item a item, ambiente vazio não
+   poderia existir, e a ordem — que o PDF usa para agrupar — não teria onde morar.
+   **`order` é acréscimo do front**, o legado não tem coluna de ordem.
+5. **Documento cancela, não desativa.** `status: active|cancelled` por
+   `POST /api/quotes/{id}/cancel`; `active` de cadastro não serve para documento.
+   A listagem continua mostrando o cancelado, com a situação.
+
+Descrição, acabamento, tamanho e preço do item são **snapshot da emissão**, não
+leitura do catálogo — senão corrigir o cadastro reescreveria orçamento do ano
+passado (regra do `project-core` @arquitetura).
+
+**Falta conhecida:** `kind` `AMBIENTE` ainda não está no vocabulário de
+`src/data/lookups-api.ts` (são 19 kinds hoje). Entra junto com a wiring da tela.
+
+### Colaborador — `GET /api/employees`, só leitura
+
+Aberto para o `salespersonId` do orçamento ter para onde apontar. **Não tem
+`POST`, `PUT` nem detalhe por id**: o formulário de RH são ~30 campos da
+transcrição §2 e merece corte próprio; detalhe que devolvesse só os 5 campos da
+listagem mostraria formulário quase em branco. **Não tem `code`** — o legado
+identifica funcionário por CPF e não guarda código humano, então a coluna
+`Código` sai da listagem em vez de exibir um uuid.
 
 ### Dashboard e Planner — caminhos `Proposto`, sem servidor ainda
 

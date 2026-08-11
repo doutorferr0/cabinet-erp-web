@@ -493,6 +493,374 @@ export interface ProjectPlanDto {
   phases: PlanPhaseDto[];
 }
 
+/**
+ * Proposto. Colaborador da empresa ativa. Somente leitura neste corte: existe para resolver o `salespersonId` do orçamento e a listagem de Colaboradores. O formulário de RH (transcrição §2, ~30 campos) entra num corte próprio, com POST e PUT. Não há `code`: o legado identifica funcionário por CPF e não guarda código humano, então a coluna `Código` da listagem sai da tela em vez de exibir um uuid.
+ */
+export interface EmployeeDto {
+  id: string;
+  name: string;
+  /**
+     * Setor — kind `SETOR`.
+     * @nullable
+     */
+  sector?: string | null;
+  /**
+     * Cargo — kind `CARGO`.
+     * @nullable
+     */
+  jobTitle?: string | null;
+  active: boolean;
+}
+
+export interface PagedResultOfEmployeeDto {
+  rows: EmployeeDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Ambiente da obra DENTRO do orçamento — o `Ambiente F5` da tela. São três camadas, e esta é a do meio: o catálogo por empresa vive em `GET /api/catalog-lookups?kind=AMBIENTE`, esta é a instância no documento, e o item aponta para ela por `environmentCode`. O `name` é CONGELADO na emissão, como o legado já faz em `VendaAmbiente.VenAmb_Descricao`: renomear o ambiente no catálogo não pode reescrever orçamento fechado, e reescrever item a item seria pior ainda. Ambiente sem item nenhum é estado legítimo — por isso é coleção própria, não um campo derivado dos itens.
+ */
+export interface QuoteEnvironmentDto {
+  /** Id do ambiente no catálogo (`CatalogLookupDto.id`, kind `AMBIENTE`). */
+  code: string;
+  /** Nome congelado na emissão. */
+  name: string;
+  /** Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem. */
+  order: number;
+}
+
+/**
+ * Proposto. Linha da grade do orçamento. Os campos de descrição, acabamento, tamanho e preço são SNAPSHOT da emissão, não leitura do catálogo: documento comercial congela spec e preço, senão corrigir o cadastro reescreveria orçamento do ano passado.
+ */
+export interface QuoteItemDto {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /**
+     * Acabamento congelado.
+     * @nullable
+     */
+  finish?: string | null;
+  /**
+     * Tamanho congelado.
+     * @nullable
+     */
+  size?: string | null;
+  /** Até 3 casas. */
+  quantity: number;
+  /** @nullable */
+  unit?: string | null;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /** Desconto do item. Int com 4 casas implícitas: `10000` = 1%. */
+  discountPercent: number;
+  /**
+     * Fornecedor da linha (`PartnerDto.id`).
+     * @nullable
+     */
+  supplierId?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /**
+     * Código do produto NO fornecedor — a língua em que o item é pedido.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /** @nullable */
+  supplierDescription?: string | null;
+  /**
+     * Grupo de produto.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /**
+     * Tipo da peça — kind `TIPO_PECA`.
+     * @nullable
+     */
+  pieceType?: string | null;
+  /** Valor do item. Calculado pelo servidor — a escrita não manda. */
+  totalCents: number;
+}
+
+/**
+ * Proposto. Linha da grade na escrita. Sem `totalCents`: quem soma é o servidor.
+ */
+export interface QuoteItemWriteRequest {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /**
+     * Acabamento congelado.
+     * @nullable
+     */
+  finish?: string | null;
+  /**
+     * Tamanho congelado.
+     * @nullable
+     */
+  size?: string | null;
+  /** Até 3 casas. */
+  quantity: number;
+  /** @nullable */
+  unit?: string | null;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /** Desconto do item. Int com 4 casas implícitas: `10000` = 1%. */
+  discountPercent: number;
+  /**
+     * Fornecedor da linha (`PartnerDto.id`).
+     * @nullable
+     */
+  supplierId?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /**
+     * Código do produto NO fornecedor — a língua em que o item é pedido.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /** @nullable */
+  supplierDescription?: string | null;
+  /**
+     * Grupo de produto.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /**
+     * Tipo da peça — kind `TIPO_PECA`.
+     * @nullable
+     */
+  pieceType?: string | null;
+}
+
+/**
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ */
+export type QuoteDtoStatus = typeof QuoteDtoStatus[keyof typeof QuoteDtoStatus];
+
+
+export const QuoteDtoStatus = {
+  active: 'active',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Orçamento na listagem — só o que a grade mostra.
+ */
+export interface QuoteDto {
+  id: string;
+  /** Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas. */
+  number: string;
+  /**
+     * Série do documento.
+     * @nullable
+     */
+  series?: string | null;
+  /**
+     * Data de emissão.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  /**
+     * Data de validade — curta, ~5 dias na operação atual.
+     * @nullable
+     */
+  expiresAt?: string | null;
+  customerId: string;
+  /** Nome do cliente na emissão. */
+  customerName: string;
+  /**
+     * `Descrição da Obra` — como o operador chama a obra.
+     * @nullable
+     */
+  projectName?: string | null;
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  status: QuoteDtoStatus;
+  /** Total do orçamento, em centavos. Calculado pelo servidor. */
+  totalCents: number;
+}
+
+/**
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ */
+export type QuoteDetailDtoStatus = typeof QuoteDetailDtoStatus[keyof typeof QuoteDetailDtoStatus];
+
+
+export const QuoteDetailDtoStatus = {
+  active: 'active',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ */
+export type QuoteDetailDtoDiscountMode = typeof QuoteDetailDtoDiscountMode[keyof typeof QuoteDetailDtoDiscountMode];
+
+
+export const QuoteDetailDtoDiscountMode = {
+  product: 'product',
+  general: 'general',
+} as const;
+
+/**
+ * Proposto. O orçamento inteiro: cabeçalho, ambientes e itens numa resposta só. Itens e ambientes viajam embutidos porque não têm identidade fora do documento, e porque sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas — falha no meio deixaria metade da grade gravada.
+ */
+export interface QuoteDetailDto {
+  id: string;
+  /** Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas. */
+  number: string;
+  /**
+     * Série do documento.
+     * @nullable
+     */
+  series?: string | null;
+  /**
+     * Data de emissão.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  /**
+     * Data de validade — curta, ~5 dias na operação atual.
+     * @nullable
+     */
+  expiresAt?: string | null;
+  customerId: string;
+  /** Nome do cliente na emissão. */
+  customerName: string;
+  /**
+     * `Descrição da Obra` — como o operador chama a obra.
+     * @nullable
+     */
+  projectName?: string | null;
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  status: QuoteDetailDtoStatus;
+  /** Total do orçamento, em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * `Nº Pasta`.
+     * @nullable
+     */
+  folderNumber?: string | null;
+  /**
+     * Data de fechamento.
+     * @nullable
+     */
+  closedAt?: string | null;
+  /**
+     * Consultor(a) que atende — `EmployeeDto.id`.
+     * @nullable
+     */
+  salespersonId?: string | null;
+  /** @nullable */
+  salespersonName?: string | null;
+  /**
+     * Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.
+     * @nullable
+     */
+  professionalId?: string | null;
+  /** @nullable */
+  professionalName?: string | null;
+  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  discountMode: QuoteDetailDtoDiscountMode;
+  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  discountPercent: number;
+  /** Ambientes do documento, na ordem de exibição. */
+  environments: QuoteEnvironmentDto[];
+  items: QuoteItemDto[];
+}
+
+/**
+ * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ */
+export type QuoteWriteRequestDiscountMode = typeof QuoteWriteRequestDiscountMode[keyof typeof QuoteWriteRequestDiscountMode];
+
+
+export const QuoteWriteRequestDiscountMode = {
+  product: 'product',
+  general: 'general',
+} as const;
+
+/**
+ * Proposto. Corpo de criação e de alteração. **`PUT` substitui o documento INTEIRO**, itens e ambientes junto: corpo parcial apaga o que não veio. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`), sem `totalCents` nem `customerName` (o servidor calcula e resolve).
+ */
+export interface QuoteWriteRequest {
+  /**
+     * Série do documento.
+     * @nullable
+     */
+  series?: string | null;
+  /**
+     * Data de emissão.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  /**
+     * Data de validade — curta, ~5 dias na operação atual.
+     * @nullable
+     */
+  expiresAt?: string | null;
+  customerId: string;
+  /**
+     * `Descrição da Obra` — como o operador chama a obra.
+     * @nullable
+     */
+  projectName?: string | null;
+  /**
+     * `Nº Pasta`.
+     * @nullable
+     */
+  folderNumber?: string | null;
+  /**
+     * Data de fechamento.
+     * @nullable
+     */
+  closedAt?: string | null;
+  /**
+     * Consultor(a) que atende — `EmployeeDto.id`.
+     * @nullable
+     */
+  salespersonId?: string | null;
+  /**
+     * Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.
+     * @nullable
+     */
+  professionalId?: string | null;
+  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  discountMode: QuoteWriteRequestDiscountMode;
+  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  discountPercent: number;
+  /** Ambientes do documento, na ordem de exibição. */
+  environments: QuoteEnvironmentDto[];
+  items: QuoteItemWriteRequest[];
+}
+
+export interface PagedResultOfQuoteDto {
+  rows: QuoteDto[];
+  total: number;
+}
+
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;
@@ -563,5 +931,21 @@ export type ListProjectsParams = {
  * Ausente = todos. O toggle do Planner manda `active,proposed` ou `closed`.
  */
 status?: string;
+};
+
+export type ListEmployeesParams = {
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListQuotesParams = {
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 

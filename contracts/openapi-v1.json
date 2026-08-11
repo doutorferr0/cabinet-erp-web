@@ -1602,6 +1602,377 @@
           }
         }
       }
+    },
+    "/api/employees": {
+      "get": {
+        "tags": ["cadastros"],
+        "operationId": "ListEmployees",
+        "description": "Proposto. Colaboradores da empresa ativa. Somente leitura neste corte \u2014 \u00e9 daqui que sai o combo de Consultor(a) do or\u00e7amento.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfEmployeeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "ListQuotes",
+        "description": "Proposto. Or\u00e7amentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName` e `projectName`; fora da lista \u00e9 400.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfQuoteDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CreateQuote",
+        "description": "Proposto. Cria or\u00e7amento na empresa ativa. O n\u00famero \u00e9 atribu\u00eddo aqui.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetQuote",
+        "description": "Proposto. O documento inteiro, com ambientes e itens.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["vendas"],
+        "operationId": "UpdateQuote",
+        "description": "Proposto. Substitui o documento INTEIRO, itens e ambientes junto. Or\u00e7amento cancelado n\u00e3o aceita altera\u00e7\u00e3o \u2014 \u00e9 409, n\u00e3o 400.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}/cancel": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CancelQuote",
+        "description": "Proposto. Cancela o or\u00e7amento (`status: cancelled`). Documento n\u00e3o se apaga nem se desativa: a listagem continua mostrando, com a situa\u00e7\u00e3o. Cancelar duas vezes \u00e9 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDetailDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2455,6 +2826,478 @@
             }
           }
         }
+      },
+      "EmployeeDto": {
+        "description": "Proposto. Colaborador da empresa ativa. Somente leitura neste corte: existe para resolver o `salespersonId` do or\u00e7amento e a listagem de Colaboradores. O formul\u00e1rio de RH (transcri\u00e7\u00e3o \u00a72, ~30 campos) entra num corte pr\u00f3prio, com POST e PUT. N\u00e3o h\u00e1 `code`: o legado identifica funcion\u00e1rio por CPF e n\u00e3o guarda c\u00f3digo humano, ent\u00e3o a coluna `C\u00f3digo` da listagem sai da tela em vez de exibir um uuid.",
+        "required": ["id", "name", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sector": {
+            "description": "Setor \u2014 kind `SETOR`.",
+            "type": ["string", "null"]
+          },
+          "jobTitle": {
+            "description": "Cargo \u2014 kind `CARGO`.",
+            "type": ["string", "null"]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfEmployeeDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmployeeDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "QuoteEnvironmentDto": {
+        "description": "Proposto. Ambiente da obra DENTRO do or\u00e7amento \u2014 o `Ambiente F5` da tela. S\u00e3o tr\u00eas camadas, e esta \u00e9 a do meio: o cat\u00e1logo por empresa vive em `GET /api/catalog-lookups?kind=AMBIENTE`, esta \u00e9 a inst\u00e2ncia no documento, e o item aponta para ela por `environmentCode`. O `name` \u00e9 CONGELADO na emiss\u00e3o, como o legado j\u00e1 faz em `VendaAmbiente.VenAmb_Descricao`: renomear o ambiente no cat\u00e1logo n\u00e3o pode reescrever or\u00e7amento fechado, e reescrever item a item seria pior ainda. Ambiente sem item nenhum \u00e9 estado leg\u00edtimo \u2014 por isso \u00e9 cole\u00e7\u00e3o pr\u00f3pria, n\u00e3o um campo derivado dos itens.",
+        "required": ["code", "name", "order"],
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Id do ambiente no cat\u00e1logo (`CatalogLookupDto.id`, kind `AMBIENTE`).",
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Nome congelado na emiss\u00e3o.",
+            "type": "string"
+          },
+          "order": {
+            "description": "Ordem de exibi\u00e7\u00e3o. O PDF do or\u00e7amento agrupa por ambiente e vai para o cliente, ent\u00e3o a ordem \u00e9 dado, n\u00e3o apresenta\u00e7\u00e3o. N\u00c3O vem do legado \u2014 `VendaAmbiente` n\u00e3o tem coluna de ordem.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "QuoteItemDto": {
+        "description": "Proposto. Linha da grade do or\u00e7amento. Os campos de descri\u00e7\u00e3o, acabamento, tamanho e pre\u00e7o s\u00e3o SNAPSHOT da emiss\u00e3o, n\u00e3o leitura do cat\u00e1logo: documento comercial congela spec e pre\u00e7o, sen\u00e3o corrigir o cadastro reescreveria or\u00e7amento do ano passado.",
+        "required": [
+          "lineNumber",
+          "description",
+          "quantity",
+          "unitPriceCents",
+          "discountPercent",
+          "totalCents"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "Coluna `Item`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environmentCode": {
+            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` \u00e9 nul\u00e1vel).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "variantId": {
+            "description": "Variante do cat\u00e1logo (produto \u00d7 acabamento \u00d7 tamanho). `null` quando a linha n\u00e3o veio do cat\u00e1logo.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descri\u00e7\u00e3o congelada na emiss\u00e3o.",
+            "type": "string"
+          },
+          "finish": {
+            "description": "Acabamento congelado.",
+            "type": ["string", "null"]
+          },
+          "size": {
+            "description": "Tamanho congelado.",
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "At\u00e9 3 casas.",
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "unitPriceCents": {
+            "description": "Valor unit\u00e1rio congelado, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "discountPercent": {
+            "description": "Desconto do item. Int com 4 casas impl\u00edcitas: `10000` = 1%.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierId": {
+            "description": "Fornecedor da linha (`PartnerDto.id`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          },
+          "supplierCode": {
+            "description": "C\u00f3digo do produto NO fornecedor \u2014 a l\u00edngua em que o item \u00e9 pedido.",
+            "type": ["string", "null"]
+          },
+          "supplierDescription": {
+            "type": ["string", "null"]
+          },
+          "productGroup": {
+            "description": "Grupo de produto.",
+            "type": ["string", "null"]
+          },
+          "pieceType": {
+            "description": "Tipo da pe\u00e7a \u2014 kind `TIPO_PECA`.",
+            "type": ["string", "null"]
+          },
+          "totalCents": {
+            "description": "Valor do item. Calculado pelo servidor \u2014 a escrita n\u00e3o manda.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "QuoteItemWriteRequest": {
+        "description": "Proposto. Linha da grade na escrita. Sem `totalCents`: quem soma \u00e9 o servidor.",
+        "required": ["lineNumber", "description", "quantity", "unitPriceCents", "discountPercent"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "Coluna `Item`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environmentCode": {
+            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` \u00e9 nul\u00e1vel).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "variantId": {
+            "description": "Variante do cat\u00e1logo (produto \u00d7 acabamento \u00d7 tamanho). `null` quando a linha n\u00e3o veio do cat\u00e1logo.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descri\u00e7\u00e3o congelada na emiss\u00e3o.",
+            "type": "string"
+          },
+          "finish": {
+            "description": "Acabamento congelado.",
+            "type": ["string", "null"]
+          },
+          "size": {
+            "description": "Tamanho congelado.",
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "At\u00e9 3 casas.",
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "unitPriceCents": {
+            "description": "Valor unit\u00e1rio congelado, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "discountPercent": {
+            "description": "Desconto do item. Int com 4 casas impl\u00edcitas: `10000` = 1%.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierId": {
+            "description": "Fornecedor da linha (`PartnerDto.id`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          },
+          "supplierCode": {
+            "description": "C\u00f3digo do produto NO fornecedor \u2014 a l\u00edngua em que o item \u00e9 pedido.",
+            "type": ["string", "null"]
+          },
+          "supplierDescription": {
+            "type": ["string", "null"]
+          },
+          "productGroup": {
+            "description": "Grupo de produto.",
+            "type": ["string", "null"]
+          },
+          "pieceType": {
+            "description": "Tipo da pe\u00e7a \u2014 kind `TIPO_PECA`.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "QuoteDto": {
+        "description": "Proposto. Or\u00e7amento na listagem \u2014 s\u00f3 o que a grade mostra.",
+        "required": ["id", "number", "customerId", "customerName", "status", "totalCents"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "N\u00famero do documento. Sequ\u00eancia GLOBAL do grupo, atribu\u00edda pelo servidor \u2014 por isso n\u00e3o existe na escrita. No legado `Ven_CodigoPre` j\u00e1 \u00e9 \u00fanica entre as empresas, e cliente que escolhe n\u00famero colide entre elas.",
+            "type": "string"
+          },
+          "series": {
+            "description": "S\u00e9rie do documento.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Data de emiss\u00e3o.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "expiresAt": {
+            "description": "Data de validade \u2014 curta, ~5 dias na opera\u00e7\u00e3o atual.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "description": "Nome do cliente na emiss\u00e3o.",
+            "type": "string"
+          },
+          "projectName": {
+            "description": "`Descri\u00e7\u00e3o da Obra` \u2014 como o operador chama a obra.",
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "Documento CANCELA, n\u00e3o desativa: `active` de cadastro n\u00e3o serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "type": "string",
+            "enum": ["active", "cancelled"]
+          },
+          "totalCents": {
+            "description": "Total do or\u00e7amento, em centavos. Calculado pelo servidor.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "QuoteDetailDto": {
+        "description": "Proposto. O or\u00e7amento inteiro: cabe\u00e7alho, ambientes e itens numa resposta s\u00f3. Itens e ambientes viajam embutidos porque n\u00e3o t\u00eam identidade fora do documento, e porque sub-recurso por linha faria um `Gravar` virar N requisi\u00e7\u00f5es sem transa\u00e7\u00e3o entre elas \u2014 falha no meio deixaria metade da grade gravada.",
+        "required": [
+          "id",
+          "number",
+          "customerId",
+          "customerName",
+          "status",
+          "totalCents",
+          "discountMode",
+          "discountPercent",
+          "environments",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "N\u00famero do documento. Sequ\u00eancia GLOBAL do grupo, atribu\u00edda pelo servidor \u2014 por isso n\u00e3o existe na escrita. No legado `Ven_CodigoPre` j\u00e1 \u00e9 \u00fanica entre as empresas, e cliente que escolhe n\u00famero colide entre elas.",
+            "type": "string"
+          },
+          "series": {
+            "description": "S\u00e9rie do documento.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Data de emiss\u00e3o.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "expiresAt": {
+            "description": "Data de validade \u2014 curta, ~5 dias na opera\u00e7\u00e3o atual.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "description": "Nome do cliente na emiss\u00e3o.",
+            "type": "string"
+          },
+          "projectName": {
+            "description": "`Descri\u00e7\u00e3o da Obra` \u2014 como o operador chama a obra.",
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "Documento CANCELA, n\u00e3o desativa: `active` de cadastro n\u00e3o serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "type": "string",
+            "enum": ["active", "cancelled"]
+          },
+          "totalCents": {
+            "description": "Total do or\u00e7amento, em centavos. Calculado pelo servidor.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "folderNumber": {
+            "description": "`N\u00ba Pasta`.",
+            "type": ["string", "null"]
+          },
+          "closedAt": {
+            "description": "Data de fechamento.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "salespersonId": {
+            "description": "Consultor(a) que atende \u2014 `EmployeeDto.id`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "salespersonName": {
+            "type": ["string", "null"]
+          },
+          "professionalId": {
+            "description": "Profissional Externo (arquiteto/especificador) \u2014 \u00e9 `PartnerDto.id` com papel `professional`, n\u00e3o cadastro \u00e0 parte.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "professionalName": {
+            "type": ["string", "null"]
+          },
+          "discountMode": {
+            "description": "Desconto por produto ou geral \u2014 `Ven_TipoDesc` do legado (P/G).",
+            "type": "string",
+            "enum": ["product", "general"]
+          },
+          "discountPercent": {
+            "description": "Desconto geral. Int com 4 casas impl\u00edcitas: `10000` = 1%. Zero quando o modo \u00e9 `product`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environments": {
+            "description": "Ambientes do documento, na ordem de exibi\u00e7\u00e3o.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteEnvironmentDto"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteItemDto"
+            }
+          }
+        }
+      },
+      "QuoteWriteRequest": {
+        "description": "Proposto. Corpo de cria\u00e7\u00e3o e de altera\u00e7\u00e3o. **`PUT` substitui o documento INTEIRO**, itens e ambientes junto: corpo parcial apaga o que n\u00e3o veio. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`), sem `totalCents` nem `customerName` (o servidor calcula e resolve).",
+        "required": ["customerId", "discountMode", "discountPercent", "environments", "items"],
+        "type": "object",
+        "properties": {
+          "series": {
+            "description": "S\u00e9rie do documento.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Data de emiss\u00e3o.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "expiresAt": {
+            "description": "Data de validade \u2014 curta, ~5 dias na opera\u00e7\u00e3o atual.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectName": {
+            "description": "`Descri\u00e7\u00e3o da Obra` \u2014 como o operador chama a obra.",
+            "type": ["string", "null"]
+          },
+          "folderNumber": {
+            "description": "`N\u00ba Pasta`.",
+            "type": ["string", "null"]
+          },
+          "closedAt": {
+            "description": "Data de fechamento.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "salespersonId": {
+            "description": "Consultor(a) que atende \u2014 `EmployeeDto.id`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "professionalId": {
+            "description": "Profissional Externo (arquiteto/especificador) \u2014 \u00e9 `PartnerDto.id` com papel `professional`, n\u00e3o cadastro \u00e0 parte.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "discountMode": {
+            "description": "Desconto por produto ou geral \u2014 `Ven_TipoDesc` do legado (P/G).",
+            "type": "string",
+            "enum": ["product", "general"]
+          },
+          "discountPercent": {
+            "description": "Desconto geral. Int com 4 casas impl\u00edcitas: `10000` = 1%. Zero quando o modo \u00e9 `product`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environments": {
+            "description": "Ambientes do documento, na ordem de exibi\u00e7\u00e3o.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteEnvironmentDto"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteItemWriteRequest"
+            }
+          }
+        }
+      },
+      "PagedResultOfQuoteDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -2479,6 +3322,12 @@
     },
     {
       "name": "planner"
+    },
+    {
+      "name": "vendas"
+    },
+    {
+      "name": "cadastros"
     }
   ]
 }

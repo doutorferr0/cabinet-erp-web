@@ -14,17 +14,21 @@ import type {
   HealthStatus,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
+  ListEmployeesParams,
   ListPartnersParams,
   ListProductsParams,
   ListProjectsParams,
+  ListQuotesParams,
   ListStockMovementsParams,
   ListTasksParams,
   LoginFalhou,
   LoginOk,
   LoginRequest,
   PagedResultOfCatalogLookupDto,
+  PagedResultOfEmployeeDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
+  PagedResultOfQuoteDto,
   PagedResultOfStockMovementDto,
   PartnerDto,
   PartnerLinkRequest,
@@ -36,6 +40,8 @@ import type {
   ProductWriteRequest,
   ProjectDto,
   ProjectPlanDto,
+  QuoteDetailDto,
+  QuoteWriteRequest,
   ReadinessStatus,
   SessaoAtual,
   StockMovementDto,
@@ -1483,6 +1489,314 @@ export const getProjectPlan = async (projectId: string, options?: Parameters<typ
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listEmployeesResponse200 = {
+  data: PagedResultOfEmployeeDto
+  status: 200
+}
+
+export type listEmployeesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listEmployeesResponseSuccess = (listEmployeesResponse200) & {
+  headers: Headers;
+};
+export type listEmployeesResponseError = (listEmployeesResponse400) & {
+  headers: Headers;
+};
+
+export type listEmployeesResponse = (listEmployeesResponseSuccess | listEmployeesResponseError)
+
+export const getListEmployeesUrl = (params?: ListEmployeesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/employees?${stringifiedParams}` : `/api/employees`
+}
+
+/**
+ * Proposto. Colaboradores da empresa ativa. Somente leitura neste corte — é daqui que sai o combo de Consultor(a) do orçamento.
+ */
+export const listEmployees = async (params?: ListEmployeesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listEmployeesResponse> => {
+
+  return apiFetch<listEmployeesResponse>(getListEmployeesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listQuotesResponse200 = {
+  data: PagedResultOfQuoteDto
+  status: 200
+}
+
+export type listQuotesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listQuotesResponseSuccess = (listQuotesResponse200) & {
+  headers: Headers;
+};
+export type listQuotesResponseError = (listQuotesResponse400) & {
+  headers: Headers;
+};
+
+export type listQuotesResponse = (listQuotesResponseSuccess | listQuotesResponseError)
+
+export const getListQuotesUrl = (params?: ListQuotesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/quotes?${stringifiedParams}` : `/api/quotes`
+}
+
+/**
+ * Proposto. Orçamentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName` e `projectName`; fora da lista é 400.
+ */
+export const listQuotes = async (params?: ListQuotesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listQuotesResponse> => {
+
+  return apiFetch<listQuotesResponse>(getListQuotesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createQuoteResponse201 = {
+  data: QuoteDetailDto
+  status: 201
+}
+
+export type createQuoteResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createQuoteResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createQuoteResponseSuccess = (createQuoteResponse201) & {
+  headers: Headers;
+};
+export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse403 | createQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type createQuoteResponse = (createQuoteResponseSuccess | createQuoteResponseError)
+
+export const getCreateQuoteUrl = () => {
+
+
+
+
+  return `/api/quotes`
+}
+
+/**
+ * Proposto. Cria orçamento na empresa ativa. O número é atribuído aqui.
+ */
+export const createQuote = async (quoteWriteRequest: QuoteWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createQuoteResponse> => {
+
+  return apiFetch<createQuoteResponse>(getCreateQuoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quoteWriteRequest)
+  }
+);}
+
+
+
+export type getQuoteResponse200 = {
+  data: QuoteDetailDto
+  status: 200
+}
+
+export type getQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getQuoteResponseSuccess = (getQuoteResponse200) & {
+  headers: Headers;
+};
+export type getQuoteResponseError = (getQuoteResponse404) & {
+  headers: Headers;
+};
+
+export type getQuoteResponse = (getQuoteResponseSuccess | getQuoteResponseError)
+
+export const getGetQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}`
+}
+
+/**
+ * Proposto. O documento inteiro, com ambientes e itens.
+ */
+export const getQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getQuoteResponse> => {
+
+  return apiFetch<getQuoteResponse>(getGetQuoteUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateQuoteResponse200 = {
+  data: QuoteDetailDto
+  status: 200
+}
+
+export type updateQuoteResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateQuoteResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type updateQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateQuoteResponseSuccess = (updateQuoteResponse200) & {
+  headers: Headers;
+};
+export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type updateQuoteResponse = (updateQuoteResponseSuccess | updateQuoteResponseError)
+
+export const getUpdateQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}`
+}
+
+/**
+ * Proposto. Substitui o documento INTEIRO, itens e ambientes junto. Orçamento cancelado não aceita alteração — é 409, não 400.
+ */
+export const updateQuote = async (id: string,
+    quoteWriteRequest: QuoteWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateQuoteResponse> => {
+
+  return apiFetch<updateQuoteResponse>(getUpdateQuoteUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quoteWriteRequest)
+  }
+);}
+
+
+
+export type cancelQuoteResponse200 = {
+  data: QuoteDetailDto
+  status: 200
+}
+
+export type cancelQuoteResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type cancelQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelQuoteResponseSuccess = (cancelQuoteResponse200) & {
+  headers: Headers;
+};
+export type cancelQuoteResponseError = (cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type cancelQuoteResponse = (cancelQuoteResponseSuccess | cancelQuoteResponseError)
+
+export const getCancelQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.
+ */
+export const cancelQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelQuoteResponse> => {
+
+  return apiFetch<cancelQuoteResponse>(getCancelQuoteUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
 
   }

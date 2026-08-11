@@ -19,8 +19,10 @@ import {
   getAuthLoginResponseMock,
   getAuthMeResponseMock,
   getAuthTenantsResponseMock,
+  getCancelQuoteResponseMock,
   getCreatePartnerResponseMock,
   getCreateProductResponseMock,
+  getCreateQuoteResponseMock,
   getCreateStockMovementResponseMock,
   getCreateTaskResponseMock,
   getCreateVariantResponseMock,
@@ -28,14 +30,17 @@ import {
   getGetPartnerResponseMock,
   getGetProductResponseMock,
   getGetProjectPlanResponseMock,
+  getGetQuoteResponseMock,
   getHealthDbResponseMock,
   getHealthResponseMock,
   getLinkPartnerResponseMock,
   getListAgendaEventsResponseMock,
   getListCatalogLookupsResponseMock,
+  getListEmployeesResponseMock,
   getListPartnersResponseMock,
   getListProductsResponseMock,
   getListProjectsResponseMock,
+  getListQuotesResponseMock,
   getListStockMovementsResponseMock,
   getListTasksResponseMock,
   getListTodosResponseMock,
@@ -43,6 +48,7 @@ import {
   getPatchTodoResponseMock,
   getUpdatePartnerResponseMock,
   getUpdateProductResponseMock,
+  getUpdateQuoteResponseMock,
   getUpdateVariantResponseMock
 } from './index.faker';
 
@@ -52,8 +58,10 @@ import type {
   HealthStatus,
   LoginOk,
   PagedResultOfCatalogLookupDto,
+  PagedResultOfEmployeeDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
+  PagedResultOfQuoteDto,
   PagedResultOfStockMovementDto,
   PartnerDto,
   ProductDetailDto,
@@ -61,6 +69,7 @@ import type {
   ProductVariantDto,
   ProjectDto,
   ProjectPlanDto,
+  QuoteDetailDto,
   ReadinessStatus,
   SessaoAtual,
   StockMovementDto,
@@ -69,7 +78,7 @@ import type {
   VinculoDeEmpresa
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -437,6 +446,78 @@ export const getGetProjectPlanMockHandler = (overrideResponse?: ProjectPlanDto |
       })
   }, options)
 }
+
+export const getListEmployeesMockHandler = (overrideResponse?: PagedResultOfEmployeeDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfEmployeeDto> | PagedResultOfEmployeeDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/employees', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListEmployeesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListQuotesMockHandler = (overrideResponse?: PagedResultOfQuoteDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfQuoteDto> | PagedResultOfQuoteDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/quotes', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListQuotesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<QuoteDetailDto> | QuoteDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/quotes', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateQuoteResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getGetQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<QuoteDetailDto> | QuoteDetailDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/quotes/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetQuoteResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<QuoteDetailDto> | QuoteDetailDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/quotes/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateQuoteResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCancelQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<QuoteDetailDto> | QuoteDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/quotes/:id/cancel', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCancelQuoteResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getVitraERPMock = () => [
   getHealthMockHandler(),
   getHealthDbMockHandler(),
@@ -468,5 +549,11 @@ export const getVitraERPMock = () => [
   getListTodosMockHandler(),
   getPatchTodoMockHandler(),
   getListProjectsMockHandler(),
-  getGetProjectPlanMockHandler()
+  getGetProjectPlanMockHandler(),
+  getListEmployeesMockHandler(),
+  getListQuotesMockHandler(),
+  getCreateQuoteMockHandler(),
+  getGetQuoteMockHandler(),
+  getUpdateQuoteMockHandler(),
+  getCancelQuoteMockHandler()
 ]

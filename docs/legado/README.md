@@ -1,8 +1,8 @@
 # docs/legado — engenharia reversa do banco do Softlux
 
 Índice do material bruto levantado do **Softlux** (sistema desktop Delphi que o Cabinet vai
-substituir), em **2026-08-10**, direto do SQL Server de produção — só leitura de catálogo,
-nenhuma escrita. Este README existe para quem nunca viu o Softlux conseguir responder
+substituir), em duas rodadas — **2026-08-10** direto do SQL Server de produção e **2026-08-11** a partir do
+binário `SOFTLUX.exe` — sempre só leitura, nenhuma escrita. Este README existe para quem nunca viu o Softlux conseguir responder
 "que tabela guarda X" sem abrir o sistema legado.
 
 **Isto é referência de leitura.** Nada aqui vira código automaticamente: `contracts/openapi-v1.json`
@@ -23,10 +23,18 @@ docs/legado/
 ├─ engenharia-reversa-softlux.md    análise em prosa da 1ª rodada (11 KB)
 ├─ softlux-fluxo-banco.html         ÍNDICE por estágio: 11 estágios, 70 tabelas (134 KB)
 ├─ softlux-fluxograma.html          DIAGRAMA de setas por domínio (25 KB)
-└─ schema/                          dumps brutos do catálogo, 3 bancos × 6 arquivos
+├─ achados-exe-2026-08-11.md        análise em prosa da 2ª rodada (parâmetros, RBAC, preço, PDF)
+├─ schema/                          dumps brutos do catálogo, 3 bancos × 6 arquivos
    ├─ bdprincipal-*.csv|.sql        o banco que importa
    ├─ bdprodutos-*.csv|.sql         staging de importação por planilha — descartável
    └─ GED-*.csv|.sql                gestão de documentos, 12 linhas no total
+├─ exe/                             extraído do binário Delphi — ver seção 9
+│  ├─ mapa-telas.md                 índice das 713 telas do sistema
+│  ├─ sql-por-tela.sql              SQL dos DFMs, agrupado por formulário
+│  ├─ sql-do-codigo.sql             SQL montado no código Delphi, deduplicado
+│  ├─ COMO-FOI-EXTRAIDO.md          método, hash do binário e armadilhas do formato
+│  └─ formularios/                  142 dumps DFM completos das telas do escopo
+└─ config/                          12 CSVs de configuração real do negócio — ver seção 9
 ```
 
 ### `engenharia-reversa-softlux.md`
@@ -544,15 +552,73 @@ a nomenclatura sem padrão (`Ven_`, `orc_`, `Epr_`, `Cus_`, `Ipr_`, `PreLog_`).
 
 ## 8. O que estes dumps NÃO respondem
 
-- **Mapa tela → tabela.** A maior parte da regra de negócio mora no Delphi, não no banco:
-  numeração, transições de status, o que dispara baixa de estoque, validações de formulário.
-  Exigiria trace SQL com o sistema rodando. **É o item grande ainda aberto.**
+- ~~**Mapa tela → tabela**~~ — **RESPONDIDO em 2026-08-11 pela seção 9**, sem trace SQL. Saiu do
+  binário: os SQL de cada tela, os campos de cada formulário e a ligação menu → form → tabela.
+- ~~**`SisPermissao`**~~ — está em `config/`, ver seção 9.
 - **`PlanoContaValor`** (40 KB, a maior rotina do banco) — apuração contábil, nunca analisada.
-- **Periferia:** `EnvioWhatsapp.exe`, arquivos `cb*.rem` (remessa CNAB), pasta `XML`/`Transmissão`
-  (NFe), `SisPermissao` (modelo de permissão). Nada disso está aqui.
+- **Periferia:** `EnvioWhatsapp.exe` e os arquivos `cb*.rem` (remessa CNAB, só 6, o último de
+  10/03/2026 — boleto é pouco usado). **A pasta `XML`/`Transmissão` não existe naquela máquina** —
+  a NF-e não é transmitida de lá. Nada disso está aqui.
 - **Dado de negócio.** Estes dumps são **catálogo** — estrutura e contagem. Não há uma única
   linha de cliente, produto ou venda real neste diretório.
 
 **Risco de segurança do ambiente legado, registrado e não corrigido:** o Softlux acessa o
 SQL Server com a conta `SA`, senha fraca em texto plano em `C:\Softlux\softlux.ini`, legível
 por qualquer usuário do terminal server, instância exposta na LAN. Não replicar no Cabinet.
+
+---
+
+## 9. `exe/` e `config/` — a 2ª rodada, do binário Delphi
+
+Levantado em **2026-08-11**. O `SOFTLUX.exe` compila o SQL como literal de string e guarda cada
+formulário como recurso DFM embutido — então o binário responde o que o catálogo do banco não
+responde: **qual tela usa qual tabela, com quais campos**. Método, hash do executável e as duas
+armadilhas do formato DFM estão em `exe/COMO-FOI-EXTRAIDO.md`.
+
+### Números, conferidos nestes arquivos
+
+| O quê | Quanto | Onde conferir |
+|---|--:|---|
+| Telas no índice | 713 | `grep -c '^| `' exe/mapa-telas.md` |
+| Dumps DFM completos | 142 | `ls exe/formularios/*.txt | wc -l` |
+| Formulários com SQL | 558 | `grep -c '   FORM: ' exe/sql-por-tela.sql` |
+| Blocos SQL nos DFMs | 1981 | `grep -c '^-- \[' exe/sql-por-tela.sql` |
+| SQL únicos do código | 3793 | cabeçalho de cada grupo em `exe/sql-do-codigo.sql` |
+| — SELECT / UPDATE / INSERT / DELETE / EXEC | 2137 / 857 / 666 / 129 / 4 | idem |
+| Opções de menu mapeadas | 287 | `config/menu-form-tabela.csv` |
+| — que casaram com um formulário | 170 | coluna `Form` preenchida |
+| Campos ligados a coluna, nas 713 telas | 15921 | soma da coluna `Campos` de `exe/mapa-telas.md` |
+| — só nas telas alcançáveis pelo menu | 2549 | soma da coluna `Campos` de `config/menu-form-tabela.csv` |
+| Colunas de `Paramentros` | 284 | `config/paramentros.csv` |
+| Linhas de permissão | 875 + 259 especiais | `config/sispermissao*.csv` |
+
+### Como usar
+
+**"Que tabela a tela X grava?"** → `config/menu-form-tabela.csv`, colunas `Caption` (o rótulo do
+menu), `Form` e `Tabelas`. É o cruzamento de `SisOpcoes.NomeMenu` com os formulários do binário:
+`mFrmgrid_acabamentos` no menu é `Frmgrid_acabamentos` no exe.
+
+**"Que campos essa tela tem, e em que ordem?"** → `exe/formularios/<Form>.txt`. Traz rótulo,
+posição, máscara, ordem de tabulação e a coluna que cada campo grava — mais preciso que screenshot.
+
+**"Como o sistema monta essa consulta?"** → `exe/sql-por-tela.sql` (SQL que mora no DFM, com os
+parâmetros `:nomeados` preservados) e `exe/sql-do-codigo.sql` (o que é montado em Delphi: é aqui
+que estão os `UPDATE` e `INSERT`, ou seja, a regra de gravação).
+
+**"Que regra de negócio está configurada?"** → `config/paramentros.csv`, uma linha de 284 colunas
+virada em pares coluna/valor. **`config/sispermissao_especial.csv` é o mais reaproveitável**: são
+as exceções que o legado já trata como permissão à parte — mostrar margem de lucro, alterar
+desconto do cliente, alterar valor do produto na venda, atualizar orçamento.
+
+**Preço:** `config/custo.csv` (385 perfis por fornecedor) e `config/indice_preco.csv` (376 índices).
+`Ipr_Indice` tem mediana 2,56 e é o multiplicador da fórmula da seção 2.
+
+### Limites destes arquivos
+
+- **`config/` contém dado de PRODUÇÃO**, ao contrário de `schema/`: são parâmetros, grupos,
+  permissões e política comercial reais — nomes de fornecedor inclusive. Não há dado de cliente,
+  produto ou venda.
+- Os `TQRLabel` dos relatórios trazem placeholder, não texto: o layout do orçamento impresso foi
+  lido de PDFs reais e descrito em `achados-exe-2026-08-11.md`. **Os PDFs não estão versionados** —
+  têm nome, valor e obra de cliente.
+- 54 dos 768 marcadores `TPF0` não parseiam: são falso positivo em dado binário, não telas perdidas.

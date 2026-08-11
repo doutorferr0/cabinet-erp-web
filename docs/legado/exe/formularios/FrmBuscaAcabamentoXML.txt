@@ -1,0 +1,113 @@
+object FrmBuscaAcabamentoXML: TFrmBuscaAcabamentoXML
+  Left = 638
+  Top = 218
+  Width = 731
+  Height = 245
+  Caption = Escolha o acabamento
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poScreenCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label5: TLabel
+    Left = 9
+    Top = 20
+    Width = 60
+    Height = 13
+    Caption = Número Item
+  object Label6: TLabel
+    Left = 89
+    Top = 20
+    Width = 105
+    Height = 13
+    Caption = Código do Fornecedor
+  object Label8: TLabel
+    Left = 209
+    Top = 20
+    Width = 120
+    Height = 13
+    Caption = Descrição do Fornecedor
+  object Label9: TLabel
+    Left = 8
+    Top = 91
+    Width = 164
+    Height = 16
+    Caption = Escolha o acabamento:
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = 243
+    Font.Name = MS Sans Serif
+    Font.Style = [fsBold]
+    ParentFont = False
+  object Edit5: TEdit
+    Left = 8
+    Top = 36
+    Width = 65
+    Height = 21
+    ReadOnly = True
+    TabOrder = 0
+  object Edit6: TEdit
+    Left = 88
+    Top = 36
+    Width = 105
+    Height = 21
+    ReadOnly = True
+    TabOrder = 1
+  object Edit7: TEdit
+    Left = 208
+    Top = 36
+    Width = 505
+    Height = 21
+    ReadOnly = True
+    TabOrder = 2
+  object CmbAcabamento: TComboBox
+    Left = 184
+    Top = 88
+    Width = 529
+    Height = 24
+    Style = csDropDownList
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = 243
+    Font.Name = MS Sans Serif
+    Font.Style = [fsBold]
+    ItemHeight = 16
+    ParentFont = False
+    TabOrder = 3
+  object lstacabamento: TListBox
+    Left = 176
+    Top = 120
+    Width = 33
+    Height = 25
+    ItemHeight = 13
+    TabOrder = 4
+    Visible = False
+  object JvXPButton3: TJvXPButton
+    Left = 560
+    Top = 174
+    Height = 27
+    Caption = &Confirmar
+    TabOrder = 5
+    Glyph.Data = <bin 1034>
+    OnClick = JvXPButton3Click
+  object JvXPButton4: TJvXPButton
+    Left = 640
+    Top = 174
+    Height = 27
+    Caption = &Cancelar
+    TabOrder = 6
+    Glyph.Data = <bin 1612>
+    OnClick = JvXPButton4Click
+  object lsttamanho: TListBox
+    Left = 224
+    Top = 120
+    Width = 33
+    Height = 25
+    ItemHeight = 13
+    TabOrder = 7
+    Visible = False

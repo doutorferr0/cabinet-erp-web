@@ -1,0 +1,100 @@
+object FrmOpc_nota_entrada_produtos: TFrmOpc_nota_entrada_produtos
+  Left = 553
+  Top = 339
+  BorderStyle = bsDialog
+  Caption = Impressão dos produtos da nota de entrada
+  ClientHeight = 246
+  ClientWidth = 502
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poScreenCenter
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 24
+    Top = 16
+    Width = 57
+    Height = 13
+    Caption = Fornecedor:
+  object Cmbfornecedor: TComboBox
+    Left = 88
+    Top = 8
+    Width = 409
+    Height = 21
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 0
+    OnChange = CmbfornecedorChange
+  object Lstfornecedor: TListBox
+    Left = 424
+    Top = 32
+    Width = 33
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 1
+    Visible = False
+  object Panel2: TPanel
+    Left = 0
+    Top = 205
+    Width = 502
+    Height = 41
+    Align = alBottom
+    Alignment = taLeftJustify
+    BevelOuter = bvNone
+    TabOrder = 2
+    object JvXPBtn_Imprimir: TJvXPButton
+      Left = 341
+      Top = 6
+      Height = 27
+      Caption = Im&primir
+      Enabled = False
+      TabOrder = 0
+      Glyph.Data = <bin 4500>
+      OnClick = JvXPBtn_ImprimirClick
+    object JvXPBtn_Sair: TJvXPButton
+      Left = 424
+      Top = 6
+      Height = 27
+      Caption = &Sair
+      TabOrder = 1
+      Glyph.Data = <bin 3872>
+      OnClick = JvXPBtn_SairClick
+  object DBGrid1: TDBGrid
+    Left = 88
+    Top = 32
+    Width = 289
+    Height = 169
+    DataSource = DSnota
+    Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgCancelOnExit]
+    TabOrder = 3
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = 245
+    TitleFont.Name = MS Sans Serif
+    TitleFont.Style = []
+    Columns = <3 itens>
+  object Qryfornecedor: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [select * from fornecedor where for_classificacao ='F'  order]
+    Left = 432
+    Top = 72
+  object Qrynota: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    BeforeDelete = QrynotaBeforeDelete
+    AfterDelete = QrynotaAfterDelete
+    Parameters = <1 itens>
+    SQL.Strings = [select * from nota_entrada where nen_fornecedor=:codigo orde]
+    Left = 40
+    Top = 104
+  object DSnota: TDataSource
+    DataSet = Qrynota
+    Left = 40
+    Top = 56

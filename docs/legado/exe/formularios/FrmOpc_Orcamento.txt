@@ -1,0 +1,374 @@
+object FrmOpc_Orcamento: TFrmOpc_Orcamento
+  Left = 568
+  Top = 151
+  BorderStyle = bsDialog
+  Caption = Relatório de pedido de venda fechado por período
+  ClientHeight = 486
+  ClientWidth = 456
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  KeyPreview = True
+  OldCreateOrder = False
+  Position = poScreenCenter
+  OnKeyPress = FormKeyPress
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 8
+    Top = 175
+    Width = 72
+    Height = 13
+    Caption = No período de 
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = 245
+    Font.Name = MS Sans Serif
+    Font.Style = []
+    ParentFont = False
+  object Label2: TLabel
+    Left = 187
+    Top = 175
+    Width = 6
+    Height = 13
+    Caption = a
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = 245
+    Font.Name = MS Sans Serif
+    Font.Style = []
+    ParentFont = False
+  object Lblindicacoes: TLabel
+    Left = 8
+    Top = 14
+    Width = 56
+    Height = 13
+    Caption = Profissional:
+  object Label3: TLabel
+    Left = 8
+    Top = 38
+    Width = 48
+    Height = 13
+    Caption = Categoria:
+  object Label4: TLabel
+    Left = 8
+    Top = 13
+    Width = 59
+    Height = 13
+    Caption = Consultor(a):
+  object Lblfornecedor: TLabel
+    Left = 8
+    Top = 88
+    Width = 57
+    Height = 13
+    Caption = Fornecedor:
+  object Label5: TLabel
+    Left = 8
+    Top = 139
+    Width = 44
+    Height = 13
+    Caption = Empresa:
+    Visible = False
+  object Cmbindicacoes: TJvCheckedComboBox
+    Left = 72
+    Top = 8
+    Width = 305
+    Height = 21
+    CapSelectAll = &Selecionar Todos
+    CapDeSelectAll = &Não Selecionar Todos
+    CapInvertAll = &Inverter Seleção
+    DropDownLines = 10
+    TabOrder = 1
+  object Panel2: TPanel
+    Left = 0
+    Top = 445
+    Width = 456
+    Height = 41
+    Align = alBottom
+    Alignment = taLeftJustify
+    BevelOuter = bvNone
+    TabOrder = 7
+    object JvXPBtn_Imprimir: TJvXPButton
+      Left = 269
+      Top = 10
+      Height = 27
+      Caption = Im&primir
+      TabOrder = 0
+      Glyph.Data = <bin 4500>
+      OnClick = JvXPBtn_ImprimirClick
+    object JvXPBtn_Sair: TJvXPButton
+      Left = 352
+      Top = 10
+      Height = 27
+      Caption = &Sair
+      TabOrder = 1
+      Glyph.Data = <bin 3872>
+      OnClick = JvXPBtn_SairClick
+  object DtE_data1: TDateEdit
+    Left = 83
+    Top = 167
+    Width = 95
+    Height = 21
+    DialogTitle = Escolha a data
+    NumGlyphs = 2
+    YearDigits = dyFour
+    TabOrder = 3
+    OnExit = DtE_data1Exit
+  object DtE_data2: TDateEdit
+    Left = 203
+    Top = 167
+    Width = 95
+    Height = 21
+    DialogTitle = Escolha a data
+    NumGlyphs = 2
+    YearDigits = dyFour
+    TabOrder = 4
+    OnExit = DtE_data2Exit
+  object GroupBox1: TGroupBox
+    Left = 8
+    Top = 225
+    Width = 377
+    Height = 57
+    Caption = Ordenação
+    TabOrder = 6
+    object RadioButton1: TRadioButton
+      Left = 8
+      Top = 16
+      Width = 89
+      Height = 17
+      Caption = Nº Orçamento
+      Checked = True
+      TabOrder = 0
+      TabStop = True
+    object RadioButton2: TRadioButton
+      Left = 8
+      Top = 32
+      Width = 121
+      Height = 17
+      Caption = Nº Pedido de Venda
+      TabOrder = 1
+    object RadioButton3: TRadioButton
+      Left = 137
+      Top = 16
+      Width = 105
+      Height = 17
+      Caption = Dt.  Fechamento
+      TabOrder = 2
+    object RadioButton4: TRadioButton
+      Left = 137
+      Top = 32
+      Width = 105
+      Height = 17
+      Caption = Cliente
+      TabOrder = 3
+    object RadioButton5: TRadioButton
+      Left = 257
+      Top = 16
+      Width = 73
+      Height = 17
+      Caption = Usuário
+      TabOrder = 4
+      Visible = False
+  object Lstindicacoes: TListBox
+    Left = 382
+    Top = 56
+    Width = 25
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 8
+    Visible = False
+  object CkB_Contas: TCheckBox
+    Left = 8
+    Top = 201
+    Width = 145
+    Height = 17
+    Caption = Mostrar contas a receber
+    Checked = True
+    State = cbChecked
+    TabOrder = 5
+    OnClick = CkB_ContasClick
+  object LstCategoria: TListBox
+    Left = 374
+    Top = 36
+    Width = 25
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 9
+    Visible = False
+  object Lstatendente: TListBox
+    Left = 368
+    Top = 73
+    Width = 17
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 10
+    Visible = False
+  object RadioGroup1: TRadioGroup
+    Left = 8
+    Top = 295
+    Width = 377
+    Height = 65
+    Caption = Pedido de Venda 
+    ItemIndex = 2
+    Items.Strings = [Com Data de Conclusão, Sem Data de Conclusão, Ambos]
+    TabOrder = 11
+  object CheckBox1: TCheckBox
+    Left = 8
+    Top = 423
+    Width = 97
+    Height = 17
+    Caption = Com devoluções
+    TabOrder = 12
+  object CheckBox2: TCheckBox
+    Left = 128
+    Top = 423
+    Width = 153
+    Height = 17
+    Caption = Mostrar grupo de produtos
+    TabOrder = 13
+  object RadioGroup2: TRadioGroup
+    Left = 8
+    Top = 367
+    Width = 377
+    Height = 41
+    Caption = Pedido de Venda Série
+    Columns = 4
+    ItemIndex = 0
+    Items.Strings = [1, 2, 4, Todos]
+    TabOrder = 14
+  object Cmbatendente: TJvCheckedComboBox
+    Left = 72
+    Top = 8
+    Width = 305
+    Height = 21
+    CapSelectAll = &Selecionar Todos
+    CapDeSelectAll = &Não Selecionar Todos
+    CapInvertAll = &Inverter Seleção
+    DropDownLines = 10
+    TabOrder = 0
+  object Cmbcategoria: TJvCheckedComboBox
+    Left = 72
+    Top = 35
+    Width = 305
+    Height = 21
+    CapSelectAll = &Selecionar Todos
+    CapDeSelectAll = &Não Selecionar Todos
+    CapInvertAll = &Inverter Seleção
+    DropDownLines = 10
+    TabOrder = 2
+  object Cmbfornecedor: TJvCheckedComboBox
+    Left = 72
+    Top = 85
+    Width = 305
+    Height = 21
+    CapSelectAll = &Selecionar Todos
+    CapDeSelectAll = &Não Selecionar Todos
+    CapInvertAll = &Inverter Seleção
+    DropDownLines = 10
+    TabOrder = 15
+  object Lstfornecedor: TListBox
+    Left = 288
+    Top = 89
+    Width = 17
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 16
+    Visible = False
+  object CheckBox3: TCheckBox
+    Left = 72
+    Top = 108
+    Width = 217
+    Height = 17
+    Caption = Mostrar valores apenas do fornecedor
+    TabOrder = 17
+  object Lstempresa: TListBox
+    Left = 336
+    Top = 161
+    Width = 17
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 18
+    Visible = False
+  object CmbEmpresa: TComboBox
+    Left = 72
+    Top = 136
+    Width = 305
+    Height = 21
+    AutoDropDown = True
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 19
+    Visible = False
+  object CheckBox4: TCheckBox
+    Left = 152
+    Top = 201
+    Width = 121
+    Height = 17
+    Caption = Mostrar custo e lucro
+    TabOrder = 20
+    Visible = False
+  object CheckBox5: TCheckBox
+    Left = 280
+    Top = 201
+    Width = 145
+    Height = 17
+    Caption = Mostrar total por empresa
+    Checked = True
+    State = cbChecked
+    TabOrder = 21
+  object JvXPButton2: TJvXPButton
+    Left = 376
+    Top = 9
+    Width = 30
+    Height = 19
+    TabOrder = 22
+    Glyph.Data = <bin 850>
+    OnClick = JvXPButton2Click
+  object JvXPButton1: TJvXPButton
+    Left = 407
+    Top = 9
+    Width = 31
+    Height = 19
+    TabOrder = 23
+    Glyph.Data = <bin 850>
+    OnClick = JvXPButton1Click
+  object JvXPButton3: TJvXPButton
+    Left = 376
+    Top = 60
+    Width = 30
+    Height = 19
+    TabOrder = 24
+    Glyph.Data = <bin 850>
+    Visible = False
+    OnClick = JvXPButton3Click
+  object JvXPButton4: TJvXPButton
+    Left = 407
+    Top = 60
+    Width = 31
+    Height = 19
+    TabOrder = 25
+    Glyph.Data = <bin 850>
+    Visible = False
+    OnClick = JvXPButton4Click
+  object QryIndicacoes: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [select * from indicacoes WHERE ind_nome is not null order by]
+    Left = 360
+    Top = 104
+  object QryFornecedor: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [SELECT  For_codigo, For_Nome, for_classificacao, FROM            dbo.fornecedor, WHERE        (for_classificacao = 'F'), ORDER BY For_codigo]
+    Left = 192
+    Top = 56
+  object Qryempresa: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [select * from empresa, order by empresa]
+    Left = 304
+    Top = 120

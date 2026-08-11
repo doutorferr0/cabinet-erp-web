@@ -1,0 +1,288 @@
+id;idPai;Caption;NomeMenu;Form;SQLs;Campos;Tabelas
+1;1;Tabelas;abelas1;;0;0;
+2;165;----------> Acabamentos;mFrmgrid_acabamentos;Frmgrid_acabamentos;2;13;acabamento,dbo
+3;1;-----> Ambientes;mFrmGrid_Ambientes;FrmGrid_Ambientes;1;8;ambiente
+4;189;----------> Unidades da Federação;mFrmGrid_estado;FrmGrid_estado;1;14;estado
+5;189;----------> Municípios;mFrmgrid_municipios;Frmgrid_municipios;1;12;municipio
+6;1;-----> Profissões;mFrmgrid_profissoes;Frmgrid_profissoes;1;8;profiss
+7;1;-----> Cobrança de Projetos;mFrmCob_projeto;Frmcob_projeto;1;8;cob_projetos
+8;1;-----> Condições de Pgtos/Recebtos;mnfin;;0;0;
+9;163;----------> Condições de Venda de Produtos;mfrmgrid_forma_pagamento;FrmGrid_Forma_pagamento;1;21;forma_pagamento
+10;163;----------> Condições de Pgtos/Recebtos para Módulo Financeiro;mFrmGrid_forma_pag_fin;FrmGrid_forma_pag_fin;1;11;forma_pagamento_fin
+11;165;----------> Unidades;mFrmGrid_Unidade;FrmGrid_Unidade;1;5;unidades
+12;1;-----> Motivos;mfrmGrid_MotivoDevolucao;frmGrid_MotivoDevolucao;1;5;motivo_devolucao
+13;163;----------> Agências;mFrmgrid_BancoCaixa;Frmgrid_BancoCaixa;0;1;
+14;163;----------> Contas Bancárias;mFrmgrid_Contas;Frmgrid_Contas;1;19;contas_bancarias
+15;163;----------> Caixas;mFrmGrid_Cadcaixa;FrmGrid_CadCaixa;2;8;dbo
+16;163;----------> Tipos de Documentos;mFrmgrid_TipoDocumento;Frmgrid_TipoDocumento;1;4;tipo_documento
+17;163;----------> Modos de Pgtos/Recebtos;mFrmGrid_doc_pag;FrmGrid_doc_pag;1;17;modo
+18;1;-----> Mensagens;mFrmGrid_messagem_rel;FrmGrid_messagem_rel;1;0;mensagem_relatorio
+19;19;Cadastros;Cadastros1;;0;0;
+20;19;-----> Clientes;mfrmgrid_Clientes;;0;0;
+21;19;-----> Fornecedores;mfrmGrid_Fornecedores;;0;0;
+22;19;-----> Profissional Externo;mfrmGrid_Indicacoes;FrmGrid_Indicacoes;1;41;indicacoes
+23;19;-----> Colaboradores;mfrmgrid_Funcionario;;0;0;
+24;19;-----> Transportadoras;mfrmGrid_Transportadora;;0;0;
+25;19;-----> Serviços;mFrmGrid_servicos;FrmGrid_Servicos;1;17;servicos
+26;19;-----> Custo;mFrmGrid_custo;FrmGrid_custo;3;42;custo,fornecedor
+27;19;-----> Índice de Vl. de Venda;mFrmGrid_Indice;FrmGrid_Indice;3;19;fornecedor,indice_preco
+28;19;-----> Produtos;Produtos;;0;0;
+29;28;----------> Banco Principal;mFrmGrid_Produtos;;0;0;
+30;28;----------> Banco de Produtos;mREP0_FrmGrid_Produtos;;0;0;
+31;28;----------> Alteração de produto relacionado;mFrmproduto_relacionado_baseado;Frmproduto_relacionado_baseado;5;0;dbo,produto_relacionados
+32;19;-----> Empresa;mFrmEmpresa;Frmempresa;3;78;dbo,empresa,ged
+33;19;-----> Centro de Custo;mFrmgrid_CentroCustos;Frmgrid_CentroCustos;1;6;centro_de_custo
+34;19;-----> Plano de  Contas;mFrmgrid_PlanoContas;Frmgrid_PlanoContas;1;18;plano_contas
+35;19;-----> Filiais;mFrmgrid_filial;FrmGrid_filial;1;28;filiais
+36;36;Vendas;Emisso1;;0;0;
+37;36;-----> Pasta;mFrmGridPastaProj;;0;0;
+38;36;-----> Orçamento;mVEN0_FrmGridVenda;;0;0;
+39;36;-----> Pedido de Venda;mVEN1_FrmGridVenda;;0;0;
+145;88;----------> Aniversariantes;mfrmSelRelAniversariantes;frmSelRelAniversariantes;0;8;
+41;36;-----> Devolução de Venda;mFrmGridDevolucao;;0;0;
+281;85;----------> Estoque Atual e Físico por data;mFrmSelRelEstoqueData;FrmSelRelEstoqueData;1;2;fornecedor
+44;44;Compras;Compras1;;0;0;
+45;44;-----> Pedido;mFrmGrid_pedido_compra;FrmGrid_pedido_compra;5;15;clientes,dbo,pedido_compra
+46;44;-----> Ordem;mFrmGrid_ordem_compra;FrmGrid_ordem_compra;3;21;dbo,fornecedor
+47;44;-----> Nota de Entrada;mFrmGrid_nota_entrada;FrmGrid_nota_entrada;7;28;dbo,estoque_produto,fornecedor,nota_entrada_dif,transportadora
+48;48;Movimentação;Movimentao1;;0;0;
+49;48;-----> Controle de Entrega;mFrmgrid_controle_entrega;Frmgrid_controle_entrega;4;15;clientes,controle_entrega,controle_entrega_prod
+146;55;-----> Controle de acerto com eletricista;mfrmGridAcertoEletrecistas;frmGridAcertoEletrecistas;0;0;
+51;48;-----> Estoque;Estoque1;;0;0;
+52;51;----------> Consulta;mFrmConsulta_estoque;FrmConsulta_estoque;6;44;dbo,empresa,estoquetipo,ged
+53;51;----------> Lançamento;mFrmGrid_lancest;FrmGrid_LancEst;4;0;estoque_produto,fornecedor,lancamento_estoque,lancamento_estoque_det
+54;48;-----> Transferência para Filial;mFrmGrid_Transf_filiais;FrmGrid_Transf_filiais;4;0;dbo,estoque_produto,filiais,transferencia_filiais_produtos
+55;55;Financeiro;Financeiro1;;0;0;
+56;55;-----> Contas a Pagar;ContasaPagar1;;0;0;
+57;56;----------> Lançamento;mFrmGridContas_apagar;FrmGridContas_apagar;9;82;contas_apagar,contas_apagar_det,contas_apagar_pag,dbo,empresa,fornecedor,modo,motivo_devolucao,tipo_documento
+58;55;-----> Contas a Receber;ContasaReceber1;;0;0;
+59;58;----------> Lançamentos;mFrmGridContas_receber;FrmGridContas_receber;11;84;clientes,contas_receber_det,contas_receber_pag,dbo,empresa,fornecedor,modo,motivo_devolucao,tipo_documento
+60;55;-----> Caixa;Caixa1;;0;0;
+61;60;----------> Lançamento;mFrmGrid_caixa;FrmGrid_caixa;4;25;bancos_caixas,contas_bancarias,dbo,movimentos
+62;60;----------> Transferência de caixa para conta bancária;mREP0_FrmGrid_Trasnf_finaceira;;0;0;
+63;60;----------> Transferência de caixa para caixa;mREP1_FrmGrid_Trasnf_finaceira;;0;0;
+64;55;-----> Movimentos Bancários;MovimentosBancarios1;;0;0;
+65;64;----------> Lançamentos;mFrmgrid_Mov_bancario;FrmGrid_Mov_Bancario;4;30;bancos_caixas,contas_bancarias,movimento_bancario
+66;64;----------> Transferência de conta bancária para caixa;mREP2_FrmGrid_Trasnf_finaceira;;0;0;
+67;64;----------> Transferência de conta bancária para conta bancária;mREP3_FrmGrid_Trasnf_finaceira;;0;0;
+69;55;-----> Fluxo de Caixa Ortodoxo;mFrmFluxo_caixa_ortodoxo;FrmFluxo_caixa_ortodoxo;1;5;sisusuarioscontasbancarias
+70;55;-----> Fluxo de Caixa Otimista;mFrmFluxo_caixa_otimista;FrmFluxo_caixa_otimista;0;5;
+71;71;CRM;CRM1;;0;0;
+72;71;-----> Pós-Venda;mFrmGrid_pos_venda;FrmGrid_pos_venda;3;0;clientes,dbo,fornecedor
+73;73;Relatórios;Relatrios1;;0;0;
+74;73;-----> Venda;Projetos1;;0;0;
+76;74;----------> Quantitativo;mREP1_frmOpc_rel_pedido;;0;0;
+77;74;----------> Controle Obra;mREP2_frmOpc_rel_pedido;;0;0;
+78;74;----------> Ordem de Serviço;mREP3_frmOpc_rel_pedido;;0;0;
+79;74;----------> Alterações em Projeto;mFrmOpc_Alteracoes_projetos;FrmOpc_Alteracoes_projetos;2;0;clientes,dbo,pedido
+80;74;----------> Entrada por devolução sem confirmação do estoque;mFrmOpc_ent_dev_sem_conf;FrmOpc_ent_dev_sem_conf;3;0;clientes,dbo
+82;74;----------> Pedidos de Vendas Fechados;mfrmOpc_Orcamento;FrmOpc_Orcamento;3;0;dbo,empresa,indicacoes
+83;74;----------> Orçamento por consultor(a);mfrmopc_rel_orc_aten;FrmOpc_rel_orc_aten;0;0;
+84;73;-----> Tabela de Preço;mfrmopc_rel_tabela_preco;FrmOpc_rel_tabela_preco;3;0;fornecedor,grupoproduto
+85;73;-----> Estoque;Estoque3;;0;0;
+86;85;----------> Estoque Atual;mfrmOpc_rel_estoque_atual;FrmOpc_rel_estoque_atual;3;9;dbo,fornecedor
+87;85;----------> Conferencia de Valores;mfrmopc_listagem_conf_de_preco;FrmOpc_listagem_conf_de_preco;1;0;fornecedor
+88;73;-----> Gerencial;Gerencial1;;0;0;
+89;88;----------> Custo por Venda;mfrmOpc_Rel_Custo;FrmOpc_Rel_Custo;3;0;clientes,dbo,orcamento,pedido
+90;88;----------> Pedido de Venda por Profissional;mREP1_FrmOpc_Orcamento;;0;0;
+91;88;----------> Ranking Profissional;mFrmOpc_ramking;FrmOpc_ramking;6;16;categoriaprofissionaisexterno,dbo,empresa,pedido,venda
+93;73;-----> Financeiro;Financeiro2;;0;0;
+94;93;----------> Contas a pagar;mcontaapagar;;0;0;
+95;93;---------------> Relatório Básico;mFrmOpcContas_apagar;FrmOpcContas_apagar;5;0;dbo,empresa,fornecedor,modo,tipo_documento
+96;93;---------------> Quebra por data vencimento;mFrmOpc_plano_ctp_data;FrmOpc_plano_ctp_data;3;0;empresa,fornecedor,plano_contas
+97;93;----------> Contas a receber;mFrmOpcContas_receber;FrmOpcContas_receber;6;0;clientes,dbo,empresa,modo,tipo_documento
+179;36;-----> Transferência de Venda entre Profissionais;mFrmGridTransfInd;;0;0;
+180;74;----------> Entrada por devolução;mfrmSelRelEntDevolucao;frmSelRelEntDevolucao;6;77;clientes,dbo,devolucao,devolucaoservico,fornecedor,motivo_devolucao,servicos,venda
+100;93;----------> Transferência;mntransferencia1;;0;0;
+101;93;---------------> Quebra por data de lançamento;mFrmOpc_data_transf;FrmOpc_data_transf;1;0;dbo
+102;93;----------> Outros;mnOutros;;0;0;
+103;93;---------------> Movimentos Realizados\Previstos;mFrmOpc_fluxo_previsto_realizado;FrmOpc_fluxo_previsto_realizado;0;0;
+104;93;---------------> Valores de fechamento em projetos;mFrmOpc_valores_fec_proj;FrmOpc_valores_fec_proj;4;0;clientes,contas_receber_det,dbo
+105;73;-----> Compras;mCompras;;0;0;
+106;105;----------> Impressão dos produtos da nota entrada;mFrmOpc_nota_entrada_produtos;FrmOpc_nota_entrada_produtos;2;0;fornecedor,nota_entrada
+107;107;Controle de Acesso;ControledeAcesso1;;0;0;
+108;107;-----> Troca de Usuário;mfLogin;FLogin;0;0;
+109;107;-----> Alterar Senha;mfAlterarSenha;FAlterarSenha;0;0;
+110;107;-----> Usuário;mFrmgrid_usuario;FrmGrid_Usuario;1;24;sisusuarios
+111;107;-----> Permissões de Acesso;mfControleAcesso;FControleAcesso;4;9;sisopcoesespecial,sispermissaoespecial,sisusuarios
+112;112;Sistema;Parametros1;;0;0;
+113;112;-----> Configuração;Configurao1;;0;0;
+114;113;----------> Parâmetros;mfrmParamentro;FrmParamentro;29;283;categoriavenda,centro_de_custo,clientes,dbo,forma_pagamento_fin,grupoproduto,indicacoes,modo,moeda,nfconfig
+115;112;-----> Importação;mnimpor;;0;0;
+116;115;----------> Importar Produtos;mFrmImportacaoXML;FrmImportacaoXML;5;112;fornecedor,indice_preco,preco_produto,produto_relacionados,produtos
+117;115;----------> Produtos via Planilha;mFrmPlanilhaImportProduto;FrmPlanilhaImportProduto;20;18;acabamento,bdprodutos,custo,dbo,empresa,estoque_produto,fabrica,fornecedor,ged,grupoproduto
+171;53;-----> Controle de Crédito do Cliente;mFrmGridCreditoCliente;;0;0;
+120;112;-----> Exportação;mExportao1;;0;0;
+121;120;----------> Exportar Produtos;mFrmExportacaoProdXML;FrmExportacaoProdXML;0;3;
+122;120;----------> Exportar itens do banco de produto para o banco principal;mfrmExportacao_bdPrincipal;FrmExportacao_bdPrincipal;8;0;estoque_produto,fornecedor,produto_relacionados,produtos
+123;120;----------> Exportar produtos para Excel;mFrmExporta_vl_tabela;FrmExporta_vl_tabela;3;88;dbo,fornecedor,produtos,produtosfornecedores,tipopeca
+124;112;-----> Manutenção;Manuteno1;;0;0;
+181;74;----------> Saída por Complementação;mFrmSelRelSaidaComplementacao;frmSelRelSaidaComplementacao;7;46;ambiente,fornecedor,funcionario,indicacoes,pedido,produtos,saida_comp_luminaria_det,saida_comp_servico_det,saida_complementacao,servicos
+126;124;----------> Estoque;Estoque2;;0;0;
+127;124;---------------> Verificar cadastro do estoque;mfrmGravaProdutosEstoque;FrmGravaProdutosEstoque;2;0;dbo,estoque_produto
+128;124;---------------> Zerar  estoque;mfrmZerar_estoque;FrmZerar_estoque;1;0;estoque_produto
+182;88;----------> Resultado Financeiro;mFrmSelRelPeriodoResFinanceiro;FrmSelRelPeriodoResFinanceiro;0;0;
+130;124;---------------> Zerar estoque minimo;mFrmzerar_minimo;Frmzerar_minimo;0;0;
+131;124;----------> Banco;mfrmSuporteTecnico;;0;0;
+132;124;----------> Cópia de Segurança\Restaurar cópia;mfCopiaSeguranca;fCopiaSeguranca;2;0;sisbackup
+133;112;-----> Enviar E-mail;mfrmenvia_email;Frmenvia_email;4;0;clientes,mensagem_relatorio,paramentros,vendaemail
+134;112;-----> Carregar Chave de uso;mFrmGravar_Chave;FrmGravar_Chave;1;0;sis_controle
+135;135;Ajuda;Ajuda1;;0;0;
+136;135;-----> Sobre;mfrmSobre;Frmsobre;0;0;
+147;74;----------> Orçamento x Estoque;mfrmOpc_Orc_QtdxEst;FrmOpc_Orc_QtdxEst;5;0;clientes,dbo,venda
+138;138;Sair;Sair1;;0;0;
+139;55;-----> Participações;mFrmGrid_Reserva_tecnica;FrmGrid_Reserva_tecnica;4;0;dbo
+140;93;----------> Participação;mnReservaTecnica;;0;0;
+141;140;---------------> Relatório Básico;mFrmOpc_reserva_tecnica;FrmOpc_reserva_tecnica;4;9;contas_apagar_det,dbo,indicacoes
+142;85;----------> Movimentação do produto no estoque;mFrmOpc_mov_produto;FrmOpc_mov_produto;2;10;dbo,empresa
+143;85;----------> Valor do estoque;mFrmOpc_valor_estoque;FrmOpc_valor_estoque;1;0;fornecedor
+144;107;-----> Grupo;mFrmGrid_grupo_usuario;FrmGrid_grupo_usuario;2;5;sisgrupo_usuario,sisusuarios
+148;44;-----> Consultar previsão de chegada de produtos;mFrmConsulta_chegada_produto;FrmConsulta_chegada_produto;3;21;dbo
+149;73;-----> CRM;MNCRM;;0;0;
+150;149;----------> Carta de agradecimento ao cliente;mFrmOpc_Carta_agradecimento;FrmOpc_Carta_agradecimento;1;0;clientes
+151;36;-----> Autorização de Inclusão (DESATIVADO);mFrmGrid_AutorizoInclusao;FrmGrid_AutorizoInclusao;3;0;clientes,dbo
+152;44;-----> Consultar compras para estoque(reserva de produto).;mFrmBusca_ReservaEstoque;FrmBusca_ReservaEstoque;1;11;dbo
+153;74;----------> Entr. por dev. sem confirmação dp estoque (estoque);mfrmSelRelEntDevolucaoSEstoque;frmSelRelEntDevolucaoSEstoque;3;9;dbo,fornecedor
+154;44;-----> Atualizar valor de tabela;mFrmAlteraPreco;FrmAlteraPreco;4;15;altvalortabela,custo,dbo,indice_preco,preco_produto,produtos
+155;105;----------> Histórico de atualização do valor de tabela;mFrmSelAlteraPreco;FrmSelAlteraPreco;1;0;fornecedor
+156;165;----------> Tipos de Peças;mFrmGrid_TipoPeca;;0;0;
+157;88;----------> Demonstrativo de venda por atendente;mFrmSelRelDemonsVendaAtend;FrmSelRelDemonsVendaAtend;1;0;funcionario
+158;88;----------> Produto vendido por quantidade;mFrmSelRelProdutoVendidoQuant;FrmSelRelProdutoVendidoQuant;4;6;dbo,fornecedor,preco_produto,produtos,tipopeca
+159;88;----------> Produto vendido por valor;mFrmSelRelProdutoVendidoValor;FrmSelRelProdutoVendidoValor;5;6;dbo,fornecedor,preco_produto,produtos,produtosfornecedores,tipopeca
+160;88;----------> Comparativo de valor de vendas;mFrmSelRelCompVlVenda;FrmSelRelCompVlVenda;4;6;fornecedor,preco_produto,produtos,produtosfornecedores,tipopeca
+231;88;----------> Plano de contas;mFrmSelRelPlanodecontas;FrmSelRelPlanodecontas;2;0;sisusuarioscontasbancarias,tipocontafinanceira
+163;1;-----> Financeiro;Menu_TabelaFinanceiro;;0;0;
+164;163;----------> Bancos;mFrmGridBanco;;0;0;
+165;1;-----> Produto;Menu_TabelaProduto;;0;0;
+166;1;-----> Recurso Humano;Menu_RecursoHumano;;0;0;
+167;166;----------> Setores;mFrmGridSetor;;0;0;
+168;166;----------> Cargos;mFrmGridCargo;;0;0;
+169;166;----------> Nacionalidades;mFrmGridNacionalidade;;0;0;
+170;36;-----> Emissão de Cupom Fiscal;mEmissodeCupomFiscal;;0;0;
+172;53;-----> Controle de Crédito Junto ao Fornecedor;mFrmGridCreditoFornecedor;;0;0;
+173;53;-----> Consultar Crédito do Cliente;mFrmConsultaCreditoCliente;FrmConsultaCreditoCliente;3;17;clientes,dbo,devolucao,venda
+174;93;----------> Controle de Cheque;mFrmSelRelControleCheque;FrmSelRelControleCheque;0;0;
+175;55;-----> Controle de Cheque Recebido;mREP0_FrmGridControleCheque;;0;0;
+176;55;-----> Controle de Cheque Emitido\Repassado;mREP1_FrmGridControleCheque;;0;0;
+177;19;-----> Empresas de Factoring;mFrmGridEmpFact;;0;0;
+178;140;---------------> Relatório Analítico;mFrmSelRelResTecAnalitica;FrmSelRelResTecAnalitica;1;0;indicacoes
+230;36;-----> Quadro de Carga;mFrmGridQuadroCargas;;0;0;
+183;87;-----> Controle Entrega;ControledeEntrega1;;0;0;
+184;183;----------> Termo de Recebimento;mFrmSelRelTermoRecebimento;FrmSelRelTermoRecebimento;3;0;dbo
+185;112;-----> Gerador de Etiquetas;mFrmSelEtiquetas;;0;0;
+187;1;-----> Categorias de Venda;mFrmGridCatVenda;;0;0;
+188;166;-----> Categorias;mFrmGridCatRem;;0;0;
+189;1;-----> Localizações Geográficas;Localizacao;;0;0;
+190;189;----------> Países;mFrmGridPaises;;0;0;
+191;189;----------> Regiões;mFrmGridRegiao;;0;0;
+192;36;-----> Outros Documentos;OutrosDocumentos;;0;0;
+193;192;----------> Factura;mREP0_FrmGridFactura;;0;0;
+194;192;----------> Factura Pró-Forma;mREP1_FrmGridFactura;;0;0;
+195;192;----------> Nota de Crédito;mREP2_FrmGridFactura;;0;0;
+196;192;----------> Nota de Dédito;mREP3_FrmGridFactura;;0;0;
+197;192;----------> Venda-a-Dinheiro;mREP4_FrmGridFactura;;0;0;
+198;192;----------> Guia de Remessa;mREP5_FrmGridFactura;;0;0;
+199;192;----------> Guia de Transporte;mREP6_FrmGridFactura;;0;0;
+200;192;----------> Devolução;mREP7_FrmGridFactura;;0;0;
+201;120;----------> Exportar SAFT;mFrmExportarSAFTPT;FrmExportarSAFTPT;0;0;
+202;55;-----> Controle de Crédito do RH;mFrmGridControleCredRH;;0;0;
+203;19;-----> Metas de Venda;mFrmGridMetaVenda;;0;0;
+204;19;-----> Rateios;mFrmGridRateio;;0;0;
+205;19;-----> Ganhos Sobre Vendas;mFrmGridComissao;;0;0;
+206;36;-----> Acompanhamento e Fechamento de Metas;mFrmGridFechamentoMeta;;0;0;
+207;36;-----> Acompanhamento de Ganhos Sobre Vendas;mFrmConsultaComissao;FrmConsultaComissao;2;20;avulso,comissaopremiacao,contas_apagar_det,controlerh,ent_devolucao,factura,fechamentocomissao,funcionario,pedido,saida_complementacao
+208;36;-----> Recalcular Ganhos Sobre Vendas;mFrmRecalcGanhosVenda;FrmRecalcGanhosVenda;0;0;
+209;36;-----> Fechamento Ganhos Sobre Vendas;mFrmFechamentoGanhosVendas;FrmFechamentoGanhosVendas;1;16;fechamentocomissao
+211;1;-----> Nota Fiscal;NotaFiscal1;;0;0;
+212;211;----------> CFOP;mFrmGridCFOP;;0;0;
+213;36;-----> Nota Fiscal;mFrmGridNotaFiscal;;0;0;
+214;113;----------> Nota Fiscal;NotaFiscal2;;0;0;
+215;214;---------------> Criar Nota Fiscal;mFrmNfconfig;FrmNfconfig;7;143;dbo,nfconfig,nfconfigdet,nfconfigdet_label
+216;214;---------------> Alterar Nota Fiscal;mFrmSel_nf;FrmSel_nf;1;2;dbo
+217;120;----------> Exportar Nota Fiscal Paulista;mFrmExpNFPaul;FrmExpNFPaul;2;78;dbo
+210;55;-----> Controle de Crédito do Profissional;mFrmGridCreditoIndicacao;;0;0;
+218;124;----------> Exclusão de produtos relacionados;mFrmExcluirRelacionado;FrmExcluirRelacionado;1;7;dbo
+219;51;----------> Estoque Mínimo;mFrmEstoqueMinimo;FrmEstoqueMinimo;2;15;dbo,fornecedor
+220;105;----------> Data Prevista de Chegada\Reagendamento de Ordem de Compra;mFrmSelRelOrdemCheg;FrmSelRelOrdemCheg;0;0;
+221;55;-----> Controle de Duplicata e Recibo;mFrmDuplicataRecibo;FrmDuplicataRecibo;5;25;clientes,contas_apagar,contas_apagar_det,contas_apagar_pag,contas_receber,contas_receber_det,contas_receber_pag,dbo,fornecedor,funcionario
+222;88;----------> Movimentação por Fornecedor e Profissional;mFrmSelRelForInd;FrmSelRelForInd;0;0;
+223;44;-----> Consultar ordens externas;mFrmConsultaOrdemExterna;FrmConsultaOrdemExterna;6;54;acabamento,filiais,fornecedor,ordemcompradetext,ordemcompraext,produtos
+224;88;----------> Movimentação por Fornecedor;mFrmSelRelVendaFor;FrmSelRelVendaFor;0;0;
+225;93;----------> Extrato Bancário;mFrmSelRelExtBancario;FrmSelRelExtBancario;2;0;dbo,sisusuarioscontasbancarias
+226;55;-----> Fechamento de Contas (Caixas\Bancárias);mFrmFechamentoContas;FrmFechamentoContas;2;13;dbo,fechamentocontas,sisusuarioscontasbancarias
+227;112;-----> Editor de Texto;mEditordeTexto1;;0;0;
+228;48;-----> Requisição de Produtos;mFrmGridRequisicaoEstoq;;0;0;
+229;105;----------> Diferenças de valores na nota do fornecedor;mFrmSelRltNFEntDif;FrmSelRltNFEntDif;0;0;
+232;211;----------> Impostos (NFe);mFrmGridTabImpostos;;0;0;
+233;211;----------> Informações Complementares para Nfe;mFrmGridObsNFe;FrmGridObsNFe;1;10;nfeobservacao
+234;73;-----> Etiquetas;Etiquetas1;;0;0;
+235;234;----------> Produtos do Pedido de Venda;mFrmSelEtiqProj;FrmSelEtiqProj;1;14;dbo,venda,vendaproduto
+236;85;----------> Estoque atual, produtos não separados e separados não entregue;mFrmSelRelEstoqSepEnt;FrmSelRelEstoqSepEnt;2;0;fornecedor
+237;1;-----> Estoque;mFrmGridCadEstoque;FrmGridCadEstoque;1;9;estoquetipo
+238;51;----------> Transferência de Estoque;mFrmGridTransfEstoque;;0;0;
+239;105;----------> Pedido de compra em aberto;mFrmSelRelPedCompra;FrmSelRelPedCompra;0;0;
+240;105;----------> Ordem de Compra;mFrmSelRelOrdemCompra;FrmSelRelOrdemCompra;0;0;
+241;165;----------> Grupos de Produtos;mFrmGridGrupoProdutos;;0;0;
+270;165;----------> Fábrica;mFrmGridfabrica;;0;0;
+271;165;----------> Marca;mFrmGridmarca;;0;0;
+272;165;----------> Designer;mFrmGriddesigner;;0;0;
+280;88;----------> Valores por Facturas;mFrmSelRltValorVendaPort;;0;0;
+281;85;----------> Estoque Atual e Físico por data;mFrmSelRelEstoqueData;FrmSelRelEstoqueData;1;2;fornecedor
+242;74;----------> Alterações em Pasta;mFrmSelAlteracoesPasta;FrmSelAlteracoesPasta;2;0;dbo
+273;36;-----> Conclusão do Pedido de Venda;mFrmFecha_projeto;FrmFecha_projeto;2;11;clientes,dbo
+283;234;----------> Produtos do Pedido de Venda por Ambiente;mFrmSelEtiqProjAmb;FrmSelEtiqProjAmb;1;15;dbo,venda,vendaproduto
+284;74;----------> Nota Fiscal Eletrônica;mFrmSelRelNFeEmitidas;FrmSelRelNfeEmitidas;2;2;cfop,empresa,notafiscal
+284;19;-----> Contadores;mFrmGridContabilista;FrmGridContabilista;1;20;dbo
+285;120;----------> Livro de registro de Inventário - RI - modelo P7;mFrmExpRIMODELOP7;FrmExpRIMODELOP7;2;0;fornecedor
+286;234;----------> Produtos Cadastrados;mFrmSelEtiqFornecedor;FrmSelEtiqFornecedor;1;23;dbo
+287;211;----------> Valor Aproximado dos Tributos;mFrmPorcTributos;FrmPorcTributos;2;17;dbo,porcentagem_tributos
+288;74;----------> Impressão da Data de Entrega;mFrmSelRelDataEntrega;FrmSelRelDataEntrega;2;43;clientes,dbo
+289;85;----------> Estoque atual, produtos não separados e separados não entregue  por;mFrmSelRelEstoqSepEntcliente;FrmSelRelEstoqSepEntCliente;1;0;clientes
+290;88;----------> Ponto de Equilíbrio;mFrmRelPontodeequilibrio;FrmRelPontodeequilibrio;1;0;empresa
+291;88;----------> Situação Patrimonial;mFrmRelSituacaoPatrimonial;FrmRelSituacaoPatrimonial;0;0;
+292;51;----------> Balanço do Estoque;mFrmGridBalancoEstoque;;0;0;
+293;51;----------> Produtos Fora do Balanço do Estoque;mFrmGridForaBalanco;;0;0;
+294;56;----------> Quitação em Lote;mREP0_FrmQuitacaoLote;;0;0;
+295;58;----------> Quitação em Lote;mREP1_FrmQuitacaoLote;;0;0;
+296;1;-----> Categorias de Cliente;mFrmGridCategoriaCliente;FrmGridCategoriaCliente;0;1;
+297;105;----------> Notas dos Fornecedores;mFrmSelRltNotaFornecedor;FrmSelRltNotaFornecedor;1;15;dbo
+298;211;----------> Código do Serviço;mFrmGridCodServico;;0;0;
+299;74;----------> Data de Entrega Prevista por Pedido de Venda;mFrmSelRelDataEntregaPrevista;FrmSelRelDataEntregaPrevista;1;0;fornecedor
+300;53;-----> Consultar Crédito Junto ao Fornecedor;mFrmConsultaCreditofornecedor;FrmConsultaCreditoFornecedor;2;12;dbo,nota_entrada
+301;55;-----> Emissão de Boleto e Arquivo de Remessa;mFrmCobranca;FrmCobranca;1;16;dbo
+302;234;----------> Ambientes;mFrmSelEtiqAmbiente;FrmSelEtiqAmbiente;1;8;dbo,venda
+302;19;-----> Grupos de Produtos Relacionados;mFrmGridProdRel;FrmGridProdRel;1;9;dbo
+303;74;----------> Extrato de total de vendas por mês;mFrmSelRelExtratoVenda;FrmSelRelExtratoVenda;1;0;dbo
+304;19;-----> Promoção;mFrmGridPromocao;FrmGridPromocao;0;1;
+305;135;-----> Histórico de Versões;mFrmHistoricoVersoes;FrmHistoricoVersoes;0;0;
+306;165;----------> Tamanho;mFrmGridtamanho;;0;0;
+307;165;----------> Característica;mFrmGridCaracteristicas;;0;0;
+308;165;----------> Tipo de Linha;mFrmGridTipoLinha;;0;0;
+309;88;----------> DRE;mFrmSelRelDRE;FrmSelRelDRE;1;21;empresa
+310;120;----------> Exportar Financeiro;mFrmExportarFinanceiro;FrmExportarFinanceiro;3;17;dbo,fornecedor,indicacoes
+311;183;----------> Entregas;mFrmSelRelControleEntregarValor;FrmSelRelControleEntregarValor;1;0;clientes,venda
+312;36;-----> Pedido de Demonstração;mFrmGridDemostracao;;0;0;
+313;234;----------> Produtos Separados;mFrmSelEtiqProdSep;FrmSelEtiqProdSep;2;14;dbo
+314;120;----------> Exportar Pedido de Venda;mFrmExportarVenda;FrmExportarVenda;1;0;clientes,dbo
+315;93;---------------> Sintético;mFrmOpcContasSintetica;FrmOpcContasSintetica;2;0;fornecedor,plano_contas
+316;74;----------> Pedido de Demonstração;mFrmOpcPedidoDemonstracao;FrmOpcPedidoDemonstracao;0;0;
+317;36;----------> Pré-venda;mFrmPreVenda;FrmPreVenda;6;148;cod_tabelas,dbo,preco_produto,venda,vendaambiente,vendaatendente
+318;36;-----> Consulta de Valores de NFe, NFCe de Pré-Venda;mFrmVendasNfeNfce;FrmVendasNfeNfce;2;6;dbo
+319;85;----------> Movimentação de Produtos baseada em saídas NFe e NFCe;mFrmMovProdutosNFeNFCe;FrmMovProdutosNFeNFCe;0;0;
+320;48;-----> Gerenciamento de Entrega;mFrmGerencimentoEntrega;FrmGerencimentoEntrega;1;4;dbo
+321;48;-----> Fechamento de Entrega;mFrmFechamentoEntrega;FrmFechamentoEntrega;2;24;clientes,entrega
+322;36;-----> Consultar Situação do Pedido de Venda;mFrmConsultaSeparacaoPedidoVenda;FrmConsultaSeparacaoPedidoVenda;1;6;clientes,funcionario,venda,vendaatendente,vendaproduto
+323;28;----------> Gerar código de barra;mFrmGerarCodigoBarra;FrmGerarCodigoBarra;0;0;
+324;211;----------> EFD registro 150 Participante;mFrmGridEFDReg150;;0;0;
+325;36;-----> Assistência Técnica (Garantia);mFrmGridAssistenciaTecnica;;0;0;
+326;88;----------> Ficha Fiscal de Produtos;mFrmFichaFiscalProdutos;FrmFichaFiscalProdutos;1;0;fornecedor
+327;48;-----> Liberar Separação e Entrega;mFrmLiberarProdutos;FrmLiberarProdutos;7;32;dbo,observacoes
+328;124;---------------> Criar estoque em nova empresa;mfrmcriarestoqueempresa;FrmCriarEstoqueEmpresa;4;0;empresa,estoque_produto,fornecedor
+329;74;----------> Relatório de Notas Fiscais Simples Remesa sem Faturar;mFrmSelSimplesRemesaFatura;FrmSelSimplesRemesaFatura;1;2;empresa
+330;88;----------> Quantidade de venda, quantidade de dias sem venda e última data de v;mFrmSelEstoqueUltimaVenda;FrmSelEstoqueUltimaVenda;2;13;dbo,estoque_produto,fornecedor,nota_entrada_det,produtos,produtosfornecedores,venda,vendaproduto
+331;1;----------> Categorias de Profissionais Externo;mFrmGridCatProfExt;FrmGridCatProfExt;0;0;
+332;183;----------> Entregas Pendentes;mFrmSelRelEntregasPedentes;FrmSelRelEntregasPedentes;0;0;
+333;44;-----> Manifestação do Destinatário;mFrmDistribuicaoDFe;FrmDistribuicaoDFe;6;56;controlensu,dbo,dferesumonfe,ged
+334;36;-----> Ordem de Serviço;mFrmGridOrdemServico;;0;0;
+336;55;-----> Conciliação Bancária;mFrmConciliacaoBancaria;FrmConciliacaoBancaria;3;26;contas_apagar,contas_apagar_det,dbo,tipo_documento
+337;85;----------> Curva ABC;mFrmSelRelCurvaABC;FrmSelRelCurvaABC;3;12;dbo,fornecedor

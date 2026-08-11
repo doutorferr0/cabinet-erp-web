@@ -1,0 +1,56 @@
+object FrmImportarValoresProdutos: TFrmImportarValoresProdutos
+  Left = 343
+  Top = 237
+  Width = 420
+  Height = 236
+  Caption = Importar Valores dos Produtos
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  OldCreateOrder = False
+  PixelsPerInch = 96
+  TextHeight = 13
+  object JvXPButton2: TJvXPButton
+    Left = 86
+    Top = 67
+    Width = 218
+    Height = 46
+    Caption = Importar arquivo
+    TabOrder = 0
+    Glyph.Data = <bin 1767>
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = 240
+    Font.Name = MS Sans Serif
+    Font.Style = [fsBold]
+    ParentFont = False
+    OnClick = JvXPButton2Click
+  object JvXPButton4: TJvXPButton
+    Left = 313
+    Top = 166
+    Width = 88
+    Height = 27
+    Caption = &Sair
+    TabOrder = 1
+    Glyph.Data = <bin 1034>
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = 243
+    Font.Name = MS Sans Serif
+    Font.Style = []
+    ParentFont = False
+    OnClick = JvXPButton4Click
+  object OpenDialog1: TOpenDialog
+    Filter = CSV|*.csv
+    Left = 48
+    Top = 16
+  object Qryprodutos: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = <2 itens>
+    SQL.Strings = [select * from Preco_Produto where  Pre_Codnosso =:pPre_Codno]
+    Left = 182
+    Top = 120

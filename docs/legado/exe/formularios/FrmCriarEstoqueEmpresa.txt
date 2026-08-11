@@ -1,0 +1,104 @@
+object FrmCriarEstoqueEmpresa: TFrmCriarEstoqueEmpresa
+  Left = 489
+  Top = 371
+  Width = 411
+  Height = 241
+  Caption = FrmCriarEstoqueEmpresa
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  OldCreateOrder = False
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 32
+    Top = 18
+    Width = 41
+    Height = 13
+    Caption = Empresa
+  object Label2: TLabel
+    Left = 32
+    Top = 50
+    Width = 65
+    Height = 13
+    Caption = Fornecedores
+  object Cmbempresa: TComboBox
+    Left = 112
+    Top = 16
+    Width = 273
+    Height = 21
+    AutoDropDown = True
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 0
+  object Cmbfornecedor: TComboBox
+    Left = 112
+    Top = 48
+    Width = 273
+    Height = 21
+    AutoDropDown = True
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 1
+  object JvXPButton1: TJvXPButton
+    Left = 257
+    Top = 81
+    Width = 128
+    Height = 33
+    Caption = &Criar Estoque
+    TabOrder = 2
+    Glyph.Data = <bin 1347>
+    Align = alCustom
+    OnClick = JvXPButton1Click
+  object JvXPBtn_Sair: TJvXPButton
+    Left = 319
+    Top = 168
+    Height = 33
+    Caption = &Sair
+    TabOrder = 3
+    Glyph.Data = <bin 3872>
+    OnClick = JvXPBtn_SairClick
+  object LstEmpresa: TListBox
+    Left = 216
+    Top = 0
+    Width = 25
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 4
+    Visible = False
+  object LstFornecedor: TListBox
+    Left = 256
+    Top = 0
+    Width = 25
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 5
+    Visible = False
+  object Qryempresa: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [select * from empresa where codlanc > 1, order by empresa]
+    Left = 32
+    Top = 72
+  object Qryfornecedor: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [select for_codigo, for_nome from fornecedor where for_classi, ORDER BY FOR_NOME]
+    Left = 64
+    Top = 72
+  object QryESTOQUE: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = []
+    SQL.Strings = [select * FROM Estoque_produto]
+    Left = 32
+    Top = 112
+  object QryEstoqueNovo: TADOQuery
+    Connection = DM.ADOConnection1
+    Parameters = <3 itens>
+    SQL.Strings = [select * FROM Estoque_produto, where Epr_Codnosso=:pEpr_Codnosso , and Epr_Acabamento=:pEpr_Acabamento, and Emp_codigo=:pEmp_codigo, and EstTp_Codigo = 1]
+    Left = 64
+    Top = 112

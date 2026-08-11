@@ -1,0 +1,8 @@
+﻿Cod_grupo;Descricao;SisGru_situacao;SisGru_GrupoPrivado
+1;SUPERVISOR;A;False
+2;VENDEDORES;A;False
+3;ADMINISTRAÇÃO;A;False
+4;TECNICO;A;False
+5;COMPRAS;A;False
+6;AUTOMAÇÃO;A;False
+7;VENDAS SP;A;False

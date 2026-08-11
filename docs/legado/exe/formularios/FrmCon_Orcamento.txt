@@ -1,0 +1,97 @@
+object FrmCon_Orcamento: TFrmCon_Orcamento
+  Left = 364
+  Top = 268
+  Width = 534
+  Height = 235
+  AutoSize = True
+  Caption = Escolha o Projeto
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  OldCreateOrder = False
+  OnClose = FormClose
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 0
+    Top = 0
+    Width = 35
+    Height = 13
+    Caption = Cliente:
+  object Cmbcliente: TComboBox
+    Left = 0
+    Top = 16
+    Width = 299
+    Height = 21
+    Style = csDropDownList
+    ItemHeight = 13
+    TabOrder = 0
+    OnClick = CmbclienteClick
+  object DBGrid1: TDBGrid
+    Left = 0
+    Top = 49
+    Width = 526
+    Height = 121
+    DataSource = DSpedido
+    Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgCancelOnExit]
+    TabOrder = 1
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = 245
+    TitleFont.Name = MS Sans Serif
+    TitleFont.Style = []
+    Columns = <3 itens>
+  object JvXPBtn_Gravar: TJvXPButton
+    Left = 374
+    Top = 174
+    Height = 27
+    Caption = &Confirmar
+    Enabled = False
+    TabOrder = 2
+    Glyph.Data = <bin 1034>
+    OnClick = JvXPBtn_GravarClick
+  object JvXPBtn_Sair: TJvXPButton
+    Left = 453
+    Top = 174
+    Height = 27
+    Caption = &Sair
+    TabOrder = 3
+    Glyph.Data = <bin 3872>
+    OnClick = JvXPBtn_SairClick
+  object Lstcliente: TListBox
+    Left = 117
+    Top = 0
+    Width = 25
+    Height = 17
+    ItemHeight = 13
+    TabOrder = 4
+    Visible = False
+  object QryTrab_Ped: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = []
+    SQL.Strings = [select * from clientes order by cli_nome]
+    Left = 160
+    Top = 174
+  object Qrycliente: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = []
+    SQL.Strings = [select * from clientes order by cli_nome]
+    Left = 120
+    Top = 174
+  object Qrypedido: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = <1 itens>
+    SQL.Strings = [select Venda.*, obras.Obr_Descricao, FROM      Venda INNER JOIN,                       dbo.Obras ON dbo.Venda.Obr_codigo = db, where Ven_CodVinculo=:codigo and Ven_Situacao = 'A'  and  Ve, and (ParSV_serie ='1' or ParSV_serie='2'), and (select Pasta_DtFechamento from pasta where pasta_codigo, order by Ven_codigo]
+    Left = 56
+    Top = 174
+  object DSpedido: TDataSource
+    DataSet = Qrypedido
+    Left = 16
+    Top = 174

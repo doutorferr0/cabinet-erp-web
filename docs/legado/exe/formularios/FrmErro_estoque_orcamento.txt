@@ -1,0 +1,62 @@
+object FrmErro_estoque_orcamento: TFrmErro_estoque_orcamento
+  Left = 499
+  Top = 159
+  BorderStyle = bsDialog
+  Caption = Extornar estoque pelo orçamento
+  ClientHeight = 90
+  ClientWidth = 338
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = 245
+  Font.Name = MS Sans Serif
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poScreenCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 24
+    Top = 26
+    Width = 70
+    Height = 13
+    Caption = Nº Orçamento:
+  object Button1: TButton
+    Left = 256
+    Top = 56
+    Width = 75
+    Height = 25
+    Caption = Extornar
+    TabOrder = 0
+    OnClick = Button1Click
+  object Edit1: TRxCalcEdit
+    Left = 104
+    Top = 24
+    Width = 65
+    Height = 21
+    AutoSize = False
+    DisplayFormat = 0
+    ButtonWidth = 0
+    NumGlyphs = 2
+    TabOrder = 1
+  object QryTrab_pedido: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = []
+    SQL.Strings = [SELECT * FROM pedido ORDER BY ped_codigo]
+    Left = 208
+    Top = 16
+  object QryEstoque: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = <2 itens>
+    SQL.Strings = [SELECT * FROM Estoque_produto where Epr_Codnosso=:produto an]
+    Left = 248
+    Top = 16
+  object Qryorcamento: TADOQuery
+    Connection = DM.ADOConnection1
+    CursorType = ctStatic
+    Parameters = <1 itens>
+    SQL.Strings = [SELECT orc_codigo_pre,  orc_codigo FROM orcamento where orc_]
+    Left = 280
+    Top = 16

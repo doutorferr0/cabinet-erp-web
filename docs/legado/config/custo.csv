@@ -1,0 +1,386 @@
+﻿Cus_codigo;for_codigo;Cus_Nome;Cus_desconto1;Cus_desconto2;Cus_desconto3;Cus_desconto4;Cus_IPI;Cus_Frete;Cus_Icms;Cus_Embalagens;Cus_Financeira;Cus_Simples;Cus_outros;Cus_obs;Cus_MargValAgreg;Cus_IcmsDestino;Cus_TributacaoICMS;Cus_situacao;Cus_Importacao;Cus_Cambio;Cus_TpVlNFo;Cus_NFoICMS;Cus_NFoOutros;Cus_NFoIPI;Cus_NFoSimples;Cus_NFoEmbalagem;Cus_NFoFinanceiro;Cus_NFoFrete;Cus_NFoDesconto;Cus_ICMSDifAlqIPI;Cus_PorcCartao;Cus_STEmbalagem;Cus_CreditoICMS;Cus_CreditoPIS;Cus_CreditoCOFINS;Cus_CustoFixo;Cus_Desconto;Cus_FreteemCompra;Cus_ICMSValorCompra
+0;26;;;;;;;;;;;;;;;;;A;;;;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+0;55;EVOLED;;;;;;;;;;;;;;;;A;;;;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+1;1;TESTE;65,5100;;;;10,0000;;12,0000;;;8,0000;;;40;18;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+2;2;ILUMINAR;0,0000;;;;5,0000;;0,0000;;;0,0000;0,0000;TABELA APLICADA PREÇO / 3,2  IPI DE 5% // CORRETO É DE 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+3;3;BLUMENOX NADIR;38,0000;;;;15,0000;;21,1000;;;;;* Margem Aplicada de 2,50 *  APLICAR DESCONTO 38%  - ST: 21,10% - IPI: 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;True;;False;;;;;;False;False
+4;4;OSRAM 1;;;;;0,0000;;0,0000;;;;;* Margem Aplicada de 2,10 *   Preço da tabela ja com impostos;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+33;5;PIULUCCE;;;;;0,0000;;9,0000;;;;;* Margem Aplicada de 2,50 *   - ST : 9% - IPI ISENTO;48;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+34;6;ALTENA TRILHOS;;;;;5,0000;;8,2400;;;;;* Margem Aplicada de 2,20 *  - ST para Trilhos: 8,24% - IPI: 5,00%   5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+35;6;ALTENA SPOT;0,0000;;;;15,0000;;9,7500;;;;;* Margem Aplicada de 2,40 *  - ST para Spot: 9,75% - IPI: 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+36;7;BERTOLUCCI;40,0000;;;;0,0000;;0,0000;;;;;MARGEM 2,3  DESCONTO DE 40%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+37;8;MAXIMO FONTE INTRAL;;;;;0,0000;;12,6300;;;;0,0000;- Valor de tabela já com 30% de desconto. * MARGEM DE 2,5 *  ST: 12,63%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+38;8;MAXIMO FONTE LUXXEL;;;;;15,0000;;11,6500;;;;;- Valor de tabela já com 30% desconto. * Margem Aplicada de 2,50 *  - ST : 11,65% - IPI 15%;56,92;11,65;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+39;8;MAXIMO LUMINARIAS;;;;;0,0000;;12,6300;;;;0,0000;* Margem Aplicada de 2,50 *  - ST Luminirias: 12,63%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+40;9;STELLA DESIGN 1;;;;;5,0000;;27,2000;;;;;Margem Aplicada de 2,50 *   - ST :27,20% - IPI 5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+41;9;STELLA DESIGN 2;;;;;15,0000;;31,6200;;;;;Margem Aplicada de 2,50 *   - ST :31,62% - IPI 15%;43;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+42;10;STH LÂMP 42;;;;;6,5000;;0,0000;;;;;* Margem Aplicada de 2,10 *   - ST isento - IPI 6,5%;77;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+43;10;STH SOLO 43;;;;;15,0000;;33,5600;;;;;* Margem Aplicada de 2,50 *   - ST :33,56% - IPI 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+44;10;STH ACESSORIOS 45;;;;;9,7500;;30,4600;;;;;* Margem Aplicada de 2,10 *   - ST: 30,46% - IPI: 9,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+45;10;STH ACESORIOS 44;;;;;5,0000;;30,9000;;;;;* Margem Aplicada de 2,10 *   - ST :30,9% - IPI 5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+46;11;DRAMALUX;;;;;0,0000;;0,0000;;;;0,0000;MARGEM APLICADA: 2,5 (GERAL SEM APLICAR IMPOSTOS)  ST: 8,82% - IPI ISENTO;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+47;10;STH PEÇAS 47;;;;;9,7500;;33,0000;;;;;MARGEM APLICADA DE 2,5   IPI: 9,75% - ST:33%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+48;12;WAGNER ARCHELA;;;;;0,0000;;20,0000;;;;;MARGEM VALOR - 2,5  IPI - ISENTO   ST - 20%  I;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+49;14;HUNTER VENTILADORES;;;;;15,0000;;0,0000;;;;;Margem - 2,10  IPI - 15%   ST - 0;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+50;14;HUNTER ACESSÓRIOS;;;;;10,0000;;0,0000;;;;;Margem 2,10  IPI 10%    ST 0;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+51;14;HUNTER KIT DE ILUMINAÇÃO;;;;;15,0000;;0,0000;;;;;Margem 2,10  IPI 15 %    ST 0%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+52;15;MANTRA  LU,PN,EB,AD,SP,PF;;;;;0,0000;;0,0000;;;;;Margem - 2,60  IPI- 0%   ST- 0;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+53;15;MANTRA  AJ,TR,VD,CP,CL;;;;;0,0000;;0,0000;;;;;Margem - 2,60  IPI- 0% ST- 0%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+54;13;ABALUX;0,0000;;;;15,0000;0,0000;18,3500;0,0000;0,0000;0,0000;0,0000;Margem- 2,10    IPI- 15%   ST- 18,35%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+55;16;VOLARE;;;;;;;10,8000;;;;;Margem - 2,40  IPI- Isento ST-10,80%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+56;17;DIMLUX;;;;;15,0000;;0,0000;;;;;MARGEM - 2,50  IPI - 15%  ST -  isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+57;18;DIREÇÃO DA LUZ;;;;;15,0000;;8,6500;;;;;Margem - 2,40  ST - 8,65% - IPI 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+58;19;AVER;;;;;9,7500;;0,0000;;;;;Margem - 2,5  ST ISENTO + 9,75% IPI;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+61;20;BRILIA LAMPADAS;;;;;10,0000;;29,2400;;;;0,0000;Margem - 2,10  IPI 10%    ST 29,24%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+67;20;BRILIA PEÇAS;;;;;15,0000;;29,1900;;;;0,0000;margem 2,50  IPI 15% - ST29,19%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+69;20;BRILIA FITAS;;;;;15,0000;;29,9000;;;;0,0000;Margem - 2,1  IPI - 15%   ST - 29,90%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;True;;False;;;;;;False;False
+70;21;QUARTO CRESCENTE;;;;;0,0000;;8,4600;;;;0,0000;Margem - 2,20  IPI - isento   ST - 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+71;22;BELLA;;;;;0,0000;;0,0000;;;;;Margem - 2,50  IPI - isento  ST- isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+72;24;WSG - DESSINE;;;;;;;0,0000;;;;;Margem - 2,5  IPI - Isento St- Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+73;25;LED PLUS;;;;;0,0000;;0,0000;;;;;Margem - 2,5  IPI -  isento  ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+74;23;CVILLE;8,0000;;;;0,0000;;8,7600;;;;;Margem - 2,70  IPI - isento ST - 8,76 %    Desconto 8%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+75;26;INTRAL REATORES;0,0000;;;;5,0000;;23,2800;;;;0,0000;Margem - 2,20 -   IPI - 5%   ST - 23,28%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+76;27;TREELUX BRAZIL A;;;;;0,0000;;21,7400;;;;;Margem - 2,5  IPI - isento ST - 21,74%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+77;27;TREELUX BRAZIL B;;;;;0,0000;;23,0000;;;;0,0000;Margem - 2,5  IPI - isento ST - 23%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+78;27;TREELUX BRAZIL C;;;;;0,0000;;23,2900;;;;;Margem - 2,5  IPI - isento  ST - 23,29%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+79;28;UPZ;;;;;0,0000;;0,0000;;;;;Margem - 2,5  IPI - Isento St- Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+80;29;PIER;;;;;0,0000;;0,0000;;;;;Margem - 2,50  IPI - Isento ST - Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+81;26;INTRAL LAMPADAS;0,0000;;;;10,0000;;23,2800;;;;;Margem - 2,20   IPI - 10%  ST - 23,28%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+91;30;DONA CLO;;;;;0,0000;;8,7000;;;;0,0000;Margem - 2,6  IPI - isento ST - 8,7%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+92;31;MUNCLAIR;;;;;0,0000;;8,8200;;;;;Margem 2,4  IPI - Isento ST - 8,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+93;31;MUNCLAIR AJ E CL;;;;;0,0000;;8,2800;;;;0,0000;Margem 2,4  IPI - Isento ST- 8,28%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+94;32;XELUX;;;;;0,0000;;0,0000;;;;0,0000;Margem - 2,1  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+95;33;PHILIPS;;;;;0,0000;;0,0000;;;;0,0000;Margem - 2,1  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+96;34;RCG;;;;;0,0000;;0,0000;;;;0,0000;Margem - 2.1  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+97;35;FABBIAN;;;;;0,0000;;0,0000;;;;;Margem - 2,5  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+98;36;ESTUDIO BOLA;;;;;15,0000;;24,5300;;;;0,0000;Margem - 2,50  IPI - 15%  ST - 24,53%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+99;37;VIDROCOR;;;;;0,0000;;0,0000;;;;;Margem- 2,50  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+100;38;MOOOI;;;;;0,0000;;18,0000;;;;0,0000;Margem - 2,50  IPI - incluso tabela  ST- 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+101;39;VERTZ;;;;;0,0000;;0,0000;;;;0,0000;MARGEM - 2,1  IPI - isento  ST - Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+102;40;PALACIO;;;;;0,0000;;12,0000;;;;;Margem - 2,50  IPI - isento ST - 12%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+103;40;PALACIO AJ;;;;;0,0000;;18,4300;;;;;Margem - 2,50  IPI - Isento - ST - 18,43%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+104;41;ARTEMIDE;;;;;0,0000;;15,0000;;;;0,0000;Margem - 2,50  IPI - Isento ST- 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+105;42;KLAXON - LIGHTMUN;;;;;15,0000;;16,7000;;;;0,0000;Margem-2,5  IPI - 15%  ST - 16,70%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+106;42;KLAXON - ZULL;;;;;0,0000;;0,0000;;;;;Margem - 2,2  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+107;42;KLAXON - PEPE;;;;;15,0000;;17,0000;;;;0,0000;Margem - 2,5  IPI - 15%   ST - 17%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+108;43;GOLDEN ART;;;;;0,0000;;12,0000;;;;;Margem: 2,5  IPI - ISENTO - ST - 12%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+109;44;CLARÃO IPI + ST;;;;;15,0000;;13,8300;;;;;Margem - 2,5  IPI - 15%   ST-13,83%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+110;44;CLARÃO SEM IPI;;;;;0,0000;;9,7200;;;;0,0000;Margem - 2,5  IPI - isento  ST - 9,72%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+111;45;MISTER LED;;;;;11,2500;;10,8100;;;;;MARGEM 2,4  IPI 11,25% - ST 10,81%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+112;42;KLAXON - CORRETO;;;;;0,0000;;17,0000;;;;0,0000;Margem - 2,5  IPI - Isento ST - 17%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+113;46;LITTMAN;;;;;15,0000;;12,8400;;;;;Margem - 2,5  IPI - 15% ST - 12,84 %;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+114;47;VR LUX - LINHA DECORATIVO;44,0000;;;;15,0000;;12,6400;;;;;Margem - 2,50    **desconto de 44%**  IPI - 15% ST - 12,64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+115;48;ALPES ILUMINACAO;;;;;15,0000;;9,6400;;;;;Margem 2,5  IPI 15%   ST 9,64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+116;49;FLOS;;;;;12,0000;;0,0000;;;;;Margem -2,5  IPI 12%  - Incluso ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+117;50;INTERLIGHT;;;;;9,7500;;21,5200;;;;;Margem - 2,25  IPI - 9,75% ST - 21,52%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+118;51;FASA FINAL;;;;;0,0000;;0,0000;;;;;PREÇO CLIENTE FINAL;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+119;52;NOTA FISCAL;;;;;0,0000;;0,0000;;;;;NOTA FISCAL;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+120;53;COMERCIAL PASSARINI;;;;;0,0000;;0,0000;;;;0,0000;Margem - 2,5  IPI - Incluso ST- Incluso;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+121;55;EVOLED (ATIVA COMERCIAL);;;;;0,0000;;0,0000;;;;;Margem - 2,5  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+122;54;VERMONTEX (NEMO);;;;;;;18,0000;;;;;Margem - 2,5  IPI - INCLUSO - ST - 18% com IVA - 46%;46;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+123;43;GOLDEN ART 2;;;;;15,0000;;0,0000;;;;;Margem - 2,5  IPI 15% ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+124;43;GOLDEN ART 3;;;;;15,0000;;12,4300;;;;;Margem - 2,5  IPI 15% - ST 12,43%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+125;56;LUNIX;;;;;;;6,5000;;;;;MARGEM: 2,5  IPI: ISENTO  /  ST: 6,5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+126;57;BRONZEARTE;;;;;15,0000;;12,8400;;;;;MARGEM 2,7  IPI: 15%   ST: 12,84%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+127;58;ACCORD;;;;;0,0000;;16,4000;;;;0,0000;MARGEM 2,5  IPI: ISENTO - ST: 16,4%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+128;59;ARANYI;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,15  IPI: ISENTO ST: 8,84;0;8,64;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+129;60;LUMART;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,5  IPI: ISENTO ST: 8,64%;0;8,64;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+130;44;CLARÃO IPI;;;;;5,0000;;9,4100;;;;0,0000;MARGEM **2,5**  IPI 5% E ST 9,41;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+131;47;VR LUX - LINHA TECNICA;44,0000;;;;15,0000;;12,6400;;;;;MARGEM 2,5  **DESCONTO DE 44%**  IPI: 15%   - ST: 12,64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+132;50;INTERLIGHT DESCONTO;25,0000;;;;9,7500;;21,5200;;;;0,0000;MARGEM 2,25 ** DESCONTO 25% CAIXA FECHADA**  IPI 9,75%  ST 21,52%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+133;49;ALFILUX (FLOS);;;;;15,0000;;0,0000;;;;0,0000;MARGEM 2,1  IPI 15% - ST ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+134;16;VOLARE ACESSORIOS;;;;;0,0000;;21,2400;;;;0,0000;Margem 2,5  IPI ISENTO - ST 21,24%;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+135;61;GERBAR VENTILADORES;;;;;0,0000;;8,8200;;;;0,0000;Margem **2,1**  ST: 8,82% - IPI Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+136;62;ESTOQUE - LAMP FORA DE LINHA;;;;;0,0000;;0,0000;;;;0,0000;MAGEM 2,1;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+137;62;ESTOQUE - PÇS FORA DE LINHA;;;;;0,0000;;0,0000;;;;;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+138;62;ESTOQUE - ILUMINAR;;;;;0,0000;;0,0000;;;;0,0000;TABELA APLICADA PREÇO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+139;63;ADALL;;;;;0,0000;;7,0000;;;0,0000;0,0000;**MARGEM 2,3**  IPI JÁ ACRESCENTADO NO PRETO // ST 7%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+140;64;BILTECH;;;;;0,0000;;7,0000;;;;0,0000;**MARGEM 2,3**  IPI INCLUSO // ST 7%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+141;65;ALFA - LOUD AUDIO;;;;;0,0000;;7,0000;;;;0,0000;**MARGEM 2,3**  IPI INCLUSO / ST7%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+142;133;SADOKIN - SNJ;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,1  IPI - ISENTO - ST ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+143;141;ROMALUX - PEÇAS;;;;;0,0000;;28,6600;;;;0,0000;**MARGEM 2,5**  IPI INCLUSO - ST 28,66 %;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+144;141;ROMALUX - FITA LED;;;;;0,0000;;28,5400;;;;0,0000;**MARGEM 2,1*  IPI INCLUSO - ST 28,54%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+145;49;ALFILUX SEM IPI / ST / VENDA DIRETA;;;;;0,0000;;0,0000;;;;0,0000;SEM MARGEM   IPI ISENTO / ST ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+146;162;METAL DONADO;;;;;0,0000;;7,7400;;;;0,0000;MARGEM 2,4  IPI: ISENTA - ST 7,74%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+147;4;OSRAM - LUMINARIAS;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,5  IPI / ST INCLUSO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;0;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+148;179;SORAA;;;;;15,0000;;15,0000;;;;0,0000;MARGEM 2,5 **PREÇO EM EURO **  IPI: 15% // ST:;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+149;183;BITCINO;0,0000;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM - 2,4  IPI  e ST APLICADO JÁ;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+150;155;ANPE ILUMINAÇÃO;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,0  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+151;161;PEÇAS;;;;;15,0000;;8,8200;;;;0,0000;MARGEM 2,5  IPI 15% E ST 8,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+152;184;STILO CLEAN;0,0000;;;;0,0000;0,0000;14,6400;0,0000;0,0000;0,0000;0,0000;MARGEM 2.5  IPI: ISENTO ST:14.64%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+153;185;REVOLUZ - PEÇAS;;;;;15,0000;;0,0000;;;;0,0000;MARGEM  2,5   IPI 15% - ST 12,73%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+154;187;MART;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,5  IMPOSTOS APLICADOS NA TABELA;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+155;44;CLARÃO ESP;;;;;5,0000;0,0000;9,4100;0,0000;0,0000;0,0000;0,0000;margem 2.5  ipi 5% st 9.41%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+156;193;LEDIS - ITAMONTE;;;;;0,0000;;8,6400;;;0,0000;0,0000;Margem 2,5  IPI isento / ST 8,64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+157;194;LEDS C4;;;;;15,0000;0,0000;30,0000;0,0000;0,0000;0,0000;0,0000;MAREGEM 2.5  SEM IPI  ST:28%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+158;185;REVOLUZ - ORÇ ESP;;;;;15,0000;;12,7300;;;;0,0000;Margem 2,1  IPI 15% ST 12,73%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+159;57;BRONZEARTE LAMPADAS;;;;;0,0000;;12,0000;;;;0,0000;MARGEM 2,1  IPI: ISENTO ST: 12%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+160;155;ANPE ILUMINAÇÃO VENDA;;;;;0,0000;;0,0000;;;0,0000;0,0000;Margem 3,0  IPI isento / ST: 0;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+161;207;BOB MOLNAR (NICOLE BALKANY);;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,0  IPI E ST = ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+162;132;CHIAVE DIST (SOM) - JORDÃO LAMARCA;;;;;0,0000;;0,0000;;;0,0000;0,0000;Margem 2,3;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+163;210;NEW LINE;;;;;15,0000;;12,8400;;;0,0000;0,0000;MARGEM 2,55 (GERAL SEM IMPOSTOS)  IPI 15% E ST 12,84%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+164;210;NEW LINE2;;;;;9,7500;;0,0000;;;;;MARGEM 2,55 (GERAL SEM IMPOSTOS)  IPI 9,75% E ST 0%      st 11;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+165;217;DOT LUZ;;;;;0,0000;;8,6400;;;;0,0000;MARGEM 2,5  IPI ISENTO  ST 8,64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+166;219;STARLUX;;;;;15,0000;0,0000;31,8700;0,0000;0,0000;0,0000;0,0000;magem: 2,5% IPI: 15% ST:31.87%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+167;224;DNA LUSTRES;;;;;0,0000;;11,8300;;;;0,0000;Margem 2,6  IPI : ISENTO ST:11,83%  St:15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+168;225;SANTIL;;;;;0,0000;;0,0000;;;;0,0000;margem 2,5   ipi - isento  st -insento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+169;227;LUSTRES THEMA;;;;;0,0000;;9,6500;;;;0,0000;2,5% - LUSTRES/ IPI - ISENTO - ST: 8,65%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+170;234;FAS - ILUMINACAO;0,0000;;;;0,0000;;0,0000;;;;0,0000;PREÇO DE TABELA  DESCONTO DE 20% ** IPI ISENTO / ST 12,64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+171;235;PETERLIGHT;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+172;241;LIGHT STORE (ATIVA);;;;;0,0000;;0,0000;;;0,0000;0,0000;Margem 2,5  IPI e ST isentos;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+173;242;TANUSSI;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem - 2.3% sem ipi sem st;0;0;ICMS NORMAL;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+174;155;ANPE ILUMINAÇÃO - OUTROS;;;;;15,0000;0,0000;12,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,7  IPI 15% 12% ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+175;252;DIMENLUZ - PEÇAS;;;;;0,0000;;0,0000;;;0,0000;0,0000;MARGEM 2,5  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+176;252;DIMENLUZ - LAMPADAS;;;;;0,0000;;0,0000;;;0,0000;0,0000;MARGEM 2,1  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+177;257;SAVE ENERGY - 2,2;;;;;10,0000;0,0000;34,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,2  IPI 10% ST 34%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+178;257;SAVE ENERGY - 2,5;;;;;15,0000;;34,0000;0,0000;;0,0000;0,0000;MERGEM - 2,5  IPI 15% SEM 34%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+180;236;DIC DISTRIBUIDORA;;;;;0,0000;;0,0000;;;;0,0000;margem: 2.3 Ipi e St incluso;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+181;274;NOSSA SENHORA;;;;;;;15,7200;;;;;Margem :2.5 IPI: isento  ST:15,72;;15,72;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+182;275;ILUMINAR FORA DE LINHA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;TABELA APLICADA 30% DE DESCONTO  MARGEM:3,3;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+183;278;FONEPLAN;0,0000;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM:2,3  IPI/ST: INCLUSO NO VALOR;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+184;279;FJ ÁUDIO E VIDEO;0,0000;;;;0,0000;0,0000;11,0000;0,0000;0,0000;0,0000;0,0000;Margem: 2,3  ST: 11%  I;0;11;;A;;;;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+185;184;STILO CLEAN - LAMPADA;;;;;0,0000;0,0000;14,6400;0,0000;0,0000;0,0000;0,0000;Margem 3.0  IPI 0.0 ST 14.64%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+186;305;HOME LIGHT - LAMPADAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  SEM IPI E ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+187;308;REVOLED - PERFIL;;;;;0,0000;0,0000;20,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 3,0  ST: 20%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+188;308;REVOLED - ACESSORIOS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 3,0;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+189;309;LOSCH - ACESSORIOS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,2  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+190;310;HUNTER TRADE - ARANDELA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+191;311;METAL TECNICA;32,8400;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,6  DESCONTO DE 32,84%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+192;312;ITAMONTE;;;;;0,0000;0,0000;9,1800;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  ST: 9,18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+193;55;EVOLED (ATIVA COMERCIAL) LAMPADAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+194;320;LIGHT INOX;;;;;0,0000;0,0000;7,1700;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  ST 7,17%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+195;321;DUAL METALURGICA;;;;;0,0000;0,0000;8,6400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  ST 8,64%  / IPI ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+196;325;I9 LED;;;;;0,0000;;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+197;330;USARE;;;;;0,0000;0,0000;17,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  ST 17%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+198;333;VIBIA;;;;;0,0000;0,0000;29,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  ST 29% E IPI INCLUSO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+199;336;OSRAM FORA LINHA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  IMPOSTOS INCLUSOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+200;336;OSRAM FORA LINHA - PEÇAS;;;;;0,0000;0,0000;0,0000;0,0000;;0,0000;0,0000;MERGEM 2,5  IMPOSTOS INCLUSOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+201;337;TENSOFLEX;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;SOMENTE PARA CONSTAR NO SISTEMA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+202;338;BRILIA  - FORA LINHA LAMPADAS;;;;;10,0000;;13,1000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  IPI 10% E ST 13,10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+203;338;BRILIA - FORA LINHA PEÇAS;;;;;15,0000;0,0000;13,1000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 15% ST 13,10;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+204;339;GEO LUZ & CERAMICA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  IPI - ISENTO ST  10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+205;346;STELLA FORA DE LINHA - FITA;;;;;15,0000;;29,0000;;;0,0000;0,0000;MARGEM 2,1  ST: 29% ipi 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+206;346;STELLA FORA DE LINHA - LAMPADA;;;;;10,0000;;29,0000;;;;0,0000;MARGEM 2,1  ST: 34% ipi 10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+207;347;AMES ILUMINAÇÃO;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,2  IMPOSTOS INCLUSOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+208;353;MAXIMO FORA LINHA;;;;;0,0000;0,0000;12,6300;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO / ST 12,63%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+209;355;NEW LINE FORA LINHA;;;;;15,0000;0,0000;12,8400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,6  IPI 15% E ST 12,84%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+210;356;SAVE ENERGY FORA LINHA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+211;356;SAVE ENERGY FORA LINHA PÇ;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 3,3;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+212;358;BERTOLUCCI FORA LINHA;40,0000;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  DESCONTO DE 40%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;True;;False;;;;;;False;False
+213;359;HAVVY;;;;;9,7500;0,0000;11,8300;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 9,75% ST 11,83%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+214;361;ALTALUCE;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  ST E IPI ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;True;;False;;;;;;False;False
+215;366;EVOLED FORA LINHA LAMPADAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI E ST =  ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+216;366;EVOLED FORA LINHA PEÇAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,6  IPI E ST =  ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+217;368;FEMARTE ILUMINAÇÃO;;;;;0,0000;0,0000;8,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO - ST 8,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+218;369;CHANDELIE;;;;;15,0000;0,0000;14,0900;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 15% ST 14,09%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+219;371;MECALUX;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;9,9000;0,0000;0,0000;0,0000;0,0000;Margem aplicada 2,5 ST 9,9%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+220;257;SAVE ENERGY 2,4;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+221;372;MOTA SOLDAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 3,0;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+222;367;LUCCHI;;;;;15,0000;;18,0000;;;;0,0000;MARGEM 2,5  IPI: 15%   ST: 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+223;378;DISCABOS;;;;;0,0000;;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+224;379;FOCO METALLO;;;;;15,0000;0,0000;14,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI: 15% ST: 14,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+225;3;BLUMENOX  OUTRAS LINHAS;33,0000;;;;15,0000;0,0000;21,1000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5 **DESCONTO 33%**  IPI 15% ST 21,10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+226;381;ALLOY ILUMINAÇÃO;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,5,  IPI e ST Isentos;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+227;380;J YAZBEK INDS E COM - AUTOMAÇÃO;;;;;0,0000;0,0000;11,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,0  IPI: ISENTO ST: 11%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+228;346;STELLA FORA DE LINHA - PEÇAS;;;;;15,0000;0,0000;34,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 15% E ST 34%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+229;49;ALFILUX ESPECIAL;;;;;0,0000;;0,0000;;;0,0000;0,0000;MARGEM 2,0  IPI  E ST ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;True;;False;;;;;;False;False
+230;394;BIANCO LUCE;10,0000;;;;0,0000;0,0000;8,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI ISENTO /  ST: 8,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+231;155;ANPE ILUMINAÇÃO 2,5;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,5  SEM IPI E ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+232;401;FORNECEDOR FABRICA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;PREÇO FINAL;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+233;407;PEÇAS;;;;;15,0000;0,0000;10,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 15% ST 10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+234;39;VERTZ 2;;;;;0,0000;;0,0000;;;0,0000;0,0000;MARGEM 2,4  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+235;413;ACEND ILUMINAÇÃO;;;;;0,0000;0,0000;8,4600;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO ST 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+236;414;MISTER LED FORA LINHA;;;;;0,0000;0,0000;9,0800;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI ISENTO ST 9,08%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+237;415;MANTRA FORA LINHA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem 2,6  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+238;13;ABALUX IMPORTADO;17,0000;;;;15,0000;0,0000;29,4000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  IPI 15% ST 29,40%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;0;False;;;;;;False;False
+239;20;BRILIA HASTE;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+240;431;NEW LINE IMPORTADOS;;;;;15,0000;0,0000;12,8400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,7  IPI 15% ST 12,84%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+241;433;PUNTOLUCE;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+242;401;FILLAMENTO COM MARGEM;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+243;435;ECOPYRE;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MAEGEM 2,2;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+244;438;POWER LUME - PROFILE;0,0000;;;;9,7500;0,0000;12,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4 /  IPI: 9,75% / ST: 12%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+245;438;POWER LUME - PAISAGISMO;25,0000;;;;0,0000;0,0000;16,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4 // DESCONTO DE 25%  IPI: ISENTO ST: 16%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+246;438;POWER LUME;;;;;0,0000;0,0000;16,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI ISENTO E ST: 16%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+247;440;OLD ARTISAN;;;;;11,2500;0,0000;8,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 11,25% // ST 8,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+248;234;FAS - MARGEM 1,8;15,0000;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;** DESCONTO DE 20% **   MARGEM 1,8   SEM IPI E ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+249;449;INOV9 - PÇS;;;;;0,0000;0,0000;9,9000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI: ISENTO ST: 9,90%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+250;452;SUNNY;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+251;453;DRAMALUX FORA DE LINHA;;;;;0,0000;0,0000;8,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5 // só aplicar margem // sem impostos  ST 8,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+252;455;INTERLIGHT FORA DE LINHA;;;;;15,0000;;18,0000;;;0,0000;0,0000;MARGEM 2,1  IPI 15% ST: 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+253;457;NACIONAL TETO E PAREDE;;;;;0,0000;0,0000;14,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI: ISENTO ST 14,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+254;457;NACIONAL MESA E PISO;;;;;0,0000;;14,4600;0,0000;;0,0000;0,0000;MARGEM 2,5  IPI: ISENTO ST 14,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+255;457;IMPORTADO TETO E PAREDE;;;;;0,0000;;22,8200;0,0000;;0,0000;0,0000;MARGEM 2,5  IPI ISENTO ST: 22,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+256;457;IMPORTADO MESA E PISO;;;;;0,0000;;22,4600;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO ST: 22,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+257;462;DIREÇÃO DA LUZ FORA DE LINHA;;;;;15,0000;0,0000;8,6500;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,4   IPI: 15% ST: 8,65%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+258;463;PIULUCCE FORA DE LINHA;;;;;0,0000;0,0000;9,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,50  ST: 9% IPI ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+259;3;BLUMENOX  IMPOSTOS APLICADOS NO PRE;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,5  IPI E ST INCLUSO NO PREÇO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+260;464;GDE;;;;;2,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4  IPI 2% ST ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+261;2;ILUMINAR ESPECIAL;;;;;5,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,9 - IPI DE 5% // CORRETO É DE 15%  (PEÇAS HOLE/PLANUS/SQUARE/LUA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+262;309;LOSCH PEÇAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MERGEM 2,5  IMPOSTOS JA APLICADOS NA TABELA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+263;468;CITILUX;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,1  IPI: ISENTO ST: ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+264;470;ABALUX FORA DE LINHA;;;;;15,0000;0,0000;18,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,1  IPI: 15%  ST: 18%;0;0;;A;;;1;False;False;False;False;False;False;False;False;False;0;False;;;;;;False;False
+265;471;ABALUX FORA DE LINHA;;;;;15,0000;0,0000;18,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,1  IPI: 15% ST: 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+266;473;SPOT FORA DE LINHA;50,0000;;;;15,0000;;11,1700;;;;0,0000;MARGEM 2,4 ** DESCONTO DE 50%  ST 11,17% IPI 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+267;481;DSGNSELO - VAREJO;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;PREÇO DE TABELA  COMISSIONADO 25%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+268;484;LIGHT IMPORT;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+269;485;IDEAL ILUMINAÇÃO;;;;;0,0000;0,0000;8,4600;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5   IPI ISENTO ST 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+270;51;FASA REVENDA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;PREÇO REVENDA **MARGEM 1,8**  IMPOSTO JÁ INCLUSOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+271;486;EMERSON VENTILADORES;;;;;0,0000;0,0000;30,1400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  IPI INCLUSO ST: 30,14;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+272;486;EMERSON ILUMINAÇÃO;;;;;0,0000;;17,9400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1   IPI INCLUSO ST 17,94;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+273;486;EMERSON CONTROLE;;;;;0,0000;0,0000;38,5700;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  IPI ISENTO ST: 38,57;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+274;488;CABOS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+275;490;TOM LUZ;;;;;0,0000;0,0000;16,4000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO ST 16,40%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+276;492;YPE;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;SOMENTE PARA NF;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+277;39;VERTZ 3;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM APLICADA DIRETO;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+278;493;EKLART LED;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+279;495;FILLAMENTO PÇS ESPECIAIS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+280;493;EKLART LED PEÇAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 4,3  valor alto pois estamos praticando vl de sobras;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+282;498;VIVENDI;;;;;0,0000;0,0000;25,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,5 %  IMPOSTOS GERAL: 25 %;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+283;506;ITAIM;;;;;0,0000;0,0000;18,0000;0,0000;0,0000;0,0000;0,0000;Margem - 2,4  IPI - ISENTO  ST- 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+284;509;PLANTEC;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,0%  IPI INCLUSO/ ST INCLUSO;0;0;ICMS NORMAL;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+285;511;DIRECTLIGHT;;;;;0,0000;0,0000;9,9000;0,0000;0,0000;0,0000;0,0000;MARGEM - 2,5 %  IPI - ISENTO / ST: 9,9%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+286;516;AMCP ELETRONICA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;IPI - ISENTO  ST -  ISENTO;0;0;;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+287;521;ESTABLISHED;;;;;0,0000;;0,0000;;;0,0000;0,0000;MARGEM 2,0  (GERAL SEM IMPOSTOS)  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+288;522;MB DECOR;;;;;15,0000;0,0000;31,6200;0,0000;0,0000;0,0000;0,0000;IPI: 15% / ST: 31,62   MARGEM: 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+289;513;TRON REFRIGERAÇÃO E ELETRONICA;;;;;0,0000;0,0000;11,1600;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,20%  IPI: ISENTO ST: 11,16%,;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+290;524;AUTORIZADO DECOR;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5 (GERAL SEM IMPOSTOS)  IPI E ST ISENTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+291;531;SMALTI AMBIENTES;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM: 2,5%  IPI - isento ST - isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+293;41;ARTEMIDE IMPORTAÇÃO VERTZ;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IMPOSTOS INCLUSOS;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+294;527;WENTZ PREÇO FINAL;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;PREÇO CONSUMIDOR FINAL DA TABELA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+295;38;MOOOI 2;;;;;0,0000;0,0000;18,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2  IPI INCLUSO ST 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+296;51;FASA REVENDA 2,0;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,0  IMPOSTOS INCLUSOS;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+297;534;NEW LINE BLACK;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,55   NÃO APLICAR SEM IMPOSTOS;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+298;481;DSGNSELO MARGEM APLICAR;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  IMPOSTOS INCLUSOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+299;7;BERTOLUCCI PREÇO SUGERIDO;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;PREÇO TABELA SUGERIDO  MARKUP 2,2;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+300;540;BONVENON - LOJA ELETRICA;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  TABELA JA COM OS IMPOSTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+301;234;FAS - LAMPADAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 1,8;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+302;541;USINA DESIGN;;;;;15,0000;0,0000;12,4300;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 15% ST 12,43%;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+303;543;MOLDI TELAS TENSIONADAS;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM JA APLICADA NA TABELA DA SILVANIA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;2;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+304;545;BELLA ITALIA;;;;;9,7500;0,0000;14,8200;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI 9,75% ST 14,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+305;555;PEÇAS COM MARGEM 2,7;;;;;0,0000;;8,5000;;;;0,0000;MARGEM 2,7  IPI ISENTO ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+306;556;PREÇO REVENDA;;;;;0,0000;;0,0000;;;0,0000;0,0000;MARGEM 2,5  PREÇO JÁ COM 10% DE DESCONTO FORNECEDOR CONCEDEU;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+307;557;ADENILSA CIPÓ;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+308;558;INOVVA INTERIORES LTDA. - ME;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,0  IMPOSTOS INCLUSOS;0;0;DIFERENCIAL DE ALÍQUOTAS;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+309;561;FRONTIER IMPORTADORA;;;;;15,0000;0,0000;12,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,6  IMPOSTOS GERAL27%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;False;False
+310;565;LUMINÁRIAS NOGUEIRA;;;;;0,0000;0,0000;8,4600;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO ST 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+311;567;LUMINATTI;;;;;10,0000;;37,0300;;;;;MARGEM 2,10  ST 37,03 % - IPI 10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+312;576;ROTOPLANETA;;;;;0,0000;0,0000;10,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO ST 10%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+313;10;STELLA FONTE 311;;;;;3,7500;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  ST ISENTA IPI 3,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+314;10;STELLATECH - FITA 312;;;;;9,7500;;0,0000;;;;0,0000;MARGEM 2,1  IPI 9,75%,  SEM ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+315;578;STUDIOLUCE ILUMINACAO IMPORTACAO E;;;;;15,0000;0,0000;12,8400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,6  IPI 15% E ST 12,84%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+316;585;PD LED;;;;;0,0000;0,0000;14,4600;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  ST 14,46 % IPI ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+317;2;ILUMINAR - SLOT / GAP;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM DE 3,2  SEM ADIÇÃO DE IMPOSTOS;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+318;10;STH TRILHO 317;;;;;5,0000;0,0000;27,2000;0,0000;0,0000;0,0000;0,0000;Margem Aplicada de 2,50 *   - ST :27,20% - IPI 5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+319;10;STH SPOT 318;;;;;15,0000;0,0000;32,5900;0,0000;0,0000;0,0000;0,0000;Margem Aplicada de 2,50 *   - ST :32,59% - IPI 15%;43;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;False;False
+320;442;DUE LUCI;;;;;0,0000;0,0000;8,4600;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5  IPI ISENTO - ST 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;;;;False
+321;606;NATURAL LIGTH;;;;;0,0000;0,0000;6,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5%  IPI ISENTO  ST 6%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;0;0;;False
+322;631;ATTIMO INDUSTRIA DE LUMINARIAS LTDA;;;;;0,0000;0,0000;14,4600;0,0000;0,0000;0,0000;0,0000;margem 2,5%   IPI ISENTO / ST 14,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;0;False;;;;0;0;False;False
+323;634;ALPERTONE;;;;;9,7500;0,0000;32,3300;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  IPI 9,75% ST 32,33%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+324;642;3D LED FONTE;;;;;0,0000;0,0000;9,5400;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  IPI ISENTO / ST 9,54%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;0;0;;False
+325;659;MADELUSTRE PÇS;47,0000;;;;9,7500;;0,0000;;;;0,0000;MARGEM 2,4  IPI 9,75 SEM ST;0;19,2;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+326;661;ABAJÚ PÇS;;;;;15,0000;;18,0000;;;;;MARGEM 2,4  IPI 9,75 ST 18%;55;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;True;;False;;;;;;;False
+327;41;ARTEMIDE / ILUMINAR;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,7;0;0;;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;0;0;;False
+328;673;PIX;;;;;9,7500;0,0000;31,8500;0,0000;0,0000;0,0000;0,0000;MARGEM - 2,5   IPI 9,75%  ST 31,85%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;0;0;False;False
+329;682;LA LUNE STUDIO (MAURICIO);;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4%;2,4;0;NÃO CALCULAR ICMS;A;;;1;False;False;False;False;False;False;False;False;False;0;False;;;;0;0;;False
+330;591;VIA HF IMPORTAÇÃO MARGEM 5;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 5  TODOS OS IMPOSTOS ESTÃO EM PLANILHA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+331;686;DI LUCE;;;;;0,0000;0,0000;29,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,5   ST 29%  IPI ISENTO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+332;591;VIA HF IMPORTAÇÃO MARGEM 6;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 6  TODOS OS IMPOSTOS ESTÃO EM PLANILHA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+333;701;BELLA LUCE;;;;;0,0000;;8,4600;;;;;LUMINARIA EMBUTIDA  MARGEM 2,5%  ST8,46%;2,5;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+334;333;VIBIA MAYFAIR MINI;;;;;0,0000;0,0000;29,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,1  ST 29% E IPI INCLUSO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;0;False;;;;0;0;;False
+335;704;DESSINE;0,0000;;;;0,0000;;12,0000;;;;0,0000;MARGEM DE 2,5  IPI ISENTO - ST 12%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;0;0;;;;;False
+337;524;AUT. DECOR 2,3;;;;;9,0000;;8,4600;;;;0,0000;MARGEM 2,3  IPI 9% ST8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;;False
+338;710;LIGHT;;;;;;;0,0000;;;;;NÃO VAMOS COLOCAR IMPOSTOS, VAMOS PRATICAR VALOR DO SITE;;0;ICMS NORMAL;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+339;718;LUXION;;;;;9,7500;;0,0000;;;;;margem de 2,6 + impostos;;0;ICMS NORMAL;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+340;19;AVER CORRENTES;;;;;;;0,0000;;;;;MARGEM 2,0  CORRENTES;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+341;38;MOOOI 3;;;;;0,0000;;18,0000;;;;;MARGEM DE 2,3  IPI INCLUSO st18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+342;50;INTERLIGHT DESCONTO PICCO;25,0000;10,0000;;;9,7500;;21,5200;;;;;DESCONTO DE 25% + 10%  IPI 9,75% + ST 21,52%   MARGEM DE 2,25;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+343;524;AUT. DECOR 2;;;;;0,0000;;0,0000;;;;;MARGEM DE 2,7  ST E IPI ISENTOS;;0;;A;;;;False;False;False;False;False;False;False;False;;;False;0;0;0;;;;False
+344;730;DRESALL;;;;;0,0000;;0,0000;;;;;MARGEM DE 2,5;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;0;0;0;;;;False
+345;747;ALISEU;;;;;0,0000;;0,0000;;;;;Margem 2,5 e impostos inclusos;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+346;673;PIX FONTES;;;;;3,7500;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,3  IPI 3,75% ST 30,11%;0;30,11;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+347;45;MISTER LED ACESSORIOS;;;;;11,2500;;10,8100;;;;;MARGEM DE 2,1  IPI 11,25% E ST 10,81%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+348;785;LIGHT DESIGN;;;;;9,7500;;0,0000;;;;;MARGEM DE 2,4 + IPI 9,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+349;642;3D LED SP;;;;;0,0000;;9,5400;;;;;MARGEM 2,5  IPI ISENTO / IPI 9,54%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+350;591;VIA HF;;;;;0,0000;;0,0000;;;;;PREÇO FINAL PARA CONSUMIDOR;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+351;578;STUDIOLUCE - PREÇO 2;;;;;15,0000;;12,0000;;;;;MARGEM 2,8  IPI 15% E ST 12%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+352;11;DRAMALUX 2;;;;;0,0000;;0,0000;;;;0,0000;PEÇA QUE A SIL PEDIU COM VALOR X3;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+353;11;DRAMALUX - PREÇO 2;;;;;;;0,0000;;;;;MARGEM 3  IPI ISENTO E SEM ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+354;481;DSGNSELO PREÇO 2;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;Margem 3,2   Com impostos inclusos;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+355;10;STELLA FONTE / SP;;;;;3,7500;;0,0000;;;;;MARGEM 2,31  ST ISENTA IPI 3,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+356;10;STELLATECH - FITA / SP;;;;;9,7500;;0,0000;;;;;MARGEM 2,31  IPI 9,75%,  SEM ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+357;2;ILUMINAR PREÇO 2;;;;;5,0000;;0,0000;;;;;Margem de 3,52  Aplicado em toda a tabela;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+358;19;AVER PEÇAS PREÇO 2;;;;;9,7500;;0,0000;;;;0,0000;MARGEM 3,2  IPI 9,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+359;19;AVER CORRENTE PREÇO 2;;;;;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,4;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+360;10;STH SPOT / SP;;;;;15,0000;;32,5900;;;;;Margem Aplicada de 2,75*   - ST :32,59% - IPI 15%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+361;308;REVOLED PERFIL - PREÇO 2;;;;;0,0000;;20,0000;;;;;Margem 3,6  ST 20%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+362;308;REVOLED ACESSORIOS - PREÇO 2;;;;;0,0000;;0,0000;;;;0,0000;MARGEM DE 3,6;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+363;10;STH TRILHO / SP;;;;;5,0000;;27,2000;;;;;Margem Aplicada de 2,75 *   - ST :27,20% - IPI 5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+364;10;STH ACESSORIOS / SP;;;;;9,7500;;30,4600;;;;;* Margem Aplicada de 2,31 *   - ST: 30,46% - IPI: 9,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+365;401;FILLAMENTO PREÇO 2;;;;;0,0000;;0,0000;0,0000;0,0000;0,0000;0,0000;MARGEM 2,75;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+366;10;STH LÂMP / SP;;;;;6,5000;;0,0000;;;;;* Margem Aplicada de 2,31*   - ST ISENTO - IPI 6,5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+367;10;STH PEÇAS / SP;;;;;9,7500;;33,0000;;;;;MARGEM APLICADA DE 2,75  IPI: 9,75% - ST:33%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+368;591;VIA HF / SP;;;;;;;0,0000;;;;;MARGEM ADICIONAL DE 10% (0,10)  SEM IMPOSTOS - MARGEM DE 5,5;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+369;801;NORDECOR;;;;;0,0000;;0,0000;;;;0,0000;MARGEM DE 2,5 + PREÇO COM IMPOSTOS INCLUSOS;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+370;801;NORDECOR - SP;;;;;0,0000;;0,0000;;;;;MARGEM DE 3,2   PREÇO COM IMPOSTOS INCLUSOS;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+371;45;MISTER LED - SP;;;;;11,2500;;10,8100;;;;;MARGEM 3,2  IPI 11,25% E ST 10,81%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+372;440;OLD ARTISAN - SP;;;;;11,2500;;8,8200;;;;;MARGEM 3,2  IPI 11,25 e ST 8,82;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+373;162;METAL DOMADO - SP;;;;;0,0000;;7,7400;;;;;MARGEM 3,2  IPI isento e ST 7,74;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+374;210;NEWLINE - SP;;;;;15,0000;;12,8400;;;;;MARGEM 3,2  IPI 15 e ST 12,84;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+375;50;INTERLIGHT - SP;;;;;9,7500;;21,5200;;;;;MARGEM 2,48  IPI 9,75 e ST 21,52;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+376;804;SKYLIGHT;;;;;;;23,9000;;;;;MARGEM DE 2,5  ST 23,90%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+377;413;ACEND - SP;;;;;0,0000;;8,4600;;;;;MARGEM DE 3,2  IPI ISENTO E ST 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+378;43;GOLDEN ART - SP;;;;;15,0000;;12,4300;;;;;MARGEM 3,2  IPI 15% E ST 12,43%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+379;61;GERBAR ACESSORIOS;;;;;;;21,2400;;;;;Margem **2,1**  ST: 21,24% - IPI Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+380;805;SINDORA;;;;;0,0000;;0,0000;;;;;MARGEM 2,5  IMPOSTOS INCLUSOS;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+381;545;BELLA ITALIA - SP;;;;;9,7500;;14,8200;;;;;Margem 3,2  9,75% IPI 14,82% ST;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+382;4;OSRAM SP;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 3,2  IPI / ST INCLUSO;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+383;527;WENTZ - SP;;;;;0,0000;;0,0000;;;;;PREÇO FINAL DA TABELA   COM MARGEM 1,2;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+384;379;FOCO METALLO - SP;;;;;15,0000;;14,8200;;;;0,0000;MARGEM 3,2  IPI 15% ST 14,82%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+385;808;MARILENA G;;;;;0,0000;;8,4600;;;;;Margem 2,5  ST 8,46%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+386;50;INTERLIGHT DESCONTO - SP;25,0000;;;;9,7500;;21,5200;;;;;Margem 2,48 + 25% desconto caixa fechada  IPI 9,75% ST 21,52;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+387;785;LIGHT DESING - SP;;;;;9,7500;;0,0000;;;;0,0000;MARGEM 3,2 + IPI 9,75%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+388;16;VOLARE - SP;;;;;0,0000;;10,8000;;;;0,0000;Margem de 3,0  IPI isento ST 10,80%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+389;591;VIA - SP;;;;;0,0000;;0,0000;;;;;PREÇO FINAL CONSUMIDOR + 10%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+390;718;LUXION - SP;;;;;9,7500;;0,0000;;;;;MARGEM 3,3 + IPI 9,75;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+391;141;ROMALUX - SP;;;;;0,0000;;28,6600;;;;0,0000;MARGEM 3,2  IPI INCLUSO ST: 28,66%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+392;55;EVOLED - SP;;;;;0,0000;;0,0000;;;;0,0000;Margem - 3,2  IPI - isento ST - isento;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+393;28;UPZ - SP;;;;;0,0000;;0,0000;;;;0,0000;Margem - 3,2  IPI - Isento St- Isento;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+394;493;EKLART PEÇAS - SP;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 5,2  VALOR ALTO POR CONTA DAS SOBRAS;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+395;493;EKLART FONTE - SP;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 2,8;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+396;541;USINA DESIGN - SP;;;;;15,0000;;12,4300;;;;;MARGEM 3,2  IPI 15% ST 12,43;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+397;631;ATTIMO - SP;;;;;0,0000;;14,4600;;;;0,0000;Margem de 3,2  IPI isento | ST 14,46;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+398;511;DIRECTLIGHT - SP;;;;;0,0000;;9,9000;;;;0,0000;MARGEM 3,2  IPI Isento / ST 9,90%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+399;333;VIBIA - SP;;;;;0,0000;;29,0000;;;;0,0000;MARGEM 3,2  ST 29% IPI Incluso;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+400;333;VIBIA MAYFAIR MINI - SP;;;;;0,0000;;29,0000;;;;0,0000;MARGEM 2,6  ST 29% IPI INCLUSO;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+401;381;ALLOY ILUMINAÇÃO - SP;;;;;0,0000;;0,0000;;;;;Margem 3,2  IPI e ST Isentos;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+402;828;GAYA;20,0000;;;;0,0000;;0,0000;;;;;Margem 2,2  Sem IPI e ST;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+403;58;ACCORD - SP;;;;;0,0000;;16,4000;;;;;MARGEM DE 2,75  IPI Isento ST 16,40;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+404;830;LUMITEK;;;;;9,7500;;0,0000;;;;0,0000;Margem 2,4   IPI 9,75;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+405;438;POWER LUME SP;;;;;9,7500;;12,0000;;;;;MARGEM 2,6  ST 12% E IPI 9,75;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+406;558;INOVVA INTERIORES - SP;;;;;0,0000;;0,0000;;;;;MARGEM DE 2,5  IMPOSTOS INCLUSOS;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+407;367;LUCCHI - SP;;;;;15,0000;;18,0000;;;;;MARGEM 3,2  IPI: 15%   ST: 18%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+408;846;NEWSTANDARD;;;;;15,0000;;12,8400;;;;0,0000;Margem 2,55  IPI 15% ST 12,84;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+409;61;GERBAR - SP;;;;;0,0000;;8,8200;;;;;Margem **2,5**  ST: 8,82% - IPI Isento;;0;ICMS NORMAL;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+410;368;FEMARTE - SP;;;;;0,0000;;8,8200;;;;0,0000;Margem 3,2  IPI isento ST 8,82;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+411;847;BH ILUMINAÇÃO;;;;;0,0000;;9,3300;;;;;Margem 2,5  ST 9,33% sem IPI;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+412;31;MUNCLAIR - SP;;;;;0,0000;;8,8200;;;;0,0000;Margem de 2,4  IPI Isento ST 8,82;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+413;849;GMH TRADE;;;;;0,0000;;0,0000;;;;0,0000;Margem de 2,5  Impostos Incluso;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+414;686;DI LUCE - SP;;;;;0,0000;;29,0000;;;;0,0000;MARGEM 3,2   ST 29% IPI Isento;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+415;850;INTERLUX;;;;;9,1800;;0,0000;;;;0,0000;Margem 2,5  IPI 9,18;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+416;846;NEWSTANDARD - SP;;;;;15,0000;;12,8400;;;;0,0000;Margem 3,06  IPI 15 e ST 12,84;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;False;;False;;;;;;False;False
+417;490;TOM LUZ - SP;;;;;0,0000;;16,4000;;;;0,0000;Margem 3,2  IPI Isento e ST 16,40%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+418;673;PIX FONTES - SP;;;;;3,7500;;30,1100;;;;0,0000;MARGEM 2,8  IPI 3,75 ST 30,11;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+419;31;INDIO DA COSTA;;;;;0,0000;;0,0000;;;;0,0000;MARGEM 3,0  SEM IPI E SEM ST (PREÇO TABELA 35% DE DESCONTO);0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+420;50;DESCONTO MAIOR - SP;25,0000;10,0000;;;9,7500;;21,5200;;;;0,0000;DESCONTO DE 25% +10% IPI 9,75 + ST 21,52  MARGEM 2,48;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+421;856;ZIEL 1;;;;;5,0000;;12,0000;;;;;MARGEM DE 3  ST 12% E IPI 5%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+422;856;ZIEL 2;;;;;9,7500;;12,0000;;;;;MARGEM DE 3  ST 12% E IPI 9,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+423;856;ZIEL 3;;;;;3,7500;;12,0000;;;;;MARGEM DE 3  ST 12% E IPI 3,75%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+424;861;OPUS;;;;;0,0000;;0,0000;;;;;Margem 2,4  Impostos incluso;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+425;861;OPUS - SP;;;;;0,0000;;0,0000;;;;;Margem de 2,64   Impostos inclusos;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+426;224;DNA LUSTRES - SP;;;;;;;11,8300;;;;;Margem 3,2   IPI : ISENTO ST:11,83%  St:15%;0;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+427;863;CUPULAS GUERRA;;;;;0,0000;;0,0000;;;;;Margem de 3  Impostos Incluso;;0;;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+428;308;REVOLED - BARRA;;;;;0,0000;;20,0000;;;;;2,5 ST 20%;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+429;875;M FERREIRA;;;;;;;8,4600;;;;0,0000;MARGEM 2,5 + ST 8,46  CADASTRO PARA CLIENTE JANAINA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+430;50;INTERLIGHT DO IT;30,0000;;;;9,7500;;21,5200;;;;0,0000;MARGEM DE 2,25 + ST 21,52 + IPI 9,75  DESCONTO DE 30% SEM PRECISAR FECHAR CAIXA;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+431;634;ALPERTONE - SP;;;;;9,7500;;32,3300;;;;0,0000;MARGEM DE 2,31  + IPI 9,75 + ST 32,33;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False
+432;50;DO IT - SP;30,0000;;;;9,7500;;21,5200;;;;;MARGEM DE 2,48 + ST 21,52 + IPI 9,75   DESCONTO DE 30% LINHA DO IT;0;0;SUBSTITUIÇÃO TRIBUTÁRIA;A;;;1;False;False;False;False;False;False;False;False;;;False;;;;;;;False

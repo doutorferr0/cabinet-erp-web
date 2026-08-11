@@ -25,6 +25,10 @@ docs/legado/
 ├─ softlux-fluxograma.html          DIAGRAMA de setas por domínio (25 KB)
 ├─ softlux-er.html                  EXPLORADOR do schema: 359 tabelas navegáveis por FK
 ├─ gera-er.py                       gera o explorador a partir de schema/ e config/
+├─ dbml/                            DBML para importar em ChartDB/dbdiagram — ver seção 10
+│  ├─ softlux-nucleo.dbml           30 tabelas do caminho principal
+│  └─ softlux-completo.dbml         as 212 tabelas com dado
+├─ gera-dbml.py                     gera os dois DBML, com as relações inferidas
 ├─ achados-exe-2026-08-11.md        análise em prosa da 2ª rodada (parâmetros, RBAC, preço, PDF)
 ├─ schema/                          dumps brutos do catálogo, 3 bancos × 6 arquivos
    ├─ bdprincipal-*.csv|.sql        o banco que importa
@@ -636,3 +640,47 @@ desconto do cliente, alterar valor do produto na venda, atualizar orçamento.
   lido de PDFs reais e descrito em `achados-exe-2026-08-11.md`. **Os PDFs não estão versionados** —
   têm nome, valor e obra de cliente.
 - 54 dos 768 marcadores `TPF0` não parseiam: são falso positivo em dado binário, não telas perdidas.
+
+---
+
+## 10. `dbml/` — diagrama em ChartDB, dbdiagram ou qualquer editor DBML
+
+O legado declara **208 chaves estrangeiras para 359 tabelas**, e as tabelas mais importantes não
+declaram nenhuma: `Estoque_produto` não tem uma só, `Venda` tem quatro. Importar o schema cru em
+qualquer ferramenta de diagrama produziria um desenho **esparso e mentiroso** — pareceria que o
+sistema não se relaciona, quando na verdade a integridade mora no código Delphi.
+
+Por isso `gera-dbml.py` acrescenta **relações inferidas**, marcadas como tal no arquivo:
+
+- `// inferida (nome)` — a coluna tem o mesmo nome e o mesmo tipo de uma **chave primária simples**
+  de outra tabela. Colunas genéricas demais (`id`, `codigo`) e de escopo (`Emp_codigo`, usuário de
+  auditoria) ficam de fora: casariam tudo com tudo e virariam teia.
+- `// inferida (sinonimo)` — o legado troca o prefixo da MESMA coisa conforme a tabela. O código do
+  produto é `Pro_codnosso` em `produtos`, `Epr_Codnosso` em `Estoque_produto` e `Pre_Codnosso` em
+  `Preco_Produto`. Sem esse mapa, justamente estoque e preço ficariam soltos no diagrama.
+
+| Arquivo | Tabelas | Relações | Das quais inferidas |
+|---|--:|--:|--:|
+| `softlux-nucleo.dbml` | 30 | 34 | 23 |
+| `softlux-completo.dbml` | 212 | 309 | 179 |
+
+**As inferidas são hipótese, não verdade.** Foram checadas por amostragem, não uma a uma. Antes de
+usar qualquer uma como regra de migração, confira contra o SQL real em `exe/sql-do-codigo.sql`.
+
+### Como importar
+
+**ChartDB** (open source, AGPL, self-hostável — `docker run -p 8080:80 ghcr.io/chartdb/chartdb`):
+abrir, `Import` → `DBML`, colar o conteúdo do arquivo. Começar pelo `nucleo`; o `completo` cabe, mas
+só é legível com filtro e áreas.
+
+**dbdiagram.io** aceita o mesmo arquivo colado.
+
+Regerar com `python3 gera-dbml.py` depois de atualizar `schema/`. Não editar o `.dbml` à mão — o
+que for editado se perde na próxima geração.
+
+### Qual ferramenta para quê
+
+`softlux-er.html` (seção 9) responde *o que se liga a quê e que telas usam* — é para investigar.
+O DBML é para **desenhar e comunicar**: um diagrama por módulo, para quem precisa entender o domínio
+sem abrir o legado. Para exploração de schema grande com linter (tabela sem PK, FK faltando, tipo
+inconsistente), a ferramenta indicada é o Azimutt, que lê este mesmo banco direto.

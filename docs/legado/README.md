@@ -23,6 +23,8 @@ docs/legado/
 ├─ engenharia-reversa-softlux.md    análise em prosa da 1ª rodada (11 KB)
 ├─ softlux-fluxo-banco.html         ÍNDICE por estágio: 11 estágios, 70 tabelas (134 KB)
 ├─ softlux-fluxograma.html          DIAGRAMA de setas por domínio (25 KB)
+├─ softlux-er.html                  EXPLORADOR do schema: 359 tabelas navegáveis por FK
+├─ gera-er.py                       gera o explorador a partir de schema/ e config/
 ├─ achados-exe-2026-08-11.md        análise em prosa da 2ª rodada (parâmetros, RBAC, preço, PDF)
 ├─ schema/                          dumps brutos do catálogo, 3 bancos × 6 arquivos
    ├─ bdprincipal-*.csv|.sql        o banco que importa
@@ -55,7 +57,7 @@ para menos (`Venda` 34.135 vs 34.136, `VendaProduto` 549.829 vs 549.830, `VendaD
 300.325 vs 300.337, `VendaIndicacaoGrupProd` 232.409 vs 232.415, `VendaAmbiente` 144.673 vs
 144.674). Base viva, dias de diferença. **Fonte de número é o CSV**, não o `.md`.
 
-### Os dois HTML — para que serve cada um
+### Os três HTML — para que serve cada um
 Os dois são páginas estáticas, sem dependência externa: abrir direto no browser. Cobrem o
 mesmo caminho principal por ângulos diferentes, e **os dois batem com os CSVs** (conferido
 tabela a tabela, zero divergência).
@@ -78,6 +80,18 @@ com `Emp_codigo`.
 Os dois recortam as mesmas 70 tabelas. O diagrama põe 68 delas em caixas — `Funcionario`
 (111 linhas) e `Ambiente` (346 linhas) ficam de fora das caixas mas estão no índice interno
 dele; no `fluxo-banco` as duas aparecem no estágio 1.
+
+#### `softlux-er.html` — explorador do schema
+
+Abre no navegador, sem servidor e sem internet. Lista as **359 tabelas** com contagem de linhas e
+deixa navegar **seguindo as chaves estrangeiras**: clicar num nome salta para aquela tabela. Para
+cada uma mostra a PK (ou o aviso de que não há), as FKs de saída e de entrada, **as telas do sistema
+que a usam** (do cruzamento em `config/menu-form-tabela.csv`) e todas as colunas com tipo e
+nullable. Filtro padrão esconde as 147 tabelas vazias.
+
+É a porta de entrada para quem vai modelar um módulo: abrir a tabela equivalente no legado, ver o
+que se liga a ela e que telas dependem dela, antes de decidir o desenho novo. Regenerar com
+`python3 gera-er.py` depois de atualizar `schema/`.
 
 ### `schema/` — 6 arquivos por banco
 | Arquivo | Conteúdo | Uma linha por |

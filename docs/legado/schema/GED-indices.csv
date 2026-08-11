@@ -1,0 +1,3 @@
+﻿"tabela","indice","type_desc","is_primary_key","is_unique","coluna","key_ordinal","is_included_column"
+"Categoria_GED","PK_Categoria_GED","CLUSTERED","True","True","CatGED_codigo","1","False"
+"GED","PK_GED","CLUSTERED","True","True","GED_Codigo","1","False"

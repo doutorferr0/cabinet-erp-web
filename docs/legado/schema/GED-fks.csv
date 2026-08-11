@@ -1,0 +1,2 @@
+﻿"fk","tabela_origem","coluna_origem","tabela_destino","coluna_destino"
+"FK_GED_Categoria_GED","GED","CatGED_codigo","Categoria_GED","CatGED_codigo"

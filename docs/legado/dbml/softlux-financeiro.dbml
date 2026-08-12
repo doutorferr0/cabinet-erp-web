@@ -1,0 +1,644 @@
+// Softlux - modulo financeiro
+// Gerado por docs/legado/gera-dbml.py a partir de docs/legado/schema/*.csv.
+// 15 tabelas do modulo + 9 vizinhas puxadas por relacao.
+// Importar em ChartDB: Import > DBML. Não editar à mão: regerar.
+
+Table Bancos {
+  Ban_Codigo char(4) [pk, not null]
+  Ban_Nome varchar(50)
+  Ban_Site varchar(50)
+  Ban_Fone varchar(20)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Ban_situacao char(1)
+  Emp_codigo int
+  Note: '149 linhas'
+}
+
+Table Bancos_Caixas {
+  Bcx_codigo int [not null]
+  Emp_codigo int [not null]
+  Bcx_tipo varchar(1)
+  Bcx_Nome varchar(35)
+  Bcx_agencia varchar(10)
+  Bcx_endereco varchar(45)
+  Bcx_numero varchar(10)
+  Bcx_bairro varchar(30)
+  Bcx_cidade varchar(30)
+  Bcx_uf varchar(2)
+  Bcx_cep varchar(10)
+  Bcx_telefone varchar(15)
+  Bcx_fax varchar(15)
+  Bcx_Pagina varchar(100)
+  Bcx_Contato varchar(25)
+  Bcx_CodigoBanco varchar(4)
+  Ban_codigo char(4)
+  usr_cod_criacao int
+  usr_cod_alteracao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  mun_codigo int
+  Bcx_situacao char(1)
+  Bcx_DigitoAgencia varchar(5)
+  indexes {
+    (Bcx_codigo, Emp_codigo) [pk]
+  }
+  Note: '15 linhas'
+}
+
+Table contas_apagar {
+  Ctp_codigo float [pk, not null]
+  Ctp_cod_documento nvarchar(20)
+  Ctp_forma_pag int
+  Ctp_valor_total_original money
+  Ctp_fornecedor_cod int
+  Ctp_fornecedor nvarchar(45)
+  Ctp_status nvarchar(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Tpd_codigo int
+  Ctp_juros_vl float
+  Ctp_juros_por float
+  Ctp_multa_vl float
+  Ctp_multa_por float
+  Ctp_Desconto_vl float
+  Ctp_Desconto_por float
+  Pco_codigo int
+  Cdc_codigo int
+  Ctp_obs text
+  Ctp_historico nvarchar(80)
+  Ctp_cod_externo float
+  Ctp_vinculo nvarchar(50)
+  Ctp_codigo_vinculo float
+  Ctp_nome nvarchar(100)
+  CTP_ControlReferencia char(2)
+  Tcf_codigo int
+  ParSV_serie char(3)
+  Ctp_MesAnoRef varchar(10)
+  Note: '30.043 linhas'
+}
+
+Table contas_apagar_det {
+  Ctp_codigo float
+  Ctp_parcela int
+  Ctp_documento nvarchar(20)
+  Ctp_dt_vencimento smalldatetime
+  Ctp_valor_vencimento money
+  Ctp_dt_pagamento smalldatetime
+  Ctp_valor_pagamento money
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Mdo_codigo int
+  Ctp_juros_vl float
+  Ctp_juros_por float
+  Ctp_multa_vl float
+  Ctp_multa_por float
+  Ctp_Desconto_vl float
+  Ctp_Desconto_por float
+  Ctp_situacao varchar(1)
+  ctp_codigo_det float
+  Ctp_Duplicatatemplate varchar(250)
+  Ctp_recibo varchar(15)
+  Ctp_reciboImp bit
+  Ctp_reciboImpData datetime
+  Ctp_recibotemplate varchar(250)
+  Ctp_CodigoBarra varchar(100)
+  Ctp_Sequencia int [pk, increment, not null]
+  Note: '42.161 linhas'
+}
+
+Table Contas_apagar_pag {
+  Cpp_cod_pag float
+  Ctp_codigo int
+  Emp_codigo int
+  Ctp_parcelas int
+  Cpp_numero varchar(25)
+  mdo_codigo int
+  cba_codigo int
+  Cpp_numero_banco int
+  Cpp_nome_banco varchar(35)
+  Cpp_cpf_cnpj_emitente varchar(20)
+  Cpp_agencia varchar(10)
+  Cpp_conta_corrente varchar(15)
+  Cpp_numero_cheque varchar(15)
+  Cpp_emitente varchar(35)
+  Cpp_numero_cartao varchar(25)
+  Cpp_liberacao_cartao varchar(15)
+  Cpp_valor_pago float
+  Cpp_data_pagamento datetime
+  Cpp_juros_vl float
+  Cpp_juros_por float
+  Cpp_multa_vl float
+  Cpp_multa_por float
+  Cpp_Desconto_vl float
+  Cpp_Desconto_por float
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ctp_codigo_det float
+  Cpp_recibo varchar(15)
+  Cpp_reciboImp bit
+  Cpp_reciboImpData datetime
+  Cpp_recibotemplate varchar(250)
+  Cpp_TipoLancamento varchar(30)
+  Cpp_Obs ntext
+  LotePagCtPag float
+  Mod_codigo int
+  Cpp_Acrescimo_vl float
+  Cpp_Acrescimo_por float
+  Cpp_CodigoAgrupada float
+  Ctp_Sequencia int [pk, increment, not null]
+  Cpp_IDConcBancaria varchar(150)
+  Note: '41.981 linhas'
+}
+
+Table Contas_Bancarias {
+  Cba_codigo int [not null]
+  Bcx_codigo int [not null]
+  Emp_codigo int [not null]
+  Cba_numero varchar(25) [not null]
+  Cba_dt_abertura datetime
+  Cba_gerente varchar(35)
+  Cba_Saldo_inicial float
+  Cba_tipo_conta char(1)
+  Cba_valor_tarifa float
+  Cba_situacao char(1)
+  Cba_Limite float
+  Cba_NIB varchar(30)
+  Cba_CodigoCedente varchar(10)
+  Cba_DigitoConta varchar(5)
+  Cba_PDV bit
+  Cba_CodigoTransmissao varchar(30)
+  Cba_CodigoModalidade varchar(10)
+  CbaLayoutremessa varchar(10)
+  Cba_LayoutVersaoAquivo varchar(10)
+  Cba_LayoutVersaoLote varchar(10)
+  indexes {
+    (Cba_codigo, Bcx_codigo, Emp_codigo) [pk]
+  }
+  Note: '19 linhas'
+}
+
+Table Contas_BancariasCobranca {
+  CbaCob_codigo int [pk, not null]
+  Cba_codigo int
+  Bcx_codigo int
+  Emp_codigo int
+  CbaCob_carteira varchar(10)
+  CbaCob_variacao varchar(10)
+  CbaCob_especie varchar(10)
+  CbaCob_Aceite nchar(1)
+  CbaCob_convenio varchar(15)
+  CbaCob_EspecieDocumento varchar(20)
+  CbaCob_MensagemLocalPag varchar(250)
+  CbaCob_Mensagem varchar(250)
+  CbaCob_SistemaCobranca varchar(30)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  CbaCob_CodigoInstrucao1 varchar(100)
+  CbaCob_CodigoInstrucao2 varchar(100)
+  CbaCob_Instrucao text
+  CbaCob_ValorMulta float
+  CbaCob_DataMulta datetime
+  CbaCob_ValorDesconto float
+  CbaCob_DataDesconto datetime
+  CbaCob_ValorAbatimento float
+  CbaCob_DataAbatimento datetime
+  CbaCob_PorcentagemMulta float
+  CbaCob_DataProtesto datetime
+  CbaCob_DiasMulta int
+  CbaCob_DiasDesconto int
+  CbaCob_DiasAbatimento int
+  CbaCob_DiasProtesto int
+  Note: '8 linhas'
+}
+
+Table contas_receber {
+  Ctr_codigo float [pk, not null]
+  Ctr_cod_documento nvarchar(20)
+  Ctr_forma_pag int
+  Ctr_valor_total_original money
+  Ctr_cliente_cod int
+  Ctr_cliente nvarchar(45)
+  Ctr_status nvarchar(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Tpd_codigo int
+  Ctr_juros_vl float
+  Ctr_juros_por float
+  Ctr_multa_vl float
+  Ctr_multa_por float
+  Ctr_Desconto_vl float
+  Ctr_Desconto_por float
+  Pco_codigo int
+  Cdc_codigo int
+  Ctr_obs text
+  Ctr_historico nvarchar(80)
+  Ctr_vinculo nvarchar(50)
+  Ctr_codigo_vinculo float
+  Ctr_nome nvarchar(100)
+  CTR_ControlReferencia char(2)
+  Ctr_cod_externo float
+  Tcf_codigo int
+  Ctr_recibo varchar(15)
+  Ctr_reciboImp bit
+  Ctr_reciboImpData datetime
+  Ctr_recibotemplate varchar(250)
+  ParSV_serie char(3)
+  Ctr_MesAnoRef varchar(10)
+  PdvCaixa_codigo float
+  Note: '9.076 linhas'
+}
+
+Table contas_Receber_det {
+  Ctr_codigo float
+  Ctr_parcela int
+  Ctr_documento nvarchar(20)
+  Ctr_dt_vencimento smalldatetime
+  Ctr_valor_vencimento money
+  Ctr_dt_pagamento smalldatetime
+  Ctr_valor_pagamento money
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Mdo_codigo int
+  Ctr_juros_vl float
+  Ctr_juros_por float
+  Ctr_multa_vl float
+  Ctr_multa_por float
+  Ctr_Desconto_vl float
+  Ctr_Desconto_por float
+  Ctr_situacao varchar(1)
+  ctr_codigo_det float
+  Ctr_duplicata varchar(15)
+  Ctr_duplicataImp bit
+  Ctr_duplicataImpData datetime
+  Ctr_Duplicatatemplate varchar(250)
+  Ctr_recibo varchar(15)
+  Ctr_reciboImp bit
+  Ctr_reciboImpData datetime
+  Ctr_recibotemplate varchar(250)
+  Ctr_CodigoBarra varchar(100)
+  ctr_remessa bit
+  Crt_Sequencia int [pk, increment, not null]
+  Note: '18.555 linhas'
+}
+
+Table Contas_receber_pag {
+  Crp_cod_pag float
+  Ctr_codigo float
+  Emp_codigo int
+  Ctr_parcelas int
+  Crp_numero varchar(25)
+  Mdo_codigo int
+  cba_codigo int
+  Crp_numero_banco int
+  Crp_nome_banco varchar(35)
+  Crp_cpf_cnpj_emitente varchar(20)
+  Crp_agencia varchar(10)
+  Crp_conta_corrente varchar(15)
+  Crp_numero_cheque varchar(15)
+  Crp_emitente varchar(35)
+  Crp_numero_cartao varchar(25)
+  Crp_liberacao_cartao varchar(15)
+  Crp_valor_pago float
+  Crp_data_pagamento datetime
+  Crp_juros_vl float
+  Crp_juros_por float
+  Crp_multa_vl float
+  Crp_multa_por float
+  Crp_Desconto_vl float
+  Crp_Desconto_por float
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ctr_codigo_det float
+  Crp_recibo varchar(15)
+  Crp_reciboImp bit
+  Crp_reciboImpData datetime
+  Crp_recibotemplate varchar(250)
+  Crp_TipoLancamento varchar(30)
+  Crp_Obs ntext
+  LotePagCtRec float
+  Mod_codigo int
+  Crp_Acrescimo_vl float
+  Crp_Acrescimo_por float
+  Cpr_CodigoAgrupada float
+  Crt_Sequencia int [pk, increment, not null]
+  Crp_IDConcBancaria varchar(150)
+  Note: '17.885 linhas'
+}
+
+Table Credito {
+  Credito_Codigo float [pk, not null]
+  Credito_TipoVinculo char(1)
+  Credito_CodigoVinculo int
+  Credito_Operacao char(1)
+  Credito_Valor float
+  Credito_Data datetime
+  Tpd_Codigo int
+  Credito_TpdcodigoOrigem int
+  Credito_CodigoDoc varchar(15)
+  Credito_Obs varchar(500)
+  Credito_Situacao char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Credito_Antecipado char(2)
+  Credito_Docvenda bit
+  ParSV_serie char(3)
+  Emp_codigo int
+  Note: '7.477 linhas'
+}
+
+Table CreditoIndicacao {
+  CredInd_Codigo float [pk, not null]
+  Ind_Codigo int
+  CredInd_DtProcessar datetime
+  CredInd_DtInclusao datetime
+  CredInd_Operacao char(1)
+  CredInd_Valor float
+  Tpd_codigo int
+  CredInd_CodDoc varchar(20)
+  Pco_codigo int
+  Cdc_codigo int
+  CredInd_Obs text
+  Ret_codigo float
+  CredInd_ContaRefPag float
+  CredInd_parcela int
+  CredInd_situacao char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '1 linhas'
+}
+
+Table FechamentoContas {
+  Cba_codigo int [pk, not null]
+  FechContas_data datetime
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_cod_alteracao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  Note: '15 linhas'
+}
+
+Table Plano_Contas {
+  Pco_codigo int [pk, not null]
+  Pco_descricao varchar(60)
+  Pco_tipo char(1)
+  Pco_pai int
+  Pco_CreditoDebito char(1)
+  Pco_cod_masc varchar(10)
+  Pco_FixaVariavel varchar(1)
+  Pco_situacao char(1)
+  Pco_Aporte char(1)
+  Pct_codigo int
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  usr_cod_alteracao int
+  Pco_hierarquia varchar(20)
+  Pco_DRE varchar(50)
+  Pco_CustoMercVendida bit
+  Note: '140 linhas'
+}
+
+Table Plano_Contas_Tipo {
+  Pct_codigo int [pk, not null]
+  Pct_descricao varchar(40)
+  Pct_situacao char(1)
+  Note: '7 linhas'
+}
+
+Table Centro_de_custo {
+  Cdc_codigo int [pk, not null]
+  Cdc_descricao varchar(50)
+  Cdc_obs text
+  Cdc_apelido varchar(15)
+  Cdc_situacao char(1)
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  usr_cod_alteracao int
+  Note: '4 linhas'
+}
+
+Table Indicacoes {
+  Ind_codigo int [pk, not null]
+  Ind_Nome nvarchar(60)
+  Ind_Endereco nvarchar(60)
+  Ind_numero nvarchar(10)
+  Ind_complemento nvarchar(40)
+  Ind_Bairro nvarchar(25)
+  Ind_CodCidade nvarchar(10)
+  Ind_Cidade nvarchar(25)
+  Ind_UF nvarchar(2)
+  Ind_CEP nvarchar(14)
+  Ind_Dtnacimento nvarchar(5)
+  Ind_situacao char(1)
+  Ind_vinculo nvarchar(20)
+  Ind_Ativo nvarchar(3)
+  Ind_profissao nvarchar(25)
+  Ind_estadocivil nvarchar(15)
+  Ind_conjuge nvarchar(60)
+  Ind_dtnasc_conjuge nvarchar(5)
+  Ind_comercial nvarchar(22)
+  Ind_residencial nvarchar(22)
+  Ind_fax nvarchar(22)
+  Ind_celular nvarchar(12)
+  Ind_email nvarchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ind_banco varchar(30)
+  ind_num_banco varchar(5)
+  ind_num_agencia varchar(5)
+  ind_num_conta varchar(10)
+  ind_banco_endereco varchar(45)
+  ind_banco_end_numero varchar(10)
+  ind_banco_complemento varchar(40)
+  ind_banco_bairro varchar(40)
+  ind_banco_cidade varchar(40)
+  ind_banco_uf varchar(2)
+  fun_codigo int
+  Emp_codigo int
+  CatProfExt_Codigo float
+  Note: '1.316 linhas'
+}
+
+Table Modo {
+  Mdo_codigo int [pk, not null]
+  Mdo_nome varchar(30)
+  Mdo_taxa_Adm float
+  Mdo_prazo int
+  Mdo_Dia_fixo int
+  Mdo_situacao char(1)
+  Mdo_tipo char(1)
+  Mdo_obs varchar(255)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Emp_codigo int
+  SPEDFormaPag_codigo nvarchar(2)
+  EFDR150_Codigo int
+  CartBan_Codigo int
+  Note: '26 linhas'
+}
+
+Table Motivo_devolucao {
+  Mod_codigo int [pk, not null]
+  Mod_descricao nvarchar(30)
+  Mod_situacao char(1)
+  Mod_tipo char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Note: '16 linhas'
+}
+
+Table Municipio {
+  mun_codigo int [pk, not null]
+  mun_nome nvarchar(40)
+  mun_uf char(2)
+  mun_cep_inicial nvarchar(18)
+  mun_cep_final nvarchar(8)
+  usr_cod_criacao int [not null]
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  mun_situacao char(1)
+  Paises_codigo int
+  Regiao_Codigo int
+  Mun_CodIBGE varchar(10)
+  Emp_codigo int
+  Note: '569 linhas'
+}
+
+Table ParamentrosSerieVenda {
+  ParSV_serie char(3) [pk, not null]
+  ParSV_numeroOrc float
+  ParSV_numeroPed float
+  ParSV_Descricao varchar(50)
+  ParSV_situacao bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '6 linhas'
+}
+
+Table Reserva_tecnica {
+  Ret_codigo float [pk, not null]
+  Ret_projeto_avulsa float
+  Ret_tipo nvarchar(15)
+  Ret_data datetime
+  Cli_codigo float
+  Ind_codigo float
+  Ret_observacao text
+  Ret_tec_luminaria float
+  Ret_tec_materiais float
+  Ret_tec_servico float
+  Ret_tec_total float
+  Ret_situacao nvarchar(15)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Ret_TpFinanceiro char(1)
+  ParSV_serie char(3)
+  Note: '1.212 linhas'
+}
+
+Table TipoContaFinanceira {
+  Tcf_codigo int [pk, not null]
+  Tcf_descricao varchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '6 linhas'
+}
+
+Table Tipo_documento {
+  Tpd_codigo int [pk, not null]
+  Tpd_descricao varchar(40)
+  Tpd_situacao char(1)
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  usr_cod_alteracao int
+  Note: '33 linhas'
+}
+
+// ---------- relacoes DECLARADAS no banco ----------
+Ref: Bancos_Caixas.Ban_codigo > Bancos.Ban_Codigo
+Ref: Bancos_Caixas.mun_codigo > Municipio.mun_codigo
+Ref: contas_apagar.Cdc_codigo > Centro_de_custo.Cdc_codigo
+Ref: contas_apagar.Pco_codigo > Plano_Contas.Pco_codigo
+Ref: contas_apagar.Tcf_codigo > TipoContaFinanceira.Tcf_codigo
+Ref: Contas_Bancarias.Bcx_codigo > Bancos_Caixas.Bcx_codigo
+Ref: Contas_Bancarias.Emp_codigo > Bancos_Caixas.Emp_codigo
+Ref: Contas_BancariasCobranca.CbaCob_codigo > Contas_BancariasCobranca.CbaCob_codigo
+Ref: contas_receber.Cdc_codigo > Centro_de_custo.Cdc_codigo
+Ref: contas_receber.Pco_codigo > Plano_Contas.Pco_codigo
+Ref: contas_receber.Tcf_codigo > TipoContaFinanceira.Tcf_codigo
+Ref: CreditoIndicacao.Ind_Codigo > Indicacoes.Ind_codigo
+Ref: CreditoIndicacao.Tpd_codigo > Tipo_documento.Tpd_codigo
+
+// ---------- relacoes INFERIDAS, nao declaradas pelo legado ----------
+// nome: mesma coluna, mesmo tipo, e a coluna e PK simples do destino.
+// sinonimo: prefixo diferente para a MESMA coisa (Pro_codnosso = Epr_Codnosso).
+// CONFERIR antes de tratar como verdade.
+Ref: contas_apagar.Tpd_codigo > Tipo_documento.Tpd_codigo // inferida (nome)
+Ref: contas_apagar.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: contas_apagar_det.Ctp_codigo > contas_apagar.Ctp_codigo // inferida (nome)
+Ref: contas_apagar_det.Mdo_codigo > Modo.Mdo_codigo // inferida (nome)
+Ref: Contas_apagar_pag.mdo_codigo > Modo.Mdo_codigo // inferida (nome)
+Ref: Contas_apagar_pag.cba_codigo > FechamentoContas.Cba_codigo // inferida (nome)
+Ref: Contas_apagar_pag.Mod_codigo > Motivo_devolucao.Mod_codigo // inferida (nome)
+Ref: Contas_Bancarias.Cba_codigo > FechamentoContas.Cba_codigo // inferida (nome)
+Ref: Contas_BancariasCobranca.Cba_codigo > FechamentoContas.Cba_codigo // inferida (nome)
+Ref: contas_receber.Tpd_codigo > Tipo_documento.Tpd_codigo // inferida (nome)
+Ref: contas_receber.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: contas_Receber_det.Ctr_codigo > contas_receber.Ctr_codigo // inferida (nome)
+Ref: contas_Receber_det.Mdo_codigo > Modo.Mdo_codigo // inferida (nome)
+Ref: Contas_receber_pag.Ctr_codigo > contas_receber.Ctr_codigo // inferida (nome)
+Ref: Contas_receber_pag.Mdo_codigo > Modo.Mdo_codigo // inferida (nome)
+Ref: Contas_receber_pag.cba_codigo > FechamentoContas.Cba_codigo // inferida (nome)
+Ref: Contas_receber_pag.Mod_codigo > Motivo_devolucao.Mod_codigo // inferida (nome)
+Ref: Credito.Tpd_Codigo > Tipo_documento.Tpd_codigo // inferida (nome)
+Ref: Credito.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: CreditoIndicacao.Pco_codigo > Plano_Contas.Pco_codigo // inferida (nome)
+Ref: CreditoIndicacao.Cdc_codigo > Centro_de_custo.Cdc_codigo // inferida (nome)
+Ref: CreditoIndicacao.Ret_codigo > Reserva_tecnica.Ret_codigo // inferida (nome)
+Ref: Plano_Contas.Pct_codigo > Plano_Contas_Tipo.Pct_codigo // inferida (nome)
+Ref: Reserva_tecnica.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)

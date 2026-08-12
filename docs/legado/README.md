@@ -662,14 +662,33 @@ Por isso `gera-dbml.py` acrescenta **relações inferidas**, marcadas como tal n
 | Arquivo | Tabelas | Relações | Das quais inferidas |
 |---|--:|--:|--:|
 | `softlux-nucleo.dbml` | 30 | 34 | 23 |
-| `softlux-completo.dbml` | 212 | 309 | 179 |
+| `softlux-vendas.dbml` | 39 | 55 | 24 |
+| `softlux-produto.dbml` | 26 | 33 | 28 |
+| `softlux-estoque.dbml` | 18 | 23 | 19 |
+| `softlux-compras.dbml` | 16 | 21 | 17 |
+| `softlux-financeiro.dbml` | 24 | 37 | 24 |
+| `softlux-fiscal.dbml` | 24 | 34 | 19 |
+| `softlux-sistema.dbml` | 13 | 2 | 1 |
+| `softlux-completo.dbml` ⚠️ | 212 | 309 | 179 |
 
 **As inferidas são hipótese, não verdade.** Foram checadas por amostragem, não uma a uma. Antes de
 usar qualquer uma como regra de migração, confira contra o SQL real em `exe/sql-do-codigo.sql`.
 
+⚠️ **`softlux-completo.dbml` não importa no ChartDB.** Com 212 tabelas e 5.279 linhas o parser
+DBML trava na validação — sem mensagem de erro, o botão `Import` simplesmente nunca habilita. Não é
+limite de plano: acontece igual no self-host. Por isso existem os arquivos por módulo, que importam
+sem problema e ainda produzem diagrama que alguém consegue ler. O `completo` fica como referência
+de texto, para `grep` e diff.
+
+Cada módulo traz suas tabelas **mais as vizinhas puxadas por relação** — sem isso `VendaProduto`
+apareceria sem `produtos` do lado, e o diagrama não explicaria nada.
+
 ### Como importar
 
-**ChartDB** (open source, AGPL, self-hostável — `docker run -p 8080:80 ghcr.io/chartdb/chartdb`):
+**ChartDB self-host** — `docker run -d --name chartdb -p 8080:80 ghcr.io/chartdb/chartdb:latest`,
+depois `http://127.0.0.1:8080`. Testado em 2026-08-11: sem conta, sem banner de trial, e o
+schema não sai da máquina. No app hospedado o mesmo import esbarra em limite de plano.
+Já dentro:
 abrir, `Import` → `DBML`, colar o conteúdo do arquivo. Começar pelo `nucleo`; o `completo` cabe, mas
 só é legível com filtro e áreas.
 

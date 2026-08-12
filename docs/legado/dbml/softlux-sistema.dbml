@@ -1,0 +1,170 @@
+// Softlux - modulo sistema
+// Gerado por docs/legado/gera-dbml.py a partir de docs/legado/schema/*.csv.
+// 12 tabelas do modulo + 1 vizinhas puxadas por relacao.
+// Importar em ChartDB: Import > DBML. Não editar à mão: regerar.
+
+Table SisBackup {
+  ID numeric(18,0) [not null]
+  Datahora datetime [not null]
+  CodUsuario numeric(18,0)
+  NomeArquivo varchar(100)
+  local_arquivo varchar(255)
+  Note: '826 linhas - SEM chave primaria'
+}
+
+Table Siscontrole {
+  Sct_codigo int [pk, not null]
+  Sct_texto text
+  Sct_dias varchar(50)
+  Sct_data varchar(50)
+  Sct_valido varchar(50)
+  Note: '57 linhas'
+}
+
+Table SisGrupo_Usuario {
+  Cod_grupo int [pk, not null]
+  Descricao char(25)
+  SisGru_situacao char(1)
+  SisGru_GrupoPrivado bit
+  Note: '7 linhas'
+}
+
+Table SisOpcoes {
+  id numeric(18,0) [not null]
+  idPai numeric(18,0) [not null]
+  Caption varchar(80)
+  NomeMenu varchar(100)
+  idApresentacao numeric(18,0)
+  SisOpcoes_paises varchar(50)
+  SisOpcoes_Sistema varchar(10)
+  MenuWeb bit
+  Note: '287 linhas - SEM chave primaria'
+}
+
+Table SisOpcoesEspecial {
+  SisOpEsp_Codigo float [pk, not null]
+  SisOpEsp_Titulo varchar(40)
+  SisOpEsp_Descricao varchar(250)
+  Note: '52 linhas'
+}
+
+Table SisPermissao {
+  id numeric(18,0) [not null]
+  idUsuario numeric(18,0) [not null]
+  idPai numeric(18,0) [not null]
+  Alterar char(1)
+  Excluir char(1)
+  Consultar char(1)
+  Imprimir char(1)
+  Inserir char(1)
+  idApresentacao numeric(18,0)
+  idGrupo numeric(18,0)
+  Emp_codigo varchar(10)
+  Note: '875 linhas - SEM chave primaria'
+}
+
+Table SisPermissaoEspecial {
+  SisPerEsp_Codigo float [pk, not null]
+  SisOpEsp_Codigo float
+  idUsuario numeric(18,0)
+  idGrupo numeric(18,0)
+  SisPerEsp_permissao bit
+  Emp_codigo int
+  Note: '259 linhas'
+}
+
+Table SisSeqTabela {
+  SeqTab_Tabela varchar(50) [not null]
+  SeqTab_Campo varchar(50) [not null]
+  SeqTab_Numero float
+  Emp_codigo int [not null]
+  indexes {
+    (SeqTab_Tabela, SeqTab_Campo, Emp_codigo) [pk]
+  }
+  Note: '226 linhas'
+}
+
+Table SisUsuarios {
+  Id numeric(18,0) [pk, not null]
+  Login varchar(15)
+  Senha varchar(1000)
+  Nome varchar(40)
+  Grupo int
+  Nivel char(1)
+  SisUsu_situacao char(1)
+  SisUsu_monitor char(1)
+  fun_codigo int
+  SisUsu_EmailPorta int
+  SisUsu_EmailUsuario varchar(30)
+  SisUsu_EmailSenha varchar(30)
+  SisUsu_EmailNome varchar(30)
+  SisUsu_EmailSMTP varchar(200)
+  SisUsu_EmailEmail varchar(200)
+  Emp_codigo int
+  SisUsu_EmailTLS bit
+  SisUsu_EmailSSL bit
+  SisUsu_PDVSangria bit
+  SisUsu_PDVOperar bit
+  SisUsu_LiberarSepEnt bit
+  SisUsu_EnviarEmailEstoque bit
+  SisUsu_TelefoneWhatsapp varchar(20)
+  Note: '79 linhas'
+}
+
+Table SisUsuariosContasBancarias {
+  ID int [not null]
+  cba_codigo int [not null]
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  indexes {
+    (ID, cba_codigo) [pk]
+  }
+  Note: '14 linhas'
+}
+
+Table SisUsuariosGrid {
+  UsuGrid_NomeColuna varchar(200) [not null]
+  UsuGrid_Codigo float [not null]
+  UsuGrid_Grid varchar(30)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  UsuGrid_Ordem int
+  UsuGrid_TamanhoColuna int
+  emp_codigo int
+  indexes {
+    (UsuGrid_NomeColuna, UsuGrid_Codigo) [pk]
+  }
+  Note: '397 linhas'
+}
+
+Table SisVersao {
+  banco int
+  executavel float
+  ajuda int
+  relatorio int
+  data datetime
+  Note: '1 linhas - SEM chave primaria'
+}
+
+Table FechamentoContas {
+  Cba_codigo int [pk, not null]
+  FechContas_data datetime
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_cod_alteracao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  Note: '15 linhas'
+}
+
+// ---------- relacoes DECLARADAS no banco ----------
+Ref: SisPermissaoEspecial.SisOpEsp_Codigo > SisOpcoesEspecial.SisOpEsp_Codigo
+
+// ---------- relacoes INFERIDAS, nao declaradas pelo legado ----------
+// nome: mesma coluna, mesmo tipo, e a coluna e PK simples do destino.
+// sinonimo: prefixo diferente para a MESMA coisa (Pro_codnosso = Epr_Codnosso).
+// CONFERIR antes de tratar como verdade.
+Ref: SisUsuariosContasBancarias.cba_codigo > FechamentoContas.Cba_codigo // inferida (nome)

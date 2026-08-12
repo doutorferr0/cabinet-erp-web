@@ -65,10 +65,13 @@ for t, cs in tcols.items():
     for c in cs:
         tipo_base[(t, c['coluna'].lower())] = c['tipo']
 
-dono = {}                      # coluna(lower) -> tabela que a tem como PK simples
+# coluna(lower) -> (tabela, nome REAL da coluna no destino).
+# Guardar o nome real importa: DBML é case-sensitive, e o legado escreve a mesma
+# coluna como For_codigo numa tabela e for_codigo em outra.
+dono = {}
 for t, k in pk.items():
     if len(k) == 1:
-        dono.setdefault(k[0].lower(), []).append(t)
+        dono.setdefault(k[0].lower(), []).append((t, k[0]))
 dono = {c: ts[0] for c, ts in dono.items() if len(ts) == 1}   # ambíguo fica de fora
 
 ocorre = collections.Counter()
@@ -117,8 +120,11 @@ for t, cs in tcols.items():
             if alvo in tcols:
                 add(t, c['coluna'], alvo, alvo_col, 'sinonimo')
             continue
-        alvo = dono.get(cl)
-        if not alvo or alvo == t:
+        achado = dono.get(cl)
+        if not achado:
+            continue
+        alvo, alvo_col = achado
+        if alvo == t:
             continue
         if cl in RUIDO or ocorre[cl] > LIMITE_RUIDO:
             continue
@@ -126,7 +132,7 @@ for t, cs in tcols.items():
             continue                      # tipo divergente: suspeito, não desenha
         if len(pk.get(t, [])) == 1 and pk[t][0].lower() == cl:
             continue                      # é a própria PK da tabela
-        add(t, c['coluna'], alvo, c['coluna'], 'nome')
+        add(t, c['coluna'], alvo, alvo_col, 'nome')
 
 # ---------- núcleo do negócio ----------
 NUCLEO = [
@@ -225,6 +231,46 @@ escreve('softlux-completo.dbml', com_dado,
 escreve('softlux-nucleo.dbml', NUCLEO,
         'Softlux - nucleo do negocio',
         'Recorte do caminho principal: cadastro, produto, preco, venda, compra, estoque.')
+
+# ---------- por modulo ----------
+# O arquivo completo (212 tabelas, 5.279 linhas) NAO passa no parser DBML do
+# ChartDB: a validacao trava sem erro e o botao Import nunca habilita. Por modulo
+# valida e, ainda melhor, gera diagrama que alguem consegue ler.
+MODULOS = [
+    ('vendas',      r'^(Venda|Orcamento|Pasta|Ambiente|Obras|CategoriaVenda|Promocao|Meta|Reserva_tecnica|Indicacao|Indicacoes)'),
+    ('compras',     r'^(pedido_compra|Pedido_compra|ordem_compra|Ordem_compra|Nota_entrada|nota_entrada|CompraEstoque|Cotacao)'),
+    ('estoque',     r'(?i)^(estoque|balanco|giroestoque|transferencia|requisicao|inventario)'),
+    ('produto',     r'(?i)^(produto|preco_produto|custo|indice_preco|acabamento|tamanho|grupoproduto|tributacao|ncm)'),
+    ('financeiro',  r'(?i)^(contas_|cheque|banco|plano_contas|credito|fechamentocontas|duplicata|boleto|caixa|factoring|rateio)'),
+    ('fiscal',      r'(?i)^(notafiscal|nfse|mdfe|tabelaimposto|cfop|issqn|ecf|tipo(csosn|cofins|ipi|pis|origem|tributada))'),
+    ('sistema',     r'^Sis'),
+]
+
+def satelites(base):
+    """Puxa o vizinho direto de cada relacao: sem ele o diagrama do modulo fica
+    com pontas soltas (VendaProduto sem produtos nao explica nada)."""
+    dentro = set(base)
+    extra = set()
+    for o, co, d, cd in rel_reais:
+        if o in dentro and d not in dentro:
+            extra.add(d)
+    for o, co, d, cd, m in rel_inferidas:
+        if o in dentro and d not in dentro:
+            extra.add(d)
+    return [t for t in extra if linhas.get(t, 0) > 0]
+
+print()
+for nome, pat in MODULOS:
+    rx = re.compile(pat)
+    base = [t for t in com_dado if rx.match(t)]
+    if not base:
+        print('modulo %s: nenhuma tabela casou' % nome)
+        continue
+    tabelas = base + sorted(set(satelites(base)) - set(base))
+    escreve('softlux-%s.dbml' % nome, tabelas,
+            'Softlux - modulo %s' % nome,
+            '%d tabelas do modulo + %d vizinhas puxadas por relacao.'
+            % (len(base), len(tabelas) - len(base)))
 
 print('\ntotal inferidas no banco inteiro: %d (contra %d declaradas)'
       % (len(rel_inferidas), len(rel_reais)))

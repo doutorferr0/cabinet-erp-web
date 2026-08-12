@@ -1,0 +1,2298 @@
+// Softlux - as quatro frentes do escopo inicial
+// Gerado por docs/legado/gera-dbml.py a partir de docs/legado/schema/*.csv.
+// Cadastro, produto e preco, venda, compra e estoque num arquivo so.
+// Importar em ChartDB: Import > DBML. Não editar à mão: regerar.
+
+Table Acabamento {
+  CodAcabamento nvarchar(10) [pk, not null]
+  DescAcabamento nvarchar(35)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Acab_situacao char(1)
+  Emp_codigo int
+  DescAcabamento2 varchar(35)
+  acab_tipo varchar(1)
+  acab_tipo2 varchar(1)
+  Note: '248 linhas'
+}
+
+Table Ambiente {
+  CodAmbiente int [pk, not null]
+  DescAmbiente nvarchar(35)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Amb_situacao char(1)
+  Emp_codigo int
+  Note: '346 linhas'
+}
+
+Table BalancoEstoque {
+  BalEst_Codigo float [pk, not null]
+  BalEst_Descricao nvarchar(100)
+  BalEst_Data datetime
+  BalEst_Processado bit
+  BalEst_DataProc datetime
+  BalEst_UsuarioProc int
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '324 linhas'
+}
+
+Table BalancoEstoqueProdutos {
+  BalEstProd_Codigo float [pk, not null]
+  BalEst_Codigo float
+  Pro_Codnosso nvarchar(20)
+  CodAcabamento nvarchar(10)
+  BalEstProd_Quantidade float
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  BalEstProd_QuantNaoSeparada float
+  Note: '7.412 linhas'
+}
+
+Table CategoriaVenda {
+  CatVen_Codigo int [pk, not null]
+  CatVen_Descricao varchar(50)
+  CatVen_Tipo varchar(1)
+  CatVen_Ativo char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  CatVen_Financeiro bit
+  CatVen_Compras bit
+  CatVen_Estoque bit
+  Emp_codigo int
+  TpCatVenda_codigo int
+  Note: '8 linhas'
+}
+
+Table Clientes {
+  Cli_Codigo int [pk, not null]
+  Cli_cnpj_cpf nvarchar(14)
+  Cli_IE_RG nvarchar(15)
+  Cli_tp_pessoa nvarchar(10)
+  Cli_rg_org nvarchar(3)
+  Cli_rg_org_uf nvarchar(2)
+  Cli_Nome nvarchar(60)
+  Cli_Endereco nvarchar(50)
+  Cli_numero nvarchar(10)
+  Cli_complemento nvarchar(40)
+  Cli_Bairro nvarchar(25)
+  Cli_codcidade int
+  Cli_Cidade nvarchar(25)
+  Cli_UF nvarchar(2)
+  Cli_CEP nvarchar(14)
+  Cli_Endereco_cob nvarchar(50)
+  Cli_numero_cob nvarchar(10)
+  Cli_complemento_cob nvarchar(40)
+  Cli_Bairro_cob nvarchar(25)
+  Cli_Cidade_cob nvarchar(25)
+  Cli_codcidade_cob int
+  Cli_UF_cob nvarchar(2)
+  Cli_CEP_cob nvarchar(14)
+  Cli_Construcao bit
+  Cli_OBS ntext
+  Cli_Fcomercial nvarchar(22)
+  Cli_Fresidencial nvarchar(22)
+  Cli_fax nvarchar(12)
+  Cli_celular nvarchar(22)
+  Ind_codigo int
+  Cli_dataNasc nvarchar(10)
+  Cli_estadocivil nvarchar(15)
+  Cli_conjuge nvarchar(40)
+  Cli_dtnasc_conjuge nvarchar(10)
+  Cli_conj_Fcomercial nvarchar(22)
+  Cli_conj_Fresidencial nvarchar(22)
+  Cli_conj_celular nvarchar(12)
+  Cli_email nvarchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  cli_situacao char(1)
+  Cli_LimitCredVend float
+  Cli_LimitCredTotal float
+  cli_LimiteDesconto float
+  Cli_TipoConsumidor char(1)
+  Cli_Endereco_cor varchar(50)
+  Cli_numero_cor varchar(10)
+  Cli_complemento_cor varchar(40)
+  Cli_Bairro_cor varchar(25)
+  Cli_codcidade_cor int
+  Cli_UF_cor varchar(2)
+  Cli_CEP_cor varchar(14)
+  Cli_empresa_cor varchar(60)
+  Cli_cargo_cor varchar(60)
+  Cli_banco varchar(5)
+  Cli_agencia varchar(25)
+  Cli_conta varchar(25)
+  Cli_EnderecoBanco varchar(150)
+  Cli_SWIFT_BIC varchar(25)
+  Cli_ABA varchar(25)
+  Cli_IBAN varchar(25)
+  cli_naturalidade int
+  cli_nacionalidade int
+  cli_CNPJComercial varchar(14)
+  cli_TempoCtbancaria varchar(10)
+  cli_pai varchar(60)
+  cli_mae varchar(60)
+  cli_PropCFP varchar(14)
+  cli_PropRG varchar(14)
+  cli_PropRgOrg varchar(3)
+  cli_PropRgOrgUF varchar(2)
+  cli_PropNome varchar(60)
+  cli_PropEndereco varchar(50)
+  cli_PropNumero varchar(10)
+  cli_PropComplemento varchar(25)
+  cli_PropCodCidade int
+  cli_PropCEP varchar(14)
+  cli_PropBairro varchar(25)
+  Emp_CodClienteFornec float
+  Cli_Suframa varchar(12)
+  COD_ATIVID int
+  Cli_DataFundacao_cor datetime
+  CatCli_Codigo int
+  cli_sexo varchar(10)
+  cli_NomeFantasia varchar(100)
+  cli_isento bit
+  Cli_CaminhoFoto varchar(300)
+  Cli_EnderecoCompl nvarchar(50)
+  Cli_NumCompl nvarchar(50)
+  Cli_ComplEndereco nvarchar(40)
+  Emp_codigo int
+  Cli_Facebook varchar(200)
+  Cli_Instagram varchar(200)
+  Cli_IEProdRural varchar(30)
+  Cli_Contribuinte bit
+  Note: '9.322 linhas'
+}
+
+Table Custo {
+  Cus_codigo int [not null]
+  for_codigo int [not null]
+  Cus_Nome nvarchar(35) [not null]
+  Cus_desconto1 money
+  Cus_desconto2 money
+  Cus_desconto3 money
+  Cus_desconto4 money
+  Cus_IPI money
+  Cus_Frete money
+  Cus_Icms money
+  Cus_Embalagens money
+  Cus_Financeira money
+  Cus_Simples money
+  Cus_outros money
+  Cus_obs ntext
+  Cus_MargValAgreg float
+  Cus_IcmsDestino float
+  Cus_TributacaoICMS varchar(30)
+  Cus_situacao char(1)
+  Cus_Importacao float
+  Cus_Cambio float
+  Cus_TpVlNFo char(1)
+  Cus_NFoICMS bit
+  Cus_NFoOutros bit
+  Cus_NFoIPI bit
+  Cus_NFoSimples bit
+  Cus_NFoEmbalagem bit
+  Cus_NFoFinanceiro bit
+  Cus_NFoFrete bit
+  Cus_NFoDesconto bit
+  Cus_ICMSDifAlqIPI bit
+  Cus_PorcCartao float
+  Cus_STEmbalagem bit
+  Cus_CreditoICMS float
+  Cus_CreditoPIS float
+  Cus_CreditoCOFINS float
+  Cus_CustoFixo float
+  Cus_Desconto float
+  Cus_FreteemCompra bit
+  Cus_ICMSValorCompra bit
+  indexes {
+    (Cus_codigo, for_codigo, Cus_Nome) [pk]
+  }
+  Note: '385 linhas'
+}
+
+Table custo_log {
+  Csl_codigo float [pk, not null]
+  Cus_codigo int [not null]
+  for_codigo int [not null]
+  Csl_Nome nvarchar(35) [not null]
+  Csl_desconto1 money
+  Csl_desconto2 money
+  Csl_desconto3 money
+  Csl_desconto4 money
+  Csl_IPI money
+  Csl_Frete money
+  Csl_Icms money
+  Csl_Embalagens money
+  Csl_Financeira money
+  Csl_Simples money
+  Csl_outros money
+  Csl_obs ntext
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  Csl_MargValAgreg float
+  Csl_IcmsDestino float
+  Csl_TributacaoICMS varchar(30)
+  Csl_Importacao float
+  Csl_Cambio float
+  Csl_PorcCartao float
+  Csl_STEmbalagem bit
+  Csl_CreditoICMS float
+  Csl_CreditoPIS float
+  Csl_CreditoCOFINS float
+  Csl_CustoFixo float
+  Csl_Desconto float
+  Csl_FreteemCompra bit
+  Note: '719 linhas'
+}
+
+Table estoque_log {
+  Elg_codigo float
+  Elg_tipo varchar(25)
+  Elg_doc float
+  Elg_acao varchar(1)
+  Elg_operacao varchar(1)
+  Elg_pai float
+  Elg_data datetime
+  Elg_usuario int
+  Pro_codnosso varchar(21)
+  CodAcabamento varchar(10)
+  Elg_quantidade float
+  EstTp_Codigo int
+  ParSV_serie char(3)
+  Tam_codigo float
+  Elg_Sequencia int [pk, increment, not null]
+  Emp_codigo int
+  Note: '402.161 linhas'
+}
+
+Table Estoque_produto {
+  Epr_Codnosso nvarchar(20) [not null]
+  Epr_Acabamento nvarchar(10) [not null]
+  Epr_estoque float
+  Epr_PreEstoque float
+  EstTp_Codigo int [not null]
+  Emp_codigo int [not null]
+  Tam_codigo float [not null]
+  indexes {
+    (Epr_Codnosso, Epr_Acabamento, EstTp_Codigo, Tam_codigo, Emp_codigo) [pk]
+  }
+  Note: '141.043 linhas'
+}
+
+Table estoque_produto_dia {
+  Epd_data smalldatetime [not null]
+  Epd_hora varchar(10) [not null]
+  Epd_Codnosso varchar(20) [not null]
+  Epd_Acabamento nvarchar(10) [not null]
+  Epd_estoque float
+  Epd_PreEstoque float
+  EstTp_Codigo int [not null]
+  Tam_codigo float
+  Emp_codigo int [not null]
+  indexes {
+    (Epd_data, Epd_hora, Epd_Codnosso, Epd_Acabamento, EstTp_Codigo, Emp_codigo) [pk]
+  }
+  Note: '8.678.690 linhas'
+}
+
+Table EstoqueTipo {
+  EstTp_Codigo int [pk, not null]
+  EstTp_Descricao varchar(35)
+  Emp_codigo int
+  EstTp_Situacao char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  EstTp_externo bit
+  Note: '4 linhas'
+}
+
+Table fornecedor {
+  For_codigo int [pk, not null]
+  For_Sigla nvarchar(3)
+  For_cnpj_cpf nvarchar(14)
+  For_IE nvarchar(30)
+  For_Nome nvarchar(45)
+  For_Razao nvarchar(45)
+  For_Endereco nvarchar(50)
+  For_numero nvarchar(10)
+  For_complemento nvarchar(40)
+  For_Bairro nvarchar(25)
+  For_codcidade int
+  For_Cidade nvarchar(25)
+  For_UF nvarchar(2)
+  For_CEP nvarchar(14)
+  For_tp_material nvarchar(30)
+  For_fone1 nvarchar(22)
+  For_fone2 nvarchar(22)
+  For_fax nvarchar(22)
+  For_web nvarchar(50)
+  For_email nvarchar(50)
+  For_prazo_entrega int
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  for_classificacao varchar(1)
+  for_obs text
+  for_nome_especial varchar(45)
+  for_banco varchar(45)
+  for_cod_agencia varchar(20)
+  for_conta varchar(20)
+  for_operacao varchar(30)
+  for_codigo_banco varchar(6)
+  For_prazo_medio_pag int
+  for_faturamento_minimo float
+  For_TipoComunic1 varchar(15)
+  For_TipoComunic2 varchar(15)
+  For_EnderecoComunic1 varchar(50)
+  For_EnderecoComunic2 varchar(50)
+  ban_codigo char(4)
+  Tra_codigo int
+  col_cidade varchar(25)
+  col_uf varchar(2)
+  for_situacao char(1)
+  For_NIB varchar(30)
+  For_Iban varchar(30)
+  For_BicSwift varchar(30)
+  Emp_CodClienteFornec float
+  For_Tipopessoa char(1)
+  For_suframa varchar(12)
+  For_JuntarCodigoAcabOrdem bit
+  For_ForneceTipoProduto int
+  Emp_codigo int
+  Fpg_codigo int
+  For_Email_Ordem nvarchar(50)
+  For_Facebook varchar(200)
+  For_Instagram varchar(200)
+  For_EmpresaCompradora int
+  Note: '868 linhas'
+}
+
+Table FornecedorEmpresaCompradora {
+  ForEmpCom_Codigo float [pk, not null]
+  For_codigo int
+  Emp_codigo int
+  ForEmpCom_data datetime
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  usr_cod_criacao int
+  Note: '227 linhas'
+}
+
+Table FornecedorGrupProd {
+  for_codigo int [not null]
+  GrupoProduto_Codigo int [not null]
+  ForGruProd_Porc float
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  indexes {
+    (for_codigo, GrupoProduto_Codigo) [pk]
+  }
+  Note: '7.252 linhas'
+}
+
+Table FornecedorRTGrupProd {
+  for_codigo int [not null]
+  GrupoProduto_Codigo int [not null]
+  ForRTGruProd_Porc float
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  indexes {
+    (for_codigo, GrupoProduto_Codigo) [pk]
+  }
+  Note: '7.504 linhas'
+}
+
+Table Funcionario {
+  Fun_CPF float [pk, not null]
+  Fun_Nome nvarchar(60)
+  Fun_RG nvarchar(15)
+  Fun_Orgao nvarchar(6)
+  Fun_org_uf nvarchar(2)
+  Fun_Endereco nvarchar(60)
+  Fun_numero nvarchar(10)
+  Fun_complemento nvarchar(40)
+  Fun_Bairro nvarchar(25)
+  Fun_codcidade int
+  Fun_Cidade nvarchar(25)
+  Fun_UF nvarchar(2)
+  Fun_CEP nvarchar(14)
+  Fun_Dtnacimento smalldatetime
+  COD_ATIVID int
+  Fun_situacao char(1)
+  Fun_vinculo nvarchar(20)
+  Fun_Ativo nvarchar(3)
+  Fun_estadocivil nvarchar(15)
+  Fun_conjuge nvarchar(40)
+  Fun_dtnasc_conjuge smalldatetime
+  Fun_comercial nvarchar(22)
+  Fun_residencial nvarchar(22)
+  Fun_celular nvarchar(22)
+  Fun_atendimento nvarchar(3)
+  Fun_cargo nvarchar(45)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Fun_Sexo char(1)
+  GrauInst_Codigo int
+  Setor_Codigo int
+  RacaCor_Codigo int
+  Fun_pai varchar(60)
+  Fun_mae varchar(60)
+  Fun_naturalidade int
+  Nac_codigo int
+  Fun_AnoChegada int
+  Cargo_codigo int
+  Fun_Salario float
+  Fun_DtAdmissao datetime
+  Fun_DtDemissao datetime
+  Fun_Email varchar(50)
+  Fun_TipoComunic1 varchar(15)
+  Fun_TipoComunic2 varchar(15)
+  Fun_EnderecoComunic1 varchar(50)
+  Fun_EnderecoComunic2 varchar(50)
+  Fun_RGDtEmissao datetime
+  Fun_CartTrabNumero varchar(10)
+  Fun_CartTrabSerie varchar(10)
+  Fun_CartTrabDtEmissao datetime
+  Fun_CartTrabUF char(2)
+  Fun_PISPASEP varchar(20)
+  Fun_CartHab varchar(15)
+  Fun_CartHabCategoria varchar(5)
+  Fun_CartHabDtEmissao datetime
+  Fun_TitEleitorNumero varchar(15)
+  Fun_TitEleitorZona varchar(3)
+  Fun_TitEleitorSecao varchar(3)
+  Fun_TitEleitorUF char(2)
+  Fun_CertidaoTipo varchar(20)
+  Fun_CertidaoCidade int
+  Fun_CertidaoNumero int
+  Fun_CertidaoLivro int
+  Fun_CertidaoFolha int
+  Fun_CertidaoDtEmissao datetime
+  Fun_CertifReservNumero varchar(20)
+  Fun_CertifReservSerie varchar(3)
+  Fun_CertifReservDtEmissao datetime
+  Fun_CertifReservCSMDAM varchar(10)
+  Fun_CertifReservRMDN varchar(10)
+  Fun_Foto varchar(100)
+  Cdc_codigo int
+  Fun_GrupoComissao int
+  Fun_GrupoPremiacao int
+  Fun_NIB varchar(30)
+  Fun_NISS varchar(30)
+  fun_banco varchar(5)
+  fun_agencia varchar(25)
+  fun_conta varchar(25)
+  fun_EnderecoBanco varchar(150)
+  fun_SWIFT_BIC varchar(25)
+  fun_ABA varchar(25)
+  fun_IBAN varchar(25)
+  Fun_codigo int
+  Emp_codigo int
+  Fun_Facebook varchar(200)
+  Fun_Instagram varchar(200)
+  Fun_DescontoPorcVenda float
+  Note: '111 linhas'
+}
+
+Table GrupoProduto {
+  GrupoProduto_Codigo int [pk, not null]
+  GrupoProduto_Descricao varchar(50)
+  GrupoProduto_Ativo bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  GrupoProduto_ordem int
+  Emp_codigo int
+  Note: '12 linhas'
+}
+
+Table IndicacaoGrupProd {
+  ind_codigo int [not null]
+  GrupoProduto_Codigo int [not null]
+  IndGruProd_Porc float [not null]
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  IndGruProd_DescPorc float
+  IndGruProd_Operador varchar(10)
+  indexes {
+    (ind_codigo, GrupoProduto_Codigo, IndGruProd_Porc) [pk]
+  }
+  Note: '7.569 linhas'
+}
+
+Table Indicacoes {
+  Ind_codigo int [pk, not null]
+  Ind_Nome nvarchar(60)
+  Ind_Endereco nvarchar(60)
+  Ind_numero nvarchar(10)
+  Ind_complemento nvarchar(40)
+  Ind_Bairro nvarchar(25)
+  Ind_CodCidade nvarchar(10)
+  Ind_Cidade nvarchar(25)
+  Ind_UF nvarchar(2)
+  Ind_CEP nvarchar(14)
+  Ind_Dtnacimento nvarchar(5)
+  Ind_situacao char(1)
+  Ind_vinculo nvarchar(20)
+  Ind_Ativo nvarchar(3)
+  Ind_profissao nvarchar(25)
+  Ind_estadocivil nvarchar(15)
+  Ind_conjuge nvarchar(60)
+  Ind_dtnasc_conjuge nvarchar(5)
+  Ind_comercial nvarchar(22)
+  Ind_residencial nvarchar(22)
+  Ind_fax nvarchar(22)
+  Ind_celular nvarchar(12)
+  Ind_email nvarchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ind_banco varchar(30)
+  ind_num_banco varchar(5)
+  ind_num_agencia varchar(5)
+  ind_num_conta varchar(10)
+  ind_banco_endereco varchar(45)
+  ind_banco_end_numero varchar(10)
+  ind_banco_complemento varchar(40)
+  ind_banco_bairro varchar(40)
+  ind_banco_cidade varchar(40)
+  ind_banco_uf varchar(2)
+  fun_codigo int
+  Emp_codigo int
+  CatProfExt_Codigo float
+  Note: '1.316 linhas'
+}
+
+Table Indicacoes_Detalhe {
+  IndDet_codigo int [pk, not null]
+  Ind_codigo int [not null]
+  IndDet_Nome varchar(60)
+  IndDet_Endereco varchar(60)
+  IndDet_numero varchar(10)
+  IndDet_complemento varchar(40)
+  IndDet_Bairro varchar(25)
+  IndDet_CodCidade int
+  IndDet_CEP varchar(14)
+  IndDet_Dtnacimento varchar(10)
+  IndDet_situacao varchar(10)
+  IndDet_vinculo varchar(20)
+  IndDet_Ativo varchar(3)
+  IndDet_profissao varchar(25)
+  IndDet_estadocivil varchar(15)
+  IndDet_conjuge varchar(60)
+  IndDet_dtnasc_conjuge varchar(10)
+  IndDet_comercial varchar(22)
+  IndDet_residencial varchar(22)
+  IndDet_fax varchar(22)
+  IndDet_celular nvarchar(22)
+  IndDet_email varchar(50)
+  Ban_Codigo char(4)
+  IndDet_num_agencia varchar(5)
+  IndDet_num_conta varchar(10)
+  IndDet_banco_endereco varchar(45)
+  IndDet_banco_end_numero varchar(10)
+  IndDet_banco_complemento varchar(40)
+  IndDet_banco_bairro varchar(40)
+  IndDet_banco_CodCidade int
+  IndDet_TipoPessoa char(1)
+  IndDet_RazaSocial varchar(60)
+  IndDet_CNPJCPF varchar(21)
+  IndDet_RGInscricao varchar(20)
+  IndDet_TipoComunic1 varchar(15)
+  IndDet_TipoComunic2 varchar(15)
+  IndDet_EnderecoComunic1 varchar(50)
+  IndDet_EnderecoComunic2 varchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  IndDet_NIB varchar(30)
+  IndDet_crea varchar(10)
+  IndDet_site varchar(250)
+  fun_codigo int
+  Emp_codigo int
+  OrgReg_Codigo int
+  IndDet_NumRegistro varchar(20)
+  IndDet_PIS varchar(30)
+  IndDet_obs varchar(max)
+  IndDet_Facebook varchar(200)
+  IndDet_Instagram varchar(200)
+  Note: '1.344 linhas'
+}
+
+Table Indice_preco {
+  for_codigo int [not null]
+  Ipr_descricao nvarchar(100) [not null]
+  Ipr_custo int
+  Ipr_produto nvarchar(45)
+  Ipr_vl_Tabela money
+  Ipr_vl_Custo money
+  Ipr_vl_com_inter money
+  Ipr_vl_com_exter money
+  Ipr_vl_venda money
+  Ipr_desconto money
+  Ipr_Lucro money
+  Ipr_vl_Lucro money
+  Ipr_Indice money
+  Ipr_CodigoSigla float
+  Ipr_situacao char(1)
+  Ipr_IndiceVlCusto float
+  Ipr_VlLucroCusto float
+  Ipr_CustoTotal float
+  indexes {
+    (for_codigo, Ipr_descricao) [pk]
+  }
+  Note: '376 linhas'
+}
+
+Table Indice_preco_log {
+  Irl_codigo float [pk, not null]
+  csl_codigo float
+  cus_codigo int
+  for_codigo int [not null]
+  Irl_descricao nvarchar(100) [not null]
+  Irl_produto nvarchar(45)
+  Irl_vl_Tabela money
+  Irl_vl_Custo money
+  Irl_vl_com_inter money
+  Irl_vl_com_exter money
+  Irl_vl_venda money
+  Irl_desconto money
+  Irl_Lucro money
+  Irl_vl_Lucro money
+  Irl_Indice money
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  Irl_IndiceVlCusto float
+  Irl_VlLucroCusto float
+  Irl_CustoTotal float
+  Note: '1.976 linhas'
+}
+
+Table Indice_precoGrupoUsuario {
+  IprGrup_codigo float [pk, not null]
+  for_codigo int
+  Ipr_descricao nvarchar(100)
+  Cod_grupo int
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  Note: '2.059 linhas'
+}
+
+Table MetaVenda {
+  MetaVenda_Codigo float [pk, not null]
+  MetaVenda_descricao varchar(50)
+  MetaVenda_tipo char(1)
+  MetaVenda_Situacao char(1)
+  MetaVenda_valor float
+  MetaVenda_dataVigencia datetime
+  MetaVenda_Obs varchar(2000)
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  MetaVenda_dataVigenciaFim datetime
+  Note: '1 linhas'
+}
+
+Table MetaVendaDet {
+  MetaVenda_Codigo float [not null]
+  MetaVendaDet_dataV datetime [not null]
+  MetaVendaDet_Valor float
+  CatRem_Codigo int [not null]
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  MetaVendaDet_dataVFim datetime
+  indexes {
+    (MetaVenda_Codigo, MetaVendaDet_dataV, CatRem_Codigo) [pk]
+  }
+  Note: '1 linhas'
+}
+
+Table MetaVendaGrupProd {
+  MetaVenda_Codigo float [not null]
+  GrupoProduto_Codigo int [not null]
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  indexes {
+    (MetaVenda_Codigo, GrupoProduto_Codigo) [pk]
+  }
+  Note: '8 linhas'
+}
+
+Table MetaVendaTpVenda {
+  MetaVenda_Codigo float [not null]
+  Emp_Codigo int
+  CatVen_Codigo int [not null]
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  indexes {
+    (MetaVenda_Codigo, CatVen_Codigo) [pk]
+  }
+  Note: '1 linhas'
+}
+
+Table Nota_entrada {
+  Nen_codigo int [pk, not null]
+  Nen_numero_nota int
+  Nen_dt_nota smalldatetime
+  Nen_dt_emissao smalldatetime
+  Nen_cfop nvarchar(5)
+  Nen_status nvarchar(1)
+  Nen_obs ntext
+  Nen_fornecedor int
+  Nen_base_calculo money
+  Nen_vl_icms money
+  Nen_base_cal_icms_subst money
+  Nen_vl_icms_subst money
+  Nen_vl_produtos money
+  Nen_vl_frete money
+  Nen_vl_seguro money
+  Nen_outra_despesas money
+  Nen_vl_ipi money
+  Nen_vl_total_nota money
+  Nen_transportadora int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Nen_vl_nanota float
+  Nen_vl_diferenca float
+  Nen_ValorCredito float
+  Nen_NumConhecimento varchar(20)
+  Nen_DtConhecimento datetime
+  Nen_VlConhecimento float
+  Nen_TipoFrete varchar(10)
+  Mod_codigo int
+  nen_Mod_codigo_fin int
+  Nen_vl_diferenca_fin float
+  Nen_SemFinanceiro bit
+  Nen_desconto money
+  Nen_NaoCalcIPI bit
+  Nen_NaoGeraEstoque bit
+  Nen_modelo varchar(10)
+  Nen_serie varchar(3)
+  Nen_StTrib varchar(3)
+  Emp_codigo int
+  Pco_codigo int
+  Note: '6.343 linhas'
+}
+
+Table nota_entrada_det {
+  Nen_codigo int
+  Ned_item int
+  Pro_codnosso nvarchar(20)
+  Pro_Codbase nvarchar(20)
+  Ned_acabamento nvarchar(10)
+  Ned_quantidade_solicit float
+  Ned_quantidade_recebida float
+  Ned_vl_compra money
+  Ned_vl_item money
+  Ned_vl_custo money
+  Ned_item_ordem int
+  Ned_cod_ordem int
+  Ned_recebido nvarchar(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Ned_vl_produto float
+  Ned_vl_ipi float
+  Ned_vl_produto_fixo float
+  Ned_vl_ipi_fixo float
+  Ned_aliq_ipi float
+  Ned_aliq_icms float
+  Ned_codindice varchar(20)
+  Ned_recebimento varchar(15)
+  CFOP_codigo varchar(5)
+  Ned_desconto float
+  TpTrib_codigo varchar(5)
+  TpOriPro_codigo varchar(5)
+  Ned_NCM varchar(10)
+  Ned_ICMSVl float
+  Ned_ICMSModBC int
+  Ned_ICMSAliq float
+  Ned_ICMSBase float
+  Ned_ICMSReducao float
+  Ned_ICMSSTVl float
+  Ned_ICMSSTAliq float
+  Ned_ICMSSTBase float
+  Ned_ICMSSTIVA float
+  Ned_ICMSSTReducao float
+  Ned_ICMSModBCST float
+  Ned_CSOSN int
+  Ned_pCredSN float
+  Ned_vCredICMSSN float
+  PIS_codigo char(2)
+  Ned_PISBase float
+  Ned_PISValor float
+  Ned_PISAliq float
+  Ned_PISBaseProd float
+  Ned_PISAliqProd float
+  COFINS_codigo char(2)
+  Ned_COFINSBase float
+  Ned_COFINSBaseProd float
+  Ned_COFINSAliq float
+  Ned_COFINSAliqProd float
+  IPI_codigo char(2)
+  Ned_IPIBase float
+  Ned_IPIValor float
+  Ned_IPIAliq float
+  Ned_IPICodSelo varchar(60)
+  Ned_IPIQuantSelo float
+  Ned_IPIEnquadramento char(3)
+  Ned_IIBase float
+  Ned_IIDespAduaneira float
+  Ned_IIAliq float
+  Ned_IIIOF float
+  Ned_FreteValor float
+  Ned_FreteICMS float
+  Ned_SeguroValor float
+  Ned_seguroICMS float
+  Ned_DispAcValor float
+  Ned_DispAcICMS float
+  Ned_DescontoValor float
+  Ned_CodigoBarra varchar(100)
+  Ned_ImportDI varchar(50)
+  Ned_ImportData datetime
+  Ned_ImportCodExpot varchar(50)
+  Ned_ImportUF varchar(2)
+  Ned_ImportLocal varchar(50)
+  Ned_ImportDataDesen datetime
+  Ned_ImportaAdiNumero int
+  Ned_ImportaAdinSequ int
+  Ned_ImportaAdinCodFab varchar(50)
+  Ned_ImportaAdinDesconto float
+  Ned_COFINSVALOR float
+  Ned_codigo float [pk, not null]
+  Ned_StTrib varchar(3)
+  Emp_codigo int
+  Tam_codigo float
+  vBCSTRet float
+  vICMSSubstituto float
+  vICMSSTRet float
+  pST float
+  Note: '31.873 linhas'
+}
+
+Table Nota_Entrada_Dif {
+  Nen_codigo int
+  NenDf_DifProd float
+  NenDf_DifFinc float
+  NenDf_DesbUsuario int
+  NenDf_DesbData datetime
+  NenDf_Data datetime
+  NenDf_codigo float [pk, not null]
+  Note: '86 linhas'
+}
+
+Table Obras {
+  Cli_codigo int
+  Obr_Descricao nvarchar(50)
+  Obr_Endereco nvarchar(50)
+  Obr_numero nvarchar(10)
+  Obr_complemento nvarchar(40)
+  Obr_Bairro nvarchar(25)
+  Obr_Cidade nvarchar(25)
+  Obr_UF nvarchar(2)
+  Obr_CEP nvarchar(14)
+  obr_transf bit
+  Obr_Codigo float [pk, not null]
+  mun_codigo int
+  Obr_tipoObra varchar(11)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Note: '9.454 linhas'
+}
+
+Table ordem_compra {
+  Ocp_codigo int [pk, not null]
+  Ocp_codigo_pre int
+  Ocp_modo nvarchar(1)
+  Ocp_dt_limite smalldatetime
+  Ocp_dt_ordem datetime
+  Ocp_dt_envio smalldatetime
+  Ocp_status nvarchar(1)
+  Ocp_obs ntext
+  Ocp_fornecedor int
+  Ocp_transportadora int
+  Ocp_mun_trans nvarchar(25)
+  Ocp_uf_trans nvarchar(2)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Ocp_Reagendamento smalldatetime
+  Ocp_dt_prevista smalldatetime
+  Ocp_SubTotal float
+  Ocp_Desconto float
+  Ocp_Acrescimo float
+  Ocp_Total float
+  Ocp_descricao varchar(50)
+  Ocp_PagImpdesc bit
+  Emp_codigo int
+  Ocp_EmpresaCompradora int
+  Note: '5.444 linhas'
+}
+
+Table ordem_compra_det {
+  Ocp_codigo int
+  Ocd_item int
+  Pro_codnosso nvarchar(20)
+  Pro_Codbase nvarchar(20)
+  Ocd_acabamento nvarchar(10)
+  Ocd_quantidade_pedido float
+  Ocd_quantidade_solicit float
+  Ocd_vl_compra money
+  Ocd_vl_item money
+  Ocd_vl_custo money
+  Ocd_item_ped int
+  Ocd_cod_pedido int
+  Ocd_cod_venda int
+  ocd_ped_av_fan nvarchar(10)
+  Ocd_ped_modo nvarchar(1)
+  Ocd_recebido nvarchar(1)
+  Ocd_dt_ped_compra smalldatetime
+  Ocd_nota int
+  Ocd_destino nvarchar(30)
+  Ocd_quant_motivo nvarchar(30)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ocd_codindice varchar(20)
+  Ocd_recebimento varchar(15)
+  Ocd_quant_cancelada float
+  Ocpex_codigo int
+  Ocpex_cnpj varchar(25)
+  Ocdex_item int
+  ocp_ReceberOrdemExt bit
+  Emp_codigo int
+  Tam_codigo float
+  Ocd_Sequencia int [pk, not null]
+  Ocd_NumOrcFornecedor varchar(10)
+  Note: '30.623 linhas'
+}
+
+Table Pasta {
+  Pasta_codigo float [pk, not null]
+  Pasta_Descricao varchar(100)
+  Pasta_DtEmissao datetime
+  Pasta_DtFechamento datetime
+  Obr_codigo int
+  emp_codigo int
+  cli_codigo int
+  Pasta_Situacao char(1)
+  Pasta_obs varchar(5000)
+  Pasta_CodPreVendaPai float
+  Pasta_VendaPaiUsuario bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '872 linhas'
+}
+
+Table pedido_compra {
+  Pcp_codigo int [pk, not null]
+  Pcp_pedido_venda int
+  Pcp_modo nvarchar(1)
+  Pcp_dt_limite smalldatetime
+  Pcp_dt_pedido smalldatetime
+  Pcp_status nvarchar(1)
+  Pcp_obs ntext
+  Pcp_ped_av_fan nvarchar(10)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  ParSV_serie char(3)
+  Emp_codigo int
+  Note: '8.306 linhas'
+}
+
+Table Pedido_compra_det {
+  Pcp_codigo int
+  Pcd_item int
+  Pro_codnosso nvarchar(20)
+  Pcd_acabamento nvarchar(10)
+  Pcd_quantidade_projeto float
+  Pcd_quantidade_solicit float
+  Pcd_saida int
+  Pcd_destino nvarchar(30)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  pcd_codindice varchar(20)
+  Pcd_recebimento varchar(15)
+  Emp_codigo int
+  Tam_codigo float
+  Pcp_Sequencia int [pk, increment, not null]
+  Note: '34.863 linhas'
+}
+
+Table Preco_Produto {
+  Pre_Codnosso nvarchar(20)
+  Pre_Acabamento nvarchar(10)
+  Pre_Codindice nvarchar(100)
+  Pre_Tabela money
+  Pre_compra money
+  Pre_Custo money
+  Pre_Venda money
+  Pre_Lucro money
+  Pre_PorLucro money
+  Pre_est_min float
+  Pre_tp_vl nvarchar(20)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Pre_Ativo char(1)
+  pre_codigo numeric(18,0) [pk, increment, not null]
+  Pre_EstMinCalcular bit
+  Pre_VlNFor money
+  Pre_CodBarra varchar(100)
+  Emp_codigo int
+  Pre_Fornecedor int
+  Tam_codigo float
+  Pre_CodForTamanho varchar(30)
+  pre_observacao varchar(300)
+  Note: '169.764 linhas'
+}
+
+Table Preco_Produto_Log {
+  PreLog_Codnosso varchar(20) [not null]
+  PreLog_Acabamento nvarchar(10) [not null]
+  PreLog_Codindice nvarchar(100)
+  PreLog_tp_vl varchar(50)
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_criacao int
+  PreLog_Ativo char(1)
+  PreLog_Tabela money
+  PreLog_compra money
+  PreLog_Custo money
+  PreLog_Venda money
+  PreLog_Lucro money
+  PreLog_PorLucro money
+  PreLog_est_min float
+  PreLog_VlNFor money
+  PreLog_CodBarra varchar(100)
+  PreLog_observacao varchar(300)
+  Note: '3.158.263 linhas - SEM chave primaria'
+}
+
+Table Produto_Relacionados {
+  Pre_Cod_Prod_Pai nvarchar(20) [not null]
+  Pre_Cod_Prod_filho nvarchar(20) [not null]
+  pre_codigofor_pai int [not null]
+  pre_codigofor_filho int [not null]
+  pre_quantidade float
+  pre_padrao nvarchar(1)
+  pre_nao_relacionado nvarchar(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  pre_situacao varchar(1)
+  pre_comissao float
+  Pre_Grupo int
+  indexes {
+    (Pre_Cod_Prod_Pai, Pre_Cod_Prod_filho, pre_codigofor_pai, pre_codigofor_filho) [pk]
+  }
+  Note: '95 linhas'
+}
+
+Table produtos {
+  Pro_codnosso nvarchar(20) [pk, not null]
+  Pro_Codbase nvarchar(20)
+  For_codigo int
+  Pro_tp_produto varchar(30)
+  Pro_tp_peca varchar(30)
+  Pro_descricao nvarchar(100)
+  Pro_descricao_for nvarchar(100)
+  Pro_quant_minima float
+  Pro_foto nvarchar(100)
+  Pro_dt_vigencia datetime
+  Pro_exportado nvarchar(1)
+  Pro_ativo nvarchar(1)
+  Pro_unidade nvarchar(5)
+  Pro_comissao money
+  Pro_lamp_reator int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  GrupoProduto_codigo int
+  Pro_CodReduzido float
+  Trib_Codigo int
+  Pro_AliqICMS float
+  Pro_Tensao float
+  Pro_Consumo float
+  Pro_TensaoBi float
+  Pro_VaoLivre float
+  Pro_Angulacao float
+  Pro_Temp_Cor float
+  pro_tempoInstalacao int
+  TpTrib_codigo varchar(5)
+  TpOriPro_codigo varchar(5)
+  Pro_CodEspecial varchar(21)
+  Pro_Ecoreee float
+  pro_NCM varchar(10)
+  Pro_IVA_ST float
+  pro_AliqPIS float
+  pro_AliqIPI float
+  pro_AliqCOFINS float
+  COFINS_codigo char(2)
+  PIS_codigo char(2)
+  IPI_codigo char(2)
+  TbImp_codigo int
+  Pro_DescricaoComplementar ntext
+  Pro_TipoProduto char(2)
+  Pro_GeneroProdServ char(2)
+  Desig_Codigo numeric(18,0)
+  Marca_Codigo numeric(18,0)
+  Prod_DescricaoLivre ntext
+  Prod_ExibirSite bit
+  Fab_Codigo numeric(18,0)
+  Pro_CorteNicho varchar(20)
+  Pro_PesoLiq float
+  Pro_PesoBruto float
+  Pro_DescricaoComplementarFor varchar(8000)
+  Pro_Dimensoes varchar(50)
+  Pro_PrazoEntrega int
+  Pro_UnidadeEntrada nvarchar(5)
+  Pro_QuantEntrada float
+  Pro_QuantSaida float
+  Pro_AlturaProduto float
+  Pro_LarguraProduto float
+  Pro_ComprimentoProduto float
+  Pro_RaioProduto float
+  Pro_AlturaCaixa float
+  Pro_LarguraCaixa float
+  Pro_ComprimentoCaixa float
+  Pro_RaioCaixa float
+  Pro_CEST varchar(10)
+  ClasProd_codigo int
+  Emp_codigo int
+  Pro_Lumen float
+  Pro_NecMontagem bit
+  Pro_AlturaAssento float
+  Pro_PesoSuportado float
+  Pro_Garantia float
+  Pro_QuantPes int
+  Pro_QuantPortas int
+  Pro_QuantGavetas int
+  Pro_QuantPrateleiras int
+  Pro_ComEspelho bit
+  TpLinha_Codigo float
+  Pro_EmpresaCompradora int
+  Pro_ForaLinha bit
+  Pro_ConsultarValor bit
+  Pro_SobreMedida bit
+  Note: '108.992 linhas'
+}
+
+Table ProdutosFornecedores {
+  Pro_codnosso nvarchar(20) [not null]
+  For_codigo int [not null]
+  ProdFor_CodigoProduto nvarchar(60)
+  ProdFor_DescricaoProduto nvarchar(120)
+  ProdFor_CodigoBarra nvarchar(60)
+  ProdFor_Situacao bit
+  ProdFor_Padrao bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ProdFor_DescricaoCompl varchar(8000)
+  ProdFor_Codigo int
+  ProdFor_prazo_entrega int
+  ProdFor_EmbFechada char(10)
+  ProdFor_QtdeMinEmb int
+  ProdFor_GTIN varchar(50)
+  indexes {
+    (Pro_codnosso, For_codigo) [pk]
+  }
+  Note: '108.604 linhas'
+}
+
+Table ProdutosRelacionados {
+  ProdRel_codigo float [pk, not null]
+  ProdRel_Descricao varchar(50)
+  ProdRel_Situacao bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '222 linhas'
+}
+
+Table ProdutosRelacionadosCadProdutos {
+  ProdRelCadProd_codigo float [pk, not null]
+  Pro_codnosso nvarchar(20)
+  ProdRel_codigo float
+  ProdRelCadProd_situacao bit
+  ProdRelCadProd_padrao bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '222 linhas'
+}
+
+Table ProdutosRelacionadosDet {
+  ProdRelDet_Codigo float [pk, not null]
+  ProdRel_codigo float
+  Pro_codnosso nvarchar(20)
+  CodAcabamento nvarchar(10)
+  ProdRelDet_Quantidade float
+  ProdRelDet_padrao bit
+  ProdRelDet_NaoRelacionado bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Tam_codigo float
+  Note: '185 linhas'
+}
+
+Table Promocao {
+  Prom_Codigo float [pk, not null]
+  Prom_Descricao nvarchar(60)
+  Prom_DataInicial datetime
+  Prom_DataFinal datetime
+  Prom_tipo nchar(1)
+  Prom_Situacao bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Prom_DescGeral float
+  Note: '1 linhas'
+}
+
+Table RequisicaoEstoq {
+  ReqEst_Codigo float [pk, not null]
+  ReqEst_TipoDoc char(3)
+  ReqEst_NumDoc int
+  ReqEst_Data datetime
+  ReqEst_Situacao char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  ParSV_serie char(3)
+  Note: '2 linhas'
+}
+
+Table RequisicaoEstoqProd {
+  ReqEst_Codigo float [not null]
+  Pro_codnosso nvarchar(20)
+  CodAcabamento nvarchar(10)
+  Ipr_descricao nvarchar(45)
+  ReqEstProd_Quant float
+  CodAmbiente int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '80 linhas - SEM chave primaria'
+}
+
+Table Reserva_tecnica {
+  Ret_codigo float [pk, not null]
+  Ret_projeto_avulsa float
+  Ret_tipo nvarchar(15)
+  Ret_data datetime
+  Cli_codigo float
+  Ind_codigo float
+  Ret_observacao text
+  Ret_tec_luminaria float
+  Ret_tec_materiais float
+  Ret_tec_servico float
+  Ret_tec_total float
+  Ret_situacao nvarchar(15)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Ret_TpFinanceiro char(1)
+  ParSV_serie char(3)
+  Note: '1.212 linhas'
+}
+
+Table Reserva_tecnica_GrupoProd {
+  Ret_codigo float [not null]
+  GrupoProduto_Codigo int [not null]
+  RetGProd_PorcRT float [not null]
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  RetGProd_DescPorc float
+  RetGProd_Operador varchar(10)
+  indexes {
+    (Ret_codigo, GrupoProduto_Codigo, RetGProd_PorcRT) [pk]
+  }
+  Note: '12.108 linhas'
+}
+
+Table Transferencia {
+  Tra_codigo float [pk, not null]
+  Tra_tipo nvarchar(2)
+  Tra_situacao nvarchar(1)
+  Emp_codigo int
+  Tra_Bcx_origem int
+  Tra_Cba_origem int
+  Tra_operacao_origem varchar(8)
+  Tra_valor_origem float
+  Tra_data_origem datetime
+  Tra_historico_origem varchar(255)
+  Tra_Pco_origem int
+  Tra_Cdc_origem int
+  Tra_realizado_origem varchar(15)
+  Tra_Bcx_destino int
+  Tra_Cba_destino int
+  Tra_operacao_destino varchar(8)
+  Tra_valor_destino float
+  Tra_data_destino datetime
+  Tra_historico_destino varchar(255)
+  Tra_Pco_destino int
+  Tra_Cdc_destino int
+  Tra_realizado_destino varchar(15)
+  Tra_nome_destino nvarchar(50)
+  Tra_nome_origem nvarchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '1.524 linhas'
+}
+
+Table TransferenciaEstoque {
+  TransfEst_codigo float [pk, not null]
+  TransfEst_EstSaida int
+  TransfEst_EstEntrada int
+  TransfEst_Data datetime
+  Mod_codigo int
+  TransfEst_Obs ntext
+  For_codigo int
+  TransfEst_situacao char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Ven_CodigoPre float
+  emp_codigo int
+  Note: '88 linhas'
+}
+
+Table TransferenciaEstoqueProduto {
+  TransfEst_codigo float [not null]
+  Pro_codnosso nvarchar(20) [not null]
+  CodAcabamento nvarchar(10) [not null]
+  TransfEstProd_Quant float
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  tam_codigo float [not null]
+  indexes {
+    (TransfEst_codigo, Pro_codnosso, CodAcabamento, tam_codigo) [pk]
+  }
+  Note: '302 linhas'
+}
+
+Table Tributacao {
+  Trib_Codigo int [pk, not null]
+  Trib_Tipo varchar(10)
+  Trib_Descricao varchar(35)
+  Trib_CupomFiscal varchar(3)
+  SysPaises_codigo int
+  Trib_Porcentagem int
+  Note: '12 linhas'
+}
+
+Table Venda {
+  Ven_codigo float
+  Ven_Situacao char(1)
+  ParSV_serie char(3)
+  Ven_CodigoPre float [pk, not null]
+  Pasta_codigo float
+  Ven_Tipo char(1)
+  Ven_TpVinculo char(1)
+  Ven_CodVinculo int
+  Ven_Orcamento float
+  Ven_DataEmissao datetime
+  Ven_DataValidade datetime
+  Ven_DataFechaVenda datetime
+  Ven_DataConclusao datetime
+  Emp_codigo int
+  Ven_Eletricista int
+  Ven_SubTotal float
+  Ven_AcrescimoPorc float
+  Ven_Acrescimo float
+  Ven_DescontoPorc float
+  Ven_Desconto float
+  Ven_Total float
+  Ven_formaPag int
+  Obr_codigo float
+  Ven_PagReduzido bit
+  Ven_SubTotalProd float
+  Ven_AcrescimoPorcProd float
+  Ven_AcrescimoProd float
+  Ven_DescontoPorcProd float
+  Ven_DescontoProd float
+  Ven_TotalProd float
+  Ven_SubTotalServ float
+  Ven_AcrescimoPorcServ float
+  Ven_AcrescimoServ float
+  Ven_DescontoPorcServ float
+  Ven_DescontoServ float
+  Ven_TotalServ float
+  CatVen_Codigo int
+  Ven_DescGanhoVenda float
+  Ven_AcrescGanhoVenda float
+  Ven_RtAutomatico bit
+  Ven_RtCalcular bit
+  Ven_LimiteDesconto float
+  Ven_Requisicao bit
+  Ven_TipoDesc char(1)
+  par_ParcelarVlAcima float
+  par_VlMinParcela float
+  par_QuantMaxParcela int
+  Ven_TemFinanceiro bit
+  Ven_TemCompra bit
+  Ven_TemEstoque bit
+  cen_codigo int
+  Fun_codigo int
+  Ind_codigo int
+  Ven_FormaPagExtra varchar(100)
+  Ven_Exportacao bit
+  Ven_ValorCredito float
+  Ven_Migrado bit
+  Par_ComissaoVincParc char(1)
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  usr_cod_criacao int
+  Mod_codigo int
+  Ven_formaPagHist int
+  Ven_LimiteDescontoFixo bit
+  Ven_LimiteDescontoFixoFormaPag bit
+  Ven_LimiteDescFixoFormaPagVl float
+  Ven_CupomFiscalDAV float
+  Ven_FixaDescontoComissao bit
+  Ven_ComAmbiente bit
+  Ven_DescricaoVenda varchar(100)
+  Ven_ICMSBase float
+  Ven_ICMSValor float
+  Ven_ICMSSTBase float
+  Ven_ImpostoRetido float
+  Ven_ICMSSTValor float
+  Par_impostofixoRT float
+  Par_impostofixoComissao float
+  TEF_CodFormaPag_Venda int
+  Pco_codigo int
+  Ven_DataEnvioDesm datetime
+  Ven_ValorDIFAL float
+  Ven_ValorFrete float
+  Ven_HabilitarFrete bit
+  Ven_PorcentagemFrete float
+  Ven_LiberaSeparacao bit
+  Ven_LiberaEntrega bit
+  Ven_EnviarEmailEstoque bit
+  Ven_DataPrevEntrega datetime
+  Ven_TipoEntrega varchar(15)
+  Note: '34.136 linhas'
+}
+
+Table VendaAmbiente {
+  VenAmb_TpDoc char(3) [not null]
+  VenAmb_NDocPre float [not null]
+  CodAmbiente int [not null]
+  Emp_Codigo int [not null]
+  VenAmb_Descricao varchar(200)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  indexes {
+    (VenAmb_TpDoc, VenAmb_NDocPre, CodAmbiente, Emp_Codigo) [pk]
+  }
+  Note: '144.674 linhas'
+}
+
+Table VendaAtendente {
+  VenAten_TpDoc char(3) [not null]
+  VenAten_NDocPre float [not null]
+  Fun_Codigo float [not null]
+  Emp_Codigo int [not null]
+  VenAten_Porcentagem float
+  VenAten_Principal bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  VenAten_DtVigencia datetime
+  indexes {
+    (VenAten_TpDoc, VenAten_NDocPre, Fun_Codigo, Emp_Codigo) [pk]
+  }
+  Note: '37.707 linhas'
+}
+
+Table VendaDesconto {
+  Ven_CodigoPre float [not null]
+  GrupoProduto_Codigo int [not null]
+  VenDesc_DescontoPorc float
+  VenDesc_DescontoValor float
+  Emp_codigo nchar(10)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  VenDesc_ValorGrupo float
+  VenDesc_ValorGrupoDesc float
+  VenDesc_Quantidade float
+  VenDesc_DescPorcUsuario float
+  indexes {
+    (Ven_CodigoPre, GrupoProduto_Codigo) [pk]
+  }
+  Note: '300.337 linhas'
+}
+
+Table VendaEstoqueVendido {
+  VenEstVend_Codigo float [pk, not null]
+  Ven_CodigoPre float
+  CodAmbiente int
+  VenPro_Item int
+  Pro_codnosso nvarchar(20)
+  CodAcabamento nvarchar(10)
+  VenEstVend_Quantidade float
+  Emp_codigo int
+  EstTp_Codigo int
+  Tam_codigo float
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '20.335 linhas'
+}
+
+Table VendaIndicacao {
+  VenInd_TpDoc char(3) [not null]
+  VenInd_NDocPre float [not null]
+  Ind_Codigo int [not null]
+  Emp_Codigo int [not null]
+  VenInd_DtVigencia datetime
+  VenInd_Porcentagem float
+  VenInd_Principal bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  indexes {
+    (VenInd_TpDoc, VenInd_NDocPre, Ind_Codigo, Emp_Codigo) [pk]
+  }
+  Note: '34.666 linhas'
+}
+
+Table VendaIndicacaoGrupProd {
+  VenInd_TpDoc char(3) [not null]
+  VenInd_NDocPre float [not null]
+  Ind_Codigo int [not null]
+  Emp_Codigo int [not null]
+  GrupoProduto_Codigo int [not null]
+  VenIndGrup_Porc float [not null]
+  VenIndGrup_DescPorc float
+  VenIndGrup_Operador varchar(10)
+  indexes {
+    (VenInd_TpDoc, VenInd_NDocPre, Ind_Codigo, Emp_Codigo, GrupoProduto_Codigo, VenIndGrup_Porc) [pk]
+  }
+  Note: '232.415 linhas'
+}
+
+Table VendaProduto {
+  Ven_Codigo float
+  Ven_Tipo char(1)
+  VenPro_Item int [not null]
+  Ven_CodigoPre float [not null]
+  Pro_codnosso nvarchar(20) [not null]
+  CodAcabamento nvarchar(10)
+  CodAmbiente int
+  VenPro_Seq int
+  VenPro_SeqItem int
+  VenPro_Quantidade float
+  VenPro_QuantidadeOriginal float
+  VenPro_VlUnitario float
+  VenPro_VlItem float
+  VenPro_Vldesconto float
+  VenPro_VlDescontoProc float
+  VenPro_Vlimposto float
+  VenPro_ProdutoPai nvarchar(20)
+  VenPro_ProdutoSubPai nvarchar(20)
+  VenPro_ItemPai int
+  VenPro_ItemSubPai int
+  Ven_ValorCredito float
+  pld_codindice varchar(100)
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  usr_cod_criacao int
+  VenPro_PreProduto varchar(100)
+  VenPro_circuito varchar(10)
+  VenPro_DataEntrega datetime
+  VenPro_PreProdFoto varchar(100)
+  VenPro_ICMSBase float
+  VenPro_ICMSValor float
+  VenPro_ICMSSTBase float
+  VenPro_ImpostoRetido float
+  VenPro_ICMSSTValor float
+  TbImp_codigo int
+  CFOP_codigo varchar(5)
+  VenPro_CodigoPre int
+  Emp_codigo int
+  prom_codigo float
+  VenPro_VlPromocao float
+  VenPro_ProcPromocao float
+  VenPro_VlCadastroPromocao float
+  VenPro_codigo float [pk, not null]
+  VenPro_tipoprod char(1)
+  tam_codigo float
+  ProdCaract_codigo float
+  VenPro_DataRetornoPrevDesm datetime
+  VenPro_DataEntregaDesm datetime
+  VenPro_ValorDIFAL float
+  VenPro_simbolo varchar(30)
+  VenPro_aplicacao varchar(200)
+  VenPro_Obs ntext
+  Note: '549.830 linhas'
+}
+
+Table VendaServico {
+  Ven_codigopre float [not null]
+  VenSer_item int [not null]
+  Sev_cod int [not null]
+  CodAmbiente int
+  VenSer_quantidade float
+  VenSer_vlunitario money
+  VenSer_vlitem money
+  VenSer_DescVl float
+  VenSer_DescPorc float
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  VenSer_VlEletricista float
+  ain_codigo float
+  Emp_codigo int
+  VenSer_Codigo float [pk, not null]
+  Note: '4.450 linhas'
+}
+
+Table Bancos {
+  Ban_Codigo char(4) [pk, not null]
+  Ban_Nome varchar(50)
+  Ban_Site varchar(50)
+  Ban_Fone varchar(20)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Ban_situacao char(1)
+  Emp_codigo int
+  Note: '149 linhas'
+}
+
+Table CFOP {
+  CFOP_codigo varchar(5) [pk, not null]
+  CFOP_Descricao varchar(200)
+  CFOP_DescricaoCurta varchar(30)
+  CFOP_Aplicacao ntext
+  CFOP_Tipo char(1)
+  CFOP_Situacao char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  CFOP_ISS bit
+  CFOP_ICMS bit
+  CFOP_IPI bit
+  CFOP_PIS bit
+  CFOP_COFINS bit
+  CFOP_IR bit
+  CFOP_CSLL bit
+  NFeObs_Codigo int
+  Emp_codigo int
+  Note: '613 linhas'
+}
+
+Table Cargo {
+  Cargo_codigo int [pk, not null]
+  Cargo_Nome varchar(35)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Cargo_situacao char(1)
+  Emp_codigo int
+  Note: '4 linhas'
+}
+
+Table CategoriaRemuneracao {
+  CatRem_Codigo int [pk, not null]
+  CatRem_Descricao varchar(50)
+  CatRem_Tipo varchar(1)
+  CatRem_Ativo char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Note: '1 linhas'
+}
+
+Table Centro_de_custo {
+  Cdc_codigo int [pk, not null]
+  Cdc_descricao varchar(50)
+  Cdc_obs text
+  Cdc_apelido varchar(15)
+  Cdc_situacao char(1)
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  usr_cod_alteracao int
+  Note: '4 linhas'
+}
+
+Table ClassificacaoProduto {
+  ClasProd_codigo int [pk, not null]
+  ClasProd_Descricao nvarchar(50)
+  ClasProd_Situacao bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '5 linhas'
+}
+
+Table Estado {
+  UF char(2) [pk, not null]
+  DescUF nvarchar(50)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  est_situacao char(1)
+  UF_CodIBGE int
+  UF_AliqInterEstadual float
+  UF_AliqInterna float
+  UF_AliqFCP float
+  Emp_codigo int
+  UF_CalcularFCP bit
+  Note: '29 linhas'
+}
+
+Table GrauInstrucao {
+  GrauInst_Codigo int [pk, not null]
+  GrauInst_Descricao varchar(50)
+  GrauInst_Ativo bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '13 linhas'
+}
+
+Table Motivo_devolucao {
+  Mod_codigo int [pk, not null]
+  Mod_descricao nvarchar(30)
+  Mod_situacao char(1)
+  Mod_tipo char(1)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_codigo int
+  Note: '16 linhas'
+}
+
+Table Municipio {
+  mun_codigo int [pk, not null]
+  mun_nome nvarchar(40)
+  mun_uf char(2)
+  mun_cep_inicial nvarchar(18)
+  mun_cep_final nvarchar(8)
+  usr_cod_criacao int [not null]
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  mun_situacao char(1)
+  Paises_codigo int
+  Regiao_Codigo int
+  Mun_CodIBGE varchar(10)
+  Emp_codigo int
+  Note: '569 linhas'
+}
+
+Table Nacionalidade {
+  Nac_codigo int [pk, not null]
+  Nac_Nome varchar(35)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Nac_situacao char(1)
+  Emp_codigo int
+  Note: '1 linhas'
+}
+
+Table OrgaoRegistro {
+  OrgReg_Codigo int [pk, not null]
+  OrgReg_Sigla varchar(10)
+  OrgReg_Descricao varchar(50)
+  OrgReg_Situacao bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Emp_Codigo int
+  Note: '3 linhas'
+}
+
+Table ParamentrosSerieVenda {
+  ParSV_serie char(3) [pk, not null]
+  ParSV_numeroOrc float
+  ParSV_numeroPed float
+  ParSV_Descricao varchar(50)
+  ParSV_situacao bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '6 linhas'
+}
+
+Table Plano_Contas {
+  Pco_codigo int [pk, not null]
+  Pco_descricao varchar(60)
+  Pco_tipo char(1)
+  Pco_pai int
+  Pco_CreditoDebito char(1)
+  Pco_cod_masc varchar(10)
+  Pco_FixaVariavel varchar(1)
+  Pco_situacao char(1)
+  Pco_Aporte char(1)
+  Pct_codigo int
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_dt_hr_alteracao datetime
+  usr_cod_alteracao int
+  Pco_hierarquia varchar(20)
+  Pco_DRE varchar(50)
+  Pco_CustoMercVendida bit
+  Note: '140 linhas'
+}
+
+Table "Profissão" {
+  COD_ATIVID int [pk, not null]
+  NOME_ATIVI nvarchar(35)
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Prof_situacao char(1)
+  Emp_codigo int
+  Note: '149 linhas'
+}
+
+Table RacaCor {
+  RacaCor_Codigo int [pk, not null]
+  RacaCor_Descricao varchar(50)
+  RacaCor_Ativo bit
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '5 linhas'
+}
+
+Table Servicos {
+  sev_cod int [pk, not null]
+  Serv_Desc nvarchar(60)
+  Serv_Pc_Eletricista money
+  Serv_Preco money [not null]
+  usr_cod_criacao int
+  usr_dt_hr_criacao smalldatetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao smalldatetime
+  Serv_tipo varchar(12)
+  Serv_situacao char(1)
+  Serv_tempoInstalacao int
+  Serv_NFSECodigo varchar(10)
+  GrupoProduto_codigo int
+  Emp_codigo int
+  Serv_NaoAtualizarValor bit
+  Serv_Entrega bit
+  Note: '27 linhas'
+}
+
+Table Setor {
+  Setor_codigo int [pk, not null]
+  Setor_Nome varchar(35)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Setor_situacao char(1)
+  Emp_codigo int
+  Note: '7 linhas'
+}
+
+Table SisGrupo_Usuario {
+  Cod_grupo int [pk, not null]
+  Descricao char(25)
+  SisGru_situacao char(1)
+  SisGru_GrupoPrivado bit
+  Note: '7 linhas'
+}
+
+Table SysPaises {
+  SysPaises_codigo int [pk, not null]
+  SysPaises_descricao varchar(40)
+  SysPaises_UE bit
+  SysPaises_sigla varchar(5)
+  SysPaises_FormatoData varchar(10)
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '2 linhas'
+}
+
+Table TabelaImposto {
+  TbImp_codigo int [pk, not null]
+  TbImp_descricao varchar(150)
+  CFOP_codigo varchar(5)
+  TpOriPro_codigo varchar(5)
+  TpTrib_codigo varchar(5)
+  TbImp_TpMdobc int
+  TbImp_TpMdobcSt int
+  COFINS_codigo char(2)
+  IPI_codigo char(2)
+  PIS_codigo char(2)
+  TbImp_icms float
+  TbImp_icmsreducao float
+  TbImp_icmsst float
+  TbImp_iva float
+  TbImp_ipi float
+  TbImp_pis float
+  TbImp_cofins float
+  TbImp_importacao float
+  TbImp_irrf float
+  TbImp_csll float
+  TbImp_issqn float
+  TbImp_ipisomaicms bit
+  TbImp_bcsimple bit
+  TbImp_obs text
+  TbImp_NaoAltEstoque bit
+  Emp_codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  TbImp_CSOSN int
+  TbImp_CreditoSN float
+  TbImp_icmsstExterna float
+  TbImp_consumidorFinal bit
+  TbImp_NCM varchar(10)
+  TbImp_Operacao char(1)
+  TbImp_UF char(2)
+  TbImp_situacao bit
+  TbImp_ISSQNTributacao nvarchar(20)
+  TbImp_ISSQNAliquota float
+  TbImp_ISSQNMunCodigo int
+  TbImp_ISSQNMunicipio varchar(40)
+  TbImp_ISSQNUF varchar(2)
+  ISSQN_Codigo int
+  TbImp_isento bit
+  TpTrib_Pessoa char(1)
+  TpTrib_CalcularDifal bit
+  TpTrib_ContribuinteICMS bit
+  Benf_codigo varchar(10)
+  CSTIS varchar(4)
+  cClassTribIS varchar(7)
+  pIS float
+  CST varchar(4)
+  cClassTrib varchar(7)
+  pIBSUF float
+  CSTReg varchar(4)
+  cClassTribReg varchar(7)
+  pAliqEfetRegIBSUF float
+  pAliqEfetRegIBSMun float
+  pAliqEfetRegCBS float
+  pIBSMun float
+  pCBS float
+  Note: '23 linhas'
+}
+
+Table TipoCOFINS {
+  COFINS_codigo char(2) [pk, not null]
+  COFINS_descricao varchar(500)
+  COFINS_situacao bit
+  COFINS_TIPO char(2)
+  Note: '33 linhas'
+}
+
+Table TipoCategoriaVenda {
+  TpCatVenda_codigo int [pk, not null]
+  TpCatVenda_descricao nvarchar(50)
+  TpCatVenda_situacao bit
+  Note: '2 linhas'
+}
+
+Table TipoIPI {
+  IPI_codigo char(2) [pk, not null]
+  IPI_descricao varchar(500)
+  IPI_situacao bit
+  IPI_TIPO char(2)
+  Note: '14 linhas'
+}
+
+Table TipoOrigemProduto {
+  TpOriPro_codigo varchar(5) [pk, not null]
+  TpOriPro_Descricao varchar(200)
+  TpOriPro_Situacao char(1)
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '9 linhas'
+}
+
+Table TipoPIS {
+  PIS_codigo char(2) [pk, not null]
+  PIS_descricao varchar(500)
+  PIS_situacao bit
+  PIS_TIPO char(2)
+  Note: '33 linhas'
+}
+
+Table TipoTributadaICMS {
+  TpTrib_codigo varchar(5) [pk, not null]
+  TpTrib_Descricao varchar(100)
+  TpTrib_Situacao char(1)
+  Emp_Codigo int
+  usr_cod_criacao int
+  usr_dt_hr_criacao datetime
+  usr_cod_alteracao int
+  usr_dt_hr_alteracao datetime
+  Note: '11 linhas'
+}
+
+// ---------- relacoes DECLARADAS no banco ----------
+Ref: BalancoEstoqueProdutos.BalEst_Codigo > BalancoEstoque.BalEst_Codigo
+Ref: Clientes.Cli_codcidade > Municipio.mun_codigo
+Ref: Clientes.Cli_codcidade_cob > Municipio.mun_codigo
+Ref: fornecedor.For_codcidade > Municipio.mun_codigo
+Ref: FornecedorGrupProd.for_codigo > fornecedor.For_codigo
+Ref: FornecedorGrupProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo
+Ref: Funcionario.Cdc_codigo > Centro_de_custo.Cdc_codigo
+Ref: Funcionario.Cargo_codigo > Cargo.Cargo_codigo
+Ref: Funcionario.Fun_codcidade > Municipio.mun_codigo
+Ref: Funcionario.Fun_CartTrabUF > Estado.UF
+Ref: Funcionario.Fun_TitEleitorUF > Estado.UF
+Ref: Funcionario.GrauInst_Codigo > GrauInstrucao.GrauInst_Codigo
+Ref: Funcionario.Nac_codigo > Nacionalidade.Nac_codigo
+Ref: Funcionario.Fun_naturalidade > Municipio.mun_codigo
+Ref: Funcionario.RacaCor_Codigo > RacaCor.RacaCor_Codigo
+Ref: Funcionario.Setor_Codigo > Setor.Setor_codigo
+Ref: Funcionario.Fun_GrupoComissao > CategoriaRemuneracao.CatRem_Codigo
+Ref: Funcionario.Fun_GrupoPremiacao > CategoriaRemuneracao.CatRem_Codigo
+Ref: IndicacaoGrupProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo
+Ref: Indicacoes_Detalhe.Ban_Codigo > Bancos.Ban_Codigo
+Ref: Indicacoes_Detalhe.Ind_codigo > Indicacoes.Ind_codigo
+Ref: Indicacoes_Detalhe.IndDet_CodCidade > Municipio.mun_codigo
+Ref: Indicacoes_Detalhe.IndDet_banco_CodCidade > Municipio.mun_codigo
+Ref: Indicacoes_Detalhe.OrgReg_Codigo > OrgaoRegistro.OrgReg_Codigo
+Ref: MetaVendaDet.MetaVenda_Codigo > MetaVenda.MetaVenda_Codigo
+Ref: MetaVendaDet.CatRem_Codigo > CategoriaRemuneracao.CatRem_Codigo
+Ref: MetaVendaGrupProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo
+Ref: MetaVendaTpVenda.CatVen_Codigo > CategoriaVenda.CatVen_Codigo
+Ref: MetaVendaTpVenda.MetaVenda_Codigo > MetaVenda.MetaVenda_Codigo
+Ref: Municipio.mun_uf > Estado.UF
+Ref: Nota_entrada.Mod_codigo > Motivo_devolucao.Mod_codigo
+Ref: Nota_entrada.nen_Mod_codigo_fin > Motivo_devolucao.Mod_codigo
+Ref: Nota_Entrada_Dif.Nen_codigo > Nota_entrada.Nen_codigo
+Ref: Obras.mun_codigo > Municipio.mun_codigo
+Ref: produtos.TpOriPro_codigo > TipoOrigemProduto.TpOriPro_codigo
+Ref: produtos.TpTrib_codigo > TipoTributadaICMS.TpTrib_codigo
+Ref: ProdutosFornecedores.For_codigo > fornecedor.For_codigo
+Ref: ProdutosRelacionadosCadProdutos.ProdRel_codigo > ProdutosRelacionados.ProdRel_codigo
+Ref: RequisicaoEstoqProd.ReqEst_Codigo > RequisicaoEstoq.ReqEst_Codigo
+Ref: Reserva_tecnica_GrupoProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo
+Ref: Reserva_tecnica_GrupoProd.Ret_codigo > Reserva_tecnica.Ret_codigo
+Ref: TransferenciaEstoque.Mod_codigo > Motivo_devolucao.Mod_codigo
+Ref: Tributacao.SysPaises_codigo > SysPaises.SysPaises_codigo
+Ref: Venda.CatVen_Codigo > CategoriaVenda.CatVen_Codigo
+Ref: Venda.Obr_codigo > Obras.Obr_Codigo
+Ref: Venda.ParSV_serie > ParamentrosSerieVenda.ParSV_serie
+Ref: Venda.Pasta_codigo > Pasta.Pasta_codigo
+Ref: VendaAmbiente.CodAmbiente > Ambiente.CodAmbiente
+Ref: VendaDesconto.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo
+Ref: VendaDesconto.Ven_CodigoPre > Venda.Ven_CodigoPre
+Ref: VendaIndicacao.Ind_Codigo > Indicacoes.Ind_codigo
+Ref: VendaIndicacaoGrupProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo
+Ref: VendaIndicacaoGrupProd.Ind_Codigo > Indicacoes.Ind_codigo
+Ref: VendaProduto.Pro_codnosso > produtos.Pro_codnosso
+Ref: VendaProduto.Ven_CodigoPre > Venda.Ven_CodigoPre
+Ref: VendaServico.CodAmbiente > Ambiente.CodAmbiente
+Ref: VendaServico.Sev_cod > Servicos.sev_cod
+Ref: VendaServico.Ven_codigopre > Venda.Ven_CodigoPre
+
+// ---------- relacoes INFERIDAS, nao declaradas pelo legado ----------
+// nome: mesma coluna, mesmo tipo, e a coluna e PK simples do destino.
+// sinonimo: prefixo diferente para a MESMA coisa (Pro_codnosso = Epr_Codnosso).
+// CONFERIR antes de tratar como verdade.
+Ref: BalancoEstoqueProdutos.Pro_Codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: BalancoEstoqueProdutos.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
+Ref: CategoriaVenda.TpCatVenda_codigo > TipoCategoriaVenda.TpCatVenda_codigo // inferida (nome)
+Ref: Clientes.Ind_codigo > Indicacoes.Ind_codigo // inferida (nome)
+Ref: Clientes.COD_ATIVID > "Profissão".COD_ATIVID // inferida (nome)
+Ref: Custo.for_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: custo_log.for_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: estoque_log.EstTp_Codigo > EstoqueTipo.EstTp_Codigo // inferida (nome)
+Ref: estoque_log.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: Estoque_produto.Epr_Codnosso > produtos.Pro_codnosso // inferida (sinonimo)
+Ref: Estoque_produto.Epr_Acabamento > Acabamento.CodAcabamento // inferida (sinonimo)
+Ref: Estoque_produto.EstTp_Codigo > EstoqueTipo.EstTp_Codigo // inferida (nome)
+Ref: estoque_produto_dia.EstTp_Codigo > EstoqueTipo.EstTp_Codigo // inferida (nome)
+Ref: fornecedor.ban_codigo > Bancos.Ban_Codigo // inferida (nome)
+Ref: FornecedorEmpresaCompradora.For_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: FornecedorRTGrupProd.for_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: FornecedorRTGrupProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo // inferida (nome)
+Ref: Funcionario.COD_ATIVID > "Profissão".COD_ATIVID // inferida (nome)
+Ref: IndicacaoGrupProd.ind_codigo > Indicacoes.Ind_codigo // inferida (nome)
+Ref: Indice_preco.for_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: Indice_preco_log.csl_codigo > custo_log.Csl_codigo // inferida (nome)
+Ref: Indice_preco_log.for_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: Indice_precoGrupoUsuario.for_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: Indice_precoGrupoUsuario.Cod_grupo > SisGrupo_Usuario.Cod_grupo // inferida (nome)
+Ref: MetaVendaGrupProd.MetaVenda_Codigo > MetaVenda.MetaVenda_Codigo // inferida (nome)
+Ref: Nota_entrada.Pco_codigo > Plano_Contas.Pco_codigo // inferida (nome)
+Ref: nota_entrada_det.Nen_codigo > Nota_entrada.Nen_codigo // inferida (nome)
+Ref: nota_entrada_det.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: nota_entrada_det.CFOP_codigo > CFOP.CFOP_codigo // inferida (nome)
+Ref: nota_entrada_det.TpTrib_codigo > TipoTributadaICMS.TpTrib_codigo // inferida (nome)
+Ref: nota_entrada_det.TpOriPro_codigo > TipoOrigemProduto.TpOriPro_codigo // inferida (nome)
+Ref: nota_entrada_det.PIS_codigo > TipoPIS.PIS_codigo // inferida (nome)
+Ref: nota_entrada_det.COFINS_codigo > TipoCOFINS.COFINS_codigo // inferida (nome)
+Ref: nota_entrada_det.IPI_codigo > TipoIPI.IPI_codigo // inferida (nome)
+Ref: Obras.Cli_codigo > Clientes.Cli_Codigo // inferida (nome)
+Ref: ordem_compra_det.Ocp_codigo > ordem_compra.Ocp_codigo // inferida (nome)
+Ref: ordem_compra_det.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: Pasta.cli_codigo > Clientes.Cli_Codigo // inferida (nome)
+Ref: pedido_compra.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: Pedido_compra_det.Pcp_codigo > pedido_compra.Pcp_codigo // inferida (nome)
+Ref: Pedido_compra_det.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: Preco_Produto.Pre_Codnosso > produtos.Pro_codnosso // inferida (sinonimo)
+Ref: Preco_Produto.Pre_Acabamento > Acabamento.CodAcabamento // inferida (sinonimo)
+Ref: Preco_Produto.Pre_Fornecedor > fornecedor.For_codigo // inferida (sinonimo)
+Ref: produtos.For_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: produtos.GrupoProduto_codigo > GrupoProduto.GrupoProduto_Codigo // inferida (nome)
+Ref: produtos.Trib_Codigo > Tributacao.Trib_Codigo // inferida (nome)
+Ref: produtos.COFINS_codigo > TipoCOFINS.COFINS_codigo // inferida (nome)
+Ref: produtos.PIS_codigo > TipoPIS.PIS_codigo // inferida (nome)
+Ref: produtos.IPI_codigo > TipoIPI.IPI_codigo // inferida (nome)
+Ref: produtos.TbImp_codigo > TabelaImposto.TbImp_codigo // inferida (nome)
+Ref: produtos.ClasProd_codigo > ClassificacaoProduto.ClasProd_codigo // inferida (nome)
+Ref: ProdutosFornecedores.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: ProdutosRelacionadosCadProdutos.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: ProdutosRelacionadosDet.ProdRel_codigo > ProdutosRelacionados.ProdRel_codigo // inferida (nome)
+Ref: ProdutosRelacionadosDet.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: ProdutosRelacionadosDet.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
+Ref: RequisicaoEstoq.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: RequisicaoEstoqProd.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: RequisicaoEstoqProd.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
+Ref: RequisicaoEstoqProd.CodAmbiente > Ambiente.CodAmbiente // inferida (nome)
+Ref: Reserva_tecnica.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
+Ref: Servicos.GrupoProduto_codigo > GrupoProduto.GrupoProduto_Codigo // inferida (nome)
+Ref: TabelaImposto.CFOP_codigo > CFOP.CFOP_codigo // inferida (nome)
+Ref: TabelaImposto.TpOriPro_codigo > TipoOrigemProduto.TpOriPro_codigo // inferida (nome)
+Ref: TabelaImposto.TpTrib_codigo > TipoTributadaICMS.TpTrib_codigo // inferida (nome)
+Ref: TabelaImposto.COFINS_codigo > TipoCOFINS.COFINS_codigo // inferida (nome)
+Ref: TabelaImposto.IPI_codigo > TipoIPI.IPI_codigo // inferida (nome)
+Ref: TabelaImposto.PIS_codigo > TipoPIS.PIS_codigo // inferida (nome)
+Ref: TransferenciaEstoque.For_codigo > fornecedor.For_codigo // inferida (nome)
+Ref: TransferenciaEstoque.Ven_CodigoPre > Venda.Ven_CodigoPre // inferida (nome)
+Ref: TransferenciaEstoqueProduto.TransfEst_codigo > TransferenciaEstoque.TransfEst_codigo // inferida (nome)
+Ref: TransferenciaEstoqueProduto.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: TransferenciaEstoqueProduto.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
+Ref: Venda.Ind_codigo > Indicacoes.Ind_codigo // inferida (nome)
+Ref: Venda.Mod_codigo > Motivo_devolucao.Mod_codigo // inferida (nome)
+Ref: Venda.Pco_codigo > Plano_Contas.Pco_codigo // inferida (nome)
+Ref: VendaEstoqueVendido.Ven_CodigoPre > Venda.Ven_CodigoPre // inferida (nome)
+Ref: VendaEstoqueVendido.CodAmbiente > Ambiente.CodAmbiente // inferida (nome)
+Ref: VendaEstoqueVendido.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
+Ref: VendaEstoqueVendido.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
+Ref: VendaEstoqueVendido.EstTp_Codigo > EstoqueTipo.EstTp_Codigo // inferida (nome)
+Ref: VendaProduto.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
+Ref: VendaProduto.CodAmbiente > Ambiente.CodAmbiente // inferida (nome)
+Ref: VendaProduto.TbImp_codigo > TabelaImposto.TbImp_codigo // inferida (nome)
+Ref: VendaProduto.CFOP_codigo > CFOP.CFOP_codigo // inferida (nome)
+Ref: VendaProduto.prom_codigo > Promocao.Prom_Codigo // inferida (nome)

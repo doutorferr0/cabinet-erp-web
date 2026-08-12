@@ -607,7 +607,6 @@ Ref: contas_apagar.Pco_codigo > Plano_Contas.Pco_codigo
 Ref: contas_apagar.Tcf_codigo > TipoContaFinanceira.Tcf_codigo
 Ref: Contas_Bancarias.Bcx_codigo > Bancos_Caixas.Bcx_codigo
 Ref: Contas_Bancarias.Emp_codigo > Bancos_Caixas.Emp_codigo
-Ref: Contas_BancariasCobranca.CbaCob_codigo > Contas_BancariasCobranca.CbaCob_codigo
 Ref: contas_receber.Cdc_codigo > Centro_de_custo.Cdc_codigo
 Ref: contas_receber.Pco_codigo > Plano_Contas.Pco_codigo
 Ref: contas_receber.Tcf_codigo > TipoContaFinanceira.Tcf_codigo

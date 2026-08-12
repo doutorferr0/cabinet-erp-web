@@ -55,6 +55,11 @@ for r in fks:
     if o in SISTEMA or d in SISTEMA:
         continue
     declaradas.add((o, r['coluna_origem'], d, r['coluna_destino']))
+    # O legado tem FK de uma coluna para ELA MESMA
+    # (Contas_BancariasCobranca.CbaCob_codigo → Contas_BancariasCobranca.CbaCob_codigo).
+    # É lixo do banco, e o DBML recusa com "Two endpoints are the same".
+    if (o.lower(), r['coluna_origem'].lower()) == (d.lower(), r['coluna_destino'].lower()):
+        continue
     rel_reais.append((o, r['coluna_origem'], d, r['coluna_destino']))
 
 # ---------- inferência por convenção de nome ----------
@@ -151,6 +156,13 @@ NUCLEO = [
     'Estoque_produto', 'estoque_log', 'EstoqueTipo',
 ]
 
+ID_SIMPLES = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+
+def q(nome):
+    """DBML quebra em nome com acento fora de aspas — a tabela `Profissão` derruba
+    o import inteiro com 'Unexpected token'. Cita só o que precisa."""
+    return nome if ID_SIMPLES.match(nome) else '"%s"' % nome
+
 def tipo_dbml(c):
     t, n = c['tipo'], c['max_length']
     if t in ('nvarchar', 'varchar', 'char', 'nchar'):
@@ -172,7 +184,7 @@ def escreve(nome, tabelas, titulo, nota):
          '']
     for t in tabelas:
         n = linhas.get(t, 0)
-        L.append('Table %s {' % t)
+        L.append('Table %s {' % q(t))
         chave = pk.get(t, [])
         for c in tcols[t]:
             attrs = []
@@ -184,13 +196,13 @@ def escreve(nome, tabelas, titulo, nota):
                 attrs.append('not null')
             if c['coluna'] in uni.get(t, ()):
                 attrs.append('unique')
-            linha = '  %s %s' % (c['coluna'], tipo_dbml(c))
+            linha = '  %s %s' % (q(c['coluna']), tipo_dbml(c))
             if attrs:
                 linha += ' [%s]' % ', '.join(attrs)
             L.append(linha)
         if len(chave) > 1:
             L.append('  indexes {')
-            L.append('    (%s) [pk]' % ', '.join(chave))
+            L.append('    (%s) [pk]' % ', '.join(q(x) for x in chave))
             L.append('  }')
         obs = '%s linhas' % format(n, ',d').replace(',', '.') if n else 'VAZIA'
         if not chave:
@@ -205,7 +217,7 @@ def escreve(nome, tabelas, titulo, nota):
         k = (o.lower(), co.lower(), d.lower(), cd.lower())
         if o in ativos and d in ativos and k not in vistos:
             vistos.add(k)
-            L.append('Ref: %s.%s > %s.%s' % (o, co, d, cd))
+            L.append('Ref: %s.%s > %s.%s' % (q(o), q(co), q(d), q(cd)))
     L.append('')
     L.append('// ---------- relacoes INFERIDAS, nao declaradas pelo legado ----------')
     L.append('// nome: mesma coluna, mesmo tipo, e a coluna e PK simples do destino.')
@@ -215,7 +227,7 @@ def escreve(nome, tabelas, titulo, nota):
         k = (o.lower(), co.lower(), d.lower(), cd.lower())
         if o in ativos and d in ativos and k not in vistos:
             vistos.add(k)
-            L.append('Ref: %s.%s > %s.%s // inferida (%s)' % (o, co, d, cd, marca))
+            L.append('Ref: %s.%s > %s.%s // inferida (%s)' % (q(o), q(co), q(d), q(cd), marca))
     p = os.path.join(OUT, nome)
     open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     reais = len({(o.lower(), co.lower(), d.lower(), cd.lower())
@@ -258,6 +270,18 @@ def satelites(base):
         if o in dentro and d not in dentro:
             extra.add(d)
     return [t for t in extra if linhas.get(t, 0) > 0]
+
+# Um arquivo só com as quatro frentes do escopo inicial do Cabinet. Existe para
+# testar até onde o parser do ChartDB aguenta: se este passar, dá para ter UM
+# diagrama e separar os módulos por Área colorida, em vez de quatro arquivos.
+NEGOCIO = r'(?i)^(venda|orcamento|pasta|ambiente|obras|categoriavenda|promocao|meta|reserva_tecnica|indicac|produto|preco_produto|custo|indice_preco|acabamento|tamanho|grupoproduto|tributacao|ncm|estoque|balanco|giroestoque|transferencia|requisicao|inventario|pedido_compra|ordem_compra|nota_entrada|compraestoque|cotacao|clientes|fornecedor|funcionario)'
+
+print()
+rx = re.compile(NEGOCIO)
+base = [t for t in com_dado if rx.match(t)]
+escreve('softlux-negocio.dbml', base + sorted(set(satelites(base)) - set(base)),
+        'Softlux - as quatro frentes do escopo inicial',
+        'Cadastro, produto e preco, venda, compra e estoque num arquivo so.')
 
 print()
 for nome, pat in MODULOS:

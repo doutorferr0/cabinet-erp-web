@@ -669,16 +669,25 @@ Por isso `gera-dbml.py` acrescenta **relações inferidas**, marcadas como tal n
 | `softlux-financeiro.dbml` | 24 | 37 | 24 |
 | `softlux-fiscal.dbml` | 24 | 34 | 19 |
 | `softlux-sistema.dbml` | 13 | 2 | 1 |
-| `softlux-completo.dbml` ⚠️ | 212 | 309 | 179 |
+| `softlux-completo.dbml` | 212 | 309 | 179 |
 
 **As inferidas são hipótese, não verdade.** Foram checadas por amostragem, não uma a uma. Antes de
 usar qualquer uma como regra de migração, confira contra o SQL real em `exe/sql-do-codigo.sql`.
 
-⚠️ **`softlux-completo.dbml` não importa no ChartDB.** Com 212 tabelas e 5.279 linhas o parser
-DBML trava na validação — sem mensagem de erro, o botão `Import` simplesmente nunca habilita. Não é
-limite de plano: acontece igual no self-host. Por isso existem os arquivos por módulo, que importam
-sem problema e ainda produzem diagrama que alguém consegue ler. O `completo` fica como referência
-de texto, para `grep` e diff.
+**O arquivo completo importa** — 212 tabelas e 308 relações, validado no ChartDB em 2026-08-11.
+Chegou a não importar, e a causa **não era tamanho nem plano**: eram dois defeitos deste gerador,
+ambos corrigidos e ambos difíceis de achar porque a mensagem de erro não aponta a causa real.
+
+1. **Acento em nome de tabela.** A tabela `Profissão` derrubava o import inteiro com
+   `Unexpected token '£'` — o parser lê o UTF-8 byte a byte fora de aspas. Nome que não seja
+   `[A-Za-z_][A-Za-z0-9_]*` agora sai citado.
+2. **FK do banco apontando uma coluna para ela mesma.**
+   `Contas_BancariasCobranca.CbaCob_codigo → Contas_BancariasCobranca.CbaCob_codigo` existe de
+   verdade no legado, e o DBML recusa com `Two endpoints are the same`. É lixo do banco; o gerador
+   descarta.
+
+Ainda assim, **os arquivos por módulo continuam sendo o jeito útil de olhar**: 212 tabelas numa tela
+só viram uma parede. O completo serve para `grep`, diff e para quem quiser o mapa inteiro.
 
 Cada módulo traz suas tabelas **mais as vizinhas puxadas por relação** — sem isso `VendaProduto`
 apareceria sem `produtos` do lado, e o diagrama não explicaria nada.

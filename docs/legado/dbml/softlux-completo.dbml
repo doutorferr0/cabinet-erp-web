@@ -3409,8 +3409,8 @@ Table Paramentros {
   Par_CtApagar_DiasPosterior int
   Par_CtReceber_DiasAnterior int
   Par_CtReceber_DiasPosterior int
-  Par_VendaNãoImprimirCNPJIE bit
-  Par_AssistenciaNãoMovEstoque bit
+  "Par_VendaNãoImprimirCNPJIE" bit
+  "Par_AssistenciaNãoMovEstoque" bit
   Par_CadClienteCaixaAlta bit
   Par_ControleSepEntProdutos bit
   Par_ImpOrdPedObsAntesPag bit
@@ -3970,7 +3970,7 @@ Table ProdutosRelacionadosDet {
   Note: '185 linhas'
 }
 
-Table Profissão {
+Table "Profissão" {
   COD_ATIVID int [pk, not null]
   NOME_ATIVI nvarchar(35)
   usr_cod_criacao int
@@ -4986,7 +4986,6 @@ Ref: contas_apagar.Pco_codigo > Plano_Contas.Pco_codigo
 Ref: contas_apagar.Tcf_codigo > TipoContaFinanceira.Tcf_codigo
 Ref: Contas_Bancarias.Bcx_codigo > Bancos_Caixas.Bcx_codigo
 Ref: Contas_Bancarias.Emp_codigo > Bancos_Caixas.Emp_codigo
-Ref: Contas_BancariasCobranca.CbaCob_codigo > Contas_BancariasCobranca.CbaCob_codigo
 Ref: contas_receber.Cdc_codigo > Centro_de_custo.Cdc_codigo
 Ref: contas_receber.Pco_codigo > Plano_Contas.Pco_codigo
 Ref: contas_receber.Tcf_codigo > TipoContaFinanceira.Tcf_codigo
@@ -5111,7 +5110,7 @@ Ref: BalancoEstoqueProdutos.Pro_Codnosso > produtos.Pro_codnosso // inferida (no
 Ref: BalancoEstoqueProdutos.CodAcabamento > Acabamento.CodAcabamento // inferida (nome)
 Ref: CategoriaVenda.TpCatVenda_codigo > TipoCategoriaVenda.TpCatVenda_codigo // inferida (nome)
 Ref: Clientes.Ind_codigo > Indicacoes.Ind_codigo // inferida (nome)
-Ref: Clientes.COD_ATIVID > Profissão.COD_ATIVID // inferida (nome)
+Ref: Clientes.COD_ATIVID > "Profissão".COD_ATIVID // inferida (nome)
 Ref: contas_apagar.Tpd_codigo > Tipo_documento.Tpd_codigo // inferida (nome)
 Ref: contas_apagar.ParSV_serie > ParamentrosSerieVenda.ParSV_serie // inferida (nome)
 Ref: contas_apagar_det.Ctp_codigo > contas_apagar.Ctp_codigo // inferida (nome)
@@ -5175,7 +5174,7 @@ Ref: FornecedorRTGrupProd.for_codigo > fornecedor.For_codigo // inferida (nome)
 Ref: FornecedorRTGrupProd.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo // inferida (nome)
 Ref: FornecFatMinimo.GrupoProduto_Codigo > GrupoProduto.GrupoProduto_Codigo // inferida (nome)
 Ref: FornecFatMinimo.For_codigo > fornecedor.For_codigo // inferida (nome)
-Ref: Funcionario.COD_ATIVID > Profissão.COD_ATIVID // inferida (nome)
+Ref: Funcionario.COD_ATIVID > "Profissão".COD_ATIVID // inferida (nome)
 Ref: HistoricoVersoesUsuario.HistVer_Codigo > HistoricoVersoes.HistVer_Codigo // inferida (nome)
 Ref: ImportacaoProduto.Pro_codnosso > produtos.Pro_codnosso // inferida (nome)
 Ref: IndicacaoGrupProd.ind_codigo > Indicacoes.Ind_codigo // inferida (nome)

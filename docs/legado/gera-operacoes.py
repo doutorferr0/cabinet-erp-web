@@ -98,19 +98,32 @@ for t, cs in tcols.items():
         RELS.append((t, c['coluna'], alvo, ac, False))
 
 # ---------------------------------------------------------------- diagrama
-BW = 232                   # largura da caixa
-HDR = 30                   # altura do cabeçalho
-LIN = 21                   # altura de cada linha de coluna
-GAPY = 26                  # espaço vertical entre caixas
-COLX = 340                 # distância horizontal entre colunas
+BW = 204                   # largura da caixa
+HDR = 25                   # altura do cabeçalho
+LIN = 17                   # altura de cada linha de coluna
+GAPY = 22                  # espaço vertical entre caixas
+COLX = 310                 # distância horizontal entre colunas
+LIMITE_COLS = 9            # quantas colunas cabem na caixa antes de resumir
 
-def colunas_relevantes(t, ligacoes, limite=5):
-    """PK primeiro, depois as colunas que participam de alguma ligação do desenho."""
+# colunas de infraestrutura: não dizem nada sobre o negócio e roubariam o lugar
+# de quem diz. Continuam no painel de detalhe, que mostra a tabela inteira.
+RUIDO_COL = ('usr_', 'emp_codigo', 'sys')
+
+def colunas_relevantes(t, ligacoes, limite=LIMITE_COLS):
+    """Ordem: chave primária · colunas que participam de uma ligação do desenho ·
+    demais colunas de negócio. Auditoria e escopo ficam por último."""
     chave = pk.get(t, [])
     usadas = [(c, 'pk') for c in chave]
+    vistos = {c.lower() for c, _ in usadas}
     for col in ligacoes.get(t, []):
-        if not any(c.lower() == col.lower() for c, _ in usadas):
-            usadas.append((col, 'fk'))
+        if col.lower() not in vistos:
+            usadas.append((col, 'fk')); vistos.add(col.lower())
+    for c in tcols.get(t, []):
+        nome = c['coluna']
+        n = nome.lower()
+        if n in vistos or n.startswith(RUIDO_COL):
+            continue
+        usadas.append((nome, 'comum')); vistos.add(n)
     total = len(tcols.get(t, []))
     return usadas[:limite], max(0, total - min(len(usadas), limite))
 
@@ -126,18 +139,18 @@ def caixa(t, papel, cols, restam, x0, y0, larg, alt, cor_col=None):
     ROT = {'centro': 'documento da operação', 'item': 'depende do documento',
            'ref': 'consultada pela operação', 'solta': 'sem ligação direta no recorte'}
     borda, fundo = CORES[papel]
-    g = ['<a href="softlux-er.html#%s" target="_blank"><g style="cursor:pointer">'
-         '<title>%s — %s linhas · %s\nclique abre no explorador do schema</title>' % (t, t, vol(t), ROT[papel])]
+    g = ['<g style="cursor:pointer" onclick="detalhe(\'%s\')">'
+         '<title>%s — %s linhas · %s\nclique abre a tabela inteira</title>' % (t, t, vol(t), ROT[papel])]
     g.append('<rect x="%d" y="%d" width="%d" height="%d" rx="6" fill="#FFFDF8" stroke="%s" stroke-width="%s"/>'
              % (x0, y0, larg, alt, borda, 2.6 if papel == 'centro' else 1.6))
     g.append('<path d="M%d %d h%d v%d h-%d z" fill="%s"/>' % (x0, y0 + HDR, larg, -(HDR - 6), larg, fundo))
     g.append('<rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>' % (x0, y0, larg, 8, fundo))
     g.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="1.4"/>'
              % (x0, y0 + HDR, x0 + larg, y0 + HDR, borda))
-    g.append('<text x="%d" y="%d" font-size="14" font-weight="700" fill="%s">%s</text>'
-             % (x0 + 11, y0 + 20, borda, t[:26]))
-    g.append('<text x="%d" y="%d" font-size="10.5" fill="#8B8377" text-anchor="end">%s</text>'
-             % (x0 + larg - 10, y0 + 20, vol(t)))
+    g.append('<text x="%d" y="%d" font-size="12.5" font-weight="700" fill="%s">%s</text>'
+             % (x0 + 9, y0 + 17, borda, t[:24]))
+    g.append('<text x="%d" y="%d" font-size="9.5" fill="#8B8377" text-anchor="end">%s</text>'
+             % (x0 + larg - 8, y0 + 17, vol(t)))
     cor_col = cor_col or {}
     for i, (c, kind) in enumerate(cols):
         yy = y0 + HDR + LIN * i
@@ -149,20 +162,20 @@ def caixa(t, papel, cols, restam, x0, y0, larg, alt, cor_col=None):
             g.append('<rect x="%d" y="%d" width="%d" height="%d" fill="%s" opacity="0.10"/>'
                      % (x0 + 1, yy + 1, larg - 2, LIN - 2, cor))
             g.append('<rect x="%d" y="%d" width="4" height="%d" fill="%s"/>' % (x0 + 1, yy + 1, LIN - 2, cor))
-        g.append('<text x="%d" y="%d" font-size="11.5" fill="%s" font-family="ui-monospace,monospace" '
+        g.append('<text x="%d" y="%d" font-size="10.5" fill="%s" font-family="ui-monospace,monospace" '
                  'font-weight="%s">%s</text>'
-                 % (x0 + 26, yy + 15, cor or ('#1C1A17' if kind == 'pk' else '#5A544B'),
-                    '700' if (cor or kind == 'pk') else '400', c[:24]))
-        g.append('<text x="%d" y="%d" font-size="10" fill="%s">%s</text>'
-                 % (x0 + 10, yy + 15, cor or ('#C2410C' if kind == 'pk' else '#8B8377'),
+                 % (x0 + 22, yy + 12.5, cor or ('#1C1A17' if kind == 'pk' else '#5A544B'),
+                    '700' if (cor or kind == 'pk') else '400', c[:23]))
+        g.append('<text x="%d" y="%d" font-size="9" fill="%s">%s</text>'
+                 % (x0 + 9, yy + 12.5, cor or ('#C2410C' if kind == 'pk' else '#C9BFA9'),
                     '◆' if kind == 'pk' else '•'))
     if restam:
         yy = y0 + HDR + LIN * len(cols)
         g.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#EDE6D8" stroke-width="1"/>'
                  % (x0 + 1, yy, x0 + larg - 1, yy))
-        g.append('<text x="%d" y="%d" font-size="10.5" fill="#8B8377" font-style="italic">mais %d colunas</text>'
-                 % (x0 + 24, yy + 14, restam))
-    g.append('</g></a>')
+        g.append('<text x="%d" y="%d" font-size="9.5" fill="#0060B0" font-style="italic">'
+                 '+ %d colunas — clique para ver todas</text>' % (x0 + 22, yy + 13, restam))
+    g.append('</g>')
     return '\n'.join(g)
 
 def diagrama(op):
@@ -351,13 +364,13 @@ def fluxograma(passos, tabelas_por_passo=None):
             if len(tabs) > 1:
                 out.append('<path d="M%d %.0f H%d V%.0f" fill="none" stroke="#C9BFA9" stroke-width="1.4" '
                            'stroke-dasharray="4 4"/>' % (TABX - 14, cy, TABX - 8, ty + 12))
-            out.append('<a href="softlux-er.html#%s" target="_blank"><g style="cursor:pointer">'
-                       '<title>%s — %s linhas\nclique abre no explorador</title>'
+            out.append('<g style="cursor:pointer" onclick="detalhe(\'%s\')">'
+                       '<title>%s — %s linhas\nclique abre a tabela inteira</title>'
                        '<rect x="%d" y="%.0f" width="%d" height="24" rx="6" fill="#FFFDF8" stroke="#B9AE97"/>'
                        '<text x="%d" y="%.0f" font-size="11.5" font-weight="600" fill="#1C1A17" '
                        'font-family="ui-monospace,monospace">%s</text>'
                        '<text x="%d" y="%.0f" font-size="10" fill="#8B8377" text-anchor="end">%s</text>'
-                       '</g></a>'
+                       '</g>'
                        % (t, t, vol(t), TABX, ty, TABW, TABX + 9, ty + 16, t[:22],
                           TABX + TABW - 8, ty + 16, vol(t)))
     setas = []
@@ -716,6 +729,23 @@ border:1px solid var(--linha);border-radius:8px}
 .abas button{padding:6px 14px;border:1px solid var(--linha);background:var(--papel);
 border-radius:6px;font:inherit;font-size:13px;cursor:pointer;color:var(--tinta2)}
 .abas button.on{background:var(--tinta);color:var(--papel);border-color:var(--tinta);font-weight:600}
+/* painel da tabela inteira, aberto ao clicar numa caixa */
+#det{position:fixed;top:0;right:0;width:480px;height:100vh;background:var(--papel);
+border-left:1px solid var(--linha);box-shadow:-8px 0 24px rgba(28,26,23,.10);
+padding:18px 22px 40px;overflow:auto;z-index:50;display:none}
+#det.on{display:block}
+#det h4{margin:0 0 2px;font-size:20px}
+#det .m{color:var(--tinta3);font-size:12.5px;margin-bottom:14px}
+#det table{width:100%;border-collapse:collapse;font-size:12.5px}
+#det th{position:sticky;top:-18px;background:var(--papel)}
+#det td{padding:4px 8px 4px 0;border-bottom:1px solid var(--creme)}
+#det td.c{font-family:ui-monospace,monospace}
+#det td.t{color:var(--tinta2);font-size:11.5px}
+#det td.k{font-weight:700;color:#C2410C}
+#det .fechar{position:absolute;top:14px;right:18px;cursor:pointer;color:var(--tinta3);
+font-size:20px;line-height:1}
+#det .lig{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--tinta2);
+padding:3px 0;border-bottom:1px solid var(--creme)}
 @media(max-width:1250px){.painel{flex-direction:column}
   .diag{position:static;width:100%;min-width:0;padding:0 24px 30px}}
 a.tb{text-decoration:none;font-size:12px;padding:3px 9px;border-radius:5px;background:var(--creme);
@@ -766,10 +796,10 @@ def ficha(o):
     h = ['<h2>%s</h2><div class="resumo">%s</div>' % (o['nome'], o['resumo'])]
     h.append('<div class="bloco"><h3>Onde vive o dado</h3><p style="margin:0">%s</p></div>' % o['onde'])
     if o['tabelas']:
-        tags = ''.join('<a class="tb" href="softlux-er.html#%s" target="_blank"><b>%s</b> %s</a>'
+        tags = ''.join('<a class="tb" onclick="detalhe(\'%s\')"><b>%s</b> %s</a>'
                        % (t, t, vol(t)) for t in o['tabelas'])
-        h.append('<div class="bloco"><h3>Tabelas envolvidas <span class="dica">— clique abre no '
-                 'explorador do schema</span></h3><div class="tabs">%s</div></div>' % tags)
+        h.append('<div class="bloco"><h3>Tabelas envolvidas <span class="dica">— clique mostra '
+                 'a tabela inteira</span></h3><div class="tabs">%s</div></div>' % tags)
     if o['exige']:
         li = ''.join('<li>%s<br><span class="fonte">%s</span></li>' % (a, b) for a, b in o['exige'])
         h.append('<div class="bloco"><h3>O que a operação exige</h3><ul>%s</ul></div>' % li)
@@ -792,8 +822,8 @@ def ficha(o):
                      % (i, nomes.get(i, i), por) for i, por in VER[o['id']] if i in nomes)
         h.append('<div class="bloco"><h3>Ligado a</h3><ul>%s</ul></div>' % li)
     h.append('<div class="bloco"><h3>Ir mais fundo</h3><ul>'
-             '<li><a class="op" href="softlux-er.html#%s" target="_blank">Abrir <b>%s</b> no explorador do schema</a>'
-             ' — colunas, chaves e quem se liga a ela</li>'
+             '<li><a class="op" onclick="detalhe(\'%s\')">Ver <b>%s</b> inteira</a>'
+             ' — todas as colunas, tipos e ligações</li>'
              '<li><a class="op" href="dbml/softlux-nucleo.dbml" target="_blank">DBML do núcleo</a>'
              ' — para importar num editor de diagrama</li>'
              '<li><a class="op" href="exe/sql-do-codigo.sql" target="_blank">SQL do código Delphi</a>'
@@ -811,6 +841,38 @@ for f in FASES:
 fichas = {o['id']: ficha(o) for o in OPS}
 diagramas = {o['id']: diagrama(o) for o in OPS}
 fluxos = {o['id']: fluxograma(FLUXOS.get(o['id'], []), TAB_PASSO.get(o['id'], {})) for o in OPS}
+
+# tabela inteira, para o painel que abre ao clicar — só das tabelas que aparecem
+usadas = set()
+for o in OPS:
+    usadas.update(o['tabelas'])
+for m in TAB_PASSO.values():
+    for lst in m.values():
+        usadas.update(lst)
+
+def tipo_legivel(c):
+    t, n = c['tipo'], c['max_length']
+    if t in ('nvarchar', 'varchar', 'char', 'nchar'):
+        if n in ('-1', '', None):
+            return t + '(max)'
+        return '%s(%s)' % (t, int(n) // 2 if t.startswith('n') else n)
+    if t in ('decimal', 'numeric'):
+        return '%s(%s,%s)' % (t, c['precision'], c['scale'])
+    return t
+
+DETALHE = {}
+for t in sorted(usadas):
+    if t not in tcols:
+        continue
+    chave = {c.lower() for c in pk.get(t, [])}
+    DETALHE[t] = {
+        'n': vol(t),
+        'pk': pk.get(t, []),
+        'cols': [[c['coluna'], tipo_legivel(c), c['is_nullable'] == 'True',
+                  c['coluna'].lower() in chave] for c in tcols[t]],
+        'liga': sorted({'%s.%s → %s.%s%s' % (o, co, d, cd, '' if dec else '  (inferida)')
+                        for o, co, d, cd, dec in RELS if o == t or d == t})[:40],
+    }
 
 HTML = """<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -834,9 +896,26 @@ binário ou impresso real. Onde não há fonte, o campo não aparece.</div>
 <div class="cap" id="cap"></div></div>
 </div>
 </main>
+<div id="det"></div>
 <footer>%d operações · fases: %s</footer>
 <script>
-const F=%s, D=%s, X=%s;
+const F=%s, D=%s, X=%s, T=%s;
+function detalhe(t){
+  const d=T[t]; const el=document.getElementById('det');
+  if(!d){el.classList.remove('on');return;}
+  let h='<span class="fechar" onclick="document.getElementById(\\'det\\').classList.remove(\\'on\\')">×</span>';
+  h+='<h4>'+t+'</h4><div class="m">'+d.n+' linhas · '+d.cols.length+' colunas · '+
+     (d.pk.length?'chave: '+d.pk.join(' + '):'<b>sem chave primária</b>')+'</div>';
+  h+='<table><tr><th>coluna</th><th>tipo</th><th>nulo</th></tr>';
+  d.cols.forEach(c=>{h+='<tr><td class="c'+(c[3]?' k':'')+'">'+(c[3]?'◆ ':'')+c[0]+
+    '</td><td class="t">'+c[1]+'</td><td class="t">'+(c[2]?'sim':'não')+'</td></tr>';});
+  h+='</table>';
+  if(d.liga.length){h+='<div class="m" style="margin:18px 0 6px"><b>Ligações</b></div>';
+    d.liga.forEach(l=>{h+='<div class="lig">'+l+'</div>';});}
+  el.innerHTML=h; el.classList.add('on'); el.scrollTop=0;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')
+  document.getElementById('det').classList.remove('on');});
 let atual='%s', vista='t';
 const CAP={
  t:'Caixa clicável abre a tabela no explorador do schema. Cada ligação tem cor própria, e a coluna '+
@@ -867,7 +946,8 @@ abre(F[ini]?ini:'%s');
 </script></body></html>""" % (CSS, '\n'.join(nav), len(OPS), ' · '.join(FASES),
                               json.dumps(fichas, ensure_ascii=False),
                               json.dumps(diagramas, ensure_ascii=False),
-                              json.dumps(fluxos, ensure_ascii=False), OPS[0]['id'], OPS[0]['id'])
+                              json.dumps(fluxos, ensure_ascii=False),
+                              json.dumps(DETALHE, ensure_ascii=False), OPS[0]['id'], OPS[0]['id'])
 
 p = os.path.join(BASE, 'operacoes.html')
 open(p, 'w', encoding='utf-8').write(HTML)

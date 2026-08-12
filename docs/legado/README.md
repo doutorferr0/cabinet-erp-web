@@ -748,6 +748,14 @@ lateral · paralelogramo roxo = documento que sai para fora (o PDF do orçamento
 fornecedor) · estádio laranja = fim. É aqui que aparecem as bifurcações reais do negócio — orçamento
 que expira em 5 dias, pedido sem saldo que vira compra, nota que pode ou não gerar financeiro.
 
+**Ao lado de cada passo entram as tabelas que ele toca**, ligadas por linha pontilhada — dá para ver
+que "cria os ambientes" mexe em `Ambiente` e `VendaAmbiente`, e que "preço vem do índice" consulta
+`Indice_preco`. As caixinhas também abrem no explorador. O ramo "não" da decisão sai pela esquerda,
+justamente para deixar a direita livre para essa coluna.
+
+As duas vistas têm **rolagem própria**: a ficha rola de um lado, o desenho do outro, sem uma
+arrastar a outra.
+
 ### Tudo é clicável
 
 - Caixa do diagrama e chip de tabela → abrem aquela tabela em `softlux-er.html`

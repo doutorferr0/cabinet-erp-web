@@ -313,37 +313,70 @@ def no(tipo, texto, cx, cy, w=FW, h=FH):
                  % (cx, yy, peso, l))
     return '\n'.join(g), h
 
-def fluxograma(passos):
-    """passos: lista de (tipo, texto, nota_do_ramo). Decisão ganha ramo à direita."""
+def fluxograma(passos, tabelas_por_passo=None):
+    """passos: lista de (tipo, texto, nota_do_ramo).
+    À direita de cada passo entram as tabelas que ele toca, ligadas por linha pontilhada.
+    O ramo 'não' da decisão sai pela ESQUERDA, para não brigar com a coluna de tabelas."""
     if not passos:
         return ''
-    W = 700
-    cx = 250
+    tabelas_por_passo = tabelas_por_passo or {}
+    W = 900
+    cx = 300
+    TABX = 570          # início da coluna de tabelas
+    TABW = 210
     out, y = [], 40
     caixas = []
-    for tipo, texto, ramo in passos:
+    for i, (tipo, texto, ramo) in enumerate(passos):
         _, alt = no(tipo, texto, cx, 0)      # mede
-        cy = y + alt / 2
+        # o passo precisa de espaço vertical para as tabelas que pendura
+        ntab = len(tabelas_por_passo.get(i, []))
+        alt_tab = max(0, ntab * 34 - 10)
+        cy = y + max(alt, alt_tab) / 2
         svg, alt = no(tipo, texto, cx, cy)   # desenha na posição certa
-        caixas.append((tipo, texto, ramo, cy, alt))
+        caixas.append((tipo, texto, ramo, cy, alt, i))
         out.append(svg)
-        y += alt + FGAP
+        y += max(alt, alt_tab) + FGAP
     H = y + 10
+
+    # coluna de tabelas, à direita, ligada ao passo por linha pontilhada
+    for tipo, texto, ramo, cy, alt, i in caixas:
+        tabs = [t for t in tabelas_por_passo.get(i, []) if t in tcols]
+        if not tabs:
+            continue
+        topo = cy - (len(tabs) * 34 - 10) / 2
+        out.append('<line x1="%.0f" y1="%.0f" x2="%d" y2="%.0f" stroke="#C9BFA9" stroke-width="1.4" '
+                   'stroke-dasharray="4 4"/>' % (cx + FW / 2 + (16 if tipo == 'decisao' else 0), cy, TABX - 14, cy))
+        for j, t in enumerate(tabs):
+            ty = topo + j * 34
+            if len(tabs) > 1:
+                out.append('<path d="M%d %.0f H%d V%.0f" fill="none" stroke="#C9BFA9" stroke-width="1.4" '
+                           'stroke-dasharray="4 4"/>' % (TABX - 14, cy, TABX - 8, ty + 12))
+            out.append('<a href="softlux-er.html#%s" target="_blank"><g style="cursor:pointer">'
+                       '<title>%s — %s linhas\nclique abre no explorador</title>'
+                       '<rect x="%d" y="%.0f" width="%d" height="24" rx="6" fill="#FFFDF8" stroke="#B9AE97"/>'
+                       '<text x="%d" y="%.0f" font-size="11.5" font-weight="600" fill="#1C1A17" '
+                       'font-family="ui-monospace,monospace">%s</text>'
+                       '<text x="%d" y="%.0f" font-size="10" fill="#8B8377" text-anchor="end">%s</text>'
+                       '</g></a>'
+                       % (t, t, vol(t), TABX, ty, TABW, TABX + 9, ty + 16, t[:22],
+                          TABX + TABW - 8, ty + 16, vol(t)))
     setas = []
     for i in range(len(caixas) - 1):
-        _, _, _, cy, alt = caixas[i]
+        cy, alt = caixas[i][3], caixas[i][4]
         y1 = cy + alt / 2
         y2 = caixas[i + 1][3] - caixas[i + 1][4] / 2
         setas.append('<line x1="%d" y1="%.0f" x2="%d" y2="%.0f" stroke="#8B8377" stroke-width="1.8" '
                      'marker-end="url(#setaF)"/>' % (cx, y1, cx, y2 - 2))
-    for tipo, texto, ramo, cy, alt in caixas:
+    for tipo, texto, ramo, cy, alt, _i in caixas:
         if tipo == 'decisao' and ramo:
-            x1 = cx + FW / 2 + 16
+            # o ramo "não" sai pela ESQUERDA: a direita é da coluna de tabelas
+            x1 = cx - FW / 2 - 16
             setas.append('<line x1="%.0f" y1="%.0f" x2="%d" y2="%.0f" stroke="#8B8377" stroke-width="1.8" '
-                         'marker-end="url(#setaF)"/>' % (x1, cy, 500, cy))
-            svg, _ = no('fim', ramo, 590, cy, 170, 40)
+                         'marker-end="url(#setaF)"/>' % (x1, cy, 108, cy))
+            svg, _ = no('fim', ramo, 100, cy, 170, 40)
             setas.append(svg)
-            setas.append('<text x="%.0f" y="%.0f" font-size="11" fill="#8B8377">não</text>' % (x1 + 14, cy - 8))
+            setas.append('<text x="%.0f" y="%.0f" font-size="11" fill="#8B8377" text-anchor="end">não</text>'
+                         % (x1 - 12, cy - 8))
             setas.append('<text x="%d" y="%.0f" font-size="11" fill="#8B8377">sim</text>' % (cx + 8, cy + alt / 2 + 24))
     defs = ('<defs><marker id="setaF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
             'orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8B8377"/></marker></defs>')
@@ -555,6 +588,32 @@ VER = {
  'profissional':   [('orcamento', 'onde a indicação é registrada'), ('cliente', 'quem ele traz')],
 }
 
+# que tabela cada passo do fluxo toca — o índice é a posição na lista de FLUXOS
+TAB_PASSO = {
+ 'orcamento': {1: ['Clientes', 'Obras', 'Indicacoes'], 2: ['Ambiente', 'VendaAmbiente'],
+               3: ['VendaProduto', 'produtos'], 4: ['Indice_preco', 'VendaDesconto'],
+               5: ['VendaServico'], 6: ['Venda'], 7: ['Venda', 'VendaAtendente']},
+ 'pedido': {1: ['Venda'], 2: ['Estoque_produto'], 3: ['VendaProduto'], 4: ['estoque_log']},
+ 'produto': {1: ['produtos'], 2: ['ProdutosFornecedores', 'fornecedor'], 3: ['produtos'],
+             4: ['Preco_Produto', 'Acabamento'], 5: ['Custo', 'Indice_preco'], 6: ['produtos']},
+ 'preco': {1: ['Preco_Produto'], 2: ['Custo'], 3: ['Indice_preco'], 4: ['Preco_Produto_Log'],
+           5: ['Preco_Produto']},
+ 'estoque-saldo': {1: ['Estoque_produto', 'EstoqueTipo'], 2: ['Preco_Produto'],
+                   3: ['CompraEstoque'], 4: ['ordem_compra']},
+ 'estoque-mov': {1: ['estoque_log'], 2: ['Nota_entrada'], 3: ['estoque_log'],
+                 4: ['Estoque_produto', 'estoque_produto_dia']},
+ 'pedido-compra': {1: ['pedido_compra', 'Venda'], 2: ['Pedido_compra_det', 'fornecedor'],
+                   3: ['ordem_compra']},
+ 'ordem-compra': {1: ['pedido_compra'], 2: ['ordem_compra', 'ordem_compra_det'],
+                  3: ['fornecedor'], 4: ['Nota_entrada']},
+ 'nota-entrada': {1: ['Nota_entrada', 'nota_entrada_det'], 2: ['estoque_log', 'Estoque_produto'],
+                  3: ['CategoriaVenda'], 4: ['Contas_apagar_pag']},
+ 'cliente': {1: ['Clientes'], 2: ['Obras'], 3: ['Indicacoes'], 4: ['Venda']},
+ 'fornecedor': {1: ['fornecedor'], 2: ['Custo'], 3: ['Indice_preco'], 4: ['Preco_Produto']},
+ 'profissional': {1: ['Indicacoes'], 2: ['VendaIndicacaoGrupProd'], 3: ['VendaIndicacao'],
+                  4: ['CreditoIndicacao']},
+}
+
 # fluxo da operação — notação clássica.
 # tipo: inicio · acao · decisao · doc · fim   |   3º item = destino do ramo "não" da decisão
 FLUXOS = {
@@ -647,9 +706,11 @@ header{padding:20px 28px 14px;background:var(--papel);border-bottom:1px solid va
 h1{margin:0 0 3px;font-size:20px;letter-spacing:-.01em}
 .sub{color:var(--tinta2);font-size:13px;max-width:88ch}
 main{display:flex;align-items:flex-start;height:calc(100vh - 96px)}
-.painel{flex:1;display:flex;align-items:flex-start;overflow:auto;height:100%}
-.diag{flex:1;min-width:560px;position:sticky;top:0;padding:18px 24px 0 0}
-.diag svg{width:100%;height:auto;background:var(--papel);border:1px solid var(--linha);border-radius:8px}
+/* dois scrolls independentes: a ficha rola de um lado, o desenho do outro */
+.painel{flex:1;display:flex;align-items:stretch;overflow:hidden;height:100%}
+.diag{flex:1;min-width:560px;padding:18px 24px 30px 0;overflow:auto;height:100%}
+.diag svg{width:100%;min-width:820px;height:auto;background:var(--papel);
+border:1px solid var(--linha);border-radius:8px}
 .diag .cap{color:var(--tinta3);font-size:12px;margin:8px 2px 0;max-width:70ch}
 .abas{display:flex;gap:6px;margin-bottom:10px}
 .abas button{padding:6px 14px;border:1px solid var(--linha);background:var(--papel);
@@ -672,7 +733,8 @@ nav a{display:block;padding:6px 16px;cursor:pointer;font-size:14px;color:var(--t
 text-decoration:none;border-left:3px solid transparent}
 nav a:hover{background:var(--creme)}
 nav a.on{background:var(--creme);border-left-color:var(--sel);font-weight:600}
-section{flex:none;width:620px;padding:22px 26px 70px}
+section{flex:none;width:620px;padding:22px 26px 70px;overflow-y:auto;height:100%;
+border-right:1px solid var(--linha)}
 h2{margin:0 0 4px;font-size:24px;letter-spacing:-.015em}
 .resumo{color:var(--tinta2);font-size:16px;margin-bottom:18px}
 .bloco{background:var(--papel);border:1px solid var(--linha);border-radius:8px;
@@ -748,7 +810,7 @@ for f in FASES:
 
 fichas = {o['id']: ficha(o) for o in OPS}
 diagramas = {o['id']: diagrama(o) for o in OPS}
-fluxos = {o['id']: fluxograma(FLUXOS.get(o['id'], [])) for o in OPS}
+fluxos = {o['id']: fluxograma(FLUXOS.get(o['id'], []), TAB_PASSO.get(o['id'], {})) for o in OPS}
 
 HTML = """<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -796,7 +858,8 @@ function abre(id){
   document.getElementById('ficha').innerHTML=F[id];
   pinta();
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.id==='n-'+id));
-  document.querySelector('.painel').scrollTop=0;
+  document.querySelector('section').scrollTop=0;
+  document.querySelector('.diag').scrollTop=0;
   location.hash=id;
 }
 const ini=decodeURIComponent(location.hash.slice(1));

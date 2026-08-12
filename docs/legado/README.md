@@ -733,6 +733,20 @@ Cada afirmação carrega a **procedência**: `banco` (engenharia reversa do SQL 
 (impresso real do orçamento). Onde não havia fonte, o campo não existe — não se preencheu com
 suposição.
 
+### Diagrama ao lado de cada ficha
+
+Cada operação traz, ao lado do texto, um desenho só das tabelas dela — o documento no centro, o que
+depende dele em azul, o que ela consulta em verde. **Linha cheia é relação declarada pelo banco;
+tracejada é inferida por nós** (o legado declara 208 FKs para 359 tabelas). Passar o mouse na linha
+mostra a coluna que liga; passar na caixa mostra o volume.
+
+### Tudo é clicável
+
+- Caixa do diagrama e chip de tabela → abrem aquela tabela em `softlux-er.html`
+- Bloco **Ligado a** → salta para a ficha da operação vizinha, seguindo o fluxo do negócio
+  (orçamento → pedido → pedido de compra → ordem → nota → estoque)
+- Bloco **Ir mais fundo** → DBML para importar num editor de diagrama, e o SQL real do código Delphi
+
 ### Por que a tela não serve de fonte
 
 O SQL guardado dentro do formulário é o de **tempo de design**, e nas telas de venda ele ficou

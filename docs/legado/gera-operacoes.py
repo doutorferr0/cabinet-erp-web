@@ -22,6 +22,182 @@ def vol(t):
     n = linhas.get(t.lower())
     return format(n, ',d').replace(',', '.') if n else ('vazia' if n == 0 else '?')
 
+# ---------------------------------------------------------------- relações
+# Mesma lógica do gera-dbml.py: o legado declara 208 FKs para 359 tabelas, então
+# o desenho precisa das inferidas para não sair com caixas soltas.
+import re, math
+
+def rd(n):
+    with open(os.path.join(SCH, n), encoding='utf-8-sig') as f:
+        return list(csv.DictReader(f))
+
+_cols = rd('bdprincipal-colunas.csv')
+_fks = rd('bdprincipal-fks.csv')
+_idx = rd('bdprincipal-indices.csv')
+
+tcols = {}
+for r in _cols:
+    tcols.setdefault(r['tabela'], []).append(r)
+for t in tcols:
+    tcols[t].sort(key=lambda r: int(r['ordem']))
+
+pk = {}
+for r in _idx:
+    if r['is_primary_key'] == 'True' and r['is_included_column'] != 'True':
+        pk.setdefault(r['tabela'], []).append((int(r['key_ordinal']), r['coluna']))
+pk = {t: [c for _, c in sorted(v)] for t, v in pk.items()}
+
+tipo_de = {(r['tabela'], r['coluna'].lower()): r['tipo'] for r in _cols}
+dono = {}
+for t, k in pk.items():
+    if len(k) == 1:
+        dono.setdefault(k[0].lower(), []).append((t, k[0]))
+dono = {c: v[0] for c, v in dono.items() if len(v) == 1}
+ocorre = {}
+for r in _cols:
+    c = r['coluna'].lower()
+    ocorre[c] = ocorre.get(c, 0) + 1
+
+SINONIMOS = {'epr_codnosso': ('produtos', 'Pro_codnosso'), 'pre_codnosso': ('produtos', 'Pro_codnosso'),
+             'epr_acabamento': ('Acabamento', 'CodAcabamento'), 'pre_acabamento': ('Acabamento', 'CodAcabamento'),
+             'pre_fornecedor': ('fornecedor', 'For_codigo')}
+RUIDO = {'emp_codigo', 'usr_codigo', 'usr_cod_alteracao', 'usr_cod_inclusao',
+         'id', 'codigo', 'cod', 'nome', 'descricao', 'situacao'}
+
+RELS = []          # (origem, coluna, destino, coluna_destino, declarada?)
+_vistas = set()
+for r in _fks:
+    o, co, d, cd = r['tabela_origem'], r['coluna_origem'], r['tabela_destino'], r['coluna_destino']
+    k = (o.lower(), co.lower(), d.lower(), cd.lower())
+    if k in _vistas or (o.lower(), co.lower()) == (d.lower(), cd.lower()):
+        continue
+    _vistas.add(k)
+    RELS.append((o, co, d, cd, True))
+for t, cs in tcols.items():
+    for c in cs:
+        cl = c['coluna'].lower()
+        if cl in SINONIMOS:
+            alvo, ac = SINONIMOS[cl]
+        else:
+            if cl in RUIDO or ocorre.get(cl, 0) > 60:
+                continue
+            achado = dono.get(cl)
+            if not achado:
+                continue
+            alvo, ac = achado
+            if tipo_de.get((t, cl)) != tipo_de.get((alvo, cl)):
+                continue
+            if len(pk.get(t, [])) == 1 and pk[t][0].lower() == cl:
+                continue
+        if alvo == t or alvo not in tcols:
+            continue
+        k = (t.lower(), cl, alvo.lower(), ac.lower())
+        if k in _vistas:
+            continue
+        _vistas.add(k)
+        RELS.append((t, c['coluna'], alvo, ac, False))
+
+# ---------------------------------------------------------------- diagrama
+CX, CY = 500, 360          # centro do desenho
+BW, BH_BASE = 172, 26      # caixa: largura, altura do titulo
+
+def colunas_relevantes(t, ligacoes, limite=4):
+    """PK primeiro, depois as colunas que participam de alguma ligação do desenho."""
+    chave = pk.get(t, [])
+    usadas = []
+    for c in chave:
+        usadas.append((c, 'pk'))
+    for col in ligacoes.get(t, []):
+        if not any(c.lower() == col.lower() for c, _ in usadas):
+            usadas.append((col, 'fk'))
+    total = len(tcols.get(t, []))
+    return usadas[:limite], max(0, total - min(len(usadas), limite))
+
+def diagrama(op):
+    tabs = [t for t in op['tabelas'] if t in tcols]
+    if len(tabs) < 2:
+        return ''
+    central = tabs[0]
+    resto = tabs[1:]
+    dentro = set(tabs)
+    arestas = [(o, co, d, cd, dec) for o, co, d, cd, dec in RELS if o in dentro and d in dentro]
+    ligacoes = {}
+    for o, co, d, cd, dec in arestas:
+        ligacoes.setdefault(o, []).append(co)
+        ligacoes.setdefault(d, []).append(cd)
+
+    # papel de cada tabela, derivado da direção da relação com a central
+    papel = {central: 'centro'}
+    for t in resto:
+        p = 'solta'
+        for o, co, d, cd, dec in arestas:
+            if o == t and d == central: p = 'item'; break
+            if o == central and d == t: p = 'ref'
+        papel[t] = p
+
+    # posições: central no meio, satélites em uma ou duas órbitas
+    pos = {central: (CX, CY)}
+    n = len(resto)
+    raio1, raio2 = 250, 250
+    prim = resto if n <= 7 else resto[:math.ceil(n/2)]
+    seg = [] if n <= 7 else resto[math.ceil(n/2):]
+    def espalha(lista, raio, rx, ry, fase=0.0):
+        for i, t in enumerate(lista):
+            a = fase + 2*math.pi*i/max(1, len(lista))
+            pos[t] = (CX + rx*math.cos(a), CY + ry*math.sin(a))
+    espalha(prim, raio1, 415, 285, -math.pi/2)
+    if seg:
+        espalha(seg, raio2, 232, 168, -math.pi/2 + math.pi/len(seg))
+
+    CORES = {'centro': ('#1C1A17', '#FFFDF8'), 'item': ('#0091FF', '#F2F8FF'),
+             'ref': ('#2E7D32', '#F3F9F3'), 'solta': ('#8B8377', '#FAF6EE')}
+    ROT = {'centro': 'documento', 'item': 'depende dele', 'ref': 'consultada', 'solta': 'sem ligação direta'}
+
+    out = []
+    # linhas primeiro, para ficarem atrás das caixas
+    for o, co, d, cd, dec in arestas:
+        if o not in pos or d not in pos: continue
+        x1, y1 = pos[o]; x2, y2 = pos[d]
+        tracejado = '' if dec else ' stroke-dasharray="5 4"'
+        out.append('<line x1="%.0f" y1="%.0f" x2="%.0f" y2="%.0f" stroke="#C9BFA9" stroke-width="1.4"%s>'
+                   '<title>%s.%s → %s.%s%s</title></line>'
+                   % (x1, y1, x2, y2, tracejado, o, co, d, cd, '' if dec else '  (inferida)'))
+    for t in tabs:
+        x, y = pos[t]
+        cols, restam = colunas_relevantes(t, ligacoes)
+        h = BH_BASE + 15*len(cols) + (13 if restam else 0) + 8
+        borda, fundo = CORES[papel[t]]
+        larg = BW if t != central else BW + 16
+        x0, y0 = x - larg/2, y - h/2
+        peso = 2.4 if t == central else 1.3
+        # a caixa é clicável: abre a tabela no explorador do schema
+        out.append('<a href="softlux-er.html#%s" target="_blank"><g style="cursor:pointer">'
+                   '<title>%s — %s linhas · %s (clique abre no explorador)</title>' % (t, t, vol(t), ROT[papel[t]]))
+        out.append('<rect x="%.0f" y="%.0f" width="%d" height="%d" rx="7" fill="%s" stroke="%s" stroke-width="%s"/>'
+                   % (x0, y0, larg, h, fundo, borda, peso))
+        out.append('<text x="%.0f" y="%.0f" font-size="12.5" font-weight="700" fill="%s" text-anchor="middle">%s</text>'
+                   % (x, y0 + 17, borda, t[:22]))
+        for i, (c, kind) in enumerate(cols):
+            marca = '◆' if kind == 'pk' else '·'
+            out.append('<text x="%.0f" y="%.0f" font-size="10.5" fill="#5A544B">%s %s</text>'
+                       % (x0 + 9, y0 + 33 + 15*i, marca, c[:22]))
+        if restam:
+            out.append('<text x="%.0f" y="%.0f" font-size="10" fill="#8B8377" font-style="italic">… mais %d colunas</text>'
+                       % (x0 + 9, y0 + 33 + 15*len(cols), restam))
+        out.append('</g></a>')
+
+    legenda = ('<g font-size="10.5" fill="#5A544B">'
+               '<rect x="14" y="14" width="11" height="11" rx="3" fill="#FFFDF8" stroke="#1C1A17" stroke-width="2"/>'
+               '<text x="32" y="24">documento da operação</text>'
+               '<rect x="14" y="34" width="11" height="11" rx="3" fill="#F2F8FF" stroke="#0091FF"/>'
+               '<text x="32" y="44">depende dele</text>'
+               '<rect x="14" y="54" width="11" height="11" rx="3" fill="#F3F9F3" stroke="#2E7D32"/>'
+               '<text x="32" y="64">consultada pela operação</text>'
+               '<line x1="14" y1="79" x2="26" y2="79" stroke="#C9BFA9" stroke-width="1.4" stroke-dasharray="5 4"/>'
+               '<text x="32" y="83">ligação inferida, não declarada</text></g>')
+    return ('<svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">%s%s</svg>'
+            % (legenda, '\n'.join(out)))
+
 # ---------------------------------------------------------------- conteúdo
 # F = fonte. banco = engenharia reversa do SQL Server · param = Paramentros ·
 # perm = SisPermissao/SisOpcoesEspecial · exe = binário Delphi · pdf = impresso real
@@ -200,6 +376,29 @@ OPS = [
 
 FASES = ['Cadastro', 'Produto e preço', 'Venda', 'Compra', 'Estoque']
 
+# quem se liga a quem no FLUXO — vira link entre fichas
+VER = {
+ 'orcamento':      [('pedido', 'o passo seguinte, quando aprovado'), ('preco', 'de onde vem o valor unitário'),
+                    ('cliente', 'quem compra'), ('profissional', 'quem indica e recebe comissão'),
+                    ('produto', 'o que é orçado')],
+ 'pedido':         [('orcamento', 'de onde ele nasce, em 99,8% dos casos'), ('pedido-compra', 'o que ele dispara'),
+                    ('estoque-mov', 'a baixa que ele gera')],
+ 'produto':        [('preco', 'sem índice e custo, não tem preço de venda'), ('fornecedor', 'quem fornece'),
+                    ('estoque-saldo', 'onde o saldo da variante é contado')],
+ 'preco':          [('fornecedor', 'o índice é POR fornecedor'), ('produto', 'a variante que recebe o preço'),
+                    ('orcamento', 'onde o preço é usado')],
+ 'estoque-saldo':  [('estoque-mov', 'o histórico que explica o saldo'), ('nota-entrada', 'principal entrada'),
+                    ('pedido', 'principal saída')],
+ 'estoque-mov':    [('estoque-saldo', 'o saldo que ela altera'), ('nota-entrada', 'origem NOTA DE ENTRADA')],
+ 'pedido-compra':  [('pedido', 'a origem da necessidade'), ('ordem-compra', 'o agrupamento por fornecedor')],
+ 'ordem-compra':   [('pedido-compra', 'o que ela agrupa'), ('nota-entrada', 'a chegada da mercadoria'),
+                    ('fornecedor', 'para quem vai')],
+ 'nota-entrada':   [('ordem-compra', 'o que foi pedido'), ('estoque-mov', 'a entrada que ela gera')],
+ 'cliente':        [('orcamento', 'o documento que ele origina'), ('profissional', 'quem costuma indicá-lo')],
+ 'fornecedor':     [('preco', 'define o índice'), ('produto', 'fornece o item'), ('ordem-compra', 'recebe a ordem')],
+ 'profissional':   [('orcamento', 'onde a indicação é registrada'), ('cliente', 'quem ele traz')],
+}
+
 CSS = """
 :root{--creme:#FAF6EE;--papel:#FFFDF8;--tinta:#1C1A17;--tinta2:#5A544B;--tinta3:#8B8377;
 --linha:#E2DACB;--ok:#2E7D32;--alerta:#C2410C;--sel:#0091FF}
@@ -210,6 +409,19 @@ header{padding:20px 28px 14px;background:var(--papel);border-bottom:1px solid va
 h1{margin:0 0 3px;font-size:20px;letter-spacing:-.01em}
 .sub{color:var(--tinta2);font-size:13px;max-width:88ch}
 main{display:flex;align-items:flex-start;height:calc(100vh - 96px)}
+.painel{flex:1;display:flex;align-items:flex-start;overflow:auto;height:100%}
+.diag{flex:none;width:640px;position:sticky;top:0;padding:18px 20px 0 0}
+.diag svg{width:100%;height:auto;background:var(--papel);border:1px solid var(--linha);border-radius:8px}
+.diag .cap{color:var(--tinta3);font-size:12px;margin:8px 2px 0}
+@media(max-width:1400px){.diag{width:480px}}
+@media(max-width:1150px){.painel{flex-direction:column}.diag{position:static;width:100%;padding:0 24px}}
+a.tb{text-decoration:none;font-size:12px;padding:3px 9px;border-radius:5px;background:var(--creme);
+border:1px solid var(--linha);color:var(--tinta2);cursor:pointer}
+a.tb:hover{border-color:var(--sel);color:var(--sel)}
+a.tb b{color:var(--tinta);font-weight:600}
+a.op{color:var(--sel);cursor:pointer;text-decoration:none;border-bottom:1px solid transparent}
+a.op:hover{border-bottom-color:var(--sel)}
+.dica{text-transform:none;letter-spacing:0;font-weight:400;color:var(--tinta3)}
 nav{width:250px;flex:none;border-right:1px solid var(--linha);background:var(--papel);
 overflow:auto;height:100%;padding:10px 0}
 nav .fase{padding:12px 16px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
@@ -218,7 +430,7 @@ nav a{display:block;padding:6px 16px;cursor:pointer;font-size:14px;color:var(--t
 text-decoration:none;border-left:3px solid transparent}
 nav a:hover{background:var(--creme)}
 nav a.on{background:var(--creme);border-left-color:var(--sel);font-weight:600}
-section{flex:1;padding:22px 30px 70px;overflow:auto;height:100%;max-width:900px}
+section{flex:none;width:620px;padding:22px 26px 70px}
 h2{margin:0 0 4px;font-size:24px;letter-spacing:-.015em}
 .resumo{color:var(--tinta2);font-size:16px;margin-bottom:18px}
 .bloco{background:var(--papel);border:1px solid var(--linha);border-radius:8px;
@@ -250,8 +462,10 @@ def ficha(o):
     h = ['<h2>%s</h2><div class="resumo">%s</div>' % (o['nome'], o['resumo'])]
     h.append('<div class="bloco"><h3>Onde vive o dado</h3><p style="margin:0">%s</p></div>' % o['onde'])
     if o['tabelas']:
-        tags = ''.join('<span><b>%s</b> %s</span>' % (t, vol(t)) for t in o['tabelas'])
-        h.append('<div class="bloco"><h3>Tabelas envolvidas</h3><div class="tabs">%s</div></div>' % tags)
+        tags = ''.join('<a class="tb" href="softlux-er.html#%s" target="_blank"><b>%s</b> %s</a>'
+                       % (t, t, vol(t)) for t in o['tabelas'])
+        h.append('<div class="bloco"><h3>Tabelas envolvidas <span class="dica">— clique abre no '
+                 'explorador do schema</span></h3><div class="tabs">%s</div></div>' % tags)
     if o['exige']:
         li = ''.join('<li>%s<br><span class="fonte">%s</span></li>' % (a, b) for a, b in o['exige'])
         h.append('<div class="bloco"><h3>O que a operação exige</h3><ul>%s</ul></div>' % li)
@@ -268,6 +482,19 @@ def ficha(o):
     if o['defeitos']:
         li = ''.join('<li>%s</li>' % x for x in o['defeitos'])
         h.append('<div class="bloco def"><h3>Não repetir no Cabinet</h3><ul>%s</ul></div>' % li)
+    nomes = {x['id']: x['nome'] for x in OPS}
+    if VER.get(o['id']):
+        li = ''.join('<li><a class="op" onclick="abre(\'%s\')">%s</a> <span class="fonte">— %s</span></li>'
+                     % (i, nomes.get(i, i), por) for i, por in VER[o['id']] if i in nomes)
+        h.append('<div class="bloco"><h3>Ligado a</h3><ul>%s</ul></div>' % li)
+    h.append('<div class="bloco"><h3>Ir mais fundo</h3><ul>'
+             '<li><a class="op" href="softlux-er.html#%s" target="_blank">Abrir <b>%s</b> no explorador do schema</a>'
+             ' — colunas, chaves e quem se liga a ela</li>'
+             '<li><a class="op" href="dbml/softlux-nucleo.dbml" target="_blank">DBML do núcleo</a>'
+             ' — para importar num editor de diagrama</li>'
+             '<li><a class="op" href="exe/sql-do-codigo.sql" target="_blank">SQL do código Delphi</a>'
+             ' — as consultas e gravações reais do legado</li>'
+             '</ul></div>' % (o['tabelas'][0] if o['tabelas'] else '', o['tabelas'][0] if o['tabelas'] else ''))
     return '\n'.join(h)
 
 nav = []
@@ -278,6 +505,7 @@ for f in FASES:
             nav.append('<a id="n-%s" onclick="abre(\'%s\')">%s</a>' % (o['id'], o['id'], o['nome']))
 
 fichas = {o['id']: ficha(o) for o in OPS}
+diagramas = {o['id']: diagrama(o) for o in OPS}
 
 HTML = """<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -292,21 +520,29 @@ binário ou impresso real. Onde não há fonte, o campo não aparece.</div>
 </header>
 <main>
 <nav>%s</nav>
+<div class="painel">
 <section id="ficha"></section>
+<div class="diag"><div id="svg"></div>
+<div class="cap">Caixa clicável abre a tabela no explorador do schema. Linha tracejada = ligação
+inferida por nós, não declarada pelo banco. Passe o mouse para ver a coluna que liga.</div></div>
+</div>
 </main>
 <footer>%d operações · fases: %s</footer>
 <script>
-const F=%s;
+const F=%s, D=%s;
 function abre(id){
+  if(!F[id]) return;
   document.getElementById('ficha').innerHTML=F[id];
+  document.getElementById('svg').innerHTML=D[id]||'';
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.id==='n-'+id));
-  document.getElementById('ficha').scrollTop=0;
+  document.querySelector('.painel').scrollTop=0;
   location.hash=id;
 }
 const ini=decodeURIComponent(location.hash.slice(1));
 abre(F[ini]?ini:'%s');
 </script></body></html>""" % (CSS, '\n'.join(nav), len(OPS), ' · '.join(FASES),
-                              json.dumps(fichas, ensure_ascii=False), OPS[0]['id'])
+                              json.dumps(fichas, ensure_ascii=False),
+                              json.dumps(diagramas, ensure_ascii=False), OPS[0]['id'])
 
 p = os.path.join(BASE, 'operacoes.html')
 open(p, 'w', encoding='utf-8').write(HTML)

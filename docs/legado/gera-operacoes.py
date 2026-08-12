@@ -98,27 +98,78 @@ for t, cs in tcols.items():
         RELS.append((t, c['coluna'], alvo, ac, False))
 
 # ---------------------------------------------------------------- diagrama
-CX, CY = 500, 360          # centro do desenho
-BW, BH_BASE = 172, 26      # caixa: largura, altura do titulo
+BW = 232                   # largura da caixa
+HDR = 30                   # altura do cabeçalho
+LIN = 21                   # altura de cada linha de coluna
+GAPY = 26                  # espaço vertical entre caixas
+COLX = 340                 # distância horizontal entre colunas
 
-def colunas_relevantes(t, ligacoes, limite=4):
+def colunas_relevantes(t, ligacoes, limite=5):
     """PK primeiro, depois as colunas que participam de alguma ligação do desenho."""
     chave = pk.get(t, [])
-    usadas = []
-    for c in chave:
-        usadas.append((c, 'pk'))
+    usadas = [(c, 'pk') for c in chave]
     for col in ligacoes.get(t, []):
         if not any(c.lower() == col.lower() for c, _ in usadas):
             usadas.append((col, 'fk'))
     total = len(tcols.get(t, []))
     return usadas[:limite], max(0, total - min(len(usadas), limite))
 
+# uma cor por ligação: a linha, o rótulo dela e a coluna dentro das duas caixas
+# ficam da MESMA cor, para o olho seguir sem contar linhas
+PALETA = ['#0060B0', '#C2410C', '#2E7D32', '#7A5CB8', '#B7791F',
+          '#B0306B', '#0E7C86', '#8A6D3B', '#3D6B9E', '#A0522D']
+
+def caixa(t, papel, cols, restam, x0, y0, larg, alt, cor_col=None):
+    """Uma tabela: cabeçalho colorido + uma linha por coluna, com divisória."""
+    CORES = {'centro': ('#1C1A17', '#F0EDE6'), 'item': ('#0060B0', '#EAF4FF'),
+             'ref': ('#2E7D32', '#EDF6ED'), 'solta': ('#8B8377', '#F5F1E8')}
+    ROT = {'centro': 'documento da operação', 'item': 'depende do documento',
+           'ref': 'consultada pela operação', 'solta': 'sem ligação direta no recorte'}
+    borda, fundo = CORES[papel]
+    g = ['<a href="softlux-er.html#%s" target="_blank"><g style="cursor:pointer">'
+         '<title>%s — %s linhas · %s\nclique abre no explorador do schema</title>' % (t, t, vol(t), ROT[papel])]
+    g.append('<rect x="%d" y="%d" width="%d" height="%d" rx="6" fill="#FFFDF8" stroke="%s" stroke-width="%s"/>'
+             % (x0, y0, larg, alt, borda, 2.6 if papel == 'centro' else 1.6))
+    g.append('<path d="M%d %d h%d v%d h-%d z" fill="%s"/>' % (x0, y0 + HDR, larg, -(HDR - 6), larg, fundo))
+    g.append('<rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>' % (x0, y0, larg, 8, fundo))
+    g.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="1.4"/>'
+             % (x0, y0 + HDR, x0 + larg, y0 + HDR, borda))
+    g.append('<text x="%d" y="%d" font-size="14" font-weight="700" fill="%s">%s</text>'
+             % (x0 + 11, y0 + 20, borda, t[:26]))
+    g.append('<text x="%d" y="%d" font-size="10.5" fill="#8B8377" text-anchor="end">%s</text>'
+             % (x0 + larg - 10, y0 + 20, vol(t)))
+    cor_col = cor_col or {}
+    for i, (c, kind) in enumerate(cols):
+        yy = y0 + HDR + LIN * i
+        if i:
+            g.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#EDE6D8" stroke-width="1"/>'
+                     % (x0 + 1, yy, x0 + larg - 1, yy))
+        cor = cor_col.get(c.lower())
+        if cor:   # coluna que participa de uma ligação: fundo tênue e texto na cor da linha
+            g.append('<rect x="%d" y="%d" width="%d" height="%d" fill="%s" opacity="0.10"/>'
+                     % (x0 + 1, yy + 1, larg - 2, LIN - 2, cor))
+            g.append('<rect x="%d" y="%d" width="4" height="%d" fill="%s"/>' % (x0 + 1, yy + 1, LIN - 2, cor))
+        g.append('<text x="%d" y="%d" font-size="11.5" fill="%s" font-family="ui-monospace,monospace" '
+                 'font-weight="%s">%s</text>'
+                 % (x0 + 26, yy + 15, cor or ('#1C1A17' if kind == 'pk' else '#5A544B'),
+                    '700' if (cor or kind == 'pk') else '400', c[:24]))
+        g.append('<text x="%d" y="%d" font-size="10" fill="%s">%s</text>'
+                 % (x0 + 10, yy + 15, cor or ('#C2410C' if kind == 'pk' else '#8B8377'),
+                    '◆' if kind == 'pk' else '•'))
+    if restam:
+        yy = y0 + HDR + LIN * len(cols)
+        g.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#EDE6D8" stroke-width="1"/>'
+                 % (x0 + 1, yy, x0 + larg - 1, yy))
+        g.append('<text x="%d" y="%d" font-size="10.5" fill="#8B8377" font-style="italic">mais %d colunas</text>'
+                 % (x0 + 24, yy + 14, restam))
+    g.append('</g></a>')
+    return '\n'.join(g)
+
 def diagrama(op):
     tabs = [t for t in op['tabelas'] if t in tcols]
     if len(tabs) < 2:
         return ''
     central = tabs[0]
-    resto = tabs[1:]
     dentro = set(tabs)
     arestas = [(o, co, d, cd, dec) for o, co, d, cd, dec in RELS if o in dentro and d in dentro]
     ligacoes = {}
@@ -126,77 +177,182 @@ def diagrama(op):
         ligacoes.setdefault(o, []).append(co)
         ligacoes.setdefault(d, []).append(cd)
 
-    # papel de cada tabela, derivado da direção da relação com a central
     papel = {central: 'centro'}
-    for t in resto:
+    for t in tabs[1:]:
         p = 'solta'
         for o, co, d, cd, dec in arestas:
             if o == t and d == central: p = 'item'; break
             if o == central and d == t: p = 'ref'
         papel[t] = p
 
-    # posições: central no meio, satélites em uma ou duas órbitas
-    pos = {central: (CX, CY)}
-    n = len(resto)
-    raio1, raio2 = 250, 250
-    prim = resto if n <= 7 else resto[:math.ceil(n/2)]
-    seg = [] if n <= 7 else resto[math.ceil(n/2):]
-    def espalha(lista, raio, rx, ry, fase=0.0):
-        for i, t in enumerate(lista):
-            a = fase + 2*math.pi*i/max(1, len(lista))
-            pos[t] = (CX + rx*math.cos(a), CY + ry*math.sin(a))
-    espalha(prim, raio1, 415, 285, -math.pi/2)
-    if seg:
-        espalha(seg, raio2, 232, 168, -math.pi/2 + math.pi/len(seg))
+    # três colunas: quem depende do documento | documento | o que ele consulta
+    esq = [t for t in tabs[1:] if papel[t] == 'item']
+    dir_ = [t for t in tabs[1:] if papel[t] == 'ref']
+    baixo = [t for t in tabs[1:] if papel[t] == 'solta']
+    dir_ += baixo
 
-    CORES = {'centro': ('#1C1A17', '#FFFDF8'), 'item': ('#0091FF', '#F2F8FF'),
-             'ref': ('#2E7D32', '#F3F9F3'), 'solta': ('#8B8377', '#FAF6EE')}
-    ROT = {'centro': 'documento', 'item': 'depende dele', 'ref': 'consultada', 'solta': 'sem ligação direta'}
+    dims = {}
+    for t in tabs:
+        cols, restam = colunas_relevantes(t, ligacoes)
+        alt = HDR + LIN * len(cols) + (19 if restam else 0) + 6
+        dims[t] = (cols, restam, alt)
 
-    out = []
-    # linhas primeiro, para ficarem atrás das caixas
-    for o, co, d, cd, dec in arestas:
+    def altura(col):
+        return sum(dims[t][2] for t in col) + GAPY * max(0, len(col) - 1)
+
+    H = max(altura(esq), altura(dir_), dims[central][2]) + 80
+    W = COLX * 2 + BW + 90
+    pos = {}
+    def empilha(col, x):
+        y = (H - altura(col)) / 2
+        for t in col:
+            pos[t] = (x, y)
+            y += dims[t][2] + GAPY
+    empilha(esq, 40)
+    empilha(dir_, 40 + COLX * 2)
+    pos[central] = (40 + COLX, (H - dims[central][2]) / 2)
+
+    out, marcadores, cor_col = [], [], {}
+    for i, (o, co, d, cd, dec) in enumerate(arestas):
         if o not in pos or d not in pos: continue
-        x1, y1 = pos[o]; x2, y2 = pos[d]
-        tracejado = '' if dec else ' stroke-dasharray="5 4"'
-        out.append('<line x1="%.0f" y1="%.0f" x2="%.0f" y2="%.0f" stroke="#C9BFA9" stroke-width="1.4"%s>'
-                   '<title>%s.%s → %s.%s%s</title></line>'
-                   % (x1, y1, x2, y2, tracejado, o, co, d, cd, '' if dec else '  (inferida)'))
+        cor = PALETA[i % len(PALETA)]
+        cor_col.setdefault((o, co.lower()), cor)
+        cor_col.setdefault((d, cd.lower()), cor)
+        xo, yo = pos[o]; xd, yd = pos[d]
+        x1 = xo + BW if xo < xd else xo
+        x2 = xd if xo < xd else xd + BW
+        y1 = yo + dims[o][2] / 2
+        y2 = yd + dims[d][2] / 2
+        mx = (x1 + x2) / 2
+        tracejado = '' if dec else ' stroke-dasharray="7 5"'
+        marcadores.append('<marker id="s%d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" '
+                          'markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="%s"/></marker>'
+                          % (i, cor))
+        rot = co[:22]
+        largura_rot = 7 * len(rot) + 14
+        out.append('<g><title>%s.%s → %s.%s%s</title>'
+                   '<path d="M%.0f %.0f C %.0f %.0f, %.0f %.0f, %.0f %.0f" fill="none" stroke="%s" '
+                   'stroke-width="2.2"%s marker-end="url(#s%d)" opacity="0.95"/>'
+                   '<rect x="%.0f" y="%.0f" width="%d" height="17" rx="8" fill="#FFFDF8" stroke="%s" stroke-width="1"/>'
+                   '<text x="%.0f" y="%.0f" font-size="10.5" font-weight="600" fill="%s" text-anchor="middle" '
+                   'font-family="ui-monospace,monospace">%s</text>'
+                   '<text x="%.0f" y="%.0f" font-size="12" font-weight="700" fill="%s">N</text>'
+                   '<text x="%.0f" y="%.0f" font-size="12" font-weight="700" fill="%s">1</text></g>'
+                   % (o, co, d, cd, '  (inferida)' if not dec else '',
+                      x1, y1, mx, y1, mx, y2, x2, y2, cor, tracejado, i,
+                      mx - largura_rot / 2, (y1 + y2) / 2 - 8.5 - 4, largura_rot, cor,
+                      mx, (y1 + y2) / 2 + 3.5 - 4, cor, rot,
+                      x1 + (7 if x1 < x2 else -16), y1 - 7, cor,
+                      x2 + (-18 if x1 < x2 else 9), y2 - 7, cor))
     for t in tabs:
         x, y = pos[t]
-        cols, restam = colunas_relevantes(t, ligacoes)
-        h = BH_BASE + 15*len(cols) + (13 if restam else 0) + 8
-        borda, fundo = CORES[papel[t]]
-        larg = BW if t != central else BW + 16
-        x0, y0 = x - larg/2, y - h/2
-        peso = 2.4 if t == central else 1.3
-        # a caixa é clicável: abre a tabela no explorador do schema
-        out.append('<a href="softlux-er.html#%s" target="_blank"><g style="cursor:pointer">'
-                   '<title>%s — %s linhas · %s (clique abre no explorador)</title>' % (t, t, vol(t), ROT[papel[t]]))
-        out.append('<rect x="%.0f" y="%.0f" width="%d" height="%d" rx="7" fill="%s" stroke="%s" stroke-width="%s"/>'
-                   % (x0, y0, larg, h, fundo, borda, peso))
-        out.append('<text x="%.0f" y="%.0f" font-size="12.5" font-weight="700" fill="%s" text-anchor="middle">%s</text>'
-                   % (x, y0 + 17, borda, t[:22]))
-        for i, (c, kind) in enumerate(cols):
-            marca = '◆' if kind == 'pk' else '·'
-            out.append('<text x="%.0f" y="%.0f" font-size="10.5" fill="#5A544B">%s %s</text>'
-                       % (x0 + 9, y0 + 33 + 15*i, marca, c[:22]))
-        if restam:
-            out.append('<text x="%.0f" y="%.0f" font-size="10" fill="#8B8377" font-style="italic">… mais %d colunas</text>'
-                       % (x0 + 9, y0 + 33 + 15*len(cols), restam))
-        out.append('</g></a>')
+        cols, restam, alt = dims[t]
+        larg = BW if t != central else BW + 20
+        if t == central:
+            x -= 10
+        mapa = {c: v for (tt, c), v in cor_col.items() if tt == t}
+        out.append(caixa(t, papel[t], cols, restam, int(x), int(y), larg, alt, mapa))
 
-    legenda = ('<g font-size="10.5" fill="#5A544B">'
-               '<rect x="14" y="14" width="11" height="11" rx="3" fill="#FFFDF8" stroke="#1C1A17" stroke-width="2"/>'
-               '<text x="32" y="24">documento da operação</text>'
-               '<rect x="14" y="34" width="11" height="11" rx="3" fill="#F2F8FF" stroke="#0091FF"/>'
-               '<text x="32" y="44">depende dele</text>'
-               '<rect x="14" y="54" width="11" height="11" rx="3" fill="#F3F9F3" stroke="#2E7D32"/>'
-               '<text x="32" y="64">consultada pela operação</text>'
-               '<line x1="14" y1="79" x2="26" y2="79" stroke="#C9BFA9" stroke-width="1.4" stroke-dasharray="5 4"/>'
-               '<text x="32" y="83">ligação inferida, não declarada</text></g>')
-    return ('<svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">%s%s</svg>'
-            % (legenda, '\n'.join(out)))
+    defs = '<defs>%s</defs>' % ''.join(marcadores)
+    legenda = ('<g font-size="11" fill="#5A544B">'
+               '<rect x="16" y="10" width="12" height="12" rx="3" fill="#F0EDE6" stroke="#1C1A17" stroke-width="2"/>'
+               '<text x="35" y="20">documento</text>'
+               '<rect x="130" y="10" width="12" height="12" rx="3" fill="#EAF4FF" stroke="#0060B0"/>'
+               '<text x="149" y="20">depende dele</text>'
+               '<rect x="262" y="10" width="12" height="12" rx="3" fill="#EDF6ED" stroke="#2E7D32"/>'
+               '<text x="281" y="20">consultada</text>'
+               '<line x1="378" y1="16" x2="404" y2="16" stroke="#5A544B" stroke-width="2.2"/>'
+               '<text x="411" y="20">declarada no banco</text>'
+               '<line x1="548" y1="16" x2="574" y2="16" stroke="#5A544B" stroke-width="2.2" stroke-dasharray="7 5"/>'
+               '<text x="581" y="20">inferida por nós</text>'
+               '<text x="16" y="40" font-size="10.5" fill="#8B8377">Cada ligação tem sua cor; a coluna que '
+               'participa dela aparece na mesma cor dentro das duas tabelas. N = muitos · 1 = um.</text></g>')
+    return ('<svg viewBox="0 0 %d %d" xmlns="http://www.w3.org/2000/svg">%s%s%s</svg>'
+            % (W, H, defs, legenda, '\n'.join(out)))
+
+# ---------------------------------------------------------------- fluxograma
+# notação clássica: estádio = início/fim · retângulo = ação · losango = decisão
+# · paralelogramo = documento que sai do sistema
+FW, FH = 250, 46           # largura/altura padrão do nó
+FGAP = 40                  # espaço vertical entre nós
+
+def no(tipo, texto, cx, cy, w=FW, h=FH):
+    linhas = []
+    palavras = texto.split()
+    linha = ''
+    for p in palavras:
+        if len(linha) + len(p) > 30:
+            linhas.append(linha); linha = p
+        else:
+            linha = (linha + ' ' + p).strip()
+    linhas.append(linha)
+    if len(linhas) > 1:
+        h = max(h, 22 + 15 * len(linhas))
+    x0, y0 = cx - w / 2, cy - h / 2
+    C = {'inicio': ('#2E7D32', '#EDF6ED'), 'fim': ('#C2410C', '#FDF1EA'),
+         'acao': ('#1C1A17', '#FFFDF8'), 'decisao': ('#0060B0', '#EAF4FF'),
+         'doc': ('#7A5CB8', '#F4F0FC')}
+    borda, fundo = C[tipo]
+    g = []
+    if tipo in ('inicio', 'fim'):
+        g.append('<rect x="%.0f" y="%.0f" width="%.0f" height="%.0f" rx="%.0f" fill="%s" stroke="%s" stroke-width="2"/>'
+                 % (x0, y0, w, h, h / 2, fundo, borda))
+    elif tipo == 'decisao':
+        g.append('<path d="M%.0f %.0f L%.0f %.0f L%.0f %.0f L%.0f %.0f z" fill="%s" stroke="%s" stroke-width="2"/>'
+                 % (cx, y0 - 12, cx + w / 2 + 16, cy, cx, cy + h / 2 + 12, cx - w / 2 - 16, cy, fundo, borda))
+    elif tipo == 'doc':
+        g.append('<path d="M%.0f %.0f h%.0f l-16 %.0f h-%.0f z" fill="%s" stroke="%s" stroke-width="2"/>'
+                 % (x0 + 16, y0, w, h, w, fundo, borda))
+    else:
+        g.append('<rect x="%.0f" y="%.0f" width="%.0f" height="%.0f" rx="5" fill="%s" stroke="%s" stroke-width="1.8"/>'
+                 % (x0, y0, w, h, fundo, borda))
+    peso = '700' if tipo in ('inicio', 'fim', 'decisao') else '400'
+    for i, l in enumerate(linhas):
+        yy = cy - (len(linhas) - 1) * 7.5 + 15 * i + 4
+        g.append('<text x="%.0f" y="%.0f" font-size="12.5" font-weight="%s" fill="#1C1A17" text-anchor="middle">%s</text>'
+                 % (cx, yy, peso, l))
+    return '\n'.join(g), h
+
+def fluxograma(passos):
+    """passos: lista de (tipo, texto, nota_do_ramo). Decisão ganha ramo à direita."""
+    if not passos:
+        return ''
+    W = 700
+    cx = 250
+    out, y = [], 40
+    caixas = []
+    for tipo, texto, ramo in passos:
+        _, alt = no(tipo, texto, cx, 0)      # mede
+        cy = y + alt / 2
+        svg, alt = no(tipo, texto, cx, cy)   # desenha na posição certa
+        caixas.append((tipo, texto, ramo, cy, alt))
+        out.append(svg)
+        y += alt + FGAP
+    H = y + 10
+    setas = []
+    for i in range(len(caixas) - 1):
+        _, _, _, cy, alt = caixas[i]
+        y1 = cy + alt / 2
+        y2 = caixas[i + 1][3] - caixas[i + 1][4] / 2
+        setas.append('<line x1="%d" y1="%.0f" x2="%d" y2="%.0f" stroke="#8B8377" stroke-width="1.8" '
+                     'marker-end="url(#setaF)"/>' % (cx, y1, cx, y2 - 2))
+    for tipo, texto, ramo, cy, alt in caixas:
+        if tipo == 'decisao' and ramo:
+            x1 = cx + FW / 2 + 16
+            setas.append('<line x1="%.0f" y1="%.0f" x2="%d" y2="%.0f" stroke="#8B8377" stroke-width="1.8" '
+                         'marker-end="url(#setaF)"/>' % (x1, cy, 500, cy))
+            svg, _ = no('fim', ramo, 590, cy, 170, 40)
+            setas.append(svg)
+            setas.append('<text x="%.0f" y="%.0f" font-size="11" fill="#8B8377">não</text>' % (x1 + 14, cy - 8))
+            setas.append('<text x="%d" y="%.0f" font-size="11" fill="#8B8377">sim</text>' % (cx + 8, cy + alt / 2 + 24))
+    defs = ('<defs><marker id="setaF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
+            'orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8B8377"/></marker></defs>')
+    # sem teto de largura o fluxo estica a página inteira: o desenho é alto e estreito
+    return ('<svg viewBox="0 0 %d %d" style="max-width:%dpx" xmlns="http://www.w3.org/2000/svg">%s%s%s</svg>'
+            % (W, H, W, defs, '\n'.join(out), '\n'.join(setas)))
+
+def h_meia(tipo, texto):
+    return FH / 2
 
 # ---------------------------------------------------------------- conteúdo
 # F = fonte. banco = engenharia reversa do SQL Server · param = Paramentros ·
@@ -399,6 +555,88 @@ VER = {
  'profissional':   [('orcamento', 'onde a indicação é registrada'), ('cliente', 'quem ele traz')],
 }
 
+# fluxo da operação — notação clássica.
+# tipo: inicio · acao · decisao · doc · fim   |   3º item = destino do ramo "não" da decisão
+FLUXOS = {
+ 'orcamento': [
+   ('inicio', 'Cliente procura a Vertz com um projeto', None),
+   ('acao', 'Consultor abre orçamento e escolhe cliente, obra e profissional', None),
+   ('acao', 'Cria os ambientes da obra (sala, cozinha…)', None),
+   ('acao', 'Lança itens em cada ambiente: produto, acabamento, tamanho, quantidade', None),
+   ('acao', 'Preço vem do índice do fornecedor; desconto por produto ou geral', None),
+   ('doc', 'Imprime o PDF da proposta', None),
+   ('decisao', 'Cliente aprova em 5 dias?', 'Expira'),
+   ('fim', 'Vira pedido de venda — troca Ven_Tipo de O para P', None)],
+ 'pedido': [
+   ('inicio', 'Orçamento aprovado pelo cliente', None),
+   ('acao', 'Troca o tipo do registro de orçamento para pedido', None),
+   ('decisao', 'Tem saldo em estoque?', 'Gera pedido de compra'),
+   ('acao', 'Reserva o material e agenda a entrega', None),
+   ('fim', 'Baixa no estoque e entrega ao cliente', None)],
+ 'produto': [
+   ('inicio', 'Fornecedor lança item novo na linha', None),
+   ('acao', 'Cadastra o produto e seus três códigos', None),
+   ('acao', 'Vincula fornecedores e o código do produto em cada um', None),
+   ('acao', 'Preenche atributos técnicos de iluminação', None),
+   ('acao', 'Cria as variantes: acabamento × tamanho', None),
+   ('decisao', 'Tem custo e índice do fornecedor?', 'Fica sem preço de venda'),
+   ('fim', 'Produto disponível para orçamento e compra', None)],
+ 'preco': [
+   ('inicio', 'Fornecedor envia tabela de preço', None),
+   ('acao', 'Atualiza o preço de tabela por variante', None),
+   ('acao', 'Aplica os 4 descontos em cascata e os créditos de imposto', None),
+   ('acao', 'Multiplica o líquido pelo índice do fornecedor', None),
+   ('doc', 'Grava o histórico em Preco_Produto_Log', None),
+   ('fim', 'Valor unitário disponível para a venda', None)],
+ 'estoque-saldo': [
+   ('inicio', 'Alguém precisa saber o que tem em casa', None),
+   ('acao', 'Consulta saldo por variante, depósito e empresa', None),
+   ('decisao', 'Saldo abaixo do mínimo?', 'Nada a fazer'),
+   ('acao', 'Entra na sugestão de compra', None),
+   ('fim', 'Ordem de compra ao fornecedor', None)],
+ 'estoque-mov': [
+   ('inicio', 'Um evento mexe no estoque', None),
+   ('decisao', 'É entrada?', 'Saída por pedido de venda'),
+   ('acao', 'Nota do fornecedor, devolução ou balanço', None),
+   ('acao', 'Grava a linha no razão de movimentação', None),
+   ('fim', 'Saldo da variante é reescrito', None)],
+ 'pedido-compra': [
+   ('inicio', 'Pedido de venda sem saldo em estoque', None),
+   ('acao', 'Gera o pedido de compra referenciando o pedido de venda', None),
+   ('acao', 'Separa os itens por fornecedor', None),
+   ('fim', 'Aguarda ser agrupado numa ordem de compra', None)],
+ 'ordem-compra': [
+   ('inicio', 'Há pedidos de compra abertos para um fornecedor', None),
+   ('acao', 'Agrupa os pedidos numa ordem e define a empresa compradora', None),
+   ('decisao', 'Atingiu o faturamento mínimo do fornecedor?', 'Espera juntar mais'),
+   ('doc', 'Envia a ordem ao fornecedor', None),
+   ('fim', 'Aguarda a chegada da mercadoria', None)],
+ 'nota-entrada': [
+   ('inicio', 'Mercadoria chega com a nota do fornecedor', None),
+   ('acao', 'Lança a nota e confere os itens contra a ordem', None),
+   ('acao', 'Dá entrada no estoque', None),
+   ('decisao', 'Gera financeiro?', 'Entra só no estoque'),
+   ('fim', 'Cria a conta a pagar', None)],
+ 'cliente': [
+   ('inicio', 'Cliente novo chega, quase sempre por um profissional', None),
+   ('acao', 'Cadastra dados, endereço e a obra', None),
+   ('acao', 'Vincula o profissional que indicou', None),
+   ('decisao', 'Dentro do limite de crédito?', 'Exige permissão especial'),
+   ('fim', 'Pode receber orçamento', None)],
+ 'fornecedor': [
+   ('inicio', 'Nova marca entra no portfólio', None),
+   ('acao', 'Cadastra dados, prazos e empresa compradora', None),
+   ('acao', 'Monta o perfil de custo com descontos e impostos', None),
+   ('acao', 'Define o índice de venda', None),
+   ('fim', 'Produtos dele passam a ter preço', None)],
+ 'profissional': [
+   ('inicio', 'Arquiteto ou designer passa a indicar a Vertz', None),
+   ('acao', 'Cadastra registro profissional e dados bancários', None),
+   ('acao', 'Define o percentual por grupo de produto', None),
+   ('acao', 'Cada venda indicada registra a comissão', None),
+   ('fim', 'Crédito do profissional vai para o financeiro', None)],
+}
+
 CSS = """
 :root{--creme:#FAF6EE;--papel:#FFFDF8;--tinta:#1C1A17;--tinta2:#5A544B;--tinta3:#8B8377;
 --linha:#E2DACB;--ok:#2E7D32;--alerta:#C2410C;--sel:#0091FF}
@@ -410,11 +648,15 @@ h1{margin:0 0 3px;font-size:20px;letter-spacing:-.01em}
 .sub{color:var(--tinta2);font-size:13px;max-width:88ch}
 main{display:flex;align-items:flex-start;height:calc(100vh - 96px)}
 .painel{flex:1;display:flex;align-items:flex-start;overflow:auto;height:100%}
-.diag{flex:none;width:640px;position:sticky;top:0;padding:18px 20px 0 0}
+.diag{flex:1;min-width:560px;position:sticky;top:0;padding:18px 24px 0 0}
 .diag svg{width:100%;height:auto;background:var(--papel);border:1px solid var(--linha);border-radius:8px}
-.diag .cap{color:var(--tinta3);font-size:12px;margin:8px 2px 0}
-@media(max-width:1400px){.diag{width:480px}}
-@media(max-width:1150px){.painel{flex-direction:column}.diag{position:static;width:100%;padding:0 24px}}
+.diag .cap{color:var(--tinta3);font-size:12px;margin:8px 2px 0;max-width:70ch}
+.abas{display:flex;gap:6px;margin-bottom:10px}
+.abas button{padding:6px 14px;border:1px solid var(--linha);background:var(--papel);
+border-radius:6px;font:inherit;font-size:13px;cursor:pointer;color:var(--tinta2)}
+.abas button.on{background:var(--tinta);color:var(--papel);border-color:var(--tinta);font-weight:600}
+@media(max-width:1250px){.painel{flex-direction:column}
+  .diag{position:static;width:100%;min-width:0;padding:0 24px 30px}}
 a.tb{text-decoration:none;font-size:12px;padding:3px 9px;border-radius:5px;background:var(--creme);
 border:1px solid var(--linha);color:var(--tinta2);cursor:pointer}
 a.tb:hover{border-color:var(--sel);color:var(--sel)}
@@ -506,6 +748,7 @@ for f in FASES:
 
 fichas = {o['id']: ficha(o) for o in OPS}
 diagramas = {o['id']: diagrama(o) for o in OPS}
+fluxos = {o['id']: fluxograma(FLUXOS.get(o['id'], [])) for o in OPS}
 
 HTML = """<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -522,18 +765,36 @@ binário ou impresso real. Onde não há fonte, o campo não aparece.</div>
 <nav>%s</nav>
 <div class="painel">
 <section id="ficha"></section>
-<div class="diag"><div id="svg"></div>
-<div class="cap">Caixa clicável abre a tabela no explorador do schema. Linha tracejada = ligação
-inferida por nós, não declarada pelo banco. Passe o mouse para ver a coluna que liga.</div></div>
+<div class="diag">
+<div class="abas"><button id="ab-t" class="on" onclick="aba('t')">Tabelas</button>
+<button id="ab-f" onclick="aba('f')">Fluxo da operação</button></div>
+<div id="svg"></div>
+<div class="cap" id="cap"></div></div>
 </div>
 </main>
 <footer>%d operações · fases: %s</footer>
 <script>
-const F=%s, D=%s;
+const F=%s, D=%s, X=%s;
+let atual='%s', vista='t';
+const CAP={
+ t:'Caixa clicável abre a tabela no explorador do schema. Cada ligação tem cor própria, e a coluna '+
+   'que participa dela aparece na mesma cor dentro das duas tabelas. Passe o mouse na linha para ver '+
+   'os dois lados.',
+ f:'Como a operação acontece no dia a dia. Estádio verde = começo · retângulo = ação · losango = '+
+   'decisão · paralelogramo roxo = documento que sai para fora · estádio laranja = fim.'};
+function pinta(){
+  document.getElementById('svg').innerHTML=(vista==='t'?D[atual]:X[atual])||
+    '<p style="color:#8B8377;padding:20px">sem desenho para esta operação</p>';
+  document.getElementById('cap').textContent=CAP[vista];
+  document.getElementById('ab-t').classList.toggle('on',vista==='t');
+  document.getElementById('ab-f').classList.toggle('on',vista==='f');
+}
+function aba(v){vista=v;pinta();}
 function abre(id){
   if(!F[id]) return;
+  atual=id;
   document.getElementById('ficha').innerHTML=F[id];
-  document.getElementById('svg').innerHTML=D[id]||'';
+  pinta();
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.id==='n-'+id));
   document.querySelector('.painel').scrollTop=0;
   location.hash=id;
@@ -542,7 +803,8 @@ const ini=decodeURIComponent(location.hash.slice(1));
 abre(F[ini]?ini:'%s');
 </script></body></html>""" % (CSS, '\n'.join(nav), len(OPS), ' · '.join(FASES),
                               json.dumps(fichas, ensure_ascii=False),
-                              json.dumps(diagramas, ensure_ascii=False), OPS[0]['id'])
+                              json.dumps(diagramas, ensure_ascii=False),
+                              json.dumps(fluxos, ensure_ascii=False), OPS[0]['id'], OPS[0]['id'])
 
 p = os.path.join(BASE, 'operacoes.html')
 open(p, 'w', encoding='utf-8').write(HTML)

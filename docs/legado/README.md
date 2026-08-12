@@ -733,12 +733,20 @@ Cada afirmação carrega a **procedência**: `banco` (engenharia reversa do SQL 
 (impresso real do orçamento). Onde não havia fonte, o campo não existe — não se preencheu com
 suposição.
 
-### Diagrama ao lado de cada ficha
+### Duas vistas ao lado de cada ficha
 
-Cada operação traz, ao lado do texto, um desenho só das tabelas dela — o documento no centro, o que
-depende dele em azul, o que ela consulta em verde. **Linha cheia é relação declarada pelo banco;
-tracejada é inferida por nós** (o legado declara 208 FKs para 359 tabelas). Passar o mouse na linha
-mostra a coluna que liga; passar na caixa mostra o volume.
+**Tabelas.** As tabelas daquela operação, em três colunas: à esquerda o que depende do documento,
+no meio o documento, à direita o que ele consulta. Cada tabela mostra cabeçalho com volume e uma
+linha por coluna, separadas por divisória. **Cada ligação tem cor própria, e a coluna que participa
+dela aparece na mesma cor dentro das duas tabelas** — dá para seguir a ligação com o olho sem contar
+linhas. O rótulo no meio da linha é a coluna; `N` e `1` marcam a cardinalidade. Linha cheia é relação
+declarada pelo banco, tracejada é inferida por nós (o legado declara 208 FKs para 359 tabelas).
+
+**Fluxo da operação.** Como ela acontece no dia a dia, em notação clássica de fluxograma:
+estádio verde = começo · retângulo = ação · **losango = decisão**, com o ramo "não" saindo pela
+lateral · paralelogramo roxo = documento que sai para fora (o PDF do orçamento, a ordem ao
+fornecedor) · estádio laranja = fim. É aqui que aparecem as bifurcações reais do negócio — orçamento
+que expira em 5 dias, pedido sem saldo que vira compra, nota que pode ou não gerar financeiro.
 
 ### Tudo é clicável
 

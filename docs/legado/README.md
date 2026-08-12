@@ -23,6 +23,8 @@ docs/legado/
 ├─ engenharia-reversa-softlux.md    análise em prosa da 1ª rodada (11 KB)
 ├─ softlux-fluxo-banco.html         ÍNDICE por estágio: 11 estágios, 70 tabelas (134 KB)
 ├─ softlux-fluxograma.html          DIAGRAMA de setas por domínio (25 KB)
+├─ operacoes.html                   FICHAS DE OPERAÇÃO: o que cada operação exige — ver seção 11
+├─ gera-operacoes.py                gera as fichas
 ├─ softlux-er.html                  EXPLORADOR do schema: 359 tabelas navegáveis por FK
 ├─ gera-er.py                       gera o explorador a partir de schema/ e config/
 ├─ dbml/                            DBML para importar em ChartDB/dbdiagram — ver seção 10
@@ -712,3 +714,39 @@ que for editado se perde na próxima geração.
 O DBML é para **desenhar e comunicar**: um diagrama por módulo, para quem precisa entender o domínio
 sem abrir o legado. Para exploração de schema grande com linter (tabela sem PK, FK faltando, tipo
 inconsistente), a ferramenta indicada é o Azimutt, que lê este mesmo banco direto.
+
+---
+
+## 11. `operacoes.html` — o que cada operação exige
+
+As outras seções respondem *como o banco é*. Esta responde **como o negócio funciona**: para cada
+operação do sistema atual — orçamento, pedido, produto, preço, estoque, compra, cadastros — o que
+ela exige de entrada, que regras a governam, o que produz, o que dispara depois e quais defeitos do
+legado não devem ser repetidos.
+
+**Não é documentação da tela do Delphi, e não é modelo a copiar.** O Cabinet não replica o Softlux;
+usa este levantamento como requisito. Por isso a ficha ignora o desenho da tela e fica no que a
+operação precisa.
+
+Cada afirmação carrega a **procedência**: `banco` (engenharia reversa do SQL Server), `param`
+(a linha única de `Paramentros`), `perm` (permissões especiais), `exe` (binário Delphi) ou `pdf`
+(impresso real do orçamento). Onde não havia fonte, o campo não existe — não se preencheu com
+suposição.
+
+### Por que a tela não serve de fonte
+
+O SQL guardado dentro do formulário é o de **tempo de design**, e nas telas de venda ele ficou
+congelado no modelo antigo: `FrmOrcamento` consulta `Orcamento_luminaria_det`, que tem zero linhas.
+Não são views — o banco não tem nenhuma. É o código Delphi que troca o SQL em runtime.
+
+Medido nos 406 formulários com tabela identificada: **312 (77%) citam só tabelas vivas**, 69 (17%)
+misturam vivas e mortas, e 25 (6%) citam apenas tabelas do modelo morto.
+
+Também não dá para dizer qual tela dispara qual `INSERT`/`UPDATE`: 81% dos SQL ficam na região de
+código do executável, longe de qualquer formulário, e associá-los por proximidade acerta **21%** —
+ruído. Por isso a ficha descreve *o que a operação produz*, não *qual comando ela executa*.
+
+### Regenerar
+
+`python3 gera-operacoes.py`. O conteúdo analítico é curado à mão no próprio script; os volumes de
+tabela vêm de `schema/bdprincipal-linhas.csv` e se atualizam sozinhos.

@@ -10,9 +10,11 @@ import { describe, expect, it } from 'vitest'
 describe('DocumentoHeader', () => {
   it('título em Headline à esquerda e número em Número do Documento à direita', () => {
     render(<DocumentoHeader titulo="Orçamento" numero="ORÇ-2026-00184" />)
-    // Headline da banda: 800, caixa alta (DESIGN.md §Typography).
+    // Headline da banda: 700, caixa alta. Era 800 até 2026-08-13, quando o
+    // título passou à voz de QUEM (Newsreader): a família entra com 400 e 700
+    // só, e `font-extrabold` sem arquivo de 800 vira negrito sintético.
     const titulo = screen.getByRole('heading', { name: 'Orçamento' })
-    expect(titulo.className).toContain('font-extrabold')
+    expect(titulo.className).toContain('font-bold')
     expect(titulo.className).toContain('uppercase')
     // Nº do Documento: mono 700, 1.5rem — a âncora do cabeçalho.
     const numero = screen.getByText('ORÇ-2026-00184')

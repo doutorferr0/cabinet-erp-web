@@ -9,6 +9,10 @@
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
 @import "@fontsource/pt-mono/400.css";
+/* Newsreader — a voz de QUEM (nome próprio, título). Só 400 e 700: o teto de 4
+   famílias vale para pesos também, e cada peso é um woff2 na carga. */
+@import "@fontsource/newsreader/400.css";
+@import "@fontsource/newsreader/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -453,7 +457,21 @@
   --shadow-el3: 4px 4px 0 0 hsl(var(--shadow-3));
   --shadow-el4: 6px 6px 0 0 hsl(var(--shadow-4));
   --shadow-el5: 8px 8px 0 0 hsl(var(--shadow-5));
-  /* Três famílias, todas self-hosted: Display (Sora) · Corpo (Inter) · Mono (PT Mono). */
+  /* QUATRO famílias, todas self-hosted, e a divisão é SEMÂNTICA — o que a
+     palavra É, não o tamanho dela (decisão do user, 2026-08-13, formulada por
+     ele: "'cliente:' estaria em Sora e o nome do cliente em Newsreader").
+
+       quem   → Newsreader — nome próprio de entidade (cliente, profissional,
+                fornecedor, empresa) + título de tela e de documento
+       o quê  → Sora       — nome de produto, descrição
+       UI     → Inter      — rótulo, cabeçalho de coluna, botão, menu, aba
+       quanto → PT Mono    — número, código, data, valor, quantidade
+
+     **Teto de 4. Nenhuma quinta entra depois.** Quem aplica a de "quem" é o
+     componente `<Nome>`, nunca uma classe solta: nome de entidade aparece em
+     formulário, célula, combo, migalha, banda e diálogo, e depender de lembrar
+     da classe falha na terceira tela. */
+  --font-nome: "Newsreader", ui-serif, Georgia, serif;
   --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "PT Mono", ui-monospace, monospace;
@@ -852,13 +870,17 @@ body {
   line-height: 1.45;
 }
 
-/* Display (Sora 700) em título — a rampa da fase 1.5 separa VOZ de tamanho:
-   quem titula fala em Display, quem informa fala em Inter, quem identifica
-   fala em Mono. Sem isto, `<h1>` herdaria Inter e a distinção sumiria. */
+/* Título fala na voz de QUEM (Newsreader 700), não mais em Display.
+   A regra semântica de 2026-08-13 põe título de tela e de documento no mesmo
+   grupo do nome próprio de entidade: os dois respondem "quem é este". Sora
+   recuou para o "o quê" — nome de produto e descrição. Sem esta regra, `<h1>`
+   herdaria Inter e a distinção sumiria.
+   `letter-spacing` menos negativo que o da Sora: serifa de alto contraste com
+   -0.012em fecha o vão entre a haste e a serifa nos tamanhos de título. */
 h1,
 h2,
 h3 {
-  font-family: var(--font-display);
+  font-family: var(--font-nome);
   font-weight: 700;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.005em;
 }

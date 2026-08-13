@@ -20,7 +20,7 @@
 export function TelaNaoCapturada({ titulo, menu }: { titulo: string; menu: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <h1 className="font-display text-2xl font-bold tracking-[-0.012em]">{titulo}</h1>
+      <h1 className="font-nome text-2xl font-bold">{titulo}</h1>
       <p className="text-sm text-muted-foreground">
         Tela do menu <strong>{menu}</strong> do SoftLux, listada mas sem transcrição de campo
         (transcricaosoftlux.md §10) — aguardando nova rodada de prints antes de modelar.

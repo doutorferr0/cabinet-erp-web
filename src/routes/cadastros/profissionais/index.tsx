@@ -1,6 +1,7 @@
 import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
@@ -29,9 +30,16 @@ const columns: ColumnDef<PartnerDto>[] = [
   {
     accessorKey: 'tradeName',
     header: 'Nome de Apresentação',
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    cell: ({ getValue }) => {
+      const apresentacao = getValue<string | null>()
+      return apresentacao ? <Nome>{apresentacao}</Nome> : '—'
+    },
   },
-  { accessorKey: 'legalName', header: 'Nome' },
+  {
+    accessorKey: 'legalName',
+    header: 'Nome',
+    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+  },
   {
     accessorKey: 'active',
     header: 'Ativo',

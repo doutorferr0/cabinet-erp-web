@@ -67,7 +67,7 @@ function EmptyTitle({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="empty-title"
       // Display: é o título da situação, e título fala em Display aqui.
-      className={cn('font-display text-base font-bold tracking-tight text-foreground', className)}
+      className={cn('font-nome text-base font-bold text-foreground', className)}
       {...props}
     />
   )

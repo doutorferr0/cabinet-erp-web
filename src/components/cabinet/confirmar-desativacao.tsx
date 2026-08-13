@@ -1,3 +1,4 @@
+import { Nome } from '@/components/cabinet/nome'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
@@ -75,9 +76,9 @@ export function ConfirmarDesativacao({
         <AlertDialogDescription>
           {ativo ? (
             <>
-              <strong>{nome}</strong> deixa de aparecer nas telas que usam este cadastro. O registro{' '}
-              <strong>não é apagado</strong>: para voltar atrás, abra em <strong>Alterar</strong> e
-              marque <strong>Ativo</strong>.
+              <Nome peso="forte">{nome}</Nome> deixa de aparecer nas telas que usam este cadastro. O
+              registro <strong>não é apagado</strong>: para voltar atrás, abra em{' '}
+              <strong>Alterar</strong> e marque <strong>Ativo</strong>.
             </>
           ) : (
             <>

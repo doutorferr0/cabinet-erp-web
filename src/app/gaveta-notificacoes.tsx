@@ -123,9 +123,7 @@ export function GavetaDeNotificacoes({
       {aberta ? (
         <div className="flex w-[312px] shrink-0 flex-col">
           <div className="flex items-center gap-2 border-border border-b-2 p-4">
-            <span className="min-w-0 flex-1 font-display text-lg font-bold tracking-[-0.012em]">
-              Notificações
-            </span>
+            <span className="min-w-0 flex-1 font-nome text-lg font-bold">Notificações</span>
             <Button
               ref={fecharRef}
               variant="outline"

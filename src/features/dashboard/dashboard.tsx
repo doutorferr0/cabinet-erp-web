@@ -42,7 +42,7 @@ export function DashboardTela() {
   return (
     <div className="flex flex-col gap-8">
       <header data-slot="dashboard-header" className="border-rule-strong border-b pb-3">
-        <h1 className="font-display text-3xl font-bold tracking-[-0.012em]">
+        <h1 className="font-nome text-3xl font-bold">
           {saudacao()}
           {nome ? `, ${nome}` : ''}
         </h1>

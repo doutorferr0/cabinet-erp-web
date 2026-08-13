@@ -35,7 +35,7 @@ export function TarefasTela() {
         data-slot="tarefas-header"
         className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3"
       >
-        <h1 className="font-display text-3xl font-bold tracking-[-0.012em]">Tarefas</h1>
+        <h1 className="font-nome text-3xl font-bold">Tarefas</h1>
         <Button onClick={() => setIncluindoEm('todo')}>
           <Plus className="text-modulo" />
           Nova tarefa

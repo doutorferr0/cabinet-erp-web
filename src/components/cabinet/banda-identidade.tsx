@@ -41,8 +41,16 @@ export function BandaDeIdentidade({
         className,
       )}
     >
-      {/* Headline 800 caps: o degrau mais alto da rampa, um por tela. */}
-      <h1 className="font-extrabold text-2xl uppercase tracking-[-0.02em]">{titulo}</h1>
+      {/* Headline caps: o degrau mais alto da rampa, um por tela — e desde
+          2026-08-13 na voz de QUEM (Newsreader, pelo seletor `h1` do
+          `index.css`), porque título de tela responde "quem é esta tela" no
+          mesmo grupo do nome próprio de entidade.
+          Peso 700 e não 800: o Newsreader entra com dois pesos só (400/700), e
+          `font-extrabold` sem arquivo de 800 vira negrito SINTÉTICO — o browser
+          engorda o traço por conta, e numa serifada de alto contraste isso fecha
+          as hastes finas. Tracking deixa de ser negativo pelo mesmo motivo: em
+          caixa alta serifada, -0.02em encosta a serifa de uma letra na vizinha. */}
+      <h1 className="font-bold text-2xl uppercase tracking-[0.005em]">{titulo}</h1>
       {contexto ? (
         <span className="font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em] text-text-strong">
           {contexto}

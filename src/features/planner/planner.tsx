@@ -183,7 +183,7 @@ export function PlannerTela() {
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-[-0.012em]">Planner</h1>
+          <h1 className="font-nome text-3xl font-bold">Planner</h1>
           <p className="text-sm text-muted-foreground">As fases do projeto na linha do tempo.</p>
         </div>
 

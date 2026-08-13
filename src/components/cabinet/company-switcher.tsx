@@ -1,3 +1,4 @@
+import { Nome } from '@/components/cabinet/nome'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
@@ -57,11 +58,18 @@ export function CompanySwitcher() {
   const [confirmando, setConfirmando] = useState<(typeof empresas)[number] | null>(null)
 
   // Estados distintos: esperar, avisar alguém, ou não ter vínculo mesmo.
-  const titulo = carregando
-    ? 'Carregando…'
-    : erro
-      ? 'Empresas indisponíveis'
-      : (ativa?.name ?? 'Nenhuma empresa ativa')
+  // Nome de empresa é NOME PRÓPRIO e fala na voz de quem (`<Nome>`); estado e
+  // ausência são MENSAGEM e ficam na de UI. Passar os quatro casos pela mesma
+  // fonte poria "Carregando…" em serifa, com cara de razão social.
+  const titulo = carregando ? (
+    'Carregando…'
+  ) : erro ? (
+    'Empresas indisponíveis'
+  ) : ativa ? (
+    <Nome peso="forte">{ativa.name}</Nome>
+  ) : (
+    'Nenhuma empresa ativa'
+  )
 
   return (
     <SidebarMenu>
@@ -148,7 +156,9 @@ export function CompanySwitcher() {
                         )}
                       </span>
                       <span className="flex min-w-0 flex-col">
-                        <span className="truncate font-semibold">{empresa.name}</span>
+                        <Nome peso="forte" className="truncate">
+                          {empresa.name}
+                        </Nome>
                         <span className="truncate font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground">
                           {papelLabel(empresa.role)}
                         </span>

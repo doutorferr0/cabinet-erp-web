@@ -1,6 +1,7 @@
 import type { ProductDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import { Produto } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarProduto } from '@/data/produtos-api'
@@ -25,7 +26,12 @@ export const Route = createFileRoute('/cadastros/produtos/')({
  */
 const columns: ColumnDef<ProductDto>[] = [
   { accessorKey: 'code', header: 'Nosso Código' },
-  { accessorKey: 'description', header: 'Nossa Descrição' },
+  {
+    accessorKey: 'description',
+    header: 'Nossa Descrição',
+    // Voz de O QUÊ, e recuada: na listagem o produto é coadjuvante do nome.
+    cell: ({ getValue }) => <Produto>{getValue<string>()}</Produto>,
+  },
   {
     accessorKey: 'active',
     header: 'Ativo',

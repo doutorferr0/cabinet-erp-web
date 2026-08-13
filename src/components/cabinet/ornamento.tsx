@@ -35,13 +35,18 @@ import { useRouter, useRouterState } from '@tanstack/react-router'
  * proibido — o acervo é fonte, não código.
  *
  * **Por que o contorno existe:** os oito `/01` de módulo mediam 1,32 a 2,97:1
- * sobre superfície clara — nenhum alcançava 3:1, e o ornamento sumia na folha.
- * As saídas eram escurecer a paleta ou trocar cor de módulo; o user escolheu uma
- * terceira, que resolve os dois de uma vez: **quem delimita a forma passa a ser
- * o traço (~20:1), e aí o preenchimento fica livre para ser NEON.** Consequência
- * que precisa estar escrita: os hexes neon têm contraste baixo contra branco POR
- * CONSTRUÇÃO. Isso é intencional. Não "consertar" escurecendo o preenchimento —
- * o critério de aceite é o traço.
+ * sobre a folha BRANCA da época — nenhum alcançava 3:1, e o ornamento sumia
+ * nela. As saídas eram escurecer a paleta ou trocar cor de módulo; o user
+ * escolheu uma terceira, que resolve os dois de uma vez: **quem delimita a
+ * forma passa a ser o traço (~20:1), e aí o preenchimento fica livre para ser
+ * NEON.** Consequência que precisa estar escrita: os hexes neon têm contraste
+ * baixo contra papel claro POR CONSTRUÇÃO. Isso é intencional. Não "consertar"
+ * escurecendo o preenchimento — o critério de aceite é o traço.
+ *
+ * Remedido em 2026-08-13, sobre a folha cinza que substituiu a branca: a faixa
+ * subiu para 1,40 a 4,78:1 e quatro dos oito passam de 3:1. O argumento não
+ * muda com isso — o aceite continua sendo o traço, não o número do
+ * preenchimento.
  *
  * **O traço vai ATRÁS do preenchimento, em duas camadas.** Traço é centrado na
  * borda e metade dele invade a forma; num shape de LINHA — o galpão, os anéis

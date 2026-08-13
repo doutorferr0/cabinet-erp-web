@@ -21,9 +21,12 @@ export interface BandaDeIdentidadeProps {
  *
  * 1. **Um lugar só** — mudar o título de tela do sistema inteiro deixa de ser
  *    varredura de arquivo em arquivo (era o vetor de deriva do DESIGN.md).
- * 2. **A zona volta a significar** — creme-avermelhado é o emprego fixo de
- *    IDENTIDADE (par da zona de dinheiro, creme-esverdeada): quem vê a faixa
- *    sabe que ali se lê "que tela é esta", nunca dado.
+ * 2. **A zona volta a significar** — o lilás Primary/02 é o emprego fixo de
+ *    IDENTIDADE (par da zona de dinheiro, o verde Success/02): quem vê a faixa
+ *    sabe que ali se lê "que tela é esta", nunca dado. As duas eram CREMES
+ *    TINGIDOS até a 1.6 e este comentário ainda as chamava assim — com as
+ *    superfícies cinzas de 2026-08-13 não sobrou creme nenhum no sistema para
+ *    o nome apontar.
  *
  * Fica DENTRO da folha, acima da barra de ações — a folha é a página, a banda é
  * o cabeçalho dela.

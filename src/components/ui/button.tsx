@@ -46,7 +46,9 @@ const buttonVariants = cva(
           // `text-destructive-foreground`, NUNCA `text-white` literal: no tema
           // escuro o vermelho clareia (L 42 → 70) e o branco em cima cai para
           // 2,82:1 — reprova AA no estado mais perigoso da interface. O token
-          // vira escuro junto com o tema e devolve 6,29:1. Medido.
+          // vira escuro junto com o tema e devolve 6,24:1. Medido, e remedido
+          // em 2026-08-13 depois de a bancada escura deixar de ser creme
+          // (eram 6,29:1 contra o `40 12% 9%` antigo).
           'lift-control border-destructive bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground',
         // Link cru (Utrecht): mono caps sublinhado 2px. O hover era amarelo,
         // que é o anel de foco: link sob o mouse ficava com a cara de link

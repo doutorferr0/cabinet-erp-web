@@ -85,7 +85,9 @@ function TabsTrigger({
         // hover e na aba selecionada, e reservar o espaço desde o começo evita
         // que a fileira inteira ande 2px quando o mouse passa. Selecionada é
         // violeta cheio COM traço de Tinta (Regra da Caixa Preta) — do staging
-        // `neobrutalism-aria`, com `shadow-sm` traduzido para a escada quente.
+        // `neobrutalism-aria`, com `shadow-sm` traduzido para a escada de
+        // elevação do sistema (quente até 2026-08-12, neutra-fria desde a troca
+        // das superfícies — a escada é a mesma, a matiz é que mudou).
         'lift-flat inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-item border-2 border-transparent px-3 text-sm font-semibold whitespace-nowrap outline-none hover:border-border hover:text-foreground focus-visible:focus-ring data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-selected:border-border data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-el2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
         className,
       )}

@@ -1,0 +1,492 @@
+// Cabinet — schema novo (escopo inicial + esqueleto de compra)
+// Gerado por gera-cabinet-schema.py. Não editar à mão: regerar.
+// Convenções: dinheiro = centavos bigint · quantidade = numeric(14,3) ·
+//   toda tabela tem created_at/by, updated_at/by (omitidas aqui) ·
+//   tabela tenant-scoped: PK (tenant_id, id), FK COMPOSTA (tenant_id, fk) + RLS FORCE ·
+//   org-scoped: vive no schema Postgres da organização, sem tenant_id.
+
+Table tenants {
+  id uuid [pk]
+  name varchar [not null]
+  cnpj varchar(14) [not null]
+  active boolean [not null]
+  Note: 'ORG · nucleo · empresa (CNPJ) dentro da organização — o tenant do nível 2'
+}
+
+Table employees {
+  id uuid [pk]
+  name varchar [not null]
+  email varchar [not null]
+  password_hash varchar [not null]
+  must_change_password boolean [not null]
+  active boolean [not null]
+  Note: 'ORG · nucleo · identidade única na organização; papel é POR empresa'
+}
+
+Table employee_tenants {
+  tenant_id uuid
+  employee_id uuid
+  role varchar [not null]
+  active boolean [not null]
+  indexes {
+    (tenant_id, employee_id) [pk]
+  }
+  Note: 'TENANT · nucleo · vínculo N:N com papel por empresa (RBAC do core)'
+}
+
+Table catalog_lookups {
+  id uuid [pk]
+  kind varchar [not null]
+  name varchar [not null]
+  active boolean [not null]
+  Note: 'ORG · nucleo · listas simples (unidade, tipo de peça, motivo de movimento…)'
+}
+
+Table document_sequences {
+  tenant_id uuid
+  kind varchar
+  series varchar(3)
+  next_number bigint [not null]
+  indexes {
+    (tenant_id, kind, series) [pk]
+  }
+  Note: 'TENANT · nucleo · numeração transacional por documento e série — mata o MAX+1 do legado — uso: UPDATE … SET next_number = next_number + 1 RETURNING'
+}
+
+Table partners {
+  id uuid [pk]
+  legal_name varchar [not null]
+  trade_name varchar
+  document varchar(14)
+  email varchar
+  is_customer boolean [not null]
+  is_supplier boolean [not null]
+  is_professional boolean [not null]
+  registration varchar
+  payout_bank_info jsonb
+  active boolean [not null]
+  Note: 'ORG · parceiros · cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional) — registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão'
+}
+
+Table partner_tenant_links {
+  tenant_id uuid
+  partner_id uuid
+  code varchar
+  payment_terms varchar
+  credit_limit_cents bigint
+  active boolean [not null]
+  indexes {
+    (tenant_id, partner_id) [pk]
+  }
+  Note: 'TENANT · parceiros · vínculo do parceiro com CADA empresa: código, condição de pagamento, ativo (contrato: PartnerLink)'
+}
+
+Table construction_sites {
+  id uuid [pk]
+  customer_id uuid [not null]
+  name varchar [not null]
+  address varchar
+  city varchar
+  uf varchar(2)
+  active boolean [not null]
+  Note: 'ORG · parceiros · obra do cliente — dimensão do orçamento (legado: Obras)'
+}
+
+Table product_groups {
+  id uuid [pk]
+  name varchar [not null]
+  active boolean [not null]
+  Note: 'ORG · catalogo · grupo de produto — base da comissão por grupo'
+}
+
+Table finishes {
+  id uuid [pk]
+  code varchar [not null]
+  name varchar [not null]
+  active boolean [not null]
+  Note: 'ORG · catalogo · acabamento (legado: Acabamento, 248 vivos)'
+}
+
+Table products {
+  id uuid [pk]
+  code varchar [not null]
+  special_code varchar
+  short_code varchar
+  description text [not null]
+  group_id uuid
+  unit_in varchar
+  unit_out varchar
+  unit_factor numeric(14,3)
+  specs jsonb
+  active boolean [not null]
+  Note: 'ORG · catalogo · mestre do produto — specs da vertical ficam em specs jsonb — 3 códigos do legado preservados; unidade entrada≠saída com fator'
+}
+
+Table product_variants {
+  id uuid [pk]
+  product_id uuid [not null]
+  finish_id uuid
+  size varchar
+  active boolean [not null]
+  Note: 'ORG · catalogo · variante = acabamento × tamanho — a unidade de preço, estoque e item de venda'
+}
+
+Table product_suppliers {
+  product_id uuid
+  supplier_id uuid
+  supplier_code varchar
+  supplier_description varchar
+  active boolean [not null]
+  indexes {
+    (product_id, supplier_id) [pk]
+  }
+  Note: 'ORG · catalogo · multi-fornecedor por produto, com o código do produto NO fornecedor'
+}
+
+Table supplier_cost_profiles {
+  id uuid [pk]
+  supplier_id uuid [not null]
+  name varchar [not null]
+  cascade_discounts jsonb [not null]
+  ipi_percent numeric(7,4)
+  freight_percent numeric(7,4)
+  icms_percent numeric(7,4)
+  st_percent numeric(7,4)
+  active boolean [not null]
+  Note: 'ORG · preco · perfil de encargos do fornecedor (legado: Custo, 40 colunas → estrutura tipada) — cascade_discounts = até 4 descontos em cascata'
+}
+
+Table supplier_price_indexes {
+  id uuid [pk]
+  supplier_id uuid [not null]
+  cost_profile_id uuid
+  index_value numeric(8,4) [not null]
+  valid_from date [not null]
+  valid_to date
+  Note: 'ORG · preco · índice multiplicador POR FORNECEDOR com vigência (mediana 2,56 no legado) — preço de venda = líquido de compra × índice, ANTES de imposto de saída'
+}
+
+Table variant_supplier_prices {
+  id uuid [pk]
+  variant_id uuid [not null]
+  supplier_id uuid [not null]
+  list_price_cents bigint [not null]
+  valid_from date [not null]
+  valid_to date
+  Note: 'ORG · preco · preço de tabela do fornecedor por variante, com vigência — histórico em linhas, não em log sem PK'
+}
+
+Table variant_tenant_settings {
+  tenant_id uuid
+  variant_id uuid
+  sale_price_cents bigint
+  min_stock numeric(14,3)
+  active boolean [not null]
+  indexes {
+    (tenant_id, variant_id) [pk]
+  }
+  Note: 'TENANT · preco · o que é DA EMPRESA na variante: preço de venda vigente e estoque mínimo (core: preço/estoque = tenant)'
+}
+
+Table sale_categories {
+  tenant_id uuid
+  id uuid
+  name varchar [not null]
+  generates_finance boolean [not null]
+  affects_stock boolean [not null]
+  active boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · categoria da venda — decide se gera financeiro (legado: MOSTRAS/DOAÇÃO não geram)'
+}
+
+Table quotes {
+  tenant_id uuid
+  id uuid
+  number bigint [not null]
+  series varchar(3)
+  status varchar [not null]
+  issued_at date
+  expires_at date
+  customer_id uuid [not null]
+  site_id uuid
+  project_name varchar
+  folder_number varchar
+  category_id uuid
+  discount_mode varchar [not null]
+  discount_percent numeric(7,4) [not null]
+  total_cents bigint [not null]
+  closed_at date
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · orçamento — o documento central do negócio (contrato: Quote) — number vem de document_sequences; status: draft|issued|accepted|expired|cancelled'
+}
+
+Table quote_environments {
+  tenant_id uuid
+  id uuid
+  quote_id uuid [not null]
+  code uuid [not null]
+  name varchar [not null]
+  sort int [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · ambiente da obra — agrupa e numera os itens no impresso'
+}
+
+Table quote_items {
+  tenant_id uuid
+  id uuid
+  quote_id uuid [not null]
+  line_number int [not null]
+  environment_id uuid
+  variant_id uuid
+  description text [not null]
+  finish varchar
+  size varchar
+  unit varchar
+  quantity numeric(14,3) [not null]
+  unit_price_cents bigint [not null]
+  discount_percent numeric(7,4) [not null]
+  supplier_id uuid
+  supplier_name varchar
+  supplier_code varchar
+  product_group varchar
+  piece_type varchar
+  total_cents bigint [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · item com SNAPSHOT congelado na emissão (core: documento nunca referencia preço vivo) — variant_id nullable = produto fictício/pré-produto permitido, como no legado'
+}
+
+Table quote_salespeople {
+  tenant_id uuid
+  quote_id uuid
+  employee_id uuid
+  percent numeric(7,4) [not null]
+  is_primary boolean [not null]
+  indexes {
+    (tenant_id, quote_id, employee_id) [pk]
+  }
+  Note: 'TENANT · venda · consultores — aceita vários, com percentual (legado: VendaAtendente)'
+}
+
+Table quote_professionals {
+  tenant_id uuid
+  quote_id uuid
+  partner_id uuid
+  percent numeric(7,4)
+  indexes {
+    (tenant_id, quote_id, partner_id) [pk]
+  }
+  Note: 'TENANT · venda · profissional que indicou — base da comissão (legado: VendaIndicacao)'
+}
+
+Table commission_rules {
+  tenant_id uuid
+  id uuid
+  professional_id uuid [not null]
+  product_group_id uuid [not null]
+  percent numeric(7,4) [not null]
+  reserve_percent numeric(7,4)
+  active boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · percentual do profissional POR GRUPO de produto (legado: VendaIndicacaoGrupProd, 232 mil linhas) — reserve_percent = Reserva Técnica: RESERVADO, modelagem adiada (blocker em aberto)'
+}
+
+Table sales_orders {
+  tenant_id uuid
+  id uuid
+  quote_id uuid [not null]
+  order_number bigint [not null]
+  series varchar(3)
+  status varchar [not null]
+  accepted_at date [not null]
+  delivery_forecast date
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · pedido = orçamento aceito, 1:1 — conversão é transição, NÃO cópia (insight do legado preservado com ciclo próprio) — status: open|partially_delivered|delivered|cancelled; order_number de document_sequences'
+}
+
+Table stock_locations {
+  tenant_id uuid
+  id uuid
+  name varchar [not null]
+  kind varchar
+  active boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · estoque · depósito/local — o legado tem 4; local é DIMENSÃO, não gambiarra'
+}
+
+Table stock_movements {
+  tenant_id uuid
+  id uuid
+  variant_id uuid [not null]
+  location_id uuid [not null]
+  delta numeric(14,3) [not null]
+  reason varchar [not null]
+  source_kind varchar
+  source_id uuid
+  balance_after numeric(14,3) [not null]
+  occurred_at timestamptz [not null]
+  employee_id uuid
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · estoque · kardex IMUTÁVEL — ADR-009: o saldo nasce do banco, nunca de valor absoluto vindo da aplicação — balance_after preenchido pelo banco na MESMA transação; duas baixas simultâneas não se perdem'
+}
+
+Table stock_balances {
+  tenant_id uuid
+  variant_id uuid
+  location_id uuid
+  qty numeric(14,3) [not null]
+  indexes {
+    (tenant_id, variant_id, location_id) [pk]
+  }
+  Note: 'TENANT · estoque · saldo corrente por variante × local — mantido por trigger do kardex'
+}
+
+Table stock_reservations {
+  tenant_id uuid
+  id uuid
+  order_id uuid [not null]
+  variant_id uuid [not null]
+  location_id uuid
+  qty numeric(14,3) [not null]
+  status varchar [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · estoque · reserva de material para pedido aceito'
+}
+
+Table purchase_needs {
+  tenant_id uuid
+  id uuid
+  sales_order_id uuid
+  variant_id uuid [not null]
+  qty numeric(14,3) [not null]
+  status varchar [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · compra · necessidade de compra nascida do pedido de venda sem saldo (legado: pedido_compra) — status: open|grouped|cancelled'
+}
+
+Table purchase_orders {
+  tenant_id uuid
+  id uuid
+  number bigint [not null]
+  supplier_id uuid [not null]
+  status varchar [not null]
+  ordered_at date
+  expected_at date
+  min_invoice_cents bigint
+  carrier varchar
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · compra · ordem ao fornecedor, agrupando necessidades — a empresa compradora É o tenant (Vertz ou Via HF)'
+}
+
+Table purchase_order_items {
+  tenant_id uuid
+  id uuid
+  purchase_order_id uuid [not null]
+  need_id uuid
+  variant_id uuid [not null]
+  qty numeric(14,3) [not null]
+  cost_cents bigint
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · compra · item da ordem, rastreando a necessidade de origem'
+}
+
+Table goods_receipts {
+  tenant_id uuid
+  id uuid
+  purchase_order_id uuid
+  supplier_id uuid [not null]
+  invoice_number varchar [not null]
+  received_at date [not null]
+  generates_finance boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · compra · nota do fornecedor: dá entrada no estoque e (por categoria) dispara o financeiro futuro'
+}
+
+Table goods_receipt_items {
+  tenant_id uuid
+  id uuid
+  receipt_id uuid [not null]
+  variant_id uuid [not null]
+  qty numeric(14,3) [not null]
+  unit_cost_cents bigint
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · compra · item recebido — cada linha vira um stock_movement de entrada'
+}
+
+// relações — FK entre tabelas tenant-scoped é COMPOSTA (tenant_id, coluna)
+Ref: employee_tenants.tenant_id > tenants.id
+Ref: employee_tenants.employee_id > employees.id
+Ref: partner_tenant_links.tenant_id > tenants.id
+Ref: partner_tenant_links.partner_id > partners.id
+Ref: construction_sites.customer_id > partners.id
+Ref: products.group_id > product_groups.id
+Ref: product_variants.product_id > products.id
+Ref: product_variants.finish_id > finishes.id
+Ref: product_suppliers.product_id > products.id
+Ref: product_suppliers.supplier_id > partners.id
+Ref: supplier_cost_profiles.supplier_id > partners.id
+Ref: supplier_price_indexes.supplier_id > partners.id
+Ref: supplier_price_indexes.cost_profile_id > supplier_cost_profiles.id
+Ref: variant_supplier_prices.variant_id > product_variants.id
+Ref: variant_supplier_prices.supplier_id > partners.id
+Ref: variant_tenant_settings.variant_id > product_variants.id
+Ref: variant_tenant_settings.tenant_id > tenants.id
+Ref: quotes.customer_id > partners.id
+Ref: quotes.site_id > construction_sites.id
+Ref: quotes.category_id > sale_categories.id
+Ref: quote_environments.quote_id > quotes.id
+Ref: quote_items.quote_id > quotes.id
+Ref: quote_items.environment_id > quote_environments.id
+Ref: quote_items.variant_id > product_variants.id
+Ref: quote_items.supplier_id > partners.id
+Ref: quote_salespeople.quote_id > quotes.id
+Ref: quote_salespeople.employee_id > employees.id
+Ref: quote_professionals.quote_id > quotes.id
+Ref: quote_professionals.partner_id > partners.id
+Ref: commission_rules.professional_id > partners.id
+Ref: commission_rules.product_group_id > product_groups.id
+Ref: sales_orders.quote_id > quotes.id
+Ref: stock_movements.variant_id > product_variants.id
+Ref: stock_movements.location_id > stock_locations.id
+Ref: stock_movements.employee_id > employees.id
+Ref: stock_balances.variant_id > product_variants.id
+Ref: stock_balances.location_id > stock_locations.id
+Ref: stock_reservations.order_id > sales_orders.id
+Ref: stock_reservations.variant_id > product_variants.id
+Ref: purchase_needs.sales_order_id > sales_orders.id
+Ref: purchase_needs.variant_id > product_variants.id
+Ref: purchase_orders.supplier_id > partners.id
+Ref: purchase_order_items.purchase_order_id > purchase_orders.id
+Ref: purchase_order_items.need_id > purchase_needs.id
+Ref: purchase_order_items.variant_id > product_variants.id
+Ref: goods_receipts.purchase_order_id > purchase_orders.id
+Ref: goods_receipts.supplier_id > partners.id
+Ref: goods_receipt_items.receipt_id > goods_receipts.id
+Ref: goods_receipt_items.variant_id > product_variants.id

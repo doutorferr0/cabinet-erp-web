@@ -14,7 +14,7 @@ header .legenda{margin-left:auto;display:flex;gap:16px;align-items:center;font-s
 color:var(--tinta2);white-space:nowrap}
 header .legenda svg{vertical-align:middle}
 select,button{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--linha);
-border-radius:6px;background:var(--papel);color:var(--tinta);cursor:pointer}
+border-radius:6px;background:var(--papel);color:var(--tinta);cursor:pointer;white-space:nowrap}
 button:hover{border-color:var(--sel)}
 #buscawrap{position:relative}
 #busca{width:260px;padding:6px 10px;border:1px solid var(--linha);border-radius:6px;
@@ -70,7 +70,7 @@ padding:4px 9px;border-radius:6px;pointer-events:none;display:none;max-width:340
  autocomplete="off"><div id="hits"></div></div>
 <button onclick="autoLayout();encaixa()">↺ layout</button>
 <button onclick="encaixa()">⊡ caber na tela</button>
-<button onclick="limpaTudo()" title="remove todas as tabelas do canvas">✕ limpar</button>
+<button onclick="carregaPreset(presetAtual,true)" title="volta o preset ao estado original">⟲ restaurar preset</button>
 <div class="legenda">
 <span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2"/></svg> declarada</span>
 <span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2" stroke-dasharray="5 4"/></svg> inferida</span>
@@ -103,7 +103,9 @@ function chaveStore(){ return 'softlux-canvas:'+presetAtual; }
 function salva(){ try{ localStorage.setItem(chaveStore(),
   JSON.stringify({aberto:aberto,view:view})); }catch(e){} }
 function carrega(){ try{ const s=localStorage.getItem(chaveStore());
-  if(s){ const j=JSON.parse(s); aberto=j.aberto||{}; view=j.view||view; return true; } }catch(e){}
+  if(s){ const j=JSON.parse(s);
+    if(!j.aberto||!Object.keys(j.aberto).length) return false;  // vazio salvo não vale
+    aberto=j.aberto; view=j.view||view; return true; } }catch(e){}
   return false; }
 
 // ---- colunas visíveis de um card: PK + colunas que ligam; exp = todas
@@ -240,7 +242,6 @@ function addTabela(t,x,y){
 }
 function fecha(t){ delete aberto[t]; render(); }
 function expande(t,v){ aberto[t].exp=v; render(); }
-function limpaTudo(){ aberto={}; render(); }
 function vizinhos(t){
   const p=aberto[t]; let k=0;
   (relDe[t]||[]).forEach(i=>{ const r=R[i]; const outro=r[0]===t?r[2]:r[0];
@@ -382,4 +383,5 @@ Object.keys(PRESETS).forEach(p=>{
 });
 sel.addEventListener('change',()=>carregaPreset(sel.value,false));
 carregaPreset(presetAtual,false);
+sel.value=presetAtual;
 </script></body></html>

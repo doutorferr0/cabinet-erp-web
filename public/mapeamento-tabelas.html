@@ -1,0 +1,385 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cabinet — mapeamento de tabelas</title>
+<style>
+:root{--creme:#FAF6EE;--papel:#FFFDF8;--tinta:#1C1A17;--tinta2:#5A544B;--tinta3:#8B8377;
+--linha:#E2DACB;--sel:#0091FF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--creme);color:var(--tinta);overflow:hidden;
+font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:14px;
+padding:10px 16px;background:var(--papel);border-bottom:1px solid var(--linha)}
+header h1{margin:0;font-size:15px;white-space:nowrap}
+header .legenda{margin-left:auto;display:flex;gap:16px;align-items:center;font-size:11.5px;
+color:var(--tinta2);white-space:nowrap}
+header .legenda svg{vertical-align:middle}
+select,button{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--linha);
+border-radius:6px;background:var(--papel);color:var(--tinta);cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--sel)}
+#buscawrap{position:relative}
+#busca{width:260px;padding:6px 10px;border:1px solid var(--linha);border-radius:6px;
+background:var(--creme);font:inherit;font-size:13px}
+#hits{position:absolute;top:34px;left:0;width:330px;max-height:330px;overflow:auto;z-index:40;
+background:var(--papel);border:1px solid var(--linha);border-radius:8px;
+box-shadow:0 8px 22px rgba(28,26,23,.14);display:none}
+#hits a{display:flex;justify-content:space-between;gap:10px;padding:6px 12px;cursor:pointer;
+font-size:12.5px;color:var(--tinta);text-decoration:none}
+#hits a:hover{background:var(--creme)}
+#hits .q{color:var(--tinta3);font-size:11px;flex:none}
+#viewport{position:absolute;inset:0;top:49px;overflow:hidden;cursor:grab}
+#viewport.pan{cursor:grabbing}
+#mundo{position:absolute;left:0;top:0;transform-origin:0 0}
+#fios{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+#fios path.fio{pointer-events:stroke}
+.card{position:absolute;width:236px;background:var(--papel);border:1.6px solid var(--tinta3);
+border-radius:9px;box-shadow:0 2px 8px rgba(28,26,23,.10);user-select:none}
+.card.mexe{box-shadow:0 10px 26px rgba(28,26,23,.22);z-index:10}
+.card .hd{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;cursor:move;
+border-bottom:1px solid var(--linha);border-radius:8px 8px 0 0;background:var(--creme)}
+.card .hd b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.card .hd .n{font-size:10px;color:var(--tinta3);white-space:nowrap}
+.card .hd .bt{cursor:pointer;color:var(--tinta3);font-size:13px;line-height:1;padding:1px 3px;
+border-radius:4px}
+.card .hd .bt:hover{background:var(--linha);color:var(--tinta)}
+.row{display:flex;align-items:center;gap:5px;height:21px;padding:0 8px;font-size:11px;
+font-family:ui-monospace,Consolas,monospace;border-top:1px solid #F3EDE0;white-space:nowrap}
+.row .ic{width:10px;flex:none;font-size:8.5px;color:#C9BFA9}
+.row .ic.k{color:#C2410C}
+.row .nm{overflow:hidden;text-overflow:ellipsis}
+.row .tp{margin-left:auto;color:var(--tinta3);font-size:9.5px;flex:none}
+.row.fk{cursor:pointer}
+.row.fk:hover{background:var(--creme)}
+.row.fk .nm{color:#0060B0;font-weight:600}
+.row.acesa{background:#FFF3D6}
+.mais{font-size:10.5px;color:var(--sel);padding:4px 8px;cursor:pointer;border-top:1px solid #F3EDE0}
+.mais:hover{text-decoration:underline}
+#painel{position:fixed;left:16px;bottom:16px;z-index:30;background:var(--papel);
+border:1px solid var(--linha);border-radius:10px;padding:10px 12px;font-size:12px;
+color:var(--tinta2);box-shadow:0 4px 14px rgba(28,26,23,.10);max-width:290px}
+#painel b{color:var(--tinta)}
+#zoombar{position:fixed;right:16px;bottom:16px;z-index:30;display:flex;gap:6px}
+#zoombar button{width:34px}
+.dica{position:fixed;z-index:50;background:var(--tinta);color:var(--papel);font-size:11.5px;
+padding:4px 9px;border-radius:6px;pointer-events:none;display:none;max-width:340px}
+</style></head><body>
+<header>
+<h1>Cabinet — mapeamento de tabelas</h1>
+<label style="font-size:12px;color:var(--tinta2)">preset</label>
+<select id="preset"></select>
+<div id="buscawrap"><input id="busca" type="search" placeholder="adicionar tabela… ( / )"
+ autocomplete="off"><div id="hits"></div></div>
+<button onclick="autoLayout();encaixa()">↺ layout</button>
+<button onclick="encaixa()">⊡ caber na tela</button>
+<button onclick="carregaPreset(presetAtual,true)" title="volta o preset ao estado original">⟲ restaurar preset</button>
+<div class="legenda">
+<span>◆ chave · azul traz a vizinha · FK de empresa é composta (tenant_id)</span>
+</div>
+</header>
+<div id="viewport"><div id="mundo"><svg id="fios" width="26000" height="18000"></svg><div id="cartas"></div></div></div>
+<div id="painel"></div>
+<div id="zoombar"><button onclick="zoomBt(1.25)">+</button><button onclick="zoomBt(0.8)">−</button></div>
+<div class="dica" id="dica"></div>
+<script>
+const DADOS = {"T":{"tenants":{"n":0,"dom":"nucleo","esc":"org","doc":"empresa (CNPJ) dentro da organização — o tenant do nível 2","pk":["id"],"c":[["id","uuid"],["name","varchar"],["cnpj","varchar(14)"],["active","boolean"]]},"employees":{"n":0,"dom":"nucleo","esc":"org","doc":"identidade única na organização; papel é POR empresa","pk":["id"],"c":[["id","uuid"],["name","varchar"],["email","varchar"],["password_hash","varchar"],["must_change_password","boolean"],["active","boolean"]]},"employee_tenants":{"n":0,"dom":"nucleo","esc":"tenant","doc":"vínculo N:N com papel por empresa (RBAC do core)","pk":["tenant_id","employee_id"],"c":[["tenant_id","uuid"],["employee_id","uuid"],["role","varchar"],["active","boolean"]]},"catalog_lookups":{"n":0,"dom":"nucleo","esc":"org","doc":"listas simples (unidade, tipo de peça, motivo de movimento…)","pk":["id"],"c":[["id","uuid"],["kind","varchar"],["name","varchar"],["active","boolean"]]},"document_sequences":{"n":0,"dom":"nucleo","esc":"tenant","doc":"numeração transacional por documento e série — mata o MAX+1 do legado — uso: UPDATE … SET next_number = next_number + 1 RETURNING","pk":["tenant_id","kind","series"],"c":[["tenant_id","uuid"],["kind","varchar"],["series","varchar(3)"],["next_number","bigint"]]},"partners":{"n":0,"dom":"parceiros","esc":"org","doc":"cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional) — registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão","pk":["id"],"c":[["id","uuid"],["legal_name","varchar"],["trade_name","varchar"],["document","varchar(14)"],["email","varchar"],["is_customer","boolean"],["is_supplier","boolean"],["is_professional","boolean"],["registration","varchar"],["payout_bank_info","jsonb"],["active","boolean"]]},"partner_tenant_links":{"n":0,"dom":"parceiros","esc":"tenant","doc":"vínculo do parceiro com CADA empresa: código, condição de pagamento, ativo (contrato: PartnerLink)","pk":["tenant_id","partner_id"],"c":[["tenant_id","uuid"],["partner_id","uuid"],["code","varchar"],["payment_terms","varchar"],["credit_limit_cents","bigint"],["active","boolean"]]},"construction_sites":{"n":0,"dom":"parceiros","esc":"org","doc":"obra do cliente — dimensão do orçamento (legado: Obras)","pk":["id"],"c":[["id","uuid"],["customer_id","uuid"],["name","varchar"],["address","varchar"],["city","varchar"],["uf","varchar(2)"],["active","boolean"]]},"product_groups":{"n":0,"dom":"catalogo","esc":"org","doc":"grupo de produto — base da comissão por grupo","pk":["id"],"c":[["id","uuid"],["name","varchar"],["active","boolean"]]},"finishes":{"n":0,"dom":"catalogo","esc":"org","doc":"acabamento (legado: Acabamento, 248 vivos)","pk":["id"],"c":[["id","uuid"],["code","varchar"],["name","varchar"],["active","boolean"]]},"products":{"n":0,"dom":"catalogo","esc":"org","doc":"mestre do produto — specs da vertical ficam em specs jsonb — 3 códigos do legado preservados; unidade entrada≠saída com fator","pk":["id"],"c":[["id","uuid"],["code","varchar"],["special_code","varchar"],["short_code","varchar"],["description","text"],["group_id","uuid"],["unit_in","varchar"],["unit_out","varchar"],["unit_factor","numeric(14,3)"],["specs","jsonb"],["active","boolean"]]},"product_variants":{"n":0,"dom":"catalogo","esc":"org","doc":"variante = acabamento × tamanho — a unidade de preço, estoque e item de venda","pk":["id"],"c":[["id","uuid"],["product_id","uuid"],["finish_id","uuid"],["size","varchar"],["active","boolean"]]},"product_suppliers":{"n":0,"dom":"catalogo","esc":"org","doc":"multi-fornecedor por produto, com o código do produto NO fornecedor","pk":["product_id","supplier_id"],"c":[["product_id","uuid"],["supplier_id","uuid"],["supplier_code","varchar"],["supplier_description","varchar"],["active","boolean"]]},"supplier_cost_profiles":{"n":0,"dom":"preco","esc":"org","doc":"perfil de encargos do fornecedor (legado: Custo, 40 colunas → estrutura tipada) — cascade_discounts = até 4 descontos em cascata","pk":["id"],"c":[["id","uuid"],["supplier_id","uuid"],["name","varchar"],["cascade_discounts","jsonb"],["ipi_percent","numeric(7,4)"],["freight_percent","numeric(7,4)"],["icms_percent","numeric(7,4)"],["st_percent","numeric(7,4)"],["active","boolean"]]},"supplier_price_indexes":{"n":0,"dom":"preco","esc":"org","doc":"índice multiplicador POR FORNECEDOR com vigência (mediana 2,56 no legado) — preço de venda = líquido de compra × índice, ANTES de imposto de saída","pk":["id"],"c":[["id","uuid"],["supplier_id","uuid"],["cost_profile_id","uuid"],["index_value","numeric(8,4)"],["valid_from","date"],["valid_to","date"]]},"variant_supplier_prices":{"n":0,"dom":"preco","esc":"org","doc":"preço de tabela do fornecedor por variante, com vigência — histórico em linhas, não em log sem PK","pk":["id"],"c":[["id","uuid"],["variant_id","uuid"],["supplier_id","uuid"],["list_price_cents","bigint"],["valid_from","date"],["valid_to","date"]]},"variant_tenant_settings":{"n":0,"dom":"preco","esc":"tenant","doc":"o que é DA EMPRESA na variante: preço de venda vigente e estoque mínimo (core: preço/estoque = tenant)","pk":["tenant_id","variant_id"],"c":[["tenant_id","uuid"],["variant_id","uuid"],["sale_price_cents","bigint"],["min_stock","numeric(14,3)"],["active","boolean"]]},"sale_categories":{"n":0,"dom":"venda","esc":"tenant","doc":"categoria da venda — decide se gera financeiro (legado: MOSTRAS/DOAÇÃO não geram)","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["name","varchar"],["generates_finance","boolean"],["affects_stock","boolean"],["active","boolean"]]},"quotes":{"n":0,"dom":"venda","esc":"tenant","doc":"orçamento — o documento central do negócio (contrato: Quote) — number vem de document_sequences; status: draft|issued|accepted|expired|cancelled","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["number","bigint"],["series","varchar(3)"],["status","varchar"],["issued_at","date"],["expires_at","date"],["customer_id","uuid"],["site_id","uuid"],["project_name","varchar"],["folder_number","varchar"],["category_id","uuid"],["discount_mode","varchar"],["discount_percent","numeric(7,4)"],["total_cents","bigint"],["closed_at","date"]]},"quote_environments":{"n":0,"dom":"venda","esc":"tenant","doc":"ambiente da obra — agrupa e numera os itens no impresso","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["quote_id","uuid"],["code","uuid"],["name","varchar"],["sort","int"]]},"quote_items":{"n":0,"dom":"venda","esc":"tenant","doc":"item com SNAPSHOT congelado na emissão (core: documento nunca referencia preço vivo) — variant_id nullable = produto fictício/pré-produto permitido, como no legado","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["quote_id","uuid"],["line_number","int"],["environment_id","uuid"],["variant_id","uuid"],["description","text"],["finish","varchar"],["size","varchar"],["unit","varchar"],["quantity","numeric(14,3)"],["unit_price_cents","bigint"],["discount_percent","numeric(7,4)"],["supplier_id","uuid"],["supplier_name","varchar"],["supplier_code","varchar"],["product_group","varchar"],["piece_type","varchar"],["total_cents","bigint"]]},"quote_salespeople":{"n":0,"dom":"venda","esc":"tenant","doc":"consultores — aceita vários, com percentual (legado: VendaAtendente)","pk":["tenant_id","quote_id","employee_id"],"c":[["tenant_id","uuid"],["quote_id","uuid"],["employee_id","uuid"],["percent","numeric(7,4)"],["is_primary","boolean"]]},"quote_professionals":{"n":0,"dom":"venda","esc":"tenant","doc":"profissional que indicou — base da comissão (legado: VendaIndicacao)","pk":["tenant_id","quote_id","partner_id"],"c":[["tenant_id","uuid"],["quote_id","uuid"],["partner_id","uuid"],["percent","numeric(7,4)"]]},"commission_rules":{"n":0,"dom":"venda","esc":"tenant","doc":"percentual do profissional POR GRUPO de produto (legado: VendaIndicacaoGrupProd, 232 mil linhas) — reserve_percent = Reserva Técnica: RESERVADO, modelagem adiada (blocker em aberto)","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["professional_id","uuid"],["product_group_id","uuid"],["percent","numeric(7,4)"],["reserve_percent","numeric(7,4)"],["active","boolean"]]},"sales_orders":{"n":0,"dom":"venda","esc":"tenant","doc":"pedido = orçamento aceito, 1:1 — conversão é transição, NÃO cópia (insight do legado preservado com ciclo próprio) — status: open|partially_delivered|delivered|cancelled; order_number de document_sequences","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["quote_id","uuid"],["order_number","bigint"],["series","varchar(3)"],["status","varchar"],["accepted_at","date"],["delivery_forecast","date"]]},"stock_locations":{"n":0,"dom":"estoque","esc":"tenant","doc":"depósito/local — o legado tem 4; local é DIMENSÃO, não gambiarra","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["name","varchar"],["kind","varchar"],["active","boolean"]]},"stock_movements":{"n":0,"dom":"estoque","esc":"tenant","doc":"kardex IMUTÁVEL — ADR-009: o saldo nasce do banco, nunca de valor absoluto vindo da aplicação — balance_after preenchido pelo banco na MESMA transação; duas baixas simultâneas não se perdem","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["variant_id","uuid"],["location_id","uuid"],["delta","numeric(14,3)"],["reason","varchar"],["source_kind","varchar"],["source_id","uuid"],["balance_after","numeric(14,3)"],["occurred_at","timestamptz"],["employee_id","uuid"]]},"stock_balances":{"n":0,"dom":"estoque","esc":"tenant","doc":"saldo corrente por variante × local — mantido por trigger do kardex","pk":["tenant_id","variant_id","location_id"],"c":[["tenant_id","uuid"],["variant_id","uuid"],["location_id","uuid"],["qty","numeric(14,3)"]]},"stock_reservations":{"n":0,"dom":"estoque","esc":"tenant","doc":"reserva de material para pedido aceito","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["order_id","uuid"],["variant_id","uuid"],["location_id","uuid"],["qty","numeric(14,3)"],["status","varchar"]]},"purchase_needs":{"n":0,"dom":"compra","esc":"tenant","doc":"necessidade de compra nascida do pedido de venda sem saldo (legado: pedido_compra) — status: open|grouped|cancelled","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["sales_order_id","uuid"],["variant_id","uuid"],["qty","numeric(14,3)"],["status","varchar"]]},"purchase_orders":{"n":0,"dom":"compra","esc":"tenant","doc":"ordem ao fornecedor, agrupando necessidades — a empresa compradora É o tenant (Vertz ou Via HF)","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["number","bigint"],["supplier_id","uuid"],["status","varchar"],["ordered_at","date"],["expected_at","date"],["min_invoice_cents","bigint"],["carrier","varchar"]]},"purchase_order_items":{"n":0,"dom":"compra","esc":"tenant","doc":"item da ordem, rastreando a necessidade de origem","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["purchase_order_id","uuid"],["need_id","uuid"],["variant_id","uuid"],["qty","numeric(14,3)"],["cost_cents","bigint"]]},"goods_receipts":{"n":0,"dom":"compra","esc":"tenant","doc":"nota do fornecedor: dá entrada no estoque e (por categoria) dispara o financeiro futuro","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["purchase_order_id","uuid"],["supplier_id","uuid"],["invoice_number","varchar"],["received_at","date"],["generates_finance","boolean"]]},"goods_receipt_items":{"n":0,"dom":"compra","esc":"tenant","doc":"item recebido — cada linha vira um stock_movement de entrada","pk":["tenant_id","id"],"c":[["tenant_id","uuid"],["id","uuid"],["receipt_id","uuid"],["variant_id","uuid"],["qty","numeric(14,3)"],["unit_cost_cents","bigint"]]}},"R":[["employee_tenants","tenant_id","tenants","id",0],["employee_tenants","employee_id","employees","id",0],["partner_tenant_links","tenant_id","tenants","id",0],["partner_tenant_links","partner_id","partners","id",0],["construction_sites","customer_id","partners","id",0],["products","group_id","product_groups","id",0],["product_variants","product_id","products","id",0],["product_variants","finish_id","finishes","id",0],["product_suppliers","product_id","products","id",0],["product_suppliers","supplier_id","partners","id",0],["supplier_cost_profiles","supplier_id","partners","id",0],["supplier_price_indexes","supplier_id","partners","id",0],["supplier_price_indexes","cost_profile_id","supplier_cost_profiles","id",0],["variant_supplier_prices","variant_id","product_variants","id",0],["variant_supplier_prices","supplier_id","partners","id",0],["variant_tenant_settings","variant_id","product_variants","id",0],["variant_tenant_settings","tenant_id","tenants","id",0],["quotes","customer_id","partners","id",0],["quotes","site_id","construction_sites","id",0],["quotes","category_id","sale_categories","id",0],["quote_environments","quote_id","quotes","id",0],["quote_items","quote_id","quotes","id",0],["quote_items","environment_id","quote_environments","id",0],["quote_items","variant_id","product_variants","id",0],["quote_items","supplier_id","partners","id",0],["quote_salespeople","quote_id","quotes","id",0],["quote_salespeople","employee_id","employees","id",0],["quote_professionals","quote_id","quotes","id",0],["quote_professionals","partner_id","partners","id",0],["commission_rules","professional_id","partners","id",0],["commission_rules","product_group_id","product_groups","id",0],["sales_orders","quote_id","quotes","id",0],["stock_movements","variant_id","product_variants","id",0],["stock_movements","location_id","stock_locations","id",0],["stock_movements","employee_id","employees","id",0],["stock_balances","variant_id","product_variants","id",0],["stock_balances","location_id","stock_locations","id",0],["stock_reservations","order_id","sales_orders","id",0],["stock_reservations","variant_id","product_variants","id",0],["purchase_needs","sales_order_id","sales_orders","id",0],["purchase_needs","variant_id","product_variants","id",0],["purchase_orders","supplier_id","partners","id",0],["purchase_order_items","purchase_order_id","purchase_orders","id",0],["purchase_order_items","need_id","purchase_needs","id",0],["purchase_order_items","variant_id","product_variants","id",0],["goods_receipts","purchase_order_id","purchase_orders","id",0],["goods_receipts","supplier_id","partners","id",0],["goods_receipt_items","receipt_id","goods_receipts","id",0],["goods_receipt_items","variant_id","product_variants","id",0]],"P":{"tudo":["tenants","employees","employee_tenants","catalog_lookups","document_sequences","partners","partner_tenant_links","construction_sites","product_groups","finishes","products","product_variants","product_suppliers","supplier_cost_profiles","supplier_price_indexes","variant_supplier_prices","variant_tenant_settings","sale_categories","quotes","quote_environments","quote_items","quote_salespeople","quote_professionals","commission_rules","sales_orders","stock_locations","stock_movements","stock_balances","stock_reservations","purchase_needs","purchase_orders","purchase_order_items","goods_receipts","goods_receipt_items"],"caminho do orçamento":["partners","construction_sites","products","product_variants","sale_categories","quotes","quote_environments","quote_items","quote_salespeople","quote_professionals","sales_orders","document_sequences"],"nucleo":["tenants","employees","employee_tenants","catalog_lookups","document_sequences"],"parceiros":["partners","partner_tenant_links","construction_sites"],"catalogo":["product_groups","finishes","products","product_variants","product_suppliers"],"preco":["supplier_cost_profiles","supplier_price_indexes","variant_supplier_prices","variant_tenant_settings"],"venda":["sale_categories","quotes","quote_environments","quote_items","quote_salespeople","quote_professionals","commission_rules","sales_orders"],"estoque":["stock_locations","stock_movements","stock_balances","stock_reservations"],"compra":["purchase_needs","purchase_orders","purchase_order_items","goods_receipts","goods_receipt_items"]}};
+const T = DADOS.T, R = DADOS.R, PRESETS = DADOS.P;
+const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',
+             venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',outros:'#8B8377'};
+const $=s=>document.querySelector(s);
+const fmt=n=>n?n.toLocaleString('pt-BR'):'vazia';
+const HD=34, ROW=21, CW=236;
+
+// relações indexadas por tabela
+const relDe = {};
+R.forEach((r,i)=>{ relDe[r[0]]=relDe[r[0]]||[]; relDe[r[0]].push(i);
+                   relDe[r[2]]=relDe[r[2]]||[]; relDe[r[2]].push(i); });
+
+let aberto = {};        // t -> {x,y,exp}
+let view = {x:40,y:40,k:1};
+let presetAtual = 'caminho do orçamento';
+
+function chaveStore(){ return 'cabinet-canvas:'+presetAtual; }
+function salva(){ try{ localStorage.setItem(chaveStore(),
+  JSON.stringify({aberto:aberto,view:view})); }catch(e){} }
+function carrega(){ try{ const s=localStorage.getItem(chaveStore());
+  if(s){ const j=JSON.parse(s);
+    if(!j.aberto||!Object.keys(j.aberto).length) return false;  // vazio salvo não vale
+    aberto=j.aberto; view=j.view||view; return true; } }catch(e){}
+  return false; }
+
+// ---- colunas visíveis de um card: PK + colunas que ligam; exp = todas
+function ligadas(t){
+  const s=new Set();
+  (relDe[t]||[]).forEach(i=>{ const r=R[i];
+    if(r[0]===t)s.add(r[1].toLowerCase()); if(r[2]===t)s.add(r[3].toLowerCase()); });
+  return s;
+}
+function linhasCard(t){
+  const d=T[t], lig=ligadas(t), chave=new Set(d.pk.map(c=>c.toLowerCase()));
+  if(aberto[t]&&aberto[t].exp) return d.c.map(c=>c[0]);
+  const vis=[];
+  d.c.forEach(c=>{ const cl=c[0].toLowerCase();
+    if(chave.has(cl)||lig.has(cl)) vis.push(c[0]); });
+  return vis.length?vis:d.c.slice(0,3).map(c=>c[0]);
+}
+
+// ---- render dos cards
+function render(){
+  const wrap=$('#cartas'); wrap.innerHTML='';
+  for(const t in aberto){
+    const d=T[t], p=aberto[t], cor=COR[d.dom]||'#8B8377';
+    const vis=linhasCard(t), chave=new Set(d.pk.map(c=>c.toLowerCase())), lig=ligadas(t);
+    const el=document.createElement('div');
+    el.className='card'; el.dataset.t=t;
+    el.style.left=p.x+'px'; el.style.top=p.y+'px';
+    el.style.borderColor=cor;
+    const tipos={}; d.c.forEach(c=>tipos[c[0]]=c[1]);
+    let h='<div class="hd" style="background:'+cor+'14"><b title="'+t+'" style="color:'+cor+'">'+t+
+      '</b><span class="n">'+(d.esc==='tenant'?'tenant':'org')+'</span>'+
+      '<span class="bt" title="traz todas as vizinhas" onclick="vizinhos(\''+t+'\');event.stopPropagation()">⊕</span>'+
+      '<span class="bt" title="remove do canvas" onclick="fecha(\''+t+'\');event.stopPropagation()">×</span></div>';
+    vis.forEach(c=>{
+      const cl=c.toLowerCase(), ehPk=chave.has(cl), ehFk=lig.has(cl);
+      h+='<div class="row'+(ehFk?' fk':'')+'" data-c="'+cl+'"'+
+         (ehFk?' onclick="clicaCol(\''+t+'\',\''+cl.replace(/'/g,"\\'")+'\')"':'')+'>'+
+         '<span class="ic'+(ehPk?' k':'')+'">'+(ehPk?'◆':'•')+'</span>'+
+         '<span class="nm">'+c+'</span><span class="tp">'+(tipos[c]||'')+'</span></div>';
+    });
+    const resto=d.c.length-vis.length;
+    if(!(p.exp)&&resto>0)
+      h+='<div class="mais" onclick="expande(\''+t+'\',1)">+ '+resto+' colunas</div>';
+    if(p.exp)
+      h+='<div class="mais" onclick="expande(\''+t+'\',0)">− só chave e ligações</div>';
+    el.innerHTML=h;
+    el.querySelector('.hd').addEventListener('mousedown',e=>arrasta(e,t,el));
+    el.addEventListener('mouseenter',()=>acende(t));
+    el.addEventListener('mouseleave',apaga);
+    wrap.appendChild(el);
+  }
+  desenha(); painel(); aplicaView(); salva();
+}
+
+function portaY(t, col){
+  const p=aberto[t]; if(!p) return 0;
+  const vis=linhasCard(t);
+  const i=vis.findIndex(c=>c.toLowerCase()===col.toLowerCase());
+  if(i<0) return p.y+HD/2;
+  return p.y+HD+i*ROW+ROW/2;
+}
+
+// ---- fios
+function desenha(){
+  const svg=$('#fios'); let h='';
+  R.forEach((r,i)=>{
+    const [o,co,d,cd,inf]=r;
+    if(!aberto[o]||!aberto[d]) return;
+    const po=aberto[o], pd=aberto[d];
+    const oDir = po.x+CW/2 < pd.x+CW/2;
+    const x1 = oDir? po.x+CW : po.x, x2 = oDir? pd.x : pd.x+CW;
+    const y1 = portaY(o,co), y2 = portaY(d,cd);
+    const mx=(x1+x2)/2;
+    h+='<g class="fio-g" data-i="'+i+'">'+
+       '<path class="fio" d="M'+x1+' '+y1+' C '+mx+' '+y1+', '+mx+' '+y2+', '+x2+' '+y2+
+       '" fill="none" stroke="transparent" stroke-width="11"/>'+
+       '<path class="vis" d="M'+x1+' '+y1+' C '+mx+' '+y1+', '+mx+' '+y2+', '+x2+' '+y2+
+       '" fill="none" stroke="#8B8377" stroke-width="1.7" opacity="0.85"'+
+       (inf?' stroke-dasharray="6 5"':'')+'/>'+
+       '<circle cx="'+x1+'" cy="'+y1+'" r="3" fill="#8B8377"/>'+
+       '<circle cx="'+x2+'" cy="'+y2+'" r="3" fill="#8B8377"/>'+
+       '<text x="'+(x1+(oDir?6:-13))+'" y="'+(y1-5)+'" font-size="10" font-weight="700" fill="#8B8377">N</text>'+
+       '<text x="'+(x2+(oDir?-12:6))+'" y="'+(y2-5)+'" font-size="10" font-weight="700" fill="#8B8377">1</text></g>';
+  });
+  svg.innerHTML=h;
+  svg.querySelectorAll('.fio-g').forEach(g=>{
+    g.querySelector('.fio').addEventListener('mousemove',e=>dicaFio(e,+g.dataset.i));
+    g.querySelector('.fio').addEventListener('mouseleave',()=>{$('#dica').style.display='none';apaga();});
+    g.querySelector('.fio').addEventListener('mouseenter',()=>acendeFio(+g.dataset.i));
+  });
+}
+
+// ---- destaque
+function acendeFio(i){
+  document.querySelectorAll('#fios .fio-g').forEach(g=>{
+    const on=+g.dataset.i===i;
+    g.querySelector('.vis').setAttribute('stroke', on?'#0060B0':'#8B8377');
+    g.querySelector('.vis').setAttribute('stroke-width', on?'3':'1.7');
+    g.querySelector('.vis').setAttribute('opacity', on?'1':'0.18');
+  });
+  const r=R[i];
+  marca(r[0],r[1],true); marca(r[2],r[3],true);
+}
+function acende(t){
+  document.querySelectorAll('#fios .fio-g').forEach(g=>{
+    const r=R[+g.dataset.i], on=(r[0]===t||r[2]===t);
+    g.querySelector('.vis').setAttribute('stroke', on?'#0060B0':'#8B8377');
+    g.querySelector('.vis').setAttribute('opacity', on?'1':'0.15');
+    g.querySelector('.vis').setAttribute('stroke-width', on?'2.6':'1.7');
+  });
+}
+function apaga(){
+  document.querySelectorAll('#fios .fio-g .vis').forEach(v=>{
+    v.setAttribute('stroke','#8B8377'); v.setAttribute('opacity','0.85');
+    v.setAttribute('stroke-width','1.7');});
+  document.querySelectorAll('.row.acesa').forEach(r=>r.classList.remove('acesa'));
+}
+function marca(t,col,on){
+  const el=document.querySelector('.card[data-t="'+t+'"] .row[data-c="'+col.toLowerCase()+'"]');
+  if(el) el.classList.toggle('acesa',on);
+}
+function dicaFio(e,i){
+  const r=R[i], d=$('#dica');
+  d.textContent=r[0]+'.'+r[1]+' → '+r[2]+'.'+r[3];
+  d.style.display='block'; d.style.left=(e.clientX+14)+'px'; d.style.top=(e.clientY+10)+'px';
+}
+
+// ---- ações
+function addTabela(t,x,y){
+  if(!T[t]||aberto[t]) return;
+  aberto[t]={x:Math.round(x||(-view.x+innerWidth/2)/view.k-CW/2),
+             y:Math.round(y||(-view.y+innerHeight/2)/view.k-60), exp:0};
+  render();
+}
+function fecha(t){ delete aberto[t]; render(); }
+function expande(t,v){ aberto[t].exp=v; render(); }
+function vizinhos(t){
+  const p=aberto[t]; let k=0;
+  (relDe[t]||[]).forEach(i=>{ const r=R[i]; const outro=r[0]===t?r[2]:r[0];
+    if(!aberto[outro]&&T[outro]){ aberto[outro]={x:p.x+CW+130, y:p.y+k*150, exp:0}; k++; } });
+  render();
+}
+function clicaCol(t,col){
+  const p=aberto[t]; let k=0, achou=false;
+  (relDe[t]||[]).forEach(i=>{ const r=R[i];
+    const meu=(r[0]===t&&r[1].toLowerCase()===col)||(r[2]===t&&r[3].toLowerCase()===col);
+    if(!meu) return;
+    const outro=r[0]===t?r[2]:r[0];
+    if(!aberto[outro]&&T[outro]){
+      aberto[outro]={x:p.x+(r[0]===t?CW+130:-CW-130), y:p.y+k*150, exp:0}; k++; achou=true; }
+  });
+  if(achou) render();
+}
+
+// ---- layout automático em camadas (BFS a partir da mais conectada)
+function autoLayout(){
+  const ts=Object.keys(aberto); if(!ts.length) return;
+  const dentro=new Set(ts);
+  const grau={}, adj={};
+  ts.forEach(t=>{grau[t]=0; adj[t]=new Set();});
+  R.forEach(r=>{ if(dentro.has(r[0])&&dentro.has(r[2])){
+    grau[r[0]]++;grau[r[2]]++; adj[r[0]].add(r[2]); adj[r[2]].add(r[0]); }});
+  const nivel={}, resto=new Set(ts);
+  while(resto.size){
+    const raiz=[...resto].sort((a,b)=>grau[b]-grau[a])[0];
+    let onda=[raiz]; nivel[raiz]=0; resto.delete(raiz);
+    while(onda.length){
+      const prox=[];
+      onda.forEach(t=>adj[t].forEach(v=>{ if(resto.has(v)){
+        nivel[v]=nivel[t]+1; resto.delete(v); prox.push(v); }}));
+      onda=prox;
+    }
+  }
+  const porNivel={};
+  ts.forEach(t=>{ const l=nivel[t]||0; (porNivel[l]=porNivel[l]||[]).push(t); });
+  const GX=CW+150, GY=44;
+  Object.keys(porNivel).sort((a,b)=>a-b).forEach(l=>{
+    const colu=porNivel[l].sort((a,b)=>grau[b]-grau[a]);
+    let y=60;
+    colu.forEach(t=>{ aberto[t].x=60+l*GX; aberto[t].y=y;
+      y+=HD+linhasCard(t).length*ROW+22+GY; });
+  });
+  render();
+}
+
+// ---- presets
+function carregaPreset(nome, forcaLayout){
+  presetAtual=nome;
+  if(!forcaLayout && carrega()){ render(); return; }
+  aberto={};
+  (PRESETS[nome]||[]).forEach(t=>{ aberto[t]={x:0,y:0,exp:0}; });
+  autoLayout(); encaixa();
+}
+
+// ---- pan / zoom / drag
+const vp=$('#viewport'), mundo=$('#mundo');
+function aplicaView(){ mundo.style.transform='translate('+view.x+'px,'+view.y+'px) scale('+view.k+')'; }
+vp.addEventListener('mousedown',e=>{
+  if(e.target.closest('.card')) return;
+  vp.classList.add('pan');
+  const sx=e.clientX-view.x, sy=e.clientY-view.y;
+  const mv=e2=>{ view.x=e2.clientX-sx; view.y=e2.clientY-sy; aplicaView(); };
+  const up=()=>{ vp.classList.remove('pan'); salva();
+    removeEventListener('mousemove',mv); removeEventListener('mouseup',up); };
+  addEventListener('mousemove',mv); addEventListener('mouseup',up);
+});
+vp.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=Math.exp(-e.deltaY*0.0012), k2=Math.min(2.5,Math.max(0.08,view.k*f));
+  const rx=e.clientX, ry=e.clientY-49;
+  view.x=rx-(rx-view.x)*(k2/view.k); view.y=ry-(ry-view.y)*(k2/view.k); view.k=k2;
+  aplicaView(); salva();
+},{passive:false});
+function zoomBt(f){
+  const k2=Math.min(2.5,Math.max(0.08,view.k*f));
+  const rx=innerWidth/2, ry=(innerHeight-49)/2;
+  view.x=rx-(rx-view.x)*(k2/view.k); view.y=ry-(ry-view.y)*(k2/view.k); view.k=k2;
+  aplicaView(); salva();
+}
+function arrasta(e,t,el){
+  e.preventDefault();
+  el.classList.add('mexe');
+  const p=aberto[t], sx=e.clientX, sy=e.clientY, ox=p.x, oy=p.y;
+  const mv=e2=>{ p.x=ox+(e2.clientX-sx)/view.k; p.y=oy+(e2.clientY-sy)/view.k;
+    el.style.left=p.x+'px'; el.style.top=p.y+'px'; desenha(); };
+  const up=()=>{ el.classList.remove('mexe'); salva();
+    removeEventListener('mousemove',mv); removeEventListener('mouseup',up); };
+  addEventListener('mousemove',mv); addEventListener('mouseup',up);
+}
+function encaixa(){
+  const ts=Object.keys(aberto); if(!ts.length) return;
+  let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  ts.forEach(t=>{ const p=aberto[t];
+    const alt=HD+linhasCard(t).length*ROW+24;
+    x1=Math.min(x1,p.x); y1=Math.min(y1,p.y);
+    x2=Math.max(x2,p.x+CW); y2=Math.max(y2,p.y+alt); });
+  const W=innerWidth, H=innerHeight-49;
+  const k=Math.min(2, Math.min(W/(x2-x1+120), H/(y2-y1+120)));
+  view.k=k; view.x=(W-(x2-x1)*k)/2-x1*k; view.y=(H-(y2-y1)*k)/2-y1*k;
+  aplicaView(); salva();
+}
+
+// ---- busca e painel
+const NOMES=Object.keys(T).sort((a,b)=>a.localeCompare(b));
+$('#busca').addEventListener('input',e=>{
+  const v=e.target.value.toLowerCase().trim(), hits=$('#hits');
+  if(!v){hits.style.display='none';return;}
+  const ts=NOMES.filter(t=>t.toLowerCase().includes(v)).slice(0,14);
+  hits.innerHTML=ts.map(t=>'<a onclick="addTabela(\''+t+'\');this.parentNode.style.display=\'none\'">'+
+    (aberto[t]?'✓ ':'')+t+'<span class="q">'+T[t].dom+'</span></a>').join('')||''
+  ;hits.style.display=ts.length?'block':'none';
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement!==$('#busca')){e.preventDefault();$('#busca').focus();}
+  if(e.key==='Escape'){$('#hits').style.display='none';$('#busca').blur();}
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#buscawrap'))$('#hits').style.display='none';
+});
+function painel(){
+  const ts=Object.keys(aberto);
+  let nd=0;
+  R.forEach(r=>{ if(aberto[r[0]]&&aberto[r[2]]) nd++; });
+  $('#painel').innerHTML='<b>'+ts.length+'</b> tabelas no canvas · <b>'+nd+
+    '</b> ligações · toda tabela tem created/updated_at/by (omitidas)<br>'+
+    'arraste o fundo = mover · roda do mouse = zoom · arraste o cabeçalho = mover tabela<br>'+
+    'coluna azul traz a vizinha · ⊕ traz todas · posições ficam salvas neste navegador';
+}
+
+// ---- init
+const sel=$('#preset');
+Object.keys(PRESETS).forEach(p=>{
+  const o=document.createElement('option'); o.value=p;
+  o.textContent=p+' ('+PRESETS[p].length+')'; sel.appendChild(o);
+});
+sel.addEventListener('change',()=>carregaPreset(sel.value,false));
+carregaPreset(presetAtual,false);
+sel.value=presetAtual;
+</script></body></html>

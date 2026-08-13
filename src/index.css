@@ -21,7 +21,9 @@
    para acompanhar:
    - canto POR NATUREZA (painel 10 · cartão 6 · controle 4 · dado 2 · item 0),
      no lugar do "radius 0 é lei";
-   - elevação em 6 níveis com sombra da FAMÍLIA QUENTE do papel — nunca preta;
+   - elevação em 6 níveis com sombra colorida, nunca preta (a família era
+     QUENTE enquanto o papel era creme; desde 2026-08-13 é neutra-fria, com as
+     superfícies cinzas — sombra quente sobre cinza lê como sujeira);
    - acento saturado (violeta) como cor de ação; o amarelo recua para foco e
      pendência;
    - etiqueta e cabeçalho de coluna INVERTIDOS: caixa clara com letra preta, no
@@ -29,31 +31,50 @@
    Cor em HSL-triplet (não hex) porque é o que `@theme inline` consome — trocar
    a notação quebraria todo `bg-*`/`text-*` do repo. */
 :root {
-  /* PALETA FLAT (decisão do user, 2026-08-09) — creme QUENTE no fundo,
-     sidebar e header; cinzas FRIOS nas folhas de conteúdo. A paleta flat
-     governa SUPERFÍCIE e TEXTO SECUNDÁRIO; NUNCA cor de módulo (neon /01 +
-     pastel /02), NUNCA tinta dos donos (money/focus/error). */
-  --background: 40 33% 91%; /* #FAF6EE — bancada creme quente */
+  /* PALETA FLAT — cinzas nas duas superfícies (decisão do user, 2026-08-13).
+     A paleta flat governa SUPERFÍCIE e TEXTO SECUNDÁRIO; NUNCA cor de módulo
+     (neon /01 + pastel /02), NUNCA tinta dos donos (money/focus/error).
+
+     **O MECANISMO QUE SE PERDEU, e que ninguém pode re-derivar errado:** até
+     2026-08-12 bancada e folha se separavam por MATIZ — creme quente embaixo,
+     cinza frio em cima (decisão do user de 2026-08-09). O degrau térmico
+     carregava a separação sozinho, e por isso a diferença de luz podia ser
+     mínima. Agora as duas são cinza e a separação é só de LUMINÂNCIA, de
+     propósito baixa (~1,15:1).
+
+     **Consequência dura: quem delimita a folha passa a ser o CONTORNO PRETO de
+     2px.** Confirmado em listagem densa renderizada — funciona, mas só
+     enquanto o traço estiver lá. Suavizar a borda depois não deixa a folha
+     "mais leve": faz a folha DESAPARECER. É a mesma economia do ornamento, em
+     que o traço delimita e o preenchimento fica livre. */
+  --background: 216 12% 92%; /* #E8EAED — bancada cinza */
   --foreground: 0 0% 0%; /* traço e texto: preto puro */
-  /* FASE 1.6 — folha BRANCA sobre fundo creme. A paleta flat troca o branco
-     pelo Light Gray frio: a folha agora se separa do fundo por MATIZ (quente ×
-     frio), não só por luminosidade. O degrau térmico é mais forte que o degrau
-     de luz — creme sob cinza lê como "base sob conteúdo". */
-  --card: 210 17% 98%; /* #F5F7FA Light Gray — folha fria */
+  /* A folha: um degrau de LUZ acima da bancada, e só. Ver a nota do
+     `--background` — o contorno preto é que a delimita. */
+  --card: 220 16% 96%; /* #F4F5F7 — folha cinza clara */
   --card-foreground: 0 0% 0%;
-  --popover: 210 17% 98%;
+  --popover: 220 16% 96%;
   --popover-foreground: 0 0% 0%;
-  /* Degrau INTERNO da folha: o Light Gray escuro (#E6E9ED). */
-  --surface-sunken: 210 14% 94%; /* #E6E9ED — afundado, zebra */
-  --neutral: 210 14% 94%; /* hover de item, trilho, skeleton */
+  /* Degrau INTERNO da folha (zebra, hover, trilho). Desce junto com a folha
+     para manter os 4 pontos de luz que separavam 98 de 94 — a 2 pontos a zebra
+     some numa listagem de 25 linhas. Cai no mesmo nível de luz da bancada, e
+     tudo bem: são regiões que nunca se encostam sem o contorno preto entre elas. */
+  --surface-sunken: 220 13% 92%;
+  --neutral: 220 13% 92%; /* hover de item, trilho, skeleton */
   /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
   --primary: 241 100% 66%;
   --primary-hover: 241 77% 57%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 17% 98%; /* acompanha a Folha */
+  --secondary: 220 16% 96%; /* acompanha a Folha */
   --secondary-foreground: 0 0% 0%;
-  --muted: 210 14% 94%;
-  --muted-foreground: 213 10% 43%; /* #656D78 — texto secundário */
+  --muted: 220 13% 92%;
+  /* Texto secundário. DESCE de L 43% para 41% junto com as superfícies, e o
+     número é medido: a folha caiu de 98% para 96% e a zebra de 94% para 92%,
+     e a 43% o secundário sobre a ZEBRA dava 4,38:1 — abaixo do piso, na linha
+     alternada de toda listagem. A 41% dá 4,72:1 na zebra, 4,73:1 na bancada e
+     5,19:1 na folha. Mesmo remédio que a 1.5 aplicou ao verde e ao vermelho:
+     matiz e saturação intactas, só a luz. */
+  --muted-foreground: 213 10% 41%;
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
   /* Cinzas da paleta flat — separador, desabilitado, texto alternativo. */
@@ -73,7 +94,8 @@
   /* Verde de dinheiro. A amostra pedia L 35%, que sobre a zona de valor
      (`--zone-money`) dá 2,79:1 — dinheiro é o dado que a tela existe para
      mostrar e estava ilegível justo no fundo feito para ele. L 26% mantém
-     matiz e saturação e sobe para 4,65:1 sobre a zona / 5,15:1 sobre a Folha. */
+     matiz e saturação e sobe para 4,65:1 sobre a zona / 5,03:1 sobre a Folha
+     (era 5,15:1 quando a folha estava em 98% de luz — remedido em 2026-08-13). */
   --money: 155 81% 26%;
   /* Vermelho: destruição, erro e VALOR NEGATIVO. Desce de L 52% pelo mesmo
      motivo do verde — negativo mora na mesma fileira de totais, sobre a mesma
@@ -125,16 +147,20 @@
   --zone-info: 223 69% 95%; /* Info/02 #E9EEFB */
   --zone-warn: 48 100% 95%; /* Warning/02 #FFFAE5 */
   --zone-danger: 6 76% 95%; /* Danger/03 #FCEBE9 */
-  /* Sombra: família quente do papel, 5 profundidades. NUNCA preta — preto vira
-     buraco, o papel projeta sombra de papel. */
-  --shadow-1: 41 14% 61%;
-  --shadow-2: 39 13% 47%;
-  --shadow-3: 37 16% 36%;
-  --shadow-4: 36 18% 27%;
-  --shadow-5: 35 20% 19%;
+  /* Sombra: 5 profundidades, e continua NUNCA preta — preto vira buraco, o
+     papel projeta sombra de papel. O que mudou é a FAMÍLIA: era quente (matiz
+     35–41), da época do papel creme. Sombra quente sobre superfície cinza não
+     lê como sombra, lê como SUJEIRA — a mancha ganha um tom de bege que a
+     bancada não tem em lugar nenhum. Mesma escada de luz, matiz neutralizada
+     para o frio das superfícies novas. */
+  --shadow-1: 214 10% 61%;
+  --shadow-2: 215 11% 47%;
+  --shadow-3: 216 13% 36%;
+  --shadow-4: 216 14% 27%;
+  --shadow-5: 217 16% 19%;
   /* Carimbo: os quatro tons continuam semânticos (o mapeamento tom → situação
      segue `[a resolver]` até a enumeração real do backend). */
-  --stamp-neutral: 37 16% 36%;
+  --stamp-neutral: 216 13% 36%;
   --stamp-open: 47 100% 50%;
   /* Acompanham `--money` e `--destructive`: `done` é PREENCHIDO com letra
      branca em cima (3,31:1 no verde antigo) e `void` é letra sobre papel. */
@@ -145,13 +171,13 @@
      quase invisível, e a cortina existe justamente para dizer "o que está atrás
      não recebe clique agora". No escuro ela precisa ser bem mais densa. */
   --veil: 0 0% 0% / 0.2;
-  --grid-line: hsl(40 18% 82%); /* quente — a grade pousa sobre o fundo creme */
-  /* Sidebar: mesmo creme quente da bancada; item ativo = Folha com traço preto. */
-  --sidebar: hsl(40 33% 91%); /* #FAF6EE — creme quente */
+  --grid-line: hsl(216 12% 83%); /* a grade pousa sobre a bancada cinza */
+  /* Sidebar: o mesmo cinza da bancada; item ativo = Folha com traço preto. */
+  --sidebar: hsl(216 12% 92%); /* #E8EAED — bancada cinza */
   --sidebar-foreground: hsl(0 0% 0%);
   --sidebar-primary: hsl(241 100% 66%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(210 14% 94%); /* #E6E9ED — hover de item, cinza frio */
+  --sidebar-accent: hsl(220 13% 92%); /* hover de item */
   --sidebar-accent-foreground: hsl(0 0% 0%);
   --sidebar-border: hsl(0 0% 0%);
   --sidebar-ring: hsl(47 100% 50%);
@@ -253,34 +279,35 @@
    5,34:1. É o mesmo violeta cumprindo o mesmo papel, com o contraste na mão
    certa. */
 .dark {
-  /* Superfícies: bancada escura e QUENTE (creme persiste); folha um degrau
-     ACIMA com viés FRIO (paleta flat). */
-  --background: 40 12% 9%;
-  --foreground: 42 25% 94%;
-  --card: 210 8% 16%; /* cinza frio escuro */
-  --card-foreground: 42 25% 94%;
-  --popover: 210 8% 16%;
-  --popover-foreground: 42 25% 94%;
+  /* Superfícies: bancada escura e folha um degrau ACIMA, as duas cinzas. O
+     creme saiu daqui pelo mesmo motivo do claro (2026-08-13) — a separação é
+     de LUZ, e quem delimita a folha é o traço. */
+  --background: 220 8% 10%;
+  --foreground: 220 12% 94%;
+  --card: 220 9% 17%; /* folha escura */
+  --card-foreground: 220 12% 94%;
+  --popover: 220 9% 17%;
+  --popover-foreground: 220 12% 94%;
   /* Afundar no escuro é ESCURECER: o degrau interno desce, não sobe. */
-  --surface-sunken: 210 8% 12%;
-  --neutral: 210 6% 22%;
+  --surface-sunken: 220 9% 13%;
+  --neutral: 220 7% 23%;
   /* Ação: o mesmo violeta, clareado para se ver sobre a folha escura. O texto
      em cima dele fica escuro — ver a nota da inversão acima. */
   --primary: 241 100% 74%;
   --primary-hover: 241 90% 82%;
-  --primary-foreground: 40 12% 9%;
-  --secondary: 210 8% 16%;
-  --secondary-foreground: 42 25% 94%;
-  --muted: 210 6% 22%;
+  --primary-foreground: 220 8% 10%;
+  --secondary: 220 9% 17%;
+  --secondary-foreground: 220 12% 94%;
+  --muted: 220 7% 23%;
   --muted-foreground: 210 6% 70%; /* texto secundário frio */
   --accent: 262 90% 78%;
-  --accent-foreground: 40 12% 9%;
+  --accent-foreground: 220 8% 10%;
   --info: 225 71% 75%;
   /* Dinheiro e negativo sobem de luz: no claro eles escureciam para se ver
      sobre pastel claro; aqui clareiam pelo motivo espelhado. */
   --money: 155 65% 62%;
   --destructive: 357 90% 70%;
-  --destructive-foreground: 40 12% 9%;
+  --destructive-foreground: 220 8% 10%;
   --warn: 47 100% 55%;
   /* Tomato segue igual: a L 66 ele ja se le sobre o papel escuro. */
   --offline: 11 100% 66%;
@@ -290,12 +317,13 @@
      de ação logo acima: sobre papel escuro, a cor precisa CLAREAR. */
   --empresa: 234 91% 74%;
   /* O TRAÇO. É ele que desenha a caixa, e no escuro ele é claro — a Regra da
-     Caixa Preta vira a regra do traço: muda a tinta, não o papel dela. */
-  --border: 40 10% 66%;
-  --input: 40 10% 66%;
+     Caixa Preta vira a regra do traço: muda a tinta, não o papel dela. Perdeu o
+     tingimento quente junto com as superfícies. */
+  --border: 220 8% 66%;
+  --input: 220 8% 66%;
   --ring: 47 100% 55%;
-  --rule-hair: 210 6% 30%; /* cinza frio */
-  --rule-strong: 40 10% 70%;
+  --rule-hair: 220 7% 31%;
+  --rule-strong: 220 8% 70%;
   /* Cinzas da paleta flat, invertidos para o escuro. */
   --text-disabled: 210 5% 40%;
   --text-strong: 210 8% 80%;
@@ -315,26 +343,26 @@
      escuro seria luz, não sombra. Os cinco degraus ficam sutis de propósito:
      no escuro quem carrega a elevação é o degrau de superfície e o traço
      claro, e a sombra só confirma. */
-  --shadow-1: 40 14% 6%;
-  --shadow-2: 39 16% 5%;
-  --shadow-3: 37 18% 4%;
-  --shadow-4: 36 20% 3%;
-  --shadow-5: 35 22% 2%;
-  --stamp-neutral: 40 14% 70%;
+  --shadow-1: 220 10% 6%;
+  --shadow-2: 220 12% 5%;
+  --shadow-3: 220 14% 4%;
+  --shadow-4: 220 16% 3%;
+  --shadow-5: 220 18% 2%;
+  --stamp-neutral: 220 10% 70%;
   --stamp-open: 47 100% 55%;
   --stamp-done: 155 65% 62%;
   --stamp-void: 357 90% 70%;
   /* Sobre papel escuro a cortina precisa de muito mais densidade para separar
      o modal do resto: 20% de preto ali some. */
   --veil: 0 0% 0% / 0.65;
-  --grid-line: hsl(40 8% 18%); /* warm — a grade pousa sobre a bancada quente */
-  --sidebar: hsl(40 12% 9%); /* mesmo creme escuro da bancada */
-  --sidebar-foreground: hsl(42 25% 94%);
+  --grid-line: hsl(220 8% 19%); /* a grade pousa sobre a bancada escura */
+  --sidebar: hsl(220 8% 10%); /* o mesmo cinza escuro da bancada */
+  --sidebar-foreground: hsl(220 12% 94%);
   --sidebar-primary: hsl(241 100% 74%);
-  --sidebar-primary-foreground: hsl(40 12% 9%);
-  --sidebar-accent: hsl(210 6% 22%); /* cinza frio — hover de item */
-  --sidebar-accent-foreground: hsl(42 25% 94%);
-  --sidebar-border: hsl(40 10% 66%);
+  --sidebar-primary-foreground: hsl(220 8% 10%);
+  --sidebar-accent: hsl(220 7% 23%); /* hover de item */
+  --sidebar-accent-foreground: hsl(220 12% 94%);
+  --sidebar-border: hsl(220 8% 66%);
   --sidebar-ring: hsl(47 100% 55%);
   /* Par de módulo padrão, escuro. */
   --modulo-01: 262 90% 78%;
@@ -342,12 +370,20 @@
 }
 
 /* COR DE MÓDULO NO ESCURO — só a /02 muda.
-   A cheia /01 já é clara e continua servindo de tinta sobre o papel escuro
-   (medido: entre 5,15:1 e 8,5:1 sobre a folha, todas acima do piso de 3:1 de
-   elemento não-textual). A pastel /02, que no claro é superfície, aqui teria
-   91–95% de luz e viraria um bloco branco no meio do escuro: ela desce para a
-   mesma matiz com 20% de luz, e a tinta clara por cima fica entre 9,7:1 e
-   13,4:1. */
+   A cheia /01 já é clara e continua servindo de tinta sobre o papel escuro.
+   **Remedido em 2026-08-13, com a folha escura nova:** vai de 2,74:1 (vendas) a
+   9,38:1 (produtos) — e duas das oito ficam ABAIXO de 3:1, vendas e
+   fornecedores. A medição anterior anotada aqui ("entre 5,15:1 e 8,5:1, todas
+   acima do piso") estava errada, e não é a folha nova que a quebrou: contra a
+   folha escura ANTIGA as mesmas duas já não passavam.
+   Fica como está, e pelo motivo que o `<Ornamento>` documenta: **quem delimita
+   a forma é o TRAÇO** (`--foreground` sobre a folha escura, 12,5:1), e o
+   preenchimento neon tem contraste baixo POR CONSTRUÇÃO. O piso de 3:1 vale
+   para elemento não-textual que se sustenta sozinho — não é o caso aqui.
+   Escurecer os neons para "consertar" o número desmontaria a escolha do user.
+   A pastel /02, que no claro é superfície, aqui teria 91–95% de luz e viraria
+   um bloco branco no meio do escuro: ela desce para a mesma matiz com 20% de
+   luz, e a tinta clara por cima fica entre 9,5:1 e 13,1:1. */
 .dark [data-modulo="produtos"] {
   --modulo-02: 185 35% 20%;
 }

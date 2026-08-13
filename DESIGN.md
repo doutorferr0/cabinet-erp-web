@@ -1,9 +1,9 @@
 ---
 name: Cabinet
-description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfície creme, elevação em degraus e acento saturado.
+description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
 colors:
-  bench: "hsl(41 25% 85%)"
-  sheet: "hsl(0 0% 100%)"
+  bench: "hsl(216 12% 92%)"
+  sheet: "hsl(220 16% 96%)"
   sheet-sunken: "hsl(60 20% 98%)"
   neutral: "hsl(44 35% 92%)"
   ink: "hsl(0 0% 0%)"
@@ -97,7 +97,14 @@ effects:
   border-heavy: "3px solid hsl(0 0% 0%)"
 ---
 
-# Design System: Cabinet — fase 1.6
+# Design System: Cabinet — fase 1.6 + identidade própria (2026-08-13)
+
+> **A identidade do Cabinet passou a ser dele** (sessão com o user, 2026-08-13): marca desenhada
+> pelo user em dois pesos, tipografia de 4 famílias com regra SEMÂNTICA, superfícies cinzas no
+> lugar do creme. As três seções que isso reescreve são **Superfícies**, **Typography** e **a
+> sidebar/marca**; a **Sombra** trocou de família junto. **Todo número de contraste medido contra
+> a bancada creme foi refeito** — quem citar um valor antigo desta página está citando medição
+> inválida.
 
 > **Supersede a fundação "Brut sobre papel" (fases 1 e 2).** Amostra de referência aprovada pelo user:
 > `docs/design/amostra-fase-1.5.html` (v5, 2026-08-06). **Em divergência entre este doc e a amostra, a AMOSTRA vence.**
@@ -126,16 +133,17 @@ legado SoftLux · desktop-only, largura inteira · número tabular à direita ·
 interação por clique · nada anima na entrada de tela.
 
 **O que a 1.6 acrescentou** (a 1.5 continua valendo no que ela não contradiz): a queixa era
-"escuro/triste/sem cor", e a resposta tem três partes. **Cor** — folha branca sobre bancada creme,
+"escuro/triste/sem cor", e a resposta tem três partes. **Cor** — folha clara sobre bancada (então
+cremes, cinzas desde 2026-08-13),
 as cinco zonas viram os pastéis /02 da paleta, e cada módulo ganha um par fixo trocado por escopo.
 **Movimento** — entrada de tela numa mola, peça que aparece com outra, e o hover que PULA (§3b),
 porque o da 1.5 foi avaliado como fraco. **Ornamento** — uma forma colorida por módulo, recortada
 por máscara, jamais preta.
 
 **Key characteristics:**
-- Bancada creme com grade de 52px no fundo; folhas de trabalho BRANCAS pousam OPACAS por cima
-- Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra
-- **Elevação em 5 degraus** com sombra quente (`el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal)
+- Bancada CINZA com grade de 52px no fundo; folhas de trabalho um degrau de luz acima pousam OPACAS por cima (o creme saiu em 2026-08-13)
+- Traço PRETO de 2px em toda caixa — o preto ficou no traço, saiu do preenchimento e da sombra. **Com as duas superfícies cinzas a 1,10:1, é o traço que delimita a folha**: suavizá-lo faz a folha sumir
+- **Elevação em 5 degraus** com sombra neutra-fria (`el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal)
 - **Etiqueta invertida**: rótulo de seção, rótulo de campo e cabeçalho de coluna são **caixa clara com letra preta**. A força vem da borda, da caixa alta e do tracking — não do fundo cheio
 - **Superfície tintada por conteúdo**, nos pastéis /02 da paleta: valor · identidade · apoio · pendência · bloqueio. A cheia /01 só entra em elemento compacto
 - **Um par de cor fixo por módulo**, trocado por escopo (`data-modulo`), com um shape de ornamento fixo
@@ -146,18 +154,33 @@ por máscara, jamais preta.
 
 ## Colors
 
-### Superfícies — fundo MEIO-TERMO (1.6)
+### Superfícies — as duas CINZAS (2026-08-13)
 | papel | uso |
 |---|---|
-| Bancada `hsl(41 25% 85%)` | fundo do app, atrás das folhas — **segue creme** |
-| Folha `#FFFFFF` | superfície de trabalho: painel, cartão, campo, tabela |
-| Afundado `#FBFBF9` (Gray-50) | degrau INTERNO da folha: compartimento de formulário, trilho |
-| Neutro `hsl(44 35% 92%)` | hover de item, skeleton |
+| Bancada `#E8EAED` (`216 12% 92%`) | fundo do app, sidebar e header |
+| Folha `#F4F5F7` (`220 16% 96%`) | superfície de trabalho: painel, cartão, campo, tabela |
+| Afundado `220 13% 92%` | degrau INTERNO da folha: zebra, compartimento, trilho |
+| Neutro `220 13% 92%` | hover de item, skeleton |
 
-Creme sobre creme fazia a folha sumir contra a bancada — era metade da queixa de "escuro e sem
-cor": não havia degrau entre fundo e superfície de trabalho. Com a folha branca, caixa dentro de
-caixa passa a depender só do traço, e é para isso que existe o **Afundado**: meio grau de luz,
-sem gastar cor. Degrau ≠ zona — quem tem cor de verdade é o bloco cujo CONTEÚDO tem dono.
+**O creme SAIU, e o que se perde junto é um MECANISMO — não um tom.** Até 2026-08-12 bancada e
+folha se separavam por **matiz**: creme quente embaixo, cinza frio em cima (decisão do user de
+2026-08-09). O degrau térmico carregava a separação sozinho, e por isso a diferença de luz podia
+ser mínima. Agora as duas são cinza e a separação é só de **luminância**, de propósito baixa:
+**1,10:1 medido** — o próprio par que o user escolheu, não um desvio dele.
+
+**Consequência dura, e é a linha mais importante desta seção: quem delimita a folha passa a ser o
+CONTORNO PRETO de 2px.** Confirmado em listagem densa renderizada. Funciona, mas só enquanto o
+traço estiver lá — se alguém propuser "suavizar a borda" depois, a folha não fica mais leve, ela
+**desaparece**. É a mesma economia do ornamento: o traço delimita, e aí o preenchimento fica livre.
+
+O **Afundado** desceu junto (94% → 92%) para manter os 4 pontos de luz que o separavam da folha; a
+2 pontos a zebra some numa listagem de 25 linhas. Ele cai no mesmo nível de luz da bancada, e tudo
+bem — são regiões que nunca se encostam sem o contorno preto entre elas.
+
+**Contrastes remedidos** (o texto secundário desceu de L 43% para 41% por causa disto): preto na
+folha 19,1:1 · secundário na folha 5,19:1, na zebra 4,72:1, na bancada 4,73:1 · dinheiro na folha
+5,03:1 · negativo 5,51:1 · traço preto na folha 19,1:1. Os números anteriores desta página foram
+medidos contra a bancada creme e **não valem mais**.
 
 ### Zonas por conteúdo — os pastéis /02 da paleta (1.6)
 Valor `#D2FEEB` · Identidade `#E9DCFE` · Apoio `#E9EEFB` · Pendência `#FFFAE5` · Bloqueio
@@ -208,9 +231,9 @@ seção) é quem carrega `text-modulo`. Hover, ativo e desabilitado saem de gra�
 duplicado.
 
 ### Paleta flat (2026-08-09)
-Camada de **cinzas frios, preenchimentos e estados** — NUNCA cor de módulo, NUNCA tinta dos
-donos. Fundo creme quente `#FAF6EE` na bancada, sidebar e header; folhas em cinza frio
-`#F5F7FA` (Light Gray). O degrau térmico (quente × frio) separa fundo de conteúdo.
+Camada de **cinzas, preenchimentos e estados** — NUNCA cor de módulo, NUNCA tinta dos donos.
+Bancada `#E8EAED` no fundo, sidebar e header; folha `#F4F5F7`. **O degrau térmico (quente × frio)
+que separava fundo de conteúdo acabou em 2026-08-13** — hoje separa só a luz, e o contorno preto.
 
 **Preenchimentos flat** (com contorno preto, para elementos compactos):
 
@@ -253,18 +276,22 @@ empresa ativa pousa sobre a **zona de identidade**, e a 74% (a luz do `#828DF9` 
 escuro a zona é escura e ele volta aos 74%, com 4,75:1: sobre papel escuro a cor precisa CLAREAR,
 a mesma inversão do violeta de ação.
 
-> **Medida que vale para o resto da paleta, e que ainda é decisão em aberto:** sobre as superfícies
-> CLARAS (bancada creme e folha branca) **nenhum dos oito /01 de módulo alcança 3:1** — a faixa vai
-> de 1,32:1 (Lavender) a 2,97:1 (Soft blue sobre a folha), e o roxo de marca fica em 1,99:1 sobre a
-> bancada. Não é regressão de nenhuma fase: é a paleta /01 como foi travada, e ela foi escolhida
+> **Medida que vale para o resto da paleta, e que ainda é decisão em aberto** (remedida em
+> 2026-08-13 sobre as superfícies cinzas): sobre a folha os oito /01 vão de **1,40:1** (produtos) a
+> **4,78:1** (vendas), e **quatro dos oito seguem abaixo de 3:1** — produtos, boletim, estoque e,
+> na bancada, também compras e clientes. O roxo de marca fica em 2,25:1 sobre a bancada. As
+> superfícies novas são um pouco mais escuras que as antigas, então a faixa SUBIU (a nota anterior
+> dizia 1,32 a 2,97, medida contra folha branca), mas o diagnóstico não mudou. Não é regressão de nenhuma fase: é a paleta /01 como foi travada, e ela foi escolhida
 > para elemento COMPACTO e para preencher fundo com texto preto por cima (aí ela mede 7:1 a 20:1).
 > Como ornamento é decoração `aria-hidden`, a WCAG 1.4.11 não o obriga — mas a legibilidade em tema
 > claro é real e fica fraca. Mexer nisso é mexer na paleta travada: decisão do user, junto da
 > colisão dos quatro azuis vizinhos.
 
 ### Sombra
-Cinco degraus de `hsl(41 14% 61%)` a `hsl(35 20% 19%)` — todos sem blur, todos da família quente.
-**Nenhuma sombra preta.** A escada é **2/3/4/6/8** desde a 1.6: a 10px a sombra do modal virava
+Cinco degraus de `hsl(214 10% 61%)` a `hsl(217 16% 19%)` — todos sem blur, todos da família
+**neutra-fria**. Era quente (matiz 35–41) enquanto o papel era creme; sobre superfície cinza a
+sombra quente não lê como sombra, lê como **sujeira** — ganha um bege que a bancada não tem em
+lugar nenhum. Mesma escada de luz, matiz neutralizada. **Nenhuma sombra preta.** A escada é **2/3/4/6/8** desde a 1.6: a 10px a sombra do modal virava
 uma segunda peça na tela, do tamanho de uma borda grossa. Ela cresce devagar embaixo, onde os
 degraus se distinguem, e para em 8px, onde ainda se lê como sombra.
 
@@ -314,9 +341,9 @@ Os dois são **um arranjo só**, não duas escolhas soltas. O teto de densidade 
 região visível, e as duas peças no mesmo cabeçalho o estouravam — além de empilharem as duas
 perguntas de identidade ("que sistema é este" e "de que empresa é este dado") no mesmo canto do olho.
 
-| Lugar | Shape | Tamanho | Cor |
+| Lugar | Desenho | Tamanho | Cor |
 |---|---|---|---|
-| Topo — marca do sistema | `emblema` (`brutalist-shape-185`, losango em círculo) | 28px | Roxo de marca (`--accent`) |
+| Topo — marca do sistema | `<Marca variante="assinatura">` (símbolo do user + wordmark) | 28px | `currentColor` |
 | Rodapé — empresa ativa | `empresa` (`brutalist-029`, galpão) | 16px | Soft blue (`--empresa`) |
 
 **A empresa ativa é o escopo de tudo que a sidebar lista acima**, e escopo se lê depois do que ele
@@ -324,17 +351,36 @@ governa. Ela também é o único ornamento de cor FIXA fora dos estados de siste
 empresa é o que estou vendo", resposta que não muda de tela para tela — lê-la do `[data-modulo]`
 faria a marca da empresa piscar de cor a cada navegação.
 
-**`emblema` ≠ `marca`.** `marca` (`shape-182` + apoio + base) é a composição de BOAS-VINDAS do
-login, que ocupa meia tela e some quando o operador entra. `emblema` é o selo que fica no canto as
-oito horas seguintes, e tem de se ler a 28px sem competir com o conteúdo. Dois empregos, dois
-desenhos, duas chaves.
+**A MARCA saiu do acervo em 2026-08-13.** `emblema` (`shape-185`), `marca` (`shape-182` + apoio +
+base) e a composição de boas-vindas do login eram **empréstimo** enquanto o Cabinet não tinha
+símbolo próprio. O user entregou o dele, e as quatro chaves foram removidas do `<Ornamento>`.
+
+**`<Marca>` não passa pelo `<Ornamento>`, e isso não é organização de arquivo:** o ornamento monta
+traço + preenchimento em duas camadas com tom de MÓDULO, e a marca é desenho de linha sem
+preenchimento e sem cor de módulo — passá-la por lá pintaria o miolo da casa e daria a ela a cor
+da tela em que estivesse. A cor sai de `currentColor`: a marca responde "que produto é este",
+pergunta cuja resposta não muda ao navegar.
+
+**Dois pesos, e o corte é de legibilidade MEDIDA:**
+
+| arquivo | desenho | uso | piso |
+|---|---|---|---|
+| `cabinet-mark.svg` | 3 níveis + moldura, traço 3.2 | ≥64px — login, splash, favicon grande | 64px |
+| `cabinet-mark-compact.svg` | 2 níveis, sem moldura, traço 9 | ≤32px — sidebar, favicon 16/32 | **16px** |
+
+Rasterizado a 32px, os traços internos da versão com moldura se FUNDEM — a moldura come 20% do
+quadro e empurra o traço interno para sub-pixel. Por isso são dois desenhos e não uma espessura
+interpolada. `public/favicon.svg` é **cópia** do compacto (o browser o lê antes de existir bundle):
+mudou a marca, mudam os dois arquivos.
 
 ### Modo escuro
 Recalculado na fase 3 sobre esta paleta. **O escuro não inverte a cor, inverte a RELAÇÃO:** a
 bancada continua sendo o fundo e a folha continua pousando por cima — só que a folha agora é mais
 clara que a bancada (`hsl(40 10% 14%)` sobre `hsl(40 12% 9%)`), e a tinta que desenha a caixa é
-clara em vez de preta. A matiz quente do papel (35–42) fica em todas as superfícies; sem ela o creme
-vira cinza e o sistema perde a identidade.
+clara em vez de preta. **A matiz quente saiu daqui também (2026-08-13)**, pelo mesmo motivo do
+tema claro: as superfícies do escuro eram creme escurecido (matiz 35–42) e a tinta clara vinha
+tingida de quente (`42 25% 94%`); com o creme fora do sistema, tingir só o escuro deixaria os dois
+temas falando línguas diferentes. Bancada `220 8% 10%`, folha `220 9% 17%`, traço `220 8% 66%`.
 
 Três inversões que o cálculo obrigou, e que valem como regra:
 - **O texto da ação vira escuro.** No claro o violeta é L 66 e leva branco; no escuro precisa clarear
@@ -347,18 +393,60 @@ As cinco zonas mantêm a MATIZ dos pastéis /02 e viram a luz de 91–95% para 1
 nomeando o conteúdo, só o papel escureceu. Nos módulos, a cheia /01 já é clara e continua servindo
 de tinta; só a /02 desce.
 
-A sombra continua quente e sem blur, mas precisa ser **mais escura que a bancada** para existir —
+**Remedido em 2026-08-13, e a nota antiga estava errada:** a cheia /01 sobre a folha escura vai de
+**2,74:1** (vendas) a **9,38:1** (produtos) — duas das oito abaixo de 3:1, vendas e fornecedores.
+A página afirmava "entre 5,15:1 e 8,5:1, todas acima do piso", e não foi a folha nova que quebrou
+isso: contra a folha escura ANTIGA as mesmas duas já não passavam. Fica como está, pelo motivo que
+o `<Ornamento>` documenta — **quem delimita a forma é o traço**, e o preenchimento neon tem
+contraste baixo por construção. Escurecer os neons para consertar o número desmontaria a escolha
+do user.
+
+A sombra acompanhou a neutralização e continua sem blur, mas precisa ser **mais escura que a
+bancada** para existir —
 sombra clara sobre papel escuro seria luz. Os cinco degraus ficam sutis de propósito: no escuro quem
 carrega a elevação é o degrau de superfície e o traço claro, e a sombra só confirma.
 
 ## Typography
 
-Três famílias self-hosted (`@fontsource`), **zero CDN** — CDN em produção é dependência externa e IP do
-operador vazando a cada carga.
-- **Display (Sora 700)** — título de tela e de painel, valor de indicador. `letter-spacing: -0.012em`.
-- **Corpo (Inter 400/500/600)** — texto, rótulo, controle. Número tabular à direita, como sempre.
-- **Mono (PT Mono)** — identificador (código, CNPJ, NCM), etiqueta de seção, rótulo de campo,
-  cabeçalho de coluna, badge, migalha. Tracking largo (0.12em; 0.16em na etiqueta de seção).
+**Quatro** famílias self-hosted (`@fontsource`), **zero CDN** — CDN em produção é dependência
+externa e IP do operador vazando a cada carga. **Teto de 4: nenhuma quinta entra depois.**
+
+A divisão é **SEMÂNTICA, não por tamanho** (decisão do user, 2026-08-13, formulada por ele:
+*"'cliente:' estaria em Sora e o nome do cliente em Newsreader"*). Até aqui a rampa separava por
+altura — quem titula fala em Display, quem informa em Inter. Agora separa por **o que a palavra
+é**:
+
+| papel | família | onde |
+|---|---|---|
+| **quem** | Newsreader 400/700 | nome próprio de entidade (cliente, profissional, fornecedor, empresa) + título de tela e de documento |
+| **o quê** | Sora 600/700 | nome de produto, descrição |
+| **UI** | Inter 400/500/600 | rótulo de campo, cabeçalho de coluna, botão, menu, aba, mensagem |
+| **quanto** | PT Mono | número, código, data, valor, quantidade |
+
+Três regras que saíram de RENDER, não de teoria:
+
+1. **Newsreader entra +2px** (`text-[1.15em]`) em relação ao vizinho. A altura-x dela é menor: no
+   mesmo tamanho o nome do cliente lê como texto secundário e a hierarquia da linha **inverte** —
+   o rótulo passa a pesar mais que o dado. O ajuste é em `em` porque a peça entra tanto numa
+   célula de 14px quanto num título de 24px.
+2. **Produto fica em `--muted-foreground`** na listagem. Foi o que impediu o empate visual entre
+   três famílias na mesma linha; em `--foreground` ele disputa com o nome e a linha perde o
+   assunto.
+3. **Nome de entidade é COMPONENTE (`<Nome>`), nunca classe solta** — mesma disciplina do
+   `<Ornamento>`. Nome aparece em formulário, célula, combo, migalha, banda e diálogo de
+   confirmação; regra que depende de lembrar da classe falha na terceira tela, e falha MUDA
+   (texto na fonte errada não quebra teste). O par dele é `<Produto>`, no mesmo arquivo.
+
+**Peso 700 e não 800 no título:** o Newsreader entra com dois pesos, e `font-extrabold` sem
+arquivo de 800 vira negrito **sintético** — numa serifada de alto contraste isso fecha as hastes
+finas. Pelo mesmo motivo o tracking do título deixa de ser negativo: em caixa alta serifada,
+-0,02em encosta a serifa de uma letra na vizinha.
+
+**Descartadas, com motivo estrutural:** Instrument Serif (no `@fontsource` só existe peso 400 — sem
+bold, cabeçalho e rótulo em destaque ficam sem contraste de peso) · Fraunces (o eixo `opsz` era
+vantagem enquanto a divisão parecia ser por tamanho) · Playfair e Bodoni (hairlines finas a 13px,
+números irregulares na coluna) · **Lastik** (pedida pelo user para a interface, barrada por
+licença: grátis só para uso pessoal, e o Cabinet é vendido a terceiros).
 
 Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
@@ -380,8 +468,8 @@ Regras do Número Tabular e da Mono para Identificador: inalteradas.
 4. **Hover-lift é de PEÇA SOLTA** — botão e cartão clicável, o que tem caixa e sombra próprias e espaço em volta para se mover. **Item de menu NÃO levanta**: `.menu-item:hover` da amostra troca fundo e cor de borda, e só. Item encosta em item — levantar um abre fresta na fileira, que é o mesmo motivo de item não arredondar. Linha e célula de grade também não: lá o amarelo marca foco e o violeta marca seleção.
 
 ### Foco
-**Amarelo sozinho não sobrevive ao creme.** O `--ring` da amostra dá **1,45:1** sobre a Folha e
-**1,14:1** sobre a Bancada — a WCAG 1.4.11 pede 3:1 de um indicador de foco, e um anel que só o
+**Amarelo sozinho não sobrevive ao papel claro.** O `--ring` da amostra dá **1,42:1** sobre a Folha
+e **1,29:1** sobre a Bancada (remedido em 2026-08-13; eram 1,45 e 1,14 sobre as superfícies cremes) — a WCAG 1.4.11 pede 3:1 de um indicador de foco, e um anel que só o
 operador de vista boa enxerga não é indicador. Quem carrega o contraste é um **fio preto de 1px por
 fora do amarelo**; o amarelo continua sendo a identidade do foco, como manda a amostra.
 

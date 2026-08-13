@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-09T22:10:49.000Z",
-  "title": "Design System: Cabinet — paleta flat (2026-08-09)",
+  "generatedAt": "2026-08-13T00:00:00.000Z",
+  "title": "Design System: Cabinet — identidade própria (2026-08-13)",
   "extensions": {
     "colorMeta": {
       "bench": {
         "role": "neutral",
-        "displayName": "Creme Quente",
-        "canonical": "hsl(40 33% 91%)",
-        "purpose": "Fundo do app, sidebar e header. Creme #FAF6EE da paleta flat — quente por baixo.",
+        "displayName": "Bancada Cinza",
+        "canonical": "hsl(216 12% 92%)",
+        "purpose": "Fundo do app, sidebar e header. #E8EAED. O creme saiu em 2026-08-13: bancada e folha passam a se separar so por LUMINANCIA (~1,10:1 medido), nao mais por matiz quente x fria. Quem delimita a folha e o contorno preto de 2px — suavizar a borda faz a folha sumir.",
         "tonalRamp": [
           "hsl(41 25% 15%)",
           "hsl(41 25% 26%)",
@@ -22,9 +22,9 @@
       },
       "sheet": {
         "role": "neutral",
-        "displayName": "Folha Cinza Frio",
-        "canonical": "hsl(210 17% 98%)",
-        "purpose": "Superficie de trabalho em Light Gray #F5F7FA — fria sobre fundo quente. Degrau termico, nao so de luz.",
+        "displayName": "Folha Cinza Clara",
+        "canonical": "hsl(220 16% 96%)",
+        "purpose": "Superficie de trabalho. #F4F5F7, um degrau de luz acima da bancada. O traco e que a delimita.",
         "tonalRamp": [
           "hsl(0 0% 15%)",
           "hsl(0 0% 26%)",
@@ -38,9 +38,9 @@
       },
       "sheet-sunken": {
         "role": "neutral",
-        "displayName": "Folha Afundada Fria",
-        "canonical": "hsl(210 14% 94%)",
-        "purpose": "Degrau interno da folha em #E6E9ED. Zebra, trilho, area de leitura.",
+        "displayName": "Folha Afundada",
+        "canonical": "hsl(220 13% 92%)",
+        "purpose": "Degrau interno da folha: zebra, trilho, area de leitura. Desceu junto com a folha para manter os 4 pontos de luz — a 2 pontos a zebra some numa listagem de 25 linhas.",
         "tonalRamp": [
           "hsl(60 20% 15%)",
           "hsl(60 20% 26%)",
@@ -502,9 +502,13 @@
       }
     },
     "typographyMeta": {
+      "nome": {
+        "displayName": "Nome",
+        "purpose": "A voz de QUEM: nome proprio de entidade (cliente, profissional, fornecedor, empresa) e titulo de tela e de documento. Newsreader 400/700, +2px (0,15em) sobre o vizinho — a altura-x menor inverteria a hierarquia no mesmo tamanho. Aplicada pelo componente <Nome>, nunca por classe solta."
+      },
       "display": {
         "displayName": "Display",
-        "purpose": "Título de tela e de painel; valor de indicador. Sora 700."
+        "purpose": "A voz de O QUE: nome de produto e descricao. Sora 600/700. Na listagem, o produto vai em --muted-foreground para nao empatar com o nome."
       },
       "headline": {
         "displayName": "Headline",
@@ -516,7 +520,7 @@
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Texto corrido e dado de célula. Inter 400."
+        "purpose": "A voz de UI: texto, rotulo de campo, cabecalho de coluna, botao, menu, aba, mensagem. Inter 400/500/600."
       },
       "label": {
         "displayName": "Label",
@@ -528,7 +532,7 @@
       },
       "numeric": {
         "displayName": "Numeric",
-        "purpose": "Número em coluna: tabular, alinhado à direita."
+        "purpose": "A voz de QUANTO: numero, codigo, data, valor, quantidade. PT Mono, tabular, alinhado a direita."
       },
       "tag": {
         "displayName": "Tag",
@@ -546,27 +550,27 @@
     "shadows": [
       {
         "name": "el-1",
-        "value": "2px 2px 0 0 hsl(41 14% 61%)",
-        "purpose": "Apoio. Também o degrau do carimbo e do badge."
+        "value": "2px 2px 0 0 hsl(214 10% 61%)",
+        "purpose": "Apoio. Também o degrau do carimbo e do badge. Familia NEUTRA-FRIA desde 2026-08-13: sombra quente sobre cinza le como sujeira."
       },
       {
         "name": "el-2",
-        "value": "3px 3px 0 0 hsl(39 13% 47%)",
+        "value": "3px 3px 0 0 hsl(215 11% 47%)",
         "purpose": "Repouso do controle que levanta, e da aba selecionada."
       },
       {
         "name": "el-3",
-        "value": "4px 4px 0 0 hsl(37 16% 36%)",
+        "value": "4px 4px 0 0 hsl(216 13% 36%)",
         "purpose": "Padrão: folha, caixa de dado, menu. Destino do hover."
       },
       {
         "name": "el-4",
-        "value": "6px 6px 0 0 hsl(36 18% 27%)",
+        "value": "6px 6px 0 0 hsl(216 14% 27%)",
         "purpose": "Destaque — o indicador que a tela existe para mostrar."
       },
       {
         "name": "el-5",
-        "value": "8px 8px 0 0 hsl(35 20% 19%)",
+        "value": "8px 8px 0 0 hsl(217 16% 19%)",
         "purpose": "Modal, gaveta e diálogo de alerta."
       }
     ],

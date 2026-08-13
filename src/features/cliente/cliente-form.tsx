@@ -98,7 +98,7 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
           groupbox nenhum — conferir contra nova captura do SoftLux. */}
       <FormBlock legend="Identificação">
         <div className="grid grid-cols-12 items-end gap-3">
-          <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-6" />
+          <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-6" />
           <RadioField
             name="tipoPessoa"
             label="Tipo de pessoa"

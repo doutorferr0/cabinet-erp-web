@@ -1,5 +1,6 @@
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import type { Colaborador } from '@/mocks/colaboradores'
@@ -12,7 +13,11 @@ export const Route = createFileRoute('/cadastros/colaboradores/')({
 
 const columns: ColumnDef<Colaborador>[] = [
   { accessorKey: 'id', header: 'Código' },
-  { accessorKey: 'nome', header: 'Nome' },
+  {
+    accessorKey: 'nome',
+    header: 'Nome',
+    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+  },
   {
     accessorKey: 'setor',
     header: 'Setor',

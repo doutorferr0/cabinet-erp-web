@@ -279,7 +279,7 @@ export function ColaboradorForm({
       <div className="flex items-start gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <div className="grid grid-cols-12 items-end gap-3">
-            <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-5" />
+            <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-5" />
             <LookupField
               name="setor"
               label="Setor"

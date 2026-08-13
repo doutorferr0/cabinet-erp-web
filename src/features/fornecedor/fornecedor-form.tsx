@@ -138,12 +138,14 @@ function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
           <TextField
             name="razaoSocial"
             label="Razão Social"
+            voz="nome"
             className="col-span-12 sm:col-span-6"
           />
           <TextField name="sigla" label="Sigla" className="col-span-4 sm:col-span-2" />
           <TextField
             name="nomeFantasia"
             label="Nome Fantasia"
+            voz="nome"
             className="col-span-8 sm:col-span-4"
           />
           <div className="col-span-8 flex items-end gap-1 sm:col-span-4">

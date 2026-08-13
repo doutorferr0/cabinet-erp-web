@@ -43,6 +43,17 @@ export interface NomeProps {
 /** +2px a 14px. Em `em` para acompanhar o vizinho em qualquer contexto. */
 const DEGRAU = 'text-[1.15em]'
 
+/**
+ * A voz de QUEM como CLASSE — a única exceção à regra "componente, nunca
+ * classe", e ela existe por um motivo mecânico: **`<input>` não aceita filho.**
+ * O nome do cliente dentro do campo do formulário é o mesmo nome próprio da
+ * célula da listagem, e ficaria em Inter só porque o controle é um input.
+ *
+ * Não usar isto onde couber `<Nome>`. Quem a consome é o `voz="nome"` do
+ * `<TextField>`, que é o jeito de pedi-la sem espalhar a classe por tela.
+ */
+export const VOZ_DE_NOME = `font-nome ${DEGRAU}`
+
 export function Nome({ children, peso = 'normal', className }: NomeProps) {
   return (
     <span

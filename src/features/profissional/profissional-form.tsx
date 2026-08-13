@@ -157,7 +157,7 @@ function AbaDadosCadastrais({
           ]}
           className="col-span-12 sm:col-span-3"
         />
-        <TextField name="nome" label="Nome" className="col-span-12 sm:col-span-5" />
+        <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-5" />
         <DateField name="dtNascimento" label="Dt Nascimento" className="col-span-6 sm:col-span-2" />
         <TextField
           name="cpf"
@@ -286,6 +286,7 @@ export function ProfissionalForm({
         <TextField
           name="nomeApresentacao"
           label="Nome de Apresentação"
+          voz="nome"
           className="col-span-12 sm:col-span-6"
         />
         <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />

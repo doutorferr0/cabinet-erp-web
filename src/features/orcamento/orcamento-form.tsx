@@ -14,6 +14,7 @@ import {
   TextField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -132,7 +133,11 @@ const colunasParceiro: ColumnDef<PartnerDto>[] = [
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
-  { accessorKey: 'legalName', header: 'Nome' },
+  {
+    accessorKey: 'legalName',
+    header: 'Nome',
+    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+  },
 ]
 
 function Cabecalho() {

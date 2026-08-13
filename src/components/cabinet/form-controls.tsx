@@ -1,4 +1,5 @@
 import { LookupCombo } from '@/components/cabinet/lookup-combo'
+import { VOZ_DE_NOME } from '@/components/cabinet/nome'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   FormControl,
@@ -32,8 +33,23 @@ export function TextField({
   name,
   label,
   className,
+  voz,
   ...inputProps
-}: BaseProps & Omit<React.ComponentProps<typeof Input>, 'name'>) {
+}: BaseProps &
+  Omit<React.ComponentProps<typeof Input>, 'name'> & {
+    /**
+     * `nome` quando o que se digita é NOME PRÓPRIO DE ENTIDADE — razão social,
+     * nome fantasia, nome do cliente. O campo passa a falar na voz de QUEM,
+     * como a célula da listagem que mostra o mesmo dado.
+     *
+     * Existe como prop, e não como `className` solta, porque a voz tem de sair
+     * de um lugar só: a regra é semântica ("o que a palavra é"), e uma classe
+     * livre no input convidaria a usar a serifada por gosto, em campo que não é
+     * nome. Não vale para nome de cônjuge, pai ou mãe — esses são ATRIBUTO de
+     * um colaborador, não entidade do sistema.
+     */
+    voz?: 'nome'
+  }) {
   return (
     <FormField
       name={name}
@@ -41,7 +57,12 @@ export function TextField({
         <FormItem className={className}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input {...inputProps} {...field} value={field.value ?? ''} />
+            <Input
+              {...inputProps}
+              {...field}
+              value={field.value ?? ''}
+              {...(voz === 'nome' && { className: VOZ_DE_NOME })}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

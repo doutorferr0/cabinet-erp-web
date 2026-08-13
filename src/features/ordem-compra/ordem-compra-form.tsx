@@ -13,6 +13,7 @@ import {
   TextareaField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -103,7 +104,11 @@ function Cabecalho() {
 
 const transportadoraColumns: ColumnDef<Transportadora>[] = [
   { accessorKey: 'codigo', header: 'Código' },
-  { accessorKey: 'nome', header: 'Transportadora' },
+  {
+    accessorKey: 'nome',
+    header: 'Transportadora',
+    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+  },
   { accessorKey: 'municipio', header: 'Município' },
   { accessorKey: 'uf', header: 'UF' },
 ]
@@ -129,7 +134,11 @@ function BlocoTransportadora() {
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <span>
           <span className="text-muted-foreground">Nome:</span>{' '}
-          <output aria-label="Nome da transportadora">{transportadora?.nome || '—'}</output>
+          <output aria-label="Nome da transportadora">
+            {/* O registro existe vazio antes da busca: quem decide é o NOME,
+                não o objeto. */}
+            {transportadora?.nome ? <Nome>{transportadora.nome}</Nome> : '—'}
+          </output>
         </span>
         <span>
           <span className="text-muted-foreground">Município:</span>{' '}

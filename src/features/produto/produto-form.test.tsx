@@ -17,7 +17,20 @@ import { describe, expect, it } from 'vitest'
 
 const ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
 
-const LINHA = { id: ID, code: '1201', description: 'PENDENTE REDONDO ALUMÍNIO PRETO', active: true }
+const LINHA = {
+  id: ID,
+  code: '1201',
+  description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
+  active: true,
+  // Classificação do catálogo: entrou no DTO em 2026-08-13 e devolveu três
+  // colunas à listagem. O id é para escrever, o nome é o que a coluna mostra.
+  productTypeId: '11111111-1111-4111-8111-111111111111',
+  productTypeName: 'PENDENTE',
+  brandId: '22222222-2222-4222-8222-222222222222',
+  brandName: 'VERTZ',
+  factoryId: '33333333-3333-4333-8333-333333333333',
+  factoryName: 'FÁBRICA SP',
+}
 
 /** Id da variante: é ele que separa alterar a linha (PUT) de criar outra (POST). */
 const VARIANTE_ID = '9c858901-8a57-4791-81fe-4c455b099bc9'
@@ -100,6 +113,31 @@ describe('listagem de produtos', () => {
     expect(screen.getByText('Ativo', { selector: '[data-slot="stamp"]' })).toBeInTheDocument()
   })
 
+  // As três voltaram quando o DTO cresceu. Enquanto o contrato não as tinha,
+  // ficavam FORA — coluna vazia em toda linha lê-se como cadastro incompleto,
+  // e o incompleto era o contrato.
+  it('mostra a classificação do catálogo, que o contrato passou a trazer', async () => {
+    renderRoute('/cadastros/produtos', servidorDeProdutos())
+
+    expect(await screen.findByText('PENDENTE')).toBeInTheDocument()
+    expect(screen.getByText('VERTZ')).toBeInTheDocument()
+    expect(screen.getByText('FÁBRICA SP')).toBeInTheDocument()
+  })
+
+  // O `accessorKey` viaja como `sortBy`, e a whitelist do servidor é
+  // `code`/`description`/`active`. Clicar em `Marca` mandaria `sortBy=brandName`
+  // e voltaria 400: a tela quebraria no CLIQUE, não na carga — o pior lugar,
+  // porque o operador associa a quebra ao que ele fez.
+  it('a classificação não é ordenável enquanto a whitelist não a aceitar', async () => {
+    renderRoute('/cadastros/produtos', servidorDeProdutos())
+
+    await screen.findByText('VERTZ')
+    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Fábrica/ })).toBeNull()
+    // Contraprova: a coluna que a whitelist ACEITA continua clicável.
+    expect(screen.getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
+  })
+
   // A whitelist do servidor é `code`/`description`/`active`: mandar o nome em
   // português voltaria 400 e a listagem quebraria só ao clicar no cabeçalho.
   it('ordenar pelo cabeçalho manda o campo do contrato em sortBy', async () => {
@@ -166,6 +204,11 @@ describe('listagem de produtos', () => {
             unitInQty: '',
             unitOut: null,
             unitOutQty: '',
+            // A LINHA traz a classificação e ela volta como veio: desativar não
+            // pode apagar a marca do produto.
+            productTypeId: '11111111-1111-4111-8111-111111111111',
+            brandId: '22222222-2222-4222-8222-222222222222',
+            factoryId: '33333333-3333-4333-8333-333333333333',
           },
         },
       ])

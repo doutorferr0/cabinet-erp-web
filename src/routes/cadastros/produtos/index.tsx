@@ -16,13 +16,20 @@ export const Route = createFileRoute('/cadastros/produtos/')({
 /**
  * Colunas do que o `ProductDto` traz, com os rótulos LITERAIS da §6.
  *
- * A §6 registra mais quatro colunas — `Marca`, `Fábrica`, `Tipo de Produto` e
- * `Valor de Tabela`. Elas NÃO estão no DTO da listagem, e coluna que fica vazia em
- * toda linha é pior que coluna ausente: parece cadastro incompleto, não contrato
- * incompleto. Voltam quando o DTO crescer (`docs/integracao.md`).
+ * **`Marca`, `Fábrica` e `Tipo de Produto` VOLTARAM (2026-08-13)**, quando o DTO
+ * cresceu com a classificação do catálogo. As três saíram um dia porque coluna
+ * vazia em toda linha é pior que coluna ausente — parece cadastro incompleto, e
+ * o incompleto era o contrato.
+ *
+ * `Valor de Tabela`, a quarta que a §6 registra, continua fora: ela é da
+ * VARIANTE (§6.3), e a listagem lista produtos. Derivar "o preço da primeira
+ * variante" seria inventar regra aqui.
  *
  * O `accessorKey` é o nome do campo NO CONTRATO porque ele viaja como `sortBy`, e
- * a whitelist do servidor é `code`/`description`/`active`.
+ * a whitelist do servidor é `code`/`description`/`active` — por isso as três
+ * novas entram com **`enableSorting: false`**. Sem isso, clicar no cabeçalho
+ * manda `sortBy=brandName`, que a whitelist recusa com 400: a tela quebraria no
+ * clique, não na carga.
  */
 const columns: ColumnDef<ProductDto>[] = [
   { accessorKey: 'code', header: 'Nosso Código' },
@@ -31,6 +38,24 @@ const columns: ColumnDef<ProductDto>[] = [
     header: 'Nossa Descrição',
     // Voz de O QUÊ, e recuada: na listagem o produto é coadjuvante do nome.
     cell: ({ getValue }) => <Produto>{getValue<string>()}</Produto>,
+  },
+  {
+    accessorKey: 'productTypeName',
+    header: 'Tipo de Produto',
+    enableSorting: false,
+    cell: ({ getValue }) => getValue<string | null>() ?? '—',
+  },
+  {
+    accessorKey: 'brandName',
+    header: 'Marca',
+    enableSorting: false,
+    cell: ({ getValue }) => getValue<string | null>() ?? '—',
+  },
+  {
+    accessorKey: 'factoryName',
+    header: 'Fábrica',
+    enableSorting: false,
+    cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
   {
     accessorKey: 'active',

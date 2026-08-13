@@ -134,6 +134,36 @@ export interface ProductDto {
      * @nullable
      */
   unitOutQty?: string | null;
+  /**
+     * Proposto. `Tipo de Produto` (§6) — id do `catalog-lookups` de kind `TIPO_PRODUTO`. Id E nome viajam juntos, o mesmo par de `customerId`/`customerName` do orçamento: o id é a referência que a escrita usa, o nome é o que a LISTAGEM mostra sem precisar carregar a lista de apoio inteira para resolver três colunas.
+     * @nullable
+     */
+  productTypeId?: string | null;
+  /**
+     * Proposto. Nome do tipo, para exibição. Não é escrita — o `PUT` manda o id.
+     * @nullable
+     */
+  productTypeName?: string | null;
+  /**
+     * Proposto. `Marca` (§6) — kind `MARCA`.
+     * @nullable
+     */
+  brandId?: string | null;
+  /**
+     * Proposto. Nome da marca, para exibição.
+     * @nullable
+     */
+  brandName?: string | null;
+  /**
+     * Proposto. `Fábrica` (§6) — kind `FABRICA`.
+     * @nullable
+     */
+  factoryId?: string | null;
+  /**
+     * Proposto. Nome da fábrica, para exibição.
+     * @nullable
+     */
+  factoryName?: string | null;
 }
 
 export interface PagedResultOfProductDto {
@@ -257,6 +287,36 @@ export interface ProductDetailDto {
      * @nullable
      */
   unitOutQty?: string | null;
+  /**
+     * Proposto. `Tipo de Produto` (§6) — id do `catalog-lookups` de kind `TIPO_PRODUTO`. Id E nome viajam juntos, o mesmo par de `customerId`/`customerName` do orçamento: o id é a referência que a escrita usa, o nome é o que a LISTAGEM mostra sem precisar carregar a lista de apoio inteira para resolver três colunas.
+     * @nullable
+     */
+  productTypeId?: string | null;
+  /**
+     * Proposto. Nome do tipo, para exibição. Não é escrita — o `PUT` manda o id.
+     * @nullable
+     */
+  productTypeName?: string | null;
+  /**
+     * Proposto. `Marca` (§6) — kind `MARCA`.
+     * @nullable
+     */
+  brandId?: string | null;
+  /**
+     * Proposto. Nome da marca, para exibição.
+     * @nullable
+     */
+  brandName?: string | null;
+  /**
+     * Proposto. `Fábrica` (§6) — kind `FABRICA`.
+     * @nullable
+     */
+  factoryId?: string | null;
+  /**
+     * Proposto. Nome da fábrica, para exibição.
+     * @nullable
+     */
+  factoryName?: string | null;
   variants: ProductVariantDto[];
 }
 
@@ -297,6 +357,21 @@ export interface ProductWriteRequest {
      * @nullable
      */
   unitOutQty?: string | null;
+  /**
+     * Proposto. Só o ID viaja na escrita: o nome é do cadastro de apoio, e aceitá-lo aqui deixaria a tela renomear a lista de apoio por engano.
+     * @nullable
+     */
+  productTypeId?: string | null;
+  /**
+     * Proposto. Só o id — ver `productTypeId`.
+     * @nullable
+     */
+  brandId?: string | null;
+  /**
+     * Proposto. Só o id — ver `productTypeId`.
+     * @nullable
+     */
+  factoryId?: string | null;
 }
 
 export interface ReadinessStatus {

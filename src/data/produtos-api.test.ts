@@ -38,6 +38,13 @@ function detalhe(over: Record<string, unknown> = {}) {
     unitInQty: '12',
     unitOut: 'UN',
     unitOutQty: '1',
+    // Classificação do catálogo: id para escrever, nome para mostrar.
+    productTypeId: '11111111-1111-4111-8111-111111111111',
+    productTypeName: 'PENDENTE',
+    brandId: '22222222-2222-4222-8222-222222222222',
+    brandName: 'VERTZ',
+    factoryId: '33333333-3333-4333-8333-333333333333',
+    factoryName: 'FÁBRICA SP',
     variants: [
       {
         id: '9c858901-8a57-4791-81fe-4c455b099bc9',
@@ -108,11 +115,19 @@ describe('detalhe de produto', () => {
 
     // Se algum destes vier preenchido, é dado inventado com cara de dado do
     // servidor — o operador não teria como distinguir.
-    expect(produto.marca).toBe('')
-    expect(produto.fabrica).toBe('')
-    expect(produto.tipoProduto).toBe('')
+    // `marca`, `fabrica` e `tipoProduto` SAÍRAM desta lista em 2026-08-13: o
+    // contrato passou a trazê-los, então preenchidos agora é dado do servidor,
+    // não herança de mock. O teste da classificação está na escrita.
     expect(produto.ncm).toBe('')
     expect(produto.fornecedores).toEqual([])
+    // Detalhe SEM classificação continua em branco — o `??` não pode virar
+    // valor inventado quando o servidor manda nulo.
+    const semClassificacao = produtoDoContrato(
+      detalhe({ productTypeName: null, brandName: null, factoryName: null }),
+    )
+    expect(semClassificacao.marca).toBe('')
+    expect(semClassificacao.fabrica).toBe('')
+    expect(semClassificacao.tipoProduto).toBe('')
     // Preço mora na VARIANTE (§6.3 e schema do backend); no produto fica 0.
     expect(produto.valorTabelaCentavos).toBe(0)
   })
@@ -185,7 +200,24 @@ describe('escrita de produto', () => {
       unitInQty: '12',
       unitOut: 'UN',
       unitOutQty: '1',
+      // Só os IDs: o nome é do cadastro de apoio, e a tela escolhe por nome.
+      productTypeId: '11111111-1111-4111-8111-111111111111',
+      brandId: '22222222-2222-4222-8222-222222222222',
+      factoryId: '33333333-3333-4333-8333-333333333333',
     })
+  })
+
+  // O formulário escolhe a classificação pelo NOME (é o que o lookup expõe) e o
+  // contrato escreve por ID. Sem guardar o id da leitura, gravar a descrição
+  // mandaria os três nulos e o `PUT` apagaria a classificação do produto.
+  it('guarda o id da classificação para devolvê-lo na escrita', () => {
+    const produto = produtoDoContrato(detalhe())
+
+    expect(produto.marca).toBe('VERTZ')
+    expect(produto.marcaId).toBe('22222222-2222-4222-8222-222222222222')
+    expect(produtoParaContrato({ ...produto, nossaDescricao: 'OUTRA' }).brandId).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    )
   })
 
   // Entrada e saída são unidades DIFERENTES no fixture de propósito: comprar em
@@ -255,6 +287,9 @@ describe('escrita de produto', () => {
       unitInQty: '',
       unitOut: null,
       unitOutQty: '',
+      productTypeId: null,
+      brandId: null,
+      factoryId: null,
     })
   })
 
@@ -280,6 +315,9 @@ describe('escrita de produto', () => {
       unitInQty: '',
       unitOut: null,
       unitOutQty: '',
+      productTypeId: null,
+      brandId: null,
+      factoryId: null,
     })
     expect(gravado.id).toBe(ID)
   })
@@ -309,6 +347,9 @@ describe('escrita de produto', () => {
       unitInQty: '12',
       unitOut: 'UN',
       unitOutQty: '1',
+      productTypeId: '11111111-1111-4111-8111-111111111111',
+      brandId: '22222222-2222-4222-8222-222222222222',
+      factoryId: '33333333-3333-4333-8333-333333333333',
     })
   })
 

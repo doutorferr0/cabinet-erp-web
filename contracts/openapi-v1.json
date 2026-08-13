@@ -2330,6 +2330,33 @@
             "type": ["null", "string"],
             "description": "Proposto. `Qtd. Saída` (§6), decimal em string."
           },
+          "productTypeId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. `Tipo de Produto` (§6) — id do `catalog-lookups` de kind `TIPO_PRODUTO`. Id E nome viajam juntos, o mesmo par de `customerId`/`customerName` do orçamento: o id é a referência que a escrita usa, o nome é o que a LISTAGEM mostra sem precisar carregar a lista de apoio inteira para resolver três colunas."
+          },
+          "productTypeName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Nome do tipo, para exibição. Não é escrita — o `PUT` manda o id."
+          },
+          "brandId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. `Marca` (§6) — kind `MARCA`."
+          },
+          "brandName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Nome da marca, para exibição."
+          },
+          "factoryId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. `Fábrica` (§6) — kind `FABRICA`."
+          },
+          "factoryName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Nome da fábrica, para exibição."
+          },
           "variants": {
             "type": "array",
             "items": {
@@ -2378,6 +2405,33 @@
           "unitOutQty": {
             "type": ["null", "string"],
             "description": "Proposto. `Qtd. Saída` (§6). O par entrada×saída é que dá o fator de conversão; o front manda os quatro campos que a tela tem, e quem deriva o fator é o servidor — a modelagem do banco guarda `unit_factor`, a tela não."
+          },
+          "productTypeId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. `Tipo de Produto` (§6) — id do `catalog-lookups` de kind `TIPO_PRODUTO`. Id E nome viajam juntos, o mesmo par de `customerId`/`customerName` do orçamento: o id é a referência que a escrita usa, o nome é o que a LISTAGEM mostra sem precisar carregar a lista de apoio inteira para resolver três colunas."
+          },
+          "productTypeName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Nome do tipo, para exibição. Não é escrita — o `PUT` manda o id."
+          },
+          "brandId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. `Marca` (§6) — kind `MARCA`."
+          },
+          "brandName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Nome da marca, para exibição."
+          },
+          "factoryId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. `Fábrica` (§6) — kind `FABRICA`."
+          },
+          "factoryName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Nome da fábrica, para exibição."
           }
         }
       },
@@ -2448,6 +2502,21 @@
           "unitOutQty": {
             "type": ["null", "string"],
             "description": "Proposto. Decimal em string, 3 casas."
+          },
+          "productTypeId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. Só o ID viaja na escrita: o nome é do cadastro de apoio, e aceitá-lo aqui deixaria a tela renomear a lista de apoio por engano."
+          },
+          "brandId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. Só o id — ver `productTypeId`."
+          },
+          "factoryId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "Proposto. Só o id — ver `productTypeId`."
           }
         }
       },

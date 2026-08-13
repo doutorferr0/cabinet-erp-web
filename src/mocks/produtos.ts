@@ -111,6 +111,21 @@ export interface Produto {
   designerModelo: string | null
   fabrica: string
   marca: string
+  /**
+   * Os IDs de `Tipo de Produto`, `Fábrica` e `Marca` — dado do servidor que a
+   * TELA NÃO EDITA e devolve como veio.
+   *
+   * O formulário escolhe pelo NOME (é o que o `useLookupOptions` expõe), mas o
+   * contrato escreve por ID: sem guardar o id, gravar qualquer outro campo
+   * mandaria os três nulos e o `PUT` — que substitui o registro inteiro —
+   * apagaria a classificação do produto. Mesma técnica do `tradeName` que a tela
+   * de Clientes devolve intacto.
+   *
+   * Nasce `null` no registro em branco e no mock: quem os preenche é o servidor.
+   */
+  tipoProdutoId: string | null
+  fabricaId: string | null
+  marcaId: string | null
   descricaoComplementar: string
   foraDeLinha: boolean
   consultarValor: boolean
@@ -268,6 +283,11 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
     designerModelo: ['LINHA PRÓPRIA', 'STUDIO', 'ASSINADO'][i % 3] ?? null,
     fabrica,
     marca: MARCAS[i % MARCAS.length] as string,
+    // O mock não tem uuid de lista de apoio para inventar — e inventar seria
+    // dado de mentira com cara de dado do servidor.
+    tipoProdutoId: null,
+    fabricaId: null,
+    marcaId: null,
     descricaoComplementar: '',
     foraDeLinha: false,
     consultarValor: true,
@@ -347,6 +367,9 @@ export function produtoVazio(id = ''): Produto {
     designerModelo: null,
     fabrica: '',
     marca: '',
+    tipoProdutoId: null,
+    fabricaId: null,
+    marcaId: null,
     descricaoComplementar: '',
     foraDeLinha: false,
     consultarValor: true,

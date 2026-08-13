@@ -124,6 +124,15 @@ export function produtoDoContrato(dto: ProductDetailDto): Produto {
     unidadeEntradaQuantidade: dto.unitInQty ?? '',
     unidadeSaidaUnidade: dto.unitOut ?? null,
     unidadeSaidaQuantidade: dto.unitOutQty ?? '',
+    // Classificação do catálogo: o NOME preenche o combo (é o que o operador
+    // vê e escolhe), o ID fica guardado para a escrita devolver — ver a nota do
+    // tipo `Produto`.
+    tipoProduto: dto.productTypeName ?? '',
+    tipoProdutoId: dto.productTypeId ?? null,
+    marca: dto.brandName ?? '',
+    marcaId: dto.brandId ?? null,
+    fabrica: dto.factoryName ?? '',
+    fabricaId: dto.factoryId ?? null,
     variantes: dto.variants.map(varianteDoContrato),
   }
 }
@@ -172,6 +181,10 @@ export interface CamposGravaveis {
   unidadeEntradaQuantidade: string
   unidadeSaidaUnidade: string | null
   unidadeSaidaQuantidade: string
+  /** IDs da classificação — a tela não os edita, só os devolve. */
+  tipoProdutoId: string | null
+  marcaId: string | null
+  fabricaId: string | null
 }
 
 /**
@@ -194,6 +207,12 @@ export function produtoParaContrato(values: CamposGravaveis): ProductWriteReques
     unitInQty: values.unidadeEntradaQuantidade,
     unitOut: values.unidadeSaidaUnidade,
     unitOutQty: values.unidadeSaidaQuantidade,
+    // Só o ID viaja, e ele vem da LEITURA, não do combo: o formulário escolhe
+    // por nome e o contrato escreve por id. Mandar nulo porque a tela não tem o
+    // id apagaria a classificação do produto no `PUT`.
+    productTypeId: values.tipoProdutoId,
+    brandId: values.marcaId,
+    factoryId: values.fabricaId,
   }
 }
 
@@ -225,6 +244,9 @@ export function corpoDeDesativacao(linha: ProductDto): ProductWriteRequest {
     unidadeEntradaQuantidade: linha.unitInQty ?? '',
     unidadeSaidaUnidade: linha.unitOut ?? null,
     unidadeSaidaQuantidade: linha.unitOutQty ?? '',
+    tipoProdutoId: linha.productTypeId ?? null,
+    marcaId: linha.brandId ?? null,
+    fabricaId: linha.factoryId ?? null,
   })
 }
 

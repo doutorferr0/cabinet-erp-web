@@ -108,11 +108,35 @@ aqui seria regra de negócio no cliente.
 **Quantidade viaja como string decimal**, pela mesma razão do dinheiro em
 centavos: quantidade tem 3 casas e float perde centésimo.
 
-A LISTAGEM não muda: as quatro colunas que a §6 registra e o DTO não tem são
-`Marca`, `Fábrica`, `Tipo de Produto` e `Valor de Tabela` — nenhuma delas é o que
-entrou agora. E o `Excluir` da listagem monta o `PUT` a partir da linha, então os
-seis campos novos vão junto: sem isso, desativar apagaria código e unidade do
-cadastro inteiro.
+E o `Excluir` da listagem monta o `PUT` a partir da linha, então os campos novos
+vão junto: sem isso, desativar apagaria código e unidade do cadastro inteiro.
+
+**Segunda leva, no mesmo dia: a classificação do catálogo.** `productTypeId` +
+`productTypeName`, `brandId` + `brandName`, `factoryId` + `factoryName`. Com
+eles, três das quatro colunas que a §6 pede **voltaram à listagem**: `Tipo de
+Produto`, `Marca` e `Fábrica`. `Valor de Tabela`, a quarta, continua fora — ela é
+da VARIANTE (§6.3), e derivar "o preço da primeira variante" seria regra
+inventada na tela.
+
+**Id E nome viajam juntos**, o mesmo par de `customerId`/`customerName` do
+orçamento: o id é a referência que a escrita usa, o nome é o que a listagem
+mostra sem carregar três listas de apoio inteiras só para resolver três colunas.
+Na ESCRITA vai só o id — aceitar nome deixaria a tela renomear a lista de apoio
+por engano.
+
+**A tela guarda o id sem editá-lo, e isso é o ponto delicado.** O formulário
+escolhe a classificação pelo NOME (é o que `useLookupOptions` expõe) e o contrato
+escreve por id. Sem guardar o id que veio na leitura, gravar qualquer outro campo
+mandaria os três nulos e o `PUT` apagaria a classificação. Por isso `Produto` tem
+`tipoProdutoId`/`marcaId`/`fabricaId` — dado do servidor que a tela devolve
+intacto, a mesma técnica do `tradeName` na tela de Clientes.
+
+**As três colunas novas não são ordenáveis** (`enableSorting: false`): o
+`accessorKey` viaja como `sortBy` e a whitelist do servidor é
+`code`/`description`/`active`. Clicar em `Marca` mandaria `sortBy=brandName` e
+voltaria 400 — a tela quebraria no CLIQUE, não na carga, que é o pior lugar
+porque o operador associa a quebra ao que ele acabou de fazer. Quando a whitelist
+crescer, tira-se a trava.
 
 **Caminho no contrato, tela ainda mock:** orçamento e colaborador. Os caminhos
 existem (ver abaixo), o cliente gerado existe, mas `src/data/` ainda não os

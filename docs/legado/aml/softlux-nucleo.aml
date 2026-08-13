@@ -1,0 +1,1128 @@
+# Softlux — núcleo do negócio (30 tabelas)
+# Gerado por gera-aml.py a partir dos CSVs do catálogo. Não editar à mão: regerar.
+# Recorte do caminho principal: cadastro → produto/preço → venda → compra → estoque.
+# Relações `# inferida (...)` NÃO são declaradas no banco: hipótese por convenção
+# de nome (mesma coluna+tipo, PK simples no destino) ou sinônimo de prefixo do
+# legado. Conferir contra exe/sql-do-codigo.sql antes de tratar como verdade.
+
+#
+# ---------- CADASTRO (4 tabelas) ----------
+#
+
+Clientes {tags: [cadastro]} | 9.322 linhas
+  Cli_Codigo int pk
+  Cli_cnpj_cpf nvarchar(14) nullable
+  Cli_IE_RG nvarchar(15) nullable
+  Cli_tp_pessoa nvarchar(10) nullable
+  Cli_rg_org nvarchar(3) nullable
+  Cli_rg_org_uf nvarchar(2) nullable
+  Cli_Nome nvarchar(60) nullable
+  Cli_Endereco nvarchar(50) nullable
+  Cli_numero nvarchar(10) nullable
+  Cli_complemento nvarchar(40) nullable
+  Cli_Bairro nvarchar(25) nullable
+  Cli_codcidade int nullable
+  Cli_Cidade nvarchar(25) nullable
+  Cli_UF nvarchar(2) nullable
+  Cli_CEP nvarchar(14) nullable
+  Cli_Endereco_cob nvarchar(50) nullable
+  Cli_numero_cob nvarchar(10) nullable
+  Cli_complemento_cob nvarchar(40) nullable
+  Cli_Bairro_cob nvarchar(25) nullable
+  Cli_Cidade_cob nvarchar(25) nullable
+  Cli_codcidade_cob int nullable
+  Cli_UF_cob nvarchar(2) nullable
+  Cli_CEP_cob nvarchar(14) nullable
+  Cli_Construcao bit nullable
+  Cli_OBS ntext nullable
+  Cli_Fcomercial nvarchar(22) nullable
+  Cli_Fresidencial nvarchar(22) nullable
+  Cli_fax nvarchar(12) nullable
+  Cli_celular nvarchar(22) nullable
+  Ind_codigo int nullable
+  Cli_dataNasc nvarchar(10) nullable
+  Cli_estadocivil nvarchar(15) nullable
+  Cli_conjuge nvarchar(40) nullable
+  Cli_dtnasc_conjuge nvarchar(10) nullable
+  Cli_conj_Fcomercial nvarchar(22) nullable
+  Cli_conj_Fresidencial nvarchar(22) nullable
+  Cli_conj_celular nvarchar(12) nullable
+  Cli_email nvarchar(50) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  cli_situacao char(1) nullable
+  Cli_LimitCredVend float nullable
+  Cli_LimitCredTotal float nullable
+  cli_LimiteDesconto float nullable
+  Cli_TipoConsumidor char(1) nullable
+  Cli_Endereco_cor varchar(50) nullable
+  Cli_numero_cor varchar(10) nullable
+  Cli_complemento_cor varchar(40) nullable
+  Cli_Bairro_cor varchar(25) nullable
+  Cli_codcidade_cor int nullable
+  Cli_UF_cor varchar(2) nullable
+  Cli_CEP_cor varchar(14) nullable
+  Cli_empresa_cor varchar(60) nullable
+  Cli_cargo_cor varchar(60) nullable
+  Cli_banco varchar(5) nullable
+  Cli_agencia varchar(25) nullable
+  Cli_conta varchar(25) nullable
+  Cli_EnderecoBanco varchar(150) nullable
+  Cli_SWIFT_BIC varchar(25) nullable
+  Cli_ABA varchar(25) nullable
+  Cli_IBAN varchar(25) nullable
+  cli_naturalidade int nullable
+  cli_nacionalidade int nullable
+  cli_CNPJComercial varchar(14) nullable
+  cli_TempoCtbancaria varchar(10) nullable
+  cli_pai varchar(60) nullable
+  cli_mae varchar(60) nullable
+  cli_PropCFP varchar(14) nullable
+  cli_PropRG varchar(14) nullable
+  cli_PropRgOrg varchar(3) nullable
+  cli_PropRgOrgUF varchar(2) nullable
+  cli_PropNome varchar(60) nullable
+  cli_PropEndereco varchar(50) nullable
+  cli_PropNumero varchar(10) nullable
+  cli_PropComplemento varchar(25) nullable
+  cli_PropCodCidade int nullable
+  cli_PropCEP varchar(14) nullable
+  cli_PropBairro varchar(25) nullable
+  Emp_CodClienteFornec float nullable
+  Cli_Suframa varchar(12) nullable
+  COD_ATIVID int nullable
+  Cli_DataFundacao_cor datetime nullable
+  CatCli_Codigo int nullable
+  cli_sexo varchar(10) nullable
+  cli_NomeFantasia varchar(100) nullable
+  cli_isento bit nullable
+  Cli_CaminhoFoto varchar(300) nullable
+  Cli_EnderecoCompl nvarchar(50) nullable
+  Cli_NumCompl nvarchar(50) nullable
+  Cli_ComplEndereco nvarchar(40) nullable
+  Emp_codigo int nullable
+  Cli_Facebook varchar(200) nullable
+  Cli_Instagram varchar(200) nullable
+  Cli_IEProdRural varchar(30) nullable
+  Cli_Contribuinte bit nullable
+
+fornecedor {tags: [cadastro]} | 868 linhas
+  For_codigo int pk
+  For_Sigla nvarchar(3) nullable
+  For_cnpj_cpf nvarchar(14) nullable
+  For_IE nvarchar(30) nullable
+  For_Nome nvarchar(45) nullable
+  For_Razao nvarchar(45) nullable
+  For_Endereco nvarchar(50) nullable
+  For_numero nvarchar(10) nullable
+  For_complemento nvarchar(40) nullable
+  For_Bairro nvarchar(25) nullable
+  For_codcidade int nullable
+  For_Cidade nvarchar(25) nullable
+  For_UF nvarchar(2) nullable
+  For_CEP nvarchar(14) nullable
+  For_tp_material nvarchar(30) nullable
+  For_fone1 nvarchar(22) nullable
+  For_fone2 nvarchar(22) nullable
+  For_fax nvarchar(22) nullable
+  For_web nvarchar(50) nullable
+  For_email nvarchar(50) nullable
+  For_prazo_entrega int nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  for_classificacao varchar(1) nullable
+  for_obs text nullable
+  for_nome_especial varchar(45) nullable
+  for_banco varchar(45) nullable
+  for_cod_agencia varchar(20) nullable
+  for_conta varchar(20) nullable
+  for_operacao varchar(30) nullable
+  for_codigo_banco varchar(6) nullable
+  For_prazo_medio_pag int nullable
+  for_faturamento_minimo float nullable
+  For_TipoComunic1 varchar(15) nullable
+  For_TipoComunic2 varchar(15) nullable
+  For_EnderecoComunic1 varchar(50) nullable
+  For_EnderecoComunic2 varchar(50) nullable
+  ban_codigo char(4) nullable
+  Tra_codigo int nullable
+  col_cidade varchar(25) nullable
+  col_uf varchar(2) nullable
+  for_situacao char(1) nullable
+  For_NIB varchar(30) nullable
+  For_Iban varchar(30) nullable
+  For_BicSwift varchar(30) nullable
+  Emp_CodClienteFornec float nullable
+  For_Tipopessoa char(1) nullable
+  For_suframa varchar(12) nullable
+  For_JuntarCodigoAcabOrdem bit nullable
+  For_ForneceTipoProduto int nullable
+  Emp_codigo int nullable
+  Fpg_codigo int nullable
+  For_Email_Ordem nvarchar(50) nullable
+  For_Facebook varchar(200) nullable
+  For_Instagram varchar(200) nullable
+  For_EmpresaCompradora int nullable
+
+Indicacoes {tags: [cadastro]} | 1.316 linhas
+  Ind_codigo int pk
+  Ind_Nome nvarchar(60) nullable
+  Ind_Endereco nvarchar(60) nullable
+  Ind_numero nvarchar(10) nullable
+  Ind_complemento nvarchar(40) nullable
+  Ind_Bairro nvarchar(25) nullable
+  Ind_CodCidade nvarchar(10) nullable
+  Ind_Cidade nvarchar(25) nullable
+  Ind_UF nvarchar(2) nullable
+  Ind_CEP nvarchar(14) nullable
+  Ind_Dtnacimento nvarchar(5) nullable
+  Ind_situacao char(1) nullable
+  Ind_vinculo nvarchar(20) nullable
+  Ind_Ativo nvarchar(3) nullable
+  Ind_profissao nvarchar(25) nullable
+  Ind_estadocivil nvarchar(15) nullable
+  Ind_conjuge nvarchar(60) nullable
+  Ind_dtnasc_conjuge nvarchar(5) nullable
+  Ind_comercial nvarchar(22) nullable
+  Ind_residencial nvarchar(22) nullable
+  Ind_fax nvarchar(22) nullable
+  Ind_celular nvarchar(12) nullable
+  Ind_email nvarchar(50) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  ind_banco varchar(30) nullable
+  ind_num_banco varchar(5) nullable
+  ind_num_agencia varchar(5) nullable
+  ind_num_conta varchar(10) nullable
+  ind_banco_endereco varchar(45) nullable
+  ind_banco_end_numero varchar(10) nullable
+  ind_banco_complemento varchar(40) nullable
+  ind_banco_bairro varchar(40) nullable
+  ind_banco_cidade varchar(40) nullable
+  ind_banco_uf varchar(2) nullable
+  fun_codigo int nullable
+  Emp_codigo int nullable
+  CatProfExt_Codigo float nullable
+
+Funcionario {tags: [cadastro]} | 111 linhas
+  Fun_CPF float pk
+  Fun_Nome nvarchar(60) nullable
+  Fun_RG nvarchar(15) nullable
+  Fun_Orgao nvarchar(6) nullable
+  Fun_org_uf nvarchar(2) nullable
+  Fun_Endereco nvarchar(60) nullable
+  Fun_numero nvarchar(10) nullable
+  Fun_complemento nvarchar(40) nullable
+  Fun_Bairro nvarchar(25) nullable
+  Fun_codcidade int nullable
+  Fun_Cidade nvarchar(25) nullable
+  Fun_UF nvarchar(2) nullable
+  Fun_CEP nvarchar(14) nullable
+  Fun_Dtnacimento smalldatetime nullable
+  COD_ATIVID int nullable
+  Fun_situacao char(1) nullable
+  Fun_vinculo nvarchar(20) nullable
+  Fun_Ativo nvarchar(3) nullable
+  Fun_estadocivil nvarchar(15) nullable
+  Fun_conjuge nvarchar(40) nullable
+  Fun_dtnasc_conjuge smalldatetime nullable
+  Fun_comercial nvarchar(22) nullable
+  Fun_residencial nvarchar(22) nullable
+  Fun_celular nvarchar(22) nullable
+  Fun_atendimento nvarchar(3) nullable
+  Fun_cargo nvarchar(45) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  Fun_Sexo char(1) nullable
+  GrauInst_Codigo int nullable
+  Setor_Codigo int nullable
+  RacaCor_Codigo int nullable
+  Fun_pai varchar(60) nullable
+  Fun_mae varchar(60) nullable
+  Fun_naturalidade int nullable
+  Nac_codigo int nullable
+  Fun_AnoChegada int nullable
+  Cargo_codigo int nullable
+  Fun_Salario float nullable
+  Fun_DtAdmissao datetime nullable
+  Fun_DtDemissao datetime nullable
+  Fun_Email varchar(50) nullable
+  Fun_TipoComunic1 varchar(15) nullable
+  Fun_TipoComunic2 varchar(15) nullable
+  Fun_EnderecoComunic1 varchar(50) nullable
+  Fun_EnderecoComunic2 varchar(50) nullable
+  Fun_RGDtEmissao datetime nullable
+  Fun_CartTrabNumero varchar(10) nullable
+  Fun_CartTrabSerie varchar(10) nullable
+  Fun_CartTrabDtEmissao datetime nullable
+  Fun_CartTrabUF char(2) nullable
+  Fun_PISPASEP varchar(20) nullable
+  Fun_CartHab varchar(15) nullable
+  Fun_CartHabCategoria varchar(5) nullable
+  Fun_CartHabDtEmissao datetime nullable
+  Fun_TitEleitorNumero varchar(15) nullable
+  Fun_TitEleitorZona varchar(3) nullable
+  Fun_TitEleitorSecao varchar(3) nullable
+  Fun_TitEleitorUF char(2) nullable
+  Fun_CertidaoTipo varchar(20) nullable
+  Fun_CertidaoCidade int nullable
+  Fun_CertidaoNumero int nullable
+  Fun_CertidaoLivro int nullable
+  Fun_CertidaoFolha int nullable
+  Fun_CertidaoDtEmissao datetime nullable
+  Fun_CertifReservNumero varchar(20) nullable
+  Fun_CertifReservSerie varchar(3) nullable
+  Fun_CertifReservDtEmissao datetime nullable
+  Fun_CertifReservCSMDAM varchar(10) nullable
+  Fun_CertifReservRMDN varchar(10) nullable
+  Fun_Foto varchar(100) nullable
+  Cdc_codigo int nullable
+  Fun_GrupoComissao int nullable
+  Fun_GrupoPremiacao int nullable
+  Fun_NIB varchar(30) nullable
+  Fun_NISS varchar(30) nullable
+  fun_banco varchar(5) nullable
+  fun_agencia varchar(25) nullable
+  fun_conta varchar(25) nullable
+  fun_EnderecoBanco varchar(150) nullable
+  fun_SWIFT_BIC varchar(25) nullable
+  fun_ABA varchar(25) nullable
+  fun_IBAN varchar(25) nullable
+  Fun_codigo int nullable
+  Emp_codigo int nullable
+  Fun_Facebook varchar(200) nullable
+  Fun_Instagram varchar(200) nullable
+  Fun_DescontoPorcVenda float nullable
+
+# relações de cadastro
+rel Clientes(Ind_codigo) -> Indicacoes(Ind_codigo) # inferida (nome)
+
+#
+# ---------- PRODUTO (7 tabelas) ----------
+#
+
+produtos {tags: [produto]} | 108.992 linhas
+  Pro_codnosso nvarchar(20) pk
+  Pro_Codbase nvarchar(20) nullable
+  For_codigo int nullable
+  Pro_tp_produto varchar(30) nullable
+  Pro_tp_peca varchar(30) nullable
+  Pro_descricao nvarchar(100) nullable
+  Pro_descricao_for nvarchar(100) nullable
+  Pro_quant_minima float nullable
+  Pro_foto nvarchar(100) nullable
+  Pro_dt_vigencia datetime nullable
+  Pro_exportado nvarchar(1) nullable
+  Pro_ativo nvarchar(1) nullable
+  Pro_unidade nvarchar(5) nullable
+  Pro_comissao money nullable
+  Pro_lamp_reator int nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  GrupoProduto_codigo int nullable
+  Pro_CodReduzido float nullable
+  Trib_Codigo int nullable
+  Pro_AliqICMS float nullable
+  Pro_Tensao float nullable
+  Pro_Consumo float nullable
+  Pro_TensaoBi float nullable
+  Pro_VaoLivre float nullable
+  Pro_Angulacao float nullable
+  Pro_Temp_Cor float nullable
+  pro_tempoInstalacao int nullable
+  TpTrib_codigo varchar(5) nullable
+  TpOriPro_codigo varchar(5) nullable
+  Pro_CodEspecial varchar(21) nullable
+  Pro_Ecoreee float nullable
+  pro_NCM varchar(10) nullable
+  Pro_IVA_ST float nullable
+  pro_AliqPIS float nullable
+  pro_AliqIPI float nullable
+  pro_AliqCOFINS float nullable
+  COFINS_codigo char(2) nullable
+  PIS_codigo char(2) nullable
+  IPI_codigo char(2) nullable
+  TbImp_codigo int nullable
+  Pro_DescricaoComplementar ntext nullable
+  Pro_TipoProduto char(2) nullable
+  Pro_GeneroProdServ char(2) nullable
+  Desig_Codigo "numeric(18,0)" nullable
+  Marca_Codigo "numeric(18,0)" nullable
+  Prod_DescricaoLivre ntext nullable
+  Prod_ExibirSite bit nullable
+  Fab_Codigo "numeric(18,0)" nullable
+  Pro_CorteNicho varchar(20) nullable
+  Pro_PesoLiq float nullable
+  Pro_PesoBruto float nullable
+  Pro_DescricaoComplementarFor varchar(8000) nullable
+  Pro_Dimensoes varchar(50) nullable
+  Pro_PrazoEntrega int nullable
+  Pro_UnidadeEntrada nvarchar(5) nullable
+  Pro_QuantEntrada float nullable
+  Pro_QuantSaida float nullable
+  Pro_AlturaProduto float nullable
+  Pro_LarguraProduto float nullable
+  Pro_ComprimentoProduto float nullable
+  Pro_RaioProduto float nullable
+  Pro_AlturaCaixa float nullable
+  Pro_LarguraCaixa float nullable
+  Pro_ComprimentoCaixa float nullable
+  Pro_RaioCaixa float nullable
+  Pro_CEST varchar(10) nullable
+  ClasProd_codigo int nullable
+  Emp_codigo int nullable
+  Pro_Lumen float nullable
+  Pro_NecMontagem bit nullable
+  Pro_AlturaAssento float nullable
+  Pro_PesoSuportado float nullable
+  Pro_Garantia float nullable
+  Pro_QuantPes int nullable
+  Pro_QuantPortas int nullable
+  Pro_QuantGavetas int nullable
+  Pro_QuantPrateleiras int nullable
+  Pro_ComEspelho bit nullable
+  TpLinha_Codigo float nullable
+  Pro_EmpresaCompradora int nullable
+  Pro_ForaLinha bit nullable
+  Pro_ConsultarValor bit nullable
+  Pro_SobreMedida bit nullable
+
+ProdutosFornecedores {tags: [produto]} | 108.604 linhas
+  Pro_codnosso nvarchar(20) pk
+  For_codigo int pk
+  ProdFor_CodigoProduto nvarchar(60) nullable
+  ProdFor_DescricaoProduto nvarchar(120) nullable
+  ProdFor_CodigoBarra nvarchar(60) nullable
+  ProdFor_Situacao bit nullable
+  ProdFor_Padrao bit nullable
+  Emp_codigo int nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  ProdFor_DescricaoCompl varchar(8000) nullable
+  ProdFor_Codigo int nullable
+  ProdFor_prazo_entrega int nullable
+  ProdFor_EmbFechada char(10) nullable
+  ProdFor_QtdeMinEmb int nullable
+  ProdFor_GTIN varchar(50) nullable
+
+Preco_Produto {tags: [produto]} | 169.764 linhas
+  Pre_Codnosso nvarchar(20) nullable
+  Pre_Acabamento nvarchar(10) nullable
+  Pre_Codindice nvarchar(100) nullable
+  Pre_Tabela money nullable
+  Pre_compra money nullable
+  Pre_Custo money nullable
+  Pre_Venda money nullable
+  Pre_Lucro money nullable
+  Pre_PorLucro money nullable
+  Pre_est_min float nullable
+  Pre_tp_vl nvarchar(20) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  Pre_Ativo char(1) nullable
+  pre_codigo "numeric(18,0)" pk {autoIncrement}
+  Pre_EstMinCalcular bit nullable
+  Pre_VlNFor money nullable
+  Pre_CodBarra varchar(100) nullable
+  Emp_codigo int nullable
+  Pre_Fornecedor int nullable
+  Tam_codigo float nullable
+  Pre_CodForTamanho varchar(30) nullable
+  pre_observacao varchar(300) nullable
+
+Custo {tags: [produto]} | 385 linhas
+  Cus_codigo int pk
+  for_codigo int pk
+  Cus_Nome nvarchar(35) pk
+  Cus_desconto1 money nullable
+  Cus_desconto2 money nullable
+  Cus_desconto3 money nullable
+  Cus_desconto4 money nullable
+  Cus_IPI money nullable
+  Cus_Frete money nullable
+  Cus_Icms money nullable
+  Cus_Embalagens money nullable
+  Cus_Financeira money nullable
+  Cus_Simples money nullable
+  Cus_outros money nullable
+  Cus_obs ntext nullable
+  Cus_MargValAgreg float nullable
+  Cus_IcmsDestino float nullable
+  Cus_TributacaoICMS varchar(30) nullable
+  Cus_situacao char(1) nullable
+  Cus_Importacao float nullable
+  Cus_Cambio float nullable
+  Cus_TpVlNFo char(1) nullable
+  Cus_NFoICMS bit nullable
+  Cus_NFoOutros bit nullable
+  Cus_NFoIPI bit nullable
+  Cus_NFoSimples bit nullable
+  Cus_NFoEmbalagem bit nullable
+  Cus_NFoFinanceiro bit nullable
+  Cus_NFoFrete bit nullable
+  Cus_NFoDesconto bit nullable
+  Cus_ICMSDifAlqIPI bit nullable
+  Cus_PorcCartao float nullable
+  Cus_STEmbalagem bit nullable
+  Cus_CreditoICMS float nullable
+  Cus_CreditoPIS float nullable
+  Cus_CreditoCOFINS float nullable
+  Cus_CustoFixo float nullable
+  Cus_Desconto float nullable
+  Cus_FreteemCompra bit nullable
+  Cus_ICMSValorCompra bit nullable
+
+Indice_preco {tags: [produto]} | 376 linhas
+  for_codigo int pk
+  Ipr_descricao nvarchar(100) pk
+  Ipr_custo int nullable
+  Ipr_produto nvarchar(45) nullable
+  Ipr_vl_Tabela money nullable
+  Ipr_vl_Custo money nullable
+  Ipr_vl_com_inter money nullable
+  Ipr_vl_com_exter money nullable
+  Ipr_vl_venda money nullable
+  Ipr_desconto money nullable
+  Ipr_Lucro money nullable
+  Ipr_vl_Lucro money nullable
+  Ipr_Indice money nullable
+  Ipr_CodigoSigla float nullable
+  Ipr_situacao char(1) nullable
+  Ipr_IndiceVlCusto float nullable
+  Ipr_VlLucroCusto float nullable
+  Ipr_CustoTotal float nullable
+
+Acabamento {tags: [produto]} | 248 linhas
+  CodAcabamento nvarchar(10) pk
+  DescAcabamento nvarchar(35) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  Acab_situacao char(1) nullable
+  Emp_codigo int nullable
+  DescAcabamento2 varchar(35) nullable
+  acab_tipo varchar(1) nullable
+  acab_tipo2 varchar(1) nullable
+
+GrupoProduto {tags: [produto]} | 12 linhas
+  GrupoProduto_Codigo int pk
+  GrupoProduto_Descricao varchar(50) nullable
+  GrupoProduto_Ativo bit nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  GrupoProduto_ordem int nullable
+  Emp_codigo int nullable
+
+# relações de produto
+rel ProdutosFornecedores(For_codigo) -> fornecedor(For_codigo)
+rel Custo(for_codigo) -> fornecedor(For_codigo) # inferida (nome)
+rel Indice_preco(for_codigo) -> fornecedor(For_codigo) # inferida (nome)
+rel Preco_Produto(Pre_Codnosso) -> produtos(Pro_codnosso) # inferida (sinonimo)
+rel Preco_Produto(Pre_Acabamento) -> Acabamento(CodAcabamento) # inferida (sinonimo)
+rel Preco_Produto(Pre_Fornecedor) -> fornecedor(For_codigo) # inferida (sinonimo)
+rel produtos(For_codigo) -> fornecedor(For_codigo) # inferida (nome)
+rel produtos(GrupoProduto_codigo) -> GrupoProduto(GrupoProduto_Codigo) # inferida (nome)
+rel ProdutosFornecedores(Pro_codnosso) -> produtos(Pro_codnosso) # inferida (nome)
+
+#
+# ---------- VENDA (10 tabelas) ----------
+#
+
+Venda {tags: [venda]} | 34.136 linhas
+  Ven_codigo float nullable
+  Ven_Situacao char(1) nullable
+  ParSV_serie char(3) nullable
+  Ven_CodigoPre float pk
+  Pasta_codigo float nullable
+  Ven_Tipo char(1) nullable
+  Ven_TpVinculo char(1) nullable
+  Ven_CodVinculo int nullable
+  Ven_Orcamento float nullable
+  Ven_DataEmissao datetime nullable
+  Ven_DataValidade datetime nullable
+  Ven_DataFechaVenda datetime nullable
+  Ven_DataConclusao datetime nullable
+  Emp_codigo int nullable
+  Ven_Eletricista int nullable
+  Ven_SubTotal float nullable
+  Ven_AcrescimoPorc float nullable
+  Ven_Acrescimo float nullable
+  Ven_DescontoPorc float nullable
+  Ven_Desconto float nullable
+  Ven_Total float nullable
+  Ven_formaPag int nullable
+  Obr_codigo float nullable
+  Ven_PagReduzido bit nullable
+  Ven_SubTotalProd float nullable
+  Ven_AcrescimoPorcProd float nullable
+  Ven_AcrescimoProd float nullable
+  Ven_DescontoPorcProd float nullable
+  Ven_DescontoProd float nullable
+  Ven_TotalProd float nullable
+  Ven_SubTotalServ float nullable
+  Ven_AcrescimoPorcServ float nullable
+  Ven_AcrescimoServ float nullable
+  Ven_DescontoPorcServ float nullable
+  Ven_DescontoServ float nullable
+  Ven_TotalServ float nullable
+  CatVen_Codigo int nullable
+  Ven_DescGanhoVenda float nullable
+  Ven_AcrescGanhoVenda float nullable
+  Ven_RtAutomatico bit nullable
+  Ven_RtCalcular bit nullable
+  Ven_LimiteDesconto float nullable
+  Ven_Requisicao bit nullable
+  Ven_TipoDesc char(1) nullable
+  par_ParcelarVlAcima float nullable
+  par_VlMinParcela float nullable
+  par_QuantMaxParcela int nullable
+  Ven_TemFinanceiro bit nullable
+  Ven_TemCompra bit nullable
+  Ven_TemEstoque bit nullable
+  cen_codigo int nullable
+  Fun_codigo int nullable
+  Ind_codigo int nullable
+  Ven_FormaPagExtra varchar(100) nullable
+  Ven_Exportacao bit nullable
+  Ven_ValorCredito float nullable
+  Ven_Migrado bit nullable
+  Par_ComissaoVincParc char(1) nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  usr_cod_criacao int nullable
+  Mod_codigo int nullable
+  Ven_formaPagHist int nullable
+  Ven_LimiteDescontoFixo bit nullable
+  Ven_LimiteDescontoFixoFormaPag bit nullable
+  Ven_LimiteDescFixoFormaPagVl float nullable
+  Ven_CupomFiscalDAV float nullable
+  Ven_FixaDescontoComissao bit nullable
+  Ven_ComAmbiente bit nullable
+  Ven_DescricaoVenda varchar(100) nullable
+  Ven_ICMSBase float nullable
+  Ven_ICMSValor float nullable
+  Ven_ICMSSTBase float nullable
+  Ven_ImpostoRetido float nullable
+  Ven_ICMSSTValor float nullable
+  Par_impostofixoRT float nullable
+  Par_impostofixoComissao float nullable
+  TEF_CodFormaPag_Venda int nullable
+  Pco_codigo int nullable
+  Ven_DataEnvioDesm datetime nullable
+  Ven_ValorDIFAL float nullable
+  Ven_ValorFrete float nullable
+  Ven_HabilitarFrete bit nullable
+  Ven_PorcentagemFrete float nullable
+  Ven_LiberaSeparacao bit nullable
+  Ven_LiberaEntrega bit nullable
+  Ven_EnviarEmailEstoque bit nullable
+  Ven_DataPrevEntrega datetime nullable
+  Ven_TipoEntrega varchar(15) nullable
+
+VendaProduto {tags: [venda]} | 549.830 linhas
+  Ven_Codigo float nullable
+  Ven_Tipo char(1) nullable
+  VenPro_Item int
+  Ven_CodigoPre float
+  Pro_codnosso nvarchar(20)
+  CodAcabamento nvarchar(10) nullable
+  CodAmbiente int nullable
+  VenPro_Seq int nullable
+  VenPro_SeqItem int nullable
+  VenPro_Quantidade float nullable
+  VenPro_QuantidadeOriginal float nullable
+  VenPro_VlUnitario float nullable
+  VenPro_VlItem float nullable
+  VenPro_Vldesconto float nullable
+  VenPro_VlDescontoProc float nullable
+  VenPro_Vlimposto float nullable
+  VenPro_ProdutoPai nvarchar(20) nullable
+  VenPro_ProdutoSubPai nvarchar(20) nullable
+  VenPro_ItemPai int nullable
+  VenPro_ItemSubPai int nullable
+  Ven_ValorCredito float nullable
+  pld_codindice varchar(100) nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  usr_cod_criacao int nullable
+  VenPro_PreProduto varchar(100) nullable
+  VenPro_circuito varchar(10) nullable
+  VenPro_DataEntrega datetime nullable
+  VenPro_PreProdFoto varchar(100) nullable
+  VenPro_ICMSBase float nullable
+  VenPro_ICMSValor float nullable
+  VenPro_ICMSSTBase float nullable
+  VenPro_ImpostoRetido float nullable
+  VenPro_ICMSSTValor float nullable
+  TbImp_codigo int nullable
+  CFOP_codigo varchar(5) nullable
+  VenPro_CodigoPre int nullable
+  Emp_codigo int nullable
+  prom_codigo float nullable
+  VenPro_VlPromocao float nullable
+  VenPro_ProcPromocao float nullable
+  VenPro_VlCadastroPromocao float nullable
+  VenPro_codigo float pk
+  VenPro_tipoprod char(1) nullable
+  tam_codigo float nullable
+  ProdCaract_codigo float nullable
+  VenPro_DataRetornoPrevDesm datetime nullable
+  VenPro_DataEntregaDesm datetime nullable
+  VenPro_ValorDIFAL float nullable
+  VenPro_simbolo varchar(30) nullable
+  VenPro_aplicacao varchar(200) nullable
+  VenPro_Obs ntext nullable
+
+VendaAmbiente {tags: [venda]} | 144.674 linhas
+  VenAmb_TpDoc char(3) pk
+  VenAmb_NDocPre float pk
+  CodAmbiente int pk
+  Emp_Codigo int pk
+  VenAmb_Descricao varchar(200) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+
+VendaServico {tags: [venda]} | 4.450 linhas
+  Ven_codigopre float
+  VenSer_item int
+  Sev_cod int
+  CodAmbiente int nullable
+  VenSer_quantidade float nullable
+  VenSer_vlunitario money nullable
+  VenSer_vlitem money nullable
+  VenSer_DescVl float nullable
+  VenSer_DescPorc float nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  VenSer_VlEletricista float nullable
+  ain_codigo float nullable
+  Emp_codigo int nullable
+  VenSer_Codigo float pk
+
+VendaIndicacao {tags: [venda]} | 34.666 linhas
+  VenInd_TpDoc char(3) pk
+  VenInd_NDocPre float pk
+  Ind_Codigo int pk
+  Emp_Codigo int pk
+  VenInd_DtVigencia datetime nullable
+  VenInd_Porcentagem float nullable
+  VenInd_Principal bit nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+
+VendaAtendente {tags: [venda]} | 37.707 linhas
+  VenAten_TpDoc char(3) pk
+  VenAten_NDocPre float pk
+  Fun_Codigo float pk
+  Emp_Codigo int pk
+  VenAten_Porcentagem float nullable
+  VenAten_Principal bit nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  VenAten_DtVigencia datetime nullable
+
+VendaDesconto {tags: [venda]} | 300.337 linhas
+  Ven_CodigoPre float pk
+  GrupoProduto_Codigo int pk
+  VenDesc_DescontoPorc float nullable
+  VenDesc_DescontoValor float nullable
+  Emp_codigo nchar(10) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  VenDesc_ValorGrupo float nullable
+  VenDesc_ValorGrupoDesc float nullable
+  VenDesc_Quantidade float nullable
+  VenDesc_DescPorcUsuario float nullable
+
+Ambiente {tags: [venda]} | 346 linhas
+  CodAmbiente int pk
+  DescAmbiente nvarchar(35) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  Amb_situacao char(1) nullable
+  Emp_codigo int nullable
+
+Obras {tags: [venda]} | 9.454 linhas
+  Cli_codigo int nullable
+  Obr_Descricao nvarchar(50) nullable
+  Obr_Endereco nvarchar(50) nullable
+  Obr_numero nvarchar(10) nullable
+  Obr_complemento nvarchar(40) nullable
+  Obr_Bairro nvarchar(25) nullable
+  Obr_Cidade nvarchar(25) nullable
+  Obr_UF nvarchar(2) nullable
+  Obr_CEP nvarchar(14) nullable
+  obr_transf bit nullable
+  Obr_Codigo float pk
+  mun_codigo int nullable
+  Obr_tipoObra varchar(11) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  Emp_codigo int nullable
+
+CategoriaVenda {tags: [venda]} | 8 linhas
+  CatVen_Codigo int pk
+  CatVen_Descricao varchar(50) nullable
+  CatVen_Tipo varchar(1) nullable
+  CatVen_Ativo char(1) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  CatVen_Financeiro bit nullable
+  CatVen_Compras bit nullable
+  CatVen_Estoque bit nullable
+  Emp_codigo int nullable
+  TpCatVenda_codigo int nullable
+
+# relações de venda
+rel Venda(CatVen_Codigo) -> CategoriaVenda(CatVen_Codigo)
+rel Venda(Obr_codigo) -> Obras(Obr_Codigo)
+rel VendaAmbiente(CodAmbiente) -> Ambiente(CodAmbiente)
+rel VendaDesconto(GrupoProduto_Codigo) -> GrupoProduto(GrupoProduto_Codigo)
+rel VendaDesconto(Ven_CodigoPre) -> Venda(Ven_CodigoPre)
+rel VendaIndicacao(Ind_Codigo) -> Indicacoes(Ind_codigo)
+rel VendaProduto(Pro_codnosso) -> produtos(Pro_codnosso)
+rel VendaProduto(Ven_CodigoPre) -> Venda(Ven_CodigoPre)
+rel VendaServico(CodAmbiente) -> Ambiente(CodAmbiente)
+rel VendaServico(Ven_codigopre) -> Venda(Ven_CodigoPre)
+rel Obras(Cli_codigo) -> Clientes(Cli_Codigo) # inferida (nome)
+rel Venda(Ind_codigo) -> Indicacoes(Ind_codigo) # inferida (nome)
+rel VendaAmbiente(VenAmb_NDocPre) -> Venda(Ven_CodigoPre) # inferida (sinonimo)
+rel VendaAtendente(VenAten_NDocPre) -> Venda(Ven_CodigoPre) # inferida (sinonimo)
+rel VendaIndicacao(VenInd_NDocPre) -> Venda(Ven_CodigoPre) # inferida (sinonimo)
+rel VendaProduto(CodAcabamento) -> Acabamento(CodAcabamento) # inferida (nome)
+rel VendaProduto(CodAmbiente) -> Ambiente(CodAmbiente) # inferida (nome)
+
+#
+# ---------- COMPRA (6 tabelas) ----------
+#
+
+pedido_compra {tags: [compra]} | 8.306 linhas
+  Pcp_codigo int pk
+  Pcp_pedido_venda int nullable
+  Pcp_modo nvarchar(1) nullable
+  Pcp_dt_limite smalldatetime nullable
+  Pcp_dt_pedido smalldatetime nullable
+  Pcp_status nvarchar(1) nullable
+  Pcp_obs ntext nullable
+  Pcp_ped_av_fan nvarchar(10) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  ParSV_serie char(3) nullable
+  Emp_codigo int nullable
+
+Pedido_compra_det {tags: [compra]} | 34.863 linhas
+  Pcp_codigo int nullable
+  Pcd_item int nullable
+  Pro_codnosso nvarchar(20) nullable
+  Pcd_acabamento nvarchar(10) nullable
+  Pcd_quantidade_projeto float nullable
+  Pcd_quantidade_solicit float nullable
+  Pcd_saida int nullable
+  Pcd_destino nvarchar(30) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  pcd_codindice varchar(20) nullable
+  Pcd_recebimento varchar(15) nullable
+  Emp_codigo int nullable
+  Tam_codigo float nullable
+  Pcp_Sequencia int pk {autoIncrement}
+
+ordem_compra {tags: [compra]} | 5.444 linhas
+  Ocp_codigo int pk
+  Ocp_codigo_pre int nullable
+  Ocp_modo nvarchar(1) nullable
+  Ocp_dt_limite smalldatetime nullable
+  Ocp_dt_ordem datetime nullable
+  Ocp_dt_envio smalldatetime nullable
+  Ocp_status nvarchar(1) nullable
+  Ocp_obs ntext nullable
+  Ocp_fornecedor int nullable
+  Ocp_transportadora int nullable
+  Ocp_mun_trans nvarchar(25) nullable
+  Ocp_uf_trans nvarchar(2) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  Ocp_Reagendamento smalldatetime nullable
+  Ocp_dt_prevista smalldatetime nullable
+  Ocp_SubTotal float nullable
+  Ocp_Desconto float nullable
+  Ocp_Acrescimo float nullable
+  Ocp_Total float nullable
+  Ocp_descricao varchar(50) nullable
+  Ocp_PagImpdesc bit nullable
+  Emp_codigo int nullable
+  Ocp_EmpresaCompradora int nullable
+
+ordem_compra_det {tags: [compra]} | 30.623 linhas
+  Ocp_codigo int nullable
+  Ocd_item int nullable
+  Pro_codnosso nvarchar(20) nullable
+  Pro_Codbase nvarchar(20) nullable
+  Ocd_acabamento nvarchar(10) nullable
+  Ocd_quantidade_pedido float nullable
+  Ocd_quantidade_solicit float nullable
+  Ocd_vl_compra money nullable
+  Ocd_vl_item money nullable
+  Ocd_vl_custo money nullable
+  Ocd_item_ped int nullable
+  Ocd_cod_pedido int nullable
+  Ocd_cod_venda int nullable
+  ocd_ped_av_fan nvarchar(10) nullable
+  Ocd_ped_modo nvarchar(1) nullable
+  Ocd_recebido nvarchar(1) nullable
+  Ocd_dt_ped_compra smalldatetime nullable
+  Ocd_nota int nullable
+  Ocd_destino nvarchar(30) nullable
+  Ocd_quant_motivo nvarchar(30) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  ocd_codindice varchar(20) nullable
+  Ocd_recebimento varchar(15) nullable
+  Ocd_quant_cancelada float nullable
+  Ocpex_codigo int nullable
+  Ocpex_cnpj varchar(25) nullable
+  Ocdex_item int nullable
+  ocp_ReceberOrdemExt bit nullable
+  Emp_codigo int nullable
+  Tam_codigo float nullable
+  Ocd_Sequencia int pk
+  Ocd_NumOrcFornecedor varchar(10) nullable
+
+Nota_entrada {tags: [compra]} | 6.343 linhas
+  Nen_codigo int pk
+  Nen_numero_nota int nullable
+  Nen_dt_nota smalldatetime nullable
+  Nen_dt_emissao smalldatetime nullable
+  Nen_cfop nvarchar(5) nullable
+  Nen_status nvarchar(1) nullable
+  Nen_obs ntext nullable
+  Nen_fornecedor int nullable
+  Nen_base_calculo money nullable
+  Nen_vl_icms money nullable
+  Nen_base_cal_icms_subst money nullable
+  Nen_vl_icms_subst money nullable
+  Nen_vl_produtos money nullable
+  Nen_vl_frete money nullable
+  Nen_vl_seguro money nullable
+  Nen_outra_despesas money nullable
+  Nen_vl_ipi money nullable
+  Nen_vl_total_nota money nullable
+  Nen_transportadora int nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  Nen_vl_nanota float nullable
+  Nen_vl_diferenca float nullable
+  Nen_ValorCredito float nullable
+  Nen_NumConhecimento varchar(20) nullable
+  Nen_DtConhecimento datetime nullable
+  Nen_VlConhecimento float nullable
+  Nen_TipoFrete varchar(10) nullable
+  Mod_codigo int nullable
+  nen_Mod_codigo_fin int nullable
+  Nen_vl_diferenca_fin float nullable
+  Nen_SemFinanceiro bit nullable
+  Nen_desconto money nullable
+  Nen_NaoCalcIPI bit nullable
+  Nen_NaoGeraEstoque bit nullable
+  Nen_modelo varchar(10) nullable
+  Nen_serie varchar(3) nullable
+  Nen_StTrib varchar(3) nullable
+  Emp_codigo int nullable
+  Pco_codigo int nullable
+
+nota_entrada_det {tags: [compra]} | 31.873 linhas
+  Nen_codigo int nullable
+  Ned_item int nullable
+  Pro_codnosso nvarchar(20) nullable
+  Pro_Codbase nvarchar(20) nullable
+  Ned_acabamento nvarchar(10) nullable
+  Ned_quantidade_solicit float nullable
+  Ned_quantidade_recebida float nullable
+  Ned_vl_compra money nullable
+  Ned_vl_item money nullable
+  Ned_vl_custo money nullable
+  Ned_item_ordem int nullable
+  Ned_cod_ordem int nullable
+  Ned_recebido nvarchar(1) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao smalldatetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao smalldatetime nullable
+  Ned_vl_produto float nullable
+  Ned_vl_ipi float nullable
+  Ned_vl_produto_fixo float nullable
+  Ned_vl_ipi_fixo float nullable
+  Ned_aliq_ipi float nullable
+  Ned_aliq_icms float nullable
+  Ned_codindice varchar(20) nullable
+  Ned_recebimento varchar(15) nullable
+  CFOP_codigo varchar(5) nullable
+  Ned_desconto float nullable
+  TpTrib_codigo varchar(5) nullable
+  TpOriPro_codigo varchar(5) nullable
+  Ned_NCM varchar(10) nullable
+  Ned_ICMSVl float nullable
+  Ned_ICMSModBC int nullable
+  Ned_ICMSAliq float nullable
+  Ned_ICMSBase float nullable
+  Ned_ICMSReducao float nullable
+  Ned_ICMSSTVl float nullable
+  Ned_ICMSSTAliq float nullable
+  Ned_ICMSSTBase float nullable
+  Ned_ICMSSTIVA float nullable
+  Ned_ICMSSTReducao float nullable
+  Ned_ICMSModBCST float nullable
+  Ned_CSOSN int nullable
+  Ned_pCredSN float nullable
+  Ned_vCredICMSSN float nullable
+  PIS_codigo char(2) nullable
+  Ned_PISBase float nullable
+  Ned_PISValor float nullable
+  Ned_PISAliq float nullable
+  Ned_PISBaseProd float nullable
+  Ned_PISAliqProd float nullable
+  COFINS_codigo char(2) nullable
+  Ned_COFINSBase float nullable
+  Ned_COFINSBaseProd float nullable
+  Ned_COFINSAliq float nullable
+  Ned_COFINSAliqProd float nullable
+  IPI_codigo char(2) nullable
+  Ned_IPIBase float nullable
+  Ned_IPIValor float nullable
+  Ned_IPIAliq float nullable
+  Ned_IPICodSelo varchar(60) nullable
+  Ned_IPIQuantSelo float nullable
+  Ned_IPIEnquadramento char(3) nullable
+  Ned_IIBase float nullable
+  Ned_IIDespAduaneira float nullable
+  Ned_IIAliq float nullable
+  Ned_IIIOF float nullable
+  Ned_FreteValor float nullable
+  Ned_FreteICMS float nullable
+  Ned_SeguroValor float nullable
+  Ned_seguroICMS float nullable
+  Ned_DispAcValor float nullable
+  Ned_DispAcICMS float nullable
+  Ned_DescontoValor float nullable
+  Ned_CodigoBarra varchar(100) nullable
+  Ned_ImportDI varchar(50) nullable
+  Ned_ImportData datetime nullable
+  Ned_ImportCodExpot varchar(50) nullable
+  Ned_ImportUF varchar(2) nullable
+  Ned_ImportLocal varchar(50) nullable
+  Ned_ImportDataDesen datetime nullable
+  Ned_ImportaAdiNumero int nullable
+  Ned_ImportaAdinSequ int nullable
+  Ned_ImportaAdinCodFab varchar(50) nullable
+  Ned_ImportaAdinDesconto float nullable
+  Ned_COFINSVALOR float nullable
+  Ned_codigo float pk
+  Ned_StTrib varchar(3) nullable
+  Emp_codigo int nullable
+  Tam_codigo float nullable
+  vBCSTRet float nullable
+  vICMSSubstituto float nullable
+  vICMSSTRet float nullable
+  pST float nullable
+
+# relações de compra
+rel nota_entrada_det(Nen_codigo) -> Nota_entrada(Nen_codigo) # inferida (nome)
+rel nota_entrada_det(Pro_codnosso) -> produtos(Pro_codnosso) # inferida (nome)
+rel ordem_compra_det(Ocp_codigo) -> ordem_compra(Ocp_codigo) # inferida (nome)
+rel ordem_compra_det(Pro_codnosso) -> produtos(Pro_codnosso) # inferida (nome)
+rel Pedido_compra_det(Pcp_codigo) -> pedido_compra(Pcp_codigo) # inferida (nome)
+rel Pedido_compra_det(Pro_codnosso) -> produtos(Pro_codnosso) # inferida (nome)
+
+#
+# ---------- ESTOQUE (3 tabelas) ----------
+#
+
+Estoque_produto {tags: [estoque]} | 141.043 linhas
+  Epr_Codnosso nvarchar(20) pk
+  Epr_Acabamento nvarchar(10) pk
+  Epr_estoque float nullable
+  Epr_PreEstoque float nullable
+  EstTp_Codigo int pk
+  Emp_codigo int pk
+  Tam_codigo float pk
+
+estoque_log {tags: [estoque]} | 402.161 linhas
+  Elg_codigo float nullable
+  Elg_tipo varchar(25) nullable
+  Elg_doc float nullable
+  Elg_acao varchar(1) nullable
+  Elg_operacao varchar(1) nullable
+  Elg_pai float nullable
+  Elg_data datetime nullable
+  Elg_usuario int nullable
+  Pro_codnosso varchar(21) nullable
+  CodAcabamento varchar(10) nullable
+  Elg_quantidade float nullable
+  EstTp_Codigo int nullable
+  ParSV_serie char(3) nullable
+  Tam_codigo float nullable
+  Elg_Sequencia int pk {autoIncrement}
+  Emp_codigo int nullable
+
+EstoqueTipo {tags: [estoque]} | 4 linhas
+  EstTp_Codigo int pk
+  EstTp_Descricao varchar(35) nullable
+  Emp_codigo int nullable
+  EstTp_Situacao char(1) nullable
+  usr_cod_criacao int nullable
+  usr_dt_hr_criacao datetime nullable
+  usr_cod_alteracao int nullable
+  usr_dt_hr_alteracao datetime nullable
+  EstTp_externo bit nullable
+
+# relações de estoque
+rel estoque_log(EstTp_Codigo) -> EstoqueTipo(EstTp_Codigo) # inferida (nome)
+rel Estoque_produto(Epr_Codnosso) -> produtos(Pro_codnosso) # inferida (sinonimo)
+rel Estoque_produto(Epr_Acabamento) -> Acabamento(CodAcabamento) # inferida (sinonimo)
+rel Estoque_produto(EstTp_Codigo) -> EstoqueTipo(EstTp_Codigo) # inferida (nome)
+

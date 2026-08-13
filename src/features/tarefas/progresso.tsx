@@ -1,4 +1,5 @@
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { Nome } from '@/components/cabinet/nome'
 import { Barra, Painel } from '@/components/cabinet/painel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cargaPorPessoa, progressoDoQuadro, useTarefas } from '@/data/dashboard-api'
@@ -82,7 +83,10 @@ export function ProgressoDoQuadro() {
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex items-baseline gap-2">
-                    <span className="truncate font-semibold">{pessoa.nome}</span>
+                    {/* Peso normal, não forte: a lista inteira em 700 não
+                        destacaria ninguém — o degrau da serifa já separa o nome
+                        do número ao lado. */}
+                    <Nome className="truncate">{pessoa.nome}</Nome>
                     <span className="ml-auto shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
                       {pessoa.concluidas}/{pessoa.total}
                     </span>

@@ -1,4 +1,5 @@
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { Nome } from '@/components/cabinet/nome'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -11,6 +12,7 @@ import {
 import { COLUNAS, useTarefas } from '@/data/dashboard-api'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
+import { Fragment } from 'react'
 import { Prioridade } from './prioridade'
 
 /**
@@ -103,7 +105,16 @@ export function ListaDeTarefas({ busca }: { busca: string }) {
                   {tarefa.assignees.length === 0 ? (
                     <span className="text-muted-foreground">—</span>
                   ) : (
-                    tarefa.assignees.map((pessoa) => pessoa.name).join(', ')
+                    // Responsável é COLABORADOR, e colaborador é entidade: fala
+                    // na voz de quem, como o nome na listagem de Colaboradores.
+                    // A vírgula fica FORA do `<Nome>` — separador é pontuação de
+                    // UI, não parte do nome de ninguém.
+                    tarefa.assignees.map((pessoa, i) => (
+                      <Fragment key={pessoa.id}>
+                        {i > 0 ? ', ' : null}
+                        <Nome>{pessoa.name}</Nome>
+                      </Fragment>
+                    ))
                   )}
                 </TableCell>
               </TableRow>

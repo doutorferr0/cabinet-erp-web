@@ -83,12 +83,7 @@ function CoberturaDaTela() {
         <strong>Gravar não os envia</strong> — inclusive <strong>Índice</strong> e{' '}
         <strong>Tipo de Valor</strong>, que a grade mostra e o contrato não tem.
       </p>
-      <p>
-        <strong>Tipo de Produto</strong>, <strong>Marca</strong> e <strong>Fábrica</strong> são
-        exceção e merecem leitura: a tela <strong>mostra</strong> o que o servidor gravou e{' '}
-        <strong>não deixa trocar</strong> — o combo escolhe pelo nome e o servidor guarda por
-        código. Trocar a classificação ainda é pelo cadastro de apoio.
-      </p>
+
       <p>
         <strong>Excluir linha</strong> tira a variante da tela, não do servidor: o contrato não tem
         exclusão de variante. Para tirá-la de circulação, desmarque o <strong>Ativo</strong> da

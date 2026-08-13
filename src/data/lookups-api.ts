@@ -46,10 +46,50 @@ export function lookupLabel(kind: LookupKind): string {
 
 export interface LookupOptions {
   options: string[]
+  /**
+   * Nome → TODOS os ids com aquele nome. Plural de propósito.
+   *
+   * O combo escolhe por NOME e o contrato escreve por ID, então alguém precisa
+   * traduzir. Só que **nome não é chave**: dois itens homônimos no mesmo kind,
+   * ou um item renomeado entre a carga da lista e o submit, e a tradução grava
+   * o id errado — em silêncio, no campo que ninguém confere. Guardar a LISTA de
+   * ids em vez do primeiro é o que permite `resolverIdDoLookup` recusar em vez
+   * de chutar.
+   */
+  idsPorNome: Map<string, string[]>
   /** A lista passou do teto e veio cortada — ver o comentário do `pageSize`. */
   truncada: boolean
   carregando: boolean
   erro: boolean
+}
+
+/** O que a tradução nome → id devolve. Falha é VALOR, não exceção nem `null`. */
+export type ResolucaoDeLookup =
+  | { ok: true; id: string | null }
+  | { ok: false; motivo: 'desconhecido' | 'ambiguo' }
+
+/**
+ * Nome escolhido no combo → id que o contrato grava.
+ *
+ * **Falha barulhento, nunca chuta** (regra do user, 2026-08-13). Se o nome não
+ * existe na lista — porque foi renomeado, desativado, ou porque a lista veio
+ * truncada — ou se existe DUAS vezes, esta função recusa e quem chamou tem de
+ * mostrar erro ao operador. Gravar o palpite seria trocar a marca do produto
+ * por outra sem ninguém ver.
+ *
+ * Nome vazio resolve para `null`: limpar o campo é escolha legítima.
+ */
+export function resolverIdDoLookup(
+  idsPorNome: Map<string, string[]>,
+  nome: string,
+): ResolucaoDeLookup {
+  const limpo = nome.trim()
+  if (limpo === '') return { ok: true, id: null }
+
+  const ids = idsPorNome.get(limpo)
+  if (!ids || ids.length === 0) return { ok: false, motivo: 'desconhecido' }
+  if (ids.length > 1) return { ok: false, motivo: 'ambiguo' }
+  return { ok: true, id: ids[0] as string }
 }
 
 /**
@@ -83,8 +123,15 @@ export function useLookupOptions(kind: LookupKind): LookupOptions {
     },
   })
 
+  const ativos = query.data?.rows.filter((r) => r.active) ?? []
+  const idsPorNome = new Map<string, string[]>()
+  for (const linha of ativos) {
+    idsPorNome.set(linha.name, [...(idsPorNome.get(linha.name) ?? []), linha.id])
+  }
+
   return {
-    options: query.data?.rows.filter((r) => r.active).map((r) => r.name) ?? [],
+    options: ativos.map((r) => r.name),
+    idsPorNome,
     truncada: (query.data?.total ?? 0) > (query.data?.rows.length ?? 0),
     carregando: query.isPending,
     erro: query.isError,

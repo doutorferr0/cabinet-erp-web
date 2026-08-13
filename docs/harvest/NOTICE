@@ -1,0 +1,34 @@
+NOTICE — docs/harvest
+=====================
+
+Material derivado de projetos de terceiros sob licença permissiva, colhido para
+avaliação e adaptação. Nenhum arquivo desta pasta é distribuído no bundle do
+Cabinet no estado atual; quando algum for integrado a `src/`, o NOTICE do item
+correspondente acompanha o código integrado.
+
+Avisos por item (detalhe e escopo exato em cada subpasta):
+
+-----------------------------------------------------------------------
+kanban-funil/  —  marmelab/atomic-crm
+-----------------------------------------------------------------------
+The MIT License (MIT)
+Copyright (c) 2024-present, Francois Zaninotto, Marmelab
+https://github.com/marmelab/atomic-crm
+
+-----------------------------------------------------------------------
+auditoria/  —  supabase/supa_audit
+-----------------------------------------------------------------------
+Copyright 2021 Supabase
+Licensed under the Apache License, Version 2.0
+https://github.com/supabase/supa_audit
+SPDX-License-Identifier: Apache-2.0
+
+-----------------------------------------------------------------------
+autoform/  —  vantezzen/autoform
+-----------------------------------------------------------------------
+MIT License
+Copyright (c) 2024 Bennett Hollstein
+https://github.com/vantezzen/autoform
+
+Nenhum código do AutoForm foi copiado. A avaliação cita trechos curtos do
+projeto para justificar o veredito — uso descritivo, não derivação.

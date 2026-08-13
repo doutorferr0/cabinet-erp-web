@@ -1,0 +1,50 @@
+NOTICE — autoform
+=================
+
+Fonte avaliada: vantezzen/autoform (`@autoform/react`, `@autoform/zod`,
+`@autoform/shadcn`), versão 6.0.0 do adaptador Zod.
+
+    MIT License
+
+    Copyright (c) 2024 Bennett Hollstein
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+ESCOPO DESTE ITEM
+-----------------
+Avaliação, não colheita. NENHUM código do AutoForm foi copiado para este
+repositório.
+
+`avaliacao.md` cita trechos curtos de quatro arquivos do projeto
+(`packages/core/src/label.ts`, `packages/zod/src/v4/schema-parser.ts`,
+`packages/zod/src/v4/field-type-inference.ts`,
+`packages/shadcn/src/components/ui/autoform/components/FieldWrapper.tsx`)
+para sustentar afirmações verificáveis sobre o comportamento da biblioteca.
+Citação descritiva com atribuição, não obra derivada.
+
+`custo-autoform.tsx` é código NOVO, escrito aqui, mostrando o que a adoção
+exigiria. `alternativa-resolver.ts` também é código novo e não tem relação com
+o AutoForm além de resolver o mesmo problema por outro caminho.
+
+MATERIAL DE PROVA
+-----------------
+O Zod citado em `avaliacao.md` foi GERADO de verdade a partir de
+`contracts/openapi-v1.json` com Orval 8.23.0 (`client: 'zod'`), escrevendo fora
+do repositório. `orval.config.ts`, `package.json` e `src/api/gerado/` não foram
+tocados.

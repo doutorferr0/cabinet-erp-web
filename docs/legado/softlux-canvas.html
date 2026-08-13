@@ -288,34 +288,55 @@ function clicaCol(t,col){
   if(achou) render();
 }
 
-// ---- layout automático: um BLOCO espacial por domínio, na ordem do fluxo do
-// negócio; dentro do bloco, colunas empilhadas com as tabelas mais conectadas no topo
+// ---- layout automático (família Sugiyama, adaptado a blocos):
+// 1. um BLOCO espacial por domínio, na ordem do fluxo do negócio;
+// 2. blocos empacotados em PRANCHETA 2D (~16:9), não numa tira horizontal;
+// 3. dentro do bloco, ordenação por BARYCENTER — cada tabela sobe/desce para perto
+//    da média da posição dos vizinhos, iterado 3x para reduzir cruzamento de linha.
 function autoLayout(){
   const ts=Object.keys(aberto); if(!ts.length) return;
   const dentro=new Set(ts);
-  const grau={};
-  ts.forEach(t=>grau[t]=0);
-  R.forEach(r=>{ if(dentro.has(r[0])&&dentro.has(r[2])){ grau[r[0]]++; grau[r[2]]++; }});
+  const grau={}, viz={};
+  ts.forEach(t=>{grau[t]=0; viz[t]=[];});
+  R.forEach(r=>{ if(dentro.has(r[0])&&dentro.has(r[2])){
+    grau[r[0]]++; grau[r[2]]++; viz[r[0]].push(r[2]); viz[r[2]].push(r[0]); }});
   const por={};
   ts.forEach(t=>{ const dm=T[t].dom; (por[dm]=por[dm]||[]).push(t); });
   const ordem=ORD_DOM.filter(d=>por[d]).concat(Object.keys(por).filter(d=>!ORD_DOM.includes(d)));
-  const ALVO=880, GY=40, GCOL=44, GAREA=150, TOPO=120;
-  let x=90;
-  ordem.forEach(dm=>{
-    const grupo=por[dm].sort((a,b)=>grau[b]-grau[a]);
-    // distribui em colunas de altura ~ALVO
-    const cols=[[]]; let alt=0;
-    grupo.forEach(t=>{
-      const h=alturaCard(t)+GY;
-      if(alt+h>ALVO&&cols[cols.length-1].length){ cols.push([]); alt=0; }
-      cols[cols.length-1].push(t); alt+=h;
+  const ALVO=820, GY=40, GCOL=44, GAREA=170, GLINHA=200;
+
+  function montaBloco(grupo){
+    const cols=[[]]; let alt=0, maxAlt=0;
+    grupo.forEach(t=>{ const h=alturaCard(t)+GY;
+      if(alt+h>ALVO&&cols[cols.length-1].length){ maxAlt=Math.max(maxAlt,alt); cols.push([]); alt=0; }
+      cols[cols.length-1].push(t); alt+=h; });
+    maxAlt=Math.max(maxAlt,alt);
+    return {cols, w: cols.length*(CW+GCOL)-GCOL, h: maxAlt-GY};
+  }
+  function posiciona(){
+    const blocos=ordem.map(dm=>({dm, ...montaBloco(por[dm])}));
+    const area=blocos.reduce((s,b)=>s+(b.w+GAREA)*(b.h+GLINHA),0);
+    const LARG=Math.max(1500, Math.sqrt(area*1.9));   // prancheta tende a 16:9
+    let x=90, y=130, linhaH=0;
+    blocos.forEach(b=>{
+      if(x>90 && x+b.w>LARG){ x=90; y+=linhaH+GLINHA; linhaH=0; }
+      b.cols.forEach((c,j)=>{ let yy=y;
+        c.forEach(t=>{ aberto[t].x=x+j*(CW+GCOL); aberto[t].y=yy; yy+=alturaCard(t)+GY; }); });
+      linhaH=Math.max(linhaH,b.h); x+=b.w+GAREA;
     });
-    cols.forEach((c,j)=>{
-      let y=TOPO;
-      c.forEach(t=>{ aberto[t].x=x+j*(CW+GCOL); aberto[t].y=y; y+=alturaCard(t)+GY; });
-    });
-    x+=cols.length*(CW+GCOL)-GCOL+GAREA;
-  });
+  }
+
+  for(const dm in por) por[dm].sort((a,b)=>grau[b]-grau[a]);   // 1ª passada: grau
+  posiciona();
+  for(let it=0; it<3; it++){                                   // refinamento barycenter
+    for(const dm in por){
+      por[dm].sort((a,b)=>{
+        const ba=viz[a].length? viz[a].reduce((s,v)=>s+aberto[v].y,0)/viz[a].length : aberto[a].y;
+        const bb=viz[b].length? viz[b].reduce((s,v)=>s+aberto[v].y,0)/viz[b].length : aberto[b].y;
+        return ba-bb; });
+    }
+    posiciona();
+  }
   render();
 }
 

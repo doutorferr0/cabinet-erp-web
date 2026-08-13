@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T16:12:37.000Z",
+  "generatedAt": "2026-08-13T17:29:33.000Z",
   "title": "Design System: Cabinet — identidade própria (2026-08-13)",
   "extensions": {
     "colorMeta": {
@@ -516,7 +516,7 @@
       },
       "value": {
         "displayName": "Value",
-        "purpose": "O número que a tela existe para mostrar."
+        "purpose": "O numero que a tela existe para mostrar. Mesma voz de QUANTO, 1.5rem, sem negrito."
       },
       "body": {
         "displayName": "Body",
@@ -532,7 +532,7 @@
       },
       "numeric": {
         "displayName": "Numeric",
-        "purpose": "A voz de QUANTO: numero, codigo, data, valor, quantidade. PT Mono, tabular, alinhado a direita."
+        "purpose": "A voz de QUANTO: numero, codigo, data, valor, quantidade — inclusive o numero grande do KPI. PT Mono 400, tabular. SEM negrito: o @fontsource publica so o peso 400, e font-bold sem arquivo de 700 vira negrito sintetico. Presenca vem da largura da mono e da tabularidade, nao do peso."
       },
       "tag": {
         "displayName": "Tag",

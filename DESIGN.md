@@ -4,11 +4,11 @@ description: Sistema visual de um ERP denso, desktop, em PT-BR — documento com
 colors:
   bench: "hsl(216 12% 92%)"
   sheet: "hsl(220 16% 96%)"
-  sheet-sunken: "hsl(60 20% 98%)"
-  neutral: "hsl(44 35% 92%)"
+  sheet-sunken: "hsl(220 13% 92%)"
+  neutral: "hsl(220 13% 92%)"
   ink: "hsl(0 0% 0%)"
-  ink-muted: "hsl(37 16% 36%)"
-  rule-hair: "hsl(42 17% 70%)"
+  ink-muted: "hsl(213 10% 41%)"
+  rule-hair: "hsl(210 10% 86%)"
   main: "hsl(241 100% 66%)"
   main-hover: "hsl(241 77% 57%)"
   main-foreground: "hsl(0 0% 100%)"
@@ -23,26 +23,35 @@ colors:
   zone-info: "hsl(223 69% 95%)"
   zone-warn: "hsl(48 100% 95%)"
   zone-danger: "hsl(6 76% 95%)"
-  shadow-1: "hsl(41 14% 61%)"
-  shadow-2: "hsl(39 13% 47%)"
-  shadow-3: "hsl(37 16% 36%)"
-  shadow-4: "hsl(36 18% 27%)"
-  shadow-5: "hsl(35 20% 19%)"
+  shadow-1: "hsl(214 10% 61%)"
+  shadow-2: "hsl(215 11% 47%)"
+  shadow-3: "hsl(216 13% 36%)"
+  shadow-4: "hsl(216 14% 27%)"
+  shadow-5: "hsl(217 16% 19%)"
 typography:
+  nome:
+    fontFamily: "Newsreader, ui-serif, Georgia, serif"
+    fontSize: "1.15em"
+    fontWeight: 400
   display:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, ui-serif, Georgia, serif"
     fontSize: "1.85rem"
     fontWeight: 700
-    letterSpacing: "-0.012em"
+    letterSpacing: "-0.005em"
   headline:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, ui-serif, Georgia, serif"
     fontSize: "1.35rem"
     fontWeight: 700
-    letterSpacing: "-0.012em"
-  value:
+    letterSpacing: "-0.005em"
+  produto:
     fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.7rem"
-    fontWeight: 700
+    fontSize: "0.875rem"
+    fontWeight: 400
+  value:
+    fontFamily: "PT Mono, ui-monospace, monospace"
+    fontSize: "1.5rem"
+    fontWeight: 400
+    fontFeature: "tabular-nums"
   body:
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
@@ -56,7 +65,7 @@ typography:
     fontSize: "0.875rem"
     fontWeight: 600
   numeric:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "PT Mono, ui-monospace, monospace"
     fontSize: "0.875rem"
     fontWeight: 400
     fontFeature: "tabular-nums"
@@ -88,11 +97,11 @@ spacing:
   lg: "18px"
   cell: "52px"
 effects:
-  el-1: "2px 2px 0 0 hsl(41 14% 61%)"
-  el-2: "3px 3px 0 0 hsl(39 13% 47%)"
-  el-3: "4px 4px 0 0 hsl(37 16% 36%)"
-  el-4: "6px 6px 0 0 hsl(36 18% 27%)"
-  el-5: "8px 8px 0 0 hsl(35 20% 19%)"
+  el-1: "2px 2px 0 0 hsl(214 10% 61%)"
+  el-2: "3px 3px 0 0 hsl(215 11% 47%)"
+  el-3: "4px 4px 0 0 hsl(216 13% 36%)"
+  el-4: "6px 6px 0 0 hsl(216 14% 27%)"
+  el-5: "8px 8px 0 0 hsl(217 16% 19%)"
   border-strong: "2px solid hsl(0 0% 0%)"
   border-heavy: "3px solid hsl(0 0% 0%)"
 ---
@@ -120,8 +129,9 @@ O que muda na 1.5 é o **acabamento**: a fundação anterior era preta e chapada
 canto reto em tudo, cabeçalho em barra preta). Ela lia como maquete de protesto, não como ferramenta de
 trabalho de oito horas. A 1.5 mantém o traço de 2px e a densidade, e troca o resto por três decisões:
 
-1. **Elevação de verdade** — 5 degraus de sombra, sem blur, na **família quente do papel**. Sombra preta
-   vira buraco na tela; sombra cor-de-papel projeta como papel sobre papel.
+1. **Elevação de verdade** — 5 degraus de sombra, sem blur, na **família do papel** (quente até
+   2026-08-12, neutra-fria desde a troca das superfícies). Sombra preta vira buraco na tela;
+   sombra cor-de-papel projeta como papel sobre papel.
 2. **Canto por natureza** — o raio diz o que a coisa é: painel 10px, cartão 6px, controle 4px, dado 2px,
    **item 0**. Item é o que encosta em item (chip, aba, página, célula, item de menu, etiqueta): canto
    arredondado ali abre fresta e desmancha a fileira.
@@ -150,7 +160,8 @@ por máscara, jamais preta.
 - **Faixa de acento**: painel importante ganha barra de 8px na lateral esquerda, com traço à direita
 - Dinheiro escreve em VERDE, negativo em vermelho; célula de valor ganha fundo da zona
 - Foco = **amarelo 3px com fio preto de 1px por fora**, em todo controle (§Foco)
-- Três famílias, todas **self-hosted**: Sora (título) · Inter (corpo) · PT Mono (identificador e etiqueta)
+- **Quatro** famílias, todas **self-hosted**, divididas por SEMÂNTICA: Newsreader (quem — nome de entidade e título) · Sora (o quê — produto e descrição) · Inter (UI) · PT Mono (quanto — número, código, data)
+- **Serifada não leva caixa alta**: o título ficou com maiúscula só na inicial dos substantivos; caixa alta segue em mono e Inter (etiqueta, carimbo, cabeçalho de coluna)
 
 ## Colors
 
@@ -421,7 +432,7 @@ altura — quem titula fala em Display, quem informa em Inter. Agora separa por 
 | **quem** | Newsreader 400/700 | nome próprio de entidade (cliente, profissional, fornecedor, empresa) + título de tela e de documento |
 | **o quê** | Sora 600/700 | nome de produto, descrição |
 | **UI** | Inter 400/500/600 | rótulo de campo, cabeçalho de coluna, botão, menu, aba, mensagem |
-| **quanto** | PT Mono | número, código, data, valor, quantidade |
+| **quanto** | PT Mono 400 | número, código, data, valor, quantidade — **inclusive o número grande do KPI**, e sem negrito (só existe o peso 400) |
 
 Três regras que saíram de RENDER, não de teoria:
 
@@ -525,8 +536,15 @@ de 3px acima. Negativo em vermelho.
 
 ### Indicadores (KPI)
 Cartão (raio 6px, `el-1`; `el-4` quando é o número que a tela existe para mostrar), rótulo em etiqueta,
-valor em Display 1.7rem, delta em corpo pequeno. Zona por conteúdo quando o número for dinheiro,
-pendência ou bloqueio.
+valor na voz de **QUANTO** (PT Mono) 1.5rem, delta em corpo pequeno. Zona por conteúdo quando o
+número for dinheiro, pendência ou bloqueio.
+
+**O número grande NÃO leva negrito** (decisão do user, 2026-08-13): o `@fontsource` publica só o
+peso **400** do PT Mono, e `font-bold` sem arquivo de 700 vira negrito sintético — o browser
+engorda o traço por conta. Quem dá presença ao número aqui é a **largura da mono e a
+tabularidade**, não o peso. Vale para os três números grandes do sistema: KPI do Dashboard,
+grandeza do Planner e progresso de Tarefas. Se um dia entrar uma mono com 700 de verdade, este é
+o lugar que muda.
 
 ### Navegação
 Abas, paginação e itens de menu são ITENS: raio 0, encostados (margem negativa de 2px para o traço não

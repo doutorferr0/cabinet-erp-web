@@ -65,12 +65,12 @@ function Cartao({ indicador }: { indicador: Indicador }) {
         <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
           {indicador.rotulo}
         </span>
-        <span
-          className={cn(
-            'font-display text-2xl font-bold tracking-[-0.012em] tabular-nums',
-            indicador.dinheiro && 'text-money',
-          )}
-        >
+        {/* A voz de QUANTO (PT Mono), e SEM negrito: o `@fontsource` publica só o
+            peso 400 do PT Mono, e `font-bold` sem arquivo de 700 viraria negrito
+            sintético — o browser engorda o traço por conta. Quem dá presença ao
+            número aqui é a largura da mono e a tabularidade, não o peso
+            (decisão do user, 2026-08-13). */}
+        <span className={cn('font-mono text-2xl tabular-nums', indicador.dinheiro && 'text-money')}>
           {indicador.valor}
         </span>
         <span className="text-sm text-muted-foreground">{indicador.apoio}</span>

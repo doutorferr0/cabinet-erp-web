@@ -319,9 +319,12 @@ function Grandeza({ rotulo, valor }: { rotulo: string; valor: number }) {
       <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {rotulo}
       </span>
-      <span className="font-display text-3xl font-bold tracking-[-0.012em] tabular-nums">
-        {valor}
-      </span>
+      {/* A voz de QUANTO (PT Mono), e SEM negrito: o `@fontsource` publica só o
+          peso 400 do PT Mono, e `font-bold` sem arquivo de 700 viraria negrito
+          sintético — o browser engorda o traço por conta. Quem dá presença ao
+          número aqui é a largura da mono e a tabularidade, não o peso
+          (decisão do user, 2026-08-13). */}
+      <span className="font-mono text-3xl tabular-nums">{valor}</span>
     </div>
   )
 }

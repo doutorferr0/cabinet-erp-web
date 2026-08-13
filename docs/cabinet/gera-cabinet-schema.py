@@ -57,8 +57,11 @@ TABELAS = [
  'cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional)',
  [('id', U, 'k'), ('legal_name', S, ''), ('trade_name', S, 'n'), ('document', 'varchar(14)', 'n'),
   ('email', S, 'n'), ('is_customer', B, ''), ('is_supplier', B, ''), ('is_professional', B, ''),
-  ('registration', S, 'n'), ('payout_bank_info', 'jsonb', 'n'), ('active', B, '')],
- 'registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão'),
+  ('registration', S, 'n'), ('payout_bank_info', 'jsonb', 'n'), ('parent_id', U, 'n'),
+  ('active', B, '')],
+ 'registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão; '
+ 'parent_id = hierarquia pai/filho (escritório de arquitetura ↔ profissionais dele) — '
+ 'campo, não tabela: quem indicou continua sendo o parceiro, o escritório é o pai'),
 ('partner_tenant_links', 'parceiros', 'tenant',
  'vínculo do parceiro com CADA empresa: código, condição de pagamento, ativo (contrato: PartnerLink)',
  [('tenant_id', U, 'k'), ('partner_id', U, 'k'), ('code', S, 'n'),
@@ -207,6 +210,17 @@ TABELAS = [
 ('goods_receipt_items', 'compra', 'tenant', 'item recebido — cada linha vira um stock_movement de entrada',
  [('tenant_id', U, 'k'), ('id', U, 'k'), ('receipt_id', U, ''), ('variant_id', U, ''),
   ('qty', QTY, ''), ('unit_cost_cents', BIG, 'n')], ''),
+# ---------- tarefas (enxerto — NÃO é tabela do CRM) ----------
+('activities', 'tarefas', 'tenant',
+ 'atividade agendada sobre QUALQUER entidade — oportunidade, orçamento, pedido, parceiro',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('entity_type', S, ''), ('entity_id', U, ''),
+  ('kind', S, ''), ('title', S, ''), ('due_date', D, 'n'), ('assignee_employee_id', U, 'n'),
+  ('done_at', TS, 'n'), ('notes', TXT, 'n')],
+ 'POLIMÓRFICA (entity_type + entity_id): por isso não há FK para o alvo — o preço de servir '
+ '4 entidades com uma tabela só. entity_type entra em CHECK e no índice '
+ '(tenant_id, entity_type, entity_id). Fica FORA do CRM de propósito: dentro dele duplicaria '
+ 'quando orçamento e parceiro precisassem do mesmo. Histórico do registro NÃO vem aqui — '
+ 'é Auditoria + Notificações'),
 ]
 
 # relações (origem.coluna → destino.coluna). FK de tabela tenant para tabela tenant é
@@ -216,6 +230,7 @@ RELS = [
  ('employee_tenants', 'employee_id', 'employees', 'id'),
  ('partner_tenant_links', 'tenant_id', 'tenants', 'id'),
  ('partner_tenant_links', 'partner_id', 'partners', 'id'),
+ ('partners', 'parent_id', 'partners', 'id'),
  ('construction_sites', 'customer_id', 'partners', 'id'),
  ('products', 'group_id', 'product_groups', 'id'),
  ('product_variants', 'product_id', 'products', 'id'),
@@ -268,6 +283,7 @@ RELS = [
  ('goods_receipts', 'supplier_id', 'partners', 'id'),
  ('goods_receipt_items', 'receipt_id', 'goods_receipts', 'id'),
  ('goods_receipt_items', 'variant_id', 'product_variants', 'id'),
+ ('activities', 'assignee_employee_id', 'employees', 'id'),
 ]
 
 # índices UNIQUE além da PK — existem para servir de ALVO a FK composta.

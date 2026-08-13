@@ -148,6 +148,29 @@ nunca hunk a hunk.
 ## FECHAMENTO — obrigatório antes de encerrar QUALQUER sessão
 1. `pnpm check` → zero erros. 2. `pnpm check-types` → zero erros. 3. `pnpm test` → verde (componente novo = teste novo mínimo: render + interação principal). 4. Mexeu no contrato? `pnpm codegen` e **commitar `src/api/gerado/`** — o CI tem passo `Codegen is up to date` e reprova o gerado velho. 5. Commit Conventional ≤50 char, foco no "porquê" — **adicionar por CAMINHO, nunca `git add -A`**: a árvore costuma ter trabalho de outro trilho não commitado. 6. Push → CI verde (`gh run watch`). CI vermelho = sessão não terminou. 7. **Registrar progresso em `topicos/frente-visual.md` da memória** (seção MEMÓRIA abaixo) — NUNCA tocar no `next-task.md` (é do trilho backend).
 
+## REGRA DE OURO — N agentes no mesmo repo, zonas DISJUNTAS
+Atualizada 2026-08-13 por decisão do user (`project-core` @regras) — **supersede "UM agente por
+vez por repo"**. Paralelismo intra-repo está liberado, e as condições são TODAS obrigatórias:
+
+1. **Worktree + branch própria por agente.** Ninguém trabalha na `main` direto.
+2. **Zona de arquivos DISJUNTA, declarada no prompt.** Sair da zona → parar e registrar blocker.
+   Worktree resolve CHECKOUT, não MERGE: o mesmo arquivo em duas branches dá o mesmo conflito de
+   sempre. A divisão é por arquivo, não por assunto.
+3. **Dono único de `package.json`/lockfile.** Dependência nova fora do dono → parar e registrar
+   blocker, não instalar "só pra testar".
+4. **Merge SERIAL na `main`** — e aqui a `main` deploya sozinha (`cabinetonline.cc`), então merge
+   é publicação.
+5. **Cada trilho escreve só no SEU arquivo de memória:** backend → `next-task.md` · visual →
+   `topicos/frente-visual.md`. Handoff é a MEMÓRIA, nunca conversa colada.
+6. **Enquanto um executor roda, o chat NÃO escreve na memória** (evita head divergente). Exceção:
+   o user mandar.
+7. **`next-task.md` VENCE o roteiro versionado** se os dois divergirem.
+
+**Consequência prática para quem lê isto dentro de uma sessão:** a árvore pode ter trabalho de
+outro agente em curso. Por isso o fechamento manda `git add` **por caminho** — `git add -A`
+levaria junto a zona alheia. E `git status` sujo não é motivo para "limpar": é motivo para não
+tocar no que não é seu.
+
 **Antes de reservar tarefa:** `git branch -r --contains <oid>`. Worktree parada NÃO é trabalho em
 curso — já houve tarefa reservada duas vezes para coisa que estava em `main`.
 

@@ -134,6 +134,32 @@ function confereChave(
   ).toEqual(dto[chave])
 }
 
+/**
+ * A OUTRA METADE: o campo que a tela EDITA continua saindo daqui?
+ *
+ * A verificação de cima protege o DADO — nada se apaga. Ela não vê o defeito
+ * espelhado: o campo que o operador digita e que **para de viajar**. No parceiro
+ * isso é invisível de propósito, porque `corpoDeEscrita` devolve o valor
+ * original quando o formulário não manda nada; a rede que salva o dado é a mesma
+ * que esconde a edição perdida.
+ *
+ * Por isso cada recurso declara aqui o que é EDITÁVEL, com o caminho no registro
+ * do formulário. O que não estiver na lista é, por definição,
+ * carregado-não-editado — e é essa a declaração explícita. Campo que muda de
+ * lado (vira editável, deixa de ser) muda aqui, à vista, e não por acidente.
+ */
+function editando(registro: Json, caminho: string, valor: unknown): Json {
+  const partes = caminho.split('.')
+  const copia: Json = { ...registro }
+  let alvo = copia
+  for (const parte of partes.slice(0, -1)) {
+    alvo[parte] = { ...(alvo[parte] as Json) }
+    alvo = alvo[parte] as Json
+  }
+  alvo[partes[partes.length - 1] as string] = valor
+  return copia
+}
+
 describe('cobertura de escrita — o formulário não perde campo do contrato', () => {
   it('PRODUTO leva ao servidor tudo que o ProductWriteRequest tem', () => {
     const dto = dtoCompleto('ProductDetailDto', { variants: [] })
@@ -160,6 +186,26 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
     { nome: 'PROFISSIONAL', papel: papelProfissional, schema: profissionalSchema },
   ]
 
+  // Chave do contrato → campo do formulário que a edita, POR PAPEL. As três
+  // telas usam o mesmo `PartnerWriteRequest` e editam conjuntos diferentes: o
+  // Cliente não tem Nome Fantasia; só o Profissional tem conselho.
+  const editaveisPorPapel: Record<string, Record<string, string>> = {
+    CLIENTE: { legalName: 'nome', document: 'cpf', email: 'email' },
+    FORNECEDOR: {
+      legalName: 'razaoSocial',
+      tradeName: 'nomeFantasia',
+      document: 'cnpjCpf',
+      email: 'email',
+    },
+    PROFISSIONAL: {
+      legalName: 'nome',
+      tradeName: 'nomeApresentacao',
+      document: 'cpf',
+      email: 'email',
+      registration: 'registroProfissional',
+    },
+  }
+
   for (const { nome, papel, schema } of papeis) {
     it(`${nome} leva ao servidor tudo que o PartnerWriteRequest tem`, () => {
       const dto = dtoCompleto('PartnerDto') as never
@@ -174,6 +220,23 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
           isSupplier: 'idem',
           isProfessional: 'idem',
         })
+      }
+    })
+
+    it(`${nome} continua ENVIANDO o que a tela edita`, () => {
+      const dto = dtoCompleto('PartnerDto') as never
+      const editaveis = editaveisPorPapel[nome] as Record<string, string>
+
+      for (const [chaveDoContrato, campoDoForm] of Object.entries(editaveis)) {
+        const digitado = `DIGITADO-${chaveDoContrato}`
+        const registro = editando(papel.dtoParaForm(dto) as unknown as Json, campoDoForm, digitado)
+        const doForm = schema.parse(registro) as never
+        const corpo = corpoDeEscrita(dto, papel.paraEscrita(doForm, dto)) as unknown as Json
+
+        expect(
+          corpo[chaveDoContrato],
+          `${nome}: o operador digitou em "${campoDoForm}" e o PUT não levou — a rede do corpoDeEscrita devolveu o valor antigo, e ninguém percebe`,
+        ).toBe(digitado)
       }
     })
   }

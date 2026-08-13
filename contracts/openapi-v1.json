@@ -2357,11 +2357,64 @@
             "type": ["null", "string"],
             "description": "Proposto. Nome da fábrica, para exibição."
           },
+          "specs": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductSpecs" }],
+            "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
+          },
           "variants": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProductVariantDto"
             }
+          }
+        }
+      },
+      "ProductDimensions": {
+        "type": "object",
+        "description": "Proposto. Medidas de uma caixa: as quatro do bloco §6.2, em string decimal pelo mesmo motivo da quantidade — 3 casas, e float perde centésimo. Sem unidade no valor: a unidade é do CAMPO (cm), não do dado; guardar \"10 cm\" tornaria o número inutilizável para conta e para filtro.",
+        "properties": {
+          "height": { "type": ["null", "string"], "description": "`Altura`." },
+          "width": { "type": ["null", "string"], "description": "`Largura`." },
+          "length": { "type": ["null", "string"], "description": "`Comprimento`." },
+          "radius": { "type": ["null", "string"], "description": "`Raio`." }
+        }
+      },
+      "ProductSpecs": {
+        "type": "object",
+        "description": "Proposto. A ficha TÉCNICA do produto — a aba `Outros Dados` (§6.2) inteira. É um objeto e não 17 campos soltos no `ProductDto` porque isto é a VERTICAL: iluminação tem lúmen, ângulo e temperatura de cor; outro ramo do mesmo ERP teria outra lista, e um dia esta ficha muda sem que o cadastro de produto mude. A modelagem do banco guarda isto em `products.specs jsonb` pela mesma razão.\n\nO que ficou FORA, e por que: `Marca`, `Fábrica` e `Tipo de Produto` são CLASSIFICAÇÃO e viraram campo de primeiro nível — viram coluna de listagem e um dia entram na whitelist de ordenação, e nada disso funciona dentro de um jsonb. `Descrição livre` e `Publicar no site` também ficaram fora: são conteúdo e canal, não especificação.\n\nTodo valor é STRING: os campos da §6.2 são livres na tela do legado, e converter para número aqui inventaria precisão que o dado não tem.",
+        "properties": {
+          "lampsPerBallast": {
+            "type": ["null", "string"],
+            "description": "`Qtd. lâmp. por reator`."
+          },
+          "watts": { "type": ["null", "string"], "description": "`Consumo (Watts)`." },
+          "volts": { "type": ["null", "string"], "description": "`Tensão (Volts)`." },
+          "biVolts": { "type": ["null", "string"], "description": "`Tensão (BiVolts)`." },
+          "colorTemperature": {
+            "type": ["null", "string"],
+            "description": "`Temperatura de Cor`."
+          },
+          "beamAngle": { "type": ["null", "string"], "description": "`Ângulo`." },
+          "lumen": { "type": ["null", "string"], "description": "`Lúmen`." },
+          "clearSpan": { "type": ["null", "string"], "description": "`Vão livre`." },
+          "nicheCut": { "type": ["null", "string"], "description": "`Corte do nicho`." },
+          "netWeight": { "type": ["null", "string"], "description": "`Peso líquido`." },
+          "grossWeight": { "type": ["null", "string"], "description": "`Peso bruto`." },
+          "installationMinutes": {
+            "type": ["null", "string"],
+            "description": "`Tempo de instalação`, em minutos."
+          },
+          "warrantyMonths": {
+            "type": ["null", "string"],
+            "description": "`Garantia`, em meses."
+          },
+          "productDimensions": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductDimensions" }],
+            "description": "Medidas do PRODUTO."
+          },
+          "packageDimensions": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductDimensions" }],
+            "description": "Medidas da EMBALAGEM — são outras, e é por isso que são dois blocos."
           }
         }
       },
@@ -2432,6 +2485,10 @@
           "factoryName": {
             "type": ["null", "string"],
             "description": "Proposto. Nome da fábrica, para exibição."
+          },
+          "specs": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductSpecs" }],
+            "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
           }
         }
       },
@@ -2517,6 +2574,10 @@
             "type": ["null", "string"],
             "format": "uuid",
             "description": "Proposto. Só o id — ver `productTypeId`."
+          },
+          "specs": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductSpecs" }],
+            "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
           }
         }
       },

@@ -209,6 +209,10 @@ describe('listagem de produtos', () => {
             productTypeId: '11111111-1111-4111-8111-111111111111',
             brandId: '22222222-2222-4222-8222-222222222222',
             factoryId: '33333333-3333-4333-8333-333333333333',
+            // A LINHA da listagem não traz ficha técnica: o campo existe no DTO
+            // e o fixture não o preenche. Vazio vira `null` — desativar não
+            // inventa ficha.
+            specs: null,
           },
         },
       ])
@@ -380,6 +384,10 @@ describe('formulário de produto', () => {
           unitInQty: '',
           unitOut: null,
           unitOutQty: '',
+          productTypeId: null,
+          brandId: null,
+          factoryId: null,
+          specs: null,
         },
       },
     ])

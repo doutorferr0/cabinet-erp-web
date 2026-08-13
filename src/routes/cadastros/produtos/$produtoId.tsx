@@ -58,9 +58,10 @@ function ProdutoEditPage() {
 }
 
 /**
- * O contrato cobre 9 campos das 5 abas da §6 mais a grade de Valores — eram 4
- * até 2026-08-13, quando a engenharia reversa do legado confirmou os outros dois
- * códigos e o par de unidades. Sem este aviso, aba em branco se lê como cadastro
+ * O contrato cobre a aba 1 quase inteira e a aba 2 INTEIRA, mais a grade de
+ * Valores — eram 4 campos até 2026-08-13, quando a engenharia reversa do legado
+ * destravou os outros dois códigos, o par de unidades, a classificação
+ * (Tipo/Marca/Fábrica) e a ficha técnica da §6.2. Sem este aviso, aba em branco se lê como cadastro
  * incompleto e campo sem destino se lê como gravado — o operador preencheria o
  * que o servidor não guarda. Sai quando o DTO cobrir a tela
  * (`docs/integracao.md`).
@@ -77,9 +78,16 @@ function CoberturaDaTela() {
         <strong>Código Reduzido</strong>, <strong>Nossa Descrição</strong>, o par de{' '}
         <strong>Unidade e Quantidade de Entrada e Saída</strong>, <strong>Ativo</strong> e a grade
         de <strong>Valores</strong> (Acabamento, Tamanho, Valor de Tabela, Est.Mínimo e o Ativo da
-        linha). Os demais campos aparecem em branco e <strong>Gravar não os envia</strong> —
-        inclusive <strong>Índice</strong> e <strong>Tipo de Valor</strong>, que a grade mostra e o
-        contrato não tem.
+        linha). A aba <strong>Outros Dados</strong> inteira também viaja — medidas, peso, watts,
+        volts, lúmen, garantia. Os demais campos aparecem em branco e{' '}
+        <strong>Gravar não os envia</strong> — inclusive <strong>Índice</strong> e{' '}
+        <strong>Tipo de Valor</strong>, que a grade mostra e o contrato não tem.
+      </p>
+      <p>
+        <strong>Tipo de Produto</strong>, <strong>Marca</strong> e <strong>Fábrica</strong> são
+        exceção e merecem leitura: a tela <strong>mostra</strong> o que o servidor gravou e{' '}
+        <strong>não deixa trocar</strong> — o combo escolhe pelo nome e o servidor guarda por
+        código. Trocar a classificação ainda é pelo cadastro de apoio.
       </p>
       <p>
         <strong>Excluir linha</strong> tira a variante da tela, não do servidor: o contrato não tem

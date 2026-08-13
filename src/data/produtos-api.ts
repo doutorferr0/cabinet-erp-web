@@ -1,6 +1,8 @@
 import type {
   ProductDetailDto,
+  ProductDimensions,
   ProductDto,
+  ProductSpecs,
   ProductVariantDto,
   ProductWriteRequest,
   VariantWriteRequest,
@@ -133,6 +135,7 @@ export function produtoDoContrato(dto: ProductDetailDto): Produto {
     marcaId: dto.brandId ?? null,
     fabrica: dto.factoryName ?? '',
     fabricaId: dto.factoryId ?? null,
+    ...fichaDoContrato(dto.specs),
     variantes: dto.variants.map(varianteDoContrato),
   }
 }
@@ -162,6 +165,107 @@ export const produtosApi: ProdutosProvider = {
 }
 
 /**
+ * Ficha técnica do contrato → os campos da aba `Outros Dados` (§6.2).
+ *
+ * Duas formas para a mesma coisa, e a tradução mora aqui: o contrato agrupa a
+ * vertical num objeto (`specs`) porque ela É a vertical — iluminação tem lúmen e
+ * temperatura de cor, outro ramo teria outra lista. O FORMULÁRIO, por sua vez, é
+ * plano: cada campo é um controle com nome próprio, e achatar aqui é o que evita
+ * `values.specs?.watts` espalhado por dez `TextField`.
+ *
+ * Ausência vira string vazia, nunca `undefined`: campo controlado do RHF precisa
+ * de valor, e `undefined` faz o input alternar entre controlado e não controlado
+ * no meio da digitação.
+ */
+function fichaDoContrato(specs: ProductSpecs | null | undefined) {
+  return {
+    qtdLampadasPorReator: specs?.lampsPerBallast ?? '',
+    consumoWatts: specs?.watts ?? '',
+    tensaoVolts: specs?.volts ?? '',
+    tensaoBiVolts: specs?.biVolts ?? '',
+    temperaturaCor: specs?.colorTemperature ?? '',
+    angulo: specs?.beamAngle ?? '',
+    lumen: specs?.lumen ?? '',
+    vaoLivre: specs?.clearSpan ?? '',
+    corteNicho: specs?.nicheCut ?? '',
+    pesoLiquido: specs?.netWeight ?? '',
+    pesoBruto: specs?.grossWeight ?? '',
+    tempoInstalacaoMin: specs?.installationMinutes ?? '',
+    garantiaMeses: specs?.warrantyMonths ?? '',
+    dimensoesProduto: dimensoesDoContrato(specs?.productDimensions),
+    dimensoesEmbalagem: dimensoesDoContrato(specs?.packageDimensions),
+  }
+}
+
+function dimensoesDoContrato(d: ProductDimensions | null | undefined) {
+  return {
+    altura: d?.height ?? '',
+    largura: d?.width ?? '',
+    comprimento: d?.length ?? '',
+    raio: d?.radius ?? '',
+  }
+}
+
+/**
+ * Os campos do formulário → `specs` do contrato.
+ *
+ * **Ficha inteira em branco viaja como `null`**, não como um objeto de quinze
+ * strings vazias — a mesma regra da conta bancária do parceiro. Objeto vazio
+ * gravado é ficha técnica que existe e não diz nada, e o servidor não teria como
+ * distinguir "sem medida" de "medida apagada".
+ */
+function fichaParaContrato(values: CamposGravaveis): ProductSpecs | null {
+  const specs: ProductSpecs = {
+    lampsPerBallast: values.qtdLampadasPorReator,
+    watts: values.consumoWatts,
+    volts: values.tensaoVolts,
+    biVolts: values.tensaoBiVolts,
+    colorTemperature: values.temperaturaCor,
+    beamAngle: values.angulo,
+    lumen: values.lumen,
+    clearSpan: values.vaoLivre,
+    nicheCut: values.corteNicho,
+    netWeight: values.pesoLiquido,
+    grossWeight: values.pesoBruto,
+    installationMinutes: values.tempoInstalacaoMin,
+    warrantyMonths: values.garantiaMeses,
+    productDimensions: dimensoesParaContrato(values.dimensoesProduto),
+    packageDimensions: dimensoesParaContrato(values.dimensoesEmbalagem),
+  }
+
+  const preenchida =
+    [
+      specs.lampsPerBallast,
+      specs.watts,
+      specs.volts,
+      specs.biVolts,
+      specs.colorTemperature,
+      specs.beamAngle,
+      specs.lumen,
+      specs.clearSpan,
+      specs.nicheCut,
+      specs.netWeight,
+      specs.grossWeight,
+      specs.installationMinutes,
+      specs.warrantyMonths,
+    ].some((v) => (v ?? '').trim() !== '') ||
+    specs.productDimensions !== null ||
+    specs.packageDimensions !== null
+
+  return preenchida ? specs : null
+}
+
+function dimensoesParaContrato(d: {
+  altura: string
+  largura: string
+  comprimento: string
+  raio: string
+}): ProductDimensions | null {
+  if ([d.altura, d.largura, d.comprimento, d.raio].every((v) => v.trim() === '')) return null
+  return { height: d.altura, width: d.largura, length: d.comprimento, radius: d.raio }
+}
+
+/**
  * O que a tela GRAVA de um produto — recorte estrutural, não o `Produto` inteiro.
  *
  * O formulário passa o registro completo; a desativação pela listagem passa a
@@ -185,6 +289,22 @@ export interface CamposGravaveis {
   tipoProdutoId: string | null
   marcaId: string | null
   fabricaId: string | null
+  /** Ficha técnica da §6.2, plana como o formulário — ver `fichaParaContrato`. */
+  qtdLampadasPorReator: string
+  consumoWatts: string
+  tensaoVolts: string
+  tensaoBiVolts: string
+  temperaturaCor: string
+  angulo: string
+  lumen: string
+  vaoLivre: string
+  corteNicho: string
+  pesoLiquido: string
+  pesoBruto: string
+  tempoInstalacaoMin: string
+  garantiaMeses: string
+  dimensoesProduto: { altura: string; largura: string; comprimento: string; raio: string }
+  dimensoesEmbalagem: { altura: string; largura: string; comprimento: string; raio: string }
 }
 
 /**
@@ -213,6 +333,7 @@ export function produtoParaContrato(values: CamposGravaveis): ProductWriteReques
     productTypeId: values.tipoProdutoId,
     brandId: values.marcaId,
     factoryId: values.fabricaId,
+    specs: fichaParaContrato(values),
   }
 }
 
@@ -247,6 +368,9 @@ export function corpoDeDesativacao(linha: ProductDto): ProductWriteRequest {
     tipoProdutoId: linha.productTypeId ?? null,
     marcaId: linha.brandId ?? null,
     fabricaId: linha.factoryId ?? null,
+    // A ficha técnica também volta da LINHA: desativar não pode apagar as
+    // medidas do produto. `fichaDoContrato` achata, `fichaParaContrato` remonta.
+    ...fichaDoContrato(linha.specs),
   })
 }
 

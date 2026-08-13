@@ -45,6 +45,15 @@ function detalhe(over: Record<string, unknown> = {}) {
     brandName: 'VERTZ',
     factoryId: '33333333-3333-4333-8333-333333333333',
     factoryName: 'FÁBRICA SP',
+    // A ficha técnica da §6.2 — a vertical de iluminação.
+    specs: {
+      watts: '9',
+      volts: '220',
+      lumen: '810',
+      colorTemperature: '3000K',
+      productDimensions: { height: '10', width: '20', length: '30', radius: '5' },
+      packageDimensions: { height: '15', width: '25', length: '35', radius: null },
+    },
     variants: [
       {
         id: '9c858901-8a57-4791-81fe-4c455b099bc9',
@@ -204,6 +213,23 @@ describe('escrita de produto', () => {
       productTypeId: '11111111-1111-4111-8111-111111111111',
       brandId: '22222222-2222-4222-8222-222222222222',
       factoryId: '33333333-3333-4333-8333-333333333333',
+      specs: {
+        lampsPerBallast: '',
+        watts: '9',
+        volts: '220',
+        biVolts: '',
+        colorTemperature: '3000K',
+        beamAngle: '',
+        lumen: '810',
+        clearSpan: '',
+        nicheCut: '',
+        netWeight: '',
+        grossWeight: '',
+        installationMinutes: '',
+        warrantyMonths: '',
+        productDimensions: { height: '10', width: '20', length: '30', radius: '5' },
+        packageDimensions: { height: '15', width: '25', length: '35', radius: '' },
+      },
     })
   })
 
@@ -218,6 +244,53 @@ describe('escrita de produto', () => {
     expect(produtoParaContrato({ ...produto, nossaDescricao: 'OUTRA' }).brandId).toBe(
       '22222222-2222-4222-8222-222222222222',
     )
+  })
+
+  // A ficha é UM objeto no contrato e QUINZE campos no formulário, e a tradução
+  // é o que impede `values.specs?.watts` de aparecer em dez controles.
+  it('achata a ficha técnica para o formulário e a remonta na escrita', () => {
+    const produto = produtoDoContrato(detalhe())
+
+    expect(produto.consumoWatts).toBe('9')
+    expect(produto.lumen).toBe('810')
+    expect(produto.dimensoesProduto).toEqual({
+      altura: '10',
+      largura: '20',
+      comprimento: '30',
+      raio: '5',
+    })
+    // Campo que o servidor não mandou vira string vazia, nunca `undefined`: o
+    // input controlado do RHF trocaria de modo no meio da digitação.
+    expect(produto.angulo).toBe('')
+
+    expect(produtoParaContrato(produto).specs).toMatchObject({
+      watts: '9',
+      lumen: '810',
+      productDimensions: { height: '10', width: '20', length: '30', radius: '5' },
+    })
+  })
+
+  // Mesma regra da conta bancária do parceiro: objeto vazio gravado é ficha que
+  // existe e não diz nada, e o servidor não distinguiria "sem medida" de
+  // "medida apagada".
+  it('ficha inteira em branco viaja como null, não como objeto vazio', () => {
+    const produto = produtoDoContrato(detalhe({ specs: null }))
+
+    expect(produto.consumoWatts).toBe('')
+    expect(produtoParaContrato(produto).specs).toBeNull()
+  })
+
+  // Um bloco de dimensões vazio também some: sem isso, um produto sem embalagem
+  // cadastrada gravaria quatro strings vazias com cara de medida.
+  it('bloco de dimensões em branco vira null dentro da ficha', () => {
+    const produto = produtoDoContrato(
+      detalhe({ specs: { watts: '9', productDimensions: null, packageDimensions: null } }),
+    )
+
+    const specs = produtoParaContrato(produto).specs
+    expect(specs?.watts).toBe('9')
+    expect(specs?.productDimensions).toBeNull()
+    expect(specs?.packageDimensions).toBeNull()
   })
 
   // Entrada e saída são unidades DIFERENTES no fixture de propósito: comprar em
@@ -290,6 +363,7 @@ describe('escrita de produto', () => {
       productTypeId: null,
       brandId: null,
       factoryId: null,
+      specs: null,
     })
   })
 
@@ -318,6 +392,7 @@ describe('escrita de produto', () => {
       productTypeId: null,
       brandId: null,
       factoryId: null,
+      specs: null,
     })
     expect(gravado.id).toBe(ID)
   })
@@ -350,6 +425,23 @@ describe('escrita de produto', () => {
       productTypeId: '11111111-1111-4111-8111-111111111111',
       brandId: '22222222-2222-4222-8222-222222222222',
       factoryId: '33333333-3333-4333-8333-333333333333',
+      specs: {
+        lampsPerBallast: '',
+        watts: '9',
+        volts: '220',
+        biVolts: '',
+        colorTemperature: '3000K',
+        beamAngle: '',
+        lumen: '810',
+        clearSpan: '',
+        nicheCut: '',
+        netWeight: '',
+        grossWeight: '',
+        installationMinutes: '',
+        warrantyMonths: '',
+        productDimensions: { height: '10', width: '20', length: '30', radius: '5' },
+        packageDimensions: { height: '15', width: '25', length: '35', radius: '' },
+      },
     })
   })
 

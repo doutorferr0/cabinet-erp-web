@@ -60,6 +60,18 @@ export const produtoSchema = z.object({
   designerModelo: z.string().nullable(),
   fabrica: z.string(),
   marca: z.string(),
+  /**
+   * Os IDs da classificação, que a tela NÃO edita e precisa carregar.
+   *
+   * O Zod tira do registro tudo que ele não declara. Sem estas três linhas, os
+   * ids sobrevivem na leitura, somem no `parse` do submit e o `PUT` — que
+   * substitui o registro inteiro — apaga a classificação do produto. Foi o
+   * teste do corpo do POST que mostrou isso; nenhum campo VISÍVEL da tela
+   * mudaria, e o operador só descobriria na próxima abertura do cadastro.
+   */
+  tipoProdutoId: z.string().nullable(),
+  fabricaId: z.string().nullable(),
+  marcaId: z.string().nullable(),
   descricaoComplementar: z.string(),
   foraDeLinha: z.boolean(),
   consultarValor: z.boolean(),

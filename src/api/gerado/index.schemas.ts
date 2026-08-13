@@ -99,6 +99,111 @@ export interface PagedResultOfPartnerDto {
   total: number;
 }
 
+/**
+ * Proposto. Medidas de uma caixa: as quatro do bloco §6.2, em string decimal pelo mesmo motivo da quantidade — 3 casas, e float perde centésimo. Sem unidade no valor: a unidade é do CAMPO (cm), não do dado; guardar "10 cm" tornaria o número inutilizável para conta e para filtro.
+ */
+export interface ProductDimensions {
+  /**
+     * `Altura`.
+     * @nullable
+     */
+  height?: string | null;
+  /**
+     * `Largura`.
+     * @nullable
+     */
+  width?: string | null;
+  /**
+     * `Comprimento`.
+     * @nullable
+     */
+  length?: string | null;
+  /**
+     * `Raio`.
+     * @nullable
+     */
+  radius?: string | null;
+}
+
+/**
+ * Proposto. A ficha TÉCNICA do produto — a aba `Outros Dados` (§6.2) inteira. É um objeto e não 17 campos soltos no `ProductDto` porque isto é a VERTICAL: iluminação tem lúmen, ângulo e temperatura de cor; outro ramo do mesmo ERP teria outra lista, e um dia esta ficha muda sem que o cadastro de produto mude. A modelagem do banco guarda isto em `products.specs jsonb` pela mesma razão.
+ *
+ * O que ficou FORA, e por que: `Marca`, `Fábrica` e `Tipo de Produto` são CLASSIFICAÇÃO e viraram campo de primeiro nível — viram coluna de listagem e um dia entram na whitelist de ordenação, e nada disso funciona dentro de um jsonb. `Descrição livre` e `Publicar no site` também ficaram fora: são conteúdo e canal, não especificação.
+ *
+ * Todo valor é STRING: os campos da §6.2 são livres na tela do legado, e converter para número aqui inventaria precisão que o dado não tem.
+ */
+export interface ProductSpecs {
+  /**
+     * `Qtd. lâmp. por reator`.
+     * @nullable
+     */
+  lampsPerBallast?: string | null;
+  /**
+     * `Consumo (Watts)`.
+     * @nullable
+     */
+  watts?: string | null;
+  /**
+     * `Tensão (Volts)`.
+     * @nullable
+     */
+  volts?: string | null;
+  /**
+     * `Tensão (BiVolts)`.
+     * @nullable
+     */
+  biVolts?: string | null;
+  /**
+     * `Temperatura de Cor`.
+     * @nullable
+     */
+  colorTemperature?: string | null;
+  /**
+     * `Ângulo`.
+     * @nullable
+     */
+  beamAngle?: string | null;
+  /**
+     * `Lúmen`.
+     * @nullable
+     */
+  lumen?: string | null;
+  /**
+     * `Vão livre`.
+     * @nullable
+     */
+  clearSpan?: string | null;
+  /**
+     * `Corte do nicho`.
+     * @nullable
+     */
+  nicheCut?: string | null;
+  /**
+     * `Peso líquido`.
+     * @nullable
+     */
+  netWeight?: string | null;
+  /**
+     * `Peso bruto`.
+     * @nullable
+     */
+  grossWeight?: string | null;
+  /**
+     * `Tempo de instalação`, em minutos.
+     * @nullable
+     */
+  installationMinutes?: string | null;
+  /**
+     * `Garantia`, em meses.
+     * @nullable
+     */
+  warrantyMonths?: string | null;
+  /** Medidas do PRODUTO. */
+  productDimensions?: null | ProductDimensions;
+  /** Medidas da EMBALAGEM — são outras, e é por isso que são dois blocos. */
+  packageDimensions?: null | ProductDimensions;
+}
+
 export interface ProductDto {
   id: string;
   code: string;
@@ -164,6 +269,8 @@ export interface ProductDto {
      * @nullable
      */
   factoryName?: string | null;
+  /** Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada. */
+  specs?: null | ProductSpecs;
 }
 
 export interface PagedResultOfProductDto {
@@ -317,6 +424,8 @@ export interface ProductDetailDto {
      * @nullable
      */
   factoryName?: string | null;
+  /** Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada. */
+  specs?: null | ProductSpecs;
   variants: ProductVariantDto[];
 }
 
@@ -372,6 +481,8 @@ export interface ProductWriteRequest {
      * @nullable
      */
   factoryId?: string | null;
+  /** Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada. */
+  specs?: null | ProductSpecs;
 }
 
 export interface ReadinessStatus {

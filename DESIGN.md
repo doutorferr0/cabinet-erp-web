@@ -39,10 +39,10 @@ typography:
     fontWeight: 700
     letterSpacing: "-0.005em"
   headline:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
+    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.35rem"
     fontWeight: 700
-    letterSpacing: "-0.005em"
+    letterSpacing: "-0.012em"
   produto:
     fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
@@ -160,7 +160,7 @@ por máscara, jamais preta.
 - **Faixa de acento**: painel importante ganha barra de 8px na lateral esquerda, com traço à direita
 - Dinheiro escreve em VERDE, negativo em vermelho; célula de valor ganha fundo da zona
 - Foco = **amarelo 3px com fio preto de 1px por fora**, em todo controle (§Foco)
-- **Quatro** famílias, todas **self-hosted**, divididas por SEMÂNTICA: Newsreader (quem — nome de entidade e título) · Sora (o quê — produto e descrição) · Inter (UI) · PT Mono (quanto — número, código, data)
+- **Quatro** famílias, todas **self-hosted**, divididas por SEMÂNTICA: Newsreader (quem — nome de entidade e o H1 da tela, e nada mais) · Sora (o quê — produto, descrição e cabeçalho de H2 para baixo) · Inter (UI) · PT Mono (quanto — número, código, data)
 - **Serifada não leva caixa alta**: o título ficou com maiúscula só na inicial dos substantivos; caixa alta segue em mono e Inter (etiqueta, carimbo, cabeçalho de coluna)
 
 ## Colors
@@ -429,10 +429,24 @@ altura — quem titula fala em Display, quem informa em Inter. Agora separa por 
 
 | papel | família | onde |
 |---|---|---|
-| **quem** | Newsreader 400/700 | nome próprio de entidade (cliente, profissional, fornecedor, empresa) + título de tela e de documento |
-| **o quê** | Sora 600/700 | nome de produto, descrição |
+| **quem** | Newsreader 400/700 | nome próprio de entidade (cliente, profissional, fornecedor, empresa) + **o H1 único** da tela ou do documento |
+| **o quê** | Sora 600/700 | nome de produto, descrição — e **todo cabeçalho de H2 para baixo** (painel, diálogo, gaveta, estado vazio) |
 | **UI** | Inter 400/500/600 | rótulo de campo, cabeçalho de coluna, botão, menu, aba, mensagem |
 | **quanto** | PT Mono 400 | número, código, data, valor, quantidade — **inclusive o número grande do KPI**, e sem negrito (só existe o peso 400) |
+
+**A serifa tem DOIS lugares e nenhum outro** (refinado pelo user em 2026-08-13, vendo a tela de
+Tarefas): o componente `<Nome>` e o **H1 único** da tela. A primeira versão da regra dava
+Newsreader a `h1, h2, h3`, e a serifa desceu para cabeçalho de painel, de gaveta e de estado
+vazio — lugares que são ESTRUTURA, não identidade.
+
+O critério é **nível hierárquico, não tamanho em px**: "título grande" é subjetivo e deriva a cada
+tela nova; "é o H1 da tela" não deriva.
+
+**Consequência que morde, e que já mordeu uma vez:** com o seletor do `index.css` restrito a `h1`,
+um `<Heading>` sem classe de família cai no **Inter do body**, não em Sora. Foi o que aconteceu com
+os títulos de diálogo, alerta, gaveta e popover no mesmo dia — o título continuava renderizando, na
+voz errada, sem quebrar teste nenhum. Por isso os quatro declaram `font-display` em vez de herdar,
+e a guarda está em `confirmar-desativacao.test.tsx`.
 
 Três regras que saíram de RENDER, não de teoria:
 

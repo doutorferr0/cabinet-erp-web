@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T17:52:13.000Z",
+  "generatedAt": "2026-08-13T18:06:50.000Z",
   "title": "Design System: Cabinet — identidade própria (2026-08-13)",
   "extensions": {
     "colorMeta": {
@@ -504,7 +504,7 @@
     "typographyMeta": {
       "nome": {
         "displayName": "Nome",
-        "purpose": "A voz de QUEM: nome proprio de entidade (cliente, profissional, fornecedor, empresa) e titulo de tela e de documento. Newsreader 400/700, +2px (0,15em) sobre o vizinho — a altura-x menor inverteria a hierarquia no mesmo tamanho. Aplicada pelo componente <Nome>, nunca por classe solta."
+        "purpose": "A voz de QUEM: nome proprio de entidade (cliente, profissional, fornecedor, empresa) e o H1 UNICO da tela ou do documento — dois lugares, nenhum outro (refinado pelo user em 2026-08-13). Newsreader 400/700, +2px (0,15em) sobre o vizinho. Aplicada pelo componente <Nome> e pelo seletor h1 do index.css, nunca por classe solta. O criterio e NIVEL HIERARQUICO, nao tamanho."
       },
       "display": {
         "displayName": "Display",
@@ -512,7 +512,7 @@
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Título de seção dentro da folha."
+        "purpose": "Titulo de secao dentro da folha, e todo cabecalho de H2 para baixo: painel, dialogo, gaveta, estado vazio. Sora — a voz de estrutura. Precisa ser DECLARADA (font-display): com o seletor do index.css restrito ao h1, um Heading sem familia cai no Inter do body, calado."
       },
       "value": {
         "displayName": "Value",

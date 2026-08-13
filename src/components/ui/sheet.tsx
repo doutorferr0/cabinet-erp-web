@@ -150,7 +150,11 @@ function SheetTitle({ className, ...props }: Omit<React.ComponentProps<typeof He
       // na voz de QUEM desde a troca de tipografia, e caixa alta em Newsreader
       // vira letreiro. Maiúscula só na inicial, como o texto vem escrito. Peso
       // 700 porque não há arquivo de 800 — 800 aqui seria negrito sintético.
-      className={cn('text-base font-bold text-foreground', className)}
+      // Sora explícito, e não herdado: desde que a regra do `index.css` passou a
+      // valer só para `h1` (2026-08-13), um `Heading` sem família cai no Inter
+      // do body — e a regra é "de H2 para baixo, Sora". Herança que sumiu, e
+      // sumiu calada: o título continuava renderizando, só que na voz errada.
+      className={cn('font-display text-base font-bold text-foreground', className)}
       {...props}
     />
   )

@@ -121,7 +121,11 @@ function AlertDialogTitle({
       slot="title"
       data-slot="alert-dialog-title"
       // Sem caixa alta e em 700: ver a nota do `SheetTitle`.
-      className={cn('text-base leading-none font-bold', className)}
+      // Sora explícito, e não herdado: desde que a regra do `index.css` passou a
+      // valer só para `h1` (2026-08-13), um `Heading` sem família cai no Inter
+      // do body — e a regra é "de H2 para baixo, Sora". Herança que sumiu, e
+      // sumiu calada: o título continuava renderizando, só que na voz errada.
+      className={cn('font-display text-base leading-none font-bold', className)}
       {...props}
     />
   )

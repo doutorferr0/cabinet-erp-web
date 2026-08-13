@@ -52,7 +52,15 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function PopoverTitle({ className, ...props }: React.ComponentProps<typeof Heading>) {
-  return <Heading data-slot="popover-title" className={cn('font-semibold', className)} {...props} />
+  // Sora explícito: com a regra do `index.css` restrita ao `h1`, um `Heading`
+  // sem família cai no Inter do body. Ver a nota do `SheetTitle`.
+  return (
+    <Heading
+      data-slot="popover-title"
+      className={cn('font-display font-semibold', className)}
+      {...props}
+    />
+  )
 }
 
 function PopoverDescription({ className, ...props }: React.ComponentProps<'div'>) {

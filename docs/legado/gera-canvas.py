@@ -146,7 +146,10 @@ for t, cs in tcols.items():
         'c': [[c['coluna'], tipo_curto(c)] for c in cs],
     }
 
-DADOS = json.dumps({'T': T, 'R': RELS, 'P': {k: v for k, v in PRESETS.items()}},
+ORDEM_DOM = ['cadastro', 'produto', 'venda', 'compra', 'estoque',
+             'financeiro', 'fiscal', 'sistema', 'outros']
+DADOS = json.dumps({'T': T, 'R': RELS, 'P': {k: v for k, v in PRESETS.items()},
+                    'D': ORDEM_DOM},
                    ensure_ascii=False, separators=(',', ':'))
 
 HTML = r"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
@@ -234,7 +237,7 @@ padding:4px 9px;border-radius:6px;pointer-events:none;display:none;max-width:340
 <div class="dica" id="dica"></div>
 <script>
 const DADOS = __DADOS__;
-const T = DADOS.T, R = DADOS.R, PRESETS = DADOS.P;
+const T = DADOS.T, R = DADOS.R, PRESETS = DADOS.P, ORD_DOM = DADOS.D||[];
 const COR = {cadastro:'#7A5CB8',produto:'#B7791F',venda:'#C2410C',compra:'#0060B0',
              estoque:'#2E7D32',financeiro:'#B0306B',fiscal:'#8A6D3B',sistema:'#8B8377',outros:'#5A544B'};
 const $=s=>document.querySelector(s);
@@ -250,7 +253,7 @@ let aberto = {};        // t -> {x,y,exp}
 let view = {x:40,y:40,k:1};
 let presetAtual = 'núcleo do negócio';
 
-function chaveStore(){ return 'softlux-canvas:'+presetAtual; }
+function chaveStore(){ return 'softlux-canvas.v2:'+presetAtual; }
 function salva(){ try{ localStorage.setItem(chaveStore(),
   JSON.stringify({aberto:aberto,view:view})); }catch(e){} }
 function carrega(){ try{ const s=localStorage.getItem(chaveStore());
@@ -319,9 +322,37 @@ function portaY(t, col){
   return p.y+HD+i*ROW+ROW/2;
 }
 
+function alturaCard(t){
+  const n=linhasCard(t).length, d=T[t], p=aberto[t];
+  const mais=(p&&p.exp)||n<d.c.length?24:6;
+  return HD+n*ROW+mais;
+}
+
+// ---- áreas por domínio (estilo ChartDB): bbox dos cards do domínio + rótulo
+function areas(){
+  const por={};
+  for(const t in aberto){ const dm=T[t].dom; (por[dm]=por[dm]||[]).push(t); }
+  let h='';
+  const ordem=ORD_DOM.filter(d=>por[d]).concat(Object.keys(por).filter(d=>!ORD_DOM.includes(d)));
+  ordem.forEach(dm=>{
+    const ts=por[dm]; if(!ts||!ts.length) return;
+    let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+    ts.forEach(t=>{ const p=aberto[t];
+      x1=Math.min(x1,p.x); y1=Math.min(y1,p.y);
+      x2=Math.max(x2,p.x+CW); y2=Math.max(y2,p.y+alturaCard(t)); });
+    const cor=COR[dm]||'#8B8377', PAD=26;
+    h+='<g pointer-events="none">'+
+       '<rect x="'+(x1-PAD)+'" y="'+(y1-PAD-14)+'" width="'+(x2-x1+2*PAD)+'" height="'+(y2-y1+2*PAD+14)+
+       '" rx="14" fill="'+cor+'" fill-opacity="0.045" stroke="'+cor+'" stroke-opacity="0.4" stroke-width="1.6"/>'+
+       '<text x="'+(x1-PAD+14)+'" y="'+(y1-PAD+8)+'" font-size="13" font-weight="700" '+
+       'letter-spacing=".06em" fill="'+cor+'">'+dm.toUpperCase()+'</text></g>';
+  });
+  return h;
+}
+
 // ---- fios
 function desenha(){
-  const svg=$('#fios'); let h='';
+  const svg=$('#fios'); let h=areas();
   R.forEach((r,i)=>{
     const [o,co,d,cd,inf]=r;
     if(!aberto[o]||!aberto[d]) return;
@@ -411,33 +442,33 @@ function clicaCol(t,col){
   if(achou) render();
 }
 
-// ---- layout automático em camadas (BFS a partir da mais conectada)
+// ---- layout automático: um BLOCO espacial por domínio, na ordem do fluxo do
+// negócio; dentro do bloco, colunas empilhadas com as tabelas mais conectadas no topo
 function autoLayout(){
   const ts=Object.keys(aberto); if(!ts.length) return;
   const dentro=new Set(ts);
-  const grau={}, adj={};
-  ts.forEach(t=>{grau[t]=0; adj[t]=new Set();});
-  R.forEach(r=>{ if(dentro.has(r[0])&&dentro.has(r[2])){
-    grau[r[0]]++;grau[r[2]]++; adj[r[0]].add(r[2]); adj[r[2]].add(r[0]); }});
-  const nivel={}, resto=new Set(ts);
-  while(resto.size){
-    const raiz=[...resto].sort((a,b)=>grau[b]-grau[a])[0];
-    let onda=[raiz]; nivel[raiz]=0; resto.delete(raiz);
-    while(onda.length){
-      const prox=[];
-      onda.forEach(t=>adj[t].forEach(v=>{ if(resto.has(v)){
-        nivel[v]=nivel[t]+1; resto.delete(v); prox.push(v); }}));
-      onda=prox;
-    }
-  }
-  const porNivel={};
-  ts.forEach(t=>{ const l=nivel[t]||0; (porNivel[l]=porNivel[l]||[]).push(t); });
-  const GX=CW+150, GY=44;
-  Object.keys(porNivel).sort((a,b)=>a-b).forEach(l=>{
-    const colu=porNivel[l].sort((a,b)=>grau[b]-grau[a]);
-    let y=60;
-    colu.forEach(t=>{ aberto[t].x=60+l*GX; aberto[t].y=y;
-      y+=HD+linhasCard(t).length*ROW+22+GY; });
+  const grau={};
+  ts.forEach(t=>grau[t]=0);
+  R.forEach(r=>{ if(dentro.has(r[0])&&dentro.has(r[2])){ grau[r[0]]++; grau[r[2]]++; }});
+  const por={};
+  ts.forEach(t=>{ const dm=T[t].dom; (por[dm]=por[dm]||[]).push(t); });
+  const ordem=ORD_DOM.filter(d=>por[d]).concat(Object.keys(por).filter(d=>!ORD_DOM.includes(d)));
+  const ALVO=880, GY=40, GCOL=44, GAREA=150, TOPO=120;
+  let x=90;
+  ordem.forEach(dm=>{
+    const grupo=por[dm].sort((a,b)=>grau[b]-grau[a]);
+    // distribui em colunas de altura ~ALVO
+    const cols=[[]]; let alt=0;
+    grupo.forEach(t=>{
+      const h=alturaCard(t)+GY;
+      if(alt+h>ALVO&&cols[cols.length-1].length){ cols.push([]); alt=0; }
+      cols[cols.length-1].push(t); alt+=h;
+    });
+    cols.forEach((c,j)=>{
+      let y=TOPO;
+      c.forEach(t=>{ aberto[t].x=x+j*(CW+GCOL); aberto[t].y=y; y+=alturaCard(t)+GY; });
+    });
+    x+=cols.length*(CW+GCOL)-GCOL+GAREA;
   });
   render();
 }
@@ -490,11 +521,10 @@ function encaixa(){
   const ts=Object.keys(aberto); if(!ts.length) return;
   let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
   ts.forEach(t=>{ const p=aberto[t];
-    const alt=HD+linhasCard(t).length*ROW+24;
     x1=Math.min(x1,p.x); y1=Math.min(y1,p.y);
-    x2=Math.max(x2,p.x+CW); y2=Math.max(y2,p.y+alt); });
+    x2=Math.max(x2,p.x+CW); y2=Math.max(y2,p.y+alturaCard(t)); });
   const W=innerWidth, H=innerHeight-49;
-  const k=Math.min(2, Math.min(W/(x2-x1+120), H/(y2-y1+120)));
+  const k=Math.min(2, Math.min(W/(x2-x1+170), H/(y2-y1+170)));
   view.k=k; view.x=(W-(x2-x1)*k)/2-x1*k; view.y=(H-(y2-y1)*k)/2-y1*k;
   aplicaView(); salva();
 }

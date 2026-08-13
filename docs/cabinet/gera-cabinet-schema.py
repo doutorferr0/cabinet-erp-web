@@ -309,7 +309,7 @@ P['caminho do orçamento'] = ['partners', 'construction_sites', 'products', 'pro
 for m in MODS:
     P[m] = [t[0] for t in TABELAS if t[1] == m]
 
-DADOS = json.dumps({'T': T, 'R': R, 'P': P}, ensure_ascii=False, separators=(',', ':'))
+DADOS = json.dumps({'T': T, 'R': R, 'P': P, 'D': MODS}, ensure_ascii=False, separators=(',', ':'))
 
 # o motor do canvas vive no gera-canvas.py — na cópia local está na mesma pasta;
 # no repo este script fica em docs/cabinet/ e o motor em docs/legado/
@@ -323,7 +323,7 @@ TPL = canvas_src[ini:fim]
 TPL = TPL.replace('Softlux — diagrama ER', 'Cabinet — mapeamento de tabelas')
 TPL = TPL.replace("const COR = {cadastro:'#7A5CB8',produto:'#B7791F',venda:'#C2410C',compra:'#0060B0',\n             estoque:'#2E7D32',financeiro:'#B0306B',fiscal:'#8A6D3B',sistema:'#8B8377',outros:'#5A544B'};",
                   "const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',\n             venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',outros:'#8B8377'};")
-TPL = TPL.replace("'softlux-canvas:'", "'cabinet-canvas:'")
+TPL = TPL.replace("'softlux-canvas.v2:'", "'cabinet-canvas.v2:'")
 TPL = TPL.replace("presetAtual = 'núcleo do negócio'", "presetAtual = 'mínimo pra começar'")
 TPL = TPL.replace('<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2"/></svg> declarada</span>\n<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2" stroke-dasharray="5 4"/></svg> inferida</span>\n<span>◆ chave · azul = liga (clique traz a vizinha)</span>',
                   '<span>◆ chave · azul traz a vizinha · FK de empresa é composta (tenant_id)</span>')

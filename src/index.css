@@ -906,16 +906,24 @@ body {
   line-height: 1.45;
 }
 
-/* Título fala na voz de QUEM (Newsreader 700), não mais em Display.
+/* Só o H1 fala na voz de QUEM (Newsreader 700).
+
+   REFINADO 2026-08-13 pelo user, vendo a tela de Tarefas: a regra pegava
+   `h1, h2, h3` e a serifa desceu para cabeçalho de painel, de gaveta e de
+   estado vazio — lugares que são estrutura, não identidade. Newsreader entra
+   em DOIS lugares e nenhum outro: o componente `<Nome>` (nome próprio de
+   entidade, em qualquer tamanho) e o H1 ÚNICO da tela ou do documento. De H2
+   para baixo é Sora.
+
+   O critério é NÍVEL HIERÁRQUICO, não tamanho em px: "título grande" é
+   subjetivo e deriva a cada tela nova; "é o H1 da tela" não deriva.
    A regra semântica de 2026-08-13 põe título de tela e de documento no mesmo
    grupo do nome próprio de entidade: os dois respondem "quem é este". Sora
    recuou para o "o quê" — nome de produto e descrição. Sem esta regra, `<h1>`
    herdaria Inter e a distinção sumiria.
    `letter-spacing` menos negativo que o da Sora: serifa de alto contraste com
    -0.012em fecha o vão entre a haste e a serifa nos tamanhos de título. */
-h1,
-h2,
-h3 {
+h1 {
   font-family: var(--font-nome);
   font-weight: 700;
   letter-spacing: -0.005em;

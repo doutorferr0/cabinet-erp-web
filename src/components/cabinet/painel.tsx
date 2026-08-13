@@ -113,7 +113,7 @@ export function Painel({
         {modulo && selo ? <Selo shape={modulo} tamanho="sm" /> : null}
         {/* Título de painel em Display: é o degrau abaixo do título da tela, e
             o que o olho usa para saltar de assunto em assunto. */}
-        <h2 className="font-nome text-lg font-bold text-text-strong first-letter:uppercase">
+        <h2 className="font-display text-lg font-bold text-text-strong first-letter:uppercase">
           {titulo}
         </h2>
         {acao ? <div className="ml-auto flex items-center gap-2">{acao}</div> : null}

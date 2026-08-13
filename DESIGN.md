@@ -113,7 +113,8 @@ effects:
 > lugar do creme. As três seções que isso reescreve são **Superfícies**, **Typography** e **a
 > sidebar/marca**; a **Sombra** trocou de família junto. **Todo número de contraste medido contra
 > a bancada creme foi refeito** — quem citar um valor antigo desta página está citando medição
-> inválida.
+> inválida. Os números vivem na **§Medição de contraste**, e se remedem rodando
+> `python3 docs/design/medir-contraste.py` sobre os tokens de `src/index.css`.
 
 > **Supersede a fundação "Brut sobre papel" (fases 1 e 2).** Amostra de referência aprovada pelo user:
 > `docs/design/amostra-fase-1.5.html` (v5, 2026-08-06). **Em divergência entre este doc e a amostra, a AMOSTRA vence.**
@@ -188,10 +189,10 @@ O **Afundado** desceu junto (94% → 92%) para manter os 4 pontos de luz que o s
 2 pontos a zebra some numa listagem de 25 linhas. Ele cai no mesmo nível de luz da bancada, e tudo
 bem — são regiões que nunca se encostam sem o contorno preto entre elas.
 
-**Contrastes remedidos** (o texto secundário desceu de L 43% para 41% por causa disto): preto na
-folha 19,1:1 · secundário na folha 5,19:1, na zebra 4,72:1, na bancada 4,73:1 · dinheiro na folha
-5,03:1 · negativo 5,51:1 · traço preto na folha 19,1:1. Os números anteriores desta página foram
-medidos contra a bancada creme e **não valem mais**.
+**Contrastes remedidos**, todos na §Medição de contraste — daqui em diante os números moram lá, e
+esta seção só guarda o que a medição OBRIGOU: **o texto secundário desceu de L 43% para 41%**,
+porque a 43% ele dava 4,38:1 sobre a zebra, abaixo do piso, na linha alternada de toda listagem.
+Os números anteriores desta página foram medidos contra a bancada creme e **não valem mais**.
 
 ### Zonas por conteúdo — os pastéis /02 da paleta (1.6)
 Valor `#D2FEEB` · Identidade `#E9DCFE` · Apoio `#E9EEFB` · Pendência `#FFFAE5` · Bloqueio
@@ -199,8 +200,10 @@ Valor `#D2FEEB` · Identidade `#E9DCFE` · Apoio `#E9EEFB` · Pendência `#FFFAE
 sem nomear conteúdo nenhum. A zona diz do que a área trata **antes de o operador ler o rótulo**;
 por isso é exclusiva — zona espalhada em dado comum deixa de significar.
 
-Nenhum par piorou na troca: dinheiro sobe de 4,65:1 para **5,02:1** sobre a zona de valor,
-negativo para **5,25:1** sobre a de bloqueio, e preto fica entre 16:1 e 20:1 em todas as cinco.
+Nenhum par piorou na troca: dinheiro sobe de 4,65:1 para **5,03:1** sobre a zona de valor,
+negativo para **5,22:1** sobre a de bloqueio, e preto fica entre **16,18:1** e **20,05:1** nas
+cinco. É o texto SOBRE a zona que passa; a zona contra o papel em volta mede ~1,1:1 e quem a
+delimita é o traço — §Medição de contraste.
 
 ### Cor de MÓDULO — /02 pinta a seção, /01 pinta o dado
 Cada módulo tem um par fixo, trocado por **escopo** (`data-modulo` no shell) e lido pelas
@@ -277,8 +280,9 @@ que separava fundo de conteúdo acabou em 2026-08-13** — hoje separa só a luz
 **Verde e vermelho descem da luz da amostra** (35% e 52%) porque os dois moram sobre a **zona de
 valor**, que é justamente onde o operador lê o número que a tela existe para mostrar: a 35% o verde
 dava 2,79:1 sobre a zona e a 52% o vermelho dava 3,72:1 — ambos abaixo dos 4,5:1 de texto. Matiz e
-saturação são os da amostra; só a luz mudou. Depois: verde 4,65:1 sobre a zona e 5,15:1 sobre a
-Folha; vermelho 5,10:1 e 5,65:1. Efeito colateral bem-vindo: o branco do botão destrutivo sai de
+saturação são os da amostra; só a luz mudou. Depois, remedido sobre as superfícies cinzas: verde
+**5,03:1** sobre a zona e **5,03:1** sobre a Folha (a zona de valor e a Folha estão a 1,00:1 de
+distância); vermelho **5,22:1** e **5,51:1**. Efeito colateral bem-vindo: o branco do botão destrutivo sai de
 4,41:1 para 6,05:1, e o do carimbo `done` (preenchido de verde) de 3,31:1 para 5,52:1.
 
 **`--empresa` desce pela mesma razão, e é o único /01 da paleta que foi recalibrado.** O galpão da
@@ -287,10 +291,9 @@ empresa ativa pousa sobre a **zona de identidade**, e a 74% (a luz do `#828DF9` 
 escuro a zona é escura e ele volta aos 74%, com 4,75:1: sobre papel escuro a cor precisa CLAREAR,
 a mesma inversão do violeta de ação.
 
-> **Medida que vale para o resto da paleta, e que ainda é decisão em aberto** (remedida em
-> 2026-08-13 sobre as superfícies cinzas): sobre a folha os oito /01 vão de **1,40:1** (produtos) a
-> **4,78:1** (vendas), e **quatro dos oito seguem abaixo de 3:1** — produtos, boletim, estoque e,
-> na bancada, também compras e clientes. O roxo de marca fica em 2,25:1 sobre a bancada. As
+> **Medida que vale para o resto da paleta, e que ainda é decisão em aberto** (números na
+> §Medição de contraste — sobre a folha os oito /01 vão de **1,40:1** a **4,78:1**, com três abaixo
+> de 3:1 ali e cinco sobre a bancada; o roxo de marca fica em 2,25:1 sobre a bancada). As
 > superfícies novas são um pouco mais escuras que as antigas, então a faixa SUBIU (a nota anterior
 > dizia 1,32 a 2,97, medida contra folha branca), mas o diagnóstico não mudou. Não é regressão de nenhuma fase: é a paleta /01 como foi travada, e ela foi escolhida
 > para elemento COMPACTO e para preencher fundo com texto preto por cima (aí ela mede 7:1 a 20:1).
@@ -404,7 +407,8 @@ As cinco zonas mantêm a MATIZ dos pastéis /02 e viram a luz de 91–95% para 1
 nomeando o conteúdo, só o papel escureceu. Nos módulos, a cheia /01 já é clara e continua servindo
 de tinta; só a /02 desce.
 
-**Remedido em 2026-08-13, e a nota antiga estava errada:** a cheia /01 sobre a folha escura vai de
+**Remedido em 2026-08-13, e a nota antiga estava errada** (tabela na §Medição de contraste): a
+cheia /01 sobre a folha escura vai de
 **2,74:1** (vendas) a **9,38:1** (produtos) — duas das oito abaixo de 3:1, vendas e fornecedores.
 A página afirmava "entre 5,15:1 e 8,5:1, todas acima do piso", e não foi a folha nova que quebrou
 isso: contra a folha escura ANTIGA as mesmas duas já não passavam. Fica como está, pelo motivo que
@@ -416,6 +420,125 @@ A sombra acompanhou a neutralização e continua sem blur, mas precisa ser **mai
 bancada** para existir —
 sombra clara sobre papel escuro seria luz. Os cinco degraus ficam sutis de propósito: no escuro quem
 carrega a elevação é o degrau de superfície e o traço claro, e a sombra só confirma.
+
+### Medição de contraste — a tabela canônica (2026-08-13)
+
+**Esta é a única lista de números desta página que se remede; qualquer razão citada fora daqui é
+citação, não medição.** As duas superfícies mudaram (creme → cinza) e invalidaram de uma vez todo
+contraste medido contra a bancada creme — o mesmo vai acontecer na próxima troca de superfície.
+
+Fonte dos valores: os tokens REAIS de `src/index.css`, lidos por
+`python3 docs/design/medir-contraste.py`. **O script existe porque a medição na mão já errou duas
+vezes nesta própria página** (a faixa da cheia /01 no escuro e a do claro, corrigidas em
+2026-08-13): quem remede fecha o loop rodando o comando e colando a saída aqui, não conferindo
+número por número. Ele não altera cor nenhuma — é instrumento.
+
+Pisos WCAG usados: **4,5:1** texto normal (1.4.3) · **3:1** texto grande e componente/estado
+não-textual (1.4.11).
+
+#### As 4 vozes tipográficas sobre as superfícies — piso 4,5:1
+
+A voz não tem cor própria: cada uma pinta com um token, e é o token que se mede. Duas vozes têm
+dois papéis com tintas diferentes, e os dois entram.
+
+| Voz | papel | tinta | Folha | Bancada | escuro: Folha | escuro: Bancada | veredito |
+|---|---|---|---|---|---|---|---|
+| quem — Newsreader | nome de entidade, H1 | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
+| o quê — Sora | produto na listagem | `--muted-foreground` | 5,19:1 | 4,73:1 | 6,77:1 | 8,30:1 | passa |
+| o quê — Sora | produto como assunto, H2+ | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
+| UI — Inter | rótulo, botão, mensagem | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
+| UI — Inter | texto secundário | `--muted-foreground` | 5,19:1 | 4,73:1 | 6,77:1 | 8,30:1 | passa |
+| UI — Inter | texto forte alternativo | `--text-strong` | 8,06:1 | 7,35:1 | 8,90:1 | 10,91:1 | passa |
+| quanto — PT Mono | código, data, quantidade | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
+| quanto — PT Mono | dinheiro | `--money` | 5,03:1 | 4,58:1 | 8,49:1 | 10,42:1 | passa |
+| quanto — PT Mono | valor negativo | `--destructive` | 5,51:1 | 5,02:1 | 5,09:1 | 6,24:1 | passa |
+
+**As quatro vozes passam AA nas duas superfícies e nos dois temas.** A troca de papel não custou
+legibilidade de texto — foi a superfície tintada que ficou devendo, abaixo.
+
+#### Os 8 pastéis /02 sobre as superfícies — piso 3:1
+
+Aqui a razão medida é **superfície contra superfície**: o /02 é a zona pintada, a Folha e a Bancada
+são o que está em volta.
+
+| Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |
+|---|---|---|---|---|
+| Produtos | 1,03:1 | 1,07:1 | 1,32:1 | REPROVA |
+| Estoque | 1,12:1 | 1,02:1 | 1,15:1 | REPROVA |
+| Vendas / Orçamento | 1,10:1 | 1,00:1 | 1,05:1 | REPROVA |
+| Compras / Pedidos | 1,07:1 | 1,02:1 | 1,03:1 | REPROVA |
+| Clientes | 1,10:1 | 1,00:1 | 1,02:1 | REPROVA |
+| Fornecedores | 1,12:1 | 1,02:1 | 1,01:1 | REPROVA |
+| Profissionais | 1,08:1 | 1,01:1 | 1,01:1 | REPROVA |
+| Boletim | 1,13:1 | 1,03:1 | 1,06:1 | REPROVA |
+
+A cheia /01 do mesmo módulo, medida contra as mesmas superfícies (é ela que pinta ornamento, ícone
+e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** — `.dark
+[data-modulo=…]` só baixa a /02, e o neon do bloco claro continua na cascata servindo de tinta:
+
+| Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |
+|---|---|---|---|---|
+| Produtos | 1,40:1 | 1,27:1 | 9,38:1 | 11,51:1 |
+| Estoque | 2,96:1 | 2,70:1 | 4,42:1 | 5,43:1 |
+| Vendas / Orçamento | 4,78:1 | 4,36:1 | 2,74:1 | 3,36:1 |
+| Compras / Pedidos | 3,14:1 | 2,87:1 | 4,16:1 | 5,11:1 |
+| Clientes | 3,21:1 | 2,93:1 | 4,08:1 | 5,00:1 |
+| Fornecedores | 4,63:1 | 4,22:1 | 2,83:1 | 3,47:1 |
+| Profissionais | 4,24:1 | 3,87:1 | 3,08:1 | 3,78:1 |
+| Boletim | 2,56:1 | 2,34:1 | 5,11:1 | 6,26:1 |
+
+Abaixo de 3:1 — no claro **três** contra a Folha (produtos, estoque, boletim) e **cinco** contra a
+Bancada (os três + compras e clientes); no escuro **duas** contra a Folha (vendas, fornecedores) e
+nenhuma contra a Bancada. A §Acentos dizia "quatro dos oito" no claro sem separar as duas
+superfícies: são três e cinco.
+
+As cinco zonas por conteúdo medem a mesma coisa que a /02, pelo mesmo motivo — **é a natureza do
+pastel /02, não regressão da troca de superfície**:
+
+| Zona | × Folha | × Bancada | escuro × Folha |
+|---|---|---|---|
+| Valor | 1,00:1 | 1,10:1 | 1,25:1 |
+| Identidade | 1,18:1 | 1,08:1 | 1,02:1 |
+| Apoio | 1,05:1 | 1,04:1 | 1,06:1 |
+| Pendência | 1,05:1 | 1,15:1 | 1,25:1 |
+| Bloqueio | 1,05:1 | 1,04:1 | 1,04:1 |
+
+**O que a reprovação significa, e o que ela NÃO significa.** A 1.4.11 pede 3:1 do que delimita o
+componente, e quem delimita aqui é o **contorno preto de 2px** — ele mede 19,12:1 sobre a Folha no
+claro e 5,88:1 no escuro, folgado nos dois. O texto que pousa sobre o pastel também passa larga
+(16,88–18,60:1 no claro, 9,48–13,10:1 no escuro). Então a reprovação é **condicional ao traço**: no
+dia em que alguém suavizar ou tirar a borda, oito módulos e cinco zonas ficam invisíveis de uma vez
+— é a mesma dependência que a §Superfícies já registra para o degrau de 1,10:1 entre Bancada e
+Folha.
+
+#### Aferições de apoio
+
+- degrau Bancada × Folha: **1,10:1** claro · **1,23:1** escuro
+- secundário sobre o Afundado (zebra): 4,72:1 claro · 7,67:1 escuro
+- traço `--border` sobre a Folha: 19,12:1 claro · 5,88:1 escuro
+- `--text-disabled` sobre a Folha: 1,73:1 claro · 2,48:1 escuro
+- tinta sobre os 8 pastéis /02: 16,88–18,60:1 claro · 9,48–13,10:1 escuro
+
+#### Pendências — nenhuma cor foi mexida aqui
+
+Esta seção **mede**; trocar cor é decisão do user, e nenhuma foi alterada por causa destes números.
+
+1. **[USER] Os 8 pastéis /02 e as 5 zonas, de 1,00 a 1,32:1 contra as superfícies.** Só há decisão
+   a tomar se a superfície tintada precisar se separar do papel **sem** o traço. Escurecer o /02
+   até 3:1 o tiraria de "pastel" — vira preenchimento, e aí compete com a cheia /01.
+2. **[USER] Vendas e Clientes medem 1,00:1 contra a Bancada** — mesma luminância, não "sutil":
+   ali o pastel e o fundo do app são a mesma cor aos olhos. Só não aparece porque a zona pintada
+   mora dentro da Folha; encostar um /02 direto na Bancada sem traço é desenhar nada.
+3. **[USER] A cheia /01 abaixo de 3:1**: três contra a Folha e cinco contra a Bancada no claro,
+   duas contra a Folha no escuro — tabela acima, decisão na §Acentos. Mesma raiz: neon tem
+   contraste baixo por construção, e quem delimita é o traço. O roxo de marca fica em 2,25:1 sobre
+   a Bancada.
+4. **`--text-disabled` a 1,73:1 sobre a Folha.** A 1.4.3 isenta componente desabilitado, então não
+   é reprovação formal. Vira uma no minuto em que esse token pintar texto que **não** é controle
+   desabilitado (rótulo apagado, placeholder de coluna vazia) — não usar fora do controle.
+5. **Margem estreita a vigiar: dinheiro na Bancada 4,58:1 e secundário na Bancada 4,73:1** (4,72:1
+   na zebra). Passam por pouco. Qualquer escurecimento da Bancada, mesmo de 1 ponto de luz,
+   derruba os dois — remedir com o script antes de mexer em `--background`.
 
 ## Typography
 

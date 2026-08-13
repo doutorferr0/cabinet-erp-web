@@ -5,6 +5,7 @@ import { type NavItem, gruposVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { RequireRecurso } from '@/app/require-recurso'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
+import { Marca } from '@/components/cabinet/marca'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import { Separator } from '@/components/ui/separator'
@@ -60,19 +61,22 @@ function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
-        {/* MARCA — o selo do sistema, e o único ornamento da sidebar que não
-            fala nem de módulo nem de empresa. Fica no topo porque é o nó mais
-            alto da hierarquia: acima de qualquer módulo está o produto. */}
-        {/* Colapsada, o `px-2` daqui somava com o `p-2` do grupo e jogava o
-            emblema 8px à esquerda da fileira de ícones. Sem rótulo para
-            equilibrar, a marca ficava visivelmente fora do eixo da coluna. */}
-        <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0">
-          <Ornamento shape="emblema" tom="marca" tamanho={28} />
-          {/* Some no modo colapsado, junto com todo rótulo: sobra a coluna de
-              ícone, e o selo sozinho continua identificando o produto. */}
-          <span className="truncate font-display font-bold text-lg tracking-[-0.012em] group-data-[collapsible=icon]:hidden">
-            Cabinet
-          </span>
+        {/* MARCA — o símbolo e o nome do produto, a única peça da sidebar que
+            não fala nem de módulo nem de empresa. Fica no topo porque é o nó
+            mais alto da hierarquia: acima de qualquer módulo está o produto.
+            Assinatura, e não símbolo + texto: o nome do Cabinet é DESENHO
+            (wordmark do user), não uma palavra na fonte de display. */}
+        {/* Colapsada, o `px-2` daqui somava com o `p-2` do grupo e jogava a
+            marca 8px à esquerda da fileira de ícones. Sem rótulo para
+            equilibrar, ela ficava visivelmente fora do eixo da coluna. */}
+        <div className="flex items-center px-2 py-1 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0">
+          {/* O nome some no modo colapsado, junto com todo rótulo: sobra a
+              coluna de ícone, e o símbolo sozinho identifica o produto. */}
+          <Marca
+            variante="assinatura"
+            tamanho={28}
+            classeDoNome="group-data-[collapsible=icon]:hidden"
+          />
         </div>
         {/* EMPRESA ATIVA logo abaixo da marca (decisão do user, 2026-08-07).
             REVOGA o rodapé de §@ornamentos: o argumento de lá era que escopo

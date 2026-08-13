@@ -1,5 +1,4 @@
 import { type Modulo, moduloDaRota } from '@/app/modulo'
-import brutalist011 from '@/assets/brutalist/brutalist-011.svg?raw'
 import brutalist014 from '@/assets/brutalist/brutalist-014.svg?raw'
 import brutalist022 from '@/assets/brutalist/brutalist-022.svg?raw'
 import brutalist029 from '@/assets/brutalist/brutalist-029.svg?raw'
@@ -11,11 +10,8 @@ import shape120 from '@/assets/brutalist/brutalist-shape-120.svg?raw'
 import shape128 from '@/assets/brutalist/brutalist-shape-128.svg?raw'
 import shape133 from '@/assets/brutalist/brutalist-shape-133.svg?raw'
 import shape135 from '@/assets/brutalist/brutalist-shape-135.svg?raw'
-import shape140 from '@/assets/brutalist/brutalist-shape-140.svg?raw'
 import shape159 from '@/assets/brutalist/brutalist-shape-159.svg?raw'
 import shape160 from '@/assets/brutalist/brutalist-shape-160.svg?raw'
-import shape182 from '@/assets/brutalist/brutalist-shape-182.svg?raw'
-import shape185 from '@/assets/brutalist/brutalist-shape-185.svg?raw'
 import shape193 from '@/assets/brutalist/brutalist-shape-193.svg?raw'
 import spark020 from '@/assets/brutalist/spark-020.svg?raw'
 import { cn } from '@/lib/utils'
@@ -135,7 +131,6 @@ function lerDesenho(raw: string, cobertura: number): Desenho {
  * número aqui derrota a regra inteira.
  */
 const DESENHOS = {
-  brutalist011: lerDesenho(brutalist011, 55.6),
   brutalist014: lerDesenho(brutalist014, 47.4),
   brutalist022: lerDesenho(brutalist022, 72.3),
   brutalist029: lerDesenho(brutalist029, 5.0),
@@ -147,11 +142,8 @@ const DESENHOS = {
   shape128: lerDesenho(shape128, 80.2),
   shape133: lerDesenho(shape133, 43.4),
   shape135: lerDesenho(shape135, 12.5),
-  shape140: lerDesenho(shape140, 62.2),
   shape159: lerDesenho(shape159, 94.7),
   shape160: lerDesenho(shape160, 10.1),
-  shape182: lerDesenho(shape182, 41.2),
-  shape185: lerDesenho(shape185, 66.0),
   shape193: lerDesenho(shape193, 42.0),
   spark020: lerDesenho(spark020, 41.3),
 } as const
@@ -182,20 +174,15 @@ const SHAPE_DE_ESTADO = {
   'rota-inexistente': DESENHOS.shape193, // bandeira torta
   alerta: DESENHOS.shape193, // a mesma bandeira: confirmação destrutiva
   'falha-rede': DESENHOS.brutalist097, // triângulo partido — a consulta não chegou
-  marca: DESENHOS.shape182, // estrela radiada: a marca do sistema, fora de módulo
-  'marca-apoio': DESENHOS.shape140, // acompanha a marca na composição do login
-  'marca-base': DESENHOS.brutalist011, // idem
-  /**
-   * Losango dentro de círculo — a marca do sistema DENTRO da interface (topo da
-   * sidebar), e depois no cabeçalho de documento impresso.
-   *
-   * Não reusa a chave `marca`, e a diferença não é capricho: `marca` é a
-   * composição de BOAS-VINDAS (estrela radiada + apoio + base), que ocupa meia
-   * tela no login e some assim que o operador entra. Este é o selo que fica no
-   * canto durante as oito horas seguintes — tem de se ler a 28px e não pode
-   * competir com o conteúdo. Dois empregos, dois desenhos, duas chaves.
+  /*
+   * NÃO existe mais shape de MARCA aqui (`marca`, `marca-apoio`, `marca-base`,
+   * `emblema` — 2026-08-13). Eram empréstimo do acervo enquanto o Cabinet não
+   * tinha símbolo próprio: uma estrela radiada no login, um losango na barra.
+   * O user entregou a marca, e ela mora em `<Marca>` (`marca.tsx`), fora do
+   * ornamento — desenho de linha, sem preenchimento e sem cor de módulo.
+   * Reabrir chave de marca aqui é reabrir a duplicidade: dois desenhos
+   * respondendo "que produto é este" divergem na terceira tela.
    */
-  emblema: DESENHOS.shape185,
   /**
    * Galpão — a EMPRESA ATIVA. Aponta para o mesmo arquivo do módulo
    * Fornecedores, pelo mesmo motivo de `rota-inexistente`/`alerta`: é a mesma
@@ -233,8 +220,8 @@ export type ShapeDeEstado = keyof typeof SHAPE_DE_ESTADO
  * 12,5) — a pequena sobra é arredondamento, não erro de método. O que a
  * cobertura decide é binário (o corte de 35% do `temPeso`) e os quatro estão
  * longe da linha: 47,4 e 86,3 são cheios com folga, 15,3 é vazado com folga.
- * `spark020` (41,3) é o mais próximo do corte — na mesma faixa do `shape182`
- * (41,2) já aceito como cheio.
+ * `spark020` (41,3) é o mais próximo do corte, e desde a saída dos shapes de
+ * marca é também o MENOR cheio em uso — ver `COBERTURA_MINIMA_PARA_PESO`.
  */
 const SHAPE_DE_LUGAR = {
   dashboard: DESENHOS.brutalist014, // quatro pontas convergindo — o painel que reúne
@@ -324,9 +311,11 @@ function pesoPara(tamanho: number): number {
  * Abaixo de 35% de cobertura o shape é VAZADO — linha, anel, contorno — e o
  * peso fecha os vãos: o desenho vira mancha em vez de ganhar volume.
  *
- * O corte não é arbitrário. Medindo os 15 shapes em uso, o maior vazado é o
- * `brutalist-shape-135` com 12,5% e o menor cheio é o `brutalist-shape-182` com
- * 41,2%: o vão entre os dois grupos é largo e o limiar cai no meio dele.
+ * O corte não é arbitrário. Medindo os shapes em uso, o maior vazado é o
+ * `brutalist-shape-135` com 12,5% e o menor cheio é o `spark-020` com 41,3%: o
+ * vão entre os dois grupos é largo e o limiar cai no meio dele. (Até
+ * 2026-08-13 o menor cheio era o `brutalist-shape-182`, 41,2% — saiu junto com
+ * os shapes de marca; o vão não mudou.)
  * Ficam sem peso o galpão (5,0%), os círculos da busca vazia (10,1%) e os anéis
  * concêntricos do Boletim (12,5%).
  */

@@ -139,18 +139,21 @@ describe('AppShell', () => {
     // O rodapé deixou de existir: não sobrou nada para pousar lá.
     expect(document.querySelector('[data-slot="sidebar-footer"]')).toBeNull()
 
-    // Selo do sistema em cima, escopo do dado embaixo — nesta ordem. O emblema
-    // (shape-185) é o selo; `marca` (shape-182) é a composição do login.
+    // Marca do produto em cima, escopo do dado embaixo — nesta ordem. Desde
+    // 2026-08-13 a marca é o símbolo do user (`<Marca>`), não mais um shape do
+    // acervo: o topo tem UM ornamento só, o da empresa.
+    const marca = topo?.querySelector('[data-slot="marca"]')
+    expect(marca).toHaveAttribute('data-variante', 'assinatura')
+    // O nome do produto é DESENHO, não texto — quem o anuncia é o rótulo.
+    expect(marca).toHaveAttribute('aria-label', 'Cabinet')
     const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
-    expect(ornamentos).toHaveLength(2)
-    expect(ornamentos[0]).toHaveAttribute('data-shape', 'emblema')
-    expect(ornamentos[1]).toHaveAttribute('data-shape', 'empresa')
-    expect(topo).toHaveTextContent('Cabinet')
+    expect(ornamentos).toHaveLength(1)
+    expect(ornamentos[0]).toHaveAttribute('data-shape', 'empresa')
     expect(topo).toHaveTextContent('VERTZ ILUMINAÇÃO')
 
     // Linhas distintas: só a empresa mora dentro do botão que abre a gaveta.
-    expect(ornamentos[0]?.closest('[data-sidebar="menu-button"]')).toBeNull()
-    expect(ornamentos[1]?.closest('[data-sidebar="menu-button"]')).not.toBeNull()
+    expect(marca?.closest('[data-sidebar="menu-button"]')).toBeNull()
+    expect(ornamentos[0]?.closest('[data-sidebar="menu-button"]')).not.toBeNull()
   })
 
   it('switches active company via drawer', async () => {

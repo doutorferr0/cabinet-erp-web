@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="miter" role="img" aria-label="Cabinet">
+  <!-- Moldura como `path` e não `rect`: quem lê este arquivo é o `<Marca>`, que
+       remonta o desenho a partir do `d` de cada caminho. Um `rect` sumiria. -->
+  <path d="M15.48 9.55 H85.32 A4.68 4.68 0 0 1 90 14.23 V84.07 A4.68 4.68 0 0 1 85.32 88.75 H15.48 A4.68 4.68 0 0 1 10.8 84.07 V14.23 A4.68 4.68 0 0 1 15.48 9.55 Z"/>
+  <path d="M25.90 74.00 L25.90 36.80 L50 16.60 L75.00 36.80 L75.00 74.00 Z"/>
+  <path d="M32.40 67.50 L32.40 39.84 L50 25.08 L68.50 39.84 L68.50 67.50 Z"/>
+  <path d="M38.90 61.00 L38.90 42.87 L50 33.56 L62.00 42.87 L62.00 61.00 Z"/>
+</svg>

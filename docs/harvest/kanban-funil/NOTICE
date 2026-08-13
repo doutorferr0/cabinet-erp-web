@@ -1,0 +1,56 @@
+NOTICE — kanban-funil
+=====================
+
+Derivado de Atomic CRM (marmelab/atomic-crm), arquivos:
+
+  src/components/atomic-crm/deals/DealListContent.tsx
+  src/components/atomic-crm/deals/DealColumn.tsx
+  src/components/atomic-crm/deals/DealCard.tsx
+  src/components/atomic-crm/deals/stages.ts
+
+Licença da fonte:
+
+    The MIT License (MIT)
+
+    Copyright (c) 2024-present, Francois Zaninotto, Marmelab
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+O QUE VEIO DA FONTE (estrutura e algoritmo)
+-------------------------------------------
+- A decomposição em três peças: quadro (estado + orquestração do arrasto) →
+  coluna (uma etapa, total no cabeçalho, área de soltura) → cartão (arrastável).
+- O agrupamento `Record<etapa, item[]>` derivado de uma lista plana, com etapa
+  desconhecida caindo na PRIMEIRA etapa configurada em vez de sumir da tela
+  (`getDealsByStage`). Essa escolha foi copiada de propósito: some silencioso é
+  pior que fora de lugar visível.
+- A ordenação de cada coluna por um inteiro `index` guardado no registro.
+- O desenho da atualização otimista: muda o estado local sincronamente e só
+  depois persiste.
+
+O QUE FOI REESCRITO (e por quê — detalhe em integracao.md)
+----------------------------------------------------------
+- Motor de arrasto: `@hello-pangea/dnd` → HTML5 drag-and-drop nativo, mais um
+  caminho por CLIQUE. Zero dependência nova.
+- Persistência: N chamadas de reindexação disparadas pela tela → UMA intenção
+  (`onMover`) entregue à camada de dado. A tela não sabe quantas linhas mudam.
+- Estado local: `splice` sobre os arrays do estado (mutação) → funções puras.
+- Dinheiro: `toLocaleString('en-US')` sobre float → centavos inteiros e
+  `formatMoneyBRL` na borda de exibição.
+- Nomes, comentários e idioma passaram para os do repositório.

@@ -1,0 +1,57 @@
+NOTICE — auditoria
+==================
+
+Derivado de supa_audit (supabase/supa_audit), arquivo `supa_audit--0.3.1.sql`.
+
+    Copyright 2021 Supabase
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+O arquivo `cabinet_audit.sql` desta pasta é OBRA DERIVADA e está modificado em
+relação ao original. A Apache-2.0 exige que arquivos modificados carreguem aviso
+proeminente de modificação — é o que esta seção faz.
+
+O QUE VEIO DA FONTE (o desenho)
+--------------------------------
+- A ideia central: UM gatilho genérico serve qualquer tabela, guardando a linha
+  inteira em jsonb, com um identificador derivado da chave primária que permite
+  buscar o histórico de um registro em tempo linear por índice.
+- A tabela de versões com `record`/`old_record` em jsonb e as restrições CHECK
+  que amarram `op` ao par (record_id, record) / (old_record_id, old_record).
+- A leitura das colunas da chave primária em `pg_index`/`pg_attribute`.
+- O par `enable_tracking` / `disable_tracking` criando e removendo o gatilho por
+  `regclass`, idempotente, com recusa para tabela sem chave primária.
+
+O QUE FOI REESCRITO (e por quê — detalhe em integracao.md)
+-----------------------------------------------------------
+- Schema `audit` único e global → tabela e funções POR SCHEMA DE ORGANIZAÇÃO,
+  aplicadas por template (`@org@`).
+- Coluna `tenant_id not null` extraída da própria linha auditada; chave primária
+  composta `(tenant_id, id)`; `tenant_id` como primeira coluna de todo índice.
+- RLS com FORCE e política que nega por omissão; sem política de UPDATE/DELETE,
+  o que torna a trilha append-only inclusive para o dono da tabela.
+- `auth.uid()`/`auth.role()` do Supabase → `app.current_employee` da sessão do
+  Cabinet, e verificação de que `app.current_tenant` bate com o `tenant_id` da
+  linha.
+- `table_oid` → `table_schema` + `table_name`, inclusive dentro do hash de
+  identidade.
+- `uuid_generate_v5` (extensão uuid-ossp) → `md5(...)::uuid`.
+- Agregação da chave primária com `order by` explícito.
+- Gatilho de TRUNCATE: REMOVIDO, por não ter linha de onde tirar `tenant_id`.
+- Colunas sensíveis omitidas via argumento do gatilho.
+- `bigserial` → `generated always as identity`.
+
+NADA disto é correção de defeito do supa_audit. O original resolve o problema
+dele — auditoria num banco Supabase de um inquilino só — e resolve bem. As
+mudanças existem porque o Cabinet tem dois níveis de isolamento que o original
+não tem por onde saber que existem.

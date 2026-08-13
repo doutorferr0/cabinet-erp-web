@@ -28,6 +28,17 @@ export function parceiro(over: Record<string, unknown> = {}) {
     // do grupo. São coisas diferentes — ver `src/data/parceiros-api.ts`.
     active: true,
     registrationActive: true,
+    // Entraram no contrato em 2026-08-13, vindos da extração do legado. Nascem
+    // NULOS no helper e não preenchidos: o padrão do cadastro é não ter conselho
+    // nem conta — só o Profissional Externo os tem, e o teste que quiser um
+    // profissional completo passa os dois pelo `over`, à vista.
+    registration: null as string | null,
+    payoutBankInfo: null as {
+      bankNumber: string | null
+      bankName: string | null
+      branchNumber: string | null
+      accountNumber: string | null
+    } | null,
     ...over,
   }
 }

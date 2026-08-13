@@ -18,14 +18,42 @@ function dtoParaForm(dto: PartnerDto): Profissional {
     cpf: dto.document ?? '',
     email: dto.email ?? '',
     ativo: dto.active,
+    // O conselho é do PROFISSIONAL, não da empresa que o contrata: `registration`
+    // mora no cadastro, não no vínculo (contrato `Proposto`, 2026-08-13).
+    registroProfissional: dto.registration ?? '',
+    // A conta vem inteira ou não vem: parceiro sem conta cadastrada manda
+    // `payoutBankInfo: null`, e os quatro campos ficam em branco juntos.
+    numeroBanco: dto.payoutBankInfo?.bankNumber ?? '',
+    nomeBanco: dto.payoutBankInfo?.bankName ?? '',
+    numeroAgencia: dto.payoutBankInfo?.branchNumber ?? '',
+    numeroConta: dto.payoutBankInfo?.accountNumber ?? '',
   }
+}
+
+/**
+ * A conta só viaja se tiver ALGUMA coisa preenchida.
+ *
+ * Mandar `{bankNumber:'',bankName:'',…}` gravaria uma conta vazia — registro
+ * que existe e não serve para pagar ninguém. O contrato distingue os dois
+ * estados de propósito, e quem decide aqui é a tela: quatro campos em branco
+ * significam "não tem conta", não "tem uma conta sem números".
+ */
+function contaDaComissao(values: Profissional) {
+  const conta = {
+    bankNumber: values.numeroBanco,
+    bankName: values.nomeBanco,
+    branchNumber: values.numeroAgencia,
+    accountNumber: values.numeroConta,
+  }
+  return Object.values(conta).some((v) => v.trim() !== '') ? conta : null
 }
 
 export const papelProfissional: PapelDeCadastro<Profissional> = {
   role: 'professional',
   rota: '/cadastros/profissionais',
   queryKeyListagem: ['profissionais'],
-  camposDeEdicao: 'Nome, Nome de Apresentação, CPF/CNPJ, E-mail e Ativo',
+  camposDeEdicao:
+    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários e Ativo',
   vazio: profissionalVazio,
   dtoParaForm,
   paraEscrita: (values) => ({
@@ -34,6 +62,8 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
     document: values.cpf,
     email: values.email,
     active: values.ativo,
+    registration: values.registroProfissional,
+    payoutBankInfo: contaDaComissao(values),
   }),
   paraInclusao: (values) => ({
     legalName: values.nome,
@@ -41,5 +71,7 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
     document: values.cpf,
     email: values.email,
     active: values.ativo,
+    registration: values.registroProfissional,
+    payoutBankInfo: contaDaComissao(values),
   }),
 }

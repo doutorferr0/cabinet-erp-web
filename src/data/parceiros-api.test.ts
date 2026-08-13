@@ -98,6 +98,15 @@ describe('escrita', () => {
       paymentTerms: '30/60/90',
       isCustomer: true,
       isSupplier: true,
+      // Entraram no contrato em 2026-08-13 e SÓ a tela de Profissional Externo
+      // os edita. Gravar por Cliente ou Fornecedor não pode apagá-los.
+      registration: 'CREA 12345-6',
+      payoutBankInfo: {
+        bankNumber: '341',
+        bankName: 'ITAÚ',
+        branchNumber: '1234',
+        accountNumber: '56789-0',
+      },
     })
 
     const corpo = corpoDeEscrita(original, {
@@ -119,7 +128,70 @@ describe('escrita', () => {
       isCustomer: true,
       isSupplier: true,
       isProfessional: false,
+      registration: 'CREA 12345-6',
+      payoutBankInfo: {
+        bankNumber: '341',
+        bankName: 'ITAÚ',
+        branchNumber: '1234',
+        accountNumber: '56789-0',
+      },
     })
+  })
+
+  // O caminho por onde a perda mais doeria: o `Excluir` da listagem é um `PUT`
+  // montado a partir da LINHA, e a listagem de Clientes nem mostra registro
+  // profissional. Sem preservar, desativar um profissional pela tela errada
+  // apagaria o conselho e a conta bancária dele.
+  it('a tela que NÃO edita o registro profissional também não o apaga', () => {
+    const original = parceiro({
+      isProfessional: true,
+      registration: 'CAU A98765-4',
+      payoutBankInfo: {
+        bankNumber: '001',
+        bankName: 'BANCO DO BRASIL',
+        branchNumber: '4321',
+        accountNumber: '11111-1',
+      },
+    })
+
+    const corpo = corpoDeEscrita(original, {
+      legalName: original.legalName,
+      tradeName: original.tradeName,
+      document: original.document,
+      email: original.email,
+      active: false,
+    })
+
+    expect(corpo.registration).toBe('CAU A98765-4')
+    expect(corpo.payoutBankInfo).toEqual(original.payoutBankInfo)
+  })
+
+  // O contrário também precisa valer: quem EDITA manda o valor, inclusive para
+  // limpar. `null` explícito é "apaga a conta", e não pode ser confundido com
+  // "a tela não tem o campo".
+  it('a tela que edita manda o valor, e null apaga de verdade', () => {
+    const original = parceiro({
+      registration: 'CREA 1',
+      payoutBankInfo: {
+        bankNumber: '033',
+        bankName: 'SANTANDER',
+        branchNumber: '1',
+        accountNumber: '1',
+      },
+    })
+
+    const corpo = corpoDeEscrita(original, {
+      legalName: original.legalName,
+      tradeName: original.tradeName,
+      document: original.document,
+      email: original.email,
+      active: true,
+      registration: '',
+      payoutBankInfo: null,
+    })
+
+    expect(corpo.registration).toBe('')
+    expect(corpo.payoutBankInfo).toBeNull()
   })
 
   it('manda PUT no id e devolve o registro que o servidor gravou', async () => {
@@ -268,6 +340,9 @@ describe('desativação (o Excluir da listagem)', () => {
       isSupplier: true,
       isProfessional: false,
       active: false,
+      // Desativar não é apagar cadastro: o que a linha traz volta como veio.
+      registration: linha.registration ?? null,
+      payoutBankInfo: linha.payoutBankInfo ?? null,
     })
   })
 

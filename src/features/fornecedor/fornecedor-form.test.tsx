@@ -81,15 +81,19 @@ describe('tela Fornecedor', () => {
     )
 
     const put = chamadas.find((c) => c.metodo === 'PUT')
-    // `PUT` substitui o registro inteiro: `code`, `paymentTerms` e os papéis não
-    // têm campo nesta tela e voltam como vieram — mandá-los nulos apagaria dado
-    // que ninguém pediu para apagar.
+    // `PUT` substitui o registro inteiro: `code`, `paymentTerms`, os papéis e —
+    // desde 2026-08-13 — o registro profissional e a conta de comissão não têm
+    // campo NESTA tela e voltam como vieram. Mandá-los nulos apagaria dado que
+    // ninguém pediu para apagar; no caso da conta bancária, dado que faz o
+    // pagamento da comissão do profissional.
     expect(put?.corpo).toEqual({
       legalName: 'STELLA ILUMINAÇÃO LTDA',
       tradeName: 'LUZ',
       document: '12345678000199',
       email: 'contato@stella.com.br',
       active: true,
+      registration: null,
+      payoutBankInfo: null,
       code: 'F001',
       paymentTerms: '30/60/90',
       isCustomer: true,

@@ -187,10 +187,35 @@ são PAPÉIS do mesmo cadastro, e o filtro `role` decide qual. **Papel inválido
 400**, não filtro ignorado — ignorado faria a tela de Fornecedores mostrar
 clientes sem ninguém desconfiar.
 
-A resposta junta duas origens: `legalName`, `tradeName`, `document`, `email` e os
-três papéis são do cadastro da **organização**; `code`, `paymentTerms` e `active`
-são do vínculo com a **empresa**. Por isso `Ativo` na tela é o `active` do
-vínculo — a pergunta do operador é "esta empresa trabalha com este fornecedor?".
+A resposta junta duas origens: `legalName`, `tradeName`, `document`, `email`, os
+três papéis e — desde 2026-08-13 — `registration` e `payoutBankInfo` são do
+cadastro da **organização**; `code`, `paymentTerms` e `active` são do vínculo com
+a **empresa**. Por isso `Ativo` na tela é o `active` do vínculo — a pergunta do
+operador é "esta empresa trabalha com este fornecedor?".
+
+**`registration` e `payoutBankInfo` são `Proposto`, e vieram da EXTRAÇÃO, não da
+transcrição.** A engenharia reversa do legado (`docs/legado/`, modelagem em
+`docs/cabinet/cabinet-schema.dbml`) confirmou `partners.registration` — o
+CREA/CAU/CFT do Profissional Externo — e os dados bancários de comissão. As duas
+coisas a tela §3 já mostrava; o que faltava era caminho no contrato, e é por isso
+que a coluna `Registro Profissional` volta à listagem agora.
+
+Os dois moram na ORGANIZAÇÃO e não no vínculo, e a distinção não é arbitrária: o
+conselho profissional é do profissional, não da empresa que o contrata, e a conta
+que recebe comissão é dele. Consequência que o código honra em
+`corpoDeEscrita`: as telas de Cliente e Fornecedor **não editam** os dois e os
+devolvem como vieram — inclusive no `Excluir`, que é um `PUT` montado a partir da
+linha. Sem isso, desativar um profissional pela tela errada apagaria o conselho e
+a conta bancária dele.
+
+**Conta em branco ≠ conta vazia.** `payoutBankInfo: null` significa "não tem
+conta"; um objeto com os quatro campos em branco seria um registro bancário que
+existe e não paga ninguém. Quem decide é a tela (`contaDaComissao`), e o contrato
+distingue os dois estados de propósito.
+
+`Profissão`, a outra coluna que a §3 registra, **continua fora** — e agora por um
+motivo mais duro que falta de contrato: ela não existe no `PartnerDto` NEM na
+extração do legado. Não é lacuna de contrato, é campo sem fonte.
 
 Incluir cria o cadastro com **o papel da tela e nenhum outro** (o schema exige ao
 menos um papel; marcar os três faria todo cadastro novo aparecer nas três

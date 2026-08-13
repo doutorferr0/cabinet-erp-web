@@ -15,8 +15,14 @@ export const Route = createFileRoute('/cadastros/profissionais/')({
 })
 
 /**
- * `Profissão` e `Registro Profissional` saíram: não existem no `PartnerDto`. A §3
- * registra as duas — voltam quando o contrato as expuser.
+ * `Registro Profissional` VOLTOU (2026-08-13): a engenharia reversa do legado
+ * confirmou o campo (`partners.registration` — CREA/CAU/CFT) e ele entrou no
+ * contrato como `Proposto`. Era uma das duas colunas da §3 que a tela escondia
+ * por falta de DTO.
+ *
+ * `Profissão` continua de fora, e agora por um motivo mais duro: não existe no
+ * `PartnerDto` NEM na extração do legado. Não é lacuna de contrato, é campo sem
+ * fonte — volta quando o user disser de onde ele sai.
  *
  * `Ativo` é o `active` do vínculo com a empresa ativa; `accessorKey` é o nome do
  * campo no contrato porque viaja como `sortBy`.
@@ -34,6 +40,12 @@ const columns: ColumnDef<PartnerDto>[] = [
       const apresentacao = getValue<string | null>()
       return apresentacao ? <Nome>{apresentacao}</Nome> : '—'
     },
+  },
+  {
+    accessorKey: 'registration',
+    header: 'Registro Profissional',
+    // Mono: é IDENTIFICADOR (CREA/CAU/CFT), a mesma voz do código e do CNPJ.
+    cell: ({ getValue }) => <span className="font-mono">{getValue<string | null>() ?? '—'}</span>,
   },
   {
     accessorKey: 'legalName',

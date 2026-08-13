@@ -49,6 +49,49 @@ describe('tela Profissional Externo', () => {
     })
   }, 15_000)
 
+  // O CONTRATO CRESCEU (2026-08-13): a engenharia reversa do legado confirmou
+  // `partners.registration` (CREA/CAU/CFT) e os dados bancários de comissão, e
+  // os dois entraram como `Proposto`. Antes disto o formulário mostrava os
+  // campos e o `Gravar` NÃO os enviava — o aviso de cobertura dizia isso ao
+  // operador. O teste trava que agora enviam.
+  it('grava Registro Profissional e a conta de comissão', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { user } = renderRoute('/cadastros/profissionais/novo', stub)
+
+    await user.type(await screen.findByLabelText('Nome de Apresentação'), 'MARINA BERTOLUCI')
+    await user.type(screen.getByLabelText(/Registro Profissional/), 'CAU A123456-7')
+    await user.type(screen.getByLabelText('Nº da agência'), '1234')
+    await user.type(screen.getByLabelText('Nº da conta'), '56789-0')
+
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(() => {
+      expect(chamadas.find((c) => c.metodo === 'POST')).toBeDefined()
+    })
+    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toMatchObject({
+      registration: 'CAU A123456-7',
+      payoutBankInfo: { branchNumber: '1234', accountNumber: '56789-0' },
+    })
+  }, 15_000)
+
+  // Conta em branco não é conta vazia: são estados diferentes, e o contrato os
+  // distingue. Mandar quatro strings vazias gravaria um registro bancário que
+  // existe e não serve para pagar ninguém.
+  it('sem nenhum dado bancário, a conta viaja como null', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { user } = renderRoute('/cadastros/profissionais/novo', stub)
+
+    await user.type(await screen.findByLabelText('Nome de Apresentação'), 'SEM CONTA')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(() => {
+      expect(chamadas.find((c) => c.metodo === 'POST')).toBeDefined()
+    })
+    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toMatchObject({
+      payoutBankInfo: null,
+    })
+  }, 15_000)
+
   // `Nº do banco` era `TextField` livre, sem busca nenhuma — o único dos 10
   // `[busca +...]` da transcrição sem janela por trás (§3, §9 padrão 3;
   // mapa em `frente-visual.md` §@mapa-softlux). Vira `SearchDialog` contra

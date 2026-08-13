@@ -1,4 +1,4 @@
-import type { PartnerDto, PartnerWriteRequest } from '@/api/gerado'
+import type { PartnerDto, PartnerPayoutBankInfo, PartnerWriteRequest } from '@/api/gerado'
 import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
 import {
   ErroDaApi,
@@ -123,6 +123,14 @@ export interface CamposEditaveis {
   document: string | null
   email: string | null
   active: boolean
+  /**
+   * Registro Profissional (CREA/CAU/CFT) e conta de comissão — só a tela de
+   * Profissional Externo os edita, e por isso são OPCIONAIS aqui: as telas de
+   * Cliente e Fornecedor não têm os campos, e obrigá-las a mandar `null` seria
+   * a mesma armadilha que o comentário do `corpoDeEscrita` descreve.
+   */
+  registration?: string | null
+  payoutBankInfo?: PartnerPayoutBankInfo | null
 }
 
 /**
@@ -151,6 +159,16 @@ export function corpoDeEscrita(
     isCustomer: original.isCustomer,
     isSupplier: original.isSupplier,
     isProfessional: original.isProfessional,
+    // Editados quando a tela os tem; DEVOLVIDOS COMO VIERAM quando não tem.
+    // `undefined` aqui apagaria o conselho e a conta bancária do profissional
+    // ao gravar por qualquer outra tela — a mesma regra do `code` acima, e o
+    // caminho por onde ela mais dói: desativar um cadastro passa por aqui.
+    registration:
+      editado.registration !== undefined ? editado.registration : (original.registration ?? null),
+    payoutBankInfo:
+      editado.payoutBankInfo !== undefined
+        ? editado.payoutBankInfo
+        : (original.payoutBankInfo ?? null),
   }
 }
 
@@ -232,6 +250,10 @@ export function corpoDeInclusao(
     isCustomer: papel === 'customer',
     isSupplier: papel === 'supplier',
     isProfessional: papel === 'professional',
+    // Na INCLUSÃO não há registro anterior a preservar: o que a tela não edita
+    // nasce nulo, igual a `code` e `paymentTerms` logo acima.
+    registration: editado.registration ?? null,
+    payoutBankInfo: editado.payoutBankInfo ?? null,
   }
 }
 

@@ -41,6 +41,32 @@ export interface PagedResultOfCatalogLookupDto {
   total: number;
 }
 
+/**
+ * Proposto. Dados bancários do parceiro, para pagamento de comissão ao Profissional Externo (§3, bloco `Dados Bancários`). Um objeto e não quatro campos soltos no `PartnerDto`: os quatro só fazem sentido juntos, e parceiro sem conta cadastrada manda o objeto inteiro em `null` em vez de quatro nulos que a tela teria de recombinar. O endereço do banco, que a tela também mostra, fica FORA — endereço é bloco compartilhado e o contrato ainda não tem endereço de parceiro nenhum; entrar só o do banco daria a única exceção sem a regra.
+ */
+export interface PartnerPayoutBankInfo {
+  /**
+     * Nº do banco (código FEBRABAN). Somente leitura na tela: vem da busca de banco.
+     * @nullable
+     */
+  bankNumber: string | null;
+  /**
+     * Nome do banco. Somente leitura na tela, pelo mesmo motivo.
+     * @nullable
+     */
+  bankName: string | null;
+  /**
+     * Nº da agência, com dígito se houver. String e não número: agência tem zero à esquerda.
+     * @nullable
+     */
+  branchNumber: string | null;
+  /**
+     * Nº da conta, com dígito. String pelo mesmo motivo da agência.
+     * @nullable
+     */
+  accountNumber: string | null;
+}
+
 export interface PartnerDto {
   id: string;
   /** @nullable */
@@ -59,6 +85,13 @@ export interface PartnerDto {
   paymentTerms: string | null;
   active: boolean;
   registrationActive: boolean;
+  /**
+     * Proposto. Registro Profissional — CREA, CAU ou CFT (§3). Vive no cadastro do parceiro (ORG), não no vínculo com a empresa: o conselho é do profissional, não da empresa que o contrata. Vazio em cliente e fornecedor.
+     * @nullable
+     */
+  registration?: string | null;
+  /** Proposto. Conta para pagamento de comissão. `null` quando o parceiro não tem conta cadastrada. */
+  payoutBankInfo?: null | PartnerPayoutBankInfo;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -124,6 +157,13 @@ export interface PartnerWriteRequest {
   paymentTerms: string | null;
   /** @nullable */
   active: boolean | null;
+  /**
+     * Proposto. Registro Profissional (CREA, CAU, CFT). `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  registration?: string | null;
+  /** Proposto. Conta de comissão. Vale a mesma regra do `PUT`: mandar `null` apaga a conta cadastrada. */
+  payoutBankInfo?: null | PartnerPayoutBankInfo;
 }
 
 export interface ProblemDetails {

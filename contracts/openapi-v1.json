@@ -2111,6 +2111,29 @@
           }
         }
       },
+      "PartnerPayoutBankInfo": {
+        "required": ["bankNumber", "bankName", "branchNumber", "accountNumber"],
+        "type": "object",
+        "description": "Proposto. Dados bancários do parceiro, para pagamento de comissão ao Profissional Externo (§3, bloco `Dados Bancários`). Um objeto e não quatro campos soltos no `PartnerDto`: os quatro só fazem sentido juntos, e parceiro sem conta cadastrada manda o objeto inteiro em `null` em vez de quatro nulos que a tela teria de recombinar. O endereço do banco, que a tela também mostra, fica FORA — endereço é bloco compartilhado e o contrato ainda não tem endereço de parceiro nenhum; entrar só o do banco daria a única exceção sem a regra.",
+        "properties": {
+          "bankNumber": {
+            "type": ["null", "string"],
+            "description": "Nº do banco (código FEBRABAN). Somente leitura na tela: vem da busca de banco."
+          },
+          "bankName": {
+            "type": ["null", "string"],
+            "description": "Nome do banco. Somente leitura na tela, pelo mesmo motivo."
+          },
+          "branchNumber": {
+            "type": ["null", "string"],
+            "description": "Nº da agência, com dígito se houver. String e não número: agência tem zero à esquerda."
+          },
+          "accountNumber": {
+            "type": ["null", "string"],
+            "description": "Nº da conta, com dígito. String pelo mesmo motivo da agência."
+          }
+        }
+      },
       "PartnerDto": {
         "required": [
           "id",
@@ -2164,6 +2187,14 @@
           },
           "registrationActive": {
             "type": "boolean"
+          },
+          "registration": {
+            "type": ["null", "string"],
+            "description": "Proposto. Registro Profissional — CREA, CAU ou CFT (§3). Vive no cadastro do parceiro (ORG), não no vínculo com a empresa: o conselho é do profissional, não da empresa que o contrata. Vazio em cliente e fornecedor."
+          },
+          "payoutBankInfo": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/PartnerPayoutBankInfo" }],
+            "description": "Proposto. Conta para pagamento de comissão. `null` quando o parceiro não tem conta cadastrada."
           }
         }
       },
@@ -2226,6 +2257,14 @@
           },
           "active": {
             "type": ["null", "boolean"]
+          },
+          "registration": {
+            "type": ["null", "string"],
+            "description": "Proposto. Registro Profissional (CREA, CAU, CFT). `PUT` substitui o registro inteiro: omitir apaga."
+          },
+          "payoutBankInfo": {
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/PartnerPayoutBankInfo" }],
+            "description": "Proposto. Conta de comissão. Vale a mesma regra do `PUT`: mandar `null` apaga a conta cadastrada."
           }
         }
       },

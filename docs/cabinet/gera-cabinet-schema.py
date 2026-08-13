@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Schema NOVO do Cabinet — escopo inicial (venda + estoque) + esqueleto de compra.
+"""Schema NOVO do Cabinet — venda + estoque + esqueleto de compra + funil (CRM).
 
 Gera:
   cabinet-schema.dbml        para importar no ChartDB
@@ -57,8 +57,11 @@ TABELAS = [
  'cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional)',
  [('id', U, 'k'), ('legal_name', S, ''), ('trade_name', S, 'n'), ('document', 'varchar(14)', 'n'),
   ('email', S, 'n'), ('is_customer', B, ''), ('is_supplier', B, ''), ('is_professional', B, ''),
-  ('registration', S, 'n'), ('payout_bank_info', 'jsonb', 'n'), ('active', B, '')],
- 'registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão'),
+  ('registration', S, 'n'), ('payout_bank_info', 'jsonb', 'n'), ('parent_id', U, 'n'),
+  ('active', B, '')],
+ 'registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão; '
+ 'parent_id = hierarquia pai/filho (escritório de arquitetura ↔ profissionais dele) — '
+ 'campo, não tabela: quem indicou continua sendo o parceiro, o escritório é o pai'),
 ('partner_tenant_links', 'parceiros', 'tenant',
  'vínculo do parceiro com CADA empresa: código, condição de pagamento, ativo (contrato: PartnerLink)',
  [('tenant_id', U, 'k'), ('partner_id', U, 'k'), ('code', S, 'n'),
@@ -102,6 +105,37 @@ TABELAS = [
  'o que é DA EMPRESA na variante: preço de venda vigente e estoque mínimo (core: preço/estoque = tenant)',
  [('tenant_id', U, 'k'), ('variant_id', U, 'k'), ('sale_price_cents', BIG, 'n'),
   ('min_stock', QTY, 'n'), ('active', B, '')], ''),
+# ---------- crm (13º módulo — funil A MONTANTE do orçamento) ----------
+# Conceito do Odoo Community (LGPL: conceito sim, código não): lead e oportunidade no MESMO
+# registro, estágio é DADO (probabilidade/ganho/perda/apodrecimento), motivo de perda catalogado.
+# Atividade e histórico NÃO moram aqui — activities (módulo tarefas) e Auditoria/Notificações.
+('crm_pipelines', 'crm', 'tenant',
+ 'funil — são VÁRIOS por empresa (a Vertz tem modelos de venda distintos)',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('name', S, ''), ('sort', I, ''),
+  ('is_default', B, ''), ('active', B, '')],
+ 'is_default escolhe o funil da oportunidade criada sem escolha explícita'),
+('crm_stages', 'crm', 'tenant',
+ 'estágio DE UM funil — estágio é dado, não rótulo',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('pipeline_id', U, ''), ('name', S, ''),
+  ('sort', I, ''), ('probability', PCT, ''), ('is_won', B, ''), ('is_lost', B, ''),
+  ('rot_days', I, 'n')],
+ 'UNIQUE (tenant_id, pipeline_id, id) serve de alvo à FK composta da oportunidade; '
+ 'is_won/is_lost são POR FUNIL; probabilidade só compara dentro do mesmo funil; '
+ 'rot_days = card apodrece parado além do limite'),
+('crm_opportunities', 'crm', 'tenant',
+ 'lead E oportunidade no MESMO registro — conversão é mudança de estágio, não cadastro novo',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('name', S, ''), ('pipeline_id', U, ''),
+  ('stage_id', U, ''), ('partner_id', U, 'n'), ('contact_name', S, 'n'),
+  ('contact_email', S, 'n'), ('contact_phone', S, 'n'), ('owner_employee_id', U, 'n'),
+  ('expected_value_cents', BIG, 'n'), ('expected_close_date', D, 'n'), ('source', S, 'n'),
+  ('stage_changed_at', TS, ''), ('lost_reason_id', U, 'n'), ('quote_id', U, 'n'),
+  ('closed_at', TS, 'n')],
+ 'FK COMPOSTA (tenant_id, pipeline_id, stage_id) → crm_stages: o banco recusa estágio de outro '
+ 'funil, e mover de funil RESETA para o 1º estágio do destino (trilha em Auditoria) · '
+ 'partner_id nullable = lead ainda sem cadastro, contato solto em contact_* · '
+ 'stage_changed_at é a base do rot_days · a oportunidade NÃO congela preço: quem congela é quote'),
+('crm_lost_reasons', 'crm', 'tenant', 'motivo de perda catalogado — vira análise, não texto livre',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('name', S, ''), ('active', B, '')], ''),
 # ---------- venda ----------
 ('sale_categories', 'venda', 'tenant',
  'categoria da venda — decide se gera financeiro (legado: MOSTRAS/DOAÇÃO não geram)',
@@ -176,6 +210,17 @@ TABELAS = [
 ('goods_receipt_items', 'compra', 'tenant', 'item recebido — cada linha vira um stock_movement de entrada',
  [('tenant_id', U, 'k'), ('id', U, 'k'), ('receipt_id', U, ''), ('variant_id', U, ''),
   ('qty', QTY, ''), ('unit_cost_cents', BIG, 'n')], ''),
+# ---------- tarefas (enxerto — NÃO é tabela do CRM) ----------
+('activities', 'tarefas', 'tenant',
+ 'atividade agendada sobre QUALQUER entidade — oportunidade, orçamento, pedido, parceiro',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('entity_type', S, ''), ('entity_id', U, ''),
+  ('kind', S, ''), ('title', S, ''), ('due_date', D, 'n'), ('assignee_employee_id', U, 'n'),
+  ('done_at', TS, 'n'), ('notes', TXT, 'n')],
+ 'POLIMÓRFICA (entity_type + entity_id): por isso não há FK para o alvo — o preço de servir '
+ '4 entidades com uma tabela só. entity_type entra em CHECK e no índice '
+ '(tenant_id, entity_type, entity_id). Fica FORA do CRM de propósito: dentro dele duplicaria '
+ 'quando orçamento e parceiro precisassem do mesmo. Histórico do registro NÃO vem aqui — '
+ 'é Auditoria + Notificações'),
 ]
 
 # relações (origem.coluna → destino.coluna). FK de tabela tenant para tabela tenant é
@@ -185,6 +230,7 @@ RELS = [
  ('employee_tenants', 'employee_id', 'employees', 'id'),
  ('partner_tenant_links', 'tenant_id', 'tenants', 'id'),
  ('partner_tenant_links', 'partner_id', 'partners', 'id'),
+ ('partners', 'parent_id', 'partners', 'id'),
  ('construction_sites', 'customer_id', 'partners', 'id'),
  ('products', 'group_id', 'product_groups', 'id'),
  ('product_variants', 'product_id', 'products', 'id'),
@@ -198,6 +244,13 @@ RELS = [
  ('variant_supplier_prices', 'supplier_id', 'partners', 'id'),
  ('variant_tenant_settings', 'variant_id', 'product_variants', 'id'),
  ('variant_tenant_settings', 'tenant_id', 'tenants', 'id'),
+ ('crm_stages', 'pipeline_id', 'crm_pipelines', 'id'),
+ ('crm_opportunities', 'pipeline_id', 'crm_pipelines', 'id'),
+ ('crm_opportunities', 'stage_id', 'crm_stages', 'id'),
+ ('crm_opportunities', 'partner_id', 'partners', 'id'),
+ ('crm_opportunities', 'owner_employee_id', 'employees', 'id'),
+ ('crm_opportunities', 'lost_reason_id', 'crm_lost_reasons', 'id'),
+ ('crm_opportunities', 'quote_id', 'quotes', 'id'),
  ('quotes', 'customer_id', 'partners', 'id'),
  ('quotes', 'site_id', 'construction_sites', 'id'),
  ('quotes', 'category_id', 'sale_categories', 'id'),
@@ -230,7 +283,16 @@ RELS = [
  ('goods_receipts', 'supplier_id', 'partners', 'id'),
  ('goods_receipt_items', 'receipt_id', 'goods_receipts', 'id'),
  ('goods_receipt_items', 'variant_id', 'product_variants', 'id'),
+ ('activities', 'assignee_employee_id', 'employees', 'id'),
 ]
+
+# índices UNIQUE além da PK — existem para servir de ALVO a FK composta.
+# (tenant_id, pipeline_id, id) é o que deixa crm_opportunities amarrar estágio E funil na
+# mesma FK: sem ele o Postgres recusa a referência, e sem a referência o banco aceitaria
+# estágio de outro funil.
+UNIQUES = {
+ 'crm_stages': [('tenant_id', 'pipeline_id', 'id')],
+}
 
 nomes = {t[0] for t in TABELAS}
 for o, co, d, cd in RELS:
@@ -269,9 +331,14 @@ def escreve_dbml(arquivo, titulo, filtro=None):
             if 'n' not in f and 'k' not in f:
                 attrs.append('not null')
             L.append('  %s %s%s' % (c, t, (' [%s]' % ', '.join(attrs)) if attrs else ''))
+        idx = []
         if len(chaves) > 1:
+            idx.append('    (%s) [pk]' % ', '.join(chaves))
+        for cols in UNIQUES.get(nome, []):
+            idx.append('    (%s) [unique]' % ', '.join(cols))
+        if idx:
             L.append('  indexes {')
-            L.append('    (%s) [pk]' % ', '.join(chaves))
+            L.extend(idx)
             L.append('  }')
         obs = '%s · %s · %s' % (escopo.upper(), mod, doc)
         if nota:
@@ -292,7 +359,8 @@ escreve_dbml('cabinet-schema-minimo.dbml',
              'Cabinet — MÍNIMO para começar (o básico que não gera retrabalho)', set(MINIMO))
 
 # ---------------------------------------------------------------- canvas (mesmo motor)
-MODS = ['nucleo', 'parceiros', 'catalogo', 'preco', 'venda', 'estoque', 'compra']
+MODS = ['nucleo', 'parceiros', 'catalogo', 'preco', 'crm', 'venda', 'estoque', 'compra',
+        'tarefas']
 T = {}
 for nome, mod, escopo, doc, colunas, nota in TABELAS:
     T[nome] = {'n': 0, 'dom': mod, 'esc': escopo, 'doc': doc + ((' — ' + nota) if nota else ''),
@@ -302,6 +370,8 @@ R = [[o, co, d, cd, 0] for o, co, d, cd in RELS]
 P = collections_ordered = {}
 P['mínimo pra começar'] = MINIMO
 P['tudo'] = [t[0] for t in TABELAS]
+P['funil de venda'] = ['crm_pipelines', 'crm_stages', 'crm_opportunities', 'crm_lost_reasons',
+                       'partners', 'employees', 'activities', 'quotes']
 P['caminho do orçamento'] = ['partners', 'construction_sites', 'products', 'product_variants',
                              'sale_categories', 'quotes', 'quote_environments', 'quote_items',
                              'quote_salespeople', 'quote_professionals', 'sales_orders',
@@ -322,8 +392,10 @@ TPL = canvas_src[ini:fim]
 
 TPL = TPL.replace('Softlux — diagrama ER', 'Cabinet — mapeamento de tabelas')
 TPL = TPL.replace("const COR = {cadastro:'#7A5CB8',produto:'#B7791F',venda:'#C2410C',compra:'#0060B0',\n             estoque:'#2E7D32',financeiro:'#B0306B',fiscal:'#8A6D3B',sistema:'#8B8377',outros:'#5A544B'};",
-                  "const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',\n             venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',outros:'#8B8377'};")
-TPL = TPL.replace("'softlux-canvas.v2:'", "'cabinet-canvas.v2:'")
+                  "const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',\n             crm:'#B0306B',venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',\n             tarefas:'#6C7A1E',outros:'#8B8377'};")
+# chave versionada: layout salvo é por preset, e preset novo com chave velha carregaria
+# posição antiga e ESCONDERIA o módulo novo — foi o que aconteceu na virada .v1 → .v2
+TPL = TPL.replace("'softlux-canvas.v2:'", "'cabinet-canvas.v3:'")
 TPL = TPL.replace("presetAtual = 'núcleo do negócio'", "presetAtual = 'mínimo pra começar'")
 TPL = TPL.replace('<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2"/></svg> declarada</span>\n<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2" stroke-dasharray="5 4"/></svg> inferida</span>\n<span>◆ chave · azul = liga (clique traz a vizinha)</span>',
                   '<span>◆ chave · azul traz a vizinha · FK de empresa é composta (tenant_id)</span>')

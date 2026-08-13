@@ -102,6 +102,37 @@ TABELAS = [
  'o que é DA EMPRESA na variante: preço de venda vigente e estoque mínimo (core: preço/estoque = tenant)',
  [('tenant_id', U, 'k'), ('variant_id', U, 'k'), ('sale_price_cents', BIG, 'n'),
   ('min_stock', QTY, 'n'), ('active', B, '')], ''),
+# ---------- crm (13º módulo — funil A MONTANTE do orçamento) ----------
+# Conceito do Odoo Community (LGPL: conceito sim, código não): lead e oportunidade no MESMO
+# registro, estágio é DADO (probabilidade/ganho/perda/apodrecimento), motivo de perda catalogado.
+# Atividade e histórico NÃO moram aqui — activities (módulo tarefas) e Auditoria/Notificações.
+('crm_pipelines', 'crm', 'tenant',
+ 'funil — são VÁRIOS por empresa (a Vertz tem modelos de venda distintos)',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('name', S, ''), ('sort', I, ''),
+  ('is_default', B, ''), ('active', B, '')],
+ 'is_default escolhe o funil da oportunidade criada sem escolha explícita'),
+('crm_stages', 'crm', 'tenant',
+ 'estágio DE UM funil — estágio é dado, não rótulo',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('pipeline_id', U, ''), ('name', S, ''),
+  ('sort', I, ''), ('probability', PCT, ''), ('is_won', B, ''), ('is_lost', B, ''),
+  ('rot_days', I, 'n')],
+ 'UNIQUE (tenant_id, pipeline_id, id) serve de alvo à FK composta da oportunidade; '
+ 'is_won/is_lost são POR FUNIL; probabilidade só compara dentro do mesmo funil; '
+ 'rot_days = card apodrece parado além do limite'),
+('crm_opportunities', 'crm', 'tenant',
+ 'lead E oportunidade no MESMO registro — conversão é mudança de estágio, não cadastro novo',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('name', S, ''), ('pipeline_id', U, ''),
+  ('stage_id', U, ''), ('partner_id', U, 'n'), ('contact_name', S, 'n'),
+  ('contact_email', S, 'n'), ('contact_phone', S, 'n'), ('owner_employee_id', U, 'n'),
+  ('expected_value_cents', BIG, 'n'), ('expected_close_date', D, 'n'), ('source', S, 'n'),
+  ('stage_changed_at', TS, ''), ('lost_reason_id', U, 'n'), ('quote_id', U, 'n'),
+  ('closed_at', TS, 'n')],
+ 'FK COMPOSTA (tenant_id, pipeline_id, stage_id) → crm_stages: o banco recusa estágio de outro '
+ 'funil, e mover de funil RESETA para o 1º estágio do destino (trilha em Auditoria) · '
+ 'partner_id nullable = lead ainda sem cadastro, contato solto em contact_* · '
+ 'stage_changed_at é a base do rot_days · a oportunidade NÃO congela preço: quem congela é quote'),
+('crm_lost_reasons', 'crm', 'tenant', 'motivo de perda catalogado — vira análise, não texto livre',
+ [('tenant_id', U, 'k'), ('id', U, 'k'), ('name', S, ''), ('active', B, '')], ''),
 # ---------- venda ----------
 ('sale_categories', 'venda', 'tenant',
  'categoria da venda — decide se gera financeiro (legado: MOSTRAS/DOAÇÃO não geram)',
@@ -198,6 +229,13 @@ RELS = [
  ('variant_supplier_prices', 'supplier_id', 'partners', 'id'),
  ('variant_tenant_settings', 'variant_id', 'product_variants', 'id'),
  ('variant_tenant_settings', 'tenant_id', 'tenants', 'id'),
+ ('crm_stages', 'pipeline_id', 'crm_pipelines', 'id'),
+ ('crm_opportunities', 'pipeline_id', 'crm_pipelines', 'id'),
+ ('crm_opportunities', 'stage_id', 'crm_stages', 'id'),
+ ('crm_opportunities', 'partner_id', 'partners', 'id'),
+ ('crm_opportunities', 'owner_employee_id', 'employees', 'id'),
+ ('crm_opportunities', 'lost_reason_id', 'crm_lost_reasons', 'id'),
+ ('crm_opportunities', 'quote_id', 'quotes', 'id'),
  ('quotes', 'customer_id', 'partners', 'id'),
  ('quotes', 'site_id', 'construction_sites', 'id'),
  ('quotes', 'category_id', 'sale_categories', 'id'),
@@ -231,6 +269,14 @@ RELS = [
  ('goods_receipt_items', 'receipt_id', 'goods_receipts', 'id'),
  ('goods_receipt_items', 'variant_id', 'product_variants', 'id'),
 ]
+
+# índices UNIQUE além da PK — existem para servir de ALVO a FK composta.
+# (tenant_id, pipeline_id, id) é o que deixa crm_opportunities amarrar estágio E funil na
+# mesma FK: sem ele o Postgres recusa a referência, e sem a referência o banco aceitaria
+# estágio de outro funil.
+UNIQUES = {
+ 'crm_stages': [('tenant_id', 'pipeline_id', 'id')],
+}
 
 nomes = {t[0] for t in TABELAS}
 for o, co, d, cd in RELS:
@@ -269,9 +315,14 @@ def escreve_dbml(arquivo, titulo, filtro=None):
             if 'n' not in f and 'k' not in f:
                 attrs.append('not null')
             L.append('  %s %s%s' % (c, t, (' [%s]' % ', '.join(attrs)) if attrs else ''))
+        idx = []
         if len(chaves) > 1:
+            idx.append('    (%s) [pk]' % ', '.join(chaves))
+        for cols in UNIQUES.get(nome, []):
+            idx.append('    (%s) [unique]' % ', '.join(cols))
+        if idx:
             L.append('  indexes {')
-            L.append('    (%s) [pk]' % ', '.join(chaves))
+            L.extend(idx)
             L.append('  }')
         obs = '%s · %s · %s' % (escopo.upper(), mod, doc)
         if nota:

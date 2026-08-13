@@ -41,16 +41,20 @@ export function BandaDeIdentidade({
         className,
       )}
     >
-      {/* Headline caps: o degrau mais alto da rampa, um por tela — e desde
+      {/* Headline: o degrau mais alto da rampa, um por tela — e desde
           2026-08-13 na voz de QUEM (Newsreader, pelo seletor `h1` do
           `index.css`), porque título de tela responde "quem é esta tela" no
           mesmo grupo do nome próprio de entidade.
+          **Sem CAIXA ALTA** (decisão do user, 2026-08-13): serifada não leva
+          caixa alta. Maiúscula só na inicial — o título já chega escrito assim
+          ("Cadastro de Fornecedores"), então quem capitaliza é o texto, não o
+          CSS. A caixa alta era da época em que o título falava em Sora, onde
+          ela dava força sem custo; numa serifada de alto contraste ela vira
+          letreiro e fecha o vão entre serifas vizinhas.
           Peso 700 e não 800: o Newsreader entra com dois pesos só (400/700), e
           `font-extrabold` sem arquivo de 800 vira negrito SINTÉTICO — o browser
-          engorda o traço por conta, e numa serifada de alto contraste isso fecha
-          as hastes finas. Tracking deixa de ser negativo pelo mesmo motivo: em
-          caixa alta serifada, -0.02em encosta a serifa de uma letra na vizinha. */}
-      <h1 className="font-bold text-2xl uppercase tracking-[0.005em]">{titulo}</h1>
+          engorda o traço por conta e fecha as hastes finas. */}
+      <h1 className="font-bold text-2xl">{titulo}</h1>
       {contexto ? (
         <span className="font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em] text-text-strong">
           {contexto}

@@ -146,7 +146,11 @@ function SheetTitle({ className, ...props }: Omit<React.ComponentProps<typeof He
     <Heading
       slot="title"
       data-slot="sheet-title"
-      className={cn('text-base font-extrabold tracking-tight text-foreground uppercase', className)}
+      // Serifada não leva caixa alta (decisão do user, 2026-08-13): o título fala
+      // na voz de QUEM desde a troca de tipografia, e caixa alta em Newsreader
+      // vira letreiro. Maiúscula só na inicial, como o texto vem escrito. Peso
+      // 700 porque não há arquivo de 800 — 800 aqui seria negrito sintético.
+      className={cn('text-base font-bold text-foreground', className)}
       {...props}
     />
   )

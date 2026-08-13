@@ -129,7 +129,8 @@ function DialogTitle({ className, ...props }: Omit<React.ComponentProps<typeof H
     <Heading
       slot="title"
       data-slot="dialog-title"
-      className={cn('text-base leading-none font-extrabold tracking-tight uppercase', className)}
+      // Sem caixa alta e em 700: ver a nota do `SheetTitle`.
+      className={cn('text-base leading-none font-bold', className)}
       {...props}
     />
   )

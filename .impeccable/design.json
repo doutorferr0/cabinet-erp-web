@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T00:00:00.000Z",
+  "generatedAt": "2026-08-13T16:12:37.000Z",
   "title": "Design System: Cabinet — identidade própria (2026-08-13)",
   "extensions": {
     "colorMeta": {
@@ -626,6 +626,22 @@
   },
   "components": [
     {
+      "name": "Marca",
+      "kind": "custom",
+      "refersTo": "marca",
+      "description": "O símbolo e o nome do Cabinet, desenho do user. Fora do <Ornamento>: linha sem preenchimento, cor de currentColor, nunca tom de módulo. Dois pesos por LEGIBILIDADE MEDIDA — com moldura e 3 níveis a partir de 64px, compacto de 2 níveis abaixo disso (legível a 16px, é o favicon).",
+      "html": "<span class=\"ds-marca\" role=\"img\" aria-label=\"Cabinet\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"9\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M13.85 93.77 L13.85 37.97 L50 7.67 L87.50 37.97 L87.50 93.77 Z\"/><path d=\"M33.35 74.27 L33.35 47.08 L50 33.11 L68.00 47.08 L68.00 74.27 Z\"/></svg></span>",
+      "css": ".ds-marca{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;color:hsl(var(--foreground))}"
+    },
+    {
+      "name": "Nome de entidade",
+      "kind": "custom",
+      "refersTo": "nome",
+      "description": "A voz de QUEM aplicada por COMPONENTE, nunca por classe solta: nome de cliente, profissional, fornecedor e empresa. Entra +2px (0,15em) sobre o vizinho porque a altura-x do Newsreader é menor e no mesmo tamanho a hierarquia da linha inverte. Par obrigatório: o produto ao lado vai em Sora e em --muted-foreground, senão as três famílias empatam.",
+      "html": "<td class=\"ds-cel\"><span class=\"ds-nome\">Construtora Almeida Ltda</span></td><td class=\"ds-cel\"><span class=\"ds-produto\">Pendente Bordeaux</span></td>",
+      "css": ".ds-nome{font-family:Newsreader,serif;font-size:1.15em}.ds-produto{font-family:Sora,sans-serif;color:hsl(var(--muted-foreground))}"
+    },
+    {
       "name": "Botão Primário",
       "kind": "button",
       "refersTo": "button-primary",
@@ -661,9 +677,9 @@
       "name": "Banda de Identidade",
       "kind": "custom",
       "refersTo": "banda-identidade",
-      "description": "Onde a tela diz o próprio nome. Zona de identidade em caixa preta, com o ornamento do módulo à direita — traço preto + preenchimento na cor cheia do módulo (nunca mais mask-image).",
+      "description": "Onde a tela diz o próprio nome, na voz de QUEM (Newsreader 700 — 800 sem arquivo viraria negrito sintético). Zona de identidade em caixa preta, com o ornamento do módulo à direita — traço preto + preenchimento na cor cheia do módulo (nunca mais mask-image).",
       "html": "<div class=\"ds-banda\"><h1 class=\"ds-banda-titulo\">Cadastro de Fornecedores</h1><span class=\"ds-banda-ctx\">VERTZ ILUMINAÇÃO</span><svg class=\"ds-banda-orn\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"none\" stroke=\"hsl(var(--foreground))\" stroke-width=\"1.5\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/><path d=\"M2 2h20v14l-3 3-3-3-3 3-3-3-3 3-3-3z\" fill=\"currentColor\"/></svg></div>",
-      "css": ".ds-banda{display:flex;align-items:center;gap:14px;background:hsl(var(--zone-id));border:2px solid hsl(var(--border));padding:10px 14px}.ds-banda-titulo{margin:0;font:800 1.35rem/1.1 Sora,sans-serif;letter-spacing:-.02em;text-transform:uppercase}.ds-banda-ctx{font:700 .75rem/1 \"PT Mono\",monospace;letter-spacing:.07em;text-transform:uppercase;color:hsl(var(--shadow-3))}.ds-banda-orn{margin-left:auto;overflow:visible;color:hsl(var(--modulo-01))}"
+      "css": ".ds-banda{display:flex;align-items:center;gap:14px;background:hsl(var(--zone-id));border:2px solid hsl(var(--border));padding:10px 14px}.ds-banda-titulo{margin:0;font:700 1.35rem/1.1 Newsreader,serif;letter-spacing:.005em;text-transform:uppercase}.ds-banda-ctx{font:700 .75rem/1 \"PT Mono\",monospace;letter-spacing:.07em;text-transform:uppercase;color:hsl(var(--shadow-3))}.ds-banda-orn{margin-left:auto;overflow:visible;color:hsl(var(--modulo-01))}"
     },
     {
       "name": "Item de Navegação",

@@ -1,0 +1,233 @@
+// Cabinet — MÍNIMO para começar (o básico que não gera retrabalho)
+// Gerado por gera-cabinet-schema.py. Não editar à mão: regerar.
+// Convenções: dinheiro = centavos bigint · quantidade = numeric(14,3) ·
+//   toda tabela tem created_at/by, updated_at/by (omitidas aqui) ·
+//   tabela tenant-scoped: PK (tenant_id, id), FK COMPOSTA (tenant_id, fk) + RLS FORCE ·
+//   org-scoped: vive no schema Postgres da organização, sem tenant_id.
+
+Table tenants {
+  id uuid [pk]
+  name varchar [not null]
+  cnpj varchar(14) [not null]
+  active boolean [not null]
+  Note: 'ORG · nucleo · empresa (CNPJ) dentro da organização — o tenant do nível 2'
+}
+
+Table employees {
+  id uuid [pk]
+  name varchar [not null]
+  email varchar [not null]
+  password_hash varchar [not null]
+  must_change_password boolean [not null]
+  active boolean [not null]
+  Note: 'ORG · nucleo · identidade única na organização; papel é POR empresa'
+}
+
+Table employee_tenants {
+  tenant_id uuid
+  employee_id uuid
+  role varchar [not null]
+  active boolean [not null]
+  indexes {
+    (tenant_id, employee_id) [pk]
+  }
+  Note: 'TENANT · nucleo · vínculo N:N com papel por empresa (RBAC do core)'
+}
+
+Table document_sequences {
+  tenant_id uuid
+  kind varchar
+  series varchar(3)
+  next_number bigint [not null]
+  indexes {
+    (tenant_id, kind, series) [pk]
+  }
+  Note: 'TENANT · nucleo · numeração transacional por documento e série — mata o MAX+1 do legado — uso: UPDATE … SET next_number = next_number + 1 RETURNING'
+}
+
+Table partners {
+  id uuid [pk]
+  legal_name varchar [not null]
+  trade_name varchar
+  document varchar(14)
+  email varchar
+  is_customer boolean [not null]
+  is_supplier boolean [not null]
+  is_professional boolean [not null]
+  registration varchar
+  payout_bank_info jsonb
+  active boolean [not null]
+  Note: 'ORG · parceiros · cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional) — registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão'
+}
+
+Table partner_tenant_links {
+  tenant_id uuid
+  partner_id uuid
+  code varchar
+  payment_terms varchar
+  credit_limit_cents bigint
+  active boolean [not null]
+  indexes {
+    (tenant_id, partner_id) [pk]
+  }
+  Note: 'TENANT · parceiros · vínculo do parceiro com CADA empresa: código, condição de pagamento, ativo (contrato: PartnerLink)'
+}
+
+Table products {
+  id uuid [pk]
+  code varchar [not null]
+  special_code varchar
+  short_code varchar
+  description text [not null]
+  group_id uuid
+  unit_in varchar
+  unit_out varchar
+  unit_factor numeric(14,3)
+  specs jsonb
+  active boolean [not null]
+  Note: 'ORG · catalogo · mestre do produto — specs da vertical ficam em specs jsonb — 3 códigos do legado preservados; unidade entrada≠saída com fator'
+}
+
+Table product_variants {
+  id uuid [pk]
+  product_id uuid [not null]
+  finish_id uuid
+  size varchar
+  active boolean [not null]
+  Note: 'ORG · catalogo · variante = acabamento × tamanho — a unidade de preço, estoque e item de venda'
+}
+
+Table variant_tenant_settings {
+  tenant_id uuid
+  variant_id uuid
+  sale_price_cents bigint
+  min_stock numeric(14,3)
+  active boolean [not null]
+  indexes {
+    (tenant_id, variant_id) [pk]
+  }
+  Note: 'TENANT · preco · o que é DA EMPRESA na variante: preço de venda vigente e estoque mínimo (core: preço/estoque = tenant)'
+}
+
+Table quotes {
+  tenant_id uuid
+  id uuid
+  number bigint [not null]
+  series varchar(3)
+  status varchar [not null]
+  issued_at date
+  expires_at date
+  customer_id uuid [not null]
+  site_id uuid
+  project_name varchar
+  folder_number varchar
+  category_id uuid
+  discount_mode varchar [not null]
+  discount_percent numeric(7,4) [not null]
+  total_cents bigint [not null]
+  closed_at date
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · orçamento — o documento central do negócio (contrato: Quote) — number vem de document_sequences; status: draft|issued|accepted|expired|cancelled'
+}
+
+Table quote_environments {
+  tenant_id uuid
+  id uuid
+  quote_id uuid [not null]
+  code uuid [not null]
+  name varchar [not null]
+  sort int [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · ambiente da obra — agrupa e numera os itens no impresso'
+}
+
+Table quote_items {
+  tenant_id uuid
+  id uuid
+  quote_id uuid [not null]
+  line_number int [not null]
+  environment_id uuid
+  variant_id uuid
+  description text [not null]
+  finish varchar
+  size varchar
+  unit varchar
+  quantity numeric(14,3) [not null]
+  unit_price_cents bigint [not null]
+  discount_percent numeric(7,4) [not null]
+  supplier_id uuid
+  supplier_name varchar
+  supplier_code varchar
+  product_group varchar
+  piece_type varchar
+  total_cents bigint [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · venda · item com SNAPSHOT congelado na emissão (core: documento nunca referencia preço vivo) — variant_id nullable = produto fictício/pré-produto permitido, como no legado'
+}
+
+Table stock_locations {
+  tenant_id uuid
+  id uuid
+  name varchar [not null]
+  kind varchar
+  active boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · estoque · depósito/local — o legado tem 4; local é DIMENSÃO, não gambiarra'
+}
+
+Table stock_movements {
+  tenant_id uuid
+  id uuid
+  variant_id uuid [not null]
+  location_id uuid [not null]
+  delta numeric(14,3) [not null]
+  reason varchar [not null]
+  source_kind varchar
+  source_id uuid
+  balance_after numeric(14,3) [not null]
+  occurred_at timestamptz [not null]
+  employee_id uuid
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · estoque · kardex IMUTÁVEL — ADR-009: o saldo nasce do banco, nunca de valor absoluto vindo da aplicação — balance_after preenchido pelo banco na MESMA transação; duas baixas simultâneas não se perdem'
+}
+
+Table stock_balances {
+  tenant_id uuid
+  variant_id uuid
+  location_id uuid
+  qty numeric(14,3) [not null]
+  indexes {
+    (tenant_id, variant_id, location_id) [pk]
+  }
+  Note: 'TENANT · estoque · saldo corrente por variante × local — mantido por trigger do kardex'
+}
+
+// relações — FK entre tabelas tenant-scoped é COMPOSTA (tenant_id, coluna)
+Ref: employee_tenants.tenant_id > tenants.id
+Ref: employee_tenants.employee_id > employees.id
+Ref: partner_tenant_links.tenant_id > tenants.id
+Ref: partner_tenant_links.partner_id > partners.id
+Ref: product_variants.product_id > products.id
+Ref: variant_tenant_settings.variant_id > product_variants.id
+Ref: variant_tenant_settings.tenant_id > tenants.id
+Ref: quotes.customer_id > partners.id
+Ref: quote_environments.quote_id > quotes.id
+Ref: quote_items.quote_id > quotes.id
+Ref: quote_items.environment_id > quote_environments.id
+Ref: quote_items.variant_id > product_variants.id
+Ref: quote_items.supplier_id > partners.id
+Ref: stock_movements.variant_id > product_variants.id
+Ref: stock_movements.location_id > stock_locations.id
+Ref: stock_movements.employee_id > employees.id
+Ref: stock_balances.variant_id > product_variants.id
+Ref: stock_balances.location_id > stock_locations.id

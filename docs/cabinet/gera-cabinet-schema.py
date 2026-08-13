@@ -236,41 +236,60 @@ nomes = {t[0] for t in TABELAS}
 for o, co, d, cd in RELS:
     assert o in nomes and d in nomes, (o, d)
 
+# ---------- recorte MÍNIMO — o básico do básico para começar a construir ----------
+# Menor conjunto que ainda respeita o contrato e a arquitetura: multi-tenant com PK
+# composta, kardex, numeração transacional e snapshot no item. Fora: compra, comissão,
+# preço de fornecedor, categorias, obras. Vendedor/profissional = colunas diretas do
+# orçamento nesta fase (o contrato v1 usa salespersonId/professionalId singulares).
+MINIMO = ['tenants', 'employees', 'employee_tenants', 'document_sequences',
+          'partners', 'partner_tenant_links',
+          'products', 'product_variants', 'variant_tenant_settings',
+          'quotes', 'quote_environments', 'quote_items',
+          'stock_locations', 'stock_movements', 'stock_balances']
+
 # ---------------------------------------------------------------- DBML
-L = ['// Cabinet — schema novo (escopo inicial + esqueleto de compra)',
-     '// Gerado por gera-cabinet-schema.py. Não editar à mão: regerar.',
-     '// Convenções: dinheiro = centavos bigint · quantidade = numeric(14,3) ·',
-     '//   toda tabela tem created_at/by, updated_at/by (omitidas aqui) ·',
-     '//   tabela tenant-scoped: PK (tenant_id, id), FK COMPOSTA (tenant_id, fk) + RLS FORCE ·',
-     '//   org-scoped: vive no schema Postgres da organização, sem tenant_id.',
-     '']
-for nome, mod, escopo, doc, colunas, nota in TABELAS:
-    L.append('Table %s {' % nome)
-    chaves = [c for c, _t, f in colunas if 'k' in f]
-    for c, t, f in colunas:
-        attrs = []
-        if len(chaves) == 1 and 'k' in f:
-            attrs.append('pk')
-        if 'n' not in f and 'k' not in f:
-            attrs.append('not null')
-        L.append('  %s %s%s' % (c, t, (' [%s]' % ', '.join(attrs)) if attrs else ''))
-    if len(chaves) > 1:
-        L.append('  indexes {')
-        L.append('    (%s) [pk]' % ', '.join(chaves))
-        L.append('  }')
-    obs = '%s · %s · %s' % (escopo.upper(), mod, doc)
-    if nota:
-        obs += ' — ' + nota
-    L.append("  Note: '%s'" % obs.replace("'", "\\'"))
-    L.append('}')
-    L.append('')
-L.append('// relações — FK entre tabelas tenant-scoped é COMPOSTA (tenant_id, coluna)')
-for o, co, d, cd in RELS:
-    L.append('Ref: %s.%s > %s.%s' % (o, co, d, cd))
-p = os.path.join(HERE, 'cabinet-schema.dbml')
-open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
-print('cabinet-schema.dbml     %d tabelas · %d relações · %d KB'
-      % (len(TABELAS), len(RELS), os.path.getsize(p) / 1024))
+def escreve_dbml(arquivo, titulo, filtro=None):
+    ts = [t for t in TABELAS if filtro is None or t[0] in filtro]
+    ativos = {t[0] for t in ts}
+    rels = [r for r in RELS if r[0] in ativos and r[2] in ativos]
+    L = ['// %s' % titulo,
+         '// Gerado por gera-cabinet-schema.py. Não editar à mão: regerar.',
+         '// Convenções: dinheiro = centavos bigint · quantidade = numeric(14,3) ·',
+         '//   toda tabela tem created_at/by, updated_at/by (omitidas aqui) ·',
+         '//   tabela tenant-scoped: PK (tenant_id, id), FK COMPOSTA (tenant_id, fk) + RLS FORCE ·',
+         '//   org-scoped: vive no schema Postgres da organização, sem tenant_id.',
+         '']
+    for nome, mod, escopo, doc, colunas, nota in ts:
+        L.append('Table %s {' % nome)
+        chaves = [c for c, _t, f in colunas if 'k' in f]
+        for c, t, f in colunas:
+            attrs = []
+            if len(chaves) == 1 and 'k' in f:
+                attrs.append('pk')
+            if 'n' not in f and 'k' not in f:
+                attrs.append('not null')
+            L.append('  %s %s%s' % (c, t, (' [%s]' % ', '.join(attrs)) if attrs else ''))
+        if len(chaves) > 1:
+            L.append('  indexes {')
+            L.append('    (%s) [pk]' % ', '.join(chaves))
+            L.append('  }')
+        obs = '%s · %s · %s' % (escopo.upper(), mod, doc)
+        if nota:
+            obs += ' — ' + nota
+        L.append("  Note: '%s'" % obs.replace("'", "\\'"))
+        L.append('}')
+        L.append('')
+    L.append('// relações — FK entre tabelas tenant-scoped é COMPOSTA (tenant_id, coluna)')
+    for o, co, d, cd in rels:
+        L.append('Ref: %s.%s > %s.%s' % (o, co, d, cd))
+    p = os.path.join(HERE, arquivo)
+    open(p, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
+    print('%-28s %2d tabelas · %2d relações · %d KB'
+          % (arquivo, len(ts), len(rels), os.path.getsize(p) / 1024))
+
+escreve_dbml('cabinet-schema.dbml', 'Cabinet — schema novo (escopo inicial + esqueleto de compra)')
+escreve_dbml('cabinet-schema-minimo.dbml',
+             'Cabinet — MÍNIMO para começar (o básico que não gera retrabalho)', set(MINIMO))
 
 # ---------------------------------------------------------------- canvas (mesmo motor)
 MODS = ['nucleo', 'parceiros', 'catalogo', 'preco', 'venda', 'estoque', 'compra']
@@ -281,6 +300,7 @@ for nome, mod, escopo, doc, colunas, nota in TABELAS:
                'c': [[c, t] for c, t, _f in colunas]}
 R = [[o, co, d, cd, 0] for o, co, d, cd in RELS]
 P = collections_ordered = {}
+P['mínimo pra começar'] = MINIMO
 P['tudo'] = [t[0] for t in TABELAS]
 P['caminho do orçamento'] = ['partners', 'construction_sites', 'products', 'product_variants',
                              'sale_categories', 'quotes', 'quote_environments', 'quote_items',
@@ -304,7 +324,7 @@ TPL = TPL.replace('Softlux — diagrama ER', 'Cabinet — mapeamento de tabelas'
 TPL = TPL.replace("const COR = {cadastro:'#7A5CB8',produto:'#B7791F',venda:'#C2410C',compra:'#0060B0',\n             estoque:'#2E7D32',financeiro:'#B0306B',fiscal:'#8A6D3B',sistema:'#8B8377',outros:'#5A544B'};",
                   "const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',\n             venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',outros:'#8B8377'};")
 TPL = TPL.replace("'softlux-canvas:'", "'cabinet-canvas:'")
-TPL = TPL.replace("presetAtual = 'núcleo do negócio'", "presetAtual = 'caminho do orçamento'")
+TPL = TPL.replace("presetAtual = 'núcleo do negócio'", "presetAtual = 'mínimo pra começar'")
 TPL = TPL.replace('<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2"/></svg> declarada</span>\n<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2" stroke-dasharray="5 4"/></svg> inferida</span>\n<span>◆ chave · azul = liga (clique traz a vizinha)</span>',
                   '<span>◆ chave · azul traz a vizinha · FK de empresa é composta (tenant_id)</span>')
 TPL = TPL.replace("(r[4]?'  (inferida — conferir)':'  (declarada)')", "''")

@@ -89,6 +89,31 @@ com id inventado e responderia "não encontrado" para registro que existe.
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
 
+### Produto — o que a extração devolveu (2026-08-13)
+
+`ProductDto`, `ProductDetailDto` e `ProductWriteRequest` cresceram de 4 para 9
+campos com o que a engenharia reversa confirmou: `specialCode`, `shortCode` e o
+par `unitIn`/`unitInQty` × `unitOut`/`unitOutQty`. Todos `Proposto`.
+
+**Três códigos, e continuam três.** O legado guarda `Nosso Código`, `Código
+Especial` e `Código Reduzido` por produto, e a operação usa os três — unificar em
+um só quebraria a busca do operador que decorou o outro.
+
+**Quatro campos de unidade, não dois.** Entrada e saída podem ter unidades
+DIFERENTES: comprar em caixa de 12 e vender em peça é rotina do ramo. O front
+manda os quatro que a tela §6 tem; o fator de conversão é derivado pelo servidor
+(a modelagem guarda `unit_factor`), e a tela não o calcula — inventar a conta
+aqui seria regra de negócio no cliente.
+
+**Quantidade viaja como string decimal**, pela mesma razão do dinheiro em
+centavos: quantidade tem 3 casas e float perde centésimo.
+
+A LISTAGEM não muda: as quatro colunas que a §6 registra e o DTO não tem são
+`Marca`, `Fábrica`, `Tipo de Produto` e `Valor de Tabela` — nenhuma delas é o que
+entrou agora. E o `Excluir` da listagem monta o `PUT` a partir da linha, então os
+seis campos novos vão junto: sem isso, desativar apagaria código e unidade do
+cadastro inteiro.
+
 **Caminho no contrato, tela ainda mock:** orçamento e colaborador. Os caminhos
 existem (ver abaixo), o cliente gerado existe, mas `src/data/` ainda não os
 consome — a troca é a rodada seguinte, e mexe em `src/data/`, não na tela.

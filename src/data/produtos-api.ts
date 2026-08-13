@@ -113,6 +113,17 @@ export function produtoDoContrato(dto: ProductDetailDto): Produto {
     nossoCodigo: dto.code,
     nossaDescricao: dto.description,
     ativo: dto.active,
+    // Os TRÊS códigos do legado, que a extração confirmou (2026-08-13): a
+    // operação usa os três, e quem decorou o reduzido não acha o produto pelo
+    // nosso.
+    codigoEspecial: dto.specialCode ?? '',
+    codigoReduzido: dto.shortCode ?? '',
+    // Entrada e saída podem ter unidades DIFERENTES — comprar em caixa e vender
+    // em peça é rotina do ramo. Por isso são quatro campos e não dois.
+    unidadeEntradaUnidade: dto.unitIn ?? null,
+    unidadeEntradaQuantidade: dto.unitInQty ?? '',
+    unidadeSaidaUnidade: dto.unitOut ?? null,
+    unidadeSaidaQuantidade: dto.unitOutQty ?? '',
     variantes: dto.variants.map(varianteDoContrato),
   }
 }
@@ -154,6 +165,13 @@ export interface CamposGravaveis {
   nossoCodigo: string
   nossaDescricao: string
   ativo: boolean
+  /** Os outros dois códigos do legado — ver `produtoDoContrato`. */
+  codigoEspecial: string
+  codigoReduzido: string
+  unidadeEntradaUnidade: string | null
+  unidadeEntradaQuantidade: string
+  unidadeSaidaUnidade: string | null
+  unidadeSaidaQuantidade: string
 }
 
 /**
@@ -170,6 +188,12 @@ export function produtoParaContrato(values: CamposGravaveis): ProductWriteReques
     code: values.nossoCodigo,
     description: values.nossaDescricao,
     active: values.ativo,
+    specialCode: values.codigoEspecial,
+    shortCode: values.codigoReduzido,
+    unitIn: values.unidadeEntradaUnidade,
+    unitInQty: values.unidadeEntradaQuantidade,
+    unitOut: values.unidadeSaidaUnidade,
+    unitOutQty: values.unidadeSaidaQuantidade,
   }
 }
 
@@ -191,6 +215,16 @@ export function corpoDeDesativacao(linha: ProductDto): ProductWriteRequest {
     nossoCodigo: linha.code,
     nossaDescricao: linha.description,
     ativo: false,
+    // A LINHA da listagem traz os seis, mesmo sem coluna para eles — é por isso
+    // que o comentário acima insiste que o corpo saia de uma porta só. Um
+    // `Excluir` que os mandasse nulos apagaria código e unidade do cadastro
+    // inteiro para desativá-lo.
+    codigoEspecial: linha.specialCode ?? '',
+    codigoReduzido: linha.shortCode ?? '',
+    unidadeEntradaUnidade: linha.unitIn ?? null,
+    unidadeEntradaQuantidade: linha.unitInQty ?? '',
+    unidadeSaidaUnidade: linha.unitOut ?? null,
+    unidadeSaidaQuantidade: linha.unitOutQty ?? '',
   })
 }
 

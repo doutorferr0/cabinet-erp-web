@@ -104,6 +104,36 @@ export interface ProductDto {
   code: string;
   description: string;
   active: boolean;
+  /**
+     * Proposto. `Código Especial` (§6). Um dos TRÊS códigos que o legado guarda por produto, e os três continuam porque a operação usa os três: o nosso, o especial e o reduzido. Unificar em um só quebraria busca de operador que decorou o outro.
+     * @nullable
+     */
+  specialCode?: string | null;
+  /**
+     * Proposto. `Código Reduzido` (§6) — o código curto que o vendedor digita no balcão.
+     * @nullable
+     */
+  shortCode?: string | null;
+  /**
+     * Proposto. `Unid. Entrada` (§6): a unidade em que o produto é COMPRADO. Nome da unidade, não id — é o mesmo texto do lookup `UNIDADE`, e o documento congela texto, não referência.
+     * @nullable
+     */
+  unitIn?: string | null;
+  /**
+     * Proposto. `Qtd. Entrada` (§6). String decimal e não número: quantidade tem 3 casas e float perde centésimo — a mesma regra que o dinheiro segue em centavos.
+     * @nullable
+     */
+  unitInQty?: string | null;
+  /**
+     * Proposto. `Unid. Saída` (§6): a unidade em que o produto é VENDIDO. Pode diferir da entrada — comprar em caixa e vender em peça é rotina do ramo.
+     * @nullable
+     */
+  unitOut?: string | null;
+  /**
+     * Proposto. `Qtd. Saída` (§6). O par entrada×saída é que dá o fator de conversão; o front manda os quatro campos que a tela tem, e quem deriva o fator é o servidor — a modelagem do banco guarda `unit_factor`, a tela não.
+     * @nullable
+     */
+  unitOutQty?: string | null;
 }
 
 export interface PagedResultOfProductDto {
@@ -197,6 +227,36 @@ export interface ProductDetailDto {
   code: string;
   description: string;
   active: boolean;
+  /**
+     * Proposto. `Código Especial` (§6) — ver `ProductDto`.
+     * @nullable
+     */
+  specialCode?: string | null;
+  /**
+     * Proposto. `Código Reduzido` (§6) — ver `ProductDto`.
+     * @nullable
+     */
+  shortCode?: string | null;
+  /**
+     * Proposto. `Unid. Entrada` (§6) — ver `ProductDto`.
+     * @nullable
+     */
+  unitIn?: string | null;
+  /**
+     * Proposto. `Qtd. Entrada` (§6), decimal em string.
+     * @nullable
+     */
+  unitInQty?: string | null;
+  /**
+     * Proposto. `Unid. Saída` (§6) — ver `ProductDto`.
+     * @nullable
+     */
+  unitOut?: string | null;
+  /**
+     * Proposto. `Qtd. Saída` (§6), decimal em string.
+     * @nullable
+     */
+  unitOutQty?: string | null;
   variants: ProductVariantDto[];
 }
 
@@ -207,6 +267,36 @@ export interface ProductWriteRequest {
   description: string | null;
   /** @nullable */
   active: boolean | null;
+  /**
+     * Proposto. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  specialCode?: string | null;
+  /**
+     * Proposto. Mesma regra do `PUT`.
+     * @nullable
+     */
+  shortCode?: string | null;
+  /**
+     * Proposto. Mesma regra do `PUT`.
+     * @nullable
+     */
+  unitIn?: string | null;
+  /**
+     * Proposto. Decimal em string, 3 casas.
+     * @nullable
+     */
+  unitInQty?: string | null;
+  /**
+     * Proposto. Mesma regra do `PUT`.
+     * @nullable
+     */
+  unitOut?: string | null;
+  /**
+     * Proposto. Decimal em string, 3 casas.
+     * @nullable
+     */
+  unitOutQty?: string | null;
 }
 
 export interface ReadinessStatus {

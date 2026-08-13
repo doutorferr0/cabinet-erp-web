@@ -2306,6 +2306,30 @@
           "active": {
             "type": "boolean"
           },
+          "specialCode": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Código Especial` (§6) — ver `ProductDto`."
+          },
+          "shortCode": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Código Reduzido` (§6) — ver `ProductDto`."
+          },
+          "unitIn": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Unid. Entrada` (§6) — ver `ProductDto`."
+          },
+          "unitInQty": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Qtd. Entrada` (§6), decimal em string."
+          },
+          "unitOut": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Unid. Saída` (§6) — ver `ProductDto`."
+          },
+          "unitOutQty": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Qtd. Saída` (§6), decimal em string."
+          },
           "variants": {
             "type": "array",
             "items": {
@@ -2330,6 +2354,30 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "specialCode": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Código Especial` (§6). Um dos TRÊS códigos que o legado guarda por produto, e os três continuam porque a operação usa os três: o nosso, o especial e o reduzido. Unificar em um só quebraria busca de operador que decorou o outro."
+          },
+          "shortCode": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Código Reduzido` (§6) — o código curto que o vendedor digita no balcão."
+          },
+          "unitIn": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Unid. Entrada` (§6): a unidade em que o produto é COMPRADO. Nome da unidade, não id — é o mesmo texto do lookup `UNIDADE`, e o documento congela texto, não referência."
+          },
+          "unitInQty": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Qtd. Entrada` (§6). String decimal e não número: quantidade tem 3 casas e float perde centésimo — a mesma regra que o dinheiro segue em centavos."
+          },
+          "unitOut": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Unid. Saída` (§6): a unidade em que o produto é VENDIDO. Pode diferir da entrada — comprar em caixa e vender em peça é rotina do ramo."
+          },
+          "unitOutQty": {
+            "type": ["null", "string"],
+            "description": "Proposto. `Qtd. Saída` (§6). O par entrada×saída é que dá o fator de conversão; o front manda os quatro campos que a tela tem, e quem deriva o fator é o servidor — a modelagem do banco guarda `unit_factor`, a tela não."
           }
         }
       },
@@ -2376,6 +2424,30 @@
           },
           "active": {
             "type": ["null", "boolean"]
+          },
+          "specialCode": {
+            "type": ["null", "string"],
+            "description": "Proposto. `PUT` substitui o registro inteiro: omitir apaga."
+          },
+          "shortCode": {
+            "type": ["null", "string"],
+            "description": "Proposto. Mesma regra do `PUT`."
+          },
+          "unitIn": {
+            "type": ["null", "string"],
+            "description": "Proposto. Mesma regra do `PUT`."
+          },
+          "unitInQty": {
+            "type": ["null", "string"],
+            "description": "Proposto. Decimal em string, 3 casas."
+          },
+          "unitOut": {
+            "type": ["null", "string"],
+            "description": "Proposto. Mesma regra do `PUT`."
+          },
+          "unitOutQty": {
+            "type": ["null", "string"],
+            "description": "Proposto. Decimal em string, 3 casas."
           }
         }
       },

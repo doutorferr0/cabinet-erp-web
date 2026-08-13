@@ -58,10 +58,12 @@ function ProdutoEditPage() {
 }
 
 /**
- * O contrato cobre 4 campos das 5 abas da §6 mais a grade de Valores. Sem este
- * aviso, aba em branco se lê como cadastro incompleto e campo sem destino se lê
- * como gravado — o operador preencheria o que o servidor não guarda. Sai quando
- * o DTO cobrir a tela (`docs/integracao.md`).
+ * O contrato cobre 9 campos das 5 abas da §6 mais a grade de Valores — eram 4
+ * até 2026-08-13, quando a engenharia reversa do legado confirmou os outros dois
+ * códigos e o par de unidades. Sem este aviso, aba em branco se lê como cadastro
+ * incompleto e campo sem destino se lê como gravado — o operador preencheria o
+ * que o servidor não guarda. Sai quando o DTO cobrir a tela
+ * (`docs/integracao.md`).
  *
  * Mudou com a escrita de variante: a grade **passou a viajar**, mas não inteira
  * (`Índice` e `Tipo de Valor` não existem no contrato) e sem exclusão — não há
@@ -71,11 +73,13 @@ function CoberturaDaTela() {
   return (
     <AvisoDeCobertura>
       <p>
-        O Gravar envia <strong>Nosso Código</strong>, <strong>Nossa Descrição</strong>,{' '}
-        <strong>Ativo</strong> e a grade de <strong>Valores</strong> (Acabamento, Tamanho, Valor de
-        Tabela, Est.Mínimo e o Ativo da linha). Os demais campos aparecem em branco e{' '}
-        <strong>Gravar não os envia</strong> — inclusive <strong>Índice</strong> e{' '}
-        <strong>Tipo de Valor</strong>, que a grade mostra e o contrato não tem.
+        O Gravar envia <strong>Nosso Código</strong>, <strong>Código Especial</strong>,{' '}
+        <strong>Código Reduzido</strong>, <strong>Nossa Descrição</strong>, o par de{' '}
+        <strong>Unidade e Quantidade de Entrada e Saída</strong>, <strong>Ativo</strong> e a grade
+        de <strong>Valores</strong> (Acabamento, Tamanho, Valor de Tabela, Est.Mínimo e o Ativo da
+        linha). Os demais campos aparecem em branco e <strong>Gravar não os envia</strong> —
+        inclusive <strong>Índice</strong> e <strong>Tipo de Valor</strong>, que a grade mostra e o
+        contrato não tem.
       </p>
       <p>
         <strong>Excluir linha</strong> tira a variante da tela, não do servidor: o contrato não tem

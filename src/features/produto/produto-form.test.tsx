@@ -157,6 +157,15 @@ describe('listagem de produtos', () => {
             code: '1201',
             description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
             active: false,
+            // Os seis que entraram no contrato em 2026-08-13 e que a LISTAGEM
+            // não mostra: voltam como vieram, senão desativar apagaria os
+            // códigos e as unidades do cadastro.
+            specialCode: '',
+            shortCode: '',
+            unitIn: null,
+            unitInQty: '',
+            unitOut: null,
+            unitOutQty: '',
           },
         },
       ])
@@ -299,7 +308,7 @@ describe('formulário de produto', () => {
     })
   })
 
-  it('grava mandando POST com os 3 campos e volta para a listagem', async () => {
+  it('grava mandando POST com os campos do contrato e volta para a listagem', async () => {
     const escrita = servidorComEscrita(() =>
       json({ id: ID, code: '9999', description: 'PENDENTE TESTE', active: true }, 201),
     )
@@ -318,7 +327,17 @@ describe('formulário de produto', () => {
       {
         metodo: 'POST',
         caminho: URL_PRODUTOS,
-        corpo: { code: '9999', description: 'PENDENTE TESTE', active: true },
+        corpo: {
+          code: '9999',
+          description: 'PENDENTE TESTE',
+          active: true,
+          specialCode: '',
+          shortCode: '',
+          unitIn: null,
+          unitInQty: '',
+          unitOut: null,
+          unitOutQty: '',
+        },
       },
     ])
   }, 15_000)

@@ -29,6 +29,15 @@ function detalhe(over: Record<string, unknown> = {}) {
     code: '1201',
     description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
     active: true,
+    // Entraram no contrato em 2026-08-13, da extração do legado. O produto do
+    // fixture COMPRA em caixa e VENDE em peça — é o caso que justifica quatro
+    // campos em vez de dois, e ele precisa estar no teste, não só na prosa.
+    specialCode: 'E1201',
+    shortCode: '101',
+    unitIn: 'CX',
+    unitInQty: '12',
+    unitOut: 'UN',
+    unitOutQty: '1',
     variants: [
       {
         id: '9c858901-8a57-4791-81fe-4c455b099bc9',
@@ -159,7 +168,7 @@ describe('registro em branco', () => {
 })
 
 describe('escrita de produto', () => {
-  it('corpo leva SÓ os 3 campos do contrato — sem id, tenantId nem variantes', () => {
+  it('corpo leva SÓ os campos do contrato — sem id, tenantId nem variantes', () => {
     const produto = produtoDoContrato(detalhe())
 
     const corpo = produtoParaContrato(produto)
@@ -170,6 +179,55 @@ describe('escrita de produto', () => {
       code: '1201',
       description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
       active: true,
+      specialCode: 'E1201',
+      shortCode: '101',
+      unitIn: 'CX',
+      unitInQty: '12',
+      unitOut: 'UN',
+      unitOutQty: '1',
+    })
+  })
+
+  // Entrada e saída são unidades DIFERENTES no fixture de propósito: comprar em
+  // caixa de 12 e vender em peça é rotina do ramo, e é o que obriga o contrato a
+  // ter quatro campos em vez de um par. O fator de conversão é derivado pelo
+  // servidor (a modelagem guarda `unit_factor`), a tela não o calcula.
+  it('leva o par entrada×saída inteiro, com unidades diferentes', () => {
+    const produto = produtoDoContrato(detalhe())
+
+    expect(produto.unidadeEntradaUnidade).toBe('CX')
+    expect(produto.unidadeEntradaQuantidade).toBe('12')
+    expect(produto.unidadeSaidaUnidade).toBe('UN')
+    expect(produto.unidadeSaidaQuantidade).toBe('1')
+  })
+
+  // Mesma armadilha que o parceiro tem: o `Excluir` da listagem é um `PUT`
+  // montado a partir da LINHA, e a listagem não mostra código especial, reduzido
+  // nem unidade. Sem passá-los, desativar um produto apagaria os seis.
+  it('desativar não apaga o que a listagem não mostra', () => {
+    const linha = {
+      id: ID,
+      code: '1201',
+      description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
+      active: true,
+      specialCode: 'E1201',
+      shortCode: '101',
+      unitIn: 'CX',
+      unitInQty: '12',
+      unitOut: 'UN',
+      unitOutQty: '1',
+    }
+
+    const corpo = corpoDeDesativacao(linha)
+
+    expect(corpo.active).toBe(false)
+    expect(corpo).toMatchObject({
+      specialCode: 'E1201',
+      shortCode: '101',
+      unitIn: 'CX',
+      unitInQty: '12',
+      unitOut: 'UN',
+      unitOutQty: '1',
     })
   })
 
@@ -189,6 +247,14 @@ describe('escrita de produto', () => {
       code: '1201',
       description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
       active: false,
+      // Linha sem os campos novos (servidor que ainda não os implementou):
+      // vazio, e não `undefined` — o corpo tem o mesmo shape sempre.
+      specialCode: '',
+      shortCode: '',
+      unitIn: null,
+      unitInQty: '',
+      unitOut: null,
+      unitOutQty: '',
     })
   })
 
@@ -202,7 +268,19 @@ describe('escrita de produto', () => {
 
     const chamada = servidor.em(URL_PRODUTOS)[0]
     expect(chamada?.metodo).toBe('POST')
-    expect(chamada?.corpo).toEqual({ code: '9999', description: 'X', active: true })
+    // Produto NOVO: o que a tela não preencheu vai vazio, não ausente. `PUT` e
+    // `POST` mandam o mesmo shape — quem some de um some do outro.
+    expect(chamada?.corpo).toEqual({
+      code: '9999',
+      description: 'X',
+      active: true,
+      specialCode: '',
+      shortCode: '',
+      unitIn: null,
+      unitInQty: '',
+      unitOut: null,
+      unitOutQty: '',
+    })
     expect(gravado.id).toBe(ID)
   })
 
@@ -223,6 +301,14 @@ describe('escrita de produto', () => {
       code: '1201',
       description: 'DESCRIÇÃO NOVA',
       active: true,
+      // Alterar a descrição não pode levar embora os códigos e as unidades que
+      // vieram do servidor: `PUT` substitui o registro inteiro.
+      specialCode: 'E1201',
+      shortCode: '101',
+      unitIn: 'CX',
+      unitInQty: '12',
+      unitOut: 'UN',
+      unitOutQty: '1',
     })
   })
 

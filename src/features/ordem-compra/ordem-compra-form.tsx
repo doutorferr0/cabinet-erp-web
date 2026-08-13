@@ -194,7 +194,7 @@ function GradeItens() {
       name="itens"
       columns={[
         { key: 'codigoProduto', label: 'Código do Produto' },
-        { key: 'descricaoProduto', label: 'Descrição do Produto' },
+        { key: 'descricaoProduto', label: 'Descrição do Produto', voz: 'produto' },
         { key: 'acabamento', label: 'Acab.' },
         { key: 'tamanho', label: 'Tamanho' },
         { key: 'quantidade', label: 'Quantidade' },

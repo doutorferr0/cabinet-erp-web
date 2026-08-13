@@ -267,3 +267,55 @@ describe('FormGrid — zona de dinheiro nos totais', () => {
     expect(celula.closest('tr')?.className).not.toContain('bg-zone-money')
   })
 })
+
+/**
+ * A VOZ da coluna. A célula editável é um `<input>`, e `<input>` não aceita
+ * filho — `<Nome>` e `<Produto>` não entram aqui. Sem a prop, a mesma
+ * descrição de produto que a listagem mostra em Sora aparecia em Inter dentro
+ * da grade do documento, e a regra semântica virava "vale onde é texto, não
+ * vale onde é campo".
+ */
+describe('FormGrid — voz da coluna', () => {
+  function HarnessDeVoz() {
+    const form = useForm({
+      defaultValues: { linhas: [{ produto: 'Pendente Bordeaux', quem: 'Vertz', neutro: 'x' }] },
+    })
+    return (
+      <Form {...form}>
+        <form>
+          <FormGrid
+            name="linhas"
+            columns={[
+              { key: 'produto', label: 'Descrição do Produto', voz: 'produto' },
+              { key: 'quem', label: 'Fornecedor', voz: 'nome' },
+              { key: 'neutro', label: 'Tamanho' },
+            ]}
+            newRow={{ produto: '', quem: '', neutro: '' }}
+          />
+        </form>
+      </Form>
+    )
+  }
+
+  it('produto fala em Sora, nome em serifada, e o resto continua em UI', () => {
+    render(<HarnessDeVoz />)
+
+    expect(screen.getByLabelText(/Descrição do Produto/).className).toContain('font-display')
+    expect(screen.getByLabelText(/Fornecedor/).className).toContain('font-nome')
+    // Sem `voz`, a célula é dado neutro: nenhuma das duas famílias entra.
+    const neutro = screen.getByLabelText(/Tamanho/).className
+    expect(neutro).not.toContain('font-display')
+    expect(neutro).not.toContain('font-nome')
+  })
+
+  it('o produto NÃO recua de cor na grade — aqui ele é o assunto da linha', () => {
+    // Na listagem o produto vai em `--muted-foreground` para não disputar com
+    // o nome do cliente. Dentro do documento não há com quem disputar.
+    render(<HarnessDeVoz />)
+
+    // Classe exata, não `toContain`: o `<Input>` já traz
+    // `placeholder:text-muted-foreground`, e a busca por substring casaria com ela.
+    const classes = screen.getByLabelText(/Descrição do Produto/).className.split(/\s+/)
+    expect(classes).not.toContain('text-muted-foreground')
+  })
+})

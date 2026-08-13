@@ -207,9 +207,9 @@ function AbaDadosPrincipais() {
             name="fornecedores"
             columns={[
               { key: 'padrao', label: 'Padrão', type: 'check' },
-              { key: 'fornecedor', label: 'Fornecedor' },
+              { key: 'fornecedor', label: 'Fornecedor', voz: 'nome' },
               { key: 'codProdFornecedor', label: 'Cód. Prod. Fornecedor' },
-              { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
+              { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor', voz: 'produto' },
             ]}
             newRow={{
               padrao: false,

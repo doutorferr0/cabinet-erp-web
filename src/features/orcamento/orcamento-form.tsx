@@ -322,7 +322,7 @@ function GradeItens() {
       columns={[
         { key: 'item', label: 'Item' },
         { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
+        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor', voz: 'produto' },
         { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
         { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
         { key: 'tamanho', label: 'Tamanho' },
@@ -343,7 +343,7 @@ function GradeItens() {
           type: 'select',
           options: tiposDePeca,
         },
-        { key: 'fornecedor', label: 'Fornecedor' },
+        { key: 'fornecedor', label: 'Fornecedor', voz: 'nome' },
       ]}
       newRow={ITEM_VAZIO}
       totals={{

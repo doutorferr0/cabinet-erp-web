@@ -79,7 +79,7 @@ function GradeItens() {
       actions={(append) => <BotaoProduto onInserir={() => append(ITEM_VAZIO)} />}
       columns={[
         { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor' },
+        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor', voz: 'produto' },
         { key: 'acabamento', label: 'Acab.', type: 'select', options: tabelas.acabamentos },
         { key: 'quantidade', label: 'Quantidade' },
         { key: 'destino', label: 'Destino', type: 'select', options: tabelas.destinos },

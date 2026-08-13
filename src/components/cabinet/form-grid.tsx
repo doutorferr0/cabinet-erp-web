@@ -1,3 +1,4 @@
+import { VOZ_DE_NOME } from '@/components/cabinet/nome'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -31,6 +32,21 @@ export interface FormGridColumn {
   options?: readonly string[]
   /** Só para `type: 'computed'`: calcula o texto exibido a partir da linha. */
   compute?: (row: FormGridRow) => string
+  /**
+   * A VOZ da coluna, quando a célula não é dado neutro: `nome` para nome
+   * próprio de entidade, `produto` para nome/descrição de produto.
+   *
+   * Existe pelo mesmo motivo do `voz` do `<TextField>`: a célula editável é um
+   * `<input>`, e `<input>` não aceita filho — `<Nome>` e `<Produto>` não
+   * entram aqui. Sem isto, a mesma descrição de produto que a listagem mostra
+   * em Sora aparece em Inter dentro da grade do documento, e a regra vira
+   * "vale onde é texto, não vale onde é campo".
+   *
+   * O produto NÃO recua para `--muted-foreground` aqui: na listagem ele é
+   * coadjuvante do nome do cliente, mas na grade do documento ele É o assunto
+   * da linha.
+   */
+  voz?: 'nome' | 'produto'
 }
 
 export type FormGridRow = Record<string, string | number | boolean | null>
@@ -324,7 +340,11 @@ export function FormGrid({
                                 placeholder: col.placeholder,
                               })}
                               // Célula editável sem borda: a malha É o campo; foco = anel amarelo interno.
-                              className="h-8 border-0 bg-transparent focus-visible:focus-ring-inset"
+                              className={cn(
+                                'h-8 border-0 bg-transparent focus-visible:focus-ring-inset',
+                                col.voz === 'nome' && VOZ_DE_NOME,
+                                col.voz === 'produto' && 'font-display',
+                              )}
                               {...register(path)}
                             />
                           )}

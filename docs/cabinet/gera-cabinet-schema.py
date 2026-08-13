@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Schema NOVO do Cabinet — escopo inicial (venda + estoque) + esqueleto de compra.
+"""Schema NOVO do Cabinet — venda + estoque + esqueleto de compra + funil (CRM).
 
 Gera:
   cabinet-schema.dbml        para importar no ChartDB
@@ -359,7 +359,8 @@ escreve_dbml('cabinet-schema-minimo.dbml',
              'Cabinet — MÍNIMO para começar (o básico que não gera retrabalho)', set(MINIMO))
 
 # ---------------------------------------------------------------- canvas (mesmo motor)
-MODS = ['nucleo', 'parceiros', 'catalogo', 'preco', 'venda', 'estoque', 'compra']
+MODS = ['nucleo', 'parceiros', 'catalogo', 'preco', 'crm', 'venda', 'estoque', 'compra',
+        'tarefas']
 T = {}
 for nome, mod, escopo, doc, colunas, nota in TABELAS:
     T[nome] = {'n': 0, 'dom': mod, 'esc': escopo, 'doc': doc + ((' — ' + nota) if nota else ''),
@@ -369,6 +370,8 @@ R = [[o, co, d, cd, 0] for o, co, d, cd in RELS]
 P = collections_ordered = {}
 P['mínimo pra começar'] = MINIMO
 P['tudo'] = [t[0] for t in TABELAS]
+P['funil de venda'] = ['crm_pipelines', 'crm_stages', 'crm_opportunities', 'crm_lost_reasons',
+                       'partners', 'employees', 'activities', 'quotes']
 P['caminho do orçamento'] = ['partners', 'construction_sites', 'products', 'product_variants',
                              'sale_categories', 'quotes', 'quote_environments', 'quote_items',
                              'quote_salespeople', 'quote_professionals', 'sales_orders',
@@ -389,8 +392,10 @@ TPL = canvas_src[ini:fim]
 
 TPL = TPL.replace('Softlux — diagrama ER', 'Cabinet — mapeamento de tabelas')
 TPL = TPL.replace("const COR = {cadastro:'#7A5CB8',produto:'#B7791F',venda:'#C2410C',compra:'#0060B0',\n             estoque:'#2E7D32',financeiro:'#B0306B',fiscal:'#8A6D3B',sistema:'#8B8377',outros:'#5A544B'};",
-                  "const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',\n             venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',outros:'#8B8377'};")
-TPL = TPL.replace("'softlux-canvas.v2:'", "'cabinet-canvas.v2:'")
+                  "const COR = {nucleo:'#5A544B',parceiros:'#7A5CB8',catalogo:'#B7791F',preco:'#0E7C86',\n             crm:'#B0306B',venda:'#C2410C',estoque:'#2E7D32',compra:'#0060B0',\n             tarefas:'#6C7A1E',outros:'#8B8377'};")
+# chave versionada: layout salvo é por preset, e preset novo com chave velha carregaria
+# posição antiga e ESCONDERIA o módulo novo — foi o que aconteceu na virada .v1 → .v2
+TPL = TPL.replace("'softlux-canvas.v2:'", "'cabinet-canvas.v3:'")
 TPL = TPL.replace("presetAtual = 'núcleo do negócio'", "presetAtual = 'mínimo pra começar'")
 TPL = TPL.replace('<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2"/></svg> declarada</span>\n<span><svg width="26" height="8"><line x1="1" y1="4" x2="25" y2="4" stroke="#5A544B" stroke-width="2" stroke-dasharray="5 4"/></svg> inferida</span>\n<span>◆ chave · azul = liga (clique traz a vizinha)</span>',
                   '<span>◆ chave · azul traz a vizinha · FK de empresa é composta (tenant_id)</span>')

@@ -64,8 +64,9 @@ Table partners {
   is_professional boolean [not null]
   registration varchar
   payout_bank_info jsonb
+  parent_id uuid
   active boolean [not null]
-  Note: 'ORG · parceiros · cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional) — registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão'
+  Note: 'ORG · parceiros · cliente, fornecedor e profissional no MESMO cadastro (contrato: is_customer/supplier/professional) — registration = CREA/CAU/CFT do profissional; payout = dados bancários de comissão; parent_id = hierarquia pai/filho (escritório de arquitetura ↔ profissionais dele) — campo, não tabela: quem indicou continua sendo o parceiro, o escritório é o pai'
 }
 
 Table partner_tenant_links {
@@ -186,6 +187,71 @@ Table variant_tenant_settings {
     (tenant_id, variant_id) [pk]
   }
   Note: 'TENANT · preco · o que é DA EMPRESA na variante: preço de venda vigente e estoque mínimo (core: preço/estoque = tenant)'
+}
+
+Table crm_pipelines {
+  tenant_id uuid
+  id uuid
+  name varchar [not null]
+  sort int [not null]
+  is_default boolean [not null]
+  active boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · crm · funil — são VÁRIOS por empresa (a Vertz tem modelos de venda distintos) — is_default escolhe o funil da oportunidade criada sem escolha explícita'
+}
+
+Table crm_stages {
+  tenant_id uuid
+  id uuid
+  pipeline_id uuid [not null]
+  name varchar [not null]
+  sort int [not null]
+  probability numeric(7,4) [not null]
+  is_won boolean [not null]
+  is_lost boolean [not null]
+  rot_days int
+  indexes {
+    (tenant_id, id) [pk]
+    (tenant_id, pipeline_id, id) [unique]
+  }
+  Note: 'TENANT · crm · estágio DE UM funil — estágio é dado, não rótulo — UNIQUE (tenant_id, pipeline_id, id) serve de alvo à FK composta da oportunidade; is_won/is_lost são POR FUNIL; probabilidade só compara dentro do mesmo funil; rot_days = card apodrece parado além do limite'
+}
+
+Table crm_opportunities {
+  tenant_id uuid
+  id uuid
+  name varchar [not null]
+  pipeline_id uuid [not null]
+  stage_id uuid [not null]
+  partner_id uuid
+  contact_name varchar
+  contact_email varchar
+  contact_phone varchar
+  owner_employee_id uuid
+  expected_value_cents bigint
+  expected_close_date date
+  source varchar
+  stage_changed_at timestamptz [not null]
+  lost_reason_id uuid
+  quote_id uuid
+  closed_at timestamptz
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · crm · lead E oportunidade no MESMO registro — conversão é mudança de estágio, não cadastro novo — FK COMPOSTA (tenant_id, pipeline_id, stage_id) → crm_stages: o banco recusa estágio de outro funil, e mover de funil RESETA para o 1º estágio do destino (trilha em Auditoria) · partner_id nullable = lead ainda sem cadastro, contato solto em contact_* · stage_changed_at é a base do rot_days · a oportunidade NÃO congela preço: quem congela é quote'
+}
+
+Table crm_lost_reasons {
+  tenant_id uuid
+  id uuid
+  name varchar [not null]
+  active boolean [not null]
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · crm · motivo de perda catalogado — vira análise, não texto livre'
 }
 
 Table sale_categories {
@@ -440,11 +506,29 @@ Table goods_receipt_items {
   Note: 'TENANT · compra · item recebido — cada linha vira um stock_movement de entrada'
 }
 
+Table activities {
+  tenant_id uuid
+  id uuid
+  entity_type varchar [not null]
+  entity_id uuid [not null]
+  kind varchar [not null]
+  title varchar [not null]
+  due_date date
+  assignee_employee_id uuid
+  done_at timestamptz
+  notes text
+  indexes {
+    (tenant_id, id) [pk]
+  }
+  Note: 'TENANT · tarefas · atividade agendada sobre QUALQUER entidade — oportunidade, orçamento, pedido, parceiro — POLIMÓRFICA (entity_type + entity_id): por isso não há FK para o alvo — o preço de servir 4 entidades com uma tabela só. entity_type entra em CHECK e no índice (tenant_id, entity_type, entity_id). Fica FORA do CRM de propósito: dentro dele duplicaria quando orçamento e parceiro precisassem do mesmo. Histórico do registro NÃO vem aqui — é Auditoria + Notificações'
+}
+
 // relações — FK entre tabelas tenant-scoped é COMPOSTA (tenant_id, coluna)
 Ref: employee_tenants.tenant_id > tenants.id
 Ref: employee_tenants.employee_id > employees.id
 Ref: partner_tenant_links.tenant_id > tenants.id
 Ref: partner_tenant_links.partner_id > partners.id
+Ref: partners.parent_id > partners.id
 Ref: construction_sites.customer_id > partners.id
 Ref: products.group_id > product_groups.id
 Ref: product_variants.product_id > products.id
@@ -458,6 +542,13 @@ Ref: variant_supplier_prices.variant_id > product_variants.id
 Ref: variant_supplier_prices.supplier_id > partners.id
 Ref: variant_tenant_settings.variant_id > product_variants.id
 Ref: variant_tenant_settings.tenant_id > tenants.id
+Ref: crm_stages.pipeline_id > crm_pipelines.id
+Ref: crm_opportunities.pipeline_id > crm_pipelines.id
+Ref: crm_opportunities.stage_id > crm_stages.id
+Ref: crm_opportunities.partner_id > partners.id
+Ref: crm_opportunities.owner_employee_id > employees.id
+Ref: crm_opportunities.lost_reason_id > crm_lost_reasons.id
+Ref: crm_opportunities.quote_id > quotes.id
 Ref: quotes.customer_id > partners.id
 Ref: quotes.site_id > construction_sites.id
 Ref: quotes.category_id > sale_categories.id
@@ -490,3 +581,4 @@ Ref: goods_receipts.purchase_order_id > purchase_orders.id
 Ref: goods_receipts.supplier_id > partners.id
 Ref: goods_receipt_items.receipt_id > goods_receipts.id
 Ref: goods_receipt_items.variant_id > product_variants.id
+Ref: activities.assignee_employee_id > employees.id

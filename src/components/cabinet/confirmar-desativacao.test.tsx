@@ -32,6 +32,25 @@ describe('ConfirmarDesativacao', () => {
     expect(dialogo).toHaveAccessibleDescription(/não é apagado/i)
   })
 
+  // A voz de QUEM entra em toda peça que carrega nome de entidade, e no
+  // diálogo ela chega por HERANÇA: o `Heading` do react-aria renderiza `<h3>`,
+  // e o seletor `h1,h2,h3` do `index.css` é que aplica o Newsreader. Se alguém
+  // trocar o `Heading` por um `<div>`, o título sai da serifa sem quebrar nada
+  // — este teste é a guarda disso.
+  it('o título é cabeçalho de verdade, e serifada não leva caixa alta', async () => {
+    montar()
+    const dialogo = await screen.findByRole('alertdialog')
+    const titulo = within(dialogo).getByRole('heading')
+
+    // h1, h2 ou h3 — o que importa é cair no seletor do `index.css`, não o
+    // nível exato (aqui é h2, o `Heading` do RAC leva `level={2}`).
+    expect(['H1', 'H2', 'H3']).toContain(titulo.tagName)
+    expect(titulo.className).not.toContain('uppercase')
+    // 700 e não 800: o Newsreader entra com 400 e 700 só.
+    expect(titulo.className).toContain('font-bold')
+    expect(titulo.className).not.toContain('font-extrabold')
+  })
+
   it('NÃO fecha ao clicar fora — a saída é por botão nomeado', async () => {
     const { user, onFechar } = montar()
     await screen.findByRole('alertdialog')

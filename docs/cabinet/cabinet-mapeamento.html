@@ -135,7 +135,6 @@ function render(){
     const tipos={}; d.c.forEach(c=>tipos[c[0]]=c[1]);
     let h='<div class="hd" style="background:'+cor+'14"><b title="'+t+'" style="color:'+cor+'">'+t+
       '</b><span class="n">'+(d.esc==='tenant'?'tenant':'org')+'</span>'+
-      '<span class="bt" title="traz todas as vizinhas" onclick="vizinhos(\''+t+'\');event.stopPropagation()">⊕</span>'+
       '<span class="bt" title="remove do canvas" onclick="fecha(\''+t+'\');event.stopPropagation()">×</span></div>';
     vis.forEach(c=>{
       const cl=c.toLowerCase(), ehPk=chave.has(cl), ehFk=lig.has(cl);
@@ -268,12 +267,6 @@ function addTabela(t,x,y){
 }
 function fecha(t){ delete aberto[t]; render(); }
 function expande(t,v){ aberto[t].exp=v; render(); }
-function vizinhos(t){
-  const p=aberto[t]; let k=0;
-  (relDe[t]||[]).forEach(i=>{ const r=R[i]; const outro=r[0]===t?r[2]:r[0];
-    if(!aberto[outro]&&T[outro]){ aberto[outro]={x:p.x+CW+130, y:p.y+k*150, exp:0}; k++; } });
-  render();
-}
 function clicaCol(t,col){
   const p=aberto[t]; let k=0, achou=false;
   (relDe[t]||[]).forEach(i=>{ const r=R[i];
@@ -418,7 +411,7 @@ function painel(){
   $('#painel').innerHTML='<b>'+ts.length+'</b> tabelas no canvas · <b>'+nd+
     '</b> ligações · toda tabela tem created/updated_at/by (omitidas)<br>'+
     'arraste o fundo = mover · roda do mouse = zoom · arraste o cabeçalho = mover tabela<br>'+
-    'coluna azul traz a vizinha · ⊕ traz todas · posições ficam salvas neste navegador';
+    'coluna azul traz a vizinha · posições ficam salvas neste navegador';
 }
 
 // ---- init

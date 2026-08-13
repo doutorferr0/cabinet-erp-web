@@ -18,12 +18,12 @@ describe('BandaDeIdentidade', () => {
   })
 
   it('contexto acompanha o título sem competir com ele', () => {
-    render(<BandaDeIdentidade titulo="Cadastro de produtos" contexto="Banco Principal" />)
+    render(<BandaDeIdentidade titulo="Cadastro de Produtos" contexto="Banco Principal" />)
     const contexto = screen.getByText('Banco Principal')
     // Meta: mono, caixa alta — etiqueta, não segundo título.
     expect(contexto.className).toContain('font-mono')
     expect(contexto.className).toContain('uppercase')
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Cadastro de produtos')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Cadastro de Produtos')
   })
 
   it('é zona de identidade em caixa preta (creme-avermelhado, 2px, radius 0)', () => {

@@ -20,7 +20,7 @@ import { Quadro } from './quadro'
  * Mover, não duplicar: quadro/lista/progresso/nova-tarefa são os MESMOS
  * arquivos que já existiam em `features/dashboard/`, só de endereço novo.
  *
- * `ProgressoDoQuadro` e `Carga por responsável` vieram junto: leem a mesma
+ * `ProgressoDoQuadro` e `Carga por Responsável` vieram junto: leem a mesma
  * consulta do quadro (`useTarefas`) e respondem "como vai o quadro", não "o
  * que vem por aí" — a mesma linha que tirou o quadro do Dashboard tira o
  * progresso dele também.

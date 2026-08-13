@@ -44,7 +44,7 @@ describe('guarda de empresa ativa (RequireTenant)', () => {
     renderRoute('/')
 
     expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Escolha a empresa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Escolha a Empresa' })).not.toBeInTheDocument()
   })
 
   it('sessão sem empresa ativa bloqueia a tela e oferece os vínculos', async () => {
@@ -55,7 +55,7 @@ describe('guarda de empresa ativa (RequireTenant)', () => {
       return Promise.reject(new Error(`fetch sem stub no teste: ${caminho}`))
     })
 
-    expect(await screen.findByRole('heading', { name: 'Escolha a empresa' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Escolha a Empresa' })).toBeInTheDocument()
     // O heading aparece já no skeleton; os botões só existem após os vínculos.
     expect(await screen.findByRole('button', { name: /VERTZ ILUMINAÇÃO/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /VIA HF IMPORTADORA/ })).toBeInTheDocument()
@@ -89,7 +89,7 @@ describe('guarda de empresa ativa (RequireTenant)', () => {
     // Body exato do contrato (`TrocarEmpresaRequest`), nada a mais.
     expect(corpos).toEqual([{ tenantId: VIA_HF }])
     expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Escolha a empresa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Escolha a Empresa' })).not.toBeInTheDocument()
   })
 
   it('sessão sem vínculo nenhum informa o fato, sem ação inventada', async () => {
@@ -104,7 +104,7 @@ describe('guarda de empresa ativa (RequireTenant)', () => {
       return Promise.reject(new Error(`fetch sem stub no teste: ${caminho}`))
     })
 
-    expect(await screen.findByRole('heading', { name: 'Escolha a empresa' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Escolha a Empresa' })).toBeInTheDocument()
     expect(await screen.findByText('Nenhuma empresa vinculada a este usuário.')).toBeInTheDocument()
   })
 })

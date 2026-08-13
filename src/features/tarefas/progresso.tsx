@@ -41,7 +41,7 @@ export function ProgressoDoQuadro() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-      <Painel titulo="Progresso das tarefas">
+      <Painel titulo="Progresso das Tarefas">
         <div className="flex flex-wrap gap-y-3 divide-x divide-rule-hair">
           <Grandeza rotulo="Concluídas" valor={progresso.concluidas} />
           <Grandeza rotulo="Em aberto" valor={progresso.emAberto} />
@@ -66,7 +66,7 @@ export function ProgressoDoQuadro() {
         )}
       </Painel>
 
-      <Painel titulo="Carga por responsável">
+      <Painel titulo="Carga por Responsável">
         {carga.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhuma tarefa tem responsável — a carga aparece quando alguém assume.

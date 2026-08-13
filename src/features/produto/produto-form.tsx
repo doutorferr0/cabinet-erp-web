@@ -570,7 +570,7 @@ export function ProdutoForm({
       onCancelar={() => void navigate({ to: '/cadastros/produtos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
-      titulo="Cadastro de produtos"
+      titulo="Cadastro de Produtos"
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >

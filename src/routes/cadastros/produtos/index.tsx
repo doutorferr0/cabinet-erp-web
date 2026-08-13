@@ -72,7 +72,7 @@ function ProdutosPage() {
     <TelaDeListagem
       // O legado escrevia "Cadastro de produtos - Banco Principal" numa linha
       // só; o banco é CONTEXTO do cadastro, não parte do nome dele.
-      titulo="Cadastro de produtos"
+      titulo="Cadastro de Produtos"
       contexto="Banco Principal"
       columns={columns}
       queryKey={['produtos']}

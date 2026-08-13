@@ -180,7 +180,7 @@ describe('tela Tarefas', () => {
     })
     renderRoute('/tarefas', stub)
 
-    expect(await screen.findByText('Progresso das tarefas')).toBeInTheDocument()
+    expect(await screen.findByText('Progresso das Tarefas')).toBeInTheDocument()
     const concluidas = screen.getByText('Concluídas').closest('div') as HTMLElement
     expect(within(concluidas).getByText('1')).toBeInTheDocument()
   })

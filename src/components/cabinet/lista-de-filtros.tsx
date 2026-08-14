@@ -16,7 +16,7 @@ import {
   operadorPadrao,
 } from '@/lib/filtro-de-consulta'
 import { Filter, Trash2 } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 export interface ListaDeFiltrosProps {
   campos: readonly CampoFiltravel[]
@@ -62,6 +62,18 @@ export function ListaDeFiltros({
 }: ListaDeFiltrosProps) {
   const [aberto, setAberto] = useState(false)
   const tituloId = useId()
+  /**
+   * Remover a última linha ou limpar tudo APAGA o botão que acabou de ser
+   * clicado. Sem devolver o foco, ele cai no nada: quem navega por teclado é
+   * jogado de volta ao topo do documento e quem usa leitor de tela perde o
+   * ponto da leitura. `Adicionar filtro` é o destino certo — é a única ação que
+   * sempre existe no painel, e é a próxima que faz sentido.
+   */
+  const adicionarRef = useRef<HTMLButtonElement>(null)
+
+  function devolverFoco() {
+    requestAnimationFrame(() => adicionarRef.current?.focus())
+  }
 
   function adicionar() {
     const campo = campos[0]
@@ -86,6 +98,7 @@ export function ListaDeFiltros({
 
   function remover(filtroId: string) {
     onFiltrosChange(filtros.filter((filtro) => filtro.filtroId !== filtroId))
+    devolverFoco()
   }
 
   return (
@@ -209,7 +222,7 @@ export function ListaDeFiltros({
           )}
 
           <div className="flex items-center gap-2">
-            <Button type="button" size="sm" onClick={adicionar}>
+            <Button type="button" size="sm" ref={adicionarRef} onClick={adicionar}>
               Adicionar filtro
             </Button>
             {filtros.length > 0 ? (
@@ -220,6 +233,7 @@ export function ListaDeFiltros({
                 onClick={() => {
                   onFiltrosChange([])
                   onJuncaoChange('and')
+                  devolverFoco()
                 }}
               >
                 Limpar filtros

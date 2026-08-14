@@ -1,3 +1,4 @@
+import { ConsultasFavoritas } from '@/components/cabinet/consultas-favoritas'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
 import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
@@ -22,6 +23,16 @@ import {
 } from '@/components/ui/table'
 import { mensagemDoErro } from '@/lib/erros'
 import {
+  type FavoritoDeConsulta,
+  comPadrao,
+  consultaDoFavorito,
+  favoritoPadrao,
+  gravarFavoritos,
+  idDaTela,
+  lerFavoritos,
+  novoFavoritoId,
+} from '@/lib/favoritos-de-consulta'
+import {
   type CampoFiltravel,
   type FiltroDaTabela,
   type Juncao,
@@ -40,7 +51,7 @@ import {
   type LucideIcon,
   Search,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
@@ -157,6 +168,12 @@ export function VitraDataTable<T>({
   const [filtrosInput, setFiltrosInput] = useState<FiltroDaTabela[]>([])
   const [juncao, setJuncao] = useState<Juncao>('and')
 
+  // Consultas favoritas: a identidade da tela vem do `queryKey`, que já é o nome
+  // estável da listagem. `useState` com inicializador preguiçoso — ler o
+  // armazenamento a cada render seria I/O síncrono por tecla digitada.
+  const telaId = useMemo(() => idDaTela(queryKey), [queryKey])
+  const [favoritos, setFavoritos] = useState<FavoritoDeConsulta[]>(() => lerFavoritos(telaId))
+
   // Toda mudança de estado de consulta limpa a seleção.
   function updateState(updater: (s: TableQueryState) => TableQueryState) {
     setSelected(null)
@@ -195,6 +212,30 @@ export function VitraDataTable<T>({
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [filtrosInput, juncao, camposFiltraveis])
+
+  /** Aplica uma consulta salva: filtros, junção e ordenação de uma vez. */
+  const aplicarConsulta = useCallback((favorito: FavoritoDeConsulta) => {
+    const consulta = consultaDoFavorito(favorito)
+    setFiltrosInput(consulta.filtros)
+    setJuncao(consulta.juncao)
+    setSelected(null)
+    // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
+    // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
+    setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
+  }, [])
+
+  // O favorito PADRÃO abre a tela: é a consulta que se repete todo dia, e
+  // obrigar dois cliques nela seria cobrar pelo caso mais frequente. Roda uma
+  // vez por tela — `telaId` só muda quando a listagem muda.
+  useEffect(() => {
+    const padrao = favoritoPadrao(lerFavoritos(telaId))
+    if (padrao) aplicarConsulta(padrao)
+  }, [telaId, aplicarConsulta])
+
+  function atualizarFavoritos(proximos: FavoritoDeConsulta[]) {
+    setFavoritos(proximos)
+    gravarFavoritos(telaId, proximos)
+  }
 
   const query = useQuery({
     queryKey: [...queryKey, state],
@@ -251,23 +292,53 @@ export function VitraDataTable<T>({
           // ordem em oito telas, e dois caminhos para "filtrar" lado a lado
           // fariam o operador escolher qual dos dois é o de verdade.
           if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
+            // O painel de filtro e a lista de consultas salvas saem JUNTOS deste
+            // slot: são o mesmo assunto ("que pergunta esta tela está fazendo"),
+            // e separá-los pela barra afastaria montar de repetir.
+            const salvas = (
+              <ConsultasFavoritas
+                key="consultas"
+                favoritos={favoritos}
+                podeSalvar={filtrosValidos(filtrosInput).length > 0 || state.sort !== null}
+                onAplicar={aplicarConsulta}
+                onSalvar={(nome) =>
+                  atualizarFavoritos([
+                    ...favoritos,
+                    {
+                      id: novoFavoritoId(),
+                      nome,
+                      filtros: filtrosValidos(filtrosInput),
+                      juncao,
+                      sort: state.sort,
+                      padrao: false,
+                    },
+                  ])
+                }
+                onExcluir={(id) => atualizarFavoritos(favoritos.filter((f) => f.id !== id))}
+                onTornarPadrao={(id) => atualizarFavoritos(comPadrao(favoritos, id))}
+              />
+            )
             return modoDeFiltro === 'menu' ? (
-              <MenuDeFiltros
-                key={action.id}
-                campos={camposFiltraveis}
-                filtros={filtrosInput}
-                juncao={juncao}
-                onFiltrosChange={setFiltrosInput}
-              />
+              <span key={action.id} className="contents">
+                <MenuDeFiltros
+                  campos={camposFiltraveis}
+                  filtros={filtrosInput}
+                  juncao={juncao}
+                  onFiltrosChange={setFiltrosInput}
+                />
+                {salvas}
+              </span>
             ) : (
-              <ListaDeFiltros
-                key={action.id}
-                campos={camposFiltraveis}
-                filtros={filtrosInput}
-                juncao={juncao}
-                onFiltrosChange={setFiltrosInput}
-                onJuncaoChange={setJuncao}
-              />
+              <span key={action.id} className="contents">
+                <ListaDeFiltros
+                  campos={camposFiltraveis}
+                  filtros={filtrosInput}
+                  juncao={juncao}
+                  onFiltrosChange={setFiltrosInput}
+                  onJuncaoChange={setJuncao}
+                />
+                {salvas}
+              </span>
             )
           }
           return (

@@ -398,6 +398,35 @@ EXCLUIR o pedido — ele tem o A. Testar elemento a elemento com a negação emb
 faria o B responder "não contém A" e o pedido entraria na lista, que é o oposto do
 pedido.
 
+### Consultas favoritas — a pergunta com nome
+
+A combinação de filtro + junção + ordenação se salva com nome e volta com um
+clique (`ConsultasFavoritas`, ao lado do painel de filtro).
+
+**Guarda o que a CONSULTA é, não o que a tela mostrou.** `page` e `q` ficam de
+fora: página é onde o operador parou de rolar naquele momento, e `q` é texto
+livre de uma pergunta pontual — restaurá-los faria o favorito abrir na página 4
+de uma busca que ninguém lembra ter feito.
+
+**Um padrão por tela, aplicado na abertura.** É o caso que se repete todo dia, e
+cobrar dois cliques por ele seria cobrar pelo mais frequente. Clicar na estrela do
+próprio padrão desmarca — senão não haveria como voltar a abrir a tela sem filtro.
+
+**`localStorage` versionado** (`cabinet.consultas-favoritas.v1`), porque não há
+backend de preferência de usuário. Quando houver, o que muda é a origem da lista,
+não a forma. Toda leitura tolera lixo: JSON quebrado ou item estragado vira lista
+vazia (ou some sozinho, sem levar os irmãos). **Perder um favorito é aborrecimento;
+perder a listagem por causa de um valor gravado seria defeito.**
+
+**A identidade da tela vem do `queryKey`** — já é o nome estável da listagem. O
+acoplamento tem preço: trocar o `queryKey` por motivo de cache faria os favoritos
+sumirem em silêncio, e por isso há teste fixando a chave de cada tela. Se ele
+ficar vermelho, a decisão é migrar o guardado, não atualizar o valor esperado.
+
+**Agrupamento não entra ainda porque não existe** — os view modes são padrão
+aprovado e não implementados. O campo cabe depois sem quebrar o que já está
+gravado: ausência = sem agrupamento.
+
 ### O que continua de fora, agora medido
 
 **Dinheiro não tem consumidor.** As oito listagens com filtro foram verificadas e

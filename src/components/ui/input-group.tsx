@@ -6,13 +6,20 @@ import { type VariantProps, cva } from 'class-variance-authority'
 import type * as React from 'react'
 import { Group, type GroupProps } from 'react-aria-components'
 
-/** Grupo campo+adorno: a caixa preta 2px fica no grupo, o campo interno é cru. */
+/**
+ * Grupo campo+adorno: a caixa preta 2px fica no grupo, o campo interno é cru.
+ *
+ * Desabilitado (§Desabilitado): a caixa do grupo é que apaga. A receita entra
+ * pelo gatilho `:has(:disabled)` — quem está desabilitado é o campo de DENTRO,
+ * não o grupo. Era `has-disabled:opacity-50`, que clareava o grupo INTEIRO,
+ * adorno e valor digitado junto.
+ */
 function InputGroup({ className, ...props }: GroupProps) {
   return (
     <Group
       data-slot="input-group"
       className={cn(
-        'group/input-group relative flex h-9 w-full min-w-0 items-center rounded-control border-2 border-input bg-card transition-colors outline-none has-disabled:opacity-50 has-[[data-slot=input-group-control]:focus-visible]:focus-ring has-[[data-slot][aria-invalid=true]]:border-destructive has-[>textarea]:h-auto',
+        'group/input-group desabilitado relative flex h-9 w-full min-w-0 items-center rounded-control border-2 border-input bg-card transition-colors outline-none has-[[data-slot=input-group-control]:focus-visible]:focus-ring has-[[data-slot][aria-invalid=true]]:border-destructive has-[>textarea]:h-auto',
         className,
       )}
       {...props}
@@ -21,7 +28,10 @@ function InputGroup({ className, ...props }: GroupProps) {
 }
 
 const inputGroupAddonVariants = cva(
-  'flex h-auto cursor-text items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none group-data-[disabled=true]/input-group:opacity-50 [&>svg:not([class*="size-"])]:size-4',
+  // Adorno com o grupo desabilitado ESCURECE (secundário → tinta cheia) em vez
+  // de clarear: sobre a superfície apagada o secundário perderia contraste, e é
+  // ele que costuma carregar a unidade ou o prefixo do campo.
+  'flex h-auto cursor-text items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none group-data-[disabled=true]/input-group:text-foreground [&>svg:not([class*="size-"])]:size-4',
   {
     variants: {
       align: {

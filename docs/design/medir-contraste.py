@@ -166,6 +166,15 @@ ESTADOS = [
     ("carimbo `done` (`bg-stamp-done` + `text-primary-foreground`)", "primary-foreground", "stamp-done"),
     ("carimbo `neutral` (`text-stamp-neutral`, fundo transparente)", "stamp-neutral", "card"),
     ("carimbo `void` (`text-stamp-void`, fundo transparente)", "stamp-void", "card"),
+    # DESABILITADO (issue #106). Os três pares medem a regra inteira: o conteudo
+    # tem de PASSAR AA sobre a superficie apagada (era exatamente isto que a
+    # tinta apagada reprovava, a 1,73:1), o traco tem de se ver sobre ela, e a
+    # propria superficie tem de se distinguir da Folha — senao o estado nao e
+    # dito por nada.
+    ("desabilitado: tinta × superfície apagada", "foreground", "surface-disabled"),
+    ("desabilitado: traço apagado × superfície apagada", "rule-disabled", "surface-disabled"),
+    ("desabilitado: superfície apagada × Folha", "surface-disabled", "card"),
+    ("desabilitado: secundário × superfície apagada", "muted-foreground", "surface-disabled"),
 ]
 
 # Chave do frontmatter YAML do DESIGN.md -> token do `src/index.css` que ela copia.
@@ -181,8 +190,9 @@ FRONTMATTER = {
     "ink": "foreground",
     "ink-muted": "muted-foreground",
     "ink-strong": "text-strong",
-    "ink-disabled": "text-disabled",
     "rule-hair": "rule-hair",
+    "surface-disabled": "surface-disabled",
+    "rule-disabled": "rule-disabled",
     "main": "primary",
     "main-hover": "primary-hover",
     "main-foreground": "primary-foreground",
@@ -370,7 +380,6 @@ def _apoio(claro, escuro, mod_claro, mod_escuro) -> str:
             par("degrau Bancada × Folha", "background", "card"),
             par("secundário sobre o Afundado (zebra)", "muted-foreground", "surface-sunken"),
             par("traço `--border` sobre a Folha", "border", "card"),
-            par("`--text-disabled` sobre a Folha", "text-disabled", "card"),
             f"- tinta sobre os pastéis /02 de módulo: **{n(min(sobre_claro))}–{n(max(sobre_claro))}:1** claro"
             f" · **{n(min(sobre_escuro))}–{n(max(sobre_escuro))}:1** escuro",
         ]

@@ -107,12 +107,12 @@ function CommandInput({ className, ...props }: InputProps) {
           {...props}
           data-slot="command-input"
           className={cn(
-            'w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:hidden',
+            'desabilitado w-full text-sm outline-hidden [&::-webkit-search-cancel-button]:hidden',
             className,
           )}
         />
         <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
+          <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
         </InputGroupAddon>
       </InputGroup>
     </SearchField>
@@ -187,7 +187,7 @@ function CommandItem<T extends object>({
       data-slot="command-item"
       className={cn(
         // RAC marca estado sem valor (`data-disabled`, não `data-disabled="true"`).
-        'group/command-item relative flex cursor-default items-center gap-2 px-2 py-1.5 text-sm outline-hidden select-none data-focused:bg-muted data-disabled:pointer-events-none data-disabled:opacity-50 data-selected:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        'group/command-item relative flex cursor-default items-center gap-2 px-2 py-1.5 text-sm outline-hidden select-none desabilitado data-focused:bg-muted data-disabled:pointer-events-none data-selected:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
         className,
       )}
       {...(() => {

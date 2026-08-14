@@ -14,7 +14,7 @@ function providerQueRejeita(): ResourceProvider<{ id: number }> {
   return {
     list: () => Promise.reject(new Error('não usado neste teste')),
     get: () => Promise.reject(new Error('sem servidor')),
-    empty: (id: number) => ({ id }),
+    empty: () => ({ id: -1 }),
   }
 }
 
@@ -50,7 +50,7 @@ describe('TelaDeDocumento', () => {
             if (tentativas === 1) throw new Error('sem servidor')
             return { id: 7 }
           },
-          empty: (id: number) => ({ id }),
+          empty: () => ({ id: -1 }),
         }}
         queryKeyBase="teste-retry"
         idParam="7"
@@ -74,7 +74,7 @@ describe('TelaDeDocumento', () => {
         provider={{
           list: () => Promise.reject(new Error('não usado neste teste')),
           get: () => Promise.resolve(null),
-          empty: (id: number) => ({ id }),
+          empty: () => ({ id: -1 }),
         }}
         queryKeyBase="teste"
         idParam="1"

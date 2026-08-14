@@ -17,12 +17,10 @@ function ColaboradorEditPage() {
   const { colaboradorId } = Route.useParams()
   const readOnly = isConsulta(Route.useSearch())
   const isNovo = colaboradorId === 'novo'
-  const id = Number(colaboradorId)
 
   const query = useQuery({
     queryKey: ['colaborador', colaboradorId],
-    queryFn: () =>
-      isNovo ? data.colaboradores.empty(Date.now() % 100000) : data.colaboradores.get(id, 0),
+    queryFn: () => (isNovo ? data.colaboradores.empty() : data.colaboradores.get(colaboradorId, 0)),
   })
 
   if (query.isPending) {

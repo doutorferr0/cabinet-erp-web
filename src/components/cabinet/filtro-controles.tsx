@@ -253,6 +253,44 @@ export function ControleDeValor({
     )
   }
 
+  if (filtro.variante === 'date') {
+    // `<input type="date">` nativo, como o `DateField` do formulário: ele fala
+    // ISO (`yyyy-mm-dd`), que é a convenção do dado, e traz o calendário e o
+    // teclado que a pessoa já conhece do sistema operacional. O `Calendar` do
+    // original custaria uma dependência para chegar ao mesmo lugar.
+    if (filtro.operador === 'isBetween') {
+      const [de = '', ate = ''] = Array.isArray(filtro.valor) ? filtro.valor : [filtro.valor, '']
+      return (
+        <div className={cn('flex items-center gap-1', className)}>
+          <Input
+            type="date"
+            aria-label={`${rotulo} — de`}
+            className="h-8 min-w-0"
+            value={de}
+            onChange={(e) => onChange([e.target.value, ate])}
+          />
+          <span className="text-sm text-muted-foreground">a</span>
+          <Input
+            type="date"
+            aria-label={`${rotulo} — até`}
+            className="h-8 min-w-0"
+            value={ate}
+            onChange={(e) => onChange([de, e.target.value])}
+          />
+        </div>
+      )
+    }
+    return (
+      <Input
+        type="date"
+        aria-label={rotulo}
+        className={cn('h-8', className)}
+        value={primeiro(filtro.valor)}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    )
+  }
+
   const numerico = filtro.variante === 'number'
 
   if (numerico && filtro.operador === 'isBetween') {

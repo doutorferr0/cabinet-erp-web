@@ -347,6 +347,7 @@ tela cujo provider sabe responder. Hoje filtram:
 | Fornecedores | HTTP (`/api/partners`) | Código · Nome Fantasia · Razão Social · CNPJ/CPF · Ativo |
 | Profissionais | HTTP (`/api/partners`) | Código · Nome de Apresentação · Nome · CNPJ/CPF · Ativo |
 | Colaboradores | mock | Código · Nome · Setor · Cargo · Ativo |
+| Orçamentos | mock | Número · Cliente · Descrição da Obra · **Data Emissão** · **Data Validade** |
 
 **Campo filtrável ≠ coluna**, mas as telas de parceiro seguem as colunas de
 propósito, com uma exceção: `document` filtra sem ser coluna, porque é a busca
@@ -358,10 +359,35 @@ por quê.
 Recurso sem o parâmetro publicado (`catalog-lookups`, `stock-movements`) não passa
 `filtraveis`, e a fronteira recusa em voz alta se alguém declarar campos ali.
 
+### Data: o filtro é o DIA, e o input é o nativo
+
+A variante `date` usa `<input type="date">`, como o `DateField` do formulário — o
+dado é ISO (`yyyy-mm-dd`), que é exatamente o que o input produz e consome, e o
+calendário vem do sistema operacional. **A primeira versão deixou data de fora
+alegando falta de dependência de calendário; era erro de leitura do próprio
+repo**, e por causa dele a consulta mais comum de uma listagem de documento —
+"os orçamentos de agosto" — não existia.
+
+A comparação é sobre a **string ISO**: `yyyy-mm-dd` ordena lexicograficamente na
+mesma ordem em que ordena cronologicamente, então `Date` só acrescentaria fuso a
+uma pergunta que não tem hora.
+
+**O filtro pergunta pelo DIA, não pelo instante.** Campo que guarde
+`2025-08-05T14:32:00Z` é comparado pelos 10 primeiros caracteres: sem isso,
+`em 05/08` não acharia nada emitido às 14h e `até 05/08` deixaria o próprio dia
+de fora — a listagem cortaria um dia sem explicação. A faixa do `isBetween` é
+**fechada nos dois extremos**, que é o que "entre 01/08 e 05/08" quer dizer na
+boca de quem pergunta.
+
+Não existe `dateRange` como variante separada: `date` + `isBetween` já rende dois
+campos de data, e uma variante a mais para o mesmo resultado seria escolha sem
+consequência na tela.
+
 **Dinheiro não entra.** Trafega em centavos, então um filtro numérico sobre ele
 compararia com centavos e `1000` acharia R$ 10,00 — número certo, significado
 errado. Coluna de dinheiro só vira campo filtrável quando existir variante que
-converta na borda.
+converta na borda. **Faixa por slider** também segue fora, e essa sim por falta de
+componente.
 
 ## Parceiros — uma tabela, três telas
 

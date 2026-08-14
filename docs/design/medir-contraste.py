@@ -8,8 +8,13 @@ script lê os tokens REAIS do `src/index.css` e imprime as tabelas que a seção
 medição do DESIGN.md publica.
 
 Uso:  python3 docs/design/medir-contraste.py               # tabelas em markdown
+      python3 docs/design/medir-contraste.py --conferir    # o DESIGN.md ainda diz a verdade?
+      python3 docs/design/medir-contraste.py --escrever    # regrava as tabelas no DESIGN.md
       python3 docs/design/medir-contraste.py --par A B     # razão entre 2 tokens
-      python3 docs/design/medir-contraste.py --frontmatter # cor do YAML × index.css
+      python3 docs/design/medir-contraste.py --frontmatter # só a conferência do YAML
+
+As tabelas do DESIGN.md moram entre marcadores `<!-- tabela:nome -->` e são GERADAS: número
+colado à mão foi o que produziu os três valores errados que esta página já publicou.
 
 Não altera cor nenhuma: é instrumento de medição. Trocar cor por causa de um
 número reprovado é decisão do user.
@@ -137,6 +142,27 @@ VOZES = [
 ]
 
 
+
+ZONAS = [
+    ("Valor", "zone-money"),
+    ("Identidade", "zone-id"),
+    ("Apoio", "zone-info"),
+    ("Pendência", "zone-warn"),
+    ("Bloqueio", "zone-danger"),
+]
+
+# (rótulo, tinta, fundo) — o par REAL que o componente resolve, não preto por suposição.
+ESTADOS = [
+    ("texto sobre hover de item (`--neutral`)", "foreground", "neutral"),
+    ("secundário sobre hover de item", "muted-foreground", "neutral"),
+    ("linha selecionada: `--primary-foreground` × `--primary`", "primary-foreground", "primary"),
+    ("linha selecionada × folha (a mudança de estado)", "primary", "card"),
+    ("carimbo `open` (`bg-stamp-open` + `text-foreground`)", "foreground", "stamp-open"),
+    ("carimbo `done` (`bg-stamp-done` + `text-primary-foreground`)", "primary-foreground", "stamp-done"),
+    ("carimbo `neutral` (`text-stamp-neutral`, fundo transparente)", "stamp-neutral", "card"),
+    ("carimbo `void` (`text-stamp-void`, fundo transparente)", "stamp-void", "card"),
+]
+
 # Chave do frontmatter YAML do DESIGN.md -> token do `src/index.css` que ela copia.
 # Existe porque a cor mora em DOIS lugares: o corpo do doc e o bloco YAML que o
 # impeccable lê. Já divergiram uma vez (o YAML ficou com os cinzas antigos depois
@@ -215,6 +241,180 @@ def cor(mapa: dict[str, str], chave: str) -> tuple[float, float, float]:
     return c
 
 
+TABELAS: dict[str, str] = {}
+
+
+def tabela(nome: str):
+    """Registra um gerador de tabela sob um nome — o mesmo nome do marcador no DESIGN.md."""
+
+    def registrar(fn):
+        TABELAS[nome] = fn
+        return fn
+
+    return registrar
+
+
+def gerar(claro, escuro, mod_claro, mod_escuro) -> dict[str, str]:
+    """Todas as tabelas, já em markdown, indexadas pelo nome do marcador."""
+    return {nome: fn(claro, escuro, mod_claro, mod_escuro).strip() for nome, fn in TABELAS.items()}
+
+
+@tabela("vozes")
+def _vozes(claro, escuro, _mc, _me) -> str:
+    linhas = [
+        "| Voz | papel | tinta | Folha | Bancada | escuro: Folha | escuro: Bancada | veredito |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for voz, papel, chave in VOZES:
+        c_folha = razao(cor(claro, chave), cor(claro, "card"))
+        c_banc = razao(cor(claro, chave), cor(claro, "background"))
+        e_folha = razao(cor(escuro, chave), cor(escuro, "card"))
+        e_banc = razao(cor(escuro, chave), cor(escuro, "background"))
+        pior = min(c_folha, c_banc, e_folha, e_banc)
+        linhas.append(
+            f"| {voz} | {papel} | `--{chave}` | {n(c_folha)}:1 | {n(c_banc)}:1 "
+            f"| {n(e_folha)}:1 | {n(e_banc)}:1 | {veredito(pior, 4.5)} |"
+        )
+    return "\n".join(linhas)
+
+
+@tabela("pasteis-02")
+def _pasteis(claro, escuro, mod_claro, mod_escuro) -> str:
+    linhas = [
+        "| Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |",
+        "|---|---|---|---|---|",
+    ]
+    for rotulo, chave in MODULOS:
+        p_claro = cor(mod_claro[chave], "modulo-02")
+        p_escuro = cor(mod_escuro[chave], "modulo-02")
+        folha = razao(p_claro, cor(claro, "card"))
+        bancada = razao(p_claro, cor(claro, "background"))
+        folha_e = razao(p_escuro, cor(escuro, "card"))
+        pior = min(folha, bancada, folha_e)
+        linhas.append(
+            f"| {rotulo} | {n(folha)}:1 | {n(bancada)}:1 | {n(folha_e)}:1 | {veredito(pior, 3)} |"
+        )
+    return "\n".join(linhas)
+
+
+@tabela("cheia-01")
+def _cheia(claro, escuro, mod_claro, mod_escuro) -> str:
+    linhas = [
+        "| Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |",
+        "|---|---|---|---|---|",
+    ]
+    for rotulo, chave in MODULOS:
+        c_claro = cor(mod_claro[chave], "modulo-01")
+        c_escuro = cor(mod_escuro[chave], "modulo-01")
+        linhas.append(
+            f"| {rotulo} | {n(razao(c_claro, cor(claro, 'card')))}:1 "
+            f"| {n(razao(c_claro, cor(claro, 'background')))}:1 "
+            f"| {n(razao(c_escuro, cor(escuro, 'card')))}:1 "
+            f"| {n(razao(c_escuro, cor(escuro, 'background')))}:1 |"
+        )
+    return "\n".join(linhas)
+
+
+@tabela("zonas")
+def _zonas(claro, escuro, _mc, _me) -> str:
+    linhas = ["| Zona | × Folha | × Bancada | escuro × Folha |", "|---|---|---|---|"]
+    for rotulo, chave in ZONAS:
+        linhas.append(
+            f"| {rotulo} | {n(razao(cor(claro, chave), cor(claro, 'card')))}:1 "
+            f"| {n(razao(cor(claro, chave), cor(claro, 'background')))}:1 "
+            f"| {n(razao(cor(escuro, chave), cor(escuro, 'card')))}:1 |"
+        )
+    return "\n".join(linhas)
+
+
+@tabela("estados-fundo")
+def _estados_fundo(claro, escuro, mod_claro, mod_escuro) -> str:
+    """A cheia /01 no papel de FUNDO de texto — o par de `data-active:bg-modulo-cheia`."""
+    linhas = ["| Módulo | claro: tinta × /01 | escuro: tinta × /01 |", "|---|---|---|"]
+    for rotulo, chave in MODULOS:
+        c_claro = razao(cor(claro, "sidebar-foreground"), cor(mod_claro[chave], "modulo-01"))
+        c_escuro = razao(cor(escuro, "sidebar-foreground"), cor(mod_escuro[chave], "modulo-01"))
+        forte = lambda x: f"**{n(x)}:1**" if x < 4.5 else f"{n(x)}:1"
+        linhas.append(f"| {rotulo} | {forte(c_claro)} | {forte(c_escuro)} |")
+    return "\n".join(linhas)
+
+
+@tabela("estados-demais")
+def _estados_demais(claro, escuro, _mc, _me) -> str:
+    linhas = ["| par | claro | escuro |", "|---|---|---|"]
+    for rotulo, tinta, fundo in ESTADOS:
+        linhas.append(
+            f"| {rotulo} | {n(razao(cor(claro, tinta), cor(claro, fundo)))}:1 "
+            f"| {n(razao(cor(escuro, tinta), cor(escuro, fundo)))}:1 |"
+        )
+    return "\n".join(linhas)
+
+
+@tabela("apoio")
+def _apoio(claro, escuro, mod_claro, mod_escuro) -> str:
+    def par(rotulo: str, tinta: str, fundo: str) -> str:
+        return (
+            f"- {rotulo}: **{n(razao(cor(claro, tinta), cor(claro, fundo)))}:1** claro"
+            f" · **{n(razao(cor(escuro, tinta), cor(escuro, fundo)))}:1** escuro"
+        )
+
+    sobre_claro = [razao(cor(claro, "foreground"), cor(mod_claro[c], "modulo-02")) for _, c in MODULOS]
+    sobre_escuro = [razao(cor(escuro, "foreground"), cor(mod_escuro[c], "modulo-02")) for _, c in MODULOS]
+    return "\n".join(
+        [
+            par("degrau Bancada × Folha", "background", "card"),
+            par("secundário sobre o Afundado (zebra)", "muted-foreground", "surface-sunken"),
+            par("traço `--border` sobre a Folha", "border", "card"),
+            par("`--text-disabled` sobre a Folha", "text-disabled", "card"),
+            f"- tinta sobre os 8 pastéis /02: **{n(min(sobre_claro))}–{n(max(sobre_claro))}:1** claro"
+            f" · **{n(min(sobre_escuro))}–{n(max(sobre_escuro))}:1** escuro",
+        ]
+    )
+
+
+def blocos_do_doc(doc: str) -> dict[str, str]:
+    """O que está publicado hoje entre `<!-- tabela:nome -->` e `<!-- /tabela:nome -->`."""
+    achados = {}
+    for nome in TABELAS:
+        m = re.search(
+            rf"<!-- tabela:{re.escape(nome)} -->\n(.*?)\n<!-- /tabela:{re.escape(nome)} -->",
+            doc,
+            re.S,
+        )
+        if m:
+            achados[nome] = m.group(1).strip()
+    return achados
+
+
+def escrever_no_doc(doc: str, gerados: dict[str, str]) -> str:
+    for nome, corpo in gerados.items():
+        doc = re.sub(
+            rf"(<!-- tabela:{re.escape(nome)} -->\n).*?(\n<!-- /tabela:{re.escape(nome)} -->)",
+            lambda m: m.group(1) + corpo + m.group(2),
+            doc,
+            flags=re.S,
+        )
+    return doc
+
+
+def conferir(gerados: dict[str, str], doc: str) -> int:
+    """O DESIGN.md publicou o que o CSS diz hoje? Devolve nº de tabelas divergentes."""
+    publicados = blocos_do_doc(doc)
+    ruins = 0
+    for nome, corpo in gerados.items():
+        if nome not in publicados:
+            print(f"×  tabela:{nome} — marcador ausente do DESIGN.md")
+            ruins += 1
+        elif publicados[nome] != corpo:
+            print(f"×  tabela:{nome} — o publicado não bate com o medido")
+            for a, b in zip(publicados[nome].splitlines(), corpo.splitlines()):
+                if a != b:
+                    print(f"     doc: {a}\n     css: {b}")
+            ruins += 1
+    print("tabelas em dia" if not ruins else f"{ruins} tabela(s) divergente(s)")
+    return ruins
+
+
 def main() -> None:
     claro, escuro, mod_claro, mod_escuro = tokens()
 
@@ -227,104 +427,20 @@ def main() -> None:
         print(n(razao(cor(escuro, a), cor(escuro, b))), "escuro")
         return
 
-    print("### Pastéis /02 sobre as superfícies — piso 3:1 (WCAG 1.4.11)\n")
-    print("| Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |")
-    print("|---|---|---|---|---|")
-    for rotulo, chave in MODULOS:
-        p_claro = cor(mod_claro[chave], "modulo-02")
-        p_escuro = cor(mod_escuro[chave], "modulo-02")
-        folha = razao(p_claro, cor(claro, "card"))
-        bancada = razao(p_claro, cor(claro, "background"))
-        folha_e = razao(p_escuro, cor(escuro, "card"))
-        pior = min(folha, bancada, folha_e)
-        print(f"| {rotulo} | {n(folha)}:1 | {n(bancada)}:1 | {n(folha_e)}:1 | {veredito(pior, 3)} |")
+    gerados = gerar(claro, escuro, mod_claro, mod_escuro)
 
-    print("\n### Cheia /01 sobre as superfícies — piso 3:1\n")
-    print("| Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |")
-    print("|---|---|---|---|---|")
-    for rotulo, chave in MODULOS:
-        c_claro = cor(mod_claro[chave], "modulo-01")
-        c_escuro = cor(mod_escuro[chave], "modulo-01")
-        print(
-            f"| {rotulo} | {n(razao(c_claro, cor(claro, 'card')))}:1 "
-            f"| {n(razao(c_claro, cor(claro, 'background')))}:1 "
-            f"| {n(razao(c_escuro, cor(escuro, 'card')))}:1 "
-            f"| {n(razao(c_escuro, cor(escuro, 'background')))}:1 |"
-        )
+    if "--escrever" in sys.argv:
+        DOC.write_text(escrever_no_doc(DOC.read_text(encoding="utf-8"), gerados), encoding="utf-8")
+        print(f"{len(gerados)} tabelas escritas em {DOC.name}")
+        return
 
-    print("\n### Zonas por conteúdo /02 sobre as superfícies — piso 3:1\n")
-    print("| Zona | × Folha | × Bancada | escuro × Folha |")
-    print("|---|---|---|---|")
-    for rotulo, chave in [
-        ("Valor", "zone-money"),
-        ("Identidade", "zone-id"),
-        ("Apoio", "zone-info"),
-        ("Pendência", "zone-warn"),
-        ("Bloqueio", "zone-danger"),
-    ]:
-        print(
-            f"| {rotulo} | {n(razao(cor(claro, chave), cor(claro, 'card')))}:1 "
-            f"| {n(razao(cor(claro, chave), cor(claro, 'background')))}:1 "
-            f"| {n(razao(cor(escuro, chave), cor(escuro, 'card')))}:1 |"
-        )
+    if "--conferir" in sys.argv:
+        divergem = conferir(gerados, DOC.read_text(encoding="utf-8"))
+        divergem += conferir_frontmatter(claro)
+        raise SystemExit(1 if divergem else 0)
 
-    print("\n### As 4 vozes sobre as superfícies — piso 4,5:1 (texto normal)\n")
-    print("| Voz | papel | tinta | Folha | Bancada | escuro: Folha | escuro: Bancada | veredito |")
-    print("|---|---|---|---|---|---|---|---|")
-    for voz, papel, chave in VOZES:
-        c_folha = razao(cor(claro, chave), cor(claro, "card"))
-        c_banc = razao(cor(claro, chave), cor(claro, "background"))
-        e_folha = razao(cor(escuro, chave), cor(escuro, "card"))
-        e_banc = razao(cor(escuro, chave), cor(escuro, "background"))
-        pior = min(c_folha, c_banc, e_folha, e_banc)
-        print(
-            f"| {voz} | {papel} | `--{chave}` | {n(c_folha)}:1 | {n(c_banc)}:1 "
-            f"| {n(e_folha)}:1 | {n(e_banc)}:1 | {veredito(pior, 4.5)} |"
-        )
-
-    print("\n### Estados — onde a cheia /01 vira FUNDO de texto (piso 4,5:1)\n")
-    print("O par real do `sidebar.tsx`: `data-active:bg-modulo-cheia` com a tinta do contêiner.")
-    print("\n| Módulo | claro: tinta × /01 | escuro: tinta × /01 |")
-    print("|---|---|---|")
-    for rotulo, chave in MODULOS:
-        c_claro = razao(cor(claro, "sidebar-foreground"), cor(mod_claro[chave], "modulo-01"))
-        c_escuro = razao(cor(escuro, "sidebar-foreground"), cor(mod_escuro[chave], "modulo-01"))
-        marca = lambda x: f"**{n(x)}:1**" if x < 4.5 else f"{n(x)}:1"
-        print(f"| {rotulo} | {marca(c_claro)} | {marca(c_escuro)} |")
-
-    print("\n### Demais estados — o par REAL de cada componente\n")
-    print("| par | claro | escuro |")
-    print("|---|---|---|")
-    # (rótulo, tinta, fundo) — fundo `None` = a Folha, para peça de fundo transparente
-    estados = [
-        ("texto sobre hover de item", "foreground", "neutral"),
-        ("secundário sobre hover de item", "muted-foreground", "neutral"),
-        ("linha selecionada: tinta × fundo", "primary-foreground", "primary"),
-        ("linha selecionada × folha", "primary", "card"),
-        ("carimbo `open` (`bg-stamp-open` + `text-foreground`)", "foreground", "stamp-open"),
-        ("carimbo `done` (`bg-stamp-done` + `text-primary-foreground`)", "primary-foreground", "stamp-done"),
-        ("carimbo `neutral` (letra, fundo transparente)", "stamp-neutral", "card"),
-        ("carimbo `void` (letra, fundo transparente)", "stamp-void", "card"),
-    ]
-    for rotulo, tinta, fundo in estados:
-        print(
-            f"| {rotulo} | {n(razao(cor(claro, tinta), cor(claro, fundo)))}:1 "
-            f"| {n(razao(cor(escuro, tinta), cor(escuro, fundo)))}:1 |"
-        )
-
-    print("\n### Aferições de apoio\n")
-    print(f"- degrau Bancada × Folha: {n(razao(cor(claro, 'background'), cor(claro, 'card')))}:1 claro"
-          f" · {n(razao(cor(escuro, 'background'), cor(escuro, 'card')))}:1 escuro")
-    print(f"- secundário sobre o Afundado (zebra): {n(razao(cor(claro, 'muted-foreground'), cor(claro, 'surface-sunken')))}:1 claro"
-          f" · {n(razao(cor(escuro, 'muted-foreground'), cor(escuro, 'surface-sunken')))}:1 escuro")
-    print(f"- traço `--border` sobre a Folha: {n(razao(cor(claro, 'border'), cor(claro, 'card')))}:1 claro"
-          f" · {n(razao(cor(escuro, 'border'), cor(escuro, 'card')))}:1 escuro")
-    print(f"- desabilitado sobre a Folha: {n(razao(cor(claro, 'text-disabled'), cor(claro, 'card')))}:1 claro"
-          f" · {n(razao(cor(escuro, 'text-disabled'), cor(escuro, 'card')))}:1 escuro")
-    sobre_pastel_claro = [razao(cor(claro, "foreground"), cor(mod_claro[c], "modulo-02")) for _, c in MODULOS]
-    sobre_pastel_escuro = [razao(cor(escuro, "foreground"), cor(mod_escuro[c], "modulo-02")) for _, c in MODULOS]
-    print(f"- tinta sobre os 8 pastéis /02: {n(min(sobre_pastel_claro))}–{n(max(sobre_pastel_claro))}:1 claro"
-          f" · {n(min(sobre_pastel_escuro))}–{n(max(sobre_pastel_escuro))}:1 escuro")
+    for nome, corpo in gerados.items():
+        print(f"<!-- tabela:{nome} -->\n{corpo}\n<!-- /tabela:{nome} -->\n")
 
 
 if __name__ == "__main__":

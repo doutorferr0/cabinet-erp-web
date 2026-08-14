@@ -119,8 +119,8 @@ effects:
 > lugar do creme. As três seções que isso reescreve são **Superfícies**, **Typography** e **a
 > sidebar/marca**; a **Sombra** trocou de família junto. **Todo número de contraste medido contra
 > a bancada creme foi refeito** — quem citar um valor antigo desta página está citando medição
-> inválida. Os números vivem na **§Medição de contraste**, e se remedem rodando
-> `python3 docs/design/medir-contraste.py` sobre os tokens de `src/index.css`.
+> inválida. Os números vivem na **§Medição de contraste**, em tabelas GERADAS: mexeu em token de
+> cor, rode `python3 docs/design/medir-contraste.py --conferir` antes de fechar.
 
 > **Supersede a fundação "Brut sobre papel" (fases 1 e 2).** Amostra de referência aprovada pelo user:
 > `docs/design/amostra-fase-1.5.html` (v5, 2026-08-06). **Em divergência entre este doc e a amostra, a AMOSTRA vence.**
@@ -434,10 +434,21 @@ citação, não medição.** As duas superfícies mudaram (creme → cinza) e in
 contraste medido contra a bancada creme — o mesmo vai acontecer na próxima troca de superfície.
 
 Fonte dos valores: os tokens REAIS de `src/index.css`, lidos por
-`python3 docs/design/medir-contraste.py`. **O script existe porque a medição na mão já errou duas
-vezes nesta própria página** (a faixa da cheia /01 no escuro e a do claro, corrigidas em
-2026-08-13): quem remede fecha o loop rodando o comando e colando a saída aqui, não conferindo
-número por número. Ele não altera cor nenhuma — é instrumento.
+`docs/design/medir-contraste.py`. **O script existe porque a medição na mão já errou duas vezes
+nesta própria página** (a faixa da cheia /01 no escuro e a do claro, corrigidas em 2026-08-13). Ele
+não altera cor nenhuma — é instrumento.
+
+**As tabelas abaixo são GERADAS, não digitadas.** Cada uma mora entre `<!-- tabela:nome -->` e o
+fechamento correspondente, e o script as escreve:
+
+- `python3 docs/design/medir-contraste.py --conferir` — pergunta se esta página ainda diz a
+  verdade sobre o CSS (tabelas **e** frontmatter). Sai com código 1 se não. É o comando a rodar
+  depois de mexer em qualquer token de cor.
+- `python3 docs/design/medir-contraste.py --escrever` — regrava as tabelas com o medido.
+
+Colar número à mão foi o que produziu os três valores errados que esta página já publicou, e na
+primeira execução do `--conferir` a guarda achou uma **linha inteira faltando** na tabela dos
+estados (o carimbo `open`). A prosa em volta continua escrita à mão: ela explica, não mede.
 
 Pisos WCAG usados: **4,5:1** texto normal (1.4.3) · **3:1** texto grande e componente/estado
 não-textual (1.4.11).
@@ -455,6 +466,7 @@ por serem medidos ou citados aqui e faltarem lá: `ink-strong`, `ink-disabled`, 
 A voz não tem cor própria: cada uma pinta com um token, e é o token que se mede. Duas vozes têm
 dois papéis com tintas diferentes, e os dois entram.
 
+<!-- tabela:vozes -->
 | Voz | papel | tinta | Folha | Bancada | escuro: Folha | escuro: Bancada | veredito |
 |---|---|---|---|---|---|---|---|
 | quem — Newsreader | nome de entidade, H1 | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
@@ -466,6 +478,7 @@ dois papéis com tintas diferentes, e os dois entram.
 | quanto — PT Mono | código, data, quantidade | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
 | quanto — PT Mono | dinheiro | `--money` | 5,03:1 | 4,58:1 | 8,49:1 | 10,42:1 | passa |
 | quanto — PT Mono | valor negativo | `--destructive` | 5,51:1 | 5,02:1 | 5,09:1 | 6,24:1 | passa |
+<!-- /tabela:vozes -->
 
 **As quatro vozes passam AA nas duas superfícies e nos dois temas.** A troca de papel não custou
 legibilidade de texto — foi a superfície tintada que ficou devendo, abaixo.
@@ -475,6 +488,7 @@ legibilidade de texto — foi a superfície tintada que ficou devendo, abaixo.
 Aqui a razão medida é **superfície contra superfície**: o /02 é a zona pintada, a Folha e a Bancada
 são o que está em volta.
 
+<!-- tabela:pasteis-02 -->
 | Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |
 |---|---|---|---|---|
 | Produtos | 1,03:1 | 1,07:1 | 1,32:1 | REPROVA |
@@ -485,11 +499,13 @@ são o que está em volta.
 | Fornecedores | 1,12:1 | 1,02:1 | 1,01:1 | REPROVA |
 | Profissionais | 1,08:1 | 1,01:1 | 1,01:1 | REPROVA |
 | Boletim | 1,13:1 | 1,03:1 | 1,06:1 | REPROVA |
+<!-- /tabela:pasteis-02 -->
 
 A cheia /01 do mesmo módulo, medida contra as mesmas superfícies (é ela que pinta ornamento, ícone
 e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** — `.dark
 [data-modulo=…]` só baixa a /02, e o neon do bloco claro continua na cascata servindo de tinta:
 
+<!-- tabela:cheia-01 -->
 | Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |
 |---|---|---|---|---|
 | Produtos | 1,40:1 | 1,27:1 | 9,38:1 | 11,51:1 |
@@ -500,6 +516,7 @@ e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** �
 | Fornecedores | 4,63:1 | 4,22:1 | 2,83:1 | 3,47:1 |
 | Profissionais | 4,24:1 | 3,87:1 | 3,08:1 | 3,78:1 |
 | Boletim | 2,56:1 | 2,34:1 | 5,11:1 | 6,26:1 |
+<!-- /tabela:cheia-01 -->
 
 Abaixo de 3:1 — no claro **três** contra a Folha (produtos, estoque, boletim) e **cinco** contra a
 Bancada (os três + compras e clientes); no escuro **duas** contra a Folha (vendas, fornecedores) e
@@ -509,6 +526,7 @@ superfícies: são três e cinco.
 As cinco zonas por conteúdo medem a mesma coisa que a /02, pelo mesmo motivo — **é a natureza do
 pastel /02, não regressão da troca de superfície**:
 
+<!-- tabela:zonas -->
 | Zona | × Folha | × Bancada | escuro × Folha |
 |---|---|---|---|
 | Valor | 1,00:1 | 1,10:1 | 1,25:1 |
@@ -516,6 +534,7 @@ pastel /02, não regressão da troca de superfície**:
 | Apoio | 1,05:1 | 1,04:1 | 1,06:1 |
 | Pendência | 1,05:1 | 1,15:1 | 1,25:1 |
 | Bloqueio | 1,05:1 | 1,04:1 | 1,04:1 |
+<!-- /tabela:zonas -->
 
 **O que a reprovação significa, e o que ela NÃO significa.** A 1.4.11 pede 3:1 do que delimita o
 componente, e quem delimita aqui é o **contorno preto de 2px** — ele mede 19,12:1 sobre a Folha no
@@ -533,6 +552,7 @@ cima**. Hoje são dois, e o par é o mesmo — `data-active:bg-modulo-cheia` no 
 (`sidebar.tsx`) e a gaveta de notificações, que herda o `text-sidebar-foreground`/`text-foreground`
 do tema.
 
+<!-- tabela:estados-fundo -->
 | Módulo | claro: tinta × /01 | escuro: tinta × /01 |
 |---|---|---|
 | Produtos | 13,71:1 | **1,33:1** |
@@ -543,6 +563,7 @@ do tema.
 | Fornecedores | **4,13:1** | **4,42:1** |
 | Profissionais | 4,51:1 | **4,05:1** |
 | Boletim | 7,46:1 | **2,45:1** |
+<!-- /tabela:estados-fundo -->
 
 **Piso 4,5:1, não 3:1** — o rótulo do item é 14px em `font-bold`, e "texto grande" pela WCAG começa
 em 18,66px negrito. Reprovam **dois no claro** (vendas, fornecedores; profissionais raspa em 4,51)
@@ -570,18 +591,21 @@ Corrigi-lo é edição em `src/`, fora da zona desta passagem — fica como pend
 
 Os demais estados, com o par que o componente resolve de verdade — um deles também reprova:
 
+<!-- tabela:estados-demais -->
 | par | claro | escuro |
 |---|---|---|
 | texto sobre hover de item (`--neutral`) | 17,39:1 | 10,02:1 |
 | secundário sobre hover de item | 4,72:1 | 5,43:1 |
 | linha selecionada: `--primary-foreground` × `--primary` | 5,22:1 | 5,13:1 |
 | linha selecionada × folha (a mudança de estado) | 4,76:1 | 4,18:1 |
+| carimbo `open` (`bg-stamp-open` + `text-foreground`) | 13,49:1 | 1,30:1 |
 | carimbo `done` (`bg-stamp-done` + `text-primary-foreground`) | 5,52:1 | 10,42:1 |
 | carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 6,41:1 | 6,60:1 |
 | carimbo `void` (`text-stamp-void`, fundo transparente) | 5,51:1 | 5,09:1 |
-| preenchimentos flat com texto preto (`fill-money` / `fill-focus` / `fill-error`) | 13,53 / 13,24 / 6,25:1 | tinta clara: 8,47 / 9,58 / 11,34:1 |
+<!-- /tabela:estados-demais -->
 
-**Os carimbos foram medidos com o par REAL do `stamp.tsx`, não com preto por suposição** — e um
+Os três `fill-*` ficam de fora da tabela por terem três valores por tema; estão no parágrafo
+abaixo. **Os carimbos foram medidos com o par REAL do `stamp.tsx`, não com preto por suposição** — e um
 deles reprova: **`open` no escuro dá 1,30:1**. Ele é `bg-stamp-open` + `text-foreground`, e no
 escuro o amarelo sobe para `47 100% 55%` enquanto a tinta do tema vira `220 12% 94%`: letra clara
 sobre amarelo claro. No claro o mesmo par dá 13,49:1, porque lá a tinta é preta. **É a mesma
@@ -596,11 +620,13 @@ cheia /01 e o `--stamp-open` — não.
 
 #### Aferições de apoio
 
+<!-- tabela:apoio -->
 - degrau Bancada × Folha: **1,10:1** claro · **1,23:1** escuro
-- secundário sobre o Afundado (zebra): 4,72:1 claro · 7,67:1 escuro
-- traço `--border` sobre a Folha: 19,12:1 claro · 5,88:1 escuro
-- `--text-disabled` sobre a Folha: 1,73:1 claro · 2,48:1 escuro
-- tinta sobre os 8 pastéis /02: 16,88–18,60:1 claro · 9,48–13,10:1 escuro
+- secundário sobre o Afundado (zebra): **4,72:1** claro · **7,67:1** escuro
+- traço `--border` sobre a Folha: **19,12:1** claro · **5,88:1** escuro
+- `--text-disabled` sobre a Folha: **1,73:1** claro · **2,48:1** escuro
+- tinta sobre os 8 pastéis /02: **16,88–18,60:1** claro · **9,48–13,10:1** escuro
+<!-- /tabela:apoio -->
 
 #### Pendências — nenhuma cor foi mexida aqui
 

@@ -44,52 +44,44 @@ export function lookupLabel(kind: LookupKind): string {
   return KINDS[kind].label
 }
 
+export interface OpcaoDeLookup {
+  id: string
+  nome: string
+}
+
 export interface LookupOptions {
-  options: string[]
   /**
-   * Nome → TODOS os ids com aquele nome. Plural de propósito.
+   * As opções como PARES id+nome (issue #94).
    *
-   * O combo escolhe por NOME e o contrato escreve por ID, então alguém precisa
-   * traduzir. Só que **nome não é chave**: dois itens homônimos no mesmo kind,
-   * ou um item renomeado entre a carga da lista e o submit, e a tradução grava
-   * o id errado — em silêncio, no campo que ninguém confere. Guardar a LISTA de
-   * ids em vez do primeiro é o que permite `resolverIdDoLookup` recusar em vez
-   * de chutar.
+   * Eram `string[]` de nomes, e o combo escolhia por nome — o que obrigava uma
+   * tradução nome→id no submit, com um mapa `idsPorNome` para desempatar
+   * homônimos e uma recusa barulhenta quando o nome sumia da lista. **Nome
+   * nunca foi chave**: dois itens homônimos no mesmo kind, ou um renomeado
+   * entre a carga da lista e o Gravar, e a tradução gravava o id errado no
+   * campo que ninguém confere. Escolhendo por id, o problema deixa de existir
+   * em vez de ser detectado.
    */
-  idsPorNome: Map<string, string[]>
+  options: OpcaoDeLookup[]
   /** A lista passou do teto e veio cortada — ver o comentário do `pageSize`. */
   truncada: boolean
   carregando: boolean
   erro: boolean
 }
 
-/** O que a tradução nome → id devolve. Falha é VALOR, não exceção nem `null`. */
-export type ResolucaoDeLookup =
-  | { ok: true; id: string | null }
-  | { ok: false; motivo: 'desconhecido' | 'ambiguo' }
-
 /**
- * Nome escolhido no combo → id que o contrato grava.
+ * Nome de um id, entre as opções carregadas. `undefined` quando o id não está
+ * na lista — item desativado, ou lista truncada no teto de 100.
  *
- * **Falha barulhento, nunca chuta** (regra do user, 2026-08-13). Se o nome não
- * existe na lista — porque foi renomeado, desativado, ou porque a lista veio
- * truncada — ou se existe DUAS vezes, esta função recusa e quem chamou tem de
- * mostrar erro ao operador. Gravar o palpite seria trocar a marca do produto
- * por outra sem ninguém ver.
- *
- * Nome vazio resolve para `null`: limpar o campo é escolha legítima.
+ * **`undefined` não é erro, é informação**: quem exibe decide o que mostrar no
+ * lugar, e o `LookupCombo` mostra o rótulo que o registro trouxe. O que NÃO se
+ * faz é apagar o valor por não saber o nome dele.
  */
-export function resolverIdDoLookup(
-  idsPorNome: Map<string, string[]>,
-  nome: string,
-): ResolucaoDeLookup {
-  const limpo = nome.trim()
-  if (limpo === '') return { ok: true, id: null }
-
-  const ids = idsPorNome.get(limpo)
-  if (!ids || ids.length === 0) return { ok: false, motivo: 'desconhecido' }
-  if (ids.length > 1) return { ok: false, motivo: 'ambiguo' }
-  return { ok: true, id: ids[0] as string }
+export function nomeDoLookup(
+  options: readonly OpcaoDeLookup[],
+  id: string | null,
+): string | undefined {
+  if (!id) return undefined
+  return options.find((o) => o.id === id)?.nome
 }
 
 /**
@@ -124,14 +116,9 @@ export function useLookupOptions(kind: LookupKind): LookupOptions {
   })
 
   const ativos = query.data?.rows.filter((r) => r.active) ?? []
-  const idsPorNome = new Map<string, string[]>()
-  for (const linha of ativos) {
-    idsPorNome.set(linha.name, [...(idsPorNome.get(linha.name) ?? []), linha.id])
-  }
 
   return {
-    options: ativos.map((r) => r.name),
-    idsPorNome,
+    options: ativos.map((r) => ({ id: r.id, nome: r.name })),
     truncada: (query.data?.total ?? 0) > (query.data?.rows.length ?? 0),
     carregando: query.isPending,
     erro: query.isError,

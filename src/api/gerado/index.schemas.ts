@@ -7,6 +7,50 @@
  * Vitra ERP
  * OpenAPI spec version: v1
  */
+/**
+ * Proposto. Operadores do filtro estruturado. `iLike`/`notILike` comparam trecho ignorando caixa e acento; `eq`/`ne` comparam o valor inteiro.
+ */
+export type ListFilterOperator = typeof ListFilterOperator[keyof typeof ListFilterOperator];
+
+
+export const ListFilterOperator = {
+  iLike: 'iLike',
+  notILike: 'notILike',
+  eq: 'eq',
+  ne: 'ne',
+  lt: 'lt',
+  lte: 'lte',
+  gt: 'gt',
+  gte: 'gte',
+  isBetween: 'isBetween',
+  inArray: 'inArray',
+  notInArray: 'notInArray',
+  isEmpty: 'isEmpty',
+  isNotEmpty: 'isNotEmpty',
+} as const;
+
+/**
+ * Proposto. UMA condição do filtro estruturado da listagem. Só o que o servidor precisa para consultar: o front carrega também a variante do campo (qual controle desenhar) e uma chave de linha, e as duas são UI — mandá-las no fio faria o servidor receber decisão de tela.
+ */
+export interface ListFilter {
+  /** Campo do DTO, na whitelist do recurso. Fora dela é 400, como no `sortBy` — filtro ignorado faria a tela mostrar resultado errado sem sintoma. */
+  field: string;
+  operator: ListFilterOperator;
+  /** Ausente em `isEmpty`/`isNotEmpty`. Array em `inArray`/`notInArray` (as opções aceitas) e em `isBetween` (`[de, ate]`, ponta vazia = extremo aberto). String no resto — inclusive em número e booleano, que o servidor converte pelo tipo do campo. */
+  value?: string | string[];
+}
+
+/**
+ * Proposto. Como as condições se somam. UMA para a lista inteira: junção por condição permitiria `A e B ou C`, cuja precedência ninguém lê corretamente numa lista sem parênteses.
+ */
+export type ListFilterJoin = typeof ListFilterJoin[keyof typeof ListFilterJoin];
+
+
+export const ListFilterJoin = {
+  and: 'and',
+  or: 'or',
+} as const;
+
 export interface CatalogLookupDto {
   id: string;
   kind: string;
@@ -1479,6 +1523,14 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+/**
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded** (`?filters=%%5B%%7B%%22field%%22...`), e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `code`, `description`, `active` — a mesma do `sortBy`, e cresce quando uma tela precisar. Campo fora dela é 400.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
 };
 
 export type ListPartnersParams = {
@@ -1488,6 +1540,14 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+/**
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded** (`?filters=%%5B%%7B%%22field%%22...`), e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `code`, `legalName`, `tradeName`, `document`, `active` — a mesma do `sortBy`, e cresce quando uma tela precisar. Campo fora dela é 400.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
 };
 
 export type ListStockMovementsParams = {

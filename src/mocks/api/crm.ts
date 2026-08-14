@@ -18,6 +18,7 @@ import {
   linhaPassaNosFiltros,
 } from '@/lib/filtro-de-consulta'
 import { http, HttpResponse } from 'msw'
+import { problemaJson } from './problema'
 import { novoId, store } from './store'
 
 /**
@@ -44,21 +45,6 @@ import { novoId, store } from './store'
  * - **mover de FUNIL não é movimento de coluna**: o `PATCH` recusa estágio de
  *   outro funil com 400, como a FK composta do banco recusaria.
  */
-
-const PROBLEMA = 'application/problem+json'
-
-/**
- * Cópia LOCAL dos utilitários de `handlers.ts` (problem+json e o contrato de
- * listagem). Importá-los de lá criaria ciclo — `handlers.ts` já importa este
- * arquivo para registrar os handlers. São ~30 linhas, e a semântica que elas
- * carregam está escrita em `docs/integracao.md`, não na cópia.
- */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
 
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')

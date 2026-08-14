@@ -16,6 +16,7 @@ import type {
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDoCrm } from './crm'
+import { problemaJson } from './problema'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
 /**
@@ -38,13 +39,6 @@ import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
  * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
-
-function problemaJson(status: number, detail: string, extras: Record<string, unknown> = {}) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail, ...extras },
-    { status, headers: { 'content-type': 'application/problem+json' } },
-  )
-}
 
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')

@@ -142,6 +142,31 @@ describe('Problem Details no mock', () => {
     expect(String(corpo.detail)).toContain('sortBy')
   })
 
+  /**
+   * O `title` é o rótulo do TIPO, e o mock mandava `'Erro'` em 100% das
+   * respostas. Não era detalhe: `ErroDoServidor` mostra o `title` como cabeçalho
+   * e a frase da tela abaixo, então no modo mock — o único ambiente que existe
+   * hoje — todo erro aparecia como "Erro" em cima e a informação útil embaixo,
+   * menor. Achado em revisão de outra sessão; o componente estava certo, a
+   * resposta é que não distinguia nada.
+   */
+  it('o title DISTINGUE o tipo do erro, em vez de dizer "Erro" sempre', async () => {
+    const naoEncontrado = await fetch('http://mock.teste/api/products/prod-que-nao-existe')
+    expect(naoEncontrado.status).toBe(404)
+    expect(((await naoEncontrado.json()) as Json).title).toBe('Não encontrado')
+
+    const invalido = await fetch('http://mock.teste/api/products?page=1&pageSize=10&sortBy=xpto')
+    expect(((await invalido.json()) as Json).title).toBe('Requisição inválida')
+  })
+
+  it('o handler do CRM usa o MESMO helper — formato em duas cópias vira dois formatos', async () => {
+    const semFunil = await fetch('http://mock.teste/api/crm/pipelines/funil-que-nao-existe')
+    expect(semFunil.status).toBe(404)
+    const corpo = (await semFunil.json()) as Json
+    expect(corpo.title).toBe('Não encontrado')
+    expect(semFunil.headers.get('content-type')).toContain('application/problem+json')
+  })
+
   it('erro SEM campo não inventa fields[] — nem lista vazia', async () => {
     const resposta = await createPartner({
       // O documento do fornecedor do seed: o 409 é o de cadastro repetido.

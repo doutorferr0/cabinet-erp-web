@@ -4,6 +4,7 @@ import {
 } from '@/components/cabinet/estado-de-consulta'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
+import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -50,18 +51,25 @@ function ClienteEditPage() {
       readOnly={readOnly}
       contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
       aviso={
-        <CoberturaParceiro
-          isNovo={isNovo}
-          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-          camposDeEdicao={papelCliente.camposDeEdicao}
-          {...(jaExiste && !vincular.error
-            ? {
-                vincular: () =>
-                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-                vinculando: vincular.isPending,
-              }
-            : {})}
-        />
+        // O vínculo pai/filho vale para a tela inteira e não pertence a aba
+        // nenhuma: entra aqui, acima das abas, junto do aviso de cobertura.
+        // Fica FORA do `<fieldset disabled>` — em consulta ele mostra o
+        // vínculo e o `readOnly` é que tira as ações.
+        <>
+          <CoberturaParceiro
+            isNovo={isNovo}
+            erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+            camposDeEdicao={papelCliente.camposDeEdicao}
+            {...(jaExiste && !vincular.error
+              ? {
+                  vincular: () =>
+                    vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                  vinculando: vincular.isPending,
+                }
+              : {})}
+          />
+          <HierarquiaParceiro parceiro={query.data ?? null} readOnly={readOnly} />
+        </>
       }
       onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
     />

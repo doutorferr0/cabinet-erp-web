@@ -4,6 +4,7 @@ import {
 } from '@/components/cabinet/estado-de-consulta'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
+import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -50,18 +51,25 @@ function FornecedorEditPage() {
       readOnly={readOnly}
       contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeFantasia}
       aviso={
-        <CoberturaParceiro
-          isNovo={isNovo}
-          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-          camposDeEdicao={papelFornecedor.camposDeEdicao}
-          {...(jaExiste && !vincular.error
-            ? {
-                vincular: () =>
-                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-                vinculando: vincular.isPending,
-              }
-            : {})}
-        />
+        // O vínculo pai/filho vale para a tela inteira e não pertence a aba
+        // nenhuma: entra aqui, acima das abas, junto do aviso de cobertura.
+        // Fica FORA do `<fieldset disabled>` — em consulta ele mostra o
+        // vínculo e o `readOnly` é que tira as ações.
+        <>
+          <CoberturaParceiro
+            isNovo={isNovo}
+            erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+            camposDeEdicao={papelFornecedor.camposDeEdicao}
+            {...(jaExiste && !vincular.error
+              ? {
+                  vincular: () =>
+                    vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                  vinculando: vincular.isPending,
+                }
+              : {})}
+          />
+          <HierarquiaParceiro parceiro={query.data ?? null} readOnly={readOnly} />
+        </>
       }
       onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
     />

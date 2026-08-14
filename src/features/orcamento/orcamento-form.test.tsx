@@ -1,3 +1,4 @@
+import { servidorDeOrcamentos } from '@/test/orcamentos'
 import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
@@ -5,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 describe('tela Orçamento', () => {
   it('listagem mostra orçamentos e usa Cancelar no lugar de Excluir', async () => {
-    renderRoute('/vendas/orcamentos')
+    renderRoute('/vendas/orcamentos', servidorDeOrcamentos())
 
     expect(await screen.findByText('ANDRÉ BATALHA')).toBeInTheDocument()
     // §8.1: orçamento não se apaga, se cancela.
@@ -17,7 +18,7 @@ describe('tela Orçamento', () => {
   // "Os orçamentos de agosto", "o que vence esta semana": é a consulta que uma
   // listagem de documento pede antes de qualquer outra, e era a que faltava.
   it('filtro por período de emissão estreita a listagem', async () => {
-    const { user } = renderRoute('/vendas/orcamentos')
+    const { user } = renderRoute('/vendas/orcamentos', servidorDeOrcamentos())
     await screen.findByText('ANDRÉ BATALHA')
     expect(screen.getByText('17 registros')).toBeInTheDocument()
 
@@ -35,7 +36,7 @@ describe('tela Orçamento', () => {
   })
 
   it('o campo de data é o input nativo — o calendário vem do sistema', async () => {
-    const { user } = renderRoute('/vendas/orcamentos')
+    const { user } = renderRoute('/vendas/orcamentos', servidorDeOrcamentos())
     await screen.findByText('ANDRÉ BATALHA')
 
     await user.click(screen.getByRole('button', { name: /^Filtro/ }))
@@ -49,7 +50,7 @@ describe('tela Orçamento', () => {
   })
 
   it('abre registro existente com os itens e o total calculado', async () => {
-    renderRoute('/vendas/orcamentos/2')
+    renderRoute('/vendas/orcamentos/orc-0002', servidorDeOrcamentos())
 
     expect(await screen.findByLabelText('Código')).toHaveValue('21654')
     // Item mockado: 2 × R$ 470,00 = R$ 940,00.
@@ -58,7 +59,7 @@ describe('tela Orçamento', () => {
   })
 
   it('inserir item pelo botão Produto soma no total', async () => {
-    const { user } = renderRoute('/vendas/orcamentos/novo')
+    const { user } = renderRoute('/vendas/orcamentos/novo', servidorDeOrcamentos())
 
     await screen.findByLabelText('Código')
     expect(screen.getByLabelText('Total')).toHaveTextContent('0,00')
@@ -76,7 +77,7 @@ describe('tela Orçamento', () => {
   })
 
   it('desconto por linha reduz o valor do item', async () => {
-    const { user } = renderRoute('/vendas/orcamentos/novo')
+    const { user } = renderRoute('/vendas/orcamentos/novo', servidorDeOrcamentos())
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: /Produto \(Alt\+P\)/ }))
@@ -93,7 +94,7 @@ describe('tela Orçamento', () => {
   })
 
   it('ambiente entra na linha inserida pelo botão Ambiente', async () => {
-    const { user } = renderRoute('/vendas/orcamentos/novo')
+    const { user } = renderRoute('/vendas/orcamentos/novo', servidorDeOrcamentos())
 
     await screen.findByLabelText('Código')
     await user.click(screen.getByRole('button', { name: /Ambiente \(Alt\+A\)/ }))
@@ -106,7 +107,9 @@ describe('tela Orçamento', () => {
     // da listagem de Clientes.
     const { router, user } = renderRoute(
       '/vendas/orcamentos/novo',
-      stubDeParceiros([parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true })]),
+      servidorDeOrcamentos(
+        stubDeParceiros([parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true })]),
+      ),
     )
 
     await screen.findByLabelText('Código')

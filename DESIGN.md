@@ -968,12 +968,38 @@ igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, s
 
 ### Appbar
 
-Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente em toda rota. Cluster
-à direita: busca 240px (`Pesquisar…`, chrome puro — não filtra nada, não há busca global no
-sistema) · engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
+Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente em toda rota. À
+esquerda, a **entrada da paleta de comandos** (240px, `Pesquisar…` + a etiqueta `Ctrl+K`); cluster
+à direita: engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
 lugar nenhum é pior que apagado, a mesma razão que desabilita `Alterar`/`Consul.` sem `get` no
 contrato) · sino com badge de não-lidas (abre a gaveta) · divisor · usuário (avatar + nome + papel +
 chevron, menu com `Sair`).
+
+#### Paleta de comandos (`src/app/paleta-de-comandos.tsx`)
+
+A entrada da appbar **era chrome puro** — aceitava digitação e não fazia nada, porque não há busca
+global no sistema. Deixou de ser: ela abre a paleta (ir para qualquer tela · abrir registro novo).
+Anatomia vinda da command palette do Supabase Studio (Apache-2.0); o conteúdo é montado da
+navegação daqui.
+
+**É BOTÃO com cara de campo, não `<input>`.** O que parece campo de texto e responde abrindo um
+diálogo mente sobre o que a digitação vai fazer.
+
+**Dois caminhos, e o clique é o que manda.** O botão é o acesso por mouse que a decisão de interface
+por clique exige; `Ctrl+K` — que já estava no registry (`src/lib/shortcuts.ts`), não é atalho novo —
+fica como conveniência e vem **escrito na própria peça**, para quem prefere teclado aprender sem
+documentação.
+
+**Oferece só o que a EMPRESA ATIVA alcança:** lê os mesmos `gruposVisiveis` da barra lateral, então
+tela sem recurso some das duas ao mesmo tempo. O `Incluir` de cada tela é publicado por ela na
+navegação (`NavItem.incluir`); tela que não cria registro não aparece no grupo, em vez de oferecer
+um comando que leva a 404. Estando numa tela, o `Incluir` dela encabeça a lista — e não se repete
+embaixo.
+
+**Fora dela de propósito:** `Alterar`/`Consul.`/`Excluir` (agem sobre a linha selecionada, que é
+estado de dentro da listagem — de fora, teriam de perguntar "qual registro?", e quem responde isso é
+a própria listagem) e busca por REGISTRO (exigiria consulta ao servidor a cada tecla em todo recurso,
+e o contrato não tem busca global).
 
 **Fronteira lucide × shape continua valendo aqui**: busca, engrenagem, sino e chevron são AÇÃO de
 sistema, não lugar — vêm do lucide, não do acervo brutalist. Um "segundo vocabulário" de ícone

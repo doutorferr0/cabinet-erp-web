@@ -3,6 +3,7 @@ import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
 import { type NavItem, gruposVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
+import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { Marca } from '@/components/cabinet/marca'
@@ -215,6 +216,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // duas coisas nascem e morrem juntas com a navegação da sessão.
   const [notificacoes, setNotificacoes] = useState(NOTIFICACOES_MOCK)
   const [gavetaAberta, setGavetaAberta] = useState(false)
+  // A paleta é do SHELL, não da appbar: ela está em toda rota e o `Ctrl+K`
+  // precisa valer com o foco em qualquer lugar. Montá-la dentro da appbar a
+  // amarraria ao botão que a abre — e o botão é só um dos dois caminhos.
+  const [paletaAberta, setPaletaAberta] = useState(false)
   const naoLidas = notificacoes.filter((n) => !n.lida).length
 
   return (
@@ -223,7 +228,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
-        <Appbar naoLidas={naoLidas} aoAbrirGaveta={() => setGavetaAberta(true)} />
+        <Appbar
+          naoLidas={naoLidas}
+          aoAbrirGaveta={() => setGavetaAberta(true)}
+          aoAbrirPaleta={() => setPaletaAberta(true)}
+        />
 
         {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">
@@ -261,6 +270,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           wrapper flex do `SidebarProvider` — é isso que faz a gaveta EMPURRAR
           o conteúdo ao abrir, em vez de flutuar por cima dele (decisão do
           user, §@casca-global: "não quero que sobreponha, e sim empurre"). */}
+      <PaletaDeComandos aberta={paletaAberta} onOpenChange={setPaletaAberta} />
       <GavetaDeNotificacoes
         aberta={gavetaAberta}
         onOpenChange={setGavetaAberta}

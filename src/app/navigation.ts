@@ -194,6 +194,12 @@ export const navGroups: NavGroup[] = [
         icon: Filter,
         descricao: 'Os modelos de venda: as colunas por onde a oportunidade passa até fechar.',
       },
+      {
+        title: 'Motivos de Perda',
+        url: '/crm/motivos',
+        icon: Filter,
+        descricao: 'Por que os negócios se perdem — catalogado, para virar análise no fim do ano.',
+      },
     ],
   },
   {

@@ -4,6 +4,7 @@ import {
 } from '@/components/cabinet/estado-de-consulta'
 import { obterOportunidade, oportunidadeVazia } from '@/data/crm-api'
 import { OportunidadeForm } from '@/features/crm/oportunidade-form'
+import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -63,10 +64,19 @@ function OportunidadePage() {
   }
 
   return (
-    <OportunidadeForm
-      oportunidade={registro}
-      readOnly={readOnly}
-      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
-    />
+    <div className="flex flex-col gap-6">
+      <OportunidadeForm
+        oportunidade={registro}
+        readOnly={readOnly}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
+      />
+
+      {/* O painel monta AQUI, e não dentro do `OportunidadeForm`, por duas
+          razões: atividade é registro próprio, com gravação própria — dentro do
+          `<form>` os botões dele disputariam o submit do cadastro; e a
+          oportunidade só tem id depois de gravada, então em `Incluir` não há
+          alvo a que pendurar atividade. */}
+      {isNovo ? null : <PainelDeAtividades alvo={{ tipo: 'opportunity', id: oportunidadeId }} />}
+    </div>
   )
 }

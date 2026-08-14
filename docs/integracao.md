@@ -175,9 +175,51 @@ com id inventado e responderia "não encontrado" para registro que existe.
 
 | CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` · **`GET` `/api/crm/reports/lost-reasons`** | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
 
+| Atividades — o que está agendado sobre um registro | `GET`/`POST` `/api/activities` · `PUT` `…/{id}` · **`POST` `…/{id}/done`** | `src/data/atividades-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/atividades.ts` no modo mock |
+
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
 
+### Atividades — uma tabela polimórfica, um recurso só (2026-08-14)
+
+`activities` (schema mergeado, #66) serve QUATRO entidades pelo par
+`entity_type` + `entity_id`, e o contrato repete essa forma: um recurso, com o
+alvo no corpo (criação) e na consulta (listagem). Caminho por módulo
+(`/api/crm/opportunities/{id}/activities`, `/api/partners/{id}/activities`…)
+devolveria os quatro endpoints que a tabela existe para evitar, e a primeira
+tela que perguntasse "o que me espera hoje" teria de somar quatro listagens.
+
+**O alvo viaja como PAR.** `entityId` sem `entityType` é **400**: uuid sem a
+tabela não identifica registro nenhum, e responder a lista inteira faria o painel
+de um cadastro mostrar atividade de outro.
+
+**Concluir tem verbo próprio: `POST /api/activities/{id}/done`.** O painel mostra
+a LINHA, não o registro inteiro — um `PUT` montado a partir dela apagaria prazo,
+responsável e observação por omissão, que é a classe de defeito de
+`cobertura-de-escrita.test.ts`. Quem carimba `doneAt` é o servidor, com a hora
+dele; `ActivityWriteRequest` não tem o campo, de propósito. Concluir a já
+concluída é **409**, e **não há como desconcluir**: atividade concluída é
+registro do que aconteceu, e o que se refaz é uma atividade nova.
+
+**O `PUT` não move a atividade de registro.** Trocar `entityType`/`entityId` é
+400 — a linha sumiria do painel que a mostrava sem aparecer em nenhum outro.
+
+**Não há `DELETE`.** Atividade agendada por engano se corrige alterando ou
+concluindo; o que foi agendado é parte do histórico que a análise lê. Também não
+há `active`: `activities` não é cadastro, e o padrão 8 não se aplica.
+
+**Onde o painel está montado, e por que não em toda parte.** Oportunidade
+(`/crm/oportunidades/{id}`) e os três papéis de parceiro (Cliente, Fornecedor,
+Profissional) — os dois recursos cujo id é do SERVIDOR. **Orçamento e pedido de
+compra ficam fora enquanto forem mock puro:** o `entityId` é `uuid` no contrato,
+e o id que essas telas têm hoje é inventado no front. A atividade sobreviveria à
+troca mock→HTTP apontando para registro que não existe. É a mesma regra do
+registry — o que depende do servidor só entra quando o caminho existe de verdade.
+
+**O `kind` é conjunto fechado e a lista é PROPOSTA do front**
+(`call`/`meeting`/`email`/`task`). A transcrição do SoftLux não cobre atividade e
+o schema guarda `kind varchar` sem fixar valores — a lista cresce por PR no
+contrato, junto com o CHECK do banco, e é pergunta aberta ao user.
 ### CRM — por que perdemos é AGREGAÇÃO do servidor (2026-08-14)
 
 `GET /api/crm/reports/lost-reasons?pipelineId&from&to` devolve a contagem por

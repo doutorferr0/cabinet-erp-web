@@ -15,6 +15,7 @@ import type {
 } from '@/api/gerado'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
+import { handlersDeAtividades } from './atividades'
 import { handlersDoCrm } from './crm'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { problemaJson } from './problema'
@@ -667,6 +668,12 @@ export const handlers = [
   // ---------------- orçamento ----------------
   // Mesma razão do CRM: estado e handlers em `quotes.ts`.
   ...handlersDeOrcamento,
+
+  // ---------------- atividades ----------------
+  // Mesma decisão do CRM, e aqui ela pesa mais: a tabela é POLIMÓRFICA e o
+  // painel monta em oportunidade, parceiro, orçamento e pedido — o estado não é
+  // de nenhum módulo em particular.
+  ...handlersDeAtividades,
 
   // ---------------- health ----------------
   http.get('*/health', () => HttpResponse.json({ status: 'ok' })),

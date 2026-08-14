@@ -6,6 +6,7 @@ import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { ProfissionalForm } from '@/features/profissional/profissional-form'
+import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Profissional } from '@/mocks/profissionais'
 import { createFileRoute } from '@tanstack/react-router'
@@ -45,25 +46,33 @@ function ProfissionalEditPage() {
   }
 
   return (
-    <ProfissionalForm
-      profissional={registro}
-      readOnly={readOnly}
-      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeApresentacao}
-      aviso={
-        <CoberturaParceiro
-          isNovo={isNovo}
-          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-          camposDeEdicao={papelProfissional.camposDeEdicao}
-          {...(jaExiste && !vincular.error
-            ? {
-                vincular: () =>
-                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-                vinculando: vincular.isPending,
-              }
-            : {})}
-        />
-      }
-      onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
-    />
+    <div className="flex flex-col gap-6">
+      <ProfissionalForm
+        profissional={registro}
+        readOnly={readOnly}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nomeApresentacao}
+        aviso={
+          <CoberturaParceiro
+            isNovo={isNovo}
+            erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+            camposDeEdicao={papelProfissional.camposDeEdicao}
+            {...(jaExiste && !vincular.error
+              ? {
+                  vincular: () =>
+                    vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                  vinculando: vincular.isPending,
+                }
+              : {})}
+          />
+        }
+        onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+      />
+
+      {/* O painel monta AQUI, fora do `<form>` do cadastro: atividade é
+          registro próprio, com gravação própria, e dentro do formulário os
+          botões dele disputariam o submit. Em `Incluir` não há id a que
+          pendurar atividade — por isso só aparece no registro que já existe. */}
+      {isNovo ? null : <PainelDeAtividades alvo={{ tipo: 'partner', id: profissionalId }} />}
+    </div>
   )
 }

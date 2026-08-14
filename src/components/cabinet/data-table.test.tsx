@@ -587,3 +587,92 @@ describe('VitraDataTable — consultas favoritas', () => {
     expect(screen.getByRole('button', { name: 'Consultas salvas — nenhuma' })).toBeInTheDocument()
   })
 })
+
+/**
+ * VIEW MODES — o mecanismo genérico, sem CRM no meio.
+ *
+ * O funil é o piloto (`src/features/crm/`), mas quem carrega o padrão é a
+ * DataTable: a próxima tela que ganhar gráfico ou calendário não deve
+ * reimplementar alternador, agrupamento nem o corte do conjunto.
+ */
+describe('VitraDataTable — visões', () => {
+  const visaoDeCartoes = {
+    id: 'cartoes',
+    rotulo: 'Cartões',
+    agrupa: true,
+    render: ({ rows, agruparPor }: { rows: Produto[]; agruparPor: string }) => (
+      <div data-testid="cartoes">
+        <p>agrupado por {agruparPor}</p>
+        <p>{rows.length} cartões</p>
+      </div>
+    ),
+  }
+
+  function setupComVisao(visaoInicial = 'cartoes') {
+    return renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-visao']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        pageSizeOptions={[10, 20]}
+        visoes={[visaoDeCartoes]}
+        agrupamentos={[
+          { id: 'marca', rotulo: 'Marca' },
+          { id: 'nossoCodigo', rotulo: 'Código' },
+        ]}
+        visaoInicial={visaoInicial}
+      />,
+    )
+  }
+
+  it('a visão substitui a tabela, e o alternador traz a tabela de volta', async () => {
+    const { user } = setupComVisao()
+
+    expect(await screen.findByTestId('cartoes')).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: 'Lista' }))
+
+    expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
+    expect(screen.queryByTestId('cartoes')).not.toBeInTheDocument()
+  })
+
+  /**
+   * Coluna montada com a página 1 seria coluna FALSA — mostraria três cartões
+   * numa etapa que tem trinta. A visão pede o conjunto inteiro, e o que passar
+   * do teto do contrato é DITO, não cortado calado.
+   */
+  it('a visão pede o conjunto inteiro e o rodapé some com a paginação', async () => {
+    setupComVisao()
+
+    expect(await screen.findByText('45 cartões')).toBeInTheDocument()
+    expect(screen.getByText('45 registros')).toBeInTheDocument()
+    expect(screen.queryByText(/Página 1 de/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Por página:')).not.toBeInTheDocument()
+  })
+
+  it('o `Agrupar por` só existe na visão que agrupa', async () => {
+    const { user } = setupComVisao()
+
+    expect(await screen.findByLabelText('Agrupar por:')).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Lista' }))
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(screen.queryByLabelText('Agrupar por:')).not.toBeInTheDocument()
+  })
+
+  it('o agrupamento escolhido chega à visão', async () => {
+    const { user } = setupComVisao()
+
+    expect(await screen.findByText('agrupado por marca')).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'nossoCodigo')
+    expect(await screen.findByText('agrupado por nossoCodigo')).toBeInTheDocument()
+  })
+
+  it('sem a prop `visoes` não há alternador — as oito telas seguem iguais', async () => {
+    setup()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(screen.queryByRole('radio', { name: 'Lista' })).not.toBeInTheDocument()
+  })
+})

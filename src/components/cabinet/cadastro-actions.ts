@@ -28,6 +28,14 @@ export interface CadastroActionsOptions<T> {
   onConsultar?: (row: T) => void
   /** Desativação lógica — nunca exclusão real na UI de cadastros. */
   onExcluir?: (row: T) => void
+  /**
+   * Por que `Excluir` está desabilitado. Existe porque nem todo recurso
+   * desativa: a oportunidade do CRM não tem `active` nem `DELETE` no contrato —
+   * perder um negócio é mudar de etapa, com motivo. O botão fica na barra
+   * (§9 padrão 4 é a mesma em toda tela) e DIZ por que não serve, em vez de
+   * fingir uma ação que o servidor recusaria.
+   */
+  motivoSemExcluir?: string
   onImprimir?: () => void
   onFiltro?: () => void
 }
@@ -43,6 +51,7 @@ export function cadastroActions<T>({
   motivoSemAbrir,
   onConsultar,
   onExcluir,
+  motivoSemExcluir,
   onImprimir,
   onFiltro,
 }: CadastroActionsOptions<T>): DataTableAction<T>[] {
@@ -84,6 +93,7 @@ export function cadastroActions<T>({
       icon: Ban,
       needsSelection: true,
       variant: 'destructive',
+      ...(motivoSemExcluir ? { disabled: true, title: motivoSemExcluir } : {}),
       onClick: (row) =>
         row &&
         (onExcluir

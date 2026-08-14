@@ -1,11 +1,14 @@
 import {
+  type CampoFiltravel,
   type FiltroDaTabela,
   filtroCasa,
+  filtrosNormalizados,
   filtrosValidos,
   linhaPassaNosFiltros,
   novoFiltroId,
   operadorPadrao,
   operadoresDaVariante,
+  somenteDigitos,
 } from '@/lib/filtro-de-consulta'
 import { describe, expect, it } from 'vitest'
 
@@ -175,5 +178,50 @@ describe('junção', () => {
 
   it('filtro sem valor não conta nem no or — senão traria tudo', () => {
     expect(quais([doSetorVendas, filtro({ valor: '' })], 'or')).toEqual([1])
+  })
+})
+
+describe('normalização na saída', () => {
+  const campos: CampoFiltravel[] = [
+    { id: 'document', rotulo: 'CNPJ / CPF', variante: 'text', normalizar: somenteDigitos },
+    { id: 'nome', rotulo: 'Nome', variante: 'text' },
+  ]
+
+  it('somenteDigitos tira a pontuação que o operador digita', () => {
+    expect(somenteDigitos('12.345.678/0001-90')).toBe('12345678000190')
+    expect(somenteDigitos('123.456.789-00')).toBe('12345678900')
+    expect(somenteDigitos('')).toBe('')
+  })
+
+  it('o valor que VIAJA perde a máscara — o dado é dígito puro', () => {
+    const [saiu] = filtrosNormalizados(
+      [filtro({ id: 'document', valor: '12.345.678/0001-90' })],
+      campos,
+    )
+    expect(saiu?.valor).toBe('12345678000190')
+  })
+
+  it('campo sem normalizar passa intacto — nome tem ponto de verdade', () => {
+    const [saiu] = filtrosNormalizados([filtro({ id: 'nome', valor: 'J. SILVA' })], campos)
+    expect(saiu?.valor).toBe('J. SILVA')
+  })
+
+  it('normaliza cada item da múltipla escolha', () => {
+    const [saiu] = filtrosNormalizados(
+      [
+        filtro({
+          id: 'document',
+          operador: 'inArray',
+          valor: ['12.345.678/0001-90', '111.222.333-44'],
+        }),
+      ],
+      campos,
+    )
+    expect(saiu?.valor).toEqual(['12345678000190', '11122233344'])
+  })
+
+  it('campo que a tela não declara não quebra nada', () => {
+    const [saiu] = filtrosNormalizados([filtro({ id: 'desconhecido', valor: 'x' })], [])
+    expect(saiu?.valor).toBe('x')
   })
 })

@@ -25,6 +25,7 @@ import {
   type CampoFiltravel,
   type FiltroDaTabela,
   type Juncao,
+  filtrosNormalizados,
   filtrosValidos,
 } from '@/lib/filtro-de-consulta'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
@@ -180,7 +181,10 @@ export function VitraDataTable<T>({
   useEffect(() => {
     const t = setTimeout(() => {
       setState((s) => {
-        const validos = filtrosValidos(filtrosInput)
+        // Normaliza DEPOIS de decidir o que já é frase completa: um CNPJ meio
+        // digitado continua sendo filtro sem valor, e limpar a máscara antes
+        // não muda isso.
+        const validos = filtrosNormalizados(filtrosValidos(filtrosInput), camposFiltraveis ?? [])
         if (
           assinaturaDoFiltro(s.filtros, s.juncao ?? 'and') === assinaturaDoFiltro(validos, juncao)
         )
@@ -190,7 +194,7 @@ export function VitraDataTable<T>({
       })
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [filtrosInput, juncao])
+  }, [filtrosInput, juncao, camposFiltraveis])
 
   const query = useQuery({
     queryKey: [...queryKey, state],

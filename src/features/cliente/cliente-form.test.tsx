@@ -17,6 +17,37 @@ describe('tela Cliente', () => {
     expect(urls.find((u) => u.includes('/api/partners'))).toContain('role=customer')
   })
 
+  // O dado trafega em dígito puro; o operador digita com pontuação. Sem a
+  // normalização na saída, a consulta responderia "nenhum registro" para um
+  // cliente que existe — e ele conferiria o CNPJ dígito a dígito.
+  it('filtrar por CNPJ digitado com máscara manda só os dígitos', async () => {
+    const urls: string[] = []
+    const linhas = [parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true })]
+    const { user } = renderRoute('/cadastros/clientes', (entrada) => {
+      urls.push(String(entrada instanceof Request ? entrada.url : entrada))
+      return stubDeParceiros(linhas)(entrada)
+    })
+
+    await screen.findByText('ANDRÉ BATALHA')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /CNPJ/ }))
+    await user.type(await screen.findByLabelText('Valor do filtro 1'), '12.345.678/0001-90')
+
+    await waitFor(() => {
+      const consulta = urls.filter((u) => u.includes('filters=')).at(-1)
+      expect(consulta).toBeDefined()
+      const filtros = JSON.parse(new URL(consulta as string).searchParams.get('filters') as string)
+      expect(filtros).toEqual([{ field: 'document', operator: 'iLike', value: '12345678000190' }])
+    })
+
+    // O campo continua mostrando o que foi digitado: normalizar na tela apagaria
+    // a máscara embaixo do cursor.
+    expect(await screen.findByLabelText('Valor do filtro 1')).toHaveValue('12.345.678/0001-90')
+  })
+
   it('formulário grava e volta para a listagem, com o papel desta tela', async () => {
     const { stub, chamadas } = servidorDeParceiros()
     const { router, user } = renderRoute('/cadastros/clientes/novo', stub)

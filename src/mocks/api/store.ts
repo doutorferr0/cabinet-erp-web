@@ -11,6 +11,7 @@ import type {
   VinculoDeEmpresa,
 } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
+import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
 
 /**
  * Estado em memória do modo mock (`VITE_API_MODE=mock`).
@@ -72,17 +73,7 @@ export const TENANT_MATRIZ = 'tenant-matriz'
 export const TENANT_FILIAL = 'tenant-filial'
 
 function lookupsDoSeed(): CatalogLookupDto[] {
-  const porKind: Record<string, string[]> = {
-    MARCA: ['EVOLED', 'STELLA', 'BRILIA', 'SAVE ENERGY'],
-    FABRICA: ['FÁBRICA SP', 'FÁBRICA SUL'],
-    TIPO_PRODUTO: ['PENDENTE', 'ARANDELA', 'EMBUTIDO', 'PLAFON', 'FITA LED'],
-    TIPO_PECA: ['VIDRO', 'METAL', 'MADEIRA'],
-    CLASSIFICACAO: ['DECORATIVO', 'TÉCNICO'],
-    SETOR: ['VENDAS', 'ESTOQUE', 'PROJETO'],
-    CARGO: ['VENDEDOR', 'PROJETISTA', 'GERENTE'],
-    MATERIAIS: ['ALUMÍNIO', 'LATÃO', 'ACRÍLICO'],
-  }
-  return Object.entries(porKind).flatMap(([kind, nomes]) =>
+  return Object.entries(VOCABULARIO_DE_APOIO).flatMap(([kind, nomes]) =>
     nomes.map((name, i) => ({ id: `lk-${kind}-${i + 1}`, kind, name, active: true })),
   )
 }

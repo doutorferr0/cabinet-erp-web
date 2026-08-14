@@ -95,6 +95,12 @@ antes.
 
 **Severidade: alta — e é config de repositório, não de workflow.**
 
+> **Reconferido em 2026-08-13 pela API, e continua aberto:**
+> `GET /repos/{owner}/{repo}/branches/main/protection` responde **404 "Branch not protected"** e
+> `GET /rulesets` devolve lista **vazia**. Não é suposição de quem escreveu em 08/08 — é o estado
+> de hoje. Vale mais aqui do que na maioria dos repos: a `main` publica sozinha em
+> `cabinetonline.cc`, então merge é publicação, e nada exige o check verde antes dela.
+
 O CLAUDE.md diz "CI vermelho = sessão não terminou", mas isso é disciplina, não trava. Sem
 proteção de branch, um merge entra com o check falhando (ou ainda rodando) e a Cloudflare publica.
 
@@ -214,7 +220,8 @@ Não há allowlist de teste de aplicação: o workflow reprova qualquer ocorrên
 
 Não há `--coverage` no CI e não há limiar. O CLAUDE.md exige "componente novo = teste novo
 mínimo", que é a intenção certa e não é o que um limiar global mede: 427 testes hoje dão um número
-qualquer, e fixar esse número como piso premia teste de encher linha.
+qualquer, e fixar esse número como piso premia teste de encher linha. (**486 testes em 73
+arquivos** em 2026-08-13 — o número da frase muda a cada semana, que é justamente o argumento.)
 
 Proposta, se entrar: `vitest run --coverage` publicando **relatório**, sem `thresholds`, por dois
 ou três meses. Depois disso existe série histórica e o piso pode ser calibrado em cima de dado, em
@@ -242,6 +249,12 @@ por convenção, não por trava.
 2. **Configuração externa pendente:** proteger `main` exigindo o job `check` e branch atualizada.
 3. **Futuro deliberado:** cobertura e supply-chain automatizado, somente após definir dependência,
    fonte de publicação e política de falha.
+4. **Candidata nova, decisão do user:** `python3 docs/design/medir-contraste.py --conferir` (2026-08-13)
+   pergunta se as tabelas de contraste e o frontmatter do `DESIGN.md` ainda batem com
+   `src/index.css`, e sai 1 quando não. Hoje é comando manual, e comando manual não é guarda —
+   ninguém roda. Como passo do CI custaria **python num job que hoje é só node**; é a única
+   objeção real, já que o script não tem dependência externa e roda em ~50 ms. Fica proposto,
+   não aplicado: mexer no `ci.yml` é fora da zona de quem escreveu isto.
 
 Itens de workflow e a migração do helper foram mantidos no mesmo fechamento porque a guarda 5.2
 precisava nascer sem exceção.
@@ -250,6 +263,10 @@ precisava nascer sem exceção.
 
 Manter **um job**. A tentação é paralelizar lint/tipos/teste em jobs separados para feedback mais
 rápido, mas aqui cada job extra repaga `checkout` + `pnpm install` (o custo dominante), e o
-trabalho útil é curto: suíte inteira em **18,6 s** (63 arquivos, 427 testes) e build em **757 ms**.
+trabalho útil é curto: suíte inteira em **18,6 s** (63 arquivos, 427 testes) e build em **757 ms**
+— medição de 2026-08-08, em máquina ociosa. **Não comparar com uma rodada local qualquer:** com
+build e browser disputando a máquina, a mesma suíte foi a 151 s e reprovou 7 arquivos por
+contenção, e a MESMA árvore fechou verde em seguida com `--maxWorkers=2`. Falha de suíte cheia em
+máquina ocupada não é regressão até ser reproduzida limitando os workers.
 Três jobs paralelos triplicariam a instalação para economizar segundos. A ordem sequencial atual
 — codegen, lint, tipos, teste, build — já põe o mais barato e mais provável primeiro.

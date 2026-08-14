@@ -183,6 +183,12 @@ export const navGroups: NavGroup[] = [
     icon: Filter,
     items: [
       {
+        title: 'Oportunidades',
+        url: '/crm/funil',
+        icon: SquareKanban,
+        descricao: 'O quadro do funil: cada negócio em aberto, na etapa em que está.',
+      },
+      {
         title: 'Funis',
         url: '/crm/funis',
         icon: Filter,

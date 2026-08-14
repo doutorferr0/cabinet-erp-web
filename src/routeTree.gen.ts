@@ -39,6 +39,8 @@ import { Route as ComprasOrdensIndexRouteImport } from './routes/compras/ordens/
 import { Route as ComprasOrdensOrdemIdRouteImport } from './routes/compras/ordens/$ordemId'
 import { Route as ComprasPedidosIndexRouteImport } from './routes/compras/pedidos/index'
 import { Route as ComprasPedidosPedidoIdRouteImport } from './routes/compras/pedidos/$pedidoId'
+import { Route as CrmFunilIndexRouteImport } from './routes/crm/funil/index'
+import { Route as CrmFunilFunilIdRouteImport } from './routes/crm/funil/$funilId'
 import { Route as CrmFunisIndexRouteImport } from './routes/crm/funis/index'
 import { Route as CrmFunisFunilIdRouteImport } from './routes/crm/funis/$funilId'
 import { Route as VendasOrcamentosIndexRouteImport } from './routes/vendas/orcamentos/index'
@@ -202,6 +204,16 @@ const ComprasPedidosPedidoIdRoute = ComprasPedidosPedidoIdRouteImport.update({
   path: '/pedidos/$pedidoId',
   getParentRoute: () => ComprasRoute,
 } as any)
+const CrmFunilIndexRoute = CrmFunilIndexRouteImport.update({
+  id: '/funil/',
+  path: '/funil/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmFunilFunilIdRoute = CrmFunilFunilIdRouteImport.update({
+  id: '/funil/$funilId',
+  path: '/funil/$funilId',
+  getParentRoute: () => CrmRoute,
+} as any)
 const CrmFunisIndexRoute = CrmFunisIndexRouteImport.update({
   id: '/funis/',
   path: '/funis/',
@@ -248,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
   '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/crm/funil/$funilId': typeof CrmFunilFunilIdRoute
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
@@ -257,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
   '/compras/ordens/': typeof ComprasOrdensIndexRoute
   '/compras/pedidos/': typeof ComprasPedidosIndexRoute
+  '/crm/funil/': typeof CrmFunilIndexRoute
   '/crm/funis/': typeof CrmFunisIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
 }
@@ -280,6 +294,7 @@ export interface FileRoutesByTo {
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
   '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/crm/funil/$funilId': typeof CrmFunilFunilIdRoute
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
@@ -289,6 +304,7 @@ export interface FileRoutesByTo {
   '/cadastros/profissionais': typeof CadastrosProfissionaisIndexRoute
   '/compras/ordens': typeof ComprasOrdensIndexRoute
   '/compras/pedidos': typeof ComprasPedidosIndexRoute
+  '/crm/funil': typeof CrmFunilIndexRoute
   '/crm/funis': typeof CrmFunisIndexRoute
   '/vendas/orcamentos': typeof VendasOrcamentosIndexRoute
 }
@@ -317,6 +333,7 @@ export interface FileRoutesById {
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
   '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/crm/funil/$funilId': typeof CrmFunilFunilIdRoute
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
@@ -326,6 +343,7 @@ export interface FileRoutesById {
   '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
   '/compras/ordens/': typeof ComprasOrdensIndexRoute
   '/compras/pedidos/': typeof ComprasPedidosIndexRoute
+  '/crm/funil/': typeof CrmFunilIndexRoute
   '/crm/funis/': typeof CrmFunisIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
 }
@@ -355,6 +373,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/$profissionalId'
     | '/compras/ordens/$ordemId'
     | '/compras/pedidos/$pedidoId'
+    | '/crm/funil/$funilId'
     | '/crm/funis/$funilId'
     | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes/'
@@ -364,6 +383,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/'
     | '/compras/ordens/'
     | '/compras/pedidos/'
+    | '/crm/funil/'
     | '/crm/funis/'
     | '/vendas/orcamentos/'
   fileRoutesByTo: FileRoutesByTo
@@ -387,6 +407,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/$profissionalId'
     | '/compras/ordens/$ordemId'
     | '/compras/pedidos/$pedidoId'
+    | '/crm/funil/$funilId'
     | '/crm/funis/$funilId'
     | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes'
@@ -396,6 +417,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais'
     | '/compras/ordens'
     | '/compras/pedidos'
+    | '/crm/funil'
     | '/crm/funis'
     | '/vendas/orcamentos'
   id:
@@ -423,6 +445,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/$profissionalId'
     | '/compras/ordens/$ordemId'
     | '/compras/pedidos/$pedidoId'
+    | '/crm/funil/$funilId'
     | '/crm/funis/$funilId'
     | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes/'
@@ -432,6 +455,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/'
     | '/compras/ordens/'
     | '/compras/pedidos/'
+    | '/crm/funil/'
     | '/crm/funis/'
     | '/vendas/orcamentos/'
   fileRoutesById: FileRoutesById
@@ -662,6 +686,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComprasPedidosPedidoIdRouteImport
       parentRoute: typeof ComprasRoute
     }
+    '/crm/funil/': {
+      id: '/crm/funil/'
+      path: '/funil'
+      fullPath: '/crm/funil/'
+      preLoaderRoute: typeof CrmFunilIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/funil/$funilId': {
+      id: '/crm/funil/$funilId'
+      path: '/funil/$funilId'
+      fullPath: '/crm/funil/$funilId'
+      preLoaderRoute: typeof CrmFunilFunilIdRouteImport
+      parentRoute: typeof CrmRoute
+    }
     '/crm/funis/': {
       id: '/crm/funis/'
       path: '/funis'
@@ -748,12 +786,16 @@ const ComprasRouteWithChildren =
   ComprasRoute._addFileChildren(ComprasRouteChildren)
 
 interface CrmRouteChildren {
+  CrmFunilFunilIdRoute: typeof CrmFunilFunilIdRoute
   CrmFunisFunilIdRoute: typeof CrmFunisFunilIdRoute
+  CrmFunilIndexRoute: typeof CrmFunilIndexRoute
   CrmFunisIndexRoute: typeof CrmFunisIndexRoute
 }
 
 const CrmRouteChildren: CrmRouteChildren = {
+  CrmFunilFunilIdRoute: CrmFunilFunilIdRoute,
   CrmFunisFunilIdRoute: CrmFunisFunilIdRoute,
+  CrmFunilIndexRoute: CrmFunilIndexRoute,
   CrmFunisIndexRoute: CrmFunisIndexRoute,
 }
 

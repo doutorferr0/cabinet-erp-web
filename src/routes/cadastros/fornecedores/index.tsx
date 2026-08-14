@@ -5,9 +5,11 @@ import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
+import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { Building2, CircleCheck, Hash, IdCard, User } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/fornecedores/')({
@@ -49,6 +51,43 @@ const columns: ColumnDef<PartnerDto>[] = [
     header: 'Ativo',
     cell: ({ getValue }) => <CelulaAtivo ativo={getValue<boolean>()} />,
   },
+]
+
+/**
+ * Campos filtráveis — a whitelist que o contrato publica em `filters` de
+ * `GET /api/partners`. `id` é o nome do campo NO CONTRATO, como o `accessorKey`:
+ * é ele que viaja, e a whitelist do servidor é em inglês.
+ *
+ * **`document` filtra mesmo digitado com máscara** — o dado trafega em dígito
+ * puro e o operador digita `12.345.678/0001-90`. O `normalizar` limpa a
+ * pontuação na SAÍDA; sem ele a consulta diria "nenhum registro" para um
+ * fornecedor que existe.
+ */
+const camposFiltraveis: readonly CampoFiltravel[] = [
+  { id: 'code', rotulo: 'Código', variante: 'text', icon: Hash, placeholder: 'Ex.: 1042' },
+  {
+    id: 'tradeName',
+    rotulo: 'Nome Fantasia',
+    variante: 'text',
+    icon: Building2,
+    placeholder: 'Parte do nome…',
+  },
+  {
+    id: 'legalName',
+    rotulo: 'Razão Social',
+    variante: 'text',
+    icon: User,
+    placeholder: 'Parte da razão social…',
+  },
+  {
+    id: 'document',
+    rotulo: 'CNPJ / CPF',
+    variante: 'text',
+    icon: IdCard,
+    placeholder: 'Com ou sem pontuação',
+    normalizar: somenteDigitos,
+  },
+  { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
 ]
 
 function FornecedoresPage() {
@@ -100,6 +139,7 @@ function FornecedoresPage() {
       queryKey={['fornecedores']}
       fetcher={data.fornecedores.list}
       actions={actions}
+      filtros={camposFiltraveis}
       desativacao={{
         entidade: 'fornecedor',
         registro: aDesativar,

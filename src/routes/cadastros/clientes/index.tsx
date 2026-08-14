@@ -5,9 +5,11 @@ import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
+import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/clientes/')({
@@ -38,6 +40,36 @@ const columns: ColumnDef<PartnerDto>[] = [
     header: 'Ativo',
     cell: ({ getValue }) => <CelulaAtivo ativo={getValue<boolean>()} />,
   },
+]
+
+/**
+ * Campos filtráveis — a whitelist que o contrato publica em `filters` de
+ * `GET /api/partners`. `id` é o nome do campo NO CONTRATO pelo mesmo motivo do
+ * `accessorKey`: é ele que viaja, e a whitelist do servidor é em inglês.
+ *
+ * **`document` filtra mesmo digitado com máscara.** O dado trafega em dígito
+ * puro (convenção do CLAUDE.md) e o operador digita `12.345.678/0001-90`; o
+ * `normalizar` limpa a pontuação na SAÍDA, e o campo continua mostrando o que
+ * foi digitado. Sem isso a consulta responderia "nenhum registro" para um
+ * cadastro que existe, e o operador conferiria o CNPJ dígito a dígito
+ * procurando o erro dele.
+ *
+ * `tradeName` fica de fora: existe na whitelist e no DTO, mas esta tela não
+ * mostra Nome Fantasia — oferecer filtro por coluna que não está à vista faz o
+ * operador estreitar a listagem sem enxergar por quê.
+ */
+const camposFiltraveis: readonly CampoFiltravel[] = [
+  { id: 'code', rotulo: 'Código', variante: 'text', icon: Hash, placeholder: 'Ex.: 1042' },
+  { id: 'legalName', rotulo: 'Nome', variante: 'text', icon: User, placeholder: 'Parte do nome…' },
+  {
+    id: 'document',
+    rotulo: 'CNPJ / CPF',
+    variante: 'text',
+    icon: IdCard,
+    placeholder: 'Com ou sem pontuação',
+    normalizar: somenteDigitos,
+  },
+  { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
 ]
 
 function ClientesPage() {
@@ -89,6 +121,7 @@ function ClientesPage() {
       queryKey={['clientes']}
       fetcher={data.clientes.list}
       actions={actions}
+      filtros={camposFiltraveis}
       desativacao={{
         entidade: 'cliente',
         registro: aDesativar,

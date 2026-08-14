@@ -316,15 +316,47 @@ consulta é `createApiListProvider`, com `urlComQuery`), e a regra de fronteira 
 proíbe a tela de chamar o cliente gerado — mas quem for usar `listProducts()` à mão
 precisa serializar o `filters` antes.
 
+### O que o operador DIGITA × o que o dado GUARDA
+
+`CampoFiltravel.normalizar` converte o valor **só na saída**, e existe por causa
+de um caso concreto: **CPF/CNPJ trafega sem máscara e se digita com ela**
+(convenção do CLAUDE.md). Sem isso, `12.345.678/0001-90` procurado como está não
+casaria com nada — a listagem diria "nenhum registro" para um cadastro que existe,
+e o operador conferiria o documento dígito a dígito procurando o erro dele.
+
+Quem aplica é a `VitraDataTable`, no mesmo ponto em que decide o que já é frase
+completa (`filtrosNormalizados(filtrosValidos(...))`) — **normaliza depois de
+validar**, porque um documento meio digitado continua sendo filtro sem valor. O
+campo continua exibindo o que foi digitado: limpar a máscara na tela apagaria a
+pontuação embaixo do cursor no meio da digitação.
+
+`somenteDigitos` é o normalizador dos três cadastros de parceiro. **Dinheiro ainda
+não tem o seu** — a conversão reais→centavos não é limpeza de caractere, é
+mudança de unidade, e enquanto não existir variante própria coluna de dinheiro não
+entra na lista de campos filtráveis.
+
 ### A UI continua opt-in por tela
 
 A prop `filtros` da `VitraDataTable` é quem liga o painel, e só declara campos a
-tela cujo provider sabe responder. Pilotos: **Produtos** (`/cadastros/produtos`,
-HTTP, whitelist do contrato) e **Colaboradores** (`/cadastros/colaboradores`,
-provider mock — o `GET /api/employees` serve o `salespersonId` do orçamento, não
-esta listagem). Recurso sem o parâmetro publicado (`catalog-lookups`,
-`stock-movements`) não passa `filtraveis`, e a fronteira recusa em voz alta se
-alguém declarar campos ali.
+tela cujo provider sabe responder. Hoje filtram:
+
+| tela | origem | campos |
+|---|---|---|
+| Produtos | HTTP (`/api/products`) | Nosso Código · Nossa Descrição · Ativo |
+| Clientes | HTTP (`/api/partners`) | Código · Nome · CNPJ/CPF · Ativo |
+| Fornecedores | HTTP (`/api/partners`) | Código · Nome Fantasia · Razão Social · CNPJ/CPF · Ativo |
+| Profissionais | HTTP (`/api/partners`) | Código · Nome de Apresentação · Nome · CNPJ/CPF · Ativo |
+| Colaboradores | mock | Código · Nome · Setor · Cargo · Ativo |
+
+**Campo filtrável ≠ coluna**, mas as telas de parceiro seguem as colunas de
+propósito, com uma exceção: `document` filtra sem ser coluna, porque é a busca
+mais natural do cadastro. A recíproca não vale — a tela de Clientes não oferece
+`tradeName`, que está na whitelist e no DTO, porque ela não mostra Nome Fantasia:
+filtro por coluna fora da vista faz o operador estreitar a listagem sem enxergar
+por quê.
+
+Recurso sem o parâmetro publicado (`catalog-lookups`, `stock-movements`) não passa
+`filtraveis`, e a fronteira recusa em voz alta se alguém declarar campos ali.
 
 **Dinheiro não entra.** Trafega em centavos, então um filtro numérico sobre ele
 compararia com centavos e `1000` acharia R$ 10,00 — número certo, significado

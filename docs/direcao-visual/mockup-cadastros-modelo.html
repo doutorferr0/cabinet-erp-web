@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cabinet — Modelo de cadastro (todas as entidades)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#111111; --muted:#5C5A54; --faint:#8B887F;
+    --bancada:#FAF6EE; --folha:#FFFFFF;
+    --bw:2px;
+    --sombra:4px 4px 0 #111; --sombra-sm:3px 3px 0 #111; --sombra-xs:2px 2px 0 #111; --sombra-lg:6px 6px 0 #111;
+    --dinheiro:#16A34A; --foco:#FACC15; --erro:#DC2626;
+    --main:#5551FF;
+    --r:12px; --r-lg:16px; --r-sm:9px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Manrope',sans-serif;background:#EFE9DC;color:var(--ink);font-size:14px;padding:22px;min-height:100vh}
+  h1,h2,h3,b,strong{font-family:'Archivo',sans-serif}
+  .app{max-width:1180px;margin:0 auto;background:var(--bancada);border:var(--bw) solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:var(--sombra-lg)}
+
+  .orn{display:inline-block;flex-shrink:0;background-color:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center}
+  .o1{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-001.svg');mask-image:url('assets-brutalist/brutalist/brutalist-001.svg')}
+  .o2{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-014.svg');mask-image:url('assets-brutalist/brutalist/brutalist-014.svg')}
+  .o3{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-101.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-101.svg')}
+  .o4{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-120.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-120.svg')}
+  .o5{-webkit-mask-image:url('assets-brutalist/spark/spark-001.svg');mask-image:url('assets-brutalist/spark/spark-001.svg')}
+  .o6{-webkit-mask-image:url('assets-brutalist/spark/spark-020.svg');mask-image:url('assets-brutalist/spark/spark-020.svg')}
+  .o7{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-072.svg');mask-image:url('assets-brutalist/brutalist/brutalist-072.svg')}
+  .o8{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-140.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-140.svg')}
+
+  .selo{width:40px;height:40px;border:var(--bw) solid var(--ink);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--folha)}
+  .selo .orn{width:22px;height:22px}
+
+  /* seletor de entidade */
+  .seletor{display:flex;gap:9px;flex-wrap:wrap;padding:14px 26px;border-bottom:var(--bw) solid var(--ink);background:var(--bancada)}
+  .ent{display:flex;align-items:center;gap:8px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--folha);padding:8px 14px;font-family:'Archivo';font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sombra-xs)}
+  .ent .pt{width:14px;height:14px;border:var(--bw) solid var(--ink);border-radius:5px}
+  .ent:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .ent.on{color:#fff;box-shadow:var(--sombra-sm)}
+  .ent.on .pt{background:#fff!important}
+
+  .topo{background:var(--folha);border-bottom:var(--bw) solid var(--ink);padding:18px 26px 0}
+  .trilha{font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+  .trilha span{color:var(--ink)}
+  .titulo-linha{display:flex;align-items:center;gap:13px;margin-bottom:15px;flex-wrap:wrap}
+  .titulo-linha h1{font-size:27px;font-weight:900;letter-spacing:-.6px}
+  .selo.lg{width:46px;height:46px;border-radius:13px;box-shadow:var(--sombra-xs)}
+  .selo.lg .orn{width:25px;height:25px;color:#fff}
+  .chip-ativo{margin-left:auto;display:flex;align-items:center;gap:9px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:#D2FEEB;padding:7px 13px;font-size:12.5px;font-weight:800;box-shadow:var(--sombra-sm);cursor:pointer;user-select:none}
+  .chip-ativo .bolinha{width:13px;height:13px;border:var(--bw) solid var(--ink);border-radius:5px;background:var(--dinheiro)}
+
+  .barra-obrig{display:flex;align-items:center;gap:12px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--foco);padding:9px 14px;box-shadow:var(--sombra-sm);margin-bottom:16px;font-size:12.5px;font-weight:800}
+  .barra-obrig .trilho{flex:1;height:12px;border:var(--bw) solid var(--ink);border-radius:6px;background:var(--folha);overflow:hidden;min-width:90px}
+  .barra-obrig .preenchido{height:100%;background:var(--dinheiro);width:0%;transition:width .2s}
+  .barra-obrig .n{font-family:'Archivo';font-weight:900;font-size:14px;white-space:nowrap}
+
+  .abas{display:flex;gap:8px;flex-wrap:wrap}
+  .aba{border:var(--bw) solid var(--ink);border-bottom:0;border-radius:var(--r) var(--r) 0 0;background:var(--bancada);padding:10px 17px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer;position:relative;top:2px}
+  .aba.on{color:#fff;font-weight:900;box-shadow:3px -3px 0 #111}
+  .aba:not(.on):hover{background:var(--folha);color:var(--ink)}
+
+  .corpo{padding:26px 26px 0;display:flex;gap:24px;align-items:flex-start}
+  .coluna{flex:1;max-width:780px;min-width:0}
+  .lateral{width:246px;flex-shrink:0;position:sticky;top:22px}
+
+  .bloco{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);margin-bottom:15px;box-shadow:var(--sombra);overflow:hidden;background:var(--folha)}
+  .bl-topo{display:flex;align-items:center;gap:13px;padding:13px 16px;cursor:pointer;user-select:none;border-bottom:var(--bw) solid transparent}
+  .bloco.aberto .bl-topo{border-bottom-color:var(--ink)}
+  .bl-txt{min-width:0}
+  .bl-txt h2{font-size:16px;font-weight:900;letter-spacing:-.3px;line-height:1.2}
+  .bl-txt p{font-size:11.5px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.75}
+  .bl-dir{margin-left:auto;display:flex;align-items:center;gap:9px;flex-shrink:0}
+  .tag{font-size:10px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;border:var(--bw) solid var(--ink);border-radius:7px;padding:3px 8px;background:var(--folha)}
+  .tag.obrig{background:var(--erro);color:#fff}
+  .tag.opc{background:var(--folha);color:var(--muted)}
+  .contador{font-family:'Archivo';font-size:11.5px;font-weight:900;border:var(--bw) solid var(--ink);border-radius:7px;padding:3px 9px;background:var(--folha)}
+  .contador.tem{background:var(--dinheiro);color:#fff}
+  .seta{width:32px;height:32px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra-xs);transition:transform .18s}
+  .bloco.aberto .seta{transform:rotate(180deg)}
+  .bl-corpo{display:none;padding:20px 20px 22px}
+  .bloco.aberto .bl-corpo{display:block}
+  .bl-topo.claro h2,.bl-topo.claro p{color:var(--ink)}
+  .bl-topo.escuro h2,.bl-topo.escuro p{color:#fff}
+
+  .campo{margin-bottom:15px}
+  .linha{display:flex;gap:12px}
+  .linha>.campo{flex:1;min-width:0}
+  .linha>.campo.curto{flex:0 0 128px}
+  .linha>.campo.medio{flex:0 0 200px}
+  label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+  label .ast{color:var(--erro);font-size:15px;line-height:1;font-family:'Archivo';font-weight:900}
+  label .ajuda{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:0;text-transform:none;color:var(--muted)}
+  .entrada{width:100%;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:11px 13px;font-family:'Manrope';font-size:14px;font-weight:700;color:var(--ink);outline:0;box-shadow:var(--sombra-xs)}
+  .entrada::placeholder{color:var(--faint);font-weight:600}
+  .entrada:focus{box-shadow:0 0 0 3px var(--foco),var(--sombra-xs)}
+  textarea.entrada{resize:vertical;min-height:76px}
+  select.entrada{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='3.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center}
+  .com-botao{display:flex;gap:8px}
+  .btn-lupa{width:44px;flex-shrink:0;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);box-shadow:var(--sombra-xs);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .btn-lupa:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .money{position:relative}
+  .money .pre{position:absolute;left:0;top:0;bottom:0;width:38px;border-right:var(--bw) solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-weight:900;font-size:12px;color:var(--dinheiro)}
+  .money .entrada{padding-left:50px;background:#D2FEEB}
+  .seg{display:flex;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--sombra-xs);width:fit-content;flex-wrap:wrap}
+  .seg button{border:0;border-right:var(--bw) solid var(--ink);background:var(--folha);font-family:'Archivo';font-size:13px;font-weight:800;padding:10px 22px;cursor:pointer;color:var(--muted)}
+  .seg button:last-child{border-right:0}
+  .seg button.on{color:#fff;font-weight:900}
+  .interruptor{display:flex;align-items:center;gap:10px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:10px 13px;box-shadow:var(--sombra-xs);cursor:pointer;user-select:none;font-size:13px;font-weight:800}
+  .interruptor .cx{width:19px;height:19px;border:var(--bw) solid var(--ink);border-radius:6px;background:var(--folha);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .interruptor.on .cx{background:var(--dinheiro)}
+  .interruptor.on .cx::after{content:'';width:8px;height:8px;background:#fff;border-radius:2px}
+  .dica{display:flex;align-items:center;gap:9px;border:var(--bw) dashed var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:9px 12px;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:14px}
+  .dica .orn{width:15px;height:15px;color:var(--ink);flex-shrink:0}
+  .btn-add{width:100%;border:var(--bw) dashed var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:9px;font-family:'Archivo';font-size:12.5px;font-weight:900;cursor:pointer;margin-top:4px}
+  .btn-add:hover{background:var(--foco)}
+
+  /* vínculo colaborador × empresa */
+  .vinc{border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--folha);padding:13px 14px;margin-bottom:11px;box-shadow:var(--sombra-xs)}
+  .vinc-topo{display:flex;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
+  .vinc-n{width:24px;height:24px;border:var(--bw) solid var(--ink);border-radius:7px;background:#5551FF;color:#fff;font-family:'Archivo';font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .vinc-emp{font-family:'Archivo';font-size:15px;font-weight:900}
+  .vinc-sel{width:auto;flex:1;min-width:150px;padding:8px 34px 8px 11px;font-size:13px}
+  .vinc-x{margin-left:auto;border:var(--bw) solid var(--ink);border-radius:7px;background:#FDE3E3;font-family:'Archivo';font-size:11px;font-weight:900;padding:5px 10px;cursor:pointer}
+  .vinc-x:hover{background:var(--erro);color:#fff}
+  .vinc .interruptor{margin-top:11px}
+  .aviso-iso{display:flex;gap:10px;align-items:flex-start;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:#FFF6D6;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.5;margin-top:14px;box-shadow:var(--sombra-xs)}
+  .aviso-iso .orn{width:16px;height:16px;color:var(--ink);flex-shrink:0;margin-top:1px}
+
+  .card-lat{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);background:var(--folha);box-shadow:var(--sombra);overflow:hidden;margin-bottom:14px}
+  .card-lat h3{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:11px 14px;border-bottom:var(--bw) solid var(--ink);display:flex;align-items:center;gap:8px}
+  .card-lat h3 .orn{width:15px;height:15px}
+  .lista-nav{padding:8px}
+  .item-nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border:var(--bw) solid transparent;border-radius:var(--r-sm);font-size:12.5px;font-weight:800;cursor:pointer;margin-bottom:2px}
+  .item-nav:hover{border-color:var(--ink);background:var(--bancada)}
+  .item-nav .pt{width:13px;height:13px;border:var(--bw) solid var(--ink);border-radius:5px;flex-shrink:0}
+  .item-nav .st{margin-left:auto;font-size:10px;font-weight:900;color:var(--muted)}
+  .item-nav.falta .st{color:var(--erro)}
+
+  .rodape{position:sticky;bottom:0;margin-top:24px;display:flex;align-items:center;gap:12px;padding:14px 26px;border-top:var(--bw) solid var(--ink);background:var(--folha);flex-wrap:wrap}
+  .rodape .aviso{font-size:12px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .rodape .aviso .orn{width:15px;height:15px;color:var(--erro)}
+  .btn{border:var(--bw) solid var(--ink);border-radius:var(--r);padding:11px 22px;font-family:'Archivo';font-size:14px;font-weight:900;cursor:pointer;box-shadow:var(--sombra-sm);background:var(--folha)}
+  .btn:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .btn.primario{background:var(--main);color:#fff}
+  .btn.secundario{margin-left:auto}
+  @media(max-width:1000px){.lateral{display:none}.corpo{padding:20px 16px 0}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="seletor" id="seletor"></div>
+  <div class="topo">
+    <div class="trilha">Cadastros › <span id="trilhaEnt"></span></div>
+    <div class="titulo-linha">
+      <div class="selo lg" id="seloTit"><i class="orn o1"></i></div>
+      <h1 id="titulo"></h1>
+      <div class="chip-ativo"><span class="bolinha"></span> Ativo</div>
+    </div>
+    <div class="barra-obrig">
+      <i class="orn o5" style="width:16px;height:16px"></i>
+      <span>Obrigatórios</span>
+      <div class="trilho"><div class="preenchido" id="trilho"></div></div>
+      <span class="n" id="contaObrig">0 de 0</span>
+    </div>
+    <div class="abas" id="abas"></div>
+  </div>
+
+  <div class="corpo">
+    <div class="coluna" id="coluna"></div>
+    <aside class="lateral">
+      <div class="card-lat">
+        <h3 id="latTit"><i class="orn o1"></i> Neste cadastro</h3>
+        <div class="lista-nav" id="navLat"></div>
+      </div>
+      <div class="card-lat">
+        <h3 style="background:#FFF6D6"><i class="orn o6" style="color:#111"></i> Regra</h3>
+        <div style="padding:12px 14px;font-size:12px;font-weight:700;line-height:1.5;color:var(--muted)">
+          Campo com <b style="color:var(--erro)">*</b> trava o Gravar.<br>
+          Bloco fechado nunca esconde campo obrigatório.<br>
+          Mesma estrutura em <b>todos</b> os cadastros — só muda a cor e a lista.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="rodape">
+    <div class="aviso"><i class="orn o5"></i> <span id="avisoTxt"></span></div>
+    <button class="btn secundario">Cancelar</button>
+    <button class="btn primario">Gravar</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   SCHEMA — esta estrutura É a especificação. O renderizador abaixo é genérico:
+   qualquer cadastro novo entra só adicionando uma entrada aqui.
+   tipos de campo: texto | data | select | busca | dinheiro | area | seg | check
+   larguras: (vazio)=cheio · curto · medio
+   ========================================================================= */
+const C = {
+  cliente:{cheia:'#E620FF', clara:'#FBE0FF', tinta:'escuro'},
+  colab:  {cheia:'#0091FF', clara:'#D1ECFF', tinta:'escuro'},
+  fornec: {cheia:'#3D5AFE', clara:'#DDE3FF', tinta:'escuro'},
+  profis: {cheia:'#B026FF', clara:'#F2E7FE', tinta:'escuro'},
+  transp: {cheia:'#FF6B2C', clara:'#FFE4D6', tinta:'escuro'},
+  obra:   {cheia:'#FF2D95', clara:'#FFDDEE', tinta:'escuro'},
+  doc:    {cheia:'#0091FF', clara:'#D1ECFF', tinta:'escuro'},
+  end:    {cheia:'#00E5FF', clara:'#CEF9FD', tinta:'claro'},
+  cont:   {cheia:'#FF6B2C', clara:'#FFE4D6', tinta:'escuro'},
+  banco:  {cheia:'#16A34A', clara:'#D2FEEB', tinta:'escuro'},
+  social: {cheia:'#E620FF', clara:'#FBE0FF', tinta:'escuro'},
+  fiscal: {cheia:'#7C3DFF', clara:'#ECE8FD', tinta:'escuro'},
+  comerc: {cheia:'#FACC15', clara:'#FFF6D6', tinta:'claro'},
+  obs:    {cheia:'#A8A29E', clara:'#F4F4F0', tinta:'claro'},
+  acesso: {cheia:'#5551FF', clara:'#D2D1FF', tinta:'escuro'}
+};
+
+const BLOCO_ENDERECO = {id:'end',cor:'end',orn:'o4',titulo:'Endereço',resumo:'CEP preenche rua, bairro, cidade e UF automaticamente',campos:[
+  {t:'busca',r:'CEP',w:'medio',ph:'00000-000'},
+  {linha:[{t:'texto',r:'Logradouro'},{t:'texto',r:'Número',w:'curto'}]},
+  {linha:[{t:'texto',r:'Complemento',ph:'Apto, bloco, sala'},{t:'texto',r:'Bairro'}]},
+  {linha:[{t:'busca',r:'Cidade'},{t:'select',r:'UF',w:'curto',op:['—','SP','MG','RJ','PR','SC','RS','GO','BA']}]}
+]};
+
+const BLOCO_BANCO = {id:'banco',cor:'banco',orn:'o7',titulo:'Dados bancários',resumo:'Banco · Agência · Conta · Chave PIX',campos:[
+  {linha:[{t:'texto',r:'Nº do banco',w:'curto'},{t:'busca',r:'Nome do banco'}]},
+  {linha:[{t:'texto',r:'Agência'},{t:'texto',r:'Conta'},{t:'select',r:'Tipo',w:'medio',op:['Corrente','Poupança']}]},
+  {t:'texto',r:'Chave PIX',ph:'CPF, e-mail, telefone ou aleatória'}
+]};
+
+const BLOCO_CONTATOS = {id:'cont',cor:'cont',orn:'o5',titulo:'Outros contatos',resumo:'Telefone comercial · Residencial · Fax · Comunicadores',campos:[
+  {linha:[{t:'texto',r:'Telefone comercial'},{t:'texto',r:'Telefone residencial'}]},
+  {linha:[{t:'texto',r:'Fax'},{t:'texto',r:'Contato secundário'}]},
+  {linha:[{t:'select',r:'Comunicador',w:'medio',op:['—','WhatsApp','Telegram','Instagram','Skype']},{t:'texto',r:'Identificador',ph:'usuário ou número'}]},
+  {t:'add',r:'+ Adicionar comunicador'}
+]};
+
+const BLOCO_OBS = {id:'obs',cor:'obs',orn:'o8',titulo:'Observação interna',resumo:'Só a equipe vê. Não sai em documento.',campos:[
+  {t:'area',r:'Anotações'}
+]};
+
+const ENTIDADES = {
+
+  /* ================= CLIENTE ================= */
+  cliente:{nome:'Cliente',plural:'Clientes',cor:'cliente',orn:'o1',
+    abas:['Dados cadastrais','Endereços','Histórico'],
+    blocos:[
+      {id:'ident',cor:'cliente',orn:'o1',titulo:'Identificação',resumo:'O mínimo para gravar e já vender',fixo:true,campos:[
+        {t:'seg',r:'Tipo de pessoa',req:1,op:['Física','Jurídica']},
+        {t:'texto',r:'Nome / Razão social',req:1,ph:'Ex.: Marina Duarte Prado'},
+        {linha:[{t:'texto',r:'CPF / CNPJ',req:1,w:'medio',ph:'000.000.000-00'},{t:'texto',r:'Celular',req:1,ph:'(19) 90000-0000'}]},
+        {t:'texto',r:'E-mail',req:1,ph:'nome@dominio.com.br'},
+        {t:'dica',r:'Grava com estes quatro. Endereço e fiscal entram depois, sem travar o atendimento.'}
+      ]},
+      {id:'doc',cor:'doc',orn:'o2',titulo:'Documentos e dados pessoais',resumo:'RG · Nascimento · Estado civil · Profissão · Cônjuge',campos:[
+        {linha:[{t:'texto',r:'RG'},{t:'data',r:'Data de nascimento',w:'medio'}]},
+        {linha:[{t:'select',r:'Estado civil',op:['Selecione…','Solteiro(a)','Casado(a)','Divorciado(a)','Viúvo(a)']},{t:'busca',r:'Profissão',ph:'Arquiteto(a)'}]},
+        {linha:[{t:'texto',r:'Nome do cônjuge'},{t:'data',r:'Nasc. do cônjuge',w:'medio'}]}
+      ]},
+      BLOCO_ENDERECO,
+      {id:'entrega',cor:'end',orn:'o3',titulo:'Endereço de entrega',resumo:'Só se for diferente do cadastro',campos:[
+        {t:'check',r:'Usar o mesmo endereço do cadastro',on:true},
+        {t:'busca',r:'CEP de entrega',w:'medio',ph:'00000-000'},
+        {linha:[{t:'texto',r:'Logradouro'},{t:'texto',r:'Número',w:'curto'}]},
+        {linha:[{t:'texto',r:'Bairro'},{t:'busca',r:'Cidade'},{t:'select',r:'UF',w:'curto',op:['—','SP','MG','RJ']}]},
+        {t:'texto',r:'Referência para o entregador'}
+      ]},
+      BLOCO_CONTATOS,
+      {id:'fiscal',cor:'fiscal',orn:'o6',titulo:'Fiscal',resumo:'IE · IM · Contribuinte ICMS · Regime — obrigatório só para emitir NF-e',campos:[
+        {linha:[{t:'texto',r:'Inscrição estadual'},{t:'texto',r:'Inscrição municipal'}]},
+        {linha:[{t:'select',r:'Contribuinte ICMS',op:['Não contribuinte','Contribuinte','Isento']},{t:'select',r:'Regime tributário',op:['—','Simples Nacional','Lucro presumido','Lucro real']}]}
+      ]},
+      {id:'comerc',cor:'comerc',orn:'o5',titulo:'Comercial',resumo:'Origem · Profissional que indicou · Tabela · Limite de crédito',campos:[
+        {linha:[{t:'select',r:'Como conheceu',op:['—','Indicação de profissional','Loja','Site','Instagram','Cliente antigo']},{t:'busca',r:'Profissional que indicou'}]},
+        {linha:[{t:'select',r:'Tabela de preço',op:['Padrão','Profissional','Obra']},{t:'select',r:'Condição de pagamento',op:['À vista','30 dias','30/60','30/60/90']}]},
+        {t:'dinheiro',r:'Limite de crédito',w:'medio'}
+      ]},
+      BLOCO_OBS
+    ]},
+
+  /* ================= COLABORADOR ================= */
+  colab:{nome:'Colaborador',plural:'Colaboradores',cor:'colab',orn:'o2',
+    abas:['Dados cadastrais','Metas e comissão','Acesso'],
+    blocos:[
+      {id:'ident',cor:'colab',orn:'o2',titulo:'Identificação',resumo:'O mínimo para gravar e vincular a vendas',fixo:true,campos:[
+        {t:'texto',r:'Nome completo',req:1,ph:'Ex.: Rodrigo Salles Menezes'},
+        {linha:[{t:'texto',r:'CPF',req:1,w:'medio',ph:'000.000.000-00'},{t:'texto',r:'Celular',req:1,ph:'(19) 90000-0000'}]},
+        {linha:[{t:'busca',r:'Cargo / função',req:1,ph:'Vendedor interno'},{t:'data',r:'Data de admissão',req:1,w:'medio'}]},
+        {t:'texto',r:'E-mail de login',req:1,ajuda:'colaborador é usuário do sistema',ph:'nome@vertziluminacao.com.br'},
+        {t:'dica',r:'Cargo e admissão são obrigatórios porque comissão e meta dependem deles.'}
+      ]},
+      {id:'empresas',cor:'acesso',orn:'o1',titulo:'Empresas e perfil',resumo:'Um colaborador pode atuar em mais de uma empresa, com papel diferente em cada',fixo:true,campos:[
+        {t:'empresas'}
+      ]},
+      {id:'doc',cor:'doc',orn:'o2',titulo:'Documentos e dados pessoais',resumo:'RG · Nascimento · Estado civil · PIS · CTPS · Título',campos:[
+        {linha:[{t:'texto',r:'RG'},{t:'data',r:'Data de nascimento',w:'medio'}]},
+        {linha:[{t:'select',r:'Estado civil',op:['Selecione…','Solteiro(a)','Casado(a)','Divorciado(a)','Viúvo(a)']},{t:'texto',r:'PIS / PASEP / NIS'}]},
+        {linha:[{t:'texto',r:'CTPS'},{t:'texto',r:'Título de eleitor'}]},
+        {t:'texto',r:'E-mail pessoal'}
+      ]},
+      BLOCO_ENDERECO,
+      BLOCO_CONTATOS,
+      BLOCO_BANCO,
+      {id:'comerc',cor:'comerc',orn:'o5',titulo:'Metas e comissão',resumo:'Atendente · % interna · Meta mensal',campos:[
+        {t:'check',r:'É atendente — pode ser vinculado a venda',on:true},
+        {linha:[{t:'texto',r:'% comissão interna',w:'medio',ph:'0,00'},{t:'texto',r:'% comissão externa',w:'medio',ph:'0,00'}]},
+        {t:'dinheiro',r:'Meta mensal',w:'medio'},
+        {t:'dica',r:'Percentual por grupo de produto entra na aba Metas e comissão.'}
+      ]},
+      {id:'acesso',cor:'acesso',orn:'o5',titulo:'Segurança do acesso',resumo:'Senha · 2FA · Bloqueio',campos:[
+        {t:'check',r:'Exigir troca de senha no primeiro acesso',on:true},
+        {t:'check',r:'Exigir segundo fator (2FA)'},
+        {t:'data',r:'Acesso expira em',w:'medio',ajuda:'vazio = sem prazo'},
+        {t:'dica',r:'A senha é definida pelo próprio colaborador — nunca cadastrada aqui.'}
+      ]},
+      BLOCO_OBS
+    ]},
+
+  /* ================= FORNECEDOR ================= */
+  fornec:{nome:'Fornecedor',plural:'Fornecedores',cor:'fornec',orn:'o7',
+    abas:['Dados cadastrais','Custo e preço','Produtos'],
+    blocos:[
+      {id:'ident',cor:'fornec',orn:'o7',titulo:'Identificação',resumo:'O mínimo para gravar e lançar compra',fixo:true,campos:[
+        {t:'texto',r:'Razão social',req:1,ph:'Ex.: Lumini Indústria e Comércio Ltda.'},
+        {linha:[{t:'texto',r:'CNPJ',req:1,w:'medio',ph:'00.000.000/0000-00'},{t:'texto',r:'Nome fantasia',req:1,ph:'Lumini'}]},
+        {linha:[{t:'texto',r:'Telefone',req:1},{t:'texto',r:'E-mail',req:1,ph:'contato@fornecedor.com.br'}]},
+        {t:'dica',r:'Nome fantasia é o que aparece na listagem de produto e na ordem de compra.'}
+      ]},
+      {id:'fiscal',cor:'fiscal',orn:'o6',titulo:'Fiscal',resumo:'IE · IM · Regime · CNAE — necessário para entrada de nota',campos:[
+        {linha:[{t:'texto',r:'Inscrição estadual'},{t:'texto',r:'Inscrição municipal'}]},
+        {linha:[{t:'select',r:'Regime tributário',op:['—','Simples Nacional','Lucro presumido','Lucro real']},{t:'select',r:'Contribuinte ICMS',op:['Contribuinte','Não contribuinte','Isento']}]},
+        {t:'texto',r:'CNAE principal'}
+      ]},
+      {id:'comerc',cor:'comerc',orn:'o5',titulo:'Comercial e preço',resumo:'Perfil de custo · Índice de venda · Prazo · Frete',campos:[
+        {linha:[{t:'busca',r:'Perfil de custo',ph:'Descontos, IPI, ICMS, frete…'},{t:'busca',r:'Índice de valor de venda',ph:'Multiplicador do líquido'}]},
+        {linha:[{t:'select',r:'Condição de pagamento',op:['À vista','28 dias','28/56','30/60/90']},{t:'texto',r:'Prazo de entrega (dias)',w:'medio',ph:'25'}]},
+        {linha:[{t:'select',r:'Tipo de frete',op:['CIF — por conta do fornecedor','FOB — por nossa conta']},{t:'dinheiro',r:'Pedido mínimo',w:'medio'}]},
+        {t:'dica',r:'Perfil de custo e índice são POR FORNECEDOR — é deles que sai o preço de venda.'}
+      ]},
+      {id:'repres',cor:'cont',orn:'o5',titulo:'Representante e contatos',resumo:'Quem atende a Vertz nesse fornecedor',campos:[
+        {linha:[{t:'texto',r:'Nome do representante'},{t:'texto',r:'Celular do representante'}]},
+        {t:'texto',r:'E-mail do representante'},
+        {linha:[{t:'texto',r:'Telefone do SAC'},{t:'texto',r:'Telefone de pós-venda'}]},
+        {t:'add',r:'+ Adicionar contato'}
+      ]},
+      BLOCO_ENDERECO,
+      BLOCO_BANCO,
+      BLOCO_OBS
+    ]},
+
+  /* ================= PROFISSIONAL ================= */
+  profis:{nome:'Profissional',plural:'Profissionais',cor:'profis',orn:'o3',
+    abas:['Dados cadastrais','Contatos / Observação','Participação'],
+    blocos:[
+      {id:'ident',cor:'profis',orn:'o3',titulo:'Identificação',resumo:'O mínimo para gravar o cadastro',fixo:true,campos:[
+        {t:'seg',r:'Tipo de pessoa',req:1,op:['Física','Jurídica']},
+        {t:'texto',r:'Nome completo',req:1,ph:'Ex.: Ana Carolina Ribeiro'},
+        {linha:[{t:'texto',r:'CPF',req:1,w:'medio',ph:'000.000.000-00'},{t:'texto',r:'Celular',req:1,ph:'(19) 90000-0000'}]},
+        {t:'texto',r:'Nome de apresentação',req:1,ajuda:'como aparece em orçamento e listagem',ph:'Ex.: Ana Ribeiro Arquitetura'},
+        {t:'texto',r:'E-mail',req:1,ph:'nome@dominio.com.br'},
+        {t:'dica',r:'Grava já com estes cinco. O resto entra depois, sem travar o atendimento.'}
+      ]},
+      {id:'doc',cor:'doc',orn:'o2',titulo:'Documentos e dados pessoais',resumo:'RG · Nascimento · Estado civil · Cônjuge · PIS · CREA/CAU/CFT',campos:[
+        {linha:[{t:'texto',r:'RG'},{t:'data',r:'Data de nascimento',w:'medio'}]},
+        {linha:[{t:'select',r:'Estado civil',op:['Selecione…','Solteiro(a)','Casado(a)','Divorciado(a)','Viúvo(a)']},{t:'busca',r:'Profissão',ph:'Arquiteto(a)'}]},
+        {linha:[{t:'texto',r:'Nome do cônjuge'},{t:'data',r:'Nasc. do cônjuge',w:'medio'}]},
+        {linha:[{t:'texto',r:'PIS / PASEP / NIS'},{t:'texto',r:'Registro profissional',ph:'CREA · CAU · CFT'}]}
+      ]},
+      BLOCO_ENDERECO,
+      BLOCO_CONTATOS,
+      BLOCO_BANCO,
+      {id:'comerc',cor:'comerc',orn:'o5',titulo:'Participação padrão',resumo:'% de indicação aplicado quando este profissional entra na venda',campos:[
+        {linha:[{t:'texto',r:'% padrão de indicação',w:'medio',ph:'0,00'},{t:'select',r:'Operador',w:'medio',op:['Sobre o líquido','Sobre o bruto']}]},
+        {t:'dica',r:'Percentual diferente por grupo de produto entra na aba Participação.'}
+      ]},
+      {id:'social',cor:'social',orn:'o3',titulo:'Redes sociais',resumo:'Instagram · Facebook · Site',campos:[
+        {t:'texto',r:'Instagram',ph:'@perfil'},
+        {linha:[{t:'texto',r:'Facebook'},{t:'texto',r:'Site',ph:'https://'}]}
+      ]},
+      BLOCO_OBS
+    ]},
+
+  /* ================= TRANSPORTADORA ================= */
+  transp:{nome:'Transportadora',plural:'Transportadoras',cor:'transp',orn:'o8',
+    abas:['Dados cadastrais','Entregas'],
+    blocos:[
+      {id:'ident',cor:'transp',orn:'o8',titulo:'Identificação',resumo:'O mínimo para gravar e sair em nota',fixo:true,campos:[
+        {t:'texto',r:'Razão social',req:1},
+        {linha:[{t:'texto',r:'CNPJ',req:1,w:'medio',ph:'00.000.000/0000-00'},{t:'texto',r:'Telefone',req:1}]},
+        {t:'dica',r:'Transportadora sai no campo de transporte da NF-e — CNPJ e IE precisam bater com a Sefaz.'}
+      ]},
+      {id:'fiscal',cor:'fiscal',orn:'o6',titulo:'Fiscal e habilitação',resumo:'IE · RNTRC/ANTT · Tipo de frete padrão',campos:[
+        {linha:[{t:'texto',r:'Inscrição estadual'},{t:'texto',r:'RNTRC / ANTT'}]},
+        {t:'select',r:'Tipo de frete padrão',op:['CIF','FOB','Sem frete']}
+      ]},
+      BLOCO_ENDERECO,
+      BLOCO_CONTATOS,
+      BLOCO_BANCO,
+      BLOCO_OBS
+    ]},
+
+  /* ================= OBRA ================= */
+  obra:{nome:'Obra',plural:'Obras',cor:'obra',orn:'o4',
+    abas:['Dados da obra','Ambientes','Documentos'],
+    blocos:[
+      {id:'ident',cor:'obra',orn:'o4',titulo:'Identificação',resumo:'O mínimo para vincular orçamento e pedido à obra',fixo:true,campos:[
+        {t:'texto',r:'Nome da obra',req:1,ajuda:'como a equipe chama no dia a dia',ph:'Ex.: Res. Duarte — Alphaville'},
+        {t:'busca',r:'Cliente',req:1,ph:'Quem contrata'},
+        {linha:[{t:'select',r:'Tipo',req:1,w:'medio',op:['Selecione…','Residencial','Comercial','Corporativo','Hotelaria','Retrofit']},{t:'busca',r:'Cidade',req:1}]},
+        {t:'dica',r:'Obra é o agrupador: vários orçamentos e pedidos podem apontar para a mesma obra.'}
+      ]},
+      {id:'end',cor:'end',orn:'o3',titulo:'Endereço da obra',resumo:'Onde a entrega e a visita técnica acontecem',campos:[
+        {t:'busca',r:'CEP',w:'medio',ph:'00000-000'},
+        {linha:[{t:'texto',r:'Logradouro'},{t:'texto',r:'Número',w:'curto'}]},
+        {linha:[{t:'texto',r:'Complemento',ph:'Torre, unidade, andar'},{t:'texto',r:'Bairro'}]},
+        {linha:[{t:'busca',r:'Cidade'},{t:'select',r:'UF',w:'curto',op:['—','SP','MG','RJ','PR','SC']}]},
+        {t:'texto',r:'Referência / acesso',ph:'portaria, horário de entrega, restrição de caminhão'}
+      ]},
+      {id:'equipe',cor:'profis',orn:'o3',titulo:'Equipe da obra',resumo:'Arquiteto · Designer · Engenheiro · Atendente responsável',campos:[
+        {linha:[{t:'busca',r:'Profissional responsável',ph:'arquiteto ou designer'},{t:'texto',r:'% de participação',w:'medio',ph:'0,00'}]},
+        {linha:[{t:'busca',r:'Segundo profissional'},{t:'texto',r:'% de participação',w:'medio',ph:'0,00'}]},
+        {t:'busca',r:'Atendente responsável',ph:'colaborador Vertz'},
+        {t:'add',r:'+ Adicionar participante'}
+      ]},
+      {id:'cronog',cor:'comerc',orn:'o5',titulo:'Fase e prazo',resumo:'Situação · Previsão de entrega · Data da última visita',campos:[
+        {linha:[{t:'select',r:'Situação',op:['Prospecção','Projeto','Aprovada','Em execução','Entregue','Cancelada']},{t:'data',r:'Previsão de entrega',w:'medio'}]},
+        {linha:[{t:'data',r:'Última visita técnica',w:'medio'},{t:'data',r:'Próximo contato',w:'medio'}]},
+        {t:'dinheiro',r:'Valor estimado da obra',w:'medio'}
+      ]},
+      {id:'cont',cor:'cont',orn:'o5',titulo:'Contato no local',resumo:'Quem recebe a entrega e libera o acesso',campos:[
+        {linha:[{t:'texto',r:'Nome do contato'},{t:'texto',r:'Telefone'}]},
+        {linha:[{t:'select',r:'Papel',w:'medio',op:['—','Proprietário','Mestre de obra','Zelador','Arquiteto','Marceneiro']},{t:'texto',r:'E-mail'}]},
+        {t:'add',r:'+ Adicionar contato'}
+      ]},
+      BLOCO_OBS
+    ]}
+};
+
+/* ===================== RENDERIZADOR GENÉRICO ===================== */
+const LUPA='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+const CHEV='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg>';
+let atual='cliente';
+
+function rotulo(c){
+  if(!c.r) return '';
+  return '<label>'+c.r+(c.req?' <span class="ast">*</span>':'')+(c.ajuda?'<span class="ajuda">'+c.ajuda+'</span>':'')+'</label>';
+}
+function campoHTML(c,cor){
+  if(c.linha) return '<div class="linha">'+c.linha.map(x=>campoHTML(x,cor)).join('')+'</div>';
+  const cls='campo'+(c.w?' '+c.w:'');
+  const marca=c.req?' data-req="1"':'';
+  switch(c.t){
+    case 'dica':   return '<div class="dica"><i class="orn o6"></i>'+c.r+'</div>';
+    case 'add':    return '<button class="btn-add">'+c.r+'</button>';
+    case 'area':   return '<div class="'+cls+'">'+rotulo(c)+'<textarea class="entrada"'+marca+' placeholder="'+(c.ph||'')+'"></textarea></div>';
+    case 'data':   return '<div class="'+cls+'">'+rotulo(c)+'<input type="date" class="entrada"'+marca+'></div>';
+    case 'select': return '<div class="'+cls+'">'+rotulo(c)+'<select class="entrada"'+marca+'>'+c.op.map(o=>'<option>'+o+'</option>').join('')+'</select></div>';
+    case 'busca':  return '<div class="'+cls+'">'+rotulo(c)+'<div class="com-botao"><input class="entrada"'+marca+' placeholder="'+(c.ph||'')+'"><div class="btn-lupa">'+LUPA+'</div></div></div>';
+    case 'dinheiro':return '<div class="'+cls+'">'+rotulo(c)+'<div class="money"><span class="pre">R$</span><input class="entrada"'+marca+' placeholder="0,00"></div></div>';
+    case 'seg':    return '<div class="'+cls+'">'+rotulo(c)+'<div class="seg" data-seg="1">'+c.op.map((o,i)=>'<button class="'+(i===0?'on':'')+'" style="'+(i===0?'background:'+C[cor].cheia:'')+'">'+o+'</button>').join('')+'</div></div>';
+    case 'check':  return '<div class="'+cls+'"><div class="interruptor'+(c.on?' on':'')+'" onclick="this.classList.toggle(\'on\')"><span class="cx"></span>'+c.r+'</div></div>';
+    case 'empresas': return '<div id="listaEmp"></div><button class="btn-add" onclick="addEmpresa()">+ Vincular outra empresa</button>'+
+                            '<div class="aviso-iso"><i class="orn o6"></i><div><b>Isolamento por empresa.</b> Cada vínculo é um escopo fechado: dentro da Vertz este colaborador só enxerga e interage com colaboradores da Vertz. Vincular a uma segunda empresa <u>não</u> cruza dado entre as duas — são dois contextos separados, alternados no seletor de empresa.</div></div>';
+    default:       return '<div class="'+cls+'">'+rotulo(c)+'<input class="entrada"'+marca+' placeholder="'+(c.ph||'')+'"></div>';
+  }
+}
+function contaCampos(b){
+  let n=0;
+  b.campos.forEach(c=>{ if(c.linha) n+=c.linha.length; else if(['dica','add','check'].indexOf(c.t)<0) n++; });
+  return n;
+}
+function render(k){
+  atual=k;
+  const e=ENTIDADES[k], cc=C[e.cor];
+  document.getElementById('trilhaEnt').textContent=e.plural;
+  document.getElementById('titulo').textContent='Novo '+e.nome.toLowerCase();
+  const st=document.getElementById('seloTit'); st.style.background=cc.cheia; st.innerHTML='<i class="orn '+e.orn+'"></i>';
+  document.getElementById('latTit').innerHTML='<i class="orn '+e.orn+'" style="color:'+cc.cheia+'"></i> Neste cadastro';
+  document.getElementById('latTit').style.background=cc.clara;
+
+  document.getElementById('seletor').innerHTML=Object.keys(ENTIDADES).map(x=>{
+    const on=x===k, c=C[ENTIDADES[x].cor];
+    return '<div class="ent'+(on?' on':'')+'" style="'+(on?'background:'+c.cheia:'')+'" onclick="render(\''+x+'\')"><span class="pt" style="background:'+c.cheia+'"></span>'+ENTIDADES[x].plural+'</div>';
+  }).join('');
+
+  document.getElementById('abas').innerHTML=e.abas.map((a,i)=>
+    '<div class="aba'+(i===0?' on':'')+'" style="'+(i===0?'background:'+cc.cheia:'')+'">'+a+'</div>').join('');
+
+  document.getElementById('coluna').innerHTML=e.blocos.map(b=>{
+    const c=C[b.cor], total=contaCampos(b);
+    const dir=b.fixo? '<span class="tag obrig">Obrigatório</span>'
+      : '<span class="tag opc">Opcional</span><span class="contador">0/'+total+'</span><div class="seta">'+CHEV+'</div>';
+    return '<section class="bloco'+(b.fixo?' aberto':'')+'" data-bloco="'+b.id+'">'+
+      '<div class="bl-topo '+c.tinta+'" style="background:'+c.cheia+'" '+(b.fixo?'':'onclick="abre(this)"')+'>'+
+        '<div class="selo"><i class="orn '+b.orn+'" style="color:'+c.cheia+'"></i></div>'+
+        '<div class="bl-txt"><h2>'+b.titulo+'</h2><p>'+b.resumo+'</p></div>'+
+        '<div class="bl-dir">'+dir+'</div>'+
+      '</div>'+
+      '<div class="bl-corpo" style="background:'+c.clara+'">'+b.campos.map(x=>campoHTML(x,b.cor)).join('')+'</div>'+
+    '</section>';
+  }).join('');
+
+  document.getElementById('navLat').innerHTML=e.blocos.map(b=>
+    '<div class="item-nav" data-nav="'+b.id+'" onclick="vaiPara(\''+b.id+'\')"><span class="pt" style="background:'+C[b.cor].cheia+'"></span>'+b.titulo.split(' ')[0]+'<span class="st"></span></div>').join('');
+
+  pintaEmpresas();
+  document.querySelectorAll('[data-seg] button').forEach(btn=>btn.onclick=()=>{
+    btn.parentElement.querySelectorAll('button').forEach(b=>{b.classList.remove('on');b.style.background='';});
+    btn.classList.add('on'); btn.style.background=cc.cheia;
+  });
+  atualiza();
+}
+/* ---- vínculo colaborador × empresa (N:N, escopo fechado por empresa) ---- */
+const EMPRESAS=['Vertz Iluminação','Via HF'];
+const PERFIS=['Vendedor','Estoque','Financeiro','Compras','Administrador'];
+let linhasEmp=[{emp:'Vertz Iluminação',atual:true}];
+function pintaEmpresas(){
+  const alvo=document.getElementById('listaEmp');
+  if(!alvo) return;
+  alvo.innerHTML=linhasEmp.map((l,i)=>{
+    const usadas=linhasEmp.filter((_,j)=>j!==i).map(x=>x.emp);
+    const opts=EMPRESAS.filter(e=>usadas.indexOf(e)<0);
+    return '<div class="vinc">'+
+      '<div class="vinc-topo">'+
+        '<span class="vinc-n">'+(i+1)+'</span>'+
+        (l.atual
+          ? '<b class="vinc-emp">'+l.emp+'</b><span class="tag" style="background:#D2FEEB">Empresa atual</span>'
+          : '<select class="entrada vinc-sel">'+opts.map(o=>'<option'+(o===l.emp?' selected':'')+'>'+o+'</option>').join('')+'</select>')+
+        (l.atual?'':'<button class="vinc-x" onclick="tiraEmpresa('+i+')">Remover</button>')+
+      '</div>'+
+      '<div class="linha">'+
+        '<div class="campo"><label>Perfil nesta empresa <span class="ast">*</span></label>'+
+          '<select class="entrada"'+(i===0?' data-req="1"':'')+'>'+PERFIS.map(p=>'<option>'+p+'</option>').join('')+'</select></div>'+
+        '<div class="campo medio"><label>% comissão interna</label><input class="entrada" placeholder="0,00"></div>'+
+      '</div>'+
+      '<div class="interruptor on" onclick="this.classList.toggle(\'on\')"><span class="cx"></span>É atendente nesta empresa</div>'+
+    '</div>';
+  }).join('');
+}
+function addEmpresa(){
+  if(linhasEmp.length>=EMPRESAS.length) return;
+  const usada=linhasEmp.map(x=>x.emp);
+  linhasEmp.push({emp:EMPRESAS.find(e=>usada.indexOf(e)<0)});
+  pintaEmpresas(); atualiza();
+}
+function tiraEmpresa(i){ linhasEmp.splice(i,1); pintaEmpresas(); atualiza(); }
+
+function abre(el){ el.parentElement.classList.toggle('aberto'); }
+function vaiPara(id){
+  const b=document.querySelector('[data-bloco="'+id+'"]');
+  b.classList.add('aberto'); b.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function preenchido(c){
+  const v=(c.value||'').trim();
+  if(!v) return false;
+  return !/^(—|Selecione…)$/.test(v);
+}
+function atualiza(){
+  const e=ENTIDADES[atual];
+  const obr=[...document.querySelectorAll('[data-req="1"]')];
+  const segOk=document.querySelectorAll('[data-seg]').length; // segmented já vem escolhido
+  const ok=obr.filter(preenchido).length+segOk;
+  const total=obr.length+segOk;
+  document.getElementById('contaObrig').textContent=ok+' de '+total;
+  document.getElementById('trilho').style.width=(ok/total*100)+'%';
+  const falta=total-ok;
+  document.getElementById('avisoTxt').textContent = falta
+    ? falta+' campo'+(falta>1?'s':'')+' obrigatório'+(falta>1?'s':'')+' pendente'+(falta>1?'s':'')
+    : 'Pronto para gravar';
+  e.blocos.forEach(b=>{
+    const bloco=document.querySelector('[data-bloco="'+b.id+'"]');
+    const campos=[...bloco.querySelectorAll('.entrada')];
+    const n=campos.filter(preenchido).length;
+    const cont=bloco.querySelector('.contador');
+    if(cont){ cont.textContent=n+'/'+contaCampos(b); cont.classList.toggle('tem',n>0); }
+    const nav=document.querySelector('[data-nav="'+b.id+'"]');
+    if(nav){
+      if(b.fixo){ nav.querySelector('.st').textContent = falta? falta+' faltam':'ok'; nav.classList.toggle('falta',falta>0); }
+      else nav.querySelector('.st').textContent = n? n+' preenchidos':'vazio';
+    }
+  });
+}
+document.addEventListener('input',atualiza);
+document.addEventListener('change',atualiza);
+render('cliente');
+</script>
+</body>
+</html>

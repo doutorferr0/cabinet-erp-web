@@ -250,6 +250,24 @@ describe('AppShell', () => {
     expect(frame).toContainElement(screen.getByRole('heading', { name: 'Boletim' }))
   })
 
+  /**
+   * O mapa de tabelas é arquivo estático (`public/mapeamento-tabelas.html`),
+   * não tela do roteador. Se sair como `<Link>`, o clique vira navegação
+   * client-side para uma rota que não existe: 404 dentro da SPA, com o arquivo
+   * servido pelo mesmo domínio ali do lado.
+   */
+  it('o item de referência sai da SPA por âncora, e em aba nova', async () => {
+    setup()
+    const item = await screen.findByRole('link', { name: /Mapeamento de Tabelas/ })
+
+    expect(item).toHaveAttribute('href', '/mapeamento-tabelas.html')
+    expect(item).toHaveAttribute('target', '_blank')
+    expect(item).toHaveAttribute('rel', 'noreferrer')
+    // Quem lê a barra com os olhos tem o cartão de hover; para leitor de tela o
+    // cartão não existe, e a aba nova precisa ser anunciada em algum lugar.
+    expect(item).toHaveTextContent('(abre em nova aba)')
+  })
+
   // APPBAR GLOBAL (§@casca-global): vive no LAYOUT, não na página — o mesmo
   // teste em duas rotas sem módulo em comum é o que prova isso, em vez de só
   // conferir numa tela só.
@@ -314,6 +332,30 @@ describe('AppShell', () => {
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/cadastros/clientes/novo')
       })
+    })
+
+    /**
+     * O comando do mapa de tabelas é o único que NÃO navega. `navigate({ to })`
+     * ali seria rota inexistente — o operador pediria o mapa e receberia o 404
+     * do roteador, com o arquivo servido pelo mesmo domínio ali do lado.
+     *
+     * O teste vale pela ROTA que não muda tanto quanto pelo `window.open`: sem
+     * ele, o desvio pode sumir da paleta sem nada acusar, porque a marca no
+     * item e a marca no comando continuariam certas.
+     */
+    it('destino externo abre em aba nova, e a rota atual não muda', async () => {
+      const abrir = vi.fn()
+      vi.stubGlobal('open', abrir)
+
+      const { router } = setup('/cadastros/clientes')
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+      await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/)
+
+      await user.click(await screen.findByRole('menuitem', { name: /Mapeamento de Tabelas/ }))
+
+      expect(abrir).toHaveBeenCalledWith('/mapeamento-tabelas.html', '_blank', 'noreferrer')
+      expect(router.state.location.pathname).toBe('/cadastros/clientes')
     })
 
     it('o sino abre a gaveta, que EMPURRA — sem fixed, sem véu', async () => {

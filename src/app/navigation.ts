@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   SquareKanban,
   Store,
+  Table2,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -54,6 +55,24 @@ export interface NavItem {
    * ESTA tela oferece, dito uma vez só.
    */
   incluir?: string
+
+  /**
+   * A `url` NÃO é rota do roteador: é endereço que sai da SPA.
+   *
+   * Existe por causa do `Mapeamento de Tabelas`, que é
+   * `public/mapeamento-tabelas.html` — um arquivo estático servido ao lado da
+   * aplicação, não uma tela dela. Sem esta marca, os dois consumidores da
+   * navegação levariam o operador a um 404: o shell monta `<Link to={item.url}>`
+   * e a paleta chama `navigate({ to: comando.url })`, e as duas coisas são
+   * navegação client-side para uma rota que o roteador não conhece — com o
+   * arquivo ali do lado, servido pelo mesmo domínio.
+   *
+   * Marcado, o item vira `<a href>` na barra e `window.open` na paleta, e abre
+   * em ABA NOVA: é ferramenta de referência que se consulta ao lado do
+   * trabalho, e trocar a aplicação inteira por ela custaria uma recarga fria da
+   * SPA na volta.
+   */
+  externo?: true
 
   /**
    * Cor e desenho de uma tela que NÃO tem módulo próprio.
@@ -256,6 +275,42 @@ export const navGroups: NavGroup[] = [
         incluir: '/compras/pedidos/novo',
         icon: ShoppingCart,
         descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
+      },
+    ],
+  },
+  {
+    /**
+     * REFERÊNCIA — o que se CONSULTA, e não o que se opera.
+     *
+     * Grupo próprio, no fim da barra, e não um item enfiado em Dashboard ou em
+     * Cadastros: os grupos de cima são módulos do negócio, cada um com par de
+     * cor e desenho. O mapa de tabelas não guarda registro nem gera documento;
+     * é material de quem está construindo o sistema. Empilhá-lo com Clientes
+     * diria que se cadastra tabela.
+     *
+     * Sem `aparencia`: nenhum dos oito módulos travados pelo user é este, e
+     * emprestar o par de um vizinho aqui pintaria de Compras uma ferramenta que
+     * não é de compra. Fica no par padrão (marca do sistema) — que é
+     * exatamente a regra escrita para item sem módulo.
+     */
+    title: 'Referência',
+    url: '/mapeamento-tabelas.html',
+    icon: Table2,
+    items: [
+      {
+        title: 'Mapeamento de Tabelas',
+        /**
+         * `.html` explícito, e não `/mapeamento-tabelas`, porque a URL limpa só
+         * existe em produção: o Cloudflare Pages serve o arquivo e redireciona
+         * o `.html` para ela. Em `pnpm dev` não há esse passo — o Vite serve
+         * `public/` com o nome do arquivo e manda todo caminho desconhecido
+         * para o `index.html` da SPA, então `/mapeamento-tabelas` cairia no
+         * roteador e responderia 404. O `.html` funciona nos dois.
+         */
+        url: '/mapeamento-tabelas.html',
+        externo: true,
+        icon: Table2,
+        descricao: 'O mapa das tabelas do Cabinet: módulos, chaves e ligações. Abre em nova aba.',
       },
     ],
   },

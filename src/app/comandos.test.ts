@@ -103,3 +103,21 @@ describe('comandosDaPaleta — contexto', () => {
     expect(comandos.every((c) => c.grupo !== GRUPO_NESTA_TELA)).toBe(true)
   })
 })
+
+describe('comandosDaPaleta — destino externo', () => {
+  /**
+   * A paleta executa com `navigate({ to })`. Sem esta marca viajando junto, o
+   * comando do mapa de tabelas seria navegação client-side para uma rota que o
+   * roteador não conhece: 404 dentro da SPA, com o arquivo servido ao lado.
+   */
+  it('a marca do item chega ao comando', () => {
+    const mapa = comandosDaPaleta(temTudo).find((c) => c.url.endsWith('.html'))
+    expect(mapa?.externo).toBe(true)
+    expect(mapa?.titulo).toBe('Mapeamento de Tabelas')
+  })
+
+  it('e só ele — as telas do sistema continuam sendo rota', () => {
+    const externos = comandosDaPaleta(temTudo).filter((c) => c.externo)
+    expect(externos.map((c) => c.url)).toEqual(['/mapeamento-tabelas.html'])
+  })
+})

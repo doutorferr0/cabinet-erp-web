@@ -148,6 +148,39 @@ function AppSidebar() {
                 // isso, três itens saíam em lucide cinza no meio da fileira.
                 const moduloDoItem = moduloDaRota(item.url) ?? item.aparencia?.modulo
                 const shapeDoItem = moduloDaRota(item.url) ?? item.aparencia?.shape
+                // O shape do módulo no lugar do ícone genérico: é ele que o
+                // operador aprende como marca do módulo, e o mesmo desenho
+                // reaparece na banda e no estado vazio.
+                //
+                // O par entra INVERTIDO em relação ao fundo: item inativo é
+                // liso, então o ornamento vai de cheia /01 e a fileira inteira
+                // vira um mapa de cores; item ativo já tem fundo /01 pelo §3b, e
+                // ali a cheia sobre cheia sumiria — nele o ornamento vai de
+                // pastel /02. As duas regras (memória §@ornamentos e §3b) só
+                // coexistem assim, e a família da cor é a mesma nos dois casos.
+                //
+                // Sai de dentro do `<Link>` porque agora tem DOIS invólucros: o
+                // item externo é `<a href>`, não navegação do roteador.
+                const conteudo = (
+                  <>
+                    {shapeDoItem ? (
+                      <Ornamento
+                        shape={shapeDoItem}
+                        tom={active ? 'modulo-suave' : 'modulo'}
+                        tamanho={colapsada ? 22 : 18}
+                      />
+                    ) : (
+                      <item.icon className={active ? 'text-modulo-suave' : 'text-modulo'} />
+                    )}
+                    <span>{item.title}</span>
+                    {/* O aviso de aba nova é LIDO, não visto: quem enxerga a
+                        barra já tem a explicação no cartão de hover, e um ícone
+                        a mais na fileira competiria com o ornamento, que é a
+                        marca do módulo. Para quem navega por leitor de tela o
+                        cartão não existe — aqui está a única frase que sobra. */}
+                    {item.externo && <span className="sr-only">(abre em nova aba)</span>}
+                  </>
+                )
                 return (
                   <SidebarMenuItem
                     key={item.url}
@@ -170,29 +203,17 @@ function AppSidebar() {
                         ? { tooltip: item.title }
                         : { hoverCard: <ExplicacaoDaTela tela={item} /> })}
                     >
-                      <Link to={item.url}>
-                        {/* O shape do módulo no lugar do ícone genérico: é ele
-                            que o operador aprende como marca do módulo, e o
-                            mesmo desenho reaparece na banda e no estado vazio.
-
-                            O par entra INVERTIDO em relação ao fundo: item
-                            inativo é liso, então o ornamento vai de cheia /01 e
-                            a fileira inteira vira um mapa de cores; item ativo
-                            já tem fundo /01 pelo §3b, e ali a cheia sobre cheia
-                            sumiria — nele o ornamento vai de pastel /02. As
-                            duas regras (memória §@ornamentos e §3b) só coexistem
-                            assim, e a família da cor é a mesma nos dois casos. */}
-                        {shapeDoItem ? (
-                          <Ornamento
-                            shape={shapeDoItem}
-                            tom={active ? 'modulo-suave' : 'modulo'}
-                            tamanho={colapsada ? 22 : 18}
-                          />
-                        ) : (
-                          <item.icon className={active ? 'text-modulo-suave' : 'text-modulo'} />
-                        )}
-                        <span>{item.title}</span>
-                      </Link>
+                      {/* Item EXTERNO é `<a href>`, não `<Link>`: `Link` faz
+                          navegação client-side, e o alvo (`public/*.html`) não é
+                          rota do roteador — daria 404 dentro da SPA com o
+                          arquivo servido ali do lado. Ver `NavItem.externo`. */}
+                      {item.externo ? (
+                        <a href={item.url} target="_blank" rel="noreferrer">
+                          {conteudo}
+                        </a>
+                      ) : (
+                        <Link to={item.url}>{conteudo}</Link>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

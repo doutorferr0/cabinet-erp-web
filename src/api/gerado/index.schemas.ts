@@ -136,6 +136,16 @@ export interface PartnerDto {
   registration?: string | null;
   /** Proposto. Conta para pagamento de comissão. `null` quando o parceiro não tem conta cadastrada. */
   payoutBankInfo?: null | PartnerPayoutBankInfo;
+  /**
+     * Proposto. O parceiro a que este está VINCULADO — escritório de arquitetura ↔ profissionais dele (`partners.parent_id`, que já existe no schema). `null` quando o parceiro não pende de ninguém, que é o caso da maioria. Um nível por vez: o filho aponta o pai, e a lista de filhos sai de `filters` com `parentId`. CICLO É 400 — A pai de B pai de A não é hierarquia, é laço, e o servidor recusa alto em vez de guardar uma árvore que ninguém consegue percorrer.
+     * @nullable
+     */
+  parentId?: string | null;
+  /**
+     * Proposto. Nome do parceiro-pai, para a tela mostrar o vínculo sem uma segunda consulta. Mesmo par `id`+`name` que `productTypeId`/`productTypeName` já usa: o id é para escrever, o nome é o que a tela lê. Acompanha `parentId` — os dois são `null` juntos.
+     * @nullable
+     */
+  parentName?: string | null;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -375,6 +385,11 @@ export interface PartnerWriteRequest {
   registration?: string | null;
   /** Proposto. Conta de comissão. Vale a mesma regra do `PUT`: mandar `null` apaga a conta cadastrada. */
   payoutBankInfo?: null | PartnerPayoutBankInfo;
+  /**
+     * Proposto. Vínculo pai/filho. Só o ID viaja na escrita — `parentName` é derivado, e aceitá-lo de volta abriria a porta para o nome divergir do id. `PUT` substitui o registro inteiro: omitir DESVINCULA. Apontar para si mesmo, ou para um descendente, é 400.
+     * @nullable
+     */
+  parentId?: string | null;
 }
 
 export interface ProblemDetails {
@@ -1565,7 +1580,7 @@ sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 /**
- * Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded** (`?filters=%%5B%%7B%%22field%%22...`), e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `code`, `legalName`, `tradeName`, `document`, `active` — a mesma do `sortBy`, e cresce quando uma tela precisar. Campo fora dela é 400.
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded** (`?filters=%%5B%%7B%%22field%%22...`), e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `code`, `legalName`, `tradeName`, `document`, `active`, `parentId` — a mesma do `sortBy`, e cresce quando uma tela precisar. Campo fora dela é 400. `parentId` entrou pela hierarquia pai/filho: é por ele que a tela do pai pede os filhos, em vez de um caminho novo só para isso.
  */
 filters?: ListFilter[];
 /**

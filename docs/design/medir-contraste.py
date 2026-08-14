@@ -7,8 +7,9 @@ mentira. Remedir na mão é o que já produziu dois números errados na página.
 script lê os tokens REAIS do `src/index.css` e imprime as tabelas que a seção de
 medição do DESIGN.md publica.
 
-Uso:  python3 docs/design/medir-contraste.py           # tabelas em markdown
-      python3 docs/design/medir-contraste.py --par A B # razão entre 2 tokens
+Uso:  python3 docs/design/medir-contraste.py               # tabelas em markdown
+      python3 docs/design/medir-contraste.py --par A B     # razão entre 2 tokens
+      python3 docs/design/medir-contraste.py --frontmatter # cor do YAML × index.css
 
 Não altera cor nenhuma: é instrumento de medição. Trocar cor por causa de um
 número reprovado é decisão do user.
@@ -136,6 +137,74 @@ VOZES = [
 ]
 
 
+# Chave do frontmatter YAML do DESIGN.md -> token do `src/index.css` que ela copia.
+# Existe porque a cor mora em DOIS lugares: o corpo do doc e o bloco YAML que o
+# impeccable lê. Já divergiram uma vez (o YAML ficou com os cinzas antigos depois
+# da troca das superfícies) e a divergência é MUDA — o sidecar velho mente para o
+# próximo agente sem quebrar nada.
+FRONTMATTER = {
+    "bench": "background",
+    "sheet": "card",
+    "sheet-sunken": "surface-sunken",
+    "neutral": "neutral",
+    "ink": "foreground",
+    "ink-muted": "muted-foreground",
+    "ink-strong": "text-strong",
+    "ink-disabled": "text-disabled",
+    "rule-hair": "rule-hair",
+    "main": "primary",
+    "main-hover": "primary-hover",
+    "main-foreground": "primary-foreground",
+    "accent": "accent",
+    "info": "info",
+    "money": "money",
+    "danger": "destructive",
+    "warn": "warn",
+    "ring": "ring",
+    "empresa": "empresa",
+    "fill-money": "fill-money",
+    "fill-focus": "fill-focus",
+    "fill-error": "fill-error",
+    "zone-money": "zone-money",
+    "zone-id": "zone-id",
+    "zone-info": "zone-info",
+    "zone-warn": "zone-warn",
+    "zone-danger": "zone-danger",
+    "shadow-1": "shadow-1",
+    "shadow-2": "shadow-2",
+    "shadow-3": "shadow-3",
+    "shadow-4": "shadow-4",
+    "shadow-5": "shadow-5",
+}
+
+DOC = Path(__file__).resolve().parents[2] / "DESIGN.md"
+YAML_COR = re.compile(r'^\s{2}([a-z0-9-]+):\s*"hsl\(([^)]+)\)"', re.M)
+
+
+def conferir_frontmatter(claro: dict[str, str]) -> int:
+    """Compara o bloco `colors:` do DESIGN.md com os tokens do CSS. Devolve nº de divergências."""
+    bloco = DOC.read_text(encoding="utf-8").split("---")[1]
+    divergem = 0
+    vistos = set()
+    for nome, valor in YAML_COR.findall(bloco):
+        token = FRONTMATTER.get(nome)
+        if token is None:
+            print(f"?  {nome}: no YAML e sem token correspondente no mapa deste script")
+            divergem += 1
+            continue
+        vistos.add(nome)
+        real = (claro.get(token) or "").strip()
+        if real != valor.strip():
+            print(f"×  {nome}: YAML {valor.strip()!r} × --{token} {real!r}")
+            divergem += 1
+    for nome in FRONTMATTER:
+        if nome not in vistos:
+            print(f"×  {nome}: mapeado aqui e AUSENTE do YAML do DESIGN.md")
+            divergem += 1
+    print("frontmatter em dia" if not divergem else f"{divergem} divergência(s)")
+    return divergem
+
+
 def cor(mapa: dict[str, str], chave: str) -> tuple[float, float, float]:
     valor = mapa.get(chave)
     if valor is None:
@@ -148,6 +217,9 @@ def cor(mapa: dict[str, str], chave: str) -> tuple[float, float, float]:
 
 def main() -> None:
     claro, escuro, mod_claro, mod_escuro = tokens()
+
+    if "--frontmatter" in sys.argv:
+        raise SystemExit(1 if conferir_frontmatter(claro) else 0)
 
     if "--par" in sys.argv:
         a, b = sys.argv[sys.argv.index("--par") + 1 : sys.argv.index("--par") + 3]

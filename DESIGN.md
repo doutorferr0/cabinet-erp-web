@@ -8,6 +8,8 @@ colors:
   neutral: "hsl(220 13% 92%)"
   ink: "hsl(0 0% 0%)"
   ink-muted: "hsl(213 10% 41%)"
+  ink-strong: "hsl(215 13% 30%)"
+  ink-disabled: "hsl(210 8% 74%)"
   rule-hair: "hsl(210 10% 86%)"
   main: "hsl(241 100% 66%)"
   main-hover: "hsl(241 77% 57%)"
@@ -18,6 +20,10 @@ colors:
   danger: "hsl(357 84% 42%)"
   warn: "hsl(47 100% 50%)"
   ring: "hsl(47 100% 50%)"
+  empresa: "hsl(234 91% 60%)"
+  fill-money: "hsl(88 51% 71%)"
+  fill-focus: "hsl(44 87% 64%)"
+  fill-error: "hsl(355 76% 64%)"
   zone-money: "hsl(154 96% 91%)"
   zone-id: "hsl(263 94% 93%)"
   zone-info: "hsl(223 69% 95%)"
@@ -435,6 +441,14 @@ número por número. Ele não altera cor nenhuma — é instrumento.
 
 Pisos WCAG usados: **4,5:1** texto normal (1.4.3) · **3:1** texto grande e componente/estado
 não-textual (1.4.11).
+
+**A cor mora em DOIS lugares** — o `src/index.css` e o bloco `colors:` do frontmatter desta página,
+que é o que o impeccable lê. Já divergiram (o YAML ficou com os cinzas antigos depois da troca das
+superfícies), e a divergência é **muda**: nada quebra, o sidecar só passa a mentir para o próximo
+agente. `python3 docs/design/medir-contraste.py --frontmatter` compara os dois e sai com código 1
+se algum par não bater — rodar sempre que mexer em token de cor. **Entraram no YAML em 2026-08-13**,
+por serem medidos ou citados aqui e faltarem lá: `ink-strong`, `ink-disabled`, `empresa` e os três
+`fill-*`.
 
 #### As 4 vozes tipográficas sobre as superfícies — piso 4,5:1
 

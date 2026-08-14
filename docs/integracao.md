@@ -121,6 +121,14 @@ registro do que aconteceu, e o que se refaz é uma atividade nova.
 concluindo; o que foi agendado é parte do histórico que a análise lê. Também não
 há `active`: `activities` não é cadastro, e o padrão 8 não se aplica.
 
+**Onde o painel está montado, e por que não em toda parte.** Oportunidade
+(`/crm/oportunidades/{id}`) e os três papéis de parceiro (Cliente, Fornecedor,
+Profissional) — os dois recursos cujo id é do SERVIDOR. **Orçamento e pedido de
+compra ficam fora enquanto forem mock puro:** o `entityId` é `uuid` no contrato,
+e o id que essas telas têm hoje é inventado no front. A atividade sobreviveria à
+troca mock→HTTP apontando para registro que não existe. É a mesma regra do
+registry — o que depende do servidor só entra quando o caminho existe de verdade.
+
 **O `kind` é conjunto fechado e a lista é PROPOSTA do front**
 (`call`/`meeting`/`email`/`task`). A transcrição do SoftLux não cobre atividade e
 o schema guarda `kind varchar` sem fixar valores — a lista cresce por PR no

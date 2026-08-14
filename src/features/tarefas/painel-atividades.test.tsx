@@ -1,8 +1,9 @@
 import type { ActivityDto } from '@/api/gerado'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { diaLocalISO } from '@/lib/datas'
+import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { instalarServidor, json } from '@/test/servidor'
-import { renderWithQuery } from '@/test/utils'
+import { renderRoute, renderWithQuery } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -165,6 +166,35 @@ describe('painel de atividades', () => {
       assigneeEmployeeId: 'emp-2',
       notes: null,
     })
+  })
+
+  it('o mesmo painel monta no PARCEIRO, pedindo o alvo daquele registro', async () => {
+    // A prova de que "montável em qualquer registro" não é promessa: a MESMA
+    // peça, na tela de Cliente, pergunta por `partner` + o id da rota. Se o
+    // painel dependesse do CRM, isto não compilaria — e o teste existe porque
+    // essa dependência é o tipo de coisa que entra sem ninguém notar.
+    const chamadas: string[] = []
+    const cliente = parceiro({ id: 'parc-0002', legalName: 'MARIA HELENA', isCustomer: true })
+
+    renderRoute('/cadastros/clientes/parc-0002', async (entrada) => {
+      const url = String(entrada instanceof Request ? entrada.url : entrada)
+      const caminho = new URL(url, 'http://localhost').pathname
+      chamadas.push(url)
+
+      if (caminho === '/api/activities') {
+        return json({
+          rows: [atividade({ entityType: 'partner', entityId: 'parc-0002' })],
+          total: 1,
+        })
+      }
+      return stubDeParceiros([cliente])(entrada)
+    })
+
+    expect(await screen.findByText('Ligar para confirmar a visita')).toBeInTheDocument()
+
+    const consulta = new URL(chamadas.find((u) => u.includes('/api/activities')) as string)
+    expect(consulta.searchParams.get('entityType')).toBe('partner')
+    expect(consulta.searchParams.get('entityId')).toBe('parc-0002')
   })
 
   it('registro sem atividade diz isso em voz alta, em vez de painel vazio', async () => {

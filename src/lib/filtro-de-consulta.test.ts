@@ -225,3 +225,85 @@ describe('normalização na saída', () => {
     expect(saiu?.valor).toBe('x')
   })
 })
+
+describe('filtroCasa — data', () => {
+  interface Doc {
+    numero: string
+    emissao: string | null
+    /** Alguns campos do contrato guardam o INSTANTE, não só o dia. */
+    fechamento: string | null
+  }
+
+  const docs: Doc[] = [
+    { numero: '1', emissao: '2025-08-01', fechamento: '2025-08-01T14:32:00Z' },
+    { numero: '2', emissao: '2025-08-05', fechamento: null },
+    { numero: '3', emissao: '2025-08-31', fechamento: '2025-09-01T03:00:00Z' },
+  ]
+
+  function data(over: Partial<FiltroDaTabela> = {}): FiltroDaTabela {
+    return {
+      filtroId: novoFiltroId(),
+      id: 'emissao',
+      variante: 'date',
+      operador: 'eq',
+      valor: '',
+      ...over,
+    }
+  }
+
+  const quaisDocs = (f: FiltroDaTabela[], juncao: 'and' | 'or' = 'and') =>
+    docs.filter((d) => linhaPassaNosFiltros(d, f, juncao)).map((d) => d.numero)
+
+  it('data ordena como calendário, não como texto solto', () => {
+    // '2025-08-31' < '2025-09-01' nas duas leituras; o que o ISO garante é que
+    // a ordem lexicográfica É a cronológica, e é disso que a comparação vive.
+    expect(quaisDocs([data({ operador: 'lt', valor: '2025-08-05' })])).toEqual(['1'])
+    expect(quaisDocs([data({ operador: 'gte', valor: '2025-08-05' })])).toEqual(['2', '3'])
+  })
+
+  it('em / fora de comparam o DIA', () => {
+    expect(quaisDocs([data({ operador: 'eq', valor: '2025-08-05' })])).toEqual(['2'])
+    expect(quaisDocs([data({ operador: 'ne', valor: '2025-08-05' })])).toEqual(['1', '3'])
+  })
+
+  it('entre inclui os dois extremos — é o que o operador quer dizer', () => {
+    expect(
+      quaisDocs([data({ operador: 'isBetween', valor: ['2025-08-01', '2025-08-05'] })]),
+    ).toEqual(['1', '2'])
+  })
+
+  it('ponta em branco deixa o extremo aberto', () => {
+    expect(quaisDocs([data({ operador: 'isBetween', valor: ['', '2025-08-05'] })])).toEqual([
+      '1',
+      '2',
+    ])
+    expect(quaisDocs([data({ operador: 'isBetween', valor: ['2025-08-05', ''] })])).toEqual([
+      '2',
+      '3',
+    ])
+  })
+
+  it('campo com HORA responde pelo DIA — senão a listagem corta um dia sem explicar', () => {
+    const comHora = (over: Partial<FiltroDaTabela>) => data({ id: 'fechamento', ...over })
+
+    // O doc 1 fechou às 14h32 do dia 1: perguntar "em 01/08" tem de achá-lo.
+    expect(quaisDocs([comHora({ operador: 'eq', valor: '2025-08-01' })])).toEqual(['1'])
+    // E "até 01/08" não pode deixar o próprio dia de fora.
+    expect(quaisDocs([comHora({ operador: 'lte', valor: '2025-08-01' })])).toEqual(['1'])
+  })
+
+  it('data vazia é vazia, e data ausente não casa com comparação', () => {
+    expect(quaisDocs([data({ id: 'fechamento', operador: 'isEmpty', valor: '' })])).toEqual(['2'])
+    expect(quaisDocs([data({ id: 'fechamento', operador: 'gt', valor: '2025-01-01' })])).toEqual([
+      '1',
+      '3',
+    ])
+  })
+
+  it('a variante de data oferece a palavra do calendário, não a do número', () => {
+    const rotulos = operadoresDaVariante('date').map((o) => o.rotulo)
+    expect(rotulos).toContain('antes de')
+    expect(rotulos).toContain('entre')
+    expect(rotulos).not.toContain('menor que')
+  })
+})

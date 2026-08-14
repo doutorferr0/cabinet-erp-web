@@ -18,10 +18,16 @@ import type { LucideIcon } from 'lucide-react'
  *   para o mesmo conceito, com tradução no meio — que é exatamente onde a
  *   ordenação já quebrou uma vez. O rótulo que o operador lê é PT-BR e vive só
  *   na borda de exibição.
- * - **Sem `date`/`dateRange`.** O original abre um `Calendar` (react-day-picker),
- *   dependência que este repo não tem e que a zona desta tarefa não pode
- *   adicionar. Data entra quando o calendário entrar — variante que renderiza
- *   campo quebrado é pior que variante ausente.
+ * - **`date` existe, e o `Calendar` do original NÃO foi portado.** A primeira
+ *   versão deixou data de fora dizendo que faltava dependência de calendário; era
+ *   erro de leitura do próprio repo, que já usa `<Input type="date">` nativo no
+ *   `DateField`. A data trafega em ISO (`yyyy-mm-dd`), que é exatamente o que o
+ *   input nativo produz e consome — o calendário do sistema operacional faz o
+ *   papel do widget, de graça e com o teclado que a pessoa já conhece.
+ * - **Sem `dateRange` como variante separada.** No original ela existe só para o
+ *   Calendar em modo intervalo; aqui `date` + `isBetween` já dá dois campos de
+ *   data, e uma variante a mais para o mesmo resultado seria escolha sem
+ *   consequência na tela.
  * - **Sem `range` (slider).** Mesmo motivo: o original usa um Slider que aqui não
  *   existe. `number` + `isBetween` cobre o caso com dois campos numéricos.
  * - **Sem reordenar filtro por arrastar.** A junção é uma só para a lista inteira
@@ -39,7 +45,7 @@ import type { LucideIcon } from 'lucide-react'
  * converta na borda, coluna de dinheiro não entra na lista de campos filtráveis.
  */
 
-export const VARIANTES = ['text', 'number', 'boolean', 'select', 'multiSelect'] as const
+export const VARIANTES = ['text', 'number', 'date', 'boolean', 'select', 'multiSelect'] as const
 export type VarianteDeFiltro = (typeof VARIANTES)[number]
 
 export const OPERADORES = [
@@ -174,6 +180,22 @@ const OPERADORES_NUMERICOS: readonly OperadorComRotulo[] = [
   ...VAZIOS,
 ]
 
+/**
+ * Data é ORDENADA como número, mas se LÊ como calendário: "menor que" numa data
+ * faz o operador traduzir na cabeça o que "antes de" diz direto. Os valores são
+ * os mesmos — quem muda é só a palavra que a pessoa lê.
+ */
+const OPERADORES_DE_DATA: readonly OperadorComRotulo[] = [
+  { valor: 'eq', rotulo: 'em' },
+  { valor: 'ne', rotulo: 'fora de' },
+  { valor: 'lt', rotulo: 'antes de' },
+  { valor: 'lte', rotulo: 'em ou antes de' },
+  { valor: 'gt', rotulo: 'depois de' },
+  { valor: 'gte', rotulo: 'em ou depois de' },
+  { valor: 'isBetween', rotulo: 'entre' },
+  ...VAZIOS,
+]
+
 const OPERADORES_DE_SELECAO: readonly OperadorComRotulo[] = [
   { valor: 'eq', rotulo: 'é' },
   { valor: 'ne', rotulo: 'não é' },
@@ -199,6 +221,7 @@ const OPERADORES_BOOLEANOS: readonly OperadorComRotulo[] = [
 const POR_VARIANTE: Record<VarianteDeFiltro, readonly OperadorComRotulo[]> = {
   text: OPERADORES_DE_TEXTO,
   number: OPERADORES_NUMERICOS,
+  date: OPERADORES_DE_DATA,
   boolean: OPERADORES_BOOLEANOS,
   select: OPERADORES_DE_SELECAO,
   multiSelect: OPERADORES_DE_MULTISELECAO,
@@ -263,6 +286,19 @@ function comoNumero(valor: unknown): number {
   )
 }
 
+/**
+ * O DIA de um valor ISO, e não o instante.
+ *
+ * "emitido em 05/08" tem de achar o que foi emitido às 14h daquele dia. Se o
+ * campo guardar `2025-08-05T14:32:00Z` e a comparação usar a string inteira,
+ * `eq '2025-08-05'` não acha nada e `lte '2025-08-05'` deixa o próprio dia de
+ * fora — o operador veria a listagem cortar um dia sem explicação. Os 10
+ * primeiros caracteres do ISO são a data, e é com ela que a pergunta é feita.
+ */
+function comoDia(valor: unknown): string {
+  return String(valor ?? '').slice(0, 10)
+}
+
 function iguais(bruto: unknown, filtro: FiltroDaTabela): boolean {
   const referencia = Array.isArray(filtro.valor) ? (filtro.valor[0] ?? '') : filtro.valor
   if (filtro.variante === 'number') {
@@ -270,12 +306,29 @@ function iguais(bruto: unknown, filtro: FiltroDaTabela): boolean {
     const b = comoNumero(referencia)
     return !Number.isNaN(a) && !Number.isNaN(b) && a === b
   }
+  if (filtro.variante === 'date') return comoDia(bruto) === comoDia(referencia)
   return comoTexto(bruto) === comoTexto(referencia)
 }
 
-function comparaNumero(bruto: unknown, filtro: FiltroDaTabela): number | null {
-  const a = comoNumero(bruto)
+/**
+ * Ordem entre o valor da linha e o do filtro: negativo, zero ou positivo — ou
+ * `null` quando um dos dois não é comparável.
+ *
+ * Data compara como STRING ISO, e isso não é atalho: `yyyy-mm-dd` é ordenável
+ * lexicograficamente na mesma ordem em que é cronológico, então `Date` só
+ * acrescentaria fuso horário a uma pergunta que não tem hora.
+ */
+function comparaOrdenado(bruto: unknown, filtro: FiltroDaTabela): number | null {
   const referencia = Array.isArray(filtro.valor) ? (filtro.valor[0] ?? '') : filtro.valor
+
+  if (filtro.variante === 'date') {
+    const a = comoDia(bruto)
+    const b = comoDia(referencia)
+    if (!a || !b) return null
+    return a < b ? -1 : a > b ? 1 : 0
+  }
+
+  const a = comoNumero(bruto)
   const b = comoNumero(referencia)
   if (Number.isNaN(a) || Number.isNaN(b)) return null
   return a - b
@@ -306,27 +359,35 @@ export function filtroCasa(linha: unknown, filtro: FiltroDaTabela): boolean {
     case 'ne':
       return !iguais(bruto, filtro)
     case 'lt': {
-      const d = comparaNumero(bruto, filtro)
+      const d = comparaOrdenado(bruto, filtro)
       return d !== null && d < 0
     }
     case 'lte': {
-      const d = comparaNumero(bruto, filtro)
+      const d = comparaOrdenado(bruto, filtro)
       return d !== null && d <= 0
     }
     case 'gt': {
-      const d = comparaNumero(bruto, filtro)
+      const d = comparaOrdenado(bruto, filtro)
       return d !== null && d > 0
     }
     case 'gte': {
-      const d = comparaNumero(bruto, filtro)
+      const d = comparaOrdenado(bruto, filtro)
       return d !== null && d >= 0
     }
     case 'isBetween': {
       const [de = '', ate = ''] = Array.isArray(filtro.valor) ? filtro.valor : [filtro.valor, '']
+      // Ponta em branco = extremo aberto, nas duas variantes. Exigir as duas
+      // travaria o filtro no meio da digitação, que é quando o operador ainda
+      // está montando a faixa.
+      if (filtro.variante === 'date') {
+        const dia = comoDia(bruto)
+        if (!dia) return false
+        // A faixa de datas é FECHADA nos dois extremos: "entre 01/08 e 05/08"
+        // inclui o dia 5 na boca de quem pergunta.
+        return (de === '' || dia >= comoDia(de)) && (ate === '' || dia <= comoDia(ate))
+      }
       const valor = comoNumero(bruto)
       if (Number.isNaN(valor)) return false
-      // Ponta em branco = extremo aberto. Exigir as duas travaria o filtro no
-      // meio da digitação, que é quando o operador ainda está montando a faixa.
       const min = de === '' ? Number.NEGATIVE_INFINITY : comoNumero(de)
       const max = ate === '' ? Number.POSITIVE_INFINITY : comoNumero(ate)
       if (Number.isNaN(min) || Number.isNaN(max)) return false

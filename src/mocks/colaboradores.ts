@@ -53,8 +53,20 @@ const NOMES = [
   'RENATA OLIVEIRA',
 ] as const
 
-const CARGOS = ['VENDEDOR', 'CONSULTOR DE VENDAS', 'GERENTE', 'COMPRADOR', 'AUXILIAR DE ESTOQUE']
-const SETORES = ['VENDAS', 'ESTOQUE', 'FINANCEIRO', 'ADMINISTRATIVO', 'COMPRAS']
+/**
+ * Exportados porque a listagem os oferece como OPÇÕES do filtro por setor e por
+ * cargo. Tabela de apoio estática — o que `src/mocks/` pode dar à tela, ao lado
+ * dos tipos. Digitar a mesma lista na tela abriria a porta para ela divergir do
+ * dado e oferecer um filtro que não casa com registro nenhum.
+ */
+export const CARGOS = [
+  'VENDEDOR',
+  'CONSULTOR DE VENDAS',
+  'GERENTE',
+  'COMPRADOR',
+  'AUXILIAR DE ESTOQUE',
+]
+export const SETORES = ['VENDAS', 'ESTOQUE', 'FINANCEIRO', 'ADMINISTRATIVO', 'COMPRAS']
 
 export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
   id: i + 1,

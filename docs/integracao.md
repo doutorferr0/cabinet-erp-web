@@ -255,6 +255,37 @@ listagem** e campo que o servidor não guarda aparece **em branco**, com o
 `AvisoDeCobertura` dizendo isso ao operador — preencher com mock daria dado de
 mentira com cara de dado do servidor.
 
+## Filtro estruturado da listagem — falta no contrato v1
+
+A `VitraDataTable` ganhou filtro por `campo + operador + valor` (issue #68,
+portado de sadmann7/shadcn-table — ver `NOTICE`). **O contrato v1 não tem por
+onde ele viajar:** a listagem publica `q`, `sortBy`, `sortDesc`, `page` e
+`pageSize`, e nada mais.
+
+Consequências, todas deliberadas:
+
+- **A UI de filtro é opt-in por tela** (prop `filtros` da `VitraDataTable`, com
+  os campos filtráveis). Quem responde é o provider, então só declara campos a
+  tela cujo provider sabe filtrar. Hoje isso significa **recurso mock**; a tela
+  piloto é `Cadastro de Colaboradores` (`/cadastros/colaboradores`, provider mock
+  em `src/data/index.ts` — o `GET /api/employees` do contrato serve o
+  `salespersonId` do orçamento, não esta listagem).
+- **O provider HTTP recusa em voz alta.** `recusarFiltroSemContrato`
+  (`src/data/api-provider.ts`) lança se um filtro válido chegar. Mandar a
+  requisição sem os filtros devolveria a lista COMPLETA com a tela mostrando
+  filtro aplicado — dado certo do servidor respondendo a pergunta errada.
+- **O vocabulário já está em inglês** (`iLike`, `notILike`, `eq`, `ne`, `lt`,
+  `lte`, `gt`, `gte`, `isBetween`, `inArray`, `notInArray`, `isEmpty`,
+  `isNotEmpty`; junção `and`/`or`), pela mesma razão do `accessorKey`: é o nome
+  que um dia viaja, e traduzir cria um segundo vocabulário com tradução no meio.
+
+**O que o PR de contrato precisa decidir** (não decidido aqui — desenho de
+parâmetro é decisão do contrato): como a lista de filtros se serializa na query
+(JSON num parâmetro × parâmetros repetidos), qual a **whitelist de campos
+filtráveis por recurso** e o status de erro fora dela — o precedente do `sortBy`
+manda **400**, não filtro ignorado, pelo mesmo motivo: ignorar faria a tela
+mostrar resultado errado sem sintoma.
+
 ## Parceiros — uma tabela, três telas
 
 `GET /api/partners` serve **Fornecedor**, **Cliente** e **Profissional Externo**:

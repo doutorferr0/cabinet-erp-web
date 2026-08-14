@@ -1,3 +1,5 @@
+import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
+import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +21,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { mensagemDoErro } from '@/lib/erros'
+import {
+  type CampoFiltravel,
+  type FiltroDaTabela,
+  type Juncao,
+  filtrosValidos,
+} from '@/lib/filtro-de-consulta'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -83,11 +91,44 @@ export interface VitraDataTableProps<T> {
    * por padrão — listagem de cadastro não numera.
    */
   rowNumbers?: boolean
+  /**
+   * Campos que esta listagem oferece para filtrar. **Opt-in por tela**, e não é
+   * detalhe: quem responde ao filtro é o provider, e o contrato v1 não tem
+   * parâmetro por onde `campo + operador + valor` viaje (ver
+   * `recusarFiltroSemContrato`). Recurso mock filtra hoje; recurso HTTP declara
+   * campos quando o contrato publicar o parâmetro. Ligar o filtro por padrão em
+   * toda tabela ofereceria em oito telas uma consulta que metade delas não sabe
+   * responder.
+   *
+   * Sem esta prop a barra segue com o botão `Filtro` que veio em `actions` (o
+   * comportamento antigo: leva o foco para a busca).
+   */
+  filtros?: readonly CampoFiltravel[]
+  /**
+   * `lista` (padrão) = query-builder em painel, denso, várias condições à vista.
+   * `menu` = paleta de comandos com etiquetas na própria barra. A escolha é da
+   * tela porque depende do que ela filtra, não do componente.
+   */
+  modoDeFiltro?: 'lista' | 'menu'
 }
 
 const SEARCH_DEBOUNCE_MS = 300
 
 const SKELETON_ROWS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5'] as const
+
+/**
+ * Igualdade do filtro por VALOR, não por referência.
+ *
+ * O rascunho reconstrói o array a cada tecla, então comparar referência marcaria
+ * "mudou" sempre — e cada `setState` voltaria a listagem para a página 1 e
+ * perderia a seleção sem que nada de fato tivesse mudado.
+ */
+function assinaturaDoFiltro(
+  filtros: readonly FiltroDaTabela[] | undefined,
+  juncao: Juncao,
+): string {
+  return JSON.stringify({ filtros: filtros ?? [], juncao })
+}
 
 export function VitraDataTable<T>({
   columns,
@@ -97,6 +138,8 @@ export function VitraDataTable<T>({
   actions = [],
   pageSizeOptions = [10, 20, 50],
   rowNumbers = false,
+  filtros: camposFiltraveis,
+  modoDeFiltro = 'lista',
 }: VitraDataTableProps<T>) {
   const [qInput, setQInput] = useState('')
   const [state, setState] = useState<TableQueryState>({
@@ -106,6 +149,11 @@ export function VitraDataTable<T>({
     pageSize: pageSizeOptions[0] ?? 10,
   })
   const [selected, setSelected] = useState<T | null>(null)
+  // Rascunho do filtro, como `qInput` é o rascunho da busca: o painel responde
+  // à tecla na hora e só a frase COMPLETA vira consulta, depois do debounce.
+  // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
+  const [filtrosInput, setFiltrosInput] = useState<FiltroDaTabela[]>([])
+  const [juncao, setJuncao] = useState<Juncao>('and')
 
   // Toda mudança de estado de consulta limpa a seleção.
   function updateState(updater: (s: TableQueryState) => TableQueryState) {
@@ -124,6 +172,24 @@ export function VitraDataTable<T>({
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [qInput])
+
+  // Mesmo debounce da busca, pela mesma razão. Só os filtros VÁLIDOS viajam:
+  // linha recém-adicionada ainda sem valor não pode esvaziar a listagem
+  // enquanto o operador escolhe o campo.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setState((s) => {
+        const validos = filtrosValidos(filtrosInput)
+        if (
+          assinaturaDoFiltro(s.filtros, s.juncao ?? 'and') === assinaturaDoFiltro(validos, juncao)
+        )
+          return s
+        setSelected(null)
+        return { ...s, filtros: validos, juncao, page: 1 }
+      })
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [filtrosInput, juncao])
 
   const query = useQuery({
     queryKey: [...queryKey, state],
@@ -145,6 +211,9 @@ export function VitraDataTable<T>({
 
   // Folha total de colunas (grupos contam as folhas) + a numeração opcional.
   const totalColSpan = table.getAllLeafColumns().length + (rowNumbers ? 1 : 0)
+
+  const temFiltro = (state.filtros?.length ?? 0) > 0
+  const houveConsulta = state.q !== '' || temFiltro
 
   function toggleSort(columnId: string) {
     updateState((s) => {
@@ -171,21 +240,47 @@ export function VitraDataTable<T>({
             onChange={(e) => setQInput(e.target.value)}
           />
         </div>
-        {actions.map((action) => (
-          <Button
-            key={action.id}
-            variant={action.variant ?? 'outline'}
-            size="sm"
-            disabled={
-              action.disabled === true || (action.needsSelection === true && selected === null)
-            }
-            title={action.title}
-            onClick={() => action.onClick?.(action.needsSelection ? selected : null)}
-          >
-            {action.icon ? <action.icon aria-hidden="true" className="text-modulo" /> : null}
-            {action.label}
-          </Button>
-        ))}
+        {actions.map((action) => {
+          // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra padrão
+          // (§9, padrão 4) em vez de somar um botão ao lado: a barra tem a mesma
+          // ordem em oito telas, e dois caminhos para "filtrar" lado a lado
+          // fariam o operador escolher qual dos dois é o de verdade.
+          if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
+            return modoDeFiltro === 'menu' ? (
+              <MenuDeFiltros
+                key={action.id}
+                campos={camposFiltraveis}
+                filtros={filtrosInput}
+                juncao={juncao}
+                onFiltrosChange={setFiltrosInput}
+              />
+            ) : (
+              <ListaDeFiltros
+                key={action.id}
+                campos={camposFiltraveis}
+                filtros={filtrosInput}
+                juncao={juncao}
+                onFiltrosChange={setFiltrosInput}
+                onJuncaoChange={setJuncao}
+              />
+            )
+          }
+          return (
+            <Button
+              key={action.id}
+              variant={action.variant ?? 'outline'}
+              size="sm"
+              disabled={
+                action.disabled === true || (action.needsSelection === true && selected === null)
+              }
+              title={action.title}
+              onClick={() => action.onClick?.(action.needsSelection ? selected : null)}
+            >
+              {action.icon ? <action.icon aria-hidden="true" className="text-modulo" /> : null}
+              {action.label}
+            </Button>
+          )
+        })}
       </div>
 
       {/* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e
@@ -305,10 +400,13 @@ export function VitraDataTable<T>({
                       O ornamento acompanha: shape do módulo num caso, shape de
                       busca na cor de apoio no outro — vazio de busca não é
                       módulo vazio. Ele é `aria-hidden`; quem informa é o
-                      título. */}
+                      título.
+                      FILTRO conta como consulta: listagem estreitada até zero
+                      com "Ainda não há nada cadastrado aqui" mandaria cadastrar
+                      registro que existe e está do lado de fora do filtro. */}
                   <Empty>
                     <EmptyMedia>
-                      {state.q ? (
+                      {houveConsulta ? (
                         <Ornamento shape="busca-vazia" tom="info" tamanho={96} />
                       ) : (
                         <OrnamentoDoModulo tamanho={128} />
@@ -316,12 +414,16 @@ export function VitraDataTable<T>({
                     </EmptyMedia>
                     <EmptyHeader>
                       <EmptyTitle>
-                        {state.q ? 'Nenhum registro encontrado' : 'Nenhum registro'}
+                        {houveConsulta ? 'Nenhum registro encontrado' : 'Nenhum registro'}
                       </EmptyTitle>
                       <EmptyDescription>
-                        {state.q
-                          ? `A busca por “${state.q}” não trouxe resultado. Confira o termo ou limpe a busca.`
-                          : 'Ainda não há nada cadastrado aqui.'}
+                        {state.q && temFiltro
+                          ? `A busca por “${state.q}” com os filtros aplicados não trouxe resultado. Confira o termo ou revise os filtros.`
+                          : state.q
+                            ? `A busca por “${state.q}” não trouxe resultado. Confira o termo ou limpe a busca.`
+                            : temFiltro
+                              ? 'Nenhum registro atende aos filtros aplicados. Revise as condições ou limpe os filtros.'
+                              : 'Ainda não há nada cadastrado aqui.'}
                       </EmptyDescription>
                     </EmptyHeader>
                   </Empty>

@@ -48,6 +48,39 @@ describe('pagedMock', () => {
   })
 })
 
+describe('pagedMock — filtro estruturado', () => {
+  const filtro = {
+    filtroId: 'f1',
+    id: 'nome',
+    variante: 'text' as const,
+    operador: 'iLike' as const,
+    valor: 'ba',
+  }
+
+  it('aplica o filtro e recalcula o total', async () => {
+    const r = await pagedMock(linhas, estado({ filtros: [filtro] }), matches, 0)
+    expect(r.rows.map((l) => l.nome)).toEqual(['BAURU'])
+    expect(r.total).toBe(1)
+  })
+
+  it('busca e filtro se SOMAM — a listagem responde às duas coisas escritas na tela', async () => {
+    const r = await pagedMock(linhas, estado({ q: 'campinas', filtros: [filtro] }), matches, 0)
+    expect(r.rows).toEqual([])
+    expect(r.total).toBe(0)
+  })
+
+  it('junção or aceita qualquer uma das condições', async () => {
+    const outro = { ...filtro, filtroId: 'f2', valor: 'sao' }
+    const r = await pagedMock(
+      linhas,
+      estado({ filtros: [filtro, outro], juncao: 'or' }),
+      matches,
+      0,
+    )
+    expect(r.rows.map((l) => l.nome)).toEqual(['SÃO PAULO', 'BAURU'])
+  })
+})
+
 describe('mockDelay', () => {
   it('devolve o valor recebido', async () => {
     await expect(mockDelay(null, 0)).resolves.toBeNull()

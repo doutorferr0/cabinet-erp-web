@@ -148,3 +148,44 @@ describe('createApiListProvider', () => {
     expect(erro.detail).toBeUndefined()
   })
 })
+
+describe('filtro estruturado × contrato v1', () => {
+  it('recusa em voz alta em vez de mandar a consulta sem o filtro', async () => {
+    stubFetch(() => respostaPaginada([{ id: '1', name: 'MARCA' }]))
+    const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
+
+    // Mandar a requisição sem os filtros devolveria a lista COMPLETA com a tela
+    // mostrando filtro aplicado — dado certo respondendo a pergunta errada.
+    await expect(
+      provider.list(
+        tableState({
+          filtros: [
+            {
+              filtroId: 'f1',
+              id: 'name',
+              variante: 'text',
+              operador: 'iLike',
+              valor: 'marca',
+            },
+          ],
+        }),
+      ),
+    ).rejects.toThrow(/não existe no contrato/i)
+
+    expect(chamadas).toHaveLength(0)
+  })
+
+  it('filtro ainda sem valor não é filtro — a consulta segue normal', async () => {
+    stubFetch(() => respostaPaginada([{ id: '1', name: 'MARCA' }]))
+    const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
+
+    const r = await provider.list(
+      tableState({
+        filtros: [{ filtroId: 'f1', id: 'name', variante: 'text', operador: 'iLike', valor: '' }],
+      }),
+    )
+
+    expect(r.rows).toHaveLength(1)
+    expect(ultimaUrl().searchParams.has('filtros')).toBe(false)
+  })
+})

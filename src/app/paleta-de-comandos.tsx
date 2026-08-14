@@ -64,6 +64,14 @@ export function PaletaDeComandos({ aberta, onOpenChange }: PaletaDeComandosProps
 
   function executar(comando: Comando) {
     onOpenChange(false)
+    // Destino externo não é rota: `navigate` o levaria ao 404 do roteador, com
+    // o arquivo servido pelo mesmo domínio ali do lado. Abre em aba nova, como
+    // a barra lateral faz com o mesmo item — dois caminhos para o mesmo lugar
+    // não podem se comportar diferente.
+    if (comando.externo) {
+      window.open(comando.url, '_blank', 'noreferrer')
+      return
+    }
     void navigate({ to: comando.url })
   }
 

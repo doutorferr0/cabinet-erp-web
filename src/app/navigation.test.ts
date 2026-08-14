@@ -96,3 +96,44 @@ describe('aparência emprestada', () => {
     expect(new Set(shapes).size).toBe(shapes.length)
   })
 })
+
+describe('item externo', () => {
+  const externos = navGroups.flatMap((grupo) => grupo.items).filter((item) => item.externo)
+
+  it('o mapa de tabelas está na barra, e marcado como fora da SPA', () => {
+    expect(externos.map((item) => item.url)).toEqual(['/mapeamento-tabelas.html'])
+  })
+
+  /**
+   * A extensão não é estilo: `/mapeamento-tabelas` só resolve em produção, onde
+   * o Pages serve o arquivo e redireciona a URL limpa. Em `pnpm dev` o Vite
+   * manda caminho desconhecido para o `index.html` e o roteador responde 404 —
+   * ou seja, o item quebraria exatamente para quem está desenvolvendo.
+   */
+  it('aponta para o arquivo com extensão, que resolve em dev e em produção', () => {
+    for (const item of externos) {
+      expect(item.url.endsWith('.html')).toBe(true)
+    }
+  })
+
+  it('não é rota de módulo — não empresta cor nem finge ser tela', () => {
+    for (const item of externos) {
+      expect(moduloDaRota(item.url)).toBeUndefined()
+      expect(item.aparencia).toBeUndefined()
+      // Sem `incluir`: página de consulta não cria registro, e a paleta
+      // ofereceria um "Incluir" que leva a lugar nenhum.
+      expect(item.incluir).toBeUndefined()
+    }
+  })
+
+  /**
+   * O contrário do teste acima, e o que de fato protege: item NOVO que aponte
+   * para arquivo estático sem a marca volta a ser `<Link>` no shell e
+   * `navigate()` na paleta — 404 dentro da SPA, com o arquivo servido ao lado.
+   */
+  it('todo caminho de arquivo na barra está marcado como externo', () => {
+    for (const item of navGroups.flatMap((grupo) => grupo.items)) {
+      if (item.url.endsWith('.html')) expect(item.externo).toBe(true)
+    }
+  })
+})

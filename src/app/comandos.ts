@@ -36,6 +36,16 @@ export interface Comando {
   url: string
   icon: LucideIcon
   tipo: TipoDeComando
+  /**
+   * A `url` sai da SPA — vem de `NavItem.externo`.
+   *
+   * Viaja até aqui porque a paleta NAVEGA (`navigate({ to })`), e para o
+   * destino externo isso é rota inexistente: o operador pediria o mapa de
+   * tabelas e receberia o 404 do roteador. É a mesma marca do item, carregada
+   * junto em vez de reconsultada — a paleta não deve saber que caminho "parece"
+   * arquivo estático.
+   */
+  externo?: true
 }
 
 export const GRUPO_NESTA_TELA = 'Nesta tela'
@@ -76,6 +86,7 @@ function comandoDeNavegacao(item: NavItem, grupo: string): Comando {
     url: item.url,
     icon: item.icon,
     tipo: 'navegar',
+    ...(item.externo && { externo: item.externo }),
   }
 }
 

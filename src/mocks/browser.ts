@@ -1,3 +1,4 @@
+import { http, delay } from 'msw'
 import { setupWorker } from 'msw/browser'
 import { handlers } from './api/handlers'
 import { semearSessaoAutenticada } from './api/store'
@@ -8,7 +9,33 @@ import { semearSessaoAutenticada } from './api/store'
  * requisições reais. Só é importado (dinamicamente) quando o modo está ligado:
  * msw/faker não entram no bundle de produção.
  */
-export const worker = setupWorker(...handlers)
+
+/**
+ * LATÊNCIA ARTIFICIAL — o mock responde rápido demais para ser honesto.
+ *
+ * Sem ela, todo estado de carregamento passa em zero frame: esqueleto que nunca
+ * aparece, botão que não chega a desabilitar, corrida entre duas consultas que
+ * nunca acontece. O defeito existe desde já e só apareceria no dia da
+ * integração, com o servidor de verdade e um backend novo para culpar.
+ *
+ * **Mora só aqui, e é isso que a mantém fora dos testes.** A suíte importa
+ * `handlers` direto de `./api/handlers`; este arquivo é importado
+ * dinamicamente só pelo `main.tsx` no modo mock. Não há flag para desligar em
+ * teste porque não há nada ligado em teste.
+ *
+ * O handler é o PRIMEIRO da lista e resolve com `undefined`: no MSW isso é
+ * "não tratei, passe adiante" — ele só espera e deixa o handler de verdade
+ * responder. `VITE_MOCK_DELAY=0` desliga; sem a variável, 250ms, que é a faixa
+ * de uma API saudável na mesma região.
+ */
+const ATRASO_MS = Number(import.meta.env.VITE_MOCK_DELAY ?? '250')
+
+const atraso = http.all('*', async () => {
+  if (ATRASO_MS > 0) await delay(ATRASO_MS)
+  return undefined
+})
+
+export const worker = setupWorker(atraso, ...handlers)
 
 /**
  * Autologin de dev — LIGADO por padrão, e só aqui dentro.

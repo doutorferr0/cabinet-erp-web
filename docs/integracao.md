@@ -25,11 +25,13 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
 - **`sortBy` é whitelist e recusa com 400.** Campo fora da lista é erro, não
   ordenação ignorada: ignorar faria a tela mostrar ordem errada sem sintoma. Por
   isso o `accessorKey` das colunas é o nome **em inglês** do contrato.
-- **Erro é `application/problem+json`** (RFC 9457). O **409 de parceiro com
-  documento já cadastrado carrega `existingPartnerId`** — membro de extensão fora
-  do schema do `ProblemDetails`, e é ele que habilita "Vincular esta empresa ao
-  cadastro existente" (`POST /api/partners/{id}/link`). Sem esse campo o 409 vira
-  beco sem saída. Por isso `ErroDaApi` guarda o corpo cru.
+- **Erro é `application/problem+json`** (RFC 9457), **em TODA resposta 4xx/5xx,
+  com um schema só.** `title` e `status` são obrigatórios; `detail` é a frase
+  daquela ocorrência. As duas extensões são DECLARADAS no schema: `fields[]`
+  (validação por campo) e `existingPartnerId` (no 409 de parceiro com documento
+  já cadastrado, que é o que habilita "Vincular esta empresa ao cadastro
+  existente" — sem ele o 409 vira beco sem saída). Por isso `ErroDaApi` guarda o
+  corpo cru. Ver §Problem Details.
 - **`mustChangePassword` bloqueia o domínio com 403, nunca 401.** 401 significa
   "não autenticado" e derrubaria a sessão que acabou de ser criada — o usuário
   está autenticado, só não pode operar antes de trocar a senha. A rota
@@ -52,6 +54,91 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
   casas implícitas (`10000` = 1%). Quantidade com até 3 casas. Datas ISO no dado.
   CPF/CNPJ sem máscara no dado.
 - **Desativação é lógica.** Existe `active`; nada é excluído de verdade.
+
+## Problem Details — o formato ÚNICO de erro (RFC 9457)
+
+O contrato definia sucesso com precisão e deixava o erro subespecificado. Sem
+formato único, cada caminho do backend inventaria o seu e a tela trataria caso a
+caso — e isso precisa fechar **antes de o backend começar**, porque depois cada
+divergência já tem um cliente.
+
+**Medição antes de mexer:** das 106 respostas 4xx/5xx do contrato, **102 já
+apontavam** para `ProblemDetails`. O trabalho não era converter tudo: era
+enriquecer o schema e fechar as 4 exceções.
+
+### O schema
+
+`title` e `status` **obrigatórios** — `title` é o rótulo ESTÁVEL do tipo (não
+varia entre ocorrências) e `status` repete o da resposta, porque o corpo circula
+fora dela (log, fila, tela). `detail` é a frase daquela ocorrência, e é a única
+parte acionável: a tela mostra o que veio, nunca "algo deu errado".
+
+**As duas extensões são declaradas no schema, não soltas numa resposta:**
+
+| extensão | onde | para quê |
+|---|---|---|
+| `fields[]` (`{path, message}`) | 400 de validação | o erro chega ao CONTROLE do formulário, não ao topo da tela |
+| `existingPartnerId` | 409 de documento repetido | habilita a oferta de vincular ao cadastro existente |
+
+`path` é o caminho no CORPO da requisição (`code`, `variants.0.priceCents`), como
+o cliente o mandou — nome de coluna do banco não serve, porque a tela não conhece
+o banco.
+
+### Não existe 422
+
+A DoD do trilho pedia 422 para validação. **Não entrou, e é decisão:** o contrato
+já usa **400** para validação em todo lugar. Dois códigos para a mesma coisa
+obrigariam cada caminho a escolher um e a tela a tratar os dois — o `fields[]`
+viaja no 400 que já existe.
+
+### As exceções que sobraram
+
+- **`GET /health/db` 503** continua com `ReadinessStatus`, e está escrito no
+  contrato: prova de vida é lida por orquestrador, não por operador. Quem chama
+  quer o documento de prontidão (migrações pendentes) para decidir se derruba a
+  instância; enfiá-lo em `detail` obrigaria a parsear frase.
+- **`LoginFalhou` foi REMOVIDO.** Era `{detail}` — um `ProblemDetails` degenerado
+  — usado em 3 respostas de `/auth`. As três passaram ao schema único, com
+  `application/problem+json` no lugar de `application/json`. Schema órfão vira
+  tipo gerado que ninguém usa, e o próximo leitor não sabe se é dívida ou reserva.
+
+### No front
+
+`ErroDaApi` ganhou `titulo` e `campos` — leitura defensiva, porque o corpo vem do
+servidor e pode não ter a forma prometida; item malformado é descartado em vez de
+quebrar a tela. `ErroDoServidor` (`src/components/cabinet/`) é o componente único
+que mostra os quatro textos em papéis distintos e leva o foco ao campo recusado.
+
+**A guarda é `src/data/problem-details.test.ts`**, que lê o contrato DIRETO:
+caminho novo com 4xx entra na verificação sozinho.
+
+### Latência artificial no mock
+
+`VITE_MOCK_DELAY` (padrão **250ms**, `0` desliga) atrasa toda resposta do modo
+mock. Sem ela todo estado de carregamento passa em zero frame: esqueleto que
+nunca aparece, botão que não chega a desabilitar, corrida entre consultas que
+nunca acontece — defeitos que existem desde já e só apareceriam no dia da
+integração, com um backend novo para culpar.
+
+Mora só em `src/mocks/browser.ts`, e é isso que a mantém fora dos testes: a suíte
+importa `handlers` direto. O mecanismo é um `http.all('*')` que espera e resolve
+`undefined` — no MSW isso é "não tratei, passe adiante" (verificado com teste
+antes de entrar, não assumido).
+
+### O helper de erro mora num lugar só
+
+`src/mocks/api/problema.ts`. Nasceu duplicado em `handlers.ts` e `crm.ts` — cópia
+deliberada, para não criar ciclo (`handlers.ts` importa `crm.ts`) — e saiu de lá
+quando o `title` deixou de ser fixo: **formato de erro em duas cópias vira dois
+formatos**, e o mapa de títulos ia nascer duplicado no mesmo dia. O módulo é
+folha, então o ciclo que justificava a duplicação não existe mais.
+
+O `title` vem de `tituloDoStatus`: 400 `Requisição inválida`, 404 `Não
+encontrado`, 409 `Conflito`… Antes era `'Erro'` em 100% das respostas, o que é
+pior do que parece — o `ErroDoServidor` mostra `title` como cabeçalho e a frase
+da tela abaixo, então todo erro do modo mock aparecia como "Erro" em cima e a
+informação útil embaixo, menor. Backend com tipos próprios (`/erros/estoque-insuficiente`)
+manda o título dele; o mapa por status é o piso, não o teto.
 
 ## Como o dado chega à tela
 
@@ -333,13 +420,36 @@ No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts
 de sair** — mesma escolha já feita para `page` e `pageSize`: requisição sabidamente
 inválida faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
 
-### O modo mock também filtra — só no CRM, por ora
+### O modo mock filtra de verdade — nos três recursos que publicam o parâmetro
 
-`src/mocks/api/crm.ts` aplica `filters`/`joinOperator` de verdade (reusando
-`linhaPassaNosFiltros`) e responde **400** a campo fora da whitelist. Os handlers
-de produtos e parceiros (`src/mocks/api/handlers.ts`) ainda **descartam o parâmetro
-em silêncio**: no modo mock — que é o que o site demo serve — o painel mostra a
-condição aplicada e a listagem devolve tudo. É dívida conhecida, não desenho.
+`src/mocks/api/filtro-do-servidor.ts` é a peça compartilhada: converte `filters`
+para o vocabulário de `filtro-de-consulta`, aplica com `linhaPassaNosFiltros` e
+responde **400** ao que o contrato manda recusar. Usam-na `crm.ts` (oportunidades)
+e `handlers.ts` (produtos e parceiros). **Fronteira em duas cópias vira duas
+fronteiras** — a regra tem de ser a mesma nos três, com o mesmo texto de erro.
+
+Cada recurso declara a whitelist COM O TIPO de cada campo, porque `variante` não
+viaja no contrato (é decisão de qual controle desenhar) e sem ela a comparação de
+data cairia em texto. Recurso que **não** publica `filters` — `catalog-lookups`,
+kardex, atividades — não declara nada, e o filtro que chegar é 400.
+
+**Três coisas viram 400, e as três existiam como silêncio:**
+
+| pedido | antes | agora |
+|---|---|---|
+| campo fora da whitelist | (crm: 400) · produtos/parceiros: lista inteira | 400 nos três |
+| recurso que não publica `filters` | lista inteira | 400 |
+| operador fora do vocabulário (`contains` em vez de `iLike`) | condição não recortava nada → lista inteira | 400 |
+
+O terceiro apareceu escrevendo o teste desta mudança: `filtroCasa` não reconhece a
+palavra, a condição passa todo mundo, e o sintoma é idêntico ao do parâmetro
+descartado. O contrato tipa `operator` como enum — aceitar qualquer texto era o
+mesmo buraco uma camada abaixo.
+
+**Por que isto era grave e não "coisa de mock":** `cabinetonline.cc` roda em modo
+mock. O operador montava "Ativo é não", lia a condição aplicada no painel e via a
+lista inteira, com os ativos dentro. Não é limitação de mock — é a tela afirmando
+o que não é.
 
 ### Armadilha do cliente gerado
 

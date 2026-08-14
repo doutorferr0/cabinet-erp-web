@@ -16,6 +16,8 @@ import type {
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDoCrm } from './crm'
+import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { problemaJson } from './problema'
 import { handlersDeOrcamento } from './quotes'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -40,13 +42,6 @@ import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
 
-function problemaJson(status: number, detail: string, extras: Record<string, unknown> = {}) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail, ...extras },
-    { status, headers: { 'content-type': 'application/problem+json' } },
-  )
-}
-
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 
@@ -56,6 +51,8 @@ interface ConsultaDeLista {
   sortDesc: boolean
   page: number
   pageSize: number
+  /** A URL inteira: `filters`/`joinOperator` são lidos por `aplicarFiltros`. */
+  url: URL
 }
 
 function lerConsulta(url: URL): ConsultaDeLista {
@@ -65,19 +62,32 @@ function lerConsulta(url: URL): ConsultaDeLista {
     sortDesc: url.searchParams.get('sortDesc') === 'true',
     page: Number(url.searchParams.get('page') ?? '1'),
     pageSize: Number(url.searchParams.get('pageSize') ?? '10'),
+    url,
   }
 }
 
 /**
  * O contrato de listagem, num lugar só: filtro por `q` nos campos de texto,
- * whitelist de `sortBy` (fora dela → 400), paginação 1-based com teto 100 e
- * `total` calculado DEPOIS do filtro.
+ * **filtro estruturado por `filters`**, whitelist de `sortBy` (fora dela → 400),
+ * paginação 1-based com teto 100 e `total` calculado DEPOIS do filtro.
+ *
+ * `filtraveis` é o quinto argumento e é OPCIONAL de propósito: ausente significa
+ * "este recurso não publica `filters`", e o filtro que chegar vira 400. É o que
+ * separa `/api/products` (publica) de `/api/catalog-lookups` (não publica) sem
+ * que nenhum dos dois precise repetir a regra.
+ *
+ * **Isto estava faltando, e o buraco era visível no ar** (achado no PR #114): o
+ * parâmetro chegava aqui e era descartado em silêncio — a listagem devolvia a
+ * lista inteira enquanto o painel da tela mostrava a condição aplicada. Em
+ * `cabinetonline.cc`, que roda em modo mock, isso não era limitação de mock; era
+ * a tela afirmando o que não é.
  */
 function listar<T>(
   itens: readonly T[],
   consulta: ConsultaDeLista,
   ordenaveis: readonly string[],
   textoDe: (item: T) => (string | null | undefined)[],
+  filtraveis?: CamposFiltraveis,
 ) {
   if (consulta.page < 1 || consulta.pageSize < 1 || consulta.pageSize > 100) {
     return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
@@ -91,6 +101,11 @@ function listar<T>(
     const alvo = consulta.q.toLowerCase()
     rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
   }
+
+  const filtradas = aplicarFiltros(rows, consulta.url, filtraveis)
+  if (typeof filtradas === 'string') return problemaJson(400, filtradas)
+  rows = filtradas
+
   if (consulta.sortBy) {
     const chave = consulta.sortBy as keyof T
     rows.sort((a, b) => {
@@ -127,7 +142,7 @@ export const handlers = [
     const demoPass = import.meta.env.VITE_DEMO_PASS
     if (demoUser && demoPass) {
       if (corpo.email !== demoUser || corpo.password !== demoPass) {
-        return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })
+        return problemaJson(401, 'E-mail ou senha inválidos.')
       }
       store.logado = true
       store.mustChangePassword = false
@@ -136,7 +151,7 @@ export const handlers = [
     }
     // Senha 'errada' falha de propósito — é o caminho de teste do 401 na tela.
     if (corpo.password === 'errada') {
-      return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })
+      return problemaJson(401, 'E-mail ou senha inválidos.')
     }
     store.logado = true
     // Senha 'temporaria' liga o fluxo de troca obrigatória — exercita a guarda.
@@ -211,18 +226,35 @@ export const handlers = [
       description,
       active,
     }))
-    return listar(rows, lerConsulta(url), ['code', 'description', 'active'], (p) => [
-      p.code,
-      p.description,
-    ])
+    return listar(
+      rows,
+      lerConsulta(url),
+      ['code', 'description', 'active'],
+      (p) => [p.code, p.description],
+      // A whitelist do contrato para `/api/products`, com o TIPO de cada campo —
+      // é o servidor que sabe se `active` é booleano, não a tela.
+      { code: 'text', description: 'text', active: 'boolean' },
+    )
   }),
 
   http.post('*/api/products', async ({ request }) => {
     if (!store.logado) return SEM_SESSAO()
     if (!store.activeTenantId) return SEM_EMPRESA()
     const corpo = (await request.json()) as ProductWriteRequest
+    // `fields[]` (extensão do problem+json): o erro chega ao CONTROLE, não vira
+    // frase solta no topo do formulário. Sem ele, o operador de um cadastro de
+    // 20 campos lê "campos obrigatórios" e caça qual.
+    //
+    // A condição fica no `if`, e não numa lista montada antes, porque é ela que
+    // estreita `code`/`description` para `string` no resto do handler — o
+    // contrato os declara anuláveis.
     if (!corpo.code || !corpo.description) {
-      return problemaJson(400, 'Código e descrição são obrigatórios.')
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [
+          ...(corpo.code ? [] : [{ path: 'code', message: 'Informe o código do produto.' }]),
+          ...(corpo.description ? [] : [{ path: 'description', message: 'Informe a descrição.' }]),
+        ],
+      })
     }
     if (store.produtos.some((p) => p.code === corpo.code)) {
       return problemaJson(409, `Já existe produto com o código ${corpo.code}.`)
@@ -367,6 +399,16 @@ export const handlers = [
       lerConsulta(url),
       ['code', 'legalName', 'tradeName', 'document', 'active'],
       (p) => [p.code, p.legalName, p.tradeName, p.document],
+      // A whitelist do contrato para `/api/partners`. `document` é `text` e o
+      // dado é guardado SEM máscara — quem tira a pontuação do que o operador
+      // digitou é o `normalizar` do campo, na saída da tela (§Filtro estruturado).
+      {
+        code: 'text',
+        legalName: 'text',
+        tradeName: 'text',
+        document: 'text',
+        active: 'boolean',
+      },
     )
   }),
 
@@ -374,7 +416,11 @@ export const handlers = [
     if (!store.logado) return SEM_SESSAO()
     if (!store.activeTenantId) return SEM_EMPRESA()
     const corpo = (await request.json()) as PartnerWriteRequest
-    if (!corpo.legalName) return problemaJson(400, 'Razão social é obrigatória.')
+    if (!corpo.legalName) {
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [{ path: 'legalName', message: 'Informe a razão social.' }],
+      })
+    }
     const existente = corpo.document
       ? store.parceiros.find((p) => p.document === corpo.document)
       : undefined
@@ -415,7 +461,11 @@ export const handlers = [
       return problemaJson(404, 'Parceiro não encontrado.')
     }
     const corpo = (await request.json()) as PartnerWriteRequest
-    if (!corpo.legalName) return problemaJson(400, 'Razão social é obrigatória.')
+    if (!corpo.legalName) {
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [{ path: 'legalName', message: 'Informe a razão social.' }],
+      })
+    }
     parceiro.legalName = corpo.legalName
     parceiro.tradeName = corpo.tradeName ?? null
     parceiro.document = corpo.document ?? null

@@ -9,15 +9,10 @@ import type {
   CrmStageDto,
   CrmStageWriteRequest,
   EmployeeDto,
-  ListFilter,
 } from '@/api/gerado'
-import {
-  type FiltroDaTabela,
-  type OperadorDeFiltro,
-  type VarianteDeFiltro,
-  linhaPassaNosFiltros,
-} from '@/lib/filtro-de-consulta'
 import { http, HttpResponse } from 'msw'
+import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { problemaJson } from './problema'
 import { novoId, store } from './store'
 
 /**
@@ -45,74 +40,8 @@ import { novoId, store } from './store'
  *   outro funil com 400, como a FK composta do banco recusaria.
  */
 
-const PROBLEMA = 'application/problem+json'
-
-/**
- * Cópia LOCAL dos utilitários de `handlers.ts` (problem+json e o contrato de
- * listagem). Importá-los de lá criaria ciclo — `handlers.ts` já importa este
- * arquivo para registrar os handlers. São ~30 linhas, e a semântica que elas
- * carregam está escrita em `docs/integracao.md`, não na cópia.
- */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
-
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
-
-/**
- * Filtro estruturado do lado do SERVIDOR falso.
- *
- * Existe porque o contrário é pior do que não ter filtro: o parâmetro `filters`
- * sai da tela, chega aqui e é DESCARTADO em silêncio — a listagem devolve tudo
- * enquanto o painel mostra a condição aplicada. O operador lê "3 registros
- * atendem" numa lista de 40 e não tem como saber de quem é o erro.
- *
- * O tipo de cada campo é do SERVIDOR, não da tela: `variante` não viaja no
- * contrato (é decisão de qual controle desenhar), e sem ela a comparação de
- * data cairia em texto — `lte '2026-08-05'` deixaria de fora o próprio dia 5,
- * que tem hora no ISO guardado.
- *
- * `undefined` = **o recurso não publica `filters`**. Aí o filtro que chegar é
- * 400, exatamente como o contrato manda, em vez de resposta larga demais.
- */
-type CamposFiltraveis = Record<string, VarianteDeFiltro>
-
-/** Condições do contrato → o vocabulário de `filtro-de-consulta`, ou o 400. */
-function condicoesDoPedido(
-  bruto: string,
-  filtraveis: CamposFiltraveis | undefined,
-): FiltroDaTabela[] | string {
-  if (!filtraveis) return 'Este recurso não publica o parâmetro filters.'
-
-  let pedidos: unknown
-  try {
-    pedidos = JSON.parse(bruto)
-  } catch {
-    return 'filters não é JSON válido.'
-  }
-  if (!Array.isArray(pedidos)) return 'filters é um array JSON de condições.'
-
-  const condicoes: FiltroDaTabela[] = []
-  for (const [indice, pedido] of (pedidos as ListFilter[]).entries()) {
-    const variante = filtraveis[pedido?.field ?? '']
-    if (!variante) {
-      return `Campo não filtrável: ${pedido?.field}. A whitelist é ${Object.keys(filtraveis).join(', ')}.`
-    }
-    condicoes.push({
-      // A chave de linha é da TELA e não viaja; aqui ela só precisa ser única.
-      filtroId: `condicao-${indice}`,
-      id: pedido.field,
-      variante,
-      operador: pedido.operator as OperadorDeFiltro,
-      valor: pedido.value ?? '',
-    })
-  }
-  return condicoes
-}
 
 function listar<T>(
   itens: readonly T[],
@@ -140,15 +69,9 @@ function listar<T>(
     rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
   }
 
-  // `filters` se soma ao `q` com AND, como o contrato descreve: `q` é texto
-  // livre sobre os campos que o recurso escolheu, `filters` é campo a campo.
-  const pedidoDeFiltro = url.searchParams.get('filters')
-  if (pedidoDeFiltro) {
-    const condicoes = condicoesDoPedido(pedidoDeFiltro, filtraveis)
-    if (typeof condicoes === 'string') return problemaJson(400, condicoes)
-    const juncao = url.searchParams.get('joinOperator') === 'or' ? 'or' : 'and'
-    rows = rows.filter((item) => linhaPassaNosFiltros(item, condicoes, juncao))
-  }
+  const filtradas = aplicarFiltros(rows, url, filtraveis)
+  if (typeof filtradas === 'string') return problemaJson(400, filtradas)
+  rows = filtradas
 
   if (sortBy) {
     const chave = sortBy as keyof T

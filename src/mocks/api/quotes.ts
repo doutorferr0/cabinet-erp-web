@@ -7,6 +7,7 @@ import type {
 } from '@/api/gerado'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
+import { problemaJson } from './problema'
 import { store } from './store'
 
 /**
@@ -39,16 +40,6 @@ import { store } from './store'
  * - **`PUT` substitui o documento inteiro**, itens e ambientes junto.
  * - **`status` não muda por `PUT`** — só por `POST …/cancel`.
  */
-
-const PROBLEMA = 'application/problem+json'
-
-/** Cópia local dos utilitários de `handlers.ts` — ver a nota em `crm.ts`. */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
 
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
@@ -281,7 +272,11 @@ export const handlersDeOrcamento = [
     if (!store.logado) return SEM_SESSAO()
     if (!store.activeTenantId) return SEM_EMPRESA()
     const corpo = (await request.json()) as QuoteWriteRequest
-    if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
+    if (!corpo.customerId) {
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [{ path: 'customerId', message: 'Escolha o cliente do orçamento.' }],
+      })
+    }
 
     // O NÚMERO é do servidor, e a sequência é global do grupo: o contrato tira
     // o campo da escrita justamente para o cliente não escolher.
@@ -299,7 +294,11 @@ export const handlersDeOrcamento = [
     const indice = estado.linhas.findIndex((o) => o.id === String(params.id))
     if (indice < 0) return problemaJson(404, 'Orçamento não encontrado.')
     const corpo = (await request.json()) as QuoteWriteRequest
-    if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
+    if (!corpo.customerId) {
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [{ path: 'customerId', message: 'Escolha o cliente do orçamento.' }],
+      })
+    }
 
     const anterior = estado.linhas[indice] as Orcamento
     estado.linhas[indice] = daEscrita(corpo, anterior)

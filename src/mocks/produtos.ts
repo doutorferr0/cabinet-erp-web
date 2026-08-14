@@ -1,3 +1,4 @@
+import { idDeApoio } from '@/mocks/lookups'
 /**
  * Produto — campos LITERAIS da transcrição do SoftLux (§6, 5 abas).
  *
@@ -272,22 +273,25 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
     ],
     dtVigencia: '2025-08-05',
     tipoProduto: TIPOS[i % TIPOS.length] as string,
-    tipoPeca: ['REDONDA', 'QUADRADA', 'LINEAR', 'DIRECIONÁVEL'][i % 4] ?? null,
-    tipoLinha: ['RESIDENCIAL', 'COMERCIAL', 'INDUSTRIAL', 'DECORATIVA'][i % 4] ?? null,
+    tipoPeca: idDeApoio('TIPO_PECA', ['REDONDA', 'QUADRADA', 'LINEAR', 'DIRECIONÁVEL'][i % 4]),
+    tipoLinha: idDeApoio('TIPO_LINHA', ['RESIDENCIAL', 'COMERCIAL', 'INDUSTRIAL'][i % 3]),
     unidadeEntradaUnidade: 'UN',
     unidadeEntradaQuantidade: '1',
     unidadeSaidaUnidade: 'UN',
     unidadeSaidaQuantidade: '1',
-    classificacao: ['PADRÃO', 'PREMIUM', 'ECONÔMICO'][i % 3] ?? null,
+    classificacao: idDeApoio('CLASSIFICACAO', ['PADRÃO', 'PREMIUM', 'ECONÔMICO'][i % 3]),
     empresaCompradora: EMPRESAS_COMPRADORAS[i % 2] ?? null,
-    designerModelo: ['LINHA PRÓPRIA', 'STUDIO', 'ASSINADO'][i % 3] ?? null,
+    designerModelo: idDeApoio('DESIGNER', ['LINHA PRÓPRIA', 'STUDIO', 'ASSINADO'][i % 3]),
     fabrica,
     marca: MARCAS[i % MARCAS.length] as string,
-    // O mock não tem uuid de lista de apoio para inventar — e inventar seria
-    // dado de mentira com cara de dado do servidor.
-    tipoProdutoId: null,
-    fabricaId: null,
-    marcaId: null,
+    // Os ids agora VÊM da mesma lista que o servidor falso publica (#94): o
+    // combo escolhe por id, e um produto semeado sem id abriria com a
+    // classificação em branco. `idDeApoio` devolve `null` para nome fora do
+    // vocabulário, então continua sem uuid inventado — o que a nota anterior
+    // aqui protegia.
+    tipoProdutoId: idDeApoio('TIPO_PRODUTO', TIPOS[i % TIPOS.length]),
+    fabricaId: idDeApoio('FABRICA', fabrica),
+    marcaId: idDeApoio('MARCA', MARCAS[i % MARCAS.length]),
     descricaoComplementar: '',
     foraDeLinha: false,
     consultarValor: true,
@@ -336,7 +340,7 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
     origemProduto: ORIGENS_PRODUTO[0] ?? null,
     ncm: '94051200',
     cest: '',
-    impostoPadrao: null,
+    impostoPadrao: idDeApoio('IMPOSTO_PADRAO', i % 2 === 0 ? 'NACIONAL' : 'IMPORTADO'),
     impostosNfe: [],
   }
 })

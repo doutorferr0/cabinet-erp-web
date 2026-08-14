@@ -309,7 +309,14 @@ function TotaisOrcamento() {
 function GradeItens() {
   // A coluna `Tipo de Peça` é um kind do servidor; as demais são tabelas locais
   // que o contrato não expõe como lista de apoio.
-  const { options: tiposDePeca } = useLookupOptions('tipoPeca')
+  // A célula da GRADE continua guardando o NOME, e é a única exceção à
+  // migração para id da issue #94: o `select` da `FormGrid` recebe
+  // `readonly string[]` e é compartilhado com colunas de lista estática. Passar
+  // id ali exigiria a grade inteira aprender pares valor/rótulo — mudança de
+  // componente compartilhado, não desta tela. O item do orçamento é mock e não
+  // viaja para o contrato, então nada se traduz no submit; fica anotado.
+  const { options: opcoesDeTipoDePeca } = useLookupOptions('tipoPeca')
+  const tiposDePeca = opcoesDeTipoDePeca.map((o) => o.nome)
   const subtotal = useSubtotalCentavos('itens')
   const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
   const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0

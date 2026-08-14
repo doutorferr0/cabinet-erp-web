@@ -4,15 +4,31 @@ import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
-import { type LookupKind, lookupLabel, useLookupOptions } from '@/data/lookups-api'
+import {
+  type LookupKind,
+  type OpcaoDeLookup,
+  lookupLabel,
+  nomeDoLookup,
+  useLookupOptions,
+} from '@/data/lookups-api'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
 import { useId, useState } from 'react'
 
 export interface LookupComboProps {
   kind: LookupKind
+  /** O ID do item escolhido — não o nome (issue #94). */
   value: string | null
   onChange: (value: string | null) => void
+  /**
+   * Nome que o REGISTRO trouxe, para quando o id não está na lista carregada:
+   * item desativado depois de gravado, ou lista cortada no teto de 100.
+   *
+   * Sem ele o campo mostraria o id cru ou, pior, ficaria em branco — e gravar
+   * de novo apagaria um valor que ninguém pediu para apagar. É o mesmo cuidado
+   * que o `LookupSelectField` já tomava pondo o valor corrente na lista.
+   */
+  rotulo?: string | null | undefined
   disabled?: boolean
   id?: string
   /** Esconde o botão "..." (usado onde a transcrição tem `[combo]` puro, sem cadastro rápido). */
@@ -28,6 +44,7 @@ export function LookupCombo({
   kind,
   value,
   onChange,
+  rotulo,
   disabled,
   id,
   hideQuickAdd,
@@ -35,8 +52,12 @@ export function LookupCombo({
   const [open, setOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [newItem, setNewItem] = useState('')
-  // Cadastros rápidos ficam em estado local (mock); somem ao recarregar.
-  const [added, setAdded] = useState<string[]>([])
+  // Cadastros rápidos ficam em estado local (mock); somem ao recarregar. O id
+  // é local também, e é por isso que ele carrega o prefixo: um id inventado no
+  // front não pode ser confundido com um que veio do servidor, nem no depurador
+  // nem numa gravação que chegue a existir antes de o cadastro rápido virar
+  // `POST` de verdade.
+  const [added, setAdded] = useState<OpcaoDeLookup[]>([])
   const fallbackId = useId()
   const listId = id ?? fallbackId
 
@@ -46,11 +67,21 @@ export function LookupCombo({
   const { options: doServidor, truncada, carregando, erro } = useLookupOptions(kind)
   const options = [...doServidor, ...added]
 
+  // O que aparece no botão: o nome do id escolhido; se o id não está na lista,
+  // o rótulo que o registro trouxe. Ver `rotulo` nas props.
+  const escolhido = nomeDoLookup(options, value) ?? (value ? (rotulo ?? undefined) : undefined)
+
   function confirmAdd() {
     const nome = newItem.trim().toUpperCase()
     if (!nome) return
-    if (!options.includes(nome)) setAdded((a) => [...a, nome])
-    onChange(nome)
+    const existente = options.find((o) => o.nome === nome)
+    if (existente) {
+      onChange(existente.id)
+    } else {
+      const novo = { id: `novo:${kind}:${nome}`, nome }
+      setAdded((a) => [...a, novo])
+      onChange(novo.id)
+    }
     setNewItem('')
     setAddOpen(false)
     setOpen(false)
@@ -66,10 +97,10 @@ export function LookupCombo({
           disabled={disabled ?? false}
           className={cn(
             'w-full min-w-0 shrink justify-between font-normal',
-            !value && 'text-muted-foreground',
+            !escolhido && 'text-muted-foreground',
           )}
         >
-          <span className="truncate">{value ?? `Selecione ${label.toLowerCase()}…`}</span>
+          <span className="truncate">{escolhido ?? `Selecione ${label.toLowerCase()}…`}</span>
           <ChevronsUpDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
         </Button>
         <Popover className="w-(--trigger-width) p-0">
@@ -91,16 +122,18 @@ export function LookupCombo({
             >
               {options.map((option) => (
                 <CommandItem
-                  key={option}
-                  id={option}
-                  textValue={option}
+                  key={option.id}
+                  id={option.id}
+                  textValue={option.nome}
                   onAction={() => {
-                    onChange(option === value ? null : option)
+                    onChange(option.id === value ? null : option.id)
                     setOpen(false)
                   }}
                 >
-                  <Check className={cn('size-4', option === value ? 'opacity-100' : 'opacity-0')} />
-                  {option}
+                  <Check
+                    className={cn('size-4', option.id === value ? 'opacity-100' : 'opacity-0')}
+                  />
+                  {option.nome}
                 </CommandItem>
               ))}
             </CommandList>

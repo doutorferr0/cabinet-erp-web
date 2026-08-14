@@ -70,13 +70,41 @@ describe('LookupCombo', () => {
     expect(url.searchParams.get('pageSize')).toBe('100')
   })
 
-  it('seleciona uma opção vinda do servidor', async () => {
+  it('escolhe pelo ID e mostra o NOME (issue #94)', async () => {
     const { user } = renderWithQuery(<Harness />)
 
     await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
     await user.click(await screen.findByRole('menuitem', { name: /STELLA/ }))
 
-    expect(screen.getByTestId('valor')).toHaveTextContent('STELLA')
+    // O que vai para o formulário é o id — antes ia o nome, e o submit tinha de
+    // traduzir de volta. É a mudança inteira da issue, em uma asserção.
+    expect(screen.getByTestId('valor')).toHaveTextContent('id-1')
+    // E o botão continua mostrando o nome: o operador nunca vê a chave.
+    expect(screen.getByRole('button', { name: /STELLA/ })).toBeInTheDocument()
+  })
+
+  it('id fora da lista exibe o rótulo que o registro trouxe', async () => {
+    // Item desativado depois de gravado, ou lista cortada no teto de 100. Sem o
+    // rótulo de reserva o campo abriria em branco — e gravar de novo apagaria
+    // um valor que ninguém pediu para apagar.
+    renderWithQuery(
+      <LookupCombo
+        kind="marca"
+        value="id-de-marca-aposentada"
+        rotulo="MARCA ANTIGA"
+        onChange={() => {}}
+      />,
+    )
+
+    expect(await screen.findByRole('button', { name: /MARCA ANTIGA/ })).toBeInTheDocument()
+  })
+
+  it('sem rótulo de reserva, id desconhecido não vira texto cru na tela', async () => {
+    renderWithQuery(<LookupCombo kind="marca" value="id-orfao" onChange={() => {}} />)
+
+    // Mostrar o uuid seria pior que o placeholder: o operador leria uma chave
+    // achando que é o valor. Aqui ele vê que não há escolha feita.
+    expect(await screen.findByRole('button', { name: /Selecione marca/i })).toBeInTheDocument()
   })
 
   it('cadastra item novo sem sair da tela (botão "...")', async () => {
@@ -87,7 +115,10 @@ describe('LookupCombo', () => {
     await user.type(screen.getByLabelText('Nome'), 'Marca Nova X')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
-    expect(screen.getByTestId('valor')).toHaveTextContent('MARCA NOVA X')
+    // O cadastro rápido é LOCAL (mock): o id carrega prefixo `novo:` para não
+    // ser confundido com um que veio do servidor. O operador vê o nome.
+    expect(screen.getByTestId('valor')).toHaveTextContent('novo:marca:MARCA NOVA X')
+    expect(screen.getByRole('button', { name: /MARCA NOVA X/ })).toBeInTheDocument()
   })
 
   it('busca filtra as opções', async () => {

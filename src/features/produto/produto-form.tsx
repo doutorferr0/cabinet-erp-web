@@ -13,13 +13,11 @@ import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErroDaApi } from '@/data/api-provider'
-import { resolverIdDoLookup, useLookupOptions } from '@/data/lookups-api'
 import { useGravarProduto } from '@/data/produtos-api'
 import { tabelas } from '@/data/tabelas'
 import { parseQuantidade } from '@/lib/formatters'
 import type { Produto } from '@/mocks/produtos'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 import { z } from 'zod'
 
 const dimensoesSchema = z.object({
@@ -241,7 +239,8 @@ function AbaDadosPrincipais() {
             className="col-span-6 sm:col-span-3"
           />
           <LookupSelectField
-            name="tipoProduto"
+            name="tipoProdutoId"
+            rotuloDe="tipoProduto"
             label="Tipo de Produto"
             kind="tipoProduto"
             className="col-span-6 sm:col-span-3"
@@ -305,13 +304,15 @@ function AbaDadosPrincipais() {
             className="col-span-6 sm:col-span-3"
           />
           <LookupField
-            name="fabrica"
+            name="fabricaId"
+            rotuloDe="fabrica"
             label="Fábrica"
             kind="fabrica"
             className="col-span-6 sm:col-span-3"
           />
           <LookupField
-            name="marca"
+            name="marcaId"
+            rotuloDe="marca"
             label="Marca"
             kind="marca"
             className="col-span-6 sm:col-span-3"
@@ -551,80 +552,6 @@ function AbaTributacao() {
   )
 }
 
-/**
- * Nome escolhido no combo → id que o contrato grava, para os três campos de
- * classificação (`Tipo de Produto`, `Marca`, `Fábrica`).
- *
- * **Só resolve o que MUDOU.** Se o operador não mexeu no campo, o id que veio na
- * leitura é devolvido intacto — e isso não é economia, é correção: a lista de
- * apoio vem com teto de 100 itens, e um produto cuja marca não esteja nas 100
- * primeiras perderia a marca ao gravar qualquer outro campo.
- *
- * **Falha barulhento.** Nome que não existe na lista, ou que existe duas vezes,
- * NÃO vira palpite: a gravação para e o operador lê o motivo. Nome não é chave —
- * dois homônimos no mesmo kind, ou um renomeado entre a carga e o submit, e o
- * palpite grava a classificação de outro produto sem ninguém ver.
- */
-export function classificacaoResolvida(
-  values: Produto,
-  original: Produto,
-  listas: {
-    tipoProduto: Map<string, string[]>
-    marca: Map<string, string[]>
-    fabrica: Map<string, string[]>
-  },
-): { ok: true; values: Produto } | { ok: false; mensagem: string } {
-  const campos = [
-    {
-      rotulo: 'Tipo de Produto',
-      nome: values.tipoProduto,
-      antes: original.tipoProduto,
-      id: 'tipoProdutoId',
-      idAntes: original.tipoProdutoId,
-      lista: listas.tipoProduto,
-    },
-    {
-      rotulo: 'Marca',
-      nome: values.marca,
-      antes: original.marca,
-      id: 'marcaId',
-      idAntes: original.marcaId,
-      lista: listas.marca,
-    },
-    {
-      rotulo: 'Fábrica',
-      nome: values.fabrica,
-      antes: original.fabrica,
-      id: 'fabricaId',
-      idAntes: original.fabricaId,
-      lista: listas.fabrica,
-    },
-  ] as const
-
-  const resolvido: Produto = { ...values }
-  for (const campo of campos) {
-    if (campo.nome === campo.antes) {
-      // Intocado: devolve o id como veio, sem consultar a lista.
-      resolvido[campo.id] = campo.idAntes
-      continue
-    }
-
-    const r = resolverIdDoLookup(campo.lista, campo.nome)
-    if (!r.ok) {
-      return {
-        ok: false,
-        mensagem:
-          r.motivo === 'ambiguo'
-            ? `${campo.rotulo}: existe mais de um "${campo.nome}" na lista, e o cadastro grava por código. Escolha pelo cadastro de apoio antes de gravar.`
-            : `${campo.rotulo}: "${campo.nome}" não está na lista da empresa. Cadastre-o antes de gravar — nada foi gravado.`,
-      }
-    }
-    resolvido[campo.id] = r.id
-  }
-
-  return { ok: true, values: resolvido }
-}
-
 export function ProdutoForm({
   produto,
   readOnly = false,
@@ -640,30 +567,18 @@ export function ProdutoForm({
 }) {
   const navigate = useNavigate()
   const gravar = useGravarProduto()
-  // As três listas de apoio da CLASSIFICAÇÃO. O combo escolhe por nome e o
-  // contrato grava por id — ver `classificacaoResolvida`.
-  const tiposDeProduto = useLookupOptions('tipoProduto')
-  const marcas = useLookupOptions('marca')
-  const fabricas = useLookupOptions('fabrica')
-  const [erroDeClassificacao, setErroDeClassificacao] = useState<string | null>(null)
 
   function onGravar(values: Produto) {
-    const resolvido = classificacaoResolvida(values, produto, {
-      tipoProduto: tiposDeProduto.idsPorNome,
-      marca: marcas.idsPorNome,
-      fabrica: fabricas.idsPorNome,
-    })
-
-    if (!resolvido.ok) {
-      setErroDeClassificacao(resolvido.mensagem)
-      return
-    }
-    setErroDeClassificacao(null)
-
+    // Sem tradução no meio (issue #94): o combo já escolheu por ID, e é o id
+    // que o contrato grava. O que existia aqui era `classificacaoResolvida`,
+    // que convertia o NOME escolhido no id e tinha de recusar em voz alta
+    // quando o nome sumia da lista, era homônimo, ou a lista vinha truncada —
+    // os três casos deixam de existir quando a escolha já é por id.
+    //
     // O registro COMO VEIO do servidor viaja junto: é comparando com ele que a
     // gravação decide o que da grade mudou — linha intocada não vira escrita.
     gravar.mutate(
-      { values: resolvido.values, original: produto },
+      { values, original: produto },
       { onSuccess: () => void navigate({ to: '/cadastros/produtos' }) },
     )
   }
@@ -686,14 +601,6 @@ export function ProdutoForm({
           A `message` entra junto porque a falha de VARIANTE é a que diz qual
           linha caiu e que o produto já foi gravado — perder isso deixaria o
           operador tentando de novo sobre um estado que já mudou. */}
-      {erroDeClassificacao ? (
-        // Recusa da tradução nome → id. Vem ANTES do erro do servidor porque
-        // esta gravação nem chegou a sair: dizer "não foi possível gravar" sem
-        // dizer o motivo faria o operador clicar de novo e ver o mesmo nada.
-        <p role="alert" className="text-[0.75rem] text-destructive">
-          {erroDeClassificacao}
-        </p>
-      ) : null}
       {gravar.isError ? (
         <p role="alert" className="text-[0.75rem] text-destructive">
           {gravar.error instanceof ErroDaApi

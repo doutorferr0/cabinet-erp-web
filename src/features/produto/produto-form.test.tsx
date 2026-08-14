@@ -1,6 +1,4 @@
 import { URL_PRODUTOS } from '@/data/produtos-api'
-import { classificacaoResolvida } from '@/features/produto/produto-form'
-import { produtoVazio } from '@/mocks/produtos'
 import { json, problema } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
@@ -492,80 +490,5 @@ describe('formulário de produto', () => {
     // Mensagem de validação em 0.75rem — DESIGN.md §CadastroForm (item 9).
     expect(mensagem).toHaveClass('text-xs')
     expect(router.state.location.pathname).toBe('/cadastros/produtos/novo')
-  })
-})
-
-/**
- * A TRADUÇÃO NOME → ID DA CLASSIFICAÇÃO, que o Gravar faz antes de sair.
- *
- * O combo escolhe por NOME e o contrato grava por ID. Os testes abaixo cobrem os
- * três desfechos, e os dois últimos são o motivo de a função existir: **falhar
- * barulhento**. Nome não é chave — um homônimo, ou um item que não está na lista
- * do servidor, e a tradução otimista gravaria a classificação de outro registro
- * sem ninguém ver.
- */
-describe('classificacaoResolvida', () => {
-  const listas = {
-    tipoProduto: new Map([['PENDENTE', ['t1']]]),
-    marca: new Map([
-      ['VERTZ', ['b1']],
-      ['ILUMINAR', ['b2']],
-      ['DUPLICADA', ['b3', 'b4']],
-    ]),
-    fabrica: new Map([['FÁBRICA SP', ['f1']]]),
-  }
-  const original = {
-    ...produtoVazio('id'),
-    tipoProduto: 'PENDENTE',
-    tipoProdutoId: 't1',
-    marca: 'VERTZ',
-    marcaId: 'b1',
-    fabrica: 'FÁBRICA SP',
-    fabricaId: 'f1',
-  }
-
-  it('troca resolvida vira o id novo', () => {
-    const r = classificacaoResolvida({ ...original, marca: 'ILUMINAR' }, original, listas)
-
-    expect(r.ok).toBe(true)
-    if (r.ok) expect(r.values.marcaId).toBe('b2')
-  })
-
-  // A lista de apoio tem teto de 100 itens. Um produto cuja marca não esteja nas
-  // 100 primeiras perderia a marca ao gravar QUALQUER outro campo — por isso o
-  // campo intocado nem consulta a lista.
-  it('campo intocado devolve o id como veio, sem consultar a lista', () => {
-    const r = classificacaoResolvida({ ...original, nossaDescricao: 'OUTRA' }, original, {
-      ...listas,
-      marca: new Map(),
-    })
-
-    expect(r.ok).toBe(true)
-    if (r.ok) expect(r.values.marcaId).toBe('b1')
-  })
-
-  // O `...` do combo cadastra LOCALMENTE: o nome entra na lista da tela e não
-  // existe no servidor, logo não tem id. Sem esta recusa, gravar mandaria
-  // `brandId: null` e APAGARIA a marca — com a tela mostrando o nome novo.
-  it('nome fora da lista RECUSA, com o motivo na mensagem', () => {
-    const r = classificacaoResolvida({ ...original, marca: 'NÃO CADASTRADA' }, original, listas)
-
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.mensagem).toMatch(/Marca.*não está na lista da empresa/i)
-  })
-
-  it('nome AMBÍGUO recusa em vez de pegar o primeiro id', () => {
-    const r = classificacaoResolvida({ ...original, marca: 'DUPLICADA' }, original, listas)
-
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.mensagem).toMatch(/existe mais de um/i)
-  })
-
-  // Limpar o campo é escolha legítima, e precisa chegar ao servidor como tal.
-  it('apagar o nome resolve para null', () => {
-    const r = classificacaoResolvida({ ...original, marca: '' }, original, listas)
-
-    expect(r.ok).toBe(true)
-    if (r.ok) expect(r.values.marcaId).toBeNull()
   })
 })

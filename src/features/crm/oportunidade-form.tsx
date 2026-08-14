@@ -21,6 +21,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+import { GerarOrcamento } from './gerar-orcamento'
 
 /**
  * TODO(contract): o Zod do codegen substituirá este schema na integração.
@@ -263,6 +264,13 @@ export function OportunidadeForm({
               opcoes={(motivos.data ?? []).map((m) => ({ id: m.id, nome: m.name }))}
             />
           </div>
+        </FormBlock>
+
+        {/* O orçamento fica em bloco PRÓPRIO, e não junto do desfecho: perder é
+            desfecho, gerar documento é o começo da venda. Juntá-los faria o
+            operador procurar a conversão embaixo do motivo da perda. */}
+        <FormBlock legend="Orçamento">
+          <GerarOrcamento readOnly={readOnly} />
         </FormBlock>
       </div>
     </CadastroForm>

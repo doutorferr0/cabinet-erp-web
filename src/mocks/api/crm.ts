@@ -12,6 +12,7 @@ import type {
 } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { criarOrcamento, detalheDoOrcamento } from './quotes'
 import { novoId, store } from './store'
 
 /**
@@ -685,6 +686,49 @@ export const handlersDoCrm = [
     if (origem !== destino.id) renumerar(origem)
 
     return HttpResponse.json(oportunidadeDto(achado))
+  }),
+
+  /**
+   * CONVERSÃO oportunidade → orçamento: cria o documento e grava o vínculo na
+   * MESMA operação.
+   *
+   * Não é `POST /api/quotes` seguido de `PUT` na oportunidade, e a razão é a
+   * mesma do `PATCH …/stage`: falha entre as duas deixaria um orçamento órfão —
+   * criado, sem vínculo, invisível para quem pediu a conversão e visível na
+   * listagem de orçamentos.
+   *
+   * O documento nasce SEM ITEM, com cliente e nome do projeto vindos da
+   * oportunidade. É a amarra do núcleo: a oportunidade não congela
+   * especificação nem preço. Copiar o `expectedValueCents` para um item
+   * inventado daria documento com preço que ninguém cotou.
+   */
+  http.post('*/api/crm/opportunities/:id/quote', ({ params }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+
+    const achado = crm.oportunidades.find((o) => o.id === String(params.id))
+    if (!achado) return problemaJson(404, 'Oportunidade não encontrada.')
+    if (achado.quoteId) {
+      return problemaJson(409, 'Esta oportunidade já tem orçamento.')
+    }
+    if (!achado.partnerId) {
+      // `fields[]` entra aqui quando a #131 mergear — o `problemaJson` deste
+      // arquivo ainda não aceita membro de extensão. O `detail` já diz o que
+      // fazer, que é o mínimo acionável.
+      return problemaJson(400, 'Lead sem cadastro não vira orçamento: cadastre o cliente antes.')
+    }
+
+    const orcamento = criarOrcamento({
+      customerId: achado.partnerId,
+      projectName: achado.name,
+      discountMode: 'product',
+      discountPercent: 0,
+      environments: [],
+      items: [],
+    })
+    // O vínculo é gravado JUNTO — é o que torna a operação uma só.
+    achado.quoteId = orcamento.id
+    return HttpResponse.json(detalheDoOrcamento(orcamento), { status: 201 })
   }),
 
   // ---------------- colaboradores (ver EstadoDoCrm.colaboradores) ----------------

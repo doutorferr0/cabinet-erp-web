@@ -12,7 +12,7 @@ import { useEstagios, useMoverOportunidade } from '@/data/crm-api'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
-import { Calendar, MoreHorizontal, Plus } from 'lucide-react'
+import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react'
 import { type Apodrecimento, apodrecimentoDoCartao } from './apodrecimento'
 import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
 import { SeloDeApodrecimento } from './selo-de-apodrecimento'
@@ -257,6 +257,20 @@ function Cartao({
             {formatMoneyBRL(valorCents)}
           </span>
         )}
+        {/* O vínculo com o orçamento, quando existe: o cartão diz que o
+            negócio já virou documento, e leva até ele. Sem isto a conversão
+            aconteceria e o quadro continuaria mostrando o mesmo cartão de
+            antes — o operador geraria o segundo. */}
+        {oportunidade.quoteId ? (
+          <Link
+            to="/vendas/orcamentos/$orcamentoId"
+            params={{ orcamentoId: oportunidade.quoteId }}
+            className="flex items-center gap-1 font-semibold text-foreground underline-offset-2 hover:underline"
+          >
+            <FileText className="size-3.5" aria-hidden="true" />
+            Orçamento
+          </Link>
+        ) : null}
         {dataPrevista ? (
           <span className="flex items-center gap-1 tabular-nums">
             <Calendar className="size-3.5" aria-hidden="true" />

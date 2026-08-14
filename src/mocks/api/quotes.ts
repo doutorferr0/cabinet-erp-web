@@ -229,6 +229,30 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
   }
 }
 
+/**
+ * Cria o orçamento no estado do mock e devolve a linha GUARDADA.
+ *
+ * Exportada porque o CRM também cria orçamento — a conversão da oportunidade
+ * (`POST /api/crm/opportunities/{id}/quote`) precisa do MESMO caminho: mesma
+ * sequência de número, mesmo estado, mesma forma. Duas criações independentes
+ * dariam dois orçamentos com o mesmo número no dia em que as duas rodassem.
+ *
+ * O NÚMERO é do servidor e a sequência é global do grupo — o contrato tira o
+ * campo da escrita justamente para o cliente não o escolher.
+ */
+export function criarOrcamento(corpo: QuoteWriteRequest): Orcamento {
+  const numero = String(estado.proximoNumero)
+  estado.proximoNumero += 1
+  const novo = daEscrita(corpo, { ...vazio(), id: `orc-${numero}`, numero })
+  estado.linhas.unshift(novo)
+  return novo
+}
+
+/** O DTO de detalhe de uma linha guardada — o CRM devolve o mesmo shape. */
+export function detalheDoOrcamento(o: Orcamento): QuoteDetailDto {
+  return detalheDto(o)
+}
+
 export const handlersDeOrcamento = [
   http.get('*/api/quotes', ({ request }) => {
     if (!store.logado) return SEM_SESSAO()
@@ -283,14 +307,7 @@ export const handlersDeOrcamento = [
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
 
-    // O NÚMERO é do servidor, e a sequência é global do grupo: o contrato tira
-    // o campo da escrita justamente para o cliente não escolher.
-    const numero = String(estado.proximoNumero)
-    estado.proximoNumero += 1
-    const id = `orc-${numero}`
-    const novo = daEscrita(corpo, { ...vazio(), id, numero })
-    estado.linhas.unshift(novo)
-    return HttpResponse.json(detalheDto(novo), { status: 201 })
+    return HttpResponse.json(detalheDto(criarOrcamento(corpo)), { status: 201 })
   }),
 
   http.put('*/api/quotes/:id', async ({ params, request }) => {

@@ -1,7 +1,29 @@
-# Fase visual — roteiro (1 tarefa por sessão, com FECHAMENTO)
+# Fase visual — roteiro ENCERRADO (histórico)
 
-Colar UMA tarefa por sessão (kimi ou claude) DENTRO deste repo. Toda sessão: lê a memória (CLAUDE.md seção MEMÓRIA), termina com FECHAMENTO (biome → tsc → vitest → commit → CI verde → frente-visual.md).
-REGRA DA FASE: mock only. Campos das telas: `transcricaosoftlux.md`. NÃO inventar campo nem API.
+> **NÃO tire tarefa daqui.** Este roteiro conduziu a fase V1–V12 (jul–ago/2026) e está fechado. A
+> fila de trabalho da frente visual vive em `topicos/frente-visual.md` da memória — o `CLAUDE.md`
+> diz por quê: tracker versionado ao lado do tracker real vira dois estados que divergem, e este
+> arquivo é a prova (ficou marcando "V12 próxima" por semanas, com a fase já em 1.6).
+
+**Três regras deste arquivo foram REVOGADAS. Ele fica como registro, não como instrução:**
+
+1. **"REGRA DA FASE: mock only · não inventar API" — caiu.** A fase mock acabou e **o front é dono
+   do contrato**: `contracts/openapi-v1.json` é especificação de ENTRADA, caminho novo entra
+   marcado `Proposto`, e tipo de servidor vem do codegen. Ver `CLAUDE.md` §REGRA DA FASE e
+   `docs/integracao.md`.
+2. **Os nomes mudaram.** `src/components/vitra/` virou `src/components/cabinet/` (`63e3798`) e o
+   `<VitraDataTable>` é o `<DataTable>`. Prompt antigo copiado ao pé da letra cria pasta morta.
+3. **O sistema visual não é mais o "Papel Funcional"** do bloco 1 do `template-prompt.md`: valem o
+   `DESIGN.md` (fase 1.6 + identidade própria) e a amostra `docs/design/amostra-fase-1.5.html`,
+   que vence o doc em divergência.
+
+## O que aconteceu de verdade com a V12
+
+**A exploração das 3 variantes nunca foi construída.** Não existe, e nunca existiu, rota
+`/lab/orcamento/a|b|c` no histórico. A tela de documento nasceu inteira na **V8**
+(`586d730`, 30/07) e foi refeita depois pelas fases visuais — `d1133c5` (Stamp e DocumentoHeader
+com número em mono), `e4662e8` (totais como fileiras finais da grade), `645e647` (reface fase 2).
+Quem procurar aqui o resultado da comparação não vai achar porque ela não houve.
 
 ## Estado do roteiro
 
@@ -21,11 +43,17 @@ Estado autoritativo por tarefa vive em `topicos/frente-visual.md` da memória. R
 | V9 estruturação para testes e conexão | feito | `5fd7edf` |
 | V10 modo consulta (§9 padrão 8) + cobertura de `lib/` | feito | `7bd8d90` |
 | V11 documentação do sistema visual (PRODUCT.md, DESIGN.md) | feito | `89493ef`, `4d99287`, `e6aa464` |
-| **V12 tela de documento em 3 variantes** | **próxima** | — |
+| V12 tela de documento em 3 variantes | **não aconteceu** — a tela veio da V8 e das fases 1.5/1.6 | — |
 
-V6–V11 nasceram fora deste arquivo (colados direto na sessão); estão aqui só para o roteiro parar de mentir que a fase terminou na V5. Os blocos de prompt abaixo são os originais de V1–V5.
+V6–V11 nasceram fora deste arquivo (colados direto na sessão); estão aqui só para o roteiro parar
+de mentir que a fase terminou na V5.
 
-**Nota de numeração:** a V12 chega do arquivo `docs/design/tarefa-v9-documento.md`, que se autointitulava "V9" — número já ocupado pela estruturação de testes. O arquivo continua sendo a fonte detalhada; o número corrente é V12.
+---
+
+# Histórico — os prompts como foram escritos
+
+Daqui para baixo é transcrição da fase, com as regras da época. **Lê-se para saber o que foi
+pedido, não para executar.**
 
 ## TAREFA V1 — Esqueleto + shell
 ```

@@ -1,7 +1,12 @@
-# Template de prompt visual — vitra-erp-web
+# Template de prompt visual — HISTÓRICO (fase V1–V12)
 
-> Uso: toda tarefa visual entregue ao executor (Claude Code ou kimi) segue este formato.
-> Destino final: `docs/design/template-prompt.md` no repo vitra-erp-web (executor commita).
+> **Duas coisas aqui estão mortas.** O repo `vitra-erp-web` não existe mais (é este,
+> `cabinet-erp-web`), e a **direção "papel funcional" do bloco 1 foi superada**: valem hoje o
+> `DESIGN.md` (fase 1.6 + identidade própria, superfícies cinzas, 4 vozes tipográficas) e a
+> amostra `docs/design/amostra-fase-1.5.html`, que vence o doc em divergência. O formato de 7
+> blocos continua servindo de modelo; os VALORES do bloco 1, não.
+>
+> Roteiro da fase: `docs/fase-visual-tarefas.md`, também encerrado.
 
 ---
 

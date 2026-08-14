@@ -285,6 +285,24 @@ function estadoInicial(): EstadoDoCrm {
       stageChangedAt: diasAtras(20),
       closedAt: diasAtras(20),
     }),
+    // Mais duas perdas, com motivos DIFERENTES e uma repetição: o relatório de
+    // perdas por motivo com uma linha só não mostra o que ele é — a ordenação
+    // por contagem, que é a pergunta ("qual é o maior motivo"), só aparece com
+    // empate desfeito.
+    cartao('op-0007', 'Clínica Vila Nova — recepção', 'etapa-perdido', 2, {
+      partnerId: 'parc-0003',
+      expectedValueCents: 1_700_000,
+      lostReasonId: 'perda-preco',
+      stageChangedAt: diasAtras(41),
+      closedAt: diasAtras(41),
+    }),
+    cartao('op-0008', 'Loja de calçados — vitrine', 'etapa-perdido', 3, {
+      contactName: 'Fábio Menezes',
+      expectedValueCents: 900_000,
+      lostReasonId: 'perda-prazo',
+      stageChangedAt: diasAtras(9),
+      closedAt: diasAtras(9),
+    }),
   ]
 
   const colaboradores: EmployeeDto[] = [
@@ -774,5 +792,61 @@ export const handlersDoCrm = [
     achado.name = corpo.name
     achado.active = corpo.active ?? false
     return HttpResponse.json(achado)
+  }),
+
+  // ---------------- relatório de perdas ----------------
+
+  /**
+   * Por que perdemos, somado no período.
+   *
+   * A apuração mora AQUI, e não na tela, pelo motivo escrito no contrato: a
+   * listagem tem teto de 100 por página, então contar do lado do cliente daria
+   * número certo em base pequena e errado, sem sintoma, na primeira que
+   * passasse do teto. O mock conta a base inteira porque é o que o servidor
+   * fará.
+   */
+  http.get('*/api/crm/reports/lost-reasons', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+
+    const url = new URL(request.url)
+    const de = url.searchParams.get('from')
+    const ate = url.searchParams.get('to')
+    if (!de || !ate) return problemaJson(400, 'O período (`from` e `to`) é obrigatório.')
+    if (de > ate) return problemaJson(400, 'O início do período é depois do fim.')
+    const pipelineId = url.searchParams.get('pipelineId')
+
+    const perdidas = crm.oportunidades.filter((o) => {
+      if (pipelineId && o.pipelineId !== pipelineId) return false
+      if (!estagio(o.stageId)?.isLost) return false
+      // Por DIA, não por instante: quem pergunta por agosto quer o dia 31
+      // inteiro, e o `closedAt` guardado tem hora.
+      const dia = (o.closedAt ?? '').slice(0, 10)
+      return dia !== '' && dia >= de && dia <= ate
+    })
+
+    const contagem = new Map<string, number>()
+    for (const o of perdidas) {
+      const chave = o.lostReasonId ?? ''
+      contagem.set(chave, (contagem.get(chave) ?? 0) + 1)
+    }
+
+    const rows = [...contagem.entries()]
+      .map(([id, count]) => ({
+        lostReasonId: id === '' ? null : id,
+        // Motivo DESATIVADO continua legível no relatório do ano passado: é
+        // por isso que a desativação é lógica. Cair no genérico aqui apagaria
+        // a razão da perda de tudo que veio antes da aposentadoria.
+        lostReasonName:
+          id === ''
+            ? 'Sem motivo registrado'
+            : (crm.motivos.find((m) => m.id === id)?.name ?? 'Motivo removido'),
+        count,
+      }))
+      // A pergunta é qual é o MAIOR motivo; empate desempata por nome, para a
+      // ordem não dançar entre duas consultas iguais.
+      .sort((a, b) => b.count - a.count || a.lostReasonName.localeCompare(b.lostReasonName))
+
+    return HttpResponse.json({ from: de, to: ate, total: perdidas.length, rows })
   }),
 ]

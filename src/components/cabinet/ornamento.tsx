@@ -1,4 +1,5 @@
 import { type Modulo, moduloDaRota } from '@/app/modulo'
+import brutalist011 from '@/assets/brutalist/brutalist-011.svg?raw'
 import brutalist014 from '@/assets/brutalist/brutalist-014.svg?raw'
 import brutalist022 from '@/assets/brutalist/brutalist-022.svg?raw'
 import brutalist029 from '@/assets/brutalist/brutalist-029.svg?raw'
@@ -137,6 +138,7 @@ function lerDesenho(raw: string, cobertura: number): Desenho {
  */
 const DESENHOS = {
   brutalist014: lerDesenho(brutalist014, 47.4),
+  brutalist011: lerDesenho(brutalist011, 55.5),
   brutalist022: lerDesenho(brutalist022, 72.3),
   brutalist029: lerDesenho(brutalist029, 5.0),
   brutalist064: lerDesenho(brutalist064, 78.8),
@@ -163,6 +165,11 @@ const SHAPE_DO_MODULO: Record<Modulo, Desenho> = {
   fornecedores: DESENHOS.brutalist029, // casa / galpão = empresa
   profissionais: DESENHOS.shape133, // losango dentro de losango = crachá
   boletim: DESENHOS.shape135, // anéis concêntricos = panorama
+  // Cintura: duas curvas convergindo e reabrindo — o funil, deitado. Cobertura
+  // 55,5% medida pelo mesmo método dos outros (rasterização, tinta ÷ bbox
+  // tight), com `brutalist-029` e `shape-159` como controle: 5,1 contra 5,0 e
+  // 94,8 contra 94,7 gravados. Cheio com folga sobre o corte de 35%.
+  crm: DESENHOS.brutalist011, // cintura = funil
 }
 
 /**

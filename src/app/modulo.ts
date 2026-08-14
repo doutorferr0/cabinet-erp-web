@@ -15,6 +15,11 @@
  * travada pelo user cobre oito módulos e esse não é um deles. Cai no par padrão
  * (marca do sistema) até o user atribuir — inventar a nona cor aqui seria
  * decidir identidade visual por conta própria.
+ *
+ * `crm` é o NONO módulo, e não é exceção à regra acima: o par (verde neon
+ * #00E676, hue 151) e o desenho (`brutalist-011`, a cintura que faz o funil)
+ * foram escolhidos PELO USER em 2026-08-13, depois de eu medir que o magenta do
+ * mapa de tabelas (#B0306B) cai no mesmo hue 330 do módulo Compras.
  */
 export type Modulo =
   | 'boletim'
@@ -25,6 +30,7 @@ export type Modulo =
   | 'estoque'
   | 'vendas'
   | 'compras'
+  | 'crm'
 
 /** Prefixo de rota → módulo. Ordem importa: o mais específico primeiro. */
 const porPrefixo: ReadonlyArray<readonly [string, Modulo]> = [
@@ -33,6 +39,7 @@ const porPrefixo: ReadonlyArray<readonly [string, Modulo]> = [
   ['/cadastros/profissionais', 'profissionais'],
   ['/cadastros/produtos', 'produtos'],
   ['/estoque', 'estoque'],
+  ['/crm', 'crm'],
   ['/vendas', 'vendas'],
   ['/compras', 'compras'],
 ]

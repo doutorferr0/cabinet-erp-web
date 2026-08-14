@@ -4,6 +4,7 @@ import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
   ArrowLeftRight,
   BookUser,
+  Filter,
   GanttChart,
   LayoutDashboard,
   type LucideIcon,
@@ -163,6 +164,29 @@ export const navGroups: NavGroup[] = [
         // próprios: herda o par de Estoque por `moduloDaRota('/estoque')`
         // (prefixo), não precisa de `aparencia` — não é caso de "tela sem
         // módulo", é filha de um módulo que já tem cor.
+      },
+    ],
+  },
+  {
+    /**
+     * CRM — o funil, antes da venda. Grupo próprio e não item de Vendas: o
+     * orçamento é documento (existe ou não existe), e a oportunidade é
+     * ANDAMENTO — vive mudando de coluna até virar documento ou morrer com
+     * motivo. Empilhar os dois no mesmo grupo diria que são a mesma pergunta.
+     *
+     * Sem `recurso`: `features` do vínculo tem três valores fechados
+     * (`suppliers`/`professionals`/`employees`) e CRM não é um deles. Item sem
+     * recurso está em toda empresa, que é o padrão do menu.
+     */
+    title: 'CRM',
+    url: '/crm',
+    icon: Filter,
+    items: [
+      {
+        title: 'Funis',
+        url: '/crm/funis',
+        icon: Filter,
+        descricao: 'Os modelos de venda: as colunas por onde a oportunidade passa até fechar.',
       },
     ],
   },

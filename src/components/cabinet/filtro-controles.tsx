@@ -31,7 +31,7 @@ import { useState } from 'react'
 
 /** Caixa preta 2px, radius 0 — a mesma dos selects do formulário e do rodapé da tabela. */
 const CAIXA_DE_SELECT =
-  'h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring disabled:opacity-50'
+  'desabilitado h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring'
 
 export function SelectBrut({ className, ...props }: React.ComponentProps<'select'>) {
   return <select className={cn(CAIXA_DE_SELECT, className)} {...props} />
@@ -73,7 +73,7 @@ export function SeletorDeCampo({
         className={cn('justify-between font-normal', className)}
       >
         <span className="truncate">{atual?.rotulo ?? 'Escolha o campo'}</span>
-        <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
+        <ChevronsUpDown className="ml-1 size-4 shrink-0 text-muted-foreground" />
       </Button>
       <Popover className="w-56 p-0">
         <Command>
@@ -216,7 +216,7 @@ export function ControleDeValor({
           className={cn('justify-between font-normal', className)}
         >
           <span className="truncate">{resumo}</span>
-          <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-1 size-4 shrink-0 text-muted-foreground" />
         </Button>
         <Popover className="w-56 p-0">
           <Command>

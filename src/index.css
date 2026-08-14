@@ -79,8 +79,22 @@
   --accent-foreground: 0 0% 0%;
   /* Cinzas da paleta flat — separador, desabilitado, texto alternativo. */
   --rule-hair: 210 10% 86%; /* #CCD1D9 — separador leve */
-  --text-disabled: 210 8% 74%; /* #AAB2BD — traço desabilitado */
   --text-strong: 215 13% 30%; /* #434A54 — texto forte alternativo ao preto */
+  /* DESABILITADO — o par que substituiu a tinta apagada (decisão do user,
+     2026-08-14, core @regras). Existia aqui um `--text-disabled` de valor
+     `210 8% 74%`, e ele ERA o defeito: um token cujo emprego é clarear
+     conteúdo. Sobre a Folha media 1,73:1 e, na barra de ações de Produtos, fazia
+     `Alterar`/`Consul.`/`Excluir` sumirem — ícone e rótulo dissolvidos no papel.
+     Foi REMOVIDO, não corrigido: enquanto existisse um nome para "tinta
+     apagada", o próximo controle voltaria a usá-lo.
+
+     No lugar, o apagamento mora onde não custa leitura — a SUPERFÍCIE e o
+     TRAÇO. O conteúdo fica na tinta do tema (preto no claro, clara no escuro),
+     e quem diz "morto" é o fundo rebaixado com o contorno cinza em volta.
+     A superfície desce de luz nos DOIS temas, como a `--surface-sunken`:
+     afundar no escuro é escurecer, não clarear. */
+  --surface-disabled: 216 10% 80%;
+  --rule-disabled: 210 8% 40%;
   /* Preenchimentos flat para os DONOS (dinheiro, foco, erro). Contorno preto
      por fora, preenchimento forte por dentro — mesma técnica do ornamento:
      o traço (~20:1) delimita, a cor fica livre para ser viva. */
@@ -335,8 +349,12 @@
   --rule-hair: 220 7% 31%;
   --rule-strong: 220 8% 70%;
   /* Cinzas da paleta flat, invertidos para o escuro. */
-  --text-disabled: 210 5% 40%;
   --text-strong: 210 8% 80%;
+  /* Desabilitado no escuro: a superfície continua DESCENDO de luz (folha 17% →
+     12%), e o traço desce de 66% para 46%. A tinta do conteúdo não é tocada em
+     tema nenhum — é esse o ponto da regra. */
+  --surface-disabled: 220 8% 12%;
+  --rule-disabled: 220 7% 46%;
   /* Preenchimentos flat no escuro: mesma matiz, luz virada para baixo. */
   --fill-money: 88 30% 22%;
   --fill-focus: 44 35% 20%;
@@ -482,8 +500,11 @@
   --color-fill-money: hsl(var(--fill-money));
   --color-fill-focus: hsl(var(--fill-focus));
   --color-fill-error: hsl(var(--fill-error));
-  --color-text-disabled: hsl(var(--text-disabled));
   --color-text-strong: hsl(var(--text-strong));
+  /* Desabilitado: fundo e traço. Não há `--color-*` de TINTA desabilitada, e a
+     ausência é a regra — ver a nota dos tokens. */
+  --color-surface-disabled: hsl(var(--surface-disabled));
+  --color-rule-disabled: hsl(var(--rule-disabled));
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */
@@ -741,10 +762,18 @@
     transform: none;
   }
 
+  /* Desabilitado PERDE a sombra, e isso é parte da §Desabilitado, não economia
+     de CSS: no tema escuro a superfície apagada e a Folha estão a 1,16:1, e o
+     par fundo+traço sozinho quase não diz o estado — conferido em render, na
+     barra de ações de Produtos, onde `Alterar` morto e `Filtro` vivo saíam
+     iguais. A sombra é o canal que sobra, e é de FORMA: o controle vivo
+     REPOUSA elevado (`el-2`) e o morto fica RENTE ao papel. Antes daqui o
+     desabilitado mantinha o `el-2` — um botão morto que continuava parecendo
+     uma peça pronta para ser apertada. */
   &:disabled,
   &[data-disabled] {
     transform: none;
-    box-shadow: var(--shadow-el2);
+    box-shadow: none;
   }
 }
 
@@ -919,6 +948,87 @@
 
 * {
   border-color: hsl(var(--border));
+}
+
+/* ============================================================================
+   DESABILITADO — receita ÚNICA (DESIGN.md §Desabilitado; core @regras,
+   user 2026-08-14). O estado se diz por FUNDO e TRAÇO; ícone e rótulo ficam na
+   tinta do tema.
+
+   **POR QUE ESTE BLOCO MORA AQUI, FORA DE `@utility`, e depois do `*` acima.**
+   O `*` logo acima é AUTOR SEM CAMADA, e regra sem camada vence QUALQUER regra
+   dentro de `@layer` — inclusive a camada `utilities` do Tailwind, onde todo
+   `@utility` e todo `border-*` são gerados. Medido em Chrome com o `dist`
+   compilado: `border-destructive` em elemento novo computa `rgb(0,0,0)`. Ou
+   seja, **nenhuma utility de cor de borda deste repo pinta nada hoje** — todas
+   as bordas são `--border` porque o `*` as sobrescreve. A primeira versão desta
+   receita foi escrita como `@utility` e o traço apagado saiu preto na foto; é
+   por isso que ela está aqui embaixo, e não por gosto.
+
+   Isso é um achado maior que esta issue e está registrado como pendência do
+   user na §Medição de contraste do DESIGN.md — mexer no `*` faz TODA borda
+   `border-transparent` (aba não selecionada, item de menu em repouso) parar de
+   ser preta de uma vez, que é mudança de desenho, não conserto de bug.
+
+   Os quatro gatilhos cobrem as formas que o repo usa: `:disabled` (nativo, e é
+   ele que pega descendente de `<fieldset disabled>` — como o modo consulta do
+   `CadastroForm`), `[data-disabled]` (React Aria Components e cmdk),
+   `[aria-disabled]` (item que continua focável) e `:has(:disabled)` (a caixa do
+   `InputGroup`, cujo desabilitado mora no campo de dentro).
+
+   O `:is(…)` REPETIDO leva o seletor a (0,3,0) e não é engano de copiar e
+   colar: com um só, o par empataria com `hover:bg-*` e `data-selected:bg-*` do
+   mesmo elemento, e o desempate seria por ordem de geração do Tailwind. O
+   sintoma seria o pior possível — o controle morto repintado com a cor de quem
+   responde ao mouse, ou a aba desabilitada de volta ao violeta de selecionada.
+
+   `opacity: 1` é declarado de propósito: RAC e cmdk trazem clareamento próprio,
+   e sem o reset o defeito voltaria pela dependência.
+
+   `pointer-events` NÃO entra: o botão desabilitado precisa continuar recebendo
+   evento de mouse para o browser mostrar o `title` com o motivo (ver a nota do
+   `button.tsx`). Não clicar já é garantido pelo atributo `disabled`.
+   ========================================================================== */
+.desabilitado:is(:disabled, [data-disabled], [aria-disabled="true"], :has(:disabled)):is(
+    :disabled,
+    [data-disabled],
+    [aria-disabled="true"],
+    :has(:disabled)
+  ) {
+  cursor: not-allowed;
+  opacity: 1;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--surface-disabled));
+  border-color: hsl(var(--rule-disabled));
+}
+
+/* MARCA DESABILITADA — a outra metade, para o controle cujo estado mora numa
+   PEÇA e não na caixa inteira: o quadrado do checkbox e o círculo do radio. Vai
+   no indicador, nunca na raiz, porque a raiz desses dois embrulha o RÓTULO —
+   pintar ali daria uma faixa cinza atrás de texto corrido, que não é o desenho
+   de um controle morto, é o de um bloco selecionado.
+
+   `[data-disabled] [data-slot]` tem (0,2,0) e o `&` da classe soma (0,3,0): é o
+   que faz o checkbox MARCADO e desabilitado parar de ganhar `bg-primary` com o
+   `✓` branco por cima do cinza.
+
+   O segundo gatilho, `fieldset:disabled`, fecha um buraco ACHADO EM RENDER: o
+   modo consulta do `CadastroForm` desabilita por `<fieldset disabled>`, e
+   fieldset desabilita descendente NATIVO — o `:disabled` pega o `<input>`
+   escondido do checkbox, mas a RAC não escreve `data-disabled` em lugar nenhum,
+   porque ninguém passou `isDisabled`. Fotografado na tela de Produtos em
+   consulta: campos apagados e os checkboxes `Ativo` e `Consultar Valor` ainda
+   violeta-cheios, com cara de clicáveis. Valia para a `opacity-50` de antes
+   também — o defeito é mais velho que esta receita.
+
+   A `color` entra porque o `✓` herda `currentColor` do indicador: sem ela o
+   ícone continuaria em `--primary-foreground` (branco no claro) e sumiria no
+   cinza. O ponto do radio selecionado é `bg-primary` no FILHO e não é tocado —
+   ele é o conteúdo que diz "esta é a escolha", e conteúdo não apaga. */
+.marca-desabilitada:is([data-disabled] [data-slot], fieldset:disabled [data-slot]) {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--surface-disabled));
+  border-color: hsl(var(--rule-disabled));
 }
 
 body {

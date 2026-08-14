@@ -22,6 +22,7 @@ import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
 import { Route as ComprasIndexRouteImport } from './routes/compras/index'
+import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
@@ -111,6 +112,11 @@ const ComprasIndexRoute = ComprasIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ComprasRoute,
+} as any)
+const CrmMotivosRoute = CrmMotivosRouteImport.update({
+  id: '/motivos',
+  path: '/motivos',
+  getParentRoute: () => CrmRoute,
 } as any)
 const EstoqueIndexRoute = EstoqueIndexRouteImport.update({
   id: '/',
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
+  '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
+  '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
@@ -330,6 +338,7 @@ export interface FileRoutesById {
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
+  '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
@@ -371,6 +380,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
+    | '/crm/motivos'
     | '/estoque/movimentacao'
     | '/cadastros/'
     | '/compras/'
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/planner'
     | '/tarefas'
     | '/trocar-senha'
+    | '/crm/motivos'
     | '/estoque/movimentacao'
     | '/cadastros'
     | '/compras'
@@ -445,6 +456,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
+    | '/crm/motivos'
     | '/estoque/movimentacao'
     | '/cadastros/'
     | '/compras/'
@@ -579,6 +591,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/compras/'
       preLoaderRoute: typeof ComprasIndexRouteImport
       parentRoute: typeof ComprasRoute
+    }
+    '/crm/motivos': {
+      id: '/crm/motivos'
+      path: '/motivos'
+      fullPath: '/crm/motivos'
+      preLoaderRoute: typeof CrmMotivosRouteImport
+      parentRoute: typeof CrmRoute
     }
     '/estoque/': {
       id: '/estoque/'
@@ -806,6 +825,7 @@ const ComprasRouteWithChildren =
   ComprasRoute._addFileChildren(ComprasRouteChildren)
 
 interface CrmRouteChildren {
+  CrmMotivosRoute: typeof CrmMotivosRoute
   CrmFunilFunilIdRoute: typeof CrmFunilFunilIdRoute
   CrmFunisFunilIdRoute: typeof CrmFunisFunilIdRoute
   CrmOportunidadesOportunidadeIdRoute: typeof CrmOportunidadesOportunidadeIdRoute
@@ -814,6 +834,7 @@ interface CrmRouteChildren {
 }
 
 const CrmRouteChildren: CrmRouteChildren = {
+  CrmMotivosRoute: CrmMotivosRoute,
   CrmFunilFunilIdRoute: CrmFunilFunilIdRoute,
   CrmFunisFunilIdRoute: CrmFunisFunilIdRoute,
   CrmOportunidadesOportunidadeIdRoute: CrmOportunidadesOportunidadeIdRoute,

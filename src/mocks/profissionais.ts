@@ -1,3 +1,4 @@
+import { idDeApoio } from '@/mocks/lookups'
 interface EnderecoMock {
   cep: string
   logradouro: string
@@ -58,26 +59,31 @@ const REGISTROS = [
   {
     apresentacao: 'MARIANA',
     nome: 'MARIANA DUARTE',
-    profissao: 'ARQUITETO',
+    profissao: idDeApoio('PROFISSAO', 'ARQUITETO'),
     registro: 'CAU A123456-7',
   },
   {
     apresentacao: 'ARIADINE',
     nome: 'ARIADINE CAMPOS',
-    profissao: 'ARQUITETO',
+    profissao: idDeApoio('PROFISSAO', 'ARQUITETO'),
     registro: 'CAU A234567-8',
   },
   {
     apresentacao: 'ANA ELIZA',
     nome: 'ANA ELIZA FERREIRA',
-    profissao: 'DESIGNER DE INTERIORES',
+    profissao: idDeApoio('PROFISSAO', 'DESIGNER DE INTERIORES'),
     registro: '',
   },
-  { apresentacao: 'MALU', nome: 'MALU ANDRADE', profissao: 'DESIGNER DE INTERIORES', registro: '' },
+  {
+    apresentacao: 'MALU',
+    nome: 'MALU ANDRADE',
+    profissao: idDeApoio('PROFISSAO', 'DESIGNER DE INTERIORES'),
+    registro: '',
+  },
   {
     apresentacao: 'GIORDANA',
     nome: 'GIORDANA PIRES',
-    profissao: 'ARQUITETO',
+    profissao: idDeApoio('PROFISSAO', 'ARQUITETO'),
     registro: 'CAU A345678-9',
   },
   {
@@ -89,7 +95,7 @@ const REGISTROS = [
   {
     apresentacao: 'SILVANIA',
     nome: 'SILVANIA MOURA',
-    profissao: 'DESIGNER DE INTERIORES',
+    profissao: idDeApoio('PROFISSAO', 'DESIGNER DE INTERIORES'),
     registro: '',
   },
   {

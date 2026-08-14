@@ -6,7 +6,8 @@ import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import type userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 /**
  * Provider LOCAL sobre o mock de produtos.
@@ -455,5 +456,134 @@ describe('VitraDataTable — filtro estruturado', () => {
     // Mandar cadastrar registro que existe e está fora do filtro é o erro que
     // faz o operador duplicar cadastro.
     expect(await screen.findByText(/Nenhum registro atende aos filtros/i)).toBeInTheDocument()
+  })
+})
+
+describe('VitraDataTable — consultas favoritas', () => {
+  const camposFiltraveis: CampoFiltravel[] = [{ id: 'marca', rotulo: 'Marca', variante: 'text' }]
+
+  function setupComFavoritos(queryKey: readonly unknown[] = ['produtos-fav']) {
+    return renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={queryKey}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        actions={[{ id: 'filtro', label: 'Filtro' }]}
+        filtros={camposFiltraveis}
+      />,
+    )
+  }
+
+  async function montarFiltro(user: ReturnType<typeof userEvent.setup>, valor: string) {
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.type(await screen.findByLabelText('Valor do filtro 1'), valor)
+    await user.keyboard('{Escape}')
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('sem filtro montado não há o que salvar', async () => {
+    const { user } = setupComFavoritos()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
+    expect(await screen.findByRole('button', { name: /Salvar consulta atual/ })).toBeDisabled()
+  })
+
+  it('salva a consulta montada e a lista passa a mostrá-la', async () => {
+    const { user } = setupComFavoritos()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await montarFiltro(user, 'stella')
+
+    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
+    await user.click(await screen.findByRole('button', { name: /Salvar consulta atual/ }))
+    await user.type(await screen.findByLabelText('Nome'), 'Só Stella')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    expect(await screen.findByRole('button', { name: 'Consultas salvas — 1' })).toBeInTheDocument()
+  })
+
+  it('aplicar uma consulta salva reconstrói o filtro na tela', async () => {
+    const { user } = setupComFavoritos()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await montarFiltro(user, 'stella')
+
+    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
+    await user.click(await screen.findByRole('button', { name: /Salvar consulta atual/ }))
+    await user.type(await screen.findByLabelText('Nome'), 'Só Stella')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    // Limpa e reaplica pela consulta salva.
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Limpar filtros' }))
+    // `Escape` fecha porque o foco voltou para dentro do painel (`Adicionar
+    // filtro`); sem essa devolução ele cairia num nó já removido.
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Adicionar filtro' })).toHaveFocus()
+    })
+    await user.keyboard('{Escape}')
+    expect(await screen.findByText('45 registros')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
+    await user.click(await screen.findByRole('button', { name: 'Só Stella' }))
+
+    expect(await screen.findByText('4 registros')).toBeInTheDocument()
+  })
+
+  it('a consulta PADRÃO abre a tela sozinha — o caso de todo dia é zero clique', async () => {
+    // Grava direto no armazenamento: o que se testa aqui é a ABERTURA da tela.
+    localStorage.setItem(
+      'cabinet.consultas-favoritas.v1',
+      JSON.stringify({
+        'produtos-padrao': [
+          {
+            id: 'f1',
+            nome: 'Só Stella',
+            filtros: [
+              {
+                filtroId: 'x',
+                id: 'marca',
+                variante: 'text',
+                operador: 'iLike',
+                valor: 'stella',
+              },
+            ],
+            juncao: 'and',
+            sort: null,
+            padrao: true,
+          },
+        ],
+      }),
+    )
+
+    setupComFavoritos(['produtos-padrao'])
+
+    expect(await screen.findByText('4 registros')).toBeInTheDocument()
+  })
+
+  it('cada tela tem as suas — a consulta de Produtos não aparece em outra listagem', async () => {
+    localStorage.setItem(
+      'cabinet.consultas-favoritas.v1',
+      JSON.stringify({ 'produtos-fav': [{ id: 'f1', nome: 'Só Stella', filtros: [] }] }),
+    )
+
+    setupComFavoritos(['outra-tela'])
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    expect(screen.getByRole('button', { name: 'Consultas salvas — nenhuma' })).toBeInTheDocument()
+  })
+
+  it('favorito gravado ilegível não derruba a listagem', async () => {
+    localStorage.setItem('cabinet.consultas-favoritas.v1', '{quebrado')
+
+    setupComFavoritos()
+
+    // A tela abre normalmente, sem favorito — perder a listagem por causa de um
+    // valor gravado seria defeito; perder o favorito é aborrecimento.
+    expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Consultas salvas — nenhuma' })).toBeInTheDocument()
   })
 })

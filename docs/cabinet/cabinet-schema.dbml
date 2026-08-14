@@ -20,18 +20,23 @@ Table employees {
   password_hash varchar [not null]
   must_change_password boolean [not null]
   active boolean [not null]
-  Note: 'ORG · nucleo · identidade única na organização; papel é POR empresa'
+  indexes {
+    (email) [unique]
+  }
+  Note: 'ORG · nucleo · identidade única na organização; papel é POR empresa — e-mail é a CHAVE DE LOGIN e vive fora do tenant: UNIQUE na organização inteira. Consequência tratada na borda — e-mail já usado em OUTRA empresa recusa com mensagem genérica, nunca "já existe", que revelaria cadastro de empresa que o operador não alcança'
 }
 
 Table employee_tenants {
   tenant_id uuid
   employee_id uuid
   role varchar [not null]
+  is_salesperson boolean [not null]
+  default_commission_percent numeric(7,4)
   active boolean [not null]
   indexes {
     (tenant_id, employee_id) [pk]
   }
-  Note: 'TENANT · nucleo · vínculo N:N com papel por empresa (RBAC do core)'
+  Note: 'TENANT · nucleo · colaborador É usuário: o vínculo com CADA empresa, com o papel e o que ele é ali dentro — PK natural (tenant_id, employee_id): vínculo duplicado do mesmo colaborador na mesma empresa é impossível por construção. Vínculo em 2 empresas = 2 linhas, e nada cruza — a sessão só enxerga a do tenant ativo'
 }
 
 Table catalog_lookups {

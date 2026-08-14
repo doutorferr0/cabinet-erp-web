@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cabinet — Cadastro com hierarquia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#111111; --muted:#5C5A54; --faint:#8B887F;
+    --bancada:#FAF6EE; --folha:#FFFFFF;
+    --bw:2px;
+    --sombra:4px 4px 0 #111; --sombra-sm:3px 3px 0 #111; --sombra-xs:2px 2px 0 #111; --sombra-lg:6px 6px 0 #111;
+    /* NEON por bloco — cor cheia /01 */
+    --identidade:#B026FF;  --identidade-02:#F2E7FE;
+    --documento:#0091FF;   --documento-02:#D1ECFF;
+    --endereco:#00E5FF;    --endereco-02:#CEF9FD;
+    --contato:#FF6B2C;     --contato-02:#FFE4D6;
+    --banco:#16A34A;       --banco-02:#D2FEEB;
+    --social:#E620FF;      --social-02:#FBE0FF;
+    --extra:#7C3DFF;       --extra-02:#ECE8FD;
+    /* donos */
+    --dinheiro:#16A34A; --foco:#FACC15; --erro:#DC2626; --erro-02:#FDE3E3;
+    --main:#5551FF;
+    --r:12px; --r-lg:16px; --r-sm:9px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Manrope',sans-serif;background:#EFE9DC;color:var(--ink);font-size:14px;padding:22px;min-height:100vh}
+  h1,h2,h3,b,strong{font-family:'Archivo',sans-serif}
+
+  .app{max-width:1180px;margin:0 auto;background:var(--bancada);border:var(--bw) solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:var(--sombra-lg)}
+
+  /* ornamentos */
+  .orn{display:inline-block;flex-shrink:0;background-color:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center}
+  .o1{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-001.svg');mask-image:url('assets-brutalist/brutalist/brutalist-001.svg')}
+  .o2{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-014.svg');mask-image:url('assets-brutalist/brutalist/brutalist-014.svg')}
+  .o3{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-101.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-101.svg')}
+  .o4{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-120.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-120.svg')}
+  .o5{-webkit-mask-image:url('assets-brutalist/spark/spark-001.svg');mask-image:url('assets-brutalist/spark/spark-001.svg')}
+  .o6{-webkit-mask-image:url('assets-brutalist/spark/spark-020.svg');mask-image:url('assets-brutalist/spark/spark-020.svg')}
+  .o7{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-072.svg');mask-image:url('assets-brutalist/brutalist/brutalist-072.svg')}
+
+  .selo{width:40px;height:40px;border:var(--bw) solid var(--ink);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--folha)}
+  .selo .orn{width:22px;height:22px}
+
+  /* ===== topo ===== */
+  .topo{background:var(--folha);border-bottom:var(--bw) solid var(--ink);padding:18px 26px 0}
+  .trilha{font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+  .trilha span{color:var(--ink)}
+  .titulo-linha{display:flex;align-items:center;gap:13px;margin-bottom:15px;flex-wrap:wrap}
+  .titulo-linha h1{font-size:27px;font-weight:900;letter-spacing:-.6px}
+  .selo.lg{width:46px;height:46px;border-radius:13px;box-shadow:var(--sombra-xs);background:var(--identidade)}
+  .selo.lg .orn{width:25px;height:25px;color:#fff}
+  .chip-ativo{margin-left:auto;display:flex;align-items:center;gap:9px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--banco-02);padding:7px 13px;font-size:12.5px;font-weight:800;box-shadow:var(--sombra-sm);cursor:pointer;user-select:none}
+  .chip-ativo .bolinha{width:13px;height:13px;border:var(--bw) solid var(--ink);border-radius:5px;background:var(--dinheiro)}
+
+  /* progresso obrigatório */
+  .barra-obrig{display:flex;align-items:center;gap:12px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--foco);padding:9px 14px;box-shadow:var(--sombra-sm);margin-bottom:16px;font-size:12.5px;font-weight:800}
+  .barra-obrig .trilho{flex:1;height:12px;border:var(--bw) solid var(--ink);border-radius:6px;background:var(--folha);overflow:hidden;min-width:90px}
+  .barra-obrig .preenchido{height:100%;background:var(--dinheiro);width:0%;transition:width .2s}
+  .barra-obrig .n{font-family:'Archivo';font-weight:900;font-size:14px;white-space:nowrap}
+
+  .abas{display:flex;gap:8px}
+  .aba{border:var(--bw) solid var(--ink);border-bottom:0;border-radius:var(--r) var(--r) 0 0;background:var(--bancada);padding:10px 17px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer;position:relative;top:2px}
+  .aba.on{background:var(--identidade);color:#fff;font-weight:900;box-shadow:3px -3px 0 #111}
+  .aba:not(.on):hover{background:var(--folha);color:var(--ink)}
+
+  /* ===== corpo ===== */
+  .corpo{padding:26px 26px 0;display:flex;gap:24px;align-items:flex-start}
+  .coluna{flex:1;max-width:780px;min-width:0}
+  .lateral{width:246px;flex-shrink:0;position:sticky;top:22px}
+
+  /* ===== bloco ===== */
+  .bloco{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);margin-bottom:15px;box-shadow:var(--sombra);overflow:hidden;background:var(--folha)}
+  .bl-topo{display:flex;align-items:center;gap:13px;padding:13px 16px;cursor:pointer;user-select:none;border-bottom:var(--bw) solid transparent}
+  .bloco.aberto .bl-topo{border-bottom-color:var(--ink)}
+  .bl-topo .selo{background:var(--folha)}
+  .bl-txt{min-width:0}
+  .bl-txt h2{font-size:16px;font-weight:900;letter-spacing:-.3px;line-height:1.2;display:flex;align-items:center;gap:8px}
+  .bl-txt p{font-size:11.5px;font-weight:700;color:var(--ink);opacity:.72;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bl-dir{margin-left:auto;display:flex;align-items:center;gap:9px;flex-shrink:0}
+  .tag{font-size:10px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;border:var(--bw) solid var(--ink);border-radius:7px;padding:3px 8px;background:var(--folha)}
+  .tag.obrig{background:var(--erro);color:#fff}
+  .tag.opc{background:var(--folha);color:var(--muted)}
+  .contador{font-family:'Archivo';font-size:11.5px;font-weight:900;border:var(--bw) solid var(--ink);border-radius:7px;padding:3px 9px;background:var(--folha)}
+  .contador.tem{background:var(--dinheiro);color:#fff}
+  .seta{width:32px;height:32px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra-xs);transition:transform .18s}
+  .bloco.aberto .seta{transform:rotate(180deg)}
+  .bl-corpo{display:none;padding:20px 20px 22px}
+  .bloco.aberto .bl-corpo{display:block}
+
+  /* cores por bloco */
+  .b-ident .bl-topo{background:var(--identidade)} .b-ident .bl-topo h2{color:#fff} .b-ident .bl-topo p{color:#fff;opacity:.85} .b-ident .bl-corpo{background:var(--identidade-02)} .b-ident .selo .orn{color:var(--identidade)}
+  .b-doc .bl-topo{background:var(--documento)} .b-doc .bl-topo h2{color:#fff} .b-doc .bl-topo p{color:#fff;opacity:.85} .b-doc .bl-corpo{background:var(--documento-02)} .b-doc .selo .orn{color:var(--documento)}
+  .b-end .bl-topo{background:var(--endereco)} .b-end .bl-corpo{background:var(--endereco-02)} .b-end .selo .orn{color:#0091FF}
+  .b-cont .bl-topo{background:var(--contato)} .b-cont .bl-corpo{background:var(--contato-02)} .b-cont .selo .orn{color:var(--contato)}
+  .b-banco .bl-topo{background:var(--banco)} .b-banco .bl-topo h2{color:#fff} .b-banco .bl-topo p{color:#fff;opacity:.85} .b-banco .bl-corpo{background:var(--banco-02)} .b-banco .selo .orn{color:var(--banco)}
+  .b-social .bl-topo{background:var(--social)} .b-social .bl-topo h2{color:#fff} .b-social .bl-topo p{color:#fff;opacity:.85} .b-social .bl-corpo{background:var(--social-02)} .b-social .selo .orn{color:var(--social)}
+
+  /* ===== campos ===== */
+  .campo{margin-bottom:15px}
+  .campo:last-child{margin-bottom:0}
+  label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+  label .ast{color:var(--erro);font-size:15px;line-height:1;font-family:'Archivo';font-weight:900}
+  label .ajuda{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:0;text-transform:none;color:var(--muted)}
+  .entrada{width:100%;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:11px 13px;font-family:'Manrope';font-size:14px;font-weight:700;color:var(--ink);outline:0;box-shadow:var(--sombra-xs)}
+  .entrada::placeholder{color:var(--faint);font-weight:600}
+  .entrada:focus{box-shadow:0 0 0 3px var(--foco),var(--sombra-xs)}
+  select.entrada{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='3.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center}
+  .par{display:flex;gap:12px}
+  .par>*{flex:1;min-width:0}
+  .par .curto{flex:0 0 132px}
+  .par .medio{flex:0 0 190px}
+  .com-botao{display:flex;gap:8px}
+  .com-botao .entrada{flex:1}
+  .btn-lupa{width:44px;flex-shrink:0;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);box-shadow:var(--sombra-xs);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .btn-lupa:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+
+  /* segmented */
+  .seg{display:flex;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--sombra-xs);width:fit-content}
+  .seg button{border:0;border-right:var(--bw) solid var(--ink);background:var(--folha);font-family:'Archivo';font-size:13px;font-weight:800;padding:10px 22px;cursor:pointer;color:var(--muted)}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--identidade);color:#fff;font-weight:900}
+
+  .dica{display:flex;align-items:center;gap:9px;border:var(--bw) dashed var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:9px 12px;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:14px}
+  .dica .orn{width:15px;height:15px;color:var(--ink);flex-shrink:0}
+
+  /* botão adicionar dentro do bloco fechado */
+  .add-linha{padding:0 16px 14px}
+  .btn-add{width:100%;border:var(--bw) dashed var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:9px;font-family:'Archivo';font-size:12.5px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-add:hover{background:var(--foco)}
+
+  /* ===== lateral ===== */
+  .card-lat{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);background:var(--folha);box-shadow:var(--sombra);overflow:hidden;margin-bottom:14px}
+  .card-lat h3{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:11px 14px;border-bottom:var(--bw) solid var(--ink);background:var(--extra-02);display:flex;align-items:center;gap:8px}
+  .card-lat h3 .orn{width:15px;height:15px;color:var(--extra)}
+  .lista-nav{padding:8px}
+  .item-nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border:var(--bw) solid transparent;border-radius:var(--r-sm);font-size:12.5px;font-weight:800;cursor:pointer;margin-bottom:2px}
+  .item-nav:hover{border-color:var(--ink);background:var(--bancada)}
+  .item-nav .pt{width:13px;height:13px;border:var(--bw) solid var(--ink);border-radius:5px;flex-shrink:0}
+  .item-nav .st{margin-left:auto;font-size:10px;font-weight:900;color:var(--muted)}
+  .item-nav.falta .st{color:var(--erro)}
+
+  /* ===== rodapé ===== */
+  .rodape{position:sticky;bottom:0;margin-top:24px;display:flex;align-items:center;gap:12px;padding:14px 26px;border-top:var(--bw) solid var(--ink);background:var(--folha)}
+  .rodape .aviso{font-size:12px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .rodape .aviso .orn{width:15px;height:15px;color:var(--erro)}
+  .btn{border:var(--bw) solid var(--ink);border-radius:var(--r);padding:11px 22px;font-family:'Archivo';font-size:14px;font-weight:900;cursor:pointer;box-shadow:var(--sombra-sm);background:var(--folha)}
+  .btn:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .btn.primario{background:var(--main);color:#fff}
+  .btn.secundario{margin-left:auto}
+
+  @media(max-width:1000px){.lateral{display:none}.corpo{padding:20px 16px 0}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPO -->
+  <div class="topo">
+    <div class="trilha">Cadastros › <span>Profissionais</span></div>
+    <div class="titulo-linha">
+      <div class="selo lg"><i class="orn o3"></i></div>
+      <h1>Novo profissional</h1>
+      <div class="chip-ativo"><span class="bolinha"></span> Ativo</div>
+    </div>
+
+    <div class="barra-obrig">
+      <i class="orn o5" style="width:16px;height:16px"></i>
+      <span>Obrigatórios</span>
+      <div class="trilho"><div class="preenchido" id="trilho"></div></div>
+      <span class="n" id="contaObrig">0 de 6</span>
+    </div>
+
+    <div class="abas">
+      <div class="aba on">Dados cadastrais</div>
+      <div class="aba">Contatos / Observação</div>
+      <div class="aba">Participação</div>
+    </div>
+  </div>
+
+  <!-- CORPO -->
+  <div class="corpo">
+    <div class="coluna">
+
+      <!-- 1. ESSENCIAL — sempre aberto -->
+      <section class="bloco b-ident aberto" data-bloco="ident">
+        <div class="bl-topo">
+          <div class="selo"><i class="orn o1"></i></div>
+          <div class="bl-txt">
+            <h2>Identificação</h2>
+            <p>O mínimo para gravar o cadastro</p>
+          </div>
+          <div class="bl-dir"><span class="tag obrig">Obrigatório</span></div>
+        </div>
+        <div class="bl-corpo">
+
+          <div class="campo">
+            <label>Tipo de pessoa <span class="ast">*</span></label>
+            <div class="seg">
+              <button class="on" onclick="tipo(this,'F')">Física</button>
+              <button onclick="tipo(this,'J')">Jurídica</button>
+            </div>
+          </div>
+
+          <div class="campo">
+            <label>Nome completo <span class="ast">*</span></label>
+            <input class="entrada obrig" placeholder="Ex.: Ana Carolina Ribeiro">
+          </div>
+
+          <div class="campo">
+            <label>CPF <span class="ast">*</span></label>
+            <input class="entrada obrig" placeholder="000.000.000-00" style="max-width:260px">
+          </div>
+
+          <div class="campo">
+            <label>Nome de apresentação <span class="ast">*</span> <span class="ajuda">como aparece em orçamento e listagem</span></label>
+            <input class="entrada obrig" placeholder="Ex.: Ana Ribeiro Arquitetura">
+          </div>
+
+          <div class="campo">
+            <label>Celular <span class="ast">*</span></label>
+            <input class="entrada obrig" placeholder="(19) 90000-0000" style="max-width:260px">
+          </div>
+
+          <div class="campo">
+            <label>E-mail <span class="ast">*</span></label>
+            <input class="entrada obrig" placeholder="nome@dominio.com.br">
+          </div>
+
+          <div class="dica">
+            <i class="orn o6"></i>
+            Gravar já com estes seis. O resto entra depois, sem travar o atendimento.
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. DOCUMENTOS -->
+      <section class="bloco b-doc" data-bloco="doc">
+        <div class="bl-topo" onclick="abre(this)">
+          <div class="selo"><i class="orn o2"></i></div>
+          <div class="bl-txt">
+            <h2>Documentos e dados pessoais</h2>
+            <p>RG · Nascimento · Estado civil · Profissão · Cônjuge · PIS · CREA/CAU/CFT</p>
+          </div>
+          <div class="bl-dir"><span class="tag opc">Opcional</span><span class="contador">0/8</span>
+            <div class="seta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+        </div>
+        <div class="bl-corpo">
+          <div class="par">
+            <div class="campo"><label>RG</label><input class="entrada"></div>
+            <div class="campo medio"><label>Data de nascimento</label><input class="entrada" type="date"></div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Estado civil</label>
+              <select class="entrada"><option>Selecione…</option><option>Solteiro(a)</option><option>Casado(a)</option><option>Divorciado(a)</option><option>Viúvo(a)</option></select>
+            </div>
+            <div class="campo"><label>Profissão</label>
+              <div class="com-botao"><input class="entrada" placeholder="Arquiteto(a)"><div class="btn-lupa"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div></div>
+            </div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Nome do cônjuge</label><input class="entrada"></div>
+            <div class="campo medio"><label>Nasc. do cônjuge</label><input class="entrada" type="date"></div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>PIS / PASEP / NIS</label><input class="entrada"></div>
+            <div class="campo"><label>Registro profissional</label><input class="entrada" placeholder="CREA · CAU · CFT"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. ENDEREÇO -->
+      <section class="bloco b-end" data-bloco="end">
+        <div class="bl-topo" onclick="abre(this)">
+          <div class="selo"><i class="orn o4"></i></div>
+          <div class="bl-txt">
+            <h2>Endereço</h2>
+            <p>CEP preenche rua, bairro, cidade e UF automaticamente</p>
+          </div>
+          <div class="bl-dir"><span class="tag opc">Opcional</span><span class="contador">0/7</span>
+            <div class="seta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+        </div>
+        <div class="bl-corpo">
+          <div class="campo" style="max-width:300px"><label>CEP</label>
+            <div class="com-botao"><input class="entrada" placeholder="00000-000"><div class="btn-lupa"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div></div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Logradouro</label><input class="entrada"></div>
+            <div class="campo curto"><label>Número</label><input class="entrada"></div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Complemento</label><input class="entrada" placeholder="Apto, bloco, sala"></div>
+            <div class="campo"><label>Bairro</label><input class="entrada"></div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Cidade</label><input class="entrada"></div>
+            <div class="campo curto"><label>UF</label>
+              <select class="entrada"><option>—</option><option>SP</option><option>MG</option><option>RJ</option><option>PR</option></select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. CONTATOS EXTRAS -->
+      <section class="bloco b-cont" data-bloco="cont">
+        <div class="bl-topo" onclick="abre(this)">
+          <div class="selo"><i class="orn o5"></i></div>
+          <div class="bl-txt">
+            <h2>Outros contatos</h2>
+            <p>Telefone comercial · Residencial · Fax · Comunicadores</p>
+          </div>
+          <div class="bl-dir"><span class="tag opc">Opcional</span><span class="contador">0/6</span>
+            <div class="seta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+        </div>
+        <div class="bl-corpo">
+          <div class="par">
+            <div class="campo"><label>Telefone comercial</label><input class="entrada"></div>
+            <div class="campo"><label>Telefone residencial</label><input class="entrada"></div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Fax</label><input class="entrada"></div>
+            <div class="campo"><label>Contato secundário</label><input class="entrada"></div>
+          </div>
+          <div class="par">
+            <div class="campo medio"><label>Comunicador 1</label>
+              <select class="entrada"><option>—</option><option>WhatsApp</option><option>Telegram</option><option>Instagram</option></select>
+            </div>
+            <div class="campo"><label>Identificador</label><input class="entrada" placeholder="usuário ou número"></div>
+          </div>
+          <div class="add-linha" style="padding:0"><button class="btn-add">+ Adicionar comunicador</button></div>
+        </div>
+      </section>
+
+      <!-- 5. DADOS BANCÁRIOS -->
+      <section class="bloco b-banco" data-bloco="banco">
+        <div class="bl-topo" onclick="abre(this)">
+          <div class="selo"><i class="orn o7"></i></div>
+          <div class="bl-txt">
+            <h2>Dados bancários</h2>
+            <p>Só necessário para quem recebe comissão ou repasse</p>
+          </div>
+          <div class="bl-dir"><span class="tag opc">Opcional</span><span class="contador">0/4</span>
+            <div class="seta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+        </div>
+        <div class="bl-corpo">
+          <div class="par">
+            <div class="campo curto"><label>Nº do banco</label><input class="entrada"></div>
+            <div class="campo"><label>Nome do banco</label>
+              <div class="com-botao"><input class="entrada"><div class="btn-lupa"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div></div>
+            </div>
+          </div>
+          <div class="par">
+            <div class="campo"><label>Agência</label><input class="entrada"></div>
+            <div class="campo"><label>Conta</label><input class="entrada"></div>
+          </div>
+          <div class="dica"><i class="orn o6"></i> Endereço da agência só aparece se você marcar “preciso do endereço bancário”.</div>
+        </div>
+      </section>
+
+      <!-- 6. REDES -->
+      <section class="bloco b-social" data-bloco="social">
+        <div class="bl-topo" onclick="abre(this)">
+          <div class="selo"><i class="orn o3"></i></div>
+          <div class="bl-txt">
+            <h2>Redes sociais</h2>
+            <p>Instagram · Facebook · Site</p>
+          </div>
+          <div class="bl-dir"><span class="tag opc">Opcional</span><span class="contador">0/3</span>
+            <div class="seta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+        </div>
+        <div class="bl-corpo">
+          <div class="campo"><label>Instagram</label><input class="entrada" placeholder="@perfil"></div>
+          <div class="campo"><label>Facebook</label><input class="entrada"></div>
+          <div class="campo"><label>Site</label><input class="entrada" placeholder="https://"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- LATERAL -->
+    <aside class="lateral">
+      <div class="card-lat">
+        <h3><i class="orn o1"></i> Neste cadastro</h3>
+        <div class="lista-nav" id="navLat">
+          <div class="item-nav falta" onclick="vaiPara('ident')"><span class="pt" style="background:#B026FF"></span> Identificação <span class="st" id="st-ident">6 faltam</span></div>
+          <div class="item-nav" onclick="vaiPara('doc')"><span class="pt" style="background:#0091FF"></span> Documentos <span class="st" id="st-doc">vazio</span></div>
+          <div class="item-nav" onclick="vaiPara('end')"><span class="pt" style="background:#00E5FF"></span> Endereço <span class="st" id="st-end">vazio</span></div>
+          <div class="item-nav" onclick="vaiPara('cont')"><span class="pt" style="background:#FF6B2C"></span> Contatos <span class="st" id="st-cont">vazio</span></div>
+          <div class="item-nav" onclick="vaiPara('banco')"><span class="pt" style="background:#16A34A"></span> Bancário <span class="st" id="st-banco">vazio</span></div>
+          <div class="item-nav" onclick="vaiPara('social')"><span class="pt" style="background:#E620FF"></span> Redes <span class="st" id="st-social">vazio</span></div>
+        </div>
+      </div>
+      <div class="card-lat">
+        <h3><i class="orn o6"></i> Regra</h3>
+        <div style="padding:12px 14px;font-size:12px;font-weight:700;line-height:1.5;color:var(--muted)">
+          Campo com <b style="color:var(--erro)">*</b> trava o Gravar.<br>
+          Bloco fechado nunca esconde campo obrigatório.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- RODAPÉ -->
+  <div class="rodape">
+    <div class="aviso"><i class="orn o5"></i> <span id="avisoTxt">6 campos obrigatórios pendentes</span></div>
+    <button class="btn secundario">Cancelar</button>
+    <button class="btn primario">Gravar</button>
+  </div>
+</div>
+
+<script>
+function abre(el){ el.parentElement.classList.toggle('aberto'); }
+function tipo(btn,t){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function vaiPara(id){
+  const b=document.querySelector('[data-bloco="'+id+'"]');
+  b.classList.add('aberto');
+  b.scrollIntoView({behavior:'smooth',block:'center'});
+}
+const rotulos={doc:'doc',end:'end',cont:'cont',banco:'banco',social:'social'};
+function atualiza(){
+  // obrigatórios
+  const obr=[...document.querySelectorAll('.obrig')];
+  const ok=obr.filter(i=>i.value.trim()!=='').length;
+  document.getElementById('contaObrig').textContent=ok+' de '+obr.length;
+  document.getElementById('trilho').style.width=(ok/obr.length*100)+'%';
+  const falta=obr.length-ok;
+  document.getElementById('avisoTxt').textContent = falta? falta+' campo'+(falta>1?'s':'')+' obrigatório'+(falta>1?'s':'')+' pendente'+(falta>1?'s':'') : 'Pronto para gravar';
+  document.getElementById('st-ident').textContent = falta? falta+' faltam' : 'ok';
+  document.getElementById('navLat').firstElementChild.classList.toggle('falta',falta>0);
+  // opcionais por bloco
+  Object.keys(rotulos).forEach(k=>{
+    const bloco=document.querySelector('[data-bloco="'+k+'"]');
+    const campos=[...bloco.querySelectorAll('.entrada')];
+    const n=campos.filter(c=>c.value && c.value.trim()!=='' && !c.value.startsWith('—') && !c.value.startsWith('Selecione')).length;
+    const c=bloco.querySelector('.contador');
+    c.textContent=n+'/'+c.textContent.split('/')[1];
+    c.classList.toggle('tem',n>0);
+    document.getElementById('st-'+k).textContent = n? n+' preenchidos' : 'vazio';
+  });
+}
+document.addEventListener('input',atualiza);
+document.addEventListener('change',atualiza);
+atualiza();
+</script>
+</body>
+</html>

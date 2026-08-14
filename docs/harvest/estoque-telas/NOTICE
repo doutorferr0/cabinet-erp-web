@@ -1,0 +1,75 @@
+NOTICE — estoque-telas
+======================
+
+Derivado do desenho de estoque do InvenTree (inventree/InvenTree), commit
+`e4b23b4665810319c83ecb74e65c4ff694b0b811` (2026-08-14).
+
+    MIT License
+
+    Copyright (c) 2017 - InvenTree Developers
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+ARQUIVOS DA FONTE CONSULTADOS
+------------------------------
+    src/backend/InvenTree/stock/status_codes.py   StockStatus, StockHistoryCode
+    src/backend/InvenTree/stock/models.py         StockLocation, StockItem,
+                                                  StockItemTracking, add_stock,
+                                                  take_stock, stocktake, move,
+                                                  updateQuantity, lock_quantity
+    src/backend/InvenTree/stock/api.py            StockTrackingFilter,
+                                                  StockTrackingList
+    src/backend/InvenTree/stock/serializers.py    consulta pontual
+
+O QUE FOI COPIADO
+------------------
+Nenhuma linha de Python. O que atravessa é **vocabulário e forma de tela**:
+
+- A ideia de que motivo de movimento é ENUM CODIFICADO, agrupado por origem
+  (manual · local · documento de venda · documento de compra · cliente), e não
+  texto livre. É o `StockHistoryCode`, filtrado para o recorte do Cabinet.
+- As quatro operações de estoque como VERBOS distintos, cada um com sua
+  confirmação e sua nota: adicionar · retirar · contar · transferir
+  (`add_stock` / `take_stock` / `stocktake` / `move`).
+- O sinalizador `structural` do local — nó que só agrupa e não recebe saldo.
+- O sinalizador `external` do local — depósito que não é da empresa.
+
+`filtros-movimentacao.ts` é escrito do zero e não tem nada do InvenTree além da
+lista de motivos: a estrutura é a do `src/lib/filtro-de-consulta.ts` deste repo
+(que por sua vez é porte de sadmann7/shadcn-table, MIT — ver `NOTICE` da raiz).
+
+O QUE FOI RECUSADO (motivo medido em telas.md §5)
+--------------------------------------------------
+- **O armazenamento.** `StockItem.quantity` é saldo absoluto escrito pela
+  aplicação (`updateQuantity`), com `StockItemTracking` gravado ao lado. É a
+  forma que a ADR-009 do Cabinet proíbe, por ser a do legado Softlux.
+- **`deltas` como JSONField.** A quantidade do histórico mora dentro de um JSON,
+  não em coluna tipada — não soma, não indexa, não filtra.
+- **A árvore de locais** (`InvenTreeTree` + `pathstring`). Custo de manutenção
+  sem demanda: o legado tem 4 locais e a tabela de endereçamento estruturado
+  está com ZERO linhas.
+- **`delete_on_deplete`** — apagar a linha de estoque ao zerar, deixando o
+  histórico com `item` nulo.
+- **`max(quantity, 0)`** em `updateQuantity`, pelo mesmo motivo já registrado em
+  `docs/harvest/reserva-de-estoque/mecanica.md` §7.2.
+
+Nada disso é defeito do InvenTree no problema do InvenTree — rastrear peças
+serializadas, com BOM e ordem de montagem, num almoxarifado com hierarquia
+profunda. O Cabinet não tem serial, não tem BOM, tem 4 depósitos e uma ADR que
+diz de onde o saldo nasce.

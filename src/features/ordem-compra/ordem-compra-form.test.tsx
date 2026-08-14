@@ -10,6 +10,20 @@ describe('tela Ordem de Compra', () => {
     expect(screen.getAllByText('05/08/2025').length).toBeGreaterThan(0)
   })
 
+  // "O que estava previsto e não chegou" é a pergunta do comprador, e
+  // `dataPrevista` filtra sem ser coluna — a assimetria só corre para este lado.
+  it('filtra por data prevista, que não é coluna', async () => {
+    const { user } = renderRoute('/compras/ordens')
+    await screen.findByText('EVOLED (ATIVA COMERCIAL)')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /Data Prevista/ }))
+
+    expect(await screen.findByLabelText('Valor do filtro 1')).toHaveAttribute('type', 'date')
+  })
+
   it('abre a ordem e calcula subtotal, desconto e total', async () => {
     const { user } = renderRoute('/compras/ordens/2')
 

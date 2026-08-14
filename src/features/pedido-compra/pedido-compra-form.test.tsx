@@ -10,6 +10,39 @@ describe('tela Pedido de Compra', () => {
     expect(await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')).toBeInTheDocument()
   })
 
+  // O campo é `string[]`: sem semântica de array, o `iLike` casaria contra a
+  // lista concatenada por vírgula — separador que a tela nem mostra.
+  it('filtrar por fornecedor acha o pedido que tem ESSE entre vários', async () => {
+    const { user } = renderRoute('/compras/pedidos')
+    await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /Fornecedores/ }))
+    await user.type(await screen.findByLabelText('Valor do filtro 1'), 'fillamento')
+
+    // O pedido tem Evoled E Fillamento: procurar por um dos dois tem de achá-lo.
+    expect(await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')).toBeInTheDocument()
+  })
+
+  // §7.3: `Pedido de Venda` vazio = compra para ESTOQUE. A consulta existe.
+  it('"está vazio" no pedido de venda separa a compra para estoque', async () => {
+    const { user } = renderRoute('/compras/pedidos')
+    await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /Pedido de Venda/ }))
+    await user.selectOptions(screen.getByLabelText('Operador do filtro 1'), 'isEmpty')
+
+    // Operador que dispensa valor: some o campo, e a consulta sai assim mesmo.
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Valor do filtro 1')).not.toBeInTheDocument()
+    })
+  })
+
   it('abre pedido com múltiplos fornecedores e permite incluir outro', async () => {
     const { user } = renderRoute('/compras/pedidos/13')
 

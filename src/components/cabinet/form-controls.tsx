@@ -284,6 +284,24 @@ export function SelectIdField({
 }
 
 /**
+ * O NOME que o registro trouxe para um campo de lookup, lido do campo irmão.
+ *
+ * Existe porque o rótulo de reserva é dado do REGISTRO, e quem o tem é o
+ * formulário — não a tela que compõe os campos. Passá-lo por propriedade
+ * obrigaria cada aba a receber o registro inteiro só para repassar três
+ * strings, e as abas do Produto são componentes soltos, sem ele em escopo.
+ *
+ * `undefined` quando ninguém declarou o irmão: o campo é de um lookup que não
+ * guarda nome ao lado, e aí o rótulo sai da própria lista.
+ */
+function useRotuloIrmao(campo?: string): string | null | undefined {
+  const form = useFormContext()
+  if (!campo) return undefined
+  const valor = form.watch(campo)
+  return typeof valor === 'string' ? valor : undefined
+}
+
+/**
  * `[combo]` puro cujas opções são um **kind do servidor** (`/api/catalog-lookups`).
  *
  * Mesma forma do `SelectField` — a transcrição distingue `[combo]` de
@@ -307,15 +325,30 @@ export function LookupSelectField({
   label,
   kind,
   className,
-}: BaseProps & { kind: LookupKind }) {
+  rotuloDe,
+}: BaseProps & { kind: LookupKind; rotuloDe?: string }) {
   const { options, truncada, carregando, erro } = useLookupOptions(kind)
+  const rotulo = useRotuloIrmao(rotuloDe)
 
   return (
     <FormField
       name={name}
       render={({ field }) => {
+        // O valor é o ID (issue #94). O `<option>` mostra o nome.
         const atual = typeof field.value === 'string' ? field.value : ''
-        const lista = atual && !options.includes(atual) ? [atual, ...options] : options
+        // Item fora da lista carregada (desativado, ou lista cortada no teto)
+        // continua exibível: ele entra como opção própria, com o rótulo que o
+        // registro trouxe. Sem isto o campo abriria em branco e gravar de novo
+        // apagaria um valor que ninguém pediu para apagar.
+        const foraDaLista = atual && !options.some((o) => o.id === atual)
+        // Sem rótulo de reserva, o item fora da lista aparece como AUSÊNCIA DE
+        // NOME — nunca como o id cru. Imprimir `lk-SETOR-1` na tela seria pior
+        // que não imprimir nada: o operador leria uma chave achando que é o
+        // valor. O que importa é que a opção EXISTA, para o valor não se perder
+        // ao gravar.
+        const lista = foraDaLista
+          ? [{ id: atual, nome: rotulo ?? '(item fora da lista)' }, ...options]
+          : options
 
         return (
           <FormItem className={className}>
@@ -335,8 +368,8 @@ export function LookupSelectField({
                       : 'Selecione…'}
                 </option>
                 {lista.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
+                  <option key={o.id} value={o.id}>
+                    {o.nome}
                   </option>
                 ))}
               </select>
@@ -356,14 +389,22 @@ export function LookupSelectField({
   )
 }
 
-/** `[combo +...]`: LookupCombo ligado ao form. */
+/**
+ * `[combo +...]`: LookupCombo ligado ao form.
+ *
+ * `name` aponta para o campo do ID (issue #94). `rotuloDe` aponta para o campo
+ * IRMÃO que guarda o nome — só usado quando o id não está na lista carregada,
+ * para o campo não abrir em branco num item desativado.
+ */
 export function LookupField({
   name,
   label,
   kind,
   className,
   hideQuickAdd,
-}: BaseProps & { kind: LookupKind; hideQuickAdd?: boolean }) {
+  rotuloDe,
+}: BaseProps & { kind: LookupKind; hideQuickAdd?: boolean; rotuloDe?: string }) {
+  const rotulo = useRotuloIrmao(rotuloDe)
   return (
     <FormField
       name={name}
@@ -375,6 +416,7 @@ export function LookupField({
               kind={kind}
               value={field.value ?? null}
               onChange={field.onChange}
+              rotulo={rotulo}
               hideQuickAdd={hideQuickAdd}
             />
           </FormControl>

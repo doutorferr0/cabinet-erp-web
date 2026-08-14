@@ -1,7 +1,7 @@
-import type { ProblemDetails } from '@/api/gerado'
+import type { ListFilter, ProblemDetails } from '@/api/gerado'
 import { apiFetch } from '@/api/http'
 import type { ListProvider } from '@/data/provider'
-import { filtrosValidos } from '@/lib/filtro-de-consulta'
+import { dispensaValor, filtrosValidos } from '@/lib/filtro-de-consulta'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 
 /**
@@ -112,28 +112,64 @@ export interface ApiListConfig {
    * Serve para recurso discriminado; some quando o recurso tem rota própria.
    */
   fixa?: Record<string, string | number | boolean>
+  /**
+   * Whitelist de `field` do filtro estruturado — a MESMA que o contrato declara
+   * para este recurso.
+   *
+   * **Ausente = o recurso não publicou o parâmetro `filters`.** Nem todo caminho
+   * de listagem tem: `catalog-lookups` alimenta combo e `stock-movements` nem
+   * busca por texto tem. Filtro num recurso sem o parâmetro falha aqui em vez de
+   * sair como requisição que o servidor descarta.
+   */
+  filtraveis?: readonly string[]
 }
 
 /**
- * O filtro estruturado da listagem NÃO existe no contrato v1.
+ * Filtros da tela → parâmetros `filters`/`joinOperator` do contrato.
  *
- * `contracts/openapi-v1.json` publica `q`, `sortBy`, `sortDesc`, `page` e
- * `pageSize` — não há parâmetro por onde `campo + operador + valor` viaje. Falta
- * de caminho, não escolha: o desenho do parâmetro é decisão do contrato e sai por
- * PR próprio (ver `docs/integracao.md`).
+ * **O que NÃO viaja:** `filtroId` (chave de linha do React) e `variante` (qual
+ * controle desenhar). As duas são decisão de tela; mandá-las faria o servidor
+ * receber UI, e um dia depender dela.
  *
- * **Recusa em voz alta em vez de ignorar.** A alternativa — mandar a requisição
- * sem os filtros — devolveria a lista COMPLETA com a tela mostrando três filtros
- * aplicados: dado certo do servidor respondendo a pergunta errada, que é a pior
- * forma de errar numa listagem. A tela do recurso HTTP simplesmente não declara
- * campos filtráveis; se alguém declarar, quebra aqui, na hora, em vez de mentir
- * na frente do operador.
+ * **A whitelist é barrada AQUI, e não no 400.** É a mesma escolha já feita para
+ * `page` e `pageSize` em `queryDaTabela`: o contrato manda o servidor recusar
+ * campo fora da lista, e mandar requisição sabidamente inválida faria o defeito
+ * de quem chamou chegar à tela com cara de erro do servidor.
+ *
+ * `joinOperator` some quando é `and`: é o padrão do contrato, e mandá-lo sujaria
+ * a chave de cache da consulta sem mudar resposta — a mesma regra do campo vazio.
  */
-export function recusarFiltroSemContrato(state: TableQueryState, url: string): void {
-  if (filtrosValidos(state.filtros ?? []).length === 0) return
-  throw new Error(
-    `Filtro estruturado não existe no contrato de ${url}: a listagem HTTP conhece q/sortBy/page/pageSize. Remova os campos filtráveis desta tela ou publique o parâmetro no contrato antes.`,
-  )
+export function filtrosDaTabela(
+  state: TableQueryState,
+  { url, filtraveis }: { url: string; filtraveis?: readonly string[] },
+): Record<string, string> {
+  const validos = filtrosValidos(state.filtros ?? [])
+  if (validos.length === 0) return {}
+
+  if (!filtraveis || filtraveis.length === 0) {
+    throw new Error(
+      `Filtro estruturado não existe no contrato de ${url}: o recurso não publica o parâmetro \`filters\`. Remova os campos filtráveis desta tela ou publique o parâmetro no contrato antes.`,
+    )
+  }
+
+  const fora = validos.map((f) => f.id).filter((id) => !filtraveis.includes(id))
+  if (fora.length > 0) {
+    throw new Error(
+      `Campo não filtrável em ${url}: ${fora.join(', ')}. A whitelist do contrato é ${filtraveis.join(', ')} — fora dela o servidor responde 400.`,
+    )
+  }
+
+  const itens: ListFilter[] = validos.map((filtro) => ({
+    field: filtro.id,
+    operator: filtro.operador,
+    // `isEmpty`/`isNotEmpty` são a frase inteira: mandar `value: ''` junto
+    // faria o servidor ter de decidir se o vazio é o valor ou a ausência dele.
+    ...(dispensaValor(filtro.operador) ? {} : { value: filtro.valor }),
+  }))
+
+  const query: Record<string, string> = { filters: JSON.stringify(itens) }
+  if ((state.juncao ?? 'and') === 'or') query.joinOperator = 'or'
+  return query
 }
 
 /**
@@ -143,13 +179,19 @@ export function recusarFiltroSemContrato(state: TableQueryState, url: string): v
  * artefato do mock. Aqui a latência é a real, e fingir outra esconderia o
  * comportamento que a tela vai ter em produção.
  */
-export function createApiListProvider<T>({ url, fixa }: ApiListConfig): ListProvider<T> {
+export function createApiListProvider<T>({
+  url,
+  fixa,
+  filtraveis,
+}: ApiListConfig): ListProvider<T> {
   return {
     list: async (state: TableQueryState): Promise<PagedResult<T>> => {
-      recusarFiltroSemContrato(state, url)
-
       const resposta = await apiFetch<RespostaDaApi>(
-        urlComQuery(url, { ...fixa, ...queryDaTabela(state) }),
+        urlComQuery(url, {
+          ...fixa,
+          ...queryDaTabela(state),
+          ...filtrosDaTabela(state, { url, ...(filtraveis ? { filtraveis } : {}) }),
+        }),
         { method: 'GET' },
       )
 

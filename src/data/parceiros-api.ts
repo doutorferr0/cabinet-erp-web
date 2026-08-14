@@ -65,9 +65,20 @@ export const ORDENAVEIS: readonly string[] = [
   'active',
 ]
 
+/**
+ * Whitelist de `field` do filtro estruturado — hoje a MESMA do `sortBy`, como o
+ * contrato declara na descrição do parâmetro `filters`. Alias, não cópia: divergir
+ * passa a ser edição deliberada, não duas listas iguais fora de sincronia.
+ */
+export const FILTRAVEIS: readonly string[] = ORDENAVEIS
+
 /** Listagem de um papel. `fixa` carrega o `role` em toda consulta da tabela. */
 export function parceirosDoPapel(role: PapelDeParceiro): ListProvider<PartnerDto> {
-  return createApiListProvider<PartnerDto>({ url: URL_PARCEIROS, fixa: { role } })
+  return createApiListProvider<PartnerDto>({
+    url: URL_PARCEIROS,
+    fixa: { role },
+    filtraveis: FILTRAVEIS,
+  })
 }
 
 /**

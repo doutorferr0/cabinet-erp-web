@@ -74,6 +74,16 @@ export const URL_PRODUTOS = '/api/products'
 export const ORDENAVEIS: readonly string[] = ['code', 'description', 'active']
 
 /**
+ * Whitelist de `field` do filtro estruturado — hoje a MESMA do `sortBy`, e o
+ * contrato diz isso na descrição do parâmetro `filters`.
+ *
+ * Aliás dele, não cópia: se um dia divergirem (filtrar por `brandName` sem
+ * ordenar por ele), a divergência é uma edição deliberada aqui, não um esquecimento
+ * de manter duas listas iguais em sincronia.
+ */
+export const FILTRAVEIS: readonly string[] = ORDENAVEIS
+
+/**
  * Variante do contrato → linha da grade §6.3.
  *
  * `indice` e `tipoValor` ficam vazios: não existem no `ProductVariantDto`, e
@@ -154,7 +164,7 @@ export interface ProdutosProvider extends ListProvider<ProductDto> {
 }
 
 export const produtosApi: ProdutosProvider = {
-  ...createApiListProvider<ProductDto>({ url: URL_PRODUTOS }),
+  ...createApiListProvider<ProductDto>({ url: URL_PRODUTOS, filtraveis: FILTRAVEIS }),
 
   async get(id) {
     const dto = itemOuNulo<ProductDetailDto>(await getProduct(id), `o produto ${id}`)

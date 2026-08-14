@@ -56,6 +56,36 @@ export class ErroDaApi extends Error {
     this.detail = detail
     this.corpo = corpo
   }
+
+  /**
+   * `title` do problem+json — o rótulo ESTÁVEL do tipo de erro.
+   *
+   * Diferente do `message`, que é a frase que o CHAMADOR escolheu ("Falha ao
+   * gravar o produto."): o `title` é do servidor e não muda de uma ocorrência
+   * para outra. A tela mostra os dois em papéis diferentes — o do chamador diz
+   * o que se estava fazendo, o do servidor diz o que houve.
+   */
+  get titulo(): string | undefined {
+    const corpo = this.corpo as { title?: unknown } | null | undefined
+    return typeof corpo?.title === 'string' ? corpo.title : undefined
+  }
+
+  /**
+   * Validação por campo (`fields[]` do problem+json), quando o servidor a manda.
+   *
+   * Sai daqui e não do `corpo` cru porque o consumidor é o formulário, que
+   * precisa casar `path` com o nome do controle. Ausente ou vazio = o erro não
+   * é de campo, e a tela mostra só a frase.
+   */
+  get campos(): { path: string; message: string }[] {
+    const corpo = this.corpo as { fields?: unknown } | null | undefined
+    if (!Array.isArray(corpo?.fields)) return []
+    return corpo.fields.filter(
+      (campo): campo is { path: string; message: string } =>
+        typeof (campo as { path?: unknown })?.path === 'string' &&
+        typeof (campo as { message?: unknown })?.message === 'string',
+    )
+  }
 }
 
 /**

@@ -90,7 +90,7 @@ function MenubarTrigger({
           // mesmo sinal da aba ativa e do item de menu ativo.
           'aria-expanded:bg-primary aria-expanded:text-primary-foreground',
           'focus-visible:focus-ring',
-          'data-disabled:pointer-events-none data-disabled:opacity-50',
+          'desabilitado data-disabled:pointer-events-none',
           className,
         ),
       )}

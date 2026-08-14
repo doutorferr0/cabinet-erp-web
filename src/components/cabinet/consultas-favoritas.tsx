@@ -122,9 +122,7 @@ export function ConsultasFavoritas({
                       {/* Preenchida = é o padrão. O contorno sozinho seria só um
                           enfeite ao lado do nome. */}
                       <Star
-                        className={
-                          favorito.padrao ? 'size-4 fill-current text-modulo' : 'size-4 opacity-40'
-                        }
+                        className={favorito.padrao ? 'size-4 fill-current text-modulo' : 'size-4'}
                       />
                     </Button>
                     <Button

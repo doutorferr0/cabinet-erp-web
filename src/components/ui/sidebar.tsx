@@ -447,7 +447,7 @@ const sidebarMenuButtonVariants = cva(
   //
   // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
   // sem ele, o par cai no padrão do `:root` e nada quebra.
-  'peer/menu-button group/menu-button lift-flat rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button group/menu-button lift-flat desabilitado rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none aria-disabled:pointer-events-none data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {
@@ -662,7 +662,7 @@ function SidebarMenuSubButton({
       // apagada, pula no hover, e ATIVO é violeta cheio com traço de Tinta —
       // do staging `neobrutalism-aria`, com `outline-primary` trocado pelo
       // nosso anel amarelo e `shadow-md` pela escada quente.
-      'lift-flat flex h-7 min-w-0 -translate-x-px cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-border data-active:border-l-foreground data-active:bg-primary data-active:font-bold data-active:text-primary-foreground data-active:shadow-el2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+      'lift-flat desabilitado flex h-7 min-w-0 -translate-x-px cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] px-2 text-sidebar-foreground outline-hidden group-data-[collapsible=icon]:hidden hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none aria-disabled:pointer-events-none data-[size=md]:text-sm data-[size=sm]:text-xs data-active:border-border data-active:border-l-foreground data-active:bg-primary data-active:font-bold data-active:text-primary-foreground data-active:shadow-el2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
       className,
     ),
   }

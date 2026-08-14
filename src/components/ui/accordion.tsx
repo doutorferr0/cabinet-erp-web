@@ -100,7 +100,7 @@ function AccordionTrigger({
             // de longe, correndo o olho por uma pilha de seções.
             'group-data-[expanded]/accordion-item:bg-neutral',
             'focus-visible:focus-ring-inset',
-            'data-disabled:pointer-events-none data-disabled:opacity-50',
+            'desabilitado data-disabled:pointer-events-none',
             className,
           ),
         )}

@@ -70,7 +70,7 @@ export function LookupCombo({
           )}
         >
           <span className="truncate">{value ?? `Selecione ${label.toLowerCase()}…`}</span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
         </Button>
         <Popover className="w-(--trigger-width) p-0">
           <Command>

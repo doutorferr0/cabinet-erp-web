@@ -20,6 +20,9 @@ function RadioGroup({ className, ...props }: RadioGroupProps) {
 /**
  * Opção exclusiva (○/●). O rótulo é `children` — a RAC associa sozinha.
  * Círculo é a única exceção ao canto reto: ● é vocabulário, não decoração.
+ *
+ * Desabilitado (§Desabilitado): apaga o CÍRCULO (`marca-desabilitada`), nunca o
+ * rótulo — e o ponto de dentro fica, porque ele é a escolha, não o estado.
  */
 function RadioGroupItem({ className, children, ...props }: RadioProps) {
   return (
@@ -27,7 +30,7 @@ function RadioGroupItem({ className, children, ...props }: RadioProps) {
       data-slot="radio-group-item"
       className={composeRenderProps(className, (className) =>
         cn(
-          'group/radio flex items-center gap-2 text-sm outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
+          'group/radio flex items-center gap-2 text-sm outline-none data-[disabled]:cursor-not-allowed',
           className,
         ),
       )}
@@ -37,7 +40,7 @@ function RadioGroupItem({ className, children, ...props }: RadioProps) {
         <>
           <span
             data-slot="radio-group-indicator"
-            className="relative flex size-4 shrink-0 items-center justify-center rounded-full border-2 border-input bg-card transition-colors group-data-focus-visible/radio:focus-ring group-data-selected/radio:border-primary"
+            className="marca-desabilitada relative flex size-4 shrink-0 items-center justify-center rounded-full border-2 border-input bg-card transition-colors group-data-focus-visible/radio:focus-ring group-data-selected/radio:border-primary"
           >
             {isSelected && <span className="size-2 rounded-full bg-primary" />}
           </span>

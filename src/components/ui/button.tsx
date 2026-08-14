@@ -25,15 +25,20 @@ const buttonVariants = cva(
   // ponteiro do texto morto ao lado. É a afirmação mais barata de "isto
   // responde ao clique", e é o que o operador confere sem pensar antes de
   // mirar. (Trazido da referência do neobrutalism.dev; a pele continua nossa.)
-  // `disabled:cursor-not-allowed` no lugar de `disabled:pointer-events-none`
-  // (staging `neobrutalism-aria`), e a troca conserta uma armadilha: com
+  // A `desabilitado` (index.css) traz o `cursor: not-allowed` e NÃO usa
+  // `pointer-events: none` — a troca conserta uma armadilha: com
   // `pointer-events: none` o elemento não recebe evento de mouse NENHUM, e o
   // browser deixa de mostrar o `title` nativo. A barra de ações da DataTable
   // promete exatamente isso — "Motivo, no `title` do botão. Obrigatório na
   // prática quando `disabled`: botão morto e mudo faz o operador achar que é
   // defeito". A promessa não teria como ser cumprida. Não clicar continua
   // garantido pelo atributo `disabled`, que a RAC escreve de verdade.
-  'group/button inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:text-text-disabled [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+  //
+  // O que a `desabilitado` substituiu: `disabled:opacity-50
+  // disabled:text-text-disabled`. Esta linha é a origem do defeito que o user
+  // apontou — `Alterar`, `Consul.` e `Excluir` desabilitados sumiam na folha
+  // clara. Agora ícone e rótulo ficam na tinta do tema e quem apaga é o fundo.
+  'group/button desabilitado inline-flex shrink-0 cursor-pointer rounded-control items-center justify-center gap-1.5 whitespace-nowrap border-2 text-sm font-semibold outline-none select-none focus-visible:focus-ring [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
   {
     variants: {
       variant: {

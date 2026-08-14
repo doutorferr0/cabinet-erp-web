@@ -40,11 +40,14 @@ export function TelaDeDocumento<T>({
   children,
 }: TelaDeDocumentoProps<T>) {
   const isNovo = idParam === 'novo'
-  const id = Number(idParam)
 
   const query = useQuery({
     queryKey: [queryKeyBase, idParam],
-    queryFn: () => (isNovo ? provider.empty(Date.now() % 100000) : provider.get(id, 0)),
+    // O `idParam` vai CRU. Quem converte é o provider, que conhece a forma do
+    // próprio id — o esqueleto fazia `Number(idParam)` e, no primeiro recurso
+    // HTTP a passar por aqui, isso viraria `NaN` e "não encontrado" para um
+    // documento que existe.
+    queryFn: () => (isNovo ? provider.empty() : provider.get(idParam, 0)),
   })
 
   if (query.isPending) {

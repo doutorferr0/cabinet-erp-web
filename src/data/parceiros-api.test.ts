@@ -135,6 +135,9 @@ describe('escrita', () => {
         branchNumber: '1234',
         accountNumber: '56789-0',
       },
+      // Hierarquia pai/filho (#91): nenhuma das três telas tem campo para ela,
+      // então ela viaja de volta pela mesma regra do `code` e do `registration`.
+      parentId: null,
     })
   })
 
@@ -343,6 +346,10 @@ describe('desativação (o Excluir da listagem)', () => {
       // Desativar não é apagar cadastro: o que a linha traz volta como veio.
       registration: linha.registration ?? null,
       payoutBankInfo: linha.payoutBankInfo ?? null,
+      // Inclusive a hierarquia (#91): o `Excluir` da listagem é um `PUT`
+      // montado da LINHA, e desativar um arquiteto não pode desligá-lo do
+      // escritório — quem reativar depois encontraria o vínculo perdido.
+      parentId: linha.parentId ?? null,
     })
   })
 
@@ -416,7 +423,11 @@ describe('whitelist de ordenação', () => {
   // Espelha `PartnerEndpoints.Ordenaveis` do backend. Coluna chaveada fora desta
   // lista responde 400 ao clicar no cabeçalho — `paymentTerms`, `email` e
   // `registrationActive` estão de fora de propósito.
+  //
+  // `parentId` entrou em 2026-08-14 com a hierarquia pai/filho (#91): ordenar
+  // por uuid não serve a ninguém, mas a whitelist do contrato é UMA só para
+  // `sortBy` e `filters`, e é como `filters` que a tela do pai pede os filhos.
   it('é a mesma lista que o backend aceita', () => {
-    expect(ORDENAVEIS).toEqual(['code', 'legalName', 'tradeName', 'document', 'active'])
+    expect(ORDENAVEIS).toEqual(['code', 'legalName', 'tradeName', 'document', 'active', 'parentId'])
   })
 })

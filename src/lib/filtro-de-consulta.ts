@@ -89,6 +89,46 @@ export interface CampoFiltravel {
   placeholder?: string
   /** Ícone do lucide na linha do filtro e no chip — ação, não shape brutalist. */
   icon?: LucideIcon
+  /**
+   * O que o operador DIGITA → o que o dado GUARDA, aplicado só na saída.
+   *
+   * Existe porque as duas coisas divergem de propósito em parte do sistema:
+   * CPF/CNPJ trafega sem máscara e se digita com ela (convenção do CLAUDE.md), e
+   * `12.345.678/0001-90` procurado como está não casa com nada. Sem isto o filtro
+   * responderia "nenhum registro" para um cadastro que existe — e o operador
+   * conferiria o CNPJ dígito a dígito procurando o erro dele.
+   *
+   * **Só o valor que VIAJA muda.** O campo continua mostrando o que foi digitado,
+   * como a busca já faz: normalizar o que está na tela apagaria a máscara embaixo
+   * do cursor no meio da digitação.
+   */
+  normalizar?: (valor: string) => string
+}
+
+/** Digitação com máscara → o dígito puro que o dado guarda (CPF/CNPJ, CEP, telefone). */
+export function somenteDigitos(valor: string): string {
+  return valor.replace(/\D/g, '')
+}
+
+/**
+ * Aplica a normalização de cada campo aos filtros que vão sair.
+ *
+ * Fica aqui, e não no controle, porque a distinção é entre o que se DIGITA e o
+ * que se CONSULTA — a mesma fronteira em que `filtrosValidos` decide o que já é
+ * frase completa.
+ */
+export function filtrosNormalizados(
+  filtros: readonly FiltroDaTabela[],
+  campos: readonly CampoFiltravel[],
+): FiltroDaTabela[] {
+  return filtros.map((filtro) => {
+    const normalizar = campos.find((campo) => campo.id === filtro.id)?.normalizar
+    if (!normalizar) return filtro
+    return {
+      ...filtro,
+      valor: Array.isArray(filtro.valor) ? filtro.valor.map(normalizar) : normalizar(filtro.valor),
+    }
+  })
 }
 
 export interface FiltroDaTabela {

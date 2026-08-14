@@ -14,6 +14,40 @@ describe('tela Orçamento', () => {
     expect(screen.getByRole('button', { name: 'Margem de Lucro' })).toBeInTheDocument()
   })
 
+  // "Os orçamentos de agosto", "o que vence esta semana": é a consulta que uma
+  // listagem de documento pede antes de qualquer outra, e era a que faltava.
+  it('filtro por período de emissão estreita a listagem', async () => {
+    const { user } = renderRoute('/vendas/orcamentos')
+    await screen.findByText('ANDRÉ BATALHA')
+    expect(screen.getByText('17 registros')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /Data Emissão/ }))
+    await user.selectOptions(screen.getByLabelText('Operador do filtro 1'), 'isBetween')
+
+    // Faixa FECHADA: 01/08 a 02/08 traz os dois dias inteiros (2 + 3 linhas).
+    await user.type(await screen.findByLabelText('Valor do filtro 1 — de'), '2025-08-01')
+    await user.type(screen.getByLabelText('Valor do filtro 1 — até'), '2025-08-02')
+
+    expect(await screen.findByText('5 registros')).toBeInTheDocument()
+  })
+
+  it('o campo de data é o input nativo — o calendário vem do sistema', async () => {
+    const { user } = renderRoute('/vendas/orcamentos')
+    await screen.findByText('ANDRÉ BATALHA')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /Data Validade/ }))
+
+    // `type="date"` é o que dispensa a dependência de calendário e mantém o
+    // dado em ISO, que é a convenção do repo.
+    expect(await screen.findByLabelText('Valor do filtro 1')).toHaveAttribute('type', 'date')
+  })
+
   it('abre registro existente com os itens e o total calculado', async () => {
     renderRoute('/vendas/orcamentos/2')
 

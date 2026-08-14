@@ -28,6 +28,12 @@ Em `autoform/` o segundo arquivo se chama `avaliacao.md`: o veredito é **não i
 integração para algo que não se integra seria nota vazia. O que ela tem no lugar é a medição que
 sustenta o veredito, mais o caminho alternativo — esse, sim, com passo concreto.
 
+`estoque-telas/` segue a mesma forma, para uma tela que **nunca foi capturada**: `telas.md` marca
+a origem de CADA campo (`[T]` transcrição · `[L]` banco do legado · `[S]` schema novo · `[I]`
+InvenTree · `[?]` sem fonte) e manda o que sobrou sem origem para o `integracao.md` como pergunta
+ao user. `vocabulario-de-movimento.md` propõe o domínio de `reason`/`source_kind`, hoje `varchar`
+livre no schema; `filtros-movimentacao.ts` é a declaração staged dos filtros da listagem.
+
 `reserva-de-estoque/` tem os três arquivos e mais dois, porque a colheita ali é de MECÂNICA, não
 de componente: `mecanica.md` (a espec — regra por regra, com o que foi recusado da fonte e por
 quê), `proposta-schema.md` (o texto pronto para `gera-cabinet-schema.py`, **não aplicado**) e
@@ -46,6 +52,7 @@ teste, quando alguém decidir integrar.
 | [`auditoria/`](auditoria/) | [supabase/supa_audit](https://github.com/supabase/supa_audit) | Apache-2.0 | **reescrito**, não copiado — `tenant_id` e RLS mudam a forma da tabela, não só o conteúdo |
 | [`autoform/`](autoform/) | [vantezzen/autoform](https://github.com/vantezzen/autoform) | MIT | **rejeitado como motor de formulário de cadastro** — motivo medido em `autoform/avaliacao.md` |
 | [`reserva-de-estoque/`](reserva-de-estoque/) | [saleor/saleor](https://github.com/saleor/saleor) | BSD-3 | **colher a fórmula e a trava, recusar a desnormalização** — o alocado do Saleor mora em dois lugares e tem tarefa de reparo |
+| [`estoque-telas/`](estoque-telas/) | [inventree/InvenTree](https://github.com/inventree/InvenTree) | MIT | **colher vocabulário e tela, recusar o modelo** — o saldo do InvenTree é absoluto escrito pela aplicação, que é a forma que a ADR-009 proíbe |
 
 ## O que esta pasta NÃO fez
 

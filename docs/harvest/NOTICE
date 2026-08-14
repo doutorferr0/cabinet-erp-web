@@ -47,3 +47,15 @@ allocation (fórmula do disponível, os dois níveis de reserva, a ordem de
 travamento); a espec cita nomes de função e trechos curtos para sustentar
 afirmação verificável. O texto integral da licença e a lista de arquivos
 consultados estão em reserva-de-estoque/NOTICE.
+
+-----------------------------------------------------------------------
+estoque-telas/  —  inventree/InvenTree
+-----------------------------------------------------------------------
+MIT License
+Copyright (c) 2017 - InvenTree Developers
+https://github.com/inventree/InvenTree
+
+Nenhum código do InvenTree foi copiado. O que atravessa é vocabulário
+(motivo de movimento como enum agrupado por origem) e forma de tela (as
+quatro operações de estoque como verbos distintos). O texto integral da
+licença e a lista de arquivos consultados estão em estoque-telas/NOTICE.

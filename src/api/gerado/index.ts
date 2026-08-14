@@ -35,7 +35,6 @@ import type {
   ListQuotesParams,
   ListStockMovementsParams,
   ListTasksParams,
-  LoginFalhou,
   LoginOk,
   LoginRequest,
   PagedResultOfCatalogLookupDto,
@@ -882,7 +881,7 @@ export type authLoginResponse200 = {
 }
 
 export type authLoginResponse401 = {
-  data: LoginFalhou
+  data: ProblemDetails
   status: 401
 }
 
@@ -955,7 +954,7 @@ export type authChangePasswordResponse204 = {
 }
 
 export type authChangePasswordResponse400 = {
-  data: LoginFalhou
+  data: ProblemDetails
   status: 400
 }
 
@@ -1061,7 +1060,7 @@ export type authSetActiveTenantResponse204 = {
 }
 
 export type authSetActiveTenantResponse400 = {
-  data: LoginFalhou
+  data: ProblemDetails
   status: 400
 }
 

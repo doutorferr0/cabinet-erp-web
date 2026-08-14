@@ -1,6 +1,7 @@
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { ErroDaApi } from '@/data/api-provider'
 import { createMockListProvider, normalize } from '@/data/provider'
+import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -386,5 +387,73 @@ describe('VitraDataTable', () => {
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
     expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
+  })
+})
+
+describe('VitraDataTable — filtro estruturado', () => {
+  const camposFiltraveis: CampoFiltravel[] = [{ id: 'marca', rotulo: 'Marca', variante: 'text' }]
+
+  function setupComFiltro() {
+    return renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-filtro']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        actions={[{ id: 'filtro', label: 'Filtro' }]}
+        filtros={camposFiltraveis}
+      />,
+    )
+  }
+
+  it('o filtro OCUPA o lugar do botão Filtro da barra, não soma um botão', async () => {
+    setupComFiltro()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    // Um só caminho para filtrar: o gatilho é o mesmo botão da barra padrão.
+    expect(screen.getAllByRole('button', { name: /^Filtro/ })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Filtro — nenhum aplicado' })).toBeInTheDocument()
+  })
+
+  it('sem campos filtráveis a barra segue com o botão Filtro de sempre', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-sem-filtro']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        actions={[{ id: 'filtro', label: 'Filtro' }]}
+      />,
+    )
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    expect(screen.getByRole('button', { name: 'Filtro' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /nenhum aplicado/ })).not.toBeInTheDocument()
+  })
+
+  it('o filtro chega ao provider e estreita a listagem', async () => {
+    const { user } = setupComFiltro()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(screen.getByText('45 registros')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.type(await screen.findByLabelText('Valor do filtro 1'), 'stella')
+
+    // Debounce de 300ms, como o da busca: a consulta sai com a frase pronta.
+    // 12 marcas cíclicas sobre 44 linhas geradas — STELLA cai em 4 delas.
+    expect(await screen.findByText('4 registros')).toBeInTheDocument()
+    expect(screen.getAllByText('STELLA')).toHaveLength(4)
+  })
+
+  it('filtro que não acha nada NÃO diz "ainda não há nada cadastrado"', async () => {
+    const { user } = setupComFiltro()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.type(await screen.findByLabelText('Valor do filtro 1'), 'marca-que-nao-existe')
+
+    // Mandar cadastrar registro que existe e está fora do filtro é o erro que
+    // faz o operador duplicar cadastro.
+    expect(await screen.findByText(/Nenhum registro atende aos filtros/i)).toBeInTheDocument()
   })
 })

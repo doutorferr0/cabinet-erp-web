@@ -3,6 +3,7 @@ import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao
 import type { DataTableAction } from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { mensagemDoErro } from '@/lib/erros'
+import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import type { TableFetcher } from '@/lib/table-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
@@ -30,6 +31,13 @@ export interface TelaDeListagemProps<T> {
   desativacao?: DesativacaoProps<T>
   /** Conteúdo extra abaixo da tabela (os botões de rodapé do Orçamento). */
   rodape?: ReactNode
+  /**
+   * Campos filtráveis desta listagem — repassados à `VitraDataTable`, que troca
+   * o botão `Filtro` da barra pelo filtro estruturado. Sem eles, a barra segue
+   * como estava.
+   */
+  filtros?: readonly CampoFiltravel[]
+  modoDeFiltro?: 'lista' | 'menu'
 }
 
 /**
@@ -48,11 +56,20 @@ export function TelaDeListagem<T>({
   actions,
   desativacao,
   rodape,
+  filtros,
+  modoDeFiltro,
 }: TelaDeListagemProps<T>) {
   return (
     <div className="flex flex-col gap-4">
       <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} />
-      <VitraDataTable columns={columns} queryKey={queryKey} fetcher={fetcher} actions={actions} />
+      <VitraDataTable
+        columns={columns}
+        queryKey={queryKey}
+        fetcher={fetcher}
+        actions={actions}
+        {...(filtros ? { filtros } : {})}
+        {...(modoDeFiltro ? { modoDeFiltro } : {})}
+      />
       {rodape}
       {desativacao?.registro ? (
         <ConfirmarDesativacao

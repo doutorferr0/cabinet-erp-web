@@ -420,11 +420,27 @@
           "hsl(35 20% 95%)"
         ]
       },
-      "text-disabled": {
+      "surface-disabled": {
         "role": "neutral",
-        "displayName": "Traco Desabilitado",
-        "canonical": "hsl(210 8% 74%)",
-        "purpose": "Traco e texto desabilitado #AAB2BD da paleta flat.",
+        "displayName": "Superficie Apagada",
+        "canonical": "hsl(216 10% 80%)",
+        "purpose": "Fundo do controle desabilitado. O apagamento mora aqui, nunca na tinta do conteudo.",
+        "tonalRamp": [
+          "hsl(216 10% 15%)",
+          "hsl(216 10% 26%)",
+          "hsl(216 10% 37%)",
+          "hsl(216 10% 48%)",
+          "hsl(216 10% 59%)",
+          "hsl(216 10% 70%)",
+          "hsl(216 10% 84%)",
+          "hsl(216 10% 95%)"
+        ]
+      },
+      "rule-disabled": {
+        "role": "neutral",
+        "displayName": "Traco Apagado",
+        "canonical": "hsl(210 8% 40%)",
+        "purpose": "Contorno do controle desabilitado. 3,58:1 sobre a superficie apagada.",
         "tonalRamp": [
           "hsl(210 8% 15%)",
           "hsl(210 8% 26%)",

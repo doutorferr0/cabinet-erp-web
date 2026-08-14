@@ -254,17 +254,66 @@ describe('AppShell', () => {
   // teste em duas rotas sem módulo em comum é o que prova isso, em vez de só
   // conferir numa tela só.
   describe('appbar global', () => {
-    it('aparece em toda rota, com busca, engrenagem desabilitada e sino', async () => {
+    it('aparece em toda rota, com paleta, engrenagem desabilitada e sino', async () => {
       for (const rota of ['/', '/cadastros/clientes']) {
         const { unmount } = setup(rota)
         await waitFor(() => {
           expect(document.querySelector('[data-slot="appbar"]')).toBeInTheDocument()
         })
-        expect(screen.getByLabelText('Pesquisar')).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: 'Abrir a paleta de comandos' }),
+        ).toBeInTheDocument()
         expect(screen.getByRole('button', { name: 'Configurações' })).toBeDisabled()
         expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
         unmount()
       }
+    })
+
+    // O campo de busca da appbar era CHROME: aceitava digitação e não fazia
+    // nada. Virou o caminho por CLIQUE da paleta — a decisão de interface do
+    // CLAUDE.md não admite função que só exista por tecla.
+    it('o campo de busca abre a PALETA, e não é mais um input mudo', async () => {
+      setup()
+      const user = userEvent.setup()
+      const gatilho = await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+
+      // Botão com cara de campo: input abriria diálogo ao digitar, mentindo
+      // sobre o que a tecla vai fazer.
+      expect(gatilho.tagName).toBe('BUTTON')
+      expect(gatilho).toHaveAttribute('aria-keyshortcuts', 'Control+K')
+
+      await user.click(gatilho)
+
+      expect(
+        await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/),
+      ).toBeInTheDocument()
+    })
+
+    it('Ctrl+K abre a paleta de qualquer lugar — conveniência, não requisito', async () => {
+      setup()
+      const user = userEvent.setup()
+      await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+
+      await user.keyboard('{Control>}k{/Control}')
+
+      expect(
+        await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/),
+      ).toBeInTheDocument()
+    })
+
+    it('a paleta navega, e o comando da tela atual vem primeiro', async () => {
+      const { router } = setup('/cadastros/clientes')
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+
+      await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/)
+      expect(screen.getByText('Nesta tela')).toBeInTheDocument()
+
+      await user.click(await screen.findByRole('menuitem', { name: /Novo cliente/ }))
+
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes/novo')
+      })
     })
 
     it('o sino abre a gaveta, que EMPURRA — sem fixed, sem véu', async () => {

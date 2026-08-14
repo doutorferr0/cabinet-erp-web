@@ -1,3 +1,4 @@
+import { ATALHO_DA_PALETA } from '@/app/paleta-de-comandos'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -6,13 +7,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
 import { useLogout, useSessao } from '@/data/sessao'
 import { Bell, ChevronDown, Search, Settings } from 'lucide-react'
-import { useState } from 'react'
 
 /** Duas primeiras iniciais do nome — o mesmo corte que os avatares do quadro usam. */
 function iniciaisDoNome(nome: string): string {
@@ -27,14 +26,19 @@ function iniciaisDoNome(nome: string): string {
  * (§@casca-global). Vive no shell, não na tela: duplicá-la por página
  * desalinharia da regra "appbar = layout".
  *
- * ## Busca — decoração de propósito
+ * ## Busca — deixou de ser decoração
  *
- * O mockup só tem o campo — sem JS, sem filtro. Não existe busca global no
- * sistema (cada tela tem a própria "Janela de busca", padrão #5), então este
- * campo é CHROME: aceita digitação, não filtra nada. Por isso não leva o
- * atalho `Ctrl+K` do registry (`shortcuts.ts`) — aquele é da busca do
- * CONTEXTO atual, e prometer aqui um atalho que não abre nada seria o mesmo
- * defeito mudo do "sino que não toca".
+ * Até a paleta de comandos existir, este campo aceitava digitação e não fazia
+ * nada: era CHROME copiado do mockup, e por isso não podia anunciar atalho
+ * nenhum — prometer tecla que não abre nada é o mesmo defeito mudo do "sino que
+ * não toca".
+ *
+ * Agora ele **abre a paleta**, e por isso deixou de ser `<input>`: o que parece
+ * campo de texto e responde abrindo um diálogo mente sobre o que vai acontecer
+ * ao digitar. É um BOTÃO com cara de campo — a mesma peça que o Supabase Studio
+ * usa —, e é o caminho por CLIQUE que a decisão de interface do CLAUDE.md exige.
+ * `Ctrl+K` fica como conveniência, escrito no próprio botão para quem quiser
+ * aprender.
  *
  * ## Engrenagem — desabilitada de propósito
  *
@@ -50,11 +54,12 @@ function iniciaisDoNome(nome: string): string {
 export function Appbar({
   naoLidas,
   aoAbrirGaveta,
+  aoAbrirPaleta,
 }: {
   naoLidas: number
   aoAbrirGaveta: () => void
+  aoAbrirPaleta: () => void
 }) {
-  const [busca, setBusca] = useState('')
   const { data: sessao } = useSessao()
   const { ativa } = useEmpresasDaSessao()
   const logout = useLogout()
@@ -66,19 +71,21 @@ export function Appbar({
       data-slot="appbar"
       className="flex flex-wrap items-center gap-3 border-rule-strong border-b-2 bg-card px-4 py-2.5"
     >
-      <div className="relative w-60 min-w-33 shrink">
-        <Search
-          className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          aria-label="Pesquisar"
-          placeholder="Pesquisar…"
-          value={busca}
-          onChange={(evento) => setBusca(evento.target.value)}
-          className="pl-8"
-        />
-      </div>
+      <button
+        type="button"
+        onClick={aoAbrirPaleta}
+        aria-label="Abrir a paleta de comandos"
+        aria-keyshortcuts="Control+K"
+        className="flex h-9 w-60 min-w-33 shrink items-center gap-2 border-2 border-input bg-card px-2.5 text-left text-muted-foreground text-sm outline-none hover:bg-muted focus-visible:focus-ring"
+      >
+        <Search aria-hidden="true" className="size-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">Pesquisar…</span>
+        {/* O atalho fica ESCRITO no botão: quem prefere teclado aprende sem
+            documentação, e quem não prefere continua clicando. */}
+        <span className="shrink-0 border-2 border-border px-1 font-mono text-[10px] uppercase tracking-[0.06em]">
+          {ATALHO_DA_PALETA}
+        </span>
+      </button>
 
       <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5">
         <TooltipTrigger>

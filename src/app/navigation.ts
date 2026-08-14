@@ -41,6 +41,21 @@ export interface NavItem {
    */
   recurso?: RecursoDaEmpresa
   /**
+   * Caminho que abre um registro EM BRANCO nesta tela — o `Incluir` da barra de
+   * ações (§9, padrão 4), publicado para quem está fora da tela.
+   *
+   * Existe para a paleta de comandos poder oferecer "Novo cliente" sem que ela
+   * precise de uma tabela paralela de rotas. **Ausente = a tela não inclui**, e
+   * isso é informação: `Movimentação`, `Motivos de Perda` e as telas de visão
+   * (Dashboard, Tarefas, Planner) não criam registro por aqui. Inventar o
+   * caminho na paleta daria um comando que leva a 404.
+   *
+   * Fica ao lado de `recurso` e `descricao` porque é da mesma natureza: o que
+   * ESTA tela oferece, dito uma vez só.
+   */
+  incluir?: string
+
+  /**
    * Cor e desenho de uma tela que NÃO tem módulo próprio.
    *
    * O normal é a sidebar tirar os dois de `moduloDaRota(item.url)`. Três telas
@@ -115,6 +130,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Clientes',
         url: '/cadastros/clientes',
+        incluir: '/cadastros/clientes/novo',
         icon: BookUser,
         descricao: 'Quem compra. Obra, cobrança, contato e situação financeira.',
       },
@@ -122,6 +138,7 @@ export const navGroups: NavGroup[] = [
         title: 'Fornecedores',
         descricao: 'Quem fornece. Razão social, prazo de entrega e contatos.',
         url: '/cadastros/fornecedores',
+        incluir: '/cadastros/fornecedores/novo',
         icon: BookUser,
         recurso: RECURSOS.suppliers,
       },
@@ -129,6 +146,7 @@ export const navGroups: NavGroup[] = [
         title: 'Profissional Externo',
         descricao: 'Arquiteto ou lighting designer que especifica o projeto.',
         url: '/cadastros/profissionais',
+        incluir: '/cadastros/profissionais/novo',
         icon: BookUser,
         recurso: RECURSOS.professionals,
       },
@@ -136,6 +154,7 @@ export const navGroups: NavGroup[] = [
         title: 'Colaboradores',
         descricao: 'O quadro interno. Setor, cargo, vínculo e admissão.',
         url: '/cadastros/colaboradores',
+        incluir: '/cadastros/colaboradores/novo',
         icon: BookUser,
         recurso: RECURSOS.employees,
         // Par de Clientes: é o cadastro de PESSOA vizinho na mesma seção. O
@@ -145,6 +164,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Produtos',
         url: '/cadastros/produtos',
+        incluir: '/cadastros/produtos/novo',
         icon: Package,
         descricao: 'O catálogo. Variantes, valores, localização de estoque e tributação.',
       },
@@ -191,6 +211,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Funis',
         url: '/crm/funis',
+        incluir: '/crm/funis/novo',
         icon: Filter,
         descricao: 'Os modelos de venda: as colunas por onde a oportunidade passa até fechar.',
       },
@@ -211,6 +232,7 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Orçamentos',
         url: '/vendas/orcamentos',
+        incluir: '/vendas/orcamentos/novo',
         icon: Store,
         descricao: 'A proposta ao cliente. Se cancela, nunca se apaga.',
       },
@@ -224,12 +246,14 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Ordem de Compra',
         url: '/compras/ordens',
+        incluir: '/compras/ordens/novo',
         icon: ShoppingCart,
         descricao: 'O combinado com o fornecedor: itens, prazo previsto e reagendamento.',
       },
       {
         title: 'Pedido de Compra',
         url: '/compras/pedidos',
+        incluir: '/compras/pedidos/novo',
         icon: ShoppingCart,
         descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
       },

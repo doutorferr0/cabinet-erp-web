@@ -28,6 +28,12 @@ Em `autoform/` o segundo arquivo se chama `avaliacao.md`: o veredito é **não i
 integração para algo que não se integra seria nota vazia. O que ela tem no lugar é a medição que
 sustenta o veredito, mais o caminho alternativo — esse, sim, com passo concreto.
 
+`reserva-de-estoque/` tem os três arquivos e mais dois, porque a colheita ali é de MECÂNICA, não
+de componente: `mecanica.md` (a espec — regra por regra, com o que foi recusado da fonte e por
+quê), `proposta-schema.md` (o texto pronto para `gera-cabinet-schema.py`, **não aplicado**) e
+`nota-front.md` (como a tela exibe disponível × reservado). O "código" é `disponibilidade.sql`, e
+ele nunca rodou — não existe banco do Cabinet contra o que rodar.
+
 O código staged **não é compilado**: `tsconfig.app.json` tem `"include": ["src"]`, então `tsc -b`
 não olha para cá. Ele é lido, não executado — a validação real acontece no PR de integração, com
 teste, quando alguém decidir integrar.
@@ -39,6 +45,7 @@ teste, quando alguém decidir integrar.
 | [`kanban-funil/`](kanban-funil/) | [marmelab/atomic-crm](https://github.com/marmelab/atomic-crm) | MIT | **colher a estrutura, trocar o motor** — o algoritmo de reordenação do original não sobrevive a um servidor com RLS |
 | [`auditoria/`](auditoria/) | [supabase/supa_audit](https://github.com/supabase/supa_audit) | Apache-2.0 | **reescrito**, não copiado — `tenant_id` e RLS mudam a forma da tabela, não só o conteúdo |
 | [`autoform/`](autoform/) | [vantezzen/autoform](https://github.com/vantezzen/autoform) | MIT | **rejeitado como motor de formulário de cadastro** — motivo medido em `autoform/avaliacao.md` |
+| [`reserva-de-estoque/`](reserva-de-estoque/) | [saleor/saleor](https://github.com/saleor/saleor) | BSD-3 | **colher a fórmula e a trava, recusar a desnormalização** — o alocado do Saleor mora em dois lugares e tem tarefa de reparo |
 
 ## O que esta pasta NÃO fez
 

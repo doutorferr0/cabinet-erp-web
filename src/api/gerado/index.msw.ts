@@ -30,6 +30,7 @@ import {
   getCreateStockMovementResponseMock,
   getCreateTaskResponseMock,
   getCreateVariantResponseMock,
+  getGetCrmLostReasonsReportResponseMock,
   getGetCrmOpportunityResponseMock,
   getGetCrmPipelineResponseMock,
   getGetDashboardSummaryResponseMock,
@@ -70,6 +71,7 @@ import {
 import type {
   AgendaEventDto,
   CrmLostReasonDto,
+  CrmLostReasonsReportDto,
   CrmOpportunityDto,
   CrmPipelineDto,
   CrmStageDto,
@@ -100,7 +102,7 @@ import type {
   VinculoDeEmpresa
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -685,6 +687,18 @@ export const getMoveCrmOpportunityStageMockHandler = (overrideResponse?: CrmOppo
   }, options)
 }
 
+export const getGetCrmLostReasonsReportMockHandler = (overrideResponse?: CrmLostReasonsReportDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CrmLostReasonsReportDto> | CrmLostReasonsReportDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/reports/lost-reasons', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetCrmLostReasonsReportResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getListCrmLostReasonsMockHandler = (overrideResponse?: PagedResultOfCrmLostReasonDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfCrmLostReasonDto> | PagedResultOfCrmLostReasonDto), options?: RequestHandlerOptions) => {
   return http.get('*/api/crm/lost-reasons', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -770,6 +784,7 @@ export const getVitraERPMock = () => [
   getGetCrmOpportunityMockHandler(),
   getUpdateCrmOpportunityMockHandler(),
   getMoveCrmOpportunityStageMockHandler(),
+  getGetCrmLostReasonsReportMockHandler(),
   getListCrmLostReasonsMockHandler(),
   getCreateCrmLostReasonMockHandler(),
   getUpdateCrmLostReasonMockHandler()

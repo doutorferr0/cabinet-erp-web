@@ -1,18 +1,21 @@
-import type { CrmOpportunityDto } from '@/api/gerado'
+import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { type VisaoDaListagem, VitraDataTable } from '@/components/cabinet/data-table'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { oportunidadesDoFunil, useEstagios, useFunis } from '@/data/crm-api'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Calendar, LayoutGrid } from 'lucide-react'
-import { useMemo } from 'react'
+import { Calendar, LayoutGrid, TrendingDown } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { apodrecimentoDoCartao } from './apodrecimento'
 import { AGRUPAMENTOS_DO_FUNIL, quemDoCartao } from './funil-agrupa'
+import { PerderOportunidadeDialog } from './perder-oportunidade-dialog'
 import { QuadroDoFunil } from './quadro-do-funil'
+import { RelatorioDePerdasDialog } from './relatorio-de-perdas-dialog'
+import { SeloDeApodrecimento } from './selo-de-apodrecimento'
 
 /**
  * A página do quadro: a ESCOLHA do funil em cima, a listagem embaixo.
@@ -43,8 +46,18 @@ import { QuadroDoFunil } from './quadro-do-funil'
  * diário para chegar onde o operador já ia.
  */
 
-/** O funil é sempre um só na tela — a coluna de funil seria a mesma palavra repetida. */
-function colunasDaOportunidade(): ColumnDef<CrmOpportunityDto>[] {
+/**
+ * O funil é sempre um só na tela — a coluna de funil seria a mesma palavra
+ * repetida.
+ *
+ * `etapasPorId` entra porque o apodrecimento é um fato sobre a ETAPA (`rotDays`)
+ * cruzado com o cartão (`stageChangedAt`), e a linha da listagem só tem o
+ * segundo. Sem ele, o negócio empacado seria visível no quadro e invisível na
+ * tabela — a mesma consulta contando duas histórias.
+ */
+function colunasDaOportunidade(
+  etapasPorId: Map<string, CrmStageDto>,
+): ColumnDef<CrmOpportunityDto>[] {
   return [
     { accessorKey: 'name', header: 'Título' },
     {
@@ -56,7 +69,22 @@ function colunasDaOportunidade(): ColumnDef<CrmOpportunityDto>[] {
       // ordem que a página seguinte não repetiria.
       cell: ({ row }) => quemDoCartao(row.original) ?? '',
     },
-    { accessorKey: 'stageName', header: 'Etapa' },
+    {
+      accessorKey: 'stageName',
+      header: 'Etapa',
+      cell: ({ row }) => {
+        const apodrecimento = apodrecimentoDoCartao(
+          row.original,
+          etapasPorId.get(row.original.stageId),
+        )
+        return (
+          <span className="flex items-center gap-2">
+            {row.original.stageName}
+            {apodrecimento ? <SeloDeApodrecimento apodrecimento={apodrecimento} /> : null}
+          </span>
+        )
+      },
+    },
     {
       accessorKey: 'ownerName',
       header: 'Responsável',
@@ -94,7 +122,11 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
   // O provider carrega o `pipelineId`: as duas visões perguntam pelo funil que
   // está na URL, e nenhuma delas monta consulta própria.
   const fetcher = useMemo(() => oportunidadesDoFunil(pipelineId).list, [pipelineId])
-  const columns = useMemo(() => colunasDaOportunidade(), [])
+  const etapasPorId = useMemo(
+    () => new Map((etapas.data ?? []).map((etapa) => [etapa.id, etapa])),
+    [etapas.data],
+  )
+  const columns = useMemo(() => colunasDaOportunidade(etapasPorId), [etapasPorId])
 
   /**
    * Campos filtráveis — a whitelist que o contrato publica para o recurso.
@@ -130,7 +162,12 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
         icon: LayoutGrid,
         agrupa: true,
         render: ({ rows, agruparPor }) => (
-          <QuadroDoFunil pipelineId={pipelineId} oportunidades={rows} agruparPor={agruparPor} />
+          <QuadroDoFunil
+            pipelineId={pipelineId}
+            oportunidades={rows}
+            agruparPor={agruparPor}
+            aoPerder={(oportunidade, etapaId) => setPerda({ oportunidade, etapaId })}
+          />
         ),
       },
     ],
@@ -141,6 +178,27 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
   // servidor quando o `stageId` não vem). No quadro o `Incluir` é por coluna e
   // sabe a etapa; na barra, não há coluna para perguntar.
   const primeiraEtapa = etapas.data?.[0]
+
+  /**
+   * O diálogo de perda mora AQUI, e não dentro do quadro, porque os dois
+   * caminhos que levam a ele são de visões diferentes: o menu do cartão e a
+   * barra da listagem. Um diálogo por visão daria dois estados para a mesma
+   * decisão, e o que estivesse aberto sumiria ao alternar a visão.
+   */
+  const [perdasAbertas, setPerdasAbertas] = useState(false)
+  const [perda, setPerda] = useState<{
+    oportunidade: CrmOpportunityDto
+    /** Etapa já escolhida no menu do cartão; ausente quando veio da barra. */
+    etapaId?: string
+  } | null>(null)
+
+  // As etapas de perda vêm da CONFIGURAÇÃO do funil. Um funil pode ter mais de
+  // uma ("Perdido", "Sem verba") e pode não ter nenhuma — e nesse caso não há
+  // perda a registrar, então a ação não entra na barra.
+  const etapasDePerda = useMemo(
+    () => (etapas.data ?? []).filter((etapa) => etapa.isLost),
+    [etapas.data],
+  )
   // `data` carregada e VAZIA — diferente de ainda carregando, que não autoriza
   // afirmar nada sobre a configuração do funil.
   const semEtapas = etapas.data !== undefined && etapas.data.length === 0
@@ -169,6 +227,26 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
     // justamente o que o ano inteiro vai somar.
     motivoSemExcluir: 'Negócio não se exclui: mova para uma etapa de perda, com o motivo.',
   })
+
+  /**
+   * `Perder…` entra na barra padrão, ao lado das ações de linha.
+   *
+   * O quadro tem o menu do cartão; a LISTA não tem coluna nenhuma para arrastar
+   * nem menu por linha, e sem esta ação a visão tabela seria a única em que
+   * marcar uma perda é impossível — o operador teria de trocar de visão para
+   * fazer o que estava vendo. Só existe quando o funil TEM etapa de perda:
+   * botão que abre diálogo sem destino possível promete o que não cumpre.
+   */
+  if (etapasDePerda.length > 0) {
+    actions.splice(actions.length - 1, 0, {
+      id: 'perder',
+      label: 'Perder…',
+      icon: TrendingDown,
+      needsSelection: true,
+      variant: 'destructive',
+      onClick: (row) => row && setPerda({ oportunidade: row }),
+    })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -199,12 +277,25 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
           </nav>
         )}
 
+        {/* A análise fica ao lado do funil porque é onde a pergunta nasce: quem
+            vê a coluna de perdidos encher é quem quer saber por quê. Em DIÁLOGO
+            e não em painel fixo — é pergunta ocasional, e um painel permanente
+            custaria uma requisição por visita ao quadro para respondê-la
+            quando ninguém perguntou. */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={() => setPerdasAbertas(true)}
+        >
+          <TrendingDown aria-hidden="true" className="text-modulo" />
+          Perdas por motivo
+        </Button>
+
         {/* Caminho para a configuração a partir de onde ela é sentida: quem vê
             uma etapa faltando no quadro está aqui, não no menu lateral. */}
-        <Link
-          to="/crm/funis"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')}
-        >
+        <Link to="/crm/funis" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
           Configurar funis
         </Link>
       </header>
@@ -234,6 +325,20 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
           pageSizeOptions={[20, 50, 100]}
         />
       )}
+
+      <PerderOportunidadeDialog
+        aberto={perda !== null}
+        oportunidade={perda?.oportunidade ?? null}
+        etapasDePerda={etapasDePerda}
+        {...(perda?.etapaId ? { etapaSugerida: perda.etapaId } : {})}
+        onFechar={() => setPerda(null)}
+      />
+
+      <RelatorioDePerdasDialog
+        aberto={perdasAbertas}
+        pipelineId={pipelineId}
+        onFechar={() => setPerdasAbertas(false)}
+      />
     </div>
   )
 }

@@ -40,11 +40,11 @@ const columns: ColumnDef<Colaborador>[] = [
 /**
  * TELA PILOTO do filtro estruturado (issue #68).
  *
- * Colaborador é o piloto por um motivo de fase, não de gosto: o recurso ainda é
- * **mock**, e é o provider mock que sabe responder `campo + operador + valor`. O
- * contrato v1 não tem parâmetro de filtro, então listagem HTTP (produto,
- * parceiro) não declara campos filtráveis — declarar ali faria a tela prometer
- * uma consulta que o servidor não recebe (ver `recusarFiltroSemContrato`).
+ * Colaborador é piloto do lado MOCK: quem responde `campo + operador + valor`
+ * aqui é o provider em memória. O piloto HTTP é Produtos, desde que o contrato
+ * publicou `filters` em `/api/products` (issue #77) — `GET /api/employees` existe
+ * no contrato para o `salespersonId` do orçamento, não serve esta listagem, e
+ * enquanto for assim o filtro daqui não passa por rede.
  *
  * Os `id` são os campos do mock (§2 da transcrição). Quando colaborador ganhar
  * caminho no contrato, eles viram os nomes do DTO — a mesma regra do

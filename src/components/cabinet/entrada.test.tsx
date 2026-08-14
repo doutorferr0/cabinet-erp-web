@@ -1,5 +1,5 @@
 import { Entrada, ORDEM_MAXIMA, atrasoDaOrdem } from '@/components/cabinet/entrada'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 describe('Entrada', () => {
@@ -9,10 +9,16 @@ describe('Entrada', () => {
         <p>Cadastro de fornecedores</p>
       </Entrada>,
     )
-    // `findBy`, não `getBy`: a peça parte de `opacity: 0` e o estado final chega
-    // no quadro seguinte. Uma asserção síncrona aqui afirmaria o começo da
-    // animação, que é justamente o estado em que ela NÃO pode ficar.
-    expect(await screen.findByText('Cadastro de fornecedores')).toBeVisible()
+    // A ESPERA é da VISIBILIDADE, não da existência — e a diferença é o teste
+    // inteiro. A peça parte de `opacity: 0` e o estado final chega alguns quadros
+    // depois; `findByText` resolve assim que o elemento EXISTE, que é já no
+    // primeiro quadro, e uma asserção síncrona em cima disso afirma o começo da
+    // animação — justamente o estado em que ela não pode ficar. Passava por
+    // sorte, quando a mola avançava dentro do primeiro intervalo de sondagem.
+    const peca = screen.getByText('Cadastro de fornecedores')
+    await waitFor(() => {
+      expect(peca).toBeVisible()
+    })
   })
 
   it('escalona de 80ms em 80ms', () => {

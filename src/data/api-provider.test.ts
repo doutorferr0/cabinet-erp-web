@@ -1,5 +1,7 @@
 import { configurarApi } from '@/api/cliente'
+import { ListFilterJoin, ListFilterOperator } from '@/api/gerado'
 import { ErroDaApi, PAGE_SIZE_MAX, createApiListProvider, queryDaTabela } from '@/data/api-provider'
+import { type FiltroDaTabela, JUNCOES, OPERADORES } from '@/lib/filtro-de-consulta'
 import { tableState } from '@/test/utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -149,43 +151,109 @@ describe('createApiListProvider', () => {
   })
 })
 
-describe('filtro estruturado × contrato v1', () => {
-  it('recusa em voz alta em vez de mandar a consulta sem o filtro', async () => {
+describe('filtro estruturado no fio', () => {
+  function filtro(over: Partial<FiltroDaTabela> = {}): FiltroDaTabela {
+    return {
+      filtroId: 'f1',
+      id: 'name',
+      variante: 'text',
+      operador: 'iLike',
+      valor: 'marca',
+      ...over,
+    }
+  }
+
+  /** `catalog-lookups` não publica `filters` — alimenta combo, não se filtra. */
+  const semFiltro = () => createApiListProvider<Linha>({ url: URL_LOOKUPS })
+  const comFiltro = () =>
+    createApiListProvider<Linha>({ url: URL_LOOKUPS, filtraveis: ['name', 'active'] })
+
+  function filtrosNaUrl(): unknown {
+    const bruto = ultimaUrl().searchParams.get('filters')
+    return bruto === null ? null : JSON.parse(bruto)
+  }
+
+  it('recurso sem o parâmetro no contrato recusa em voz alta, sem chamar', async () => {
     stubFetch(() => respostaPaginada([{ id: '1', name: 'MARCA' }]))
-    const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
 
     // Mandar a requisição sem os filtros devolveria a lista COMPLETA com a tela
     // mostrando filtro aplicado — dado certo respondendo a pergunta errada.
-    await expect(
-      provider.list(
-        tableState({
-          filtros: [
-            {
-              filtroId: 'f1',
-              id: 'name',
-              variante: 'text',
-              operador: 'iLike',
-              valor: 'marca',
-            },
-          ],
-        }),
-      ),
-    ).rejects.toThrow(/não existe no contrato/i)
-
+    await expect(semFiltro().list(tableState({ filtros: [filtro()] }))).rejects.toThrow(
+      /não existe no contrato/i,
+    )
     expect(chamadas).toHaveLength(0)
+  })
+
+  it('campo fora da whitelist barra AQUI, sem gastar o 400 do servidor', async () => {
+    stubFetch(() => respostaPaginada([]))
+
+    await expect(
+      comFiltro().list(tableState({ filtros: [filtro({ id: 'paymentTerms' })] })),
+    ).rejects.toThrow(/paymentTerms/)
+    expect(chamadas).toHaveLength(0)
+  })
+
+  it('viaja como array JSON, com o shape do contrato e sem a UI junto', async () => {
+    stubFetch(() => respostaPaginada([{ id: '1', name: 'MARCA' }]))
+    await comFiltro().list(tableState({ filtros: [filtro()] }))
+
+    // `filtroId` é chave de linha do React e `variante` é qual controle desenhar:
+    // as duas são decisão de tela e não podem chegar ao servidor.
+    expect(filtrosNaUrl()).toEqual([{ field: 'name', operator: 'iLike', value: 'marca' }])
+  })
+
+  it('operador que dispensa valor não manda `value` — nem vazio', async () => {
+    stubFetch(() => respostaPaginada([]))
+    await comFiltro().list(tableState({ filtros: [filtro({ operador: 'isEmpty', valor: '' })] }))
+
+    // `value: ''` obrigaria o servidor a decidir se o vazio é o valor ou a ausência.
+    expect(filtrosNaUrl()).toEqual([{ field: 'name', operator: 'isEmpty' }])
+  })
+
+  it('múltipla escolha viaja como array de valores', async () => {
+    stubFetch(() => respostaPaginada([]))
+    await comFiltro().list(
+      tableState({
+        filtros: [filtro({ variante: 'multiSelect', operador: 'inArray', valor: ['A', 'B'] })],
+      }),
+    )
+
+    expect(filtrosNaUrl()).toEqual([{ field: 'name', operator: 'inArray', value: ['A', 'B'] }])
+  })
+
+  it('joinOperator só viaja quando NÃO é o padrão', async () => {
+    stubFetch(() => respostaPaginada([]))
+
+    await comFiltro().list(tableState({ filtros: [filtro()], juncao: 'and' }))
+    expect(ultimaUrl().searchParams.has('joinOperator')).toBe(false)
+
+    await comFiltro().list(tableState({ filtros: [filtro()], juncao: 'or' }))
+    expect(ultimaUrl().searchParams.get('joinOperator')).toBe('or')
+  })
+
+  it('filtro e busca se SOMAM na mesma consulta', async () => {
+    stubFetch(() => respostaPaginada([]))
+    await comFiltro().list(tableState({ q: 'lustre', filtros: [filtro()] }))
+
+    const url = ultimaUrl()
+    expect(url.searchParams.get('q')).toBe('lustre')
+    expect(url.searchParams.has('filters')).toBe(true)
   })
 
   it('filtro ainda sem valor não é filtro — a consulta segue normal', async () => {
     stubFetch(() => respostaPaginada([{ id: '1', name: 'MARCA' }]))
-    const provider = createApiListProvider<Linha>({ url: URL_LOOKUPS })
 
-    const r = await provider.list(
-      tableState({
-        filtros: [{ filtroId: 'f1', id: 'name', variante: 'text', operador: 'iLike', valor: '' }],
-      }),
-    )
+    const r = await comFiltro().list(tableState({ filtros: [filtro({ valor: '' })] }))
 
     expect(r.rows).toHaveLength(1)
-    expect(ultimaUrl().searchParams.has('filtros')).toBe(false)
+    expect(ultimaUrl().searchParams.has('filters')).toBe(false)
+  })
+
+  it('o vocabulário do front é o que o CONTRATO declara aceitar', () => {
+    // O `tsc` já casa a direção front → contrato (o `operator` do `ListFilter` é
+    // tipado). Este teste fecha a outra: operador que o contrato ganhar e o front
+    // não oferecer vira campo morto na spec, sem ninguém perceber.
+    expect([...OPERADORES].sort()).toEqual(Object.values(ListFilterOperator).sort())
+    expect([...JUNCOES].sort()).toEqual(Object.values(ListFilterJoin).sort())
   })
 })

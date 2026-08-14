@@ -93,11 +93,12 @@ export interface VitraDataTableProps<T> {
   rowNumbers?: boolean
   /**
    * Campos que esta listagem oferece para filtrar. **Opt-in por tela**, e não é
-   * detalhe: quem responde ao filtro é o provider, e o contrato v1 não tem
-   * parâmetro por onde `campo + operador + valor` viaje (ver
-   * `recusarFiltroSemContrato`). Recurso mock filtra hoje; recurso HTTP declara
-   * campos quando o contrato publicar o parâmetro. Ligar o filtro por padrão em
-   * toda tabela ofereceria em oito telas uma consulta que metade delas não sabe
+   * detalhe: quem responde ao filtro é o provider, e nem todo recurso sabe. Os
+   * HTTP dependem de o contrato publicar `filters` para o caminho
+   * (`/api/products` e `/api/partners` publicam; `catalog-lookups` e
+   * `stock-movements`, não) e de o campo estar na whitelist — as duas coisas
+   * barram em `filtrosDaTabela`, na fronteira. Ligar o filtro por padrão em toda
+   * tabela ofereceria em oito telas uma consulta que metade delas não sabe
    * responder.
    *
    * Sem esta prop a barra segue com o botão `Filtro` que veio em `actions` (o

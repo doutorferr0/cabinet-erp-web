@@ -166,6 +166,29 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded** (`?filters=%%5B%%7B%%22field%%22...`), e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `code`, `description`, `active` — a mesma do `sortBy`, e cresce quando uma tela precisar. Campo fora dela é 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
+            }
           }
         ],
         "responses": {
@@ -598,6 +621,29 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded** (`?filters=%%5B%%7B%%22field%%22...`), e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `code`, `legalName`, `tradeName`, `document`, `active` — a mesma do `sortBy`, e cresce quando uma tela precisar. Campo fora dela é 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
             }
           }
         ],
@@ -2963,6 +3009,59 @@
   },
   "components": {
     "schemas": {
+      "ListFilter": {
+        "required": ["field", "operator"],
+        "type": "object",
+        "description": "Proposto. UMA condição do filtro estruturado da listagem. Só o que o servidor precisa para consultar: o front carrega também a variante do campo (qual controle desenhar) e uma chave de linha, e as duas são UI — mandá-las no fio faria o servidor receber decisão de tela.",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Campo do DTO, na whitelist do recurso. Fora dela é 400, como no `sortBy` — filtro ignorado faria a tela mostrar resultado errado sem sintoma."
+          },
+          "operator": {
+            "$ref": "#/components/schemas/ListFilterOperator"
+          },
+          "value": {
+            "description": "Ausente em `isEmpty`/`isNotEmpty`. Array em `inArray`/`notInArray` (as opções aceitas) e em `isBetween` (`[de, ate]`, ponta vazia = extremo aberto). String no resto — inclusive em número e booleano, que o servidor converte pelo tipo do campo.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "ListFilterOperator": {
+        "type": "string",
+        "description": "Proposto. Operadores do filtro estruturado. `iLike`/`notILike` comparam trecho ignorando caixa e acento; `eq`/`ne` comparam o valor inteiro.",
+        "enum": [
+          "iLike",
+          "notILike",
+          "eq",
+          "ne",
+          "lt",
+          "lte",
+          "gt",
+          "gte",
+          "isBetween",
+          "inArray",
+          "notInArray",
+          "isEmpty",
+          "isNotEmpty"
+        ]
+      },
+      "ListFilterJoin": {
+        "type": "string",
+        "description": "Proposto. Como as condições se somam. UMA para a lista inteira: junção por condição permitiria `A e B ou C`, cuja precedência ninguém lê corretamente numa lista sem parênteses.",
+        "default": "and",
+        "enum": ["and", "or"]
+      },
       "CatalogLookupDto": {
         "required": ["id", "kind", "name", "active"],
         "type": "object",

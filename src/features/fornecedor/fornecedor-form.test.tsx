@@ -99,6 +99,9 @@ describe('tela Fornecedor', () => {
       isCustomer: true,
       isSupplier: true,
       isProfessional: false,
+      // Hierarquia pai/filho (#91): o vínculo não é campo desta tela e volta
+      // como veio, pela mesma regra do registro profissional acima.
+      parentId: null,
     })
     // 15s: este caso monta DUAS telas (listagem e formulário completo) e ainda
     // digita — o limite padrão de 5s do vitest não cobre isso nesta máquina.

@@ -39,6 +39,11 @@ export function parceiro(over: Record<string, unknown> = {}) {
       branchNumber: string | null
       accountNumber: string | null
     } | null,
+    // Hierarquia pai/filho (#91). Nascem NULOS pelo mesmo motivo dos dois acima:
+    // o padrão do cadastro é não pender de ninguém. Quem testa o vínculo passa
+    // os dois pelo `over`, à vista — e os dois andam JUNTOS, como o contrato diz.
+    parentId: null as string | null,
+    parentName: null as string | null,
     ...over,
   }
 }

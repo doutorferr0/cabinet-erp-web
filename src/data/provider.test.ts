@@ -83,19 +83,15 @@ describe('tabelaDeApoio', () => {
 describe('registry de providers', () => {
   /**
    * Os recursos que ainda são MOCK. Saíram daqui os que viraram HTTP —
-   * `produtos` (`produtos-api.test.ts`) e os três papéis de parceiro
-   * (`parceiros-api.test.ts`), asseridos contra servidor falso.
+   * `produtos` (`produtos-api.test.ts`), os três papéis de parceiro
+   * (`parceiros-api.test.ts`) e `orcamentos` (`quotes-api.test.ts`), asseridos
+   * contra servidor falso.
    *
    * `clientes`, `fornecedores` e `profissionais` não voltam a esta lista tal como
    * estavam: sem `GET /api/partners/{id}` eles não têm `get`, e é essa a forma
    * que o contrato oferece hoje.
    */
-  const recursosComCadastro = [
-    'colaboradores',
-    'ordensCompra',
-    'pedidosCompra',
-    'orcamentos',
-  ] as const
+  const recursosComCadastro = ['colaboradores', 'ordensCompra', 'pedidosCompra'] as const
 
   it.each(recursosComCadastro)('%s expõe list/get/empty', async (nome) => {
     const p = data[nome]

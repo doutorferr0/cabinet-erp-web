@@ -20,10 +20,16 @@ export interface ListProvider<T> {
 }
 
 /**
- * Recurso com cadastro completo. Espelha o que o backend vai expor:
- * `GET /recurso?q&sort&page&pageSize` e `GET /recurso/{id}`.
+ * O que uma tela de DOCUMENTO precisa: abrir um registro por id, ou um em
+ * branco. Ela não lista — quem lista é a listagem, que é outra tela.
+ *
+ * Existe separado do `ResourceProvider` porque o tipo da LINHA e o do
+ * DOCUMENTO divergem assim que o recurso vira HTTP: a grade recebe o DTO cru
+ * (para o `sortBy` casar com a whitelist do servidor) e o formulário recebe a
+ * forma traduzida. `produtosApi` já é assim; `/api/quotes` (#134) é o primeiro
+ * com tela de documento.
  */
-export interface ResourceProvider<T> extends ListProvider<T> {
+export interface DocumentoProvider<T> {
   /**
    * Um registro por id; `null` quando não existe.
    *
@@ -49,6 +55,13 @@ export interface ResourceProvider<T> extends ListProvider<T> {
    */
   empty(): T
 }
+
+/**
+ * Recurso com cadastro completo, cuja LINHA e cujo DOCUMENTO são o mesmo tipo —
+ * o caso dos recursos mock. Espelha o que o backend vai expor:
+ * `GET /recurso?q&sort&page&pageSize` e `GET /recurso/{id}`.
+ */
+export interface ResourceProvider<T> extends ListProvider<T>, DocumentoProvider<T> {}
 
 export interface MockListConfig<T> {
   rows: readonly T[]

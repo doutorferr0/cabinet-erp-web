@@ -3,12 +3,17 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import type { ResourceProvider } from '@/data/provider'
+import type { DocumentoProvider } from '@/data/provider'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
 export interface TelaDeDocumentoProps<T> {
-  provider: ResourceProvider<T>
+  /**
+   * Só o que esta tela usa: abrir por id, ou em branco. Pedir o
+   * `ResourceProvider` inteiro obrigaria o tipo da LINHA a ser o do DOCUMENTO —
+   * e nos recursos HTTP eles divergem de propósito.
+   */
+  provider: DocumentoProvider<T>
   /** Prefixo da query key (ex.: 'orcamento', 'ordem-compra', 'pedido-compra'). */
   queryKeyBase: string
   /** Valor cru do param de rota — 'novo' ou o id numérico como string. */

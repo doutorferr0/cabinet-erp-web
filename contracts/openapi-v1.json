@@ -1759,6 +1759,29 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado da listagem, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt` — a do `sortBy`. Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` com 4 casas implícitas não têm variante que converta na borda. Campo fora da whitelist é 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
+            }
           }
         ],
         "responses": {

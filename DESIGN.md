@@ -560,10 +560,13 @@ passam AA com folga". Soft blue era o /01 **anterior ao neon**; o pior par hoje 
 1,33:1 no escuro, e no escuro o texto não é preto. Quem ler aquele comentário decide não medir.
 Corrigi-lo é edição em `src/`, fora da zona desta passagem — fica como pendência com dono.
 
-> Estes números saem dos tokens e da cascata (`data-active:` só troca borda, fundo e peso; a cor
-> vem do `text-sidebar-foreground` do contêiner), **não de render**. Confirmar na tela antes de
-> escolher a correção — a lição de que contraste de tema se confere renderizando já custou uma
-> rodada nesta página.
+> **CONFIRMADO EM RENDER** (2026-08-13, método do `@comorodar`: spec descartável → `body.innerHTML`
+> → CSS do `dist` → Chrome headless, `class="light"` e `class="dark"`). Os dois extremos previstos
+> apareceram na tela: **Produtos ativo no escuro é letra clara sobre ciano** e some — o item mais
+> legível do tema claro (13,71:1) é o pior do escuro; **Orçamentos ativo no claro** lê, mas
+> visivelmente apertado ao lado dos vizinhos, que é o 4,00:1. A cascata é a que a tabela supõe:
+> `data-active:` só troca borda, fundo e peso, e a cor vem do `text-sidebar-foreground` do
+> contêiner.
 
 Os demais estados, com o par que o componente resolve de verdade — um deles também reprova:
 
@@ -609,8 +612,9 @@ que não se lê. As outras são de superfície, onde o contorno preto é o delim
 0. **[USER] O rótulo do item de menu ATIVO reprova em 2 módulos no claro e em 7 no escuro** —
    pior caso 1,33:1 (Produtos, escuro). É a cheia /01 no papel de FUNDO, que a cascata do escuro
    não redefine, com a tinta do tema já invertida para clara. Mesmo defeito no **carimbo `open` do
-   escuro, 1,30:1**. Não escolhi correção: dar à `/01` um valor escuro em `.dark` mexe na paleta
-   travada, e trocar a tinta do item cria uma segunda regra de cor. Confirmar em render antes.
+   escuro, 1,30:1**. **Conferido em render**, nos dois temas. Não escolhi correção: dar à `/01` um
+   valor escuro em `.dark` mexe na paleta travada, e trocar a tinta do item cria uma segunda regra
+   de cor.
    **Junto vai a correção do comentário do `src/index.css`**, que ainda afirma "todas passam AA com
    folga, pior par 7,1:1" — número da paleta pré-neon, e é ele que faz o próximo leitor não medir.
 1. **[USER] Os 8 pastéis /02 e as 5 zonas, de 1,00 a 1,32:1 contra as superfícies.** Só há decisão

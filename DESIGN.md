@@ -745,6 +745,48 @@ licença: grátis só para uso pessoal, e o Cabinet é vendido a terceiros).
 
 Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
+### Algarismo tabular — MEDIDO nas quatro famílias (2026-08-14, issue #123)
+
+A pergunta era concreta: `1111` e `9999` ocupam a mesma largura? Numa coluna de valores, se não
+ocuparem, o olho perde a casa decimal e a conferência contra o orçamento deixa de ser
+conferência. Medido por `docs/design/medir-tabular.py`, que lê o **avanço de glifo** (`hmtx`) e as
+features do `GSUB` direto do `.woff` do `@fontsource` — a largura que o layout usa está no
+arquivo e não depende de rasterizador, hinting ou zoom da máquina. Mesmo princípio do
+`medir-contraste.py`: medir a fonte do valor, não a foto dele.
+
+| família | papel | avanço dos dígitos | uniforme? | publica `tnum`? |
+|---|---|---|---|---|
+| **Inter** | corpo (`--font-sans`) | 833 … 1323 / 2048 em | **não** | **sim** |
+| **Sora** | títulos (`--font-display`) | 420 … 743 / 1000 em | **não** | **sim** |
+| **Newsreader** | nome próprio (`--font-nome`) | 1133 / 2000 em | **sim** | sim |
+| **PT Mono** | meta e número grande (`--font-mono`) | 600 / 1000 em | **sim** | não |
+
+**O que a medição decidiu:** o Inter do corpo **não** alinha por padrão — o `1` avança 833 e o
+`4`, 1323, meio caractere de diferença por linha — mas **publica `tnum`**, então
+`font-variant-numeric: tabular-nums` resolve, e a coluna numérica **não** precisa cair para a
+mono. Newsreader já vem com figura tabular (é serifada de texto, com algarismo alinhado por
+construção) e PT Mono é monoespaçada: nas duas, a utility é inócua e não atrapalha.
+
+**Onde entrou:** na `VitraDataTable`, no elemento `<table>` INTEIRO — não coluna a coluna.
+Marcar cada coluna numérica falharia na primeira tela que esquecesse a `meta`, e falharia **muda**
+(o número continua lá, só desalinhado). Data, código e telefone alinham junto, o que numa grade
+de ERP é ganho. `columnDef.meta.numeric` continua existindo e passou a decidir **só o alinhamento
+à direita**, que é outra pergunta.
+
+### Densidade da linha — escolha do operador (2026-08-14, issue #123)
+
+`padrao` = a célula de **52px** da §DataTable; `compacta` = **40px**, o piso da faixa consolidada
+(40–44px compacto, 48–56px padrão). Quem confere cinquenta linhas quer as cinquenta na tela; quem
+lê uma a uma quer respiro — fixar um dos dois é escolher pelo outro.
+
+A troca é CSS puro sobre a mesma marcação (`[&_td]:h-10` na instância da tabela, que ganha da
+`h-[52px]` da célula por especificidade, sem `!important` e sem tocar o componente compartilhado).
+**Densidade não refaz consulta:** ela muda o desenho, não a pergunta — e há teste fixando isso.
+
+O controle mora ao lado de `Por página`, no rodapé: os dois respondem "quanto cabe na tela". Ele
+some nas visões que não são tabela (#86), porque é a altura da LINHA que ele muda. A escolha entra
+na **consulta favorita**, junto com visão e agrupamento.
+
 ## Layout
 
 - Shell de 3 zonas inalterado (sidebar colapsável, header, conteúdo). Bloco da empresa ativa no topo da sidebar; item de navegação ativo = Folha com traço preto.

@@ -1,0 +1,82 @@
+NOTICE — reserva-de-estoque
+===========================
+
+Derivado do desenho de *stock allocation* do Saleor (saleor/saleor), commit
+`55c5b8bf8360ffa014d5ab7ee3f1b63f4635b06b` (2026-08-12).
+
+    BSD 3-Clause License
+
+    Copyright (c) 2020-2023, Saleor Commerce
+    Copyright (c) 2010-2020, Mirumee Software
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of the copyright holder nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+ARQUIVOS DA FONTE CONSULTADOS
+------------------------------
+    saleor/warehouse/models.py         Stock, Allocation, Reservation,
+                                       PreorderAllocation, PreorderReservation,
+                                       annotate_available_quantity
+    saleor/warehouse/management.py     allocate_stocks, deallocate_stock,
+                                       increase/decrease_allocations,
+                                       decrease_stock, sort_stocks
+    saleor/warehouse/reservations.py   reserve_stocks, _create_stock_reservations
+    saleor/warehouse/availability.py   _get_available_quantity, check_stock_quantity
+    saleor/warehouse/lock_objects.py   select_for_update ordenado
+    saleor/warehouse/tasks.py          delete_expired_reservations_task,
+                                       update_stocks_quantity_allocated_task,
+                                       delete_empty_allocations_task
+
+NADA FOI COPIADO LITERALMENTE
+------------------------------
+Não há linha de Python do Saleor nesta pasta. A colheita é de DESENHO: a
+separação entre quantidade física, comprometida e disponível; os dois níveis de
+reserva (uma que expira, outra que não); a ordem de travamento que evita
+deadlock; e o ponto em que cada quantidade é lida e escrita. `mecanica.md` cita
+nomes de função e trechos curtos da fonte para sustentar afirmação verificável —
+uso descritivo, não derivação.
+
+`disponibilidade.sql` é escrito do zero, em SQL de PostgreSQL, sobre as tabelas
+do `docs/cabinet/`. O que ele tem do Saleor é a FÓRMULA (`disponível = físico −
+alocado`) e a disciplina de travamento. Não é tradução do ORM do Django.
+
+O QUE FOI RECUSADO DA FONTE (motivo medido em mecanica.md §7)
+--------------------------------------------------------------
+- A coluna desnormalizada `Stock.quantity_allocated`, mantida por código de
+  aplicação em cinco lugares e reparada por tarefa periódica
+  (`update_stocks_quantity_allocated_task`).
+- O `max(…, 0)` que fecha o disponível em zero e esconde saldo negativo.
+- O `available_quantity=0` fixo no erro de estoque insuficiente.
+- O caminho de exceção que zera o filho sem corrigir o pai
+  (`decrease_allocations` → `update(quantity_allocated=0)`).
+- A recriação destrutiva de alocação em `increase_allocations`.
+
+Nada disso é defeito do Saleor no problema do Saleor: um e-commerce com
+quantidade inteira, um inquilino por instalação e fila Celery sempre de pé
+aguenta reparo assíncrono. O Cabinet tem quantidade com 3 casas, dois níveis de
+isolamento, RLS FORCE e a ADR-009 dizendo que saldo nasce do banco — o mesmo
+desenho aqui vira divergência silenciosa entre empresas.

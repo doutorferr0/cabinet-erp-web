@@ -32,3 +32,18 @@ https://github.com/vantezzen/autoform
 
 Nenhum código do AutoForm foi copiado. A avaliação cita trechos curtos do
 projeto para justificar o veredito — uso descritivo, não derivação.
+
+-----------------------------------------------------------------------
+reserva-de-estoque/  —  saleor/saleor
+-----------------------------------------------------------------------
+BSD 3-Clause License
+Copyright (c) 2020-2023, Saleor Commerce
+Copyright (c) 2010-2020, Mirumee Software
+https://github.com/saleor/saleor
+SPDX-License-Identifier: BSD-3-Clause
+
+Nenhum código do Saleor foi copiado. A colheita é do DESENHO de stock
+allocation (fórmula do disponível, os dois níveis de reserva, a ordem de
+travamento); a espec cita nomes de função e trechos curtos para sustentar
+afirmação verificável. O texto integral da licença e a lista de arquivos
+consultados estão em reserva-de-estoque/NOTICE.

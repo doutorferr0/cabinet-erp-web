@@ -255,36 +255,81 @@ listagem** e campo que o servidor não guarda aparece **em branco**, com o
 `AvisoDeCobertura` dizendo isso ao operador — preencher com mock daria dado de
 mentira com cara de dado do servidor.
 
-## Filtro estruturado da listagem — falta no contrato v1
+## Filtro estruturado da listagem — `filters` + `joinOperator` (`Proposto`)
 
-A `VitraDataTable` ganhou filtro por `campo + operador + valor` (issue #68,
-portado de sadmann7/shadcn-table — ver `NOTICE`). **O contrato v1 não tem por
-onde ele viajar:** a listagem publica `q`, `sortBy`, `sortDesc`, `page` e
-`pageSize`, e nada mais.
+A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
+sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
+onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
+`GET /api/products` e `GET /api/partners`.
 
-Consequências, todas deliberadas:
+### Como viaja
 
-- **A UI de filtro é opt-in por tela** (prop `filtros` da `VitraDataTable`, com
-  os campos filtráveis). Quem responde é o provider, então só declara campos a
-  tela cujo provider sabe filtrar. Hoje isso significa **recurso mock**; a tela
-  piloto é `Cadastro de Colaboradores` (`/cadastros/colaboradores`, provider mock
-  em `src/data/index.ts` — o `GET /api/employees` do contrato serve o
-  `salespersonId` do orçamento, não esta listagem).
-- **O provider HTTP recusa em voz alta.** `recusarFiltroSemContrato`
-  (`src/data/api-provider.ts`) lança se um filtro válido chegar. Mandar a
-  requisição sem os filtros devolveria a lista COMPLETA com a tela mostrando
-  filtro aplicado — dado certo do servidor respondendo a pergunta errada.
-- **O vocabulário já está em inglês** (`iLike`, `notILike`, `eq`, `ne`, `lt`,
-  `lte`, `gt`, `gte`, `isBetween`, `inArray`, `notInArray`, `isEmpty`,
-  `isNotEmpty`; junção `and`/`or`), pela mesma razão do `accessorKey`: é o nome
-  que um dia viaja, e traduzir cria um segundo vocabulário com tradução no meio.
+`filters` é um **array JSON url-encoded** num parâmetro só:
 
-**O que o PR de contrato precisa decidir** (não decidido aqui — desenho de
-parâmetro é decisão do contrato): como a lista de filtros se serializa na query
-(JSON num parâmetro × parâmetros repetidos), qual a **whitelist de campos
-filtráveis por recurso** e o status de erro fora dela — o precedente do `sortBy`
-manda **400**, não filtro ignorado, pelo mesmo motivo: ignorar faria a tela
-mostrar resultado errado sem sintoma.
+```
+GET /api/products?q=lustre&filters=%5B%7B%22field%22%3A%22description%22%2C%22operator%22%3A%22iLike%22%2C%22value%22%3A%22cristal%22%7D%5D
+```
+
+Parâmetro repetido com delimitador (`filter=code:iLike:ABC`) foi recusado: o
+`value` é texto do operador e pode conter qualquer caractere, então o delimitador
+exigiria um escape inventado — e bug de escape aparece como **resultado errado, em
+silêncio**, que é o modo de falhar que este contrato evita em todo lugar. JSON tem
+escape definido e parser em toda linguagem.
+
+O item é `ListFilter` — `field`, `operator`, `value`. **`value` some** em
+`isEmpty`/`isNotEmpty` (mandar `''` obrigaria o servidor a decidir se o vazio é o
+valor ou a ausência dele) e é **array** em `inArray`/`notInArray` e em `isBetween`
+(`[de, ate]`, ponta vazia = extremo aberto).
+
+**O que o front NÃO manda:** `filtroId` (chave de linha do React) e `variante`
+(qual controle desenhar). As duas são decisão de tela; mandá-las faria o servidor
+receber UI e um dia depender dela.
+
+`joinOperator` (`and` padrão, `or`) vale para a lista inteira e **só viaja quando
+não é o padrão** — a mesma regra do campo vazio, para não sujar a chave de cache.
+Junção por condição permitiria `A e B ou C`, cuja precedência ninguém lê
+corretamente numa lista sem parênteses.
+
+`filters` e `q` se **somam com AND**: `q` é texto livre sobre os campos que o
+recurso escolheu, `filters` é campo a campo.
+
+### Whitelist, e onde ela é barrada
+
+Cada recurso declara a sua no contrato, na descrição do parâmetro. Hoje é a
+**mesma do `sortBy`** — `code`/`description`/`active` em produtos,
+mais `legalName`/`tradeName`/`document` em parceiros — e cresce quando uma tela
+precisar. Campo fora dela é **400**, como no `sortBy`: filtro ignorado faria a
+tela mostrar resultado errado sem sintoma.
+
+No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS`, em
+`produtos-api.ts` e `parceiros-api.ts`) e **`filtrosDaTabela` barra antes de sair**
+— mesma escolha já feita para `page` e `pageSize`: requisição sabidamente inválida
+faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
+
+### Armadilha do cliente gerado
+
+O parâmetro é declarado com `content: application/json`, que o Orval traduz para
+`filters?: ListFilter[]` — tipo correto. Mas o **construtor de URL gerado**
+(`getListProductsUrl`) serializa todo parâmetro com `String(value)`, e um array de
+objetos vira `[object Object]`. **Nenhuma listagem passa por ele** (quem monta a
+consulta é `createApiListProvider`, com `urlComQuery`), e a regra de fronteira já
+proíbe a tela de chamar o cliente gerado — mas quem for usar `listProducts()` à mão
+precisa serializar o `filters` antes.
+
+### A UI continua opt-in por tela
+
+A prop `filtros` da `VitraDataTable` é quem liga o painel, e só declara campos a
+tela cujo provider sabe responder. Pilotos: **Produtos** (`/cadastros/produtos`,
+HTTP, whitelist do contrato) e **Colaboradores** (`/cadastros/colaboradores`,
+provider mock — o `GET /api/employees` serve o `salespersonId` do orçamento, não
+esta listagem). Recurso sem o parâmetro publicado (`catalog-lookups`,
+`stock-movements`) não passa `filtraveis`, e a fronteira recusa em voz alta se
+alguém declarar campos ali.
+
+**Dinheiro não entra.** Trafega em centavos, então um filtro numérico sobre ele
+compararia com centavos e `1000` acharia R$ 10,00 — número certo, significado
+errado. Coluna de dinheiro só vira campo filtrável quando existir variante que
+converta na borda.
 
 ## Parceiros — uma tabela, três telas
 

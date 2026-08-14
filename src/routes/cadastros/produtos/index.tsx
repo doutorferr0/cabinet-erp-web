@@ -5,8 +5,10 @@ import { Produto } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarProduto } from '@/data/produtos-api'
+import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { CircleCheck, FileText, Hash } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/produtos/')({
@@ -64,6 +66,31 @@ const columns: ColumnDef<ProductDto>[] = [
   },
 ]
 
+/**
+ * Campos filtráveis — a whitelist que o contrato publica no parâmetro `filters`
+ * de `GET /api/products`, que hoje é a mesma do `sortBy`.
+ *
+ * **Primeira listagem HTTP a filtrar de verdade.** O `id` é o nome do campo NO
+ * CONTRATO pelo mesmo motivo do `accessorKey`: é ele que viaja, e a whitelist do
+ * servidor é em inglês — traduzir aqui daria 400 ao aplicar o filtro.
+ *
+ * `Tipo de Produto`, `Marca` e `Fábrica` ficam de fora com as colunas que já não
+ * ordenam: existem no DTO, não na whitelist. Oferecê-los renderia 400 no clique —
+ * e a fronteira barra antes disso, com o nome do campo (`filtrosDaTabela`). Entram
+ * quando o contrato os aceitar.
+ */
+const camposFiltraveis: readonly CampoFiltravel[] = [
+  { id: 'code', rotulo: 'Nosso Código', variante: 'text', icon: Hash, placeholder: 'Ex.: 1042' },
+  {
+    id: 'description',
+    rotulo: 'Nossa Descrição',
+    variante: 'text',
+    icon: FileText,
+    placeholder: 'Parte da descrição…',
+  },
+  { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
+]
+
 function ProdutosPage() {
   const navigate = useNavigate()
 
@@ -103,6 +130,7 @@ function ProdutosPage() {
       queryKey={['produtos']}
       fetcher={data.produtos.list}
       actions={actions}
+      filtros={camposFiltraveis}
       desativacao={{
         entidade: 'produto',
         registro: aDesativar,

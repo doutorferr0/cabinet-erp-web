@@ -159,6 +159,30 @@ describe('listagem de produtos', () => {
     })
   })
 
+  // Primeira listagem HTTP a filtrar. Mesma razão do `sortBy` acima: o `id` do
+  // campo filtrável é o nome do CONTRATO, e a whitelist do servidor é em inglês.
+  it('filtrar pelo painel manda o array JSON em filters', async () => {
+    const urls: string[] = []
+    const { user } = renderRoute('/cadastros/produtos', (entrada) => {
+      const url = String(entrada instanceof Request ? entrada.url : entrada)
+      urls.push(url)
+      return servidorDeProdutos()(entrada)
+    })
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
+    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.type(await screen.findByLabelText('Valor do filtro 1'), 'cristal')
+
+    await waitFor(() => {
+      const consulta = urls.filter((u) => u.includes('filters=')).at(-1)
+      expect(consulta).toBeDefined()
+      const filtros = JSON.parse(new URL(consulta as string).searchParams.get('filters') as string)
+      expect(filtros).toEqual([{ field: 'code', operator: 'iLike', value: 'cristal' }])
+    })
+  })
+
   it('abre o formulário pela ação Incluir', async () => {
     const { router, user } = renderRoute('/cadastros/produtos', servidorDeProdutos())
 

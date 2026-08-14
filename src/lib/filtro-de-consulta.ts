@@ -343,11 +343,40 @@ function comparaOrdenado(bruto: unknown, filtro: FiltroDaTabela): number | null 
  * mock é a fase, não o destino — o que precisa sobreviver à troca é o vocabulário
  * acima, não esta aritmética.
  */
+/**
+ * Operadores que NEGAM: o resultado deles sobre um campo multivalorado é
+ * "nenhum elemento casa", não "algum elemento não casa".
+ *
+ * A diferença aparece com dois valores: um pedido com fornecedores `[A, B]` e o
+ * filtro "não contém A" tem de EXCLUIR o pedido — ele tem o A. Testando elemento
+ * a elemento com a negação embutida, o B responderia "não contém A" e o pedido
+ * entraria na lista, que é o oposto do que foi pedido.
+ */
+const NEGATIVOS: readonly OperadorDeFiltro[] = ['notILike', 'ne', 'notInArray']
+
+/** O positivo equivalente de cada negativo — é ele que corre elemento a elemento. */
+const POSITIVO_DE: Partial<Record<OperadorDeFiltro, OperadorDeFiltro>> = {
+  notILike: 'iLike',
+  ne: 'eq',
+  notInArray: 'inArray',
+}
+
 export function filtroCasa(linha: unknown, filtro: FiltroDaTabela): boolean {
   const bruto = valorDaLinha(linha, filtro.id)
 
   if (filtro.operador === 'isEmpty') return estaVazio(bruto)
   if (filtro.operador === 'isNotEmpty') return !estaVazio(bruto)
+
+  // CAMPO MULTIVALORADO (um pedido com N fornecedores): casa se ALGUM elemento
+  // casar. Sem isto a comparação cai em `String(array)`, que junta os itens por
+  // vírgula — `eq` passaria a comparar contra `"a,b"`, e o separador do acidente
+  // nem é o que a tela mostra.
+  if (Array.isArray(bruto)) {
+    const negativo = NEGATIVOS.includes(filtro.operador)
+    const operador = negativo ? (POSITIVO_DE[filtro.operador] ?? filtro.operador) : filtro.operador
+    const algum = bruto.some((item) => filtroCasa({ [filtro.id]: item }, { ...filtro, operador }))
+    return negativo ? !algum : algum
+  }
 
   switch (filtro.operador) {
     case 'iLike':

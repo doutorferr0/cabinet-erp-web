@@ -10,6 +10,7 @@ import {
 import { ErroDaApi } from '@/data/api-provider'
 import { dadosOuErro, itemOuNulo } from '@/data/api-provider'
 import {
+  FILTRAVEIS_OPORTUNIDADE,
   ORDENAVEIS_OPORTUNIDADE,
   funis,
   motivosDePerda,
@@ -119,6 +120,54 @@ describe('fronteira do CRM', () => {
     expect(url.searchParams.get('q')).toBe('jardim')
   })
 
+  it('o filtro estruturado viaja em `filters`, com o campo em INGLÊS', async () => {
+    await oportunidadesDoFunil('funil-1').list(
+      tableState({
+        filtros: [
+          {
+            filtroId: 'linha-1',
+            id: 'stageName',
+            variante: 'select',
+            operador: 'eq',
+            valor: 'Proposta',
+          },
+        ],
+      }),
+    )
+
+    const url = new URL(servidor.em('/api/crm/opportunities')[0]?.url ?? '')
+    expect(JSON.parse(url.searchParams.get('filters') ?? '[]')).toEqual([
+      { field: 'stageName', operator: 'eq', value: 'Proposta' },
+    ])
+    // `and` é o padrão do contrato e não viaja — mandá-lo sujaria a chave de
+    // cache da consulta sem mudar resposta.
+    expect(url.searchParams.get('joinOperator')).toBeNull()
+  })
+
+  /**
+   * Dinheiro fica FORA da whitelist por regra escrita (`filtro-de-consulta.ts`,
+   * §Dinheiro): o valor trafega em centavos e não há variante que converta na
+   * borda. A fronteira barra ANTES de sair — o 400 do servidor chegaria à tela
+   * com cara de erro do servidor, quando o defeito é de quem chamou.
+   */
+  it('valor previsto NÃO é filtrável, e a recusa é alta', async () => {
+    await expect(
+      oportunidadesDoFunil('funil-1').list(
+        tableState({
+          filtros: [
+            {
+              filtroId: 'linha-1',
+              id: 'expectedValueCents',
+              variante: 'number',
+              operador: 'gt',
+              valor: '100',
+            },
+          ],
+        }),
+      ),
+    ).rejects.toThrow(/não filtrável/i)
+  })
+
   it('motivo de perda é listagem paginada, como todo cadastro', async () => {
     const pagina = await motivosDePerda.list(tableState())
     expect(pagina.total).toBe(1)
@@ -206,5 +255,28 @@ describe('whitelist de ordenação', () => {
         `\`${campo}\``,
       )
     }
+  })
+
+  /**
+   * Mesma trava para o FILTRO, e com a subtração explícita: a whitelist de
+   * `filters` é a de `sortBy` menos o dinheiro. Ler as duas do mesmo texto do
+   * contrato impede a divergência muda — filtro barrado aqui e aceito lá (ou o
+   * contrário) é 400 que só aparece com o operador na frente.
+   */
+  it('FILTRAVEIS_OPORTUNIDADE é a whitelist do contrato, sem o dinheiro', () => {
+    const parametros = (
+      contrato as unknown as {
+        paths: Record<string, { get: { parameters: { name: string; description?: string }[] } }>
+      }
+    ).paths['/api/crm/opportunities']?.get?.parameters
+    const filtro = parametros?.find((p) => p.name === 'filters')
+
+    expect(filtro, 'o contrato precisa publicar `filters` para o recurso').toBeDefined()
+    for (const campo of FILTRAVEIS_OPORTUNIDADE) {
+      expect(filtro?.description, `campo ${campo} não está na whitelist do contrato`).toContain(
+        `\`${campo}\``,
+      )
+    }
+    expect(FILTRAVEIS_OPORTUNIDADE).not.toContain('expectedValueCents')
   })
 })

@@ -9,7 +9,14 @@ import type {
   CrmStageDto,
   CrmStageWriteRequest,
   EmployeeDto,
+  ListFilter,
 } from '@/api/gerado'
+import {
+  type FiltroDaTabela,
+  type OperadorDeFiltro,
+  type VarianteDeFiltro,
+  linhaPassaNosFiltros,
+} from '@/lib/filtro-de-consulta'
 import { http, HttpResponse } from 'msw'
 import { novoId, store } from './store'
 
@@ -56,11 +63,63 @@ function problemaJson(status: number, detail: string) {
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 
+/**
+ * Filtro estruturado do lado do SERVIDOR falso.
+ *
+ * Existe porque o contrário é pior do que não ter filtro: o parâmetro `filters`
+ * sai da tela, chega aqui e é DESCARTADO em silêncio — a listagem devolve tudo
+ * enquanto o painel mostra a condição aplicada. O operador lê "3 registros
+ * atendem" numa lista de 40 e não tem como saber de quem é o erro.
+ *
+ * O tipo de cada campo é do SERVIDOR, não da tela: `variante` não viaja no
+ * contrato (é decisão de qual controle desenhar), e sem ela a comparação de
+ * data cairia em texto — `lte '2026-08-05'` deixaria de fora o próprio dia 5,
+ * que tem hora no ISO guardado.
+ *
+ * `undefined` = **o recurso não publica `filters`**. Aí o filtro que chegar é
+ * 400, exatamente como o contrato manda, em vez de resposta larga demais.
+ */
+type CamposFiltraveis = Record<string, VarianteDeFiltro>
+
+/** Condições do contrato → o vocabulário de `filtro-de-consulta`, ou o 400. */
+function condicoesDoPedido(
+  bruto: string,
+  filtraveis: CamposFiltraveis | undefined,
+): FiltroDaTabela[] | string {
+  if (!filtraveis) return 'Este recurso não publica o parâmetro filters.'
+
+  let pedidos: unknown
+  try {
+    pedidos = JSON.parse(bruto)
+  } catch {
+    return 'filters não é JSON válido.'
+  }
+  if (!Array.isArray(pedidos)) return 'filters é um array JSON de condições.'
+
+  const condicoes: FiltroDaTabela[] = []
+  for (const [indice, pedido] of (pedidos as ListFilter[]).entries()) {
+    const variante = filtraveis[pedido?.field ?? '']
+    if (!variante) {
+      return `Campo não filtrável: ${pedido?.field}. A whitelist é ${Object.keys(filtraveis).join(', ')}.`
+    }
+    condicoes.push({
+      // A chave de linha é da TELA e não viaja; aqui ela só precisa ser única.
+      filtroId: `condicao-${indice}`,
+      id: pedido.field,
+      variante,
+      operador: pedido.operator as OperadorDeFiltro,
+      valor: pedido.value ?? '',
+    })
+  }
+  return condicoes
+}
+
 function listar<T>(
   itens: readonly T[],
   url: URL,
   ordenaveis: readonly string[],
   textoDe: (item: T) => (string | null | undefined)[],
+  filtraveis?: CamposFiltraveis,
 ) {
   const q = url.searchParams.get('q')
   const sortBy = url.searchParams.get('sortBy')
@@ -80,6 +139,17 @@ function listar<T>(
     const alvo = q.toLowerCase()
     rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
   }
+
+  // `filters` se soma ao `q` com AND, como o contrato descreve: `q` é texto
+  // livre sobre os campos que o recurso escolheu, `filters` é campo a campo.
+  const pedidoDeFiltro = url.searchParams.get('filters')
+  if (pedidoDeFiltro) {
+    const condicoes = condicoesDoPedido(pedidoDeFiltro, filtraveis)
+    if (typeof condicoes === 'string') return problemaJson(400, condicoes)
+    const juncao = url.searchParams.get('joinOperator') === 'or' ? 'or' : 'and'
+    rows = rows.filter((item) => linhaPassaNosFiltros(item, condicoes, juncao))
+  }
+
   if (sortBy) {
     const chave = sortBy as keyof T
     rows.sort((a, b) => {
@@ -214,6 +284,24 @@ function estadoInicial(): EstadoDoCrm {
       lostReasonId: 'perda-preco',
       stageChangedAt: diasAtras(20),
       closedAt: diasAtras(20),
+    }),
+    // Mais duas perdas, com motivos DIFERENTES e uma repetição: o relatório de
+    // perdas por motivo com uma linha só não mostra o que ele é — a ordenação
+    // por contagem, que é a pergunta ("qual é o maior motivo"), só aparece com
+    // empate desfeito.
+    cartao('op-0007', 'Clínica Vila Nova — recepção', 'etapa-perdido', 2, {
+      partnerId: 'parc-0003',
+      expectedValueCents: 1_700_000,
+      lostReasonId: 'perda-preco',
+      stageChangedAt: diasAtras(41),
+      closedAt: diasAtras(41),
+    }),
+    cartao('op-0008', 'Loja de calçados — vitrine', 'etapa-perdido', 3, {
+      contactName: 'Fábio Menezes',
+      expectedValueCents: 900_000,
+      lostReasonId: 'perda-prazo',
+      stageChangedAt: diasAtras(9),
+      closedAt: diasAtras(9),
     }),
   ]
 
@@ -500,6 +588,16 @@ export const handlersDoCrm = [
         'stageChangedAt',
       ],
       (o) => [o.name, o.partnerName, o.contactName, o.stageName],
+      // A whitelist do filtro é a do `sortBy` MENOS o dinheiro — ver
+      // `FILTRAVEIS_OPORTUNIDADE` em `src/data/crm-api.ts`, onde a subtração
+      // está justificada. Aqui ela reaparece porque quem recusa é o servidor.
+      {
+        name: 'text',
+        partnerName: 'text',
+        stageName: 'text',
+        expectedCloseDate: 'date',
+        stageChangedAt: 'date',
+      },
     )
   }),
 
@@ -694,5 +792,61 @@ export const handlersDoCrm = [
     achado.name = corpo.name
     achado.active = corpo.active ?? false
     return HttpResponse.json(achado)
+  }),
+
+  // ---------------- relatório de perdas ----------------
+
+  /**
+   * Por que perdemos, somado no período.
+   *
+   * A apuração mora AQUI, e não na tela, pelo motivo escrito no contrato: a
+   * listagem tem teto de 100 por página, então contar do lado do cliente daria
+   * número certo em base pequena e errado, sem sintoma, na primeira que
+   * passasse do teto. O mock conta a base inteira porque é o que o servidor
+   * fará.
+   */
+  http.get('*/api/crm/reports/lost-reasons', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return SEM_EMPRESA()
+
+    const url = new URL(request.url)
+    const de = url.searchParams.get('from')
+    const ate = url.searchParams.get('to')
+    if (!de || !ate) return problemaJson(400, 'O período (`from` e `to`) é obrigatório.')
+    if (de > ate) return problemaJson(400, 'O início do período é depois do fim.')
+    const pipelineId = url.searchParams.get('pipelineId')
+
+    const perdidas = crm.oportunidades.filter((o) => {
+      if (pipelineId && o.pipelineId !== pipelineId) return false
+      if (!estagio(o.stageId)?.isLost) return false
+      // Por DIA, não por instante: quem pergunta por agosto quer o dia 31
+      // inteiro, e o `closedAt` guardado tem hora.
+      const dia = (o.closedAt ?? '').slice(0, 10)
+      return dia !== '' && dia >= de && dia <= ate
+    })
+
+    const contagem = new Map<string, number>()
+    for (const o of perdidas) {
+      const chave = o.lostReasonId ?? ''
+      contagem.set(chave, (contagem.get(chave) ?? 0) + 1)
+    }
+
+    const rows = [...contagem.entries()]
+      .map(([id, count]) => ({
+        lostReasonId: id === '' ? null : id,
+        // Motivo DESATIVADO continua legível no relatório do ano passado: é
+        // por isso que a desativação é lógica. Cair no genérico aqui apagaria
+        // a razão da perda de tudo que veio antes da aposentadoria.
+        lostReasonName:
+          id === ''
+            ? 'Sem motivo registrado'
+            : (crm.motivos.find((m) => m.id === id)?.name ?? 'Motivo removido'),
+        count,
+      }))
+      // A pergunta é qual é o MAIOR motivo; empate desempata por nome, para a
+      // ordem não dançar entre duas consultas iguais.
+      .sort((a, b) => b.count - a.count || a.lostReasonName.localeCompare(b.lostReasonName))
+
+    return HttpResponse.json({ from: de, to: ate, total: perdidas.length, rows })
   }),
 ]

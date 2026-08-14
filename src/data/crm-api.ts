@@ -1,6 +1,7 @@
 import type {
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
+  CrmLostReasonsReportDto,
   CrmOpportunityDto,
   CrmOpportunityStagePatchRequest,
   CrmOpportunityWriteRequest,
@@ -18,6 +19,7 @@ import {
   createCrmOpportunity,
   createCrmPipeline,
   createCrmStage,
+  getCrmLostReasonsReport,
   getCrmOpportunity,
   getCrmPipeline,
   listCrmLostReasons,
@@ -94,6 +96,26 @@ export const ORDENAVEIS_OPORTUNIDADE: readonly string[] = [
 export const ORDENAVEIS_MOTIVO_DE_PERDA: readonly string[] = ['name', 'active']
 
 /**
+ * Whitelist de `field` do filtro estruturado da oportunidade — a MESMA do
+ * contrato.
+ *
+ * É a de `sortBy` **menos `expectedValueCents`**, e a subtração tem regra
+ * escrita (`src/lib/filtro-de-consulta.ts`, §Dinheiro fica de fora): o valor
+ * trafega em centavos e o filtro não tem variante que converta na borda, então
+ * `1000` procuraria R$ 10,00 enquanto quem digitou procurava mil reais — número
+ * certo, significado errado, e sem sintoma nenhum na tela. A coluna de valor
+ * continua na listagem e continua ORDENÁVEL: ordenar por centavos dá a mesma
+ * ordem que ordenar por reais.
+ */
+export const FILTRAVEIS_OPORTUNIDADE: readonly string[] = [
+  'name',
+  'partnerName',
+  'stageName',
+  'expectedCloseDate',
+  'stageChangedAt',
+]
+
+/**
  * Providers de listagem para as telas de cadastro (DataTable com
  * `{q, sort, page, pageSize}`). Entram no registry de `src/data/index.ts`
  * quando as telas existirem: hoje não há tela de CRM, e entrada de registry sem
@@ -129,11 +151,19 @@ export const funis: FunisProvider = {
 export const motivosDePerda: ListProvider<CrmLostReasonDto> =
   createApiListProvider<CrmLostReasonDto>({ url: URL_MOTIVOS_DE_PERDA })
 
-/** Oportunidades de UM funil — o `pipelineId` viaja em toda consulta da tabela. */
+/**
+ * Oportunidades de UM funil — o `pipelineId` viaja em toda consulta da tabela.
+ *
+ * É este provider que alimenta as DUAS visões da tela do funil (quadro e
+ * lista): a visão escolhe o desenho, não a pergunta. Por isso o filtro
+ * estruturado entra aqui e não em cada visão — dois providers dariam dois
+ * filtros com o mesmo nome na mesma tela.
+ */
 export function oportunidadesDoFunil(pipelineId: string): ListProvider<CrmOpportunityDto> {
   return createApiListProvider<CrmOpportunityDto>({
     url: URL_OPORTUNIDADES,
     fixa: { pipelineId },
+    filtraveis: FILTRAVEIS_OPORTUNIDADE,
   })
 }
 
@@ -145,6 +175,12 @@ export const CHAVES_CRM = {
   oportunidades: (filtro: ListCrmOpportunitiesParams) => ['crm', 'oportunidades', filtro] as const,
   oportunidade: (id: string) => ['crm', 'oportunidade', id] as const,
   motivosDePerda: ['crm', 'motivos-de-perda'] as const,
+  // `pipelineId` explicitamente `| undefined` (e não opcional): com
+  // `exactOptionalPropertyTypes`, "ausente" e "presente como undefined" são
+  // tipos diferentes, e a chave de cache precisa aceitar os dois — o relatório
+  // de TODOS os funis é um recorte legítimo.
+  relatorioDePerdas: (recorte: { pipelineId: string | undefined; de: string; ate: string }) =>
+    ['crm', 'relatorio-de-perdas', recorte] as const,
 }
 
 /**
@@ -268,6 +304,52 @@ export function useMotivosDePerda() {
         'Falha ao carregar os motivos de perda.',
       )
       return (pagina.rows ?? []).filter((motivo) => motivo.active)
+    },
+  })
+}
+
+/**
+ * POR QUE PERDEMOS, somado no período — quem conta é o SERVIDOR.
+ *
+ * A tentação era contar aqui, sobre as linhas que a listagem já trouxe: sai de
+ * graça e não mexe no contrato. Não serve. A listagem tem teto de 100 por
+ * página, então a contagem sairia certa numa empresa pequena e errada, **sem
+ * sintoma**, na primeira que passasse do teto — e um relatório que erra em
+ * silêncio é pior que relatório nenhum, porque alguém decide com ele.
+ *
+ * `habilitado` existe porque o relatório mora num diálogo: consultar ao abrir a
+ * tela do funil seria uma requisição por visita para responder pergunta que
+ * ninguém fez.
+ */
+export function useRelatorioDePerdas({
+  pipelineId,
+  de,
+  ate,
+  habilitado = true,
+}: {
+  pipelineId?: string
+  de: string
+  ate: string
+  habilitado?: boolean
+}) {
+  return useQuery({
+    queryKey: CHAVES_CRM.relatorioDePerdas({ pipelineId, de, ate }),
+    // Período pela metade não é consulta: o operador ainda está escolhendo.
+    enabled: habilitado && de !== '' && ate !== '',
+    retry: repetirSeValeAPena,
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await getCrmLostReasonsReport({
+        // `exactOptionalPropertyTypes`: ausente e `undefined` não são a mesma
+        // coisa para o tipo gerado, e o construtor de URL manda `undefined`
+        // como a string "undefined".
+        ...(pipelineId === undefined ? {} : { pipelineId }),
+        from: de,
+        to: ate,
+      })
+      return dadosOuErro<CrmLostReasonsReportDto>(
+        resposta,
+        'Falha ao carregar as perdas do período.',
+      )
     },
   })
 }

@@ -69,3 +69,99 @@ export function somaDaColuna(cartoes: readonly CrmOpportunityDto[]): number {
 export function quemDoCartao(oportunidade: CrmOpportunityDto): string | null {
   return oportunidade.partnerName ?? oportunidade.contactName ?? null
 }
+
+/**
+ * AGRUPAR POR — as colunas do quadro saem de um campo, e o campo é escolha do
+ * operador (view modes, #86).
+ *
+ * `stageName` é o padrão porque é o que um funil É: as colunas são as etapas
+ * configuradas, na ordem configurada. Os outros dois respondem perguntas que a
+ * mesma consulta já contém e que a etapa esconde — "quem está carregando o
+ * quê" e "de onde vêm os negócios que estão vivos".
+ *
+ * **A lista é curta de propósito.** Agrupar por CLIENTE daria uma coluna por
+ * cliente, quase todas com um cartão só: um quadro de oitenta colunas não é
+ * agrupamento, é a mesma lista virada de lado. O critério para entrar é
+ * cardinalidade baixa e pergunta de gestão, não "o campo existe no DTO".
+ *
+ * `expectedValueCents` também fica fora, e por outro motivo: agrupar por
+ * dinheiro pediria faixas (`até 5 mil`, `5 a 20 mil`), e faixa é decisão do
+ * negócio — inventá-la aqui seria escrever regra de gestão em nome do user.
+ */
+export const AGRUPAMENTOS_DO_FUNIL = [
+  { id: 'stageName', rotulo: 'Etapa' },
+  { id: 'ownerName', rotulo: 'Responsável' },
+  { id: 'source', rotulo: 'Origem' },
+] as const
+
+/** O agrupamento que o quadro usa quando ninguém escolheu outro. */
+export const AGRUPAMENTO_PADRAO = 'stageName'
+
+/**
+ * Uma coluna do quadro, já montada.
+ *
+ * `etapa` só existe quando as colunas SÃO as etapas. É a diferença que a tela
+ * precisa saber: só nesse caso a coluna tem um `Incluir` que sabe onde o cartão
+ * nasce, e só nesse caso ganhar/perder é propriedade da própria coluna.
+ */
+export interface ColunaDoQuadro {
+  chave: string
+  titulo: string
+  cartoes: CrmOpportunityDto[]
+  etapa?: CrmStageDto
+}
+
+/** Campo → como ler o valor e como chamar quem não tem. */
+const CAMPO_DO_AGRUPAMENTO: Record<
+  string,
+  { valor: (o: CrmOpportunityDto) => string | null; vazio: string }
+> = {
+  ownerName: { valor: (o) => o.ownerName ?? null, vazio: 'Sem responsável' },
+  source: { valor: (o) => o.source ?? null, vazio: 'Sem origem' },
+}
+
+/**
+ * As colunas do quadro para o agrupamento escolhido.
+ *
+ * Por ETAPA, as colunas vêm das etapas CONFIGURADAS — inclusive as vazias, e na
+ * ordem do funil. Pelos outros campos elas vêm do DADO, porque não há lista de
+ * responsáveis nem de origens para enumerar: coluna de um responsável sem
+ * nenhum negócio no funil seria coluna inventada.
+ *
+ * A coluna do valor AUSENTE (`Sem responsável`) vai para o fim, não some: são
+ * exatamente os cartões que precisam de alguém olhando.
+ */
+export function colunasDoQuadro(
+  oportunidades: readonly CrmOpportunityDto[],
+  etapas: readonly CrmStageDto[],
+  agruparPor: string,
+): ColunaDoQuadro[] {
+  const campo = CAMPO_DO_AGRUPAMENTO[agruparPor]
+  // Campo desconhecido cai na etapa: é o agrupamento que sempre existe, e o
+  // quadro em branco seria pior que o quadro no padrão.
+  if (!campo) {
+    const porEtapa = agruparPorEtapa(oportunidades, etapas)
+    return etapas.map((etapa) => ({
+      chave: etapa.id,
+      titulo: etapa.name,
+      cartoes: porEtapa[etapa.id] ?? [],
+      etapa,
+    }))
+  }
+
+  const porValor = new Map<string, CrmOpportunityDto[]>()
+  for (const oportunidade of oportunidades) {
+    const chave = campo.valor(oportunidade) ?? ''
+    const coluna = porValor.get(chave)
+    if (coluna) coluna.push(oportunidade)
+    else porValor.set(chave, [oportunidade])
+  }
+
+  const comValor = [...porValor.entries()]
+    .filter(([chave]) => chave !== '')
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([chave, cartoes]) => ({ chave, titulo: chave, cartoes }))
+
+  const semValor = porValor.get('')
+  return semValor ? [...comValor, { chave: '', titulo: campo.vazio, cartoes: semValor }] : comValor
+}

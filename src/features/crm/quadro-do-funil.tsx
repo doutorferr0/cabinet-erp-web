@@ -8,12 +8,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useEstagios, useMoverOportunidade, useOportunidades } from '@/data/crm-api'
+import { useEstagios, useMoverOportunidade } from '@/data/crm-api'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { Calendar, MoreHorizontal, Plus } from 'lucide-react'
-import { agruparPorEtapa, quemDoCartao, somaDaColuna } from './funil-agrupa'
+import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
 
 /**
  * O QUADRO DO FUNIL — as oportunidades nas etapas configuradas.
@@ -48,27 +48,62 @@ import { agruparPorEtapa, quemDoCartao, somaDaColuna } from './funil-agrupa'
  * `topicos/dashboard.md` também não — então campo de cartão é pergunta ao user,
  * nunca inferência. O sinal de apodrecimento (`rotDays` × `stageChangedAt`)
  * ficou de FORA por escolha dele, embora o contrato já o sirva.
+ *
+ * ## O quadro não consulta nada (view modes, #86)
+ *
+ * As oportunidades chegam PRONTAS, da listagem que também desenha a visão
+ * Lista. É o que faz as duas visões responderem à mesma pergunta: com consulta
+ * própria aqui, alternar quadro ⇄ lista mudaria de filtro sem avisar, e a
+ * mesma tela mostraria duas contagens diferentes do mesmo funil.
+ *
+ * O que ele ainda consulta são as ETAPAS — que não são dado da listagem, são a
+ * configuração do funil, e continuam sendo necessárias mesmo quando as colunas
+ * agrupam por outro campo: o menu `Mover para` move entre ETAPAS sempre.
  */
 
 /** O que o menu de um cartão pode fazer. `null` = fim da coluna de destino. */
-interface Destino {
+export interface Destino {
   stageId: string
   precedeId: string | null
   rotulo: string
+  /**
+   * A etapa de destino é de PERDA (`isLost`)?
+   *
+   * É fato sobre a ETAPA, não sobre o movimento — e a distinção importa porque
+   * o contrato cobra `lostReasonId` **toda vez que o destino é de perda**,
+   * inclusive quando o cartão já está lá e só muda de posição na coluna.
+   */
+  perda: boolean
 }
 
 function destinosDoCartao(
   oportunidade: CrmOpportunityDto,
   etapas: readonly CrmStageDto[],
   coluna: readonly CrmOpportunityDto[],
+  colunaEhEtapa: boolean,
 ): Destino[] {
   const outras = etapas
     .filter((etapa) => etapa.id !== oportunidade.stageId)
-    .map((etapa) => ({ stageId: etapa.id, precedeId: null, rotulo: etapa.name }))
+    .map((etapa) => ({
+      stageId: etapa.id,
+      precedeId: null,
+      rotulo: etapa.name,
+      perda: etapa.isLost,
+    }))
+
+  // Reposicionar é um fato sobre a ORDEM DENTRO DA ETAPA (`precedeId` aponta o
+  // vizinho de etapa). Agrupado por responsável, "topo desta coluna" pediria ao
+  // servidor uma posição relativa a cartões de etapas diferentes — pergunta que
+  // o contrato não tem como responder, e cujo efeito o operador não veria.
+  if (!colunaEhEtapa) return outras
 
   const primeiro = coluna[0]
   const ultimo = coluna[coluna.length - 1]
   const dentroDaColuna: Destino[] = []
+  // A etapa em que o cartão JÁ ESTÁ pode ser de perda, e reposicionar dentro
+  // dela continua sendo um `PATCH` com `stageId` de etapa `isLost` — o servidor
+  // cobra o motivo do mesmo jeito.
+  const aquiEhPerda = etapas.find((etapa) => etapa.id === oportunidade.stageId)?.isLost ?? false
 
   // Reposicionar só faz sentido com vizinho: numa coluna de um cartão só, os
   // dois itens moveriam o cartão para onde ele já está.
@@ -78,6 +113,7 @@ function destinosDoCartao(
         stageId: oportunidade.stageId,
         precedeId: primeiro.id,
         rotulo: 'Topo desta etapa',
+        perda: aquiEhPerda,
       })
     }
     if (oportunidade.id !== ultimo.id) {
@@ -85,6 +121,7 @@ function destinosDoCartao(
         stageId: oportunidade.stageId,
         precedeId: null,
         rotulo: 'Fim desta etapa',
+        perda: aquiEhPerda,
       })
     }
   }
@@ -95,9 +132,15 @@ function destinosDoCartao(
 function Cartao({
   oportunidade,
   destinos,
+  mostraEtapa,
+  aoPerder,
 }: {
   oportunidade: CrmOpportunityDto
   destinos: Destino[]
+  /** A coluna não é a etapa — então a etapa precisa estar escrita no cartão. */
+  mostraEtapa: boolean
+  /** Pede o motivo antes de perder. Quem tem o diálogo é a PÁGINA. */
+  aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
   const mover = useMoverOportunidade()
   const quem = quemDoCartao(oportunidade)
@@ -107,6 +150,35 @@ function Cartao({
   // servidor não tem o dado.
   const valorCents = oportunidade.expectedValueCents ?? null
   const dataPrevista = oportunidade.expectedCloseDate ?? null
+
+  /**
+   * O item do menu dispara três coisas diferentes, e confundi-las é o defeito
+   * que esta issue conserta.
+   *
+   * 1. **Destino comum** — `PATCH` direto, como sempre foi.
+   * 2. **Destino de perda, cartão ainda ABERTO** — abre o diálogo. O motivo é
+   *    dado novo, e só o operador o tem; mandar sem ele era o 400 que deixava o
+   *    cartão parado com um recado que ninguém podia atender.
+   * 3. **Destino de perda, cartão JÁ perdido** — reenvia o motivo que está
+   *    gravado. Acontece ao reposicionar dentro da coluna de perda e ao trocar
+   *    de uma etapa de perda para outra; o contrato cobra `lostReasonId` nos
+   *    dois casos, e perguntar de novo o que a tela tem em mãos seria diálogo
+   *    para confirmar o já dito.
+   */
+  function escolher(destino: Destino) {
+    if (destino.perda && !oportunidade.lostReasonId) {
+      aoPerder(oportunidade, destino.stageId)
+      return
+    }
+    mover.mutate({
+      id: oportunidade.id,
+      destino: {
+        stageId: destino.stageId,
+        precedeId: destino.precedeId,
+        ...(destino.perda ? { lostReasonId: oportunidade.lostReasonId } : {}),
+      },
+    })
+  }
 
   return (
     <li data-slot="cartao" className="rounded-card border-2 bg-card p-2.5">
@@ -137,12 +209,7 @@ function Cartao({
             {destinos.map((destino) => (
               <DropdownMenuItem
                 key={`${destino.stageId}-${destino.precedeId ?? 'fim'}`}
-                onAction={() =>
-                  mover.mutate({
-                    id: oportunidade.id,
-                    destino: { stageId: destino.stageId, precedeId: destino.precedeId },
-                  })
-                }
+                onAction={() => escolher(destino)}
               >
                 {destino.rotulo}
               </DropdownMenuItem>
@@ -154,6 +221,15 @@ function Cartao({
       {quem ? <p className="mt-1 text-sm text-muted-foreground">{quem}</p> : null}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-1.5 text-sm text-muted-foreground">
+        {/* Agrupado por outro campo, a coluna deixa de dizer em que etapa o
+            negócio está — e sem isso o item `Mover para` do menu levaria o
+            cartão para um lugar que a tela não mostra. O carimbo devolve o que
+            a coluna deixou de contar. */}
+        {mostraEtapa ? (
+          <span className="border-2 border-border px-1.5 font-mono text-[0.75rem] uppercase tracking-[0.06em] text-foreground">
+            {oportunidade.stageName}
+          </span>
+        ) : null}
         {/* Dinheiro em centavos inteiros; R$ só aqui, na borda de exibição.
             `null` é "ainda não estimado" e some — zero diria outra coisa. */}
         {valorCents === null ? null : (
@@ -181,20 +257,21 @@ function Cartao({
 }
 
 function Coluna({
-  etapa,
-  cartoes,
+  coluna,
   etapas,
   pipelineId,
+  aoPerder,
 }: {
-  etapa: CrmStageDto
-  cartoes: CrmOpportunityDto[]
+  coluna: ColunaDoQuadro
   etapas: readonly CrmStageDto[]
   pipelineId: string
+  aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
+  const { etapa, cartoes } = coluna
   return (
     <section
       data-slot="coluna"
-      aria-label={etapa.name}
+      aria-label={coluna.titulo}
       // A coluna é caixa própria na superfície afundada e os cartões ficam em
       // `bg-card` por cima — é o contraste que separa o cartão da coluna. O
       // preenchimento NÃO varia por etapa: aqui a cor já é a do módulo (o verde
@@ -203,13 +280,16 @@ function Coluna({
         'flex min-w-0 flex-col gap-2 rounded-panel border-2 bg-surface-sunken p-2.5 shadow-el1',
         // Ganho e perda são propriedades da ETAPA, e o quadro as mostra: a
         // coluna que fecha o negócio não é uma etapa qualquer no meio do fluxo.
-        etapa.isWon && 'bg-zone-money',
-        etapa.isLost && 'bg-zone-warn',
+        // Agrupado por outro campo, a coluna não é etapa nenhuma e não herda a
+        // zona — pintar de verde a coluna de um vendedor diria que ele é o
+        // negócio fechado.
+        etapa?.isWon && 'bg-zone-money',
+        etapa?.isLost && 'bg-zone-warn',
       )}
     >
       <header className="flex items-center gap-2 rounded-card border-2 bg-card px-2 py-1.5">
         <h3 className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
-          {etapa.name}
+          {coluna.titulo}
         </h3>
         <span className="rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium tabular-nums">
           {cartoes.length}
@@ -222,16 +302,21 @@ function Coluna({
         </span>
         {/* Incluir NA COLUNA, e não um botão único no alto: o operador que abre
             uma oportunidade já sabe em que etapa ela nasce, e a etapa viaja na
-            URL. Um `Incluir` genérico faria escolher a etapa duas vezes. */}
-        <Link
-          to="/crm/oportunidades/$oportunidadeId"
-          params={{ oportunidadeId: 'novo' }}
-          search={{ funilId: pipelineId, etapaId: etapa.id }}
-          aria-label={`Incluir oportunidade em ${etapa.name}`}
-          className="grid size-6 place-content-center rounded-item border-2 hover:bg-modulo"
-        >
-          <Plus className="size-3.5" aria-hidden="true" />
-        </Link>
+            URL. Um `Incluir` genérico faria escolher a etapa duas vezes.
+            Só existe quando a coluna É uma etapa: numa coluna de responsável, o
+            cartão novo não teria etapa nenhuma para nascer, e escolher uma por
+            ele seria o `Incluir` decidindo o funil. */}
+        {etapa ? (
+          <Link
+            to="/crm/oportunidades/$oportunidadeId"
+            params={{ oportunidadeId: 'novo' }}
+            search={{ funilId: pipelineId, etapaId: etapa.id }}
+            aria-label={`Incluir oportunidade em ${etapa.name}`}
+            className="grid size-6 place-content-center rounded-item border-2 hover:bg-modulo"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+          </Link>
+        ) : null}
       </header>
 
       {cartoes.length === 0 ? (
@@ -244,7 +329,9 @@ function Coluna({
             <Cartao
               key={oportunidade.id}
               oportunidade={oportunidade}
-              destinos={destinosDoCartao(oportunidade, etapas, cartoes)}
+              mostraEtapa={etapa === undefined}
+              destinos={destinosDoCartao(oportunidade, etapas, cartoes, etapa !== undefined)}
+              aoPerder={aoPerder}
             />
           ))}
         </ul>
@@ -253,11 +340,26 @@ function Coluna({
   )
 }
 
-export function QuadroDoFunil({ pipelineId }: { pipelineId: string }) {
+export function QuadroDoFunil({
+  pipelineId,
+  oportunidades,
+  agruparPor,
+  aoPerder,
+}: {
+  pipelineId: string
+  /** As linhas que a LISTAGEM trouxe — o quadro não consulta oportunidade. */
+  oportunidades: readonly CrmOpportunityDto[]
+  agruparPor: string
+  /**
+   * Pede o motivo antes de perder. O diálogo mora na PÁGINA, e não aqui, porque
+   * a listagem também precisa dele: com um diálogo por visão, o operador teria
+   * dois caminhos com estados diferentes para a mesma decisão.
+   */
+  aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
+}) {
   const etapas = useEstagios(pipelineId)
-  const oportunidades = useOportunidades({ pipelineId })
 
-  if (etapas.isPending || oportunidades.isPending) {
+  if (etapas.isPending) {
     return (
       <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
         {[0, 1, 2, 3].map((i) => (
@@ -267,32 +369,24 @@ export function QuadroDoFunil({ pipelineId }: { pipelineId: string }) {
     )
   }
 
-  if (etapas.isError || oportunidades.isError) {
+  if (etapas.isError) {
     return (
       <FalhaDoPainel
-        titulo="O funil não carregou"
-        erro={etapas.error ?? oportunidades.error}
+        titulo="As etapas do funil não carregaram"
+        erro={etapas.error}
         aoTentar={() => {
           void etapas.refetch()
-          void oportunidades.refetch()
         }}
       />
     )
   }
 
-  const colunas = etapas.data ?? []
-
-  if (colunas.length === 0) {
-    // Funil sem etapa é estado legítimo: funil nasce vazio, de propósito. A
-    // saída é o cadastro, e a tela diz qual — em branco não diz nada.
-    return (
-      <p className="rounded-card border-2 bg-card p-6 text-center text-sm text-muted-foreground">
-        Este funil ainda não tem etapas. Configure as etapas no Cadastro de Funis.
-      </p>
-    )
-  }
-
-  const porEtapa = agruparPorEtapa(oportunidades.data?.rows ?? [], colunas)
+  // Funil SEM etapa não chega aqui: quem avisa é a página, antes da listagem —
+  // ver `PaginaDoFunil`. O aviso subiu de nível porque o defeito não é da
+  // visão: sem etapa, nem quadro nem tabela têm o que mostrar, e a listagem
+  // diria "nenhum registro" para uma configuração que falta.
+  const configuradas = etapas.data ?? []
+  const colunas = colunasDoQuadro(oportunidades, configuradas, agruparPor)
 
   return (
     // `auto-fit`/`minmax`, nunca `@media`: as colunas espremem antes de quebrar
@@ -300,13 +394,13 @@ export function QuadroDoFunil({ pipelineId }: { pipelineId: string }) {
     // notificações encolhendo o `<main>`, que um breakpoint fixo não veria.
     // `items-start`: cada coluna para onde os cartões dela param.
     <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] items-start gap-4">
-      {colunas.map((etapa) => (
+      {colunas.map((coluna) => (
         <Coluna
-          key={etapa.id}
-          etapa={etapa}
-          etapas={colunas}
-          cartoes={porEtapa[etapa.id] ?? []}
+          key={coluna.chave}
+          coluna={coluna}
+          etapas={configuradas}
           pipelineId={pipelineId}
+          aoPerder={aoPerder}
         />
       ))}
     </div>

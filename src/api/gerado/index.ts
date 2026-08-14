@@ -14,6 +14,7 @@ import type {
   ChangePasswordRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
+  CrmLostReasonsReportDto,
   CrmOpportunityDto,
   CrmOpportunityStagePatchRequest,
   CrmOpportunityWriteRequest,
@@ -22,6 +23,7 @@ import type {
   CrmStageDto,
   CrmStageWriteRequest,
   DashboardSummaryDto,
+  GetCrmLostReasonsReportParams,
   HealthStatus,
   ListActivitiesParams,
   ListAgendaEventsParams,
@@ -2216,7 +2218,7 @@ export const getListCrmOpportunitiesUrl = (params?: ListCrmOpportunitiesParams,)
 }
 
 /**
- * Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban.
+ * Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban — e é o que permite à tela alternar quadro ⇄ lista sem refazer a pergunta.
  */
 export const listCrmOpportunities = async (params?: ListCrmOpportunitiesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCrmOpportunitiesResponse> => {
 
@@ -2442,6 +2444,61 @@ export const moveCrmOpportunityStage = async (id: string,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(crmOpportunityStagePatchRequest)
+  }
+);}
+
+
+
+export type getCrmLostReasonsReportResponse200 = {
+  data: CrmLostReasonsReportDto
+  status: 200
+}
+
+export type getCrmLostReasonsReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getCrmLostReasonsReportResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getCrmLostReasonsReportResponseSuccess = (getCrmLostReasonsReportResponse200) & {
+  headers: Headers;
+};
+export type getCrmLostReasonsReportResponseError = (getCrmLostReasonsReportResponse400 | getCrmLostReasonsReportResponse409) & {
+  headers: Headers;
+};
+
+export type getCrmLostReasonsReportResponse = (getCrmLostReasonsReportResponseSuccess | getCrmLostReasonsReportResponseError)
+
+export const getGetCrmLostReasonsReportUrl = (params: GetCrmLostReasonsReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/reports/lost-reasons?${stringifiedParams}` : `/api/crm/reports/lost-reasons`
+}
+
+/**
+ * Proposto. **Por que perdemos, somado no período.** É a pergunta que justifica o catálogo de motivos existir em vez de texto livre, e quem responde é o SERVIDOR: contar do lado do cliente exigiria baixar todas as oportunidades perdidas, e a listagem tem teto de 100 por página — o número sairia certo em empresa pequena e errado, sem sintoma, na primeira que passasse do teto. Ordenado por `count` decrescente: a pergunta é qual é o MAIOR motivo. Entram só as oportunidades em estágio `isLost`, pelo `closedAt` dentro do período.
+ */
+export const getCrmLostReasonsReport = async (params: GetCrmLostReasonsReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getCrmLostReasonsReportResponse> => {
+
+  return apiFetch<getCrmLostReasonsReportResponse>(getGetCrmLostReasonsReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

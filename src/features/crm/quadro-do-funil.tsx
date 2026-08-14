@@ -62,10 +62,18 @@ import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from
  */
 
 /** O que o menu de um cartão pode fazer. `null` = fim da coluna de destino. */
-interface Destino {
+export interface Destino {
   stageId: string
   precedeId: string | null
   rotulo: string
+  /**
+   * A etapa de destino é de PERDA (`isLost`)?
+   *
+   * É fato sobre a ETAPA, não sobre o movimento — e a distinção importa porque
+   * o contrato cobra `lostReasonId` **toda vez que o destino é de perda**,
+   * inclusive quando o cartão já está lá e só muda de posição na coluna.
+   */
+  perda: boolean
 }
 
 function destinosDoCartao(
@@ -76,7 +84,12 @@ function destinosDoCartao(
 ): Destino[] {
   const outras = etapas
     .filter((etapa) => etapa.id !== oportunidade.stageId)
-    .map((etapa) => ({ stageId: etapa.id, precedeId: null, rotulo: etapa.name }))
+    .map((etapa) => ({
+      stageId: etapa.id,
+      precedeId: null,
+      rotulo: etapa.name,
+      perda: etapa.isLost,
+    }))
 
   // Reposicionar é um fato sobre a ORDEM DENTRO DA ETAPA (`precedeId` aponta o
   // vizinho de etapa). Agrupado por responsável, "topo desta coluna" pediria ao
@@ -87,6 +100,10 @@ function destinosDoCartao(
   const primeiro = coluna[0]
   const ultimo = coluna[coluna.length - 1]
   const dentroDaColuna: Destino[] = []
+  // A etapa em que o cartão JÁ ESTÁ pode ser de perda, e reposicionar dentro
+  // dela continua sendo um `PATCH` com `stageId` de etapa `isLost` — o servidor
+  // cobra o motivo do mesmo jeito.
+  const aquiEhPerda = etapas.find((etapa) => etapa.id === oportunidade.stageId)?.isLost ?? false
 
   // Reposicionar só faz sentido com vizinho: numa coluna de um cartão só, os
   // dois itens moveriam o cartão para onde ele já está.
@@ -96,6 +113,7 @@ function destinosDoCartao(
         stageId: oportunidade.stageId,
         precedeId: primeiro.id,
         rotulo: 'Topo desta etapa',
+        perda: aquiEhPerda,
       })
     }
     if (oportunidade.id !== ultimo.id) {
@@ -103,6 +121,7 @@ function destinosDoCartao(
         stageId: oportunidade.stageId,
         precedeId: null,
         rotulo: 'Fim desta etapa',
+        perda: aquiEhPerda,
       })
     }
   }
@@ -114,11 +133,14 @@ function Cartao({
   oportunidade,
   destinos,
   mostraEtapa,
+  aoPerder,
 }: {
   oportunidade: CrmOpportunityDto
   destinos: Destino[]
   /** A coluna não é a etapa — então a etapa precisa estar escrita no cartão. */
   mostraEtapa: boolean
+  /** Pede o motivo antes de perder. Quem tem o diálogo é a PÁGINA. */
+  aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
   const mover = useMoverOportunidade()
   const quem = quemDoCartao(oportunidade)
@@ -128,6 +150,35 @@ function Cartao({
   // servidor não tem o dado.
   const valorCents = oportunidade.expectedValueCents ?? null
   const dataPrevista = oportunidade.expectedCloseDate ?? null
+
+  /**
+   * O item do menu dispara três coisas diferentes, e confundi-las é o defeito
+   * que esta issue conserta.
+   *
+   * 1. **Destino comum** — `PATCH` direto, como sempre foi.
+   * 2. **Destino de perda, cartão ainda ABERTO** — abre o diálogo. O motivo é
+   *    dado novo, e só o operador o tem; mandar sem ele era o 400 que deixava o
+   *    cartão parado com um recado que ninguém podia atender.
+   * 3. **Destino de perda, cartão JÁ perdido** — reenvia o motivo que está
+   *    gravado. Acontece ao reposicionar dentro da coluna de perda e ao trocar
+   *    de uma etapa de perda para outra; o contrato cobra `lostReasonId` nos
+   *    dois casos, e perguntar de novo o que a tela tem em mãos seria diálogo
+   *    para confirmar o já dito.
+   */
+  function escolher(destino: Destino) {
+    if (destino.perda && !oportunidade.lostReasonId) {
+      aoPerder(oportunidade, destino.stageId)
+      return
+    }
+    mover.mutate({
+      id: oportunidade.id,
+      destino: {
+        stageId: destino.stageId,
+        precedeId: destino.precedeId,
+        ...(destino.perda ? { lostReasonId: oportunidade.lostReasonId } : {}),
+      },
+    })
+  }
 
   return (
     <li data-slot="cartao" className="rounded-card border-2 bg-card p-2.5">
@@ -158,12 +209,7 @@ function Cartao({
             {destinos.map((destino) => (
               <DropdownMenuItem
                 key={`${destino.stageId}-${destino.precedeId ?? 'fim'}`}
-                onAction={() =>
-                  mover.mutate({
-                    id: oportunidade.id,
-                    destino: { stageId: destino.stageId, precedeId: destino.precedeId },
-                  })
-                }
+                onAction={() => escolher(destino)}
               >
                 {destino.rotulo}
               </DropdownMenuItem>
@@ -214,10 +260,12 @@ function Coluna({
   coluna,
   etapas,
   pipelineId,
+  aoPerder,
 }: {
   coluna: ColunaDoQuadro
   etapas: readonly CrmStageDto[]
   pipelineId: string
+  aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
   const { etapa, cartoes } = coluna
   return (
@@ -283,6 +331,7 @@ function Coluna({
               oportunidade={oportunidade}
               mostraEtapa={etapa === undefined}
               destinos={destinosDoCartao(oportunidade, etapas, cartoes, etapa !== undefined)}
+              aoPerder={aoPerder}
             />
           ))}
         </ul>
@@ -295,11 +344,18 @@ export function QuadroDoFunil({
   pipelineId,
   oportunidades,
   agruparPor,
+  aoPerder,
 }: {
   pipelineId: string
   /** As linhas que a LISTAGEM trouxe — o quadro não consulta oportunidade. */
   oportunidades: readonly CrmOpportunityDto[]
   agruparPor: string
+  /**
+   * Pede o motivo antes de perder. O diálogo mora na PÁGINA, e não aqui, porque
+   * a listagem também precisa dele: com um diálogo por visão, o operador teria
+   * dois caminhos com estados diferentes para a mesma decisão.
+   */
+  aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
   const etapas = useEstagios(pipelineId)
 
@@ -339,7 +395,13 @@ export function QuadroDoFunil({
     // `items-start`: cada coluna para onde os cartões dela param.
     <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] items-start gap-4">
       {colunas.map((coluna) => (
-        <Coluna key={coluna.chave} coluna={coluna} etapas={configuradas} pipelineId={pipelineId} />
+        <Coluna
+          key={coluna.chave}
+          coluna={coluna}
+          etapas={configuradas}
+          pipelineId={pipelineId}
+          aoPerder={aoPerder}
+        />
       ))}
     </div>
   )

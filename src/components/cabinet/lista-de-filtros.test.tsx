@@ -1,6 +1,6 @@
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
 import type { CampoFiltravel, FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
@@ -141,6 +141,20 @@ describe('ListaDeFiltros', () => {
     expect(filtros[0]?.valor).toBe('carla')
   })
 
+  // Remover apaga o botão que acabou de ser clicado: sem devolver o foco, quem
+  // navega por teclado é jogado ao topo do documento.
+  it('remover a última linha devolve o foco a Adicionar filtro', async () => {
+    const { user } = setup()
+    const adicionar = await abrirPainel(user)
+    await user.click(adicionar)
+
+    await user.click(screen.getByRole('button', { name: 'Remover o filtro 1' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Adicionar filtro' })).toHaveFocus()
+    })
+  })
+
   it('limpar devolve a lista vazia e a junção ao padrão', async () => {
     const { user } = setup()
     const adicionar = await abrirPainel(user)
@@ -151,6 +165,9 @@ describe('ListaDeFiltros', () => {
     await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
 
     expect(estado()).toEqual({ filtros: [], juncao: 'and' })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Adicionar filtro' })).toHaveFocus()
+    })
   })
 
   it('o gatilho conta os filtros mesmo com o painel fechado', async () => {

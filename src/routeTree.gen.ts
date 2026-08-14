@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as ComprasRouteImport } from './routes/compras'
+import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as LoginRouteImport } from './routes/login'
@@ -38,6 +39,8 @@ import { Route as ComprasOrdensIndexRouteImport } from './routes/compras/ordens/
 import { Route as ComprasOrdensOrdemIdRouteImport } from './routes/compras/ordens/$ordemId'
 import { Route as ComprasPedidosIndexRouteImport } from './routes/compras/pedidos/index'
 import { Route as ComprasPedidosPedidoIdRouteImport } from './routes/compras/pedidos/$pedidoId'
+import { Route as CrmFunisIndexRouteImport } from './routes/crm/funis/index'
+import { Route as CrmFunisFunilIdRouteImport } from './routes/crm/funis/$funilId'
 import { Route as VendasOrcamentosIndexRouteImport } from './routes/vendas/orcamentos/index'
 import { Route as VendasOrcamentosOrcamentoIdRouteImport } from './routes/vendas/orcamentos/$orcamentoId'
 
@@ -54,6 +57,11 @@ const CadastrosRoute = CadastrosRouteImport.update({
 const ComprasRoute = ComprasRouteImport.update({
   id: '/compras',
   path: '/compras',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmRoute = CrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -194,6 +202,16 @@ const ComprasPedidosPedidoIdRoute = ComprasPedidosPedidoIdRouteImport.update({
   path: '/pedidos/$pedidoId',
   getParentRoute: () => ComprasRoute,
 } as any)
+const CrmFunisIndexRoute = CrmFunisIndexRouteImport.update({
+  id: '/funis/',
+  path: '/funis/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmFunisFunilIdRoute = CrmFunisFunilIdRouteImport.update({
+  id: '/funis/$funilId',
+  path: '/funis/$funilId',
+  getParentRoute: () => CrmRoute,
+} as any)
 const VendasOrcamentosIndexRoute = VendasOrcamentosIndexRouteImport.update({
   id: '/orcamentos/',
   path: '/orcamentos/',
@@ -210,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
+  '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
@@ -229,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
   '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
@@ -237,10 +257,12 @@ export interface FileRoutesByFullPath {
   '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
   '/compras/ordens/': typeof ComprasOrdensIndexRoute
   '/compras/pedidos/': typeof ComprasPedidosIndexRoute
+  '/crm/funis/': typeof CrmFunisIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
@@ -258,6 +280,7 @@ export interface FileRoutesByTo {
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
   '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores': typeof CadastrosColaboradoresIndexRoute
@@ -266,6 +289,7 @@ export interface FileRoutesByTo {
   '/cadastros/profissionais': typeof CadastrosProfissionaisIndexRoute
   '/compras/ordens': typeof ComprasOrdensIndexRoute
   '/compras/pedidos': typeof ComprasPedidosIndexRoute
+  '/crm/funis': typeof CrmFunisIndexRoute
   '/vendas/orcamentos': typeof VendasOrcamentosIndexRoute
 }
 export interface FileRoutesById {
@@ -273,6 +297,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
+  '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
@@ -292,6 +317,7 @@ export interface FileRoutesById {
   '/cadastros/profissionais/$profissionalId': typeof CadastrosProfissionaisProfissionalIdRoute
   '/compras/ordens/$ordemId': typeof ComprasOrdensOrdemIdRoute
   '/compras/pedidos/$pedidoId': typeof ComprasPedidosPedidoIdRoute
+  '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
@@ -300,6 +326,7 @@ export interface FileRoutesById {
   '/cadastros/profissionais/': typeof CadastrosProfissionaisIndexRoute
   '/compras/ordens/': typeof ComprasOrdensIndexRoute
   '/compras/pedidos/': typeof ComprasPedidosIndexRoute
+  '/crm/funis/': typeof CrmFunisIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
 }
 export interface FileRouteTypes {
@@ -308,6 +335,7 @@ export interface FileRouteTypes {
     | '/'
     | '/cadastros'
     | '/compras'
+    | '/crm'
     | '/dashboard'
     | '/estoque'
     | '/login'
@@ -327,6 +355,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/$profissionalId'
     | '/compras/ordens/$ordemId'
     | '/compras/pedidos/$pedidoId'
+    | '/crm/funis/$funilId'
     | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
@@ -335,10 +364,12 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/'
     | '/compras/ordens/'
     | '/compras/pedidos/'
+    | '/crm/funis/'
     | '/vendas/orcamentos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/crm'
     | '/dashboard'
     | '/login'
     | '/planner'
@@ -356,6 +387,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/$profissionalId'
     | '/compras/ordens/$ordemId'
     | '/compras/pedidos/$pedidoId'
+    | '/crm/funis/$funilId'
     | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes'
     | '/cadastros/colaboradores'
@@ -364,12 +396,14 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais'
     | '/compras/ordens'
     | '/compras/pedidos'
+    | '/crm/funis'
     | '/vendas/orcamentos'
   id:
     | '__root__'
     | '/'
     | '/cadastros'
     | '/compras'
+    | '/crm'
     | '/dashboard'
     | '/estoque'
     | '/login'
@@ -389,6 +423,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/$profissionalId'
     | '/compras/ordens/$ordemId'
     | '/compras/pedidos/$pedidoId'
+    | '/crm/funis/$funilId'
     | '/vendas/orcamentos/$orcamentoId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
@@ -397,6 +432,7 @@ export interface FileRouteTypes {
     | '/cadastros/profissionais/'
     | '/compras/ordens/'
     | '/compras/pedidos/'
+    | '/crm/funis/'
     | '/vendas/orcamentos/'
   fileRoutesById: FileRoutesById
 }
@@ -404,6 +440,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CadastrosRoute: typeof CadastrosRouteWithChildren
   ComprasRoute: typeof ComprasRouteWithChildren
+  CrmRoute: typeof CrmRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EstoqueRoute: typeof EstoqueRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -434,6 +471,13 @@ declare module '@tanstack/react-router' {
       path: '/compras'
       fullPath: '/compras'
       preLoaderRoute: typeof ComprasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm': {
+      id: '/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof CrmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -618,6 +662,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComprasPedidosPedidoIdRouteImport
       parentRoute: typeof ComprasRoute
     }
+    '/crm/funis/': {
+      id: '/crm/funis/'
+      path: '/funis'
+      fullPath: '/crm/funis/'
+      preLoaderRoute: typeof CrmFunisIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/funis/$funilId': {
+      id: '/crm/funis/$funilId'
+      path: '/funis/$funilId'
+      fullPath: '/crm/funis/$funilId'
+      preLoaderRoute: typeof CrmFunisFunilIdRouteImport
+      parentRoute: typeof CrmRoute
+    }
     '/vendas/orcamentos/': {
       id: '/vendas/orcamentos/'
       path: '/orcamentos'
@@ -689,6 +747,18 @@ const ComprasRouteChildren: ComprasRouteChildren = {
 const ComprasRouteWithChildren =
   ComprasRoute._addFileChildren(ComprasRouteChildren)
 
+interface CrmRouteChildren {
+  CrmFunisFunilIdRoute: typeof CrmFunisFunilIdRoute
+  CrmFunisIndexRoute: typeof CrmFunisIndexRoute
+}
+
+const CrmRouteChildren: CrmRouteChildren = {
+  CrmFunisFunilIdRoute: CrmFunisFunilIdRoute,
+  CrmFunisIndexRoute: CrmFunisIndexRoute,
+}
+
+const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
+
 interface EstoqueRouteChildren {
   EstoqueMovimentacaoRoute: typeof EstoqueMovimentacaoRoute
   EstoqueIndexRoute: typeof EstoqueIndexRoute
@@ -721,6 +791,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CadastrosRoute: CadastrosRouteWithChildren,
   ComprasRoute: ComprasRouteWithChildren,
+  CrmRoute: CrmRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EstoqueRoute: EstoqueRouteWithChildren,
   LoginRoute: LoginRoute,

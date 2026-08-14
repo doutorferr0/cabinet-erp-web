@@ -30,12 +30,15 @@ import {
   updateCrmStage,
 } from '@/api/gerado'
 import {
+  ErroDaApi,
   PAGE_SIZE_MAX,
   type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
+  detalheDoProblema,
   itemOuNulo,
   repetirSeValeAPena,
+  respostaOk,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -99,9 +102,27 @@ export const ORDENAVEIS_MOTIVO_DE_PERDA: readonly string[] = ['name', 'active']
  * tem — a linha da listagem já é o registro inteiro (dois campos), e caminho de
  * detalhe seria requisição para buscar o que a tela tem em mãos.
  */
-export const funis: ListProvider<CrmPipelineDto> = createApiListProvider<CrmPipelineDto>({
-  url: URL_FUNIS,
-})
+/**
+ * A listagem devolve o `CrmPipelineDto` CRU, sem tradução para os nomes em
+ * português: o `sortBy` que viaja é o `accessorKey` da coluna, e a whitelist do
+ * servidor é em inglês — traduzir aqui quebraria a ordenação com 400 ao clicar
+ * no cabeçalho.
+ *
+ * `get` entra porque o caminho existe de verdade (`GET /api/crm/pipelines/{id}`)
+ * e devolve o registro do FORMULÁRIO — cabeçalho e colunas, que são duas
+ * consultas e uma tela só.
+ */
+export interface FunisProvider extends ListProvider<CrmPipelineDto> {
+  get(id: string): Promise<Funil | null>
+  /** Registro em branco do `Incluir` — local, o backend não fornece. */
+  empty(): Funil
+}
+
+export const funis: FunisProvider = {
+  ...createApiListProvider<CrmPipelineDto>({ url: URL_FUNIS }),
+  get: (id) => obterFunil(id),
+  empty: () => funilVazio(),
+}
 
 export const motivosDePerda: ListProvider<CrmLostReasonDto> =
   createApiListProvider<CrmLostReasonDto>({ url: URL_MOTIVOS_DE_PERDA })
@@ -386,6 +407,263 @@ export function useAlterarMotivoDePerda() {
       const resposta: RespostaDaApi = await updateCrmLostReason(id, corpo)
       return dadosOuErro<CrmLostReasonDto>(resposta, 'Falha ao gravar o motivo de perda.')
     },
+    onSuccess: invalidar,
+  })
+}
+
+/* ------------------------------------------------------------------ *
+ * O FUNIL COMO O FORMULÁRIO O EDITA
+ * ------------------------------------------------------------------ */
+
+/**
+ * Uma coluna do funil na grade do formulário.
+ *
+ * Os campos são os do `CrmStageDto` com os nomes da TELA, e os numéricos viajam
+ * como TEXTO: a célula editável da `FormGrid` é um `<input>`, e converter na
+ * borda (aqui) é o que impede "12a" de virar `NaN` dentro do estado do
+ * formulário. `id: null` é a marca de linha nova — é ele que faz o `Gravar`
+ * criar o estágio em vez de tentar alterar um que não existe.
+ */
+export interface EstagioDeFunil {
+  id: string | null
+  nome: string
+  ordem: string
+  /** Probabilidade em int com 4 casas implícitas (célula `percent` da grade). */
+  probabilidade: number | null
+  ganho: boolean
+  perdido: boolean
+  /** Dias até o cartão apodrecer parado. Vazio = o estágio não apodrece. */
+  apodreceEmDias: string
+}
+
+/** O funil inteiro do formulário: o cabeçalho e as colunas. */
+export interface Funil {
+  /** Vazio = Incluir (o servidor atribui no 201). */
+  id: string
+  nome: string
+  ordem: string
+  padrao: boolean
+  ativo: boolean
+  estagios: EstagioDeFunil[]
+}
+
+function textoDeInteiro(valor: number | null | undefined): string {
+  return valor === null || valor === undefined ? '' : String(valor)
+}
+
+/**
+ * Texto da grade → int do contrato. Vazio é `null` (ausência); texto que não é
+ * número também vira `null` em vez de `NaN`, porque `NaN` atravessa o
+ * `JSON.stringify` como `null` de qualquer jeito — melhor decidir aqui, à vista.
+ */
+function inteiroDeTexto(texto: string): number | null {
+  const limpo = texto.trim()
+  if (!limpo) return null
+  const numero = Number(limpo)
+  return Number.isFinite(numero) ? Math.trunc(numero) : null
+}
+
+export function estagioDoContrato(dto: CrmStageDto): EstagioDeFunil {
+  return {
+    id: dto.id,
+    nome: dto.name,
+    ordem: textoDeInteiro(dto.sort),
+    probabilidade: dto.probability,
+    ganho: dto.isWon,
+    perdido: dto.isLost,
+    apodreceEmDias: textoDeInteiro(dto.rotDays),
+  }
+}
+
+export function estagioParaContrato(estagio: EstagioDeFunil): CrmStageWriteRequest {
+  return {
+    name: estagio.nome,
+    sort: inteiroDeTexto(estagio.ordem) ?? 0,
+    probability: estagio.probabilidade ?? 0,
+    isWon: estagio.ganho,
+    isLost: estagio.perdido,
+    rotDays: inteiroDeTexto(estagio.apodreceEmDias),
+  }
+}
+
+export function funilDoContrato(dto: CrmPipelineDto, estagios: CrmStageDto[]): Funil {
+  return {
+    id: dto.id,
+    nome: dto.name,
+    ordem: textoDeInteiro(dto.sort),
+    padrao: dto.isDefault,
+    ativo: dto.active,
+    estagios: [...estagios].sort((a, b) => a.sort - b.sort).map(estagioDoContrato),
+  }
+}
+
+export function funilParaContrato(funil: Funil): CrmPipelineWriteRequest {
+  return {
+    name: funil.nome,
+    sort: inteiroDeTexto(funil.ordem) ?? 0,
+    isDefault: funil.padrao,
+    active: funil.ativo,
+  }
+}
+
+/**
+ * Registro em branco do `Incluir`. Local por natureza: o servidor não fornece
+ * registro vazio, e o formulário não precisa esperar rede para abrir.
+ *
+ * **Nasce SEM estágio nenhum.** Semear "Contato / Proposta / Ganho" aqui
+ * inventaria o modelo de venda da empresa — que é justamente o que muda de
+ * empresa para empresa, e a razão de existirem vários funis.
+ */
+export function funilVazio(): Funil {
+  return { id: '', nome: '', ordem: '', padrao: false, ativo: true, estagios: [] }
+}
+
+export const estagioVazio: EstagioDeFunil = {
+  id: null,
+  nome: '',
+  ordem: '',
+  probabilidade: null,
+  ganho: false,
+  perdido: false,
+  apodreceEmDias: '',
+}
+
+/**
+ * O funil para EDIÇÃO: cabeçalho e colunas, em duas consultas.
+ *
+ * São dois caminhos porque o contrato os separa de propósito — estágio tem id
+ * estável e a oportunidade aponta para ele, então ele não viaja embutido no
+ * `PUT` do funil. `null` quando o funil não existe (404); qualquer outra falha
+ * REJEITA, para "não escolheu empresa" não virar "não encontrado".
+ */
+export async function obterFunil(id: string): Promise<Funil | null> {
+  const cabecalho: RespostaDaApi = await getCrmPipeline(id)
+  const dto = itemOuNulo<CrmPipelineDto>(cabecalho, 'o funil')
+  if (!dto) return null
+
+  const colunas: RespostaDaApi = await listCrmStages(id)
+  const estagios = dadosOuErro<CrmStageDto[]>(colunas, 'Falha ao carregar os estágios do funil.')
+  return funilDoContrato(dto, estagios)
+}
+
+function estagioMudou(antes: EstagioDeFunil, agora: EstagioDeFunil): boolean {
+  return (
+    antes.nome !== agora.nome ||
+    antes.ordem !== agora.ordem ||
+    antes.probabilidade !== agora.probabilidade ||
+    antes.ganho !== agora.ganho ||
+    antes.perdido !== agora.perdido ||
+    antes.apodreceEmDias !== agora.apodreceEmDias
+  )
+}
+
+/**
+ * Grava as colunas: linha sem `id` vira `POST`, linha alterada vira `PUT`.
+ *
+ * Mesma forma da grade de variantes do produto, e pelos mesmos motivos:
+ * **linha inalterada não vira requisição** (senão cada `Gravar` carimbaria
+ * alteração em coluna que ninguém tocou) e as escritas são **sequenciais**, para
+ * a mensagem poder dizer QUAL coluna falhou.
+ *
+ * **Não há transação entre os endpoints** — o contrato não oferece uma. Se a
+ * terceira coluna falhar, o funil e as duas anteriores já estão gravados, e a
+ * mensagem manda reabrir: a grade em tela ainda mostra como novas as linhas que
+ * já foram criadas.
+ *
+ * **Coluna removida da grade NÃO é apagada no servidor**, e é decisão: o
+ * contrato não tem `DELETE` de estágio porque apagar coluna com cartão dentro
+ * obrigaria o servidor a escolher para onde os cartões vão. Some da tela e
+ * continua no funil — por isso a tela avisa em vez de fingir que excluiu.
+ */
+export async function gravarEstagios(
+  pipelineId: string,
+  estagios: readonly EstagioDeFunil[],
+  originais: readonly EstagioDeFunil[],
+): Promise<void> {
+  const antes = new Map(originais.filter((e) => e.id).map((e) => [e.id, e]))
+
+  for (const estagio of estagios) {
+    const anterior = estagio.id ? antes.get(estagio.id) : undefined
+    if (anterior && !estagioMudou(anterior, estagio)) continue
+
+    const corpo = estagioParaContrato(estagio)
+    const resposta: RespostaDaApi = estagio.id
+      ? await updateCrmStage(pipelineId, estagio.id, corpo)
+      : await createCrmStage(pipelineId, corpo)
+
+    if (!respostaOk(resposta) || !resposta.data) {
+      throw new ErroDaApi(
+        `Falha ao gravar o estágio ${estagio.nome || '(sem nome)'}. O funil já foi gravado — reabra o funil antes de tentar de novo.`,
+        resposta.status,
+        detalheDoProblema(resposta.data),
+      )
+    }
+  }
+}
+
+/** O que o `Gravar` manda: o registro editado e o que veio do servidor. */
+export interface GravacaoDeFunil {
+  values: Funil
+  /** Registro como o servidor o devolveu; ausente no Incluir. */
+  original?: Funil | null
+}
+
+/**
+ * A porta única de escrita do funil: `id` vazio = Incluir (POST → 201), senão
+ * Alterar (PUT → 200). Recebe o corpo montado do registro INTEIRO — `PUT`
+ * substitui tudo, e corpo parcial apaga o que não veio.
+ */
+export async function escreverFunil(
+  id: string,
+  corpo: CrmPipelineWriteRequest,
+): Promise<CrmPipelineDto> {
+  const resposta: RespostaDaApi = id
+    ? await updateCrmPipeline(id, corpo)
+    : await createCrmPipeline(corpo)
+
+  if (!respostaOk(resposta) || !resposta.data) {
+    throw new ErroDaApi(
+      'Falha ao gravar o funil.',
+      resposta.status,
+      detalheDoProblema(resposta.data),
+    )
+  }
+  return resposta.data as CrmPipelineDto
+}
+
+/**
+ * `Gravar` do formulário: o funil primeiro, as colunas depois.
+ *
+ * A ordem não é estética — no Incluir, o `pipelineId` que as colunas penduram
+ * só existe depois do 201.
+ */
+export async function gravarFunil({ values, original }: GravacaoDeFunil): Promise<CrmPipelineDto> {
+  const gravado = await escreverFunil(values.id, funilParaContrato(values))
+  await gravarEstagios(gravado.id, values.estagios, original?.estagios ?? [])
+  return gravado
+}
+
+export function useGravarFunil() {
+  const invalidar = useInvalidarCrm()
+  return useMutation({ mutationFn: gravarFunil, onSuccess: invalidar })
+}
+
+/**
+ * O `Excluir` da listagem de funis é DESATIVAÇÃO (padrão 8), e mora aqui pelo
+ * mesmo motivo do `useDesativarParceiro`: é a fronteira que sabe montar o `PUT`
+ * a partir do registro INTEIRO. Montado da linha, e não de um corpo parcial —
+ * `PUT` parcial apagaria nome e ordem junto com o `active`.
+ */
+export function useDesativarFunil() {
+  const invalidar = useInvalidarCrm()
+  return useMutation({
+    mutationFn: async (linha: CrmPipelineDto) =>
+      escreverFunil(linha.id, {
+        name: linha.name,
+        sort: linha.sort,
+        isDefault: linha.isDefault,
+        active: false,
+      }),
     onSuccess: invalidar,
   })
 }

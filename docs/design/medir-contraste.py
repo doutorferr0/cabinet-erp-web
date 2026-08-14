@@ -117,16 +117,21 @@ def veredito(r: float, piso: float) -> str:
 
 # ---------------------------------------------------------------- tabelas
 
-MODULOS = [
-    ("Produtos", "produtos"),
-    ("Estoque", "estoque"),
-    ("Vendas / Orçamento", "vendas"),
-    ("Compras / Pedidos", "compras"),
-    ("Clientes", "clientes"),
-    ("Fornecedores", "fornecedores"),
-    ("Profissionais", "profissionais"),
-    ("Boletim", "boletim"),
-]
+# Nome de exibição por módulo. A LISTA não mora aqui — ela sai do próprio
+# `index.css` (`modulos()`), e é assim de propósito: com a lista fixa no script,
+# o módulo `crm` entrou no CSS em 2026-08-13 e as tabelas continuaram dizendo
+# "em dia" com um módulo inteiro fora da medição. Módulo novo sem entrada aqui
+# aparece com o nome da chave — feio, mas medido.
+ROTULOS = {
+    "vendas": "Vendas / Orçamento",
+    "compras": "Compras / Pedidos",
+    "crm": "CRM",
+}
+
+
+def modulos(mod_claro: dict[str, dict[str, str]]) -> list[tuple[str, str]]:
+    """(rótulo, chave) de cada `[data-modulo=…]` do CSS, na ordem do arquivo."""
+    return [(ROTULOS.get(k, k.capitalize()), k) for k in mod_claro]
 
 # voz -> (rótulo do papel, token de tinta)
 VOZES = [
@@ -284,7 +289,7 @@ def _pasteis(claro, escuro, mod_claro, mod_escuro) -> str:
         "| Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |",
         "|---|---|---|---|---|",
     ]
-    for rotulo, chave in MODULOS:
+    for rotulo, chave in modulos(mod_claro):
         p_claro = cor(mod_claro[chave], "modulo-02")
         p_escuro = cor(mod_escuro[chave], "modulo-02")
         folha = razao(p_claro, cor(claro, "card"))
@@ -303,7 +308,7 @@ def _cheia(claro, escuro, mod_claro, mod_escuro) -> str:
         "| Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |",
         "|---|---|---|---|---|",
     ]
-    for rotulo, chave in MODULOS:
+    for rotulo, chave in modulos(mod_claro):
         c_claro = cor(mod_claro[chave], "modulo-01")
         c_escuro = cor(mod_escuro[chave], "modulo-01")
         linhas.append(
@@ -331,7 +336,7 @@ def _zonas(claro, escuro, _mc, _me) -> str:
 def _estados_fundo(claro, escuro, mod_claro, mod_escuro) -> str:
     """A cheia /01 no papel de FUNDO de texto — o par de `data-active:bg-modulo-cheia`."""
     linhas = ["| Módulo | claro: tinta × /01 | escuro: tinta × /01 |", "|---|---|---|"]
-    for rotulo, chave in MODULOS:
+    for rotulo, chave in modulos(mod_claro):
         c_claro = razao(cor(claro, "sidebar-foreground"), cor(mod_claro[chave], "modulo-01"))
         c_escuro = razao(cor(escuro, "sidebar-foreground"), cor(mod_escuro[chave], "modulo-01"))
         forte = lambda x: f"**{n(x)}:1**" if x < 4.5 else f"{n(x)}:1"
@@ -358,15 +363,15 @@ def _apoio(claro, escuro, mod_claro, mod_escuro) -> str:
             f" · **{n(razao(cor(escuro, tinta), cor(escuro, fundo)))}:1** escuro"
         )
 
-    sobre_claro = [razao(cor(claro, "foreground"), cor(mod_claro[c], "modulo-02")) for _, c in MODULOS]
-    sobre_escuro = [razao(cor(escuro, "foreground"), cor(mod_escuro[c], "modulo-02")) for _, c in MODULOS]
+    sobre_claro = [razao(cor(claro, "foreground"), cor(mod_claro[c], "modulo-02")) for _, c in modulos(mod_claro)]
+    sobre_escuro = [razao(cor(escuro, "foreground"), cor(mod_escuro[c], "modulo-02")) for _, c in modulos(mod_claro)]
     return "\n".join(
         [
             par("degrau Bancada × Folha", "background", "card"),
             par("secundário sobre o Afundado (zebra)", "muted-foreground", "surface-sunken"),
             par("traço `--border` sobre a Folha", "border", "card"),
             par("`--text-disabled` sobre a Folha", "text-disabled", "card"),
-            f"- tinta sobre os 8 pastéis /02: **{n(min(sobre_claro))}–{n(max(sobre_claro))}:1** claro"
+            f"- tinta sobre os pastéis /02 de módulo: **{n(min(sobre_claro))}–{n(max(sobre_claro))}:1** claro"
             f" · **{n(min(sobre_escuro))}–{n(max(sobre_escuro))}:1** escuro",
         ]
     )

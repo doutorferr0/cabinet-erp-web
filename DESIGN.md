@@ -226,14 +226,20 @@ utilities `bg-modulo` (pastel /02), `bg-modulo-cheia` (cheia /01) e `text-modulo
 | Clientes | Fúcsia neon `#E620FF` | `#F0E3FF` | `brutalist-064` (pessoa) |
 | Fornecedores | Índigo neon `#3D5AFE` | `#E0E7FF` | `brutalist-029` (galpão) |
 | Profissionais | Púrpura neon `#B026FF` | `#F7E8FF` | `brutalist-shape-133` (crachá) |
+| CRM | Verde neon `#00E676` | `#D2FCE7` | `brutalist-011` (cintura — o funil) |
 | Boletim | Laranja neon `#FF6B2C` | `#FFDFDB` | `brutalist-shape-135` (anéis) |
 
 **Dashboard, Planner e Tarefas** emprestam o laranja do Boletim (`#FF6B2C`) com shapes
 próprios (`b014`, `s120`, `b011`). **Colaboradores** empresta o rosa de Clientes (`#E620FF`)
-com shape `s101`. Nenhuma nona cor foi inventada — a decisão do user (2026-08-09) foi pelo
-REÚSO, e a cor passa a ler-se como FAMÍLIA (laranja = zona de acompanhamento, rosa = cadastro
-de pessoa). O empréstimo vale no ITEM DE MENU; `moduloDaRota` continua sem conhecer essas
+com shape `s101`. O empréstimo vale no ITEM DE MENU; `moduloDaRota` continua sem conhecer essas
 rotas para não tingir a folha inteira.
+
+**A nona cor existe desde 2026-08-13, e foi o user quem a escolheu** — esta página dizia
+"nenhuma nona cor foi inventada", o que valia enquanto a decisão de 2026-08-09 era pelo REÚSO
+(a cor lendo-se como FAMÍLIA: laranja = acompanhamento, rosa = cadastro de pessoa). O **CRM**
+entrou com par próprio porque reusar não cabia: o magenta do mapa de tabelas (`#B0306B`) cai no
+**mesmo hue 330 do módulo Compras**, e dois módulos no mesmo matiz derrubam "mesmo módulo, mesma
+cor". A faixa 151 é a única larga que sobrava — o resto se aperta entre 186 e 330.
 
 Os pares **não passam pelo `@theme inline`**: ali `--color-x: hsl(var(--y))` é substituído no
 `:root`, e o valor já resolvido é o que os filhos herdam — redefinir `--modulo-01` num
@@ -242,6 +248,23 @@ no elemento que pinta.
 
 Risco das cores neon: têm baixo contraste contra branco POR CONSTRUÇÃO. Quem delimita a forma
 é o traço preto (~20:1), e o preenchimento fica livre para ser neon.
+
+> **O verde do CRM encosta no verde que tem DONO — medido, e é decisão do user (2026-08-13).**
+> A regra §Acentos diz "verde = dinheiro, e só", e a §Ornamento tira as três cores com dono da
+> paleta decorativa. O par do CRM entra por cima disso, e os números dizem quanto:
+>
+> - **`/02` do CRM × zona de VALOR: 1,02:1.** `150 92% 90%` contra `154 96% 91%` — para o olho é
+>   a mesma cor. A zona de valor existe para dizer "aqui tem dinheiro" **antes** de o operador ler
+>   o rótulo; num painel de CRM inteiro tingido dessa cor, ela para de dizer isso.
+> - **`/01` do CRM × `fill-money` (Grass): 1,08:1** — chip de dinheiro e preenchimento do módulo
+>   viram o mesmo verde. Contra o verde de TEXTO (`--money`) e o carimbo `done` a distância é
+>   3,29:1, que separa, mas não muito.
+>
+> **Não é reprovação de WCAG** (é cor contra cor, não texto contra fundo) e não mexi em nada. É
+> colisão SEMÂNTICA: o sistema tem uma cor que significa dinheiro, e agora tem um módulo da mesma
+> família. Três saídas, todas do user: aceitar e escrever aqui que na tela de CRM a zona de valor
+> deixa de ser lida por cor · afastar a luz do `/02` do CRM da luz da zona · ou trocar a faixa do
+> CRM, sabendo que 151 era a única larga livre.
 
 ### Ícone lucide colorido por módulo (2026-08-09)
 Ícones de ação do lucide (Plus, Pencil, Eye, Trash2, MoreHorizontal, Minus) em DataTable,
@@ -298,7 +321,7 @@ escuro a zona é escura e ele volta aos 74%, com 4,75:1: sobre papel escuro a co
 a mesma inversão do violeta de ação.
 
 > **Medida que vale para o resto da paleta, e que ainda é decisão em aberto** (números na
-> §Medição de contraste — sobre a folha os oito /01 vão de **1,40:1** a **4,78:1**, com três abaixo
+> §Medição de contraste — sobre a folha os /01 de módulo vão de **1,40:1** a **4,78:1**, com quatro abaixo
 > de 3:1 ali e cinco sobre a bancada; o roxo de marca fica em 2,25:1 sobre a bancada). As
 > superfícies novas são um pouco mais escuras que as antigas, então a faixa SUBIU (a nota anterior
 > dizia 1,32 a 2,97, medida contra folha branca), mas o diagnóstico não mudou. Não é regressão de nenhuma fase: é a paleta /01 como foi travada, e ela foi escolhida
@@ -483,7 +506,7 @@ dois papéis com tintas diferentes, e os dois entram.
 **As quatro vozes passam AA nas duas superfícies e nos dois temas.** A troca de papel não custou
 legibilidade de texto — foi a superfície tintada que ficou devendo, abaixo.
 
-#### Os 8 pastéis /02 sobre as superfícies — piso 3:1
+#### Os pastéis /02 de módulo sobre as superfícies — piso 3:1
 
 Aqui a razão medida é **superfície contra superfície**: o /02 é a zona pintada, a Folha e a Bancada
 são o que está em volta.
@@ -498,6 +521,7 @@ são o que está em volta.
 | Clientes | 1,10:1 | 1,00:1 | 1,02:1 | REPROVA |
 | Fornecedores | 1,12:1 | 1,02:1 | 1,01:1 | REPROVA |
 | Profissionais | 1,08:1 | 1,01:1 | 1,01:1 | REPROVA |
+| CRM | 1,02:1 | 1,08:1 | 1,34:1 | REPROVA |
 | Boletim | 1,13:1 | 1,03:1 | 1,06:1 | REPROVA |
 <!-- /tabela:pasteis-02 -->
 
@@ -515,13 +539,15 @@ e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** �
 | Clientes | 3,21:1 | 2,93:1 | 4,08:1 | 5,00:1 |
 | Fornecedores | 4,63:1 | 4,22:1 | 2,83:1 | 3,47:1 |
 | Profissionais | 4,24:1 | 3,87:1 | 3,08:1 | 3,78:1 |
+| CRM | 1,53:1 | 1,39:1 | 8,57:1 | 10,52:1 |
 | Boletim | 2,56:1 | 2,34:1 | 5,11:1 | 6,26:1 |
 <!-- /tabela:cheia-01 -->
 
-Abaixo de 3:1 — no claro **três** contra a Folha (produtos, estoque, boletim) e **cinco** contra a
-Bancada (os três + compras e clientes); no escuro **duas** contra a Folha (vendas, fornecedores) e
-nenhuma contra a Bancada. A §Acentos dizia "quatro dos oito" no claro sem separar as duas
-superfícies: são três e cinco.
+Abaixo de 3:1 — no claro **quatro** contra a Folha (produtos, estoque, boletim e o CRM novo) e
+**seis** contra a Bancada (os quatro + compras e clientes); no escuro **duas** contra a Folha
+(vendas, fornecedores) e nenhuma contra a Bancada. A §Acentos dizia "quatro dos oito" no claro sem
+separar as duas superfícies — e o número certo mudou de novo com o nono módulo, que é a razão de
+estas tabelas serem geradas e não digitadas.
 
 As cinco zonas por conteúdo medem a mesma coisa que a /02, pelo mesmo motivo — **é a natureza do
 pastel /02, não regressão da troca de superfície**:
@@ -562,13 +588,14 @@ do tema.
 | Clientes | 5,96:1 | **3,06:1** |
 | Fornecedores | **4,13:1** | **4,42:1** |
 | Profissionais | 4,51:1 | **4,05:1** |
+| CRM | 12,53:1 | **1,46:1** |
 | Boletim | 7,46:1 | **2,45:1** |
 <!-- /tabela:estados-fundo -->
 
 **Piso 4,5:1, não 3:1** — o rótulo do item é 14px em `font-bold`, e "texto grande" pela WCAG começa
 em 18,66px negrito. Reprovam **dois no claro** (vendas, fornecedores; profissionais raspa em 4,51)
-e **sete no escuro**, o pior deles o ciano de Produtos a **1,33:1**, que é letra clara sobre
-preenchimento claro.
+e **oito dos nove no escuro** — só vendas escapa —, o pior deles o ciano de Produtos a **1,33:1**,
+que é letra clara sobre preenchimento claro. **O CRM entrou já reprovando: 1,46:1 no escuro.**
 
 **A raiz do caso escuro é a mesma cascata da tabela da /01:** `.dark [data-modulo=…]` só redefine a
 `/02`. A cheia continua neon — o que é certo enquanto ela é TRAÇO sobre papel escuro (9,38:1 em
@@ -625,7 +652,7 @@ cheia /01 e o `--stamp-open` — não.
 - secundário sobre o Afundado (zebra): **4,72:1** claro · **7,67:1** escuro
 - traço `--border` sobre a Folha: **19,12:1** claro · **5,88:1** escuro
 - `--text-disabled` sobre a Folha: **1,73:1** claro · **2,48:1** escuro
-- tinta sobre os 8 pastéis /02: **16,88–18,60:1** claro · **9,48–13,10:1** escuro
+- tinta sobre os pastéis /02 de módulo: **16,88–18,81:1** claro · **9,32–13,10:1** escuro
 <!-- /tabela:apoio -->
 
 #### Pendências — nenhuma cor foi mexida aqui
@@ -635,7 +662,7 @@ Esta seção **mede**; trocar cor é decisão do user, e nenhuma foi alterada po
 **As duas primeiras são de TEXTO e não têm o traço para segurá-las** — nenhuma borda conserta letra
 que não se lê. As outras são de superfície, onde o contorno preto é o delimitador.
 
-0. **[USER] O rótulo do item de menu ATIVO reprova em 2 módulos no claro e em 7 no escuro** —
+0. **[USER] O rótulo do item de menu ATIVO reprova em 2 módulos no claro e em 8 dos 9 no escuro** —
    pior caso 1,33:1 (Produtos, escuro). É a cheia /01 no papel de FUNDO, que a cascata do escuro
    não redefine, com a tinta do tema já invertida para clara. Mesmo defeito no **carimbo `open` do
    escuro, 1,30:1**. **Conferido em render**, nos dois temas. Não escolhi correção: dar à `/01` um
@@ -643,7 +670,7 @@ que não se lê. As outras são de superfície, onde o contorno preto é o delim
    de cor.
    **Junto vai a correção do comentário do `src/index.css`**, que ainda afirma "todas passam AA com
    folga, pior par 7,1:1" — número da paleta pré-neon, e é ele que faz o próximo leitor não medir.
-1. **[USER] Os 8 pastéis /02 e as 5 zonas, de 1,00 a 1,32:1 contra as superfícies.** Só há decisão
+1. **[USER] Os pastéis /02 de módulo e as 5 zonas, de 1,00 a 1,34:1 contra as superfícies.** Só há decisão
    a tomar se a superfície tintada precisar se separar do papel **sem** o traço. Escurecer o /02
    até 3:1 o tiraria de "pastel" — vira preenchimento, e aí compete com a cheia /01.
 2. **[USER] Vendas e Clientes medem 1,00:1 contra a Bancada** — mesma luminância, não "sutil":

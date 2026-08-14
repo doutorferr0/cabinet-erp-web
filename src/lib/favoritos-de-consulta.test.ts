@@ -30,6 +30,7 @@ function favorito(over: Partial<FavoritoDeConsulta> = {}): FavoritoDeConsulta {
     sort: { id: 'code', desc: false },
     visao: '',
     agruparPor: '',
+    densidade: '',
     padrao: false,
     ...over,
   }

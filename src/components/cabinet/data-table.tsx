@@ -127,6 +127,24 @@ export interface OpcaoDeAgrupamento {
   rotulo: string
 }
 
+/**
+ * DENSIDADE da linha — escolha do operador, não do designer.
+ *
+ * `padrao` é a célula de 52px do `DESIGN.md` §DataTable; `compacta` é 40px, o
+ * piso da faixa consolidada (40–44px). Quem confere cinquenta linhas quer as
+ * cinquenta na tela; quem lê uma a uma quer respiro. Fixar um dos dois é
+ * escolher pelo outro.
+ *
+ * A troca é CSS puro sobre a mesma marcação — nada de reconsultar nem remontar
+ * a tabela, porque densidade não muda o que a consulta trouxe.
+ */
+export const DENSIDADES = [
+  { id: 'padrao', rotulo: 'Padrão' },
+  { id: 'compacta', rotulo: 'Compacta' },
+] as const
+
+export type Densidade = (typeof DENSIDADES)[number]['id']
+
 export interface VitraDataTableProps<T> {
   columns: ColumnDef<T>[]
   /** Prefixo da query key do TanStack Query (o estado da tabela é anexado). */
@@ -309,6 +327,7 @@ export function VitraDataTable<T>({
   // muda o CONJUNTO de registros, só o desenho. Somá-los à chave de cache faria
   // alternar quadro ⇄ lista refazer uma consulta cuja resposta é a mesma.
   const [visaoId, setVisaoId] = useState(visaoInicial)
+  const [densidade, setDensidade] = useState<Densidade>('padrao')
   // O `name` agrupa os rádios, e precisa ser único por INSTÂNCIA: duas
   // listagens na mesma página (a janela de busca sobre a tela) dividiriam o
   // grupo e uma desmarcaria a visão da outra.
@@ -375,6 +394,9 @@ export function VitraDataTable<T>({
     // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
     if (consulta.visao) setVisaoId(consulta.visao)
     if (consulta.agruparPor) setAgruparPor(consulta.agruparPor)
+    if (consulta.densidade === 'padrao' || consulta.densidade === 'compacta') {
+      setDensidade(consulta.densidade)
+    }
     // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
     // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
     setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
@@ -477,7 +499,8 @@ export function VitraDataTable<T>({
                   filtrosValidos(filtrosInput).length > 0 ||
                   state.sort !== null ||
                   visaoId !== visaoInicial ||
-                  agruparPor !== agrupamentoInicial
+                  agruparPor !== agrupamentoInicial ||
+                  densidade !== 'padrao'
                 }
                 onAplicar={aplicarConsulta}
                 onSalvar={(nome) =>
@@ -491,6 +514,7 @@ export function VitraDataTable<T>({
                       sort: state.sort,
                       visao: visaoId,
                       agruparPor,
+                      densidade,
                       padrao: false,
                     },
                   ])
@@ -643,7 +667,26 @@ export function VitraDataTable<T>({
           `overflow-hidden` — sem o overflow, o canto arredondado do contêiner
           apareceria por baixo do cabeçalho quadrado da primeira fileira. */
         <div className="overflow-hidden rounded-data border-2 border-border shadow-el3">
-          <Table>
+          {/* `tabular-nums` na TABELA inteira, e não coluna a coluna.
+              Medido em `docs/design/medir-tabular.py`: no Inter do corpo o `1`
+              avança 833/2048 de em e o `4`, 1323 — numa coluna de valores isso
+              é meio caractere de diferença por linha, e a casa decimal deixa de
+              formar coluna. A fonte publica `tnum`, então a utility resolve.
+              No elemento inteiro porque a alternativa — marcar cada coluna
+              numérica — falha na primeira tela que esquecer a `meta`, e falha
+              MUDA: o número continua lá, só desalinhado. Data, código e
+              telefone alinham junto, o que numa grade de ERP é ganho.
+              `meta.numeric` segue existindo, e agora só decide ALINHAMENTO à
+              direita, que é outra pergunta. */}
+          <Table
+            className={cn(
+              'tabular-nums',
+              // A célula do shadcn traz `h-[52px]`; o seletor de descendente
+              // ganha dela por especificidade, sem `!important` e sem tocar no
+              // componente compartilhado — outras tabelas do app não mudam.
+              densidade === 'compacta' && '[&_td]:h-10',
+            )}
+          >
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
@@ -809,6 +852,24 @@ export function VitraDataTable<T>({
           ) : null
         ) : (
           <div className="ml-auto flex items-center gap-2">
+            {/* Densidade ao lado do tamanho de página: os dois respondem à
+                mesma pergunta — quanto cabe na tela — e separá-los mandaria o
+                operador procurar em dois cantos. Só na visão TABELA, porque é
+                a altura da LINHA que ela muda; num quadro não haveria o que
+                encolher. */}
+            <label htmlFor="vitra-densidade">Linha:</label>
+            <select
+              id="vitra-densidade"
+              className="h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring"
+              value={densidade}
+              onChange={(e) => setDensidade(e.target.value as Densidade)}
+            >
+              {DENSIDADES.map((opcao) => (
+                <option key={opcao.id} value={opcao.id}>
+                  {opcao.rotulo}
+                </option>
+              ))}
+            </select>
             <label htmlFor="vitra-page-size">Por página:</label>
             <select
               id="vitra-page-size"

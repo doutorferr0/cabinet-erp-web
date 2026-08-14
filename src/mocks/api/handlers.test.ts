@@ -9,6 +9,9 @@ import {
   listProducts,
   listStockMovements,
 } from '@/api/gerado'
+import { data } from '@/data'
+import type { FiltroDaTabela, OperadorDeFiltro } from '@/lib/filtro-de-consulta'
+import { tableState } from '@/test/utils'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
@@ -98,6 +101,132 @@ describe('contrato de listagem', () => {
     await entrarComEmpresa()
     const resposta = await listProducts({ page: 1, pageSize: 10, sortBy: 'paymentTerms' })
     expect(resposta.status).toBe(400)
+  })
+})
+
+/**
+ * O FILTRO ESTRUTURADO CHEGA E É APLICADO — o buraco que o PR #114 achou.
+ *
+ * Antes disto, `filters` saía da tela, chegava aqui e era DESCARTADO em
+ * silêncio: a listagem devolvia tudo enquanto o painel da tela mostrava a
+ * condição aplicada. Em `cabinetonline.cc`, que roda em modo mock, o operador
+ * lia "Ativo é não" e via a lista inteira, com os ativos dentro.
+ *
+ * Os testes passam pela FRONTEIRA de verdade (`data.produtos.list`), e não pelo
+ * cliente gerado direto: o `filters` do contrato viaja como array JSON
+ * url-encoded, montado por `filtrosDaTabela`, e a serialização que o Orval faria
+ * de um array de params é OUTRA. Testar pelo caminho que a tela não usa provaria
+ * o que ninguém executa.
+ */
+describe('filtro estruturado do servidor falso', () => {
+  function condicao(
+    id: string,
+    operador: OperadorDeFiltro,
+    valor: string,
+    variante: 'text' | 'boolean' = 'text',
+  ): FiltroDaTabela {
+    return { filtroId: `f-${id}`, id, variante, operador, valor }
+  }
+
+  it('produtos: a condição RECORTA a lista, e o total conta o recorte', async () => {
+    await entrarComEmpresa()
+
+    const tudo = await data.produtos.list(tableState({ pageSize: 50 }))
+    expect(tudo.total).toBe(3)
+
+    const so1042 = await data.produtos.list(
+      tableState({ pageSize: 50, filtros: [condicao('code', 'iLike', 'PD-')] }),
+    )
+    expect(so1042.total, 'total tem de contar o RECORTE, não a lista inteira').toBe(1)
+    expect(so1042.rows[0]?.code).toBe('PD-1001')
+  })
+
+  it('produtos: booleano recorta os inativos — o caso que o operador vê no ar', async () => {
+    await entrarComEmpresa()
+
+    const inativos = await data.produtos.list(
+      tableState({ pageSize: 50, filtros: [condicao('active', 'eq', 'false', 'boolean')] }),
+    )
+    expect(inativos.rows.every((p) => !p.active)).toBe(true)
+    expect(inativos.total).toBe(1)
+  })
+
+  it('parceiros: duas condições se somam com AND, e `or` muda a resposta', async () => {
+    await entrarComEmpresa()
+
+    const e = await data.clientes.list(
+      tableState({
+        pageSize: 50,
+        filtros: [condicao('legalName', 'iLike', 'MARIA'), condicao('code', 'iLike', 'C-9')],
+      }),
+    )
+    expect(e.total, 'AND de duas condições que ninguém atende junto').toBe(0)
+
+    const ou = await data.clientes.list(
+      tableState({
+        pageSize: 50,
+        juncao: 'or',
+        filtros: [condicao('legalName', 'iLike', 'MARIA'), condicao('code', 'iLike', 'C-9')],
+      }),
+    )
+    expect(ou.total, 'OR devolve quem atende UMA delas').toBe(1)
+  })
+
+  it('parceiros: o filtro se soma ao `q`, não o substitui', async () => {
+    await entrarComEmpresa()
+
+    const so_q = await data.clientes.list(tableState({ q: 'maria', pageSize: 50 }))
+    expect(so_q.total).toBe(1)
+
+    const q_mais_filtro = await data.clientes.list(
+      tableState({
+        q: 'maria',
+        pageSize: 50,
+        filtros: [condicao('code', 'iLike', 'INEXISTENTE')],
+      }),
+    )
+    expect(q_mais_filtro.total, '`q` e `filters` se somam com AND').toBe(0)
+  })
+
+  it('campo fora da whitelist é 400 do SERVIDOR, não filtro ignorado', async () => {
+    await entrarComEmpresa()
+
+    // A fronteira barra antes de sair (é o desenho), então para provar o 400 do
+    // servidor a requisição precisa ser montada aqui, como um cliente qualquer.
+    const url = `http://mock.teste/api/products?page=1&pageSize=10&filters=${encodeURIComponent(
+      JSON.stringify([{ field: 'paymentTerms', operator: 'iLike', value: 'x' }]),
+    )}`
+    const resposta = await fetch(url)
+    expect(resposta.status).toBe(400)
+    expect((await resposta.json()).detail).toContain('Campo não filtrável')
+  })
+
+  it('operador fora do vocabulário é 400 — antes passava TUDO em silêncio', async () => {
+    await entrarComEmpresa()
+
+    // Achado escrevendo estes testes: `contains` não existe no vocabulário (o
+    // nome é `iLike`), e a condição com ele não recortava nada — a listagem
+    // devolvia os 3 produtos como se não houvesse filtro. Mesmo sintoma do
+    // parâmetro descartado, uma camada abaixo.
+    const url = `http://mock.teste/api/products?page=1&pageSize=10&filters=${encodeURIComponent(
+      JSON.stringify([{ field: 'code', operator: 'contains', value: 'PD-' }]),
+    )}`
+    const resposta = await fetch(url)
+    expect(resposta.status).toBe(400)
+    expect((await resposta.json()).detail).toContain('Operador inválido')
+  })
+
+  it('recurso que NÃO publica `filters` recusa em voz alta', async () => {
+    await entrarComEmpresa()
+
+    // `/api/catalog-lookups` não tem o parâmetro no contrato. Aceitar calado
+    // devolveria a lista inteira para quem pediu um recorte.
+    const url = `http://mock.teste/api/catalog-lookups?page=1&pageSize=10&filters=${encodeURIComponent(
+      JSON.stringify([{ field: 'name', operator: 'iLike', value: 'x' }]),
+    )}`
+    const resposta = await fetch(url)
+    expect(resposta.status).toBe(400)
+    expect((await resposta.json()).detail).toContain('não publica o parâmetro filters')
   })
 })
 

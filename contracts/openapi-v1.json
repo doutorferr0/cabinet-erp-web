@@ -3005,6 +3005,306 @@
           }
         }
       }
+    },
+    "/api/activities": {
+      "get": {
+        "tags": ["tarefas"],
+        "operationId": "ListActivities",
+        "description": "Proposto. Atividades agendadas da empresa ativa — a tabela POLIMÓRFICA `activities` do schema mergeado (#66). UM recurso serve oportunidade, parceiro, orçamento e pedido de compra: atividade dentro de cada módulo seria a mesma coisa escrita quatro vezes, e a primeira tela que perguntasse \"o que me espera hoje\" teria de somar quatro listagens. O recorte de um registro é `entityType` e `entityId` JUNTOS — `entityId` sozinho é 400, porque uuid sem a tabela não identifica nada. `sortBy` aceita `dueDate`, `doneAt`, `kind` e `title`; fora da lista é 400. A ordem padrão é a do painel: pendentes primeiro, por prazo crescente e sem prazo por último, depois as concluídas da mais recente para a mais antiga.",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "description": "Proposto. Tabela do registro dono. Vai junto com `entityId`; um sem o outro é 400.",
+            "schema": {
+              "type": "string",
+              "enum": ["opportunity", "partner", "quote", "purchaseOrder"]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "description": "Proposto. Id do registro dono, dentro de `entityType`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "open",
+            "in": "query",
+            "description": "Proposto. `true` traz só o que ainda espera alguém (`doneAt` nulo), `false` só o concluído. Ausente traz os dois — o painel mostra pendência e histórico na mesma consulta, e separar em duas daria duas paginações para uma lista só.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "assigneeEmployeeId",
+            "in": "query",
+            "description": "Proposto. Só as atividades deste responsável. É o recorte que uma tela de \"minhas atividades\" pede, e ele não se monta no cliente: o front não tem a lista inteira em mãos.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfActivityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["tarefas"],
+        "operationId": "CreateActivity",
+        "description": "Proposto. Agenda uma atividade sobre o registro informado, na empresa ativa. O alvo vai no CORPO, e não no caminho, porque o dono é um par (`entityType`, `entityId`) e não uma rota — caminho por módulo devolveria os quatro endpoints que a tabela polimórfica existe para evitar. Alvo inexistente é 404. **Não há DELETE**: atividade agendada por engano se corrige alterando ou concluindo, e o que foi agendado é parte do histórico que a análise lê.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivityWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activities/{id}": {
+      "put": {
+        "tags": ["tarefas"],
+        "operationId": "UpdateActivity",
+        "description": "Proposto. Substitui a atividade INTEIRA — corpo parcial apaga o que não veio. É por aqui que se remarca prazo e se troca responsável. O alvo viaja porque o corpo é o registro completo, mas MUDÁ-LO é 400: a atividade pertence ao registro onde nasceu, e repontá-la faria a linha sumir do painel que a mostra sem aparecer em nenhum outro. Concluir não é aqui — é `POST /api/activities/{id}/done`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivityWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/done": {
+      "post": {
+        "tags": ["tarefas"],
+        "operationId": "CompleteActivity",
+        "description": "Proposto. Conclui a atividade: quem carimba `doneAt` é o servidor, com a hora dele. Verbo próprio, e não `PUT` com `doneAt` preenchido, pela mesma razão do `PATCH` do quadro de tarefas — o painel mostra a LINHA, não o registro inteiro, e um `PUT` montado a partir dela apagaria prazo, responsável e observação. Concluir a já concluída é 409: repetir o carimbo reescreveria a data do que já é histórico. **Não há como desconcluir** — atividade concluída é registro do que aconteceu; o que se refaz é uma atividade nova.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5039,6 +5339,115 @@
             "format": "int32"
           }
         }
+      },
+      "ActivityDto": {
+        "description": "Proposto. Uma atividade agendada sobre qualquer registro — a linha do painel Atividades.",
+        "required": ["id", "entityType", "entityId", "kind", "title"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entityType": {
+            "description": "Tabela do registro dono. Conjunto fechado — é o CHECK de `entity_type` no banco, e a razão de a tabela não ter FK para o alvo.",
+            "type": "string",
+            "enum": ["opportunity", "partner", "quote", "purchaseOrder"]
+          },
+          "entityId": {
+            "description": "Id do registro dono, dentro de `entityType`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "description": "O que a atividade É — e o que dá o ícone e o rótulo no painel. Conjunto fechado. A lista é PROPOSTA do front: a transcrição do SoftLux não cobre atividade e o schema (#66) guarda `kind varchar` sem fixar valores — cresce por PR aqui, junto com o CHECK do banco.",
+            "type": "string",
+            "enum": ["call", "meeting", "email", "task"]
+          },
+          "title": {
+            "description": "O que precisa ser feito, em uma linha — é o que a linha do painel mostra.",
+            "type": "string"
+          },
+          "dueDate": {
+            "description": "Prazo (data, sem hora). Nulo = sem prazo: a atividade existe e não cobra dia.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "assigneeEmployeeId": {
+            "description": "Colaborador responsável (`GET /api/employees`). Nulo = ninguém assumiu ainda.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "assigneeName": {
+            "description": "Nome do responsável, resolvido pelo servidor — o painel mostra gente, não uuid, e uma consulta a mais por linha para traduzir id seria a listagem inteira de colaboradores por painel aberto.",
+            "type": ["string", "null"]
+          },
+          "doneAt": {
+            "description": "Quando foi concluída; nulo = ainda pendente. Escrito pelo SERVIDOR em `POST /api/activities/{id}/done` — o relógio do cliente não carimba histórico.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "notes": {
+            "description": "Observação livre. NÃO é histórico do registro — histórico é Auditoria e Notificações.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "ActivityWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração da atividade. `doneAt` não entra: quem conclui é `POST /api/activities/{id}/done`, e aceitar a data aqui deixaria o cliente carimbar histórico.",
+        "required": ["entityType", "entityId", "kind", "title"],
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "description": "Tabela do registro dono. Conjunto fechado — é o CHECK de `entity_type` no banco, e a razão de a tabela não ter FK para o alvo.",
+            "type": "string",
+            "enum": ["opportunity", "partner", "quote", "purchaseOrder"]
+          },
+          "entityId": {
+            "description": "Id do registro dono. Na alteração precisa ser o MESMO do registro — mudar de alvo é 400.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "description": "O que a atividade É — e o que dá o ícone e o rótulo no painel. Conjunto fechado. A lista é PROPOSTA do front: a transcrição do SoftLux não cobre atividade e o schema (#66) guarda `kind varchar` sem fixar valores — cresce por PR aqui, junto com o CHECK do banco.",
+            "type": "string",
+            "enum": ["call", "meeting", "email", "task"]
+          },
+          "title": {
+            "description": "O que precisa ser feito, em uma linha — é o que a linha do painel mostra.",
+            "type": "string"
+          },
+          "dueDate": {
+            "description": "Prazo (data, sem hora). Nulo = sem prazo: a atividade existe e não cobra dia.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "assigneeEmployeeId": {
+            "description": "Colaborador responsável (`GET /api/employees`). Nulo = ninguém assumiu ainda.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "description": "Observação livre. NÃO é histórico do registro — histórico é Auditoria e Notificações.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfActivityDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -5072,6 +5481,9 @@
     },
     {
       "name": "crm"
+    },
+    {
+      "name": "tarefas"
     }
   ]
 }

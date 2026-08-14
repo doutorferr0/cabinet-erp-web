@@ -1508,6 +1508,132 @@ export interface PagedResultOfCrmLostReasonDto {
   total: number;
 }
 
+/**
+ * Tabela do registro dono. Conjunto fechado — é o CHECK de `entity_type` no banco, e a razão de a tabela não ter FK para o alvo.
+ */
+export type ActivityDtoEntityType = typeof ActivityDtoEntityType[keyof typeof ActivityDtoEntityType];
+
+
+export const ActivityDtoEntityType = {
+  opportunity: 'opportunity',
+  partner: 'partner',
+  quote: 'quote',
+  purchaseOrder: 'purchaseOrder',
+} as const;
+
+/**
+ * O que a atividade É — e o que dá o ícone e o rótulo no painel. Conjunto fechado. A lista é PROPOSTA do front: a transcrição do SoftLux não cobre atividade e o schema (#66) guarda `kind varchar` sem fixar valores — cresce por PR aqui, junto com o CHECK do banco.
+ */
+export type ActivityDtoKind = typeof ActivityDtoKind[keyof typeof ActivityDtoKind];
+
+
+export const ActivityDtoKind = {
+  call: 'call',
+  meeting: 'meeting',
+  email: 'email',
+  task: 'task',
+} as const;
+
+/**
+ * Proposto. Uma atividade agendada sobre qualquer registro — a linha do painel Atividades.
+ */
+export interface ActivityDto {
+  id: string;
+  /** Tabela do registro dono. Conjunto fechado — é o CHECK de `entity_type` no banco, e a razão de a tabela não ter FK para o alvo. */
+  entityType: ActivityDtoEntityType;
+  /** Id do registro dono, dentro de `entityType`. */
+  entityId: string;
+  /** O que a atividade É — e o que dá o ícone e o rótulo no painel. Conjunto fechado. A lista é PROPOSTA do front: a transcrição do SoftLux não cobre atividade e o schema (#66) guarda `kind varchar` sem fixar valores — cresce por PR aqui, junto com o CHECK do banco. */
+  kind: ActivityDtoKind;
+  /** O que precisa ser feito, em uma linha — é o que a linha do painel mostra. */
+  title: string;
+  /**
+     * Prazo (data, sem hora). Nulo = sem prazo: a atividade existe e não cobra dia.
+     * @nullable
+     */
+  dueDate?: string | null;
+  /**
+     * Colaborador responsável (`GET /api/employees`). Nulo = ninguém assumiu ainda.
+     * @nullable
+     */
+  assigneeEmployeeId?: string | null;
+  /**
+     * Nome do responsável, resolvido pelo servidor — o painel mostra gente, não uuid, e uma consulta a mais por linha para traduzir id seria a listagem inteira de colaboradores por painel aberto.
+     * @nullable
+     */
+  assigneeName?: string | null;
+  /**
+     * Quando foi concluída; nulo = ainda pendente. Escrito pelo SERVIDOR em `POST /api/activities/{id}/done` — o relógio do cliente não carimba histórico.
+     * @nullable
+     */
+  doneAt?: string | null;
+  /**
+     * Observação livre. NÃO é histórico do registro — histórico é Auditoria e Notificações.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+/**
+ * Tabela do registro dono. Conjunto fechado — é o CHECK de `entity_type` no banco, e a razão de a tabela não ter FK para o alvo.
+ */
+export type ActivityWriteRequestEntityType = typeof ActivityWriteRequestEntityType[keyof typeof ActivityWriteRequestEntityType];
+
+
+export const ActivityWriteRequestEntityType = {
+  opportunity: 'opportunity',
+  partner: 'partner',
+  quote: 'quote',
+  purchaseOrder: 'purchaseOrder',
+} as const;
+
+/**
+ * O que a atividade É — e o que dá o ícone e o rótulo no painel. Conjunto fechado. A lista é PROPOSTA do front: a transcrição do SoftLux não cobre atividade e o schema (#66) guarda `kind varchar` sem fixar valores — cresce por PR aqui, junto com o CHECK do banco.
+ */
+export type ActivityWriteRequestKind = typeof ActivityWriteRequestKind[keyof typeof ActivityWriteRequestKind];
+
+
+export const ActivityWriteRequestKind = {
+  call: 'call',
+  meeting: 'meeting',
+  email: 'email',
+  task: 'task',
+} as const;
+
+/**
+ * Proposto. Corpo de criação e de alteração da atividade. `doneAt` não entra: quem conclui é `POST /api/activities/{id}/done`, e aceitar a data aqui deixaria o cliente carimbar histórico.
+ */
+export interface ActivityWriteRequest {
+  /** Tabela do registro dono. Conjunto fechado — é o CHECK de `entity_type` no banco, e a razão de a tabela não ter FK para o alvo. */
+  entityType: ActivityWriteRequestEntityType;
+  /** Id do registro dono. Na alteração precisa ser o MESMO do registro — mudar de alvo é 400. */
+  entityId: string;
+  /** O que a atividade É — e o que dá o ícone e o rótulo no painel. Conjunto fechado. A lista é PROPOSTA do front: a transcrição do SoftLux não cobre atividade e o schema (#66) guarda `kind varchar` sem fixar valores — cresce por PR aqui, junto com o CHECK do banco. */
+  kind: ActivityWriteRequestKind;
+  /** O que precisa ser feito, em uma linha — é o que a linha do painel mostra. */
+  title: string;
+  /**
+     * Prazo (data, sem hora). Nulo = sem prazo: a atividade existe e não cobra dia.
+     * @nullable
+     */
+  dueDate?: string | null;
+  /**
+     * Colaborador responsável (`GET /api/employees`). Nulo = ninguém assumiu ainda.
+     * @nullable
+     */
+  assigneeEmployeeId?: string | null;
+  /**
+     * Observação livre. NÃO é histórico do registro — histórico é Auditoria e Notificações.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface PagedResultOfActivityDto {
+  rows: ActivityDto[];
+  total: number;
+}
+
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;
@@ -1651,4 +1777,38 @@ sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 };
+
+export type ListActivitiesParams = {
+/**
+ * Proposto. Tabela do registro dono. Vai junto com `entityId`; um sem o outro é 400.
+ */
+entityType?: ListActivitiesEntityType;
+/**
+ * Proposto. Id do registro dono, dentro de `entityType`.
+ */
+entityId?: string;
+/**
+ * Proposto. `true` traz só o que ainda espera alguém (`doneAt` nulo), `false` só o concluído. Ausente traz os dois — o painel mostra pendência e histórico na mesma consulta, e separar em duas daria duas paginações para uma lista só.
+ */
+open?: boolean;
+/**
+ * Proposto. Só as atividades deste responsável. É o recorte que uma tela de "minhas atividades" pede, e ele não se monta no cliente: o front não tem a lista inteira em mãos.
+ */
+assigneeEmployeeId?: string;
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListActivitiesEntityType = typeof ListActivitiesEntityType[keyof typeof ListActivitiesEntityType];
+
+
+export const ListActivitiesEntityType = {
+  opportunity: 'opportunity',
+  partner: 'partner',
+  quote: 'quote',
+  purchaseOrder: 'purchaseOrder',
+} as const;
 

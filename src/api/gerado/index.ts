@@ -8,6 +8,8 @@
  * OpenAPI spec version: v1
  */
 import type {
+  ActivityDto,
+  ActivityWriteRequest,
   AgendaEventDto,
   ChangePasswordRequest,
   CrmLostReasonDto,
@@ -21,6 +23,7 @@ import type {
   CrmStageWriteRequest,
   DashboardSummaryDto,
   HealthStatus,
+  ListActivitiesParams,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
   ListCrmLostReasonsParams,
@@ -36,6 +39,7 @@ import type {
   LoginFalhou,
   LoginOk,
   LoginRequest,
+  PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
@@ -2595,6 +2599,221 @@ export const updateCrmLostReason = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(crmLostReasonWriteRequest)
+  }
+);}
+
+
+
+export type listActivitiesResponse200 = {
+  data: PagedResultOfActivityDto
+  status: 200
+}
+
+export type listActivitiesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listActivitiesResponseSuccess = (listActivitiesResponse200) & {
+  headers: Headers;
+};
+export type listActivitiesResponseError = (listActivitiesResponse400) & {
+  headers: Headers;
+};
+
+export type listActivitiesResponse = (listActivitiesResponseSuccess | listActivitiesResponseError)
+
+export const getListActivitiesUrl = (params?: ListActivitiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/activities?${stringifiedParams}` : `/api/activities`
+}
+
+/**
+ * Proposto. Atividades agendadas da empresa ativa — a tabela POLIMÓRFICA `activities` do schema mergeado (#66). UM recurso serve oportunidade, parceiro, orçamento e pedido de compra: atividade dentro de cada módulo seria a mesma coisa escrita quatro vezes, e a primeira tela que perguntasse "o que me espera hoje" teria de somar quatro listagens. O recorte de um registro é `entityType` e `entityId` JUNTOS — `entityId` sozinho é 400, porque uuid sem a tabela não identifica nada. `sortBy` aceita `dueDate`, `doneAt`, `kind` e `title`; fora da lista é 400. A ordem padrão é a do painel: pendentes primeiro, por prazo crescente e sem prazo por último, depois as concluídas da mais recente para a mais antiga.
+ */
+export const listActivities = async (params?: ListActivitiesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listActivitiesResponse> => {
+
+  return apiFetch<listActivitiesResponse>(getListActivitiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createActivityResponse201 = {
+  data: ActivityDto
+  status: 201
+}
+
+export type createActivityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createActivityResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createActivityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createActivityResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createActivityResponseSuccess = (createActivityResponse201) & {
+  headers: Headers;
+};
+export type createActivityResponseError = (createActivityResponse400 | createActivityResponse403 | createActivityResponse404 | createActivityResponse409) & {
+  headers: Headers;
+};
+
+export type createActivityResponse = (createActivityResponseSuccess | createActivityResponseError)
+
+export const getCreateActivityUrl = () => {
+
+
+
+
+  return `/api/activities`
+}
+
+/**
+ * Proposto. Agenda uma atividade sobre o registro informado, na empresa ativa. O alvo vai no CORPO, e não no caminho, porque o dono é um par (`entityType`, `entityId`) e não uma rota — caminho por módulo devolveria os quatro endpoints que a tabela polimórfica existe para evitar. Alvo inexistente é 404. **Não há DELETE**: atividade agendada por engano se corrige alterando ou concluindo, e o que foi agendado é parte do histórico que a análise lê.
+ */
+export const createActivity = async (activityWriteRequest: ActivityWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createActivityResponse> => {
+
+  return apiFetch<createActivityResponse>(getCreateActivityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(activityWriteRequest)
+  }
+);}
+
+
+
+export type updateActivityResponse200 = {
+  data: ActivityDto
+  status: 200
+}
+
+export type updateActivityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateActivityResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type updateActivityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateActivityResponseSuccess = (updateActivityResponse200) & {
+  headers: Headers;
+};
+export type updateActivityResponseError = (updateActivityResponse400 | updateActivityResponse403 | updateActivityResponse404) & {
+  headers: Headers;
+};
+
+export type updateActivityResponse = (updateActivityResponseSuccess | updateActivityResponseError)
+
+export const getUpdateActivityUrl = (id: string,) => {
+
+
+
+
+  return `/api/activities/${id}`
+}
+
+/**
+ * Proposto. Substitui a atividade INTEIRA — corpo parcial apaga o que não veio. É por aqui que se remarca prazo e se troca responsável. O alvo viaja porque o corpo é o registro completo, mas MUDÁ-LO é 400: a atividade pertence ao registro onde nasceu, e repontá-la faria a linha sumir do painel que a mostra sem aparecer em nenhum outro. Concluir não é aqui — é `POST /api/activities/{id}/done`.
+ */
+export const updateActivity = async (id: string,
+    activityWriteRequest: ActivityWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateActivityResponse> => {
+
+  return apiFetch<updateActivityResponse>(getUpdateActivityUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(activityWriteRequest)
+  }
+);}
+
+
+
+export type completeActivityResponse200 = {
+  data: ActivityDto
+  status: 200
+}
+
+export type completeActivityResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type completeActivityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type completeActivityResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type completeActivityResponseSuccess = (completeActivityResponse200) & {
+  headers: Headers;
+};
+export type completeActivityResponseError = (completeActivityResponse403 | completeActivityResponse404 | completeActivityResponse409) & {
+  headers: Headers;
+};
+
+export type completeActivityResponse = (completeActivityResponseSuccess | completeActivityResponseError)
+
+export const getCompleteActivityUrl = (id: string,) => {
+
+
+
+
+  return `/api/activities/${id}/done`
+}
+
+/**
+ * Proposto. Conclui a atividade: quem carimba `doneAt` é o servidor, com a hora dele. Verbo próprio, e não `PUT` com `doneAt` preenchido, pela mesma razão do `PATCH` do quadro de tarefas — o painel mostra a LINHA, não o registro inteiro, e um `PUT` montado a partir dela apagaria prazo, responsável e observação. Concluir a já concluída é 409: repetir o carimbo reescreveria a data do que já é histórico. **Não há como desconcluir** — atividade concluída é registro do que aconteceu; o que se refaz é uma atividade nova.
+ */
+export const completeActivity = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<completeActivityResponse> => {
+
+  return apiFetch<completeActivityResponse>(getCompleteActivityUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

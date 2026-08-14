@@ -86,8 +86,34 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
 | Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
 
+| CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
+
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
+
+### CRM — o movimento do quadro é uma requisição só (2026-08-13)
+
+`PATCH /api/crm/opportunities/{id}/stage` recebe destino (`stageId`) e VIZINHO
+(`precedeId`, `null` = fim da coluna), e o servidor reordena a coluna inteira
+numa transação. **Não é preferência de estilo:** o desenho alternativo — o
+cliente calcular índices e mandar um `PUT` por linha deslocada — está medido em
+`docs/harvest/kanban-funil/integracao.md`, e com RLS + `SET LOCAL` cada
+requisição é transação própria, então falha no meio deixa dois cartões no mesmo
+lugar sem sintoma. `precedeId` é referência a vizinho e não índice porque índice
+é posição numa lista que pode estar filtrada.
+
+Três coisas o servidor escreve e o cliente nunca manda: `order`,
+`stageChangedAt` e `closedAt`. São consequência do movimento — deixar o cliente
+escrevê-las permitiria um cartão dizer que está parado há um mês desde ontem.
+
+**`order` ainda não existe no schema mergeado (#66).** O DTO o publica porque
+sem posição persistida o `precedeId` não resolve nada; é coluna a acrescentar do
+lado do backend, e está anotada como pendência, não como campo inventado.
+
+**Estágio não tem `active`.** `crm_stages` não guarda desativação, então não há
+`DELETE` nem baixa lógica de coluna: estágio fora de uso se resolve movendo os
+cartões e deixando a coluna vazia. É a única divergência conhecida contra o
+padrão 8 dos cadastros, e é do schema, não da tela.
 
 ### Produto — o que a extração devolveu (2026-08-13)
 

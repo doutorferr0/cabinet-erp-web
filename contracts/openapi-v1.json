@@ -1973,6 +1973,992 @@
           }
         }
       }
+    },
+    "/api/crm/pipelines": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "ListCrmPipelines",
+        "description": "Proposto. Funis da empresa ativa. São VÁRIOS por empresa — modelos de venda distintos não cabem num funil só, e forçá-los a caber faz o operador usar o mesmo estágio com dois significados. `sortBy` aceita `name`, `sort` e `active`; fora da lista é 400.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCrmPipelineDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["crm"],
+        "operationId": "CreateCrmPipeline",
+        "description": "Proposto. Cria funil na empresa ativa. Funil nasce SEM estágio: quem os cria é `POST /api/crm/pipelines/{pipelineId}/stages`. Semear estágio padrão aqui inventaria o modelo de venda da empresa — e é justamente o que varia entre elas.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmPipelineWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmPipelineDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/pipelines/{id}": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "GetCrmPipeline",
+        "description": "Proposto. Um funil por id. Existe pelo mesmo motivo que o de parceiro: o quadro abre por URL própria (`/crm/funil/{id}`) e recarregar a página não pode exigir voltar à listagem para ter o registro em mãos.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmPipelineDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["crm"],
+        "operationId": "UpdateCrmPipeline",
+        "description": "Proposto. Substitui o funil INTEIRO — corpo parcial apaga o que não veio. Os estágios NÃO viajam aqui: eles têm identidade própria e id estável, e a oportunidade aponta para eles. Mandá-los embutidos faria uma edição de nome de funil recriar estágio e órfão de cartão. Desativar é `active: false`, nunca DELETE.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmPipelineWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmPipelineDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/pipelines/{pipelineId}/stages": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "ListCrmStages",
+        "description": "Proposto. Os estágios DO funil, na ordem de `sort` — as colunas do quadro. Array inteiro, sem paginação: quadro com metade das colunas não é quadro, e um funil tem dezenas de estágios no pior caso, não milhares.",
+        "parameters": [
+          {
+            "name": "pipelineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CrmStageDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["crm"],
+        "operationId": "CreateCrmStage",
+        "description": "Proposto. Cria estágio NO funil do caminho. O `pipelineId` não viaja no corpo — vem da URL, e assim não há como divergirem.",
+        "parameters": [
+          {
+            "name": "pipelineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmStageWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmStageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/pipelines/{pipelineId}/stages/{id}": {
+      "put": {
+        "tags": ["crm"],
+        "operationId": "UpdateCrmStage",
+        "description": "Proposto. Substitui o estágio INTEIRO. **Não há DELETE de estágio**: apagar coluna com cartão dentro obrigaria o servidor a escolher para onde os cartões vão, e essa escolha é do operador. Estágio que saiu de uso se resolve movendo os cartões e deixando a coluna vazia — o schema mergeado (#66) não tem `active` em `crm_stages`, e inventá-lo aqui criaria campo que o banco não guarda.",
+        "parameters": [
+          {
+            "name": "pipelineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmStageWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmStageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/opportunities": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "ListCrmOpportunities",
+        "description": "Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban.",
+        "parameters": [
+          {
+            "name": "pipelineId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as oportunidades deste funil."
+          },
+          {
+            "name": "stageId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as deste estágio — uma coluna do quadro."
+          },
+          {
+            "name": "ownerEmployeeId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as deste responsável."
+          },
+          {
+            "name": "open",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`true` = só as ABERTAS (estágio sem `isWon` nem `isLost`). Ausente = todas. É filtro por PROPRIEDADE do estágio, não por lista de ids: a tela não pode montar a lista de estágios ganhos de cada funil para depois pedir o resto."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCrmOpportunityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["crm"],
+        "operationId": "CreateCrmOpportunity",
+        "description": "Proposto. Cria a oportunidade no estágio informado, no FIM da coluna. Sem `stageId` explícito o servidor usa o primeiro estágio do funil; sem `pipelineId`, o funil `isDefault`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmOpportunityWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmOpportunityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/opportunities/{id}": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "GetCrmOpportunity",
+        "description": "Proposto. Uma oportunidade por id. Mesmo DTO da listagem — não há DTO de detalhe, porque o cartão e o formulário mostram o mesmo registro.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmOpportunityDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["crm"],
+        "operationId": "UpdateCrmOpportunity",
+        "description": "Proposto. Substitui a oportunidade INTEIRA — corpo parcial apaga o que não veio. Trocar `stageId` por aqui é permitido (é o registro inteiro), mas manda o cartão para o FIM do estágio novo e reinicia `stageChangedAt`: POSICIONAR é o `PATCH /api/crm/opportunities/{id}/stage`. Estágio de OUTRO funil é 400 — o banco recusa pela FK composta, e a resposta diz isso em vez de estourar 500.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmOpportunityWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmOpportunityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/opportunities/{id}/stage": {
+      "patch": {
+        "tags": ["crm"],
+        "operationId": "MoveCrmOpportunityStage",
+        "description": "Proposto. Mover o cartão de coluna é UMA intenção, logo UMA requisição. O quadro manda o destino (`stageId`) e o VIZINHO (`precedeId`); a reordenação inteira da coluna acontece aqui, numa transação só. A alternativa — o cliente recalcular os índices e mandar um `PUT` por linha deslocada — é o desenho que a colheita de `docs/harvest/kanban-funil/` recusou: com RLS e `SET LOCAL` por transação, cada requisição é uma transação própria, e falha no meio deixa dois cartões no mesmo lugar sem ninguém saber.\n\nÉ `PATCH` e não `PUT` pela mesma razão do quadro de tarefas: o cartão não carrega o registro inteiro, e um `PUT` a partir dele apagaria o que ele não mostra.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmOpportunityStagePatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmOpportunityDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/lost-reasons": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "ListCrmLostReasons",
+        "description": "Proposto. Motivos de perda catalogados da empresa ativa. É cadastro e não texto livre porque a pergunta que ele responde é \"por que perdemos\" somada no ano — texto livre vira trinta grafias da mesma coisa. `sortBy` aceita `name` e `active`.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCrmLostReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["crm"],
+        "operationId": "CreateCrmLostReason",
+        "description": "Proposto. Cria motivo de perda na empresa ativa.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmLostReasonWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmLostReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/lost-reasons/{id}": {
+      "put": {
+        "tags": ["crm"],
+        "operationId": "UpdateCrmLostReason",
+        "description": "Proposto. Substitui o motivo INTEIRO; desativar é `active: false`. Não há GET por id: o registro tem dois campos e a LINHA da listagem já é o registro inteiro — caminho de detalhe aqui seria requisição para buscar o que a tela já tem.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrmLostReasonWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmLostReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3539,6 +4525,421 @@
             "format": "int32"
           }
         }
+      },
+      "CrmPipelineDto": {
+        "description": "Proposto. Funil de venda. Vários por empresa — ver `crm_pipelines` no schema mergeado (#66).",
+        "required": ["id", "name", "sort", "isDefault", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Nome do funil, como o operador o chama.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Ordem de exibição entre os funis.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDefault": {
+            "description": "Funil da oportunidade criada sem escolha explícita. Um só por empresa: marcar outro desmarca o anterior, e quem resolve isso é o servidor, na mesma transação.",
+            "type": "boolean"
+          },
+          "active": {
+            "description": "Desativação lógica (padrão 8 dos cadastros). Funil inativo some da escolha e não recebe oportunidade nova; as que já estão nele continuam abrindo — senão desativar viraria apagar, com outro nome.",
+            "type": "boolean"
+          }
+        }
+      },
+      "CrmPipelineWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração do funil. `PUT` substitui o registro inteiro: omitir apaga.",
+        "required": ["name", "sort", "isDefault", "active"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Nome do funil, como o operador o chama.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Ordem de exibição entre os funis.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDefault": {
+            "description": "Funil da oportunidade criada sem escolha explícita. Um só por empresa: marcar outro desmarca o anterior, e quem resolve isso é o servidor, na mesma transação.",
+            "type": "boolean"
+          },
+          "active": {
+            "description": "Desativação lógica (padrão 8 dos cadastros). Funil inativo some da escolha e não recebe oportunidade nova; as que já estão nele continuam abrindo — senão desativar viraria apagar, com outro nome.",
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfCrmPipelineDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmPipelineDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CrmStageDto": {
+        "description": "Proposto. Estágio DE UM funil — a coluna do quadro. Não tem `active`: o schema mergeado (#66) não guarda desativação por estágio, e coluna que some com cartão dentro esconderia oportunidade sem apagá-la.",
+        "required": ["id", "pipelineId", "name", "sort", "probability", "isWon", "isLost"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pipelineId": {
+            "description": "Funil a que o estágio pertence.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Nome do estágio — o cabeçalho da coluna no quadro.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Ordem da coluna no quadro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "probability": {
+            "description": "Probabilidade de fechamento. Int com 4 casas implícitas, a mesma convenção de `discountPercent`: `10000` = 1%, `1000000` = 100%. Só compara DENTRO do mesmo funil — dois funis com modelos de venda diferentes não têm escala comum.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "isWon": {
+            "description": "Estágio de GANHO. É propriedade do estágio e não do funil porque cada funil fecha no seu; e é dado, não rótulo, senão \"Fechado\" e \"Ganho\" viram a mesma coluna com dois nomes.",
+            "type": "boolean"
+          },
+          "isLost": {
+            "description": "Estágio de PERDA. Oportunidade que entra num estágio assim exige `lostReasonId` — sem motivo, a perda não vira análise nenhuma.",
+            "type": "boolean"
+          },
+          "rotDays": {
+            "description": "Apodrecimento: cartão parado mais dias que isto NO ESTÁGIO é sinalizado no quadro. `null` = o estágio não apodrece. Conta a partir de `stageChangedAt`, não da criação — apodrecer é \"parado desde\", não \"velho\".",
+            "type": ["integer", "null"],
+            "format": "int32"
+          }
+        }
+      },
+      "CrmStageWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração do estágio. Sem `pipelineId`: ele vem do caminho, e dois lugares para o mesmo fato divergem.",
+        "required": ["name", "sort", "probability", "isWon", "isLost"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Nome do estágio — o cabeçalho da coluna no quadro.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Ordem da coluna no quadro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "probability": {
+            "description": "Probabilidade de fechamento. Int com 4 casas implícitas, a mesma convenção de `discountPercent`: `10000` = 1%, `1000000` = 100%. Só compara DENTRO do mesmo funil — dois funis com modelos de venda diferentes não têm escala comum.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "isWon": {
+            "description": "Estágio de GANHO. É propriedade do estágio e não do funil porque cada funil fecha no seu; e é dado, não rótulo, senão \"Fechado\" e \"Ganho\" viram a mesma coluna com dois nomes.",
+            "type": "boolean"
+          },
+          "isLost": {
+            "description": "Estágio de PERDA. Oportunidade que entra num estágio assim exige `lostReasonId` — sem motivo, a perda não vira análise nenhuma.",
+            "type": "boolean"
+          },
+          "rotDays": {
+            "description": "Apodrecimento: cartão parado mais dias que isto NO ESTÁGIO é sinalizado no quadro. `null` = o estágio não apodrece. Conta a partir de `stageChangedAt`, não da criação — apodrecer é \"parado desde\", não \"velho\".",
+            "type": ["integer", "null"],
+            "format": "int32"
+          }
+        }
+      },
+      "CrmOpportunityDto": {
+        "description": "Proposto. Lead e negócio no MESMO registro — converter é mudar de estágio, não cadastrar de novo. Os campos `*Name` vêm resolvidos pelo servidor: o cartão do quadro mostra três palavras e não pode carregar lista de apoio para traduzir id.",
+        "required": [
+          "id",
+          "name",
+          "pipelineId",
+          "pipelineName",
+          "stageId",
+          "stageName",
+          "order",
+          "stageChangedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Título do negócio. Existe separado do parceiro porque o cartão precisa escrever algo quando `partnerId` é nulo — e porque a mesma empresa dá origem a vários negócios.",
+            "type": "string"
+          },
+          "pipelineId": {
+            "description": "Funil em que a oportunidade está.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "pipelineName": {
+            "description": "Nome do funil, resolvido pelo servidor.",
+            "type": "string"
+          },
+          "stageId": {
+            "description": "Estágio atual — sempre do MESMO funil (FK composta no banco).",
+            "type": "string",
+            "format": "uuid"
+          },
+          "stageName": {
+            "description": "Nome do estágio, resolvido pelo servidor.",
+            "type": "string"
+          },
+          "order": {
+            "description": "Posição DENTRO do estágio, crescente. Quem atribui é o servidor — ver `PATCH /api/crm/opportunities/{id}/stage`. O cliente nunca calcula posição: índice é posição numa lista que pode estar filtrada.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerId": {
+            "description": "Cliente/prospect já cadastrado (`PartnerDto.id`). `null` = lead ainda sem cadastro, e aí o contato vive nos três campos `contact*`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "partnerName": {
+            "description": "Nome do parceiro, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "contactName": {
+            "description": "Nome do contato do lead sem cadastro.",
+            "type": ["string", "null"]
+          },
+          "contactEmail": {
+            "description": "E-mail do contato do lead sem cadastro.",
+            "type": ["string", "null"]
+          },
+          "contactPhone": {
+            "description": "Telefone do contato do lead sem cadastro.",
+            "type": ["string", "null"]
+          },
+          "ownerEmployeeId": {
+            "description": "Responsável pela oportunidade (`EmployeeDto.id`). `null` = lead que entrou por formulário e ainda não tem dono.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "ownerName": {
+            "description": "Nome do responsável, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "expectedValueCents": {
+            "description": "Valor previsto do negócio, em centavos. `null` = ainda não estimado, que é diferente de zero.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "expectedCloseDate": {
+            "description": "Data prevista de fechamento.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "source": {
+            "description": "Origem do lead (indicação, feira, site).",
+            "type": ["string", "null"]
+          },
+          "stageChangedAt": {
+            "description": "Instante da última mudança de estágio. É a base do `rotDays` do estágio: sem ele o apodrecimento não calcula nada.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "lostReasonId": {
+            "description": "Motivo da perda (`CrmLostReasonDto.id`). Só faz sentido em estágio `isLost`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "lostReasonName": {
+            "description": "Nome do motivo de perda, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "quoteId": {
+            "description": "Orçamento gerado a partir da oportunidade (`QuoteDto.id`). A oportunidade NÃO congela preço: quem congela é o orçamento.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "closedAt": {
+            "description": "Instante do fechamento (ganho ou perda). Escrito pelo SERVIDOR quando a oportunidade entra num estágio `isWon`/`isLost`, e limpo quando ela volta a um estágio aberto.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "CrmOpportunityWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração. `PUT` substitui o registro INTEIRO: campo ausente é campo apagado. Sem os `*Name` (o servidor resolve), sem `order`, sem `stageChangedAt` e sem `closedAt` — os três são consequência do movimento, e deixar o cliente escrevê-los permitiria um cartão dizer que está parado há um mês desde ontem.",
+        "required": ["name"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Título do negócio. Existe separado do parceiro porque o cartão precisa escrever algo quando `partnerId` é nulo — e porque a mesma empresa dá origem a vários negócios.",
+            "type": "string"
+          },
+          "pipelineId": {
+            "description": "Funil. Ausente ou `null` na criação = o funil `isDefault` da empresa.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "stageId": {
+            "description": "Estágio. Ausente ou `null` na criação = o primeiro estágio do funil. Trocar o estágio por aqui manda o cartão para o FIM da coluna nova e reinicia `stageChangedAt` — posicionar é o `PATCH .../stage`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "partnerId": {
+            "description": "Cliente/prospect já cadastrado (`PartnerDto.id`). `null` = lead ainda sem cadastro, e aí o contato vive nos três campos `contact*`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "contactName": {
+            "description": "Nome do contato do lead sem cadastro.",
+            "type": ["string", "null"]
+          },
+          "contactEmail": {
+            "description": "E-mail do contato do lead sem cadastro.",
+            "type": ["string", "null"]
+          },
+          "contactPhone": {
+            "description": "Telefone do contato do lead sem cadastro.",
+            "type": ["string", "null"]
+          },
+          "ownerEmployeeId": {
+            "description": "Responsável pela oportunidade (`EmployeeDto.id`). `null` = lead que entrou por formulário e ainda não tem dono.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "expectedValueCents": {
+            "description": "Valor previsto do negócio, em centavos. `null` = ainda não estimado, que é diferente de zero.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "expectedCloseDate": {
+            "description": "Data prevista de fechamento.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "source": {
+            "description": "Origem do lead (indicação, feira, site).",
+            "type": ["string", "null"]
+          },
+          "lostReasonId": {
+            "description": "Motivo da perda (`CrmLostReasonDto.id`). Só faz sentido em estágio `isLost`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "quoteId": {
+            "description": "Orçamento gerado a partir da oportunidade (`QuoteDto.id`). A oportunidade NÃO congela preço: quem congela é o orçamento.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        }
+      },
+      "CrmOpportunityStagePatchRequest": {
+        "description": "Proposto. O destino de UM movimento do quadro. Só o que muda viaja — ausente NÃO é `null`: `precedeId` ausente é \"sem preferência de posição\" (fim da coluna), e é por isso que ele é nulável em vez de obrigatório.",
+        "required": ["stageId"],
+        "type": "object",
+        "properties": {
+          "stageId": {
+            "description": "Estágio de destino. De outro funil é 400 — mover de FUNIL é `PUT`, e reseta a posição.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "precedeId": {
+            "description": "Id do cartão na frente do qual a oportunidade fica; `null` = fim da coluna. É referência a VIZINHO, não índice: índice é posição numa lista que pode estar filtrada, vizinho é um fato sobre dois registros que o servidor confere. Cartão que não está no estágio de destino é 400.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "lostReasonId": {
+            "description": "Motivo da perda. **Obrigatório quando o estágio de destino tem `isLost`** — sem ele a resposta é 400, porque perda sem motivo não vira análise. Ignorado nos demais estágios.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        }
+      },
+      "PagedResultOfCrmOpportunityDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmOpportunityDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CrmLostReasonDto": {
+        "description": "Proposto. Motivo de perda catalogado — vira análise, não texto livre.",
+        "required": ["id", "name", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Motivo da perda, como entra no relatório.",
+            "type": "string"
+          },
+          "active": {
+            "description": "Desativação lógica: motivo aposentado some da escolha, mas continua legível nas oportunidades antigas.",
+            "type": "boolean"
+          }
+        }
+      },
+      "CrmLostReasonWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração do motivo de perda.",
+        "required": ["name", "active"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Motivo da perda, como entra no relatório.",
+            "type": "string"
+          },
+          "active": {
+            "description": "Desativação lógica: motivo aposentado some da escolha, mas continua legível nas oportunidades antigas.",
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfCrmLostReasonDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmLostReasonDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -3569,6 +4970,9 @@
     },
     {
       "name": "cadastros"
+    },
+    {
+      "name": "crm"
     }
   ]
 }

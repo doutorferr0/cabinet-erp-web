@@ -10,10 +10,22 @@
 import type {
   AgendaEventDto,
   ChangePasswordRequest,
+  CrmLostReasonDto,
+  CrmLostReasonWriteRequest,
+  CrmOpportunityDto,
+  CrmOpportunityStagePatchRequest,
+  CrmOpportunityWriteRequest,
+  CrmPipelineDto,
+  CrmPipelineWriteRequest,
+  CrmStageDto,
+  CrmStageWriteRequest,
   DashboardSummaryDto,
   HealthStatus,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
+  ListCrmLostReasonsParams,
+  ListCrmOpportunitiesParams,
+  ListCrmPipelinesParams,
   ListEmployeesParams,
   ListPartnersParams,
   ListProductsParams,
@@ -25,6 +37,9 @@ import type {
   LoginOk,
   LoginRequest,
   PagedResultOfCatalogLookupDto,
+  PagedResultOfCrmLostReasonDto,
+  PagedResultOfCrmOpportunityDto,
+  PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
@@ -1799,6 +1814,787 @@ export const cancelQuote = async (id: string, options?: Parameters<typeof apiFet
     method: 'POST'
 
 
+  }
+);}
+
+
+
+export type listCrmPipelinesResponse200 = {
+  data: PagedResultOfCrmPipelineDto
+  status: 200
+}
+
+export type listCrmPipelinesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCrmPipelinesResponseSuccess = (listCrmPipelinesResponse200) & {
+  headers: Headers;
+};
+export type listCrmPipelinesResponseError = (listCrmPipelinesResponse400) & {
+  headers: Headers;
+};
+
+export type listCrmPipelinesResponse = (listCrmPipelinesResponseSuccess | listCrmPipelinesResponseError)
+
+export const getListCrmPipelinesUrl = (params?: ListCrmPipelinesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/pipelines?${stringifiedParams}` : `/api/crm/pipelines`
+}
+
+/**
+ * Proposto. Funis da empresa ativa. São VÁRIOS por empresa — modelos de venda distintos não cabem num funil só, e forçá-los a caber faz o operador usar o mesmo estágio com dois significados. `sortBy` aceita `name`, `sort` e `active`; fora da lista é 400.
+ */
+export const listCrmPipelines = async (params?: ListCrmPipelinesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCrmPipelinesResponse> => {
+
+  return apiFetch<listCrmPipelinesResponse>(getListCrmPipelinesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCrmPipelineResponse201 = {
+  data: CrmPipelineDto
+  status: 201
+}
+
+export type createCrmPipelineResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCrmPipelineResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createCrmPipelineResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCrmPipelineResponseSuccess = (createCrmPipelineResponse201) & {
+  headers: Headers;
+};
+export type createCrmPipelineResponseError = (createCrmPipelineResponse400 | createCrmPipelineResponse403 | createCrmPipelineResponse409) & {
+  headers: Headers;
+};
+
+export type createCrmPipelineResponse = (createCrmPipelineResponseSuccess | createCrmPipelineResponseError)
+
+export const getCreateCrmPipelineUrl = () => {
+
+
+
+
+  return `/api/crm/pipelines`
+}
+
+/**
+ * Proposto. Cria funil na empresa ativa. Funil nasce SEM estágio: quem os cria é `POST /api/crm/pipelines/{pipelineId}/stages`. Semear estágio padrão aqui inventaria o modelo de venda da empresa — e é justamente o que varia entre elas.
+ */
+export const createCrmPipeline = async (crmPipelineWriteRequest: CrmPipelineWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCrmPipelineResponse> => {
+
+  return apiFetch<createCrmPipelineResponse>(getCreateCrmPipelineUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmPipelineWriteRequest)
+  }
+);}
+
+
+
+export type getCrmPipelineResponse200 = {
+  data: CrmPipelineDto
+  status: 200
+}
+
+export type getCrmPipelineResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getCrmPipelineResponseSuccess = (getCrmPipelineResponse200) & {
+  headers: Headers;
+};
+export type getCrmPipelineResponseError = (getCrmPipelineResponse404) & {
+  headers: Headers;
+};
+
+export type getCrmPipelineResponse = (getCrmPipelineResponseSuccess | getCrmPipelineResponseError)
+
+export const getGetCrmPipelineUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/pipelines/${id}`
+}
+
+/**
+ * Proposto. Um funil por id. Existe pelo mesmo motivo que o de parceiro: o quadro abre por URL própria (`/crm/funil/{id}`) e recarregar a página não pode exigir voltar à listagem para ter o registro em mãos.
+ */
+export const getCrmPipeline = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getCrmPipelineResponse> => {
+
+  return apiFetch<getCrmPipelineResponse>(getGetCrmPipelineUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateCrmPipelineResponse200 = {
+  data: CrmPipelineDto
+  status: 200
+}
+
+export type updateCrmPipelineResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCrmPipelineResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type updateCrmPipelineResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateCrmPipelineResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateCrmPipelineResponseSuccess = (updateCrmPipelineResponse200) & {
+  headers: Headers;
+};
+export type updateCrmPipelineResponseError = (updateCrmPipelineResponse400 | updateCrmPipelineResponse403 | updateCrmPipelineResponse404 | updateCrmPipelineResponse409) & {
+  headers: Headers;
+};
+
+export type updateCrmPipelineResponse = (updateCrmPipelineResponseSuccess | updateCrmPipelineResponseError)
+
+export const getUpdateCrmPipelineUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/pipelines/${id}`
+}
+
+/**
+ * Proposto. Substitui o funil INTEIRO — corpo parcial apaga o que não veio. Os estágios NÃO viajam aqui: eles têm identidade própria e id estável, e a oportunidade aponta para eles. Mandá-los embutidos faria uma edição de nome de funil recriar estágio e órfão de cartão. Desativar é `active: false`, nunca DELETE.
+ */
+export const updateCrmPipeline = async (id: string,
+    crmPipelineWriteRequest: CrmPipelineWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCrmPipelineResponse> => {
+
+  return apiFetch<updateCrmPipelineResponse>(getUpdateCrmPipelineUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmPipelineWriteRequest)
+  }
+);}
+
+
+
+export type listCrmStagesResponse200 = {
+  data: CrmStageDto[]
+  status: 200
+}
+
+export type listCrmStagesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listCrmStagesResponseSuccess = (listCrmStagesResponse200) & {
+  headers: Headers;
+};
+export type listCrmStagesResponseError = (listCrmStagesResponse404) & {
+  headers: Headers;
+};
+
+export type listCrmStagesResponse = (listCrmStagesResponseSuccess | listCrmStagesResponseError)
+
+export const getListCrmStagesUrl = (pipelineId: string,) => {
+
+
+
+
+  return `/api/crm/pipelines/${pipelineId}/stages`
+}
+
+/**
+ * Proposto. Os estágios DO funil, na ordem de `sort` — as colunas do quadro. Array inteiro, sem paginação: quadro com metade das colunas não é quadro, e um funil tem dezenas de estágios no pior caso, não milhares.
+ */
+export const listCrmStages = async (pipelineId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listCrmStagesResponse> => {
+
+  return apiFetch<listCrmStagesResponse>(getListCrmStagesUrl(pipelineId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCrmStageResponse201 = {
+  data: CrmStageDto
+  status: 201
+}
+
+export type createCrmStageResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCrmStageResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createCrmStageResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createCrmStageResponseSuccess = (createCrmStageResponse201) & {
+  headers: Headers;
+};
+export type createCrmStageResponseError = (createCrmStageResponse400 | createCrmStageResponse403 | createCrmStageResponse404) & {
+  headers: Headers;
+};
+
+export type createCrmStageResponse = (createCrmStageResponseSuccess | createCrmStageResponseError)
+
+export const getCreateCrmStageUrl = (pipelineId: string,) => {
+
+
+
+
+  return `/api/crm/pipelines/${pipelineId}/stages`
+}
+
+/**
+ * Proposto. Cria estágio NO funil do caminho. O `pipelineId` não viaja no corpo — vem da URL, e assim não há como divergirem.
+ */
+export const createCrmStage = async (pipelineId: string,
+    crmStageWriteRequest: CrmStageWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCrmStageResponse> => {
+
+  return apiFetch<createCrmStageResponse>(getCreateCrmStageUrl(pipelineId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmStageWriteRequest)
+  }
+);}
+
+
+
+export type updateCrmStageResponse200 = {
+  data: CrmStageDto
+  status: 200
+}
+
+export type updateCrmStageResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCrmStageResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type updateCrmStageResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateCrmStageResponseSuccess = (updateCrmStageResponse200) & {
+  headers: Headers;
+};
+export type updateCrmStageResponseError = (updateCrmStageResponse400 | updateCrmStageResponse403 | updateCrmStageResponse404) & {
+  headers: Headers;
+};
+
+export type updateCrmStageResponse = (updateCrmStageResponseSuccess | updateCrmStageResponseError)
+
+export const getUpdateCrmStageUrl = (pipelineId: string,
+    id: string,) => {
+
+
+
+
+  return `/api/crm/pipelines/${pipelineId}/stages/${id}`
+}
+
+/**
+ * Proposto. Substitui o estágio INTEIRO. **Não há DELETE de estágio**: apagar coluna com cartão dentro obrigaria o servidor a escolher para onde os cartões vão, e essa escolha é do operador. Estágio que saiu de uso se resolve movendo os cartões e deixando a coluna vazia — o schema mergeado (#66) não tem `active` em `crm_stages`, e inventá-lo aqui criaria campo que o banco não guarda.
+ */
+export const updateCrmStage = async (pipelineId: string,
+    id: string,
+    crmStageWriteRequest: CrmStageWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCrmStageResponse> => {
+
+  return apiFetch<updateCrmStageResponse>(getUpdateCrmStageUrl(pipelineId,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmStageWriteRequest)
+  }
+);}
+
+
+
+export type listCrmOpportunitiesResponse200 = {
+  data: PagedResultOfCrmOpportunityDto
+  status: 200
+}
+
+export type listCrmOpportunitiesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCrmOpportunitiesResponseSuccess = (listCrmOpportunitiesResponse200) & {
+  headers: Headers;
+};
+export type listCrmOpportunitiesResponseError = (listCrmOpportunitiesResponse400) & {
+  headers: Headers;
+};
+
+export type listCrmOpportunitiesResponse = (listCrmOpportunitiesResponseSuccess | listCrmOpportunitiesResponseError)
+
+export const getListCrmOpportunitiesUrl = (params?: ListCrmOpportunitiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/opportunities?${stringifiedParams}` : `/api/crm/opportunities`
+}
+
+/**
+ * Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban.
+ */
+export const listCrmOpportunities = async (params?: ListCrmOpportunitiesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCrmOpportunitiesResponse> => {
+
+  return apiFetch<listCrmOpportunitiesResponse>(getListCrmOpportunitiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCrmOpportunityResponse201 = {
+  data: CrmOpportunityDto
+  status: 201
+}
+
+export type createCrmOpportunityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCrmOpportunityResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createCrmOpportunityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createCrmOpportunityResponseSuccess = (createCrmOpportunityResponse201) & {
+  headers: Headers;
+};
+export type createCrmOpportunityResponseError = (createCrmOpportunityResponse400 | createCrmOpportunityResponse403 | createCrmOpportunityResponse404) & {
+  headers: Headers;
+};
+
+export type createCrmOpportunityResponse = (createCrmOpportunityResponseSuccess | createCrmOpportunityResponseError)
+
+export const getCreateCrmOpportunityUrl = () => {
+
+
+
+
+  return `/api/crm/opportunities`
+}
+
+/**
+ * Proposto. Cria a oportunidade no estágio informado, no FIM da coluna. Sem `stageId` explícito o servidor usa o primeiro estágio do funil; sem `pipelineId`, o funil `isDefault`.
+ */
+export const createCrmOpportunity = async (crmOpportunityWriteRequest: CrmOpportunityWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCrmOpportunityResponse> => {
+
+  return apiFetch<createCrmOpportunityResponse>(getCreateCrmOpportunityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmOpportunityWriteRequest)
+  }
+);}
+
+
+
+export type getCrmOpportunityResponse200 = {
+  data: CrmOpportunityDto
+  status: 200
+}
+
+export type getCrmOpportunityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getCrmOpportunityResponseSuccess = (getCrmOpportunityResponse200) & {
+  headers: Headers;
+};
+export type getCrmOpportunityResponseError = (getCrmOpportunityResponse404) & {
+  headers: Headers;
+};
+
+export type getCrmOpportunityResponse = (getCrmOpportunityResponseSuccess | getCrmOpportunityResponseError)
+
+export const getGetCrmOpportunityUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/opportunities/${id}`
+}
+
+/**
+ * Proposto. Uma oportunidade por id. Mesmo DTO da listagem — não há DTO de detalhe, porque o cartão e o formulário mostram o mesmo registro.
+ */
+export const getCrmOpportunity = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getCrmOpportunityResponse> => {
+
+  return apiFetch<getCrmOpportunityResponse>(getGetCrmOpportunityUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateCrmOpportunityResponse200 = {
+  data: CrmOpportunityDto
+  status: 200
+}
+
+export type updateCrmOpportunityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCrmOpportunityResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type updateCrmOpportunityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateCrmOpportunityResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateCrmOpportunityResponseSuccess = (updateCrmOpportunityResponse200) & {
+  headers: Headers;
+};
+export type updateCrmOpportunityResponseError = (updateCrmOpportunityResponse400 | updateCrmOpportunityResponse403 | updateCrmOpportunityResponse404 | updateCrmOpportunityResponse409) & {
+  headers: Headers;
+};
+
+export type updateCrmOpportunityResponse = (updateCrmOpportunityResponseSuccess | updateCrmOpportunityResponseError)
+
+export const getUpdateCrmOpportunityUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/opportunities/${id}`
+}
+
+/**
+ * Proposto. Substitui a oportunidade INTEIRA — corpo parcial apaga o que não veio. Trocar `stageId` por aqui é permitido (é o registro inteiro), mas manda o cartão para o FIM do estágio novo e reinicia `stageChangedAt`: POSICIONAR é o `PATCH /api/crm/opportunities/{id}/stage`. Estágio de OUTRO funil é 400 — o banco recusa pela FK composta, e a resposta diz isso em vez de estourar 500.
+ */
+export const updateCrmOpportunity = async (id: string,
+    crmOpportunityWriteRequest: CrmOpportunityWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCrmOpportunityResponse> => {
+
+  return apiFetch<updateCrmOpportunityResponse>(getUpdateCrmOpportunityUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmOpportunityWriteRequest)
+  }
+);}
+
+
+
+export type moveCrmOpportunityStageResponse200 = {
+  data: CrmOpportunityDto
+  status: 200
+}
+
+export type moveCrmOpportunityStageResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type moveCrmOpportunityStageResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type moveCrmOpportunityStageResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type moveCrmOpportunityStageResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type moveCrmOpportunityStageResponseSuccess = (moveCrmOpportunityStageResponse200) & {
+  headers: Headers;
+};
+export type moveCrmOpportunityStageResponseError = (moveCrmOpportunityStageResponse400 | moveCrmOpportunityStageResponse403 | moveCrmOpportunityStageResponse404 | moveCrmOpportunityStageResponse409) & {
+  headers: Headers;
+};
+
+export type moveCrmOpportunityStageResponse = (moveCrmOpportunityStageResponseSuccess | moveCrmOpportunityStageResponseError)
+
+export const getMoveCrmOpportunityStageUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/opportunities/${id}/stage`
+}
+
+/**
+ * Proposto. Mover o cartão de coluna é UMA intenção, logo UMA requisição. O quadro manda o destino (`stageId`) e o VIZINHO (`precedeId`); a reordenação inteira da coluna acontece aqui, numa transação só. A alternativa — o cliente recalcular os índices e mandar um `PUT` por linha deslocada — é o desenho que a colheita de `docs/harvest/kanban-funil/` recusou: com RLS e `SET LOCAL` por transação, cada requisição é uma transação própria, e falha no meio deixa dois cartões no mesmo lugar sem ninguém saber.
+ *
+ * É `PATCH` e não `PUT` pela mesma razão do quadro de tarefas: o cartão não carrega o registro inteiro, e um `PUT` a partir dele apagaria o que ele não mostra.
+ */
+export const moveCrmOpportunityStage = async (id: string,
+    crmOpportunityStagePatchRequest: CrmOpportunityStagePatchRequest, options?: Parameters<typeof apiFetch>[1]): Promise<moveCrmOpportunityStageResponse> => {
+
+  return apiFetch<moveCrmOpportunityStageResponse>(getMoveCrmOpportunityStageUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmOpportunityStagePatchRequest)
+  }
+);}
+
+
+
+export type listCrmLostReasonsResponse200 = {
+  data: PagedResultOfCrmLostReasonDto
+  status: 200
+}
+
+export type listCrmLostReasonsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCrmLostReasonsResponseSuccess = (listCrmLostReasonsResponse200) & {
+  headers: Headers;
+};
+export type listCrmLostReasonsResponseError = (listCrmLostReasonsResponse400) & {
+  headers: Headers;
+};
+
+export type listCrmLostReasonsResponse = (listCrmLostReasonsResponseSuccess | listCrmLostReasonsResponseError)
+
+export const getListCrmLostReasonsUrl = (params?: ListCrmLostReasonsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/lost-reasons?${stringifiedParams}` : `/api/crm/lost-reasons`
+}
+
+/**
+ * Proposto. Motivos de perda catalogados da empresa ativa. É cadastro e não texto livre porque a pergunta que ele responde é "por que perdemos" somada no ano — texto livre vira trinta grafias da mesma coisa. `sortBy` aceita `name` e `active`.
+ */
+export const listCrmLostReasons = async (params?: ListCrmLostReasonsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCrmLostReasonsResponse> => {
+
+  return apiFetch<listCrmLostReasonsResponse>(getListCrmLostReasonsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCrmLostReasonResponse201 = {
+  data: CrmLostReasonDto
+  status: 201
+}
+
+export type createCrmLostReasonResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCrmLostReasonResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createCrmLostReasonResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCrmLostReasonResponseSuccess = (createCrmLostReasonResponse201) & {
+  headers: Headers;
+};
+export type createCrmLostReasonResponseError = (createCrmLostReasonResponse400 | createCrmLostReasonResponse403 | createCrmLostReasonResponse409) & {
+  headers: Headers;
+};
+
+export type createCrmLostReasonResponse = (createCrmLostReasonResponseSuccess | createCrmLostReasonResponseError)
+
+export const getCreateCrmLostReasonUrl = () => {
+
+
+
+
+  return `/api/crm/lost-reasons`
+}
+
+/**
+ * Proposto. Cria motivo de perda na empresa ativa.
+ */
+export const createCrmLostReason = async (crmLostReasonWriteRequest: CrmLostReasonWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCrmLostReasonResponse> => {
+
+  return apiFetch<createCrmLostReasonResponse>(getCreateCrmLostReasonUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLostReasonWriteRequest)
+  }
+);}
+
+
+
+export type updateCrmLostReasonResponse200 = {
+  data: CrmLostReasonDto
+  status: 200
+}
+
+export type updateCrmLostReasonResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCrmLostReasonResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type updateCrmLostReasonResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateCrmLostReasonResponseSuccess = (updateCrmLostReasonResponse200) & {
+  headers: Headers;
+};
+export type updateCrmLostReasonResponseError = (updateCrmLostReasonResponse400 | updateCrmLostReasonResponse403 | updateCrmLostReasonResponse404) & {
+  headers: Headers;
+};
+
+export type updateCrmLostReasonResponse = (updateCrmLostReasonResponseSuccess | updateCrmLostReasonResponseError)
+
+export const getUpdateCrmLostReasonUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/lost-reasons/${id}`
+}
+
+/**
+ * Proposto. Substitui o motivo INTEIRO; desativar é `active: false`. Não há GET por id: o registro tem dois campos e a LINHA da listagem já é o registro inteiro — caminho de detalhe aqui seria requisição para buscar o que a tela já tem.
+ */
+export const updateCrmLostReason = async (id: string,
+    crmLostReasonWriteRequest: CrmLostReasonWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCrmLostReasonResponse> => {
+
+  return apiFetch<updateCrmLostReasonResponse>(getUpdateCrmLostReasonUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLostReasonWriteRequest)
   }
 );}
 

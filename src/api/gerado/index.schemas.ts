@@ -1177,6 +1177,293 @@ export interface PagedResultOfQuoteDto {
   total: number;
 }
 
+/**
+ * Proposto. Funil de venda. Vários por empresa — ver `crm_pipelines` no schema mergeado (#66).
+ */
+export interface CrmPipelineDto {
+  id: string;
+  /** Nome do funil, como o operador o chama. */
+  name: string;
+  /** Ordem de exibição entre os funis. */
+  sort: number;
+  /** Funil da oportunidade criada sem escolha explícita. Um só por empresa: marcar outro desmarca o anterior, e quem resolve isso é o servidor, na mesma transação. */
+  isDefault: boolean;
+  /** Desativação lógica (padrão 8 dos cadastros). Funil inativo some da escolha e não recebe oportunidade nova; as que já estão nele continuam abrindo — senão desativar viraria apagar, com outro nome. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração do funil. `PUT` substitui o registro inteiro: omitir apaga.
+ */
+export interface CrmPipelineWriteRequest {
+  /** Nome do funil, como o operador o chama. */
+  name: string;
+  /** Ordem de exibição entre os funis. */
+  sort: number;
+  /** Funil da oportunidade criada sem escolha explícita. Um só por empresa: marcar outro desmarca o anterior, e quem resolve isso é o servidor, na mesma transação. */
+  isDefault: boolean;
+  /** Desativação lógica (padrão 8 dos cadastros). Funil inativo some da escolha e não recebe oportunidade nova; as que já estão nele continuam abrindo — senão desativar viraria apagar, com outro nome. */
+  active: boolean;
+}
+
+export interface PagedResultOfCrmPipelineDto {
+  rows: CrmPipelineDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Estágio DE UM funil — a coluna do quadro. Não tem `active`: o schema mergeado (#66) não guarda desativação por estágio, e coluna que some com cartão dentro esconderia oportunidade sem apagá-la.
+ */
+export interface CrmStageDto {
+  id: string;
+  /** Funil a que o estágio pertence. */
+  pipelineId: string;
+  /** Nome do estágio — o cabeçalho da coluna no quadro. */
+  name: string;
+  /** Ordem da coluna no quadro. */
+  sort: number;
+  /** Probabilidade de fechamento. Int com 4 casas implícitas, a mesma convenção de `discountPercent`: `10000` = 1%, `1000000` = 100%. Só compara DENTRO do mesmo funil — dois funis com modelos de venda diferentes não têm escala comum. */
+  probability: number;
+  /** Estágio de GANHO. É propriedade do estágio e não do funil porque cada funil fecha no seu; e é dado, não rótulo, senão "Fechado" e "Ganho" viram a mesma coluna com dois nomes. */
+  isWon: boolean;
+  /** Estágio de PERDA. Oportunidade que entra num estágio assim exige `lostReasonId` — sem motivo, a perda não vira análise nenhuma. */
+  isLost: boolean;
+  /**
+     * Apodrecimento: cartão parado mais dias que isto NO ESTÁGIO é sinalizado no quadro. `null` = o estágio não apodrece. Conta a partir de `stageChangedAt`, não da criação — apodrecer é "parado desde", não "velho".
+     * @nullable
+     */
+  rotDays?: number | null;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração do estágio. Sem `pipelineId`: ele vem do caminho, e dois lugares para o mesmo fato divergem.
+ */
+export interface CrmStageWriteRequest {
+  /** Nome do estágio — o cabeçalho da coluna no quadro. */
+  name: string;
+  /** Ordem da coluna no quadro. */
+  sort: number;
+  /** Probabilidade de fechamento. Int com 4 casas implícitas, a mesma convenção de `discountPercent`: `10000` = 1%, `1000000` = 100%. Só compara DENTRO do mesmo funil — dois funis com modelos de venda diferentes não têm escala comum. */
+  probability: number;
+  /** Estágio de GANHO. É propriedade do estágio e não do funil porque cada funil fecha no seu; e é dado, não rótulo, senão "Fechado" e "Ganho" viram a mesma coluna com dois nomes. */
+  isWon: boolean;
+  /** Estágio de PERDA. Oportunidade que entra num estágio assim exige `lostReasonId` — sem motivo, a perda não vira análise nenhuma. */
+  isLost: boolean;
+  /**
+     * Apodrecimento: cartão parado mais dias que isto NO ESTÁGIO é sinalizado no quadro. `null` = o estágio não apodrece. Conta a partir de `stageChangedAt`, não da criação — apodrecer é "parado desde", não "velho".
+     * @nullable
+     */
+  rotDays?: number | null;
+}
+
+/**
+ * Proposto. Lead e negócio no MESMO registro — converter é mudar de estágio, não cadastrar de novo. Os campos `*Name` vêm resolvidos pelo servidor: o cartão do quadro mostra três palavras e não pode carregar lista de apoio para traduzir id.
+ */
+export interface CrmOpportunityDto {
+  id: string;
+  /** Título do negócio. Existe separado do parceiro porque o cartão precisa escrever algo quando `partnerId` é nulo — e porque a mesma empresa dá origem a vários negócios. */
+  name: string;
+  /** Funil em que a oportunidade está. */
+  pipelineId: string;
+  /** Nome do funil, resolvido pelo servidor. */
+  pipelineName: string;
+  /** Estágio atual — sempre do MESMO funil (FK composta no banco). */
+  stageId: string;
+  /** Nome do estágio, resolvido pelo servidor. */
+  stageName: string;
+  /** Posição DENTRO do estágio, crescente. Quem atribui é o servidor — ver `PATCH /api/crm/opportunities/{id}/stage`. O cliente nunca calcula posição: índice é posição numa lista que pode estar filtrada. */
+  order: number;
+  /**
+     * Cliente/prospect já cadastrado (`PartnerDto.id`). `null` = lead ainda sem cadastro, e aí o contato vive nos três campos `contact*`.
+     * @nullable
+     */
+  partnerId?: string | null;
+  /**
+     * Nome do parceiro, resolvido pelo servidor.
+     * @nullable
+     */
+  partnerName?: string | null;
+  /**
+     * Nome do contato do lead sem cadastro.
+     * @nullable
+     */
+  contactName?: string | null;
+  /**
+     * E-mail do contato do lead sem cadastro.
+     * @nullable
+     */
+  contactEmail?: string | null;
+  /**
+     * Telefone do contato do lead sem cadastro.
+     * @nullable
+     */
+  contactPhone?: string | null;
+  /**
+     * Responsável pela oportunidade (`EmployeeDto.id`). `null` = lead que entrou por formulário e ainda não tem dono.
+     * @nullable
+     */
+  ownerEmployeeId?: string | null;
+  /**
+     * Nome do responsável, resolvido pelo servidor.
+     * @nullable
+     */
+  ownerName?: string | null;
+  /**
+     * Valor previsto do negócio, em centavos. `null` = ainda não estimado, que é diferente de zero.
+     * @nullable
+     */
+  expectedValueCents?: number | null;
+  /**
+     * Data prevista de fechamento.
+     * @nullable
+     */
+  expectedCloseDate?: string | null;
+  /**
+     * Origem do lead (indicação, feira, site).
+     * @nullable
+     */
+  source?: string | null;
+  /** Instante da última mudança de estágio. É a base do `rotDays` do estágio: sem ele o apodrecimento não calcula nada. */
+  stageChangedAt: string;
+  /**
+     * Motivo da perda (`CrmLostReasonDto.id`). Só faz sentido em estágio `isLost`.
+     * @nullable
+     */
+  lostReasonId?: string | null;
+  /**
+     * Nome do motivo de perda, resolvido pelo servidor.
+     * @nullable
+     */
+  lostReasonName?: string | null;
+  /**
+     * Orçamento gerado a partir da oportunidade (`QuoteDto.id`). A oportunidade NÃO congela preço: quem congela é o orçamento.
+     * @nullable
+     */
+  quoteId?: string | null;
+  /**
+     * Instante do fechamento (ganho ou perda). Escrito pelo SERVIDOR quando a oportunidade entra num estágio `isWon`/`isLost`, e limpo quando ela volta a um estágio aberto.
+     * @nullable
+     */
+  closedAt?: string | null;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração. `PUT` substitui o registro INTEIRO: campo ausente é campo apagado. Sem os `*Name` (o servidor resolve), sem `order`, sem `stageChangedAt` e sem `closedAt` — os três são consequência do movimento, e deixar o cliente escrevê-los permitiria um cartão dizer que está parado há um mês desde ontem.
+ */
+export interface CrmOpportunityWriteRequest {
+  /** Título do negócio. Existe separado do parceiro porque o cartão precisa escrever algo quando `partnerId` é nulo — e porque a mesma empresa dá origem a vários negócios. */
+  name: string;
+  /**
+     * Funil. Ausente ou `null` na criação = o funil `isDefault` da empresa.
+     * @nullable
+     */
+  pipelineId?: string | null;
+  /**
+     * Estágio. Ausente ou `null` na criação = o primeiro estágio do funil. Trocar o estágio por aqui manda o cartão para o FIM da coluna nova e reinicia `stageChangedAt` — posicionar é o `PATCH .../stage`.
+     * @nullable
+     */
+  stageId?: string | null;
+  /**
+     * Cliente/prospect já cadastrado (`PartnerDto.id`). `null` = lead ainda sem cadastro, e aí o contato vive nos três campos `contact*`.
+     * @nullable
+     */
+  partnerId?: string | null;
+  /**
+     * Nome do contato do lead sem cadastro.
+     * @nullable
+     */
+  contactName?: string | null;
+  /**
+     * E-mail do contato do lead sem cadastro.
+     * @nullable
+     */
+  contactEmail?: string | null;
+  /**
+     * Telefone do contato do lead sem cadastro.
+     * @nullable
+     */
+  contactPhone?: string | null;
+  /**
+     * Responsável pela oportunidade (`EmployeeDto.id`). `null` = lead que entrou por formulário e ainda não tem dono.
+     * @nullable
+     */
+  ownerEmployeeId?: string | null;
+  /**
+     * Valor previsto do negócio, em centavos. `null` = ainda não estimado, que é diferente de zero.
+     * @nullable
+     */
+  expectedValueCents?: number | null;
+  /**
+     * Data prevista de fechamento.
+     * @nullable
+     */
+  expectedCloseDate?: string | null;
+  /**
+     * Origem do lead (indicação, feira, site).
+     * @nullable
+     */
+  source?: string | null;
+  /**
+     * Motivo da perda (`CrmLostReasonDto.id`). Só faz sentido em estágio `isLost`.
+     * @nullable
+     */
+  lostReasonId?: string | null;
+  /**
+     * Orçamento gerado a partir da oportunidade (`QuoteDto.id`). A oportunidade NÃO congela preço: quem congela é o orçamento.
+     * @nullable
+     */
+  quoteId?: string | null;
+}
+
+/**
+ * Proposto. O destino de UM movimento do quadro. Só o que muda viaja — ausente NÃO é `null`: `precedeId` ausente é "sem preferência de posição" (fim da coluna), e é por isso que ele é nulável em vez de obrigatório.
+ */
+export interface CrmOpportunityStagePatchRequest {
+  /** Estágio de destino. De outro funil é 400 — mover de FUNIL é `PUT`, e reseta a posição. */
+  stageId: string;
+  /**
+     * Id do cartão na frente do qual a oportunidade fica; `null` = fim da coluna. É referência a VIZINHO, não índice: índice é posição numa lista que pode estar filtrada, vizinho é um fato sobre dois registros que o servidor confere. Cartão que não está no estágio de destino é 400.
+     * @nullable
+     */
+  precedeId?: string | null;
+  /**
+     * Motivo da perda. **Obrigatório quando o estágio de destino tem `isLost`** — sem ele a resposta é 400, porque perda sem motivo não vira análise. Ignorado nos demais estágios.
+     * @nullable
+     */
+  lostReasonId?: string | null;
+}
+
+export interface PagedResultOfCrmOpportunityDto {
+  rows: CrmOpportunityDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Motivo de perda catalogado — vira análise, não texto livre.
+ */
+export interface CrmLostReasonDto {
+  id: string;
+  /** Motivo da perda, como entra no relatório. */
+  name: string;
+  /** Desativação lógica: motivo aposentado some da escolha, mas continua legível nas oportunidades antigas. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração do motivo de perda.
+ */
+export interface CrmLostReasonWriteRequest {
+  /** Motivo da perda, como entra no relatório. */
+  name: string;
+  /** Desativação lógica: motivo aposentado some da escolha, mas continua legível nas oportunidades antigas. */
+  active: boolean;
+}
+
+export interface PagedResultOfCrmLostReasonDto {
+  rows: CrmLostReasonDto[];
+  total: number;
+}
+
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;
@@ -1258,6 +1545,46 @@ pageSize?: number;
 };
 
 export type ListQuotesParams = {
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListCrmPipelinesParams = {
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListCrmOpportunitiesParams = {
+/**
+ * Só as oportunidades deste funil.
+ */
+pipelineId?: string;
+/**
+ * Só as deste estágio — uma coluna do quadro.
+ */
+stageId?: string;
+/**
+ * Só as deste responsável.
+ */
+ownerEmployeeId?: string;
+/**
+ * `true` = só as ABERTAS (estágio sem `isWon` nem `isLost`). Ausente = todas. É filtro por PROPRIEDADE do estágio, não por lista de ids: a tela não pode montar a lista de estágios ganhos de cada funil para depois pedir o resto.
+ */
+open?: boolean;
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListCrmLostReasonsParams = {
 q?: string;
 sortBy?: string;
 sortDesc?: boolean;

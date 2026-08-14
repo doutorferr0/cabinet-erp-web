@@ -125,6 +125,21 @@ importa `handlers` direto. O mecanismo é um `http.all('*')` que espera e resolv
 `undefined` — no MSW isso é "não tratei, passe adiante" (verificado com teste
 antes de entrar, não assumido).
 
+### O helper de erro mora num lugar só
+
+`src/mocks/api/problema.ts`. Nasceu duplicado em `handlers.ts` e `crm.ts` — cópia
+deliberada, para não criar ciclo (`handlers.ts` importa `crm.ts`) — e saiu de lá
+quando o `title` deixou de ser fixo: **formato de erro em duas cópias vira dois
+formatos**, e o mapa de títulos ia nascer duplicado no mesmo dia. O módulo é
+folha, então o ciclo que justificava a duplicação não existe mais.
+
+O `title` vem de `tituloDoStatus`: 400 `Requisição inválida`, 404 `Não
+encontrado`, 409 `Conflito`… Antes era `'Erro'` em 100% das respostas, o que é
+pior do que parece — o `ErroDoServidor` mostra `title` como cabeçalho e a frase
+da tela abaixo, então todo erro do modo mock aparecia como "Erro" em cima e a
+informação útil embaixo, menor. Backend com tipos próprios (`/erros/estoque-insuficiente`)
+manda o título dele; o mapa por status é o piso, não o teto.
+
 ## Como o dado chega à tela
 
 ```
@@ -405,13 +420,36 @@ No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts
 de sair** — mesma escolha já feita para `page` e `pageSize`: requisição sabidamente
 inválida faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
 
-### O modo mock também filtra — só no CRM, por ora
+### O modo mock filtra de verdade — nos três recursos que publicam o parâmetro
 
-`src/mocks/api/crm.ts` aplica `filters`/`joinOperator` de verdade (reusando
-`linhaPassaNosFiltros`) e responde **400** a campo fora da whitelist. Os handlers
-de produtos e parceiros (`src/mocks/api/handlers.ts`) ainda **descartam o parâmetro
-em silêncio**: no modo mock — que é o que o site demo serve — o painel mostra a
-condição aplicada e a listagem devolve tudo. É dívida conhecida, não desenho.
+`src/mocks/api/filtro-do-servidor.ts` é a peça compartilhada: converte `filters`
+para o vocabulário de `filtro-de-consulta`, aplica com `linhaPassaNosFiltros` e
+responde **400** ao que o contrato manda recusar. Usam-na `crm.ts` (oportunidades)
+e `handlers.ts` (produtos e parceiros). **Fronteira em duas cópias vira duas
+fronteiras** — a regra tem de ser a mesma nos três, com o mesmo texto de erro.
+
+Cada recurso declara a whitelist COM O TIPO de cada campo, porque `variante` não
+viaja no contrato (é decisão de qual controle desenhar) e sem ela a comparação de
+data cairia em texto. Recurso que **não** publica `filters` — `catalog-lookups`,
+kardex, atividades — não declara nada, e o filtro que chegar é 400.
+
+**Três coisas viram 400, e as três existiam como silêncio:**
+
+| pedido | antes | agora |
+|---|---|---|
+| campo fora da whitelist | (crm: 400) · produtos/parceiros: lista inteira | 400 nos três |
+| recurso que não publica `filters` | lista inteira | 400 |
+| operador fora do vocabulário (`contains` em vez de `iLike`) | condição não recortava nada → lista inteira | 400 |
+
+O terceiro apareceu escrevendo o teste desta mudança: `filtroCasa` não reconhece a
+palavra, a condição passa todo mundo, e o sintoma é idêntico ao do parâmetro
+descartado. O contrato tipa `operator` como enum — aceitar qualquer texto era o
+mesmo buraco uma camada abaixo.
+
+**Por que isto era grave e não "coisa de mock":** `cabinetonline.cc` roda em modo
+mock. O operador montava "Ativo é não", lia a condição aplicada no painel e via a
+lista inteira, com os ativos dentro. Não é limitação de mock — é a tela afirmando
+o que não é.
 
 ### Armadilha do cliente gerado
 

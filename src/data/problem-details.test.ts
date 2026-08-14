@@ -122,13 +122,27 @@ describe('Problem Details no mock', () => {
   })
 
   /**
-   * A DoD da issue pede o 400 de **filtro** fora da whitelist. Ele não é
-   * testável nesta branch, e por um motivo que vale escrito: na `main` de hoje
-   * o `filters` de `/api/products` ainda é **descartado em silêncio** — a
-   * requisição volta 200 com a lista inteira. Quem conserta é o PR #117, que já
-   * traz o teste desse 400. Aqui fica o irmão que existe na `main`: `sortBy`
-   * fora da whitelist, que prova a mesma coisa sobre a FORMA do erro.
+   * O 400 de FILTRO fora da whitelist — o item que a DoD pede nominalmente.
+   *
+   * Ele não existia quando este arquivo nasceu: na `main` daquele momento o
+   * `filters` de `/api/products` ainda era descartado em silêncio, e a
+   * requisição voltava 200 com a lista inteira. Quem o criou foi o #117, que
+   * esta branch agora contém — por isso o teste pôde entrar.
    */
+  it('o 400 do FILTRO fora da whitelist é problem+json com detail acionável', async () => {
+    const url = `http://mock.teste/api/products?page=1&pageSize=10&filters=${encodeURIComponent(
+      JSON.stringify([{ field: 'paymentTerms', operator: 'iLike', value: 'x' }]),
+    )}`
+    const resposta = await fetch(url)
+
+    expect(resposta.status).toBe(400)
+    expect(resposta.headers.get('content-type')).toContain('application/problem+json')
+    const corpo = (await resposta.json()) as Json
+    expect(corpo.title).toBe('Requisição inválida')
+    expect(corpo.status).toBe(400)
+    expect(String(corpo.detail)).toContain('Campo não filtrável')
+  })
+
   it('o 400 da whitelist de ordenação é problem+json com detail acionável', async () => {
     const resposta = await fetch(
       'http://mock.teste/api/products?page=1&pageSize=10&sortBy=paymentTerms',

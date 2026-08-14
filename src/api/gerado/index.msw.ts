@@ -20,12 +20,18 @@ import {
   getAuthMeResponseMock,
   getAuthTenantsResponseMock,
   getCancelQuoteResponseMock,
+  getCreateCrmLostReasonResponseMock,
+  getCreateCrmOpportunityResponseMock,
+  getCreateCrmPipelineResponseMock,
+  getCreateCrmStageResponseMock,
   getCreatePartnerResponseMock,
   getCreateProductResponseMock,
   getCreateQuoteResponseMock,
   getCreateStockMovementResponseMock,
   getCreateTaskResponseMock,
   getCreateVariantResponseMock,
+  getGetCrmOpportunityResponseMock,
+  getGetCrmPipelineResponseMock,
   getGetDashboardSummaryResponseMock,
   getGetPartnerResponseMock,
   getGetProductResponseMock,
@@ -36,6 +42,10 @@ import {
   getLinkPartnerResponseMock,
   getListAgendaEventsResponseMock,
   getListCatalogLookupsResponseMock,
+  getListCrmLostReasonsResponseMock,
+  getListCrmOpportunitiesResponseMock,
+  getListCrmPipelinesResponseMock,
+  getListCrmStagesResponseMock,
   getListEmployeesResponseMock,
   getListPartnersResponseMock,
   getListProductsResponseMock,
@@ -44,8 +54,13 @@ import {
   getListStockMovementsResponseMock,
   getListTasksResponseMock,
   getListTodosResponseMock,
+  getMoveCrmOpportunityStageResponseMock,
   getPatchTaskResponseMock,
   getPatchTodoResponseMock,
+  getUpdateCrmLostReasonResponseMock,
+  getUpdateCrmOpportunityResponseMock,
+  getUpdateCrmPipelineResponseMock,
+  getUpdateCrmStageResponseMock,
   getUpdatePartnerResponseMock,
   getUpdateProductResponseMock,
   getUpdateQuoteResponseMock,
@@ -54,10 +69,17 @@ import {
 
 import type {
   AgendaEventDto,
+  CrmLostReasonDto,
+  CrmOpportunityDto,
+  CrmPipelineDto,
+  CrmStageDto,
   DashboardSummaryDto,
   HealthStatus,
   LoginOk,
   PagedResultOfCatalogLookupDto,
+  PagedResultOfCrmLostReasonDto,
+  PagedResultOfCrmOpportunityDto,
+  PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
@@ -78,7 +100,7 @@ import type {
   VinculoDeEmpresa
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -518,6 +540,186 @@ export const getCancelQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((
       })
   }, options)
 }
+
+export const getListCrmPipelinesMockHandler = (overrideResponse?: PagedResultOfCrmPipelineDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfCrmPipelineDto> | PagedResultOfCrmPipelineDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/pipelines', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListCrmPipelinesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateCrmPipelineMockHandler = (overrideResponse?: CrmPipelineDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CrmPipelineDto> | CrmPipelineDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/crm/pipelines', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateCrmPipelineResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getGetCrmPipelineMockHandler = (overrideResponse?: CrmPipelineDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CrmPipelineDto> | CrmPipelineDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/pipelines/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetCrmPipelineResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateCrmPipelineMockHandler = (overrideResponse?: CrmPipelineDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<CrmPipelineDto> | CrmPipelineDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/crm/pipelines/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateCrmPipelineResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListCrmStagesMockHandler = (overrideResponse?: CrmStageDto[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CrmStageDto[]> | CrmStageDto[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/pipelines/:pipelineId/stages', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListCrmStagesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateCrmStageMockHandler = (overrideResponse?: CrmStageDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CrmStageDto> | CrmStageDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/crm/pipelines/:pipelineId/stages', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateCrmStageResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateCrmStageMockHandler = (overrideResponse?: CrmStageDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<CrmStageDto> | CrmStageDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/crm/pipelines/:pipelineId/stages/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateCrmStageResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListCrmOpportunitiesMockHandler = (overrideResponse?: PagedResultOfCrmOpportunityDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfCrmOpportunityDto> | PagedResultOfCrmOpportunityDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/opportunities', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListCrmOpportunitiesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateCrmOpportunityMockHandler = (overrideResponse?: CrmOpportunityDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CrmOpportunityDto> | CrmOpportunityDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/crm/opportunities', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateCrmOpportunityResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getGetCrmOpportunityMockHandler = (overrideResponse?: CrmOpportunityDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CrmOpportunityDto> | CrmOpportunityDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/opportunities/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetCrmOpportunityResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateCrmOpportunityMockHandler = (overrideResponse?: CrmOpportunityDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<CrmOpportunityDto> | CrmOpportunityDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/crm/opportunities/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateCrmOpportunityResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMoveCrmOpportunityStageMockHandler = (overrideResponse?: CrmOpportunityDto | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<CrmOpportunityDto> | CrmOpportunityDto), options?: RequestHandlerOptions) => {
+  return http.patch('*/api/crm/opportunities/:id/stage', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMoveCrmOpportunityStageResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListCrmLostReasonsMockHandler = (overrideResponse?: PagedResultOfCrmLostReasonDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfCrmLostReasonDto> | PagedResultOfCrmLostReasonDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/crm/lost-reasons', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListCrmLostReasonsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateCrmLostReasonMockHandler = (overrideResponse?: CrmLostReasonDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CrmLostReasonDto> | CrmLostReasonDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/crm/lost-reasons', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateCrmLostReasonResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateCrmLostReasonMockHandler = (overrideResponse?: CrmLostReasonDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<CrmLostReasonDto> | CrmLostReasonDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/crm/lost-reasons/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateCrmLostReasonResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getVitraERPMock = () => [
   getHealthMockHandler(),
   getHealthDbMockHandler(),
@@ -555,5 +757,20 @@ export const getVitraERPMock = () => [
   getCreateQuoteMockHandler(),
   getGetQuoteMockHandler(),
   getUpdateQuoteMockHandler(),
-  getCancelQuoteMockHandler()
+  getCancelQuoteMockHandler(),
+  getListCrmPipelinesMockHandler(),
+  getCreateCrmPipelineMockHandler(),
+  getGetCrmPipelineMockHandler(),
+  getUpdateCrmPipelineMockHandler(),
+  getListCrmStagesMockHandler(),
+  getCreateCrmStageMockHandler(),
+  getUpdateCrmStageMockHandler(),
+  getListCrmOpportunitiesMockHandler(),
+  getCreateCrmOpportunityMockHandler(),
+  getGetCrmOpportunityMockHandler(),
+  getUpdateCrmOpportunityMockHandler(),
+  getMoveCrmOpportunityStageMockHandler(),
+  getListCrmLostReasonsMockHandler(),
+  getCreateCrmLostReasonMockHandler(),
+  getUpdateCrmLostReasonMockHandler()
 ]

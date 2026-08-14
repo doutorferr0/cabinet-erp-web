@@ -15,6 +15,7 @@ import type {
 } from '@/api/gerado'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
+import { handlersDeAtividades } from './atividades'
 import { handlersDoCrm } from './crm'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -612,6 +613,12 @@ export const handlers = [
   // Estado e handlers do funil vivem em `crm.ts`: estado próprio, e arquivo
   // novo não disputa linha com quem estiver editando este aqui.
   ...handlersDoCrm,
+
+  // ---------------- atividades ----------------
+  // Mesma decisão do CRM, e aqui ela pesa mais: a tabela é POLIMÓRFICA e o
+  // painel monta em oportunidade, parceiro, orçamento e pedido — o estado não é
+  // de nenhum módulo em particular.
+  ...handlersDeAtividades,
 
   // ---------------- health ----------------
   http.get('*/health', () => HttpResponse.json({ status: 'ok' })),

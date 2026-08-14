@@ -348,6 +348,8 @@ tela cujo provider sabe responder. Hoje filtram:
 | Profissionais | HTTP (`/api/partners`) | Código · Nome de Apresentação · Nome · CNPJ/CPF · Ativo |
 | Colaboradores | mock | Código · Nome · Setor · Cargo · Ativo |
 | Orçamentos | mock | Número · Cliente · Descrição da Obra · **Data Emissão** · **Data Validade** |
+| Pedidos de Compra | mock | Código · Pedido de Venda · Data · **Fornecedores** (multivalorado) |
+| Ordens de Compra | mock | Código · Fornecedor · Data Ordem · Data Envio · Data Prevista |
 
 **Campo filtrável ≠ coluna**, mas as telas de parceiro seguem as colunas de
 propósito, com uma exceção: `document` filtra sem ser coluna, porque é a busca
@@ -383,11 +385,32 @@ Não existe `dateRange` como variante separada: `date` + `isBetween` já rende d
 campos de data, e uma variante a mais para o mesmo resultado seria escolha sem
 consequência na tela.
 
-**Dinheiro não entra.** Trafega em centavos, então um filtro numérico sobre ele
-compararia com centavos e `1000` acharia R$ 10,00 — número certo, significado
-errado. Coluna de dinheiro só vira campo filtrável quando existir variante que
-converta na borda. **Faixa por slider** também segue fora, e essa sim por falta de
-componente.
+### Campo multivalorado casa por ALGUM elemento
+
+`PedidoCompra.fornecedores` é `string[]`, e a coluna concatena os nomes. O
+avaliador reconhece o array e casa quando **algum** elemento casa — não pela lista
+concatenada, que é o que `String(array)` faria por acidente, com vírgula, que nem
+é o separador que a tela mostra.
+
+**Negar quer dizer "NENHUM elemento casa"**, e a diferença aparece com dois
+valores: um pedido com fornecedores `[A, B]` e o filtro "não contém A" tem de
+EXCLUIR o pedido — ele tem o A. Testar elemento a elemento com a negação embutida
+faria o B responder "não contém A" e o pedido entraria na lista, que é o oposto do
+pedido.
+
+### O que continua de fora, agora medido
+
+**Dinheiro não tem consumidor.** As oito listagens com filtro foram verificadas e
+**nenhuma tem coluna de dinheiro** — valor de orçamento é da variante, faturamento
+mínimo é do formulário. A variante fica de fora por isso, que é razão mais forte do
+que a anterior ("trafega em centavos"): esta é sobre demanda, aquela era sobre
+mecanismo. Quando existir a coluna, o obstáculo real é que reais→centavos é
+mudança de UNIDADE e não limpeza de caractere, então `normalizar` não serve — o
+operador que digita `1234` quer R$ 1.234,00, e o mesmo texto lido como centavos dá
+R$ 12,34.
+
+**Faixa por slider** segue fora por falta de componente, e essa checagem foi
+refeita: não há slider no repo.
 
 ## Parceiros — uma tabela, três telas
 

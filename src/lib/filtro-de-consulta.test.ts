@@ -307,3 +307,62 @@ describe('filtroCasa — data', () => {
     expect(rotulos).not.toContain('menor que')
   })
 })
+
+describe('campo multivalorado', () => {
+  interface Pedido {
+    codigo: string
+    fornecedores: string[]
+  }
+
+  const pedidos: Pedido[] = [
+    { codigo: '1', fornecedores: ['STELLA', 'ILUMINAR'] },
+    { codigo: '2', fornecedores: ['ILUMINAR'] },
+    { codigo: '3', fornecedores: [] },
+  ]
+
+  function f(over: Partial<FiltroDaTabela> = {}): FiltroDaTabela {
+    return {
+      filtroId: novoFiltroId(),
+      id: 'fornecedores',
+      variante: 'text',
+      operador: 'iLike',
+      valor: '',
+      ...over,
+    }
+  }
+
+  const quais = (filtros: FiltroDaTabela[]) =>
+    pedidos.filter((p) => linhaPassaNosFiltros(p, filtros)).map((p) => p.codigo)
+
+  it('casa quando ALGUM elemento casa', () => {
+    expect(quais([f({ valor: 'stella' })])).toEqual(['1'])
+    expect(quais([f({ valor: 'iluminar' })])).toEqual(['1', '2'])
+  })
+
+  it('é compara o elemento INTEIRO, não a lista concatenada', () => {
+    // Sem a semântica de array isto compararia contra "stella,iluminar".
+    expect(quais([f({ operador: 'eq', valor: 'STELLA' })])).toEqual(['1'])
+    expect(quais([f({ operador: 'eq', valor: 'STELLA,ILUMINAR' })])).toEqual([])
+  })
+
+  it('negar é "NENHUM elemento casa", não "algum não casa"', () => {
+    // O pedido 1 TEM Stella: "não contém stella" precisa excluí-lo, mesmo ele
+    // tendo um segundo fornecedor que não é Stella.
+    expect(quais([f({ operador: 'notILike', valor: 'stella' })])).toEqual(['2', '3'])
+    expect(quais([f({ operador: 'ne', valor: 'STELLA' })])).toEqual(['2', '3'])
+  })
+
+  it('é um de casa quando algum elemento está entre os escolhidos', () => {
+    const escolha = (valor: string[]) => f({ variante: 'multiSelect', operador: 'inArray', valor })
+    expect(quais([escolha(['STELLA'])])).toEqual(['1'])
+    expect(quais([escolha(['STELLA', 'ILUMINAR'])])).toEqual(['1', '2'])
+    expect(
+      quais([f({ variante: 'multiSelect', operador: 'notInArray', valor: ['STELLA'] })]),
+    ).toEqual(['2', '3'])
+  })
+
+  it('lista vazia é vazia', () => {
+    expect(quais([f({ operador: 'isEmpty', valor: '' })])).toEqual(['3'])
+    expect(quais([f({ operador: 'isNotEmpty', valor: '' })])).toEqual(['1', '2'])
+  })
+})

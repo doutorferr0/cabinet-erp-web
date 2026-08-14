@@ -15,6 +15,7 @@ import type {
 } from '@/api/gerado'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
+import { handlersDoCrm } from './crm'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
 /**
@@ -606,6 +607,11 @@ export const handlers = [
     if (!plano) return problemaJson(404, 'Projeto não encontrado.')
     return HttpResponse.json(plano)
   }),
+
+  // ---------------- crm ----------------
+  // Estado e handlers do funil vivem em `crm.ts`: estado próprio, e arquivo
+  // novo não disputa linha com quem estiver editando este aqui.
+  ...handlersDoCrm,
 
   // ---------------- health ----------------
   http.get('*/health', () => HttpResponse.json({ status: 'ok' })),

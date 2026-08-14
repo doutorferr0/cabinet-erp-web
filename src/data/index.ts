@@ -1,3 +1,4 @@
+import { funis } from '@/data/crm-api'
 import { parceiros } from '@/data/parceiros-api'
 import { produtosApi } from '@/data/produtos-api'
 import {
@@ -86,6 +87,17 @@ export const data = {
       normalize(o.descricaoObra).includes(q),
     empty: orcamentoVazio,
   }),
+
+  /**
+   * Funil de venda (CRM). Listagem, detalhe e registro em branco são todos do
+   * contrato — `GET /api/crm/pipelines` e `GET …/{id}` existem, e o `get`
+   * devolve o funil COM as colunas, que é o que o formulário edita.
+   *
+   * As oportunidades NÃO entram aqui: o quadro do funil não é uma listagem
+   * paginada, e a fronteira delas são os hooks de `crm-api.ts`. Entrada de
+   * registry é para tela de cadastro com DataTable.
+   */
+  funis,
 
   /** Tabela de apoio: só consulta, chave é `codigo` e não há "Incluir". */
   cidades: tabelaDeApoio({ rows: cidades }),

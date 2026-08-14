@@ -1,6 +1,13 @@
+import {
+  estagioDoContrato,
+  estagioParaContrato,
+  funilDoContrato,
+  funilParaContrato,
+} from '@/data/crm-api'
 import { corpoDeEscrita } from '@/data/parceiros-api'
 import { produtoDoContrato, produtoParaContrato } from '@/data/produtos-api'
 import { clienteSchema } from '@/features/cliente/cliente-form'
+import { funilSchema } from '@/features/crm/funil-form'
 import { fornecedorSchema } from '@/features/fornecedor/fornecedor-form'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
@@ -174,6 +181,36 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
         // O round-trip dela tem teste próprio em `produtos-api.test.ts`.
         specs: 'objeto no contrato, campos planos no formulário',
       })
+    }
+  })
+
+  /**
+   * O FUNIL tem duas escritas na mesma tela — o cabeçalho e cada etapa — e as
+   * duas passam por schemas Zod. Duas chances de perder campo, duas entradas
+   * aqui.
+   *
+   * A etapa é o caso mais exposto: a grade edita seis colunas, o `PUT`
+   * substitui o estágio inteiro, e um campo que saísse do schema da linha
+   * (`rotDays`, por exemplo) apagaria o apodrecimento de toda etapa gravada sem
+   * mudar nada na tela.
+   */
+  it('FUNIL leva ao servidor tudo que o CrmPipelineWriteRequest tem', () => {
+    const dto = dtoCompleto('CrmPipelineDto')
+    const doForm = funilSchema.parse(funilDoContrato(dto as never, []))
+    const corpo = funilParaContrato(doForm as never) as unknown as Json
+
+    for (const chave of chavesDeEscrita('CrmPipelineWriteRequest')) {
+      confereChave(corpo, dto, chave, {})
+    }
+  })
+
+  it('ETAPA leva ao servidor tudo que o CrmStageWriteRequest tem', () => {
+    const dto = dtoCompleto('CrmStageDto')
+    const doForm = funilSchema.shape.estagios.element.parse(estagioDoContrato(dto as never))
+    const corpo = estagioParaContrato(doForm as never) as unknown as Json
+
+    for (const chave of chavesDeEscrita('CrmStageWriteRequest')) {
+      confereChave(corpo, dto, chave, {})
     }
   })
 

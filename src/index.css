@@ -247,6 +247,16 @@
   --modulo-02: 279 100% 95%; /* #F7E8FF */
 }
 
+[data-modulo="crm"] {
+  /* Verde neon #00E676 — o NONO módulo, escolhido pelo user em 2026-08-13.
+     Foi para 151 porque o magenta do mapa de tabelas (#B0306B) cai no hue 330,
+     que já é do Compras: dois módulos no mesmo matiz derrubam a regra "mesmo
+     módulo, mesma cor". 151 é a única faixa larga livre — todo o resto se
+     aperta entre 186 e 330. */
+  --modulo-01: 151 100% 45%; /* Verde neon #00E676 */
+  --modulo-02: 150 92% 90%; /* #D2FCE7 */
+}
+
 [data-modulo="boletim"] {
   --modulo-01: 18 100% 59%; /* Laranja neon #FF6B2C — era Fusion coral #FF8577 */
   --modulo-02: 7 100% 93%; /* #FFDFDB */
@@ -410,6 +420,10 @@
 
 .dark [data-modulo="profissionais"] {
   --modulo-02: 279 35% 20%;
+}
+
+.dark [data-modulo="crm"] {
+  --modulo-02: 150 35% 20%;
 }
 
 .dark [data-modulo="boletim"] {

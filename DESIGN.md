@@ -9,8 +9,9 @@ colors:
   ink: "hsl(0 0% 0%)"
   ink-muted: "hsl(213 10% 41%)"
   ink-strong: "hsl(215 13% 30%)"
-  ink-disabled: "hsl(210 8% 74%)"
   rule-hair: "hsl(210 10% 86%)"
+  surface-disabled: "hsl(216 10% 80%)"
+  rule-disabled: "hsl(210 8% 40%)"
   main: "hsl(241 100% 66%)"
   main-hover: "hsl(241 77% 57%)"
   main-foreground: "hsl(0 0% 100%)"
@@ -629,6 +630,10 @@ Os demais estados, com o par que o componente resolve de verdade — um deles ta
 | carimbo `done` (`bg-stamp-done` + `text-primary-foreground`) | 5,52:1 | 10,42:1 |
 | carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 6,41:1 | 6,60:1 |
 | carimbo `void` (`text-stamp-void`, fundo transparente) | 5,51:1 | 5,09:1 |
+| desabilitado: tinta × superfície apagada | 12,89:1 | 14,55:1 |
+| desabilitado: traço apagado × superfície apagada | 3,58:1 | 3,49:1 |
+| desabilitado: superfície apagada × Folha | 1,48:1 | 1,16:1 |
+| desabilitado: secundário × superfície apagada | 3,50:1 | 7,88:1 |
 <!-- /tabela:estados-demais -->
 
 Os três `fill-*` ficam de fora da tabela por terem três valores por tema; estão no parágrafo
@@ -651,7 +656,6 @@ cheia /01 e o `--stamp-open` — não.
 - degrau Bancada × Folha: **1,10:1** claro · **1,23:1** escuro
 - secundário sobre o Afundado (zebra): **4,72:1** claro · **7,67:1** escuro
 - traço `--border` sobre a Folha: **19,12:1** claro · **5,88:1** escuro
-- `--text-disabled` sobre a Folha: **1,73:1** claro · **2,48:1** escuro
 - tinta sobre os pastéis /02 de módulo: **16,88–18,81:1** claro · **9,32–13,10:1** escuro
 <!-- /tabela:apoio -->
 
@@ -680,12 +684,31 @@ que não se lê. As outras são de superfície, onde o contorno preto é o delim
    duas contra a Folha no escuro — tabela acima, decisão na §Acentos. Mesma raiz: neon tem
    contraste baixo por construção, e quem delimita é o traço. O roxo de marca fica em 2,25:1 sobre
    a Bancada.
-4. **`--text-disabled` a 1,73:1 sobre a Folha.** A 1.4.3 isenta componente desabilitado, então não
-   é reprovação formal. Vira uma no minuto em que esse token pintar texto que **não** é controle
-   desabilitado (rótulo apagado, placeholder de coluna vazia) — não usar fora do controle.
+4. ~~**`--text-disabled` a 1,73:1 sobre a Folha.**~~ **FECHADA em 2026-08-14 (issue #106), e não
+   por escolha de cor: o token foi REMOVIDO.** A 1.4.3 isenta componente desabilitado, então nunca
+   foi reprovação formal — mas o user olhou a barra de ações do Cadastro de Produtos e a decisão
+   veio de olhar, não de norma: "nunca fazer algo assim em cor clara pois não dá pra ver". O
+   apagamento passou para `--surface-disabled` + `--rule-disabled`, e o conteúdo do controle morto
+   mede 12,89:1 (claro) / 14,55:1 (escuro). Ver §Desabilitado.
 5. **Margem estreita a vigiar: dinheiro na Bancada 4,58:1 e secundário na Bancada 4,73:1** (4,72:1
    na zebra). Passam por pouco. Qualquer escurecimento da Bancada, mesmo de 1 ponto de luz,
    derruba os dois — remedir com o script antes de mexer em `--background`.
+6. **[USER] NENHUMA utility `border-*` deste repo pinta nada — todas as bordas são `--border`.**
+   Achado em 2026-08-14 medindo o traço apagado, e é maior que a issue que o encontrou. O
+   `* { border-color: hsl(var(--border)) }` do fim do `src/index.css` está **fora de `@layer`**, e
+   autor sem camada vence QUALQUER regra dentro de camada — inclusive a `utilities`, onde o
+   Tailwind gera todo `border-*`. **Medido no Chrome com o `dist` compilado: um elemento novo com
+   `border-2 border-destructive` computa `rgb(0,0,0)`.**
+   O que isso apaga hoje, em silêncio: **`aria-invalid:border-destructive` do `Input` e do
+   `Textarea`** — o campo com erro não fica vermelho, e essa é a mesma família de defeito desta
+   issue (estado que não se diz); `border-destructive` do botão destrutivo; `border-primary` do
+   checkbox e do radio selecionados; `data-active:border-l-foreground` da sidebar; os quatro
+   `border-stamp-*`.
+   **Não consertei, e o motivo é que o conserto é MUDANÇA DE DESENHO, não correção de bug:** pôr o
+   `*` em `@layer base` (que é onde o preflight do Tailwind o coloca) faz os 7 `border-transparent`
+   do repo passarem a valer de uma vez — aba não selecionada e item de menu em repouso **perdem o
+   contorno preto**, que é a Regra da Caixa Preta em duas dezenas de telas. É decisão do user.
+   Enquanto isso, a receita da §Desabilitado mora fora de camada, depois do `*`, e é a única.
 
 ## Typography
 
@@ -783,9 +806,113 @@ deslocamento ficaria escondido atrás dele. Onde este doc dizia "foco + `el-2`",
 
 Nunca escrever a receita à mão no componente — recalibração de foco tem que mudar tudo de um ponto só.
 
+### Desabilitado
+**Estado desabilitado nunca é dito por cor clara** (decisão do user, 2026-08-14, `project-core`
+@regras). Ícone e rótulo de controle desabilitado ficam na **tinta do tema**. O que muda é o
+**fundo** (superfície apagada) e o **traço** — nunca a opacidade do conteúdo. Vale para botão,
+ícone, campo somente-leitura e item de menu. Estado se diz por **forma, posição, rótulo e fundo**;
+nenhum controle pode depender de baixo contraste para comunicar estado.
+
+**A origem é medida, não opinião.** Havia um token `--text-disabled` a **1,73:1 sobre a Folha**, e a
+barra de ações do Cadastro de Produtos o usava: `Alterar`, `Consul.` e `Excluir` desabilitados
+sumiam no papel. O token foi **removido** — enquanto existisse um nome para "tinta apagada", o
+próximo controle voltaria a usá-lo. No lugar entrou um par de superfície e traço:
+`--surface-disabled` e `--rule-disabled`, um valor por tema.
+
+A receita mora num ponto só, em `src/index.css`, em duas classes:
+- **`desabilitado`** — o controle inteiro apaga (botão, campo, item de menu, aba, gatilho de
+  accordion, caixa do `InputGroup`). Gatilhos: `:disabled` (nativo — e é ele que pega descendente
+  de `<fieldset disabled>`, que é como o `CadastroForm` faz o modo consulta), `[data-disabled]`
+  (RAC e cmdk), `[aria-disabled]` (item que continua focável) e `:has(:disabled)` (a caixa cujo
+  campo de dentro é que está morto). Declara `opacity: 1` para desfazer o clareamento que RAC e
+  cmdk trazem de fábrica.
+- **`marca-desabilitada`** — o controle cujo estado mora numa PEÇA, não na caixa: o quadrado do
+  checkbox e o círculo do radio. Vai no indicador, porque a raiz desses dois embrulha o **rótulo**,
+  e pintar ali daria uma faixa cinza atrás de texto corrido. O segundo gatilho é
+  `fieldset:disabled`, porque a RAC não escreve `data-disabled` quando ninguém passou `isDisabled`.
+
+**A perda da sombra é o terceiro canal, e é de FORMA.** No escuro a superfície apagada e a Folha
+estão a 1,16:1: fundo e traço sozinhos quase não diziam o estado — conferido em render, com
+`Alterar` morto e `Filtro` vivo saindo iguais na foto. Por isso `lift-control` passou a zerar a
+sombra no desabilitado: o controle vivo REPOUSA elevado (`el-2`) e o morto fica rente ao papel.
+Antes disso o desabilitado mantinha o `el-2` — um botão morto com cara de peça pronta para apertar.
+
+**As duas classes usam seletor de especificidade (0,3,0), e isso é parte da receita, não detalhe de
+implementação.** Com (0,2,0) elas empatariam com `hover:bg-*` e `data-selected:bg-*` do mesmo
+elemento, e o desempate ficaria por ordem de geração do Tailwind: o controle morto voltaria a ser
+repintado com a cor de quem responde ao mouse, e o checkbox marcado-e-desabilitado voltaria ao
+violeta com o `✓` branco por cima do cinza. É o mesmo defeito por outra porta.
+
+**E as duas moram FORA de `@layer`, depois do `* { border-color }`** — ver a pendência 6 da
+§Medição de contraste. Escritas como `@utility`, elas caíram na camada `utilities`, que perde para
+o `*` sem camada, e **o traço apagado saiu preto na foto**. Mover este bloco para dentro de um
+`@layer`, ou para cima do `*`, mata o traço em silêncio; a guarda de teste checa a posição.
+
+**A etiqueta do campo NÃO apaga.** Ela é o que diz o que o campo é, e apagá-la tira o nome do dado
+justamente quando o operador não pode mexer nele. Conferido em render no modo consulta de Produtos:
+etiqueta nítida sobre campo apagado lê melhor que os dois apagados juntos.
+
+**O que NÃO entra na receita:** `pointer-events: none`. O botão desabilitado precisa continuar
+recebendo evento de mouse para o browser mostrar o `title` — a barra de ações da DataTable promete
+explicar ali por que a ação está morta, e com o ponteiro desligado a explicação existiria no DOM e
+nunca na tela. Não clicar já é garantido pelo atributo `disabled`.
+
+**Números** (§Medição de contraste): tinta sobre a superfície apagada **12,89:1** claro ·
+**14,55:1** escuro — o piso de 4,5 sobra. Traço apagado sobre ela **3,58 / 3,49:1**, acima dos 3:1
+de 1.4.11. A superfície apagada contra a Folha mede **1,48 / 1,16:1**: é degrau de região, e quem a
+delimita é o traço, mesma economia da Bancada × Folha (1,10:1).
+
+**Conferido em render, nos dois temas** (método do `@comorodar`), na barra de ações da listagem de
+Produtos e no formulário em `?modo=consulta`. Estilo computado no Chrome, idêntico nos dois:
+fundo `--surface-disabled`, traço `--rule-disabled`, tinta cheia — botão, campo, gatilho de combo,
+botão `...` de cadastro rápido e indicador de checkbox.
+
+**Campo somente-leitura** (`readOnly`, hoje só em `<EnderecoBlock>`) não recebe apagamento nenhum —
+lê como campo normal. Está conforme a regra (o valor está em tinta cheia), mas o estado não é dito
+por nada: é pendência de desenho, não de contraste.
+
+A guarda é `src/components/ui/desabilitado.test.tsx`: varre `components/`, `features/` e `app/`
+atrás de qualquer gatilho de desabilitado seguido de `opacity-*`, e confere os tokens no CSS.
+
+#### A varredura de 2026-08-14 — o que era e o que sobrou
+
+Dezoito lugares clareavam conteúdo para dizer desabilitado, em 15 arquivos: `button` · `input` ·
+`textarea` · `label` (duas formas: `peer-` e `group-`) · `input-group` (grupo e adorno) ·
+`checkbox` · `radio-group` · `tabs` · `accordion` · `command` (campo e item) · `dropdown-menu` ·
+`menubar` · `navigation-menu` (dois) · `sidebar` (item e subitem) · `filtro-controles`. Todos
+passaram para a receita. **Não é lista de conserto de tela: é uma classe de defeito, e por isso o
+que fica no lugar é uma receita com guarda, não 18 correções.**
+
+Três trocas de vizinhança, do mesmo movimento: o adorno do `InputGroup` com o grupo desabilitado
+**escurece** (secundário → tinta cheia) em vez de clarear, porque sobre a superfície apagada ele
+mede 3,50:1; a estrela "não é a consulta padrão" da `consultas-favoritas` perdeu o `opacity-40` —
+quem diz o estado é o preenchimento (`fill-current`), e a opacidade era um segundo canal dizendo a
+mesma coisa pior; e o chevron do `LookupCombo`, do `filtro-controles` e a lupa do `Command` trocaram
+`opacity-50` por `text-muted-foreground`, que é token MEDIDO (4,72–5,19:1) em vez de um número solto.
+
+**O que a varredura achou e a regra do desabilitado NÃO alcançava** — dois estados que só apareceram
+porque alguém foi olhar: o checkbox em `<fieldset disabled>` continuava violeta-cheio (ninguém
+escreve `data-disabled` ali), e nenhuma borda do repo obedece à utility que a nomeia (pendência 6 da
+§Medição). O primeiro está corrigido; o segundo é decisão do user.
+
+**Opacidade que FICA, e por quê** — o proibido é opacidade que diz *estado de controle*, não
+opacidade:
+- `sheet.tsx` — animação de entrada/saída da gaveta.
+- `sidebar.tsx` — rótulo de grupo com a barra colapsada (0/100, com `pointer-events-none`) e ação
+  de item revelada no hover.
+- `command.tsx` / `lookup-combo.tsx` — o `✓` do item selecionado (0/100). Presença/ausência é
+  binário, não clareamento.
+
+**Fora da zona, com dono** — `src/features/dashboard/hoje.tsx:128`: o dia de fora do mês na grade do
+calendário é `text-muted-foreground opacity-60`, que derruba o secundário abaixo do piso AA. Não é
+controle (é `<div>` sem ação), então a guarda não o pega e a regra do desabilitado não o alcança —
+mas é texto abaixo de 4,5:1. Conserto é tirar o `opacity-60` e deixar o token secundário sozinho.
+
 ### Button
 Fundo Folha, traço 2px, raio de controle. Primário = violeta com texto branco (hover `main-hover`).
-Destrutivo = vermelho com texto branco. Compacto para barra de ações. Desabilitado 40% e ponteiro morto.
+Destrutivo = vermelho com texto branco. Compacto para barra de ações. Desabilitado pela receita da
+§Desabilitado — rótulo e ícone em tinta cheia, fundo e traço apagados, ponteiro VIVO (é ele que
+entrega o `title` com o motivo).
 
 ### Badge / Stamp
 Item (raio 0), traço 2px, mono 11px, `el-1`. Tons: primária (violeta) · marca (roxo) · dinheiro (verde) ·

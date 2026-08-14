@@ -1,4 +1,5 @@
 import { configurarApi } from '@/api/cliente'
+import type { CrmOpportunityDto } from '@/api/gerado'
 import {
   authLogin,
   authSetActiveTenant,
@@ -10,6 +11,7 @@ import {
   moveCrmOpportunityStage,
   updateCrmOpportunity,
 } from '@/api/gerado'
+import { apiFetch } from '@/api/http'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetCrm } from './crm'
@@ -38,6 +40,31 @@ beforeEach(async () => {
   await authLogin({ email: 'admin@vertz.dev', password: 'qualquer' })
   await authSetActiveTenant({ tenantId: TENANT_MATRIZ })
 })
+
+/**
+ * Listagem COM filtro estruturado, montada como o app monta.
+ *
+ * Não dá para usar a operação gerada aqui: o serializador do Orval faz
+ * `String(value)` em todo parâmetro, e um array de condições viraria
+ * `[object Object]`. Quem monta a query de listagem no app é
+ * `createApiListProvider`, que serializa `filters` como **array JSON** — é essa
+ * requisição que o servidor falso precisa saber responder.
+ */
+async function listarComFiltros(
+  filtros: { field: string; operator: string; value?: string }[],
+  juncao?: 'and' | 'or',
+) {
+  const query = new URLSearchParams({
+    pipelineId: 'funil-projeto',
+    pageSize: '100',
+    filters: JSON.stringify(filtros),
+  })
+  if (juncao) query.set('joinOperator', juncao)
+  return apiFetch<{ data?: { rows: CrmOpportunityDto[]; total: number }; status: number }>(
+    `/api/crm/opportunities?${query.toString()}`,
+    { method: 'GET' },
+  )
+}
 
 /** Os ids da coluna, na ordem em que o quadro os mostraria. */
 async function colunaDe(stageId: string): Promise<string[]> {
@@ -191,6 +218,52 @@ describe('oportunidade — lead e negócio no mesmo registro', () => {
 
     expect(abertas.data.total).toBeLessThan(todas.data.total)
     expect(abertas.data.rows.some((o) => o.stageId === 'etapa-perdido')).toBe(false)
+  })
+
+  /**
+   * O filtro estruturado tem de ESTREITAR de verdade no modo mock.
+   *
+   * Aceitar `filters` e descartá-lo em silêncio é pior que não ter filtro: a
+   * listagem devolveria tudo enquanto o painel mostra a condição aplicada, e o
+   * operador leria "atende ao filtro" numa lista que não atende. É o que o
+   * site demo serviria, já que ele roda em modo mock.
+   */
+  it('`filters` ESTREITA a listagem — aceitar e ignorar seria pior', async () => {
+    const todas = await listCrmOpportunities({ pipelineId: 'funil-projeto', pageSize: 100 })
+    if (todas.status !== 200) throw new Error('listagem falhou')
+    const alvo = todas.data.rows[0]?.stageName as string
+
+    const filtrada = await listarComFiltros([{ field: 'stageName', operator: 'eq', value: alvo }])
+    if (filtrada.status !== 200) throw new Error(`listagem filtrada falhou: ${filtrada.status}`)
+
+    expect(filtrada.data?.total).toBeLessThan(todas.data.total)
+    expect(filtrada.data?.rows.every((o) => o.stageName === alvo)).toBe(true)
+  })
+
+  it('campo fora da whitelist é 400, e não filtro ignorado', async () => {
+    const resposta = await listarComFiltros([
+      { field: 'expectedValueCents', operator: 'gt', value: '1' },
+    ])
+
+    expect(resposta.status).toBe(400)
+  })
+
+  it('`joinOperator=or` soma as condições com OU, não com E', async () => {
+    const contato = await listarComFiltros([
+      { field: 'stageName', operator: 'eq', value: 'Contato' },
+    ])
+    const proposta = await listarComFiltros([
+      { field: 'stageName', operator: 'eq', value: 'Proposta' },
+    ])
+    const ambas = await listarComFiltros(
+      [
+        { field: 'stageName', operator: 'eq', value: 'Contato' },
+        { field: 'stageName', operator: 'eq', value: 'Proposta' },
+      ],
+      'or',
+    )
+
+    expect(ambas.data?.total).toBe((contato.data?.total ?? 0) + (proposta.data?.total ?? 0))
   })
 
   it('o PUT substitui o registro inteiro: campo omitido é campo apagado', async () => {

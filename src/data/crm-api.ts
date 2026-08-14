@@ -94,6 +94,26 @@ export const ORDENAVEIS_OPORTUNIDADE: readonly string[] = [
 export const ORDENAVEIS_MOTIVO_DE_PERDA: readonly string[] = ['name', 'active']
 
 /**
+ * Whitelist de `field` do filtro estruturado da oportunidade — a MESMA do
+ * contrato.
+ *
+ * É a de `sortBy` **menos `expectedValueCents`**, e a subtração tem regra
+ * escrita (`src/lib/filtro-de-consulta.ts`, §Dinheiro fica de fora): o valor
+ * trafega em centavos e o filtro não tem variante que converta na borda, então
+ * `1000` procuraria R$ 10,00 enquanto quem digitou procurava mil reais — número
+ * certo, significado errado, e sem sintoma nenhum na tela. A coluna de valor
+ * continua na listagem e continua ORDENÁVEL: ordenar por centavos dá a mesma
+ * ordem que ordenar por reais.
+ */
+export const FILTRAVEIS_OPORTUNIDADE: readonly string[] = [
+  'name',
+  'partnerName',
+  'stageName',
+  'expectedCloseDate',
+  'stageChangedAt',
+]
+
+/**
  * Providers de listagem para as telas de cadastro (DataTable com
  * `{q, sort, page, pageSize}`). Entram no registry de `src/data/index.ts`
  * quando as telas existirem: hoje não há tela de CRM, e entrada de registry sem
@@ -129,11 +149,19 @@ export const funis: FunisProvider = {
 export const motivosDePerda: ListProvider<CrmLostReasonDto> =
   createApiListProvider<CrmLostReasonDto>({ url: URL_MOTIVOS_DE_PERDA })
 
-/** Oportunidades de UM funil — o `pipelineId` viaja em toda consulta da tabela. */
+/**
+ * Oportunidades de UM funil — o `pipelineId` viaja em toda consulta da tabela.
+ *
+ * É este provider que alimenta as DUAS visões da tela do funil (quadro e
+ * lista): a visão escolhe o desenho, não a pergunta. Por isso o filtro
+ * estruturado entra aqui e não em cada visão — dois providers dariam dois
+ * filtros com o mesmo nome na mesma tela.
+ */
 export function oportunidadesDoFunil(pipelineId: string): ListProvider<CrmOpportunityDto> {
   return createApiListProvider<CrmOpportunityDto>({
     url: URL_OPORTUNIDADES,
     fixa: { pipelineId },
+    filtraveis: FILTRAVEIS_OPORTUNIDADE,
   })
 }
 

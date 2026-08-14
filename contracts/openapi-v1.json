@@ -2457,7 +2457,7 @@
       "get": {
         "tags": ["crm"],
         "operationId": "ListCrmOpportunities",
-        "description": "Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban.",
+        "description": "Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban — e é o que permite à tela alternar quadro ⇄ lista sem refazer a pergunta.",
         "parameters": [
           {
             "name": "pipelineId",
@@ -2529,6 +2529,29 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `name`, `partnerName`, `stageName`, `expectedCloseDate`, `stageChangedAt` — é a do `sortBy` MENOS `expectedValueCents`, e a subtração é a regra do front: dinheiro trafega em centavos e o filtro não tem variante que converta na borda, então `1000` procuraria R$ 10,00 enquanto quem digitou procurava mil reais. Campo fora da whitelist é 400. **A mesma consulta serve às duas visões da tela** (quadro e lista): é o filtro que decide o conjunto, e a visão só decide como ele é desenhado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
             }
           }
         ],

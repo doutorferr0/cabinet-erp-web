@@ -2212,7 +2212,7 @@ export const getListCrmOpportunitiesUrl = (params?: ListCrmOpportunitiesParams,)
 }
 
 /**
- * Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban.
+ * Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban — e é o que permite à tela alternar quadro ⇄ lista sem refazer a pergunta.
  */
 export const listCrmOpportunities = async (params?: ListCrmOpportunitiesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCrmOpportunitiesResponse> => {
 

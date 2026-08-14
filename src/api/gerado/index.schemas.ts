@@ -1642,6 +1642,14 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+/**
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `name`, `partnerName`, `stageName`, `expectedCloseDate`, `stageChangedAt` — é a do `sortBy` MENOS `expectedValueCents`, e a subtração é a regra do front: dinheiro trafega em centavos e o filtro não tem variante que converta na borda, então `1000` procuraria R$ 10,00 enquanto quem digitou procurava mil reais. Campo fora da whitelist é 400. **A mesma consulta serve às duas visões da tela** (quadro e lista): é o filtro que decide o conjunto, e a visão só decide como ele é desenhado.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
 };
 
 export type ListCrmLostReasonsParams = {

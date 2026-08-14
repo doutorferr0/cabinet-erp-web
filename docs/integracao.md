@@ -260,7 +260,8 @@ mentira com cara de dado do servidor.
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
 sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
 onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
-`GET /api/products` e `GET /api/partners`.
+`GET /api/products`, `GET /api/partners` e — desde a issue #86 —
+`GET /api/crm/opportunities`.
 
 ### Como viaja
 
@@ -295,16 +296,32 @@ recurso escolheu, `filters` é campo a campo.
 
 ### Whitelist, e onde ela é barrada
 
-Cada recurso declara a sua no contrato, na descrição do parâmetro. Hoje é a
-**mesma do `sortBy`** — `code`/`description`/`active` em produtos,
+Cada recurso declara a sua no contrato, na descrição do parâmetro. Em produtos e
+parceiros é a **mesma do `sortBy`** — `code`/`description`/`active` em produtos,
 mais `legalName`/`tradeName`/`document` em parceiros — e cresce quando uma tela
 precisar. Campo fora dela é **400**, como no `sortBy`: filtro ignorado faria a
 tela mostrar resultado errado sem sintoma.
 
-No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS`, em
-`produtos-api.ts` e `parceiros-api.ts`) e **`filtrosDaTabela` barra antes de sair**
-— mesma escolha já feita para `page` e `pageSize`: requisição sabidamente inválida
-faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
+**Oportunidade é a primeira whitelist MENOR que a de `sortBy`**, e a subtração é
+uma regra do front, não um esquecimento: `expectedValueCents` fica de fora porque
+dinheiro trafega em centavos e o filtro **não tem variante de dinheiro** (ver
+`src/lib/filtro-de-consulta.ts`, §Dinheiro fica de fora). Filtrar por `1000` traria
+R$ 10,00 para quem procurava mil reais — número certo, significado errado, sem
+sintoma. Ordenar por centavos continua valendo: a ordem é a mesma. Sobram `name`,
+`partnerName`, `stageName`, `expectedCloseDate` e `stageChangedAt`.
+
+No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts` e
+`parceiros-api.ts`; lista própria em `crm-api.ts`) e **`filtrosDaTabela` barra antes
+de sair** — mesma escolha já feita para `page` e `pageSize`: requisição sabidamente
+inválida faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
+
+### O modo mock também filtra — só no CRM, por ora
+
+`src/mocks/api/crm.ts` aplica `filters`/`joinOperator` de verdade (reusando
+`linhaPassaNosFiltros`) e responde **400** a campo fora da whitelist. Os handlers
+de produtos e parceiros (`src/mocks/api/handlers.ts`) ainda **descartam o parâmetro
+em silêncio**: no modo mock — que é o que o site demo serve — o painel mostra a
+condição aplicada e a listagem devolve tudo. É dívida conhecida, não desenho.
 
 ### Armadilha do cliente gerado
 

@@ -2,6 +2,7 @@ import type { PartnerDto, PartnerPayoutBankInfo, PartnerWriteRequest } from '@/a
 import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
 import {
   ErroDaApi,
+  PAGE_SIZE_MAX,
   type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
@@ -63,6 +64,12 @@ export const ORDENAVEIS: readonly string[] = [
   'tradeName',
   'document',
   'active',
+  // `parentId` entrou pela hierarquia pai/filho (#91). Ordenar por uuid não
+  // serve para ninguém; ele está aqui porque a whitelist do contrato é UMA só
+  // para `sortBy` e `filters`, e é como `filters` que a tela do pai pede os
+  // filhos. Divergir as duas listas custaria um parâmetro novo no contrato para
+  // uma consulta que o filtro já sabe fazer.
+  'parentId',
 ]
 
 /**
@@ -71,6 +78,17 @@ export const ORDENAVEIS: readonly string[] = [
  * passa a ser edição deliberada, não duas listas iguais fora de sincronia.
  */
 export const FILTRAVEIS: readonly string[] = ORDENAVEIS
+
+/**
+ * Listagem de parceiro SEM recorte de papel — é dela que sai a consulta de
+ * filhos (#91). Fica ao lado de `parceirosDoPapel` para as duas lerem a mesma
+ * `FILTRAVEIS`: divergir faria a consulta de filhos passar por uma whitelist
+ * que o contrato não publica.
+ */
+export const LISTA_DE_PARCEIROS = createApiListProvider<PartnerDto>({
+  url: URL_PARCEIROS,
+  filtraveis: FILTRAVEIS,
+})
 
 /** Listagem de um papel. `fixa` carrega o `role` em toda consulta da tabela. */
 export function parceirosDoPapel(role: PapelDeParceiro): ListProvider<PartnerDto> {
@@ -142,6 +160,13 @@ export interface CamposEditaveis {
    */
   registration?: string | null
   payoutBankInfo?: PartnerPayoutBankInfo | null
+  /**
+   * Parceiro-pai (#91). Opcional pela MESMA razão dos dois acima: nenhuma das
+   * três telas tem campo para ele no formulário — o vínculo é editado por ação
+   * própria, e o `PUT` precisa devolvê-lo como veio para não desvincular quem
+   * gravou por outro caminho.
+   */
+  parentId?: string | null
 }
 
 /**
@@ -180,6 +205,10 @@ export function corpoDeEscrita(
       editado.payoutBankInfo !== undefined
         ? editado.payoutBankInfo
         : (original.payoutBankInfo ?? null),
+    // Mesma regra, e aqui ela é a diferença entre gravar um cadastro e desfazer
+    // uma hierarquia: o formulário não tem campo de vínculo, então omitir aqui
+    // faria todo Gravar de Cliente desligar o profissional do escritório dele.
+    parentId: editado.parentId !== undefined ? editado.parentId : (original.parentId ?? null),
   }
 }
 
@@ -227,6 +256,43 @@ export function corpoDeDesativacao(linha: PartnerDto): PartnerWriteRequest {
  * desativação, não sumiço), mas com `Ativo: Não`, que é a prova visível de que
  * a escrita valeu.
  */
+/**
+ * Linha + novo pai → corpo do `PUT` (#91). Mesma economia do
+ * `corpoDeDesativacao`: o vínculo é UMA propriedade, e todo o resto do registro
+ * viaja de volta como veio. Escrever o corpo à mão na tela seria a terceira
+ * cópia da regra "o que a tela não mostra é devolvido como veio".
+ *
+ * `null` DESVINCULA — é a mesma chamada, e é de propósito: vincular e
+ * desvincular são o mesmo ato com valores diferentes, não dois caminhos.
+ */
+export function corpoDeVinculoPai(linha: PartnerDto, paiId: string | null): PartnerWriteRequest {
+  return corpoDeEscrita(linha, {
+    legalName: linha.legalName,
+    tradeName: linha.tradeName,
+    document: linha.document,
+    email: linha.email,
+    active: linha.active,
+    parentId: paiId,
+  })
+}
+
+/**
+ * Vincular/desvincular do pai. Invalida o REGISTRO (`['parceiro', id]`) e a
+ * lista de filhos dos dois lados: quem sai de um pai entra em outro, e a tela
+ * do pai antigo continuaria mostrando um filho que já não é dele.
+ */
+export function useVincularPai(idParam: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ linha, paiId }: { linha: PartnerDto; paiId: string | null }) =>
+      atualizarParceiro(linha.id, corpoDeVinculoPai(linha, paiId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['parceiro', idParam] })
+      await queryClient.invalidateQueries({ queryKey: ['parceiro-filhos'] })
+    },
+  })
+}
+
 export function useDesativarParceiro(queryKey: readonly unknown[]) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -265,6 +331,7 @@ export function corpoDeInclusao(
     // nasce nulo, igual a `code` e `paymentTerms` logo acima.
     registration: editado.registration ?? null,
     payoutBankInfo: editado.payoutBankInfo ?? null,
+    parentId: editado.parentId ?? null,
   }
 }
 
@@ -276,6 +343,74 @@ export function corpoDeInclusao(
 export async function incluirParceiro(corpo: PartnerWriteRequest): Promise<PartnerDto> {
   const resposta: RespostaDaApi = await createPartner(corpo)
   return dadosOuErro<PartnerDto>(resposta, 'Falha ao incluir o parceiro.')
+}
+
+/**
+ * OS FILHOS DE UM PARCEIRO — o outro lado de `parentId` (#91).
+ *
+ * Sai do `filters` que a listagem já usa, e não de um caminho novo: o parâmetro
+ * existe, a whitelist do contrato passou a publicar `parentId`, e um
+ * `GET /api/partners/{id}/children` seria uma segunda forma de perguntar a mesma
+ * coisa — com paginação, ordenação e filtro próprios para manter.
+ *
+ * **Sem `role`**: os filhos de um escritório são profissionais, mas o vínculo é
+ * do CADASTRO, não do papel. Filtrar por papel aqui esconderia um filho que
+ * também é cliente, e a tela mostraria "nenhum vinculado" para quem tem.
+ */
+export async function filhosDoParceiro(paiId: string): Promise<PartnerDto[]> {
+  // Pelo PROVIDER, não pelo cliente gerado direto, e o motivo é mecânico: o
+  // `getListPartnersUrl` do codegen serializa todo parâmetro com `String(value)`
+  // — um array de objetos viraria `[object Object]` na query. Quem sabe montar
+  // `filters` é o `createApiListProvider`, que faz `JSON.stringify` e ainda
+  // barra campo fora da whitelist ANTES de sair. Duplicar a codificação aqui
+  // seria manter dois serializadores do mesmo parâmetro.
+  const { rows } = await LISTA_DE_PARCEIROS.list({
+    q: '',
+    sort: null,
+    page: 1,
+    // O TETO do contrato, não um número escolhido: `queryDaTabela` recusa
+    // acima de `PAGE_SIZE_MAX` em vez de mandar uma consulta que o servidor
+    // devolveria 400. Escritório com mais de 100 profissionais vinculados não
+    // existe no negócio da Vertz; se existir, o bloco mostra a primeira página.
+    pageSize: PAGE_SIZE_MAX,
+    filtros: [
+      {
+        filtroId: 'pai',
+        id: 'parentId',
+        variante: 'text',
+        operador: 'eq',
+        valor: paiId,
+      },
+    ],
+  })
+  return rows
+}
+
+/**
+ * Se `candidato` pode virar PAI de `parceiro`, com o que a tela tem em mãos.
+ *
+ * **Duas recusas, e as duas são visíveis antes de gravar**: apontar para si
+ * mesmo, e apontar para um dos próprios filhos (o A→B→A que a issue nomeia).
+ *
+ * **O que esta função NÃO faz, e é importante que não pareça fazer:** ciclo de
+ * três ou mais níveis (A→B→C→A) ela não vê, porque a tela conhece um nível para
+ * baixo e nenhum para cima. Quem fecha isso é o servidor, e o contrato manda
+ * 400. Uma varredura recursiva daqui seria N consultas para chegar a uma
+ * resposta que o servidor dá em uma, e ainda ficaria desatualizada entre a
+ * checagem e o Gravar.
+ */
+export function motivoDeRecusaDoVinculo(
+  parceiroId: string,
+  candidatoId: string,
+  filhos: readonly PartnerDto[],
+): string | null {
+  if (candidatoId === parceiroId) {
+    return 'Um cadastro não pode ser vinculado a si mesmo.'
+  }
+  if (filhos.some((filho) => filho.id === candidatoId)) {
+    return 'Este cadastro já é um dos vinculados — o vínculo ficaria em laço.'
+  }
+  return null
 }
 
 /**

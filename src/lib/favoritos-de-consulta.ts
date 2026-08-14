@@ -45,6 +45,15 @@ export interface FavoritoDeConsulta {
   visao: string
   /** Campo das colunas da visão que agrupa. `''` = não guardou agrupamento. */
   agruparPor: string
+  /**
+   * Altura da linha da grade (#123). `''` = não guardou densidade.
+   *
+   * Entra pela mesma razão que a visão entrou: é parte de COMO o operador quer
+   * ver aquela consulta. "Conferência de estoque" é a pergunta e a grade
+   * apertada com 200 linhas na tela; salvar a pergunta e devolver a grade larga
+   * é devolver metade do que ele salvou.
+   */
+  densidade: string
   /** Aplicado sozinho ao abrir a tela. No máximo um por tela. */
   padrao: boolean
 }
@@ -56,6 +65,7 @@ export interface ConsultaSalva {
   sort: TableSort | null
   visao: string
   agruparPor: string
+  densidade: string
 }
 
 const CHAVE = 'cabinet.consultas-favoritas.v1'
@@ -110,6 +120,7 @@ export function lerFavoritos(tela: string): FavoritoDeConsulta[] {
     // "este favorito não fala de visão", que é diferente de "volte ao padrão".
     visao: typeof f.visao === 'string' ? f.visao : '',
     agruparPor: typeof f.agruparPor === 'string' ? f.agruparPor : '',
+    densidade: typeof f.densidade === 'string' ? f.densidade : '',
     padrao: f.padrao === true,
   }))
 }
@@ -161,6 +172,7 @@ export function consultaDoFavorito(favorito: FavoritoDeConsulta): ConsultaSalva 
     sort: favorito.sort,
     visao: favorito.visao,
     agruparPor: favorito.agruparPor,
+    densidade: favorito.densidade,
   }
 }
 

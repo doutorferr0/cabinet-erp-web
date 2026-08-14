@@ -30,6 +30,7 @@ function favorito(over: Partial<FavoritoDeConsulta> = {}): FavoritoDeConsulta {
     sort: { id: 'code', desc: false },
     visao: '',
     agruparPor: '',
+    densidade: '',
     padrao: false,
     ...over,
   }
@@ -116,6 +117,34 @@ describe('leitura tolerante — favorito estragado não derruba a tela', () => {
 
     const [lido] = lerFavoritos('produtos')
     expect(lido).toMatchObject({ juncao: 'and', sort: null, padrao: false })
+  })
+
+  /**
+   * Densidade (#123) entrou depois, como visão e agrupamento antes dela. Vazio
+   * é "este favorito não fala de densidade", e aplicá-lo não pode mexer na
+   * altura que está na tela — senão o favorito de filtro salvo mês passado
+   * passaria a devolver a grade larga sem ninguém ter pedido.
+   */
+  it('favorito salvo antes da densidade não manda na altura da linha', () => {
+    localStorage.setItem(
+      CHAVE,
+      JSON.stringify({
+        produtos: [{ id: 'x', nome: 'Velho', filtros: [], visao: 'lista', agruparPor: '' }],
+      }),
+    )
+
+    const [lido] = lerFavoritos('produtos')
+    expect(lido?.densidade).toBe('')
+    expect(consultaDoFavorito(lido as FavoritoDeConsulta).densidade).toBe('')
+  })
+
+  it('densidade gravada com lixo também vira vazio, não classe inventada', () => {
+    localStorage.setItem(
+      CHAVE,
+      JSON.stringify({ produtos: [{ id: 'x', nome: 'V', filtros: [], densidade: 42 }] }),
+    )
+
+    expect(lerFavoritos('produtos')[0]?.densidade).toBe('')
   })
 })
 

@@ -745,6 +745,63 @@ licença: grátis só para uso pessoal, e o Cabinet é vendido a terceiros).
 
 Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
+### As quatro servem para número em coluna — medido, não estimado (#123)
+
+`font-variant-numeric: tabular-nums` só faz efeito se a fonte trouxer a feature OpenType `tnum`.
+A estimativa que circula é de que poucas webfonts a trazem, e decidir a tipografia de toda coluna
+numérica do ERP por estimativa é o erro que a medição de contraste já corrigiu aqui.
+
+`docs/design/medir-tabular-nums.py` abre os `.woff` que o `@fontsource` instalou — os mesmos bytes
+que o navegador baixa — e lê a lista de features do `GSUB` mais a largura de avanço dos dígitos
+`0`–`9`. **As duas juntas, porque uma sem a outra engana:** monoespaçada não declara `tnum` e não
+precisa, e ler só a feature a reprovaria.
+
+<!-- gerado por docs/design/medir-tabular-nums.py -->
+
+| voz | família | peso | `tnum` | dígitos iguais sem a feature | veredito |
+|---|---|---|---|---|---|
+| quem | Newsreader | 400 | sim | sim | já tabular, e ainda declara `tnum` |
+| o quê | Sora | 600 | sim | não | proporcional por padrão, `tnum` corrige |
+| UI | Inter | 400 | sim | não | proporcional por padrão, `tnum` corrige |
+| quanto | PT Mono | 400 | não | sim | já tabular (não precisa da feature) |
+
+**Nenhuma coluna precisa cair para a mono por incapacidade da fonte do corpo.** Inter é a voz da
+UI e corrige com `tnum`; PT Mono já nasce tabular. A mono em número segue sendo escolha de VOZ
+("quanto"), como sempre foi — não remendo de tipografia.
+
+Reexecutar quando trocar de família ou subir versão do `@fontsource`: a feature é declarada por
+ARQUIVO, e nada obriga o regular e o semibold da mesma família a concordarem.
+
+### Grandeza × identificador — a mesma tabularidade, alinhamentos diferentes
+
+A `VitraDataTable` tem dois metas de coluna, e a distinção não é preciosismo:
+
+| meta | o que é | tabular | alinhamento |
+|---|---|---|---|
+| `numeric` | grandeza — valor, quantidade, percentual | sim | **direita** |
+| `codigo` | identificador — código, número de documento, série | sim | esquerda (como texto) |
+
+Alinhar grandeza à direita põe a casa das unidades numa vertical só, e é daí que sai a comparação
+de magnitude sem ler dígito a dígito. Identificador não responde "qual é maior", responde "é este
+mesmo?" — e `code` do parceiro e `Nosso Código` do produto são `string` no contrato, valendo
+`F001`. Alinhado à direita, um código fica pendurado na margem oposta à leitura.
+
+### Densidade da linha — escolha de quem opera (#123)
+
+Duas alturas, no rodapé da listagem ao lado de `Por página`: **Padrão 52px** (o de sempre) e
+**Compacta 42px**, a mesma altura do cabeçalho. As duas ficam nas faixas consolidadas de grade de
+dados (compacto 40-44, padrão 48-56).
+
+Quem confere 200 linhas quer mais linha por tela; quem cadastra quer alvo maior para o mouse.
+Fixar uma das duas atende metade e cobra da outra. **Não há uma terceira** — densidade é escolha
+binária de quem opera, e uma escala de quatro passos vira preferência para regular em vez de
+decisão para tomar.
+
+A altura entra por seletor descendente a partir do `<table>` (`[&_td]:h-[42px]`), e não trocando a
+classe da célula: `TableCell` traz `h-[52px]` de fábrica e continua valendo em toda tabela que não
+é a listagem. **Entra na consulta favorita**, junto com visão e agrupamento — quem salvou
+"Conferência de estoque" salvou também a grade apertada.
+
 ## Layout
 
 - Shell de 3 zonas inalterado (sidebar colapsável, header, conteúdo). Bloco da empresa ativa no topo da sidebar; item de navegação ativo = Folha com traço preto.
@@ -807,6 +864,10 @@ partes que cada célula pode desenhar (topo e base em todas, lateral só na prim
 célula desenharia uma moldura por coluna.
 Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
+**Altura de célula é o PADRÃO, não o único valor** (#123): o rodapé oferece `Compacta` (42px), que
+entra por seletor descendente a partir do `<table>` e vale só na listagem. Coluna numérica declara
+`meta.numeric` (grandeza, à direita) ou `meta.codigo` (identificador, à esquerda); as duas em
+numeral tabular — ver §As quatro servem para número em coluna.
 
 ### CadastroForm / BandaDeIdentidade (assinatura)
 Painel (raio 10px, `el-3`) com **faixa de acento** de 8px à esquerda e zona de identidade no fundo.

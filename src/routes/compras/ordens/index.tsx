@@ -14,7 +14,7 @@ export const Route = createFileRoute('/compras/ordens/')({
 
 /** Colunas LITERAIS da transcrição §7.1. */
 const columns: ColumnDef<OrdemCompra>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
+  { accessorKey: 'codigo', header: 'Código', meta: { codigo: true } },
   { accessorKey: 'fornecedor', header: 'Fornecedor' },
   {
     accessorKey: 'dataOrdem',

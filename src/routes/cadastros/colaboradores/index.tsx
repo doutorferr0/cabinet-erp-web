@@ -14,7 +14,7 @@ export const Route = createFileRoute('/cadastros/colaboradores/')({
 })
 
 const columns: ColumnDef<Colaborador>[] = [
-  { accessorKey: 'id', header: 'Código' },
+  { accessorKey: 'id', header: 'Código', meta: { codigo: true } },
   {
     accessorKey: 'nome',
     header: 'Nome',

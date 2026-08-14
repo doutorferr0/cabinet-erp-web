@@ -34,7 +34,7 @@ export const Route = createFileRoute('/cadastros/produtos/')({
  * clique, não na carga.
  */
 const columns: ColumnDef<ProductDto>[] = [
-  { accessorKey: 'code', header: 'Nosso Código' },
+  { accessorKey: 'code', header: 'Nosso Código', meta: { codigo: true } },
   {
     accessorKey: 'description',
     header: 'Nossa Descrição',

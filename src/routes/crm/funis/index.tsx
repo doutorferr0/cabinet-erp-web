@@ -31,6 +31,7 @@ const columns: ColumnDef<CrmPipelineDto>[] = [
   },
   {
     accessorKey: 'sort',
+    meta: { numeric: true },
     header: 'Ordem',
     cell: ({ getValue }) => getValue<number>(),
   },

@@ -27,6 +27,7 @@ export const Route = createFileRoute('/cadastros/clientes/')({
 const columns: ColumnDef<PartnerDto>[] = [
   {
     accessorKey: 'code',
+    meta: { codigo: true },
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },

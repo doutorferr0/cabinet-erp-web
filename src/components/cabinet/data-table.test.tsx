@@ -6,7 +6,7 @@ import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import { screen, waitFor } from '@testing-library/react'
-import type userEvent from '@testing-library/user-event'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 /**
@@ -237,6 +237,82 @@ describe('VitraDataTable', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const celula = screen.getAllByRole('cell').find((c) => c.className.includes('tabular-nums'))
     expect(celula?.className).toContain('text-right')
+  })
+
+  /**
+   * Identificador é numeral tabular SEM alinhamento à direita (#123). `code` do
+   * parceiro e `Nosso Código` do produto são `string` no contrato e valem
+   * `F001`: alinhá-los à direita os penduraria na margem oposta à leitura.
+   */
+  it('coluna codigo é tabular, e continua alinhada à esquerda', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={[
+          { accessorKey: 'nossoCodigo', header: 'Nosso Código', meta: { codigo: true } },
+          ...columns.slice(1),
+        ]}
+        queryKey={['produtos-test-codigo']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+      />,
+    )
+    const head = await screen.findByRole('columnheader', { name: 'Nosso Código' })
+    expect(head.className).not.toContain('text-right')
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const celula = screen.getAllByRole('cell').find((c) => c.className.includes('tabular-nums'))
+    expect(celula).toBeDefined()
+    expect(celula?.className).not.toContain('text-right')
+  })
+
+  /**
+   * DENSIDADE (#123) — a altura entra por seletor descendente a partir do
+   * `<table>`, e não trocando a classe da célula: `TableCell` traz `h-[52px]` de
+   * fábrica e continua valendo em toda tabela que não é esta.
+   */
+  it('densidade compacta aperta a linha, e o padrão não escreve nada', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-densidade']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+      />,
+    )
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+
+    const tabela = () => document.querySelector('table') as HTMLElement
+    expect(tabela()).toHaveAttribute('data-densidade', 'padrao')
+    // Padrão não sobrepõe: a altura é a que a célula já traz.
+    expect(tabela().className).not.toContain('h-[42px]')
+
+    const seletor = screen.getByLabelText('Linha:')
+    await userEvent.selectOptions(seletor, 'compacta')
+
+    expect(tabela()).toHaveAttribute('data-densidade', 'compacta')
+    expect(tabela().className).toContain('[&_td]:h-[42px]')
+  })
+
+  /**
+   * O controle some na visão que não é tabela — junto com `Por página`, e pelo
+   * mesmo motivo: não há linha para apertar nem página para dimensionar.
+   */
+  it('não oferece densidade onde não há linha para apertar', async () => {
+    renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-test-densidade-visao']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        visoes={[
+          {
+            id: 'cartoes',
+            rotulo: 'Cartões',
+            render: ({ rows }) => <div>{rows.length} cartões</div>,
+          },
+        ]}
+        visaoInicial="cartoes"
+      />,
+    )
+    await screen.findByText(/cartões/)
+    expect(screen.queryByLabelText('Linha:')).not.toBeInTheDocument()
   })
 
   it('linha selecionada é violeta cheio, e o estado não depende só de cor', async () => {

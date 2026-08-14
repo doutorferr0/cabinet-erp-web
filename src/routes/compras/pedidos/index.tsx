@@ -14,13 +14,19 @@ export const Route = createFileRoute('/compras/pedidos/')({
 
 /** Colunas LITERAIS da transcrição §7.3. */
 const columns: ColumnDef<PedidoCompra>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
+  { accessorKey: 'codigo', header: 'Código', meta: { codigo: true } },
   {
     accessorKey: 'pedVenda',
+    meta: { codigo: true },
     header: 'Pedido de Venda',
     cell: ({ getValue }) => getValue<string>() || '—',
   },
-  { accessorKey: 'serie', header: 'Série', cell: ({ getValue }) => getValue<string>() || '—' },
+  {
+    accessorKey: 'serie',
+    header: 'Série',
+    meta: { codigo: true },
+    cell: ({ getValue }) => getValue<string>() || '—',
+  },
   {
     accessorKey: 'data',
     header: 'Data',

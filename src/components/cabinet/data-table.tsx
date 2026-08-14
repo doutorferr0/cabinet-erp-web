@@ -61,8 +61,26 @@ import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
-    /** Coluna de valor: numerais tabulares alinhados à direita (DESIGN.md, Regra do Número Tabular). */
+    /**
+     * Coluna de GRANDEZA — valor, quantidade, percentual: numerais tabulares,
+     * alinhados à direita (DESIGN.md, Regra do Número Tabular).
+     *
+     * Alinhar à direita é o que deixa a casa das unidades numa vertical só, e é
+     * daí que sai a comparação de magnitude sem ler dígito a dígito.
+     */
     numeric?: boolean
+    /**
+     * Coluna de IDENTIFICADOR — código, número de documento, série: numerais
+     * tabulares, alinhados à ESQUERDA como todo texto.
+     *
+     * Existe separado de `numeric` porque as duas coisas não se comportam
+     * igual, e tratá-las igual erra nos dois sentidos. `code` do parceiro e
+     * `Nosso Código` do produto são `string` no contrato, e valem `F001` — uma
+     * coluna dessas alinhada à direita fica pendurada na margem oposta à
+     * leitura, e a comparação que ela apoia não é "qual é maior", é "é este
+     * mesmo?". Tabular serve às duas; o alinhamento, só a uma.
+     */
+    codigo?: boolean
   }
 }
 
@@ -125,6 +143,47 @@ export interface VisaoDaListagem<T> {
 export interface OpcaoDeAgrupamento {
   id: string
   rotulo: string
+}
+
+/**
+ * DENSIDADE DA LINHA — escolha do operador, não do designer.
+ *
+ * `padrao` são os 52px que a listagem sempre teve (a amostra da fase 1.5 pediu
+ * ar: é onde o operador mira com o mouse). `compacta` desce para 42px, que é o
+ * mesmo valor do cabeçalho — a linha fica da altura da etiqueta que a nomeia.
+ *
+ * As duas alturas ficam nas faixas consolidadas de grade de dados (compacto
+ * 40-44px, padrão 48-56px), e a escolha é de quem usa: quem confere 200 linhas
+ * quer mais linha por tela, quem cadastra quer alvo maior. Fixar uma das duas
+ * atende metade e cobra da outra.
+ *
+ * Não há uma terceira. Densidade é escolha binária de quem opera, e uma escala
+ * de quatro passos vira preferência para regular em vez de decisão para tomar.
+ */
+export const DENSIDADES = ['padrao', 'compacta'] as const
+export type DensidadeDaGrade = (typeof DENSIDADES)[number]
+
+function ehDensidade(valor: string): valor is DensidadeDaGrade {
+  return (DENSIDADES as readonly string[]).includes(valor)
+}
+
+const ROTULO_DA_DENSIDADE: Record<DensidadeDaGrade, string> = {
+  padrao: 'Padrão',
+  compacta: 'Compacta',
+}
+
+/**
+ * A altura entra por SELETOR DESCENDENTE, e não trocando a classe da célula.
+ *
+ * `TableCell` traz `h-[52px]` de fábrica, e é ele que vale em toda a aplicação —
+ * inclusive nas tabelas que não são a `VitraDataTable`. Sobrepor a partir do
+ * `<Table>` (`[&_td]:h-…`, especificidade 0,1,1 contra 0,1,0 da classe) mantém o
+ * padrão onde ele está e faz a densidade ser o que ela é: uma exceção da
+ * listagem, ligada por quem opera, sem reescrever a peça de baixo.
+ */
+const ALTURA_DA_LINHA: Record<DensidadeDaGrade, string> = {
+  padrao: '',
+  compacta: '[&_td]:h-[42px]',
 }
 
 export interface VitraDataTableProps<T> {
@@ -315,6 +374,10 @@ export function VitraDataTable<T>({
   const grupoDeVisao = useId()
   const agrupamentoInicial = agrupamentos?.[0]?.id ?? ''
   const [agruparPor, setAgruparPor] = useState(agrupamentoInicial)
+  // Densidade também fica fora do `TableQueryState`, pelo mesmo motivo da visão:
+  // muda a altura da linha, não o conjunto de registros. Somá-la à chave de
+  // cache faria apertar a grade refazer a consulta.
+  const [densidade, setDensidade] = useState<DensidadeDaGrade>('padrao')
   // Id desconhecido (favorito gravado antes de a visão ser renomeada) cai na
   // tabela em vez de derrubar a tela: a tabela responde a mesma pergunta.
   const visaoAtiva = visoes?.find((visao) => visao.id === visaoId) ?? null
@@ -375,6 +438,10 @@ export function VitraDataTable<T>({
     // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
     if (consulta.visao) setVisaoId(consulta.visao)
     if (consulta.agruparPor) setAgruparPor(consulta.agruparPor)
+    // Mesma regra do vazio, e uma a mais: valor desconhecido (densidade
+    // renomeada, lixo no armazenamento) não pode virar uma classe inexistente
+    // — a grade ficaria sem altura nenhuma.
+    if (ehDensidade(consulta.densidade)) setDensidade(consulta.densidade)
     // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
     // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
     setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
@@ -477,7 +544,8 @@ export function VitraDataTable<T>({
                   filtrosValidos(filtrosInput).length > 0 ||
                   state.sort !== null ||
                   visaoId !== visaoInicial ||
-                  agruparPor !== agrupamentoInicial
+                  agruparPor !== agrupamentoInicial ||
+                  densidade !== 'padrao'
                 }
                 onAplicar={aplicarConsulta}
                 onSalvar={(nome) =>
@@ -491,6 +559,7 @@ export function VitraDataTable<T>({
                       sort: state.sort,
                       visao: visaoId,
                       agruparPor,
+                      densidade,
                       padrao: false,
                     },
                   ])
@@ -643,7 +712,7 @@ export function VitraDataTable<T>({
           `overflow-hidden` — sem o overflow, o canto arredondado do contêiner
           apareceria por baixo do cabeçalho quadrado da primeira fileira. */
         <div className="overflow-hidden rounded-data border-2 border-border shadow-el3">
-          <Table>
+          <Table data-densidade={densidade} className={ALTURA_DA_LINHA[densidade]}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
@@ -771,8 +840,13 @@ export function VitraDataTable<T>({
                         <TableCell
                           key={cell.id}
                           className={cn(
+                            // Grandeza puxa para a direita; identificador fica
+                            // onde o texto fica. Os dois ganham numeral tabular
+                            // — a medição de `docs/design/medir-tabular-nums.py`
+                            // diz que as quatro famílias da identidade servem.
                             cell.column.columnDef.meta?.numeric === true &&
                               'text-right tabular-nums',
+                            cell.column.columnDef.meta?.codigo === true && 'tabular-nums',
                           )}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -809,6 +883,27 @@ export function VitraDataTable<T>({
           ) : null
         ) : (
           <div className="ml-auto flex items-center gap-2">
+            {/* DENSIDADE ao lado de `Por página`, e não junto do alternador de
+                visão: as duas escolhas daqui são sobre quanta listagem cabe na
+                tela, e é o mesmo gesto — o operador que apertou a grade em
+                seguida sobe o tamanho da página.
+
+                Fica na mesma condicional: numa visão que não é a tabela não há
+                linha para apertar, e o controle sumiria de efeito antes de sumir
+                da tela. */}
+            <label htmlFor="vitra-densidade">Linha:</label>
+            <select
+              id="vitra-densidade"
+              className="h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring"
+              value={densidade}
+              onChange={(e) => setDensidade(e.target.value as DensidadeDaGrade)}
+            >
+              {DENSIDADES.map((opcao) => (
+                <option key={opcao} value={opcao}>
+                  {ROTULO_DA_DENSIDADE[opcao]}
+                </option>
+              ))}
+            </select>
             <label htmlFor="vitra-page-size">Por página:</label>
             <select
               id="vitra-page-size"

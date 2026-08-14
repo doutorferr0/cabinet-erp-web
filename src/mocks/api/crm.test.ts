@@ -6,6 +6,7 @@ import {
   listCrmOpportunities,
   listCrmPipelines,
   listCrmStages,
+  listEmployees,
   moveCrmOpportunityStage,
   updateCrmOpportunity,
 } from '@/api/gerado'
@@ -145,6 +146,17 @@ describe('o movimento do quadro', () => {
     if (resposta.status !== 200) return
     expect(resposta.data.closedAt).toBeNull()
     expect(resposta.data.lostReasonId).toBeNull()
+  })
+})
+
+describe('colaboradores', () => {
+  it('`/api/employees` responde de verdade — o combo de Responsável depende dele', async () => {
+    const resposta = await listEmployees({ pageSize: 100 })
+
+    expect(resposta.status).toBe(200)
+    if (resposta.status !== 200) return
+    expect(resposta.data.rows.length).toBeGreaterThan(0)
+    expect(resposta.data.rows.every((c) => c.name.length > 0)).toBe(true)
   })
 })
 

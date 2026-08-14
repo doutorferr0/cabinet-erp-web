@@ -8,6 +8,7 @@ import type {
   CrmPipelineWriteRequest,
   CrmStageDto,
   CrmStageWriteRequest,
+  EmployeeDto,
 } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
 import { novoId, store } from './store'
@@ -123,6 +124,17 @@ interface EstadoDoCrm {
   estagios: CrmStageDto[]
   oportunidades: OportunidadeGuardada[]
   motivos: CrmLostReasonDto[]
+  /**
+   * Colaboradores. Não é CRM, e mora aqui por um motivo verificável:
+   * `GET /api/employees` está no contrato desde o corte do orçamento e NENHUM
+   * handler o servia — o `EmployeeDto` só chegava embutido nas tarefas. O campo
+   * `Responsável` da oportunidade é o primeiro consumidor de verdade, e sem
+   * handler o modo mock deixaria o combo vazio sem dizer por quê.
+   *
+   * Move para `handlers.ts` no dia em que a tela de Colaboradores consumir o
+   * endpoint — aí ele deixa de ser exclusividade desta fronteira.
+   */
+  colaboradores: EmployeeDto[]
 }
 
 /** Dias atrás, em ISO — o apodrecimento do cartão precisa de data relativa ao dia da execução. */
@@ -205,7 +217,31 @@ function estadoInicial(): EstadoDoCrm {
     }),
   ]
 
-  return { funis, estagios, oportunidades, motivos }
+  const colaboradores: EmployeeDto[] = [
+    {
+      id: 'emp-admin',
+      name: 'Henrique Ferro',
+      sector: 'COMERCIAL',
+      jobTitle: 'DIRETOR',
+      active: true,
+    },
+    {
+      id: 'emp-0002',
+      name: 'Ana Beatriz Lima',
+      sector: 'COMERCIAL',
+      jobTitle: 'CONSULTORA',
+      active: true,
+    },
+    {
+      id: 'emp-0003',
+      name: 'Caio Nogueira',
+      sector: 'PROJETOS',
+      jobTitle: 'PROJETISTA',
+      active: true,
+    },
+  ]
+
+  return { funis, estagios, oportunidades, motivos, colaboradores }
 }
 
 function est(
@@ -611,6 +647,19 @@ export const handlersDoCrm = [
     if (origem !== destino.id) renumerar(origem)
 
     return HttpResponse.json(oportunidadeDto(achado))
+  }),
+
+  // ---------------- colaboradores (ver EstadoDoCrm.colaboradores) ----------------
+
+  http.get('*/api/employees', ({ request }) => {
+    if (!store.logado) return SEM_SESSAO()
+    if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
+    return listar(
+      crm.colaboradores,
+      new URL(request.url),
+      ['name', 'sector', 'jobTitle', 'active'],
+      (c) => [c.name, c.sector, c.jobTitle],
+    )
   }),
 
   // ---------------- motivos de perda ----------------

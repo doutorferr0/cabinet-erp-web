@@ -1,4 +1,11 @@
-# V12 — Tela de documento (orçamento) em 3 variantes
+# V12 — Tela de documento (orçamento) em 3 variantes — NÃO ACONTECEU
+
+> **A exploração descrita aqui nunca foi construída**, e a premissa dela caducou: o texto diz que
+> o padrão de documento é "o ÚNICO da §9 sem nenhuma implementação", o que deixou de ser verdade
+> em 30/07/2026, quando a **V8** (`586d730`) entregou orçamento, pedido e ordem de compra inteiros.
+> As três variantes `/lab/orcamento/a|b|c` não existem no histórico do repo. A tela de documento
+> que está no ar veio da V8 e foi refeita pelas fases 1.5/1.6 — `d1133c5`, `e4662e8`, `645e647`.
+> Fica como registro do que se pensou em fazer.
 
 > **Integrada** ao `docs/fase-visual-tarefas.md` como **V12** (o número V9 já era da estruturação de testes, commit `5fd7edf`). O nome do arquivo fica como está por histórico.
 > Formato: segue `template-prompt.md`. Sistema visual: `DESIGN.md`. Executor: 1 sessão por variante OU 1 sessão para as 3 — decisão do executor, registrar motivo.

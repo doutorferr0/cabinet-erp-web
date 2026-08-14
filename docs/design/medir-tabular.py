@@ -28,21 +28,45 @@ Uso: `python3 docs/design/medir-tabular.py` na raiz do repo.
 
 from __future__ import annotations
 
+import re
 import struct
 import sys
 import zlib
 from pathlib import Path
 
-# As quatro famílias da identidade, com o papel de cada uma. O peso 400 é o do
-# corpo de texto — é nele que a coluna numérica cai.
+# As quatro famílias da identidade, com o papel de cada uma. O PESO não vem
+# escrito aqui: sai dos `@import` do `src/index.css`, que é a lista do que a
+# aplicação de fato baixa.
+#
+# A diferença é real. `tnum` é declarado por ARQUIVO, não por família, e nada
+# obriga dois pesos da mesma família a concordarem — o WOFF de cada peso tem o
+# seu próprio `GSUB`. Fixar 400 aqui media, no caso do Sora, um arquivo que o
+# navegador nunca pede: o CSS importa **600 e 700**, e 400 não está entre eles.
+# (Hoje os dois dão o mesmo veredito; a medição é que apontava para o lugar
+# errado, e é ela que precisa continuar certa quando a família mudar.)
 FAMILIAS = [
-    ("Inter", "corpo (--font-sans)", "inter", "inter-latin-400-normal.woff"),
-    ("Sora", "títulos (--font-display)", "sora", "sora-latin-400-normal.woff"),
-    ("Newsreader", "nome próprio (--font-nome)", "newsreader", "newsreader-latin-400-normal.woff"),
-    ("PT Mono", "meta e número grande (--font-mono)", "pt-mono", "pt-mono-latin-400-normal.woff"),
+    ("Inter", "corpo (--font-sans)", "inter"),
+    ("Sora", "títulos (--font-display)", "sora"),
+    ("Newsreader", "nome próprio (--font-nome)", "newsreader"),
+    ("PT Mono", "meta e número grande (--font-mono)", "pt-mono"),
 ]
 
 RAIZ = Path(__file__).resolve().parents[2]
+CSS = RAIZ / "src" / "index.css"
+
+
+def pesos_importados(pacote: str) -> list[str]:
+    """Os pesos que o `src/index.css` importa deste pacote, na ordem do arquivo.
+
+    Lê a fonte da verdade em vez de repetir a lista: importar um peso novo e
+    esquecer de medi-lo é o silêncio que esta função existe para evitar.
+    """
+    css = CSS.read_text(encoding="utf-8")
+    achados = re.findall(rf'@import\s+"@fontsource/{re.escape(pacote)}/(\d+)\.css"', css)
+    if not achados:
+        raise SystemExit(f"{pacote}: nenhum @import em src/index.css — a família ainda é usada?")
+    # `dict.fromkeys` tira repetido preservando a ordem em que o CSS declara.
+    return list(dict.fromkeys(achados))
 
 
 def tabelas_do_woff(caminho: Path) -> dict[str, bytes]:
@@ -136,32 +160,34 @@ def recursos_gsub(tabelas: dict[str, bytes]) -> set[str]:
 def medir() -> int:
     print("MEDIÇÃO — algarismo tabular nas famílias da identidade\n")
     falhou = False
-    for nome, papel, pacote, arquivo in FAMILIAS:
-        caminho = RAIZ / "node_modules" / "@fontsource" / pacote / "files" / arquivo
-        if not caminho.exists():
-            print(f"{nome}: arquivo não encontrado ({caminho}) — rode `pnpm install`")
-            falhou = True
-            continue
+    for nome, papel, pacote in FAMILIAS:
+        for peso in pesos_importados(pacote):
+            arquivo = f"{pacote}-latin-{peso}-normal.woff"
+            caminho = RAIZ / "node_modules" / "@fontsource" / pacote / "files" / arquivo
+            if not caminho.exists():
+                print(f"{nome} {peso}: arquivo não encontrado ({caminho}) — rode `pnpm install`")
+                falhou = True
+                continue
 
-        tabelas = tabelas_do_woff(caminho)
-        unidades = struct.unpack(">H", tabelas["head"][18:20])[0]
-        larguras = avancos(tabelas)
-        distintas = sorted(set(larguras.values()))
-        uniforme = len(distintas) == 1
-        tem_tnum = "tnum" in recursos_gsub(tabelas)
+            tabelas = tabelas_do_woff(caminho)
+            unidades = struct.unpack(">H", tabelas["head"][18:20])[0]
+            larguras = avancos(tabelas)
+            distintas = sorted(set(larguras.values()))
+            uniforme = len(distintas) == 1
+            tem_tnum = "tnum" in recursos_gsub(tabelas)
 
-        print(f"{nome} — {papel}")
-        print(f"  unidades por em: {unidades}")
-        print(f"  avanço dos dígitos 0–9: {', '.join(str(v) for v in distintas)}")
-        print(f"  uniformes por padrão: {'SIM' if uniforme else 'NÃO'}")
-        print(f"  publica `tnum`: {'SIM' if tem_tnum else 'NÃO'}")
-        if uniforme:
-            veredito = "alinha sem precisar de `font-variant-numeric`"
-        elif tem_tnum:
-            veredito = "alinha COM `font-variant-numeric: tabular-nums`"
-        else:
-            veredito = "NÃO alinha — coluna numérica precisa cair para a mono"
-        print(f"  → {veredito}\n")
+            print(f"{nome} {peso} — {papel}")
+            print(f"  unidades por em: {unidades}")
+            print(f"  avanço dos dígitos 0–9: {', '.join(str(v) for v in distintas)}")
+            print(f"  uniformes por padrão: {'SIM' if uniforme else 'NÃO'}")
+            print(f"  publica `tnum`: {'SIM' if tem_tnum else 'NÃO'}")
+            if uniforme:
+                veredito = "alinha sem precisar de `font-variant-numeric`"
+            elif tem_tnum:
+                veredito = "alinha COM `font-variant-numeric: tabular-nums`"
+            else:
+                veredito = "NÃO alinha — coluna numérica precisa cair para a mono"
+            print(f"  → {veredito}\n")
 
     return 1 if falhou else 0
 

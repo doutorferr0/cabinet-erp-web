@@ -676,3 +676,116 @@ describe('VitraDataTable — visões', () => {
     expect(screen.queryByRole('radio', { name: 'Lista' })).not.toBeInTheDocument()
   })
 })
+
+/**
+ * DENSIDADE (#123) — quantas linhas cabem é escolha do operador.
+ *
+ * O que se vigia aqui não é o pixel (isso é CSS), é o CONTRATO: a classe muda,
+ * a escolha entra no favorito e volta com ele, e nada disso refaz a consulta.
+ */
+describe('VitraDataTable — densidade', () => {
+  // Helpers próprios: os do bloco de favoritos são locais a ele, e reaproveitar
+  // por escopo faria este bloco depender da ordem dos `describe`.
+  const filtraveis: CampoFiltravel[] = [{ id: 'marca', rotulo: 'Marca', variante: 'text' }]
+
+  function setupComFavoritos() {
+    return renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-fav']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        actions={[{ id: 'filtro', label: 'Filtro' }]}
+        filtros={filtraveis}
+      />,
+    )
+  }
+
+  function tabela() {
+    const linha = screen.getByText('PENDENTE REDONDO ALUMÍNIO PRETO').closest('table')
+    if (!linha) throw new Error('tabela não encontrada')
+    return linha
+  }
+
+  it('a grade nasce em tabular-nums — alinhar dígito não é opt-in por coluna', async () => {
+    setup()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(tabela().className).toContain('tabular-nums')
+  })
+
+  it('compacta encolhe a linha, e padrão devolve', async () => {
+    const { user } = setup()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(tabela().className).not.toContain('[&_td]:h-10')
+
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    expect(tabela().className).toContain('[&_td]:h-10')
+
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
+    expect(tabela().className).not.toContain('[&_td]:h-10')
+  })
+
+  it('trocar a densidade NÃO refaz a consulta — desenho não é pergunta', async () => {
+    let consultas = 0
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-densidade']}
+        fetcher={(state) => {
+          consultas += 1
+          return produtosMock.list(state, 0)
+        }}
+      />,
+    )
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const antes = consultas
+
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    expect(consultas).toBe(antes)
+  })
+
+  it('a densidade entra no favorito e volta com ele', async () => {
+    const { user } = setupComFavoritos()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+
+    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
+    await user.click(screen.getByRole('button', { name: 'Salvar consulta atual…' }))
+    await user.type(screen.getByLabelText('Nome'), 'Apertada')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    const guardado = JSON.parse(localStorage.getItem('cabinet.consultas-favoritas.v1') ?? '{}')
+    expect(guardado['produtos-fav']?.[0]).toMatchObject({ densidade: 'compacta' })
+
+    // Volta ao padrão e reaplica o favorito: a densidade tem de voltar junto.
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
+    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
+    await user.click(screen.getByRole('button', { name: 'Apertada' }))
+
+    expect(tabela().className).toContain('[&_td]:h-10')
+  })
+
+  /**
+   * Favorito gravado antes da densidade existir não pode significar "volte ao
+   * padrão" — a mesma regra da visão e do agrupamento.
+   */
+  it('favorito antigo, sem densidade, não mexe na densidade da tela', async () => {
+    localStorage.setItem(
+      'cabinet.consultas-favoritas.v1',
+      JSON.stringify({ 'produtos-fav': [{ id: 'f1', nome: 'De antes', filtros: [] }] }),
+    )
+
+    const { user } = setupComFavoritos()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+
+    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
+    await user.click(screen.getByRole('button', { name: 'De antes' }))
+
+    expect(tabela().className).toContain('[&_td]:h-10')
+  })
+})

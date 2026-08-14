@@ -16,11 +16,12 @@ import type { TableSort } from '@/lib/table-query'
  * de uma pergunta pontual — restaurar os dois faria o favorito abrir na página 4
  * de uma busca que ninguém lembra ter feito.
  *
- * **A VISÃO e o AGRUPAMENTO entraram** (view modes, #86) e são o resto da mesma
- * frase: "quais registros" (filtros + junção), "em que ordem" (`sort`), "como
- * desenhados" (`visao`) e "em que colunas" (`agruparPor`). Guardar os dois
- * primeiros e deixar os dois últimos de fora faria o favorito abrir a lista
- * quando o operador salvou o quadro — e ele salvou o quadro.
+ * **A VISÃO, o AGRUPAMENTO e a DENSIDADE entraram** (view modes #86, densidade
+ * #123) e são o resto da mesma frase: "quais registros" (filtros + junção), "em
+ * que ordem" (`sort`), "como desenhados" (`visao`), "em que colunas"
+ * (`agruparPor`) e "quantas linhas cabem" (`densidade`). Guardar só os
+ * primeiros faria o favorito abrir a lista quando o operador salvou o quadro —
+ * e ele salvou o quadro.
  *
  * **Vazio (`''`) = o favorito não guardou aquilo, e aplicá-lo não mexe no que
  * está na tela.** É o que mantém válido o que foi gravado ANTES desta mudança:
@@ -45,6 +46,8 @@ export interface FavoritoDeConsulta {
   visao: string
   /** Campo das colunas da visão que agrupa. `''` = não guardou agrupamento. */
   agruparPor: string
+  /** Altura da linha da tabela (`padrao`/`compacta`). `''` = não guardou. */
+  densidade: string
   /** Aplicado sozinho ao abrir a tela. No máximo um por tela. */
   padrao: boolean
 }
@@ -56,6 +59,7 @@ export interface ConsultaSalva {
   sort: TableSort | null
   visao: string
   agruparPor: string
+  densidade: string
 }
 
 const CHAVE = 'cabinet.consultas-favoritas.v1'
@@ -110,6 +114,7 @@ export function lerFavoritos(tela: string): FavoritoDeConsulta[] {
     // "este favorito não fala de visão", que é diferente de "volte ao padrão".
     visao: typeof f.visao === 'string' ? f.visao : '',
     agruparPor: typeof f.agruparPor === 'string' ? f.agruparPor : '',
+    densidade: typeof f.densidade === 'string' ? f.densidade : '',
     padrao: f.padrao === true,
   }))
 }
@@ -161,6 +166,7 @@ export function consultaDoFavorito(favorito: FavoritoDeConsulta): ConsultaSalva 
     sort: favorito.sort,
     visao: favorito.visao,
     agruparPor: favorito.agruparPor,
+    densidade: favorito.densidade,
   }
 }
 

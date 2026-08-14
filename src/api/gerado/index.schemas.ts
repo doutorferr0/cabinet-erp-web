@@ -1662,6 +1662,14 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+/**
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt` — a do `sortBy`. Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` com 4 casas implícitas não têm variante que converta na borda. Campo fora da whitelist é 400.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
 };
 
 export type ListCrmPipelinesParams = {

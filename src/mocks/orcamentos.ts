@@ -26,7 +26,16 @@ export interface OrcamentoItem {
 export type ModoDesconto = 'PRODUTO' | 'GERAL'
 
 export interface Orcamento {
-  id: number
+  /**
+   * Id do documento — TEXTO desde a migração para `/api/quotes` (#134).
+   *
+   * Era `number` (1..N) enquanto o orçamento era array local. Virou string
+   * porque o contrato declara `format: uuid` e o recurso passou a responder por
+   * HTTP: id numérico ao lado de recurso do servidor é exatamente o casamento
+   * que a regra do registry proíbe. No modo mock ele é legível (`orc-0001`),
+   * como os do CRM — o formato uuid é exigência do backend, não do mock.
+   */
+  id: string
   /** `Número` — sequencial global, NÃO cronológico (§8.1, observação). */
   numero: string
   serie: string
@@ -34,11 +43,22 @@ export interface Orcamento {
   dataEmissao: string | null
   dataValidade: string | null
   dataFechamento: string | null
+  /** `PartnerDto.id` do cliente — é ele que viaja para o servidor. */
+  clienteId: string
+  /** Nome resolvido pelo servidor; a tela mostra, o servidor resolve. */
   cliente: string
   /** Na prática o legado guarda o profissional aqui (§8.1, observação). */
   descricaoObra: string
+  consultorId: string | null
   consultor: string | null
+  profissionalId: string | null
   profissionalExterno: string | null
+  /**
+   * Documento CANCELA, não desativa (`QuoteDto.status` = `active`/`cancelled`,
+   * espelhando `Ven_Situacao` A/C do legado). Data de FECHAMENTO é outra
+   * coisa: orçamento fechado continua ativo.
+   */
+  cancelado: boolean
   modoDesconto: ModoDesconto
   /** Desconto geral em % (4 casas implícitas) — §8.2. */
   descontoPercentual: number
@@ -97,17 +117,28 @@ function validade(emissao: string): string {
 export const AMBIENTES = ['SALA', 'QUARTO', 'COZINHA', 'BANHEIRO', 'ÁREA EXTERNA'] as const
 
 export const orcamentos: Orcamento[] = LINHAS.map((l, i) => ({
-  id: i + 1,
+  id: `orc-${String(i + 1).padStart(4, '0')}`,
   numero: l.numero,
   serie: '1',
   numeroPasta: '',
   dataEmissao: l.emissao,
   dataValidade: validade(l.emissao),
   dataFechamento: null,
+  // O seed não casa com a base de parceiros (as linhas são literais da
+  // transcrição, e os parceiros são outro mock). O id é sintético e estável, e
+  // o servidor falso ecoa o nome que está aqui — é o que um servidor de
+  // verdade faria resolvendo a FK.
+  clienteId: `cli-seed-${String(i + 1).padStart(4, '0')}`,
   cliente: l.cliente,
   descricaoObra: l.obra,
+  consultorId: null,
   consultor: null,
+  profissionalId:
+    l.obra === 'OBRA INDEFINIDA' || l.obra === ''
+      ? null
+      : `prof-seed-${String(i + 1).padStart(4, '0')}`,
   profissionalExterno: l.obra === 'OBRA INDEFINIDA' || l.obra === '' ? null : l.obra,
+  cancelado: false,
   modoDesconto: 'PRODUTO',
   descontoPercentual: 0,
   itens:
@@ -132,7 +163,7 @@ export const orcamentos: Orcamento[] = LINHAS.map((l, i) => ({
         ],
 }))
 
-export function orcamentoVazio(id: number): Orcamento {
+export function orcamentoVazio(id = ''): Orcamento {
   return {
     id,
     numero: '',
@@ -141,10 +172,14 @@ export function orcamentoVazio(id: number): Orcamento {
     dataEmissao: null,
     dataValidade: null,
     dataFechamento: null,
+    clienteId: '',
     cliente: '',
     descricaoObra: '',
+    consultorId: null,
     consultor: null,
+    profissionalId: null,
     profissionalExterno: null,
+    cancelado: false,
     modoDesconto: 'PRODUTO',
     descontoPercentual: 0,
     itens: [],

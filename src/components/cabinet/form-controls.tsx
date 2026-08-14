@@ -207,6 +207,82 @@ export function SelectField({
   )
 }
 
+/** Uma escolha cujo VALOR é id e cujo rótulo é o nome que o operador lê. */
+export interface EscolhaPorId {
+  id: string
+  nome: string
+}
+
+/**
+ * `<select>` que grava ID e mostra NOME.
+ *
+ * Existe porque o `SelectField` guarda o próprio rótulo (`options: string[]`), e
+ * isso só serve para lista cujo valor É o texto. Recurso do contrato viaja por
+ * uuid: gravar o nome obrigaria a tela a traduzir nome → id na hora do
+ * `Gravar`, que é exatamente a tradução que já custou um bug no cadastro de
+ * produtos ("classificação grava por id, e recusa palpite", 2026-08-13).
+ *
+ * Dois cuidados que o `<select>` cru não tem, e que o `LookupSelectField` já
+ * ensinou aqui:
+ *
+ * 1. **Carregando não parece "lista vazia"** — um select vazio e silencioso faz
+ *    o operador concluir que não há opção cadastrada.
+ * 2. **O valor do registro é sempre exibível.** Registro que aponta para item
+ *    hoje inativo (ou salvo antes de a lista falhar) mostraria campo em branco
+ *    por falta de `<option>` — e gravar de novo apagaria o valor sem ninguém
+ *    pedir. Por isso quem chama passa o par corrente em `valorAtual`.
+ */
+export function SelectIdField({
+  name,
+  label,
+  opcoes,
+  valorAtual,
+  carregando = false,
+  vazio = 'Selecione…',
+  className,
+}: BaseProps & {
+  opcoes: readonly EscolhaPorId[]
+  /** Par id→nome do registro aberto, para o valor nunca sumir da lista. */
+  valorAtual?: EscolhaPorId | null
+  carregando?: boolean
+  /** Rótulo da opção nula. Campo obrigatório passa algo como "Escolha a etapa". */
+  vazio?: string
+  className?: string
+}) {
+  const { watch } = useFormContext()
+  const valor = watch(name) as string | null | undefined
+  const listadas = opcoes.some((o) => o.id === valor)
+  const lista = valor && !listadas && valorAtual ? [valorAtual, ...opcoes] : [...opcoes]
+
+  return (
+    <FormField
+      name={name}
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <select
+              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
+              disabled={carregando}
+              {...field}
+              value={field.value ?? ''}
+              onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.value)}
+            >
+              <option value="">{carregando ? 'Carregando…' : vazio}</option>
+              {lista.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.nome}
+                </option>
+              ))}
+            </select>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
 /**
  * `[combo]` puro cujas opções são um **kind do servidor** (`/api/catalog-lookups`).
  *

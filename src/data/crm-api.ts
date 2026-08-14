@@ -11,6 +11,7 @@ import type {
   ListCrmOpportunitiesParams,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmPipelineDto,
+  PagedResultOfEmployeeDto,
 } from '@/api/gerado'
 import {
   createCrmLostReason,
@@ -23,6 +24,7 @@ import {
   listCrmOpportunities,
   listCrmPipelines,
   listCrmStages,
+  listEmployees,
   moveCrmOpportunityStage,
   updateCrmLostReason,
   updateCrmOpportunity,
@@ -665,5 +667,168 @@ export function useDesativarFunil() {
         active: false,
       }),
     onSuccess: invalidar,
+  })
+}
+
+/* ------------------------------------------------------------------ *
+ * A OPORTUNIDADE COMO O FORMULÁRIO A EDITA
+ * ------------------------------------------------------------------ */
+
+/**
+ * O registro do formulário da oportunidade.
+ *
+ * Todo campo do `CrmOpportunityWriteRequest` está aqui, inclusive o que a tela
+ * não deixa editar (`quoteId`): `PUT` substitui o registro inteiro, e campo que
+ * não atravessa o formulário é campo apagado sem sintoma. Os `*Name` do DTO NÃO
+ * entram — o servidor os resolve, e guardá-los no formulário criaria uma segunda
+ * verdade sobre o nome do parceiro.
+ *
+ * `parceiroNome` é a exceção, e é só de EXIBIÇÃO: a janela de busca devolve id e
+ * nome juntos, e o campo precisa mostrar algo enquanto o servidor não respondeu
+ * de novo. Ele não viaja na escrita.
+ */
+export interface Oportunidade {
+  /** Vazio = Incluir (o servidor atribui no 201). */
+  id: string
+  nome: string
+  funilId: string | null
+  etapaId: string | null
+  parceiroId: string | null
+  parceiroNome: string
+  contatoNome: string
+  contatoEmail: string
+  contatoTelefone: string
+  responsavelId: string | null
+  valorPrevistoCentavos: number | null
+  dataPrevista: string
+  origem: string
+  motivoDePerdaId: string | null
+  /** Carregado-não-editado: o vínculo com o orçamento nasce do orçamento. */
+  orcamentoId: string | null
+}
+
+export function oportunidadeDoContrato(dto: CrmOpportunityDto): Oportunidade {
+  return {
+    id: dto.id,
+    nome: dto.name,
+    funilId: dto.pipelineId,
+    etapaId: dto.stageId,
+    parceiroId: dto.partnerId ?? null,
+    parceiroNome: dto.partnerName ?? '',
+    contatoNome: dto.contactName ?? '',
+    contatoEmail: dto.contactEmail ?? '',
+    contatoTelefone: dto.contactPhone ?? '',
+    responsavelId: dto.ownerEmployeeId ?? null,
+    valorPrevistoCentavos: dto.expectedValueCents ?? null,
+    dataPrevista: dto.expectedCloseDate ?? '',
+    origem: dto.source ?? '',
+    motivoDePerdaId: dto.lostReasonId ?? null,
+    orcamentoId: dto.quoteId ?? null,
+  }
+}
+
+/** Texto vazio do formulário → `null` do contrato: ausência, não string vazia. */
+function textoOuNulo(texto: string): string | null {
+  const limpo = texto.trim()
+  return limpo === '' ? null : limpo
+}
+
+export function oportunidadeParaContrato(o: Oportunidade): CrmOpportunityWriteRequest {
+  return {
+    name: o.nome,
+    pipelineId: o.funilId,
+    stageId: o.etapaId,
+    partnerId: o.parceiroId,
+    contactName: textoOuNulo(o.contatoNome),
+    contactEmail: textoOuNulo(o.contatoEmail),
+    contactPhone: textoOuNulo(o.contatoTelefone),
+    ownerEmployeeId: o.responsavelId,
+    expectedValueCents: o.valorPrevistoCentavos,
+    expectedCloseDate: textoOuNulo(o.dataPrevista),
+    source: textoOuNulo(o.origem),
+    lostReasonId: o.motivoDePerdaId,
+    quoteId: o.orcamentoId,
+  }
+}
+
+/**
+ * Registro em branco do `Incluir`. Funil e etapa entram por parâmetro porque o
+ * quadro sabe de onde o operador clicou — e o contrato aceita os dois nulos,
+ * caindo no funil padrão e na primeira etapa dele.
+ */
+export function oportunidadeVazia(funilId?: string, etapaId?: string): Oportunidade {
+  return {
+    id: '',
+    nome: '',
+    funilId: funilId ?? null,
+    etapaId: etapaId ?? null,
+    parceiroId: null,
+    parceiroNome: '',
+    contatoNome: '',
+    contatoEmail: '',
+    contatoTelefone: '',
+    responsavelId: null,
+    valorPrevistoCentavos: null,
+    dataPrevista: '',
+    origem: '',
+    motivoDePerdaId: null,
+    orcamentoId: null,
+  }
+}
+
+/** Uma oportunidade por id, já no formato do formulário; `null` no 404. */
+export async function obterOportunidade(id: string): Promise<Oportunidade | null> {
+  const resposta: RespostaDaApi = await getCrmOpportunity(id)
+  const dto = itemOuNulo<CrmOpportunityDto>(resposta, 'a oportunidade')
+  return dto ? oportunidadeDoContrato(dto) : null
+}
+
+/**
+ * A porta única de escrita: `id` vazio = Incluir (POST → 201), senão Alterar
+ * (PUT → 200). Toda falha vira `ErroDaApi` com o `detail` do problem+json — na
+ * escrita o modo de falhar é ERRO ALTO (400 validação, 403 escopo, 409), nunca
+ * silêncio.
+ */
+export async function gravarOportunidade(valores: Oportunidade): Promise<CrmOpportunityDto> {
+  const corpo = oportunidadeParaContrato(valores)
+  const resposta: RespostaDaApi = valores.id
+    ? await updateCrmOpportunity(valores.id, corpo)
+    : await createCrmOpportunity(corpo)
+
+  if (!respostaOk(resposta) || !resposta.data) {
+    throw new ErroDaApi(
+      'Falha ao gravar a oportunidade.',
+      resposta.status,
+      detalheDoProblema(resposta.data),
+    )
+  }
+  return resposta.data as CrmOpportunityDto
+}
+
+export function useGravarOportunidade() {
+  const invalidar = useInvalidarCrm()
+  return useMutation({ mutationFn: gravarOportunidade, onSuccess: invalidar })
+}
+
+/**
+ * Colaboradores da empresa, para o campo `Responsável`.
+ *
+ * `GET /api/employees` já existia no contrato e nenhuma tela o consumia — o
+ * `EmployeeDto` chegava embutido nas tarefas. É o mesmo endpoint, e o
+ * `ownerEmployeeId` da oportunidade é `EmployeeDto.id` por definição do
+ * contrato: montar a lista de outro lugar casaria id de origens diferentes.
+ */
+export function useColaboradoresParaEscolha() {
+  return useQuery({
+    queryKey: ['crm', 'colaboradores'],
+    retry: repetirSeValeAPena,
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listEmployees({ page: 1, pageSize: PAGE_SIZE_MAX })
+      const pagina = dadosOuErro<PagedResultOfEmployeeDto>(
+        resposta,
+        'Falha ao carregar os colaboradores.',
+      )
+      return pagina.rows ?? []
+    },
   })
 }

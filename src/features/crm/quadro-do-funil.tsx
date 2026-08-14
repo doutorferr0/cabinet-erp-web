@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useEstagios, useMoverOportunidade, useOportunidades } from '@/data/crm-api'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Calendar, MoreHorizontal } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { Calendar, MoreHorizontal, Plus } from 'lucide-react'
 import { agruparPorEtapa, quemDoCartao, somaDaColuna } from './funil-agrupa'
 
 /**
@@ -110,11 +111,17 @@ function Cartao({
   return (
     <li data-slot="cartao" className="rounded-card border-2 bg-card p-2.5">
       <div className="flex items-start gap-1">
-        {/* TÍTULO, não link: a tela de detalhe da oportunidade ainda não
-            existe (o contrato tem `GET /api/crm/opportunities/{id}`, a tela
-            não). Botão que não leva a lugar nenhum é pior que texto — promete
-            uma ação e devolve nada. Vira link no dia em que a tela existir. */}
-        <span className="flex-1 font-display font-semibold leading-tight">{oportunidade.name}</span>
+        {/* Link do router, não `onClick` na caixa: o cartão leva a uma URL
+            própria, e link preserva meio-clique, "abrir em nova aba" e o
+            endereço na barra de status. Caixa inteira clicável também não é
+            alcançável por teclado e engoliria o clique do menu. */}
+        <Link
+          to="/crm/oportunidades/$oportunidadeId"
+          params={{ oportunidadeId: oportunidade.id }}
+          className="flex-1 font-display font-semibold leading-tight underline-offset-2 hover:underline"
+        >
+          {oportunidade.name}
+        </Link>
 
         <DropdownMenuTrigger>
           <Button
@@ -177,10 +184,12 @@ function Coluna({
   etapa,
   cartoes,
   etapas,
+  pipelineId,
 }: {
   etapa: CrmStageDto
   cartoes: CrmOpportunityDto[]
   etapas: readonly CrmStageDto[]
+  pipelineId: string
 }) {
   return (
     <section
@@ -211,6 +220,18 @@ function Coluna({
         <span className="ml-auto font-mono text-[0.75rem] tabular-nums">
           {formatMoneyBRL(somaDaColuna(cartoes))}
         </span>
+        {/* Incluir NA COLUNA, e não um botão único no alto: o operador que abre
+            uma oportunidade já sabe em que etapa ela nasce, e a etapa viaja na
+            URL. Um `Incluir` genérico faria escolher a etapa duas vezes. */}
+        <Link
+          to="/crm/oportunidades/$oportunidadeId"
+          params={{ oportunidadeId: 'novo' }}
+          search={{ funilId: pipelineId, etapaId: etapa.id }}
+          aria-label={`Incluir oportunidade em ${etapa.name}`}
+          className="grid size-6 place-content-center rounded-item border-2 hover:bg-modulo"
+        >
+          <Plus className="size-3.5" aria-hidden="true" />
+        </Link>
       </header>
 
       {cartoes.length === 0 ? (
@@ -280,7 +301,13 @@ export function QuadroDoFunil({ pipelineId }: { pipelineId: string }) {
     // `items-start`: cada coluna para onde os cartões dela param.
     <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] items-start gap-4">
       {colunas.map((etapa) => (
-        <Coluna key={etapa.id} etapa={etapa} etapas={colunas} cartoes={porEtapa[etapa.id] ?? []} />
+        <Coluna
+          key={etapa.id}
+          etapa={etapa}
+          etapas={colunas}
+          cartoes={porEtapa[etapa.id] ?? []}
+          pipelineId={pipelineId}
+        />
       ))}
     </div>
   )

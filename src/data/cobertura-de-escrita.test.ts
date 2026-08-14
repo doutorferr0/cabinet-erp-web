@@ -3,11 +3,14 @@ import {
   estagioParaContrato,
   funilDoContrato,
   funilParaContrato,
+  oportunidadeDoContrato,
+  oportunidadeParaContrato,
 } from '@/data/crm-api'
 import { corpoDeEscrita } from '@/data/parceiros-api'
 import { produtoDoContrato, produtoParaContrato } from '@/data/produtos-api'
 import { clienteSchema } from '@/features/cliente/cliente-form'
 import { funilSchema } from '@/features/crm/funil-form'
+import { oportunidadeSchema } from '@/features/crm/oportunidade-form'
 import { fornecedorSchema } from '@/features/fornecedor/fornecedor-form'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
@@ -210,6 +213,22 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
     const corpo = estagioParaContrato(doForm as never) as unknown as Json
 
     for (const chave of chavesDeEscrita('CrmStageWriteRequest')) {
+      confereChave(corpo, dto, chave, {})
+    }
+  })
+
+  /**
+   * A OPORTUNIDADE é o caso com mais campo carregado-não-editado do repo: o
+   * `quoteId` nasce do orçamento, não desta tela, e some no `parse` se o schema
+   * do formulário não o declarar. Some sem sintoma — o cartão continua igual,
+   * e o vínculo com o documento se perde na próxima gravação do título.
+   */
+  it('OPORTUNIDADE leva ao servidor tudo que o CrmOpportunityWriteRequest tem', () => {
+    const dto = dtoCompleto('CrmOpportunityDto')
+    const doForm = oportunidadeSchema.parse(oportunidadeDoContrato(dto as never))
+    const corpo = oportunidadeParaContrato(doForm as never) as unknown as Json
+
+    for (const chave of chavesDeEscrita('CrmOpportunityWriteRequest')) {
       confereChave(corpo, dto, chave, {})
     }
   })

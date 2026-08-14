@@ -1,6 +1,7 @@
 import type { ProblemDetails } from '@/api/gerado'
 import { apiFetch } from '@/api/http'
 import type { ListProvider } from '@/data/provider'
+import { filtrosValidos } from '@/lib/filtro-de-consulta'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 
 /**
@@ -114,6 +115,28 @@ export interface ApiListConfig {
 }
 
 /**
+ * O filtro estruturado da listagem NÃO existe no contrato v1.
+ *
+ * `contracts/openapi-v1.json` publica `q`, `sortBy`, `sortDesc`, `page` e
+ * `pageSize` — não há parâmetro por onde `campo + operador + valor` viaje. Falta
+ * de caminho, não escolha: o desenho do parâmetro é decisão do contrato e sai por
+ * PR próprio (ver `docs/integracao.md`).
+ *
+ * **Recusa em voz alta em vez de ignorar.** A alternativa — mandar a requisição
+ * sem os filtros — devolveria a lista COMPLETA com a tela mostrando três filtros
+ * aplicados: dado certo do servidor respondendo a pergunta errada, que é a pior
+ * forma de errar numa listagem. A tela do recurso HTTP simplesmente não declara
+ * campos filtráveis; se alguém declarar, quebra aqui, na hora, em vez de mentir
+ * na frente do operador.
+ */
+export function recusarFiltroSemContrato(state: TableQueryState, url: string): void {
+  if (filtrosValidos(state.filtros ?? []).length === 0) return
+  throw new Error(
+    `Filtro estruturado não existe no contrato de ${url}: a listagem HTTP conhece q/sortBy/page/pageSize. Remova os campos filtráveis desta tela ou publique o parâmetro no contrato antes.`,
+  )
+}
+
+/**
  * Provider de lista sobre a API.
  *
  * O `delayMs` do `ListProvider` é ignorado de propósito: latência simulada é
@@ -123,6 +146,8 @@ export interface ApiListConfig {
 export function createApiListProvider<T>({ url, fixa }: ApiListConfig): ListProvider<T> {
   return {
     list: async (state: TableQueryState): Promise<PagedResult<T>> => {
+      recusarFiltroSemContrato(state, url)
+
       const resposta = await apiFetch<RespostaDaApi>(
         urlComQuery(url, { ...fixa, ...queryDaTabela(state) }),
         { method: 'GET' },

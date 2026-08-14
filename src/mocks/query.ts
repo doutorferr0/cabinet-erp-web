@@ -1,17 +1,17 @@
+import { linhaPassaNosFiltros } from '@/lib/filtro-de-consulta'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
+import { normalize } from '@/lib/texto'
 
 /**
- * Provider mock compartilhado: aplica q/sort/paginação COMO SE fosse o servidor,
- * com latência simulada (testes passam 0). Cada mock entrega só o predicado de
- * busca — o resto do comportamento é idêntico em todas as listagens.
+ * Provider mock compartilhado: aplica q/filtros/sort/paginação COMO SE fosse o
+ * servidor, com latência simulada (testes passam 0). Cada mock entrega só o
+ * predicado de busca — o resto do comportamento é idêntico em todas as listagens.
  *
  * TODO(contract): sai inteiro quando o fetcher virar chamada gerada do OpenAPI.
  */
 
-/** Minúsculas sem acento — a busca da listagem ignora ambos. */
-export function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
-}
+/** Reexportado: a normalização mudou de casa (`src/lib/texto.ts`), o nome não. */
+export { normalize }
 
 function compareValues(a: unknown, b: unknown): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b
@@ -32,6 +32,12 @@ export function pagedMock<T>(
     setTimeout(() => {
       const q = normalize(state.q.trim())
       let rows = q ? all.filter((row) => matches(row, q)) : [...all]
+
+      // Busca e filtro se SOMAM (o servidor real faz o mesmo `AND`): a busca é
+      // texto livre sobre os campos que o recurso escolheu, o filtro é campo a
+      // campo. Aplicar um no lugar do outro faria a listagem responder a metade
+      // do que está escrito na tela.
+      rows = rows.filter((row) => linhaPassaNosFiltros(row, state.filtros, state.juncao))
 
       if (state.sort) {
         const key = state.sort.id as keyof T

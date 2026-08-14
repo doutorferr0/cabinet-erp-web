@@ -1,0 +1,56 @@
+NOTICE — cabinet-erp-web
+========================
+
+Este produto inclui código derivado de projetos de terceiros sob licença
+permissiva. Os avisos de copyright abaixo acompanham o código integrado a
+`src/`, como exige cada licença.
+
+Material ainda NÃO integrado (colhido para avaliação) tem o seu próprio aviso em
+`docs/harvest/NOTICE` e não é distribuído no bundle.
+
+-----------------------------------------------------------------------
+Filtro de consulta da listagem — sadmann7/shadcn-table
+-----------------------------------------------------------------------
+MIT License
+Copyright (c) 2024 Sadman Sakib
+https://github.com/sadmann7/shadcn-table
+
+Arquivos derivados neste repositório:
+  src/lib/filtro-de-consulta.ts          (de src/config/data-table.ts,
+                                          src/types/data-table.ts e
+                                          src/lib/data-table.ts)
+  src/components/cabinet/filtro-controles.tsx
+  src/components/cabinet/lista-de-filtros.tsx   (de data-table-filter-list.tsx)
+  src/components/cabinet/menu-de-filtros.tsx    (de data-table-filter-menu.tsx)
+
+O que foi copiado: o VOCABULÁRIO do filtro (variantes de campo, conjunto de
+operadores por variante, operador padrão, noção de filtro válido) e a ANATOMIA
+das duas interfaces — a lista query-builder com `Onde`/junção/campo/operador/
+valor, e a paleta de comandos com etiquetas editáveis.
+
+O que foi reescrito: o estado (aqui vive no componente, não na URL — o original
+usa `nuqs`), os controles (o original usa Calendar, Slider, Faceted e Select do
+Radix; aqui são `<select>` nativo com a caixa brut de 2px e Command sobre
+react-aria-components), os rótulos (PT-BR) e a avaliação local dos filtros, que
+no original acontece no servidor. Variantes de data e de faixa por slider não
+foram portadas — dependeriam de componentes que este repo não tem.
+
+Texto integral da licença: https://github.com/sadmann7/shadcn-table/blob/main/LICENSE.md
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.

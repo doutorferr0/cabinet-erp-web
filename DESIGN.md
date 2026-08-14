@@ -525,6 +525,72 @@ dia em que alguém suavizar ou tirar a borda, oito módulos e cinco zonas ficam 
 — é a mesma dependência que a §Superfícies já registra para o degrau de 1,10:1 entre Bancada e
 Folha.
 
+#### Estados e preenchimentos — onde a cheia /01 vira FUNDO de texto
+
+As tabelas acima medem superfície e voz. Falta o terceiro grupo, e é onde está a única reprovação
+de TEXTO desta página: os lugares em que a cheia /01 deixa de ser traço e vira **fundo com letra em
+cima**. Hoje são dois, e o par é o mesmo — `data-active:bg-modulo-cheia` no item de menu
+(`sidebar.tsx`) e a gaveta de notificações, que herda o `text-sidebar-foreground`/`text-foreground`
+do tema.
+
+| Módulo | claro: tinta × /01 | escuro: tinta × /01 |
+|---|---|---|
+| Produtos | 13,71:1 | **1,33:1** |
+| Estoque | 6,46:1 | **2,83:1** |
+| Vendas / Orçamento | **4,00:1** | 4,57:1 |
+| Compras / Pedidos | 6,08:1 | **3,00:1** |
+| Clientes | 5,96:1 | **3,06:1** |
+| Fornecedores | **4,13:1** | **4,42:1** |
+| Profissionais | 4,51:1 | **4,05:1** |
+| Boletim | 7,46:1 | **2,45:1** |
+
+**Piso 4,5:1, não 3:1** — o rótulo do item é 14px em `font-bold`, e "texto grande" pela WCAG começa
+em 18,66px negrito. Reprovam **dois no claro** (vendas, fornecedores; profissionais raspa em 4,51)
+e **sete no escuro**, o pior deles o ciano de Produtos a **1,33:1**, que é letra clara sobre
+preenchimento claro.
+
+**A raiz do caso escuro é a mesma cascata da tabela da /01:** `.dark [data-modulo=…]` só redefine a
+`/02`. A cheia continua neon — o que é certo enquanto ela é TRAÇO sobre papel escuro (9,38:1 em
+produtos) e vira defeito no único lugar em que ela é FUNDO, porque aí a tinta do tema também
+clareou. É um par que inverteu de mão sem ninguém remedir.
+
+**O comentário do `src/index.css` (§utilities, `bg-modulo`) afirma o contrário e está velho:**
+"sobre a /01 e a /02 o texto é sempre PRETO: o pior par da tabela é o soft blue a 7,1:1 — todas
+passam AA com folga". Soft blue era o /01 **anterior ao neon**; o pior par hoje é 4,00:1 no claro e
+1,33:1 no escuro, e no escuro o texto não é preto. Quem ler aquele comentário decide não medir.
+Corrigi-lo é edição em `src/`, fora da zona desta passagem — fica como pendência com dono.
+
+> Estes números saem dos tokens e da cascata (`data-active:` só troca borda, fundo e peso; a cor
+> vem do `text-sidebar-foreground` do contêiner), **não de render**. Confirmar na tela antes de
+> escolher a correção — a lição de que contraste de tema se confere renderizando já custou uma
+> rodada nesta página.
+
+Os demais estados, com o par que o componente resolve de verdade — um deles também reprova:
+
+| par | claro | escuro |
+|---|---|---|
+| texto sobre hover de item (`--neutral`) | 17,39:1 | 10,02:1 |
+| secundário sobre hover de item | 4,72:1 | 5,43:1 |
+| linha selecionada: `--primary-foreground` × `--primary` | 5,22:1 | 5,13:1 |
+| linha selecionada × folha (a mudança de estado) | 4,76:1 | 4,18:1 |
+| carimbo `done` (`bg-stamp-done` + `text-primary-foreground`) | 5,52:1 | 10,42:1 |
+| carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 6,41:1 | 6,60:1 |
+| carimbo `void` (`text-stamp-void`, fundo transparente) | 5,51:1 | 5,09:1 |
+| preenchimentos flat com texto preto (`fill-money` / `fill-focus` / `fill-error`) | 13,53 / 13,24 / 6,25:1 | tinta clara: 8,47 / 9,58 / 11,34:1 |
+
+**Os carimbos foram medidos com o par REAL do `stamp.tsx`, não com preto por suposição** — e um
+deles reprova: **`open` no escuro dá 1,30:1**. Ele é `bg-stamp-open` + `text-foreground`, e no
+escuro o amarelo sobe para `47 100% 55%` enquanto a tinta do tema vira `220 12% 94%`: letra clara
+sobre amarelo claro. No claro o mesmo par dá 13,49:1, porque lá a tinta é preta. **É a mesma
+inversão do item de menu ativo, no outro componente**: um preenchimento que continuou claro
+enquanto a tinta trocou de lado. `done` não tem o problema (o `--primary-foreground` do escuro é a
+bancada, quase preta) — daí 10,42:1.
+
+**Os três `fill-*` são o contraexemplo que mostra o que falta aos outros dois**: eles DESCEM de luz
+no escuro (`fill-money` de `88 51% 71%` para `88 30% 22%`), então a tinta clara pousa neles com
+8,47 a 11,34:1. Quem desce de luz no escuro sobrevive à inversão da tinta; quem fica claro — a
+cheia /01 e o `--stamp-open` — não.
+
 #### Aferições de apoio
 
 - degrau Bancada × Folha: **1,10:1** claro · **1,23:1** escuro
@@ -537,6 +603,16 @@ Folha.
 
 Esta seção **mede**; trocar cor é decisão do user, e nenhuma foi alterada por causa destes números.
 
+**As duas primeiras são de TEXTO e não têm o traço para segurá-las** — nenhuma borda conserta letra
+que não se lê. As outras são de superfície, onde o contorno preto é o delimitador.
+
+0. **[USER] O rótulo do item de menu ATIVO reprova em 2 módulos no claro e em 7 no escuro** —
+   pior caso 1,33:1 (Produtos, escuro). É a cheia /01 no papel de FUNDO, que a cascata do escuro
+   não redefine, com a tinta do tema já invertida para clara. Mesmo defeito no **carimbo `open` do
+   escuro, 1,30:1**. Não escolhi correção: dar à `/01` um valor escuro em `.dark` mexe na paleta
+   travada, e trocar a tinta do item cria uma segunda regra de cor. Confirmar em render antes.
+   **Junto vai a correção do comentário do `src/index.css`**, que ainda afirma "todas passam AA com
+   folga, pior par 7,1:1" — número da paleta pré-neon, e é ele que faz o próximo leitor não medir.
 1. **[USER] Os 8 pastéis /02 e as 5 zonas, de 1,00 a 1,32:1 contra as superfícies.** Só há decisão
    a tomar se a superfície tintada precisar se separar do papel **sem** o traço. Escurecer o /02
    até 3:1 o tiraria de "pastel" — vira preenchimento, e aí compete com a cheia /01.

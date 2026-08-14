@@ -282,6 +282,36 @@ def main() -> None:
             f"| {n(e_folha)}:1 | {n(e_banc)}:1 | {veredito(pior, 4.5)} |"
         )
 
+    print("\n### Estados — onde a cheia /01 vira FUNDO de texto (piso 4,5:1)\n")
+    print("O par real do `sidebar.tsx`: `data-active:bg-modulo-cheia` com a tinta do contêiner.")
+    print("\n| Módulo | claro: tinta × /01 | escuro: tinta × /01 |")
+    print("|---|---|---|")
+    for rotulo, chave in MODULOS:
+        c_claro = razao(cor(claro, "sidebar-foreground"), cor(mod_claro[chave], "modulo-01"))
+        c_escuro = razao(cor(escuro, "sidebar-foreground"), cor(mod_escuro[chave], "modulo-01"))
+        marca = lambda x: f"**{n(x)}:1**" if x < 4.5 else f"{n(x)}:1"
+        print(f"| {rotulo} | {marca(c_claro)} | {marca(c_escuro)} |")
+
+    print("\n### Demais estados — o par REAL de cada componente\n")
+    print("| par | claro | escuro |")
+    print("|---|---|---|")
+    # (rótulo, tinta, fundo) — fundo `None` = a Folha, para peça de fundo transparente
+    estados = [
+        ("texto sobre hover de item", "foreground", "neutral"),
+        ("secundário sobre hover de item", "muted-foreground", "neutral"),
+        ("linha selecionada: tinta × fundo", "primary-foreground", "primary"),
+        ("linha selecionada × folha", "primary", "card"),
+        ("carimbo `open` (`bg-stamp-open` + `text-foreground`)", "foreground", "stamp-open"),
+        ("carimbo `done` (`bg-stamp-done` + `text-primary-foreground`)", "primary-foreground", "stamp-done"),
+        ("carimbo `neutral` (letra, fundo transparente)", "stamp-neutral", "card"),
+        ("carimbo `void` (letra, fundo transparente)", "stamp-void", "card"),
+    ]
+    for rotulo, tinta, fundo in estados:
+        print(
+            f"| {rotulo} | {n(razao(cor(claro, tinta), cor(claro, fundo)))}:1 "
+            f"| {n(razao(cor(escuro, tinta), cor(escuro, fundo)))}:1 |"
+        )
+
     print("\n### Aferições de apoio\n")
     print(f"- degrau Bancada × Folha: {n(razao(cor(claro, 'background'), cor(claro, 'card')))}:1 claro"
           f" · {n(razao(cor(escuro, 'background'), cor(escuro, 'card')))}:1 escuro")

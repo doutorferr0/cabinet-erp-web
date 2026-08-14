@@ -18,6 +18,7 @@ import { http, HttpResponse } from 'msw'
 import { handlersDeAtividades } from './atividades'
 import { handlersDoCrm } from './crm'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { problemaJson } from './problema'
 import { handlersDeOrcamento } from './quotes'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -41,13 +42,6 @@ import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
  * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
-
-function problemaJson(status: number, detail: string, extras: Record<string, unknown> = {}) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail, ...extras },
-    { status, headers: { 'content-type': 'application/problem+json' } },
-  )
-}
 
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')

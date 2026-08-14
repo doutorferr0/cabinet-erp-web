@@ -874,8 +874,17 @@
    elemento COMPACTO (cheia /01: chip, cabeçalho de card de item, marcador) e
    nunca área grande · `text-modulo` é o traço.
 
-   Sobre a /01 e a /02 o texto é sempre PRETO: medido, o pior par da tabela é o
-   soft blue a 7,1:1 — todas passam AA com folga, e preto é a tinta do sistema. */
+   Sobre a /02 o texto preto passa folgado (16,88 a 18,81:1 no claro). Sobre a
+   /01 NÃO é mais assim, e a frase que estava aqui — "o pior par é o soft blue a
+   7,1:1, todas passam AA com folga" — era da paleta PRÉ-NEON e do tema claro
+   sozinho. Remedido em 2026-08-13, com a /01 servindo de FUNDO no item de menu
+   ativo: **claro 4,00:1 em vendas e 4,13:1 em fornecedores** (piso 4,5, porque o
+   rótulo é 14px negrito) e **escuro 1,46 a 4,57:1, oito dos nove abaixo do
+   piso** — no escuro a tinta do tema é CLARA e a /01 continua neon, porque
+   `.dark [data-modulo=…]` só redefine a /02. Está registrado como pendência do
+   user na §Medição de contraste do DESIGN.md; não "conserte" escurecendo o
+   preenchimento sem passar por lá. Conferir com
+   `python3 docs/design/medir-contraste.py --conferir`. */
 @utility bg-modulo {
   background-color: hsl(var(--modulo-02));
 }

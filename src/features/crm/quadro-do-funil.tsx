@@ -13,7 +13,9 @@ import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { Calendar, MoreHorizontal, Plus } from 'lucide-react'
+import { type Apodrecimento, apodrecimentoDoCartao } from './apodrecimento'
 import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
+import { SeloDeApodrecimento } from './selo-de-apodrecimento'
 
 /**
  * O QUADRO DO FUNIL — as oportunidades nas etapas configuradas.
@@ -46,8 +48,14 @@ import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from
  * Título, quem (parceiro cadastrado ou o contato solto do lead), valor previsto
  * e data prevista. `topicos/transcricaosoftlux.md` não tem funil e
  * `topicos/dashboard.md` também não — então campo de cartão é pergunta ao user,
- * nunca inferência. O sinal de apodrecimento (`rotDays` × `stageChangedAt`)
- * ficou de FORA por escolha dele, embora o contrato já o sirva.
+ * nunca inferência.
+ *
+ * ## O apodrecimento entrou depois (#87)
+ *
+ * `rotDays` × `stageChangedAt` estava no contrato desde a #75 e ficou de fora
+ * na primeira escolha de campos. Entrou como SELO no rodapé do cartão, mais o
+ * tingimento do cartão inteiro no último degrau — ver `apodrecimento.ts` para a
+ * régua e `selo-de-apodrecimento.tsx` para o desenho.
  *
  * ## O quadro não consulta nada (view modes, #86)
  *
@@ -133,12 +141,15 @@ function Cartao({
   oportunidade,
   destinos,
   mostraEtapa,
+  apodrecimento,
   aoPerder,
 }: {
   oportunidade: CrmOpportunityDto
   destinos: Destino[]
   /** A coluna não é a etapa — então a etapa precisa estar escrita no cartão. */
   mostraEtapa: boolean
+  /** `null` = a etapa deste cartão não apodrece (sem `rotDays`, ou fecha). */
+  apodrecimento: Apodrecimento | null
   /** Pede o motivo antes de perder. Quem tem o diálogo é a PÁGINA. */
   aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
@@ -181,7 +192,16 @@ function Cartao({
   }
 
   return (
-    <li data-slot="cartao" className="rounded-card border-2 bg-card p-2.5">
+    <li
+      data-slot="cartao"
+      className={cn(
+        'rounded-card border-2 bg-card p-2.5',
+        // O TINGIMENTO é o terceiro degrau, e só no fim: nada → selo → selo +
+        // cartão tingido. Tingir já no aviso gastaria o sinal forte antes de o
+        // prazo estourar, e aí o vermelho não significaria mais nada.
+        apodrecimento?.estado === 'apodrecido' && 'bg-zone-danger',
+      )}
+    >
       <div className="flex items-start gap-1">
         {/* Link do router, não `onClick` na caixa: o cartão leva a uma URL
             própria, e link preserva meio-clique, "abrir em nova aba" e o
@@ -242,6 +262,12 @@ function Cartao({
             <Calendar className="size-3.5" aria-hidden="true" />
             {formatDateBR(dataPrevista)}
           </span>
+        ) : null}
+        {/* No fim da fileira de rodapé, e não no alto: o apodrecimento é sobre o
+            TEMPO do cartão, e mora ao lado da data prevista — não competindo
+            com o título, que é o que o operador lê primeiro. */}
+        {apodrecimento ? (
+          <SeloDeApodrecimento apodrecimento={apodrecimento} className="ml-auto" />
         ) : null}
       </div>
 
@@ -330,6 +356,13 @@ function Coluna({
               key={oportunidade.id}
               oportunidade={oportunidade}
               mostraEtapa={etapa === undefined}
+              // A etapa vem da CONFIGURAÇÃO, não da coluna: agrupado por
+              // responsável a coluna não é etapa nenhuma, e o cartão continua
+              // apodrecendo pelo prazo da etapa em que ele está.
+              apodrecimento={apodrecimentoDoCartao(
+                oportunidade,
+                etapas.find((e) => e.id === oportunidade.stageId),
+              )}
               destinos={destinosDoCartao(oportunidade, etapas, cartoes, etapa !== undefined)}
               aoPerder={aoPerder}
             />

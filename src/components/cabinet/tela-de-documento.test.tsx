@@ -1,5 +1,5 @@
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
-import type { ResourceProvider } from '@/data/provider'
+import type { DocumentoProvider } from '@/data/provider'
 import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -10,11 +10,10 @@ import { describe, expect, it } from 'vitest'
  * teste é do componente isolado, com um provider que rejeita de propósito, e
  * não de rota (Fase 7 item 1 do refactor: braço de erro que faltava).
  */
-function providerQueRejeita(): ResourceProvider<{ id: number }> {
+function providerQueRejeita(): DocumentoProvider<{ id: number }> {
   return {
-    list: () => Promise.reject(new Error('não usado neste teste')),
     get: () => Promise.reject(new Error('sem servidor')),
-    empty: (id: number) => ({ id }),
+    empty: () => ({ id: -1 }),
   }
 }
 
@@ -44,13 +43,12 @@ describe('TelaDeDocumento', () => {
     const { user } = renderWithQuery(
       <TelaDeDocumento
         provider={{
-          list: () => Promise.reject(new Error('não usado neste teste')),
           get: async () => {
             tentativas += 1
             if (tentativas === 1) throw new Error('sem servidor')
             return { id: 7 }
           },
-          empty: (id: number) => ({ id }),
+          empty: () => ({ id: -1 }),
         }}
         queryKeyBase="teste-retry"
         idParam="7"
@@ -72,9 +70,8 @@ describe('TelaDeDocumento', () => {
     renderWithQuery(
       <TelaDeDocumento
         provider={{
-          list: () => Promise.reject(new Error('não usado neste teste')),
           get: () => Promise.resolve(null),
-          empty: (id: number) => ({ id }),
+          empty: () => ({ id: -1 }),
         }}
         queryKeyBase="teste"
         idParam="1"

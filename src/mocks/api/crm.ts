@@ -270,7 +270,10 @@ function estadoInicial(): EstadoDoCrm {
       contactEmail: 'ricardo@exemplo.dev',
       expectedValueCents: 3_100_000,
       expectedCloseDate: '2026-09-05',
-      stageChangedAt: diasAtras(6),
+      // PERTO de apodrecer: `rotDays` da proposta é 15, e o aviso começa a dois
+      // terços (dia 10). O seed precisa exercitar os TRÊS estados — com só
+      // fresco e apodrecido, o degrau do meio nunca aparece no site demo.
+      stageChangedAt: diasAtras(11),
     }),
     cartao('op-0005', 'Escritório Faria Lima — luminárias lineares', 'etapa-negociacao', 1, {
       partnerId: 'parc-0002',

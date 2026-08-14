@@ -17,6 +17,7 @@ import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDeAtividades } from './atividades'
 import { handlersDoCrm } from './crm'
+import { handlersDeOrcamento } from './quotes'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
 /**
@@ -613,6 +614,10 @@ export const handlers = [
   // Estado e handlers do funil vivem em `crm.ts`: estado próprio, e arquivo
   // novo não disputa linha com quem estiver editando este aqui.
   ...handlersDoCrm,
+
+  // ---------------- orçamento ----------------
+  // Mesma razão do CRM: estado e handlers em `quotes.ts`.
+  ...handlersDeOrcamento,
 
   // ---------------- atividades ----------------
   // Mesma decisão do CRM, e aqui ela pesa mais: a tabela é POLIMÓRFICA e o

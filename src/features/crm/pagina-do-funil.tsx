@@ -1,4 +1,4 @@
-import type { CrmOpportunityDto } from '@/api/gerado'
+import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { type VisaoDaListagem, VitraDataTable } from '@/components/cabinet/data-table'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -10,10 +10,12 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Calendar, LayoutGrid, TrendingDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { apodrecimentoDoCartao } from './apodrecimento'
 import { AGRUPAMENTOS_DO_FUNIL, quemDoCartao } from './funil-agrupa'
 import { PerderOportunidadeDialog } from './perder-oportunidade-dialog'
 import { QuadroDoFunil } from './quadro-do-funil'
 import { RelatorioDePerdasDialog } from './relatorio-de-perdas-dialog'
+import { SeloDeApodrecimento } from './selo-de-apodrecimento'
 
 /**
  * A página do quadro: a ESCOLHA do funil em cima, a listagem embaixo.
@@ -44,8 +46,18 @@ import { RelatorioDePerdasDialog } from './relatorio-de-perdas-dialog'
  * diário para chegar onde o operador já ia.
  */
 
-/** O funil é sempre um só na tela — a coluna de funil seria a mesma palavra repetida. */
-function colunasDaOportunidade(): ColumnDef<CrmOpportunityDto>[] {
+/**
+ * O funil é sempre um só na tela — a coluna de funil seria a mesma palavra
+ * repetida.
+ *
+ * `etapasPorId` entra porque o apodrecimento é um fato sobre a ETAPA (`rotDays`)
+ * cruzado com o cartão (`stageChangedAt`), e a linha da listagem só tem o
+ * segundo. Sem ele, o negócio empacado seria visível no quadro e invisível na
+ * tabela — a mesma consulta contando duas histórias.
+ */
+function colunasDaOportunidade(
+  etapasPorId: Map<string, CrmStageDto>,
+): ColumnDef<CrmOpportunityDto>[] {
   return [
     { accessorKey: 'name', header: 'Título' },
     {
@@ -57,7 +69,22 @@ function colunasDaOportunidade(): ColumnDef<CrmOpportunityDto>[] {
       // ordem que a página seguinte não repetiria.
       cell: ({ row }) => quemDoCartao(row.original) ?? '',
     },
-    { accessorKey: 'stageName', header: 'Etapa' },
+    {
+      accessorKey: 'stageName',
+      header: 'Etapa',
+      cell: ({ row }) => {
+        const apodrecimento = apodrecimentoDoCartao(
+          row.original,
+          etapasPorId.get(row.original.stageId),
+        )
+        return (
+          <span className="flex items-center gap-2">
+            {row.original.stageName}
+            {apodrecimento ? <SeloDeApodrecimento apodrecimento={apodrecimento} /> : null}
+          </span>
+        )
+      },
+    },
     {
       accessorKey: 'ownerName',
       header: 'Responsável',
@@ -95,7 +122,11 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
   // O provider carrega o `pipelineId`: as duas visões perguntam pelo funil que
   // está na URL, e nenhuma delas monta consulta própria.
   const fetcher = useMemo(() => oportunidadesDoFunil(pipelineId).list, [pipelineId])
-  const columns = useMemo(() => colunasDaOportunidade(), [])
+  const etapasPorId = useMemo(
+    () => new Map((etapas.data ?? []).map((etapa) => [etapa.id, etapa])),
+    [etapas.data],
+  )
+  const columns = useMemo(() => colunasDaOportunidade(etapasPorId), [etapasPorId])
 
   /**
    * Campos filtráveis — a whitelist que o contrato publica para o recurso.

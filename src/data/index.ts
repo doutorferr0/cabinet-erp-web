@@ -8,12 +8,12 @@ import {
   normalize,
   tabelaDeApoio,
 } from '@/data/provider'
+import { orcamentosApi } from '@/data/quotes-api'
 import { bancos } from '@/mocks/bancos'
 import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
 import { type Colaborador, colaboradorVazio, colaboradores } from '@/mocks/colaboradores'
 import { fornecedorVazio } from '@/mocks/fornecedores'
-import { type Orcamento, orcamentoVazio, orcamentos } from '@/mocks/orcamentos'
 import { type OrdemCompra, ordemCompraVazia, ordensCompra } from '@/mocks/ordens-compra'
 import { type PedidoCompra, pedidoCompraVazio, pedidosCompra } from '@/mocks/pedidos-compra'
 import { profissionalVazio } from '@/mocks/profissionais'
@@ -79,14 +79,14 @@ export const data = {
     empty: pedidoCompraVazio,
   }),
 
-  orcamentos: createMockProvider<Orcamento>({
-    rows: orcamentos,
-    matches: (o, q) =>
-      o.numero.includes(q) ||
-      normalize(o.cliente).includes(q) ||
-      normalize(o.descricaoObra).includes(q),
-    empty: orcamentoVazio,
-  }),
+  /**
+   * Orçamento — HTTP desde a #134 (`/api/quotes`).
+   *
+   * A LINHA e o DOCUMENTO são tipos diferentes de propósito: a grade recebe o
+   * `QuoteDto` cru, para o `sortBy` casar com a whitelist do servidor, e o
+   * formulário recebe a forma da transcrição. Mesma divisão de `produtos`.
+   */
+  orcamentos: orcamentosApi,
 
   /**
    * Funil de venda (CRM). Listagem, detalhe e registro em branco são todos do

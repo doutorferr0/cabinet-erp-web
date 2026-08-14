@@ -320,8 +320,8 @@ mentira com cara de dado do servidor.
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
 sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
 onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
-`GET /api/products`, `GET /api/partners` e — desde a issue #86 —
-`GET /api/crm/opportunities`.
+`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86) e
+`GET /api/quotes` (#134).
 
 ### Como viaja
 

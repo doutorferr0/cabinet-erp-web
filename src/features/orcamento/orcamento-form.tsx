@@ -33,7 +33,10 @@ import { z } from 'zod'
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const orcamentoSchema = z.object({
-  id: z.number(),
+  // Id de TEXTO desde a migração para `/api/quotes` (#134): o documento passou
+  // a ter id de servidor. Era `z.number()`, e com string o `Gravar` reprovava
+  // na validação sem dizer em qual campo — o id não aparece no formulário.
+  id: z.string(),
   numero: z.string(),
   serie: z.string(),
   numeroPasta: z.string(),

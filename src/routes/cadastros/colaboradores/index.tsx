@@ -3,9 +3,11 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
-import type { Colaborador } from '@/mocks/colaboradores'
+import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
+import { CARGOS, type Colaborador, SETORES } from '@/mocks/colaboradores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { BriefcaseBusiness, Building2, CircleCheck, Hash, User } from 'lucide-react'
 
 export const Route = createFileRoute('/cadastros/colaboradores/')({
   component: ColaboradoresPage,
@@ -35,6 +37,46 @@ const columns: ColumnDef<Colaborador>[] = [
   },
 ]
 
+/**
+ * TELA PILOTO do filtro estruturado (issue #68).
+ *
+ * Colaborador é o piloto por um motivo de fase, não de gosto: o recurso ainda é
+ * **mock**, e é o provider mock que sabe responder `campo + operador + valor`. O
+ * contrato v1 não tem parâmetro de filtro, então listagem HTTP (produto,
+ * parceiro) não declara campos filtráveis — declarar ali faria a tela prometer
+ * uma consulta que o servidor não recebe (ver `recusarFiltroSemContrato`).
+ *
+ * Os `id` são os campos do mock (§2 da transcrição). Quando colaborador ganhar
+ * caminho no contrato, eles viram os nomes do DTO — a mesma regra do
+ * `accessorKey` das colunas ordenáveis.
+ *
+ * `salario` fica de fora de propósito: trafega em centavos, e um filtro numérico
+ * ali compararia com centavos ("1000" acharia R$ 10,00). Entra quando houver
+ * variante de dinheiro.
+ */
+const camposFiltraveis: readonly CampoFiltravel[] = [
+  { id: 'id', rotulo: 'Código', variante: 'number', icon: Hash, placeholder: 'Ex.: 12' },
+  { id: 'nome', rotulo: 'Nome', variante: 'text', icon: User, placeholder: 'Parte do nome…' },
+  {
+    id: 'setor',
+    rotulo: 'Setor',
+    variante: 'select',
+    icon: Building2,
+    opcoes: SETORES.map((s) => ({ valor: s, rotulo: s })),
+  },
+  {
+    // Múltipla escolha porque a pergunta real é "quem é vendedor OU consultor" —
+    // com `select` o operador teria de rodar a consulta duas vezes e somar de
+    // cabeça.
+    id: 'cargo',
+    rotulo: 'Cargo',
+    variante: 'multiSelect',
+    icon: BriefcaseBusiness,
+    opcoes: CARGOS.map((c) => ({ valor: c, rotulo: c })),
+  },
+  { id: 'ativo', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
+]
+
 function ColaboradoresPage() {
   const navigate = useNavigate()
 
@@ -60,6 +102,7 @@ function ColaboradoresPage() {
       queryKey={['colaboradores']}
       fetcher={data.colaboradores.list}
       actions={actions}
+      filtros={camposFiltraveis}
     />
   )
 }

@@ -754,12 +754,18 @@ features do `GSUB` direto do `.woff` do `@fontsource` — a largura que o layout
 arquivo e não depende de rasterizador, hinting ou zoom da máquina. Mesmo princípio do
 `medir-contraste.py`: medir a fonte do valor, não a foto dele.
 
-| família | papel | avanço dos dígitos | uniforme? | publica `tnum`? |
+| família | pesos importados | avanço dos dígitos | uniforme? | publica `tnum`? |
 |---|---|---|---|---|
-| **Inter** | corpo (`--font-sans`) | 833 … 1323 / 2048 em | **não** | **sim** |
-| **Sora** | títulos (`--font-display`) | 420 … 743 / 1000 em | **não** | **sim** |
-| **Newsreader** | nome próprio (`--font-nome`) | 1133 / 2000 em | **sim** | sim |
-| **PT Mono** | meta e número grande (`--font-mono`) | 600 / 1000 em | **sim** | não |
+| **Inter** | 400 · 500 · 600 | 833 … 1364 / 2048 em | **não** | **sim** |
+| **Sora** | 600 · 700 | 425 … 763 / 1000 em | **não** | **sim** |
+| **Newsreader** | 400 · 700 | 1133 e 1268 / 2000 em | **sim** (dentro de cada peso) | sim |
+| **PT Mono** | 400 | 600 / 1000 em | **sim** | não |
+
+**Mede-se o PESO que o CSS importa, não o 400 por convenção.** `tnum` é declarado por ARQUIVO, e
+o WOFF de cada peso tem o seu próprio `GSUB` — nada obriga dois pesos da mesma família a
+concordarem. A primeira versão media `sora-latin-400`, que o `src/index.css` **não** importa (ele
+pede 600 e 700): arquivo que o navegador nunca baixa. Os pesos saem hoje dos `@import` do próprio
+CSS, então importar um peso novo e esquecer de medi-lo deixou de ser possível.
 
 **O que a medição decidiu:** o Inter do corpo **não** alinha por padrão — o `1` avança 833 e o
 `4`, 1323, meio caractere de diferença por linha — mas **publica `tnum`**, então

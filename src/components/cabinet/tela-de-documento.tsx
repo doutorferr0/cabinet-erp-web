@@ -3,12 +3,17 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import type { ResourceProvider } from '@/data/provider'
+import type { DocumentoProvider } from '@/data/provider'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
 export interface TelaDeDocumentoProps<T> {
-  provider: ResourceProvider<T>
+  /**
+   * Só o que esta tela usa: abrir por id, ou em branco. Pedir o
+   * `ResourceProvider` inteiro obrigaria o tipo da LINHA a ser o do DOCUMENTO —
+   * e nos recursos HTTP eles divergem de propósito.
+   */
+  provider: DocumentoProvider<T>
   /** Prefixo da query key (ex.: 'orcamento', 'ordem-compra', 'pedido-compra'). */
   queryKeyBase: string
   /** Valor cru do param de rota — 'novo' ou o id numérico como string. */
@@ -40,11 +45,14 @@ export function TelaDeDocumento<T>({
   children,
 }: TelaDeDocumentoProps<T>) {
   const isNovo = idParam === 'novo'
-  const id = Number(idParam)
 
   const query = useQuery({
     queryKey: [queryKeyBase, idParam],
-    queryFn: () => (isNovo ? provider.empty(Date.now() % 100000) : provider.get(id, 0)),
+    // O `idParam` vai CRU. Quem converte é o provider, que conhece a forma do
+    // próprio id — o esqueleto fazia `Number(idParam)` e, no primeiro recurso
+    // HTTP a passar por aqui, isso viraria `NaN` e "não encontrado" para um
+    // documento que existe.
+    queryFn: () => (isNovo ? provider.empty() : provider.get(idParam, 0)),
   })
 
   if (query.isPending) {

@@ -86,10 +86,28 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
 | Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
 
-| CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
+| CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` · **`GET` `/api/crm/reports/lost-reasons`** | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
 
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
+
+### CRM — por que perdemos é AGREGAÇÃO do servidor (2026-08-14)
+
+`GET /api/crm/reports/lost-reasons?pipelineId&from&to` devolve a contagem por
+motivo no período, ordenada pelo maior. É caminho próprio, e não uma soma feita
+na tela sobre a listagem, por uma razão de tamanho: **a listagem tem teto de 100
+por página**, então contar do lado do cliente sairia certo numa empresa pequena e
+**errado, sem sintoma**, na primeira que passasse do teto. Relatório que erra
+calado é pior que relatório nenhum, porque alguém decide com ele.
+
+`from`/`to` são **obrigatórios**: contagem sem recorte responde outra pergunta e
+cresce para sempre — um motivo aposentado há três anos continuaria liderando o
+quadro. O recorte é por DIA (`closedAt`), não por instante.
+
+`lostReasonId` da linha é **anulável**, e só em registro MIGRADO: o
+`PATCH …/stage` exige o motivo, então perda sem motivo não nasce pelo produto. O
+legado tem, e omitir a linha faria a soma das linhas não bater com o `total` — a
+divergência entre os dois é justamente o sintoma que se quer ver.
 
 ### CRM — o movimento do quadro é uma requisição só (2026-08-13)
 
@@ -260,8 +278,8 @@ mentira com cara de dado do servidor.
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
 sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
 onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
-`GET /api/products`, `GET /api/partners` e — desde a issue #86 —
-`GET /api/crm/opportunities`.
+`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86) e
+`GET /api/quotes` (#134).
 
 ### Como viaja
 

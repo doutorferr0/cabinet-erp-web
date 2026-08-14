@@ -1,10 +1,10 @@
+import type { QuoteDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
-import type { Orcamento } from '@/mocks/orcamentos'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CalendarDays, HardHat, Hash, User } from 'lucide-react'
@@ -13,23 +13,31 @@ export const Route = createFileRoute('/vendas/orcamentos/')({
   component: OrcamentosPage,
 })
 
-/** Colunas LITERAIS da transcrição §8.1. */
-const columns: ColumnDef<Orcamento>[] = [
-  { accessorKey: 'numero', header: 'Número' },
-  { accessorKey: 'serie', header: 'Série' },
-  { accessorKey: 'cliente', header: 'Cliente' },
+/**
+ * Colunas LITERAIS da transcrição §8.1 — com o `accessorKey` em INGLÊS.
+ *
+ * O rótulo que o operador lê continua o da transcrição; o que muda é a CHAVE,
+ * que é o nome que a whitelist de `sortBy` do servidor aceita. Traduzir a chave
+ * quebraria a ordenação com 400 ao primeiro clique no cabeçalho (padrão 1).
+ */
+const columns: ColumnDef<QuoteDto>[] = [
+  { accessorKey: 'number', header: 'Número' },
+  // `series` não está na whitelist do contrato: a coluna aparece e não ordena,
+  // o que é melhor que um cabeçalho clicável que responde 400.
+  { accessorKey: 'series', header: 'Série', enableSorting: false },
+  { accessorKey: 'customerName', header: 'Cliente' },
   {
-    accessorKey: 'descricaoObra',
+    accessorKey: 'projectName',
     header: 'Descrição da Obra',
-    cell: ({ getValue }) => getValue<string>() || '—',
+    cell: ({ getValue }) => getValue<string | null>() || '—',
   },
   {
-    accessorKey: 'dataEmissao',
+    accessorKey: 'issuedAt',
     header: 'Data Emissão',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
   },
   {
-    accessorKey: 'dataValidade',
+    accessorKey: 'expiresAt',
     header: 'Data Validade',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
   },
@@ -75,22 +83,28 @@ function RodapeDeOrcamento() {
  * que o operador não digita (centavos, percentual com 4 casas implícitas) e não
  * há variante que converta na borda.
  *
- * Recurso MOCK: quem responde é o provider em memória. Orçamento tem caminho
- * `Proposto` no contrato (`/api/quotes`) e a listagem ainda não é HTTP — quando
- * for, os `id` daqui viram os nomes do DTO, como nas telas de parceiro.
+ * Recurso HTTP desde a #134: quem responde é `/api/quotes`, e os `id` daqui
+ * são os nomes do DTO — o contrato publica `filters` com a mesma whitelist do
+ * `sortBy`, e campo fora dela é barrado na fronteira antes de sair.
  */
 const camposFiltraveis: readonly CampoFiltravel[] = [
-  { id: 'numero', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: 21653' },
-  { id: 'cliente', rotulo: 'Cliente', variante: 'text', icon: User, placeholder: 'Parte do nome…' },
+  { id: 'number', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: 21653' },
   {
-    id: 'descricaoObra',
+    id: 'customerName',
+    rotulo: 'Cliente',
+    variante: 'text',
+    icon: User,
+    placeholder: 'Parte do nome…',
+  },
+  {
+    id: 'projectName',
     rotulo: 'Descrição da Obra',
     variante: 'text',
     icon: HardHat,
     placeholder: 'Parte da descrição…',
   },
-  { id: 'dataEmissao', rotulo: 'Data Emissão', variante: 'date', icon: CalendarDays },
-  { id: 'dataValidade', rotulo: 'Data Validade', variante: 'date', icon: CalendarDays },
+  { id: 'issuedAt', rotulo: 'Data Emissão', variante: 'date', icon: CalendarDays },
+  { id: 'expiresAt', rotulo: 'Data Validade', variante: 'date', icon: CalendarDays },
 ]
 
 function OrcamentosPage() {
@@ -104,11 +118,11 @@ function OrcamentosPage() {
     })
   }
 
-  const actions = cadastroActions<Orcamento>({
+  const actions = cadastroActions<QuoteDto>({
     entidade: 'orçamento',
     onIncluir: () => abrir('novo'),
-    onAbrir: (o) => abrir(String(o.id)),
-    onConsultar: (o) => abrir(String(o.id), 'consulta'),
+    onAbrir: (o) => abrir(o.id),
+    onConsultar: (o) => abrir(o.id, 'consulta'),
   })
 
   // Orçamento não se apaga, se cancela (§8.1).
@@ -117,7 +131,7 @@ function OrcamentosPage() {
       ? {
           ...a,
           label: 'Cancelar',
-          onClick: (o: Orcamento | null) => console.info('[mock] Cancelar orçamento', o),
+          onClick: (o: QuoteDto | null) => console.info('[mock] Cancelar orçamento', o),
         }
       : a,
   )

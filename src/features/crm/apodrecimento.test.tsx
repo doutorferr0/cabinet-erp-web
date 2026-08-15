@@ -56,32 +56,34 @@ function cartao(over: Partial<CrmOpportunityDto> & { id: string }): CrmOpportuni
   }
 }
 
-/** Cartão que entrou na etapa há `n` dias, contando do `AGORA` dos testes. */
-function paradoHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
-  return paradoDesde(AGORA, dias, over)
-}
-
 /**
- * O mesmo, contando de AGORA DE VERDADE.
+ * Cartão que entrou na etapa há `n` dias.
  *
- * A TELA chama `apodrecimentoDoCartao` sem `agora`, então ela usa o relógio da
- * máquina — e um cartão montado a partir da constante dos testes conta um dia a
- * mais ou a menos assim que a data real passa dela. **Já quebrou**: a suíte
- * rodou às 21h50 de 14/08 no fuso -03, que é 15/08 em UTC, e o selo disse 21
- * onde o teste esperava 20. Regra pura usa a constante; teste de tela usa o
- * relógio, que é o que a tela usa.
+ * **A referência é parâmetro, e isso é o conserto de um teste que virava
+ * vermelho sozinho.** Os casos da RÉGUA chamam `apodrecimentoDoCartao(...,
+ * AGORA)` e por isso precisam da data montada a partir do MESMO `AGORA` — é o
+ * que os torna determinísticos. Os casos de QUADRO renderizam a tela, e ali quem
+ * conta os dias é o componente, com `new Date()` de verdade: montar o cartão a
+ * partir do `AGORA` fixo fazia a conta divergir assim que a data real passasse
+ * de 2026-08-14 UTC. A frase do selo dizia "21 dias" onde a asserção esperava
+ * 20, e o CI da `main` ficou vermelho para todo mundo à meia-noite UTC — em
+ * branch nenhuma relacionada a CRM.
+ *
+ * O padrão é o mesmo que o seed do MSW já usa (`diasAtras`, em
+ * `src/mocks/api/crm.ts`): data relativa ao dia da execução.
  */
-function paradoAgoraHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
-  return paradoDesde(new Date(), dias, over)
-}
-
-function paradoDesde(
-  referencia: Date,
+function paradoHa(
   dias: number,
-  over: Partial<CrmOpportunityDto>,
+  over: Partial<CrmOpportunityDto> = {},
+  referencia: Date = AGORA,
 ): CrmOpportunityDto {
   const entrada = new Date(referencia.getTime() - dias * 86_400_000)
   return cartao({ id: `op-${dias}`, stageChangedAt: entrada.toISOString(), ...over })
+}
+
+/** Cartão para os testes de QUADRO: relativo ao relógio REAL, como o componente. */
+function noQuadroHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
+  return paradoHa(dias, over, new Date())
 }
 
 describe('régua do apodrecimento', () => {
@@ -160,11 +162,11 @@ const ETAPAS: CrmStageDto[] = [
 
 /** Um cartão de cada estado, em etapas que existem no funil do teste. */
 const CARTOES: CrmOpportunityDto[] = [
-  { ...paradoAgoraHa(1), id: 'op-fresco', name: 'Fresco' },
-  { ...paradoAgoraHa(7), id: 'op-perto', name: 'Quase la' },
-  { ...paradoAgoraHa(20), id: 'op-podre', name: 'Podre' },
+  { ...noQuadroHa(1), id: 'op-fresco', name: 'Fresco' },
+  { ...noQuadroHa(7), id: 'op-perto', name: 'Quase la' },
+  { ...noQuadroHa(20), id: 'op-podre', name: 'Podre' },
   {
-    ...paradoAgoraHa(90),
+    ...noQuadroHa(90),
     id: 'op-sem-prazo',
     // Título diferente do nome da ETAPA de propósito: com os dois iguais, a
     // busca por texto acha a coluna e o cartão, e a asserção não sabe qual pegou.
@@ -172,7 +174,7 @@ const CARTOES: CrmOpportunityDto[] = [
     stageId: 'e2',
     stageName: 'Sem prazo',
   },
-  { ...paradoAgoraHa(90), id: 'op-ganho', name: 'Ganho velho', stageId: 'e3', stageName: 'Ganho' },
+  { ...noQuadroHa(90), id: 'op-ganho', name: 'Ganho velho', stageId: 'e3', stageName: 'Ganho' },
 ]
 
 function servidorDoFunil(): FetchStub {

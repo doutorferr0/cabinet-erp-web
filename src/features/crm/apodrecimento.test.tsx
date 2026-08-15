@@ -56,10 +56,34 @@ function cartao(over: Partial<CrmOpportunityDto> & { id: string }): CrmOpportuni
   }
 }
 
-/** Cartão que entrou na etapa há `n` dias, contando do `AGORA` dos testes. */
-function paradoHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
-  const entrada = new Date(AGORA.getTime() - dias * 86_400_000)
+/**
+ * Cartão que entrou na etapa há `n` dias.
+ *
+ * **A referência é parâmetro, e isso é o conserto de um teste que virava
+ * vermelho sozinho.** Os casos da RÉGUA chamam `apodrecimentoDoCartao(...,
+ * AGORA)` e por isso precisam da data montada a partir do MESMO `AGORA` — é o
+ * que os torna determinísticos. Os casos de QUADRO renderizam a tela, e ali quem
+ * conta os dias é o componente, com `new Date()` de verdade: montar o cartão a
+ * partir do `AGORA` fixo fazia a conta divergir assim que a data real passasse
+ * de 2026-08-14 UTC. A frase do selo dizia "21 dias" onde a asserção esperava
+ * 20, e o CI da `main` ficou vermelho para todo mundo à meia-noite UTC — em
+ * branch nenhuma relacionada a CRM.
+ *
+ * O padrão é o mesmo que o seed do MSW já usa (`diasAtras`, em
+ * `src/mocks/api/crm.ts`): data relativa ao dia da execução.
+ */
+function paradoHa(
+  dias: number,
+  over: Partial<CrmOpportunityDto> = {},
+  referencia: Date = AGORA,
+): CrmOpportunityDto {
+  const entrada = new Date(referencia.getTime() - dias * 86_400_000)
   return cartao({ id: `op-${dias}`, stageChangedAt: entrada.toISOString(), ...over })
+}
+
+/** Cartão para os testes de QUADRO: relativo ao relógio REAL, como o componente. */
+function noQuadroHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
+  return paradoHa(dias, over, new Date())
 }
 
 describe('régua do apodrecimento', () => {
@@ -138,11 +162,11 @@ const ETAPAS: CrmStageDto[] = [
 
 /** Um cartão de cada estado, em etapas que existem no funil do teste. */
 const CARTOES: CrmOpportunityDto[] = [
-  { ...paradoHa(1), id: 'op-fresco', name: 'Fresco' },
-  { ...paradoHa(7), id: 'op-perto', name: 'Quase la' },
-  { ...paradoHa(20), id: 'op-podre', name: 'Podre' },
+  { ...noQuadroHa(1), id: 'op-fresco', name: 'Fresco' },
+  { ...noQuadroHa(7), id: 'op-perto', name: 'Quase la' },
+  { ...noQuadroHa(20), id: 'op-podre', name: 'Podre' },
   {
-    ...paradoHa(90),
+    ...noQuadroHa(90),
     id: 'op-sem-prazo',
     // Título diferente do nome da ETAPA de propósito: com os dois iguais, a
     // busca por texto acha a coluna e o cartão, e a asserção não sabe qual pegou.
@@ -150,7 +174,7 @@ const CARTOES: CrmOpportunityDto[] = [
     stageId: 'e2',
     stageName: 'Sem prazo',
   },
-  { ...paradoHa(90), id: 'op-ganho', name: 'Ganho velho', stageId: 'e3', stageName: 'Ganho' },
+  { ...noQuadroHa(90), id: 'op-ganho', name: 'Ganho velho', stageId: 'e3', stageName: 'Ganho' },
 ]
 
 function servidorDoFunil(): FetchStub {

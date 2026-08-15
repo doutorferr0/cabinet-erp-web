@@ -11,12 +11,18 @@ import { describe, expect, it } from 'vitest'
  * `GET /api/partners` — sem detalhe por id no contrato, elas só abrem em branco.
  * Colaborador segue mock, com `list`/`get`/`empty`. O objeto sob teste é o
  * `CadastroForm`, que é o mesmo nas duas.
+ *
+ * **O acoplamento tem preço, e ele apareceu na #101:** o rótulo do campo virou
+ * `Nome completo` quando o cadastro passou a ler o schema de módulos, e estas
+ * asserções quebraram sem que o `CadastroForm` mudasse uma linha. Se doer de
+ * novo, a saída é um formulário de mentira montado aqui — que testaria o objeto
+ * sob teste sem depender do rótulo de tela nenhuma.
  */
 describe('CadastroForm em modo consulta', () => {
   it('carrega os dados mas desabilita os campos e esconde Gravar', async () => {
     renderRoute('/cadastros/colaboradores/1?modo=consulta')
 
-    const nome = await screen.findByLabelText('Nome')
+    const nome = await screen.findByLabelText('Nome completo')
     expect(nome).toHaveValue('CARLA SOUZA')
     expect(nome).toBeDisabled()
 
@@ -34,7 +40,7 @@ describe('CadastroForm em modo consulta', () => {
   it('banda de identidade não é desabilitada com o formulário', async () => {
     renderRoute('/cadastros/colaboradores/1?modo=consulta')
 
-    await screen.findByLabelText('Nome')
+    await screen.findByLabelText('Nome completo')
     const banda = screen.getByRole('heading', { level: 1 }).closest('div')
     expect(banda?.closest('fieldset')).toBeNull()
   })
@@ -42,7 +48,7 @@ describe('CadastroForm em modo consulta', () => {
   it('desabilita também os botões de dentro do formulário', async () => {
     renderRoute('/cadastros/colaboradores/1?modo=consulta')
 
-    await screen.findByLabelText('Nome')
+    await screen.findByLabelText('Nome completo')
     // `<fieldset disabled>` alcança botão de busca, não só input.
     expect(screen.getByRole('button', { name: 'Buscar naturalidade' })).toBeDisabled()
   })
@@ -50,7 +56,7 @@ describe('CadastroForm em modo consulta', () => {
   it('sem o search param a tela continua editável', async () => {
     renderRoute('/cadastros/colaboradores/1')
 
-    const nome = await screen.findByLabelText('Nome')
+    const nome = await screen.findByLabelText('Nome completo')
     expect(nome).toBeEnabled()
     expect(screen.getByRole('button', { name: /Gravar/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Fechar/ })).not.toBeInTheDocument()

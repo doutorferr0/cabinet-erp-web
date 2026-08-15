@@ -25,6 +25,7 @@ escrita** — o arquivo está fora da zona declarada deste trilho.
 | `docs/legado/schema/bdprincipal-colunas.csv` | **nome e tipo real de cada coluna** — é daqui que sai todo nome de campo de origem citado abaixo |
 | `docs/legado/schema/bdprincipal-linhas.csv` | contagem de linhas por tabela (foto de 2026-08-10) |
 | `docs/legado/schema/bdprincipal-fks.csv` · `-indices.csv` | FKs declaradas e PKs reais |
+| `docs/legado/exe/sql-do-codigo.sql` · `sql-por-tela.sql` | **2,1 MB de SQL real do sistema** (3.793 comandos únicos do código Delphi + 1.981 blocos dos DFMs). É a fonte da 2ª rodada deste documento — ver [§1.1](#11-a-segunda-rodada-o-sql-do-binário-corrigiu-seis-pontos) |
 | memória `topicos/legado-softlux.md` §`@banco` | leitura funcional, domínios de código, métricas e os blockers já conhecidos |
 | `docs/cabinet/gera-cabinet-schema.py` | o schema destino — tabelas, colunas, escopo org/tenant |
 
@@ -51,6 +52,29 @@ abaixo cobre as 39; o DoD "todas as 34 aparecem" está contido nisso. A contagem
 | `compra` | 5 |
 | `tarefas` | 1 |
 | **total** | **39** |
+
+## 1.1 A segunda rodada: o SQL do binário corrigiu seis pontos
+
+A 1ª rodada leu o **catálogo** (nome, tipo, PK, FK). A 2ª leu o **SQL que o sistema executa** —
+`docs/legado/exe/`, extraído do `SOFTLUX.exe` e versionado no repo desde 2026-08-11. Catálogo diz
+como o dado é guardado; o SQL diz **como o sistema o interpreta**, e é aí que mora a semântica que
+nenhuma FK declara.
+
+Rendeu seis correções ao próprio documento e três respostas a perguntas que estavam marcadas como
+"só o banco responde". Ficam registradas como correção, não silenciosamente sobrescritas:
+
+| # | o que a 1ª rodada dizia | o que o SQL mostrou | onde |
+|---|---|---|---|
+| 1 | `quotes.customer_id` **sem coluna direta** — chegaria por `Obras` ou `Pasta` | **`Venda.Ven_CodVinculo` É o cliente.** 86 junções `Ven_CodVinculo = Clientes.Cli_Codigo` nos dois dumps, **zero** com qualquer outra tabela | [§7.20](#720-quotes--venda-com-ven_tipo--o-23033-de-34136) |
+| 2 | `quotes.number` ← `Ven_CodigoPre` | **`Ven_codigo` é o número do documento; `Ven_CodigoPre` é a chave interna.** Todo relatório impresso seleciona `ven_codigo` + `ParSV_serie` | [§7.20](#720-quotes--venda-com-ven_tipo--o-23033-de-34136) |
+| 3 | numeração de orçamento e pedido é **compartilhada**, e migrar exigiria decisão | **não é.** `ParamentrosSerieVenda` tem **duas** contagens por série — `ParSV_numeroOrc` e `ParSV_numeroPed` — que é exatamente o `kind` separado do Cabinet | [§7.5](#75-document_sequences--paramentrosserievenda-6-linhas--sisseqtabela-226) |
+| 4 | `TpDoc char(3)` × `Ven_Tipo char(1)`: correspondência **não levantada**, 449 mil linhas por uma inferência | **medida:** `'ORC'`↔`'O'`, `'PRO'`↔`'P'`, `'VEN'`↔`'V'` | [§7.21](#721-quote_environments--vendaambiente-144674--ambiente-346) |
+| 5 | B4: `VendaAtendente.Fun_Codigo` teria de resolver contra `Funcionario.Fun_codigo` | **pior:** o sistema junta contra **`Fun_CPF` em 33 consultas** e contra `Fun_codigo` em 5. A coluna carrega CPF na maioria dos caminhos | [B4](#b4--o-mesmo-fun_codigo-é-cpf-em-33-consultas-e-código-em-5) |
+| 6 | `Emp_codigo = empresa.CODLANC` era **premissa** de confiança média-alta | **confirmada:** junções explícitas `Emp_codigo = dbo.empresa.CODLANC` | [T2](#4-transformações-transversais) |
+
+**O que a 2ª rodada NÃO faz:** continua sem tocar o servidor. Literal que aparece no SQL da
+aplicação prova que **o sistema usa** aquele valor — não prova que seja o domínio inteiro da
+coluna. Onde a diferença importa, está dito.
 
 ## 2. Notação
 
@@ -81,7 +105,7 @@ Decidido antes do campo a campo, com base em `@banco`:
   nunca foi usada aqui (`Factura`, `GuiaR`, `GuiaT`, `NotaCredito`, `NotaDebito`).
 - **`estoque_produto_dia` (8,7 mi de linhas) não migra:** é foto diária de saldo, derivável do
   kardex novo. Metade do tamanho da base.
-- **`Preco_Produto_Log` (3,1 mi) não migra como histórico** — ver [§7.16](#716-variant_supplier_prices).
+- **`Preco_Produto_Log` (3,1 mi) não migra como histórico** — ver [§7.16](#716-variant_supplier_prices--preco_produto-169764).
 
 ## 4. Transformações transversais
 
@@ -90,10 +114,10 @@ Valem para **toda** tabela; não se repetem linha a linha no mapa.
 | # | assunto | origem | destino | regra |
 |---|---|---|---|---|
 | T1 | **identidade** | `int` / `float` / `nvarchar` por tabela | `uuid` | toda chave nova é gerada. A carga precisa de uma **tabela de-para persistida** (`origem_tabela`, `origem_chave`, `uuid_novo`) viva até o fim da migração — sem ela nenhuma FK se resolve, e uma segunda passada renumera tudo. É requisito, não detalhe de implementação |
-| T2 | **empresa** | `Emp_codigo int` (em 212 das 359 tabelas) | `tenant_id uuid` | de-para contra `empresa` (4 linhas). **`Emp_codigo` é NULLABLE em quase toda tabela**, e `tenant_id` é parte da PK no destino (NOT NULL) → linha com empresa nula precisa de regra. 99,91% do volume está na empresa 1 (Vertz); empresa 3 tem 22 documentos, empresa 4 tem 6 |
+| T2 | **empresa** | `Emp_codigo int` (em 212 das 359 tabelas) | `tenant_id uuid` | de-para contra `empresa` (4 linhas), **por `CODLANC` — confirmado na 2ª rodada** por junções explícitas `Emp_codigo = dbo.empresa.CODLANC` no SQL da aplicação. **`Emp_codigo` é NULLABLE em quase toda tabela**, e `tenant_id` é parte da PK no destino (NOT NULL) → linha com empresa nula precisa de regra. 99,91% do volume está na empresa 1 (Vertz); empresa 3 tem 22 documentos, empresa 4 tem 6 |
 | T3 | **dinheiro** | `money` (preço) e **`float`** (todos os totais de `Venda`) | `bigint` centavos | `round(valor * 100)`. `money` tem 4 decimais e converte limpo; **`float` não** — `Ven_Total`, `Ven_Desconto`, `VenPro_VlUnitario` e todos os totais são `float`, e a soma dos itens pode não bater com o total do documento por arredondamento binário. Conferir item×cabeçalho antes de aceitar a carga |
 | T4 | **quantidade** | `float` | `numeric(14,3)` | quantidade fracionária é normal no negócio (4,9 MT no impresso). 3 casas é o teto do Cabinet — quantidade com mais casas no legado perde precisão silenciosamente. Medir antes |
-| T5 | **booleano** | **quatro codificações**: `bit` · `char(1)` `'A'`/`'I'` (`*_situacao`) · `nvarchar(2)` `'S'`/`'N'` (`Pro_ativo`) · `nvarchar(6)` (`Ind_Ativo`, `Fun_Ativo`) | `boolean` | uma regra por codificação, não uma só. `Indicacoes` tem **os dois**: `Ind_situacao` char e `Ind_Ativo` nvarchar(6) — qual manda é [blocker B7](#b7-dois-campos-de-ativo-no-profissional) |
+| T5 | **booleano** | **quatro codificações**: `bit` · `char(1)` `'A'`/`'I'` (`*_situacao`) · `nvarchar(2)` `'S'`/`'N'` (`Pro_ativo`) · `nvarchar(6)` (`Ind_Ativo`, `Fun_Ativo`) | `boolean` | uma regra por codificação, não uma só. `Indicacoes` tem **os dois**: `Ind_situacao` char e `Ind_Ativo` nvarchar(6) — qual manda é [blocker B7](#b7--dois-campos-de-ativo-no-profissional) |
 | T6 | **data** | `datetime`/`smalldatetime`, mas **texto em 5 lugares**: `Cli_dataNasc nvarchar(20)`, `Cli_dtnasc_conjuge`, `Ind_Dtnacimento nvarchar(10)`, `Ind_dtnasc_conjuge`, `IndDet_Dtnacimento varchar(10)` | `date` / `timestamptz` | as de texto precisam de parse com formato explícito e tratamento de lixo. `smalldatetime` tem precisão de minuto |
 | T7 | **documento** | `Cli_cnpj_cpf nvarchar(28)`, `For_cnpj_cpf nvarchar(28)`, `IndDet_CNPJCPF varchar(21)`, `CGCCPF nvarchar(38)` | `varchar(14)` sem máscara | tirar máscara e validar. O tamanho de origem (28, 38) diz que guarda formatado; o que não couber em 14 dígitos limpos é lixo, e lixo não vira `NULL` calado — vira relatório |
 | T8 | **auditoria** | `usr_cod_criacao`, `usr_dt_hr_criacao`, `usr_cod_alteracao`, `usr_dt_hr_alteracao` (presentes em quase toda tabela) | `created_by`/`created_at`/`updated_by`/`updated_at` | direto, resolvendo o usuário por T1. **Não repetido no mapa por tabela** |
@@ -185,8 +209,9 @@ endereços de entrega e cobrança, dados bancários e chave PIX, redes sociais, 
 cabeçalho (o impresso do orçamento carrega logo, razão, endereço, CNPJ, IE, fone, e-mail) exige
 esses campos. Decisão de escopo, não de ETL.
 
-**Nota de premissa:** o mapa assume `Emp_codigo = empresa.CODLANC`. Não há FK declarada que prove
-— confiança média-alta (o padrão vale para as 212 tabelas). Confirmar com uma consulta antes da carga.
+**Premissa confirmada na 2ª rodada:** `Emp_codigo = empresa.CODLANC`. Não há FK declarada, mas o
+SQL da aplicação junta assim de forma explícita (`Emp_codigo = dbo.empresa.CODLANC`, e
+`empresa.CODLANC = dbo.FornecedorEmpresaCompradora.Emp_codigo`). Confiança alta.
 
 ### 7.2 `employees` ← `Funcionario` (111) ∪ `SisUsuarios` (79)
 
@@ -213,7 +238,7 @@ centro de custo. O Cabinet não tem módulo de colaborador — `employees` é id
 **Sem destino em `SisUsuarios`:** configuração de e-mail SMTP por usuário (7 col), flags de PDV,
 `SisUsu_LiberarSepEnt`, `SisUsu_TelefoneWhatsapp`.
 
-⚠️ **Ver [B4](#b4-funcionario-tem-pk-de-cpf-e-as-fks-apontam-para-outra-coluna).**
+⚠️ **Ver [B4](#b4--o-mesmo-fun_codigo-é-cpf-em-33-consultas-e-código-em-5).**
 
 ### 7.3 `employee_tenants` ← `SisUsuarios` + `SisGrupo_Usuario` (7)
 
@@ -250,14 +275,38 @@ Uma linha por `kind`:
 `product_groups`), `EstoqueTipo` (idem `stock_locations`), `CategoriaVenda` (idem
 `sale_categories`).
 
-### 7.5 `document_sequences` ← `SisSeqTabela` (226 linhas)
+### 7.5 `document_sequences` ← `ParamentrosSerieVenda` (6 linhas) + `SisSeqTabela` (226)
+
+**Corrigido na 2ª rodada.** A origem principal não é `SisSeqTabela`: é
+**`ParamentrosSerieVenda`**, e ela já tem a forma do destino.
 
 | destino | origem | tipo |
 |---|---|---|
-| `tenant_id` | `Emp_codigo` (é NOT NULL aqui) | T2 |
-| `kind` | `SeqTab_Tabela` + `SeqTab_Campo` | transformação — filtrar as sequências dos documentos que o Cabinet tem |
-| `series` | `ParamentrosSerieVenda.ParSV_serie` | transformação — a série não está em `SisSeqTabela` |
-| `next_number` | `SeqTab_Numero float` | **recalcular, não copiar** |
+| `tenant_id` | `ParamentrosSerieVenda.Emp_codigo` | T2 |
+| `series` | `ParSV_serie char(3)` | direto — e o destino é `varchar(3)`, mesmo tamanho |
+| `kind` | **implícito na coluna escolhida** | transformação — ver abaixo |
+| `next_number` | `ParSV_numeroOrc` (kind orçamento) · `ParSV_numeroPed` (kind pedido) | **recalcular, não copiar** |
+
+**`ParamentrosSerieVenda` guarda DUAS contagens por série:**
+
+```
+ParSV_serie char(3)  ·  ParSV_numeroOrc float  ·  ParSV_numeroPed float
+```
+
+Uma linha da origem vira **duas** linhas do destino — `(tenant, 'quote', serie)` e
+`(tenant, 'sales_order', serie)`. Isso desfaz a preocupação da 1ª rodada com numeração
+compartilhada ([§7.26](#726-sales_orders--venda-com-ven_tipo--p-11103)): o legado **já** numera
+orçamento e pedido separadamente, por série. O `kind` do Cabinet não é invenção nova, é o que o
+Softlux sempre fez — só que em duas colunas em vez de duas linhas.
+
+São 6 séries cadastradas, e o próprio dump do binário mostra a criação delas
+(`insert into ParamentrosSerieVenda (ParSV_serie, ParSV_numeroOrc, ParSV_numeroPed, …) values('2',0,…`).
+
+**`SisSeqTabela` (226 linhas) continua sendo origem** para o que não é documento de venda —
+ordem de compra, entre outros — com o mesmo cuidado abaixo. Das 226 sequências, só interessam as
+dos documentos que existem no Cabinet; o resto é **sem destino**.
+
+**Por que recalcular, nos dois casos:**
 
 **Por que recalcular:** o legado realimenta a sequência com
 `update SisSeqTabela set SeqTab_Numero = (select MAX(Ven_CodigoPre)+1 from Venda)` — sob
@@ -404,7 +453,7 @@ regra. Quantas existem: **sem dado**.
 **Sem destino:** `GrupoProduto_ordem`.
 **Nota de conteúdo:** os códigos **1000 = SERVIÇOS** e **1001 = FRETE** são pseudo-produtos — o
 legado põe serviço e frete como grupo de produto para entrarem no cálculo de comissão por grupo.
-Migrar o grupo é fácil; o que depende dele (`VendaServico`, frete) é **sem destino** — ver [§8](#8-o-que-fica-sem-destino-módulos-inteiros).
+Migrar o grupo é fácil; o que depende dele (`VendaServico`, frete) é **sem destino** — ver [§8](#8-o-que-fica-sem-destino--módulos-inteiros).
 
 ### 7.10 `finishes` ← `Acabamento` (248)
 
@@ -538,7 +587,7 @@ Some também **`Cus_TributacaoICMS varchar(30)`**, que ramifica o cálculo de IC
 (ST/MVA, DIFAL, crédito…) — e ST domina, 317 de 385 perfis.
 
 → **`supplier_cost_profiles` guarda 5 números de um cálculo de 30.** O preço de VENDA sobrevive
-(depende de `Pre_Tabela`, dos descontos em cascata e do índice — ver [§7.15](#715-supplier_price_indexes)).
+(depende de `Pre_Tabela`, dos descontos em cascata e do índice — ver [§7.15](#715-supplier_price_indexes--indice_preco-376-linhas)).
 O **CUSTO e o LUCRO não.** Se o Cabinet vai mostrar margem, o perfil de custo precisa crescer, e
 isso é decisão de modelagem anterior ao ETL.
 
@@ -567,7 +616,7 @@ barato é `valid_from = data de corte da migração` e `valid_to = NULL` — o �
 embutidas no índice), `Ipr_Lucro`, `Ipr_vl_Lucro`, `Ipr_CustoTotal`, `Ipr_IndiceVlCusto`,
 `Ipr_VlLucroCusto`, `Ipr_CodigoSigla`.
 
-⚠️ **Ver [B1](#b1-ipr_indice--16-índices-em-10-vendem-pelo-preço-de-compra).**
+⚠️ **Ver [B1](#b1--ipr_indice-16-índices-em-10-vendem-pelo-preço-de-compra).**
 
 ### 7.16 `variant_supplier_prices` ← `Preco_Produto` (169.764)
 
@@ -657,12 +706,12 @@ destino nasceu para carregar.
 | destino | origem | tipo |
 |---|---|---|
 | `id` | `Ven_CodigoPre float` (PK) | T1 |
-| `number` | `Ven_CodigoPre` | direto |
+| `number` | **`Ven_codigo float`** | direto · **corrigido na 2ª rodada** |
 | `series` | `ParSV_serie char(3)` | direto |
 | `status` | `Ven_Situacao` + `Ven_DataFechaVenda` + `Ven_DataValidade` | **transformação** — 2 valores de origem (`A`/`C`) para 5 de destino (`draft\|issued\|accepted\|expired\|cancelled`) |
 | `issued_at` | `Ven_DataEmissao` | direto |
 | `expires_at` | `Ven_DataValidade` | direto (validade típica: 5 dias, `par_val_orc=5`) |
-| `customer_id` | **nenhuma coluna direta** | **transformação · B3** |
+| `customer_id` | **`Ven_CodVinculo int`** | T1 · **corrigido na 2ª rodada** |
 | `site_id` | `Obr_codigo` | T1 |
 | `project_name` | `Ven_DescricaoVenda` (ou `Obras.Obr_Descricao`) | transformação |
 | `folder_number` | `Pasta_codigo` → `Pasta` (872) | T1 |
@@ -671,6 +720,22 @@ destino nasceu para carregar.
 | `discount_percent` | `Ven_DescontoPorc float` | T3/T4 |
 | `total_cents` | `Ven_Total float` | **T3 — float** |
 | `closed_at` | `Ven_DataFechaVenda` | direto |
+
+#### Dois números por documento, e o que se imprime é o segundo
+
+`Venda` tem `Ven_CodigoPre float` (**PK**) e `Ven_codigo float` (nullable). A 1ª rodada tratou
+`Ven_CodigoPre` como o número do documento. **É a chave interna.** O número que o cliente vê é
+`Ven_codigo`, sempre em par com a série — todo relatório impresso seleciona
+`venda.ven_codigo, venda.ParSV_serie`, nunca `Ven_CodigoPre`. E o par bate com as duas contagens
+de `ParamentrosSerieVenda` ([§7.5](#75-document_sequences--paramentrosserievenda-6-linhas--sisseqtabela-226)).
+
+A migração antiga embutida no binário confirma a separação na origem: ela lê
+`orc_codigo` → `Ven_codigo` e `orc_codigo_pre` → `Ven_CodigoPre`, duas colunas distintas já no
+modelo velho.
+
+→ **Consequência:** `quotes.id` ← `Ven_CodigoPre` (é por ele que os satélites penduram) e
+`quotes.number` ← `Ven_codigo`. Trocar os dois faria o Cabinet imprimir o número errado em 34 mil
+documentos, e o erro seria invisível — os dois são `float` e ambos existem.
 
 **`discount_mode` tem um terceiro modo escondido:** o legado documenta desconto por produto OU
 geral OU **por grupo**, e `VendaDesconto` tem **300.337 linhas** (13 col) — o desconto por grupo
@@ -698,8 +763,10 @@ materializado por documento. `Ven_TipoDesc` só tem `P` e `G`. A tabela `VendaDe
 - **RT:** `Ven_RtAutomatico`, `Ven_RtCalcular`, `Par_impostofixoRT`, `Par_impostofixoComissao` → **B2**
 - **ganho sobre venda:** `Ven_DescGanhoVenda`, `Ven_AcrescGanhoVenda`, `Par_ComissaoVincParc`,
   `Ven_FixaDescontoComissao`
-- **vínculo:** `Ven_TpVinculo`, `Ven_CodVinculo`, `Ven_codigo`, `Ven_Migrado`, `Pco_codigo`,
-  `Ven_CupomFiscalDAV`
+- **vínculo:** `Ven_TpVinculo` (o discriminador do que `Ven_CodVinculo` aponta — não aparece
+  comparado a literal em nenhum dos 5.774 comandos SQL extraídos, então **o domínio segue sem
+  dado**; na prática as 86 junções são todas com `Clientes`), `Ven_Migrado` (marca a carga do
+  modelo velho), `Pco_codigo`, `Ven_CupomFiscalDAV`
 
 ### 7.21 `quote_environments` ← `VendaAmbiente` (144.674) + `Ambiente` (346)
 
@@ -717,10 +784,24 @@ ambiente**. Um `uuid` não numera nada. Parece erro de tipo no gerador do schema
 `U` são todas FK). **Sem `code` legível, o impresso migrado perde a numeração de ambiente.**
 Registrado como achado; correção é fora da zona desta issue.
 
-**Sobre a chave:** os satélites da venda penduram por `TpDoc` + `NDocPre`, e `TpDoc` é `char(3)`
-enquanto `Ven_Tipo` é `char(1)` — a correspondência entre os dois domínios **não está levantada**
-(`@banco` marca a inferência `VenAmb_NDocPre → Venda.Ven_CodigoPre` como confiança média-alta).
-Confirmar antes de juntar, senão o ambiente cola no documento errado.
+**Sobre a chave — resolvido na 2ª rodada.** Os satélites penduram por `TpDoc` + `NDocPre`, e
+`TpDoc` é `char(3)` contra `Ven_Tipo char(1)`. A correspondência estava marcada como não levantada;
+o SQL da aplicação a mostra, por co-ocorrência no mesmo comando:
+
+| `Ven_Tipo` | `TpDoc` | co-ocorrências |
+|---|---|---|
+| `'P'` | `'PRO'` | 36 |
+| `'O'` | `'ORC'` | 2 |
+| `'V'` | `'VEN'` | 1 |
+
+Outros `TpDoc` que aparecem sem par com `Ven_Tipo`: `'AVU'` (11), `'AUT'` (10), `'VDI'` (5),
+`'FCT'` (5), `'DEM'` (4), `'SPC'`, `'PST'`, `'EPD'`, `'NDE'`, `'NCR'`, `'GTR'`, `'GRE'`, `'FPF'`,
+`'DEV'` — documentos de outros módulos (devolução, factura portuguesa, guias) que penduram nas
+mesmas satélites. **Filtrar por `TpDoc` ao migrar**, senão o ambiente de uma devolução cola num
+orçamento.
+
+`NDocPre` casa com `Ven_CodigoPre` (a chave interna), **não** com `Ven_codigo` — coerente com o
+nome (`NDocPre` = número do documento **pré**).
 
 `Ambiente` (346) é a lista de ambientes cadastrados; `VendaAmbiente` é o ambiente **dentro de um
 documento**, com descrição própria. O destino só tem o segundo — a lista mestre é **sem destino**.
@@ -835,18 +916,22 @@ comissão de documento antigo com a regra de hoje dá número diferente do que f
 |---|---|---|
 | `id` | `Ven_CodigoPre` do pedido | T1 |
 | `quote_id` | **`Ven_Orcamento float`** | T1 · **B3** |
-| `order_number` | `Ven_CodigoPre` | direto · ver nota |
+| `order_number` | **`Ven_codigo`** (contado por `ParSV_numeroPed`) | direto · **corrigido na 2ª rodada** |
 | `series` | `ParSV_serie` | direto |
 | `status` | `Ven_Situacao` + `Ven_DataConclusao` | transformação → `open\|partially_delivered\|delivered\|cancelled` |
 | `accepted_at` | `Ven_DataFechaVenda` | direto |
 | `delivery_forecast` | `Ven_DataPrevEntrega` | direto |
 
-**Numeração compartilhada:** orçamento e pedido saem da **mesma** sequência
-(`Ven_CodigoPre` é global, e a PK de `Venda` é só ela — sem `Emp_codigo`). No Cabinet
-`quotes.number` e `sales_orders.order_number` vêm de `document_sequences` com `kind` **separado**.
-Migrar os números como estão preserva a rastreabilidade com o papel antigo e deixa as duas
-sequências com buracos; renumerar quebra a referência a documento impresso que está na rua.
-Decisão — e ela precisa acontecer antes de [§7.5](#75-document_sequences--sisseqtabela-226-linhas).
+**A numeração NÃO é compartilhada — a 1ª rodada errou aqui.** O que é global e sem tenant é a
+chave interna `Ven_CodigoPre` (PK de `Venda`, sem `Emp_codigo`). O **número do documento** é
+`Ven_codigo`, e ele vem de contagens separadas por tipo e por série
+(`ParSV_numeroOrc` / `ParSV_numeroPed`, [§7.5](#75-document_sequences--paramentrosserievenda-6-linhas--sisseqtabela-226)).
+Ou seja: o `kind` separado do Cabinet **reproduz** o legado, não conflita com ele. Não há decisão a
+tomar, e a que a 1ª rodada propunha (renumerar vs preservar buracos) era resposta a um problema
+que não existe.
+
+O que **continua valendo** é o risco de tenant: `Ven_CodigoPre` é sequência global entre Vertz e
+Via HF, e o Cabinet põe `tenant_id` na PK.
 
 **24 pedidos não têm orçamento** (11.103 − 11.079, de `@banco`) e `sales_orders.quote_id` é
 NOT NULL → ou nasce um `quote` sintético para cada, ou eles ficam de fora. São 24 registros;
@@ -887,7 +972,7 @@ linha de log pode ser a alteração de outra linha**, e somar tudo conta duas ve
 aponta a linha original. Nenhuma dessas três colunas tem destino.
 
 **`balance_after` é NOT NULL no destino e não existe na origem.** Recalcular por ordenação é o
-único caminho — e leva direto a [B5](#b5-o-log-de-estoque-não-fecha-com-o-saldo-por-desenho).
+único caminho — e leva direto a [B5](#b5--o-log-de-estoque-não-fecha-com-o-saldo-por-desenho).
 
 **Corte de carga:** **56.254 dos 56.379 `ZERAR ESTOQUE` aconteceram em 30/03/2015**, num único
 dia — é a carga inicial do Softlux, não movimento. Migrar 402 mil linhas para reproduzir a carga
@@ -908,7 +993,7 @@ movimento de abertura na data de corte e guardar o histórico como arquivo. Deci
 ⚠️ **`stock_balances` não é carga, é conferência.** No Cabinet o saldo é mantido por trigger do
 kardex (ADR-009). Carregar `Epr_estoque` direto contradiz o desenho; o valor do legado serve para
 **bater** contra o saldo que o kardex produziu. Divergência aqui é sintoma, não erro de digitação
-— ver [B5](#b5-o-log-de-estoque-não-fecha-com-o-saldo-por-desenho).
+— ver [B5](#b5--o-log-de-estoque-não-fecha-com-o-saldo-por-desenho).
 
 ### 7.30 `stock_reservations` ← `Reserva_Estoque` (3.183)
 
@@ -1064,7 +1149,7 @@ tabulares, 7 procedures e 1 trigger. As que carregam regra de negócio de verdad
 `CalcularProduto` / `CalcularPorProduto` (formação de preço, [§7.14](#714-supplier_cost_profiles--custo-385-linhas-40-col)),
 **`PlanoContaValor`** (41 KB, a maior rotina do banco, apuração contábil — **nunca aberta**,
 item F do inventário A–H), `EstoqueMinimo` e `GiroEstoque` (funções, não tabelas),
-`GravaEstoqueMinimo` (procedure) e o trigger `GatilhoEstoqueMinimo` (ver [B5](#b5-o-log-de-estoque-não-fecha-com-o-saldo-por-desenho)).
+`GravaEstoqueMinimo` (procedure) e o trigger `GatilhoEstoqueMinimo` (ver [B5](#b5--o-log-de-estoque-não-fecha-com-o-saldo-por-desenho)).
 Nenhuma migra: no Cabinet a regra vive na aplicação e no schema, não em T-SQL com cursor.
 Mas o **comportamento** de `CalcularProduto` precisa ser reproduzido, e hoje só 5 das ~30 entradas
 dele têm coluna de destino.
@@ -1158,7 +1243,22 @@ orçamentos. **A leitura consistente é que o pedido é uma linha NOVA que refer
 e a coluna `Venda.Ven_Orcamento float` é exatamente essa referência. Há ainda
 `Ven_TpVinculo` + `Ven_CodVinculo`, um segundo par de vínculo genérico.
 
-**Confiança média-alta.** É aritmética sobre números medidos, não inspeção de código.
+**A 2ª rodada subiu a confiança para ALTA**, com três evidências independentes do SQL do binário:
+
+1. **Não existe `update venda set ven_tipo = …`** em nenhum dos 5.774 comandos extraídos. Se a
+   conversão fosse troca de tipo, esse UPDATE seria o coração dela.
+2. **As satélites separam os dois documentos por `TpDoc`** — orçamento grava `'ORC'`, pedido grava
+   `'PRO'` ([§7.21](#721-quote_environments--vendaambiente-144674--ambiente-346)). Uma troca de
+   tipo teria de reescrever `TpDoc` em `VendaAmbiente` (144.674), `VendaAtendente` (37.707),
+   `VendaIndicacao` (34.666) e `VendaIndicacaoGrupProd` (232.415) junto — 449 mil linhas
+   reetiquetadas a cada conversão. Nenhum UPDATE desses aparece.
+3. **A migração do modelo velho, embutida no binário, já era cópia:** `insert into venda(...)
+   select ... from orcamento` e um segundo `insert into venda(...)` a partir de `pedido`, este
+   carregando `Ven_Orcamento` na lista de colunas. Orçamento e pedido eram **linhas separadas** no
+   modelo antigo, e a separação foi preservada na carga para `Venda`.
+
+Nada disso é a rotina de conversão em si — ela não está nos dumps. Por isso **alta, não certa**, e
+Q1 continua sendo a consulta que fecha.
 
 **Por que é blocker:** a diferença troca o mapa inteiro do módulo de venda.
 - Se **cópia** (leitura desta seção): `quotes` ← 23.033 linhas `Ven_Tipo='O'`, `sales_orders` ←
@@ -1176,23 +1276,39 @@ venda é sequência global entre Vertz e Via HF, e o isolamento depende de filtr
 O Cabinet põe `tenant_id` na PK, com RLS FORCE. Se houver número repetido entre empresas, ele
 some na carga.
 
-### B4 — `Funcionario` tem PK de CPF e as FKs apontam para outra coluna
+### B4 — o mesmo `Fun_Codigo` é CPF em 33 consultas e código em 5
 
 `Funcionario` (111 linhas) tem **PK = `Fun_CPF float`**. A coluna `Fun_codigo int` é **nullable** e
-**não tem índice único**. E é `Fun_codigo` que o resto do banco usa: `SisUsuarios.fun_codigo`,
-`VendaAtendente.Fun_Codigo` (37.707 linhas), `Venda.Fun_codigo`, `Indicacoes.fun_codigo`,
-`observacoes.Fun_codigo`. **Nenhuma FK declarada aponta para `Funcionario`** — conferido em
-`bdprincipal-fks.csv`, as 10 FKs da tabela são todas de saída.
+**sem índice único**. **Nenhuma FK declarada aponta para `Funcionario`** — as 10 FKs da tabela são
+todas de saída (conferido em `bdprincipal-fks.csv`).
+
+A 1ª rodada supôs que a resolução fosse por `Fun_codigo`. **O SQL do binário mostra pior:** o
+sistema junta a coluna `Fun_Codigo` das satélites contra **duas** colunas diferentes, dependendo da
+consulta.
+
+| junção observada | ocorrências |
+|---|---|
+| `… .Fun_Codigo = Funcionario.Fun_CPF` | **33** |
+| `… .Fun_Codigo = Funcionario.Fun_codigo` | 5 |
+
+Ou seja: **`VendaAtendente.Fun_Codigo` (37.707 linhas) carrega um CPF na maioria dos caminhos**, e
+o nome da coluna mente. A migração do modelo velho, no mesmo dump, faz a conversão explícita e
+confirma a leitura:
+
+```sql
+(select fun_codigo from Funcionario where Fun_CPF = orc_eletricista)
+```
 
 Consequências para a carga:
-- `employees` ← `Funcionario` precisa resolver por `Fun_codigo`, que pode ser nulo ou repetido;
-- `quote_salespeople.employee_id` (37.707 linhas) pode não resolver;
-- CPF como chave num `float` perde dígito: **CPF tem 11 dígitos e `float` de dupla precisão tem
-  ~15-16 dígitos significativos** — cabe, mas zero à esquerda some e a comparação é traiçoeira.
+- resolver `employees` por `Fun_codigo` **perde 33 dos 38 caminhos**; resolver por `Fun_CPF` perde
+  os outros 5. Nenhuma das duas sozinha funciona — é preciso decidir por coluna de origem, uma a uma;
+- CPF num `float`: 11 dígitos cabem nos ~15-16 significativos de dupla precisão, mas **zero à
+  esquerda some** e a comparação por igualdade em ponto flutuante é traiçoeira;
+- `quote_salespeople.employee_id` é o que mais depende disso.
 
-**O que destrava:** medir quantos `Funcionario` têm `Fun_codigo` nulo ou duplicado, e quantos
-`VendaAtendente.Fun_Codigo` não casam. São 111 colaboradores — se der conflito, dá para resolver
-à mão.
+**O que destrava:** medir, nas 111 linhas de `Funcionario`, quantas têm `Fun_codigo` nulo ou
+repetido, e testar os dois caminhos de resolução contra `VendaAtendente`. São 111 colaboradores —
+se sobrar conflito, resolve-se à mão.
 
 ### B5 — o log de estoque não fecha com o saldo, por desenho
 
@@ -1251,16 +1367,19 @@ Cabem na execução, mas quebram em silêncio se ninguém olhar.
    `CodAcabamento` é `nvarchar(20)` em `Acabamento`, `varchar(10)` em `estoque_log` e
    `Res_Acabamento varchar(5)` na reserva. **O legado já truncou.** A junção por código vai falhar
    para produto com código longo, e falhar quieta: a linha simplesmente não casa.
-2. **`Preco_Produto` aceita duplicata de variante** — ver [§7.16](#716-variant_supplier_prices).
+2. **`Preco_Produto` aceita duplicata de variante** — ver [§7.16](#716-variant_supplier_prices--preco_produto-169764).
 3. **`float` para dinheiro** em toda a `Venda` (T3): conferir `SUM(itens)` contra `Ven_Total`
    documento a documento antes de aceitar.
 4. **`Emp_codigo` nulo** em tabela que vira tenant-scoped (T2): PK do destino é NOT NULL.
-5. **`TpDoc char(3)` × `Ven_Tipo char(1)`**: a correspondência entre os domínios não está
-   levantada, e dela dependem `VendaAmbiente`, `VendaAtendente`, `VendaIndicacao` e
-   `VendaIndicacaoGrupProd` — 449 mil linhas penduradas por uma inferência de confiança
-   média-alta.
+5. ~~`TpDoc char(3)` × `Ven_Tipo char(1)` sem correspondência levantada~~ — **RESOLVIDO na 2ª
+   rodada** ([§7.21](#721-quote_environments--vendaambiente-144674--ambiente-346)). Vira outro
+   risco, menor e concreto: as satélites carregam documentos de **outros módulos** (`'DEV'`,
+   `'FCT'`, `'GTR'`…), então migrar sem filtrar por `TpDoc` cola satélite de devolução em orçamento.
 6. **`quote_environments.code` é `uuid`** e recebe `int` — ver [§7.21](#721-quote_environments--vendaambiente-144674--ambiente-346).
-7. **Numeração compartilhada entre orçamento e pedido** — ver [§7.26](#726-sales_orders--venda-com-ven_tipo--p-11103).
+7. ~~Numeração compartilhada entre orçamento e pedido~~ — **não existe**, era erro de leitura da 1ª
+   rodada ([§7.26](#726-sales_orders--venda-com-ven_tipo--p-11103)). No lugar dela: **não trocar
+   `Ven_codigo` por `Ven_CodigoPre`** ([§7.20](#720-quotes--venda-com-ven_tipo--o-23033-de-34136)) —
+   os dois são `float`, ambos existem, e o erro sai impresso.
 
 ## 11. Conferências mínimas de aceite
 
@@ -1279,17 +1398,19 @@ Sem isso a carga "termina" sem ninguém saber se deu certo.
 
 ## 12. Perguntas que só o banco responde
 
-Nenhuma foi executada nesta rodada — o levantamento é sobre os dumps versionados em
-`docs/legado/schema/`, de 2026-08-10, e não houve acesso ao servidor. Cada linha é uma consulta.
+Nenhuma consulta ao servidor foi executada — as duas rodadas leram os dumps versionados
+(`docs/legado/schema/`, de 2026-08-10, e `docs/legado/exe/`). **Três perguntas caíram na 2ª rodada**
+e ficam registradas com a resposta; as outras nove continuam de pé.
 
 | # | pergunta | destrava |
 |---|---|---|
-| Q1 | quantas linhas `Ven_Tipo='P'` têm `Ven_Orcamento` preenchido e resolvendo para um `Ven_Tipo='O'`? | **B3** — o mapa inteiro de venda |
+| Q1 | quantas linhas `Ven_Tipo='P'` têm `Ven_Orcamento` preenchido e resolvendo para um `Ven_Tipo='O'`? | **B3** — o mapa inteiro de venda. Confiança já subiu a **alta** na 2ª rodada; esta consulta fecha |
 | Q2 | `SUM(estoque_log)` por variante × local bate com `Estoque_produto`? em quantas variantes diverge, e por quanto? | **B5** |
-| Q3 | `Emp_codigo` = `empresa.CODLANC`? | T2, premissa de todo o multi-tenant |
-| Q4 | quantos `Funcionario` têm `Fun_codigo` nulo ou repetido? quantos `VendaAtendente.Fun_Codigo` não casam? | **B4** |
-| Q5 | quantas `Venda` têm `Obr_codigo` nulo **e** `Pasta_codigo` nulo? (documento sem caminho para o cliente) | `quotes.customer_id` |
-| Q6 | domínio de `Pcp_status`, `Ocp_status`, `Nen_status`, `obs_tipo` | §7.31, §7.32, §7.34, §7.36 |
+| ~~Q3~~ | ~~`Emp_codigo` = `empresa.CODLANC`?~~ | **RESPONDIDA — sim**, por junção explícita no SQL da aplicação |
+| Q4 | quantos `Funcionario` têm `Fun_codigo` nulo ou repetido? e os dois caminhos de resolução (`Fun_CPF` × `Fun_codigo`) cobrem quanto de `VendaAtendente`? | **B4** — reformulada pela 2ª rodada |
+| ~~Q5~~ | ~~quantas `Venda` têm `Obr_codigo` e `Pasta_codigo` nulos?~~ | **DISSOLVIDA** — o cliente vem de `Ven_CodVinculo`, não da obra. Vira Q5′ |
+| Q5′ | quantas `Venda` têm `Ven_CodVinculo` nulo ou sem `Clientes` correspondente? | `quotes.customer_id` é NOT NULL |
+| ~~Q6~~ | ~~domínio de `Pcp_status`, `Ocp_status`, `Nen_status`, `obs_tipo`~~ | **PARCIAL** — o sistema filtra por `'A'` nos três status (e `Nen_status <> 'C'`), mesmo par Ativo/Cancelado de `Ven_Situacao`; `obs_tipo` usa `'P'`, `'O'`, `'I'`, `'A'`. São os valores que a aplicação USA, não prova de domínio fechado — só uma consulta dá o domínio inteiro |
 | Q7 | quantos parceiros coincidem por documento entre `Clientes`, `fornecedor` e `Indicacoes_Detalhe`? | dedup de `partners` |
 | Q8 | `Indicacoes` 1:N `Indicacoes_Detalhe` — quantos cabeçalhos têm mais de um detalhe? | `partners.parent_id` |
 | Q9 | quantas `Nota_entrada` têm itens de mais de uma `ordem_compra`? | §7.34 |
@@ -1306,8 +1427,14 @@ Nenhuma foi executada nesta rodada — o levantamento é sobre os dumps versiona
   **1 é derivada** sem tabela de origem (`product_variants`). **5 são parciais**, com coluna
   essencial sem origem.
 - **7 blockers**, dois vindos da issue (`Ipr_Indice`, `Par_RTautomatico`) e cinco desta leitura.
-  Nenhum resolvido — cada um tem escrito o que destrava.
+  Nenhum resolvido — cada um tem escrito o que destrava. A 2ª rodada subiu **B3** para confiança
+  alta e mostrou que **B4 é pior** do que a 1ª descrevia.
+- **A 2ª rodada corrigiu seis pontos do próprio documento** lendo o SQL do binário
+  ([§1.1](#11-a-segunda-rodada-o-sql-do-binário-corrigiu-seis-pontos)) — entre eles dois que
+  sairiam impressos errados em 34 mil documentos: o cliente do orçamento e o número do documento.
+  Catálogo diz como o dado é guardado; só o SQL diz como o sistema o lê.
 - **A maior lacuna não é de ETL, é de schema:** `partners` não guarda endereço nem telefone, e o
   legado tem três endereços e quatro telefones por cliente. Depois dela, na ordem: o perfil de
   custo com 5 de 30 colunas, o snapshot do item de orçamento, e o RBAC fino reduzido a uma string.
-- **12 perguntas** dependem de uma consulta ao SQL Server. Nenhuma foi feita nesta rodada.
+- **9 perguntas** ainda dependem de uma consulta ao SQL Server; eram 12, e três caíram lendo o SQL
+  do binário. Nenhuma consulta ao servidor foi feita — não houve acesso em nenhuma das rodadas.

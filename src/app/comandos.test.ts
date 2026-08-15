@@ -21,9 +21,18 @@ const doGrupo = (grupo: string, rotaAtual?: string, tem: Tem = temTudo) =>
     .map((c) => c.titulo)
 
 describe('comandosDaPaleta — recurso da empresa', () => {
-  it('oferece uma navegação por item visível', () => {
-    const itens = navGroups.flatMap((g) => g.items)
-    expect(doGrupo(GRUPO_IR_PARA)).toHaveLength(itens.length)
+  /**
+   * "Item visível" para a paleta é o que `gruposVisiveis` devolve, e desde a
+   * Nav-2 isso é menos que a barra desenha: tela FUTURA sai (comando que leva
+   * a 404) e FILHA sobe (quem navega é `Ordem de Compra`, não o pai
+   * `Compras`). Contar contra `navGroups` cru voltaria a oferecer as duas.
+   */
+  it('oferece uma navegação por item NAVEGÁVEL', () => {
+    const navegaveis = navGroups
+      .flatMap((g) => g.items)
+      .flatMap((item) => item.filhas ?? [item])
+      .filter((item) => !item.futuro)
+    expect(doGrupo(GRUPO_IR_PARA)).toHaveLength(navegaveis.length)
   })
 
   it('empresa sem o recurso NÃO vê a tela na paleta', () => {

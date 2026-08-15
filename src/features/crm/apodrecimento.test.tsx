@@ -58,7 +58,29 @@ function cartao(over: Partial<CrmOpportunityDto> & { id: string }): CrmOpportuni
 
 /** Cartão que entrou na etapa há `n` dias, contando do `AGORA` dos testes. */
 function paradoHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
-  const entrada = new Date(AGORA.getTime() - dias * 86_400_000)
+  return paradoDesde(AGORA, dias, over)
+}
+
+/**
+ * O mesmo, contando de AGORA DE VERDADE.
+ *
+ * A TELA chama `apodrecimentoDoCartao` sem `agora`, então ela usa o relógio da
+ * máquina — e um cartão montado a partir da constante dos testes conta um dia a
+ * mais ou a menos assim que a data real passa dela. **Já quebrou**: a suíte
+ * rodou às 21h50 de 14/08 no fuso -03, que é 15/08 em UTC, e o selo disse 21
+ * onde o teste esperava 20. Regra pura usa a constante; teste de tela usa o
+ * relógio, que é o que a tela usa.
+ */
+function paradoAgoraHa(dias: number, over: Partial<CrmOpportunityDto> = {}): CrmOpportunityDto {
+  return paradoDesde(new Date(), dias, over)
+}
+
+function paradoDesde(
+  referencia: Date,
+  dias: number,
+  over: Partial<CrmOpportunityDto>,
+): CrmOpportunityDto {
+  const entrada = new Date(referencia.getTime() - dias * 86_400_000)
   return cartao({ id: `op-${dias}`, stageChangedAt: entrada.toISOString(), ...over })
 }
 
@@ -138,11 +160,11 @@ const ETAPAS: CrmStageDto[] = [
 
 /** Um cartão de cada estado, em etapas que existem no funil do teste. */
 const CARTOES: CrmOpportunityDto[] = [
-  { ...paradoHa(1), id: 'op-fresco', name: 'Fresco' },
-  { ...paradoHa(7), id: 'op-perto', name: 'Quase la' },
-  { ...paradoHa(20), id: 'op-podre', name: 'Podre' },
+  { ...paradoAgoraHa(1), id: 'op-fresco', name: 'Fresco' },
+  { ...paradoAgoraHa(7), id: 'op-perto', name: 'Quase la' },
+  { ...paradoAgoraHa(20), id: 'op-podre', name: 'Podre' },
   {
-    ...paradoHa(90),
+    ...paradoAgoraHa(90),
     id: 'op-sem-prazo',
     // Título diferente do nome da ETAPA de propósito: com os dois iguais, a
     // busca por texto acha a coluna e o cartão, e a asserção não sabe qual pegou.
@@ -150,7 +172,7 @@ const CARTOES: CrmOpportunityDto[] = [
     stageId: 'e2',
     stageName: 'Sem prazo',
   },
-  { ...paradoHa(90), id: 'op-ganho', name: 'Ganho velho', stageId: 'e3', stageName: 'Ganho' },
+  { ...paradoAgoraHa(90), id: 'op-ganho', name: 'Ganho velho', stageId: 'e3', stageName: 'Ganho' },
 ]
 
 function servidorDoFunil(): FetchStub {

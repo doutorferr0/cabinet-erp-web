@@ -1,12 +1,10 @@
-import { Appbar } from '@/app/appbar'
+import { Appbar, secaoDaRota } from '@/app/appbar'
 import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
-import { type NavItem, gruposVisiveis } from '@/app/navigation'
+import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
-import { CompanySwitcher } from '@/components/cabinet/company-switcher'
-import { Marca } from '@/components/cabinet/marca'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import { Separator } from '@/components/ui/separator'
@@ -23,13 +21,14 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-  useSidebar,
 } from '@/components/ui/sidebar'
+import { normalize } from '@/data/provider'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
 import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { useState } from 'react'
+import { ChevronDown, Search } from 'lucide-react'
+import { useId, useState } from 'react'
 
 /**
  * O conteúdo do cartão de hover de UM item: só a linha que diz o que a tela FAZ
@@ -44,183 +43,281 @@ function ExplicacaoDaTela({ tela }: { tela: NavItem }) {
   return <p className="text-sm leading-snug">{tela.descricao}</p>
 }
 
-function AppSidebar() {
+/**
+ * Estado de colapso dos itens com filhas, LEMBRADO POR SESSÃO.
+ *
+ * `sessionStorage` e não `localStorage`: é preferência de sessão de trabalho,
+ * não de conta (a issue pede "lembrado por sessão"). Quem abre o Cabinet
+ * amanhã começa do padrão, e quem navegou a manhã inteira não reabre `Compras`
+ * a cada tela. Leitura tolerante — chave corrompida abre no padrão em vez de
+ * derrubar a barra.
+ */
+const CHAVE_COLAPSO = 'cabinet.nav.abertos.v1'
+
+function lerAbertos(): string[] {
+  try {
+    const bruto = sessionStorage.getItem(CHAVE_COLAPSO)
+    if (!bruto) return []
+    const lido: unknown = JSON.parse(bruto)
+    return Array.isArray(lido) ? lido.filter((v): v is string => typeof v === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function gravarAbertos(abertos: string[]): void {
+  try {
+    sessionStorage.setItem(CHAVE_COLAPSO, JSON.stringify(abertos))
+  } catch {
+    // Cota estourada ou armazenamento bloqueado: o colapso segue em memória.
+    // Falhar a gravação não pode fechar o que o operador acabou de abrir.
+  }
+}
+
+/** Casa o termo digitado com o título, ignorando acento e caixa. */
+function casa(titulo: string, termo: string): boolean {
+  return normalize(titulo).includes(normalize(termo))
+}
+
+/** O ícone do item: o shape do módulo quando existe, o lucide quando não. */
+function IconeDoItem({ item, ativo }: { item: NavItem; ativo: boolean }) {
+  const shape = moduloDaRota(item.url) ?? item.aparencia?.shape
+  if (!shape) return <item.icon className={ativo ? 'text-modulo-suave' : 'text-modulo'} />
+  return <Ornamento shape={shape} tom={ativo ? 'modulo-suave' : 'modulo'} tamanho={18} />
+}
+
+/**
+ * Uma linha da barra: tela, tela FUTURA ou pai colapsável.
+ *
+ * As três são visualmente irmãs de propósito — o operador vê o mapa inteiro do
+ * que o sistema tem e do para onde ele cresce, e é isso que a issue pede com
+ * "tela futura: visível, apagada NO FUNDO".
+ */
+function ItemDaBarra({
+  item,
+  pathname,
+  abertos,
+  filtrando,
+  aoAlternar,
+}: {
+  item: NavItem
+  pathname: string
+  abertos: string[]
+  /** Há termo digitado na busca? Filtrando, o pai abre — ver abaixo. */
+  filtrando: boolean
+  aoAlternar: (titulo: string) => void
+}) {
+  const ativo = pathname === item.url || pathname.startsWith(`${item.url}/`)
+
+  if (item.futuro) {
+    return (
+      <SidebarMenuItem>
+        {/* Apagado no FUNDO, nunca na tinta (regra Visual-1): texto claro sobre
+            folha clara reprova contraste, e o item precisa continuar legível —
+            ele existe justamente para ser LIDO. `aria-disabled` em vez de
+            `disabled` para o item seguir alcançável por leitor de tela: quem
+            navega por teclado tem o direito de saber que a tela vai existir. */}
+        <div
+          aria-disabled="true"
+          className="flex cursor-not-allowed items-center gap-2 border-2 border-transparent bg-muted px-2 py-1.5 text-sm"
+        >
+          <item.icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate">{item.title}</span>
+          <span className="shrink-0 border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
+            futuro
+          </span>
+        </div>
+      </SidebarMenuItem>
+    )
+  }
+
+  if (item.filhas) {
+    /**
+     * Filtrando, o pai abre SEMPRE. Respeitar o colapso durante a busca faria a
+     * barra achar `Pedido de Compra` e escondê-lo dentro de `Compras` fechado —
+     * achar e não mostrar é o mesmo que não achar.
+     */
+    const aberto = filtrando || abertos.includes(item.title)
+    // O pai acende quando UMA FILHA está no ar: sem isso, entrar em Ordem de
+    // Compra fecharia o grupo visualmente e o operador perderia onde está.
+    const algumaAtiva = item.filhas.some(
+      (filha) => pathname === filha.url || pathname.startsWith(`${filha.url}/`),
+    )
+    return (
+      <SidebarMenuItem>
+        <button
+          type="button"
+          onClick={() => aoAlternar(item.title)}
+          aria-expanded={aberto}
+          className="flex w-full items-center gap-2 border-2 border-transparent px-2 py-1.5 text-left font-medium text-sm outline-none hover:bg-modulo focus-visible:focus-ring"
+        >
+          <item.icon aria-hidden="true" className="size-4 shrink-0 text-modulo" />
+          <span className={cn('min-w-0 flex-1 truncate', algumaAtiva && 'font-bold')}>
+            {item.title}
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn('size-3.5 shrink-0 text-muted-foreground', aberto && 'rotate-180')}
+          />
+        </button>
+        {aberto ? (
+          <SidebarMenu className="ml-3 border-rule-hair border-l-2 pl-1">
+            {item.filhas.map((filha) => (
+              <ItemDaBarra
+                key={filha.url}
+                item={filha}
+                pathname={pathname}
+                abertos={abertos}
+                filtrando={filtrando}
+                aoAlternar={aoAlternar}
+              />
+            ))}
+          </SidebarMenu>
+        ) : null}
+      </SidebarMenuItem>
+    )
+  }
+
+  const modulo = moduloDaRota(item.url) ?? item.aparencia?.modulo
+  return (
+    <SidebarMenuItem {...(modulo && { 'data-modulo': modulo })}>
+      <SidebarMenuButton asChild isActive={ativo} hoverCard={<ExplicacaoDaTela tela={item} />}>
+        {/* Item EXTERNO é `<a href>`, não navegação do roteador: o alvo é um
+            arquivo estático servido ao lado da SPA, e `<Link to>` o mandaria
+            para o roteador — 404 com o arquivo ali do lado. */}
+        {item.externo ? (
+          <a href={item.url} target="_blank" rel="noreferrer">
+            <IconeDoItem item={item} ativo={ativo} />
+            <span>{item.title}</span>
+            <span className="sr-only">(abre em nova aba)</span>
+          </a>
+        ) : (
+          <Link to={item.url}>
+            <IconeDoItem item={item} ativo={ativo} />
+            <span>{item.title}</span>
+          </Link>
+        )}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
+/**
+ * A BARRA LATERAL — contextual à seção aberta no topo (Nav-2).
+ *
+ * Ela deixou de listar o sistema inteiro: mostra só a seção em que o operador
+ * está, no formato da referência aprovada pelo user — busca própria no topo,
+ * grupos rotulados com o quadradinho do módulo dono, item colapsável com
+ * filhas, tela futura apagada com selo.
+ *
+ * ## A busca daqui NÃO é a paleta
+ *
+ * Filtra os itens da SEÇÃO ATIVA, e só. A paleta `Ctrl+K` continua global e
+ * intocada — são duas perguntas diferentes: "onde está aquela tela desta
+ * seção" e "leve-me a qualquer lugar do sistema". Uma busca que fizesse as
+ * duas coisas responderia mal às duas.
+ *
+ * A marca e o seletor de empresa SAÍRAM daqui para a appbar: o que não muda
+ * (produto, escopo do dado) não pode morar dentro do que muda a cada seção.
+ */
+function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
   const { location } = useRouterState()
   const pathname = location.pathname
-  // O MENU É DA EMPRESA ATIVA, não do sistema: item cujo recurso a empresa não
-  // tem some da barra — e some do cartão de hover junto, porque o cartão é
-  // montado do mesmo grupo já filtrado. Oferecer no cartão o que a barra não
-  // lista seria dar caminho para tela que a guarda vai recusar.
-  const { tem } = useRecursosDaEmpresa()
-  const grupos = gruposVisiveis(tem)
-  // O ornamento cresce quando o rótulo some. No colapsado ele é a ÚNICA
-  // coisa que identifica a tela, e 18px de shape numa coluna de 56px lia
-  // como ícone de aviso, não como marca do módulo.
-  const { state } = useSidebar()
-  const colapsada = state === 'collapsed'
+
+  const [termo, setTermo] = useState('')
+  const [abertos, setAbertos] = useState<string[]>(lerAbertos)
+  const buscaId = useId()
+
+  function alternar(titulo: string) {
+    setAbertos((atual) => {
+      const proximo = atual.includes(titulo)
+        ? atual.filter((t) => t !== titulo)
+        : [...atual, titulo]
+      gravarAbertos(proximo)
+      return proximo
+    })
+  }
+
+  /**
+   * O filtro casa o item OU alguma filha dele, e nunca esconde a filha que
+   * casou: procurar "pedido" tem de achar `Pedido de Compra` dentro de
+   * `Compras`, e mostrá-lo — não o pai fechado com o resultado escondido.
+   */
+  const grupos = (secao?.grupos ?? [])
+    .map((grupo) => ({
+      ...grupo,
+      items: grupo.items.flatMap((item) => {
+        if (!termo) return [item]
+        if (casa(item.title, termo)) return [item]
+        const filhas = item.filhas?.filter((filha) => casa(filha.title, termo)) ?? []
+        return filhas.length > 0 ? [{ ...item, filhas }] : []
+      }),
+    }))
+    .filter((grupo) => grupo.items.length > 0)
 
   return (
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar collapsible="offcanvas" variant="inset">
       <SidebarHeader>
-        {/* MARCA — o símbolo e o nome do produto, a única peça da sidebar que
-            não fala nem de módulo nem de empresa. Fica no topo porque é o nó
-            mais alto da hierarquia: acima de qualquer módulo está o produto.
-            Assinatura, e não símbolo + texto: o nome do Cabinet é DESENHO
-            (wordmark do user), não uma palavra na fonte de display. */}
-        {/* Colapsada, o `px-2` daqui somava com o `p-2` do grupo e jogava a
-            marca 8px à esquerda da fileira de ícones. Sem rótulo para
-            equilibrar, ela ficava visivelmente fora do eixo da coluna. */}
-        <div className="flex items-center px-2 py-1 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0">
-          {/* O nome some no modo colapsado, junto com todo rótulo: sobra a
-              coluna de ícone, e o símbolo sozinho identifica o produto. */}
-          <Marca
-            variante="assinatura"
-            tamanho={28}
-            classeDoNome="group-data-[collapsible=icon]:hidden"
-          />
+        <div className="flex flex-col gap-1 px-1 pt-1">
+          {/* O nome da seção encabeça o painel: sem ele, seis conteúdos
+              diferentes moram no mesmo lugar sem dizer qual é qual — o ícone
+              aceso lá em cima está longe do olho de quem lê a lista. */}
+          <span className="px-1 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
+            {secao?.rotulo ?? ''}
+          </span>
+          <div className="flex items-center gap-2 border-2 border-input bg-card px-2">
+            <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+            <label htmlFor={buscaId} className="sr-only">
+              Filtrar telas de {secao?.rotulo ?? 'esta seção'}
+            </label>
+            <input
+              id={buscaId}
+              type="text"
+              value={termo}
+              onChange={(e) => setTermo(e.target.value)}
+              placeholder="Filtrar…"
+              className="h-8 w-full min-w-0 bg-transparent text-sm outline-none"
+            />
+          </div>
         </div>
-        {/* EMPRESA ATIVA logo abaixo da marca (decisão do user, 2026-08-07).
-            REVOGA o rodapé de §@ornamentos: o argumento de lá era que escopo
-            se lê depois do que ele governa. Na prática o operador procura
-            "de que empresa é isto" ANTES de ler a lista, não depois, e no
-            rodapé a peça ficava fora do caminho do olho. As duas perguntas
-            de identidade seguem separadas por serem duas linhas distintas —
-            selo do produto em cima, escopo do dado embaixo. */}
-        <CompanySwitcher />
       </SidebarHeader>
       <SidebarContent>
-        {/* Boletim é a entrada, não um módulo: fica solto acima dos grupos.
-            Casamento exato — `/` é prefixo de tudo, `startsWith` acenderia sempre. */}
-        <SidebarGroup className="group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-2">
-          <SidebarMenu>
-            {/* Boletim É módulo na tabela de cor (coral), mas ficava de fora
-                da fileira colorida por acidente de montagem: por morar neste
-                grupo à parte, não passava pelo `moduloDaRota` do laço abaixo e
-                caía num lucide cinza. Era o único item com shape atribuído que
-                não o mostrava — e logo o primeiro da barra. */}
-            <SidebarMenuItem data-modulo="boletim">
-              <SidebarMenuButton asChild isActive={pathname === '/'} tooltip="Boletim">
-                <Link to="/">
-                  <Ornamento
-                    shape="boletim"
-                    tom={pathname === '/' ? 'modulo-suave' : 'modulo'}
-                    tamanho={colapsada ? 22 : 18}
-                  />
-                  <span>Boletim</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
-        {grupos.map((group) => (
-          <SidebarGroup
-            key={group.title}
-            className={cn(
-              // Colapsada, o rótulo é zerado (`-mt-8 opacity-0`) e os grupos
-              // viram uma fileira contínua de ícones sem fronteira. A régua
-              // ocupa o lugar que o nome do módulo deixou: separa sem nomear.
-              'group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:border-rule-hair group-data-[collapsible=icon]:border-t-2 group-data-[collapsible=icon]:pt-2',
-              // Grupo sem tela (Estoque, §10) não tem o que separar: expandido
-              // o rótulo ainda declara que o módulo existe, colapsado sobraria
-              // só uma régua solta sobre espaço vazio.
-              group.items.length === 0 && 'group-data-[collapsible=icon]:hidden',
-            )}
-          >
-            {/* O rótulo do grupo é o gatilho do cartão: pousar em CADASTROS
-                abre as telas de cadastro. Grupo de uma tela só não tem o que
-                abrir — ali o cartão repetiria o próprio rótulo.
-
-                Só existe na sidebar expandida. Colapsada, o rótulo some
-                (`collapsible=icon` zera a opacidade dele) e o atalho some
-                junto; o que volta ali é a dica de cada ícone, que é justamente
-                o que falta no estado de ícone. */}
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarMenu>
-              {group.items.map((item) => {
-                const active = pathname === item.url || pathname.startsWith(`${item.url}/`)
-                // Cada item carrega a cor do SEU módulo, não a da tela no ar:
-                // é o que faz a fileira inteira ficar legível como um mapa de
-                // cores, e não só o item aceso (memória §@ornamentos).
-                //
-                // Tela fora da tabela de cor (Dashboard, Planner,
-                // Colaboradores) traz a atribuição na própria entrada do menu:
-                // empresta o par de um vizinho e leva desenho próprio. Sem
-                // isso, três itens saíam em lucide cinza no meio da fileira.
-                const moduloDoItem = moduloDaRota(item.url) ?? item.aparencia?.modulo
-                const shapeDoItem = moduloDaRota(item.url) ?? item.aparencia?.shape
-                // O shape do módulo no lugar do ícone genérico: é ele que o
-                // operador aprende como marca do módulo, e o mesmo desenho
-                // reaparece na banda e no estado vazio.
-                //
-                // O par entra INVERTIDO em relação ao fundo: item inativo é
-                // liso, então o ornamento vai de cheia /01 e a fileira inteira
-                // vira um mapa de cores; item ativo já tem fundo /01 pelo §3b, e
-                // ali a cheia sobre cheia sumiria — nele o ornamento vai de
-                // pastel /02. As duas regras (memória §@ornamentos e §3b) só
-                // coexistem assim, e a família da cor é a mesma nos dois casos.
-                //
-                // Sai de dentro do `<Link>` porque agora tem DOIS invólucros: o
-                // item externo é `<a href>`, não navegação do roteador.
-                const conteudo = (
-                  <>
-                    {shapeDoItem ? (
-                      <Ornamento
-                        shape={shapeDoItem}
-                        tom={active ? 'modulo-suave' : 'modulo'}
-                        tamanho={colapsada ? 22 : 18}
-                      />
-                    ) : (
-                      <item.icon className={active ? 'text-modulo-suave' : 'text-modulo'} />
-                    )}
-                    <span>{item.title}</span>
-                    {/* O aviso de aba nova é LIDO, não visto: quem enxerga a
-                        barra já tem a explicação no cartão de hover, e um ícone
-                        a mais na fileira competiria com o ornamento, que é a
-                        marca do módulo. Para quem navega por leitor de tela o
-                        cartão não existe — aqui está a única frase que sobra. */}
-                    {item.externo && <span className="sr-only">(abre em nova aba)</span>}
-                  </>
-                )
-                return (
-                  <SidebarMenuItem
+        {grupos.length === 0 ? (
+          // Busca sem resultado DIZ que não achou. Painel em branco faria o
+          // operador achar que a seção está vazia.
+          <p className="px-3 py-4 text-muted-foreground text-sm">
+            Nenhuma tela desta seção casa com “{termo}”.
+          </p>
+        ) : (
+          grupos.map((grupo) => (
+            <SidebarGroup key={grupo.title}>
+              <SidebarGroupLabel>
+                {/* O quadradinho na cor do módulo DONO do grupo: numa lista de
+                    seis rótulos, a cor diz de quem é o bloco antes de o olho
+                    ler o nome. Grupo sem módulo sai no par neutro do `:root` —
+                    nenhuma cor nova é inventada aqui. */}
+                <span
+                  aria-hidden="true"
+                  {...(grupo.modulo && { 'data-modulo': grupo.modulo })}
+                  className="mr-2 size-2 shrink-0 border-2 bg-modulo-cheia"
+                />
+                {grupo.title}
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {grupo.items.map((item) => (
+                  <ItemDaBarra
                     key={item.url}
-                    {...(moduloDoItem && { 'data-modulo': moduloDoItem })}
-                  >
-                    {/* CARTÃO no expandido, DICA no colapsado — e a razão é o que
-                        cada estado já mostra. Expandido: o nome está no item, a um
-                        centímetro do ponteiro; repeti-lo no cartão seria a mesma
-                        duplicata que tirou o cartão do rótulo do grupo. Colapsado: o
-                        nome NÃO existe na tela, então ali a peça certa é a dica, que
-                        é justamente o que ela sempre fez.
-
-                        O cartão nunca convive com a dica: quando existe, vence. Por
-                        isso ele não pode aparecer no colapsado sem o nome — seria
-                        trocar a única identificação do ícone por uma frase solta. */}
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      {...(colapsada
-                        ? { tooltip: item.title }
-                        : { hoverCard: <ExplicacaoDaTela tela={item} /> })}
-                    >
-                      {/* Item EXTERNO é `<a href>`, não `<Link>`: `Link` faz
-                          navegação client-side, e o alvo (`public/*.html`) não é
-                          rota do roteador — daria 404 dentro da SPA com o
-                          arquivo servido ali do lado. Ver `NavItem.externo`. */}
-                      {item.externo ? (
-                        <a href={item.url} target="_blank" rel="noreferrer">
-                          {conteudo}
-                        </a>
-                      ) : (
-                        <Link to={item.url}>{conteudo}</Link>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+                    item={item}
+                    pathname={pathname}
+                    abertos={abertos}
+                    filtrando={termo !== ''}
+                    aoAlternar={alternar}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))
+        )}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
@@ -230,6 +327,30 @@ function AppSidebar() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { location } = useRouterState()
   const modulo = moduloDaRota(location.pathname)
+  const { tem } = useRecursosDaEmpresa()
+
+  /**
+   * A SEÇÃO ABERTA na barra lateral.
+   *
+   * Nasce da ROTA — a barra mostra onde o operador está, sem ele escolher nada
+   * — e a aba do topo pode sobrepor, para EXPLORAR outra seção sem sair da
+   * tela. Explorar não navega: um clique de curiosidade não pode jogar fora um
+   * formulário meio preenchido.
+   *
+   * A escolha se desfaz na próxima navegação (`key` do efeito é o caminho):
+   * senão, quem espiasse Financeiro e depois abrisse um cliente ficaria com a
+   * barra de Financeiro sobre a tela de Clientes.
+   */
+  const secoes = secoesVisiveis(tem)
+  // A escolha guarda EM QUE ROTA foi feita, e vale só nela. Derivar assim
+  // dispensa o efeito que zeraria o estado a cada navegação — efeito de
+  // sincronizar é justamente o que se evita quando dá para calcular.
+  const [escolha, setEscolha] = useState<{ id: string; em: string } | null>(null)
+  const escolhida = escolha?.em === location.pathname ? escolha.id : null
+  const secaoAtiva =
+    secoes.find((secao) => secao.id === escolhida) ??
+    secaoDaRota(secoes, location.pathname) ??
+    secoes[0]
 
   // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
   // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
@@ -245,12 +366,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar secao={secaoAtiva} />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
         <Appbar
           naoLidas={naoLidas}
+          secaoAtiva={secaoAtiva?.id}
+          aoEscolherSecao={(id) => setEscolha({ id, em: location.pathname })}
           aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAbrirPaleta={() => setPaletaAberta(true)}
         />

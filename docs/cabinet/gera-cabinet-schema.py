@@ -22,6 +22,13 @@ updated_at/by (omitidas no desenho) · tabela tenant-scoped tem PK (tenant_id, i
 FK composta (tenant_id, fk_id); org-scoped vive no schema da organização sem tenant_id.
 Reserva Técnica: campo reservado em commission_rules, MODELAGEM ADIADA (blocker
 Par_RTautomatico × Ven_RtAutomatico não resolvido).
+
+Isolamento entre empresas (decisão do user, 2026-08-14): colaborador É usuário e pode ter
+vínculo em mais de uma empresa, mas os contextos NÃO se cruzam — quem está na empresa X só
+enxerga colaborador da X. Quem garante isso é o RLS FORCE de `employee_tenants`, não a
+consulta: a tela pede "os colaboradores", e é o banco que decide quais linhas existem para
+aquela sessão. A prova disso é a bateria de isolamento, que roda contra Postgres com o
+MESMO usuário da aplicação — nunca superuser, que ignora RLS e faz o teste passar mentindo.
 """
 import os, json
 
@@ -43,9 +50,17 @@ TABELAS = [
  [('id', U, 'k'), ('name', S, ''), ('cnpj', 'varchar(14)', ''), ('active', B, '')], ''),
 ('employees', 'nucleo', 'org', 'identidade única na organização; papel é POR empresa',
  [('id', U, 'k'), ('name', S, ''), ('email', S, ''), ('password_hash', S, ''),
-  ('must_change_password', B, ''), ('active', B, '')], ''),
-('employee_tenants', 'nucleo', 'tenant', 'vínculo N:N com papel por empresa (RBAC do core)',
- [('tenant_id', U, 'k'), ('employee_id', U, 'k'), ('role', S, ''), ('active', B, '')], ''),
+  ('must_change_password', B, ''), ('active', B, '')],
+ 'e-mail é a CHAVE DE LOGIN e vive fora do tenant: UNIQUE na organização inteira. '
+ 'Consequência tratada na borda — e-mail já usado em OUTRA empresa recusa com mensagem '
+ 'genérica, nunca "já existe", que revelaria cadastro de empresa que o operador não alcança'),
+('employee_tenants', 'nucleo', 'tenant',
+ 'colaborador É usuário: o vínculo com CADA empresa, com o papel e o que ele é ali dentro',
+ [('tenant_id', U, 'k'), ('employee_id', U, 'k'), ('role', S, ''),
+  ('is_salesperson', B, ''), ('default_commission_percent', PCT, 'n'), ('active', B, '')],
+ 'PK natural (tenant_id, employee_id): vínculo duplicado do mesmo colaborador na mesma '
+ 'empresa é impossível por construção. Vínculo em 2 empresas = 2 linhas, e nada cruza — '
+ 'a sessão só enxerga a do tenant ativo'),
 ('catalog_lookups', 'nucleo', 'org', 'listas simples (unidade, tipo de peça, motivo de movimento…)',
  [('id', U, 'k'), ('kind', S, ''), ('name', S, ''), ('active', B, '')], ''),
 ('document_sequences', 'nucleo', 'tenant',
@@ -292,6 +307,11 @@ RELS = [
 # estágio de outro funil.
 UNIQUES = {
  'crm_stages': [('tenant_id', 'pipeline_id', 'id')],
+ # E-mail é a chave de LOGIN, e login é da organização, não da empresa (decisão do user,
+ # 2026-08-14). Único em `employees` — que é org-scoped —, e não em `employee_tenants`:
+ # ali o mesmo e-mail poderia repetir por empresa e duas pessoas entrariam com a mesma
+ # credencial em contextos diferentes, sem o banco reclamar.
+ 'employees': [('email',)],
 }
 
 nomes = {t[0] for t in TABELAS}

@@ -28,6 +28,13 @@ Delphi e do catálogo do SQL Server de produção.
 | `schema/bdprincipal-*.csv` | colunas, tipos, nulidade, PKs, FKs, contagem de linhas | foto de 2026-08-10 |
 | `schema/bdprincipal-rotinas.sql` | corpo das 44 rotinas do banco | inclui `PlanoContaValor` |
 | `config/sisopcoes*.csv`, `sispermissao*.csv` | quem enxerga o quê | RBAC real |
+| `config/paramentros.csv` | **dump de CONTEÚDO** — os 285 parâmetros reais da operação | fonte de §4.9 |
+| `exe/formularios/` | DFM completo de 142 telas — **rótulo literal e vínculo campo↔coluna** | só 4 são do Financeiro |
+
+Vale separar os dois regimes, porque a confiança muda: `schema/` é dump de **catálogo** (existe a
+coluna, existe o tipo — não quantas linhas têm cada valor), enquanto `config/` é dump de
+**conteúdo** (é a configuração que roda). Por isso §4.9 afirma valor de parâmetro sem hedge, e §9
+recusa afirmar distribuição de código de domínio.
 
 **Marca de origem em todo campo e toda afirmação de campo:**
 
@@ -294,12 +301,29 @@ de venda** `[D]` — inclusive a baixa, quando há entrada. Se a conta nasce ou 
 
 `FrmAvulso` (Venda Avulsa) faz o mesmo caminho.
 
+**A venda carrega o próprio veredito.** `Venda` tem três bits irmãos — **`Ven_TemFinanceiro`,
+`Ven_TemCompra`, `Ven_TemEstoque`** `[L]` — que dizem, no registro, se aquele documento gerou cada
+uma das três consequências. Não é derivação: é coluna. Ela responde de graça a pergunta de §3.1
+sobre a razão pedidos↔títulos (§9.7), e é o desenho que o Cabinet teria de decidir se copia — um
+flag no documento é rápido de ler e **fica errado em silêncio** se a consequência for desfeita
+depois.
+
+**E a venda congela as regras de parcelamento.** `Venda` guarda `par_ParcelarVlAcima`,
+`par_VlMinParcela` e `par_QuantMaxParcela` **dentro do próprio registro** `[L]` — cópia dos
+parâmetros globais no momento da emissão. Mudar o parâmetro depois não reescreve venda antiga.
+É a mesma ideia do snapshot que o Cabinet já aplica em `quote_items` `[S]`, e aqui ela vale a favor
+do legado: **é um acerto, não uma dívida.**
+
 ### 4.2 Um título a pagar nasce de quatro lugares
 
 1. **Nota do fornecedor** — `FrmNota_entrada` (333 campos, a maior tela do sistema) grava
    `contas_apagar_pag` `[D]`. Duas permissões especiais governam: **(10) não criar conta pela
-   entrada da NF** e **(11) poder escolher se cria**. `[S]` o schema novo já reserva
-   `goods_receipts.generates_finance` para exatamente essa decisão.
+   entrada da NF** e **(11) poder escolher se cria** — e a decisão fica gravada na própria nota, em
+   **`Nota_entrada.Nen_SemFinanceiro` (bit)** `[L]`, ao lado de `nen_Mod_codigo_fin` (o modo do
+   financeiro, separado do modo da nota) e `Nen_vl_diferenca_fin`. `[S]` o schema novo já reserva
+   `goods_receipts.generates_finance` para exatamente essa decisão — **com o sinal invertido**, o
+   que é melhor: `generates_finance = true` como padrão explícito, em vez de um "sem" que só existe
+   quando alguém marca.
 2. **Participação do profissional** — `FrmRT` ("Participação", 66 campos) toca
    `reserva_tecnica` + `reserva_tecnica_grupoprod` + `creditoindicacao` + **`contas_apagar` e
    `contas_apagar_det`** `[D]`. **A comissão do arquiteto vira conta a pagar.** É o elo que faz o
@@ -370,7 +394,76 @@ extraído** — se é OFX, CNAB retorno ou digitação, `[?]`.
 é um **razão de crédito**, não um saldo. Telas: lançar (`FrmCreditoCliente`, `FrmCreditoFornecedor`)
 e consultar (`FrmConsultaCreditoCliente` — que lê `venda` e `devolucao`;
 `FrmConsultaCreditoFornecedor` — que lê `nota_entrada`). A permissão especial **(52)** mostra o
-crédito do cliente dentro do pedido de venda. `[P]` limite de crédito global = 300.000.
+crédito do cliente dentro do pedido de venda. `[P]` limite de crédito global = 300.000; janela
+padrão de consulta 180 dias (§4.9).
+
+**São as únicas telas do módulo com DFM completo recuperado**, então são as únicas cuja espec tem
+rótulo literal em vez de nome de coluna — está em §5.8, e é lá que aparecem o saldo apurado do razão
+e a separação entre crédito confirmado e pendente.
+
+### 4.9 Os parâmetros globais governam mais do que parece
+
+`docs/legado/config/paramentros.csv` é **dump de conteúdo**, não de catálogo — são os 285 parâmetros
+reais da operação. O que sai de lá muda o desenho:
+
+**O plano de conta do título não é digitado: é escolhido pela ORIGEM do documento.** São 16 slots
+`Par_PlanoContas*`, e cinco estão preenchidos `[P]`:
+
+| parâmetro | valor | origem do título |
+|---|--:|---|
+| `Par_PlanoContasProjeto` | **148** | conta a receber nascida de pedido/projeto |
+| `Par_PlanoContasAvulsa` | **148** | conta a receber de venda avulsa — **o mesmo 148** |
+| `Par_PlanoContasReservaTecnica` | **150** | conta a pagar da participação do profissional |
+| `Par_PlanoContasCreditoCliente` | **111** | crédito de cliente |
+| `Par_PlanoContasRH` | **42** | conta a pagar de RH |
+| **`Par_PlanoContasNotaEntrada`** | **vazio** | **conta a pagar da nota do fornecedor** |
+| `...CreditoFornecedor` · `...Devolucao` · `...NF` · `...CupomFiscal` · `...VendaaDinheiro` · `...Factura` · `...NotaCredito` · `...NotaDebito` · `...JurosFact` | vazios | (parte é o bloco Portugal, que nunca foi usado) |
+
+**A maior origem de conta a pagar é a única sem plano padrão.** Projeto e avulsa dividem o mesmo
+plano 148, o que também diz que a granularidade do plano por origem, na prática, é menor do que os
+16 slots sugerem. Se isso é intencional, `[?]`.
+
+**As janelas de filtro padrão de cada tela existem como parâmetro** — isto preenche o que em §5.1
+seria chute:
+
+| parâmetro | valor | efeito |
+|---|--:|---|
+| `Par_CtApagar_DiasAnterior` / `_DiasPosterior` | **30 / 120** | a listagem de contas a pagar abre mostrando de 30 dias atrás a 120 à frente |
+| `Par_DiasFiltroCreditoCliente` / `...Fornecedor` | 180 / 180 | janela das telas de crédito |
+| `Par_DiasFiltroControleCheque` | 180 | janela do controle de cheque |
+| `Par_DiasFiltroNotaCredito` | 30 | |
+
+Isso é o mesmo padrão já registrado para as outras telas do legado (orçamento/projeto 364 dias,
+pedido/ordem/nota 180): **nenhuma listagem abre com a base inteira.** Vale copiar o conceito — a
+tela nasce com recorte, e o recorte é configuração, não código.
+
+**Outros que mudam comportamento** `[P]`:
+
+- **`Par_LancBancEfetivarAutomatico = True`** — o lançamento bancário já nasce efetivado.
+  Isto muda a leitura de `Mba_efetivado` (§5.5): o par previsto/realizado existe na coluna, **mas a
+  operação está configurada para nunca usar o estado "previsto"**. Pesa direto na decisão §11.5.
+- `Par_RHDiasPag = 5` — dia de pagamento do RH.
+- `Par_ModoPagFact = 1010` — mais um pseudo-modo, além do 1000/1001 que a quitação em lote exclui.
+- `Par_Layoutcontas = 3` — variante do impresso de contas.
+- `Par_OrdemCompraConta = False` — **ordem de compra não gera conta**; quem gera é a nota.
+- `Par_FechContaSenhaConj = False` — senha conjunta no fechamento de contas, desligada.
+- `Par_EntregaComDuplicata = False` · `par_dt_validade_1pag = False` · `Par_Vlminparhist = False`.
+- `Par_ContaRecdias` e `Par_ContaPagdias` **vazios** — não há prazo padrão de vencimento.
+- `Par_DirBoletoLogo = C:\Softlux\Imagens\Logos\Colorido` — o boleto **foi mesmo montado**, com logo
+  configurada. Reforça §4.6: implementado e pouco usado, não implementado pela metade.
+
+**E os parâmetros resolvem — provavelmente — a contradição da Reserva Técnica que estava aberta.**
+O registro do legado aponta que `Par_RTautomatico = True` no parâmetro global enquanto
+`Ven_RtAutomatico` está **vazio em toda a `Venda`**, sem explicação. O dump mostra que a chave-mestra
+está ligada e **todos os interruptores de escopo estão vazios**: `Par_RTAutomaticoProj`,
+`Par_RTAutomaticoAvu`, `Par_RTAutomaticoTipo` e `Par_RTPrimeiraPorc` — nenhum preenchido. Com escopo
+nenhum ligado, a automação não tem onde agir, e a coluna da venda nunca é alimentada. **Confiança
+média** — é leitura de configuração, não do código Delphi que a consome, e fechar exigiria abrir a
+rotina. Mas é uma explicação coerente onde antes não havia nenhuma.
+
+O resto do bloco RT: `Par_RTFormaPag = 1` e `Par_RTCentroCusto = 2` — **a conta a pagar da
+participação nasce com forma de pagamento e centro de custo fixos por parâmetro**, não escolhidos;
+`Par_RTCreditoClienteNaoGerar = True`; `Par_RTFornecedor = False`; `Par_impostofixoRT = 0`.
 
 ---
 
@@ -467,15 +560,54 @@ Duas telas, 5 campos cada, sem SQL nos DFMs além de `SisUsuariosContasBancarias
 **A regra que separa "ortodoxo" de "otimista" não está no binário extraído nem no banco.** `[?]` —
 é a pergunta mais importante que sobrou (§11.6).
 
-### 5.8 As demais, em inventário
+### 5.8 Crédito de cliente e de fornecedor — as únicas com RÓTULO LITERAL
+
+`docs/legado/exe/formularios/` traz o DFM completo de 142 das 713 telas, escolhidas pelo escopo de
+estoque/orçamento. **Do Financeiro, sobraram quatro** — e são justamente as de crédito. Nelas o
+rótulo não precisa ser inferido do nome da coluna: está no binário, com o vínculo campo↔coluna.
+
+**Controle de Crédito do Cliente** (`FrmCreditoCliente`) — rótulo → coluna, literal `[D]`:
+
+| rótulo na tela | coluna | controle |
+|---|---|---|
+| `Cliente:` | `Credito_CodigoVinculo` | combo de busca |
+| `Operação:` | `Credito_Operacao` | **radio** (`'C'`/`'D'`) — não é combo |
+| `Nº do documento:` | `Credito_CodigoDoc` | texto |
+| `Tipo do doc.:` | `Credito_TpdcodigoOrigem` | combo — **note que é a coluna `...Origem`, não `Tpd_Codigo`** |
+| `Valor:` | `Credito_Valor` | valor calculado |
+| `Data:` | `Credito_Data` | data |
+| `Observação:` | `Credito_Obs` | memo |
+| `Nº de série:` | `ParSV_serie` | texto |
+| `Pedido de Venda` | `Credito_Docvenda` | **checkbox** |
+
+**Controle de Crédito Junto ao Fornecedor** (`FrmCreditoFornecedor`) é a mesma tela com `Fornecedor:`
+no lugar de `Cliente:`, **sem** `Nº de série` e **sem** o checkbox `Pedido de Venda` — 7 campos
+contra 9. Duas telas para uma entidade só, no legado; no Cabinet seria uma, com o papel do parceiro
+decidindo o rótulo `[S]`.
+
+**Consultar Crédito do Cliente** (`FrmConsultaCreditoCliente`) — a tela de leitura, e ela revela
+duas coisas que o schema sozinho não diz `[D]`:
+
+- o cabeçalho mostra **`Créditos:` · `Débitos:` · `Total:`** — o saldo é **apurado do razão**, não
+  guardado. Coerente com `Credito` ser lançamento com `Credito_Operacao` `C`/`D`;
+- há **duas abas**: uma consulta `Confirmado` e uma memória `NaoConfirmada` — ou seja,
+  **`Credito_Situacao` separa crédito confirmado de pendente**, e a tela mostra os dois lados
+  separados. O que confirma um crédito, `[?]`.
+- `Busca por data:` sobre `Credito_Data`, com a janela padrão de 180 dias de §4.9.
+
+**Escolher Sistema de Cobrança** (`FrmCobranca`) é um seletor de uma coluna só: uma grade de contas
+com `Nome · Cód. Banco · Banco · Agência · Conta · Carteira · Variação · Aceite · Espécie ·
+Espécie Documento` `[D]`, e Confirmar/Cancelar. Não é tela de cadastro — é o passo que escolhe **por
+qual convênio** o boleto vai sair, antes da emissão de §4.6.
+
+### 5.9 As demais, em inventário
 
 | tela | form | tam. | estado do dado |
 |---|---|--:|---|
 | Emissão de boleto e remessa | `FrmBoletoRemessa` | 79 campos | implementado, **pouco usado** (6 `.rem`) |
 | Conciliação bancária | `FrmConciliacaoBancaria` | 26 | leitura do extrato `[?]` |
 | Controle de cheque (recebido/emitido) | `FrmControleCheque` | 31 | 2.760 lotes, factoring com **0 empresas** |
-| Controle de crédito do cliente / fornecedor | `FrmCreditoCliente` / `FrmCreditoFornecedor` | 9 / 7 | **7.477 lançamentos — vivo** |
-| Consulta de crédito | `FrmConsultaCreditoCliente` / `...Fornecedor` | 17 / 12 | lê venda/devolução e nota de entrada |
+| Crédito de cliente / fornecedor (lançar e consultar) | 4 forms | 9 · 7 · 17 · 12 | **7.477 lançamentos — vivo. Especificadas em §5.8, com rótulo literal** |
 | Controle de crédito do RH | `FrmControleCredRH` | 124 | vira conta a pagar com `ControlReferencia='RH'` |
 | Controle de crédito do profissional | `FrmCreditoIndicacao` | 9 | **1 linha** |
 | Participações | `FrmRT` / `FrmReserva_tecnica` | 66 / 39 | 1.212 RTs · 12.108 linhas por grupo |
@@ -629,9 +761,15 @@ Registrado como `[?]`, sem preenchimento por inferência:
    **catálogo**, não de conteúdo: os valores foram lidos de literais SQL, então sabemos que o código
    existe, **não quantas linhas têm cada um**. Uma consulta de 6 linhas no banco fecharia isso.
 7. **Se `CategoriaVenda.CatVen_Financeiro` explica sozinho os 9.076 títulos a receber para 11.103
-   pedidos.**
+   pedidos.** — **a pergunta encolheu**: `Venda.Ven_TemFinanceiro` (bit) já registra o veredito por
+   documento (§4.1), então `SELECT Ven_TemFinanceiro, COUNT(*) FROM Venda WHERE Ven_Tipo='P'` fecha
+   isso em uma linha. Sabemos onde olhar; falta a leitura.
 8. **Se o legado calcula juros/multa por atraso automaticamente** ou se o operador digita. Há
    colunas para os dois; não há rotina de cálculo no banco.
+9. **O que confirma um crédito** — a consulta separa `Confirmado` de `NaoConfirmada` (§5.8) e
+   `Credito_Situacao` existe, mas o que muda o estado não aparece no SQL extraído.
+10. **Se `Par_PlanoContasNotaEntrada` vazio é intenção ou lacuna** (§4.9) — a maior origem de conta
+    a pagar sem plano de conta padrão.
 
 ---
 
@@ -684,11 +822,16 @@ não é**: tem `Mdo_taxa_Adm`, `Mdo_prazo`, `Mdo_Dia_fixo`, `SPEDFormaPag_codigo
 (a taxa de cartão entra no custo). *Trade-off:* forçar `Modo` no lookup genérico devolve o problema
 mais tarde, quando alguém precisar da taxa.
 
-**11.5 — Previsto e realizado: status ou documento?**
+**11.5 — Previsto e realizado: status, documento, ou nem isso?**
 O legado resolve com **uma coluna** (`Mba_efetivado` `S`/`N`) e com a data de vencimento das parcelas
 em aberto. (a) Copiar o flag é barato e casa com `PlanoContaValor`. (b) Separar em documento próprio
 é mais limpo e é trabalho novo sem precedente no legado. Isto decide também se o Fluxo de Caixa é
 relatório ou tela.
+**Medição que mudou esta decisão:** `Par_LancBancEfetivarAutomatico = True` (§4.9) — o lançamento
+bancário **já nasce efetivado**. A coluna existe, o par previsto/realizado existe, e a operação está
+configurada para nunca usar o lado "previsto". Então há uma opção (c) que antes não aparecia:
+**não migrar o estado**, e deixar o previsto ser só a parcela em aberto. *Trade-off:* (c) é a mais
+barata e fecha a porta para fluxo de caixa projetado com lançamento manual futuro.
 
 **11.6 — Fluxo de Caixa Ortodoxo vs Otimista: perguntar ou descartar.**
 A regra não existe em lugar nenhum recuperável. Ou o operador explica, ou as duas telas ficam fora.
@@ -699,11 +842,20 @@ Implementado no legado, **8 contas configuradas e 6 arquivos de remessa desde se
 10/03/2026**. É o item mais caro do módulo (layout por banco, retorno, conciliação) para o uso
 medido. Só o user sabe se o uso é baixo por escolha ou por o legado ser ruim nisso.
 
-**11.8 — Consulta de 6 linhas ao banco fecha metade do §9.**
-Distribuição de `Ctp_status`, `Ctp_vinculo`, `Mdo_tipo`, `Tcf_codigo`, `Credito_Operacao` e a razão
-pedidos↔títulos a receber. O dump versionado é **de catálogo, não de conteúdo**. Se houver nova
-janela de leitura no SQL Server de produção, essas seis contagens valem mais que qualquer estimativa
-aqui.
+**11.8 — Uma consulta curta ao banco fecha metade do §9.**
+Distribuição de `Ctp_status`, `Ctp_vinculo`, `Mdo_tipo`, `Tcf_codigo`, `Credito_Operacao` e
+`Credito_Situacao`, mais `Ven_TemFinanceiro` por `Ven_Tipo`. Os dumps versionados de `schema/` são
+**de catálogo, não de conteúdo** — os de `config/` são de conteúdo, e foi deles que veio §4.9
+inteira. Se houver nova janela de leitura no SQL Server de produção, **essas sete contagens valem
+mais que qualquer estimativa aqui**, e a de `Ven_TemFinanceiro` sozinha responde a pergunta de §3.1.
+
+**11.8b — A Reserva Técnica tem agora uma explicação, e ela precisa de confirmação.**
+O blocker registrado no levantamento do legado (`Par_RTautomatico = True` com `Ven_RtAutomatico`
+vazio em toda a `Venda`) ganhou uma leitura em §4.9: **a chave-mestra está ligada e todos os
+interruptores de escopo estão vazios**. Confiança média — é configuração, não o código que a
+consome. Fechar exige ou abrir a rotina Delphi, ou uma pergunta de uma frase a quem opera. **Enquanto
+não fecha, modelar RT no Cabinet continua apoiado em suposição** — e `commission_rules.reserve_percent`
+segue reservado por isso.
 
 **11.9 — Índice do `docs/harvest/README.md`.**
 A zona da issue #166 é este arquivo e só ele, então a tabela `Itens` do README **não lista

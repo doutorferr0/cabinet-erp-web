@@ -70,29 +70,70 @@ describe('tela Cliente', () => {
     })
   }, 15_000)
 
-  // DESIGN.md §Shapes: a aba Principal é uma pilha de compartimentos fechados,
-  // não uma parede de campos. Legendas marcadas `TODO(transcricao)` no código
-  // são inferência — a transcrição §5 não registra groupbox.
-  it('aba Principal agrupa os campos em compartimentos com moldura', async () => {
+  /**
+   * Diretriz 3: o que trava o `Gravar` fica FORA de accordion.
+   *
+   * Este é o teste que impede o drift de voltar. Antes desta migração o Cliente
+   * tinha 11 blocos montados à mão e o Fornecedor 13 — mesma base de código,
+   * agrupamentos diferentes. Agora quais existem, em que ordem e qual é
+   * obrigatório sai de `ENTIDADES.cliente`.
+   */
+  it('o bloco obrigatório está aberto e os opcionais nascem fechados', async () => {
     renderRoute('/cadastros/clientes/novo')
 
-    await screen.findByLabelText('Nome')
-    const legendas = screen
-      .getAllByText(/^(Identificação|Endereço|Telefones e E-mail|Redes Sociais)$/)
-      .filter((el) => el.tagName === 'LEGEND')
-    expect(legendas).toHaveLength(4)
+    // Os obrigatórios estão à vista sem nenhum clique.
+    expect(await screen.findByLabelText('Nome')).toBeInTheDocument()
+    expect(screen.getByLabelText('CPF')).toBeInTheDocument()
+    expect(screen.getByLabelText('Celular')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email')).toBeInTheDocument()
 
-    // Compartimento tem caixa própria; blocos irmãos não compartilham parede.
-    const identificacao = legendas[0]?.closest('fieldset')
-    expect(identificacao?.className).toContain('rounded-lg')
-    expect(identificacao).toContainElement(screen.getByLabelText('Nome'))
+    // O opcional não: `RG` mora em `Documentos e dados pessoais`, recolhido.
+    // Ele está no DOM e NÃO visível — e isso é desenho, não detalhe: o campo
+    // continua registrado no react-hook-form, então a validação do `Gravar` e a
+    // contagem do topo enxergam o formulário inteiro, aberto ou fechado.
+    expect(screen.getByLabelText('RG')).not.toBeVisible()
+
+    const gatilho = screen.getByRole('button', { name: 'Documentos e dados pessoais' })
+    expect(gatilho).toHaveAttribute('aria-expanded', 'false')
   })
+
+  it('o bloco opcional abre por clique e mostra o que guardava', async () => {
+    const { user } = renderRoute('/cadastros/clientes/novo')
+
+    await screen.findByLabelText('Nome')
+    await user.click(screen.getByRole('button', { name: 'Documentos e dados pessoais' }))
+
+    expect(screen.getByLabelText('RG')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Documentos e dados pessoais' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+  })
+
+  it('o topo conta quantos obrigatórios faltam, e nomeia o que falta', async () => {
+    const { user } = renderRoute('/cadastros/clientes/novo')
+
+    const nome = await screen.findByLabelText('Nome')
+    // Registro em branco: nenhum dos obrigatórios com lastro está preenchido.
+    expect(screen.getByText(/de \d+ obrigatórios/)).toBeInTheDocument()
+    expect(screen.getByText(/Falta:/)).toHaveTextContent('Nome')
+
+    await user.type(nome, 'ANDRÉ BATALHA')
+
+    // Preenchido, ele sai da lista do que falta — a barra responde à digitação.
+    await waitFor(() => {
+      expect(screen.getByText(/Falta:/)).not.toHaveTextContent('Nome')
+    })
+  }, 15_000)
 
   it('busca de cidade (janela auxiliar) preenche cidade e UF', async () => {
     const { user } = renderRoute('/cadastros/clientes/novo')
 
     await screen.findByLabelText('Nome')
-    await user.click(screen.getByRole('button', { name: 'Buscar cidade' }))
+    // `Endereço` é módulo opcional: nasce fechado, e o operador o abre. O botão
+    // de busca só existe depois disso — é a hierarquia funcionando.
+    await user.click(screen.getByRole('button', { name: /Endereço/ }))
+    await user.click(await screen.findByRole('button', { name: 'Buscar cidade' }))
 
     // janela de busca com a MESMA DataTable
     const dialog = await screen.findByRole('dialog')

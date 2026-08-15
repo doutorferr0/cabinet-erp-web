@@ -1,5 +1,6 @@
 import { ConsultasFavoritas } from '@/components/cabinet/consultas-favoritas'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
+import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
 import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -26,6 +27,7 @@ import {
 // desenha colunas pede o conjunto inteiro, e "inteiro" é um número que o
 // servidor define.
 import { PAGE_SIZE_MAX } from '@/data/api-provider'
+import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import {
   type FavoritoDeConsulta,
@@ -180,7 +182,7 @@ export interface VitraDataTableProps<T> {
    * `menu` = paleta de comandos com etiquetas na própria barra. A escolha é da
    * tela porque depende do que ela filtra, não do componente.
    */
-  modoDeFiltro?: 'lista' | 'menu'
+  modoDeFiltro?: 'lista' | 'menu' | 'modulo'
   /**
    * Visões ALTERNATIVAS à tabela. A tabela existe sempre e não entra na lista —
    * é a visão que toda listagem do ERP tem, e declarar a mesma entrada em oito
@@ -197,6 +199,15 @@ export interface VitraDataTableProps<T> {
    * chegar onde o operador já ia.
    */
   visaoInicial?: string
+  /**
+   * A entidade do schema de módulos — obrigatória em `modoDeFiltro: 'modulo'`.
+   *
+   * É dela que saem os chips, os campos de cada painel e a cor de cada pill. A
+   * prop `filtros` (lista de `CampoFiltravel`) **não serve** para isso: ela é
+   * uma lista plana, e o que o modo por módulo precisa é justamente o
+   * agrupamento — qual campo pertence a que assunto.
+   */
+  entidade?: EntidadeCadastro
 }
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -308,6 +319,7 @@ export function VitraDataTable<T>({
   visoes,
   agrupamentos,
   visaoInicial = VISAO_LISTA,
+  entidade,
 }: VitraDataTableProps<T>) {
   const [qInput, setQInput] = useState('')
   const [state, setState] = useState<TableQueryState>({
@@ -523,6 +535,22 @@ export function VitraDataTable<T>({
                 onTornarPadrao={(id) => atualizarFavoritos(comPadrao(favoritos, id))}
               />
             )
+            // O modo por módulo (#104) troca a barra plana pela faixa de
+            // chips. Reusa o MESMO `filtrosInput`, então debounce, consulta
+            // favorita e a recusa na fronteira continuam valendo de graça — a
+            // diferença é só como o operador monta a pergunta.
+            if (modoDeFiltro === 'modulo' && entidade) {
+              return (
+                <span key={action.id} className="contents">
+                  <FiltroPorModulo
+                    entidade={entidade}
+                    filtros={filtrosInput}
+                    onChange={setFiltrosInput}
+                  />
+                  {salvas}
+                </span>
+              )
+            }
             return modoDeFiltro === 'menu' ? (
               <span key={action.id} className="contents">
                 <MenuDeFiltros

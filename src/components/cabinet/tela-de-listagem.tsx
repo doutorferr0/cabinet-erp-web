@@ -2,6 +2,7 @@ import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import type { DataTableAction } from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import type { TableFetcher } from '@/lib/table-query'
@@ -37,7 +38,9 @@ export interface TelaDeListagemProps<T> {
    * como estava.
    */
   filtros?: readonly CampoFiltravel[]
-  modoDeFiltro?: 'lista' | 'menu'
+  modoDeFiltro?: 'lista' | 'menu' | 'modulo'
+  /** A entidade do schema de módulos — obrigatória em `modoDeFiltro: 'modulo'`. */
+  entidadeDoSchema?: EntidadeCadastro
 }
 
 /**
@@ -58,6 +61,7 @@ export function TelaDeListagem<T>({
   rodape,
   filtros,
   modoDeFiltro,
+  entidadeDoSchema,
 }: TelaDeListagemProps<T>) {
   return (
     <div className="flex flex-col gap-4">
@@ -69,6 +73,7 @@ export function TelaDeListagem<T>({
         actions={actions}
         {...(filtros ? { filtros } : {})}
         {...(modoDeFiltro ? { modoDeFiltro } : {})}
+        {...(entidadeDoSchema ? { entidade: entidadeDoSchema } : {})}
       />
       {rodape}
       {desativacao?.registro ? (

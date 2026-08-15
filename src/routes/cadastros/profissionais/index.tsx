@@ -5,11 +5,10 @@ import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
-import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
+import { profissional as esquemaProfissional } from '@/features/cadastro/modulos'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/profissionais/')({
@@ -61,42 +60,6 @@ const columns: ColumnDef<PartnerDto>[] = [
   },
 ]
 
-/**
- * Campos filtráveis — a whitelist que o contrato publica em `filters` de
- * `GET /api/partners`. `id` é o nome do campo NO CONTRATO, como o `accessorKey`.
- *
- * **`document` filtra mesmo digitado com máscara**: o dado trafega em dígito
- * puro e o operador digita com pontuação, então o `normalizar` limpa na SAÍDA.
- * `Profissão` continua fora daqui pelo mesmo motivo de estar fora das colunas —
- * não existe no DTO nem na extração, é campo sem fonte.
- */
-const camposFiltraveis: readonly CampoFiltravel[] = [
-  { id: 'code', rotulo: 'Código', variante: 'text', icon: Hash, placeholder: 'Ex.: 1042' },
-  {
-    id: 'tradeName',
-    rotulo: 'Nome de Apresentação',
-    variante: 'text',
-    icon: User,
-    placeholder: 'Parte do nome…',
-  },
-  {
-    id: 'legalName',
-    rotulo: 'Nome',
-    variante: 'text',
-    icon: User,
-    placeholder: 'Parte do nome…',
-  },
-  {
-    id: 'document',
-    rotulo: 'CNPJ / CPF',
-    variante: 'text',
-    icon: IdCard,
-    placeholder: 'Com ou sem pontuação',
-    normalizar: somenteDigitos,
-  },
-  { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
-]
-
 function ProfissionaisPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -146,7 +109,11 @@ function ProfissionaisPage() {
       queryKey={['profissionais']}
       fetcher={data.profissionais.list}
       actions={actions}
-      filtros={camposFiltraveis}
+      // Filtro POR MÓDULO (#104): os chips saem do mesmo schema que desenha o
+      // formulário e a ficha, e é ele que traz o agrupamento que a lista plana
+      // não tinha.
+      modoDeFiltro="modulo"
+      entidadeDoSchema={esquemaProfissional}
       desativacao={{
         entidade: 'profissional',
         registro: aDesativar,

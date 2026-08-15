@@ -1,0 +1,558 @@
+import {
+  moduloBancario,
+  moduloContatos,
+  moduloEndereco,
+  moduloObservacao,
+  moduloRedesSociais,
+} from './compartilhados'
+import type { EntidadeCadastro } from './tipos'
+
+/**
+ * AS QUATRO ENTIDADES DE CADASTRO (issue #100).
+ *
+ * Fonte da estrutura: `mockup-consulta-modelo.html` §`const E` — o user já
+ * desenhou o schema nesta forma, e os `k`/`r`/`col`/`fil`/`grana` são os dele.
+ * Fonte dos `campo`: os schemas Zod que as telas já validam
+ * (`cliente-form.tsx` e irmãos). Fonte dos `dto`: `PartnerDto` e a whitelist
+ * que `GET /api/partners` publica no contrato.
+ *
+ * **Transportadora e Obra ficam de fora**, como manda a issue: não existem como
+ * feature no repo. O mockup traz as duas prontas; entram quando a feature entrar.
+ *
+ * ## O que a leitura cruzada das três fontes revelou
+ *
+ * O mockup desenha o cadastro que a Vertz QUER e o repo guarda o que a
+ * transcrição cobre. As duas listas não coincidem, e a diferença não é pequena:
+ * `Limite de crédito`, `Última compra`, `Tabela de preço`, `Como conheceu`,
+ * `Regime tributário`, `CNAE`, `Chave PIX`, `Meta mensal`, `% de comissão`,
+ * `Perfil de custo`, `Índice de venda` — nada disso tem onde ser gravado hoje.
+ *
+ * Nenhum deles foi apagado nem inventado: entram **sem `campo`**, e `semLastro`
+ * os conta. Apagar encolheria a espec do user em silêncio; fingir que existem
+ * daria formulário que grava no vácuo. A mesma economia do `AvisoDeCobertura`:
+ * a lacuna fica visível em vez de virar surpresa na hora de migrar a tela.
+ */
+
+/** Whitelist de `sortBy`/`filters` de `GET /api/partners`, copiada do contrato.
+ *  Campo fora dela é 400 — o teste de invariante confere cada `dto` contra ela. */
+const WHITELIST_PARCEIRO = ['code', 'legalName', 'tradeName', 'document', 'active'] as const
+
+/**
+ * `Código` não é campo de formulário: quem o gera é o servidor. Entra no módulo
+ * de identificação sem `campo` e COM `dto`, porque é a primeira coluna de toda
+ * listagem de parceiro e o operador procura por ele.
+ */
+const CAMPO_CODIGO = { k: 'codigo', r: 'Código', col: true, fil: 'texto', dto: 'code' } as const
+
+/** `Ativo` é o 8º padrão: checkbox em todo cadastro, desativação lógica. */
+const CAMPO_ATIVO = {
+  k: 'ativo',
+  r: 'Ativo',
+  t: 'check',
+  col: true,
+  fil: 'bool',
+  campo: 'ativo',
+  dto: 'active',
+} as const
+
+export const cliente: EntidadeCadastro = {
+  id: 'cliente',
+  nome: 'Cliente',
+  plural: 'Clientes',
+  cor: 'clientes',
+  fonte: 'http',
+  whitelist: WHITELIST_PARCEIRO,
+  modulos: [
+    {
+      id: 'identificacao',
+      titulo: 'Identificação',
+      resumo: 'O mínimo para gravar e já vender',
+      cor: 'clientes',
+      obrigatorio: true,
+      campos: [
+        CAMPO_CODIGO,
+        {
+          k: 'tipo',
+          r: 'Tipo de pessoa',
+          t: 'seg',
+          req: true,
+          op: ['Física', 'Jurídica'],
+          campo: 'tipoPessoa',
+        },
+        {
+          k: 'nome',
+          r: 'Nome / Razão social',
+          req: true,
+          col: true,
+          fil: 'texto',
+          campo: 'nome',
+          dto: 'legalName',
+        },
+        {
+          k: 'doc',
+          r: 'CPF / CNPJ',
+          req: true,
+          w: 'medio',
+          col: true,
+          fil: 'texto',
+          campo: 'cpf',
+          dto: 'document',
+        },
+        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'celular' },
+        { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
+        CAMPO_ATIVO,
+      ],
+    },
+    {
+      id: 'documentos',
+      titulo: 'Documentos e dados pessoais',
+      resumo: 'RG · Nascimento · Estado civil · Profissão · Cônjuge',
+      cor: 'estoque',
+      campos: [
+        { k: 'rg', r: 'RG', campo: 'rg' },
+        { k: 'orgao', r: 'Órgão expedidor', w: 'medio', campo: 'orgaoExpedicao' },
+        { k: 'ufrg', r: 'UF do RG', t: 'select', w: 'curto', campo: 'ufRg' },
+        {
+          k: 'nasc',
+          r: 'Data de nascimento',
+          t: 'data',
+          w: 'medio',
+          fil: 'data',
+          campo: 'dtNascimento',
+        },
+        { k: 'sexo', r: 'Sexo', t: 'select', w: 'medio', campo: 'sexo' },
+        // Do mockup, sem onde gravar hoje.
+        { k: 'civil', r: 'Estado civil', t: 'select', fil: 'sel' },
+        { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'texto' },
+      ],
+    },
+    moduloEndereco(),
+    moduloContatos({ comunicadores: false }),
+    {
+      id: 'fiscal',
+      titulo: 'Fiscal',
+      resumo: 'Inscrição estadual · Contribuinte — necessário só para emitir NF-e',
+      cor: 'vendas',
+      campos: [
+        { k: 'ieRural', r: 'Insc. estadual produtor rural', campo: 'inscEstProdutorRural' },
+        { k: 'contrib', r: 'Contribuinte ICMS', t: 'select', fil: 'sel' },
+        { k: 'regime', r: 'Regime tributário', t: 'select', fil: 'sel' },
+      ],
+    },
+    {
+      id: 'comercial',
+      titulo: 'Comercial',
+      resumo: 'Quem indicou · Categoria · Tabela · Limite de crédito',
+      campos: [
+        {
+          k: 'indicou',
+          r: 'Profissional que indicou',
+          t: 'busca',
+          col: true,
+          fil: 'texto',
+          campo: 'profissional',
+        },
+        { k: 'categoria', r: 'Categoria', t: 'select', fil: 'sel', campo: 'categoria' },
+        // Do mockup, sem onde gravar hoje.
+        { k: 'origem', r: 'Como conheceu', t: 'select', fil: 'sel' },
+        { k: 'tabela', r: 'Tabela de preço', t: 'select', fil: 'sel' },
+        {
+          k: 'limite',
+          r: 'Limite de crédito',
+          t: 'dinheiro',
+          w: 'medio',
+          grana: true,
+          col: true,
+          fil: 'faixa',
+        },
+        { k: 'ultima', r: 'Última compra', t: 'data', col: true, fil: 'data' },
+      ],
+    },
+    moduloRedesSociais(),
+    moduloObservacao(),
+  ],
+}
+
+export const fornecedor: EntidadeCadastro = {
+  id: 'fornecedor',
+  nome: 'Fornecedor',
+  plural: 'Fornecedores',
+  cor: 'fornecedores',
+  fonte: 'http',
+  whitelist: WHITELIST_PARCEIRO,
+  modulos: [
+    {
+      id: 'identificacao',
+      titulo: 'Identificação',
+      resumo: 'O mínimo para gravar e lançar compra',
+      cor: 'fornecedores',
+      obrigatorio: true,
+      campos: [
+        CAMPO_CODIGO,
+        {
+          k: 'fantasia',
+          r: 'Nome fantasia',
+          req: true,
+          col: true,
+          fil: 'texto',
+          campo: 'nomeFantasia',
+          dto: 'tradeName',
+        },
+        {
+          k: 'nome',
+          r: 'Razão social',
+          req: true,
+          fil: 'texto',
+          campo: 'razaoSocial',
+          dto: 'legalName',
+        },
+        { k: 'sigla', r: 'Sigla', w: 'curto', campo: 'sigla' },
+        {
+          k: 'doc',
+          r: 'CNPJ',
+          req: true,
+          w: 'medio',
+          col: true,
+          fil: 'texto',
+          campo: 'cnpjCpf',
+          dto: 'document',
+        },
+        { k: 'tel', r: 'Telefone', req: true, col: true, campo: 'fone1' },
+        { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
+        CAMPO_ATIVO,
+      ],
+    },
+    {
+      id: 'fiscal',
+      titulo: 'Fiscal',
+      resumo: 'IE · Regime · CNAE — necessário para entrada de nota',
+      cor: 'vendas',
+      campos: [
+        { k: 'ie', r: 'Inscrição estadual', campo: 'inscEst' },
+        // Do mockup, sem onde gravar hoje.
+        { k: 'regime', r: 'Regime tributário', t: 'select', fil: 'sel' },
+        { k: 'cnae', r: 'CNAE principal' },
+      ],
+    },
+    {
+      id: 'comercial',
+      titulo: 'Comercial e preço',
+      resumo: 'Prazo de entrega · Prazo de pagamento · Revenda',
+      campos: [
+        {
+          k: 'prazoEntrega',
+          r: 'Prazo de entrega (dias)',
+          w: 'medio',
+          col: true,
+          fil: 'faixa',
+          campo: 'prazoEntregaDias',
+        },
+        {
+          k: 'prazoPgto',
+          r: 'Prazo de pagamento (dias)',
+          w: 'medio',
+          fil: 'faixa',
+          campo: 'prazoPagamentoDias',
+        },
+        {
+          k: 'revenda',
+          r: 'Fornece para revenda',
+          t: 'check',
+          fil: 'bool',
+          campo: 'forneceRevenda',
+        },
+        {
+          k: 'materiais',
+          r: 'Materiais que fornece',
+          t: 'busca',
+          fil: 'texto',
+          campo: 'materiais',
+        },
+        {
+          k: 'compradora',
+          r: 'Empresa compradora',
+          t: 'select',
+          fil: 'sel',
+          campo: 'empresaCompradora',
+        },
+        // Do mockup, sem onde gravar hoje. São os dois de que sai o preço de venda.
+        { k: 'custo', r: 'Perfil de custo', t: 'busca', col: true, fil: 'texto' },
+        { k: 'indice', r: 'Índice de valor de venda', col: true, fil: 'faixa' },
+        { k: 'frete', r: 'Tipo de frete', t: 'select', fil: 'sel' },
+        { k: 'minimo', r: 'Pedido mínimo', t: 'dinheiro', w: 'medio', grana: true },
+      ],
+    },
+    {
+      id: 'representante',
+      titulo: 'Representante e contatos',
+      resumo: 'Quem atende a Vertz nesse fornecedor',
+      cor: 'boletim',
+      campos: [
+        { k: 'contatos', r: 'Contatos', campo: 'contatos' },
+        { k: 'fone2', r: 'Telefone 2', campo: 'fone2' },
+        { k: 'fax', r: 'Fax', campo: 'fax' },
+        { k: 'site', r: 'Site', campo: 'site' },
+        {
+          k: 'com1tipo',
+          r: 'Comunicador',
+          t: 'select',
+          w: 'medio',
+          campo: 'comunicadores.comunicador1Tipo',
+        },
+        { k: 'com1valor', r: 'Identificador', campo: 'comunicadores.comunicador1Valor' },
+        {
+          k: 'com2tipo',
+          r: 'Comunicador',
+          t: 'select',
+          w: 'medio',
+          campo: 'comunicadores.comunicador2Tipo',
+        },
+        { k: 'com2valor', r: 'Identificador', campo: 'comunicadores.comunicador2Valor' },
+      ],
+    },
+    moduloEndereco(),
+    moduloRedesSociais(),
+  ],
+}
+
+export const profissional: EntidadeCadastro = {
+  id: 'profissional',
+  nome: 'Profissional',
+  plural: 'Profissionais',
+  cor: 'profissionais',
+  fonte: 'http',
+  whitelist: WHITELIST_PARCEIRO,
+  modulos: [
+    {
+      id: 'identificacao',
+      titulo: 'Identificação',
+      resumo: 'O mínimo para gravar o cadastro',
+      cor: 'profissionais',
+      obrigatorio: true,
+      campos: [
+        CAMPO_CODIGO,
+        {
+          k: 'tipo',
+          r: 'Tipo de pessoa',
+          t: 'seg',
+          req: true,
+          op: ['Física', 'Jurídica'],
+          campo: 'tipoPessoa',
+        },
+        {
+          k: 'apres',
+          r: 'Nome de apresentação',
+          req: true,
+          col: true,
+          fil: 'texto',
+          campo: 'nomeApresentacao',
+          dto: 'tradeName',
+        },
+        { k: 'nome', r: 'Nome completo', req: true, fil: 'texto', campo: 'nome', dto: 'legalName' },
+        {
+          k: 'doc',
+          r: 'CPF / CNPJ',
+          req: true,
+          w: 'medio',
+          col: true,
+          fil: 'texto',
+          campo: 'cpf',
+          dto: 'document',
+        },
+        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'telefones.celular' },
+        { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
+        CAMPO_ATIVO,
+      ],
+    },
+    {
+      id: 'documentos',
+      titulo: 'Documentos e dados pessoais',
+      resumo: 'RG · Nascimento · Estado civil · Cônjuge · PIS · CREA/CAU/CFT',
+      cor: 'estoque',
+      campos: [
+        {
+          k: 'registro',
+          r: 'Registro profissional',
+          col: true,
+          fil: 'texto',
+          campo: 'registroProfissional',
+        },
+        { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'sel', campo: 'profissao' },
+        { k: 'rg', r: 'RG', campo: 'rg' },
+        {
+          k: 'nasc',
+          r: 'Data de nascimento',
+          t: 'data',
+          w: 'medio',
+          fil: 'data',
+          campo: 'dtNascimento',
+        },
+        { k: 'civil', r: 'Estado civil', t: 'select', fil: 'sel', campo: 'estadoCivil' },
+        { k: 'conjuge', r: 'Nome do cônjuge', campo: 'nomeConjuge' },
+        { k: 'nascConjuge', r: 'Nasc. do cônjuge', t: 'data', w: 'medio', campo: 'dtNascConjuge' },
+        { k: 'pis', r: 'PIS / PASEP / NIS', campo: 'pisPasepNis' },
+      ],
+    },
+    moduloEndereco(),
+    moduloContatos({ prefixo: 'telefones' }),
+    moduloBancario(),
+    // O endereço da agência é um SEGUNDO endereço no mesmo schema, e é por isso
+    // que o módulo compartilhado recebe prefixo em vez de caminho fixo.
+    {
+      ...moduloEndereco('enderecoBanco'),
+      titulo: 'Endereço da agência',
+      resumo: 'Só quando o banco exige',
+    },
+    {
+      id: 'participacao',
+      titulo: 'Participação padrão',
+      resumo: '% de indicação aplicado quando este profissional entra na venda',
+      campos: [
+        // Do mockup, sem onde gravar hoje.
+        { k: 'pct', r: '% padrão de indicação', w: 'medio', col: true, fil: 'faixa' },
+        { k: 'operador', r: 'Operador', t: 'select', w: 'medio', fil: 'sel' },
+        { k: 'indicados', r: 'Clientes indicados', col: true },
+        { k: 'gerado', r: 'Gerado no ano', t: 'dinheiro', grana: true, col: true },
+      ],
+    },
+    moduloRedesSociais(),
+  ],
+}
+
+export const colaborador: EntidadeCadastro = {
+  id: 'colaborador',
+  nome: 'Colaborador',
+  plural: 'Colaboradores',
+  // SEM cor, e não é esquecimento: a tabela de shape×cor travada pelo user cobre
+  // oito módulos e Colaboradores não é um deles (ver `src/app/modulo.ts`).
+  // O mockup pinta o cadastro com o azure do Estoque, que é cor de OUTRO módulo.
+  // Atribuir a nona cor é decisão de identidade visual, do user.
+  fonte: 'mock',
+  modulos: [
+    {
+      id: 'identificacao',
+      titulo: 'Identificação',
+      resumo: 'O mínimo para gravar e vincular a vendas',
+      obrigatorio: true,
+      campos: [
+        { k: 'nome', r: 'Nome completo', req: true, col: true, fil: 'texto', campo: 'nome' },
+        {
+          k: 'cargo',
+          r: 'Cargo / função',
+          t: 'busca',
+          req: true,
+          col: true,
+          fil: 'sel',
+          campo: 'cargo',
+        },
+        {
+          k: 'admissao',
+          r: 'Data de admissão',
+          t: 'data',
+          req: true,
+          w: 'medio',
+          col: true,
+          fil: 'data',
+          campo: 'dataAdmissao',
+        },
+        { k: 'setor', r: 'Setor', t: 'select', fil: 'sel', campo: 'setor' },
+        {
+          k: 'atendente',
+          r: 'É atendente — pode ser vinculado a venda',
+          t: 'check',
+          fil: 'bool',
+          campo: 'atendimentoCliente',
+        },
+        { k: 'ativo', r: 'Ativo', t: 'check', col: true, fil: 'bool', campo: 'ativo' },
+        // Do mockup, sem onde gravar hoje. Colaborador é usuário do sistema
+        // (issue #105) e o e-mail de login é o que falta para isso ser verdade.
+        { k: 'login', r: 'E-mail de login', fil: 'texto' },
+        { k: 'cel', r: 'Celular' },
+      ],
+    },
+    {
+      id: 'empresas',
+      titulo: 'Empresas e perfil',
+      resumo: 'Um colaborador pode atuar em mais de uma empresa, com papel diferente em cada',
+      campos: [
+        { k: 'empresa', r: 'Empresa', t: 'select', col: true, fil: 'sel', campo: 'empresa' },
+        // O perfil por empresa é o escopo da issue #105 (Acesso-1).
+        { k: 'perfil', r: 'Perfil', t: 'select', col: true, fil: 'sel' },
+      ],
+    },
+    {
+      id: 'documentos',
+      titulo: 'Documentos e dados pessoais',
+      resumo: 'Nascimento · Estado civil · Filiação · Naturalidade · Instrução',
+      campos: [
+        {
+          k: 'nasc',
+          r: 'Data de nascimento',
+          t: 'data',
+          w: 'medio',
+          fil: 'data',
+          campo: 'dtNascimento',
+        },
+        { k: 'sexo', r: 'Sexo', t: 'select', w: 'medio', campo: 'sexo' },
+        { k: 'civil', r: 'Estado civil', t: 'select', fil: 'sel', campo: 'estadoCivil' },
+        { k: 'conjuge', r: 'Nome do cônjuge', campo: 'nomeConjuge' },
+        { k: 'nascConjuge', r: 'Nasc. do cônjuge', t: 'data', w: 'medio', campo: 'dtNascConjuge' },
+        { k: 'pai', r: 'Nome do pai', campo: 'nomePai' },
+        { k: 'mae', r: 'Nome da mãe', campo: 'nomeMae' },
+        { k: 'instrucao', r: 'Grau de instrução', t: 'select', fil: 'sel', campo: 'grauInstrucao' },
+        { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'texto', campo: 'profissao' },
+        { k: 'racaCor', r: 'Raça / cor', t: 'select', campo: 'racaCor' },
+        { k: 'cidadeNatal', r: 'Naturalidade', t: 'busca', campo: 'naturalidade.cidadeNome' },
+        { k: 'ufNatal', r: 'UF de nascimento', t: 'select', w: 'curto', campo: 'naturalidade.uf' },
+        { k: 'nacionalidade', r: 'Nacionalidade', t: 'select', campo: 'nacionalidade' },
+        { k: 'anoChegada', r: 'Ano de chegada', w: 'curto', campo: 'anoChegada' },
+      ],
+    },
+    {
+      id: 'trabalhistas',
+      titulo: 'Dados trabalhistas',
+      resumo: 'Vínculo · Salário · Admissão · Demissão',
+      campos: [
+        { k: 'vinculo', r: 'Vínculo', t: 'select', fil: 'sel', campo: 'vinculo' },
+        {
+          k: 'salario',
+          r: 'Salário',
+          t: 'dinheiro',
+          w: 'medio',
+          grana: true,
+          fil: 'faixa',
+          campo: 'salario',
+        },
+        {
+          k: 'demissao',
+          r: 'Data de demissão',
+          t: 'data',
+          w: 'medio',
+          fil: 'data',
+          campo: 'dataDemissao',
+        },
+      ],
+    },
+    {
+      id: 'metas',
+      titulo: 'Metas e comissão',
+      resumo: '% interna · % externa · Meta mensal',
+      campos: [
+        // Módulo inteiro do mockup, sem lastro: comissão e meta não existem em
+        // schema nenhum. É o maior buraco medido nesta issue, e o que o user
+        // mais citou no mockup.
+        { k: 'comissaoInterna', r: '% comissão interna', w: 'medio', col: true },
+        { k: 'comissaoExterna', r: '% comissão externa', w: 'medio' },
+        { k: 'meta', r: 'Meta mensal', t: 'dinheiro', w: 'medio', grana: true, fil: 'faixa' },
+      ],
+    },
+    moduloRedesSociais(),
+  ],
+}
+
+export const ENTIDADES: Readonly<Record<string, EntidadeCadastro>> = {
+  cliente,
+  colaborador,
+  fornecedor,
+  profissional,
+}

@@ -1,4 +1,3 @@
-import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { ComunicadoresBlock, EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -11,8 +10,9 @@ import {
 } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
-import { Tabs } from '@/components/ui/tabs'
 import { tabelas } from '@/data/tabelas'
+import { type ModuloCadastro, fornecedor as entidadeFornecedor } from '@/features/cadastro/modulos'
+import { ProgressoObrigatorios } from '@/features/cliente/progresso-obrigatorios'
 import type { Fornecedor } from '@/mocks/fornecedores'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -70,17 +70,6 @@ export const fornecedorSchema = z.object({
   ),
 })
 
-/** Abas inferiores capturadas na transcrição §4: só `Contatos`. */
-const ABAS_SEM_CAPTURA = [
-  ['dadosBancarios', 'Dados Bancários'],
-  ['faturamento', 'Faturamento'],
-  ['observacao', 'Observação'],
-  ['outrosDados', 'Outros Dados'],
-  ['comissao', 'Comissão\\Premiação'],
-  ['participacao', 'Participação'],
-  ['historico', 'Histórico Emp. Comp.'],
-] as const
-
 function ConsultaCnpjButton() {
   const { getValues, setValue } = useFormContext<Fornecedor>()
 
@@ -127,13 +116,36 @@ function BuscaCidade({
   )
 }
 
+/** O módulo pelo `id` — se o schema o renomear, o erro é de compilação aqui. */
+function modulo(id: string): ModuloCadastro {
+  const achado = entidadeFornecedor.modulos.find((m) => m.id === id)
+  if (!achado) throw new Error(`Módulo "${id}" saiu do schema do fornecedor`)
+  return achado
+}
+
+/**
+ * O bloco de um módulo do schema: título, resumo, cor e obrigatoriedade vêm de
+ * lá; o miolo vem de quem chama.
+ */
+function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode }) {
+  const m = modulo(id)
+  return (
+    <FormBlock
+      legend={m.titulo}
+      {...(m.obrigatorio ? { obrigatorio: true } : { colapsavel: true })}
+      {...(m.cor ? { cor: m.cor } : {})}
+    >
+      {children}
+    </FormBlock>
+  )
+}
+
 function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
   return (
     <div className="flex flex-col gap-3">
-      {/* TODO(transcricao): `Identificação` é legenda INFERIDA. A transcrição §4
-          lista o corpo do cadastro em sequência plana, sem groupbox — conferir
-          contra nova captura do SoftLux. */}
-      <FormBlock legend="Identificação">
+      <ProgressoObrigatorios entidade={entidadeFornecedor} />
+
+      <BlocoDoModulo id="identificacao">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="razaoSocial"
@@ -152,33 +164,30 @@ function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
             <TextField name="cnpjCpf" label="CNPJ/CPF" className="flex-1" />
             <ConsultaCnpjButton />
           </div>
-          <TextField name="inscEst" label="Insc. Est." className="col-span-4 sm:col-span-2" />
-        </div>
-      </FormBlock>
-
-      {/* TODO(transcricao): `Telefones e E-mail` é legenda INFERIDA. */}
-      <FormBlock legend="Telefones e E-mail">
-        <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="fone1" label="Fone 1" className="col-span-6 sm:col-span-2" />
-          <TextField name="fone2" label="Fone 2" className="col-span-6 sm:col-span-2" />
-          <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-2" />
           <TextField name="email" label="E-mail" className="col-span-12 sm:col-span-6" />
-          <TextField name="site" label="Site" className="col-span-12 sm:col-span-6" />
+          <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
         </div>
-      </FormBlock>
+      </BlocoDoModulo>
 
-      {/* `Endereço` e `Comunicadores` são nomes da própria transcrição (§10 e §3). */}
-      <FormBlock legend="Endereço">
-        <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
-      </FormBlock>
-
-      <FormBlock legend="Comunicadores">
-        <ComunicadoresBlock prefix="comunicadores" />
-      </FormBlock>
-
-      {/* TODO(transcricao): `Fornecimento` é legenda INFERIDA. */}
-      <FormBlock legend="Fornecimento">
+      <BlocoDoModulo id="fiscal">
         <div className="grid grid-cols-12 items-end gap-3">
+          <TextField name="inscEst" label="Insc. Est." className="col-span-6 sm:col-span-3" />
+        </div>
+      </BlocoDoModulo>
+
+      <BlocoDoModulo id="comercial">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField
+            name="prazoEntregaDias"
+            label="Prazo de entrega (dias)"
+            className="col-span-6 sm:col-span-3"
+          />
+          <TextField
+            name="prazoPagamentoDias"
+            label="Prazo de pagamento (dias)"
+            className="col-span-6 sm:col-span-3"
+          />
           <CheckboxField
             name="forneceRevenda"
             label="Fornece produto para revenda"
@@ -190,30 +199,62 @@ function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
             kind="materiais"
             className="col-span-12 sm:col-span-3"
           />
-          <TextField
-            name="prazoEntregaDias"
-            label="Prazo de entrega (dias)"
-            className="col-span-6 sm:col-span-3"
-          />
-          <TextField
-            name="prazoPagamentoDias"
-            label="Prazo de pagamento (dias)"
-            className="col-span-6 sm:col-span-3"
-          />
           <SelectField
             name="empresaCompradora"
             label="Empresa compradora"
             options={tabelas.empresasCompradoras}
             className="col-span-12 sm:col-span-4"
           />
-          <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
         </div>
-      </FormBlock>
 
-      {/* TODO(transcricao): `Redes Sociais` é legenda INFERIDA. */}
-      <FormBlock legend="Redes Sociais">
+        {/* DECISÃO DO USER (2026-08-14): perfil de custo e índice de valor de
+            venda ficam OPCIONAIS, mesmo sendo deles que sai o preço de venda.
+            A tela AVISA e não trava — travar o cadastro de um fornecedor
+            porque o preço ainda não foi negociado impediria de registrar quem
+            já está fornecendo. O aviso mora aqui, no bloco onde os dois
+            campos vão nascer, e não no topo: no topo ele seria mais uma linha
+            que ninguém associa a nada. */}
+        <p className="text-[0.75rem] text-muted-foreground">
+          Sem perfil de custo e índice de valor de venda, o produto deste fornecedor não tem preço
+          de venda calculado. Os dois campos ainda não existem no cadastro — quando entrarem,
+          continuam opcionais.
+        </p>
+      </BlocoDoModulo>
+
+      <BlocoDoModulo id="representante">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-12 items-end gap-3">
+            <TextField name="fone2" label="Fone 2" className="col-span-6 sm:col-span-2" />
+            <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-2" />
+            <TextField name="site" label="Site" className="col-span-12 sm:col-span-6" />
+          </div>
+
+          <ComunicadoresBlock prefix="comunicadores" />
+
+          {/* A grade de contatos era a única aba capturada da §4, e vivia numa
+              tira de abas com sete irmãs desabilitadas. O schema a coloca em
+              `Representante e contatos`, que é onde ela sempre pertenceu —
+              e as sete abas mortas deixam de ocupar a tela. */}
+          <FormGrid
+            name="contatos"
+            columns={[
+              { key: 'nome', label: 'Nome' },
+              { key: 'vinculo', label: 'Vínculo' },
+              { key: 'fone', label: 'Fone' },
+              { key: 'fax', label: 'FAX' },
+            ]}
+            newRow={{ nome: '', vinculo: '', fone: '', fax: '' }}
+          />
+        </div>
+      </BlocoDoModulo>
+
+      <BlocoDoModulo id="endereco">
+        <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
+      </BlocoDoModulo>
+
+      <BlocoDoModulo id="redes">
         <RedesSociaisBlock prefix="redesSociais" />
-      </FormBlock>
+      </BlocoDoModulo>
     </div>
   )
 }
@@ -263,21 +304,6 @@ export function FornecedorForm({
       {...(aviso ? { aviso } : {})}
     >
       <FornecedorCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} />
-
-      <Tabs defaultValue="contatos">
-        <AbasSemCaptura capturada={['contatos', 'Contatos']} abas={ABAS_SEM_CAPTURA}>
-          <FormGrid
-            name="contatos"
-            columns={[
-              { key: 'nome', label: 'Nome' },
-              { key: 'vinculo', label: 'Vínculo' },
-              { key: 'fone', label: 'Fone' },
-              { key: 'fax', label: 'FAX' },
-            ]}
-            newRow={{ nome: '', vinculo: '', fone: '', fax: '' }}
-          />
-        </AbasSemCaptura>
-      </Tabs>
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

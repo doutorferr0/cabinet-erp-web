@@ -111,8 +111,11 @@ describe('tela Fornecedor', () => {
     const razao = await screen.findByLabelText('Razão Social')
     await user.type(razao, 'FORNECEDOR TESTE LTDA')
 
-    // grade Contatos: Incluir linha e preencher
-    await user.click(screen.getByRole('button', { name: /Incluir/ }))
+    // grade Contatos: o módulo `Representante e contatos` é opcional e nasce
+    // recolhido — a grade só existe depois de abrir. É a hierarquia da
+    // diretriz 3 funcionando, não um passo extra do teste.
+    await user.click(screen.getByRole('button', { name: 'Representante e contatos' }))
+    await user.click(await screen.findByRole('button', { name: /Incluir/ }))
     await user.type(screen.getByLabelText('Nome linha 1'), 'MARIA')
     await user.type(screen.getByLabelText('Vínculo linha 1'), 'COMPRAS')
 
@@ -130,7 +133,8 @@ describe('tela Fornecedor', () => {
     const { user } = renderRoute('/cadastros/fornecedores/novo', servidorDeParceiros().stub)
 
     await screen.findByLabelText('Razão Social')
-    await user.click(screen.getByRole('button', { name: 'Buscar cidade' }))
+    await user.click(screen.getByRole('button', { name: 'Endereço' }))
+    await user.click(await screen.findByRole('button', { name: 'Buscar cidade' }))
 
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent('Busca de Cidade')
@@ -146,6 +150,53 @@ describe('tela Fornecedor', () => {
 
   // O papel vem da TELA: incluir por Fornecedores cria fornecedor, e só. Marcar
   // os três "por precaução" faria o cadastro novo aparecer nas três listagens.
+  /**
+   * Diretriz 3, no Fornecedor: era a tela mais desigual do repo — 13 blocos
+   * montados à mão, 6 nomeados, contra 11/4 do Cliente sobre a mesma base. Os
+   * dois passam a sair do mesmo schema, e este teste é o que impede o drift de
+   * voltar.
+   */
+  it('o obrigatório está aberto, o opcional nasce fechado e as abas mortas sumiram', async () => {
+    renderRoute('/cadastros/fornecedores/novo')
+
+    // Obrigatórios à vista, sem clique.
+    expect(await screen.findByLabelText('Razão Social')).toBeVisible()
+    expect(screen.getByLabelText('CNPJ/CPF')).toBeVisible()
+    expect(screen.getByLabelText('Fone 1')).toBeVisible()
+    expect(screen.getByLabelText('E-mail')).toBeVisible()
+
+    // Opcional no DOM e invisível — segue registrado no RHF, então validação e
+    // contagem enxergam o formulário inteiro.
+    expect(screen.getByLabelText('Site')).not.toBeVisible()
+    expect(screen.getByRole('button', { name: 'Representante e contatos' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+
+    // As sete abas não capturadas da §4 saíram: módulo recolhível diz a mesma
+    // coisa sem ocupar a tela com aba que não abre.
+    expect(screen.queryByRole('tab', { name: /Dados Bancários/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: /Comissão/ })).not.toBeInTheDocument()
+  })
+
+  /**
+   * DECISÃO DO USER (2026-08-14): perfil de custo e índice de valor de venda
+   * ficam opcionais, mesmo sendo deles que sai o preço de venda — e a tela
+   * AVISA em vez de travar. Travar impediria registrar quem já está fornecendo
+   * só porque o preço ainda não foi negociado.
+   */
+  it('o bloco comercial avisa o efeito de não ter perfil de custo, e não trava', async () => {
+    const { user } = renderRoute('/cadastros/fornecedores/novo')
+
+    await screen.findByLabelText('Razão Social')
+    await user.click(screen.getByRole('button', { name: 'Comercial e preço' }))
+
+    expect(await screen.findByText(/não tem\s+preço de venda calculado/)).toBeVisible()
+    // O bloco é `Opcional` — o carimbo é do próprio FormBlock, e é o que diz
+    // ao operador que ele pode gravar sem isto.
+    expect(screen.getByRole('button', { name: 'Comercial e preço' })).toBeInTheDocument()
+  })
+
   it('Incluir manda POST com o papel desta tela', async () => {
     const { stub, chamadas } = servidorDeParceiros()
     const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)

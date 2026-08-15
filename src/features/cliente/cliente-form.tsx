@@ -1,4 +1,3 @@
-import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -12,13 +11,52 @@ import {
   TextField,
   TextareaField,
 } from '@/components/cabinet/form-controls'
-import { Tabs } from '@/components/ui/tabs'
+import { type ModuloCadastro, cliente as entidadeCliente } from '@/features/cadastro/modulos'
 import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
 import type { Cliente } from '@/mocks/clientes'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
+import { ProgressoObrigatorios } from './progresso-obrigatorios'
+
+/**
+ * CADASTRO DE CLIENTE — a hierarquia vem do SCHEMA, os controles não.
+ *
+ * ## O que mudou, e o que deliberadamente não mudou
+ *
+ * Antes: onze `FormBlock` montados à mão, quatro com nome, nenhum recolhível,
+ * nada dizendo o que trava o `Gravar`. A ordem e o agrupamento eram decisão
+ * desta tela, e por isso divergiam do Fornecedor — 13 blocos, 6 nomeados, sobre
+ * a mesma base de código (diretriz 3, `docs/direcao-visual/DIRETRIZES-UI.md`).
+ *
+ * Agora **quais** blocos existem, em que ordem, com que cor, qual é obrigatório
+ * e o que cada um resume sai de `ENTIDADES.cliente` (issue #100). Uma fonte, e
+ * as quatro telas param de divergir.
+ *
+ * **O que NÃO saiu do schema: os controles.** O CLAUDE.md veta form-generator
+ * declarativo, e a razão aparece aqui: o CEP busca endereço, a cidade abre
+ * janela de busca, `profissional` e `categoria` são `LookupCombo` com cadastro
+ * rápido, CPF tem máscara. Um renderizador genérico de `CampoCadastro` teria de
+ * reinventar esses comportamentos como configuração — e o primeiro campo que
+ * não coubesse na configuração voltaria a ser escrito à mão, do lado de fora.
+ * O schema descreve a ESTRUTURA; a tela compõe o miolo.
+ *
+ * ## Obrigatório fora de accordion — invariante, não estilo
+ *
+ * `Identificação` é o único módulo `obrigatorio` e nunca colapsa. Os demais
+ * nascem fechados, com resumo e contador. Bloco fechado escondendo campo que
+ * trava o `Gravar` é o defeito que a diretriz 3 nomeia; o `FormBlock` derruba o
+ * render em desenvolvimento se acontecer.
+ *
+ * ## As abas saíram
+ *
+ * A transcrição §5 lista cinco abas não capturadas, e o `AbasSemCaptura` as
+ * mostrava desabilitadas. Com módulos recolhíveis, a mesma informação cabe na
+ * coluna: `Documentos`, `Fiscal` e `Comercial` são exatamente o que aquelas
+ * abas prometiam, e agora existem de verdade em vez de existirem apagadas. O
+ * que a transcrição não cobre continua sem existir — nenhum campo foi inventado.
+ */
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const clienteSchema = z.object({
@@ -57,17 +95,33 @@ export const clienteSchema = z.object({
   observacao: z.string(),
 })
 
-/** Abas da transcrição §5: só `Principal` foi capturada. */
-const ABAS_SEM_CAPTURA = [
-  ['pessoais', 'Pessoais'],
-  ['cobranca', 'Cobrança\\Comercial'],
-  ['obra', 'Obra'],
-  ['contato', 'Contato'],
-  ['financeiro', 'Financeiro\\Tributário'],
-] as const
-
 const UFS = ['SP', 'RJ', 'MG', 'PR', 'RS', 'SC', 'ES', 'GO', 'DF'] as const
 const SEXOS = ['MASCULINO', 'FEMININO'] as const
+
+/** O módulo pelo `id` — se o schema o renomear, o erro é de compilação aqui. */
+function modulo(id: string): ModuloCadastro {
+  const achado = entidadeCliente.modulos.find((m) => m.id === id)
+  if (!achado) throw new Error(`Módulo "${id}" saiu do schema do cliente`)
+  return achado
+}
+
+/**
+ * O bloco de um módulo do schema: título, resumo, cor e obrigatoriedade vêm de
+ * lá; o miolo vem de quem chama. É o ponto exato em que a estrutura é
+ * declarativa e o conteúdo não.
+ */
+function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode }) {
+  const m = modulo(id)
+  return (
+    <FormBlock
+      legend={m.titulo}
+      {...(m.obrigatorio ? { obrigatorio: true } : { colapsavel: true })}
+      {...(m.cor ? { cor: m.cor } : {})}
+    >
+      {children}
+    </FormBlock>
+  )
+}
 
 function BuscaCidade({
   open,
@@ -88,15 +142,13 @@ function BuscaCidade({
   )
 }
 
-function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
+function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
   return (
-    // Compartimentos irmãos: caixa própria + goteira de `{spacing.md}`, nunca
-    // parede compartilhada (DESIGN.md §Shapes).
     <div className="flex flex-col gap-3">
-      {/* TODO(transcricao): `Identificação` é legenda INFERIDA. A transcrição §5
-          lista os campos da aba `Principal` em sequência plana e não registra
-          groupbox nenhum — conferir contra nova captura do SoftLux. */}
-      <FormBlock legend="Identificação">
+      <ProgressoObrigatorios entidade={entidadeCliente} />
+
+      {/* Tudo que trava o Gravar mora aqui, e este bloco não colapsa. */}
+      <BlocoDoModulo id="identificacao">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-6" />
           <RadioField
@@ -115,12 +167,13 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
             placeholder="___.___.___-__"
             className="col-span-6 sm:col-span-3"
           />
-          <SelectField
-            name="sexo"
-            label="Sexo"
-            options={SEXOS}
-            className="col-span-6 sm:col-span-3"
-          />
+          <TextField name="celular" label="Celular" className="col-span-6 sm:col-span-3" />
+          <TextField name="email" label="Email" className="col-span-12 sm:col-span-6" />
+        </div>
+      </BlocoDoModulo>
+
+      <BlocoDoModulo id="documentos">
+        <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="rg" label="RG" className="col-span-4 sm:col-span-2" />
           <TextField
             name="orgaoExpedicao"
@@ -133,18 +186,20 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
             label="Dt. de Nasc."
             className="col-span-6 sm:col-span-3"
           />
+          <SelectField
+            name="sexo"
+            label="Sexo"
+            options={SEXOS}
+            className="col-span-6 sm:col-span-3"
+          />
         </div>
-      </FormBlock>
+      </BlocoDoModulo>
 
-      {/* `Endereço` não é inferência: a transcrição §10 trata o conjunto
-          (Endereço…CEP) como bloco reutilizável, com esse nome. */}
-      <FormBlock legend="Endereço">
+      <BlocoDoModulo id="endereco">
         <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
-      </FormBlock>
+      </BlocoDoModulo>
 
-      {/* TODO(transcricao): `Telefones e E-mail` é legenda INFERIDA. A §10 nomeia
-          "telefone" como bloco (4 variações fixas), mas não o conjunto com e-mail. */}
-      <FormBlock legend="Telefones e E-mail">
+      <BlocoDoModulo id="contatos">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="foneComercial"
@@ -157,15 +212,20 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
             label="Fone Resid."
             className="col-span-6 sm:col-span-3"
           />
-          <TextField name="celular" label="Celular" className="col-span-6 sm:col-span-3" />
-          <TextField name="email" label="Email" className="col-span-12 sm:col-span-6" />
         </div>
-      </FormBlock>
+      </BlocoDoModulo>
 
-      {/* Moldura sem legenda: a transcrição não agrupa estes três e nenhum nome
-          plausível sobrevive sem colidir com aba existente (`Cobrança\Comercial`).
-          Compartimento sem nome continua sendo compartimento. */}
-      <FormBlock>
+      <BlocoDoModulo id="fiscal">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField
+            name="inscEstProdutorRural"
+            label="Inscrição Estadual Produtor Rural"
+            className="col-span-12 sm:col-span-6"
+          />
+        </div>
+      </BlocoDoModulo>
+
+      <BlocoDoModulo id="comercial">
         <div className="grid grid-cols-12 items-end gap-3">
           <LookupField
             name="profissional"
@@ -179,22 +239,16 @@ function ClientePrincipal({ onBuscaCidade }: { onBuscaCidade: () => void }) {
             kind="categoria"
             className="col-span-12 sm:col-span-4"
           />
-          <TextField
-            name="inscEstProdutorRural"
-            label="Inscrição Estadual Produtor Rural"
-            className="col-span-12 sm:col-span-4"
-          />
         </div>
-      </FormBlock>
+      </BlocoDoModulo>
 
-      {/* TODO(transcricao): `Redes Sociais` é legenda INFERIDA — a transcrição
-          lista FaceBook e Instagram soltos, sem moldura. */}
-      <FormBlock legend="Redes Sociais">
+      <BlocoDoModulo id="redes">
         <RedesSociaisBlock prefix="redesSociais" />
-      </FormBlock>
+      </BlocoDoModulo>
 
-      {/* Campo único não ganha caixa: compartimento com um controle é decoração. */}
-      <TextareaField name="observacao" label="Observação" rows={3} />
+      <BlocoDoModulo id="observacao">
+        <TextareaField name="observacao" label="Observação" rows={3} />
+      </BlocoDoModulo>
     </div>
   )
 }
@@ -245,11 +299,7 @@ export function ClienteForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <Tabs defaultValue="principal">
-        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
-          <ClientePrincipal onBuscaCidade={() => setBuscaCidadeOpen(true)} />
-        </AbasSemCaptura>
-      </Tabs>
+      <ClienteCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} />
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

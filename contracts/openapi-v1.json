@@ -1759,6 +1759,29 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado da listagem, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt` — a do `sortBy`. Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` com 4 casas implícitas não têm variante que converta na borda. Campo fora da whitelist é 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
+            }
           }
         ],
         "responses": {
@@ -2457,7 +2480,7 @@
       "get": {
         "tags": ["crm"],
         "operationId": "ListCrmOpportunities",
-        "description": "Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban.",
+        "description": "Proposto. Oportunidades da empresa ativa — LEAD e negócio no mesmo recurso: converter é mudar de estágio, não cadastrar de novo. Os filtros são combináveis e todos opcionais. `sortBy` aceita `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate` e `stageChangedAt`; fora da lista é 400. A ordem padrão é a do quadro (`stage.sort`, depois `order`), para que a mesma consulta sirva a listagem e o kanban — e é o que permite à tela alternar quadro ⇄ lista sem refazer a pergunta.",
         "parameters": [
           {
             "name": "pipelineId",
@@ -2529,6 +2552,29 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `name`, `partnerName`, `stageName`, `expectedCloseDate`, `stageChangedAt` — é a do `sortBy` MENOS `expectedValueCents`, e a subtração é a regra do front: dinheiro trafega em centavos e o filtro não tem variante que converta na borda, então `1000` procuraria R$ 10,00 enquanto quem digitou procurava mil reais. Campo fora da whitelist é 400. **A mesma consulta serve às duas visões da tela** (quadro e lista): é o filtro que decide o conjunto, e a visão só decide como ele é desenhado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
             }
           }
         ],
@@ -2790,6 +2836,76 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crm/reports/lost-reasons": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "GetCrmLostReasonsReport",
+        "description": "Proposto. **Por que perdemos, somado no período.** É a pergunta que justifica o catálogo de motivos existir em vez de texto livre, e quem responde é o SERVIDOR: contar do lado do cliente exigiria baixar todas as oportunidades perdidas, e a listagem tem teto de 100 por página — o número sairia certo em empresa pequena e errado, sem sintoma, na primeira que passasse do teto. Ordenado por `count` decrescente: a pergunta é qual é o MAIOR motivo. Entram só as oportunidades em estágio `isLost`, pelo `closedAt` dentro do período.",
+        "parameters": [
+          {
+            "name": "pipelineId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as perdas deste funil. Ausente = todos os funis da empresa ativa."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório: contagem sem recorte responde outra pergunta e cresce para sempre — um motivo aposentado há três anos continuaria liderando o quadro."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmLostReasonsReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4987,6 +5103,55 @@
           "total": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "CrmLostReasonCountDto": {
+        "description": "Proposto. Uma linha do relatório de perdas: o motivo e quantas vezes ele apareceu no período.",
+        "required": ["lostReasonId", "lostReasonName", "count"],
+        "type": "object",
+        "properties": {
+          "lostReasonId": {
+            "description": "`null` só em registro MIGRADO: o `PATCH …/stage` exige o motivo, então perda sem motivo não nasce aqui. O legado tem, e omitir a linha faria a soma do relatório não bater com o total — erro que ninguém consegue explicar olhando a tela.",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "lostReasonName": {
+            "description": "Nome resolvido pelo servidor. Na linha sem motivo, o texto que o servidor escolheu para ela.",
+            "type": "string"
+          },
+          "count": {
+            "description": "Oportunidades perdidas por este motivo no período.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CrmLostReasonsReportDto": {
+        "description": "Proposto. O relatório inteiro. `total` vem do servidor e NÃO é a soma das linhas feita pelo cliente: as duas têm de bater, e é justamente a divergência entre elas que denuncia perda sem motivo escapando do agrupamento.",
+        "required": ["from", "to", "total", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "description": "Oportunidades perdidas no período, com motivo ou sem.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmLostReasonCountDto"
+            }
           }
         }
       },

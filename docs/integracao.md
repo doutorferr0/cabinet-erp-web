@@ -86,10 +86,28 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
 | Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
 
-| CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
+| CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` · **`GET` `/api/crm/reports/lost-reasons`** | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
 
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
+
+### CRM — por que perdemos é AGREGAÇÃO do servidor (2026-08-14)
+
+`GET /api/crm/reports/lost-reasons?pipelineId&from&to` devolve a contagem por
+motivo no período, ordenada pelo maior. É caminho próprio, e não uma soma feita
+na tela sobre a listagem, por uma razão de tamanho: **a listagem tem teto de 100
+por página**, então contar do lado do cliente sairia certo numa empresa pequena e
+**errado, sem sintoma**, na primeira que passasse do teto. Relatório que erra
+calado é pior que relatório nenhum, porque alguém decide com ele.
+
+`from`/`to` são **obrigatórios**: contagem sem recorte responde outra pergunta e
+cresce para sempre — um motivo aposentado há três anos continuaria liderando o
+quadro. O recorte é por DIA (`closedAt`), não por instante.
+
+`lostReasonId` da linha é **anulável**, e só em registro MIGRADO: o
+`PATCH …/stage` exige o motivo, então perda sem motivo não nasce pelo produto. O
+legado tem, e omitir a linha faria a soma das linhas não bater com o `total` — a
+divergência entre os dois é justamente o sintoma que se quer ver.
 
 ### CRM — o movimento do quadro é uma requisição só (2026-08-13)
 
@@ -260,7 +278,8 @@ mentira com cara de dado do servidor.
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
 sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
 onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
-`GET /api/products` e `GET /api/partners`.
+`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86) e
+`GET /api/quotes` (#134).
 
 ### Como viaja
 
@@ -295,16 +314,32 @@ recurso escolheu, `filters` é campo a campo.
 
 ### Whitelist, e onde ela é barrada
 
-Cada recurso declara a sua no contrato, na descrição do parâmetro. Hoje é a
-**mesma do `sortBy`** — `code`/`description`/`active` em produtos,
+Cada recurso declara a sua no contrato, na descrição do parâmetro. Em produtos e
+parceiros é a **mesma do `sortBy`** — `code`/`description`/`active` em produtos,
 mais `legalName`/`tradeName`/`document` em parceiros — e cresce quando uma tela
 precisar. Campo fora dela é **400**, como no `sortBy`: filtro ignorado faria a
 tela mostrar resultado errado sem sintoma.
 
-No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS`, em
-`produtos-api.ts` e `parceiros-api.ts`) e **`filtrosDaTabela` barra antes de sair**
-— mesma escolha já feita para `page` e `pageSize`: requisição sabidamente inválida
-faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
+**Oportunidade é a primeira whitelist MENOR que a de `sortBy`**, e a subtração é
+uma regra do front, não um esquecimento: `expectedValueCents` fica de fora porque
+dinheiro trafega em centavos e o filtro **não tem variante de dinheiro** (ver
+`src/lib/filtro-de-consulta.ts`, §Dinheiro fica de fora). Filtrar por `1000` traria
+R$ 10,00 para quem procurava mil reais — número certo, significado errado, sem
+sintoma. Ordenar por centavos continua valendo: a ordem é a mesma. Sobram `name`,
+`partnerName`, `stageName`, `expectedCloseDate` e `stageChangedAt`.
+
+No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts` e
+`parceiros-api.ts`; lista própria em `crm-api.ts`) e **`filtrosDaTabela` barra antes
+de sair** — mesma escolha já feita para `page` e `pageSize`: requisição sabidamente
+inválida faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
+
+### O modo mock também filtra — só no CRM, por ora
+
+`src/mocks/api/crm.ts` aplica `filters`/`joinOperator` de verdade (reusando
+`linhaPassaNosFiltros`) e responde **400** a campo fora da whitelist. Os handlers
+de produtos e parceiros (`src/mocks/api/handlers.ts`) ainda **descartam o parâmetro
+em silêncio**: no modo mock — que é o que o site demo serve — o painel mostra a
+condição aplicada e a listagem devolve tudo. É dívida conhecida, não desenho.
 
 ### Armadilha do cliente gerado
 

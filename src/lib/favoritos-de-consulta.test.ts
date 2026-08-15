@@ -28,6 +28,9 @@ function favorito(over: Partial<FavoritoDeConsulta> = {}): FavoritoDeConsulta {
     filtros: [filtro],
     juncao: 'and',
     sort: { id: 'code', desc: false },
+    visao: '',
+    agruparPor: '',
+    densidade: '',
     padrao: false,
     ...over,
   }

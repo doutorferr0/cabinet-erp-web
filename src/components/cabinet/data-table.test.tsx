@@ -587,3 +587,205 @@ describe('VitraDataTable — consultas favoritas', () => {
     expect(screen.getByRole('button', { name: 'Consultas salvas — nenhuma' })).toBeInTheDocument()
   })
 })
+
+/**
+ * VIEW MODES — o mecanismo genérico, sem CRM no meio.
+ *
+ * O funil é o piloto (`src/features/crm/`), mas quem carrega o padrão é a
+ * DataTable: a próxima tela que ganhar gráfico ou calendário não deve
+ * reimplementar alternador, agrupamento nem o corte do conjunto.
+ */
+describe('VitraDataTable — visões', () => {
+  const visaoDeCartoes = {
+    id: 'cartoes',
+    rotulo: 'Cartões',
+    agrupa: true,
+    render: ({ rows, agruparPor }: { rows: Produto[]; agruparPor: string }) => (
+      <div data-testid="cartoes">
+        <p>agrupado por {agruparPor}</p>
+        <p>{rows.length} cartões</p>
+      </div>
+    ),
+  }
+
+  function setupComVisao(visaoInicial = 'cartoes') {
+    return renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-visao']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        pageSizeOptions={[10, 20]}
+        visoes={[visaoDeCartoes]}
+        agrupamentos={[
+          { id: 'marca', rotulo: 'Marca' },
+          { id: 'nossoCodigo', rotulo: 'Código' },
+        ]}
+        visaoInicial={visaoInicial}
+      />,
+    )
+  }
+
+  it('a visão substitui a tabela, e o alternador traz a tabela de volta', async () => {
+    const { user } = setupComVisao()
+
+    expect(await screen.findByTestId('cartoes')).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: 'Lista' }))
+
+    expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
+    expect(screen.queryByTestId('cartoes')).not.toBeInTheDocument()
+  })
+
+  /**
+   * Coluna montada com a página 1 seria coluna FALSA — mostraria três cartões
+   * numa etapa que tem trinta. A visão pede o conjunto inteiro, e o que passar
+   * do teto do contrato é DITO, não cortado calado.
+   */
+  it('a visão pede o conjunto inteiro e o rodapé some com a paginação', async () => {
+    setupComVisao()
+
+    expect(await screen.findByText('45 cartões')).toBeInTheDocument()
+    expect(screen.getByText('45 registros')).toBeInTheDocument()
+    expect(screen.queryByText(/Página 1 de/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Por página:')).not.toBeInTheDocument()
+  })
+
+  it('o `Agrupar por` só existe na visão que agrupa', async () => {
+    const { user } = setupComVisao()
+
+    expect(await screen.findByLabelText('Agrupar por:')).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Lista' }))
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(screen.queryByLabelText('Agrupar por:')).not.toBeInTheDocument()
+  })
+
+  it('o agrupamento escolhido chega à visão', async () => {
+    const { user } = setupComVisao()
+
+    expect(await screen.findByText('agrupado por marca')).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'nossoCodigo')
+    expect(await screen.findByText('agrupado por nossoCodigo')).toBeInTheDocument()
+  })
+
+  it('sem a prop `visoes` não há alternador — as oito telas seguem iguais', async () => {
+    setup()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(screen.queryByRole('radio', { name: 'Lista' })).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * DENSIDADE (#123) — quantas linhas cabem é escolha do operador.
+ *
+ * O que se vigia aqui não é o pixel (isso é CSS), é o CONTRATO: a classe muda,
+ * a escolha entra no favorito e volta com ele, e nada disso refaz a consulta.
+ */
+describe('VitraDataTable — densidade', () => {
+  // Helpers próprios: os do bloco de favoritos são locais a ele, e reaproveitar
+  // por escopo faria este bloco depender da ordem dos `describe`.
+  const filtraveis: CampoFiltravel[] = [{ id: 'marca', rotulo: 'Marca', variante: 'text' }]
+
+  function setupComFavoritos() {
+    return renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-fav']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        actions={[{ id: 'filtro', label: 'Filtro' }]}
+        filtros={filtraveis}
+      />,
+    )
+  }
+
+  function tabela() {
+    const linha = screen.getByText('PENDENTE REDONDO ALUMÍNIO PRETO').closest('table')
+    if (!linha) throw new Error('tabela não encontrada')
+    return linha
+  }
+
+  it('a grade nasce em tabular-nums — alinhar dígito não é opt-in por coluna', async () => {
+    setup()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(tabela().className).toContain('tabular-nums')
+  })
+
+  it('compacta encolhe a linha, e padrão devolve', async () => {
+    const { user } = setup()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    expect(tabela().className).not.toContain('[&_td]:h-10')
+
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    expect(tabela().className).toContain('[&_td]:h-10')
+
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
+    expect(tabela().className).not.toContain('[&_td]:h-10')
+  })
+
+  it('trocar a densidade NÃO refaz a consulta — desenho não é pergunta', async () => {
+    let consultas = 0
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['produtos-densidade']}
+        fetcher={(state) => {
+          consultas += 1
+          return produtosMock.list(state, 0)
+        }}
+      />,
+    )
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    const antes = consultas
+
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    expect(consultas).toBe(antes)
+  })
+
+  it('a densidade entra no favorito e volta com ele', async () => {
+    const { user } = setupComFavoritos()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+
+    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
+    await user.click(screen.getByRole('button', { name: 'Salvar consulta atual…' }))
+    await user.type(screen.getByLabelText('Nome'), 'Apertada')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    const guardado = JSON.parse(localStorage.getItem('cabinet.consultas-favoritas.v1') ?? '{}')
+    expect(guardado['produtos-fav']?.[0]).toMatchObject({ densidade: 'compacta' })
+
+    // Volta ao padrão e reaplica o favorito: a densidade tem de voltar junto.
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
+    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
+    await user.click(screen.getByRole('button', { name: 'Apertada' }))
+
+    expect(tabela().className).toContain('[&_td]:h-10')
+  })
+
+  /**
+   * Favorito gravado antes da densidade existir não pode significar "volte ao
+   * padrão" — a mesma regra da visão e do agrupamento.
+   */
+  it('favorito antigo, sem densidade, não mexe na densidade da tela', async () => {
+    localStorage.setItem(
+      'cabinet.consultas-favoritas.v1',
+      JSON.stringify({ 'produtos-fav': [{ id: 'f1', nome: 'De antes', filtros: [] }] }),
+    )
+
+    const { user } = setupComFavoritos()
+
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+
+    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
+    await user.click(screen.getByRole('button', { name: 'De antes' }))
+
+    expect(tabela().className).toContain('[&_td]:h-10')
+  })
+})

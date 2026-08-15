@@ -1,4 +1,5 @@
 import { configurarApi } from '@/api/cliente'
+import type { CrmOpportunityDto } from '@/api/gerado'
 import {
   authLogin,
   authSetActiveTenant,
@@ -8,8 +9,10 @@ import {
   listCrmStages,
   listEmployees,
   moveCrmOpportunityStage,
+  updateCrmLostReason,
   updateCrmOpportunity,
 } from '@/api/gerado'
+import { apiFetch } from '@/api/http'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetCrm } from './crm'
@@ -38,6 +41,31 @@ beforeEach(async () => {
   await authLogin({ email: 'admin@vertz.dev', password: 'qualquer' })
   await authSetActiveTenant({ tenantId: TENANT_MATRIZ })
 })
+
+/**
+ * Listagem COM filtro estruturado, montada como o app monta.
+ *
+ * Não dá para usar a operação gerada aqui: o serializador do Orval faz
+ * `String(value)` em todo parâmetro, e um array de condições viraria
+ * `[object Object]`. Quem monta a query de listagem no app é
+ * `createApiListProvider`, que serializa `filters` como **array JSON** — é essa
+ * requisição que o servidor falso precisa saber responder.
+ */
+async function listarComFiltros(
+  filtros: { field: string; operator: string; value?: string }[],
+  juncao?: 'and' | 'or',
+) {
+  const query = new URLSearchParams({
+    pipelineId: 'funil-projeto',
+    pageSize: '100',
+    filters: JSON.stringify(filtros),
+  })
+  if (juncao) query.set('joinOperator', juncao)
+  return apiFetch<{ data?: { rows: CrmOpportunityDto[]; total: number }; status: number }>(
+    `/api/crm/opportunities?${query.toString()}`,
+    { method: 'GET' },
+  )
+}
 
 /** Os ids da coluna, na ordem em que o quadro os mostraria. */
 async function colunaDe(stageId: string): Promise<string[]> {
@@ -193,6 +221,52 @@ describe('oportunidade — lead e negócio no mesmo registro', () => {
     expect(abertas.data.rows.some((o) => o.stageId === 'etapa-perdido')).toBe(false)
   })
 
+  /**
+   * O filtro estruturado tem de ESTREITAR de verdade no modo mock.
+   *
+   * Aceitar `filters` e descartá-lo em silêncio é pior que não ter filtro: a
+   * listagem devolveria tudo enquanto o painel mostra a condição aplicada, e o
+   * operador leria "atende ao filtro" numa lista que não atende. É o que o
+   * site demo serviria, já que ele roda em modo mock.
+   */
+  it('`filters` ESTREITA a listagem — aceitar e ignorar seria pior', async () => {
+    const todas = await listCrmOpportunities({ pipelineId: 'funil-projeto', pageSize: 100 })
+    if (todas.status !== 200) throw new Error('listagem falhou')
+    const alvo = todas.data.rows[0]?.stageName as string
+
+    const filtrada = await listarComFiltros([{ field: 'stageName', operator: 'eq', value: alvo }])
+    if (filtrada.status !== 200) throw new Error(`listagem filtrada falhou: ${filtrada.status}`)
+
+    expect(filtrada.data?.total).toBeLessThan(todas.data.total)
+    expect(filtrada.data?.rows.every((o) => o.stageName === alvo)).toBe(true)
+  })
+
+  it('campo fora da whitelist é 400, e não filtro ignorado', async () => {
+    const resposta = await listarComFiltros([
+      { field: 'expectedValueCents', operator: 'gt', value: '1' },
+    ])
+
+    expect(resposta.status).toBe(400)
+  })
+
+  it('`joinOperator=or` soma as condições com OU, não com E', async () => {
+    const contato = await listarComFiltros([
+      { field: 'stageName', operator: 'eq', value: 'Contato' },
+    ])
+    const proposta = await listarComFiltros([
+      { field: 'stageName', operator: 'eq', value: 'Proposta' },
+    ])
+    const ambas = await listarComFiltros(
+      [
+        { field: 'stageName', operator: 'eq', value: 'Contato' },
+        { field: 'stageName', operator: 'eq', value: 'Proposta' },
+      ],
+      'or',
+    )
+
+    expect(ambas.data?.total).toBe((contato.data?.total ?? 0) + (proposta.data?.total ?? 0))
+  })
+
   it('o PUT substitui o registro inteiro: campo omitido é campo apagado', async () => {
     const antes = await listCrmOpportunities({ stageId: 'etapa-negociacao', pageSize: 100 })
     if (antes.status !== 200) throw new Error('listagem falhou')
@@ -219,5 +293,74 @@ describe('oportunidade — lead e negócio no mesmo registro', () => {
     expect(resposta.status).toBe(200)
     if (resposta.status !== 200) return
     expect(resposta.data.rows).toEqual([])
+  })
+})
+
+describe('perdas por motivo — a apuração é do SERVIDOR', () => {
+  async function relatorio(de: string, ate: string, pipelineId?: string) {
+    const query = new URLSearchParams({ from: de, to: ate })
+    if (pipelineId) query.set('pipelineId', pipelineId)
+    return apiFetch<{
+      data?: {
+        from: string
+        to: string
+        total: number
+        rows: { lostReasonName: string; count: number }[]
+      }
+      status: number
+    }>(`/api/crm/reports/lost-reasons?${query.toString()}`, { method: 'GET' })
+  }
+
+  const HOJE = new Date().toISOString().slice(0, 10)
+  const ANO = `${new Date().getFullYear()}-01-01`
+
+  it('agrupa por motivo e ordena pelo MAIOR — é a pergunta que o relatório faz', async () => {
+    const resposta = await relatorio(ANO, HOJE)
+    expect(resposta.status).toBe(200)
+
+    const rows = resposta.data?.rows ?? []
+    expect(rows.length).toBeGreaterThan(1)
+    expect(rows[0]?.count).toBeGreaterThanOrEqual(rows[1]?.count ?? 0)
+    // O total é do servidor e bate com a soma das linhas: a divergência entre
+    // os dois é o sintoma de perda escapando do agrupamento.
+    expect(rows.reduce((soma, linha) => soma + linha.count, 0)).toBe(resposta.data?.total)
+  })
+
+  it('o período RECORTA — perda de fora dele não entra na conta', async () => {
+    const tudo = await relatorio('2000-01-01', HOJE)
+    const amanha = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+    const futuro = await relatorio(amanha, amanha)
+
+    expect(tudo.data?.total).toBeGreaterThan(0)
+    expect(futuro.data?.total).toBe(0)
+    expect(futuro.data?.rows).toEqual([])
+  })
+
+  it('só as perdas do funil pedido', async () => {
+    const doProjeto = await relatorio('2000-01-01', HOJE, 'funil-projeto')
+    const doBalcao = await relatorio('2000-01-01', HOJE, 'funil-balcao')
+
+    expect(doProjeto.data?.total).toBeGreaterThan(0)
+    expect(doBalcao.data?.total).toBe(0)
+  })
+
+  it('período invertido é 400, não lista vazia', async () => {
+    const resposta = await relatorio(HOJE, '2000-01-01')
+    expect(resposta.status).toBe(400)
+  })
+
+  /**
+   * Motivo DESATIVADO continua legível no relatório do ano passado — é para
+   * isso que a desativação é lógica. Cair num genérico apagaria a razão da
+   * perda de tudo que veio antes da aposentadoria do motivo.
+   */
+  it('motivo desativado continua nomeado no período em que foi usado', async () => {
+    await updateCrmLostReason('perda-preco', {
+      name: 'Preço acima do orçamento do cliente',
+      active: false,
+    })
+    const resposta = await relatorio('2000-01-01', HOJE)
+
+    expect(resposta.data?.rows.some((l) => l.lostReasonName.startsWith('Preço acima'))).toBe(true)
   })
 })

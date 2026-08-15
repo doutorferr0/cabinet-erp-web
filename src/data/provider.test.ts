@@ -45,13 +45,22 @@ describe('ResourceProvider (contrato)', () => {
     expect(r.total).toBe(1)
   })
 
-  it('get devolve o registro e null quando não existe', async () => {
-    await expect(provider.get(2, 0)).resolves.toMatchObject({ nome: 'SÃO PAULO' })
-    await expect(provider.get(999, 0)).resolves.toBeNull()
+  /**
+   * O id chega como TEXTO, do jeito que a rota o entrega. O provider mock
+   * guarda número, e comparar os dois com `===` seria sempre falso — o registro
+   * existiria e a tela diria que não.
+   */
+  it('get aceita o id como veio da rota, e devolve null quando não existe', async () => {
+    await expect(provider.get('2', 0)).resolves.toMatchObject({ nome: 'SÃO PAULO' })
+    await expect(provider.get('999', 0)).resolves.toBeNull()
   })
 
-  it('empty devolve registro em branco com o id pedido', () => {
-    expect(provider.empty(42)).toEqual({ id: 42, nome: '' })
+  it('empty não pede id — o registro em branco ainda não existe', () => {
+    const branco = provider.empty()
+    expect(branco.nome).toBe('')
+    // Id NEGATIVO de propósito: é chave de formulário, não id de registro, e
+    // não pode colidir com nada que veio do servidor.
+    expect(branco.id).toBeLessThan(0)
   })
 })
 
@@ -74,19 +83,15 @@ describe('tabelaDeApoio', () => {
 describe('registry de providers', () => {
   /**
    * Os recursos que ainda são MOCK. Saíram daqui os que viraram HTTP —
-   * `produtos` (`produtos-api.test.ts`) e os três papéis de parceiro
-   * (`parceiros-api.test.ts`), asseridos contra servidor falso.
+   * `produtos` (`produtos-api.test.ts`), os três papéis de parceiro
+   * (`parceiros-api.test.ts`) e `orcamentos` (`quotes-api.test.ts`), asseridos
+   * contra servidor falso.
    *
    * `clientes`, `fornecedores` e `profissionais` não voltam a esta lista tal como
    * estavam: sem `GET /api/partners/{id}` eles não têm `get`, e é essa a forma
    * que o contrato oferece hoje.
    */
-  const recursosComCadastro = [
-    'colaboradores',
-    'ordensCompra',
-    'pedidosCompra',
-    'orcamentos',
-  ] as const
+  const recursosComCadastro = ['colaboradores', 'ordensCompra', 'pedidosCompra'] as const
 
   it.each(recursosComCadastro)('%s expõe list/get/empty', async (nome) => {
     const p = data[nome]
@@ -94,8 +99,8 @@ describe('registry de providers', () => {
     expect(lista.total).toBeGreaterThan(0)
 
     const primeiro = lista.rows[0] as { id: number }
-    await expect(p.get(primeiro.id, 0)).resolves.toMatchObject({ id: primeiro.id })
-    expect(p.empty(1)).toHaveProperty('id', 1)
+    await expect(p.get(String(primeiro.id), 0)).resolves.toMatchObject({ id: primeiro.id })
+    expect(p.empty()).toHaveProperty('id')
   })
 
   it('cidades é só consulta (tabela de apoio, sem cadastro)', async () => {

@@ -1483,6 +1483,30 @@ export interface PagedResultOfCrmOpportunityDto {
 }
 
 /**
+ * Proposto. Uma linha do relatório de perdas: o motivo e quantas vezes ele apareceu no período.
+ */
+export interface CrmLostReasonCountDto {
+  /** `null` só em registro MIGRADO: o `PATCH …/stage` exige o motivo, então perda sem motivo não nasce aqui. O legado tem, e omitir a linha faria a soma do relatório não bater com o total — erro que ninguém consegue explicar olhando a tela. */
+  lostReasonId: string | null;
+  /** Nome resolvido pelo servidor. Na linha sem motivo, o texto que o servidor escolheu para ela. */
+  lostReasonName: string;
+  /** Oportunidades perdidas por este motivo no período. */
+  count: number;
+}
+
+/**
+ * Proposto. O relatório inteiro. `total` vem do servidor e NÃO é a soma das linhas feita pelo cliente: as duas têm de bater, e é justamente a divergência entre elas que denuncia perda sem motivo escapando do agrupamento.
+ */
+export interface CrmLostReasonsReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  /** Oportunidades perdidas no período, com motivo ou sem. */
+  total: number;
+  rows: CrmLostReasonCountDto[];
+}
+
+/**
  * Proposto. Motivo de perda catalogado — vira análise, não texto livre.
  */
 export interface CrmLostReasonDto {
@@ -1610,6 +1634,14 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+/**
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt` — a do `sortBy`. Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` com 4 casas implícitas não têm variante que converta na borda. Campo fora da whitelist é 400.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
 };
 
 export type ListCrmPipelinesParams = {
@@ -1642,6 +1674,29 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+/**
+ * Proposto. Filtro estruturado da listagem, somado ao `q` com AND — `q` é texto livre sobre os campos que o recurso escolheu, `filters` é campo a campo. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `name`, `partnerName`, `stageName`, `expectedCloseDate`, `stageChangedAt` — é a do `sortBy` MENOS `expectedValueCents`, e a subtração é a regra do front: dinheiro trafega em centavos e o filtro não tem variante que converta na borda, então `1000` procuraria R$ 10,00 enquanto quem digitou procurava mil reais. Campo fora da whitelist é 400. **A mesma consulta serve às duas visões da tela** (quadro e lista): é o filtro que decide o conjunto, e a visão só decide como ele é desenhado.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
+};
+
+export type GetCrmLostReasonsReportParams = {
+/**
+ * Só as perdas deste funil. Ausente = todos os funis da empresa ativa.
+ */
+pipelineId?: string;
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório: contagem sem recorte responde outra pergunta e cresce para sempre — um motivo aposentado há três anos continuaria liderando o quadro.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
 };
 
 export type ListCrmLostReasonsParams = {

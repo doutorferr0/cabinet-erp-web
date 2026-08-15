@@ -16,10 +16,17 @@ import type { TableSort } from '@/lib/table-query'
  * de uma pergunta pontual — restaurar os dois faria o favorito abrir na página 4
  * de uma busca que ninguém lembra ter feito.
  *
- * **Agrupamento não entra ainda porque não existe.** Os view modes (kanban /
- * lista / gráfico sobre o mesmo filtro) são padrão aprovado e ainda não
- * implementados; quando entrarem, o campo cabe aqui sem quebrar o que já está
- * gravado — `Partial` na leitura, ausência = "sem agrupamento".
+ * **A VISÃO, o AGRUPAMENTO e a DENSIDADE entraram** (view modes #86, densidade
+ * #123) e são o resto da mesma frase: "quais registros" (filtros + junção), "em
+ * que ordem" (`sort`), "como desenhados" (`visao`), "em que colunas"
+ * (`agruparPor`) e "quantas linhas cabem" (`densidade`). Guardar só os
+ * primeiros faria o favorito abrir a lista quando o operador salvou o quadro —
+ * e ele salvou o quadro.
+ *
+ * **Vazio (`''`) = o favorito não guardou aquilo, e aplicá-lo não mexe no que
+ * está na tela.** É o que mantém válido o que foi gravado ANTES desta mudança:
+ * um favorito de Clientes salvo na semana passada não tem visão, e ele não pode
+ * significar "volte para a visão padrão" — significa "eu só falo de filtro".
  *
  * ## Local, e versionado
  *
@@ -35,6 +42,12 @@ export interface FavoritoDeConsulta {
   filtros: FiltroDaTabela[]
   juncao: Juncao
   sort: TableSort | null
+  /** Id da visão ativa (`lista` é a tabela). `''` = não guardou visão. */
+  visao: string
+  /** Campo das colunas da visão que agrupa. `''` = não guardou agrupamento. */
+  agruparPor: string
+  /** Altura da linha da tabela (`padrao`/`compacta`). `''` = não guardou. */
+  densidade: string
   /** Aplicado sozinho ao abrir a tela. No máximo um por tela. */
   padrao: boolean
 }
@@ -44,6 +57,9 @@ export interface ConsultaSalva {
   filtros: FiltroDaTabela[]
   juncao: Juncao
   sort: TableSort | null
+  visao: string
+  agruparPor: string
+  densidade: string
 }
 
 const CHAVE = 'cabinet.consultas-favoritas.v1'
@@ -93,6 +109,12 @@ export function lerFavoritos(tela: string): FavoritoDeConsulta[] {
     ...f,
     juncao: f.juncao === 'or' ? 'or' : 'and',
     sort: f.sort ?? null,
+    // Gravado antes dos view modes não tem os dois campos, e lixo no
+    // armazenamento pode ter qualquer coisa neles. Nos dois casos vale o vazio:
+    // "este favorito não fala de visão", que é diferente de "volte ao padrão".
+    visao: typeof f.visao === 'string' ? f.visao : '',
+    agruparPor: typeof f.agruparPor === 'string' ? f.agruparPor : '',
+    densidade: typeof f.densidade === 'string' ? f.densidade : '',
     padrao: f.padrao === true,
   }))
 }
@@ -142,6 +164,9 @@ export function consultaDoFavorito(favorito: FavoritoDeConsulta): ConsultaSalva 
     filtros: favorito.filtros.map((filtro) => ({ ...filtro, filtroId: novoFiltroId() })),
     juncao: favorito.juncao,
     sort: favorito.sort,
+    visao: favorito.visao,
+    agruparPor: favorito.agruparPor,
+    densidade: favorito.densidade,
   }
 }
 

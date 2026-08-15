@@ -14,12 +14,13 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   existir servidor, entra marcado **`Proposto`** — o leitor precisa distinguir o que já foi
   implementado do que é pedido. Não há repo de backend para conferir contra.
 - **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos e
-  variantes (`/api/products`, `…/variants`) e os três papéis de parceiro — cliente, fornecedor,
-  profissional (`/api/partners`, filtro `role`). Ver `docs/integracao.md`.
+  variantes (`/api/products`, `…/variants`), os três papéis de parceiro — cliente, fornecedor,
+  profissional (`/api/partners`, filtro `role`) — e o **orçamento** (`/api/quotes`, #134). Ver
+  `docs/integracao.md`.
 - **Também HTTP, por caminho `Proposto` que o front escreveu:** dashboard (indicadores, agenda,
   tarefas, A fazer) e planner (projetos, plano). Nenhum backend os implementa ainda — no modo
   mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a diferença.
-- **Ainda mock:** colaborador, orçamento, pedido de compra, ordem de compra, cidades, boletim
+- **Ainda mock:** colaborador, pedido de compra, ordem de compra, cidades, boletim
   — **por falta de caminho no contrato, não por escolha.** Esses seguem a regra antiga: dados
   tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
 - **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
@@ -53,8 +54,8 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 - Componentes compartilhados moram em `src/components/cabinet/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
 - Acessibilidade mínima: label em todo campo, foco visível, dialog com focus-trap (shadcn já dá).
 
-## Os 8 padrões — JÁ IMPLEMENTADOS, tela nova COMPÕE (fonte: transcricaosoftlux @padroes, 20 telas)
-1. **DataTable server-ready** — busca, ordenação, paginação com estado tipado `{q, sort, page, pageSize}` (mais `filtros`/`juncao`, opcionais). Nos recursos HTTP quem aplica é o backend; nos mock, o provider. É o coração: 8+ telas usam. Coluna que ordena usa `accessorKey` **em inglês**, o nome que a whitelist de `sortBy` do servidor aceita — traduzir quebra a ordenação com 400 só ao clicar no cabeçalho. **Filtro estruturado** (campo+operador+valor, portado de sadmann7/shadcn-table — ver `NOTICE`) viaja em `filters` (array JSON) + `joinOperator`, `Proposto` em `/api/products` e `/api/partners`. Continua **opt-in por tela** via a prop `filtros`, e só em recurso que publica o parâmetro: quem não publica recusa em voz alta na fronteira, em vez de devolver a lista inteira com a tela mostrando filtro aplicado. Campo fora da whitelist é barrado antes de sair (o contrato manda 400), e o que o operador DIGITA vira o que o dado GUARDA na saída (`normalizar` — CNPJ com máscara). Variantes: texto, número, **data** (`<input type="date">` nativo, comparação por dia), booleano, seleção e múltipla escolha. Ver `docs/integracao.md` §Filtro estruturado.
+## Os 9 padrões — JÁ IMPLEMENTADOS, tela nova COMPÕE (1–8 da transcricaosoftlux @padroes, 20 telas; o 9º é decisão do core)
+1. **DataTable server-ready** — busca, ordenação, paginação com estado tipado `{q, sort, page, pageSize}` (mais `filtros`/`juncao`, opcionais). Nos recursos HTTP quem aplica é o backend; nos mock, o provider. É o coração: 8+ telas usam. Coluna que ordena usa `accessorKey` **em inglês**, o nome que a whitelist de `sortBy` do servidor aceita — traduzir quebra a ordenação com 400 só ao clicar no cabeçalho. **Filtro estruturado** (campo+operador+valor, portado de sadmann7/shadcn-table — ver `NOTICE`) viaja em `filters` (array JSON) + `joinOperator`, `Proposto` em `/api/products`, `/api/partners`, `/api/crm/opportunities` e `/api/quotes`. Continua **opt-in por tela** via a prop `filtros`, e só em recurso que publica o parâmetro: quem não publica recusa em voz alta na fronteira, em vez de devolver a lista inteira com a tela mostrando filtro aplicado. Campo fora da whitelist é barrado antes de sair (o contrato manda 400), e o que o operador DIGITA vira o que o dado GUARDA na saída (`normalizar` — CNPJ com máscara). Variantes: texto, número, **data** (`<input type="date">` nativo, comparação por dia), booleano, seleção e múltipla escolha. Ver `docs/integracao.md` §Filtro estruturado.
 2. **LookupCombo** — Combobox (Command+Popover) + botão `...` abrindo Dialog de cadastro rápido; parametrizado por `kind` (19 usos).
 3. **Blocos compartilhados** — `<EnderecoBlock>` (com busca CEP mockada) · `<TelefonesBlock>` · `<ComunicadoresBlock>` (2 pares combo+texto) · `<RedesSociaisBlock>`.
 4. **Form com abas** — shadcn Tabs + RHF, **1 form por tela** (não por aba), rodapé fixo Gravar/Cancelar.
@@ -62,6 +63,7 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 6. **Grade no formulário** — TanStack Table + RHF `useFieldArray`, células editáveis, Incluir/Excluir linha.
 7. Toda listagem: barra de ações padrão (Filtro · Incluir · Alterar · Consultar · Excluir/Cancelar · Imprimir) — componente único configurável.
 8. `Ativo` checkbox em todo cadastro (desativação lógica — nunca "excluir" de verdade na UI de cadastros).
+9. **View modes** (#86) — a MESMA `VitraDataTable` desenhada de outro jeito: props `visoes` (as alternativas; a tabela existe sempre e não entra na lista), `agrupamentos` e `visaoInicial`. A visão RECEBE as linhas e não consulta nada — é o que garante o "mesmo filtro" do padrão aprovado (core @decisoes, ponto 6). Visão que agrupa liga o `Agrupar por`; visão não-tabela pede o conjunto inteiro (`pageSize` no teto do contrato) e o rodapé DIZ quando o teto cortou — coluna montada com uma página é coluna falsa. Visão + agrupamento entram na consulta favorita. Piloto: o funil (`src/features/crm/pagina-do-funil.tsx`). Tela nova COMPÕE — não reimplementar alternador.
 
 ## Layout do repo
 ```

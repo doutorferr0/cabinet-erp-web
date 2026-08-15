@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cabinet — Consulta por módulos (listagem + ficha)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#111111; --muted:#5C5A54; --faint:#8B887F;
+    --bancada:#FAF6EE; --folha:#FFFFFF;
+    --bw:2px;
+    --sombra:4px 4px 0 #111; --sombra-sm:3px 3px 0 #111; --sombra-xs:2px 2px 0 #111; --sombra-lg:6px 6px 0 #111;
+    --dinheiro:#16A34A; --foco:#FACC15; --erro:#DC2626;
+    --main:#5551FF;
+    --r:12px; --r-lg:16px; --r-sm:9px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Manrope',sans-serif;background:#EFE9DC;color:var(--ink);font-size:14px;padding:22px;min-height:100vh}
+  h1,h2,h3,b,strong{font-family:'Archivo',sans-serif}
+  .app{max-width:1240px;margin:0 auto;background:var(--bancada);border:var(--bw) solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:var(--sombra-lg)}
+
+  .orn{display:inline-block;flex-shrink:0;background-color:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center}
+  .o1{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-001.svg');mask-image:url('assets-brutalist/brutalist/brutalist-001.svg')}
+  .o2{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-014.svg');mask-image:url('assets-brutalist/brutalist/brutalist-014.svg')}
+  .o3{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-101.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-101.svg')}
+  .o4{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-120.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-120.svg')}
+  .o5{-webkit-mask-image:url('assets-brutalist/spark/spark-001.svg');mask-image:url('assets-brutalist/spark/spark-001.svg')}
+  .o6{-webkit-mask-image:url('assets-brutalist/spark/spark-020.svg');mask-image:url('assets-brutalist/spark/spark-020.svg')}
+  .o7{-webkit-mask-image:url('assets-brutalist/brutalist/brutalist-072.svg');mask-image:url('assets-brutalist/brutalist/brutalist-072.svg')}
+  .o8{-webkit-mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-140.svg');mask-image:url('assets-brutalist/brutalist-shape/brutalist-shape-140.svg')}
+  .selo{width:40px;height:40px;border:var(--bw) solid var(--ink);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--folha)}
+  .selo .orn{width:22px;height:22px}
+  .selo.lg{width:48px;height:48px;border-radius:13px;box-shadow:var(--sombra-xs)}
+  .selo.lg .orn{width:26px;height:26px;color:#fff}
+
+  .seletor{display:flex;gap:9px;flex-wrap:wrap;padding:14px 24px;border-bottom:var(--bw) solid var(--ink);background:var(--bancada)}
+  .ent{display:flex;align-items:center;gap:8px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--folha);padding:8px 14px;font-family:'Archivo';font-size:13px;font-weight:800;cursor:pointer;box-shadow:var(--sombra-xs)}
+  .ent .pt{width:14px;height:14px;border:var(--bw) solid var(--ink);border-radius:5px}
+  .ent:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .ent.on{color:#fff;box-shadow:var(--sombra-sm)}
+  .ent.on .pt{background:#fff!important}
+
+  /* ===== barra de comando ===== */
+  .comando{background:var(--folha);border-bottom:var(--bw) solid var(--ink);padding:16px 24px}
+  .cmd-linha{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .busca{flex:1;min-width:230px;display:flex;align-items:center;gap:10px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--folha);padding:11px 14px;box-shadow:var(--sombra-sm)}
+  .busca input{border:0;outline:0;background:transparent;font-family:'Manrope';font-size:14px;font-weight:700;width:100%}
+  .busca input::placeholder{color:var(--faint);font-weight:600}
+  .btn{border:var(--bw) solid var(--ink);border-radius:var(--r);padding:11px 18px;font-family:'Archivo';font-size:13.5px;font-weight:900;cursor:pointer;box-shadow:var(--sombra-sm);background:var(--folha);display:flex;align-items:center;gap:8px}
+  .btn:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .btn.novo{color:#fff}
+
+  .rotulo-faixa{font-size:10px;font-weight:900;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .modulos{display:flex;gap:8px;flex-wrap:wrap}
+  .mod{display:flex;align-items:center;gap:7px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;box-shadow:var(--sombra-xs)}
+  .mod .pt{width:12px;height:12px;border:var(--bw) solid var(--ink);border-radius:4px}
+  .mod .qt{font-family:'Archivo';font-size:10.5px;font-weight:900;border:1.5px solid var(--ink);border-radius:5px;padding:0 5px;background:var(--foco)}
+  .mod:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 #111}
+  .mod.on{box-shadow:inset 0 0 0 2px #111}
+
+  .painel{display:none;border:var(--bw) solid var(--ink);border-radius:var(--r);margin-top:12px;box-shadow:var(--sombra-sm);overflow:hidden}
+  .painel.aberto{display:block}
+  .painel-topo{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:var(--bw) solid var(--ink);font-family:'Archivo';font-size:13px;font-weight:900}
+  .painel-topo .x{margin-left:auto;border:var(--bw) solid var(--ink);border-radius:7px;background:var(--folha);font-family:'Archivo';font-size:11px;font-weight:900;padding:4px 9px;cursor:pointer}
+  .painel-corpo{padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+  label{display:block;font-size:10.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+  .entrada{width:100%;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:9px 11px;font-family:'Manrope';font-size:13px;font-weight:700;outline:0;box-shadow:var(--sombra-xs)}
+  .entrada:focus{box-shadow:0 0 0 3px var(--foco),var(--sombra-xs)}
+  select.entrada{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='3.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 10px center}
+  .par-min{display:flex;gap:8px;align-items:center}
+  .par-min .entrada{min-width:0}
+
+  .ativos{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .pill{display:flex;align-items:center;gap:7px;border:var(--bw) solid var(--ink);border-radius:20px;padding:5px 6px 5px 11px;font-size:11.5px;font-weight:800;box-shadow:var(--sombra-xs)}
+  .pill b{font-family:'Archivo'}
+  .pill .x{width:18px;height:18px;border:1.5px solid var(--ink);border-radius:50%;background:var(--folha);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;cursor:pointer;font-family:'Archivo'}
+  .limpar{border:var(--bw) dashed var(--ink);border-radius:20px;background:transparent;padding:5px 12px;font-family:'Archivo';font-size:11.5px;font-weight:900;cursor:pointer}
+
+  /* ===== resultado ===== */
+  .resultado{padding:20px 24px 24px}
+  .res-topo{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .res-topo .cont{font-family:'Archivo';font-size:15px;font-weight:900}
+  .res-topo .cont small{font-family:'Manrope';font-size:12px;font-weight:800;color:var(--muted)}
+  .mini{margin-left:auto;display:flex;gap:8px}
+  .mini button{border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:7px 12px;font-family:'Archivo';font-size:12px;font-weight:900;cursor:pointer;box-shadow:var(--sombra-xs)}
+  .mini button:hover{background:var(--foco)}
+
+  .grade{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);overflow:hidden;background:var(--folha);box-shadow:var(--sombra)}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;font-family:'Archivo';font-size:10.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:11px 14px;border-bottom:var(--bw) solid var(--ink);white-space:nowrap}
+  thead th .tp{display:inline-block;width:9px;height:9px;border:1.5px solid var(--ink);border-radius:3px;margin-right:6px;vertical-align:-1px}
+  tbody td{padding:12px 14px;border-bottom:var(--bw) solid #E7E5E4;font-size:13px;font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr{cursor:pointer}
+  tbody tr:hover td{background:var(--foco)}
+  td.forte{font-family:'Archivo';font-weight:900;font-size:13.5px}
+  td.grana{font-family:'Archivo';font-weight:900;color:var(--dinheiro)}
+  .marca{display:inline-flex;align-items:center;gap:6px;border:var(--bw) solid var(--ink);border-radius:7px;padding:2px 8px;font-size:10.5px;font-weight:900;font-family:'Archivo'}
+  .vazio-cel{color:var(--faint);font-weight:800}
+
+  /* ===== FICHA ===== */
+  .ficha-topo{background:var(--folha);border-bottom:var(--bw) solid var(--ink);padding:18px 24px}
+  .voltar{border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:6px 12px;font-family:'Archivo';font-size:12px;font-weight:900;cursor:pointer;box-shadow:var(--sombra-xs);margin-bottom:13px}
+  .ficha-id{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .ficha-id h1{font-size:26px;font-weight:900;letter-spacing:-.6px}
+  .ficha-id .sub{font-size:12.5px;font-weight:800;color:var(--muted);margin-top:2px}
+  .acoes{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px}
+  .kpi{border:var(--bw) solid var(--ink);border-radius:var(--r);padding:11px 13px;box-shadow:var(--sombra-xs)}
+  .kpi .r{font-size:10px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted)}
+  .kpi .v{font-family:'Archivo';font-size:21px;font-weight:900;letter-spacing:-.5px;margin-top:3px}
+
+  .ficha-corpo{padding:22px 24px 24px;display:flex;gap:22px;align-items:flex-start}
+  .ficha-col{flex:1;min-width:0;max-width:820px}
+  .ficha-lat{width:230px;flex-shrink:0;position:sticky;top:22px}
+
+  .bloco{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);margin-bottom:14px;box-shadow:var(--sombra);overflow:hidden;background:var(--folha)}
+  .bl-topo{display:flex;align-items:center;gap:12px;padding:12px 15px;cursor:pointer;user-select:none;border-bottom:var(--bw) solid transparent}
+  .bloco.aberto .bl-topo{border-bottom-color:var(--ink)}
+  .bl-txt h2{font-size:15.5px;font-weight:900;letter-spacing:-.3px}
+  .bl-txt p{font-size:11px;font-weight:700;opacity:.75;margin-top:2px}
+  .bl-dir{margin-left:auto;display:flex;align-items:center;gap:9px}
+  .tag{font-size:10px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;border:var(--bw) solid var(--ink);border-radius:7px;padding:3px 8px;background:var(--folha)}
+  .contador{font-family:'Archivo';font-size:11.5px;font-weight:900;border:var(--bw) solid var(--ink);border-radius:7px;padding:3px 9px;background:var(--dinheiro);color:#fff}
+  .lapis{width:30px;height:30px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra-xs)}
+  .lapis:hover{background:var(--foco)}
+  .seta{width:30px;height:30px;border:var(--bw) solid var(--ink);border-radius:var(--r-sm);background:var(--folha);display:flex;align-items:center;justify-content:center;box-shadow:var(--sombra-xs);transition:transform .18s}
+  .bloco.aberto .seta{transform:rotate(180deg)}
+  .bl-corpo{display:none;padding:16px 18px 18px}
+  .bloco.aberto .bl-corpo{display:block}
+  .dados{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 18px}
+  .dado .r{font-size:10px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted)}
+  .dado .v{font-size:14.5px;font-weight:800;margin-top:2px;word-break:break-word}
+  .dado .v.vazio{color:var(--faint);font-weight:700;font-style:italic}
+  .dado .v.grana{font-family:'Archivo';font-weight:900;color:var(--dinheiro)}
+
+  /* bloco sem dado: apagado */
+  .bloco.oco{box-shadow:none;border-color:#A8A29E;background:#F4F4F0}
+  .bloco.oco .bl-topo{background:#F4F4F0!important}
+  .bloco.oco .bl-txt h2{color:var(--muted)!important}
+  .bloco.oco .bl-txt p{color:var(--faint)!important}
+  .bloco.oco .selo{border-color:#A8A29E;background:#F4F4F0}
+  .bloco.oco .selo .orn{color:#A8A29E!important}
+  .bloco.oco .seta,.bloco.oco .lapis{border-color:#A8A29E;box-shadow:none}
+  .btn-preencher{border:var(--bw) dashed var(--ink);border-radius:var(--r-sm);background:var(--folha);padding:5px 11px;font-family:'Archivo';font-size:11.5px;font-weight:900;cursor:pointer}
+  .btn-preencher:hover{background:var(--foco)}
+
+  .card-lat{border:var(--bw) solid var(--ink);border-radius:var(--r-lg);background:var(--folha);box-shadow:var(--sombra);overflow:hidden;margin-bottom:13px}
+  .card-lat h3{font-size:11.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:10px 13px;border-bottom:var(--bw) solid var(--ink);display:flex;align-items:center;gap:8px}
+  .card-lat h3 .orn{width:14px;height:14px}
+  .lista-nav{padding:7px}
+  .item-nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border:var(--bw) solid transparent;border-radius:var(--r-sm);font-size:12px;font-weight:800;cursor:pointer;margin-bottom:2px}
+  .item-nav:hover{border-color:var(--ink);background:var(--bancada)}
+  .item-nav .pt{width:12px;height:12px;border:var(--bw) solid var(--ink);border-radius:4px;flex-shrink:0}
+  .item-nav .st{margin-left:auto;font-size:10px;font-weight:900;color:var(--muted)}
+  .item-nav.oco{color:var(--faint)}
+  .item-nav.oco .pt{background:#E7E5E4!important}
+
+  .oculto{display:none!important}
+  @media(max-width:1040px){.ficha-lat{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="seletor" id="seletor"></div>
+
+  <!-- ================= LISTAGEM ================= -->
+  <div id="telaLista">
+    <div class="comando">
+      <div class="cmd-linha">
+        <div class="busca">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="buscaGeral" placeholder="Buscar…">
+        </div>
+        <button class="btn" onclick="alterna('colunas')">Colunas</button>
+        <button class="btn novo" id="btnNovo">+ Novo</button>
+      </div>
+
+      <div class="rotulo-faixa"><i class="orn o6" style="width:13px;height:13px"></i> Filtrar por módulo</div>
+      <div class="modulos" id="modulos"></div>
+
+      <div class="painel" id="painelFiltro">
+        <div class="painel-topo" id="painelTopo"></div>
+        <div class="painel-corpo" id="painelCorpo"></div>
+      </div>
+
+      <div class="painel" id="painelColunas">
+        <div class="painel-topo" style="background:#F4F4F0">Colunas visíveis — agrupadas por módulo
+          <button class="x" onclick="alterna('colunas')">Fechar</button></div>
+        <div class="painel-corpo" id="colunasCorpo"></div>
+      </div>
+
+      <div class="ativos" id="ativos"></div>
+    </div>
+
+    <div class="resultado">
+      <div class="res-topo">
+        <div class="cont" id="contRes"></div>
+        <div class="mini">
+          <button>Exportar</button><button>Imprimir</button><button>Etiquetas</button>
+        </div>
+      </div>
+      <div class="grade"><table><thead id="cab"></thead><tbody id="linhas"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ================= FICHA ================= -->
+  <div id="telaFicha" class="oculto">
+    <div class="ficha-topo">
+      <button class="voltar" onclick="voltar()">← Voltar para a listagem</button>
+      <div class="ficha-id">
+        <div class="selo lg" id="fSelo"></div>
+        <div>
+          <h1 id="fNome"></h1>
+          <div class="sub" id="fSub"></div>
+        </div>
+        <div class="acoes">
+          <button class="btn">Editar tudo</button>
+          <button class="btn">Duplicar</button>
+          <button class="btn" style="background:#FDE3E3">Inativar</button>
+        </div>
+      </div>
+      <div class="kpis" id="fKpis"></div>
+    </div>
+    <div class="ficha-corpo">
+      <div class="ficha-col" id="fBlocos"></div>
+      <aside class="ficha-lat">
+        <div class="card-lat">
+          <h3 id="fLatTit"><i class="orn o1"></i> Módulos</h3>
+          <div class="lista-nav" id="fNav"></div>
+        </div>
+        <div class="card-lat">
+          <h3 style="background:#FFF6D6"><i class="orn o6" style="color:#111"></i> Leitura</h3>
+          <div style="padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.5;color:var(--muted)">
+            Módulo com dado abre sozinho.<br>Módulo vazio fica cinza e recolhido — não ocupa a tela, mas continua acessível.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script>
+const C={
+  cliente:{cheia:'#E620FF',clara:'#FBE0FF'}, colab:{cheia:'#0091FF',clara:'#D1ECFF'},
+  fornec:{cheia:'#3D5AFE',clara:'#DDE3FF'}, profis:{cheia:'#B026FF',clara:'#F2E7FE'},
+  transp:{cheia:'#FF6B2C',clara:'#FFE4D6'}, obra:{cheia:'#FF2D95',clara:'#FFDDEE'},
+  doc:{cheia:'#0091FF',clara:'#D1ECFF'}, end:{cheia:'#00E5FF',clara:'#CEF9FD'},
+  cont:{cheia:'#FF6B2C',clara:'#FFE4D6'}, banco:{cheia:'#16A34A',clara:'#D2FEEB'},
+  fiscal:{cheia:'#7C3DFF',clara:'#ECE8FD'}, comerc:{cheia:'#FACC15',clara:'#FFF6D6'},
+  acesso:{cheia:'#5551FF',clara:'#D2D1FF'}, obs:{cheia:'#A8A29E',clara:'#F4F4F0'},
+  social:{cheia:'#E620FF',clara:'#FBE0FF'}
+};
+const claro=k=>['end','comerc','obs'].indexOf(k)>=0;
+
+/* ---------------------------------------------------------------------------
+   MESMO SCHEMA DO CADASTRO — módulo é a unidade de tudo:
+   do formulário, do filtro, da coluna da grade e do bloco da ficha.
+   f: campos do módulo. Cada campo pode ser coluna (col), filtro (fil) ou ambos.
+   --------------------------------------------------------------------------- */
+const E={
+ cliente:{nome:'Cliente',plural:'Clientes',cor:'cliente',orn:'o1',
+  mods:[
+   {id:'ident',cor:'cliente',orn:'o1',t:'Identificação',f:[
+     {k:'nome',r:'Nome / Razão social',col:1,fil:'texto',forte:1},
+     {k:'doc',r:'CPF / CNPJ',col:1,fil:'texto'},
+     {k:'tipo',r:'Tipo de pessoa',fil:'sel',op:['Todos','Física','Jurídica']},
+     {k:'cel',r:'Celular',col:1},{k:'email',r:'E-mail',fil:'texto'}]},
+   {id:'doc',cor:'doc',orn:'o2',t:'Documentos',f:[
+     {k:'rg',r:'RG'},{k:'nasc',r:'Nascimento',fil:'data'},{k:'civil',r:'Estado civil',fil:'sel',op:['Todos','Solteiro(a)','Casado(a)']},{k:'profissao',r:'Profissão',fil:'texto'}]},
+   {id:'end',cor:'end',orn:'o4',t:'Endereço',f:[
+     {k:'cidade',r:'Cidade',col:1,fil:'texto'},{k:'uf',r:'UF',fil:'sel',op:['Todas','SP','MG','RJ']},
+     {k:'bairro',r:'Bairro',fil:'texto'},{k:'cep',r:'CEP'},{k:'log',r:'Logradouro'}]},
+   {id:'comerc',cor:'comerc',orn:'o5',t:'Comercial',f:[
+     {k:'origem',r:'Como conheceu',fil:'sel',op:['Todas','Indicação de profissional','Loja','Site','Instagram']},
+     {k:'indicou',r:'Profissional que indicou',col:1,fil:'texto'},
+     {k:'tabela',r:'Tabela de preço',fil:'sel',op:['Todas','Padrão','Profissional','Obra']},
+     {k:'limite',r:'Limite de crédito',col:1,grana:1,fil:'faixa'},
+     {k:'ultima',r:'Última compra',col:1,fil:'data'}]},
+   {id:'fiscal',cor:'fiscal',orn:'o6',t:'Fiscal',f:[
+     {k:'ie',r:'Inscrição estadual',fil:'texto'},{k:'contrib',r:'Contribuinte ICMS',fil:'sel',op:['Todos','Contribuinte','Não contribuinte','Isento']}]},
+   {id:'obs',cor:'obs',orn:'o8',t:'Observação',f:[{k:'obs',r:'Anotações'}]}
+  ],
+  kpis:[{r:'Comprado no ano',k:'ano',grana:1},{r:'Pedidos',k:'pedidos'},{r:'Obras vinculadas',k:'obras'},{r:'Última compra',k:'ultima'}],
+  regs:[
+   {nome:'Marina Duarte Prado',doc:'318.442.907-15',tipo:'Física',cel:'(19) 99812-4400',email:'marina.prado@gmail.com',rg:'44.902.117-3',nasc:'12/03/1984',civil:'Casado(a)',profissao:'Médica',cidade:'Campinas',uf:'SP',bairro:'Cambuí',cep:'13024-110',log:'Rua Coronel Quirino, 1420',origem:'Indicação de profissional',indicou:'Ana Ribeiro Arquitetura',tabela:'Profissional',limite:'40.000,00',ultima:'02/08/2026',ie:'',contrib:'Não contribuinte',obs:'Prefere atendimento à tarde. Obra em Alphaville.',ano:'R$ 128.400',pedidos:'7',obras:'2'},
+   {nome:'Construtora Vega Ltda.',doc:'12.884.330/0001-09',tipo:'Jurídica',cel:'(19) 3255-8800',email:'compras@vega.com.br',cidade:'Valinhos',uf:'SP',bairro:'Centro',cep:'13270-000',log:'Av. Independência, 88',origem:'Loja',indicou:'',tabela:'Obra',limite:'250.000,00',ultima:'28/07/2026',ie:'244.118.900.114',contrib:'Contribuinte',ano:'R$ 611.900',pedidos:'23',obras:'6'},
+   {nome:'Rafael Bittencourt Nunes',doc:'092.117.884-30',tipo:'Física',cel:'(11) 98220-7711',email:'rafa.nunes@outlook.com',cidade:'São Paulo',uf:'SP',bairro:'Pinheiros',origem:'Instagram',indicou:'',tabela:'Padrão',limite:'',ultima:'19/06/2026',ano:'R$ 22.180',pedidos:'2',obras:'0'},
+   {nome:'Helena Vasconcelos Aguiar',doc:'770.418.223-66',tipo:'Física',cel:'(19) 99140-2288',email:'helena.aguiar@me.com',rg:'32.118.440-9',nasc:'27/09/1971',civil:'Solteiro(a)',cidade:'Campinas',uf:'SP',bairro:'Nova Campinas',origem:'Indicação de profissional',indicou:'Estúdio Ferrari',tabela:'Profissional',limite:'85.000,00',ultima:'11/08/2026',ano:'R$ 204.750',pedidos:'11',obras:'3'},
+   {nome:'Otávio Prates Câmara',doc:'551.093.774-20',tipo:'Física',cel:'(19) 99677-1030',email:'otavio.camara@gmail.com',cidade:'Indaiatuba',uf:'SP',origem:'Site',tabela:'Padrão',limite:'',ultima:'',ano:'R$ 0',pedidos:'0',obras:'1'}
+  ]},
+
+ colab:{nome:'Colaborador',plural:'Colaboradores',cor:'colab',orn:'o2',
+  mods:[
+   {id:'ident',cor:'colab',orn:'o2',t:'Identificação',f:[
+     {k:'nome',r:'Nome completo',col:1,fil:'texto',forte:1},{k:'doc',r:'CPF',col:1},
+     {k:'cargo',r:'Cargo / função',col:1,fil:'texto'},{k:'admissao',r:'Admissão',col:1,fil:'data'},
+     {k:'login',r:'E-mail de login',fil:'texto'},{k:'cel',r:'Celular'}]},
+   {id:'empresas',cor:'acesso',orn:'o1',t:'Empresas e perfil',f:[
+     {k:'empresa',r:'Empresa',col:1,fil:'sel',op:['Empresa atual','Todas que administro']},
+     {k:'perfil',r:'Perfil',col:1,fil:'sel',op:['Todos','Vendedor','Estoque','Financeiro','Compras','Administrador']},
+     {k:'atendente',r:'É atendente',fil:'sel',op:['Todos','Sim','Não']}]},
+   {id:'doc',cor:'doc',orn:'o2',t:'Documentos',f:[{k:'rg',r:'RG'},{k:'nasc',r:'Nascimento',fil:'data'},{k:'pis',r:'PIS / PASEP'},{k:'ctps',r:'CTPS'}]},
+   {id:'end',cor:'end',orn:'o4',t:'Endereço',f:[{k:'cidade',r:'Cidade',fil:'texto'},{k:'uf',r:'UF',fil:'sel',op:['Todas','SP','MG']},{k:'bairro',r:'Bairro'}]},
+   {id:'banco',cor:'banco',orn:'o7',t:'Dados bancários',f:[{k:'banco',r:'Banco'},{k:'agencia',r:'Agência'},{k:'conta',r:'Conta'},{k:'pix',r:'Chave PIX'}]},
+   {id:'comerc',cor:'comerc',orn:'o5',t:'Metas e comissão',f:[{k:'comissao',r:'% comissão interna',col:1},{k:'meta',r:'Meta mensal',grana:1,fil:'faixa'},{k:'vendido',r:'Vendido no mês',col:1,grana:1}]},
+   {id:'obs',cor:'obs',orn:'o8',t:'Observação',f:[{k:'obs',r:'Anotações'}]}
+  ],
+  kpis:[{r:'Vendido no mês',k:'vendido',grana:1},{r:'Meta',k:'meta',grana:1},{r:'Pedidos no mês',k:'pedidos'},{r:'Empresas',k:'empresa'}],
+  regs:[
+   {nome:'Rodrigo Salles Menezes',doc:'411.208.663-70',cargo:'Vendedor interno',admissao:'04/02/2019',login:'rodrigo@vertziluminacao.com.br',cel:'(19) 99333-1120',empresa:'Vertz Iluminação',perfil:'Vendedor',atendente:'Sim',rg:'28.117.004-2',nasc:'19/07/1990',pis:'120.44088.01-9',cidade:'Campinas',uf:'SP',bairro:'Taquaral',banco:'341 — Itaú',agencia:'1882',conta:'44012-7',pix:'411.208.663-70',comissao:'1,50',meta:'R$ 180.000',vendido:'R$ 214.300',pedidos:'19',obs:''},
+   {nome:'Priscila Camargo Tavares',doc:'228.774.109-55',cargo:'Gerente de loja',admissao:'11/09/2015',login:'priscila@vertziluminacao.com.br',cel:'(19) 99804-2277',empresa:'Vertz + Via HF',perfil:'Administrador',atendente:'Sim',cidade:'Campinas',uf:'SP',banco:'237 — Bradesco',agencia:'0442',conta:'11908-0',comissao:'0,80',meta:'R$ 400.000',vendido:'R$ 388.100',pedidos:'31'},
+   {nome:'Eduardo Lins Barreto',doc:'900.336.712-84',cargo:'Estoque',admissao:'23/01/2023',login:'eduardo@vertziluminacao.com.br',cel:'(19) 99111-8890',empresa:'Vertz Iluminação',perfil:'Estoque',atendente:'Não',pis:'188.99012.44-0',cidade:'Sumaré',uf:'SP',comissao:'',meta:'',vendido:'—',pedidos:'—'},
+   {nome:'Juliana Peixoto Mano',doc:'184.552.006-11',cargo:'Financeiro',admissao:'02/05/2021',login:'juliana@vertziluminacao.com.br',cel:'(19) 99220-4417',empresa:'Vertz Iluminação',perfil:'Financeiro',atendente:'Não',cidade:'Campinas',uf:'SP',banco:'001 — Banco do Brasil',agencia:'3390',conta:'20114-8',vendido:'—',pedidos:'—'}
+  ]},
+
+ fornec:{nome:'Fornecedor',plural:'Fornecedores',cor:'fornec',orn:'o7',
+  mods:[
+   {id:'ident',cor:'fornec',orn:'o7',t:'Identificação',f:[
+     {k:'fantasia',r:'Nome fantasia',col:1,fil:'texto',forte:1},{k:'nome',r:'Razão social',fil:'texto'},
+     {k:'doc',r:'CNPJ',col:1},{k:'tel',r:'Telefone',col:1},{k:'email',r:'E-mail'}]},
+   {id:'comerc',cor:'comerc',orn:'o5',t:'Comercial e preço',f:[
+     {k:'custo',r:'Perfil de custo',col:1,fil:'texto'},{k:'indice',r:'Índice de venda',col:1,fil:'faixa'},
+     {k:'prazo',r:'Prazo de entrega',col:1,fil:'faixa'},{k:'cond',r:'Condição de pagamento',fil:'sel',op:['Todas','À vista','28 dias','28/56','30/60/90']},
+     {k:'frete',r:'Tipo de frete',fil:'sel',op:['Todos','CIF','FOB']},{k:'minimo',r:'Pedido mínimo',grana:1}]},
+   {id:'fiscal',cor:'fiscal',orn:'o6',t:'Fiscal',f:[{k:'ie',r:'Inscrição estadual'},{k:'regime',r:'Regime tributário',fil:'sel',op:['Todos','Simples Nacional','Lucro presumido','Lucro real']},{k:'cnae',r:'CNAE'}]},
+   {id:'repres',cor:'cont',orn:'o5',t:'Representante',f:[{k:'rep',r:'Representante',col:1,fil:'texto'},{k:'repcel',r:'Celular do representante'},{k:'repmail',r:'E-mail do representante'}]},
+   {id:'end',cor:'end',orn:'o4',t:'Endereço',f:[{k:'cidade',r:'Cidade',fil:'texto'},{k:'uf',r:'UF',col:1,fil:'sel',op:['Todas','SP','MG','SC','RS']}]},
+   {id:'banco',cor:'banco',orn:'o7',t:'Dados bancários',f:[{k:'banco',r:'Banco'},{k:'agencia',r:'Agência'},{k:'conta',r:'Conta'}]},
+   {id:'obs',cor:'obs',orn:'o8',t:'Observação',f:[{k:'obs',r:'Anotações'}]}
+  ],
+  kpis:[{r:'Produtos ativos',k:'produtos'},{r:'Comprado no ano',k:'ano',grana:1},{r:'Índice de venda',k:'indice'},{r:'Prazo médio',k:'prazo'}],
+  regs:[
+   {fantasia:'Lumini',nome:'Lumini Indústria e Comércio Ltda.',doc:'61.208.774/0001-30',tel:'(11) 4133-9000',email:'vendas@lumini.com.br',custo:'IMP-SP-12',indice:'2,45',prazo:'25 dias',cond:'28/56',frete:'CIF',minimo:'3.000,00',ie:'114.220.887.003',regime:'Lucro real',cnae:'2740-6/02',rep:'Marcelo Antunes',repcel:'(11) 99114-2280',repmail:'marcelo@lumini.com.br',cidade:'Itupeva',uf:'SP',banco:'341 — Itaú',agencia:'0902',conta:'88117-2',produtos:'1.284',ano:'R$ 892.400'},
+   {fantasia:'Newline',nome:'Newline Iluminação S/A',doc:'08.774.110/0001-88',tel:'(47) 3320-1400',email:'comercial@newline.ind.br',custo:'IMP-SC-04',indice:'2,10',prazo:'32 dias',cond:'30/60/90',frete:'FOB',minimo:'5.000,00',ie:'255.001.774',regime:'Lucro presumido',rep:'Cristina Boehm',repcel:'(47) 99820-1140',cidade:'Blumenau',uf:'SC',produtos:'742',ano:'R$ 411.220'},
+   {fantasia:'Interlight',nome:'Interlight Comércio de Luminárias Ltda.',doc:'22.901.663/0001-14',tel:'(11) 2066-3300',email:'sac@interlight.com.br',custo:'NAC-SP-01',indice:'1,95',prazo:'12 dias',cond:'À vista',frete:'CIF',ie:'118.004.221.900',regime:'Simples Nacional',cidade:'São Paulo',uf:'SP',produtos:'318',ano:'R$ 127.880'},
+   {fantasia:'Bella Luce',nome:'Bella Luce Importação Ltda.',doc:'44.117.882/0001-70',tel:'(19) 3877-2200',email:'contato@bellaluce.com.br',custo:'',indice:'',prazo:'45 dias',cond:'28 dias',frete:'FOB',cidade:'Vinhedo',uf:'SP',produtos:'96',ano:'R$ 38.400',obs:'Perfil de custo ainda não definido — preço sai manual.'}
+  ]},
+
+ profis:{nome:'Profissional',plural:'Profissionais',cor:'profis',orn:'o3',
+  mods:[
+   {id:'ident',cor:'profis',orn:'o3',t:'Identificação',f:[
+     {k:'apres',r:'Nome de apresentação',col:1,fil:'texto',forte:1},{k:'nome',r:'Nome completo',fil:'texto'},
+     {k:'doc',r:'CPF / CNPJ',col:1},{k:'cel',r:'Celular',col:1},{k:'email',r:'E-mail'}]},
+   {id:'doc',cor:'doc',orn:'o2',t:'Documentos',f:[{k:'registro',r:'Registro profissional',col:1,fil:'texto'},{k:'profissao',r:'Profissão',fil:'sel',op:['Todas','Arquiteto(a)','Designer','Engenheiro(a)','Marceneiro(a)']},{k:'rg',r:'RG'},{k:'nasc',r:'Nascimento'}]},
+   {id:'comerc',cor:'comerc',orn:'o5',t:'Participação',f:[
+     {k:'pct',r:'% padrão de indicação',col:1,fil:'faixa'},{k:'operador',r:'Operador',fil:'sel',op:['Todos','Sobre o líquido','Sobre o bruto']},
+     {k:'indicados',r:'Clientes indicados',col:1},{k:'gerado',r:'Gerado no ano',col:1,grana:1}]},
+   {id:'end',cor:'end',orn:'o4',t:'Endereço',f:[{k:'cidade',r:'Cidade',col:1,fil:'texto'},{k:'uf',r:'UF',fil:'sel',op:['Todas','SP','MG']}]},
+   {id:'cont',cor:'cont',orn:'o5',t:'Contatos',f:[{k:'comercial',r:'Telefone comercial'},{k:'whats',r:'WhatsApp'}]},
+   {id:'banco',cor:'banco',orn:'o7',t:'Dados bancários',f:[{k:'banco',r:'Banco'},{k:'agencia',r:'Agência'},{k:'conta',r:'Conta'},{k:'pix',r:'Chave PIX'}]},
+   {id:'social',cor:'social',orn:'o3',t:'Redes sociais',f:[{k:'insta',r:'Instagram',col:1},{k:'face',r:'Facebook'},{k:'site',r:'Site'}]},
+   {id:'obs',cor:'obs',orn:'o8',t:'Observação',f:[{k:'obs',r:'Anotações'}]}
+  ],
+  kpis:[{r:'Gerado no ano',k:'gerado',grana:1},{r:'Clientes indicados',k:'indicados'},{r:'% padrão',k:'pct'},{r:'Obras ativas',k:'obras'}],
+  regs:[
+   {apres:'Ana Ribeiro Arquitetura',nome:'Ana Carolina Ribeiro',doc:'337.114.902-08',cel:'(19) 99770-3311',email:'ana@anaribeiro.arq.br',registro:'CAU A118440-2',profissao:'Arquiteto(a)',rg:'30.884.117-5',nasc:'08/11/1986',pct:'5,00',operador:'Sobre o líquido',indicados:'34',gerado:'R$ 412.900',cidade:'Campinas',uf:'SP',comercial:'(19) 3255-1140',whats:'(19) 99770-3311',banco:'260 — Nubank',agencia:'0001',conta:'88117-4',pix:'ana@anaribeiro.arq.br',insta:'@anaribeiroarq',face:'',site:'anaribeiro.arq.br',obras:'6'},
+   {apres:'Estúdio Ferrari',nome:'Ferrari Projetos e Interiores Ltda.',doc:'31.900.774/0001-22',cel:'(19) 99118-4420',email:'contato@estudioferrari.com.br',registro:'CAU B004417-9',profissao:'Designer',pct:'4,00',operador:'Sobre o líquido',indicados:'21',gerado:'R$ 288.400',cidade:'Valinhos',uf:'SP',insta:'@estudioferrari',site:'estudioferrari.com.br',obras:'4'},
+   {apres:'Mauro Tagliari',nome:'Mauro Tagliari',doc:'118.774.003-91',cel:'(11) 98844-1120',email:'mauro.tagliari@gmail.com',registro:'CREA 5062884190',profissao:'Engenheiro(a)',pct:'3,00',operador:'Sobre o bruto',indicados:'8',gerado:'R$ 94.100',cidade:'São Paulo',uf:'SP',obras:'2'},
+   {apres:'Bianca Nogueira Interiores',nome:'Bianca Nogueira',doc:'662.008.114-37',cel:'(19) 99441-2200',email:'bia@bnint.com.br',profissao:'Designer',pct:'',indicados:'2',gerado:'R$ 11.400',cidade:'Jundiaí',uf:'SP',insta:'@bnogueirainteriores',obras:'1',obs:'Primeira indicação em julho. Ainda sem % definido.'}
+  ]},
+
+ transp:{nome:'Transportadora',plural:'Transportadoras',cor:'transp',orn:'o8',
+  mods:[
+   {id:'ident',cor:'transp',orn:'o8',t:'Identificação',f:[{k:'nome',r:'Razão social',col:1,fil:'texto',forte:1},{k:'doc',r:'CNPJ',col:1},{k:'tel',r:'Telefone',col:1}]},
+   {id:'fiscal',cor:'fiscal',orn:'o6',t:'Fiscal e habilitação',f:[{k:'ie',r:'Inscrição estadual'},{k:'antt',r:'RNTRC / ANTT',col:1,fil:'texto'},{k:'frete',r:'Frete padrão',col:1,fil:'sel',op:['Todos','CIF','FOB','Sem frete']}]},
+   {id:'end',cor:'end',orn:'o4',t:'Endereço',f:[{k:'cidade',r:'Cidade',col:1,fil:'texto'},{k:'uf',r:'UF',fil:'sel',op:['Todas','SP','MG','PR']}]},
+   {id:'cont',cor:'cont',orn:'o5',t:'Contatos',f:[{k:'contato',r:'Contato'},{k:'cel',r:'Celular'}]},
+   {id:'banco',cor:'banco',orn:'o7',t:'Dados bancários',f:[{k:'banco',r:'Banco'},{k:'agencia',r:'Agência'},{k:'conta',r:'Conta'}]},
+   {id:'obs',cor:'obs',orn:'o8',t:'Observação',f:[{k:'obs',r:'Anotações'}]}
+  ],
+  kpis:[{r:'Entregas no ano',k:'entregas'},{r:'Prazo médio',k:'prazoMed'},{r:'Ocorrências',k:'ocorr'},{r:'Frete padrão',k:'frete'}],
+  regs:[
+   {nome:'Rodoluz Transportes Ltda.',doc:'19.884.220/0001-45',tel:'(19) 3877-4400',ie:'118.900.442',antt:'RNTRC 004881220',frete:'CIF',cidade:'Campinas',uf:'SP',contato:'Sérgio Prado',cel:'(19) 99118-4400',banco:'341 — Itaú',agencia:'1180',conta:'44200-1',entregas:'318',prazoMed:'3 dias',ocorr:'4'},
+   {nome:'Expresso Bandeirante S/A',doc:'44.220.117/0001-08',tel:'(11) 4004-2200',antt:'RNTRC 001144890',frete:'FOB',cidade:'São Paulo',uf:'SP',contato:'Central de atendimento',entregas:'142',prazoMed:'5 dias',ocorr:'11'},
+   {nome:'TransVinhedo Cargas ME',doc:'30.117.442/0001-91',tel:'(19) 3876-1120',frete:'CIF',cidade:'Vinhedo',uf:'SP',entregas:'44',prazoMed:'2 dias',ocorr:'0',obs:'Só entrega na região metropolitana.'}
+  ]},
+
+ obra:{nome:'Obra',plural:'Obras',cor:'obra',orn:'o4',
+  mods:[
+   {id:'ident',cor:'obra',orn:'o4',t:'Identificação',f:[
+     {k:'nome',r:'Nome da obra',col:1,fil:'texto',forte:1},{k:'cliente',r:'Cliente',col:1,fil:'texto'},
+     {k:'tipo',r:'Tipo',col:1,fil:'sel',op:['Todos','Residencial','Comercial','Corporativo','Hotelaria','Retrofit']}]},
+   {id:'end',cor:'end',orn:'o3',t:'Endereço da obra',f:[{k:'cidade',r:'Cidade',col:1,fil:'texto'},{k:'uf',r:'UF',fil:'sel',op:['Todas','SP','MG']},{k:'bairro',r:'Bairro'},{k:'acesso',r:'Referência / acesso'}]},
+   {id:'equipe',cor:'profis',orn:'o3',t:'Equipe',f:[{k:'prof',r:'Profissional responsável',col:1,fil:'texto'},{k:'pct',r:'% de participação'},{k:'atendente',r:'Atendente responsável',fil:'texto'}]},
+   {id:'cronog',cor:'comerc',orn:'o5',t:'Fase e prazo',f:[
+     {k:'situacao',r:'Situação',col:1,fil:'sel',op:['Todas','Prospecção','Projeto','Aprovada','Em execução','Entregue','Cancelada']},
+     {k:'previsao',r:'Previsão de entrega',col:1,fil:'data'},{k:'visita',r:'Última visita'},{k:'valor',r:'Valor estimado',col:1,grana:1,fil:'faixa'}]},
+   {id:'cont',cor:'cont',orn:'o5',t:'Contato no local',f:[{k:'contato',r:'Nome do contato'},{k:'papel',r:'Papel',fil:'sel',op:['Todos','Proprietário','Mestre de obra','Arquiteto','Marceneiro']},{k:'tel',r:'Telefone'}]},
+   {id:'obs',cor:'obs',orn:'o8',t:'Observação',f:[{k:'obs',r:'Anotações'}]}
+  ],
+  kpis:[{r:'Valor estimado',k:'valor',grana:1},{r:'Já faturado',k:'faturado',grana:1},{r:'Orçamentos',k:'orcamentos'},{r:'Situação',k:'situacao'}],
+  regs:[
+   {nome:'Res. Duarte — Alphaville',cliente:'Marina Duarte Prado',tipo:'Residencial',cidade:'Campinas',uf:'SP',bairro:'Alphaville',acesso:'Portaria 2 · entrega até 16h',prof:'Ana Ribeiro Arquitetura',pct:'5,00',atendente:'Rodrigo Salles Menezes',situacao:'Em execução',previsao:'20/11/2026',visita:'05/08/2026',valor:'R$ 186.000',contato:'Wilson (mestre)',papel:'Mestre de obra',tel:'(19) 99880-1174',faturado:'R$ 98.400',orcamentos:'4'},
+   {nome:'Edifício Aurora — hall e áreas comuns',cliente:'Construtora Vega Ltda.',tipo:'Comercial',cidade:'Valinhos',uf:'SP',bairro:'Centro',prof:'Estúdio Ferrari',pct:'4,00',atendente:'Priscila Camargo Tavares',situacao:'Aprovada',previsao:'15/02/2027',valor:'R$ 420.000',contato:'Eng. Tadeu',papel:'Arquiteto',faturado:'R$ 0',orcamentos:'2'},
+   {nome:'Casa Aguiar — Nova Campinas',cliente:'Helena Vasconcelos Aguiar',tipo:'Residencial',cidade:'Campinas',uf:'SP',bairro:'Nova Campinas',prof:'Estúdio Ferrari',atendente:'Rodrigo Salles Menezes',situacao:'Entregue',previsao:'30/06/2026',visita:'22/06/2026',valor:'R$ 94.500',faturado:'R$ 94.500',orcamentos:'3'},
+   {nome:'Pousada Mirante — retrofit',cliente:'Otávio Prates Câmara',tipo:'Retrofit',cidade:'Indaiatuba',uf:'SP',situacao:'Prospecção',valor:'',faturado:'R$ 0',orcamentos:'1',obs:'Aguardando projeto luminotécnico do arquiteto.'}
+  ]}
+};
+
+/* ===================== estado ===================== */
+let ent='cliente', modAberto=null, filtros={}, colunasExtra={}, regAtual=null;
+const LUPA='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+const CHEV='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3.5"><path d="M6 9l6 6 6-6"/></svg>';
+const LAPIS='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="3"><path d="M4 20h4L20 8l-4-4L4 16v4z"/></svg>';
+
+function temDado(reg,mod){ return mod.f.some(c=>reg[c.k] && String(reg[c.k]).trim()!=='' && reg[c.k]!=='—'); }
+function colunas(){
+  const e=E[ent], out=[];
+  e.mods.forEach(m=>m.f.forEach(c=>{
+    const chave=m.id+'.'+c.k;
+    if(c.col || colunasExtra[chave]) out.push({m:m,c:c});
+  }));
+  return out;
+}
+function filtrosDoMod(m){ return m.f.filter(c=>c.fil); }
+function nAtivos(m){ return Object.keys(filtros).filter(k=>k.indexOf(m.id+'.')===0).length; }
+
+/* ===================== listagem ===================== */
+function pinta(){
+  const e=E[ent], cc=C[e.cor];
+
+  document.getElementById('seletor').innerHTML=Object.keys(E).map(x=>{
+    const on=x===ent, c=C[E[x].cor];
+    return '<div class="ent'+(on?' on':'')+'" style="'+(on?'background:'+c.cheia:'')+'" onclick="trocaEnt(\''+x+'\')"><span class="pt" style="background:'+c.cheia+'"></span>'+E[x].plural+'</div>';
+  }).join('');
+
+  document.getElementById('buscaGeral').placeholder='Buscar '+e.plural.toLowerCase()+' por nome, documento ou telefone…';
+  const bn=document.getElementById('btnNovo');
+  bn.style.background=cc.cheia; bn.textContent='+ Novo '+e.nome.toLowerCase();
+
+  document.getElementById('modulos').innerHTML=e.mods.map(m=>{
+    const n=nAtivos(m), c=C[m.cor];
+    return '<div class="mod'+(modAberto===m.id?' on':'')+'" onclick="abreMod(\''+m.id+'\')" style="background:'+(modAberto===m.id?c.clara:'#fff')+'">'+
+      '<span class="pt" style="background:'+c.cheia+'"></span>'+m.t+
+      (n?'<span class="qt">'+n+'</span>':'')+'</div>';
+  }).join('');
+
+  const pf=document.getElementById('painelFiltro');
+  if(modAberto){
+    const m=e.mods.find(x=>x.id===modAberto), c=C[m.cor];
+    pf.classList.add('aberto');
+    document.getElementById('painelTopo').style.background=c.clara;
+    document.getElementById('painelTopo').innerHTML='<span class="pt" style="width:13px;height:13px;border:2px solid #111;border-radius:4px;background:'+c.cheia+'"></span>Filtros de '+m.t+
+      '<button class="x" onclick="abreMod(null)">Fechar</button>';
+    document.getElementById('painelCorpo').style.background=c.clara;
+    document.getElementById('painelCorpo').innerHTML=filtrosDoMod(m).map(c2=>{
+      const id=m.id+'.'+c2.k, v=filtros[id]||'';
+      if(c2.fil==='sel') return '<div><label>'+c2.r+'</label><select class="entrada" onchange="setF(\''+id+'\',this.value,\''+c2.r+'\',1)">'+c2.op.map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+      if(c2.fil==='data') return '<div><label>'+c2.r+' — período</label><div class="par-min"><input type="date" class="entrada" onchange="setF(\''+id+'\',this.value,\''+c2.r+'\')"><span style="font-weight:900">→</span><input type="date" class="entrada"></div></div>';
+      if(c2.fil==='faixa')return '<div><label>'+c2.r+' — de / até</label><div class="par-min"><input class="entrada" placeholder="mín" onchange="setF(\''+id+'\',this.value,\''+c2.r+'\')"><span style="font-weight:900">→</span><input class="entrada" placeholder="máx"></div></div>';
+      return '<div><label>'+c2.r+'</label><input class="entrada" value="'+v+'" placeholder="contém…" onchange="setF(\''+id+'\',this.value,\''+c2.r+'\')"></div>';
+    }).join('');
+  } else pf.classList.remove('aberto');
+
+  document.getElementById('colunasCorpo').innerHTML=e.mods.map(m=>{
+    const c=C[m.cor];
+    return '<div style="border:2px solid #111;border-radius:9px;padding:10px;background:'+c.clara+'">'+
+      '<div style="font-family:Archivo;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">'+
+      '<span style="width:11px;height:11px;border:2px solid #111;border-radius:4px;background:'+c.cheia+'"></span>'+m.t+'</div>'+
+      m.f.map(c2=>{
+        const id=m.id+'.'+c2.k, on=c2.col||colunasExtra[id];
+        return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;margin-bottom:5px;cursor:'+(c2.col?'not-allowed':'pointer')+';opacity:'+(c2.col?'.55':'1')+'" '+(c2.col?'':'onclick="toggleCol(\''+id+'\')"')+'>'+
+          '<span style="width:16px;height:16px;border:2px solid #111;border-radius:5px;background:'+(on?'#16A34A':'#fff')+'"></span>'+c2.r+(c2.col?' · fixa':'')+'</div>';
+      }).join('')+'</div>';
+  }).join('');
+
+  const at=Object.keys(filtros);
+  document.getElementById('ativos').innerHTML = at.length
+    ? at.map(k=>'<div class="pill" style="background:'+C[e.mods.find(m=>m.id===k.split('.')[0]).cor].clara+'"><b>'+filtros[k].r+':</b> '+filtros[k].v+'<span class="x" onclick="tiraF(\''+k+'\')">×</span></div>').join('')
+      + '<button class="limpar" onclick="filtros={};pinta()">Limpar tudo</button>'
+    : '';
+
+  const cols=colunas(), regs=E[ent].regs;
+  document.getElementById('contRes').innerHTML=regs.length+' <small>'+e.plural.toLowerCase()+' · '+cols.length+' colunas de '+e.mods.length+' módulos</small>';
+  document.getElementById('cab').innerHTML='<tr>'+cols.map(x=>
+    '<th><span class="tp" style="background:'+C[x.m.cor].cheia+'"></span>'+x.c.r+'</th>').join('')+'</tr>';
+  document.getElementById('linhas').innerHTML=regs.map((r,i)=>'<tr onclick="abreFicha('+i+')">'+cols.map(x=>{
+    const v=r[x.c.k];
+    if(!v) return '<td><span class="vazio-cel">—</span></td>';
+    if(x.c.grana) return '<td class="grana">'+(String(v).indexOf('R$')<0?'R$ '+v:v)+'</td>';
+    if(x.c.forte) return '<td class="forte">'+v+'</td>';
+    return '<td>'+v+'</td>';
+  }).join('')+'</tr>').join('');
+}
+function trocaEnt(k){ ent=k; modAberto=null; filtros={}; colunasExtra={}; pinta(); }
+function abreMod(id){ modAberto = (modAberto===id? null : id); document.getElementById('painelColunas').classList.remove('aberto'); pinta(); }
+function alterna(){
+  const p=document.getElementById('painelColunas');
+  const abrir=!p.classList.contains('aberto');
+  modAberto=null; pinta();
+  p.classList.toggle('aberto',abrir);
+}
+function setF(id,v,r,sel){
+  if(!v || (sel && /^(Tod[oa]s|Empresa atual)$/.test(v))) delete filtros[id]; else filtros[id]={v:v,r:r};
+  pinta();
+}
+function tiraF(k){ delete filtros[k]; pinta(); }
+function toggleCol(id){ colunasExtra[id]=!colunasExtra[id]; pinta(); }
+
+/* ===================== ficha ===================== */
+function abreFicha(i){
+  regAtual=i;
+  const e=E[ent], r=e.regs[i], cc=C[e.cor];
+  document.getElementById('telaLista').classList.add('oculto');
+  document.getElementById('telaFicha').classList.remove('oculto');
+
+  const s=document.getElementById('fSelo'); s.style.background=cc.cheia; s.innerHTML='<i class="orn '+e.orn+'"></i>';
+  const primeiro=e.mods[0].f.find(c=>c.forte)||e.mods[0].f[0];
+  document.getElementById('fNome').textContent=r[primeiro.k]||'—';
+  const seg=e.mods[0].f.filter(c=>c.k!==primeiro.k).slice(0,3).map(c=>r[c.k]).filter(Boolean);
+  document.getElementById('fSub').textContent=e.nome+' · '+seg.join(' · ');
+
+  document.getElementById('fKpis').innerHTML=e.kpis.map((k,idx)=>{
+    const cores=[cc.clara,'#D2FEEB','#FFF6D6','#D1ECFF'];
+    const v=r[k.k]||'—';
+    return '<div class="kpi" style="background:'+cores[idx%4]+'"><div class="r">'+k.r+'</div><div class="v"'+(k.grana?' style="color:#16A34A"':'')+'>'+v+'</div></div>';
+  }).join('');
+
+  document.getElementById('fLatTit').innerHTML='<i class="orn '+e.orn+'" style="color:'+cc.cheia+'"></i> Módulos';
+  document.getElementById('fLatTit').style.background=cc.clara;
+
+  document.getElementById('fBlocos').innerHTML=e.mods.map(m=>{
+    const c=C[m.cor], cheio=temDado(r,m);
+    const preenchidos=m.f.filter(x=>r[x.k]&&String(r[x.k]).trim()!=='').length;
+    const dir = cheio
+      ? '<span class="contador">'+preenchidos+'/'+m.f.length+'</span><div class="lapis">'+LAPIS+'</div><div class="seta">'+CHEV+'</div>'
+      : '<span class="tag">Vazio</span><button class="btn-preencher">+ Preencher</button><div class="seta">'+CHEV+'</div>';
+    const corpo = cheio
+      ? '<div class="dados">'+m.f.map(x=>{
+          const v=r[x.k];
+          return '<div class="dado"><div class="r">'+x.r+'</div><div class="v'+(v?(x.grana?' grana':''):' vazio')+'">'+(v?(x.grana&&String(v).indexOf('R$')<0?'R$ '+v:v):'não informado')+'</div></div>';
+        }).join('')+'</div>'
+      : '<div style="font-size:12.5px;font-weight:700;color:var(--muted)">Nenhum campo deste módulo foi preenchido. Campos: '+m.f.map(x=>x.r).join(' · ')+'</div>';
+    return '<section class="bloco'+(cheio?' aberto':' oco')+'" data-bl="'+m.id+'">'+
+      '<div class="bl-topo" onclick="this.parentElement.classList.toggle(\'aberto\')" style="background:'+c.cheia+';color:'+(claro(m.cor)?'#111':'#fff')+'">'+
+        '<div class="selo"><i class="orn '+m.orn+'" style="color:'+c.cheia+'"></i></div>'+
+        '<div class="bl-txt"><h2>'+m.t+'</h2><p>'+m.f.map(x=>x.r).slice(0,4).join(' · ')+'</p></div>'+
+        '<div class="bl-dir">'+dir+'</div></div>'+
+      '<div class="bl-corpo" style="background:'+c.clara+'">'+corpo+'</div></section>';
+  }).join('');
+
+  document.getElementById('fNav').innerHTML=e.mods.map(m=>{
+    const cheio=temDado(r,m), n=m.f.filter(x=>r[x.k]&&String(r[x.k]).trim()!=='').length;
+    return '<div class="item-nav'+(cheio?'':' oco')+'" onclick="vai(\''+m.id+'\')"><span class="pt" style="background:'+C[m.cor].cheia+'"></span>'+m.t+
+      '<span class="st">'+(cheio?n+'/'+m.f.length:'vazio')+'</span></div>';
+  }).join('');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function vai(id){ const b=document.querySelector('[data-bl="'+id+'"]'); b.classList.add('aberto'); b.scrollIntoView({behavior:'smooth',block:'center'}); }
+function voltar(){ document.getElementById('telaFicha').classList.add('oculto'); document.getElementById('telaLista').classList.remove('oculto'); window.scrollTo({top:0}); }
+
+pinta();
+</script>
+</body>
+</html>

@@ -61,7 +61,9 @@ describe('Button — elevação por utility, não por literal', () => {
     // morta, e `pointer-events: none` faz o browser parar de mostrar o título
     // nativo: a explicação existiria no DOM e nunca na tela. Não clicar já é
     // garantido pelo atributo `disabled`.
+    // O `cursor: not-allowed` mudou de lugar: mora na utility `desabilitado`
+    // (index.css §Desabilitado), junto com o fundo e o traço apagados.
     expect(buttonVariants({ variant: 'default' })).not.toContain('disabled:pointer-events-none')
-    expect(buttonVariants({ variant: 'default' })).toContain('disabled:cursor-not-allowed')
+    expect(buttonVariants({ variant: 'default' })).toContain('desabilitado')
   })
 })

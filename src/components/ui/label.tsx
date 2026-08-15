@@ -14,13 +14,19 @@ import { LabelContext, Label as LabelPrimitive, type LabelProps } from 'react-ar
  * Raio de ITEM (0): etiqueta encosta em campo, e canto arredondado ali abre
  * fresta. Ver §Foco para o anel — a etiqueta não é focável, quem recebe foco
  * é o controle que ela nomeia.
+ *
+ * Com o campo desabilitado a etiqueta NÃO muda (§Desabilitado): ela é o que diz
+ * o que o campo é, e apagá-la tira o nome do dado justamente quando o operador
+ * não pode mexer nele. Era `peer-disabled:opacity-50` + `group-…:opacity-50`.
+ * Conferido em render no modo consulta de Produtos: etiqueta nítida sobre campo
+ * apagado lê melhor do que os dois apagados juntos.
  */
 function Label({ className, htmlFor, slot, ...props }: LabelProps) {
   const label = (
     <LabelPrimitive
       data-slot="label"
       className={cn(
-        'inline-flex w-fit items-center gap-2 self-start rounded-item border-2 border-border bg-card px-[7px] py-[2px] font-mono text-[10px] leading-none tracking-[0.12em] text-foreground uppercase select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
+        'inline-flex w-fit items-center gap-2 self-start rounded-item border-2 border-border bg-card px-[7px] py-[2px] font-mono text-[10px] leading-none tracking-[0.12em] text-foreground uppercase select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed',
         className,
       )}
       {...props}

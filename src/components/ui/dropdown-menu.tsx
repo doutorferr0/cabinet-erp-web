@@ -85,7 +85,7 @@ function DropdownMenuLabel({
 }
 
 const dropdownMenuItemVariants = cva(
-  'group/dropdown-menu-item relative flex cursor-default items-center rounded-item outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'group/dropdown-menu-item desabilitado relative flex cursor-default items-center rounded-item outline-hidden select-none data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       selectionMode: {

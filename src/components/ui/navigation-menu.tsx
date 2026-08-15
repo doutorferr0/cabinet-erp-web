@@ -85,7 +85,7 @@ function NavigationMenuLink({
           // na sidebar. `aria-current` carrega o estado para quem não vê a cor.
           'aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground',
           'focus-visible:focus-ring',
-          'data-disabled:pointer-events-none data-disabled:opacity-50',
+          'desabilitado data-disabled:pointer-events-none',
           className,
         ),
       )}
@@ -116,7 +116,7 @@ function NavigationMenuTrigger({
           'hover:bg-neutral data-pressed:bg-neutral',
           'aria-expanded:bg-primary aria-expanded:text-primary-foreground',
           'focus-visible:focus-ring',
-          'data-disabled:pointer-events-none data-disabled:opacity-50',
+          'desabilitado data-disabled:pointer-events-none',
           className,
         ),
       )}

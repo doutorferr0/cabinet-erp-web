@@ -1,24 +1,16 @@
-import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
-import { RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { FormBlock } from '@/components/cabinet/form-block'
-import {
-  CheckboxField,
-  DateField,
-  LookupField,
-  LookupSelectField,
-  MoneyField,
-  RadioField,
-  SelectField,
-  TextField,
-} from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs } from '@/components/ui/tabs'
-import { tabelas } from '@/data/tabelas'
+import { camposDe, colaborador as esquema } from '@/features/cadastro/modulos'
+import {
+  CamposDoModulo,
+  Pendencias,
+  ProgressoDeObrigatorios,
+} from '@/features/colaborador/campos-do-modulo'
 import type { Colaborador } from '@/mocks/colaboradores'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -60,14 +52,6 @@ export const colaboradorSchema = z.object({
   }),
   empresa: z.string().nullable(),
 })
-
-/** Abas da transcrição §2: só `Geral` foi capturada. */
-const ABAS_SEM_CAPTURA = [
-  ['endereco', 'Endereço'],
-  ['documentacao', 'Documentação'],
-  ['contatos', 'Contatos'],
-  ['financeiro', 'Financeiro'],
-] as const
 
 /** Moldura de foto + botões (visual apenas — sem upload real na fase mock). */
 function FotoFrame() {
@@ -145,106 +129,48 @@ function UfNaturalidade({ className }: { className?: string }) {
   )
 }
 
-function AbaGeral({ onBuscaNaturalidade }: { onBuscaNaturalidade: () => void }) {
+/**
+ * OS MÓDULOS VIRAM BLOCOS — mesma gramática do Profissional (#101).
+ *
+ * As abas saíram: `Documentos`, `Financeiro` e `Ocorrências` eram
+ * `AbasSemCaptura`, isto é, promessas de conteúdo que entregavam aviso. Bloco
+ * recolhido com resumo à vista diz a mesma coisa sem prometer.
+ *
+ * A naturalidade continua com janela própria: é o único campo do cadastro com
+ * busca, e o render genérico não tem como saber disso.
+ */
+function BlocosDoCadastro({
+  onBuscaNaturalidade,
+  readOnly,
+}: { onBuscaNaturalidade: () => void; readOnly: boolean }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-12 items-end gap-3">
-        <RadioField
-          name="sexo"
-          label="Sexo"
-          options={[
-            { value: 'MASCULINO', label: 'Masculino' },
-            { value: 'FEMININO', label: 'Feminino' },
-          ]}
-          className="col-span-12 sm:col-span-3"
-        />
-        <DateField name="dtNascimento" label="Dt Nascimento" className="col-span-6 sm:col-span-2" />
-        <LookupSelectField
-          name="grauInstrucao"
-          label="Grau de Instrução"
-          kind="grauInstrucao"
-          className="col-span-12 sm:col-span-3"
-        />
-        <LookupField
-          name="profissao"
-          label="Profissão"
-          kind="profissao"
-          className="col-span-12 sm:col-span-4"
-        />
-        <LookupSelectField
-          name="racaCor"
-          label="Raça/Cor"
-          kind="racaCor"
-          className="col-span-6 sm:col-span-3"
-        />
-        <LookupSelectField
-          name="estadoCivil"
-          label="Estado Civil"
-          kind="estadoCivil"
-          className="col-span-6 sm:col-span-3"
-        />
-        <TextField
-          name="nomeConjuge"
-          label="Nome do Cônjuge"
-          className="col-span-12 sm:col-span-4"
-        />
-        <DateField
-          name="dtNascConjuge"
-          label="Dt.Nasc.Cônjuge"
-          className="col-span-6 sm:col-span-2"
-        />
-        <TextField name="nomePai" label="Nome do Pai" className="col-span-12 sm:col-span-6" />
-        <TextField name="nomeMae" label="Nome da Mãe" className="col-span-12 sm:col-span-6" />
-        <NaturalidadeField onBusca={onBuscaNaturalidade} className="col-span-12 sm:col-span-4" />
-        <UfNaturalidade className="col-span-4 sm:col-span-1" />
-        <LookupField
-          name="nacionalidade"
-          label="Nacionalidade"
-          kind="nacionalidade"
-          className="col-span-8 sm:col-span-5"
-        />
-        <TextField name="anoChegada" label="Ano de Chegada" className="col-span-6 sm:col-span-2" />
-      </div>
-
-      <FormBlock legend="Dados Trabalhistas">
-        <div className="grid grid-cols-12 items-end gap-3">
-          <LookupField
-            name="cargo"
-            label="Cargo"
-            kind="cargo"
-            className="col-span-12 sm:col-span-4"
+    <div className="flex flex-col gap-3">
+      {esquema.modulos.map((modulo) => (
+        <FormBlock
+          key={modulo.id}
+          legend={modulo.titulo}
+          colapsavel={!modulo.obrigatorio && !readOnly}
+          {...(modulo.obrigatorio ? { obrigatorio: true } : {})}
+          {...(modulo.cor ? { cor: modulo.cor } : {})}
+        >
+          {/* Naturalidade e UF saem do render genérico: a primeira tem janela
+              de busca e a segunda é rótulo derivado dela, não campo digitável. */}
+          <CamposDoModulo
+            modulo={modulo}
+            {...(modulo.id === 'documentos' ? { omitir: ['cidadeNatal', 'ufNatal'] } : {})}
           />
-          <MoneyField name="salario" label="Salário" className="col-span-6 sm:col-span-2" />
-          <LookupSelectField
-            name="vinculo"
-            label="Vínculo"
-            kind="vinculo"
-            className="col-span-6 sm:col-span-2"
-          />
-          <DateField
-            name="dataAdmissao"
-            label="Data de Admissão"
-            className="col-span-6 sm:col-span-2"
-          />
-          <DateField
-            name="dataDemissao"
-            label="Data de Demissão"
-            className="col-span-6 sm:col-span-2"
-          />
-        </div>
-      </FormBlock>
-
-      <div className="grid grid-cols-12 items-end gap-3">
-        <div className="col-span-12 sm:col-span-8">
-          <RedesSociaisBlock prefix="redesSociais" />
-        </div>
-        <SelectField
-          name="empresa"
-          label="Empresa"
-          options={tabelas.empresas}
-          className="col-span-12 sm:col-span-4"
-        />
-      </div>
+          {modulo.id === 'documentos' ? (
+            <div className="mt-3 grid grid-cols-12 items-end gap-3">
+              <NaturalidadeField
+                onBusca={onBuscaNaturalidade}
+                className="col-span-12 sm:col-span-6"
+              />
+              <UfNaturalidade className="col-span-6 sm:col-span-2" />
+            </div>
+          ) : null}
+          <Pendencias modulo={modulo} />
+        </FormBlock>
+      ))}
     </div>
   )
 }
@@ -276,29 +202,14 @@ export function ColaboradorForm({
       {/* FotoFrame (~224px) é coluna lateral do bloco campos+abas, não sibling
           de só uma fileira — assim a altura da linha vem do conteúdo da aba
           (bem mais alto que a foto), sem vão vazio nem sobreposição. */}
+      <ProgressoDeObrigatorios campos={camposDe(esquema)} />
+
       <div className="flex items-start gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <div className="grid grid-cols-12 items-end gap-3">
-            <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-5" />
-            <LookupField
-              name="setor"
-              label="Setor"
-              kind="setor"
-              className="col-span-8 sm:col-span-3"
-            />
-            <CheckboxField
-              name="atendimentoCliente"
-              label="Atendimento ao cliente"
-              className="col-span-6 sm:col-span-3"
-            />
-            <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-1" />
-          </div>
-
-          <Tabs defaultValue="geral">
-            <AbasSemCaptura capturada={['geral', 'Geral']} abas={ABAS_SEM_CAPTURA}>
-              <AbaGeral onBuscaNaturalidade={() => setBuscaNaturalidadeOpen(true)} />
-            </AbasSemCaptura>
-          </Tabs>
+          <BlocosDoCadastro
+            onBuscaNaturalidade={() => setBuscaNaturalidadeOpen(true)}
+            readOnly={readOnly}
+          />
         </div>
 
         <FotoFrame />

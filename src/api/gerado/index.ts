@@ -2661,6 +2661,72 @@ export const updateCrmLostReason = async (id: string,
 
 
 
+export type createQuoteFromOpportunityResponse201 = {
+  data: QuoteDetailDto
+  status: 201
+}
+
+export type createQuoteFromOpportunityResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createQuoteFromOpportunityResponse403 = {
+  data: ProblemDetails
+  status: 403
+}
+
+export type createQuoteFromOpportunityResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createQuoteFromOpportunityResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createQuoteFromOpportunityResponseSuccess = (createQuoteFromOpportunityResponse201) & {
+  headers: Headers;
+};
+export type createQuoteFromOpportunityResponseError = (createQuoteFromOpportunityResponse400 | createQuoteFromOpportunityResponse403 | createQuoteFromOpportunityResponse404 | createQuoteFromOpportunityResponse409) & {
+  headers: Headers;
+};
+
+export type createQuoteFromOpportunityResponse = (createQuoteFromOpportunityResponseSuccess | createQuoteFromOpportunityResponseError)
+
+export const getCreateQuoteFromOpportunityUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/opportunities/${id}/quote`
+}
+
+/**
+ * Proposto. Gera o ORÇAMENTO da oportunidade e grava o vínculo (`quoteId`) na mesma transação.
+ *
+ * **Caminho próprio, e não `POST /api/quotes` seguido de `PUT` na oportunidade**, pela mesma razão do `PATCH …/{id}/stage`: com RLS e `SET LOCAL` por transação, cada requisição é transação própria, e falha entre as duas deixaria um orçamento órfão — criado, sem vínculo, invisível para quem pediu a conversão e visível na listagem de orçamentos. Uma intenção, uma requisição.
+ *
+ * **O orçamento nasce VAZIO de item**, com cliente e nome do projeto copiados da oportunidade. É a amarra do núcleo: a oportunidade não congela especificação nem preço — quem congela é o orçamento, e ele só passa a valer quando o operador o preenche. Copiar o `expectedValueCents` para um item inventado daria documento com preço que ninguém cotou.
+ *
+ * **Oportunidade sem `partnerId` é 400**: o orçamento exige `customerId`, e lead sem cadastro não tem. O caminho é cadastrar o parceiro antes — a tela oferece isso.
+ *
+ * **Oportunidade que já tem `quoteId` é 409**, não um segundo orçamento: dois documentos para o mesmo negócio é justamente o que o vínculo existe para impedir. Refazer é cancelar o orçamento e gerar de novo, e essa é uma decisão do operador.
+ */
+export const createQuoteFromOpportunity = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<createQuoteFromOpportunityResponse> => {
+
+  return apiFetch<createQuoteFromOpportunityResponse>(getCreateQuoteFromOpportunityUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export type listActivitiesResponse200 = {
   data: PagedResultOfActivityDto
   status: 200

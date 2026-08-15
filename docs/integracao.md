@@ -151,6 +151,30 @@ quadro. O recorte é por DIA (`closedAt`), não por instante.
 legado tem, e omitir a linha faria a soma das linhas não bater com o `total` — a
 divergência entre os dois é justamente o sintoma que se quer ver.
 
+### CRM — a conversão para orçamento também é UMA requisição (2026-08-14)
+
+`POST /api/crm/opportunities/{id}/quote` cria o documento **e** grava o `quoteId`
+na mesma transação. Não é `POST /api/quotes` seguido de `PUT` na oportunidade,
+e o motivo é o mesmo do `PATCH …/stage`: com RLS e `SET LOCAL` por transação,
+cada requisição é transação própria, e falha entre as duas deixaria um orçamento
+**órfão** — criado, sem vínculo, invisível para quem pediu a conversão e visível
+na listagem de orçamentos.
+
+**O documento nasce SEM ITEM**, com cliente e nome do projeto copiados. É a
+amarra do núcleo: a oportunidade não congela especificação nem preço — quem
+congela é o orçamento. Copiar o `expectedValueCents` para um item inventado daria
+um documento com preço que ninguém cotou, e é justamente o número que o cliente
+leria como proposta.
+
+**Lead sem `partnerId` é 400** (o orçamento exige `customerId`) e **oportunidade
+já convertida é 409** — dois documentos para o mesmo negócio é o que o vínculo
+existe para impedir. A tela ANTECIPA as duas: desabilita e diz o que fazer, em
+vez de deixar o operador descobrir clicando.
+
+No mock, quem cria continua sendo `criarOrcamento` de `src/mocks/api/quotes.ts`,
+exportada para isso — duas criações independentes dariam dois orçamentos com o
+mesmo número no dia em que as duas rodassem.
+
 ### CRM — o movimento do quadro é uma requisição só (2026-08-13)
 
 `PATCH /api/crm/opportunities/{id}/stage` recebe destino (`stageId`) e VIZINHO

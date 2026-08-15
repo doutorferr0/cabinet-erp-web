@@ -3122,6 +3122,76 @@
         }
       }
     },
+    "/api/crm/opportunities/{id}/quote": {
+      "post": {
+        "tags": ["crm"],
+        "operationId": "CreateQuoteFromOpportunity",
+        "description": "Proposto. Gera o ORÇAMENTO da oportunidade e grava o vínculo (`quoteId`) na mesma transação.\n\n**Caminho próprio, e não `POST /api/quotes` seguido de `PUT` na oportunidade**, pela mesma razão do `PATCH …/{id}/stage`: com RLS e `SET LOCAL` por transação, cada requisição é transação própria, e falha entre as duas deixaria um orçamento órfão — criado, sem vínculo, invisível para quem pediu a conversão e visível na listagem de orçamentos. Uma intenção, uma requisição.\n\n**O orçamento nasce VAZIO de item**, com cliente e nome do projeto copiados da oportunidade. É a amarra do núcleo: a oportunidade não congela especificação nem preço — quem congela é o orçamento, e ele só passa a valer quando o operador o preenche. Copiar o `expectedValueCents` para um item inventado daria documento com preço que ninguém cotou.\n\n**Oportunidade sem `partnerId` é 400**: o orçamento exige `customerId`, e lead sem cadastro não tem. O caminho é cadastrar o parceiro antes — a tela oferece isso.\n\n**Oportunidade que já tem `quoteId` é 409**, não um segundo orçamento: dois documentos para o mesmo negócio é justamente o que o vínculo existe para impedir. Refazer é cancelar o orçamento e gerar de novo, e essa é uma decisão do operador.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/activities": {
       "get": {
         "tags": ["tarefas"],

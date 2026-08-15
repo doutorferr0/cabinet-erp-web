@@ -13,12 +13,14 @@ import type {
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
+  QuoteDetailDto,
 } from '@/api/gerado'
 import {
   createCrmLostReason,
   createCrmOpportunity,
   createCrmPipeline,
   createCrmStage,
+  createQuoteFromOpportunity,
   getCrmLostReasonsReport,
   getCrmOpportunity,
   getCrmPipeline,
@@ -470,6 +472,33 @@ export function useAlterarEstagio() {
       return dadosOuErro<CrmStageDto>(resposta, 'Falha ao gravar o estágio.')
     },
     onSuccess: invalidar,
+  })
+}
+
+/**
+ * GERAR O ORÇAMENTO da oportunidade — uma intenção, uma requisição.
+ *
+ * O servidor cria o documento e grava o `quoteId` na mesma transação. O caminho
+ * existe por isso: `POST /api/quotes` seguido de `PUT` na oportunidade deixaria
+ * um orçamento órfão se a segunda falhasse — criado, sem vínculo, invisível
+ * para quem pediu a conversão.
+ *
+ * Devolve o `QuoteDetailDto` criado, que é o que a tela usa para navegar até o
+ * documento novo. Invalida o tronco do CRM porque a oportunidade mudou (ganhou
+ * `quoteId`), e as consultas de orçamento porque a listagem tem uma linha a mais.
+ */
+export function useGerarOrcamento() {
+  const invalidar = useInvalidarCrm()
+  const cliente = useQueryClient()
+  return useMutation({
+    mutationFn: async (oportunidadeId: string) => {
+      const resposta: RespostaDaApi = await createQuoteFromOpportunity(oportunidadeId)
+      return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao gerar o orçamento.')
+    },
+    onSuccess: async () => {
+      await invalidar()
+      await cliente.invalidateQueries({ queryKey: ['orcamentos'] })
+    },
   })
 }
 

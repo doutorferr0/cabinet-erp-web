@@ -1,4 +1,7 @@
+import { type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { ATALHO_DA_PALETA } from '@/app/paleta-de-comandos'
+import { CompanySwitcher } from '@/components/cabinet/company-switcher'
+import { Marca } from '@/components/cabinet/marca'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,8 +13,10 @@ import {
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
+import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { useLogout, useSessao } from '@/data/sessao'
-import { Bell, ChevronDown, Search, Settings } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Bell, ChevronDown, Search } from 'lucide-react'
 
 /** Duas primeiras iniciais do nome — o mesmo corte que os avatares do quadro usam. */
 function iniciaisDoNome(nome: string): string {
@@ -19,6 +24,91 @@ function iniciaisDoNome(nome: string): string {
   const primeira = partes[0]?.[0] ?? ''
   const ultima = partes.length > 1 ? (partes.at(-1)?.[0] ?? '') : ''
   return (primeira + ultima).toUpperCase()
+}
+
+/** A primeira tela navegável da seção — o destino do ícone. */
+export function primeiraTelaDaSecao(secao: NavSecao): string | undefined {
+  for (const grupo of secao.grupos) {
+    for (const item of grupo.items) {
+      if (item.futuro) continue
+      if (item.filhas) {
+        const filha = item.filhas.find((f) => !f.futuro)
+        if (filha) return filha.url
+        continue
+      }
+      return item.url
+    }
+  }
+  return undefined
+}
+
+/** A seção dona desta rota — é ela que fica acesa e desenha a barra lateral. */
+export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | undefined {
+  return secoes.find((secao) =>
+    secao.grupos.some((grupo) =>
+      grupo.items
+        .flatMap((item) => item.filhas ?? [item])
+        .some((item) => pathname === item.url || pathname.startsWith(`${item.url}/`)),
+    ),
+  )
+}
+
+/**
+ * A aba de uma seção: ÍCONE GRANDE, nome só no hover.
+ *
+ * Decisão fechada do user (v7): o rótulo escrito ao lado de seis ícones comeria
+ * a faixa inteira e empurraria empresa e avatar para fora em tela de 1366. O
+ * nome existe — em tooltip para quem vê, e em `aria-label` para quem ouve, que
+ * é o que impede o ícone de ser um enigma para leitor de tela.
+ *
+ * ## Botão, e não link — e a razão não é preguiça
+ *
+ * A aba ABRE UMA SEÇÃO na barra lateral; ela não é um endereço. Fazer dela um
+ * `<Link>` para a primeira tela obrigaria toda seção a ter uma tela navegável —
+ * e **Financeiro não tem nenhuma ainda**. A aba sumiria justamente da seção
+ * cujo propósito hoje é mostrar para onde o sistema cresce.
+ *
+ * A troca de seção não navega: quem navega é o item que o operador escolher na
+ * barra. Isso também é o que evita que um clique de exploração jogue fora um
+ * formulário meio preenchido.
+ */
+function AbaDeSecao({
+  secao,
+  ativa,
+  aoEscolher,
+}: {
+  secao: NavSecao
+  ativa: boolean
+  aoEscolher: () => void
+}) {
+  return (
+    <TooltipTrigger delay={200}>
+      <button
+        type="button"
+        onClick={aoEscolher}
+        aria-label={secao.rotulo}
+        aria-current={ativa ? 'page' : undefined}
+        {...(secao.modulo && { 'data-modulo': secao.modulo })}
+        className={cn(
+          'relative grid h-full w-14 place-content-center outline-none hover:bg-modulo focus-visible:focus-ring',
+          ativa && 'bg-modulo',
+        )}
+      >
+        <secao.icon aria-hidden="true" className="size-6" />
+        {/* O fio de 3px é ELEMENTO, não `border`: nenhuma utility de borda
+            deste repo pinta cor (o `* { border-color }` do fim do `index.css`
+            está fora de `@layer` e vence a camada `utilities`), e `index.css`
+            não é zona desta issue. Fundo pinta. */}
+        {ativa ? (
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-[3px] bg-modulo-cheia"
+          />
+        ) : null}
+      </button>
+      <Tooltip>{secao.rotulo}</Tooltip>
+    </TooltipTrigger>
+  )
 }
 
 /**
@@ -40,11 +130,17 @@ function iniciaisDoNome(nome: string): string {
  * `Ctrl+K` fica como conveniência, escrito no próprio botão para quem quiser
  * aprender.
  *
- * ## Engrenagem — desabilitada de propósito
+ * ## As seis seções, e a engrenagem que é a sétima
  *
- * Não existe tela de configurações no sistema. Um botão que não leva a lugar
- * nenhum é pior que um botão apagado — a mesma razão que desabilita
- * `Alterar`/`Consultar` quando o contrato não tem `get`.
+ * A faixa deixou de ser só busca + globais: ela carrega a NAVEGAÇÃO de primeiro
+ * nível (Nav-2). A marca e o seletor de empresa desceram da barra lateral para
+ * cá porque a lateral passou a ser CONTEXTUAL — ela muda com a seção, e o que
+ * não muda (produto, empresa) não pode morar dentro do que muda.
+ *
+ * A engrenagem **abre Configurações**, a sétima seção, oculta da fileira: ela
+ * existe fora do caminho de operação (Odoo CogMenu, HubSpot settings). Deixou
+ * de ser o botão apagado que dizia "ainda não existe" — agora existe, e leva a
+ * Funis, Motivos de Perda e Mapeamento de Tabelas.
  *
  * ## Sino — abre a gaveta que EMPURRA
  *
@@ -53,47 +149,96 @@ function iniciaisDoNome(nome: string): string {
  */
 export function Appbar({
   naoLidas,
+  secaoAtiva,
+  aoEscolherSecao,
   aoAbrirGaveta,
   aoAbrirPaleta,
 }: {
   naoLidas: number
+  /** Id da seção aberta na barra lateral — quem a guarda é o `AppShell`. */
+  secaoAtiva: string | undefined
+  aoEscolherSecao: (id: string) => void
   aoAbrirGaveta: () => void
   aoAbrirPaleta: () => void
 }) {
   const { data: sessao } = useSessao()
   const { ativa } = useEmpresasDaSessao()
   const logout = useLogout()
+  const { tem } = useRecursosDaEmpresa()
+
+  // O MENU É DA EMPRESA ATIVA: seção sem nenhum item que ela opere não vira
+  // aba — o ícone abriria um painel em branco.
+  const secoes = secoesVisiveis(tem)
+  const config = secoes.find((secao) => secao.oculta)
 
   const nome = sessao?.displayName?.trim() || 'Usuário'
 
   return (
     <div
       data-slot="appbar"
-      className="flex flex-wrap items-center gap-3 border-rule-strong border-b-2 bg-card px-4 py-2.5"
+      className="flex flex-wrap items-stretch gap-3 border-rule-strong border-b-2 bg-card px-4"
     >
-      <button
-        type="button"
-        onClick={aoAbrirPaleta}
-        aria-label="Abrir a paleta de comandos"
-        aria-keyshortcuts="Control+K"
-        className="flex h-9 w-60 min-w-33 shrink items-center gap-2 border-2 border-input bg-card px-2.5 text-left text-muted-foreground text-sm outline-none hover:bg-muted focus-visible:focus-ring"
-      >
-        <Search aria-hidden="true" className="size-4 shrink-0" />
-        <span className="min-w-0 flex-1 truncate">Pesquisar…</span>
-        {/* O atalho fica ESCRITO no botão: quem prefere teclado aprende sem
-            documentação, e quem não prefere continua clicando. */}
-        <span className="shrink-0 border-2 border-border px-1 font-mono text-[10px] uppercase tracking-[0.06em]">
-          {ATALHO_DA_PALETA}
-        </span>
-      </button>
+      {/* MARCA e EMPRESA, nesta ordem: acima de qualquer módulo está o produto,
+          e logo abaixo dele o escopo do dado. As duas desceram da barra lateral
+          quando ela virou contextual — o que não muda não mora no que muda. */}
+      <div className="flex shrink-0 items-center py-2.5">
+        <Marca variante="assinatura" tamanho={26} />
+      </div>
+      <div className="flex shrink-0 items-center py-2.5">
+        <CompanySwitcher />
+      </div>
 
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5">
-        <TooltipTrigger>
-          <Button variant="outline" size="icon" isDisabled aria-label="Configurações">
-            <Settings />
-          </Button>
-          <Tooltip>Configurações — ainda não existe</Tooltip>
-        </TooltipTrigger>
+      {/* AS SEIS SEÇÕES. `nav` com rótulo: é a navegação primária do sistema, e
+          sem nome ela é uma fileira de ícones anônimos no leitor de tela. */}
+      <nav aria-label="Seções" className="flex items-stretch gap-0.5">
+        {secoes
+          .filter((secao) => !secao.oculta)
+          .map((secao) => (
+            <AbaDeSecao
+              key={secao.id}
+              secao={secao}
+              ativa={secao.id === secaoAtiva}
+              aoEscolher={() => aoEscolherSecao(secao.id)}
+            />
+          ))}
+      </nav>
+
+      <div className="flex items-center py-2.5">
+        <button
+          type="button"
+          onClick={aoAbrirPaleta}
+          aria-label="Abrir a paleta de comandos"
+          aria-keyshortcuts="Control+K"
+          className="flex h-9 w-60 min-w-33 shrink items-center gap-2 border-2 border-input bg-card px-2.5 text-left text-muted-foreground text-sm outline-none hover:bg-muted focus-visible:focus-ring"
+        >
+          <Search aria-hidden="true" className="size-4 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">Pesquisar…</span>
+          {/* O atalho fica ESCRITO no botão: quem prefere teclado aprende sem
+            documentação, e quem não prefere continua clicando. */}
+          <span className="shrink-0 border-2 border-border px-1 font-mono text-[10px] uppercase tracking-[0.06em]">
+            {ATALHO_DA_PALETA}
+          </span>
+        </button>
+      </div>
+
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5 py-2.5">
+        {config ? (
+          <TooltipTrigger delay={200}>
+            <button
+              type="button"
+              onClick={() => aoEscolherSecao(config.id)}
+              aria-label="Configurações"
+              aria-current={secaoAtiva === config.id ? 'page' : undefined}
+              className={cn(
+                'grid size-9 place-content-center border-2 border-border bg-card outline-none hover:bg-muted focus-visible:focus-ring',
+                secaoAtiva === config.id && 'bg-muted',
+              )}
+            >
+              <config.icon aria-hidden="true" className="size-4" />
+            </button>
+            <Tooltip>Configurações</Tooltip>
+          </TooltipTrigger>
+        ) : null}
 
         <Button
           variant="outline"

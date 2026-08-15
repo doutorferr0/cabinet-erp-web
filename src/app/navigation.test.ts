@@ -1,5 +1,5 @@
 import { moduloDaRota } from '@/app/modulo'
-import { gruposVisiveis, itemDaRota, navGroups } from '@/app/navigation'
+import { gruposVisiveis, itemDaRota, navGroups, navSecoes, secoesVisiveis } from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import { describe, expect, it } from 'vitest'
 
@@ -24,9 +24,34 @@ describe('gruposVisiveis', () => {
     expect(visiveis).toContain('Orçamentos')
   })
 
-  it('empresa completa vê o menu inteiro', () => {
-    const todos = Object.values(RECURSOS)
-    expect(titulos(todos)).toEqual(navGroups.flatMap((g) => g.items.map((i) => i.title)))
+  /**
+   * "Inteiro" para a PALETA não é "tudo que a barra desenha": tela futura sai
+   * (comando que leva a 404 é pior que comando ausente) e filha sobe (quem
+   * navega é `Ordem de Compra`, não o pai `Compras`).
+   */
+  it('empresa completa vê tudo que é NAVEGÁVEL, sem futuro e com as filhas soltas', () => {
+    const esperado = navGroups
+      .flatMap((g) => g.items)
+      .flatMap((item) => item.filhas ?? [item])
+      .filter((item) => !item.futuro)
+      .map((item) => item.title)
+
+    expect(titulos(Object.values(RECURSOS))).toEqual(esperado)
+  })
+
+  it('tela futura nunca chega à paleta — ela é desenho da barra, não destino', () => {
+    const futuros = navGroups.flatMap((g) => g.items).filter((item) => item.futuro)
+    expect(futuros.length).toBeGreaterThan(0)
+
+    const oferecidos = titulos(Object.values(RECURSOS))
+    for (const item of futuros) expect(oferecidos).not.toContain(item.title)
+  })
+
+  it('o pai colapsável não vira comando — quem navega são as filhas', () => {
+    const oferecidos = titulos(Object.values(RECURSOS))
+    expect(oferecidos).not.toContain('Compras')
+    expect(oferecidos).toContain('Ordem de Compra')
+    expect(oferecidos).toContain('Pedido de Compra')
   })
 
   it('recurso é item a item, não bloco', () => {
@@ -50,6 +75,55 @@ describe('gruposVisiveis', () => {
   })
 })
 
+describe('secoesVisiveis', () => {
+  /**
+   * A barra MOSTRA o futuro — é o que o user pediu: "o operador vê pra onde
+   * cresce". Quem o esconde é `gruposVisiveis`, que serve a paleta. As duas
+   * funções divergem de propósito, e é esta a diferença.
+   */
+  it('a barra mostra o futuro que a paleta esconde', () => {
+    const secoes = secoesVisiveis(empresaCom(...Object.values(RECURSOS)))
+    const financeiro = secoes.find((s) => s.id === 'financeiro')
+
+    expect(financeiro?.grupos[0]?.items.map((i) => i.title)).toEqual([
+      'Contas a Receber',
+      'Contas a Pagar',
+      'Comissões',
+    ])
+    expect(titulos(Object.values(RECURSOS))).not.toContain('Contas a Pagar')
+  })
+
+  it('seis seções na fileira, e Configurações fora dela', () => {
+    const secoes = secoesVisiveis(empresaCom(...Object.values(RECURSOS)))
+    expect(secoes.filter((s) => !s.oculta).map((s) => s.id)).toEqual([
+      'inicio',
+      'comercial',
+      'estoque',
+      'financeiro',
+      'pessoas',
+      'catalogo',
+    ])
+    expect(secoes.filter((s) => s.oculta).map((s) => s.id)).toEqual(['config'])
+  })
+
+  /**
+   * TETO DE SEIS (catálogo §5): seção nova só substituindo. O teste existe para
+   * a sétima entrar por decisão, não por acidente — e a fileira não crescer até
+   * empurrar empresa e avatar para fora da faixa.
+   */
+  it('o teto de seis é regra, não coincidência', () => {
+    expect(navSecoes.filter((s) => !s.oculta)).toHaveLength(6)
+  })
+
+  it('a empresa sem recurso nenhum perde o item, não a seção inteira', () => {
+    const secoes = secoesVisiveis(empresaCom())
+    const pessoas = secoes.find((s) => s.id === 'pessoas')
+
+    // Profissional Externo e Colaboradores exigem recurso; Clientes não.
+    expect(pessoas?.grupos.flatMap((g) => g.items).map((i) => i.title)).toEqual(['Clientes'])
+  })
+})
+
 describe('itemDaRota', () => {
   it('acha o item pela listagem e pelo detalhe', () => {
     expect(itemDaRota('/cadastros/fornecedores')?.recurso).toBe(RECURSOS.suppliers)
@@ -57,9 +131,26 @@ describe('itemDaRota', () => {
   })
 
   it('rota sem item — e prefixo que só PARECE item — não casa', () => {
-    expect(itemDaRota('/')).toBeUndefined()
     expect(itemDaRota('/cadastros')).toBeUndefined()
     expect(itemDaRota('/cadastros/fornecedores-antigos')).toBeUndefined()
+  })
+
+  /**
+   * O Boletim ENTROU no menu (Início/Hoje) e a rota dele é `/`. O casamento é
+   * EXATO — `startsWith('/')` acenderia o Boletim em toda tela do sistema, e a
+   * guarda de recurso passaria a responder por qualquer rota.
+   */
+  it('a raiz casa o Boletim, e só ela', () => {
+    expect(itemDaRota('/')?.title).toBe('Boletim')
+    expect(itemDaRota('/cadastros/clientes')?.title).toBe('Clientes')
+    // E ele NÃO empresta aparência: `moduloDaRota('/')` já responde `boletim`
+    // por casamento exato — ele é a única tela com módulo e sem prefixo.
+    expect(itemDaRota('/')?.aparencia).toBeUndefined()
+  })
+
+  it('tela futura não casa rota — ela não está lá', () => {
+    expect(itemDaRota('/financeiro/pagar')).toBeUndefined()
+    expect(itemDaRota('/obras')).toBeUndefined()
   })
 })
 
@@ -94,5 +185,52 @@ describe('aparência emprestada', () => {
     // Desenhos distintos entre si.
     const shapes = comEmprestimo.map((item) => item.aparencia?.shape)
     expect(new Set(shapes).size).toBe(shapes.length)
+  })
+})
+
+describe('item externo', () => {
+  const externos = navGroups.flatMap((grupo) => grupo.items).filter((item) => item.externo)
+
+  it('mora em Configurações, fora do caminho de operação', () => {
+    const config = navSecoes.find((s) => s.id === 'config')
+    const titulosDaConfig = config?.grupos.flatMap((g) => g.items).map((i) => i.title) ?? []
+    expect(titulosDaConfig).toContain('Mapeamento de Tabelas')
+  })
+
+  it('o mapa de tabelas está na barra, e marcado como fora da SPA', () => {
+    expect(externos.map((item) => item.url)).toEqual(['/mapeamento-tabelas.html'])
+  })
+
+  /**
+   * A extensão não é estilo: `/mapeamento-tabelas` só resolve em produção, onde
+   * o Pages serve o arquivo e redireciona a URL limpa. Em `pnpm dev` o Vite
+   * manda caminho desconhecido para o `index.html` e o roteador responde 404 —
+   * ou seja, o item quebraria exatamente para quem está desenvolvendo.
+   */
+  it('aponta para o arquivo com extensão, que resolve em dev e em produção', () => {
+    for (const item of externos) {
+      expect(item.url.endsWith('.html')).toBe(true)
+    }
+  })
+
+  it('não é rota de módulo — não empresta cor nem finge ser tela', () => {
+    for (const item of externos) {
+      expect(moduloDaRota(item.url)).toBeUndefined()
+      expect(item.aparencia).toBeUndefined()
+      // Sem `incluir`: página de consulta não cria registro, e a paleta
+      // ofereceria um "Incluir" que leva a lugar nenhum.
+      expect(item.incluir).toBeUndefined()
+    }
+  })
+
+  /**
+   * O contrário do teste acima, e o que de fato protege: item NOVO que aponte
+   * para arquivo estático sem a marca volta a ser `<Link>` no shell e
+   * `navigate()` na paleta — 404 dentro da SPA, com o arquivo servido ao lado.
+   */
+  it('todo caminho de arquivo na barra está marcado como externo', () => {
+    for (const item of navGroups.flatMap((grupo) => grupo.items)) {
+      if (item.url.endsWith('.html')) expect(item.externo).toBe(true)
+    }
   })
 })

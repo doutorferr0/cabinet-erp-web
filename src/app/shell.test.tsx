@@ -58,16 +58,106 @@ function setup(initialUrl = '/') {
 }
 
 describe('AppShell', () => {
-  it('renders sidebar modules and header controls', async () => {
+  /**
+   * As SEIS seções vivem no topo, só com ícone — o nome existe em `aria-label`
+   * e no tooltip. Buscar por texto acharia o rótulo do grupo da barra lateral e
+   * passaria sem provar que a aba está lá; por PAPEL + NOME ACESSÍVEL, não.
+   */
+  it('as seis seções estão no topo, alcançáveis por nome', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
-      expect(screen.getByText('Cadastros')).toBeInTheDocument()
     })
-    for (const moduleName of ['Estoque', 'Vendas', 'Compras']) {
-      expect(screen.getByText(moduleName)).toBeInTheDocument()
+
+    const secoes = within(screen.getByRole('navigation', { name: 'Seções' }))
+    for (const rotulo of ['Início', 'Comercial', 'Estoque', 'Financeiro', 'Pessoas', 'Catálogo']) {
+      expect(secoes.getByRole('button', { name: rotulo })).toBeInTheDocument()
     }
+    // Configurações é a SÉTIMA, oculta: fora da fileira, atrás da engrenagem.
+    expect(secoes.queryByRole('button', { name: 'Configurações' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
+  })
+
+  /**
+   * A barra lateral é CONTEXTUAL: mostra a seção da rota, não o sistema
+   * inteiro. Na raiz é Início — e Compras (de Estoque) não pode estar ali.
+   */
+  it('a barra mostra só a seção da rota', async () => {
+    setup()
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+
+    await waitFor(() => {
+      expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+    })
+    expect(barra().getByText('Hoje')).toBeInTheDocument()
+    expect(barra().queryByText('Compras')).not.toBeInTheDocument()
+    expect(barra().queryByRole('link', { name: 'Orçamentos' })).not.toBeInTheDocument()
+  })
+
+  it('a busca da barra filtra a seção, e diz quando não acha', async () => {
+    setup('/compras/ordens')
+    const user = userEvent.setup()
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+
+    await waitFor(() => {
+      expect(barra().getByText('Movimentação')).toBeInTheDocument()
+    })
+
+    // Filtra pela FILHA e mostra o pai com ela dentro — esconder o resultado
+    // dentro de um pai fechado seria achar e não mostrar.
+    await user.type(barra().getByRole('textbox'), 'pedido')
+    await waitFor(() => {
+      expect(barra().queryByText('Movimentação')).not.toBeInTheDocument()
+    })
+    expect(barra().getByRole('link', { name: 'Pedido de Compra' })).toBeInTheDocument()
+
+    await user.clear(barra().getByRole('textbox'))
+    await user.type(barra().getByRole('textbox'), 'zzz')
+    expect(await barra().findByText(/Nenhuma tela desta seção/)).toBeInTheDocument()
+  })
+
+  /** Tela futura: visível, apagada NO FUNDO (regra Visual-1), com selo, e não navega. */
+  it('tela futura aparece apagada, com selo, e não é link', async () => {
+    setup('/estoque/movimentacao')
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+
+    await waitFor(() => {
+      expect(barra().getByText('Reserva Técnica')).toBeInTheDocument()
+    })
+    expect(barra().queryByRole('link', { name: 'Reserva Técnica' })).not.toBeInTheDocument()
+
+    const futuro = barra().getByText('Reserva Técnica').closest('[aria-disabled="true"]')
+    expect(futuro).not.toBeNull()
+    expect(futuro).toHaveTextContent('futuro')
+    // Apagado no FUNDO, nunca na tinta: o item continua legível.
+    expect(futuro?.className).toContain('bg-muted')
+  })
+
+  it('o item colapsável abre as filhas, e o estado fica lembrado', async () => {
+    setup('/estoque/movimentacao')
+    const user = userEvent.setup()
+    // A barra só existe depois do primeiro render — esperar por ela antes de
+    // estreitar o escopo, senão o `querySelector` devolve `null`. Pelo SLOT, e
+    // não por texto: `Movimentação` é o nome da tela E do item, e aparece duas
+    // vezes no documento.
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="sidebar"]')).toBeInTheDocument()
+    })
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+
+    const pai = await barra().findByRole('button', { name: /Compras/ })
+    expect(pai).toHaveAttribute('aria-expanded', 'false')
+    expect(barra().queryByRole('link', { name: 'Ordem de Compra' })).not.toBeInTheDocument()
+
+    await user.click(pai)
+    expect(await barra().findByRole('link', { name: 'Ordem de Compra' })).toBeInTheDocument()
+    expect(barra().getByRole('button', { name: /Compras/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    // Lembrado por SESSÃO: quem abriu de manhã não reabre a cada tela.
+    expect(sessionStorage.getItem('cabinet.nav.abertos.v1')).toContain('Compras')
   })
 
   // `data-active={false}` vira `data-active="false"` no DOM — React não omite
@@ -134,7 +224,10 @@ describe('AppShell', () => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
     })
 
-    const topo = document.querySelector('[data-slot="sidebar-header"]')
+    // A marca e a empresa DESCERAM para a appbar (Nav-2): a barra lateral
+    // virou contextual, e o que não muda — produto, escopo do dado — não pode
+    // morar dentro do que muda a cada seção.
+    const topo = document.querySelector('[data-slot="appbar"]')
     expect(topo).toBeInTheDocument()
     // O rodapé deixou de existir: não sobrou nada para pousar lá.
     expect(document.querySelector('[data-slot="sidebar-footer"]')).toBeNull()
@@ -175,19 +268,21 @@ describe('AppShell', () => {
   // rodapé: os cadastros que a empresa não opera saem da barra. Asserção nos
   // dois sentidos de propósito — some o que é da empresa, FICA o que é de toda
   // empresa (Clientes, Produtos); um filtro largo demais passaria no primeiro.
+  /**
+   * Os três cadastros com recurso vivem em seções diferentes desde a Nav-2:
+   * Profissional Externo e Colaboradores em Pessoas, Fornecedores em Catálogo.
+   * A barra é contextual, então a asserção acontece DENTRO da seção de cada um
+   * — e é isso que prova que a regra é do dado, não do desenho da barra.
+   */
   it('cadastros da empresa somem ao trocar para a empresa que não os opera', async () => {
-    setup()
+    setup('/cadastros/clientes')
     const user = userEvent.setup()
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /vertz iluminação/i })).toBeInTheDocument()
-    })
-    // `Clientes` aparece na barra E no boletim — a presença se afere DENTRO da
-    // barra; a ausência, no documento inteiro, porque as duas listas seguem a
-    // mesma regra e nenhuma pode oferecer o que a empresa não opera.
     const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
-    for (const item of GATED) {
-      expect(barra().getByRole('link', { name: item })).toBeInTheDocument()
-    }
+
+    await waitFor(() => {
+      expect(barra().getByRole('link', { name: 'Profissional Externo' })).toBeInTheDocument()
+    })
+    expect(barra().getByRole('link', { name: 'Colaboradores' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /vertz iluminação/i }))
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
@@ -195,13 +290,13 @@ describe('AppShell', () => {
     await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
 
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: 'Fornecedores' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Profissional Externo' })).not.toBeInTheDocument()
     })
     for (const item of GATED) {
       expect(screen.queryByRole('link', { name: item })).not.toBeInTheDocument()
     }
+    // O que não depende de recurso continua: a seção não sumiu junto.
     expect(barra().getByRole('link', { name: 'Clientes' })).toBeInTheDocument()
-    expect(barra().getByRole('link', { name: 'Produtos' })).toBeInTheDocument()
   })
 
   // Esconder o item da barra não fecha a porta: o endereço continua digitável
@@ -250,11 +345,31 @@ describe('AppShell', () => {
     expect(frame).toContainElement(screen.getByRole('heading', { name: 'Boletim' }))
   })
 
+  /**
+   * O mapa de tabelas é arquivo estático (`public/mapeamento-tabelas.html`),
+   * não tela do roteador. Se sair como `<Link>`, o clique vira navegação
+   * client-side para uma rota que não existe: 404 dentro da SPA, com o arquivo
+   * servido pelo mesmo domínio ali do lado.
+   */
+  it('o item de referência sai da SPA por âncora, e em aba nova', async () => {
+    // Mora em Configurações desde a Nav-2 — fora do caminho de operação. A
+    // barra dele só existe numa rota da seção.
+    setup('/crm/funis')
+    const item = await screen.findByRole('link', { name: /Mapeamento de Tabelas/ })
+
+    expect(item).toHaveAttribute('href', '/mapeamento-tabelas.html')
+    expect(item).toHaveAttribute('target', '_blank')
+    expect(item).toHaveAttribute('rel', 'noreferrer')
+    // Quem lê a barra com os olhos tem o cartão de hover; para leitor de tela o
+    // cartão não existe, e a aba nova precisa ser anunciada em algum lugar.
+    expect(item).toHaveTextContent('(abre em nova aba)')
+  })
+
   // APPBAR GLOBAL (§@casca-global): vive no LAYOUT, não na página — o mesmo
   // teste em duas rotas sem módulo em comum é o que prova isso, em vez de só
   // conferir numa tela só.
   describe('appbar global', () => {
-    it('aparece em toda rota, com paleta, engrenagem desabilitada e sino', async () => {
+    it('aparece em toda rota, com paleta, engrenagem e sino', async () => {
       for (const rota of ['/', '/cadastros/clientes']) {
         const { unmount } = setup(rota)
         await waitFor(() => {
@@ -263,7 +378,9 @@ describe('AppShell', () => {
         expect(
           screen.getByRole('button', { name: 'Abrir a paleta de comandos' }),
         ).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: 'Configurações' })).toBeDisabled()
+        // A engrenagem deixou de ser o botão apagado que dizia "ainda não
+        // existe": Configurações EXISTE agora, e é a sétima seção.
+        expect(screen.getByRole('button', { name: 'Configurações' })).toBeEnabled()
         expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
         unmount()
       }
@@ -314,6 +431,30 @@ describe('AppShell', () => {
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/cadastros/clientes/novo')
       })
+    })
+
+    /**
+     * O comando do mapa de tabelas é o único que NÃO navega. `navigate({ to })`
+     * ali seria rota inexistente — o operador pediria o mapa e receberia o 404
+     * do roteador, com o arquivo servido pelo mesmo domínio ali do lado.
+     *
+     * O teste vale pela ROTA que não muda tanto quanto pelo `window.open`: sem
+     * ele, o desvio pode sumir da paleta sem nada acusar, porque a marca no
+     * item e a marca no comando continuariam certas.
+     */
+    it('destino externo abre em aba nova, e a rota atual não muda', async () => {
+      const abrir = vi.fn()
+      vi.stubGlobal('open', abrir)
+
+      const { router } = setup('/cadastros/clientes')
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+      await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/)
+
+      await user.click(await screen.findByRole('menuitem', { name: /Mapeamento de Tabelas/ }))
+
+      expect(abrir).toHaveBeenCalledWith('/mapeamento-tabelas.html', '_blank', 'noreferrer')
+      expect(router.state.location.pathname).toBe('/cadastros/clientes')
     })
 
     it('o sino abre a gaveta, que EMPURRA — sem fixed, sem véu', async () => {

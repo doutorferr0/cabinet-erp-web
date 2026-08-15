@@ -1,3 +1,4 @@
+import { atividadeDoContrato, atividadeParaContrato } from '@/data/atividades-api'
 import {
   estagioDoContrato,
   estagioParaContrato,
@@ -17,6 +18,7 @@ import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { produtoSchema } from '@/features/produto/produto-form'
 import { profissionalSchema } from '@/features/profissional/profissional-form'
+import { atividadeSchema } from '@/features/tarefas/atividade-dialogo'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -229,6 +231,26 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
     const corpo = oportunidadeParaContrato(doForm as never) as unknown as Json
 
     for (const chave of chavesDeEscrita('CrmOpportunityWriteRequest')) {
+      confereChave(corpo, dto, chave, {})
+    }
+  })
+
+  /**
+   * A ATIVIDADE é o caso onde o campo carregado-não-editado não é um detalhe:
+   * `alvoTipo`/`alvoId` são a identidade polimórfica do registro (#66), o
+   * diálogo não os oferece, e o `PUT` substitui a atividade inteira. Se saírem
+   * do schema, o corpo sobe sem alvo — e o servidor recusa com 400 ou, pior,
+   * aceita e a linha some do painel que a mostrava.
+   */
+  it('ATIVIDADE leva ao servidor tudo que o ActivityWriteRequest tem', () => {
+    const dto = dtoCompleto('ActivityDto', {
+      entityType: 'opportunity',
+      kind: 'call',
+    })
+    const doForm = atividadeSchema.parse(atividadeDoContrato(dto as never))
+    const corpo = atividadeParaContrato(doForm as never) as unknown as Json
+
+    for (const chave of chavesDeEscrita('ActivityWriteRequest')) {
       confereChave(corpo, dto, chave, {})
     }
   })

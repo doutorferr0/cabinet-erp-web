@@ -6,6 +6,7 @@ import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
+import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Cliente } from '@/mocks/clientes'
 import { createFileRoute } from '@tanstack/react-router'
@@ -45,25 +46,33 @@ function ClienteEditPage() {
   }
 
   return (
-    <ClienteForm
-      cliente={registro}
-      readOnly={readOnly}
-      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
-      aviso={
-        <CoberturaParceiro
-          isNovo={isNovo}
-          erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
-          camposDeEdicao={papelCliente.camposDeEdicao}
-          {...(jaExiste && !vincular.error
-            ? {
-                vincular: () =>
-                  vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
-                vinculando: vincular.isPending,
-              }
-            : {})}
-        />
-      }
-      onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
-    />
+    <div className="flex flex-col gap-6">
+      <ClienteForm
+        cliente={registro}
+        readOnly={readOnly}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
+        aviso={
+          <CoberturaParceiro
+            isNovo={isNovo}
+            erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
+            camposDeEdicao={papelCliente.camposDeEdicao}
+            {...(jaExiste && !vincular.error
+              ? {
+                  vincular: () =>
+                    vincular.mutate({ id: jaExiste, ativo: incluir.variables?.ativo ?? true }),
+                  vinculando: vincular.isPending,
+                }
+              : {})}
+          />
+        }
+        onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+      />
+
+      {/* O painel monta AQUI, fora do `<form>` do cadastro: atividade é
+          registro próprio, com gravação própria, e dentro do formulário os
+          botões dele disputariam o submit. Em `Incluir` não há id a que
+          pendurar atividade — por isso só aparece no registro que já existe. */}
+      {isNovo ? null : <PainelDeAtividades alvo={{ tipo: 'partner', id: clienteId }} />}
+    </div>
   )
 }

@@ -12,6 +12,7 @@ import {
 } from '@faker-js/faker';
 
 import type {
+  ActivityDto,
   AgendaEventDto,
   CrmLostReasonDto,
   CrmLostReasonsReportDto,
@@ -21,6 +22,7 @@ import type {
   DashboardSummaryDto,
   HealthStatus,
   LoginOk,
+  PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
@@ -174,4 +176,12 @@ export const getListCrmLostReasonsResponseMock = (overrideResponse: Partial<Extr
 export const getCreateCrmLostReasonResponseMock = (overrideResponse: Partial<Extract<CrmLostReasonDto, object>> = {}): CrmLostReasonDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), active: faker.datatype.boolean(), ...overrideResponse})
 
 export const getUpdateCrmLostReasonResponseMock = (overrideResponse: Partial<Extract<CrmLostReasonDto, object>> = {}): CrmLostReasonDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), active: faker.datatype.boolean(), ...overrideResponse})
+
+export const getListActivitiesResponseMock = (overrideResponse: Partial<Extract<PagedResultOfActivityDto, object>> = {}): PagedResultOfActivityDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), entityType: faker.helpers.arrayElement(['opportunity','partner','quote','purchaseOrder'] as const), entityId: faker.string.uuid(), kind: faker.helpers.arrayElement(['call','meeting','email','task'] as const), title: faker.string.alpha({length: {min: 10, max: 20}}), dueDate: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), assigneeEmployeeId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), assigneeName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), doneAt: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined])})), total: faker.number.int(), ...overrideResponse})
+
+export const getCreateActivityResponseMock = (overrideResponse: Partial<Extract<ActivityDto, object>> = {}): ActivityDto => ({id: faker.string.uuid(), entityType: faker.helpers.arrayElement(['opportunity','partner','quote','purchaseOrder'] as const), entityId: faker.string.uuid(), kind: faker.helpers.arrayElement(['call','meeting','email','task'] as const), title: faker.string.alpha({length: {min: 10, max: 20}}), dueDate: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), assigneeEmployeeId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), assigneeName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), doneAt: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), ...overrideResponse})
+
+export const getUpdateActivityResponseMock = (overrideResponse: Partial<Extract<ActivityDto, object>> = {}): ActivityDto => ({id: faker.string.uuid(), entityType: faker.helpers.arrayElement(['opportunity','partner','quote','purchaseOrder'] as const), entityId: faker.string.uuid(), kind: faker.helpers.arrayElement(['call','meeting','email','task'] as const), title: faker.string.alpha({length: {min: 10, max: 20}}), dueDate: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), assigneeEmployeeId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), assigneeName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), doneAt: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), ...overrideResponse})
+
+export const getCompleteActivityResponseMock = (overrideResponse: Partial<Extract<ActivityDto, object>> = {}): ActivityDto => ({id: faker.string.uuid(), entityType: faker.helpers.arrayElement(['opportunity','partner','quote','purchaseOrder'] as const), entityId: faker.string.uuid(), kind: faker.helpers.arrayElement(['call','meeting','email','task'] as const), title: faker.string.alpha({length: {min: 10, max: 20}}), dueDate: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), assigneeEmployeeId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), assigneeName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), doneAt: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), ...overrideResponse})
 

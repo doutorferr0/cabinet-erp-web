@@ -20,6 +20,8 @@ import {
   getAuthMeResponseMock,
   getAuthTenantsResponseMock,
   getCancelQuoteResponseMock,
+  getCompleteActivityResponseMock,
+  getCreateActivityResponseMock,
   getCreateCrmLostReasonResponseMock,
   getCreateCrmOpportunityResponseMock,
   getCreateCrmPipelineResponseMock,
@@ -41,6 +43,7 @@ import {
   getHealthDbResponseMock,
   getHealthResponseMock,
   getLinkPartnerResponseMock,
+  getListActivitiesResponseMock,
   getListAgendaEventsResponseMock,
   getListCatalogLookupsResponseMock,
   getListCrmLostReasonsResponseMock,
@@ -58,6 +61,7 @@ import {
   getMoveCrmOpportunityStageResponseMock,
   getPatchTaskResponseMock,
   getPatchTodoResponseMock,
+  getUpdateActivityResponseMock,
   getUpdateCrmLostReasonResponseMock,
   getUpdateCrmOpportunityResponseMock,
   getUpdateCrmPipelineResponseMock,
@@ -69,6 +73,7 @@ import {
 } from './index.faker';
 
 import type {
+  ActivityDto,
   AgendaEventDto,
   CrmLostReasonDto,
   CrmLostReasonsReportDto,
@@ -78,6 +83,7 @@ import type {
   DashboardSummaryDto,
   HealthStatus,
   LoginOk,
+  PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
@@ -102,7 +108,7 @@ import type {
   VinculoDeEmpresa
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -734,6 +740,54 @@ export const getUpdateCrmLostReasonMockHandler = (overrideResponse?: CrmLostReas
       })
   }, options)
 }
+
+export const getListActivitiesMockHandler = (overrideResponse?: PagedResultOfActivityDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfActivityDto> | PagedResultOfActivityDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/activities', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListActivitiesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateActivityMockHandler = (overrideResponse?: ActivityDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ActivityDto> | ActivityDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/activities', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateActivityResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateActivityMockHandler = (overrideResponse?: ActivityDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<ActivityDto> | ActivityDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/activities/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateActivityResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCompleteActivityMockHandler = (overrideResponse?: ActivityDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ActivityDto> | ActivityDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/activities/:id/done', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCompleteActivityResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getVitraERPMock = () => [
   getHealthMockHandler(),
   getHealthDbMockHandler(),
@@ -787,5 +841,9 @@ export const getVitraERPMock = () => [
   getGetCrmLostReasonsReportMockHandler(),
   getListCrmLostReasonsMockHandler(),
   getCreateCrmLostReasonMockHandler(),
-  getUpdateCrmLostReasonMockHandler()
+  getUpdateCrmLostReasonMockHandler(),
+  getListActivitiesMockHandler(),
+  getCreateActivityMockHandler(),
+  getUpdateActivityMockHandler(),
+  getCompleteActivityMockHandler()
 ]

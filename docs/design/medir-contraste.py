@@ -354,6 +354,50 @@ def _estados_fundo(claro, escuro, mod_claro, mod_escuro) -> str:
     return "\n".join(linhas)
 
 
+@tabela("nav-estados")
+def _nav_estados(claro, escuro, mod_claro, mod_escuro) -> str:
+    """Os estados da NAVEGAÇÃO (Nav-2, issue #140) — hover e ativo, nos dois temas.
+
+    Três pares, porque a navegação pinta o estado de três jeitos diferentes e cada
+    um responde a um piso da WCAG:
+
+    - **tinta × /02** — o rótulo/ícone sobre a superfície de hover e de ativo da aba
+      do topo (`hover:bg-modulo`, `ativa && 'bg-modulo'` em `appbar.tsx`) e sobre o
+      hover do item da lateral. É TEXTO: piso **4,5:1**.
+    - **/01 × superfície** — o fio de 3px que marca a aba ativa
+      (`bg-modulo-cheia` sobre `--background`). É componente NÃO-TEXTO (WCAG 1.4.11):
+      piso **3:1**. E ele carrega sozinho o estado, porque a /02 sob a aba fica em
+      1,00–1,17:1 contra a superfície — invisível (ver §tabela:pasteis-02).
+    - **/01 × /02** — o ícone do item da lateral contra o próprio preenchimento:
+      ativo é `text-modulo-suave` (/02) sobre `bg-modulo-cheia` (/01), e hover é o
+      inverso. Mesmo par nos dois sentidos. NÃO-TEXTO: piso **3:1**.
+
+    O quarto par da navegação — tinta × /01, o RÓTULO do item ativo da lateral —
+    não se repete aqui: já é a §tabela:estados-fundo, e a reprovação dele está
+    registrada como pendência do user.
+    """
+    linhas = [
+        "| Módulo | claro: tinta × /02 | escuro: tinta × /02 "
+        "| claro: fio /01 × fundo | escuro: fio /01 × fundo "
+        "| claro: ícone /01 × /02 | escuro: ícone /01 × /02 |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    texto = lambda x: f"**{n(x)}:1**" if x < 4.5 else f"{n(x)}:1"
+    grafico = lambda x: f"**{n(x)}:1**" if x < 3.0 else f"{n(x)}:1"
+    for rotulo, chave in modulos(mod_claro):
+        mc, me = mod_claro[chave], mod_escuro[chave]
+        linhas.append(
+            f"| {rotulo} "
+            f"| {texto(razao(cor(claro, 'sidebar-foreground'), cor(mc, 'modulo-02')))} "
+            f"| {texto(razao(cor(escuro, 'sidebar-foreground'), cor(me, 'modulo-02')))} "
+            f"| {grafico(razao(cor(mc, 'modulo-01'), cor(claro, 'background')))} "
+            f"| {grafico(razao(cor(me, 'modulo-01'), cor(escuro, 'background')))} "
+            f"| {grafico(razao(cor(mc, 'modulo-02'), cor(mc, 'modulo-01')))} "
+            f"| {grafico(razao(cor(me, 'modulo-02'), cor(me, 'modulo-01')))} |"
+        )
+    return "\n".join(linhas)
+
+
 @tabela("estados-demais")
 def _estados_demais(claro, escuro, _mc, _me) -> str:
     linhas = ["| par | claro | escuro |", "|---|---|---|"]

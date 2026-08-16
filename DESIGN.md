@@ -636,6 +636,49 @@ Os demais estados, com o par que o componente resolve de verdade — um deles ta
 | desabilitado: secundário × superfície apagada | 3,50:1 | 7,88:1 |
 <!-- /tabela:estados-demais -->
 
+### Os estados da NAVEGAÇÃO — hover e ativo, nos dois temas (Nav-2, issue #140)
+
+A tabela acima mede estado de item; esta mede o estado da **navegação de primeiro nível**, que é
+outro par: a aba do topo (`appbar.tsx`) e o item da barra lateral (`sidebar.tsx`) pintam "onde eu
+estou" de três jeitos, e cada um responde a um piso diferente da WCAG.
+
+<!-- tabela:nav-estados -->
+| Módulo | claro: tinta × /02 | escuro: tinta × /02 | claro: fio /01 × fundo | escuro: fio /01 × fundo | claro: ícone /01 × /02 | escuro: ícone /01 × /02 |
+|---|---|---|---|---|---|---|
+| Produtos | 18,60:1 | 9,48:1 | **1,27:1** | 11,51:1 | **1,36:1** | 7,11:1 |
+| Estoque | 17,14:1 | 10,88:1 | **2,70:1** | 5,43:1 | **2,65:1** | 3,85:1 |
+| Vendas / Orçamento | 17,46:1 | 13,10:1 | 4,36:1 | 3,36:1 | 4,36:1 | **2,87:1** |
+| Compras / Pedidos | 17,83:1 | 12,14:1 | **2,87:1** | 5,11:1 | **2,93:1** | 4,05:1 |
+| Clientes | 17,46:1 | 12,69:1 | **2,93:1** | 5,00:1 | **2,93:1** | 4,14:1 |
+| Fornecedores | 17,12:1 | 12,39:1 | 4,22:1 | 3,47:1 | 4,14:1 | **2,80:1** |
+| Profissionais | 17,63:1 | 12,38:1 | 3,87:1 | 3,78:1 | 3,91:1 | 3,05:1 |
+| CRM | 18,81:1 | 9,32:1 | **1,39:1** | 10,52:1 | **1,50:1** | 6,39:1 |
+| Boletim | 16,88:1 | 11,84:1 | **2,34:1** | 6,26:1 | **2,26:1** | 4,84:1 |
+<!-- /tabela:nav-estados -->
+
+**O rótulo passa com folga; o que reprova é o SINAL do estado.**
+
+- **tinta × /02 — passa nos dois temas, com margem grande.** É o texto e o ícone sobre a superfície
+  de hover e de ativo da aba do topo: pior caso **16,88:1 no claro** (Boletim) e **9,32:1 no
+  escuro** (CRM), contra um piso de 4,5:1. Este é o item que a #140 pedia, e ele está cumprido.
+- **fio /01 × fundo — reprova no CLARO, em 6 dos 9 módulos.** O fio de 3px é o que marca a aba
+  ativa, e no tema claro ele chega a **1,27:1** (Produtos) contra os 3:1 que a WCAG 1.4.11 pede
+  para componente não-texto. No escuro sobra folga (3,36:1 no pior, Vendas).
+- **ícone /01 × /02 — reprova nos dois temas, 8 dos 9 módulos.** É o ícone do item da lateral
+  contra o próprio preenchimento: ativo é `text-modulo-suave` sobre `bg-modulo-cheia`, hover é o
+  inverso, e o par é o mesmo nos dois sentidos. Pior **1,36:1 no claro** e **2,80:1 no escuro**.
+
+**O agravante do fio:** ele carrega o estado ativo sozinho. A superfície `/02` que a aba ganha ao
+ficar ativa mede **1,00 a 1,17:1** contra o fundo da appbar (§tabela:pasteis-02) — ou seja, é
+invisível. Tirando o fio, a aba ativa e a inativa são a mesma imagem, e no claro o fio está abaixo
+do piso. Sobra o `aria-current="page"`, que serve o leitor de tela e não o olho.
+
+**Não "consertei" nenhum dos dois**, e a razão é a mesma da /01-como-fundo acima: corrigir exige
+mexer em `--modulo-01`/`--modulo-02`, que é a paleta dos nove módulos inteira, em `src/index.css`.
+O próprio arquivo registra isso como decisão do user (§utilities, `bg-modulo`: *"não 'conserte'
+escurecendo o preenchimento sem passar por lá"*). **Fica como pendência com dono, medida e não
+opinada.**
+
 Os três `fill-*` ficam de fora da tabela por terem três valores por tema; estão no parágrafo
 abaixo. **Os carimbos foram medidos com o par REAL do `stamp.tsx`, não com preto por suposição** — e um
 deles reprova: **`open` no escuro dá 1,30:1**. Ele é `bg-stamp-open` + `text-foreground`, e no

@@ -5,6 +5,7 @@ import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
+import { fornecedor as esquemaFornecedor } from '@/features/cadastro/modulos'
 import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -140,6 +141,11 @@ function FornecedoresPage() {
       fetcher={data.fornecedores.list}
       actions={actions}
       filtros={camposFiltraveis}
+      // Filtro POR MÓDULO (#104): o mesmo schema que desenha o formulário e a
+      // ficha agrupa os campos aqui. A whitelist acima continua sendo quem diz
+      // o que o servidor aceita e como o valor sai.
+      modoDeFiltro="modulo"
+      entidadeDoSchema={esquemaFornecedor}
       desativacao={{
         entidade: 'fornecedor',
         registro: aDesativar,

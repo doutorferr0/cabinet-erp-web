@@ -6,9 +6,11 @@ import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarParceiro } from '@/data/parceiros-api'
 import { profissional as esquemaProfissional } from '@/features/cadastro/modulos'
+import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
+import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/profissionais/')({
@@ -58,6 +60,45 @@ const columns: ColumnDef<PartnerDto>[] = [
     header: 'Ativo',
     cell: ({ getValue }) => <CelulaAtivo ativo={getValue<boolean>()} />,
   },
+]
+
+/**
+ * Campos filtráveis — a whitelist que o contrato publica em `filters` de
+ * `GET /api/partners`: `code`, `legalName`, `tradeName`, `document`, `active`.
+ *
+ * **A faixa por módulo depende desta lista existir**, e não só do
+ * `entidadeDoSchema`: a DataTable só monta o bloco de filtro quando a tela
+ * declara o que pode ser filtrado, e as duas props respondem perguntas
+ * diferentes — esta diz o que o SERVIDOR aceita (e como o valor sai daqui), o
+ * schema diz a que ASSUNTO cada campo pertence.
+ *
+ * `document` filtra mesmo digitado com máscara: o dado trafega em dígito puro e
+ * o `normalizar` limpa a pontuação na saída. Sem ele a consulta responderia
+ * "nenhum registro" para um profissional que existe.
+ *
+ * `Registro Profissional` é coluna mas NÃO é filtro: não está na whitelist do
+ * recurso, e campo fora dela o contrato manda 400. Oferecer o filtro aqui daria
+ * erro só no clique.
+ */
+const camposFiltraveis: readonly CampoFiltravel[] = [
+  { id: 'code', rotulo: 'Código', variante: 'text', icon: Hash, placeholder: 'Ex.: 1042' },
+  {
+    id: 'tradeName',
+    rotulo: 'Nome de Apresentação',
+    variante: 'text',
+    icon: User,
+    placeholder: 'Parte do nome…',
+  },
+  { id: 'legalName', rotulo: 'Nome', variante: 'text', icon: User, placeholder: 'Parte do nome…' },
+  {
+    id: 'document',
+    rotulo: 'CPF / CNPJ',
+    variante: 'text',
+    icon: IdCard,
+    placeholder: 'Com ou sem pontuação',
+    normalizar: somenteDigitos,
+  },
+  { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
 ]
 
 function ProfissionaisPage() {
@@ -112,6 +153,7 @@ function ProfissionaisPage() {
       // Filtro POR MÓDULO (#104): os chips saem do mesmo schema que desenha o
       // formulário e a ficha, e é ele que traz o agrupamento que a lista plana
       // não tinha.
+      filtros={camposFiltraveis}
       modoDeFiltro="modulo"
       entidadeDoSchema={esquemaProfissional}
       desativacao={{

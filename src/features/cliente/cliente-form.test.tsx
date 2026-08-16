@@ -30,11 +30,11 @@ describe('tela Cliente', () => {
 
     await screen.findByText('ANDRÉ BATALHA')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /CNPJ/ }))
-    await user.type(await screen.findByLabelText('Valor do filtro 1'), '12.345.678/0001-90')
+    // A tela filtra POR MÓDULO (#104): o campo entra pelo painel do módulo a
+    // que pertence, não pela barra plana. Quem normaliza continua sendo a
+    // whitelist da tela — é isso que este teste protege.
+    await user.click(screen.getByRole('button', { name: /Identificação/ }))
+    await user.type(await screen.findByLabelText('CPF / CNPJ'), '12.345.678/0001-90')
 
     await waitFor(() => {
       const consulta = urls.filter((u) => u.includes('filters=')).at(-1)
@@ -45,7 +45,7 @@ describe('tela Cliente', () => {
 
     // O campo continua mostrando o que foi digitado: normalizar na tela apagaria
     // a máscara embaixo do cursor.
-    expect(await screen.findByLabelText('Valor do filtro 1')).toHaveValue('12.345.678/0001-90')
+    expect(await screen.findByLabelText('CPF / CNPJ')).toHaveValue('12.345.678/0001-90')
   })
 
   it('formulário grava e volta para a listagem, com o papel desta tela', async () => {

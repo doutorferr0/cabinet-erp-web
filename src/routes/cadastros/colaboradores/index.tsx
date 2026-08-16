@@ -3,6 +3,7 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { CARGOS, type Colaborador, SETORES } from '@/mocks/colaboradores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -103,6 +104,12 @@ function ColaboradoresPage() {
       fetcher={data.colaboradores.list}
       actions={actions}
       filtros={camposFiltraveis}
+      // Filtro POR MÓDULO (#104): o mesmo schema que desenha o formulário e a
+      // ficha agrupa os campos aqui. Colaborador é MOCK, então o id do filtro é
+      // a chave do registro (e não o campo do DTO) — as duas pontas saem do
+      // mesmo schema, e é ele que mantém as duas de acordo.
+      modoDeFiltro="modulo"
+      entidadeDoSchema={esquemaColaborador}
     />
   )
 }

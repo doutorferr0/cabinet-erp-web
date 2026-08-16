@@ -4,8 +4,9 @@ import { Marca } from '@/components/cabinet/marca'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useLogin } from '@/data/sessao'
+import { destinoDepoisDoLogin } from '@/lib/rota-de-origem'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -32,6 +33,9 @@ type LoginValores = z.infer<typeof loginSchema>
  */
 export function LoginTela() {
   const navigate = useNavigate()
+  // `from` fixo em `/login`: é a única rota que monta esta tela, e o search já
+  // chega validado pela rota — destino externo nem aparece aqui.
+  const { redirect } = useSearch({ from: '/login' })
   const login = useLogin()
   const form = useForm<LoginValores>({
     resolver: zodResolver(loginSchema),
@@ -40,11 +44,20 @@ export function LoginTela() {
 
   function entrar(valores: LoginValores) {
     login.mutate(valores, {
-      // A entrada do sistema é o DASHBOARD (decisão do user): o que está em
-      // curso, não o fechamento do dia. O Boletim continua em `/` e na barra —
-      // o que mudou é qual dos dois recebe quem acabou de entrar.
-      onSuccess: (resultado) =>
-        navigate({ to: resultado.mustChangePassword ? '/trocar-senha' : '/dashboard' }),
+      onSuccess: (resultado) => {
+        // Senha provisória vence o destino guardado: enquanto ela não trocar, o
+        // backend recusa o resto com 403 e a rota preservada só mostraria a
+        // guarda de novo. O destino é descartado aqui, de propósito — carregá-lo
+        // por duas telas custaria mais do que vale o caso raro de sessão
+        // provisória interrompida no meio de uma navegação profunda.
+        if (resultado.mustChangePassword) return navigate({ to: '/trocar-senha' })
+        // A entrada do sistema é o DASHBOARD (decisão do user): o que está em
+        // curso, não o fechamento do dia. O `redirect` só desvia disso quando a
+        // guarda de fato interrompeu uma navegação — é o destino que o operador
+        // já tinha pedido, e mandá-lo ao Dashboard o obrigaria a refazer o
+        // caminho à mão.
+        navigate({ to: destinoDepoisDoLogin(redirect) })
+      },
     })
   }
 

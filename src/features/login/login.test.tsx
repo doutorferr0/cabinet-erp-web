@@ -15,9 +15,24 @@ interface Chamada {
   corpo: string
 }
 
-/** Servidor falso de auth. `loginFalha` simula o 401 do contrato. */
-function servidorDeAuth({ loginFalha = false, precisaTrocarSenha = false } = {}) {
+/**
+ * Servidor falso de auth. `loginFalha` simula o 401 do contrato.
+ *
+ * `semSessao` responde 401 no `/auth/me` para sempre — é a guarda desviando.
+ * `semSessaoAteLogin` responde 401 **até** o POST de login e sessão válida
+ * depois: é o único jeito de exercitar o caminho inteiro do destino preservado
+ * (guarda desvia → operador entra → volta para a rota). Com `semSessao` fixo, a
+ * guarda desviaria de novo logo após o login e o teste mediria o desvio, não a
+ * volta.
+ */
+function servidorDeAuth({
+  loginFalha = false,
+  precisaTrocarSenha = false,
+  semSessao = false,
+  semSessaoAteLogin = false,
+} = {}) {
   const chamadas: Chamada[] = []
+  let entrou = false
   const stub: FetchStub = async (input) => {
     const requisicao = input instanceof Request ? input : null
     const url = String(requisicao ? requisicao.url : input)
@@ -31,11 +46,15 @@ function servidorDeAuth({ loginFalha = false, precisaTrocarSenha = false } = {})
         headers: { 'content-type': 'application/json' },
       })
 
-    if (caminho === '/auth/me') return respostaSessao()
+    if (caminho === '/auth/me') {
+      if (semSessao) return new Response('', { status: 401 })
+      if (semSessaoAteLogin && !entrou) return new Response('', { status: 401 })
+      return respostaSessao()
+    }
     if (caminho === '/auth/login') {
-      return loginFalha
-        ? json({ detail: 'E-mail ou senha incorretos.' }, 401)
-        : json({ mustChangePassword: precisaTrocarSenha })
+      if (loginFalha) return json({ detail: 'E-mail ou senha incorretos.' }, 401)
+      entrou = true
+      return json({ mustChangePassword: precisaTrocarSenha })
     }
     return new Response('', { status: 404 })
   }
@@ -126,5 +145,69 @@ describe('RequireSession (guarda)', () => {
     renderRoute('/')
 
     expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
+  })
+
+  it('guarda o destino interrompido na busca do login', async () => {
+    const { stub } = servidorDeAuth({ semSessao: true })
+    const { router } = renderRoute('/cadastros/clientes?modo=consulta', stub)
+
+    expect(await screen.findByLabelText('E-mail')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/login')
+    // Caminho E busca: quem foi interrompido em `?modo=consulta` volta em
+    // consulta, não no formulário de edição.
+    expect(router.state.location.search).toEqual({
+      redirect: '/cadastros/clientes?modo=consulta',
+    })
+  })
+})
+
+/**
+ * O destino preservado (#124, ponto 1).
+ *
+ * O par completo: a guarda ESCREVE o `redirect` (bateria acima) e o login o
+ * CONSOME (esta). Testar só um lado deixaria passar a versão que guarda o
+ * destino e nunca o usa.
+ */
+describe('volta para a rota de origem depois de entrar', () => {
+  it('entra e reabre a rota que a guarda interrompeu', async () => {
+    // Sem sessão até o login: é o que faz a guarda desviar e produzir o
+    // `redirect`. Depois do POST, `/auth/me` passa a responder sessão válida.
+    const { stub } = servidorDeAuth({ semSessaoAteLogin: true })
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await preencherEEntrar(user)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cadastros/clientes'))
+  })
+
+  it('sem destino guardado, entra no Dashboard', async () => {
+    const { stub } = servidorDeAuth()
+    const { router, user } = renderRoute('/login', stub)
+
+    await preencherEEntrar(user)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
+  })
+
+  it('destino que sai do site é ignorado — cai no Dashboard', async () => {
+    const { stub } = servidorDeAuth()
+    // Link montado por terceiro: `//exemplo.test` começa com barra e mesmo
+    // assim leva a outro host. Entrar e ser despejado lá com a sessão nova é a
+    // falha que o `validateSearch` da rota impede.
+    const { router, user } = renderRoute('/login?redirect=//exemplo.test/phishing', stub)
+
+    await preencherEEntrar(user)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
+  })
+
+  it('senha provisória vence o destino guardado', async () => {
+    const { stub } = servidorDeAuth({ precisaTrocarSenha: true })
+    const { router, user } = renderRoute('/login?redirect=/cadastros/clientes', stub)
+
+    await preencherEEntrar(user)
+
+    expect(await screen.findByLabelText('Senha atual')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/trocar-senha')
   })
 })

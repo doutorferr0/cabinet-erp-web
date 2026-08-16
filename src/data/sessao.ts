@@ -72,7 +72,22 @@ export function useLogin() {
       }
       return resposta.data as LoginOk
     },
-    onSuccess: () => queryClient.invalidateQueries(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries()
+      // A sessão é REBUSCADA, não só invalidada, e o `await` importa.
+      //
+      // `invalidateQueries` refaz apenas as consultas ATIVAS, e o `/auth/me`
+      // está inativo enquanto se está no login — nenhuma guarda montada o
+      // observa. Ele ficava marcado como velho com o `null` do 401 ainda em
+      // cache; a tela navegava para a rota de destino, a guarda montava, lia
+      // esse `null` e devolvia para o login. Quem entrava a partir de uma rota
+      // profunda (sessão vencida no meio do trabalho) não conseguia voltar.
+      //
+      // Não aparecia antes porque o destino do login era sempre `/dashboard`,
+      // e quem chega nele acabou de vir de uma tela que já mantinha o
+      // `/auth/me` ativo.
+      await queryClient.refetchQueries({ queryKey: SESSAO_KEY })
+    },
   })
 }
 

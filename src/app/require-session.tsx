@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSessao } from '@/data/sessao'
-import { Navigate } from '@tanstack/react-router'
+import { rotaDeOrigemValida } from '@/lib/rota-de-origem'
+import { Navigate, useRouterState } from '@tanstack/react-router'
 
 /**
  * Guarda de sessão: nenhuma tela do sistema renderiza sem `/auth/me`.
@@ -34,6 +35,13 @@ export function RequireSession({
   permiteSenhaProvisoria = false,
 }: { children: React.ReactNode; permiteSenhaProvisoria?: boolean }) {
   const sessao = useSessao()
+  // A rota que o operador tentou abrir, com a busca — é o que o `/login` recebe
+  // para reabrir depois de entrar. Lida do router, e não de `window.location`,
+  // porque o teste monta o router sobre uma history de memória e `window` ali
+  // apontaria para `/` em toda navegação.
+  const origem = useRouterState({
+    select: (estado) => `${estado.location.pathname}${estado.location.searchStr}`,
+  })
 
   if (sessao.isPending) {
     return (
@@ -62,7 +70,17 @@ export function RequireSession({
     )
   }
 
-  if (sessao.data === null) return <Navigate to="/login" />
+  // Sem sessão: o login, levando junto o destino interrompido. `replace` para a
+  // volta do browser não cair de novo na rota que acabou de recusar.
+  if (sessao.data === null) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        search={rotaDeOrigemValida(origem) ? { redirect: origem } : {}}
+      />
+    )
+  }
 
   if (sessao.data.mustChangePassword && !permiteSenhaProvisoria) {
     return <Navigate to="/trocar-senha" />

@@ -1,6 +1,7 @@
+import { SemPermissao } from '@/components/cabinet/sem-permissao'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { detalheDoErro } from '@/lib/erros'
+import { detalheDoErro, ehSemPermissao } from '@/lib/erros'
 
 /**
  * Miolo compartilhado do tríduo carregando/erro/não-encontrado que toda tela
@@ -35,6 +36,12 @@ export function ErroDeCarregamento({
   erro: unknown
   refazer: () => void
 }) {
+  // 403 não é falha de carregamento: é recusa por permissão, e a única coisa
+  // que o markup genérico oferece — "Tentar de novo" — nunca resolve. O desvio
+  // mora AQUI, e não em cada rota, porque as seis telas de detalhe chamam este
+  // mesmo componente: espalhar o `if` daria seis chances de esquecer uma.
+  if (ehSemPermissao(erro)) return <SemPermissao erro={erro} />
+
   return (
     <div className="flex flex-col items-start gap-2 text-muted-foreground">
       {mensagem}

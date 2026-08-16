@@ -138,7 +138,29 @@ function sessaoAtual(): SessaoAtual {
   }
 }
 
+/** Métodos que ESCREVEM — os que o ensaio de expiração intercepta. */
+const ESCRITA = ['POST', 'PUT', 'PATCH', 'DELETE']
+
 export const handlers = [
+  // ---------------- ensaio de expiração (#124, ponto 4) ----------------
+  //
+  // PRIMEIRO da lista de propósito: o MSW resolve na ordem, e um gatilho que
+  // corresse depois do handler do recurso já teria deixado a escrita acontecer
+  // — o store mudaria e a resposta 401 mentiria sobre o que o servidor fez.
+  //
+  // Armado por `armarExpiracaoDaProximaEscrita()`; desarma ao disparar.
+  http.all('*', async ({ request }) => {
+    if (!store.expiraProximaEscrita) return undefined
+    if (!ESCRITA.includes(request.method.toUpperCase())) return undefined
+    // O login NUNCA expira: é por ele que o operador reentra depois de tomar o
+    // 401. Interceptá-lo deixaria o ensaio sem saída — a tela pediria para
+    // entrar de novo e a reentrada tomaria 401 também.
+    if (new URL(request.url).pathname.endsWith('/auth/login')) return undefined
+
+    store.expiraProximaEscrita = false
+    return SEM_SESSAO()
+  }),
+
   // ---------------- auth ----------------
   http.post('*/auth/login', async ({ request }) => {
     const corpo = (await request.json()) as LoginRequest

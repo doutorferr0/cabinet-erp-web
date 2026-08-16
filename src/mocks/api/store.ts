@@ -52,6 +52,20 @@ export interface ParceiroDaOrg {
 
 export interface StoreDaApi {
   logado: boolean
+  /**
+   * Gatilho de ensaio: a PRÓXIMA escrita responde 401 e desarma sozinha.
+   *
+   * É o que torna a expiração de sessão provocável no navegador (#124, ponto
+   * 4). Sem ele, o pior caso do trilho — o cookie vencer entre abrir o
+   * formulário e clicar em Gravar — só existia dentro do teste, e ninguém
+   * conseguia ver a tela se comportar.
+   *
+   * Vale para UMA escrita, não para a sessão inteira: o alvo é o envio, e
+   * derrubar a sessão de leitura junto faria a guarda desmontar a tela antes
+   * de o formulário ter chance de reagir — apagando justamente o que o ensaio
+   * quer observar.
+   */
+  expiraProximaEscrita: boolean
   mustChangePassword: boolean
   activeTenantId: string | null
   empresas: VinculoDeEmpresa[]
@@ -496,6 +510,7 @@ function planosDoSeed(): Record<string, ProjectPlanDto> {
 export function criarStore(): StoreDaApi {
   return {
     logado: false,
+    expiraProximaEscrita: false,
     mustChangePassword: false,
     activeTenantId: null,
     // As duas empresas diferem no que OPERAM, não só no nome: a Matriz compra e
@@ -558,6 +573,30 @@ export function semearSessaoAutenticada(): void {
   store.logado = true
   store.mustChangePassword = false
   store.activeTenantId = store.empresas[0]?.tenantId ?? null
+}
+
+/**
+ * Arma o ensaio de expiração: a PRÓXIMA escrita responde 401.
+ *
+ * A sessão de leitura continua de pé de propósito — ver `expiraProximaEscrita`.
+ * O gatilho se desarma ao disparar, então o reenvio depois da reentrada passa;
+ * fosse permanente, o operador entraria de novo e tomaria 401 outra vez, e o
+ * ensaio provaria o contrário do que existe para mostrar.
+ */
+export function armarExpiracaoDaProximaEscrita(): void {
+  store.expiraProximaEscrita = true
+}
+
+/**
+ * Derruba a sessão inteira, como um cookie que venceu de vez.
+ *
+ * Ensaia o outro caminho, o do ponto 1: o `/auth/me` passa a 401, a guarda
+ * manda ao login e a rota de origem é preservada. É complementar ao gatilho de
+ * escrita, não substituto — este apaga a tela, aquele a mantém de pé.
+ */
+export function expirarSessaoAgora(): void {
+  store.logado = false
+  store.activeTenantId = null
 }
 
 export function novoId(prefixo: string): string {

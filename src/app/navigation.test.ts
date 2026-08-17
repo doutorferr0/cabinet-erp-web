@@ -93,11 +93,12 @@ describe('secoesVisiveis', () => {
     expect(titulos(Object.values(RECURSOS))).not.toContain('Contas a Pagar')
   })
 
-  it('seis seções na fileira, e Configurações fora dela', () => {
+  it('sete seções na barra, na ordem do fluxo, e Configurações fora dela', () => {
     const secoes = secoesVisiveis(empresaCom(...Object.values(RECURSOS)))
     expect(secoes.filter((s) => !s.oculta).map((s) => s.id)).toEqual([
       'inicio',
       'comercial',
+      'crm',
       'estoque',
       'financeiro',
       'pessoas',
@@ -107,12 +108,43 @@ describe('secoesVisiveis', () => {
   })
 
   /**
-   * TETO DE SEIS (catálogo §5): seção nova só substituindo. O teste existe para
-   * a sétima entrar por decisão, não por acidente — e a fileira não crescer até
-   * empurrar empresa e avatar para fora da faixa.
+   * TETO (catálogo §5): seção nova só substituindo ou reagrupando. Era seis;
+   * CRM subiu a sete por decisão do user em 2026-08-17. O teste existe para a
+   * oitava entrar pelo mesmo caminho — decisão, não acidente.
    */
-  it('o teto de seis é regra, não coincidência', () => {
-    expect(navSecoes.filter((s) => !s.oculta)).toHaveLength(6)
+  it('o teto de sete é regra, não coincidência', () => {
+    expect(navSecoes.filter((s) => !s.oculta)).toHaveLength(7)
+  })
+
+  /**
+   * O CRM inteiro num lugar só: o quadro e o que o MONTA. Enquanto Funis e
+   * Motivos moravam em Configurações, montar um funil obrigava a sair do
+   * módulo — que é a queixa que derrubou o desenho anterior.
+   */
+  it('Funis e Motivos de Perda moram no CRM, não em Configurações', () => {
+    const secoes = secoesVisiveis(empresaCom(...Object.values(RECURSOS)))
+    const crm = secoes.find((s) => s.id === 'crm')
+    expect(crm?.grupos.flatMap((g) => g.items).map((i) => i.title)).toEqual([
+      'Oportunidades',
+      'Funis',
+      'Motivos de Perda',
+    ])
+
+    const config = secoes.find((s) => s.oculta)
+    expect(config?.grupos.flatMap((g) => g.items).map((i) => i.title)).toEqual([
+      'Mapeamento de Tabelas',
+      'Usuários e Empresas',
+    ])
+  })
+
+  /**
+   * A seção-página não tem item que case a própria rota — quem responde por
+   * `/config` é a `raiz`. Sem ela o cabeçalho anunciaria a seção errada.
+   */
+  it('a seção oculta declara a raiz da própria página', () => {
+    const config = navSecoes.find((s) => s.oculta)
+    expect(config?.raiz).toBe('/config')
+    expect(navSecoes.filter((s) => s.raiz).map((s) => s.id)).toEqual(['config'])
   })
 
   it('a empresa sem recurso nenhum perde o item, não a seção inteira', () => {

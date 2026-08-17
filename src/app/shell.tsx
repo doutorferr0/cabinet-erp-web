@@ -214,11 +214,11 @@ function ItemDaBarra({
  * onde o resultado mora (achar e esconder dentro de seção fechada é o mesmo
  * que não achar). A paleta `Ctrl+K` continua global e intocada.
  *
- * ## Configurações mora no pé
+ * ## Configurações NÃO mora aqui
  *
- * A 7ª seção fica fora do caminho de operação, no rodapé visual da lista —
- * o mesmo lugar do Settings no admin Shopify. A engrenagem da topbar é o
- * atalho que a abre.
+ * Ela é página (`/config`), alcançada pela engrenagem da topbar: a barra
+ * lista o que se OPERA, e um bloco de visita rara no pé cobrava espaço
+ * permanente por isso. Quem chega recebe `secoes` já sem ela.
  */
 function AppSidebar({
   secoes,
@@ -306,11 +306,7 @@ function AppSidebar({
               const aberta = filtrando || (manuais[secao.id] ?? secao.id === secaoAtiva?.id)
               const ativa = secao.id === secaoAtiva?.id
               return (
-                <SidebarGroup
-                  key={secao.id}
-                  {...(secao.modulo && { 'data-modulo': secao.modulo })}
-                  className={cn(secao.oculta && 'mt-auto')}
-                >
+                <SidebarGroup key={secao.id} {...(secao.modulo && { 'data-modulo': secao.modulo })}>
                   <button
                     type="button"
                     onClick={() => setManuais((m) => ({ ...m, [secao.id]: !aberta }))}
@@ -386,27 +382,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { tem } = useRecursosDaEmpresa()
 
   /**
-   * A SEÇÃO ABERTA na barra lateral.
+   * A SEÇÃO DA ROTA — nasce do caminho, e só dele.
    *
-   * Nasce da ROTA — a barra mostra onde o operador está, sem ele escolher nada
-   * — e a aba do topo pode sobrepor, para EXPLORAR outra seção sem sair da
-   * tela. Explorar não navega: um clique de curiosidade não pode jogar fora um
-   * formulário meio preenchido.
-   *
-   * A escolha se desfaz na próxima navegação (`key` do efeito é o caminho):
-   * senão, quem espiasse Financeiro e depois abrisse um cliente ficaria com a
-   * barra de Financeiro sobre a tela de Clientes.
+   * Havia aqui um estado de "escolha" para a fileira de ícones do topo poder
+   * espiar outra seção sem navegar. A fileira morreu (POLARIS) e a barra
+   * lateral abre e fecha bloco por conta própria; o último consumidor era a
+   * engrenagem, que agora NAVEGA para `/config`. Estado sem quem o mude é
+   * estado que só pode divergir da tela.
    */
   const secoes = secoesVisiveis(tem)
-  // A escolha guarda EM QUE ROTA foi feita, e vale só nela. Derivar assim
-  // dispensa o efeito que zeraria o estado a cada navegação — efeito de
-  // sincronizar é justamente o que se evita quando dá para calcular.
-  const [escolha, setEscolha] = useState<{ id: string; em: string } | null>(null)
-  const escolhida = escolha?.em === location.pathname ? escolha.id : null
-  const secaoAtiva =
-    secoes.find((secao) => secao.id === escolhida) ??
-    secaoDaRota(secoes, location.pathname) ??
-    secoes[0]
+  /** A barra desenha o que se OPERA: a seção-página fica de fora. */
+  const daBarra = secoes.filter((secao) => !secao.oculta)
+  const secaoAtiva = secaoDaRota(secoes, location.pathname) ?? daBarra[0]
   /** A TELA da rota, para o rastro do header — busca nas folhas da seção. */
   const telaAtiva = secaoAtiva?.grupos
     .flatMap((grupo) => grupo.items.flatMap((item) => item.filhas ?? [item]))
@@ -426,14 +413,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar secoes={secoes} secaoAtiva={secaoAtiva} />
+      <AppSidebar secoes={daBarra} secaoAtiva={secaoAtiva} />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
         <Appbar
           naoLidas={naoLidas}
           secaoAtiva={secaoAtiva?.id}
-          aoEscolherSecao={(id) => setEscolha({ id, em: location.pathname })}
           aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAbrirPaleta={() => setPaletaAberta(true)}
         />

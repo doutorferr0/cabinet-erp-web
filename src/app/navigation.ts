@@ -144,32 +144,43 @@ export interface NavGroup {
 }
 
 /**
- * SEÇÃO — o processo de negócio, e o que o ícone do topo representa.
+ * SEÇÃO — o processo de negócio, e o bloco que a barra lateral desenha.
  *
- * Seis, com teto (catálogo §5): *"nova seção só substituindo ou reagrupando"*.
- * A ordem é a frequência de uso, esquerda→direita — Início, Comercial, Estoque,
- * Financeiro — e vem de Dynamics/NetSuite, onde poucos itens no topo ordenados
- * por importância é o que faz a barra ser lida sem procurar.
+ * A ordem é a frequência de uso, de cima para baixo — Início, Comercial, CRM,
+ * Estoque, Financeiro — e vem de Dynamics/NetSuite, onde poucos itens
+ * ordenados por importância é o que faz a barra ser lida sem procurar.
  *
- * **Configurações é a sétima, OCULTA:** mora atrás da engrenagem, fora do
- * caminho de operação (Odoo CogMenu, HubSpot settings — catálogo §2.6). Ela não
- * conta para o teto porque não disputa espaço com as outras.
+ * **Configurações não é bloco da barra: é PÁGINA.** Ela tem `oculta` e `raiz`,
+ * mora atrás da engrenagem da topbar e some da lista de operação (Odoo
+ * CogMenu, HubSpot settings — catálogo §2.6). Continua declarada aqui porque
+ * os grupos dela são os mesmos NavGroup de todo mundo — a página de
+ * Configurações LÊ esta taxonomia em vez de manter uma lista paralela, que é o
+ * que faria a engrenagem divergir da paleta de comandos sem ninguém notar.
  */
 export interface NavSecao {
   id: string
   rotulo: string
   icon: LucideIcon
-  /** Cor da aba: o fio de 3px sob o ícone ativo e o fundo pastel do hover. */
+  /** Cor do bloco: o fio de 3px na borda esquerda e o fundo pastel do hover. */
   modulo?: Modulo
-  /** Fora da fileira de ícones — alcançada pela engrenagem. */
+  /** Fora da barra de operação — a seção é uma página, alcançada pela engrenagem. */
   oculta?: true
+  /**
+   * Caminho da PÁGINA da seção oculta. Existe porque ela não tem item que case
+   * a rota: sem isto, entrar em `/config` deixaria o cabeçalho anunciando
+   * `Início` (o primeiro da lista) — o operador leria o lugar errado.
+   */
+  raiz?: string
   grupos: NavGroup[]
 }
 
 /**
- * A TAXONOMIA — seis seções por processo, mais Configurações atrás da
- * engrenagem. Desenho FECHADO pelo user em 2026-08-14 (mockup v7 +
- * `catalogo-navegacao.md`).
+ * A TAXONOMIA — sete seções por processo, mais Configurações atrás da
+ * engrenagem. Desenho fechado pelo user em 2026-08-14 (mockup v7 +
+ * `catalogo-navegacao.md`) e revisto em 2026-08-17: **CRM saiu de dentro de
+ * Comercial e virou seção própria**, gastando a regra "nova seção só
+ * substituindo ou reagrupando" — o teto de seis foi levantado por decisão, e é
+ * o que o teste de teto agora trava em sete.
  *
  * Três princípios da pesquisa mandam aqui, e explicam escolhas que de fora
  * parecem arbitrárias:
@@ -292,13 +303,32 @@ export const navSecoes: NavSecao[] = [
           },
         ],
       },
+    ],
+  },
+  {
+    /**
+     * CRM — SEÇÃO PRÓPRIA (decisão do user, 2026-08-17).
+     *
+     * Era um grupo dentro de Comercial e a configuração dele estava atrás da
+     * engrenagem: quem monta um funil ou cataloga um motivo de perda tinha de
+     * sair do módulo onde trabalha e procurar em Configurações. Duas casas
+     * para o mesmo assunto.
+     *
+     * Agora o assunto é um só e mora num lugar só: o ANDAMENTO (funil) e o que
+     * o MONTA (etapas, motivos), lado a lado. O orçamento fica em Comercial
+     * porque é outra natureza — documento existe ou não existe; oportunidade
+     * vive mudando de coluna até virar documento ou morrer com motivo.
+     *
+     * Fica logo abaixo de Comercial: é de onde o orçamento nasce, e a ordem da
+     * barra é a do fluxo.
+     */
+    id: 'crm',
+    rotulo: 'CRM',
+    icon: SquareKanban,
+    modulo: 'crm',
+    grupos: [
       {
-        /**
-         * CRM em grupo próprio dentro de Comercial: o orçamento é DOCUMENTO
-         * (existe ou não existe) e a oportunidade é ANDAMENTO — vive mudando
-         * de coluna até virar documento ou morrer com motivo.
-         */
-        title: 'CRM',
+        title: 'Negócios',
         url: '/crm/funil',
         icon: SquareKanban,
         modulo: 'crm',
@@ -308,6 +338,34 @@ export const navSecoes: NavSecao[] = [
             url: '/crm/funil',
             icon: SquareKanban,
             descricao: 'O quadro do funil: cada negócio em aberto, na etapa em que está.',
+          },
+        ],
+      },
+      {
+        /**
+         * O esqueleto do catálogo §5 — Documentos → Cadastros → Relatórios —
+         * vale aqui como em toda seção: primeiro o que se opera, depois o que
+         * o sustenta. Funil e Motivo de Perda são CADASTRO, não operação: o
+         * operador entra neles raramente, e por isso vêm depois, nunca antes.
+         */
+        title: 'Cadastros',
+        url: '/crm/funis',
+        icon: Filter,
+        modulo: 'crm',
+        items: [
+          {
+            title: 'Funis',
+            url: '/crm/funis',
+            incluir: '/crm/funis/novo',
+            icon: Filter,
+            descricao: 'Os modelos de venda: as colunas por onde a oportunidade passa até fechar.',
+          },
+          {
+            title: 'Motivos de Perda',
+            url: '/crm/motivos',
+            icon: Filter,
+            descricao:
+              'Por que os negócios se perdem — catalogado, para virar análise no fim do ano.',
           },
         ],
       },
@@ -531,37 +589,22 @@ export const navSecoes: NavSecao[] = [
   },
   {
     /**
-     * A SÉTIMA seção, oculta atrás da engrenagem. Funis e Motivos de Perda
-     * saíram do menu do CRM: são como o funil é MONTADO, não o que se faz nele.
-     * Mapeamento de Tabelas saiu da barra (#119) pelo mesmo motivo.
+     * CONFIGURAÇÕES — a seção que é PÁGINA (`/config`), não bloco da barra.
+     *
+     * Funis e Motivos de Perda VOLTARAM para o CRM em 2026-08-17: eles são do
+     * assunto do funil, e mantê-los aqui obrigava quem monta um funil a
+     * procurar noutro lugar. O que sobra é o que não pertence a processo
+     * nenhum — o mapa das tabelas e, quando existir, quem entra no sistema.
+     *
+     * Ela sai da barra por isso mesmo: com dois itens de sistema, um bloco no
+     * pé da lista de operação era peso permanente para visita rara.
      */
     id: 'config',
     rotulo: 'Configurações',
     icon: Settings,
     oculta: true,
+    raiz: '/config',
     grupos: [
-      {
-        title: 'CRM',
-        url: '/crm/funis',
-        icon: Filter,
-        modulo: 'crm',
-        items: [
-          {
-            title: 'Funis',
-            url: '/crm/funis',
-            incluir: '/crm/funis/novo',
-            icon: Filter,
-            descricao: 'Os modelos de venda: as colunas por onde a oportunidade passa até fechar.',
-          },
-          {
-            title: 'Motivos de Perda',
-            url: '/crm/motivos',
-            icon: Filter,
-            descricao:
-              'Por que os negócios se perdem — catalogado, para virar análise no fim do ano.',
-          },
-        ],
-      },
       {
         title: 'Sistema',
         url: '/mapeamento-tabelas.html',

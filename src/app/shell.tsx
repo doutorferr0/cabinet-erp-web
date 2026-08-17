@@ -5,7 +5,6 @@ import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
-import { Marca } from '@/components/cabinet/marca'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import { Separator } from '@/components/ui/separator'
@@ -204,29 +203,42 @@ function ItemDaBarra({
 }
 
 /**
- * A BARRA LATERAL — contextual à seção aberta no topo (Nav-2).
- *
- * Ela deixou de listar o sistema inteiro: mostra só a seção em que o operador
- * está, no formato da referência aprovada pelo user — busca própria no topo,
- * grupos rotulados com o quadradinho do módulo dono, item colapsável com
- * filhas, tela futura apagada com selo.
+ * A BARRA LATERAL — o MAPA INTEIRO do sistema, com rótulo (POLARIS,
+ * sidebar-first, decisão do user 2026-08-17). A fileira de seis ícones
+ * anônimos do topo morreu: as seções moram aqui, como no admin Shopify —
+ * item de seção com nome, expansível, e a seção da rota vem aberta.
  *
  * ## A busca daqui NÃO é a paleta
  *
- * Filtra os itens da SEÇÃO ATIVA, e só. A paleta `Ctrl+K` continua global e
- * intocada — são duas perguntas diferentes: "onde está aquela tela desta
- * seção" e "leve-me a qualquer lugar do sistema". Uma busca que fizesse as
- * duas coisas responderia mal às duas.
+ * Filtra os itens da navegação — agora do sistema inteiro, abrindo a seção
+ * onde o resultado mora (achar e esconder dentro de seção fechada é o mesmo
+ * que não achar). A paleta `Ctrl+K` continua global e intocada.
  *
- * A MARCA voltou para cá (2026-08-17, emenda na #140): assina o painel, acima
- * do conteúdo contextual. O seletor de empresa segue na appbar, nos globais.
+ * ## Configurações mora no pé
+ *
+ * A 7ª seção fica fora do caminho de operação, no rodapé visual da lista —
+ * o mesmo lugar do Settings no admin Shopify. A engrenagem da topbar é o
+ * atalho que a abre.
  */
-function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
+function AppSidebar({
+  secoes,
+  secaoAtiva,
+}: {
+  secoes: NavSecao[]
+  secaoAtiva: NavSecao | undefined
+}) {
   const { location } = useRouterState()
   const pathname = location.pathname
 
   const [termo, setTermo] = useState('')
   const [abertos, setAbertos] = useState<string[]>(lerAbertos)
+  /**
+   * Colapso DAS SEÇÕES: o padrão é "a seção da rota aberta, as outras
+   * fechadas", e o clique no cabeçalho abre/fecha SEM navegar — explorar não
+   * pode jogar fora um formulário meio preenchido. A escolha manual sobrepõe
+   * o padrão enquanto o componente viver.
+   */
+  const [manuais, setManuais] = useState<Record<string, boolean>>({})
   const buscaId = useId()
 
   function alternar(titulo: string) {
@@ -239,91 +251,118 @@ function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
     })
   }
 
+  const filtrando = termo !== ''
+
   /**
-   * O filtro casa o item OU alguma filha dele, e nunca esconde a filha que
-   * casou: procurar "pedido" tem de achar `Pedido de Compra` dentro de
-   * `Compras`, e mostrá-lo — não o pai fechado com o resultado escondido.
+   * O filtro casa o item OU alguma filha, nunca esconde a filha que casou, e
+   * a seção sem nenhum resultado sai da lista — sobrar cabeçalho vazio é
+   * ruído na resposta.
    */
-  const grupos = (secao?.grupos ?? [])
-    .map((grupo) => ({
-      ...grupo,
-      items: grupo.items.flatMap((item) => {
-        if (!termo) return [item]
-        if (casa(item.title, termo)) return [item]
-        const filhas = item.filhas?.filter((filha) => casa(filha.title, termo)) ?? []
-        return filhas.length > 0 ? [{ ...item, filhas }] : []
-      }),
+  const visiveis = secoes
+    .map((secao) => ({
+      secao,
+      grupos: secao.grupos
+        .map((grupo) => ({
+          ...grupo,
+          items: grupo.items.flatMap((item) => {
+            if (!termo) return [item]
+            if (casa(item.title, termo)) return [item]
+            const filhas = item.filhas?.filter((filha) => casa(filha.title, termo)) ?? []
+            return filhas.length > 0 ? [{ ...item, filhas }] : []
+          }),
+        }))
+        .filter((grupo) => grupo.items.length > 0),
     }))
-    .filter((grupo) => grupo.items.length > 0)
+    .filter(({ grupos }) => !filtrando || grupos.length > 0)
 
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
       <SidebarHeader>
-        {/* A MARCA encabeça a barra lateral (referência do user, 2026-08-17 —
-            emenda na issue #140): a faixa de cima é toda da navegação, e o
-            produto assina o painel que está presente em qualquer seção. */}
-        <div className="flex items-center px-2 pt-2">
-          <Marca variante="assinatura" tamanho={26} />
-        </div>
-        <div className="flex flex-col gap-1 px-1 pt-1">
-          {/* O nome da seção encabeça o painel: sem ele, seis conteúdos
-              diferentes moram no mesmo lugar sem dizer qual é qual — o ícone
-              aceso lá em cima está longe do olho de quem lê a lista. */}
-          <span className="px-1 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground">
-            {secao?.rotulo ?? ''}
-          </span>
-          <div className="flex items-center gap-2 border-2 border-input bg-card px-2">
-            <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-            <label htmlFor={buscaId} className="sr-only">
-              Filtrar telas de {secao?.rotulo ?? 'esta seção'}
-            </label>
-            <input
-              id={buscaId}
-              type="text"
-              value={termo}
-              onChange={(e) => setTermo(e.target.value)}
-              placeholder="Filtrar…"
-              className="h-8 w-full min-w-0 bg-transparent text-sm outline-none"
-            />
-          </div>
+        <div className="flex items-center gap-2 rounded-control border-2 border-input bg-card px-2">
+          <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+          <label htmlFor={buscaId} className="sr-only">
+            Filtrar telas
+          </label>
+          <input
+            id={buscaId}
+            type="text"
+            value={termo}
+            onChange={(e) => setTermo(e.target.value)}
+            placeholder="Filtrar…"
+            className="h-8 w-full min-w-0 bg-transparent text-sm outline-none"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {grupos.length === 0 ? (
+        {visiveis.length === 0 ? (
           // Busca sem resultado DIZ que não achou. Painel em branco faria o
-          // operador achar que a seção está vazia.
+          // operador achar que o sistema está vazio.
           <p className="px-3 py-4 text-muted-foreground text-sm">
-            Nenhuma tela desta seção casa com “{termo}”.
+            Nenhuma tela casa com “{termo}”.
           </p>
         ) : (
-          grupos.map((grupo) => (
-            <SidebarGroup key={grupo.title}>
-              <SidebarGroupLabel>
-                {/* O quadradinho na cor do módulo DONO do grupo: numa lista de
-                    seis rótulos, a cor diz de quem é o bloco antes de o olho
-                    ler o nome. Grupo sem módulo sai no par neutro do `:root` —
-                    nenhuma cor nova é inventada aqui. */}
-                <span
-                  aria-hidden="true"
-                  {...(grupo.modulo && { 'data-modulo': grupo.modulo })}
-                  className="mr-2 size-2 shrink-0 border-2 bg-modulo-cheia"
-                />
-                {grupo.title}
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {grupo.items.map((item) => (
-                  <ItemDaBarra
-                    key={item.url}
-                    item={item}
-                    pathname={pathname}
-                    abertos={abertos}
-                    filtrando={termo !== ''}
-                    aoAlternar={alternar}
-                  />
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          ))
+          <nav aria-label="Seções" className="flex flex-1 flex-col">
+            {visiveis.map(({ secao, grupos }) => {
+              const aberta = filtrando || (manuais[secao.id] ?? secao.id === secaoAtiva?.id)
+              const ativa = secao.id === secaoAtiva?.id
+              return (
+                <SidebarGroup
+                  key={secao.id}
+                  {...(secao.modulo && { 'data-modulo': secao.modulo })}
+                  className={cn(secao.oculta && 'mt-auto')}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setManuais((m) => ({ ...m, [secao.id]: !aberta }))}
+                    aria-expanded={aberta}
+                    aria-current={ativa ? 'true' : undefined}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:focus-ring',
+                      ativa ? 'font-bold' : 'font-medium',
+                    )}
+                  >
+                    <secao.icon aria-hidden="true" className="size-4 shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">{secao.rotulo}</span>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cn(
+                        'size-3.5 shrink-0 text-muted-foreground',
+                        aberta && 'rotate-180',
+                      )}
+                    />
+                  </button>
+                  {aberta
+                    ? grupos.map((grupo) => (
+                        <SidebarGroup key={grupo.title} className="py-0 pl-2">
+                          <SidebarGroupLabel>
+                            {/* O quadradinho na cor do módulo DONO do grupo:
+                                a cor diz de quem é o bloco antes do nome. */}
+                            <span
+                              aria-hidden="true"
+                              {...(grupo.modulo && { 'data-modulo': grupo.modulo })}
+                              className="mr-2 size-2 shrink-0 rounded-data bg-modulo-cheia"
+                            />
+                            {grupo.title}
+                          </SidebarGroupLabel>
+                          <SidebarMenu>
+                            {grupo.items.map((item) => (
+                              <ItemDaBarra
+                                key={item.url}
+                                item={item}
+                                pathname={pathname}
+                                abertos={abertos}
+                                filtrando={filtrando}
+                                aoAlternar={alternar}
+                              />
+                            ))}
+                          </SidebarMenu>
+                        </SidebarGroup>
+                      ))
+                    : null}
+                </SidebarGroup>
+              )
+            })}
+          </nav>
         )}
       </SidebarContent>
       <SidebarRail />
@@ -373,7 +412,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar secao={secaoAtiva} />
+      <AppSidebar secoes={secoes} secaoAtiva={secaoAtiva} />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}

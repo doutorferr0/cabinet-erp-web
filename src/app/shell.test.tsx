@@ -59,11 +59,12 @@ function setup(initialUrl = '/') {
 
 describe('AppShell', () => {
   /**
-   * As SEIS seções vivem no topo, só com ícone — o nome existe em `aria-label`
-   * e no tooltip. Buscar por texto acharia o rótulo do grupo da barra lateral e
-   * passaria sem provar que a aba está lá; por PAPEL + NOME ACESSÍVEL, não.
+   * POLARIS (sidebar-first, 2026-08-17): as seções moram na BARRA LATERAL,
+   * com rótulo visível — a fileira de ícones anônimos do topo morreu. A 7ª
+   * (Configurações) também está lá, no pé, e a engrenagem da topbar é o
+   * atalho que a abre.
    */
-  it('as seis seções estão no topo, alcançáveis por nome', async () => {
+  it('as sete seções estão na barra lateral, com rótulo', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
@@ -73,26 +74,38 @@ describe('AppShell', () => {
     for (const rotulo of ['Início', 'Comercial', 'Estoque', 'Financeiro', 'Pessoas', 'Catálogo']) {
       expect(secoes.getByRole('button', { name: rotulo })).toBeInTheDocument()
     }
-    // Configurações é a SÉTIMA, oculta: fora da fileira, atrás da engrenagem.
-    expect(secoes.queryByRole('button', { name: 'Configurações' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    // A seção mora no nav; a engrenagem da topbar é o segundo caminho até ela.
+    expect(secoes.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
+    expect(topo.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
   })
 
   /**
-   * A barra lateral é CONTEXTUAL: mostra a seção da rota, não o sistema
-   * inteiro. Na raiz é Início — e Compras (de Estoque) não pode estar ali.
+   * A barra é o MAPA INTEIRO (Polaris), mas só a seção da rota vem ABERTA:
+   * na raiz, Início expõe o Dashboard e Estoque está listado porém fechado —
+   * o conteúdo dele (Compras, Orçamentos de Comercial) não aparece até o
+   * operador abrir. Abrir NÃO navega.
    */
-  it('a barra mostra só a seção da rota', async () => {
+  it('todas as seções listadas, só a da rota aberta', async () => {
     setup()
+    const user = userEvent.setup()
     const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
 
     await waitFor(() => {
       expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     })
     expect(barra().getByText('Hoje')).toBeInTheDocument()
+    expect(barra().getByRole('button', { name: 'Estoque' })).toBeInTheDocument()
     expect(barra().queryByText('Compras')).not.toBeInTheDocument()
     expect(barra().queryByRole('link', { name: 'Orçamentos' })).not.toBeInTheDocument()
+
+    // Abrir Estoque expõe o conteúdo sem sair da rota.
+    await user.click(barra().getByRole('button', { name: 'Estoque' }))
+    // 'Compras' existe duas vezes de propósito — rótulo do grupo e item pai
+    // colapsável; a asserção mira o item, que é o que o operador clica.
+    expect(await barra().findByRole('button', { name: 'Compras' })).toBeInTheDocument()
+    expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
   it('a busca da barra filtra a seção, e diz quando não acha', async () => {
@@ -114,7 +127,7 @@ describe('AppShell', () => {
 
     await user.clear(barra().getByRole('textbox'))
     await user.type(barra().getByRole('textbox'), 'zzz')
-    expect(await barra().findByText(/Nenhuma tela desta seção/)).toBeInTheDocument()
+    expect(await barra().findByText(/Nenhuma tela casa/)).toBeInTheDocument()
   })
 
   /** Tela futura: visível, apagada NO FUNDO (regra Visual-1), com selo, e não navega. */
@@ -213,12 +226,11 @@ describe('AppShell', () => {
     )
   })
 
-  // A MARCA voltou ao topo da barra lateral e a EMPRESA mora nos globais da
-  // direita da appbar (decisão do user, 2026-08-17 — emenda na issue #140,
-  // revoga o canto esquerdo de 2026-08-14). O que este teste trava: o selo do
-  // produto assina o painel, o escopo do dado fica entre sino e operador —
-  // nunca os dois disputando o mesmo canto da faixa.
-  it('marca na barra lateral, empresa nos globais da appbar', async () => {
+  // POLARIS (2026-08-17): a MARCA mora na topbar, à esquerda — a posição do
+  // logo no admin Shopify — e a EMPRESA segue nos globais da direita, ao lado
+  // do operador. A navegação desceu pra sidebar; marca e navegação não
+  // disputam mais o mesmo painel.
+  it('marca na topbar, empresa nos globais', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
@@ -229,12 +241,12 @@ describe('AppShell', () => {
     // O rodapé segue extinto: não sobrou nada para pousar lá.
     expect(document.querySelector('[data-slot="sidebar-footer"]')).toBeNull()
 
-    // A marca mora no CABEÇALHO da barra lateral, e só lá.
-    const marca = document.querySelector('[data-slot="sidebar-header"] [data-slot="marca"]')
+    // A marca mora na TOPBAR, e só lá.
+    const marca = topo?.querySelector('[data-slot="marca"]')
     expect(marca).toHaveAttribute('data-variante', 'assinatura')
     // O nome do produto é DESENHO, não texto — quem o anuncia é o rótulo.
     expect(marca).toHaveAttribute('aria-label', 'Cabinet')
-    expect(topo?.querySelector('[data-slot="marca"]')).toBeNull()
+    expect(document.querySelector('[data-slot="sidebar-header"] [data-slot="marca"]')).toBeNull()
 
     // A empresa mora na appbar: um ornamento só, o dela.
     const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
@@ -377,8 +389,10 @@ describe('AppShell', () => {
           screen.getByRole('button', { name: 'Abrir a paleta de comandos' }),
         ).toBeInTheDocument()
         // A engrenagem deixou de ser o botão apagado que dizia "ainda não
-        // existe": Configurações EXISTE agora, e é a sétima seção.
-        expect(screen.getByRole('button', { name: 'Configurações' })).toBeEnabled()
+        // existe": Configurações EXISTE — na sidebar e no atalho da topbar.
+        for (const botao of screen.getAllByRole('button', { name: 'Configurações' })) {
+          expect(botao).toBeEnabled()
+        }
         expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
         unmount()
       }

@@ -1,6 +1,11 @@
 import { ConsultasFavoritas } from '@/components/cabinet/consultas-favoritas'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
-import { colunasDaGrade, idsDeclarados } from '@/components/cabinet/listagem/colunas-da-grade'
+import {
+  PontoDoModulo,
+  colunasDaGrade,
+  idsDeclarados,
+  moduloDaColuna,
+} from '@/components/cabinet/listagem/colunas-da-grade'
 import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
 import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
@@ -758,6 +763,10 @@ export function VitraDataTable<T>({
                       'accessorKey' in header.column.columnDef
                     const active = state.sort?.id === header.column.id
                     const numeric = header.column.columnDef.meta?.numeric === true
+                    // A origem da coluna só existe onde a tela declarou a
+                    // entidade do schema — nas outras a grade segue sem ponto,
+                    // em vez de inventar um módulo para caber no desenho.
+                    const modulo = entidade ? moduloDaColuna(entidade, header.column.id) : undefined
                     return (
                       <TableHead
                         key={header.id}
@@ -775,6 +784,7 @@ export function VitraDataTable<T>({
                         }
                         className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
                       >
+                        {header.isPlaceholder ? null : <PontoDoModulo cor={modulo?.cor} />}
                         {header.isPlaceholder ? null : sortable ? (
                           <button
                             type="button"

@@ -1,9 +1,10 @@
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { ModuloCor } from '@/components/cabinet/modulo-cores'
 import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulos'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
-import { idDoFiltro } from './modulos-da-consulta'
+import { idDoFiltro, moduloDoFiltro } from './modulos-da-consulta'
 
 /**
  * COLUNAS OPCIONAIS DA GRADE (#104) — o que o seletor `Colunas` liga de verdade.
@@ -64,6 +65,46 @@ export function camposOpcionais(
       const id = idDaColuna(entidade, campo)
       return id !== undefined && !declaradas.includes(id)
     })
+}
+
+/**
+ * De que módulo veio a coluna, pelo id.
+ *
+ * Delega ao `moduloDoFiltro` porque o ESPAÇO DE IDS é o mesmo — filtro e coluna
+ * chamam o campo pelo nome que viaja (`dto` em http, `campo` em mock). Duas
+ * buscas paralelas sobre a mesma chave divergiriam no dia em que uma das duas
+ * mudasse de critério.
+ */
+export function moduloDaColuna(entidade: EntidadeCadastro, id: string) {
+  return moduloDoFiltro(entidade, id)
+}
+
+/**
+ * O ponto da cor do módulo no cabeçalho da grade (#104).
+ *
+ * O seletor de `Colunas` responde "de onde vem cada coluna" enquanto está
+ * aberto; o ponto faz a resposta continuar valendo depois que ele fecha. É a
+ * MESMA peça que o seletor usa na legenda de cada grupo — quadrado de borda
+ * dupla preenchido com a cor do módulo — para que o olho ligue as duas sem
+ * precisar aprender dois vocabulários.
+ *
+ * `aria-hidden`, e de propósito: a informação é SUPLEMENTAR (WCAG 1.4.1). Quem
+ * não enxerga a cor continua com o rótulo da coluna, que é o que identifica, e
+ * com o seletor, que agrupa por módulo e escreve o nome de cada grupo. Cor
+ * sozinha nunca carrega dado aqui.
+ *
+ * Módulo sem `cor` não desenha ponto — o `colaborador` é o caso, e a nona cor é
+ * decisão de identidade visual do user, não do componente.
+ */
+export function PontoDoModulo({ cor }: { cor: ModuloCor | undefined }) {
+  if (!cor) return null
+  return (
+    <span
+      aria-hidden="true"
+      data-modulo={cor}
+      className="mr-1.5 inline-block size-2.5 border-2 border-border bg-modulo-cheia align-middle"
+    />
+  )
 }
 
 function celula(campo: CampoCadastro, valor: unknown): ReactNode {

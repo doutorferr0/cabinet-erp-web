@@ -67,6 +67,28 @@ describe('a coluna que o operador liga chega à grade', () => {
     expect(setor).toBeDisabled()
   })
 
+  // O ponto de cor faz a resposta do seletor ("de onde vem esta coluna")
+  // sobreviver ao fechamento dele. Vale para a coluna que a TELA declara, e não
+  // só para a que o operador ligou.
+  it('Clientes — o cabeçalho marca a coluna com a cor do módulo de origem', async () => {
+    renderRoute('/cadastros/clientes', stubDeParceiros())
+
+    await screen.findByText('Cadastro de Clientes')
+    const nome = await grade().findByRole('columnheader', { name: /Nome/ })
+    expect(nome.querySelector('[data-modulo="clientes"]')).not.toBeNull()
+  })
+
+  // Colaborador NÃO tem cor atribuída (a nona cor é decisão do user, ver o
+  // schema). Inventar uma para o ponto caber seria pintar módulo por conta
+  // própria — então a grade fica sem ponto, e isso é o comportamento certo.
+  it('Colaboradores — sem cor no schema, o cabeçalho não ganha ponto', async () => {
+    renderRoute('/cadastros/colaboradores')
+
+    await screen.findByText('Cadastro de Colaboradores')
+    const nome = await grade().findByRole('columnheader', { name: /Nome/ })
+    expect(nome.querySelector('[data-modulo]')).toBeNull()
+  })
+
   // `CPF / CNPJ` é `col: true` no schema do cliente e a listagem NÃO o desenha.
   // Antes da correção o seletor o marcava como fixo — descrevendo uma grade que
   // não existe. Ele tem que ser oferecido, e funcionar.

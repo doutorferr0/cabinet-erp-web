@@ -60,25 +60,51 @@ function setup(initialUrl = '/') {
 describe('AppShell', () => {
   /**
    * POLARIS (sidebar-first, 2026-08-17): as seções moram na BARRA LATERAL,
-   * com rótulo visível — a fileira de ícones anônimos do topo morreu. A 7ª
-   * (Configurações) também está lá, no pé, e a engrenagem da topbar é o
-   * atalho que a abre.
+   * com rótulo visível — a fileira de ícones anônimos do topo morreu.
+   *
+   * A barra lista o que se OPERA, e só isso: Configurações saiu dela e virou
+   * página (`/config`), alcançada pela engrenagem da topbar. Um bloco de
+   * visita rara cobrava espaço permanente no caminho de todo dia.
    */
-  it('as sete seções estão na barra lateral, com rótulo', async () => {
+  it('as sete seções de operação estão na barra; Configurações não', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
     })
 
     const secoes = within(screen.getByRole('navigation', { name: 'Seções' }))
-    for (const rotulo of ['Início', 'Comercial', 'Estoque', 'Financeiro', 'Pessoas', 'Catálogo']) {
+    for (const rotulo of [
+      'Início',
+      'Comercial',
+      'CRM',
+      'Estoque',
+      'Financeiro',
+      'Pessoas',
+      'Catálogo',
+    ]) {
       expect(secoes.getByRole('button', { name: rotulo })).toBeInTheDocument()
     }
-    // A seção mora no nav; a engrenagem da topbar é o segundo caminho até ela.
-    expect(secoes.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    expect(secoes.queryByRole('button', { name: 'Configurações' })).not.toBeInTheDocument()
+    // O único caminho até ela: a engrenagem da topbar, que NAVEGA.
     const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
-    expect(topo.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    expect(topo.getByRole('link', { name: 'Configurações' })).toHaveAttribute('href', '/config')
     expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
+  })
+
+  /**
+   * O CRM inteiro numa seção própria (decisão do user, 2026-08-17): o quadro
+   * e o que o monta, lado a lado. Antes o quadro estava em Comercial e a
+   * configuração dele em Configurações — duas casas para o mesmo assunto.
+   */
+  it('a seção CRM abre com o quadro e os cadastros dele', async () => {
+    setup('/crm/funil')
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+
+    await waitFor(() => {
+      expect(barra().getByRole('link', { name: 'Oportunidades' })).toBeInTheDocument()
+    })
+    expect(barra().getByRole('link', { name: 'Funis' })).toBeInTheDocument()
+    expect(barra().getByRole('link', { name: 'Motivos de Perda' })).toBeInTheDocument()
   })
 
   /**
@@ -364,9 +390,9 @@ describe('AppShell', () => {
    * servido pelo mesmo domínio ali do lado.
    */
   it('o item de referência sai da SPA por âncora, e em aba nova', async () => {
-    // Mora em Configurações desde a Nav-2 — fora do caminho de operação. A
-    // barra dele só existe numa rota da seção.
-    setup('/crm/funis')
+    // Mora na PÁGINA de Configurações desde 2026-08-17 — fora do caminho de
+    // operação, e fora da barra lateral também.
+    setup('/config')
     const item = await screen.findByRole('link', { name: /Mapeamento de Tabelas/ })
 
     expect(item).toHaveAttribute('href', '/mapeamento-tabelas.html')
@@ -391,10 +417,11 @@ describe('AppShell', () => {
           screen.getByRole('button', { name: 'Abrir a paleta de comandos' }),
         ).toBeInTheDocument()
         // A engrenagem deixou de ser o botão apagado que dizia "ainda não
-        // existe": Configurações EXISTE — na sidebar e no atalho da topbar.
-        for (const botao of screen.getAllByRole('button', { name: 'Configurações' })) {
-          expect(botao).toBeEnabled()
-        }
+        // existe": Configurações é PÁGINA, e a engrenagem leva até ela.
+        expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute(
+          'href',
+          '/config',
+        )
         expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
         unmount()
       }

@@ -15,6 +15,7 @@ import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { useLogout, useSessao } from '@/data/sessao'
+import { Link } from '@tanstack/react-router'
 import { Bell, ChevronDown, Search } from 'lucide-react'
 
 /** Duas primeiras iniciais do nome — o mesmo corte que os avatares do quadro usam. */
@@ -25,8 +26,19 @@ function iniciaisDoNome(nome: string): string {
   return (primeira + ultima).toUpperCase()
 }
 
-/** A seção dona desta rota — é ela que fica acesa e vem aberta na barra lateral. */
+/**
+ * A seção dona desta rota — é ela que fica acesa e vem aberta na barra lateral.
+ *
+ * A `raiz` é conferida ANTES dos itens porque a seção-página (Configurações)
+ * não tem item que case `/config`: o hub é a própria seção. Sem esta primeira
+ * volta, `/config` cairia no `?? secoes[0]` do shell e o cabeçalho anunciaria
+ * `Início` com Configurações na tela.
+ */
 export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | undefined {
+  const naRaiz = secoes.find(
+    (secao) => secao.raiz && (pathname === secao.raiz || pathname.startsWith(`${secao.raiz}/`)),
+  )
+  if (naRaiz) return naRaiz
   return secoes.find((secao) =>
     secao.grupos.some((grupo) =>
       grupo.items
@@ -50,10 +62,12 @@ export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | un
  * e responde abrindo diálogo mentiria como `<input>`. `Ctrl+K` escrito no
  * próprio botão. No Polaris a busca é central e larga — aqui também.
  *
- * ## Engrenagem — a seção oculta
+ * ## Engrenagem — a PÁGINA de Configurações
  *
- * Abre Configurações na barra lateral (7ª seção, fora da fileira de operação:
- * Odoo CogMenu, HubSpot settings).
+ * Navega para `/config`, e não abre bloco nenhum na barra: configuração fica
+ * fora do caminho de operação (Odoo CogMenu, HubSpot settings). É `<Link>`
+ * porque é rota de verdade — quem quiser abre em outra aba pelo próprio
+ * navegador, o que um `<button>` não permitiria.
  *
  * ## Sino — abre a gaveta que EMPURRA
  *
@@ -63,14 +77,12 @@ export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | un
 export function Appbar({
   naoLidas,
   secaoAtiva,
-  aoEscolherSecao,
   aoAbrirGaveta,
   aoAbrirPaleta,
 }: {
   naoLidas: number
-  /** Id da seção aberta na barra lateral — quem a guarda é o `AppShell`. */
+  /** Id da seção da rota — quem a resolve é o `AppShell`. */
   secaoAtiva: string | undefined
-  aoEscolherSecao: (id: string) => void
   aoAbrirGaveta: () => void
   aoAbrirPaleta: () => void
 }) {
@@ -116,17 +128,16 @@ export function Appbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {config ? (
+        {config?.raiz ? (
           <TooltipTrigger delay={200}>
-            <button
-              type="button"
-              onClick={() => aoEscolherSecao(config.id)}
+            <Link
+              to={config.raiz}
               aria-label="Configurações"
               aria-current={secaoAtiva === config.id ? 'page' : undefined}
-              className="grid size-8 place-content-center rounded-control outline-none hover:bg-muted focus-visible:focus-ring"
+              className="grid size-8 place-content-center rounded-control outline-none hover:bg-muted focus-visible:focus-ring aria-[current=page]:bg-muted"
             >
               <config.icon aria-hidden="true" className="size-4" />
-            </button>
+            </Link>
             <Tooltip>Configurações</Tooltip>
           </TooltipTrigger>
         ) : null}

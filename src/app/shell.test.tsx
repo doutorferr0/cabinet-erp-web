@@ -181,7 +181,9 @@ describe('AppShell', () => {
   it('só o módulo da rota fica aceso na sidebar', async () => {
     setup('/cadastros/fornecedores')
     await waitFor(() => {
-      expect(screen.getByText('Fornecedores')).toBeInTheDocument()
+      // 'Fornecedores' também aparece no rastro do header (Seção / Tela) —
+      // a espera mira o LINK da sidebar, que é o que o teste conta depois.
+      expect(screen.getByRole('link', { name: 'Fornecedores' })).toBeInTheDocument()
     })
     const acesos = document.querySelectorAll('[data-sidebar="menu-button"][data-active]')
     expect(acesos).toHaveLength(1)

@@ -317,10 +317,20 @@ function AppSidebar({
                     aria-expanded={aberta}
                     aria-current={ativa ? 'true' : undefined}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:focus-ring',
-                      ativa ? 'font-bold' : 'font-medium',
+                      'relative flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:focus-ring',
+                      // A SEÇÃO ATIVA se anuncia como o Polaris anuncia o item
+                      // selecionado: pill preenchida + negrito + fio de módulo
+                      // na borda esquerda (o acento que o Odoo põe no app
+                      // corrente). Hover sozinho não é indicação.
+                      ativa ? 'bg-sidebar-accent font-bold' : 'font-medium',
                     )}
                   >
+                    {ativa ? (
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-modulo-cheia"
+                      />
+                    ) : null}
                     <secao.icon aria-hidden="true" className="size-4 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">{secao.rotulo}</span>
                     <ChevronDown
@@ -397,6 +407,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     secoes.find((secao) => secao.id === escolhida) ??
     secaoDaRota(secoes, location.pathname) ??
     secoes[0]
+  /** A TELA da rota, para o rastro do header — busca nas folhas da seção. */
+  const telaAtiva = secaoAtiva?.grupos
+    .flatMap((grupo) => grupo.items.flatMap((item) => item.filhas ?? [item]))
+    .find((item) => location.pathname === item.url || location.pathname.startsWith(`${item.url}/`))
 
   // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
   // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
@@ -430,6 +444,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
           </div>
+          {/* ONDE ESTOU, por extenso — o Polaris põe o contexto no topo da
+              página e o Odoo crava o nome do app na barra. Seção em negrito,
+              tela depois; some quando a rota não pertence a seção nenhuma. */}
+          {secaoAtiva ? (
+            <nav aria-label="Você está em" className="flex min-w-0 items-center gap-1.5 text-sm">
+              <span className="shrink-0 font-bold">{secaoAtiva.rotulo}</span>
+              {telaAtiva ? (
+                <>
+                  <span aria-hidden="true" className="text-muted-foreground">
+                    /
+                  </span>
+                  <span className="truncate text-muted-foreground">{telaAtiva.title}</span>
+                </>
+              ) : null}
+            </nav>
+          ) : null}
           <div className="ml-auto flex items-center gap-2">
             <ModeToggle />
           </div>

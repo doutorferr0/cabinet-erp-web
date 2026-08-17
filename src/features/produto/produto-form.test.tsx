@@ -1,6 +1,12 @@
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json, problema } from '@/test/servidor'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
+import {
+  type FetchStub,
+  acaoDoCabecalho,
+  renderRoute,
+  respostaSessao,
+  respostaVinculos,
+} from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -201,7 +207,7 @@ describe('listagem de produtos', () => {
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    await acaoDoCabecalho(user, 'Excluir')
 
     const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('Desativar produto?')
@@ -248,7 +254,7 @@ describe('listagem de produtos', () => {
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    await acaoDoCabecalho(user, 'Excluir')
     await user.click(
       within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }),
     )
@@ -266,7 +272,7 @@ describe('listagem de produtos', () => {
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    await acaoDoCabecalho(user, 'Excluir')
 
     const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('já está inativo')
@@ -283,7 +289,7 @@ describe('listagem de produtos', () => {
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
     await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    await acaoDoCabecalho(user, 'Excluir')
     const dialogo = await screen.findByRole('alertdialog')
     await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
 

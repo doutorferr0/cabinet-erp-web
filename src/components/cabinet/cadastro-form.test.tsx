@@ -2,7 +2,7 @@ import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { renderRoute, renderWithQuery } from '@/test/utils'
+import { acaoDoCabecalho, renderRoute, renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
@@ -91,7 +91,7 @@ describe('CadastroForm em modo consulta', () => {
     const { router, user } = renderRoute('/cadastros/colaboradores')
 
     await user.click(await screen.findByText('CARLA SOUZA'))
-    await user.click(screen.getByRole('button', { name: 'Consul.' }))
+    await acaoDoCabecalho(user, 'Consul.')
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
@@ -104,7 +104,7 @@ describe('CadastroForm em modo consulta', () => {
     const { router, user } = renderRoute('/cadastros/colaboradores')
 
     await user.click(await screen.findByText('CARLA SOUZA'))
-    await user.click(screen.getByRole('button', { name: 'Alterar' }))
+    await acaoDoCabecalho(user, 'Alterar')
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')

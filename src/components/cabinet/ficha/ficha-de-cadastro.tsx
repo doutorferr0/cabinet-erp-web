@@ -1,9 +1,8 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
 import { IndiceDeModulos } from '@/components/cabinet/ficha/indice-de-modulos'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/cabinet/page-header'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
-import { Pencil, X } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
@@ -30,10 +29,10 @@ import type { ReactNode } from 'react'
  *
  * ## Por que a moldura mora aqui e não em cada rota
  *
- * Banda de identidade, aviso da tela e rodapé `Fechar` são os mesmos nas quatro
- * entidades — e são os mesmos do `CadastroForm`, de propósito: quem vem do
- * `Alterar` reconhece a tela pela moldura e vê só o miolo trocar. Quatro cópias
- * divergiriam, que é a mesma razão de o schema de módulos existir.
+ * Cabeçalho de página, aviso da tela e a saída são os mesmos nas quatro
+ * entidades: quem vem do `Alterar` reconhece a tela pela moldura e vê só o
+ * miolo trocar. Quatro cópias divergiriam, que é a mesma razão de o schema de
+ * módulos existir.
  *
  * ## O que NÃO faz, e a pendência declarada
  *
@@ -50,9 +49,9 @@ import type { ReactNode } from 'react'
  * isso o convite entregava o formulário inteiro com o bloco procurado fechado,
  * que é a fricção que a ficha existe para tirar.
  *
- * O `Alterar` do rodapé continua existindo e vai SEM módulo: é a edição do
- * cadastro inteiro, no lugar em que o `CadastroForm` põe o `Gravar` — quem
- * troca de modo não deve procurar o botão em outro canto.
+ * O `Alterar` da tela continua existindo e vai SEM módulo: é a edição do
+ * cadastro inteiro. Desde a #197 ele é a ação primária do cabeçalho, e não mais
+ * a tira colada no rodapé.
  */
 
 export interface FichaDeCadastroProps {
@@ -96,7 +95,18 @@ export function FichaDeCadastro({
 }: FichaDeCadastroProps) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4" data-slot="ficha-de-cadastro">
-      <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} />
+      {/* Cabeçalho de página (Polaris-2, #197): sair à esquerda, `Alterar` como
+          a única peça forte à direita. Era a tira colada no rodapé — e ela
+          contava a mesma história duas vezes, porque o lápis de cada módulo já
+          leva ao mesmo lugar. No topo, a ação da tela fica onde a ação da tela
+          fica em toda a seção, em vez de depender de o operador chegar ao fim
+          de uma ficha de quarenta linhas para descobrir que existe. */}
+      <PageHeader
+        titulo={titulo}
+        {...(contexto ? { contexto } : {})}
+        voltar={{ label: 'Fechar', onClick: aoFechar }}
+        primaria={{ id: 'alterar', label: 'Alterar', icon: Pencil, onClick: () => aoEditar() }}
+      />
       {aviso}
 
       <div className="flex min-w-0 items-start gap-4">
@@ -123,22 +133,6 @@ export function FichaDeCadastro({
       </div>
 
       {abaixo}
-
-      {/* Mesma tira do `CadastroForm` em modo consulta: régua forte sobre
-          Documento, ação única à direita. Ver o rodapé de cadastro-form.tsx. */}
-      <div className="sticky bottom-0 flex justify-end gap-2 rule-strong-top bg-card py-3">
-        <Button type="button" variant="outline" onClick={aoFechar}>
-          <X />
-          Fechar
-        </Button>
-        {/* Onde o `CadastroForm` põe o `Gravar`: `Alterar` e `Consul.` levam à
-            mesma tela (§9 padrão 8), e trocar de modo não pode trocar o lugar
-            dos botões. Sem módulo — este é o cadastro inteiro. */}
-        <Button type="button" onClick={() => aoEditar()}>
-          <Pencil />
-          Alterar
-        </Button>
-      </div>
     </div>
   )
 }

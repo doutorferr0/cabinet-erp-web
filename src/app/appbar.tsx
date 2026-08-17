@@ -184,25 +184,26 @@ export function Appbar({
           direita, então a navegação é o que resta — e o que manda — na faixa.
           `nav` com rótulo: é a navegação primária do sistema, e sem nome ela é
           uma fileira de ícones anônimos no leitor de tela. */}
-      {/* GRUPO CENTRADO com espaçamento fixo, não espalhado na largura:
-          esticar 6 ícones numa faixa de 2500px deixa vãos maiores que o
-          conteúdo (reprovado pelo user em 2026-08-17). O centro é âncora
-          estável; esquerda e direita respiram. */}
-      <nav aria-label="Seções" className="flex min-w-0 flex-1 items-stretch justify-center gap-4">
+      {/* AS SEIS SEÇÕES distribuídas na largura da faixa, com fio vertical
+          entre vizinhas — formato EXATO da referência do user (2026-08-17,
+          fonte da verdade desta appbar; supersede o grupo centrado). */}
+      <nav aria-label="Seções" className="flex min-w-0 flex-1 items-stretch">
         {secoes
           .filter((secao) => !secao.oculta)
           .map((secao, indice) => (
-            <div key={secao.id} className="flex items-stretch gap-4">
+            <div key={secao.id} className="flex flex-1 items-stretch">
               {/* O fio é ELEMENTO, não `border` — mesma razão do fio de 3px da
                   aba: utility de borda não pinta cor neste repo. */}
               {indice > 0 ? (
                 <span aria-hidden="true" className="my-auto h-7 w-0.5 shrink-0 bg-border" />
               ) : null}
-              <AbaDeSecao
-                secao={secao}
-                ativa={secao.id === secaoAtiva}
-                aoEscolher={() => aoEscolherSecao(secao.id)}
-              />
+              <div className="flex flex-1 items-stretch justify-center">
+                <AbaDeSecao
+                  secao={secao}
+                  ativa={secao.id === secaoAtiva}
+                  aoEscolher={() => aoEscolherSecao(secao.id)}
+                />
+              </div>
             </div>
           ))}
       </nav>

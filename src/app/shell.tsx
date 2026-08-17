@@ -384,18 +384,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAbrirPaleta={() => setPaletaAberta(true)}
         />
-        {/* A BANDA DE MÓDULO: 4px na cor cheia da TELA atual, logo sob a
-            appbar. É o acento que responde "em que território estou" sem
-            pintar área — casca colorida inteira foi testada e REPROVADA pelo
-            user (2026-08-17): seção e módulo da tela produziam pastéis
-            brigando na mesma dobra. Referência do tratamento: Odoo/Polaris —
-            chrome neutro, cor pontual e sempre A DA TELA. Rota sem módulo sai
-            no par primary do :root, a marca do sistema. */}
-        <div
-          aria-hidden="true"
-          {...(modulo && { 'data-modulo': modulo })}
-          className="h-1 shrink-0 bg-modulo-cheia"
-        />
 
         {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
         <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">

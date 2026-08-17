@@ -343,6 +343,39 @@ por fragilidade barraria desenho válido — as duas primeiras linhas provam iss
 > pendente desta página. Ligar antes da decisão deixa o CI vermelho para todo mundo por uma escolha
 > que é sua. Depois do C aplicado, ela fecha em zero e vira gate barato.
 
+### A classe é maior: 9 de 12 números cravados no `index.css` estão velhos
+
+O comentário da gaveta não é caso isolado. O `src/index.css` tem um bloco (tema escuro) que abre com
+**"Cada par abaixo foi MEDIDO (mesmo método da 1.6, luminância relativa)"** e lista 12 razões. Medi
+as 12 contra os tokens de hoje:
+
+| par afirmado no comentário | afirmado | medido hoje | |
+|---|--:|--:|:--|
+| tinta sobre bancada | 15,8:1 | **15,33:1** | −0,47 |
+| tinta sobre folha | 13,6:1 | **12,50:1** | −1,10 |
+| tinta sobre hover | 10,1:1 | 10,02:1 | ok |
+| apoio sobre folha | 7,6:1 | **6,77:1** | −0,83 |
+| traço sobre folha | 6,7:1 | **5,88:1** | −0,82 |
+| dinheiro sobre a zona de valor | 6,8:1 | 6,78:1 | ok |
+| negativo sobre a de bloqueio | 4,9:1 | 4,87:1 | ok |
+| tinta sobre as 5 zonas | 10,2 · 12,5 · 12,0 · 10,3 · 12,2 | **9,98 · 12,28 · 11,77 · 10,04 · 11,96** | −0,22 a −0,26 |
+
+**9 de 12 divergem, e todas para MENOS.** A deriva uniforme e de mesmo sinal é assinatura de medição
+feita antes de uma mudança de superfície — e o próprio bloco entrega a data: ele fala em *"sem ela o
+creme vira cinza"*, e **o creme saiu em 2026-08-13**. Os números são da paleta anterior.
+
+**Nenhum cruza piso.** Todos continuam passando, então isto **não é falha de acessibilidade** — é
+deriva de documentação. O que ela custa é margem imaginária: quem dimensionar folga lendo *"traço
+sobre folha 6,7:1"* está trabalhando com **5,88:1** de verdade, num token que sustenta a delimitação
+de 13 superfícies (§`tabela:pasteis-02`) — 12% menos folga do que o comentário promete.
+
+**Recomendação:** trocar o bloco de 12 números por um ponteiro para as tabelas geradas, que são
+conferíveis. É o mesmo remédio que esta página já adotou para si — *"número colado à mão foi o que
+produziu os três valores errados que esta página já publicou"* — e que o `index.css` ainda não
+adotou. Enquanto o número morar no comentário, ele envelhece em silêncio a cada troca de token.
+
+Não editei o `index.css`: é arquivo de paleta e a edição é do trilho que executar a decisão.
+
 ### Correção — o CI **não** roda o medidor
 
 Escrevi no PR #176 e no comentário da #140 que *"o `--conferir` do CI"* protegeria as tabelas

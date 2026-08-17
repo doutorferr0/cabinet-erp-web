@@ -30,6 +30,16 @@ export interface ColunasPorModuloProps {
   entidade: EntidadeCadastro
   /** Ids (o nome que viaja) das colunas OPCIONAIS ligadas. As fixas não entram. */
   extras: readonly string[]
+  /**
+   * As colunas que a TELA já desenha, e por isso não se desmarcam.
+   *
+   * Sem isto o "fixa" sai do `col: true` do schema, que é o que o campo QUER
+   * ser — e o que a grade mostra é outra coisa: o cliente declara `CPF / CNPJ`
+   * como `col`, e a listagem desenha Código, Nome e Ativo. Marcar como fixa uma
+   * coluna que não está na grade faz o seletor descrever uma tela que não
+   * existe. Ausente, cai no `col: true` — é o que o componente sozinho sabe.
+   */
+  fixas?: readonly string[]
   onChange: (extras: string[]) => void
 }
 
@@ -41,7 +51,7 @@ function colunasDoModulo(
   return modulo.campos.filter((campo) => idDoFiltro(entidade, campo))
 }
 
-export function ColunasPorModulo({ entidade, extras, onChange }: ColunasPorModuloProps) {
+export function ColunasPorModulo({ entidade, extras, fixas, onChange }: ColunasPorModuloProps) {
   const [aberto, setAberto] = useState(false)
   const painelId = useId()
   const modulos = entidade.modulos.filter((modulo) => colunasDoModulo(entidade, modulo).length > 0)
@@ -84,7 +94,7 @@ export function ColunasPorModulo({ entidade, extras, onChange }: ColunasPorModul
               </legend>
               {colunasDoModulo(entidade, modulo).map((campo) => {
                 const id = idDoFiltro(entidade, campo) as string
-                const fixa = campo.col === true
+                const fixa = fixas ? fixas.includes(id) : campo.col === true
                 return (
                   // O `Checkbox` do react-aria JÁ é o `<label>` e associa o
                   // texto que recebe como filho — envolvê-lo em outro `<label>`

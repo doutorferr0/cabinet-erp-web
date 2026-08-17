@@ -1,5 +1,12 @@
 import { ConsultasFavoritas } from '@/components/cabinet/consultas-favoritas'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
+import {
+  PontoDoModulo,
+  colunasDaGrade,
+  idsDeclarados,
+  moduloDaColuna,
+} from '@/components/cabinet/listagem/colunas-da-grade'
+import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
 import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
@@ -334,6 +341,10 @@ export function VitraDataTable<T>({
   // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
   const [filtrosInput, setFiltrosInput] = useState<FiltroDaTabela[]>([])
   const [juncao, setJuncao] = useState<Juncao>('and')
+  // Colunas OPCIONAIS ligadas pelo seletor. Vazio = a grade que a tela declarou,
+  // e é por isso que o estado nasce aqui e não na tela: quem monta a listagem
+  // escolhe a identidade da linha, não o que o operador quer ver hoje.
+  const [colunasExtras, setColunasExtras] = useState<string[]>([])
 
   // A visão e o agrupamento não entram no `TableQueryState`: nenhum dos dois
   // muda o CONJUNTO de registros, só o desenho. Somá-los à chave de cache faria
@@ -451,9 +462,19 @@ export function VitraDataTable<T>({
   const total = query.data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / state.pageSize))
 
+  // A grade é o que a TELA declarou mais o que o operador ligou. A soma mora
+  // aqui, e não na tela, para a coluna extra nascer com a mesma célula e a
+  // mesma regra de ordenação em todas as oito listagens.
+  const declaradas = useMemo(() => idsDeclarados(columns), [columns])
+  const colunasDaTabela = useMemo(
+    () =>
+      entidade ? [...columns, ...colunasDaGrade<T>(entidade, colunasExtras, declaradas)] : columns,
+    [columns, entidade, colunasExtras, declaradas],
+  )
+
   const table = useReactTable({
     data: rows,
-    columns,
+    columns: colunasDaTabela,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     manualPagination: true,
@@ -540,12 +561,22 @@ export function VitraDataTable<T>({
             // favorita e a recusa na fronteira continuam valendo de graça — a
             // diferença é só como o operador monta a pergunta.
             if (modoDeFiltro === 'modulo' && entidade) {
+              // O seletor de colunas sai no MESMO slot, e não numa barra
+              // própria: filtro, consulta salva e colunas respondem juntos "como
+              // esta listagem está montada agora". Separá-los faria o operador
+              // procurar em dois lugares o ajuste da mesma pergunta.
               return (
                 <span key={action.id} className="contents">
                   <FiltroPorModulo
                     entidade={entidade}
                     filtros={filtrosInput}
                     onChange={setFiltrosInput}
+                  />
+                  <ColunasPorModulo
+                    entidade={entidade}
+                    extras={colunasExtras}
+                    fixas={declaradas}
+                    onChange={setColunasExtras}
                   />
                   {salvas}
                 </span>
@@ -732,6 +763,10 @@ export function VitraDataTable<T>({
                       'accessorKey' in header.column.columnDef
                     const active = state.sort?.id === header.column.id
                     const numeric = header.column.columnDef.meta?.numeric === true
+                    // A origem da coluna só existe onde a tela declarou a
+                    // entidade do schema — nas outras a grade segue sem ponto,
+                    // em vez de inventar um módulo para caber no desenho.
+                    const modulo = entidade ? moduloDaColuna(entidade, header.column.id) : undefined
                     return (
                       <TableHead
                         key={header.id}
@@ -749,6 +784,7 @@ export function VitraDataTable<T>({
                         }
                         className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
                       >
+                        {header.isPlaceholder ? null : <PontoDoModulo cor={modulo?.cor} />}
                         {header.isPlaceholder ? null : sortable ? (
                           <button
                             type="button"

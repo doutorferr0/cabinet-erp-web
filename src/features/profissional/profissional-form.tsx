@@ -170,7 +170,13 @@ function BlocosDoCadastro({
   onBuscaCidade,
   onBuscaBanco,
   readOnly,
-}: { onBuscaCidade: (p: PrefixoCidade) => void; onBuscaBanco: () => void; readOnly: boolean }) {
+  moduloEmFoco,
+}: {
+  onBuscaCidade: (p: PrefixoCidade) => void
+  onBuscaBanco: () => void
+  readOnly: boolean
+  moduloEmFoco: string | undefined
+}) {
   return (
     <div className="flex flex-col gap-3">
       {esquema.modulos.map((modulo) => {
@@ -186,6 +192,7 @@ function BlocosDoCadastro({
             key={modulo.id}
             legend={modulo.titulo}
             colapsavel={!modulo.obrigatorio && !readOnly}
+            {...(moduloEmFoco === modulo.id ? { iniciaAberto: true } : {})}
             {...(modulo.obrigatorio ? { obrigatorio: true } : {})}
             {...(modulo.cor ? { cor: modulo.cor } : {})}
             {...propsDoIcone(modulo.id)}
@@ -215,10 +222,13 @@ export function ProfissionalForm({
   readOnly = false,
   contexto,
   aviso,
+  moduloEmFoco,
   onGravar: gravarDeFora,
 }: {
   profissional: Profissional
   readOnly?: boolean
+  /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
+  moduloEmFoco?: string | undefined
   /** Modo ou registro aberto, ao lado do título na banda. */
   contexto?: string
   /** Aviso da tela — vai sob o título, acima dos campos. */
@@ -261,6 +271,7 @@ export function ProfissionalForm({
         onBuscaCidade={setBuscaCidadePrefix}
         onBuscaBanco={() => setBuscaBancoOpen(true)}
         readOnly={readOnly}
+        moduloEmFoco={moduloEmFoco}
       />
 
       <BuscaCidade prefix={buscaCidadePrefix} onOpenChange={setBuscaCidadePrefix} />

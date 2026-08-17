@@ -131,12 +131,17 @@ function modulo(id: string): ModuloCadastro {
  * O bloco de um módulo do schema: título, resumo, cor e obrigatoriedade vêm de
  * lá; o miolo vem de quem chama.
  */
-function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode }) {
+function BlocoDoModulo({
+  id,
+  emFoco,
+  children,
+}: { id: string; emFoco: string | undefined; children: React.ReactNode }) {
   const m = modulo(id)
   return (
     <FormBlock
       legend={m.titulo}
       {...(m.obrigatorio ? { obrigatorio: true } : { colapsavel: true })}
+      {...(emFoco === id ? { iniciaAberto: true } : {})}
       {...(m.cor ? { cor: m.cor } : {})}
       {...propsDoIcone(id)}
     >
@@ -145,12 +150,15 @@ function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode
   )
 }
 
-function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
+function FornecedorCorpo({
+  onBuscaCidade,
+  moduloEmFoco,
+}: { onBuscaCidade: () => void; moduloEmFoco: string | undefined }) {
   return (
     <div className="flex flex-col gap-3">
       <ProgressoObrigatorios entidade={entidadeFornecedor} />
 
-      <BlocoDoModulo id="identificacao">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="identificacao">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="razaoSocial"
@@ -175,13 +183,13 @@ function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="fiscal">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="fiscal">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="inscEst" label="Insc. Est." className="col-span-6 sm:col-span-3" />
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="comercial">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="comercial">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="prazoEntregaDias"
@@ -226,7 +234,7 @@ function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </p>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="representante">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="representante">
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-12 items-end gap-3">
             <TextField name="fone2" label="Fone 2" className="col-span-6 sm:col-span-2" />
@@ -253,11 +261,11 @@ function FornecedorCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="endereco">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="endereco">
         <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="redes">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="redes">
         <RedesSociaisBlock prefix="redesSociais" />
       </BlocoDoModulo>
     </div>
@@ -269,10 +277,13 @@ export function FornecedorForm({
   readOnly = false,
   contexto,
   aviso,
+  moduloEmFoco,
   onGravar: gravarDeFora,
 }: {
   fornecedor: Fornecedor
   readOnly?: boolean
+  /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
+  moduloEmFoco?: string | undefined
   /** Modo ou registro aberto, ao lado do título na banda. */
   contexto?: string
   /** Aviso da tela — vai sob o título, acima dos campos. */
@@ -308,7 +319,7 @@ export function FornecedorForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <FornecedorCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} />
+      <FornecedorCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} moduloEmFoco={moduloEmFoco} />
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

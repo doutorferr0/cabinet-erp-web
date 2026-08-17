@@ -276,10 +276,49 @@ As duas linhas que quebram são exatamente as duas em que o par se desemparelha.
 o contraexemplo escrito** — *"quem desce de luz no escuro sobrevive à inversão da tinta"* — mas nunca
 como regra, e por isso ela não foi aplicada aos dois casos que faltavam.
 
-**Sugestão de guarda (não implementada):** o `medir-contraste.py` já conhece os pares reais em
-`ESTADOS`. Um modo `--pares-desemparelhados` poderia comparar o sinal de ΔL entre temas de cada
-preenchimento e da sua tinta, e apontar os que não viram juntos — pegando esta classe inteira antes
-de virar reprovação. Fica como proposta; não mexi no medidor.
+### A guarda existe agora — `medir-contraste.py --pares-desemparelhados`
+
+A regra virou checagem, sobre os pares reais que o medidor já conhecia em `ESTADOS`. Ela compara
+quanto cada lado do par **anda em luminância entre os temas** e aponta os que não andam juntos.
+
+Duas coisas que ela faz questão de **não** confundir, e que a primeira versão confundia:
+
+- **Piso por tipo de par.** Traço e superfície são componente gráfico: piso 3:1, não 4,5:1. Sem essa
+  distinção a checagem acusava "reprova" em `desabilitado: traço apagado` (3,58:1) e na
+  `linha selecionada × folha` (4,76:1), que **passam** nos seus pisos.
+- **Desemparelhado ≠ reprovado.** Um preenchimento de **meio-tom** aguenta tinta que vira, porque
+  fica longe dos dois extremos — a `linha selecionada` é exatamente isso (`--primary` anda só 0,105
+  e fica no meio) e passa 5,22 / 5,13:1. É desenho legítimo, não sorte.
+
+O que ela devolve hoje:
+
+| par | veredito |
+|---|---|
+| `linha selecionada: primary-foreground × primary` | ok — lado parado é meio-tom |
+| `linha selecionada × folha` | ok — lado parado é meio-tom |
+| **`carimbo open` + `foreground`** | **REPROVA hoje** (1,30:1) |
+| `carimbo void` + folha | frágil — passa (5,51 / 5,09:1), mas o lado parado está num extremo |
+| `desabilitado: traço apagado` | frágil — passa (3,58 / 3,49:1) com margem fina |
+
+**Sai com código 1 só pelo que está abaixo do piso**, nunca por fragilidade: um gate que reprovasse
+por fragilidade barraria desenho válido — as duas primeiras linhas provam isso.
+
+> ⚠️ **Não wire no CI ainda.** Hoje ela sai 1 por causa do `carimbo open`, que é justamente a decisão
+> pendente desta página. Ligar antes da decisão deixa o CI vermelho para todo mundo por uma escolha
+> que é sua. Depois do C aplicado, ela fecha em zero e vira gate barato.
+
+### Correção — o CI **não** roda o medidor
+
+Escrevi no PR #176 e no comentário da #140 que *"o `--conferir` do CI"* protegeria as tabelas
+geradas. **Está errado, e corrijo aqui:** nada roda `medir-contraste.py` — não há passo em
+`.github/workflows/ci.yml`, não há script em `package.json`, não há hook. Conferido nos três.
+
+Consequência real: **a disciplina de "tabela gerada, não digitada" depende hoje de alguém lembrar de
+rodar.** As tabelas estão em dia agora porque eu rodei; nada impede a próxima mudança de token de
+deixá-las velhas em silêncio — que é exatamente o defeito que a página diz ter cometido três vezes.
+
+Ligar `--conferir` (e depois `--pares-desemparelhados`) ao CI é mudança em `.github/` e
+`package.json`, **fora da minha zona** — fica registrado como recomendação, não executado.
 
 ## 8. O que é preciso para executar, quando houver decisão
 

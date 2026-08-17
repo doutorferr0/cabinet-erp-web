@@ -143,6 +143,7 @@ export const cliente: EntidadeCadastro = {
       id: 'comercial',
       titulo: 'Comercial',
       resumo: 'Quem indicou · Categoria · Tabela · Limite de crédito',
+      cor: 'crm',
       campos: [
         {
           k: 'indicou',
@@ -238,6 +239,7 @@ export const fornecedor: EntidadeCadastro = {
       id: 'comercial',
       titulo: 'Comercial e preço',
       resumo: 'Prazo de entrega · Prazo de pagamento · Revenda',
+      cor: 'crm',
       campos: [
         {
           k: 'prazoEntrega',
@@ -407,6 +409,7 @@ export const profissional: EntidadeCadastro = {
       id: 'participacao',
       titulo: 'Participação padrão',
       resumo: '% de indicação aplicado quando este profissional entra na venda',
+      cor: 'vendas',
       campos: [
         // Do mockup, sem onde gravar hoje.
         { k: 'pct', r: '% padrão de indicação', w: 'medio', col: true, fil: 'faixa' },
@@ -423,16 +426,18 @@ export const colaborador: EntidadeCadastro = {
   id: 'colaborador',
   nome: 'Colaborador',
   plural: 'Colaboradores',
-  // SEM cor, e não é esquecimento: a tabela de shape×cor travada pelo user cobre
-  // oito módulos e Colaboradores não é um deles (ver `src/app/modulo.ts`).
-  // O mockup pinta o cadastro com o azure do Estoque, que é cor de OUTRO módulo.
-  // Atribuir a nona cor é decisão de identidade visual, do user.
+  // Púrpura de Pessoas, por ordem do user (2026-08-17: "cores fortes em todas
+  // as opções"). Colaborador não tem módulo próprio no ERP; veste a cor de
+  // `profissionais` porque os dois são o domínio Pessoas — o azure do mockup
+  // antigo era a cor do Estoque e colidiria com o bloco Documentos.
+  cor: 'profissionais',
   fonte: 'mock',
   modulos: [
     {
       id: 'identificacao',
       titulo: 'Identificação',
       resumo: 'O mínimo para gravar e vincular a vendas',
+      cor: 'profissionais',
       obrigatorio: true,
       campos: [
         { k: 'nome', r: 'Nome completo', req: true, col: true, fil: 'texto', campo: 'nome' },
@@ -474,6 +479,7 @@ export const colaborador: EntidadeCadastro = {
       id: 'empresas',
       titulo: 'Empresas e perfil',
       resumo: 'Um colaborador pode atuar em mais de uma empresa, com papel diferente em cada',
+      cor: 'fornecedores',
       campos: [
         { k: 'empresa', r: 'Empresa', t: 'select', col: true, fil: 'sel', campo: 'empresa' },
         // O perfil por empresa é o escopo da issue #105 (Acesso-1).
@@ -484,6 +490,7 @@ export const colaborador: EntidadeCadastro = {
       id: 'documentos',
       titulo: 'Documentos e dados pessoais',
       resumo: 'Nascimento · Estado civil · Filiação · Naturalidade · Instrução',
+      cor: 'estoque',
       campos: [
         {
           k: 'nasc',
@@ -512,6 +519,7 @@ export const colaborador: EntidadeCadastro = {
       id: 'trabalhistas',
       titulo: 'Dados trabalhistas',
       resumo: 'Vínculo · Salário · Admissão · Demissão',
+      cor: 'boletim',
       campos: [
         { k: 'vinculo', r: 'Vínculo', t: 'select', fil: 'sel', campo: 'vinculo' },
         {
@@ -537,6 +545,7 @@ export const colaborador: EntidadeCadastro = {
       id: 'metas',
       titulo: 'Metas e comissão',
       resumo: '% interna · % externa · Meta mensal',
+      cor: 'vendas',
       campos: [
         // Módulo inteiro do mockup, sem lastro: comissão e meta não existem em
         // schema nenhum. É o maior buraco medido nesta issue, e o que o user

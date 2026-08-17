@@ -7,7 +7,7 @@ import { TextField } from '@/components/cabinet/form-controls'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Input } from '@/components/ui/input'
 import { data } from '@/data'
-import { camposDe, profissional as esquema } from '@/features/cadastro/modulos'
+import { camposDe, profissional as esquema, propsDoIcone } from '@/features/cadastro/modulos'
 import {
   CamposDoModulo,
   Pendencias,
@@ -188,6 +188,7 @@ function BlocosDoCadastro({
             colapsavel={!modulo.obrigatorio && !readOnly}
             {...(modulo.obrigatorio ? { obrigatorio: true } : {})}
             {...(modulo.cor ? { cor: modulo.cor } : {})}
+            {...propsDoIcone(modulo.id)}
           >
             {/* Endereço mantém o bloco compartilhado: é ele que traz a busca de
                 CEP e a janela de cidade, que o render genérico não tem. */}

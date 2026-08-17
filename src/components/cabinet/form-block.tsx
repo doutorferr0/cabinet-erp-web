@@ -1,6 +1,6 @@
 import { type ModuloCor, classeDaTintaDaFaixa } from '@/components/cabinet/modulo-cores'
 import { cn } from '@/lib/utils'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
 /**
@@ -92,6 +92,14 @@ export interface FormBlockProps {
    * só se diz QUAL. Ver `modulo-cores.ts` para a tinta da faixa, que é medida.
    */
   cor?: ModuloCor
+  /**
+   * O SELO do mockup: ícone num quadrado de folha, pousado na faixa antes do
+   * nome. O quadrado é `bg-card` de propósito — sobre a cheia neon, o branco
+   * do selo é o que faz o símbolo ler nos dois temas, e o ícone dentro dele
+   * usa `text-modulo` (a própria /01) em vez de herdar a tinta da faixa.
+   * Quem escolhe o símbolo é `modulo-icones.ts`, por id de módulo.
+   */
+  icone?: LucideIcon
 }
 
 export function FormBlock({
@@ -101,6 +109,7 @@ export function FormBlock({
   colapsavel = false,
   obrigatorio = false,
   cor,
+  icone: Icone,
 }: FormBlockProps) {
   const idCorpo = useId()
   // A referência mora no `<fieldset>`, não no corpo: o bloco SEM cabeçalho não
@@ -155,6 +164,15 @@ export function FormBlock({
     // (DESIGN.md §Medição, pendência 6).
     aberto && 'border-b-2',
   )
+
+  const selo = Icone ? (
+    <span
+      aria-hidden="true"
+      className="flex size-6 shrink-0 items-center justify-center rounded-sm border-2 bg-card"
+    >
+      <Icone className={cn('size-3.5', cor ? 'text-modulo' : 'text-text-strong')} />
+    </span>
+  ) : null
 
   const nomeDaFaixa = (
     // `aria-hidden`: o mesmo texto já é o `<legend>` do compartimento e o
@@ -231,6 +249,7 @@ export function FormBlock({
               onClick={() => setAberto((estava) => !estava)}
               className={cn(faixa, 'cursor-pointer focus-visible:focus-ring-inset')}
             >
+              {selo}
               {nomeDaFaixa}
               {carimbos}
               <ChevronDown
@@ -240,6 +259,7 @@ export function FormBlock({
             </button>
           ) : (
             <div className={faixa}>
+              {selo}
               {nomeDaFaixa}
               {carimbos}
             </div>

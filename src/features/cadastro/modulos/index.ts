@@ -5,6 +5,7 @@ export {
   fornecedor,
   profissional,
 } from './entidades'
+export { propsDoIcone } from './modulo-icones'
 export {
   moduloBancario,
   moduloContatos,

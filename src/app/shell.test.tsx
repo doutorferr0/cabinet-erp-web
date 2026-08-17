@@ -92,6 +92,25 @@ describe('AppShell', () => {
   })
 
   /**
+   * DOIS caminhos até Configurações, e é de propósito: a engrenagem é ícone
+   * sem palavra, e quem não a associa ao destino precisa achá-lo escrito.
+   */
+  it('o menu do operador leva a Configurações, por escrito', async () => {
+    setup()
+    const user = userEvent.setup()
+
+    const avatar = await screen.findByRole('button', { name: /Henrique|Usuário/i })
+    await user.click(avatar)
+
+    const item = await screen.findByRole('menuitem', { name: 'Configurações' })
+    await user.click(item)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    })
+  })
+
+  /**
    * O CRM inteiro numa seção própria (decisão do user, 2026-08-17): o quadro
    * e o que o monta, lado a lado. Antes o quadro estava em Comercial e a
    * configuração dele em Configurações — duas casas para o mesmo assunto.

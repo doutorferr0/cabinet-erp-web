@@ -15,8 +15,9 @@ import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { useLogout, useSessao } from '@/data/sessao'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Bell, ChevronDown, Search } from 'lucide-react'
+import { Button as ButtonAria } from 'react-aria-components'
 
 /** Duas primeiras iniciais do nome — o mesmo corte que os avatares do quadro usam. */
 function iniciaisDoNome(nome: string): string {
@@ -69,6 +70,13 @@ export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | un
  * porque é rota de verdade — quem quiser abre em outra aba pelo próprio
  * navegador, o que um `<button>` não permitiria.
  *
+ * ## Configurações também no menu do operador
+ *
+ * A engrenagem é ícone sem palavra: quem não a associa a "configurações" não
+ * tem como saber que ela é o caminho. O menu do avatar repete o destino POR
+ * ESCRITO — é onde o hábito manda procurar ajuste de conta, e o custo de um
+ * segundo caminho é uma linha, não uma tela.
+ *
  * ## Sino — abre a gaveta que EMPURRA
  *
  * `aoAbrirGaveta` é do AppShell: a gaveta é coluna irmã do `<main>`, e o
@@ -86,6 +94,7 @@ export function Appbar({
   aoAbrirGaveta: () => void
   aoAbrirPaleta: () => void
 }) {
+  const navigate = useNavigate()
   const { data: sessao } = useSessao()
   const { ativa } = useEmpresasDaSessao()
   const logout = useLogout()
@@ -93,6 +102,9 @@ export function Appbar({
 
   const secoes = secoesVisiveis(tem)
   const config = secoes.find((secao) => secao.oculta)
+  // Em const, e não lido de dentro do JSX: `exactOptionalPropertyTypes` recusa
+  // `navigate({ to: config?.raiz })` porque a estreiteza se perde no callback.
+  const raizDaConfig = config?.raiz
 
   const nome = sessao?.displayName?.trim() || 'Usuário'
 
@@ -128,10 +140,10 @@ export function Appbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {config?.raiz ? (
+        {config && raizDaConfig ? (
           <TooltipTrigger delay={200}>
             <Link
-              to={config.raiz}
+              to={raizDaConfig}
               aria-label="Configurações"
               aria-current={secaoAtiva === config.id ? 'page' : undefined}
               className="grid size-8 place-content-center rounded-control outline-none hover:bg-muted focus-visible:focus-ring aria-[current=page]:bg-muted"
@@ -168,10 +180,11 @@ export function Appbar({
         </div>
 
         <DropdownMenuTrigger>
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-control py-1 pr-2 pl-1 font-semibold text-sm outline-none hover:bg-muted focus-visible:focus-ring"
-          >
+          {/* `Button` do react-aria, e não `<button>` cru: o `MenuTrigger`
+              entrega os gestos ao filho por `PressResponder`, e elemento DOM
+              puro não os recebe — o menu do operador não abria, e o `Sair`
+              dentro dele era inalcançável pelo mouse. */}
+          <ButtonAria className="flex items-center gap-2 rounded-control py-1 pr-2 pl-1 font-semibold text-sm outline-none hover:bg-muted focus-visible:focus-ring">
             <span className="grid size-7 shrink-0 place-content-center rounded-item bg-accent font-mono text-xs">
               {iniciaisDoNome(nome)}
             </span>
@@ -184,9 +197,22 @@ export function Appbar({
               ) : null}
             </span>
             <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-          </button>
+          </ButtonAria>
           <DropdownMenu placement="bottom end">
             <DropdownMenuLabel>{nome}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {config && raizDaConfig ? (
+              // `onAction` e não `href`: o menu do react-aria não conhece o
+              // roteador do TanStack, e uma âncora aqui recarregaria a SPA
+              // inteira — sessão em memória, dado em cache, tudo do zero.
+              <DropdownMenuItem
+                textValue="Configurações"
+                onAction={() => void navigate({ to: raizDaConfig })}
+              >
+                <config.icon aria-hidden="true" />
+                Configurações
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem onAction={() => logout.mutate()} isDisabled={logout.isPending}>
               {logout.isPending ? 'Saindo…' : 'Sair'}

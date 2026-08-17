@@ -173,7 +173,7 @@ export function Appbar({
   return (
     <div
       data-slot="appbar"
-      className="flex flex-wrap items-stretch gap-3 border-rule-strong border-b-2 bg-card px-4"
+      className="flex items-stretch gap-3 border-rule-strong border-b-2 bg-card px-4"
     >
       {/* AS SEIS SEÇÕES ocupam a LARGURA TODA da faixa, com fio vertical entre
           vizinhas (referência do user, 2026-08-17 — emenda na issue #140): a
@@ -181,7 +181,10 @@ export function Appbar({
           direita, então a navegação é o que resta — e o que manda — na faixa.
           `nav` com rótulo: é a navegação primária do sistema, e sem nome ela é
           uma fileira de ícones anônimos no leitor de tela. */}
-      <nav aria-label="Seções" className="flex flex-1 items-stretch">
+      {/* AS SEIS SEÇÕES distribuídas na largura da faixa, com fio vertical
+          entre vizinhas — formato EXATO da referência do user (2026-08-17,
+          fonte da verdade desta appbar; supersede o grupo centrado). */}
+      <nav aria-label="Seções" className="flex min-w-0 flex-1 items-stretch">
         {secoes
           .filter((secao) => !secao.oculta)
           .map((secao, indice) => (
@@ -202,7 +205,7 @@ export function Appbar({
           ))}
       </nav>
 
-      <div className="flex flex-wrap items-center justify-end gap-2.5 py-2.5">
+      <div className="flex shrink-0 items-center gap-2.5 py-2.5">
         <button
           type="button"
           onClick={aoAbrirPaleta}
@@ -262,7 +265,9 @@ export function Appbar({
         {/* EMPRESA entre os globais e o operador: o escopo do dado mora ao lado
             de quem opera — decisão do user (2026-08-17, emenda na #140), que
             tirou a pill do canto esquerdo. */}
-        <CompanySwitcher />
+        <div className="w-72 shrink-0">
+          <CompanySwitcher />
+        </div>
 
         <DropdownMenuTrigger>
           <button

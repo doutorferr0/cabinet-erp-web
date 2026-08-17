@@ -86,12 +86,12 @@ export interface ModuloCadastro {
   /** Uma linha do que mora aqui. Vira o resumo do bloco fechado e o subtítulo da ficha. */
   resumo: string
   /**
-   * Cor do módulo. **Opcional de propósito**: o repo nomeia nove cores, uma por
-   * MÓDULO do ERP, e nem todo bloco de cadastro corresponde a um deles.
-   * `Dados bancários` e `Metas e comissão` aparecem no mockup em verde de
-   * dinheiro e amarelo de foco, que são cores com DONO — e "cor de bloco nunca
-   * invade faixa com dono" é regra do user (2026-08-14). Bloco sem cor cai no
-   * neutro do `FormBlock`, que é desenho legítimo, não falta de acabamento.
+   * Cor do módulo. Desde 2026-08-17 a regra é do user: TODO bloco veste cor
+   * forte ("cadastro assim em todas as opções"), exceto Observação, que é cinza
+   * no próprio mockup. Continua opcional no TIPO porque o neutro existe de
+   * direito — mas bloco novo sem cor precisa de motivo, não o contrário.
+   * Verde de dinheiro e amarelo de foco seguem com DONO e não viram faixa
+   * (regra de 2026-08-14): o bancário veste o verde neon de `crm`.
    */
   cor?: ModuloCor
   /** O módulo que trava o Gravar: nunca colapsa, e é o único que aceita `req`. */

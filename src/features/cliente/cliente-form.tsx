@@ -11,7 +11,11 @@ import {
   TextField,
   TextareaField,
 } from '@/components/cabinet/form-controls'
-import { type ModuloCadastro, cliente as entidadeCliente } from '@/features/cadastro/modulos'
+import {
+  type ModuloCadastro,
+  cliente as entidadeCliente,
+  propsDoIcone,
+} from '@/features/cadastro/modulos'
 import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
 import type { Cliente } from '@/mocks/clientes'
 import { useNavigate } from '@tanstack/react-router'
@@ -117,6 +121,7 @@ function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode
       legend={m.titulo}
       {...(m.obrigatorio ? { obrigatorio: true } : { colapsavel: true })}
       {...(m.cor ? { cor: m.cor } : {})}
+      {...propsDoIcone(id)}
     >
       {children}
     </FormBlock>

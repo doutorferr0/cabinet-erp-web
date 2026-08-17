@@ -15,9 +15,15 @@ import type { ModuloCadastro } from './tipos'
  * que é exatamente o que a issue veio desfazer. O prefixo entra por parâmetro;
  * a estrutura é uma só.
  *
- * Nenhum deles leva `cor`: os quatro aparecem no mockup em cores que ou têm DONO
- * (verde de dinheiro no bancário) ou não correspondem a módulo nenhum do ERP
- * (cinza na observação). Ver a nota de `cor` em `tipos.ts`.
+ * TODOS levam `cor` desde 2026-08-17 (ordem do user: "cadastro assim em todas as
+ * opções, com as cores mais fortes"). O mapa segue o mockup aprovado
+ * (`mockup-cadastro-hierarquia.html`), que foi desenhado SOBRE a paleta de
+ * módulo: endereço cyan = `produtos`, contato laranja = `boletim`, redes no
+ * magenta de `compras` (o fúcsia do mockup é a cor de `clientes` e colidiria
+ * com a Identificação do Cliente). Bancário é o único remapeado: o verde do
+ * mockup é o verde de DINHEIRO, que tem dono e não vira faixa — veste o verde
+ * neon de `crm`, o vizinho de matiz. Observação continua neutra de propósito:
+ * no mockup ela é cinza, e o bloco apagado no meio dos coloridos é o desenho.
  */
 
 /** Prefixo do caminho no schema Zod, com o ponto. Vazio = campos na raiz. */
@@ -34,6 +40,7 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
   return {
     id: prefixo === 'endereco' ? 'endereco' : prefixo,
     titulo: 'Endereço',
+    cor: 'produtos',
     resumo: 'CEP preenche rua, bairro, cidade e UF automaticamente',
     campos: [
       { k: 'cep', r: 'CEP', t: 'busca', w: 'medio', campo: em(prefixo, 'cep') },
@@ -71,6 +78,7 @@ export function moduloContatos({
   return {
     id: 'contatos',
     titulo: 'Outros contatos',
+    cor: 'boletim',
     resumo: 'Telefone comercial · Residencial · Fax · Comunicadores',
     campos: [
       { k: 'comercial', r: 'Telefone comercial', campo: em(prefixo, 'foneComercial') },
@@ -104,6 +112,7 @@ export function moduloBancario(): ModuloCadastro {
   return {
     id: 'bancario',
     titulo: 'Dados bancários',
+    cor: 'crm',
     resumo: 'Banco · Agência · Conta · Chave PIX',
     campos: [
       { k: 'numeroBanco', r: 'Nº do banco', w: 'curto', campo: 'numeroBanco' },
@@ -121,6 +130,7 @@ export function moduloRedesSociais(): ModuloCadastro {
   return {
     id: 'redes',
     titulo: 'Redes sociais',
+    cor: 'compras',
     resumo: 'Instagram · Facebook',
     campos: [
       { k: 'instagram', r: 'Instagram', campo: 'redesSociais.instagram' },

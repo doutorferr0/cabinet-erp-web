@@ -11,7 +11,11 @@ import {
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
 import { tabelas } from '@/data/tabelas'
-import { type ModuloCadastro, fornecedor as entidadeFornecedor } from '@/features/cadastro/modulos'
+import {
+  type ModuloCadastro,
+  fornecedor as entidadeFornecedor,
+  propsDoIcone,
+} from '@/features/cadastro/modulos'
 import { ProgressoObrigatorios } from '@/features/cliente/progresso-obrigatorios'
 import type { Fornecedor } from '@/mocks/fornecedores'
 import { useNavigate } from '@tanstack/react-router'
@@ -134,6 +138,7 @@ function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode
       legend={m.titulo}
       {...(m.obrigatorio ? { obrigatorio: true } : { colapsavel: true })}
       {...(m.cor ? { cor: m.cor } : {})}
+      {...propsDoIcone(id)}
     >
       {children}
     </FormBlock>

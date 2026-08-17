@@ -5,7 +5,7 @@ import { FormBlock } from '@/components/cabinet/form-block'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { camposDe, colaborador as esquema } from '@/features/cadastro/modulos'
+import { camposDe, colaborador as esquema, propsDoIcone } from '@/features/cadastro/modulos'
 import {
   CamposDoModulo,
   Pendencias,
@@ -152,6 +152,7 @@ function BlocosDoCadastro({
           colapsavel={!modulo.obrigatorio && !readOnly}
           {...(modulo.obrigatorio ? { obrigatorio: true } : {})}
           {...(modulo.cor ? { cor: modulo.cor } : {})}
+          {...propsDoIcone(modulo.id)}
         >
           {/* Naturalidade e UF saem do render genérico: a primeira tem janela
               de busca e a segunda é rótulo derivado dela, não campo digitável. */}

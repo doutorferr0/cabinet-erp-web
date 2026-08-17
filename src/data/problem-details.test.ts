@@ -20,7 +20,24 @@ type Json = Record<string, unknown>
 
 const doc = contrato as unknown as {
   paths: Record<string, Record<string, { responses?: Record<string, Json> }>>
-  components: { schemas: Record<string, Json> }
+  components: { schemas: Record<string, Json>; responses: Record<string, Json> }
+}
+
+/**
+ * Resolve a resposta reutilizável antes de olhar dentro dela.
+ *
+ * `401` e `403` viajam como `$ref` para `components/responses` — a descrição do
+ * erro mora num lugar só, e as 54 operações apontam para lá. Sem seguir a
+ * indireção, a guarda concluiria que essas respostas não têm `ProblemDetails`
+ * e reprovaria exatamente a mudança que reduziu a duplicação.
+ */
+function resolver(resposta: Json): Json {
+  const ref = resposta.$ref as string | undefined
+  if (ref === undefined) return resposta
+  const nome = ref.replace('#/components/responses/', '')
+  const alvo = doc.components.responses[nome]
+  if (alvo === undefined) throw new Error(`resposta reutilizável inexistente: ${ref}`)
+  return alvo
 }
 
 /** Toda resposta 4xx/5xx do contrato, com o `$ref` e o content-type de cada uma. */
@@ -28,8 +45,9 @@ function respostasDeErro() {
   const saida: { onde: string; refs: string[]; tipos: string[] }[] = []
   for (const [caminho, ops] of Object.entries(doc.paths)) {
     for (const [verbo, op] of Object.entries(ops)) {
-      for (const [code, resposta] of Object.entries(op.responses ?? {})) {
+      for (const [code, bruta] of Object.entries(op.responses ?? {})) {
         if (!/^[45]/.test(code)) continue
+        const resposta = resolver(bruta)
         const content = (resposta.content ?? {}) as Record<string, { schema?: { $ref?: string } }>
         saida.push({
           onde: `${verbo.toUpperCase()} ${caminho} → ${code}`,

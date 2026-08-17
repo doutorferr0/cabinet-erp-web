@@ -40,6 +40,7 @@ import type {
   ListTasksParams,
   LoginOk,
   LoginRequest,
+  NaoAutenticadoResponse,
   PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCrmLostReasonDto,
@@ -63,6 +64,7 @@ import type {
   QuoteDetailDto,
   QuoteWriteRequest,
   ReadinessStatus,
+  SemPermissaoResponse,
   SessaoAtual,
   StockMovementDto,
   StockMovementRequest,
@@ -161,10 +163,20 @@ export type listCatalogLookupsResponse400 = {
   status: 400
 }
 
+export type listCatalogLookupsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCatalogLookupsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listCatalogLookupsResponseSuccess = (listCatalogLookupsResponse200) & {
   headers: Headers;
 };
-export type listCatalogLookupsResponseError = (listCatalogLookupsResponse400) & {
+export type listCatalogLookupsResponseError = (listCatalogLookupsResponse400 | listCatalogLookupsResponse401 | listCatalogLookupsResponse403) & {
   headers: Headers;
 };
 
@@ -208,6 +220,16 @@ export type listProductsResponse400 = {
   status: 400
 }
 
+export type listProductsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listProductsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listProductsResponse409 = {
   data: ProblemDetails
   status: 409
@@ -216,7 +238,7 @@ export type listProductsResponse409 = {
 export type listProductsResponseSuccess = (listProductsResponse200) & {
   headers: Headers;
 };
-export type listProductsResponseError = (listProductsResponse400 | listProductsResponse409) & {
+export type listProductsResponseError = (listProductsResponse400 | listProductsResponse401 | listProductsResponse403 | listProductsResponse409) & {
   headers: Headers;
 };
 
@@ -260,8 +282,13 @@ export type createProductResponse400 = {
   status: 400
 }
 
+export type createProductResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createProductResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -273,7 +300,7 @@ export type createProductResponse409 = {
 export type createProductResponseSuccess = (createProductResponse201) & {
   headers: Headers;
 };
-export type createProductResponseError = (createProductResponse400 | createProductResponse403 | createProductResponse409) & {
+export type createProductResponseError = (createProductResponse400 | createProductResponse401 | createProductResponse403 | createProductResponse409) & {
   headers: Headers;
 };
 
@@ -305,6 +332,16 @@ export type getProductResponse200 = {
   status: 200
 }
 
+export type getProductResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getProductResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getProductResponse404 = {
   data: ProblemDetails
   status: 404
@@ -318,7 +355,7 @@ export type getProductResponse409 = {
 export type getProductResponseSuccess = (getProductResponse200) & {
   headers: Headers;
 };
-export type getProductResponseError = (getProductResponse404 | getProductResponse409) & {
+export type getProductResponseError = (getProductResponse401 | getProductResponse403 | getProductResponse404 | getProductResponse409) & {
   headers: Headers;
 };
 
@@ -355,8 +392,13 @@ export type updateProductResponse400 = {
   status: 400
 }
 
+export type updateProductResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateProductResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -373,7 +415,7 @@ export type updateProductResponse409 = {
 export type updateProductResponseSuccess = (updateProductResponse200) & {
   headers: Headers;
 };
-export type updateProductResponseError = (updateProductResponse400 | updateProductResponse403 | updateProductResponse404 | updateProductResponse409) & {
+export type updateProductResponseError = (updateProductResponse400 | updateProductResponse401 | updateProductResponse403 | updateProductResponse404 | updateProductResponse409) & {
   headers: Headers;
 };
 
@@ -411,8 +453,13 @@ export type createVariantResponse400 = {
   status: 400
 }
 
+export type createVariantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createVariantResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -429,7 +476,7 @@ export type createVariantResponse409 = {
 export type createVariantResponseSuccess = (createVariantResponse201) & {
   headers: Headers;
 };
-export type createVariantResponseError = (createVariantResponse400 | createVariantResponse403 | createVariantResponse404 | createVariantResponse409) & {
+export type createVariantResponseError = (createVariantResponse400 | createVariantResponse401 | createVariantResponse403 | createVariantResponse404 | createVariantResponse409) & {
   headers: Headers;
 };
 
@@ -467,8 +514,13 @@ export type updateVariantResponse400 = {
   status: 400
 }
 
+export type updateVariantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateVariantResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -485,7 +537,7 @@ export type updateVariantResponse409 = {
 export type updateVariantResponseSuccess = (updateVariantResponse200) & {
   headers: Headers;
 };
-export type updateVariantResponseError = (updateVariantResponse400 | updateVariantResponse403 | updateVariantResponse404 | updateVariantResponse409) & {
+export type updateVariantResponseError = (updateVariantResponse400 | updateVariantResponse401 | updateVariantResponse403 | updateVariantResponse404 | updateVariantResponse409) & {
   headers: Headers;
 };
 
@@ -525,6 +577,16 @@ export type listPartnersResponse400 = {
   status: 400
 }
 
+export type listPartnersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPartnersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listPartnersResponse409 = {
   data: ProblemDetails
   status: 409
@@ -533,7 +595,7 @@ export type listPartnersResponse409 = {
 export type listPartnersResponseSuccess = (listPartnersResponse200) & {
   headers: Headers;
 };
-export type listPartnersResponseError = (listPartnersResponse400 | listPartnersResponse409) & {
+export type listPartnersResponseError = (listPartnersResponse400 | listPartnersResponse401 | listPartnersResponse403 | listPartnersResponse409) & {
   headers: Headers;
 };
 
@@ -577,8 +639,13 @@ export type createPartnerResponse400 = {
   status: 400
 }
 
+export type createPartnerResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createPartnerResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -590,7 +657,7 @@ export type createPartnerResponse409 = {
 export type createPartnerResponseSuccess = (createPartnerResponse201) & {
   headers: Headers;
 };
-export type createPartnerResponseError = (createPartnerResponse400 | createPartnerResponse403 | createPartnerResponse409) & {
+export type createPartnerResponseError = (createPartnerResponse400 | createPartnerResponse401 | createPartnerResponse403 | createPartnerResponse409) & {
   headers: Headers;
 };
 
@@ -622,6 +689,16 @@ export type getPartnerResponse200 = {
   status: 200
 }
 
+export type getPartnerResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPartnerResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getPartnerResponse404 = {
   data: ProblemDetails
   status: 404
@@ -635,7 +712,7 @@ export type getPartnerResponse409 = {
 export type getPartnerResponseSuccess = (getPartnerResponse200) & {
   headers: Headers;
 };
-export type getPartnerResponseError = (getPartnerResponse404 | getPartnerResponse409) & {
+export type getPartnerResponseError = (getPartnerResponse401 | getPartnerResponse403 | getPartnerResponse404 | getPartnerResponse409) & {
   headers: Headers;
 };
 
@@ -672,8 +749,13 @@ export type updatePartnerResponse400 = {
   status: 400
 }
 
+export type updatePartnerResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updatePartnerResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -690,7 +772,7 @@ export type updatePartnerResponse409 = {
 export type updatePartnerResponseSuccess = (updatePartnerResponse200) & {
   headers: Headers;
 };
-export type updatePartnerResponseError = (updatePartnerResponse400 | updatePartnerResponse403 | updatePartnerResponse404 | updatePartnerResponse409) & {
+export type updatePartnerResponseError = (updatePartnerResponse400 | updatePartnerResponse401 | updatePartnerResponse403 | updatePartnerResponse404 | updatePartnerResponse409) & {
   headers: Headers;
 };
 
@@ -723,8 +805,13 @@ export type linkPartnerResponse201 = {
   status: 201
 }
 
+export type linkPartnerResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type linkPartnerResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -741,7 +828,7 @@ export type linkPartnerResponse409 = {
 export type linkPartnerResponseSuccess = (linkPartnerResponse201) & {
   headers: Headers;
 };
-export type linkPartnerResponseError = (linkPartnerResponse403 | linkPartnerResponse404 | linkPartnerResponse409) & {
+export type linkPartnerResponseError = (linkPartnerResponse401 | linkPartnerResponse403 | linkPartnerResponse404 | linkPartnerResponse409) & {
   headers: Headers;
 };
 
@@ -779,8 +866,13 @@ export type createStockMovementResponse400 = {
   status: 400
 }
 
+export type createStockMovementResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createStockMovementResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -797,7 +889,7 @@ export type createStockMovementResponse409 = {
 export type createStockMovementResponseSuccess = (createStockMovementResponse201) & {
   headers: Headers;
 };
-export type createStockMovementResponseError = (createStockMovementResponse400 | createStockMovementResponse403 | createStockMovementResponse404 | createStockMovementResponse409) & {
+export type createStockMovementResponseError = (createStockMovementResponse400 | createStockMovementResponse401 | createStockMovementResponse403 | createStockMovementResponse404 | createStockMovementResponse409) & {
   headers: Headers;
 };
 
@@ -835,6 +927,16 @@ export type listStockMovementsResponse400 = {
   status: 400
 }
 
+export type listStockMovementsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listStockMovementsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listStockMovementsResponse409 = {
   data: ProblemDetails
   status: 409
@@ -843,7 +945,7 @@ export type listStockMovementsResponse409 = {
 export type listStockMovementsResponseSuccess = (listStockMovementsResponse200) & {
   headers: Headers;
 };
-export type listStockMovementsResponseError = (listStockMovementsResponse400 | listStockMovementsResponse409) & {
+export type listStockMovementsResponseError = (listStockMovementsResponse400 | listStockMovementsResponse401 | listStockMovementsResponse403 | listStockMovementsResponse409) & {
   headers: Headers;
 };
 
@@ -962,10 +1064,15 @@ export type authChangePasswordResponse400 = {
   status: 400
 }
 
+export type authChangePasswordResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type authChangePasswordResponseSuccess = (authChangePasswordResponse204) & {
   headers: Headers;
 };
-export type authChangePasswordResponseError = (authChangePasswordResponse400) & {
+export type authChangePasswordResponseError = (authChangePasswordResponse400 | authChangePasswordResponse401) & {
   headers: Headers;
 };
 
@@ -997,12 +1104,19 @@ export type authMeResponse200 = {
   status: 200
 }
 
+export type authMeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type authMeResponseSuccess = (authMeResponse200) & {
   headers: Headers;
 };
-;
+export type authMeResponseError = (authMeResponse401) & {
+  headers: Headers;
+};
 
-export type authMeResponse = (authMeResponseSuccess)
+export type authMeResponse = (authMeResponseSuccess | authMeResponseError)
 
 export const getAuthMeUrl = () => {
 
@@ -1030,12 +1144,19 @@ export type authTenantsResponse200 = {
   status: 200
 }
 
+export type authTenantsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type authTenantsResponseSuccess = (authTenantsResponse200) & {
   headers: Headers;
 };
-;
+export type authTenantsResponseError = (authTenantsResponse401) & {
+  headers: Headers;
+};
 
-export type authTenantsResponse = (authTenantsResponseSuccess)
+export type authTenantsResponse = (authTenantsResponseSuccess | authTenantsResponseError)
 
 export const getAuthTenantsUrl = () => {
 
@@ -1068,10 +1189,20 @@ export type authSetActiveTenantResponse400 = {
   status: 400
 }
 
+export type authSetActiveTenantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type authSetActiveTenantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type authSetActiveTenantResponseSuccess = (authSetActiveTenantResponse204) & {
   headers: Headers;
 };
-export type authSetActiveTenantResponseError = (authSetActiveTenantResponse400) & {
+export type authSetActiveTenantResponseError = (authSetActiveTenantResponse400 | authSetActiveTenantResponse401 | authSetActiveTenantResponse403) & {
   headers: Headers;
 };
 
@@ -1103,6 +1234,16 @@ export type getDashboardSummaryResponse200 = {
   status: 200
 }
 
+export type getDashboardSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getDashboardSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getDashboardSummaryResponse409 = {
   data: ProblemDetails
   status: 409
@@ -1111,7 +1252,7 @@ export type getDashboardSummaryResponse409 = {
 export type getDashboardSummaryResponseSuccess = (getDashboardSummaryResponse200) & {
   headers: Headers;
 };
-export type getDashboardSummaryResponseError = (getDashboardSummaryResponse409) & {
+export type getDashboardSummaryResponseError = (getDashboardSummaryResponse401 | getDashboardSummaryResponse403 | getDashboardSummaryResponse409) & {
   headers: Headers;
 };
 
@@ -1151,10 +1292,20 @@ export type listAgendaEventsResponse400 = {
   status: 400
 }
 
+export type listAgendaEventsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listAgendaEventsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listAgendaEventsResponseSuccess = (listAgendaEventsResponse200) & {
   headers: Headers;
 };
-export type listAgendaEventsResponseError = (listAgendaEventsResponse400) & {
+export type listAgendaEventsResponseError = (listAgendaEventsResponse400 | listAgendaEventsResponse401 | listAgendaEventsResponse403) & {
   headers: Headers;
 };
 
@@ -1201,10 +1352,20 @@ export type listTasksResponse400 = {
   status: 400
 }
 
+export type listTasksResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listTasksResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listTasksResponseSuccess = (listTasksResponse200) & {
   headers: Headers;
 };
-export type listTasksResponseError = (listTasksResponse400) & {
+export type listTasksResponseError = (listTasksResponse400 | listTasksResponse401 | listTasksResponse403) & {
   headers: Headers;
 };
 
@@ -1251,6 +1412,16 @@ export type createTaskResponse400 = {
   status: 400
 }
 
+export type createTaskResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createTaskResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type createTaskResponse409 = {
   data: ProblemDetails
   status: 409
@@ -1259,7 +1430,7 @@ export type createTaskResponse409 = {
 export type createTaskResponseSuccess = (createTaskResponse201) & {
   headers: Headers;
 };
-export type createTaskResponseError = (createTaskResponse400 | createTaskResponse409) & {
+export type createTaskResponseError = (createTaskResponse400 | createTaskResponse401 | createTaskResponse403 | createTaskResponse409) & {
   headers: Headers;
 };
 
@@ -1299,6 +1470,16 @@ export type patchTaskResponse400 = {
   status: 400
 }
 
+export type patchTaskResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type patchTaskResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type patchTaskResponse404 = {
   data: ProblemDetails
   status: 404
@@ -1307,7 +1488,7 @@ export type patchTaskResponse404 = {
 export type patchTaskResponseSuccess = (patchTaskResponse200) & {
   headers: Headers;
 };
-export type patchTaskResponseError = (patchTaskResponse400 | patchTaskResponse404) & {
+export type patchTaskResponseError = (patchTaskResponse400 | patchTaskResponse401 | patchTaskResponse403 | patchTaskResponse404) & {
   headers: Headers;
 };
 
@@ -1343,12 +1524,24 @@ export type listTodosResponse200 = {
   status: 200
 }
 
+export type listTodosResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listTodosResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listTodosResponseSuccess = (listTodosResponse200) & {
   headers: Headers;
 };
-;
+export type listTodosResponseError = (listTodosResponse401 | listTodosResponse403) & {
+  headers: Headers;
+};
 
-export type listTodosResponse = (listTodosResponseSuccess)
+export type listTodosResponse = (listTodosResponseSuccess | listTodosResponseError)
 
 export const getListTodosUrl = () => {
 
@@ -1384,6 +1577,16 @@ export type patchTodoResponse400 = {
   status: 400
 }
 
+export type patchTodoResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type patchTodoResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type patchTodoResponse404 = {
   data: ProblemDetails
   status: 404
@@ -1392,7 +1595,7 @@ export type patchTodoResponse404 = {
 export type patchTodoResponseSuccess = (patchTodoResponse200) & {
   headers: Headers;
 };
-export type patchTodoResponseError = (patchTodoResponse400 | patchTodoResponse404) & {
+export type patchTodoResponseError = (patchTodoResponse400 | patchTodoResponse401 | patchTodoResponse403 | patchTodoResponse404) & {
   headers: Headers;
 };
 
@@ -1433,10 +1636,20 @@ export type listProjectsResponse400 = {
   status: 400
 }
 
+export type listProjectsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listProjectsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listProjectsResponseSuccess = (listProjectsResponse200) & {
   headers: Headers;
 };
-export type listProjectsResponseError = (listProjectsResponse400) & {
+export type listProjectsResponseError = (listProjectsResponse400 | listProjectsResponse401 | listProjectsResponse403) & {
   headers: Headers;
 };
 
@@ -1478,6 +1691,16 @@ export type getProjectPlanResponse200 = {
   status: 200
 }
 
+export type getProjectPlanResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getProjectPlanResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getProjectPlanResponse404 = {
   data: ProblemDetails
   status: 404
@@ -1486,7 +1709,7 @@ export type getProjectPlanResponse404 = {
 export type getProjectPlanResponseSuccess = (getProjectPlanResponse200) & {
   headers: Headers;
 };
-export type getProjectPlanResponseError = (getProjectPlanResponse404) & {
+export type getProjectPlanResponseError = (getProjectPlanResponse401 | getProjectPlanResponse403 | getProjectPlanResponse404) & {
   headers: Headers;
 };
 
@@ -1526,10 +1749,20 @@ export type listEmployeesResponse400 = {
   status: 400
 }
 
+export type listEmployeesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listEmployeesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listEmployeesResponseSuccess = (listEmployeesResponse200) & {
   headers: Headers;
 };
-export type listEmployeesResponseError = (listEmployeesResponse400) & {
+export type listEmployeesResponseError = (listEmployeesResponse400 | listEmployeesResponse401 | listEmployeesResponse403) & {
   headers: Headers;
 };
 
@@ -1576,10 +1809,20 @@ export type listQuotesResponse400 = {
   status: 400
 }
 
+export type listQuotesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listQuotesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listQuotesResponseSuccess = (listQuotesResponse200) & {
   headers: Headers;
 };
-export type listQuotesResponseError = (listQuotesResponse400) & {
+export type listQuotesResponseError = (listQuotesResponse400 | listQuotesResponse401 | listQuotesResponse403) & {
   headers: Headers;
 };
 
@@ -1626,8 +1869,13 @@ export type createQuoteResponse400 = {
   status: 400
 }
 
+export type createQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createQuoteResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -1639,7 +1887,7 @@ export type createQuoteResponse409 = {
 export type createQuoteResponseSuccess = (createQuoteResponse201) & {
   headers: Headers;
 };
-export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse403 | createQuoteResponse409) & {
+export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse401 | createQuoteResponse403 | createQuoteResponse409) & {
   headers: Headers;
 };
 
@@ -1674,6 +1922,16 @@ export type getQuoteResponse200 = {
   status: 200
 }
 
+export type getQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getQuoteResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getQuoteResponse404 = {
   data: ProblemDetails
   status: 404
@@ -1682,7 +1940,7 @@ export type getQuoteResponse404 = {
 export type getQuoteResponseSuccess = (getQuoteResponse200) & {
   headers: Headers;
 };
-export type getQuoteResponseError = (getQuoteResponse404) & {
+export type getQuoteResponseError = (getQuoteResponse401 | getQuoteResponse403 | getQuoteResponse404) & {
   headers: Headers;
 };
 
@@ -1722,8 +1980,13 @@ export type updateQuoteResponse400 = {
   status: 400
 }
 
+export type updateQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateQuoteResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -1740,7 +2003,7 @@ export type updateQuoteResponse409 = {
 export type updateQuoteResponseSuccess = (updateQuoteResponse200) & {
   headers: Headers;
 };
-export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409) & {
+export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse401 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409) & {
   headers: Headers;
 };
 
@@ -1776,8 +2039,13 @@ export type cancelQuoteResponse200 = {
   status: 200
 }
 
+export type cancelQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type cancelQuoteResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -1794,7 +2062,7 @@ export type cancelQuoteResponse409 = {
 export type cancelQuoteResponseSuccess = (cancelQuoteResponse200) & {
   headers: Headers;
 };
-export type cancelQuoteResponseError = (cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
+export type cancelQuoteResponseError = (cancelQuoteResponse401 | cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
   headers: Headers;
 };
 
@@ -1834,10 +2102,20 @@ export type listCrmPipelinesResponse400 = {
   status: 400
 }
 
+export type listCrmPipelinesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCrmPipelinesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listCrmPipelinesResponseSuccess = (listCrmPipelinesResponse200) & {
   headers: Headers;
 };
-export type listCrmPipelinesResponseError = (listCrmPipelinesResponse400) & {
+export type listCrmPipelinesResponseError = (listCrmPipelinesResponse400 | listCrmPipelinesResponse401 | listCrmPipelinesResponse403) & {
   headers: Headers;
 };
 
@@ -1884,8 +2162,13 @@ export type createCrmPipelineResponse400 = {
   status: 400
 }
 
+export type createCrmPipelineResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createCrmPipelineResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -1897,7 +2180,7 @@ export type createCrmPipelineResponse409 = {
 export type createCrmPipelineResponseSuccess = (createCrmPipelineResponse201) & {
   headers: Headers;
 };
-export type createCrmPipelineResponseError = (createCrmPipelineResponse400 | createCrmPipelineResponse403 | createCrmPipelineResponse409) & {
+export type createCrmPipelineResponseError = (createCrmPipelineResponse400 | createCrmPipelineResponse401 | createCrmPipelineResponse403 | createCrmPipelineResponse409) & {
   headers: Headers;
 };
 
@@ -1932,6 +2215,16 @@ export type getCrmPipelineResponse200 = {
   status: 200
 }
 
+export type getCrmPipelineResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getCrmPipelineResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getCrmPipelineResponse404 = {
   data: ProblemDetails
   status: 404
@@ -1940,7 +2233,7 @@ export type getCrmPipelineResponse404 = {
 export type getCrmPipelineResponseSuccess = (getCrmPipelineResponse200) & {
   headers: Headers;
 };
-export type getCrmPipelineResponseError = (getCrmPipelineResponse404) & {
+export type getCrmPipelineResponseError = (getCrmPipelineResponse401 | getCrmPipelineResponse403 | getCrmPipelineResponse404) & {
   headers: Headers;
 };
 
@@ -1980,8 +2273,13 @@ export type updateCrmPipelineResponse400 = {
   status: 400
 }
 
+export type updateCrmPipelineResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateCrmPipelineResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -1998,7 +2296,7 @@ export type updateCrmPipelineResponse409 = {
 export type updateCrmPipelineResponseSuccess = (updateCrmPipelineResponse200) & {
   headers: Headers;
 };
-export type updateCrmPipelineResponseError = (updateCrmPipelineResponse400 | updateCrmPipelineResponse403 | updateCrmPipelineResponse404 | updateCrmPipelineResponse409) & {
+export type updateCrmPipelineResponseError = (updateCrmPipelineResponse400 | updateCrmPipelineResponse401 | updateCrmPipelineResponse403 | updateCrmPipelineResponse404 | updateCrmPipelineResponse409) & {
   headers: Headers;
 };
 
@@ -2034,6 +2332,16 @@ export type listCrmStagesResponse200 = {
   status: 200
 }
 
+export type listCrmStagesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCrmStagesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listCrmStagesResponse404 = {
   data: ProblemDetails
   status: 404
@@ -2042,7 +2350,7 @@ export type listCrmStagesResponse404 = {
 export type listCrmStagesResponseSuccess = (listCrmStagesResponse200) & {
   headers: Headers;
 };
-export type listCrmStagesResponseError = (listCrmStagesResponse404) & {
+export type listCrmStagesResponseError = (listCrmStagesResponse401 | listCrmStagesResponse403 | listCrmStagesResponse404) & {
   headers: Headers;
 };
 
@@ -2082,8 +2390,13 @@ export type createCrmStageResponse400 = {
   status: 400
 }
 
+export type createCrmStageResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createCrmStageResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2095,7 +2408,7 @@ export type createCrmStageResponse404 = {
 export type createCrmStageResponseSuccess = (createCrmStageResponse201) & {
   headers: Headers;
 };
-export type createCrmStageResponseError = (createCrmStageResponse400 | createCrmStageResponse403 | createCrmStageResponse404) & {
+export type createCrmStageResponseError = (createCrmStageResponse400 | createCrmStageResponse401 | createCrmStageResponse403 | createCrmStageResponse404) & {
   headers: Headers;
 };
 
@@ -2136,8 +2449,13 @@ export type updateCrmStageResponse400 = {
   status: 400
 }
 
+export type updateCrmStageResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateCrmStageResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2149,7 +2467,7 @@ export type updateCrmStageResponse404 = {
 export type updateCrmStageResponseSuccess = (updateCrmStageResponse200) & {
   headers: Headers;
 };
-export type updateCrmStageResponseError = (updateCrmStageResponse400 | updateCrmStageResponse403 | updateCrmStageResponse404) & {
+export type updateCrmStageResponseError = (updateCrmStageResponse400 | updateCrmStageResponse401 | updateCrmStageResponse403 | updateCrmStageResponse404) & {
   headers: Headers;
 };
 
@@ -2192,10 +2510,20 @@ export type listCrmOpportunitiesResponse400 = {
   status: 400
 }
 
+export type listCrmOpportunitiesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCrmOpportunitiesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listCrmOpportunitiesResponseSuccess = (listCrmOpportunitiesResponse200) & {
   headers: Headers;
 };
-export type listCrmOpportunitiesResponseError = (listCrmOpportunitiesResponse400) & {
+export type listCrmOpportunitiesResponseError = (listCrmOpportunitiesResponse400 | listCrmOpportunitiesResponse401 | listCrmOpportunitiesResponse403) & {
   headers: Headers;
 };
 
@@ -2242,8 +2570,13 @@ export type createCrmOpportunityResponse400 = {
   status: 400
 }
 
+export type createCrmOpportunityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createCrmOpportunityResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2255,7 +2588,7 @@ export type createCrmOpportunityResponse404 = {
 export type createCrmOpportunityResponseSuccess = (createCrmOpportunityResponse201) & {
   headers: Headers;
 };
-export type createCrmOpportunityResponseError = (createCrmOpportunityResponse400 | createCrmOpportunityResponse403 | createCrmOpportunityResponse404) & {
+export type createCrmOpportunityResponseError = (createCrmOpportunityResponse400 | createCrmOpportunityResponse401 | createCrmOpportunityResponse403 | createCrmOpportunityResponse404) & {
   headers: Headers;
 };
 
@@ -2290,6 +2623,16 @@ export type getCrmOpportunityResponse200 = {
   status: 200
 }
 
+export type getCrmOpportunityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getCrmOpportunityResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getCrmOpportunityResponse404 = {
   data: ProblemDetails
   status: 404
@@ -2298,7 +2641,7 @@ export type getCrmOpportunityResponse404 = {
 export type getCrmOpportunityResponseSuccess = (getCrmOpportunityResponse200) & {
   headers: Headers;
 };
-export type getCrmOpportunityResponseError = (getCrmOpportunityResponse404) & {
+export type getCrmOpportunityResponseError = (getCrmOpportunityResponse401 | getCrmOpportunityResponse403 | getCrmOpportunityResponse404) & {
   headers: Headers;
 };
 
@@ -2338,8 +2681,13 @@ export type updateCrmOpportunityResponse400 = {
   status: 400
 }
 
+export type updateCrmOpportunityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateCrmOpportunityResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2356,7 +2704,7 @@ export type updateCrmOpportunityResponse409 = {
 export type updateCrmOpportunityResponseSuccess = (updateCrmOpportunityResponse200) & {
   headers: Headers;
 };
-export type updateCrmOpportunityResponseError = (updateCrmOpportunityResponse400 | updateCrmOpportunityResponse403 | updateCrmOpportunityResponse404 | updateCrmOpportunityResponse409) & {
+export type updateCrmOpportunityResponseError = (updateCrmOpportunityResponse400 | updateCrmOpportunityResponse401 | updateCrmOpportunityResponse403 | updateCrmOpportunityResponse404 | updateCrmOpportunityResponse409) & {
   headers: Headers;
 };
 
@@ -2397,8 +2745,13 @@ export type moveCrmOpportunityStageResponse400 = {
   status: 400
 }
 
+export type moveCrmOpportunityStageResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type moveCrmOpportunityStageResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2415,7 +2768,7 @@ export type moveCrmOpportunityStageResponse409 = {
 export type moveCrmOpportunityStageResponseSuccess = (moveCrmOpportunityStageResponse200) & {
   headers: Headers;
 };
-export type moveCrmOpportunityStageResponseError = (moveCrmOpportunityStageResponse400 | moveCrmOpportunityStageResponse403 | moveCrmOpportunityStageResponse404 | moveCrmOpportunityStageResponse409) & {
+export type moveCrmOpportunityStageResponseError = (moveCrmOpportunityStageResponse400 | moveCrmOpportunityStageResponse401 | moveCrmOpportunityStageResponse403 | moveCrmOpportunityStageResponse404 | moveCrmOpportunityStageResponse409) & {
   headers: Headers;
 };
 
@@ -2458,6 +2811,16 @@ export type getCrmLostReasonsReportResponse400 = {
   status: 400
 }
 
+export type getCrmLostReasonsReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getCrmLostReasonsReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type getCrmLostReasonsReportResponse409 = {
   data: ProblemDetails
   status: 409
@@ -2466,7 +2829,7 @@ export type getCrmLostReasonsReportResponse409 = {
 export type getCrmLostReasonsReportResponseSuccess = (getCrmLostReasonsReportResponse200) & {
   headers: Headers;
 };
-export type getCrmLostReasonsReportResponseError = (getCrmLostReasonsReportResponse400 | getCrmLostReasonsReportResponse409) & {
+export type getCrmLostReasonsReportResponseError = (getCrmLostReasonsReportResponse400 | getCrmLostReasonsReportResponse401 | getCrmLostReasonsReportResponse403 | getCrmLostReasonsReportResponse409) & {
   headers: Headers;
 };
 
@@ -2513,10 +2876,20 @@ export type listCrmLostReasonsResponse400 = {
   status: 400
 }
 
+export type listCrmLostReasonsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCrmLostReasonsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listCrmLostReasonsResponseSuccess = (listCrmLostReasonsResponse200) & {
   headers: Headers;
 };
-export type listCrmLostReasonsResponseError = (listCrmLostReasonsResponse400) & {
+export type listCrmLostReasonsResponseError = (listCrmLostReasonsResponse400 | listCrmLostReasonsResponse401 | listCrmLostReasonsResponse403) & {
   headers: Headers;
 };
 
@@ -2563,8 +2936,13 @@ export type createCrmLostReasonResponse400 = {
   status: 400
 }
 
+export type createCrmLostReasonResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createCrmLostReasonResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2576,7 +2954,7 @@ export type createCrmLostReasonResponse409 = {
 export type createCrmLostReasonResponseSuccess = (createCrmLostReasonResponse201) & {
   headers: Headers;
 };
-export type createCrmLostReasonResponseError = (createCrmLostReasonResponse400 | createCrmLostReasonResponse403 | createCrmLostReasonResponse409) & {
+export type createCrmLostReasonResponseError = (createCrmLostReasonResponse400 | createCrmLostReasonResponse401 | createCrmLostReasonResponse403 | createCrmLostReasonResponse409) & {
   headers: Headers;
 };
 
@@ -2616,8 +2994,13 @@ export type updateCrmLostReasonResponse400 = {
   status: 400
 }
 
+export type updateCrmLostReasonResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateCrmLostReasonResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2629,7 +3012,7 @@ export type updateCrmLostReasonResponse404 = {
 export type updateCrmLostReasonResponseSuccess = (updateCrmLostReasonResponse200) & {
   headers: Headers;
 };
-export type updateCrmLostReasonResponseError = (updateCrmLostReasonResponse400 | updateCrmLostReasonResponse403 | updateCrmLostReasonResponse404) & {
+export type updateCrmLostReasonResponseError = (updateCrmLostReasonResponse400 | updateCrmLostReasonResponse401 | updateCrmLostReasonResponse403 | updateCrmLostReasonResponse404) & {
   headers: Headers;
 };
 
@@ -2670,8 +3053,13 @@ export type createQuoteFromOpportunityResponse400 = {
   status: 400
 }
 
+export type createQuoteFromOpportunityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createQuoteFromOpportunityResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2688,7 +3076,7 @@ export type createQuoteFromOpportunityResponse409 = {
 export type createQuoteFromOpportunityResponseSuccess = (createQuoteFromOpportunityResponse201) & {
   headers: Headers;
 };
-export type createQuoteFromOpportunityResponseError = (createQuoteFromOpportunityResponse400 | createQuoteFromOpportunityResponse403 | createQuoteFromOpportunityResponse404 | createQuoteFromOpportunityResponse409) & {
+export type createQuoteFromOpportunityResponseError = (createQuoteFromOpportunityResponse400 | createQuoteFromOpportunityResponse401 | createQuoteFromOpportunityResponse403 | createQuoteFromOpportunityResponse404 | createQuoteFromOpportunityResponse409) & {
   headers: Headers;
 };
 
@@ -2736,10 +3124,20 @@ export type listActivitiesResponse400 = {
   status: 400
 }
 
+export type listActivitiesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listActivitiesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
 export type listActivitiesResponseSuccess = (listActivitiesResponse200) & {
   headers: Headers;
 };
-export type listActivitiesResponseError = (listActivitiesResponse400) & {
+export type listActivitiesResponseError = (listActivitiesResponse400 | listActivitiesResponse401 | listActivitiesResponse403) & {
   headers: Headers;
 };
 
@@ -2786,8 +3184,13 @@ export type createActivityResponse400 = {
   status: 400
 }
 
+export type createActivityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type createActivityResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2804,7 +3207,7 @@ export type createActivityResponse409 = {
 export type createActivityResponseSuccess = (createActivityResponse201) & {
   headers: Headers;
 };
-export type createActivityResponseError = (createActivityResponse400 | createActivityResponse403 | createActivityResponse404 | createActivityResponse409) & {
+export type createActivityResponseError = (createActivityResponse400 | createActivityResponse401 | createActivityResponse403 | createActivityResponse404 | createActivityResponse409) & {
   headers: Headers;
 };
 
@@ -2844,8 +3247,13 @@ export type updateActivityResponse400 = {
   status: 400
 }
 
+export type updateActivityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type updateActivityResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2857,7 +3265,7 @@ export type updateActivityResponse404 = {
 export type updateActivityResponseSuccess = (updateActivityResponse200) & {
   headers: Headers;
 };
-export type updateActivityResponseError = (updateActivityResponse400 | updateActivityResponse403 | updateActivityResponse404) & {
+export type updateActivityResponseError = (updateActivityResponse400 | updateActivityResponse401 | updateActivityResponse403 | updateActivityResponse404) & {
   headers: Headers;
 };
 
@@ -2893,8 +3301,13 @@ export type completeActivityResponse200 = {
   status: 200
 }
 
+export type completeActivityResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
 export type completeActivityResponse403 = {
-  data: ProblemDetails
+  data: SemPermissaoResponse
   status: 403
 }
 
@@ -2911,7 +3324,7 @@ export type completeActivityResponse409 = {
 export type completeActivityResponseSuccess = (completeActivityResponse200) & {
   headers: Headers;
 };
-export type completeActivityResponseError = (completeActivityResponse403 | completeActivityResponse404 | completeActivityResponse409) & {
+export type completeActivityResponseError = (completeActivityResponse401 | completeActivityResponse403 | completeActivityResponse404 | completeActivityResponse409) & {
   headers: Headers;
 };
 

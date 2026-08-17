@@ -4,11 +4,13 @@
     "title": "Vitra ERP",
     "version": "v1"
   },
+  "security": [{ "sessaoCabinet": [] }],
   "paths": {
     "/health": {
       "get": {
         "tags": ["health"],
         "operationId": "Health",
+        "security": [],
         "responses": {
           "200": {
             "description": "OK",
@@ -27,6 +29,7 @@
       "get": {
         "tags": ["health"],
         "operationId": "HealthDb",
+        "security": [],
         "responses": {
           "200": {
             "description": "OK",
@@ -121,7 +124,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       }
     },
@@ -212,6 +217,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -258,16 +265,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -307,6 +306,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -374,16 +375,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -453,16 +446,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -541,16 +526,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -668,6 +645,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -714,16 +693,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -763,6 +734,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -830,16 +803,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -905,16 +870,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -984,16 +941,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1081,6 +1030,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1108,6 +1059,7 @@
           },
           "required": true
         },
+        "security": [],
         "responses": {
           "200": {
             "description": "OK",
@@ -1136,6 +1088,7 @@
       "post": {
         "tags": ["auth"],
         "operationId": "AuthLogout",
+        "security": [],
         "responses": {
           "204": {
             "description": "No Content"
@@ -1170,7 +1123,8 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" }
         }
       }
     },
@@ -1188,7 +1142,8 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" }
         }
       }
     },
@@ -1209,7 +1164,8 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" }
         }
       }
     },
@@ -1240,7 +1196,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       }
     },
@@ -1260,6 +1218,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1323,7 +1283,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       }
     },
@@ -1374,7 +1336,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       },
       "post": {
@@ -1412,6 +1376,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1472,6 +1438,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1503,7 +1471,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       }
     },
@@ -1554,6 +1524,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1605,7 +1577,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       }
     },
@@ -1636,6 +1610,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1713,7 +1689,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       }
     },
@@ -1804,7 +1782,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       },
       "post": {
@@ -1842,16 +1822,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1892,6 +1864,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1950,16 +1924,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2010,16 +1976,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2107,7 +2065,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       },
       "post": {
@@ -2145,16 +2105,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -2195,6 +2147,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2253,16 +2207,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2316,6 +2262,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2374,16 +2322,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2453,16 +2393,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2598,7 +2530,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       },
       "post": {
@@ -2636,16 +2570,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2686,6 +2612,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2744,16 +2672,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2824,16 +2744,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2914,6 +2826,8 @@
               }
             }
           },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -2991,7 +2905,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       },
       "post": {
@@ -3029,16 +2945,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "409": {
             "description": "Conflict",
             "content": {
@@ -3099,16 +3007,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3159,16 +3059,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3291,7 +3183,9 @@
                 }
               }
             }
-          }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" }
         }
       },
       "post": {
@@ -3329,16 +3223,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3409,16 +3295,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3459,16 +3337,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3494,6 +3364,36 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "sessaoCabinet": {
+        "description": "Sessão server-side por COOKIE OPACO (ADR-010, sem JWT). O cookie carrega um identificador e nada mais — papel, empresa ativa e validade moram no servidor, onde podem ser revogados de um lado só. `POST /auth/login` o emite; `POST /auth/logout` o encerra.\n\n`apiKey`+`cookie` é como o OpenAPI expressa isto: não existe tipo `cookieSession`, e descrever a sessão como `http`/`bearer` seria descrever outro mecanismo. O cliente NÃO lê nem monta o cookie — o navegador o envia sozinho, e o front pede com `credentials: 'include'`.\n\n**Vale por HERANÇA:** o `security` do topo do documento aplica esta exigência a TODA operação, e as quatro que não a têm (`Health`, `HealthDb`, `AuthLogin`, `AuthLogout`) a desligam explicitamente com `security: []`. O padrão é exigir; a exceção é que se declara.",
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cabinet_sessao"
+      }
+    },
+    "responses": {
+      "NaoAutenticado": {
+        "description": "Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — \"autenticado mas não pode\" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.\n\nResposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.\n\nExceção declarada: o 401 de `AuthLogin` NÃO é este — lá ele diz \"credencial inválida\", com mensagem genérica de propósito, e continua descrito na própria operação.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "SemPermissao": {
+        "description": "Autenticado e barrado. Três casos, e os três são 403 por decisão:\n\n1. **`mustChangePassword`** — a credencial vale, falta um passo. 401 aqui derrubaria a sessão recém-criada e o cliente tentaria logar de novo, em laço.\n2. **Empresa ativa sem vínculo** — 403 e não 404, porque o `tenantId` não é segredo (ele viaja em `GET /auth/tenants`). O que é controlado é o acesso, não a existência.\n3. **Papel sem a permissão da operação** (RBAC por empresa).\n\nQuem distingue os três é `type` (URN estável), não o texto de `detail`: código é para código, frase é para gente. O cliente mostra a tela própria de \"sem permissão\", nunca o erro genérico.\n\n**Não cobre \"não encontrado nesta empresa\"**, que é 404: dizer \"existe, mas não é sua\" confirmaria um registro da empresa vizinha.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
     "schemas": {
       "ListFilter": {
         "required": ["field", "operator"],

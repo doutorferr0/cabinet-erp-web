@@ -208,7 +208,80 @@ híbrido da §5) — porque B2 muda nove valores a mais e ainda assim deixa o í
 
 ---
 
-## 7. O que é preciso para executar, quando houver decisão
+## 7. A terceira reprovação da página tem a mesma raiz — e a regra que explica as três
+
+O `carimbo open` reprova a **1,30:1 no escuro** (§`tabela:estados-demais`), e estava sem proposta
+pelo mesmo motivo que as outras duas. Medi, e ele fecha o padrão.
+
+### Por que ele quebra
+
+`--stamp-open` é **o único preenchimento da página que NÃO vira com o tema**:
+
+| token | L no claro | L no escuro | vira? |
+|---|---|---|---|
+| `--stamp-open` | 0,625 | 0,651 | **não** — fica claro nos dois |
+| `--stamp-done` | 0,140 | 0,570 | sim |
+| `--foreground` (a tinta do `open`) | 0,000 | 0,863 | sim |
+| `--primary-foreground` (a tinta do `done`) | 1,000 | 0,010 | sim |
+
+O `done` sobrevive porque **preenchimento e tinta viram juntos** e continuam em oposição. O `open`
+tem preenchimento parado e tinta que vira — no escuro os dois ficam claros, e o par colapsa.
+
+**E nenhuma tinta existente resolve**, porque todas viram:
+
+| tinta sobre `--stamp-open` | claro | escuro |
+|---|---|---|
+| `--foreground` (hoje) | 13,49:1 | **1,30:1** |
+| `--primary-foreground` | **1,56:1** | 11,77:1 |
+
+Uma passa no claro e falha no escuro; a outra faz o inverso. Não é escolha errada de token: é que
+**um preenchimento parado exige uma tinta parada**, e não há nenhuma.
+
+### Proposta C — a tinta do `open` deixa de virar
+
+Como o preenchimento é claro nos dois temas, a tinta tem de ser escura nos dois. Um token próprio,
+fixo (não redefinido em `.dark`):
+
+| tema | tinta fixa escura × `--stamp-open` | piso |
+|---|---|---|
+| claro | **13,49:1** (inalterado) | 4,5 |
+| escuro | **14,03:1** | 4,5 |
+
+O carimbo é `font-mono font-bold text-[0.75rem]` — 12px negrito, abaixo dos 18,66px que a WCAG
+chama de texto grande, então o piso é 4,5:1 mesmo.
+
+**Custo visual: nenhum no claro, e no escuro o amarelo continua amarelo.** O preenchimento não é
+tocado, então o carimbo "em aberto" mantém o brilho de alerta que o distingue do `done` verde e do
+`void` vermelho. A delimitação contra a folha já é feita pela borda (`border-border`: 19,12:1 no
+claro, 5,88:1 no escuro), não pelo preenchimento.
+
+**A alternativa seria escurecer `--stamp-open` no escuro** para `47 100% 25%` (`#816500`, L 0,141),
+o que faria a tinta atual funcionar (4,79:1). Custo: o amarelo vira oliva no escuro e o carimbo
+perde o sinal de alerta. **Não recomendo** — troca a identidade da cor para consertar a tinta.
+
+### A regra, que vale para toda a página
+
+> **Tinta e preenchimento têm de virar JUNTOS com o tema, ou nenhum dos dois vira.**
+
+É o que separa o que sobrevive do que quebra, e explica as três reprovações de uma vez:
+
+| par | preenchimento vira? | tinta vira? | resultado |
+|---|:--:|:--:|---|
+| `fill-*` + tinta do tema | sim | sim | **passa** (8,47 a 11,34:1) — o `DESIGN.md` já tinha notado como contraexemplo |
+| `stamp-done` + `primary-foreground` | sim | sim | **passa** (5,52 / 10,42:1) |
+| `stamp-open` + `foreground` | **não** | sim | **quebra** no escuro (1,30:1) |
+| `/01` + tinta do tema | **não** (herda o claro) | sim | **quebra** no escuro (1,33:1) |
+
+As duas linhas que quebram são exatamente as duas em que o par se desemparelha. **A página já tinha
+o contraexemplo escrito** — *"quem desce de luz no escuro sobrevive à inversão da tinta"* — mas nunca
+como regra, e por isso ela não foi aplicada aos dois casos que faltavam.
+
+**Sugestão de guarda (não implementada):** o `medir-contraste.py` já conhece os pares reais em
+`ESTADOS`. Um modo `--pares-desemparelhados` poderia comparar o sinal de ΔL entre temas de cada
+preenchimento e da sua tinta, e apontar os que não viram juntos — pegando esta classe inteira antes
+de virar reprovação. Fica como proposta; não mexi no medidor.
+
+## 8. O que é preciso para executar, quando houver decisão
 
 **Nada disto foi feito.** Fica registrado para o trilho que vier:
 
@@ -216,6 +289,8 @@ híbrido da §5) — porque B2 muda nove valores a mais e ainda assim deixa o í
 - **A2** — `src/app/appbar.tsx`: o `<span>` do fio, `bg-modulo-cheia` → `bg-foreground`.
 - **B1/B2** — `src/index.css`, blocos `[data-modulo=…]` e um bloco novo `.dark [data-modulo=…]`
   para o `/01`.
+- **C** — `src/index.css`: token novo para a tinta do carimbo, definido **só** no `:root` (não em
+  `.dark`); `src/components/cabinet/stamp.tsx`: `open:` troca `text-foreground` por ele.
 - Em qualquer caso: rodar `python3 docs/design/medir-contraste.py --escrever`, porque
   `tabela:nav-estados`, `tabela:estados-fundo`, `tabela:pasteis-02` e `tabela:cheia-01` mudam todas —
   e o `--conferir` do CI reprova se ficarem velhas.

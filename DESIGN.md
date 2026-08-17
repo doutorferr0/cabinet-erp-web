@@ -718,6 +718,31 @@ inversão do item de menu ativo, no outro componente**: um preenchimento que con
 enquanto a tinta trocou de lado. `done` não tem o problema (o `--primary-foreground` do escuro é a
 bancada, quase preta) — daí 10,42:1.
 
+**A proposta do `open` está junto com as da navegação** (`docs/design/proposta-contraste-navegacao.md`,
+§7). Medi as duas saídas: **nenhuma tinta existente resolve**, porque todas viram com o tema —
+`--foreground` dá 13,49:1 no claro e 1,30:1 no escuro, `--primary-foreground` faz o inverso
+(1,56 / 11,77:1). Como o preenchimento é o único da página que **não** vira (L 0,625 no claro,
+0,651 no escuro), a tinta tem de ser fixa: um token escuro definido só no `:root` dá **13,49:1 no
+claro e 14,03:1 no escuro**, com o amarelo intacto. A alternativa — escurecer o amarelo no escuro
+para `47 100% 25%` — funciona (4,79:1) e troca a identidade da cor pelo conserto da tinta; não é a
+recomendada.
+
+**E daí sai a regra que explica as três reprovações desta página de uma vez:**
+
+> **Tinta e preenchimento têm de virar JUNTOS com o tema, ou nenhum dos dois vira.**
+
+| par | preench. vira? | tinta vira? | resultado |
+|---|:--:|:--:|---|
+| `fill-*` + tinta do tema | sim | sim | passa (8,47 a 11,34:1) |
+| `stamp-done` + `primary-foreground` | sim | sim | passa (5,52 / 10,42:1) |
+| `stamp-open` + `foreground` | **não** | sim | **quebra** (1,30:1) |
+| `/01` + tinta do tema | **não** | sim | **quebra** (1,33:1) |
+
+As duas que quebram são exatamente as duas em que o par se desemparelha. O contraexemplo dos
+`fill-*` já estava escrito logo abaixo — *"quem desce de luz no escuro sobrevive à inversão da
+tinta"* —, mas como observação sobre um caso, não como regra; por isso não foi aplicada aos dois
+que faltavam.
+
 **Os três `fill-*` são o contraexemplo que mostra o que falta aos outros dois**: eles DESCEM de luz
 no escuro (`fill-money` de `88 51% 71%` para `88 30% 22%`), então a tinta clara pousa neles com
 8,47 a 11,34:1. Quem desce de luz no escuro sobrevive à inversão da tinta; quem fica claro — a

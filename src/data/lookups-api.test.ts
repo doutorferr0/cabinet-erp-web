@@ -1,60 +1,50 @@
-import { resolverIdDoLookup } from '@/data/lookups-api'
+import { nomeDoLookup } from '@/data/lookups-api'
 import { describe, expect, it } from 'vitest'
 
 /**
- * A TRADUÇÃO NOME → ID, e a regra que a governa: **falhar barulhento, nunca
- * chutar** (decisão do user, 2026-08-13).
+ * A FRONTEIRA DAS LISTAS DE APOIO, depois da migração para `value=id` (#94).
  *
- * O combo do formulário escolhe por NOME — é o que a lista de apoio expõe ao
- * operador — e o contrato grava por ID. Alguém tem de traduzir, e o perigo mora
- * aqui: **nome não é chave.** Dois itens homônimos no mesmo kind, ou um item
- * renomeado entre a carga da lista e o clique em Gravar, e uma tradução
- * "otimista" grava o id de outro registro. O operador não teria como perceber:
- * a tela mostra o nome que ele escolheu.
+ * Este arquivo cobria `resolverIdDoLookup` — a tradução nome→id que rodava no
+ * submit, com cinco casos: nome único, nome AMBÍGUO (dois homônimos), nome fora
+ * da lista, nome vazio e espaço nas bordas. **Os cinco deixaram de existir**,
+ * não de ser testados: o combo escolhe por id, e não há mais um passo entre a
+ * escolha e a gravação onde um nome possa virar o id errado.
  *
- * Por isso a função devolve FALHA como valor, e a tela transforma isso em erro
- * visível em vez de gravar o palpite.
+ * O que sobrou é o caminho inverso, e ele é só de EXIBIÇÃO: dado um id, qual
+ * nome mostrar. Errar aqui mostra o rótulo errado; errar na tradução antiga
+ * gravava o registro errado. É outra classe de risco, e é por isso que ela pode
+ * ser simples.
  */
-describe('resolverIdDoLookup', () => {
-  const lista = new Map<string, string[]>([
-    ['STELLA', ['11111111-1111-4111-8111-111111111111']],
-    ['ILUMINAR', ['22222222-2222-4222-8222-222222222222']],
-    // Homônimos: acontece quando duas empresas do grupo cadastram a mesma marca,
-    // ou quando alguém duplica sem perceber. A lista não impede — quem impede é
-    // a recusa aqui.
-    ['DUPLICADA', ['33333333-3333-4333-8333-333333333333', '44444444-4444-4444-8444-444444444444']],
-  ])
+describe('nomeDoLookup', () => {
+  const opcoes = [
+    { id: 'lk-MARCA-1', nome: 'EVOLED' },
+    { id: 'lk-MARCA-2', nome: 'STELLA' },
+  ]
 
-  it('resolve o nome que existe uma vez só', () => {
-    expect(resolverIdDoLookup(lista, 'STELLA')).toEqual({
-      ok: true,
-      id: '11111111-1111-4111-8111-111111111111',
-    })
+  it('acha o nome do id que está na lista', () => {
+    expect(nomeDoLookup(opcoes, 'lk-MARCA-2')).toBe('STELLA')
   })
 
-  it('recusa nome AMBÍGUO em vez de pegar o primeiro', () => {
-    // Pegar `ids[0]` seria o atalho óbvio, e gravaria a marca errada em metade
-    // dos casos — sem erro, sem log, sem jeito de o operador saber.
-    expect(resolverIdDoLookup(lista, 'DUPLICADA')).toEqual({ ok: false, motivo: 'ambiguo' })
+  it('devolve `undefined` para id fora da lista — e isso NÃO é erro', () => {
+    // Item desativado depois de gravado, ou lista cortada no teto de 100. Quem
+    // exibe decide o que pôr no lugar (o `LookupCombo` põe o rótulo que o
+    // registro trouxe); o que não se faz é apagar o valor por não saber o nome.
+    expect(nomeDoLookup(opcoes, 'lk-MARCA-99')).toBeUndefined()
   })
 
-  it('recusa nome que não está na lista', () => {
-    // Três causas reais, mesmo desfecho: renomeado depois da carga, desativado,
-    // ou fora das 100 primeiras da lista truncada.
-    expect(resolverIdDoLookup(lista, 'NÃO EXISTE')).toEqual({ ok: false, motivo: 'desconhecido' })
+  it('sem id, não há nome — campo vazio é escolha legítima', () => {
+    expect(nomeDoLookup(opcoes, null)).toBeUndefined()
+    expect(nomeDoLookup(opcoes, '')).toBeUndefined()
   })
 
-  it('nome vazio resolve para null — limpar o campo é escolha legítima', () => {
-    expect(resolverIdDoLookup(lista, '')).toEqual({ ok: true, id: null })
-    expect(resolverIdDoLookup(lista, '   ')).toEqual({ ok: true, id: null })
-  })
-
-  it('ignora espaço nas bordas antes de decidir', () => {
-    // O valor chega de um combo com texto livre; espaço sobrando não pode virar
-    // "nome desconhecido" e barrar uma gravação legítima.
-    expect(resolverIdDoLookup(lista, '  STELLA  ')).toEqual({
-      ok: true,
-      id: '11111111-1111-4111-8111-111111111111',
-    })
+  it('homônimo deixou de ser problema: escolhe pelo id, não pelo nome', () => {
+    // O caso que derrubava a tradução antiga. Aqui os dois convivem e cada id
+    // acha o SEU rótulo — que é o ponto inteiro da issue #94.
+    const comHomonimo = [
+      { id: 'lk-MARCA-1', nome: 'STELLA' },
+      { id: 'lk-MARCA-7', nome: 'STELLA' },
+    ]
+    expect(nomeDoLookup(comHomonimo, 'lk-MARCA-7')).toBe('STELLA')
+    expect(nomeDoLookup(comHomonimo, 'lk-MARCA-1')).toBe('STELLA')
   })
 })

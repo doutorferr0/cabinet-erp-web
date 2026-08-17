@@ -1,3 +1,4 @@
+import { idDeApoio } from '@/mocks/lookups'
 /**
  * Mock de clientes — campos LITERAIS da transcrição §5 (aba Principal).
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
@@ -93,8 +94,8 @@ export const clientes: Cliente[] = NOMES.map((nome, i) => ({
   celular: `19 9${String(80000000 + i * 246813).slice(0, 8)}`,
   email: `${nome.split(' ')[0]?.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')}@email.com`,
   ativo: i !== 14,
-  profissional: PROFISSIONAIS[i % PROFISSIONAIS.length] ?? null,
-  categoria: i % 3 === 0 ? 'ARQUITETO' : 'CONSUMIDOR FINAL',
+  profissional: idDeApoio('PROFISSIONAL', PROFISSIONAIS[i % PROFISSIONAIS.length]),
+  categoria: idDeApoio('CATEGORIA', i % 3 === 0 ? 'ARQUITETO' : 'CONSUMIDOR FINAL'),
   dtNascimento: `19${60 + (i % 35)}-0${(i % 9) + 1}-1${i % 9}`,
   redesSociais: { facebook: '', instagram: '' },
   inscEstProdutorRural: '',

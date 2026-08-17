@@ -21,5 +21,6 @@ export {
   camposDe,
   colunasDe,
   filtrosDe,
+  indicadoresSemOrigem,
   semLastro,
 } from './tipos'

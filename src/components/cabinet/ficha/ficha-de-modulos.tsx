@@ -1,8 +1,11 @@
 import { FormBlock } from '@/components/cabinet/form-block'
 import { Button } from '@/components/ui/button'
-import type { EntidadeCadastro, ModuloCadastro } from '@/features/cadastro/modulos'
+import {
+  type EntidadeCadastro,
+  type ModuloCadastro,
+  indicadoresSemOrigem,
+} from '@/features/cadastro/modulos'
 import { Pencil, Plus } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { camposPreenchidos, moduloVazio, textoDoCampo } from './valores'
 
 /**
@@ -37,11 +40,21 @@ import { camposPreenchidos, moduloVazio, textoDoCampo } from './valores'
  * dispara consulta vira componente que falha, carrega e precisa de estado de
  * erro — e a ficha passaria a ter três estados por módulo em vez de dois.
  *
- * **Não monta os KPIs.** A faixa do topo é por entidade (cliente → comprado no
- * ano, pedidos, obras) e nenhum desses números está no schema: eles vêm de
- * consulta agregada que o contrato ainda não publica. Entram por `kpis`, como
- * conteúdo — inventar os números aqui seria dado de mentira com cara de dado do
- * servidor.
+ * **Não monta os KPIs, e agora DIZ que não monta.** A faixa do topo é por
+ * entidade (cliente → comprado no ano, pedidos, obras) e nenhum desses números
+ * tem origem: saem de consulta agregada que o contrato não publica. Inventá-los
+ * aqui seria dado de mentira com cara de dado do servidor.
+ *
+ * Até a #103 a faixa era uma prop `kpis: ReactNode` — e **nenhuma tela a
+ * passava**. `grep -rn "kpis" src` fora deste arquivo voltava vazio: ponto de
+ * extensão declarado, com docstring, sem consumidor, e invisível para qualquer
+ * teste (a mesma classe da ficha órfã e do `ColunasPorModulo`). A prop saiu.
+ *
+ * No lugar dela, os indicadores viraram parte do SCHEMA (`entidade.indicadores`,
+ * literais do mockup aprovado) e a ficha imprime a lacuna na mesma voz que o
+ * formulário usa para campo sem onde gravar: *"Ainda não guardamos: …"*. Quatro
+ * quadros vazios diriam "sem dado"; a linha diz "sem origem", que é a verdade —
+ * e sobra CONTÁVEL, em vez de sumir com a prop.
  */
 
 /** O `id` da seção do módulo na página — índice e ficha precisam concordar. */
@@ -58,8 +71,6 @@ export interface FichaDeModulosProps {
    * vira nome. Ausente: a ficha imprime o valor como ele está.
    */
   rotulos?: Readonly<Record<string, string>>
-  /** Faixa de indicadores do topo. Ver a nota do docstring. */
-  kpis?: ReactNode
   /** Lápis por módulo — abre a edição DAQUELE módulo, não do formulário inteiro. */
   onEditarModulo?: (moduloId: string) => void
   /** "+ Preencher" do módulo vazio. Sem ele, o módulo vazio é só informativo. */
@@ -163,17 +174,34 @@ function ModuloVazio({
   )
 }
 
+/**
+ * A faixa de indicadores que ainda não existe, dita pelo nome.
+ *
+ * Fica no TOPO, onde a faixa moraria — a pergunta que ela responde é "cadê os
+ * números que o desenho promete", e ela só faz sentido no lugar deles. Mesma
+ * gramática do `Pendencias` do formulário, que diz por bloco o que o repo ainda
+ * não guarda.
+ */
+function IndicadoresPendentes({ entidade }: { entidade: EntidadeCadastro }) {
+  const faltam = indicadoresSemOrigem(entidade)
+  if (faltam.length === 0) return null
+  return (
+    <p data-slot="indicadores-pendentes" className="text-muted-foreground text-xs">
+      Ainda não calculamos: {faltam.map((indicador) => indicador.r).join(' · ')}.
+    </p>
+  )
+}
+
 export function FichaDeModulos({
   entidade,
   registro,
   rotulos,
-  kpis,
   onEditarModulo,
   onPreencherModulo,
 }: FichaDeModulosProps) {
   return (
     <div className="flex flex-col gap-3" data-slot="ficha-de-modulos">
-      {kpis}
+      <IndicadoresPendentes entidade={entidade} />
       {entidade.modulos.map((modulo) => {
         const vazio = moduloVazio(registro, modulo, rotulos)
         return (

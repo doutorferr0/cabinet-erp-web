@@ -105,6 +105,42 @@ módulo.
 
 **Resolve o caso 1 nos dois temas, com folga de 5×.**
 
+### A1 tem um terceiro endereço, e ele estava afirmando o contrário
+
+Ao conferir se a §8 era executável, achei um terceiro lugar com o mesmo par — e com um comentário no
+código que **afirma o oposto do que a medição diz**. Em `src/app/gaveta-notificacoes.tsx`:
+
+```
+// Laranja cheia do Boletim (§@casca-global): a NEON /01 do módulo, texto
+// no `text-foreground` padrão — o mesmo par que o item ATIVO da sidebar já
+// usa (`data-active:bg-modulo-cheia`, `sidebar.tsx`), medido AA nos dois
+// temas. Nenhum token novo.
+```
+
+**"Medido AA nos dois temas" é falso.** É exatamente o par da §`tabela:estados-fundo`, e o Boletim
+mede lá **7,46:1 no claro e 2,45:1 no escuro**. O comentário cita a `sidebar.tsx` como precedente de
+que passa — e a `sidebar.tsx` é justamente um dos casos reprovados.
+
+Isso é o mesmo mecanismo que o `DESIGN.md` já registra para o comentário velho do `index.css`:
+**quem lê um comentário que afirma ter medido decide não medir.** Aqui ele propagou o par para uma
+superfície de **312px de largura**, maior que o item de menu que serviu de precedente.
+
+O que de fato pousa sobre a `/01` da gaveta, conferido elemento a elemento:
+
+| elemento | tinta | tamanho | claro | escuro |
+|---|---|---|---|---|
+| cabeçalho "Notificações" | `--foreground` | `text-lg` bold (18px — **abaixo** dos 18,66px de "texto grande") | 7,46:1 | **2,45:1** |
+| estado vazio "Nenhuma notificação." | `--foreground` | `text-sm` | 7,46:1 | **2,45:1** |
+
+**Os cartões de notificação NÃO entram**: eles têm `bg-card` próprio, então o texto secundário deles
+pousa na Folha, não na `/01`. Cheguei a suspeitar do contrário e a conferência derrubou — o
+`--muted-foreground` sobre a `/01` daria 2,03:1 no claro e 1,33:1 no escuro, e não é o caso.
+
+**Consequência para a proposta A1:** ela precisa cobrir os três endereços, não dois. Na gaveta, o
+equivalente ao A1 é trocar `bg-modulo-cheia` por `bg-modulo` no `<aside>` — a laranja pastel do
+Boletim no lugar da neon, com a régua `border-l-2 border-border` que já existe fazendo a separação.
+E o comentário precisa ser corrigido junto, senão ele volta a autorizar o padrão.
+
 ### Custo visual de A
 
 - **A cor do módulo sai de dois lugares**: do preenchimento do item ativo e do fio da aba. Ela
@@ -324,8 +360,20 @@ Ligar `--conferir` (e depois `--pares-desemparelhados`) ao CI é mudança em `.g
 
 **Nada disto foi feito.** Fica registrado para o trilho que vier:
 
-- **A1** — `src/components/ui/sidebar.tsx`: `data-active:bg-modulo-cheia` → `data-active:bg-modulo`.
+- **A1** — três endereços, não dois:
+  - `src/components/ui/sidebar.tsx`: `data-active:bg-modulo-cheia` → `data-active:bg-modulo`;
+  - `src/app/gaveta-notificacoes.tsx`: o `<aside>`, `bg-modulo-cheia` → `bg-modulo`, **e o
+    comentário das linhas 105–108 corrigido** — ele afirma "medido AA nos dois temas" sobre um par
+    que mede 2,45:1 no escuro;
+  - conferir se algum uso novo entrou: `grep -rn "bg-modulo-cheia" src/` dá **14 ocorrências em 11
+    arquivos** hoje, e a maioria é legítima (marcador `size-3` com borda, faixa do `form-block` com
+    tinta própria). Só entram no A1 os que têm **texto ou ícone pousando na `/01`**.
 - **A2** — `src/app/appbar.tsx`: o `<span>` do fio, `bg-modulo-cheia` → `bg-foreground`.
+  **Verificado:** `bg-foreground` já existe como utility (`--color-foreground` no `@theme`) e já é
+  usado em `tooltip.tsx` — a instrução é executável como está.
+- **Teste que trava:** `src/components/cabinet/form-block.test.tsx:151` busca `.bg-modulo-cheia`.
+  Ele mira a **faixa do FormBlock**, que não é alvo do A1 — mas quem executar deve rodar a suíte
+  antes de assumir que nenhum teste depende da classe.
 - **B1/B2** — `src/index.css`, blocos `[data-modulo=…]` e um bloco novo `.dark [data-modulo=…]`
   para o `/01`.
 - **C** — `src/index.css`: token novo para a tinta do carimbo, definido **só** no `:root` (não em

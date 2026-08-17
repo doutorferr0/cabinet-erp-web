@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ENTIDADES } from './entidades'
-import { camposDe, colunasDe, filtrosDe, semLastro } from './tipos'
+import { camposDe, colunasDe, filtrosDe, indicadoresSemOrigem, semLastro } from './tipos'
 
 /**
  * AS INVARIANTES DO SCHEMA DE MÓDULOS — o ponto da issue #100.
@@ -142,6 +142,32 @@ describe('a lacuna entre a espec e o que o repo guarda', () => {
       fornecedor: ['regime', 'cnae', 'custo', 'indice', 'frete', 'minimo'],
       profissional: ['pix', 'pct', 'operador', 'indicados', 'gerado'],
     })
+  })
+
+  it.each(entidades)('%s: os 4 indicadores do mockup estão declarados', (_, entidade) => {
+    // A faixa do topo da ficha existia como prop `kpis` que tela nenhuma
+    // passava — desenho aprovado que nenhum grep achava. Declarada no schema,
+    // ela vira contável: some daqui e este teste cobra.
+    expect(entidade.indicadores ?? []).toHaveLength(4)
+  })
+
+  it.each(entidades)('%s: indicador não promete coluna nem filtro', (_, entidade) => {
+    // Mesma regra do campo sem lastro, e por um motivo mais forte: indicador
+    // nenhum é atributo do registro. Coluna que ordenasse por "Comprado no ano"
+    // pediria ao servidor um `sortBy` que não existe na whitelist — 400 no
+    // primeiro clique.
+    const prometendo = (entidade.indicadores ?? [])
+      .filter((ind) => ind.col || ind.fil)
+      .map((ind) => ind.k)
+    expect(prometendo).toEqual([])
+  })
+
+  it('nenhum indicador tem origem hoje — a faixa inteira é lacuna declarada', () => {
+    // Quando o contrato publicar o agregado, este teste cai junto com a linha
+    // "Ainda não calculamos" — e cair é o sinal de que a faixa ganhou número.
+    for (const [id, entidade] of entidades) {
+      expect(indicadoresSemOrigem(entidade), id).toHaveLength((entidade.indicadores ?? []).length)
+    }
   })
 
   it('nenhum campo sem lastro atravessa para a grade ou para o filtro', () => {

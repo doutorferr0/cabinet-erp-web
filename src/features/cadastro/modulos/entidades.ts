@@ -172,6 +172,15 @@ export const cliente: EntidadeCadastro = {
     moduloRedesSociais(),
     moduloObservacao(),
   ],
+  // Literais do mockup aprovado (`mockup-consulta-modelo.html`, `kpis` do
+  // Cliente). Nenhum tem `campo` nem `dto`: os quatro saem de agregação que o
+  // contrato não publica — ver `indicadores` em `tipos.ts`.
+  indicadores: [
+    { k: 'ano', r: 'Comprado no ano', grana: true },
+    { k: 'pedidos', r: 'Pedidos' },
+    { k: 'obras', r: 'Obras vinculadas' },
+    { k: 'ultima', r: 'Última compra', t: 'data' },
+  ],
 }
 
 export const fornecedor: EntidadeCadastro = {
@@ -315,6 +324,12 @@ export const fornecedor: EntidadeCadastro = {
     moduloEndereco(),
     moduloRedesSociais(),
   ],
+  indicadores: [
+    { k: 'produtos', r: 'Produtos ativos' },
+    { k: 'ano', r: 'Comprado no ano', grana: true },
+    { k: 'indice', r: 'Índice de venda' },
+    { k: 'prazo', r: 'Prazo médio' },
+  ],
 }
 
 export const profissional: EntidadeCadastro = {
@@ -419,6 +434,16 @@ export const profissional: EntidadeCadastro = {
       ],
     },
     moduloRedesSociais(),
+  ],
+  // `Gerado no ano` e `Clientes indicados` também são CAMPO do módulo Comercial
+  // (com `col`, para a listagem) — e repetir aqui não é engano: no módulo eles
+  // são atributo do registro que o legado guarda; aqui são o número do topo,
+  // que sai de agregação. Mesma palavra, origens diferentes.
+  indicadores: [
+    { k: 'gerado', r: 'Gerado no ano', grana: true },
+    { k: 'indicados', r: 'Clientes indicados' },
+    { k: 'pct', r: '% padrão' },
+    { k: 'obras', r: 'Obras ativas' },
   ],
 }
 
@@ -556,6 +581,12 @@ export const colaborador: EntidadeCadastro = {
       ],
     },
     moduloRedesSociais(),
+  ],
+  indicadores: [
+    { k: 'vendido', r: 'Vendido no mês', grana: true },
+    { k: 'meta', r: 'Meta', grana: true },
+    { k: 'pedidos', r: 'Pedidos no mês' },
+    { k: 'empresa', r: 'Empresas' },
   ],
 }
 

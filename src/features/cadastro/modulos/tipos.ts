@@ -119,6 +119,26 @@ export interface EntidadeCadastro {
    *  que o teste de invariante confere cada `dto` — campo fora dela é 400. */
   whitelist?: readonly string[]
   modulos: readonly ModuloCadastro[]
+  /**
+   * A faixa de indicadores do topo da ficha (`kpis` do mockup): "Comprado no
+   * ano", "Pedidos", "Obras vinculadas".
+   *
+   * **Não são campos, e por isso não moram em módulo:** nenhum deles se guarda
+   * no registro — todos saem de consulta AGREGADA sobre outra tabela (pedidos
+   * do cliente, produtos do fornecedor). Um `campo` deles seria mentira, e
+   * dentro de um módulo eles entrariam em `camposDe`, virando candidato a
+   * coluna e a filtro de algo que o servidor não sabe ordenar.
+   *
+   * Ficam DECLARADOS mesmo sem origem pela mesma razão que campo sem `campo`
+   * fica: a lacuna precisa ser contável. Antes disto a faixa existia como uma
+   * prop `kpis` que tela nenhuma passava — desenho aprovado que nenhum grep
+   * encontrava, e que ninguém ia cobrar.
+   *
+   * `campo`/`dto` seguem valendo com o mesmo sentido: quando o contrato
+   * publicar o agregado, o indicador ganha `dto` e a faixa passa a desenhar
+   * número — com consumidor, no mesmo PR.
+   */
+  indicadores?: readonly CampoCadastro[]
 }
 
 /** Todos os campos da entidade, na ordem em que os módulos os declaram. */
@@ -150,4 +170,16 @@ export function filtrosDe(entidade: EntidadeCadastro): readonly CampoCadastro[] 
  *  é a medida da distância entre o cadastro pedido e o cadastro implementado. */
 export function semLastro(entidade: EntidadeCadastro): readonly CampoCadastro[] {
   return camposDe(entidade).filter((campo) => !campo.campo && !campo.dto)
+}
+
+/**
+ * Indicadores que a ficha ainda NÃO tem como calcular — hoje, todos.
+ *
+ * Separado de `semLastro` porque a falta é de outra natureza: campo sem lastro
+ * é dado do registro que ninguém guarda; indicador sem lastro é AGREGAÇÃO que
+ * o contrato não publica. O primeiro se resolve com uma coluna no banco, o
+ * segundo com um caminho novo.
+ */
+export function indicadoresSemOrigem(entidade: EntidadeCadastro): readonly CampoCadastro[] {
+  return (entidade.indicadores ?? []).filter((ind) => !ind.campo && !ind.dto)
 }

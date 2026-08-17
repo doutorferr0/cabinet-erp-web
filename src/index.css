@@ -1065,22 +1065,6 @@ h1 {
   letter-spacing: -0.005em;
 }
 
-/* POLARIS (2026-08-17): o repo inteiro escreve `border-2` — assinatura do
-   brutalism. Em vez de tocar centenas de arquivos, as utilities de 2px valem
-   1px aqui, uma vez. Quando a migração por componente acontecer (fases 2+),
-   estas overrides morrem. */
-@utility border-2 {
-  border-width: 1px;
-}
-@utility border-t-2 {
-  border-top-width: 1px;
-}
-@utility border-b-2 {
-  border-bottom-width: 1px;
-}
-@utility border-l-2 {
-  border-left-width: 1px;
-}
-@utility border-r-2 {
-  border-right-width: 1px;
-}
+/* POLARIS rodada 3 (2026-08-17): o user pediu linha GROSSA de volta — as
+   overrides de 1px morreram e o `border-2` volta a valer os 2px nativos,
+   agora com a cor firme (55%) em vez do preto puro do brutalism. */

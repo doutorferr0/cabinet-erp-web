@@ -565,6 +565,17 @@
   background-color: hsl(var(--background));
 }
 
+/* O mesmo Papel, com a tinta lida do ESCOPO de módulo em vez do tema — é o
+   que pinta o fundo do app na cor da seção/tela (casca=seção, tela=módulo,
+   decisão do user 2026-08-17). Fora de `[data-modulo]` resolve no par
+   primary do :root — o Papel neutro de sempre, só que lilás de marca. */
+@utility bg-paper-grid-modulo {
+  background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 52px 52px;
+  background-color: hsl(var(--modulo-02));
+}
+
 /* Textura pontilhada dos folhetos De School (DESIGN.md §Stipple): pontos de
    1px numa célula de 7px. É ACENTO GRÁFICO — vale em tela de login, estado
    vazio de módulo e tela inicial, e nunca atrás de dado: ponto sob número é

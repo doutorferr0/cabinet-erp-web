@@ -372,7 +372,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const naoLidas = notificacoes.filter((n) => !n.lida).length
 
   return (
-    <SidebarProvider>
+    /* CASCA = SEÇÃO (decisão do user, 2026-08-17): o wrapper declara o módulo
+       da seção ativa, e todo o entorno — appbar, régua do header, papel —
+       pinta no pastel /02 desse escopo. A TELA continua mandando na própria
+       cor: o `data-modulo` do `<main>` (módulo da rota) sobrepõe o da seção
+       por proximidade, exatamente a regra da #140. Rota sem módulo herda o
+       da seção — o furo neutro vira exceção, não regra. */
+    <SidebarProvider data-modulo={secaoAtiva?.modulo}>
       <AppSidebar secao={secaoAtiva} />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
@@ -386,7 +392,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
 
         {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
-        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">
+        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-modulo px-4 transition-[width,height] ease-linear">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
@@ -403,7 +409,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             escreve o atributo — o par padrão do `:root` é o que vale. */}
         <main
           {...(modulo && { 'data-modulo': modulo })}
-          className="bg-paper-grid flex flex-1 flex-col p-5"
+          className="bg-paper-grid-modulo flex flex-1 flex-col p-5"
         >
           {/* `key` por CAMINHO: trocar de tela remonta a folha e a entrada
               anima; paginar e ordenar mexem em search params, não no caminho,

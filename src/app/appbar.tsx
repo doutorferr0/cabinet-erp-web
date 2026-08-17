@@ -89,8 +89,12 @@ function AbaDeSecao({
         aria-current={ativa ? 'page' : undefined}
         {...(secao.modulo && { 'data-modulo': secao.modulo })}
         className={cn(
+          // O hover mostra o pastel DA PRÓPRIA seção (o data-modulo é da aba):
+          // numa faixa já tintada pela seção ativa, é a prévia da cor de
+          // destino. A aba ATIVA inverte — furo em `bg-card` sobre a faixa
+          // colorida + fio cheio, porque pastel sobre o mesmo pastel some.
           'relative grid h-full w-14 place-content-center outline-none hover:bg-modulo focus-visible:focus-ring',
-          ativa && 'bg-modulo',
+          ativa && 'bg-card',
         )}
       >
         <secao.icon aria-hidden="true" className="size-6" />
@@ -176,7 +180,7 @@ export function Appbar({
   return (
     <div
       data-slot="appbar"
-      className="flex items-stretch gap-3 border-rule-strong border-b-2 bg-card px-4"
+      className="flex items-stretch gap-3 border-rule-strong border-b-2 bg-modulo px-4"
     >
       {/* AS SEIS SEÇÕES ocupam a LARGURA TODA da faixa, com fio vertical entre
           vizinhas (referência do user, 2026-08-17 — emenda na issue #140): a

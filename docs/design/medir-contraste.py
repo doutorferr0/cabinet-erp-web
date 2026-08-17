@@ -177,6 +177,85 @@ ESTADOS = [
     ("desabilitado: secundário × superfície apagada", "muted-foreground", "surface-disabled"),
 ]
 
+# Quanto de luminância um token precisa andar entre os temas para dizermos que ele
+# "vira". 0,2 separa com folga os dois grupos reais da paleta: quem vira anda de
+# 0,43 a 1,00, quem não vira anda de 0,00 a 0,04. `--stamp-void` (0,198) e
+# `--primary` (0,105) são os únicos no meio, e por isso saem marcados como MEIO-TOM
+# em vez de "não vira" — ver `pares_desemparelhados`.
+LIMIAR_VIRADA = 0.20
+
+# Pares do ESTADOS cujo piso é 3:1 e não 4,5:1 — não são texto. Sem isto a
+# checagem acusa "reprova" em traço e superfície, que é o erro de aplicar piso de
+# texto a componente gráfico.
+NAO_TEXTO = {
+    "linha selecionada × folha (a mudança de estado)",
+    "desabilitado: traço apagado × superfície apagada",
+    "desabilitado: superfície apagada × Folha",
+}
+
+
+def vira(claro: dict[str, str], escuro: dict[str, str], token: str) -> tuple[bool, float]:
+    """O token muda de lado entre os temas? (sim/não, quanto andou em luminância)."""
+    delta = abs(luminancia(cor(claro, token)) - luminancia(cor(escuro, token)))
+    return delta > LIMIAR_VIRADA, delta
+
+
+def pares_desemparelhados(claro, escuro, _mc, _me) -> int:
+    """A REGRA: tinta e preenchimento têm de virar JUNTOS com o tema, ou nenhum vira.
+
+    Por que isto existe, e por que não basta medir contraste: as tabelas dizem que um
+    par reprovou HOJE. Esta checagem diz que um par é FRÁGIL — que ele depende de os
+    valores atuais calharem de funcionar, porque um lado acompanha o tema e o outro
+    não. Foi essa forma que produziu as três reprovações desta página, em três
+    componentes diferentes, e em todas o sintoma apareceu só no escuro, muito depois
+    de a cor ser escolhida.
+
+    **Desemparelhado não é sinônimo de reprovado**, e a saída separa os dois: um
+    preenchimento de MEIO-TOM aguenta tinta que vira, porque fica longe dos dois
+    extremos — é desenho legítimo, não sorte. O que quebra é preenchimento colado num
+    extremo com tinta que atravessa para o mesmo lado.
+
+    Reprova (exit 1) só pelos pares que estão ABAIXO do próprio piso hoje; a fragilidade
+    entra como aviso. Um gate que reprovasse por fragilidade barraria desenho válido.
+    """
+    achados, falhando = [], 0
+    for rotulo, tinta, fundo in ESTADOS:
+        if tinta not in claro or fundo not in claro:
+            continue
+        vt, dt = vira(claro, escuro, tinta)
+        vf, df = vira(claro, escuro, fundo)
+        if vt == vf:
+            continue
+        piso = 3.0 if rotulo in NAO_TEXTO else 4.5
+        c = razao(cor(claro, tinta), cor(claro, fundo))
+        e = razao(cor(escuro, tinta), cor(escuro, fundo))
+        pior = min(c, e)
+        # Preenchimento parado NO MEIO aguenta tinta que vira: fica longe dos dois
+        # extremos, então nenhum dos lados da virada o alcança.
+        parado = tinta if not vt else fundo
+        meio_tom = 0.15 < luminancia(cor(claro, parado)) < 0.55
+        if pior < piso:
+            estado, falhando = "REPROVA hoje", falhando + 1
+        elif meio_tom:
+            estado = "ok — o lado parado é MEIO-TOM, aguenta a virada por construção"
+        else:
+            estado = "frágil — passa hoje, mas o lado parado está num extremo"
+        achados.append((rotulo, tinta, dt, vt, fundo, df, vf, c, e, piso, estado))
+
+    if not achados:
+        print("nenhum par desemparelhado")
+        return 0
+
+    print(f"{len(achados)} par(es) desemparelhado(s) — um lado vira com o tema, o outro não:\n")
+    for rotulo, tinta, dt, vt, fundo, df, vf, c, e, piso, estado in achados:
+        print(f"  {'×' if estado.startswith('REPROVA') else '!'}  {rotulo}")
+        print(f"       tinta  --{tinta:<22} anda {dt:.3f}  {'vira' if vt else 'parada'}")
+        print(f"       fundo  --{fundo:<22} anda {df:.3f}  {'vira' if vf else 'parado'}")
+        print(f"       claro {n(c)}:1 · escuro {n(e)}:1 · piso {n(piso)}:1 → {estado}\n")
+    print(f"{falhando} abaixo do piso; {len(achados) - falhando} desemparelhados que passam.")
+    return falhando
+
+
 # Chave do frontmatter YAML do DESIGN.md -> token do `src/index.css` que ela copia.
 # Existe porque a cor mora em DOIS lugares: o corpo do doc e o bloco YAML que o
 # impeccable lê. Já divergiram uma vez (o YAML ficou com os cinzas antigos depois
@@ -478,6 +557,9 @@ def main() -> None:
 
     if "--frontmatter" in sys.argv:
         raise SystemExit(1 if conferir_frontmatter(claro) else 0)
+
+    if "--pares-desemparelhados" in sys.argv:
+        raise SystemExit(1 if pares_desemparelhados(claro, escuro, mod_claro, mod_escuro) else 0)
 
     if "--par" in sys.argv:
         a, b = sys.argv[sys.argv.index("--par") + 1 : sys.argv.index("--par") + 3]

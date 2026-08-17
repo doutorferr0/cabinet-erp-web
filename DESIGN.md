@@ -679,6 +679,36 @@ O próprio arquivo registra isso como decisão do user (§utilities, `bg-modulo`
 escurecendo o preenchimento sem passar por lá"*). **Fica como pendência com dono, medida e não
 opinada.**
 
+#### A proposta está pronta para decisão — `docs/design/proposta-contraste-navegacao.md`
+
+Medir sem propor deixa a pendência parada. As duas reprovações viraram **duas propostas completas**,
+com hex candidato módulo a módulo, razão medida nos dois temas e o custo visual de cada uma. Nada
+foi alterado: o documento é para o user aprovar com uma palavra. O essencial:
+
+**A aritmética limita o que é possível.** A janela viável de `L(/01)` é `[0,175 ; 0,241]` no claro e
+`[0,129 ; 0,153]` no escuro — **duas janelas diferentes**, e é por isso que o escuro precisaria de um
+`/01` próprio em vez de herdar o do claro. **E o caso do ícone não tem solução de paleta no
+escuro:** com `L(/01) ≥ 0,1287`, o ícone só alcança 3:1 se a `/02` cair para a luminância do próprio
+fundo da página — a superfície de hover sumiria dentro dele. Não é difícil, é autodestrutivo.
+
+**Proposta A (recomendada) — muda o COMPONENTE, zero cor.** O item ativo da lateral deixa de ser
+preenchido pela `/01` e usa a `/02` do hover, distinguido pela `border-l-foreground` e pelo negrito
+que já existem; e o fio da aba do topo passa a usar `--foreground`, como a lateral já faz. Resultado
+medido: rótulo e ícone a **16,88:1 no claro** e **9,32:1 no escuro**; fio a **17,44:1** e
+**15,33:1**. Resolve os dois casos **e** a pendência antiga do rótulo, e devolve a `/01` ao papel
+que esta página já escreveu para ela — *elemento compacto e traço, nunca área grande com letra em
+cima*. A reprovação é sintoma de uso fora do papel.
+
+**Proposta B — muda a PALETA.** No claro, escurecer os nove `/01` para `L ≈ 0,190` resolve fio, texto
+e ícone de uma vez (3,63 / 4,80 / 3,52–3,92:1). No escuro, um `/01` próprio em `L ≈ 0,140` resolve
+fio e texto (3,19 / 4,81:1) mas **deixa o ícone reprovando** (1,94–2,73:1), pela impossibilidade
+acima. Custo: **o neon acaba no tema claro** — Produtos sai de `#00E5FF` para `#008594` (−21 pontos
+de lightness), CRM −18, Boletim −16. Matiz e saturação ficam intactos, então os nove seguem
+distinguíveis entre si; o conjunto é que fica mais escuro.
+
+O documento traz ainda um **híbrido** (só o `/01` do claro escurece, o escuro fica como está porque
+lá o fio já passa a 3,36:1) e a lista do que executar quando houver decisão.
+
 Os três `fill-*` ficam de fora da tabela por terem três valores por tema; estão no parágrafo
 abaixo. **Os carimbos foram medidos com o par REAL do `stamp.tsx`, não com preto por suposição** — e um
 deles reprova: **`open` no escuro dá 1,30:1**. Ele é `bg-stamp-open` + `text-foreground`, e no
@@ -687,6 +717,31 @@ sobre amarelo claro. No claro o mesmo par dá 13,49:1, porque lá a tinta é pre
 inversão do item de menu ativo, no outro componente**: um preenchimento que continuou claro
 enquanto a tinta trocou de lado. `done` não tem o problema (o `--primary-foreground` do escuro é a
 bancada, quase preta) — daí 10,42:1.
+
+**A proposta do `open` está junto com as da navegação** (`docs/design/proposta-contraste-navegacao.md`,
+§7). Medi as duas saídas: **nenhuma tinta existente resolve**, porque todas viram com o tema —
+`--foreground` dá 13,49:1 no claro e 1,30:1 no escuro, `--primary-foreground` faz o inverso
+(1,56 / 11,77:1). Como o preenchimento é o único da página que **não** vira (L 0,625 no claro,
+0,651 no escuro), a tinta tem de ser fixa: um token escuro definido só no `:root` dá **13,49:1 no
+claro e 14,03:1 no escuro**, com o amarelo intacto. A alternativa — escurecer o amarelo no escuro
+para `47 100% 25%` — funciona (4,79:1) e troca a identidade da cor pelo conserto da tinta; não é a
+recomendada.
+
+**E daí sai a regra que explica as três reprovações desta página de uma vez:**
+
+> **Tinta e preenchimento têm de virar JUNTOS com o tema, ou nenhum dos dois vira.**
+
+| par | preench. vira? | tinta vira? | resultado |
+|---|:--:|:--:|---|
+| `fill-*` + tinta do tema | sim | sim | passa (8,47 a 11,34:1) |
+| `stamp-done` + `primary-foreground` | sim | sim | passa (5,52 / 10,42:1) |
+| `stamp-open` + `foreground` | **não** | sim | **quebra** (1,30:1) |
+| `/01` + tinta do tema | **não** | sim | **quebra** (1,33:1) |
+
+As duas que quebram são exatamente as duas em que o par se desemparelha. O contraexemplo dos
+`fill-*` já estava escrito logo abaixo — *"quem desce de luz no escuro sobrevive à inversão da
+tinta"* —, mas como observação sobre um caso, não como regra; por isso não foi aplicada aos dois
+que faltavam.
 
 **Os três `fill-*` são o contraexemplo que mostra o que falta aos outros dois**: eles DESCEM de luz
 no escuro (`fill-money` de `88 51% 71%` para `88 30% 22%`), então a tinta clara pousa neles com

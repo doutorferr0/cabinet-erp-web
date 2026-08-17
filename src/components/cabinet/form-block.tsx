@@ -87,6 +87,15 @@ export interface FormBlockProps {
    */
   obrigatorio?: boolean
   /**
+   * Nasce ABERTO, mesmo sendo `colapsavel`. É o que o lápis da ficha aciona
+   * (issue #103): abrir a edição de UM módulo, e não o formulário inteiro com o
+   * bloco procurado ainda fechado.
+   *
+   * Só o estado INICIAL — depois disso quem manda é o gatilho. Prender o bloco
+   * ao search param faria o botão parar de funcionar enquanto a URL não mudasse.
+   */
+  iniciaAberto?: boolean
+  /**
    * Veste a cor de um módulo: faixa de cabeçalho na cheia `/01`, corpo na
    * pastel `/02`. Quem resolve o par é o `[data-modulo]` do `index.css`; aqui
    * só se diz QUAL. Ver `modulo-cores.ts` para a tinta da faixa, que é medida.
@@ -108,6 +117,7 @@ export function FormBlock({
   children,
   colapsavel = false,
   obrigatorio = false,
+  iniciaAberto = false,
   cor,
   icone: Icone,
 }: FormBlockProps) {
@@ -118,7 +128,7 @@ export function FormBlock({
   const blocoRef = useRef<HTMLFieldSetElement>(null)
   // `obrigatorio` VENCE `colapsavel`: ver a invariante no docstring.
   const podeColapsar = colapsavel && !obrigatorio
-  const [aberto, setAberto] = useState(!podeColapsar)
+  const [aberto, setAberto] = useState(!podeColapsar || iniciaAberto)
   const [contagem, setContagem] = useState<Contagem>({ preenchidos: 0, total: 0 })
 
   // O bloco com cabeçalho de verdade — faixa, carimbo, contador, gatilho.

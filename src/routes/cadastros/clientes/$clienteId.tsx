@@ -21,7 +21,8 @@ export const Route = createFileRoute('/cadastros/clientes/$clienteId')({
 
 function ClienteEditPage() {
   const { clienteId } = Route.useParams()
-  const readOnly = isConsulta(Route.useSearch())
+  const { modulo: moduloEmFoco, ...search } = Route.useSearch()
+  const readOnly = isConsulta(search)
   const navigate = useNavigate()
   const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
     papelCliente,
@@ -91,11 +92,13 @@ function ClienteEditPage() {
         aviso={aviso}
         abaixo={atividades}
         aoFechar={() => void navigate({ to: '/cadastros/clientes' })}
-        aoEditar={() =>
+        aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/clientes/$clienteId',
             params: { clienteId },
-            search: {},
+            // Sem `modo`: sair da consulta É a ação. O `modulo` só viaja quando
+            // veio do lápis de uma seção — é ele que abre o bloco na edição.
+            search: moduloId ? { modulo: moduloId } : {},
           })
         }
       />
@@ -107,6 +110,7 @@ function ClienteEditPage() {
       <ClienteForm
         cliente={registro}
         readOnly={readOnly}
+        {...(moduloEmFoco ? { moduloEmFoco } : {})}
         contexto={isNovo ? 'Incluir' : registro.nome}
         aviso={aviso}
         onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}

@@ -114,12 +114,17 @@ function modulo(id: string): ModuloCadastro {
  * lá; o miolo vem de quem chama. É o ponto exato em que a estrutura é
  * declarativa e o conteúdo não.
  */
-function BlocoDoModulo({ id, children }: { id: string; children: React.ReactNode }) {
+function BlocoDoModulo({
+  id,
+  emFoco,
+  children,
+}: { id: string; emFoco: string | undefined; children: React.ReactNode }) {
   const m = modulo(id)
   return (
     <FormBlock
       legend={m.titulo}
       {...(m.obrigatorio ? { obrigatorio: true } : { colapsavel: true })}
+      {...(emFoco === id ? { iniciaAberto: true } : {})}
       {...(m.cor ? { cor: m.cor } : {})}
       {...propsDoIcone(id)}
     >
@@ -147,13 +152,16 @@ function BuscaCidade({
   )
 }
 
-function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
+function ClienteCorpo({
+  onBuscaCidade,
+  moduloEmFoco,
+}: { onBuscaCidade: () => void; moduloEmFoco: string | undefined }) {
   return (
     <div className="flex flex-col gap-3">
       <ProgressoObrigatorios entidade={entidadeCliente} />
 
       {/* Tudo que trava o Gravar mora aqui, e este bloco não colapsa. */}
-      <BlocoDoModulo id="identificacao">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="identificacao">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-6" />
           <RadioField
@@ -177,7 +185,7 @@ function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="documentos">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="documentos">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="rg" label="RG" className="col-span-4 sm:col-span-2" />
           <TextField
@@ -200,11 +208,11 @@ function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="endereco">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="endereco">
         <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="contatos">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="contatos">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="foneComercial"
@@ -220,7 +228,7 @@ function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="fiscal">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="fiscal">
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="inscEstProdutorRural"
@@ -230,7 +238,7 @@ function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="comercial">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="comercial">
         <div className="grid grid-cols-12 items-end gap-3">
           <LookupField
             name="profissional"
@@ -247,11 +255,11 @@ function ClienteCorpo({ onBuscaCidade }: { onBuscaCidade: () => void }) {
         </div>
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="redes">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="redes">
         <RedesSociaisBlock prefix="redesSociais" />
       </BlocoDoModulo>
 
-      <BlocoDoModulo id="observacao">
+      <BlocoDoModulo emFoco={moduloEmFoco} id="observacao">
         <TextareaField name="observacao" label="Observação" rows={3} />
       </BlocoDoModulo>
     </div>
@@ -263,10 +271,16 @@ export function ClienteForm({
   readOnly = false,
   contexto,
   aviso,
+  moduloEmFoco,
   onGravar: gravarDeFora,
 }: {
   cliente: Cliente
   readOnly?: boolean
+  /**
+   * Módulo que o lápis da ficha mandou editar (issue #103): o bloco dele nasce
+   * aberto em vez de recolhido. Ausente, todos os opcionais nascem fechados.
+   */
+  moduloEmFoco?: string | undefined
   /** Modo ou registro aberto, ao lado do título na banda. */
   contexto?: string
   /** Aviso da tela — vai sob o título, acima dos campos. */
@@ -304,7 +318,7 @@ export function ClienteForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <ClienteCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} />
+      <ClienteCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} moduloEmFoco={moduloEmFoco} />
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

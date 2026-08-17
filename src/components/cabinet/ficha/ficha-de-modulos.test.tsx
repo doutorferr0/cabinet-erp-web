@@ -122,6 +122,37 @@ describe('FichaDeModulos', () => {
       expect(secao, modulo.id).toHaveAttribute('data-vazio', 'true')
     }
   })
+
+  /**
+   * A FAIXA DE INDICADORES QUE NÃO EXISTE — e a ficha diz isso.
+   *
+   * Era uma prop `kpis` que tela nenhuma passava: desenho aprovado, invisível
+   * para todo teste. Quatro quadros vazios diriam "sem dado"; a linha diz "sem
+   * origem", e os nomes vêm do schema, não deste teste.
+   */
+  it('a faixa de indicadores aparece como lacuna nomeada, sem número inventado', () => {
+    renderWithQuery(<FichaDeModulos entidade={cliente} registro={REGISTRO_CHEIO} />)
+
+    const pendencia = document.querySelector('[data-slot="indicadores-pendentes"]')
+    expect(pendencia).not.toBeNull()
+    for (const indicador of cliente.indicadores ?? []) {
+      expect(pendencia).toHaveTextContent(indicador.r)
+    }
+
+    // Nenhum quadro de KPI na tela: a faixa não desenha valor até ter origem.
+    expect(screen.queryByText('R$ 0,00')).toBeNull()
+    expect(screen.queryByText('—')).toBeNull()
+  })
+
+  it('entidade sem indicadores declarados não imprime linha nenhuma', () => {
+    // A linha é conteúdo, não moldura: sem indicador no schema ela não existe,
+    // em vez de aparecer vazia.
+    renderWithQuery(
+      <FichaDeModulos entidade={{ ...cliente, indicadores: [] }} registro={REGISTRO_CHEIO} />,
+    )
+
+    expect(document.querySelector('[data-slot="indicadores-pendentes"]')).toBeNull()
+  })
 })
 
 /**

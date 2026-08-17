@@ -213,40 +213,38 @@ describe('AppShell', () => {
     )
   })
 
-  // Marca e empresa ativa agora dividem o CABEÇALHO, em linhas distintas
-  // (decisão do user, 2026-08-07 — revoga o rodapé). O teto de densidade segue
-  // valendo: o que ele proíbe é dois ornamentos disputando a mesma leitura, não
-  // dois em linhas separadas. O que este teste trava é a separação — o selo do
-  // produto NÃO pode ser absorvido pelo botão que abre a gaveta de empresa.
-  it('marca e empresa ativa no topo, em linhas distintas', async () => {
+  // A MARCA voltou ao topo da barra lateral e a EMPRESA mora nos globais da
+  // direita da appbar (decisão do user, 2026-08-17 — emenda na issue #140,
+  // revoga o canto esquerdo de 2026-08-14). O que este teste trava: o selo do
+  // produto assina o painel, o escopo do dado fica entre sino e operador —
+  // nunca os dois disputando o mesmo canto da faixa.
+  it('marca na barra lateral, empresa nos globais da appbar', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
     })
 
-    // A marca e a empresa DESCERAM para a appbar (Nav-2): a barra lateral
-    // virou contextual, e o que não muda — produto, escopo do dado — não pode
-    // morar dentro do que muda a cada seção.
     const topo = document.querySelector('[data-slot="appbar"]')
     expect(topo).toBeInTheDocument()
-    // O rodapé deixou de existir: não sobrou nada para pousar lá.
+    // O rodapé segue extinto: não sobrou nada para pousar lá.
     expect(document.querySelector('[data-slot="sidebar-footer"]')).toBeNull()
 
-    // Marca do produto em cima, escopo do dado embaixo — nesta ordem. Desde
-    // 2026-08-13 a marca é o símbolo do user (`<Marca>`), não mais um shape do
-    // acervo: o topo tem UM ornamento só, o da empresa.
-    const marca = topo?.querySelector('[data-slot="marca"]')
+    // A marca mora no CABEÇALHO da barra lateral, e só lá.
+    const marca = document.querySelector('[data-slot="sidebar-header"] [data-slot="marca"]')
     expect(marca).toHaveAttribute('data-variante', 'assinatura')
     // O nome do produto é DESENHO, não texto — quem o anuncia é o rótulo.
     expect(marca).toHaveAttribute('aria-label', 'Cabinet')
+    expect(topo?.querySelector('[data-slot="marca"]')).toBeNull()
+
+    // A empresa mora na appbar: um ornamento só, o dela.
     const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
     expect(ornamentos).toHaveLength(1)
     expect(ornamentos[0]).toHaveAttribute('data-shape', 'empresa')
     expect(topo).toHaveTextContent('VERTZ ILUMINAÇÃO')
 
-    // Linhas distintas: só a empresa mora dentro do botão que abre a gaveta.
-    expect(marca?.closest('[data-sidebar="menu-button"]')).toBeNull()
-    expect(ornamentos[0]?.closest('[data-sidebar="menu-button"]')).not.toBeNull()
+    // E dentro do botão que abre a gaveta — a marca nunca é absorvida por ele.
+    expect(ornamentos[0]?.closest('button')).not.toBeNull()
+    expect(marca?.closest('button')).toBeNull()
   })
 
   it('switches active company via drawer', async () => {

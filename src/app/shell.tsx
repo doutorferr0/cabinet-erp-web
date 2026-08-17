@@ -5,6 +5,7 @@ import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
+import { Marca } from '@/components/cabinet/marca'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import { Separator } from '@/components/ui/separator'
@@ -217,8 +218,8 @@ function ItemDaBarra({
  * seção" e "leve-me a qualquer lugar do sistema". Uma busca que fizesse as
  * duas coisas responderia mal às duas.
  *
- * A marca e o seletor de empresa SAÍRAM daqui para a appbar: o que não muda
- * (produto, escopo do dado) não pode morar dentro do que muda a cada seção.
+ * A MARCA voltou para cá (2026-08-17, emenda na #140): assina o painel, acima
+ * do conteúdo contextual. O seletor de empresa segue na appbar, nos globais.
  */
 function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
   const { location } = useRouterState()
@@ -258,6 +259,12 @@ function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
       <SidebarHeader>
+        {/* A MARCA encabeça a barra lateral (referência do user, 2026-08-17 —
+            emenda na issue #140): a faixa de cima é toda da navegação, e o
+            produto assina o painel que está presente em qualquer seção. */}
+        <div className="flex items-center px-2 pt-2">
+          <Marca variante="assinatura" tamanho={26} />
+        </div>
         <div className="flex flex-col gap-1 px-1 pt-1">
           {/* O nome da seção encabeça o painel: sem ele, seis conteúdos
               diferentes moram no mesmo lugar sem dizer qual é qual — o ícone

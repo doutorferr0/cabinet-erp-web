@@ -142,7 +142,8 @@ function UfNaturalidade({ className }: { className?: string }) {
 function BlocosDoCadastro({
   onBuscaNaturalidade,
   readOnly,
-}: { onBuscaNaturalidade: () => void; readOnly: boolean }) {
+  moduloEmFoco,
+}: { onBuscaNaturalidade: () => void; readOnly: boolean; moduloEmFoco: string | undefined }) {
   return (
     <div className="flex flex-col gap-3">
       {esquema.modulos.map((modulo) => (
@@ -150,6 +151,7 @@ function BlocosDoCadastro({
           key={modulo.id}
           legend={modulo.titulo}
           colapsavel={!modulo.obrigatorio && !readOnly}
+          {...(moduloEmFoco === modulo.id ? { iniciaAberto: true } : {})}
           {...(modulo.obrigatorio ? { obrigatorio: true } : {})}
           {...(modulo.cor ? { cor: modulo.cor } : {})}
         >
@@ -179,7 +181,14 @@ export function ColaboradorForm({
   colaborador,
   readOnly = false,
   contexto,
-}: { colaborador: Colaborador; readOnly?: boolean; contexto?: string }) {
+  moduloEmFoco,
+}: {
+  colaborador: Colaborador
+  readOnly?: boolean
+  contexto?: string
+  /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
+  moduloEmFoco?: string | undefined
+}) {
   const navigate = useNavigate()
   const [buscaNaturalidadeOpen, setBuscaNaturalidadeOpen] = useState(false)
 
@@ -209,6 +218,7 @@ export function ColaboradorForm({
           <BlocosDoCadastro
             onBuscaNaturalidade={() => setBuscaNaturalidadeOpen(true)}
             readOnly={readOnly}
+            moduloEmFoco={moduloEmFoco}
           />
         </div>
 

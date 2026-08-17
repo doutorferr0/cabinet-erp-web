@@ -21,7 +21,8 @@ export const Route = createFileRoute('/cadastros/fornecedores/$fornecedorId')({
 
 function FornecedorEditPage() {
   const { fornecedorId } = Route.useParams()
-  const readOnly = isConsulta(Route.useSearch())
+  const { modulo: moduloEmFoco, ...search } = Route.useSearch()
+  const readOnly = isConsulta(search)
   const navigate = useNavigate()
   const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
     papelFornecedor,
@@ -91,11 +92,11 @@ function FornecedorEditPage() {
         aviso={aviso}
         abaixo={atividades}
         aoFechar={() => void navigate({ to: '/cadastros/fornecedores' })}
-        aoEditar={() =>
+        aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/fornecedores/$fornecedorId',
             params: { fornecedorId },
-            search: {},
+            search: moduloId ? { modulo: moduloId } : {},
           })
         }
       />
@@ -107,6 +108,7 @@ function FornecedorEditPage() {
       <FornecedorForm
         fornecedor={registro}
         readOnly={readOnly}
+        {...(moduloEmFoco ? { moduloEmFoco } : {})}
         contexto={isNovo ? 'Incluir' : registro.nomeFantasia}
         aviso={aviso}
         onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}

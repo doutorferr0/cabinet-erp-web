@@ -59,13 +59,15 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
     expect(await screen.findByRole('button', { name: 'Preencher Metas e comissão' })).toBeVisible()
   })
 
-  it('o lápis do módulo leva de volta à edição', async () => {
+  it('o lápis do módulo leva de volta à edição, dizendo qual módulo', async () => {
     const { router, user } = renderRoute('/cadastros/colaboradores/1?modo=consulta')
 
     await user.click(await screen.findByRole('button', { name: 'Alterar Identificação' }))
 
+    // O `modo` não viaja (sair da consulta é a ação) e o `modulo` viaja: é ele
+    // que abre AQUELE bloco na edição, em vez do formulário inteiro fechado.
     await waitFor(() => {
-      expect(router.state.location.search).toEqual({})
+      expect(router.state.location.search).toEqual({ modulo: 'identificacao' })
     })
     expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
     // E na edição o formulário volta, editável.

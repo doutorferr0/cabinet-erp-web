@@ -21,7 +21,8 @@ export const Route = createFileRoute('/cadastros/profissionais/$profissionalId')
 
 function ProfissionalEditPage() {
   const { profissionalId } = Route.useParams()
-  const readOnly = isConsulta(Route.useSearch())
+  const { modulo: moduloEmFoco, ...search } = Route.useSearch()
+  const readOnly = isConsulta(search)
   const navigate = useNavigate()
   const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
     papelProfissional,
@@ -91,11 +92,11 @@ function ProfissionalEditPage() {
         aviso={aviso}
         abaixo={atividades}
         aoFechar={() => void navigate({ to: '/cadastros/profissionais' })}
-        aoEditar={() =>
+        aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/profissionais/$profissionalId',
             params: { profissionalId },
-            search: {},
+            search: moduloId ? { modulo: moduloId } : {},
           })
         }
       />
@@ -107,6 +108,7 @@ function ProfissionalEditPage() {
       <ProfissionalForm
         profissional={registro}
         readOnly={readOnly}
+        {...(moduloEmFoco ? { moduloEmFoco } : {})}
         contexto={isNovo ? 'Incluir' : registro.nomeApresentacao}
         aviso={aviso}
         onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}

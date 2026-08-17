@@ -1,8 +1,9 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
+import { IndiceDeModulos } from '@/components/cabinet/ficha/indice-de-modulos'
 import { Button } from '@/components/ui/button'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
-import { X } from 'lucide-react'
+import { Pencil, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
@@ -41,11 +42,17 @@ import type { ReactNode } from 'react'
  * Quando a #94 (LookupCombo por id) entrar, quem passa o mapa `rotulos` é a
  * rota — o ponto de entrada já existe na prop do `FichaDeModulos`.
  *
- * **O lápis abre o cadastro, não o módulo.** A issue pede "edita AQUELE
- * módulo"; abrir o formulário JÁ posicionado num bloco exige o `CadastroForm`
- * aceitar módulo inicial, e os quatro formulários estão fora da zona desta PR.
- * O caminho de volta à edição existe e é o certo — o refinamento fica declarado
- * em vez de meio-feito.
+ * ## O lápis abre AQUELE módulo, e o índice diz onde há dado
+ *
+ * As duas coisas que a versão anterior desta moldura declarou como pendência.
+ * O lápis manda o `moduloId` para a rota, que o repassa ao formulário como
+ * `?modulo=` — o bloco correspondente nasce aberto em vez de recolhido. Sem
+ * isso o convite entregava o formulário inteiro com o bloco procurado fechado,
+ * que é a fricção que a ficha existe para tirar.
+ *
+ * O `Alterar` do rodapé continua existindo e vai SEM módulo: é a edição do
+ * cadastro inteiro, no lugar em que o `CadastroForm` põe o `Gravar` — quem
+ * troca de modo não deve procurar o botão em outro canto.
  */
 
 export interface FichaDeCadastroProps {
@@ -63,8 +70,12 @@ export interface FichaDeCadastroProps {
   abaixo?: ReactNode
   /** Volta para a listagem. */
   aoFechar: () => void
-  /** Leva ao modo edição da MESMA rota (sem `?modo=consulta`). */
-  aoEditar: (moduloId: string) => void
+  /**
+   * Leva ao modo edição da MESMA rota (sem `?modo=consulta`). Com módulo, veio
+   * do lápis (ou do `+ Preencher`) de uma seção e o bloco dele nasce aberto;
+   * sem módulo, veio do rodapé e é o cadastro inteiro.
+   */
+  aoEditar: (moduloId?: string) => void
 }
 
 export function FichaDeCadastro({
@@ -78,19 +89,31 @@ export function FichaDeCadastro({
   aoEditar,
 }: FichaDeCadastroProps) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4" data-slot="ficha-de-cadastro">
       <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} />
       {aviso}
 
-      <FichaDeModulos
-        entidade={entidade}
-        registro={registro}
-        onEditarModulo={aoEditar}
-        // Preencher e Alterar levam ao mesmo lugar — a diferença entre eles é o
-        // estado do módulo, não o destino. Módulo vazio dá ao operador o convite
-        // que o módulo cheio dá pelo lápis.
-        onPreencherModulo={aoEditar}
-      />
+      <div className="flex min-w-0 items-start gap-4">
+        {/* O índice é NAVEGAÇÃO da página, não conteúdo dela: some no estreito,
+            onde a coluna única já entrega a mesma leitura por rolagem. */}
+        <IndiceDeModulos
+          entidade={entidade}
+          registro={registro}
+          className="sticky top-4 hidden w-52 shrink-0 lg:block"
+        />
+
+        <div className="min-w-0 flex-1">
+          <FichaDeModulos
+            entidade={entidade}
+            registro={registro}
+            onEditarModulo={aoEditar}
+            // Preencher e Alterar levam ao mesmo lugar — a diferença entre eles é o
+            // estado do módulo, não o destino. Módulo vazio dá ao operador o convite
+            // que o módulo cheio dá pelo lápis.
+            onPreencherModulo={aoEditar}
+          />
+        </div>
+      </div>
 
       {abaixo}
 
@@ -100,6 +123,13 @@ export function FichaDeCadastro({
         <Button type="button" variant="outline" onClick={aoFechar}>
           <X />
           Fechar
+        </Button>
+        {/* Onde o `CadastroForm` põe o `Gravar`: `Alterar` e `Consul.` levam à
+            mesma tela (§9 padrão 8), e trocar de modo não pode trocar o lugar
+            dos botões. Sem módulo — este é o cadastro inteiro. */}
+        <Button type="button" onClick={() => aoEditar()}>
+          <Pencil />
+          Alterar
         </Button>
       </div>
     </div>

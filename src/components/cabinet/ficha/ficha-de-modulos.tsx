@@ -44,6 +44,11 @@ import { camposPreenchidos, moduloVazio, textoDoCampo } from './valores'
  * servidor.
  */
 
+/** O `id` da seção do módulo na página — índice e ficha precisam concordar. */
+export function ancoraDoModulo(moduloId: string): string {
+  return `modulo-${moduloId}`
+}
+
 export interface FichaDeModulosProps {
   entidade: EntidadeCadastro
   /** O registro, na forma que o schema descreve (caminhos de `campo`). */
@@ -172,7 +177,15 @@ export function FichaDeModulos({
       {entidade.modulos.map((modulo) => {
         const vazio = moduloVazio(registro, modulo, rotulos)
         return (
-          <section key={modulo.id} data-modulo-id={modulo.id} data-vazio={vazio || undefined}>
+          <section
+            key={modulo.id}
+            // `id` é o alvo do índice lateral (`#modulo-endereco`). Âncora de
+            // verdade, não `scrollIntoView` por script: link com destino sobrevive
+            // ao "abrir em nova aba", ao voltar do browser e ao teclado.
+            id={ancoraDoModulo(modulo.id)}
+            data-modulo-id={modulo.id}
+            data-vazio={vazio || undefined}
+          >
             {vazio ? (
               <ModuloVazio
                 modulo={modulo}

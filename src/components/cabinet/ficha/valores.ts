@@ -1,4 +1,4 @@
-import type { CampoCadastro, EntidadeCadastro, ModuloCadastro } from '@/features/cadastro/modulos'
+import type { CampoCadastro, ModuloCadastro } from '@/features/cadastro/modulos'
 
 /**
  * LEITURA DO REGISTRO PELO SCHEMA — a metade sem JSX da ficha (issue #103).
@@ -72,11 +72,9 @@ export function moduloVazio(
   return camposPreenchidos(registro, modulo, rotulos).length === 0
 }
 
-/** Quantos módulos da entidade têm algum dado — o índice lateral usa isto. */
-export function modulosComDado(
-  registro: unknown,
-  entidade: EntidadeCadastro,
-  rotulos?: Readonly<Record<string, string>>,
-): readonly ModuloCadastro[] {
-  return entidade.modulos.filter((modulo) => !moduloVazio(registro, modulo, rotulos))
-}
+// `modulosComDado` morava aqui, escrita na #137 com a nota "o índice lateral usa
+// isto" — e quando o índice existiu de verdade ele usou `camposPreenchidos`,
+// porque precisa da CONTAGEM por módulo, não da lista dos que têm dado. Ficou
+// exportada e sem chamador por uma janela inteira. Removida: função escrita para
+// um consumidor futuro é a mesma dívida que prop sem consumidor, e a varredura
+// de exportados sem chamador a pegou junto com as outras.

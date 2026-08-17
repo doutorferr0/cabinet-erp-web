@@ -1,26 +1,51 @@
-import { renderRoute } from '@/test/utils'
+import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { renderRoute, renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 
 /**
  * Modo `Consul.` — transcrição §9 padrão 8. A tela é a mesma do `Alterar`;
  * o que muda é não poder editar nem gravar.
  *
- * A tela exercitada é **Colaborador**: estas asserções precisam de um cadastro
- * que abra registro EXISTENTE, e as três telas de parceiro passaram a ler
- * `GET /api/partners` — sem detalhe por id no contrato, elas só abrem em branco.
- * Colaborador segue mock, com `list`/`get`/`empty`. O objeto sob teste é o
- * `CadastroForm`, que é o mesmo nas duas.
+ * **O objeto sob teste passou a ser montado aqui, e a nota antiga previa isto.**
+ * Estas asserções rodavam pela rota de Colaborador, e o acoplamento já tinha
+ * cobrado uma vez (na #101 o rótulo virou `Nome completo` e o teste quebrou sem
+ * que o `CadastroForm` mudasse). Cobrou de novo na #103: `?modo=consulta` deixou
+ * de abrir o formulário desabilitado e passa a abrir a FICHA — os quatro
+ * cadastros não têm mais formulário em modo consulta para exercitar.
  *
- * **O acoplamento tem preço, e ele apareceu na #101:** o rótulo do campo virou
- * `Nome completo` quando o cadastro passou a ler o schema de módulos, e estas
- * asserções quebraram sem que o `CadastroForm` mudasse uma linha. Se doer de
- * novo, a saída é um formulário de mentira montado aqui — que testaria o objeto
- * sob teste sem depender do rótulo de tela nenhuma.
+ * O formulário de mentira testa o `CadastroForm` sem depender de tela nenhuma.
+ * Quem prova que a rota chega na ficha é `ficha-de-cadastro.test.tsx`; quem
+ * ainda usa `readOnly` de verdade são os DOCUMENTOS (Ordem de compra, abaixo),
+ * onde consulta continua sendo o formulário — documento não tem módulos.
  */
+const esquemaDeMentira = z.object({ nome: z.string() })
+
+function FormularioDeMentira({ readOnly }: { readOnly: boolean }) {
+  return (
+    <CadastroForm
+      schema={esquemaDeMentira}
+      defaultValues={{ nome: 'CARLA SOUZA' }}
+      onGravar={() => {}}
+      onCancelar={() => {}}
+      readOnly={readOnly}
+      titulo="Cadastro de Colaboradores"
+      contexto={readOnly ? 'Consulta' : 'CARLA SOUZA'}
+    >
+      <Label htmlFor="nome">Nome completo</Label>
+      <Input id="nome" defaultValue="CARLA SOUZA" />
+      <Button type="button">Buscar naturalidade</Button>
+    </CadastroForm>
+  )
+}
+
 describe('CadastroForm em modo consulta', () => {
   it('carrega os dados mas desabilita os campos e esconde Gravar', async () => {
-    renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    renderWithQuery(<FormularioDeMentira readOnly />)
 
     const nome = await screen.findByLabelText('Nome completo')
     expect(nome).toHaveValue('CARLA SOUZA')
@@ -38,7 +63,7 @@ describe('CadastroForm em modo consulta', () => {
   // inteiro no modo consulta, e apagar junto o nome da tela deixaria o operador
   // sem saber onde está.
   it('banda de identidade não é desabilitada com o formulário', async () => {
-    renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    renderWithQuery(<FormularioDeMentira readOnly />)
 
     await screen.findByLabelText('Nome completo')
     const banda = screen.getByRole('heading', { level: 1 }).closest('div')
@@ -46,7 +71,7 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('desabilita também os botões de dentro do formulário', async () => {
-    renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    renderWithQuery(<FormularioDeMentira readOnly />)
 
     await screen.findByLabelText('Nome completo')
     // `<fieldset disabled>` alcança botão de busca, não só input.

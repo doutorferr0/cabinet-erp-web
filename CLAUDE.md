@@ -188,13 +188,26 @@ query {
     head: ref(qualifiedName: "refs/heads/main") { target { oid } }
     core:  object(expression: "main:projetosClaude/vertz-erp/project-core.md")  { ... on Blob { text } }
     state: object(expression: "main:projetosClaude/vertz-erp/current-state.md") { ... on Blob { text } }
-    visual: object(expression: "main:projetosClaude/vertz-erp/topicos/frente-visual.md") { ... on Blob { text } }
     telas: object(expression: "main:projetosClaude/vertz-erp/topicos/transcricaosoftlux.md") { ... on Blob { text } }
     dash: object(expression: "main:projetosClaude/vertz-erp/topicos/dashboard.md") { ... on Blob { text } }
   }
 }'
 ```
+**O `frente-visual.md` NÃO vem por aqui — ele passou de 512 KB, e o `text` de `Blob` TRUNCA
+nesse tamanho, sem erro e sem avisar.** Ler por ele e gravar por cima apaga a cauda do arquivo:
+aconteceu **duas vezes em 16/08**, ~21 KB e ~29 KB de outras sessões perdidos, reparados em
+`3142c69` e `18f7392`. O campo `isTruncated` existe no schema e ninguém o pedia. Leia pela API de
+conteúdo, que não trunca:
+```bash
+gh api "repos/doutorferr0/projetos-claude/contents/projetosClaude/vertz-erp/topicos/frente-visual.md?ref=main" \
+  --jq '.content' | base64 -d > /tmp/frente-visual.md
+```
 Guardar `head.target.oid`. Ecoar 2 linhas: `▸ Frente visual: <status do frente-visual.md>` · `▸ Próxima tarefa: <a colada pelo user>`.
+
+**Sinal de arquivo íntegro:** termina em `<!-- /referencias-visuais -->`. Terminar no meio de uma
+frase quer dizer que a cauda já foi comida — repare ANTES de escrever a sua rodada: ache
+`atual[-400:]` dentro de um commit íntegro anterior (`gh api ...contents/...?ref=<sha>`), cole o
+resto e confira `reparado.startswith(atual)`, para não desfazer o que os outros gravaram no meio.
 
 **`topicos/dashboard.md` é a ESPECIFICAÇÃO da seção Dashboard** (páginas Dashboard e Planner):
 diagramação e inventário de elementos, vindos de mockup aprovado. Está na leitura porque é a
@@ -219,6 +232,10 @@ mutation($head: GitObjectID!, $vis: Base64String!) {
 }' -f head="<oid>" -f vis="$(base64 -w0 /tmp/frente-visual.md)"
 ```
 Head divergente (trilho backend commitou antes) → reler head, reaplicar, retry 1x.
+**Conferir DEPOIS de gravar, e a régua é o tamanho:** o blob novo tem de crescer o tanto que
+você inseriu (`byteSize` antes × depois). Cresceu menos = você comeu cauda alheia — repare na
+hora. Comparar com `Blob { text }` não serve: ele volta truncado e acusa divergência falsa no
+fim de um arquivo que está certo.
 **PROIBIDO escrever em:** next-task.md, project-core.md, current-state.md, outros tópicos. Achou algo que pertence a eles → anotar no frente-visual.md em `## Para o hub` e o chat move depois.
 
 ## Regras de trabalho

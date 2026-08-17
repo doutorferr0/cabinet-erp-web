@@ -20,6 +20,7 @@ export {
   type TipoDeCampo,
   type VarianteDeFiltro,
   camposDe,
+  camposDoContrato,
   colunasDe,
   filtrosDe,
   indicadoresSemOrigem,

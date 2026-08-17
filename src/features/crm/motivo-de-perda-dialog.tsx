@@ -1,10 +1,10 @@
 import type { CrmLostReasonDto } from '@/api/gerado'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ErroDaApi } from '@/data/api-provider'
 import { useAlterarMotivoDePerda, useCriarMotivoDePerda } from '@/data/crm-api'
 import { useEffect, useState } from 'react'
 
@@ -96,13 +96,7 @@ export function MotivoDePerdaDialog({
           Ativo
         </Checkbox>
 
-        {erro ? (
-          <p role="alert" className="text-[0.75rem] text-destructive">
-            {erro instanceof ErroDaApi
-              ? [erro.message, erro.detail].filter(Boolean).join(' ')
-              : 'Falha ao gravar o motivo.'}
-          </p>
-        ) : null}
+        <ErroDeGravacao erro={erro} mensagem="Falha ao gravar o motivo." />
       </div>
 
       <DialogFooter>

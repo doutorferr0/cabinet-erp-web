@@ -1,8 +1,8 @@
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { ErroDaApi } from '@/data/api-provider'
 import { useMotivosDePerda, useMoverOportunidade } from '@/data/crm-api'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useId, useState } from 'react'
@@ -156,13 +156,7 @@ export function PerderOportunidadeDialog({
           </p>
         ) : null}
 
-        {mover.isError ? (
-          <p role="alert" className="text-[0.75rem] text-destructive">
-            {mover.error instanceof ErroDaApi
-              ? [mover.error.message, mover.error.detail].filter(Boolean).join(' ')
-              : 'Falha ao marcar como perdida.'}
-          </p>
-        ) : null}
+        <ErroDeGravacao erro={mover.error} mensagem="Falha ao marcar como perdida." />
       </div>
 
       <DialogFooter>

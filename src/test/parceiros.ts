@@ -62,6 +62,14 @@ export interface ChamadaDeParceiro {
 export interface OpcoesDoServidor {
   /** Faz o `POST` responder o 409 de documento repetido, com a extensão da RFC 9457. */
   documentoRepetido?: string
+  /**
+   * Faz a ESCRITA responder o 400 de validação com `fields[]`, no formato que o
+   * handler mock já usa (`{ path, message }`). Existe porque `fields[]` é a
+   * única parte do problem+json que a tela precisa TRADUZIR — path do contrato
+   * → campo da tela — e sem um servidor que o mande, a tradução não teria como
+   * ser cobrada.
+   */
+  camposRecusados?: readonly { path: string; message: string }[]
 }
 
 export function servidorDeParceiros(
@@ -83,6 +91,18 @@ export function servidorDeParceiros(
     const texto = requisicao ? await requisicao.clone().text() : ''
     chamadas.push({ metodo, caminho, corpo: texto ? JSON.parse(texto) : null })
 
+    if ((metodo === 'POST' || metodo === 'PUT') && opcoes.camposRecusados) {
+      return new Response(
+        JSON.stringify({
+          type: 'about:blank',
+          title: 'Requisição inválida',
+          status: 400,
+          detail: 'Confira os campos destacados.',
+          fields: opcoes.camposRecusados,
+        }),
+        { status: 400, headers: { 'content-type': 'application/problem+json' } },
+      )
+    }
     if (caminho === URL_PARCEIROS && metodo === 'GET') {
       return json({ rows: linhas, total: linhas.length })
     }

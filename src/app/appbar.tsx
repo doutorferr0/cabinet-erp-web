@@ -89,12 +89,8 @@ function AbaDeSecao({
         aria-current={ativa ? 'page' : undefined}
         {...(secao.modulo && { 'data-modulo': secao.modulo })}
         className={cn(
-          // O hover mostra o pastel DA PRÓPRIA seção (o data-modulo é da aba):
-          // numa faixa já tintada pela seção ativa, é a prévia da cor de
-          // destino. A aba ATIVA inverte — furo em `bg-card` sobre a faixa
-          // colorida + fio cheio, porque pastel sobre o mesmo pastel some.
           'relative grid h-full w-14 place-content-center outline-none hover:bg-modulo focus-visible:focus-ring',
-          ativa && 'bg-card',
+          ativa && 'bg-modulo',
         )}
       >
         <secao.icon aria-hidden="true" className="size-6" />
@@ -180,7 +176,7 @@ export function Appbar({
   return (
     <div
       data-slot="appbar"
-      className="flex items-stretch gap-3 border-rule-strong border-b-2 bg-modulo px-4"
+      className="flex items-stretch gap-3 border-rule-strong border-b-2 bg-card px-4"
     >
       {/* AS SEIS SEÇÕES ocupam a LARGURA TODA da faixa, com fio vertical entre
           vizinhas (referência do user, 2026-08-17 — emenda na issue #140): a
@@ -188,23 +184,25 @@ export function Appbar({
           direita, então a navegação é o que resta — e o que manda — na faixa.
           `nav` com rótulo: é a navegação primária do sistema, e sem nome ela é
           uma fileira de ícones anônimos no leitor de tela. */}
-      <nav aria-label="Seções" className="flex min-w-0 flex-1 items-stretch">
+      {/* GRUPO CENTRADO com espaçamento fixo, não espalhado na largura:
+          esticar 6 ícones numa faixa de 2500px deixa vãos maiores que o
+          conteúdo (reprovado pelo user em 2026-08-17). O centro é âncora
+          estável; esquerda e direita respiram. */}
+      <nav aria-label="Seções" className="flex min-w-0 flex-1 items-stretch justify-center gap-4">
         {secoes
           .filter((secao) => !secao.oculta)
           .map((secao, indice) => (
-            <div key={secao.id} className="flex flex-1 items-stretch">
+            <div key={secao.id} className="flex items-stretch gap-4">
               {/* O fio é ELEMENTO, não `border` — mesma razão do fio de 3px da
                   aba: utility de borda não pinta cor neste repo. */}
               {indice > 0 ? (
                 <span aria-hidden="true" className="my-auto h-7 w-0.5 shrink-0 bg-border" />
               ) : null}
-              <div className="flex flex-1 items-stretch justify-center">
-                <AbaDeSecao
-                  secao={secao}
-                  ativa={secao.id === secaoAtiva}
-                  aoEscolher={() => aoEscolherSecao(secao.id)}
-                />
-              </div>
+              <AbaDeSecao
+                secao={secao}
+                ativa={secao.id === secaoAtiva}
+                aoEscolher={() => aoEscolherSecao(secao.id)}
+              />
             </div>
           ))}
       </nav>
@@ -269,7 +267,7 @@ export function Appbar({
         {/* EMPRESA entre os globais e o operador: o escopo do dado mora ao lado
             de quem opera — decisão do user (2026-08-17, emenda na #140), que
             tirou a pill do canto esquerdo. */}
-        <div className="w-64 min-w-44 shrink">
+        <div className="w-72 shrink-0">
           <CompanySwitcher />
         </div>
 

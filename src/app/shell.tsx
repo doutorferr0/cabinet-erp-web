@@ -372,13 +372,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const naoLidas = notificacoes.filter((n) => !n.lida).length
 
   return (
-    /* CASCA = SEÇÃO (decisão do user, 2026-08-17): o wrapper declara o módulo
-       da seção ativa, e todo o entorno — appbar, régua do header, papel —
-       pinta no pastel /02 desse escopo. A TELA continua mandando na própria
-       cor: o `data-modulo` do `<main>` (módulo da rota) sobrepõe o da seção
-       por proximidade, exatamente a regra da #140. Rota sem módulo herda o
-       da seção — o furo neutro vira exceção, não regra. */
-    <SidebarProvider data-modulo={secaoAtiva?.modulo}>
+    <SidebarProvider>
       <AppSidebar secao={secaoAtiva} />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
@@ -390,9 +384,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAbrirPaleta={() => setPaletaAberta(true)}
         />
+        {/* A BANDA DE MÓDULO: 4px na cor cheia da TELA atual, logo sob a
+            appbar. É o acento que responde "em que território estou" sem
+            pintar área — casca colorida inteira foi testada e REPROVADA pelo
+            user (2026-08-17): seção e módulo da tela produziam pastéis
+            brigando na mesma dobra. Referência do tratamento: Odoo/Polaris —
+            chrome neutro, cor pontual e sempre A DA TELA. Rota sem módulo sai
+            no par primary do :root, a marca do sistema. */}
+        <div
+          aria-hidden="true"
+          {...(modulo && { 'data-modulo': modulo })}
+          className="h-1 shrink-0 bg-modulo-cheia"
+        />
 
         {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
-        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-modulo px-4 transition-[width,height] ease-linear">
+        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
@@ -409,7 +415,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             escreve o atributo — o par padrão do `:root` é o que vale. */}
         <main
           {...(modulo && { 'data-modulo': modulo })}
-          className="bg-paper-grid-modulo flex flex-1 flex-col p-5"
+          className="bg-paper-grid flex flex-1 flex-col p-5"
         >
           {/* `key` por CAMINHO: trocar de tela remonta a folha e a entrada
               anima; paginar e ordenar mexem em search params, não no caminho,

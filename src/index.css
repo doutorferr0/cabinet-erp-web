@@ -48,13 +48,13 @@
      "mais leve": faz a folha DESAPARECER. É a mesma economia do ornamento, em
      que o traço delimita e o preenchimento fica livre. */
   --background: 0 0% 95%; /* #F1F1F1 — fundo Polaris (bg do admin Shopify) */
-  --foreground: 0 0% 19%; /* #303030 — texto Polaris, nunca preto puro */
+  --foreground: 0 0% 7%; /* preto de tinta — user pediu peso acima do #303030 do Polaris */
   /* A folha: um degrau de LUZ acima da bancada, e só. Ver a nota do
      `--background` — o contorno preto é que a delimita. */
   --card: 0 0% 100%; /* cartão BRANCO sobre fundo cinza — o par Polaris */
-  --card-foreground: 0 0% 19%;
+  --card-foreground: 0 0% 7%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 19%;
+  --popover-foreground: 0 0% 7%;
   /* Degrau INTERNO da folha (zebra, hover, trilho). Desce junto com a folha
      para manter os 4 pontos de luz que separavam 98 de 94 — a 2 pontos a zebra
      some numa listagem de 25 linhas. Cai no mesmo nível de luz da bancada, e
@@ -62,11 +62,11 @@
   --surface-sunken: 0 0% 97%;
   --neutral: 0 0% 96%; /* hover de item, trilho, skeleton */
   /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
-  --primary: 0 0% 19%; /* botão primário Polaris: neutro escuro #303030 */
+  --primary: 0 0% 7%;
   --primary-hover: 0 0% 10%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 100%;
-  --secondary-foreground: 0 0% 19%;
+  --secondary-foreground: 0 0% 7%;
   --muted: 0 0% 95%;
   /* Texto secundário. DESCE de L 43% para 41% junto com as superfícies, e o
      número é medido: a folha caiu de 98% para 96% e a zebra de 94% para 92%,
@@ -74,12 +74,12 @@
      alternada de toda listagem. A 41% dá 4,72:1 na zebra, 4,73:1 na bancada e
      5,19:1 na folha. Mesmo remédio que a 1.5 aplicou ao verde e ao vermelho:
      matiz e saturação intactas, só a luz. */
-  --muted-foreground: 0 0% 38%; /* #616161 secundário Polaris */
+  --muted-foreground: 0 0% 30%;
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
   /* Cinzas da paleta flat — separador, desabilitado, texto alternativo. */
-  --rule-hair: 0 0% 85%; /* separador visível — user pediu peso */
-  --text-strong: 0 0% 19%;
+  --rule-hair: 0 0% 72%;
+  --text-strong: 0 0% 7%;
   /* DESABILITADO — o par que substituiu a tinta apagada (decisão do user,
      2026-08-14, core @regras). Existia aqui um `--text-disabled` de valor
      `210 8% 74%`, e ele ERA o defeito: um token cujo emprego é clarear
@@ -142,10 +142,10 @@
   /* POLARIS: borda sutil #E3E3E3, input um degrau mais firme, foco AZUL
      (anel do admin Shopify). O contorno preto morreu com a folha cinza:
      cartão branco sobre fundo cinza se delimita sozinho. */
-  --border: 0 0% 78%; /* #C7C7C7 — user pediu peso: #E3E3E3 sumia */
-  --input: 0 0% 68%; /* controle de formulário se anuncia */
+  --border: 0 0% 55%; /* linha FIRME — segunda rodada de peso a pedido do user */
+  --input: 0 0% 45%;
   --ring: 213 100% 41%; /* #005BD3 — foco Polaris */
-  --rule-strong: 0 0% 65%;
+  --rule-strong: 0 0% 20%;
   /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata).
      FASE 1.6 — as cinco deixam de ser CREMES TINGIDOS e passam a ser os pastéis
      /02 da paleta (`paleta-vitra.md` §2). Era daqui que vinha metade do "sem
@@ -190,12 +190,12 @@
   --grid-line: hsl(0 0% 95%); /* POLARIS: sem textura de grade — linha = fundo */
   /* Sidebar: o mesmo cinza da bancada; item ativo = Folha com traço preto. */
   --sidebar: hsl(0 0% 95%); /* POLARIS: sidebar no cinza do fundo */
-  --sidebar-foreground: hsl(0 0% 19%);
-  --sidebar-primary: hsl(0 0% 19%);
+  --sidebar-foreground: hsl(0 0% 7%);
+  --sidebar-primary: hsl(0 0% 7%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
   --sidebar-accent: hsl(0 0% 91%); /* hover de item */
-  --sidebar-accent-foreground: hsl(0 0% 19%);
-  --sidebar-border: hsl(0 0% 78%);
+  --sidebar-accent-foreground: hsl(0 0% 7%);
+  --sidebar-border: hsl(0 0% 55%);
   --sidebar-ring: hsl(213 100% 41%);
 }
 

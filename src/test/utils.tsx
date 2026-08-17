@@ -1,6 +1,7 @@
 import { configurarApi } from '@/api/cliente'
 import { Providers } from '@/app/providers'
 import { opcoesDoRouter } from '@/app/router'
+import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   type AnyRouter,
@@ -85,7 +86,24 @@ const sessaoValida: FetchStub = (input) => {
   const caminho = new URL(url, 'http://localhost').pathname
   if (caminho === '/auth/me') return Promise.resolve(respostaSessao())
   if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
+  if (caminho === '/api/catalog-lookups') return Promise.resolve(respostaLookups())
   return Promise.reject(new Error(`fetch sem stub no teste: ${url}`))
+}
+
+/**
+ * As listas de apoio no shape do contrato (`PagedResultOfCatalogLookupDto`),
+ * a partir do MESMO vocabulário que semeia o servidor mock. Toda tela de
+ * detalhe consulta `/api/catalog-lookups` para traduzir id em nome na ficha
+ * (`useRotulosDeApoio`), então a resposta mora no stub PADRÃO como a sessão —
+ * teste que quiser exercitar a falha das listas passa o próprio stub.
+ */
+export function respostaLookups(): Response {
+  const rows = Object.entries(VOCABULARIO_DE_APOIO).flatMap(([kind, nomes]) =>
+    nomes.map((name, i) => ({ id: `lk-${kind}-${i + 1}`, kind, name, active: true })),
+  )
+  return new Response(JSON.stringify({ rows, total: rows.length }), {
+    headers: { 'content-type': 'application/json' },
+  })
 }
 
 export interface RenderRouteResult extends RenderResult {

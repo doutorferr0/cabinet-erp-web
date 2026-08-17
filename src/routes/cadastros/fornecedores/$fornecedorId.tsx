@@ -3,6 +3,7 @@ import {
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
 import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { useRotulosDeApoio } from '@/data/lookups-api'
 import { fornecedor as esquema } from '@/features/cadastro/modulos'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
@@ -23,13 +24,15 @@ function FornecedorEditPage() {
   const { fornecedorId } = Route.useParams()
   const { modulo: moduloEmFoco, ...search } = Route.useSearch()
   const readOnly = isConsulta(search)
+  // A outra metade da #94: traduz o id de lista de apoio no nome, na leitura.
+  const { carregando: carregandoApoio, rotulos } = useRotulosDeApoio()
   const navigate = useNavigate()
   const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
     papelFornecedor,
     fornecedorId,
   )
 
-  if (!isNovo && query.isPending) {
+  if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
   }
 
@@ -82,10 +85,12 @@ function FornecedorEditPage() {
   )
 
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103).
+
   if (readOnly && !isNovo) {
     return (
       <FichaDeCadastro
         entidade={esquema}
+        {...(rotulos ? { rotulos } : {})}
         registro={registro}
         titulo="Cadastro de Fornecedores"
         contexto={registro.nomeFantasia}

@@ -1,6 +1,6 @@
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { json } from '@/test/servidor'
-import { type FetchStub, respostaSessao, respostaVinculos } from '@/test/utils'
+import { type FetchStub, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * Servidor falso das três telas de parceiro (Fornecedor, Cliente, Profissional).
@@ -78,6 +78,7 @@ export function servidorDeParceiros(
 
     if (caminho === '/auth/me') return respostaSessao()
     if (caminho === '/auth/tenants') return respostaVinculos()
+    if (caminho === '/api/catalog-lookups') return respostaLookups()
 
     const texto = requisicao ? await requisicao.clone().text() : ''
     chamadas.push({ metodo, caminho, corpo: texto ? JSON.parse(texto) : null })
@@ -142,6 +143,7 @@ export function stubDeParceiros(linhas: readonly unknown[] = [parceiro()]): Fetc
 
     if (caminho === '/auth/me') return Promise.resolve(respostaSessao())
     if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
+    if (caminho === '/api/catalog-lookups') return Promise.resolve(respostaLookups())
     if (caminho === URL_PARCEIROS) {
       return Promise.resolve(json({ rows: linhas, total: linhas.length }))
     }

@@ -124,3 +124,42 @@ export function useLookupOptions(kind: LookupKind): LookupOptions {
     erro: query.isError,
   }
 }
+
+/**
+ * Mapa id → nome de TODAS as listas de apoio, para a FICHA traduzir o que o
+ * registro guarda (`lk-SETOR-1`) no que o operador lê (`VENDAS`).
+ *
+ * É a outra metade da issue #94: o `LookupCombo` passou a guardar id, e a ficha
+ * de consulta imprime o valor guardado — sem este mapa ela imprime a chave. A
+ * sentinela `rotulo-de-apoio.test.tsx` existe exatamente para este fio.
+ *
+ * **Uma consulta, sem `kind`**: o contrato aceita a listagem inteira, e o
+ * vocabulário todo cabe no teto de 100 do contrato com folga. Item INATIVO
+ * entra de propósito — registro antigo apontando para item aposentado continua
+ * legível na ficha; quem impede escolher de novo é o combo, não a leitura.
+ *
+ * `undefined` enquanto carrega (e em erro): a ficha mostra o valor cru até o
+ * mapa chegar — pior ler a chave por um instante do que esconder o dado.
+ */
+export function useRotulosDeApoio(): {
+  /** Enquanto true, a rota mostra esqueleto — a ficha nunca pisca o id cru. */
+  carregando: boolean
+  rotulos?: Readonly<Record<string, string>>
+} {
+  const query = useQuery({
+    queryKey: ['catalog-lookups', 'rotulos'],
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listCatalogLookups({ pageSize: 100, sortBy: 'name' })
+      return dadosOuErro<PagedResultOfCatalogLookupDto>(
+        resposta,
+        'Falha ao carregar as listas de apoio.',
+      )
+    },
+  })
+
+  if (!query.data) return { carregando: query.isPending }
+  return {
+    carregando: false,
+    rotulos: Object.fromEntries(query.data.rows.map((r) => [r.id, r.name])),
+  }
+}

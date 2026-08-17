@@ -23,6 +23,7 @@ import {
   respostaOk,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
+import { avisar } from '@/lib/avisos'
 import { formatQuantidade, parseQuantidade } from '@/lib/formatters'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
 import { type Produto, type ProdutoVariante, produtoVazio } from '@/mocks/produtos'
@@ -521,11 +522,15 @@ export function useGravarProduto() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: gravarProduto,
-    onSuccess: (gravado) =>
-      Promise.all([
+    onSuccess: (gravado) => {
+      // Ver `lib/avisos.ts` (#201): o `Gravar` navega de volta para a listagem,
+      // e sem isto a resposta ao clique era uma troca de tela e mais nada.
+      avisar('Produto gravado.', gravado.description ?? undefined)
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: ['produtos'] }),
         queryClient.invalidateQueries({ queryKey: ['produto', gravado.id] }),
-      ]),
+      ])
+    },
   })
 }
 
@@ -546,10 +551,15 @@ export function useDesativarProduto() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (linha: ProductDto) => escreverProduto(linha.id, corpoDeDesativacao(linha)),
-    onSuccess: (_, linha) =>
-      Promise.all([
+    onSuccess: (_, linha) => {
+      avisar(
+        `${linha.description ?? 'Produto'} foi desativado.`,
+        'O cadastro continua no sistema, inativo.',
+      )
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: ['produtos'] }),
         queryClient.invalidateQueries({ queryKey: ['produto', linha.id] }),
-      ]),
+      ])
+    },
   })
 }

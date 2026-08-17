@@ -10,6 +10,7 @@ import {
   obterParceiro,
   vincularParceiro,
 } from '@/data/parceiros-api'
+import { avisar } from '@/lib/avisos'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
@@ -64,7 +65,17 @@ export function usarParceiro<T>(papel: PapelDeCadastro<T>, idParam: string) {
   })
   const linha = query.data ?? null
 
-  async function aposGravar() {
+  /**
+   * Gravou: reconsulta a listagem, avisa e volta.
+   *
+   * O aviso entra AQUI porque este é o único ponto que sabe que a escrita
+   * terminou — a tela que tinha o formulário está sendo desmontada na linha
+   * seguinte, e a listagem que recebe o operador é idêntica à que ele viu antes
+   * de editar. Sem isto, o `Gravar` respondia com uma troca de tela e mais
+   * nada. Ver `lib/avisos.ts` (#201).
+   */
+  async function aposGravar(_dado: unknown, _variaveis: unknown, mensagem = 'Cadastro gravado.') {
+    avisar(mensagem)
     await queryClient.invalidateQueries({ queryKey: papel.queryKeyListagem })
     void navigate({ to: papel.rota })
   }
@@ -74,13 +85,13 @@ export function usarParceiro<T>(papel: PapelDeCadastro<T>, idParam: string) {
       if (!linha) throw new Error('Sem a linha da listagem não há o que gravar.')
       return atualizarParceiro(linha.id, corpoDeEscrita(linha, papel.paraEscrita(values, linha)))
     },
-    onSuccess: aposGravar,
+    onSuccess: (dado, variaveis) => aposGravar(dado, variaveis, 'Alterações gravadas.'),
   })
 
   const incluir = useMutation({
     mutationFn: (values: T) =>
       incluirParceiro(corpoDeInclusao(papel.role, papel.paraInclusao(values))),
-    onSuccess: aposGravar,
+    onSuccess: (dado, variaveis) => aposGravar(dado, variaveis, 'Cadastro incluído.'),
   })
 
   // O 409 de documento repetido não é beco: o cadastro existe no GRUPO e só falta
@@ -89,7 +100,10 @@ export function usarParceiro<T>(papel: PapelDeCadastro<T>, idParam: string) {
 
   const vincular = useMutation({
     mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => vincularParceiro(id, ativo),
-    onSuccess: aposGravar,
+    // O caso do 409: o cadastro já existia no grupo e esta empresa se ligou a
+    // ele. Dizer "incluído" seria mentira sobre o que aconteceu.
+    onSuccess: (dado, variaveis) =>
+      aposGravar(dado, variaveis, 'Empresa vinculada ao cadastro existente.'),
   })
 
   const registro = isNovo ? papel.vazio(0) : linha ? papel.dtoParaForm(linha) : null

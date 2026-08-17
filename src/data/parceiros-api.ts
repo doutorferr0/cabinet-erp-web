@@ -9,6 +9,7 @@ import {
   itemOuNulo,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
+import { avisar } from '@/lib/avisos'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -297,7 +298,14 @@ export function useDesativarParceiro(queryKey: readonly unknown[]) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (linha: PartnerDto) => atualizarParceiro(linha.id, corpoDeDesativacao(linha)),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: (_dado, linha) => {
+      // O aviso sai daqui, e não da tela, porque quem SABE que a escrita
+      // terminou é a mutation: a listagem apenas fecha o diálogo e reconsulta,
+      // e uma linha que muda de `Sim` para `Não` no meio de vinte é mudança
+      // que passa despercebida. Ver `lib/avisos.ts` (#201).
+      avisar(`${linha.legalName} foi desativado.`, 'O cadastro continua no sistema, inativo.')
+      return queryClient.invalidateQueries({ queryKey })
+    },
   })
 }
 

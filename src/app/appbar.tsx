@@ -93,7 +93,7 @@ export function Appbar({
           Shopify). Ela subiu da barra lateral quando a navegação desceu:
           os dois não disputam mais o mesmo canto. */}
       <div className="flex shrink-0 items-center">
-        <Marca variante="assinatura" tamanho={24} />
+        <Marca variante="assinatura" tamanho={34} />
       </div>
 
       {/* BUSCA CENTRAL, larga — a âncora da topbar no Polaris. */}

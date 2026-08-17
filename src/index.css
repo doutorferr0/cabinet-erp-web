@@ -78,7 +78,7 @@
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
   /* Cinzas da paleta flat — separador, desabilitado, texto alternativo. */
-  --rule-hair: 0 0% 92%; /* #EBEBEB — separador secundário Polaris */
+  --rule-hair: 0 0% 85%; /* separador visível — user pediu peso */
   --text-strong: 0 0% 19%;
   /* DESABILITADO — o par que substituiu a tinta apagada (decisão do user,
      2026-08-14, core @regras). Existia aqui um `--text-disabled` de valor
@@ -142,10 +142,10 @@
   /* POLARIS: borda sutil #E3E3E3, input um degrau mais firme, foco AZUL
      (anel do admin Shopify). O contorno preto morreu com a folha cinza:
      cartão branco sobre fundo cinza se delimita sozinho. */
-  --border: 0 0% 89%; /* #E3E3E3 */
-  --input: 0 0% 82%; /* #D0D0D0 */
+  --border: 0 0% 78%; /* #C7C7C7 — user pediu peso: #E3E3E3 sumia */
+  --input: 0 0% 68%; /* controle de formulário se anuncia */
   --ring: 213 100% 41%; /* #005BD3 — foco Polaris */
-  --rule-strong: 0 0% 85%;
+  --rule-strong: 0 0% 65%;
   /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata).
      FASE 1.6 — as cinco deixam de ser CREMES TINGIDOS e passam a ser os pastéis
      /02 da paleta (`paleta-vitra.md` §2). Era daqui que vinha metade do "sem
@@ -195,7 +195,7 @@
   --sidebar-primary-foreground: hsl(0 0% 100%);
   --sidebar-accent: hsl(0 0% 91%); /* hover de item */
   --sidebar-accent-foreground: hsl(0 0% 19%);
-  --sidebar-border: hsl(0 0% 89%);
+  --sidebar-border: hsl(0 0% 78%);
   --sidebar-ring: hsl(213 100% 41%);
 }
 

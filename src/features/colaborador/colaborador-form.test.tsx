@@ -81,24 +81,28 @@ describe('tela Colaborador', () => {
       expect(screen.queryByLabelText('E-mail de login')).not.toBeInTheDocument()
     })
     /**
-     * DEFEITO ENCONTRADO ESCREVENDO A #101, e travado aqui.
+     * DEFEITO ENCONTRADO ESCREVENDO A #101, e RESOLVIDO NA RAIZ pela #103.
      *
      * O gatilho de expandir do `FormBlock` mora DENTRO do `<fieldset disabled>`
      * do `CadastroForm`. Em modo consulta ele nascia desabilitado junto com os
      * campos — e o operador não conseguia abrir bloco nenhum, isto é, não
-     * conseguia LER metade do cadastro na tela que existe para ler.
+     * conseguia LER metade do cadastro na tela que existe para ler. O remendo
+     * de então foi não colapsar em consulta.
      *
-     * A saída não foi reabilitar o botão (fieldset desabilitado alcança todo
-     * descendente, por especificação): é não colapsar em consulta. Recolher
-     * existe para reduzir o esforço de PREENCHER; em leitura não há o que
-     * deixar para depois, e o valor é justamente ver tudo.
+     * Agora `?modo=consulta` nem chega ao formulário: quem responde é a ficha
+     * (`ficha-de-cadastro.test.tsx`). O que sobra aqui é a guarda de que o
+     * remendo não é mais necessário — **não existe formulário em consulta para
+     * ter bloco recolhido**. Se alguém reverter a ligação da ficha, este teste
+     * cai junto com os de lá.
      */
-    it('em consulta nada fica recolhido — senão o cadastro fica ilegível', async () => {
+    it('consulta não abre mais o formulário — quem lê é a ficha', async () => {
       renderRoute('/cadastros/colaboradores/1?modo=consulta')
 
-      await screen.findByLabelText('Nome completo')
-      // Campo de bloco opcional alcançável sem clique, e sem gatilho para clicar.
-      expect(screen.getByRole('textbox', { name: 'Nome do pai' })).toBeDisabled()
+      // O valor está na tela como texto — duas vezes, no contexto da banda e no
+      // par de leitura do módulo.
+      expect((await screen.findAllByText('CARLA SOUZA')).length).toBeGreaterThan(0)
+      // …e não há campo, logo não há gatilho de colapso a desabilitar.
+      expect(screen.queryByRole('textbox', { name: 'Nome do pai' })).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Documentos e dados pessoais' }),
       ).not.toBeInTheDocument()

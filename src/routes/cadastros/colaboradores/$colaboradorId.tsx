@@ -2,11 +2,13 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
+import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { data } from '@/data'
+import { colaborador as esquema } from '@/features/cadastro/modulos'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')({
   component: ColaboradorEditPage,
@@ -17,6 +19,7 @@ function ColaboradorEditPage() {
   const { colaboradorId } = Route.useParams()
   const readOnly = isConsulta(Route.useSearch())
   const isNovo = colaboradorId === 'novo'
+  const navigate = useNavigate()
 
   const query = useQuery({
     queryKey: ['colaborador', colaboradorId],
@@ -42,6 +45,29 @@ function ColaboradorEditPage() {
 
   if (!query.data) {
     return <p className="text-muted-foreground">Colaborador não encontrado.</p>
+  }
+
+  // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103): ler é
+  // o uso mais frequente do cadastro, e o caminho de volta à edição é o lápis
+  // por módulo. `Incluir` nunca cai aqui — não há o que ler num registro que
+  // ainda não existe.
+  if (readOnly && !isNovo) {
+    return (
+      <FichaDeCadastro
+        entidade={esquema}
+        registro={query.data}
+        titulo="Cadastro de Colaboradores"
+        contexto={query.data.nome}
+        aoFechar={() => void navigate({ to: '/cadastros/colaboradores' })}
+        aoEditar={() =>
+          void navigate({
+            to: '/cadastros/colaboradores/$colaboradorId',
+            params: { colaboradorId },
+            search: {},
+          })
+        }
+      />
+    )
   }
 
   return (

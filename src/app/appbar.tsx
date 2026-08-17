@@ -1,7 +1,6 @@
 import { type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { ATALHO_DA_PALETA } from '@/app/paleta-de-comandos'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
-import { Marca } from '@/components/cabinet/marca'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -133,9 +132,10 @@ function AbaDeSecao({
  * ## As seis seções, e a engrenagem que é a sétima
  *
  * A faixa deixou de ser só busca + globais: ela carrega a NAVEGAÇÃO de primeiro
- * nível (Nav-2). A marca e o seletor de empresa desceram da barra lateral para
- * cá porque a lateral passou a ser CONTEXTUAL — ela muda com a seção, e o que
- * não muda (produto, empresa) não pode morar dentro do que muda.
+ * nível (Nav-2), espalhada na largura toda com fio entre as abas. A marca voltou
+ * ao topo da barra lateral e a empresa mora nos globais da direita (busca ·
+ * engrenagem · sino · empresa · operador) — formato de referência aprovado pelo
+ * user em 2026-08-17, emenda registrada na issue #140.
  *
  * A engrenagem **abre Configurações**, a sétima seção, oculta da fileira: ela
  * existe fora do caminho de operação (Odoo CogMenu, HubSpot settings). Deixou
@@ -178,32 +178,34 @@ export function Appbar({
       data-slot="appbar"
       className="flex flex-wrap items-stretch gap-3 border-rule-strong border-b-2 bg-card px-4"
     >
-      {/* MARCA e EMPRESA, nesta ordem: acima de qualquer módulo está o produto,
-          e logo abaixo dele o escopo do dado. As duas desceram da barra lateral
-          quando ela virou contextual — o que não muda não mora no que muda. */}
-      <div className="flex shrink-0 items-center py-2.5">
-        <Marca variante="assinatura" tamanho={26} />
-      </div>
-      <div className="flex shrink-0 items-center py-2.5">
-        <CompanySwitcher />
-      </div>
-
-      {/* AS SEIS SEÇÕES. `nav` com rótulo: é a navegação primária do sistema, e
-          sem nome ela é uma fileira de ícones anônimos no leitor de tela. */}
-      <nav aria-label="Seções" className="flex items-stretch gap-0.5">
+      {/* AS SEIS SEÇÕES ocupam a LARGURA TODA da faixa, com fio vertical entre
+          vizinhas (referência do user, 2026-08-17 — emenda na issue #140): a
+          marca subiu para a barra lateral e a empresa foi para os globais da
+          direita, então a navegação é o que resta — e o que manda — na faixa.
+          `nav` com rótulo: é a navegação primária do sistema, e sem nome ela é
+          uma fileira de ícones anônimos no leitor de tela. */}
+      <nav aria-label="Seções" className="flex flex-1 items-stretch">
         {secoes
           .filter((secao) => !secao.oculta)
-          .map((secao) => (
-            <AbaDeSecao
-              key={secao.id}
-              secao={secao}
-              ativa={secao.id === secaoAtiva}
-              aoEscolher={() => aoEscolherSecao(secao.id)}
-            />
+          .map((secao, indice) => (
+            <div key={secao.id} className="flex flex-1 items-stretch">
+              {/* O fio é ELEMENTO, não `border` — mesma razão do fio de 3px da
+                  aba: utility de borda não pinta cor neste repo. */}
+              {indice > 0 ? (
+                <span aria-hidden="true" className="my-auto h-7 w-0.5 shrink-0 bg-border" />
+              ) : null}
+              <div className="flex flex-1 items-stretch justify-center">
+                <AbaDeSecao
+                  secao={secao}
+                  ativa={secao.id === secaoAtiva}
+                  aoEscolher={() => aoEscolherSecao(secao.id)}
+                />
+              </div>
+            </div>
           ))}
       </nav>
 
-      <div className="flex items-center py-2.5">
+      <div className="flex flex-wrap items-center justify-end gap-2.5 py-2.5">
         <button
           type="button"
           onClick={aoAbrirPaleta}
@@ -219,9 +221,7 @@ export function Appbar({
             {ATALHO_DA_PALETA}
           </span>
         </button>
-      </div>
 
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5 py-2.5">
         {config ? (
           <TooltipTrigger delay={200}>
             <button
@@ -261,6 +261,11 @@ export function Appbar({
         </Button>
 
         <div aria-hidden="true" className="h-7 w-0.5 bg-border" />
+
+        {/* EMPRESA entre os globais e o operador: o escopo do dado mora ao lado
+            de quem opera — decisão do user (2026-08-17, emenda na #140), que
+            tirou a pill do canto esquerdo. */}
+        <CompanySwitcher />
 
         <DropdownMenuTrigger>
           <button

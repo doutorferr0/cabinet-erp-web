@@ -159,6 +159,9 @@ function FornecedorCorpo({
       <ProgressoObrigatorios entidade={entidadeFornecedor} />
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="identificacao">
+        {/* Mesma ordem do cliente: identidade primeiro (razão · sigla ·
+            fantasia), documento e contato depois. Ativo fecha a linha do
+            documento porque é estado, não dado. */}
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField
             name="razaoSocial"
@@ -177,8 +180,8 @@ function FornecedorCorpo({
             <TextField name="cnpjCpf" label="CNPJ/CPF" className="flex-1" />
             <ConsultaCnpjButton />
           </div>
-          <TextField name="fone1" label="Fone 1" className="col-span-6 sm:col-span-2" />
-          <TextField name="email" label="E-mail" className="col-span-12 sm:col-span-6" />
+          <TextField name="fone1" label="Fone 1" className="col-span-4 sm:col-span-2" />
+          <TextField name="email" label="E-mail" className="col-span-12 sm:col-span-4" />
           <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
         </div>
       </BlocoDoModulo>

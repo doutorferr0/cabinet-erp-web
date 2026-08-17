@@ -112,7 +112,7 @@ export function ListaDeFiltros({
           filtros.length > 0 ? `Filtro — ${filtros.length} aplicado(s)` : 'Filtro — nenhum aplicado'
         }
       >
-        <Filter aria-hidden="true" className="text-modulo" />
+        <Filter aria-hidden="true" />
         Filtro
         {/* A contagem fica em Meta tabular, como toda cifra pequena da listagem:
             o operador precisa saber que há filtro ativo mesmo com o painel

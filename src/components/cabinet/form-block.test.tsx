@@ -151,8 +151,9 @@ describe('FormBlock com hierarquia', () => {
     const faixa = bloco.querySelector('.bg-modulo-cheia')
     expect(faixa).not.toBeNull()
     expect(screen.getByLabelText('Prazo').parentElement?.className).toContain('bg-modulo')
-    // A tinta da faixa é MEDIDA, não a do tema: fornecedores é dos três em que
-    // o neon é escuro e o preto reprovaria (4,13:1).
-    expect(faixa?.className).toContain('text-white')
+    // A tinta da faixa é MEDIDA, não a do tema. Desde a paleta 400 (ref.
+    // brutalism.tailwinddashboard, 2026-08-17) o fill é claro e o preto passa
+    // em TODOS os módulos — traço e tinta sempre pretos, cor só preenchimento.
+    expect(faixa?.className).toContain('text-black')
   })
 })

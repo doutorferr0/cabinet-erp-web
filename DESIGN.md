@@ -515,15 +515,15 @@ são o que está em volta.
 <!-- tabela:pasteis-02 -->
 | Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |
 |---|---|---|---|---|
-| Produtos | 1,03:1 | 1,07:1 | 1,32:1 | REPROVA |
-| Estoque | 1,12:1 | 1,02:1 | 1,15:1 | REPROVA |
-| Vendas / Orçamento | 1,10:1 | 1,00:1 | 1,05:1 | REPROVA |
-| Compras / Pedidos | 1,07:1 | 1,02:1 | 1,03:1 | REPROVA |
-| Clientes | 1,10:1 | 1,00:1 | 1,02:1 | REPROVA |
+| Produtos | 1,02:1 | 1,07:1 | 1,32:1 | REPROVA |
+| Estoque | 1,10:1 | 1,01:1 | 1,15:1 | REPROVA |
+| Vendas / Orçamento | 1,10:1 | 1,01:1 | 1,05:1 | REPROVA |
+| Compras / Pedidos | 1,06:1 | 1,03:1 | 1,03:1 | REPROVA |
+| Clientes | 1,08:1 | 1,02:1 | 1,02:1 | REPROVA |
 | Fornecedores | 1,12:1 | 1,02:1 | 1,01:1 | REPROVA |
-| Profissionais | 1,08:1 | 1,01:1 | 1,01:1 | REPROVA |
-| CRM | 1,02:1 | 1,08:1 | 1,34:1 | REPROVA |
-| Boletim | 1,13:1 | 1,03:1 | 1,06:1 | REPROVA |
+| Profissionais | 1,09:1 | 1,00:1 | 1,01:1 | REPROVA |
+| CRM | 1,01:1 | 1,11:1 | 1,34:1 | REPROVA |
+| Boletim | 1,04:1 | 1,05:1 | 1,06:1 | REPROVA |
 <!-- /tabela:pasteis-02 -->
 
 A cheia /01 do mesmo módulo, medida contra as mesmas superfícies (é ela que pinta ornamento, ícone
@@ -533,15 +533,15 @@ e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** �
 <!-- tabela:cheia-01 -->
 | Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |
 |---|---|---|---|---|
-| Produtos | 1,40:1 | 1,27:1 | 9,38:1 | 11,51:1 |
-| Estoque | 2,96:1 | 2,70:1 | 4,42:1 | 5,43:1 |
-| Vendas / Orçamento | 4,78:1 | 4,36:1 | 2,74:1 | 3,36:1 |
-| Compras / Pedidos | 3,14:1 | 2,87:1 | 4,16:1 | 5,11:1 |
-| Clientes | 3,21:1 | 2,93:1 | 4,08:1 | 5,00:1 |
-| Fornecedores | 4,63:1 | 4,22:1 | 2,83:1 | 3,47:1 |
-| Profissionais | 4,24:1 | 3,87:1 | 3,08:1 | 3,78:1 |
-| CRM | 1,53:1 | 1,39:1 | 8,57:1 | 10,52:1 |
-| Boletim | 2,56:1 | 2,34:1 | 5,11:1 | 6,26:1 |
+| Produtos | 1,52:1 | 1,39:1 | 8,60:1 | 10,55:1 |
+| Estoque | 2,30:1 | 2,10:1 | 5,69:1 | 6,98:1 |
+| Vendas / Orçamento | 2,52:1 | 2,29:1 | 5,20:1 | 6,38:1 |
+| Compras / Pedidos | 2,43:1 | 2,22:1 | 5,39:1 | 6,61:1 |
+| Clientes | 2,21:1 | 2,01:1 | 5,92:1 | 7,27:1 |
+| Fornecedores | 2,68:1 | 2,44:1 | 4,88:1 | 5,99:1 |
+| Profissionais | 2,43:1 | 2,22:1 | 5,37:1 | 6,59:1 |
+| CRM | 1,38:1 | 1,26:1 | 9,48:1 | 11,63:1 |
+| Boletim | 2,06:1 | 1,88:1 | 6,35:1 | 7,79:1 |
 <!-- /tabela:cheia-01 -->
 
 Abaixo de 3:1 — no claro **quatro** contra a Folha (produtos, estoque, boletim e o CRM novo) e
@@ -582,15 +582,15 @@ do tema.
 <!-- tabela:estados-fundo -->
 | Módulo | claro: tinta × /01 | escuro: tinta × /01 |
 |---|---|---|
-| Produtos | 13,71:1 | **1,33:1** |
-| Estoque | 6,46:1 | **2,83:1** |
-| Vendas / Orçamento | **4,00:1** | 4,57:1 |
-| Compras / Pedidos | 6,08:1 | **3,00:1** |
-| Clientes | 5,96:1 | **3,06:1** |
-| Fornecedores | **4,13:1** | **4,42:1** |
-| Profissionais | 4,51:1 | **4,05:1** |
-| CRM | 12,53:1 | **1,46:1** |
-| Boletim | 7,46:1 | **2,45:1** |
+| Produtos | 12,57:1 | **1,45:1** |
+| Estoque | 8,32:1 | **2,19:1** |
+| Vendas / Orçamento | 7,60:1 | **2,40:1** |
+| Compras / Pedidos | 7,87:1 | **2,32:1** |
+| Clientes | 8,66:1 | **2,11:1** |
+| Fornecedores | 7,14:1 | **2,56:1** |
+| Profissionais | 7,85:1 | **2,33:1** |
+| CRM | 13,86:1 | **1,32:1** |
+| Boletim | 9,28:1 | **1,97:1** |
 <!-- /tabela:estados-fundo -->
 
 **Piso 4,5:1, não 3:1** — o rótulo do item é 14px em `font-bold`, e "texto grande" pela WCAG começa
@@ -645,15 +645,15 @@ estou" de três jeitos, e cada um responde a um piso diferente da WCAG.
 <!-- tabela:nav-estados -->
 | Módulo | claro: tinta × /02 | escuro: tinta × /02 | claro: fio /01 × fundo | escuro: fio /01 × fundo | claro: ícone /01 × /02 | escuro: ícone /01 × /02 |
 |---|---|---|---|---|---|---|
-| Produtos | 18,60:1 | 9,48:1 | **1,27:1** | 11,51:1 | **1,36:1** | 7,11:1 |
-| Estoque | 17,14:1 | 10,88:1 | **2,70:1** | 5,43:1 | **2,65:1** | 3,85:1 |
-| Vendas / Orçamento | 17,46:1 | 13,10:1 | 4,36:1 | 3,36:1 | 4,36:1 | **2,87:1** |
-| Compras / Pedidos | 17,83:1 | 12,14:1 | **2,87:1** | 5,11:1 | **2,93:1** | 4,05:1 |
-| Clientes | 17,46:1 | 12,69:1 | **2,93:1** | 5,00:1 | **2,93:1** | 4,14:1 |
-| Fornecedores | 17,12:1 | 12,39:1 | 4,22:1 | 3,47:1 | 4,14:1 | **2,80:1** |
-| Profissionais | 17,63:1 | 12,38:1 | 3,87:1 | 3,78:1 | 3,91:1 | 3,05:1 |
-| CRM | 18,81:1 | 9,32:1 | **1,39:1** | 10,52:1 | **1,50:1** | 6,39:1 |
-| Boletim | 16,88:1 | 11,84:1 | **2,34:1** | 6,26:1 | **2,26:1** | 4,84:1 |
+| Produtos | 18,69:1 | 9,48:1 | **1,39:1** | 10,55:1 | **1,49:1** | 6,52:1 |
+| Estoque | 17,35:1 | 10,88:1 | **2,10:1** | 6,98:1 | **2,09:1** | 4,96:1 |
+| Vendas / Orçamento | 17,35:1 | 13,10:1 | **2,29:1** | 6,38:1 | **2,28:1** | 5,45:1 |
+| Compras / Pedidos | 18,02:1 | 12,14:1 | **2,22:1** | 6,61:1 | **2,29:1** | 5,23:1 |
+| Clientes | 17,75:1 | 12,69:1 | **2,01:1** | 7,27:1 | **2,05:1** | 6,01:1 |
+| Fornecedores | 17,12:1 | 12,39:1 | **2,44:1** | 5,99:1 | **2,40:1** | 4,84:1 |
+| Profissionais | 17,48:1 | 12,38:1 | **2,22:1** | 6,59:1 | **2,22:1** | 5,33:1 |
+| CRM | 19,31:1 | 9,32:1 | **1,26:1** | 11,63:1 | **1,39:1** | 7,07:1 |
+| Boletim | 18,38:1 | 11,84:1 | **1,88:1** | 7,79:1 | **1,98:1** | 6,02:1 |
 <!-- /tabela:nav-estados -->
 
 **O rótulo passa com folga; o que reprova é o SINAL do estado.**
@@ -754,7 +754,7 @@ cheia /01 e o `--stamp-open` — não.
 - degrau Bancada × Folha: **1,10:1** claro · **1,23:1** escuro
 - secundário sobre o Afundado (zebra): **4,72:1** claro · **7,67:1** escuro
 - traço `--border` sobre a Folha: **19,12:1** claro · **5,88:1** escuro
-- tinta sobre os pastéis /02 de módulo: **16,88–18,81:1** claro · **9,32–13,10:1** escuro
+- tinta sobre os pastéis /02 de módulo: **17,12–19,31:1** claro · **9,32–13,10:1** escuro
 <!-- /tabela:apoio -->
 
 #### Pendências — nenhuma cor foi mexida aqui

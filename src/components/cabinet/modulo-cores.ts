@@ -37,7 +37,10 @@ export type ModuloCor = (typeof MODULOS_COR)[number]
 /**
  * A TINTA DA FAIXA, escolhida por MEDIÇÃO e não por gosto.
  *
- * A faixa do cabeçalho é a cheia `/01` — um neon. Texto sobre neon é o único
+ * A faixa do cabeçalho é a cheia `/01` — desde 2026-08-17, tom 400 da paleta
+ * Tailwind (ref. brutalism.tailwinddashboard, escolha do user): fill claro o
+ * bastante para a tinta PRETA passar em TODOS os módulos, nos dois temas.
+ * Era um neon. Texto sobre neon é o único
  * lugar em que a paleta de módulo vira FUNDO de leitura, e é onde a §Medição de
  * contraste do DESIGN.md já registra a pior reprovação do repo (o item de menu
  * ativo, 1,33:1 no escuro).
@@ -68,11 +71,11 @@ export type TintaDaFaixa = 'preta' | 'clara'
 export const TINTA_DA_FAIXA: Record<ModuloCor, TintaDaFaixa> = {
   produtos: 'preta',
   estoque: 'preta',
-  vendas: 'clara',
+  vendas: 'preta',
   compras: 'preta',
   clientes: 'preta',
-  fornecedores: 'clara',
-  profissionais: 'clara',
+  fornecedores: 'preta',
+  profissionais: 'preta',
   crm: 'preta',
   boletim: 'preta',
 }

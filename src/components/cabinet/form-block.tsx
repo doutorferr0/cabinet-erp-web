@@ -102,10 +102,8 @@ export interface FormBlockProps {
    */
   cor?: ModuloCor
   /**
-   * O SELO do mockup: ícone num quadrado de folha, pousado na faixa antes do
-   * nome. O quadrado é `bg-card` de propósito — sobre a cheia neon, o branco
-   * do selo é o que faz o símbolo ler nos dois temas, e o ícone dentro dele
-   * usa `text-modulo` (a própria /01) em vez de herdar a tinta da faixa.
+   * O símbolo do bloco, pousado na faixa antes do nome, na MESMA tinta preta
+   * do texto — traço nunca veste cor de módulo (regra do user, 2026-08-17).
    * Quem escolhe o símbolo é `modulo-icones.ts`, por id de módulo.
    */
   icone?: LucideIcon
@@ -175,14 +173,10 @@ export function FormBlock({
     aberto && 'border-b-2',
   )
 
-  const selo = Icone ? (
-    <span
-      aria-hidden="true"
-      className="flex size-6 shrink-0 items-center justify-center rounded-sm border-2 bg-card"
-    >
-      <Icone className={cn('size-3.5', cor ? 'text-modulo' : 'text-text-strong')} />
-    </span>
-  ) : null
+  // Regra do user (2026-08-17): traço é SEMPRE preto — cor só em preenchimento.
+  // O ícone herda a tinta da faixa (preta em todos os módulos) em vez de vestir
+  // a /01; o quadrado-selo saiu junto: na faixa clara ele só somava moldura.
+  const selo = Icone ? <Icone aria-hidden="true" className="size-4 shrink-0" /> : null
 
   const nomeDaFaixa = (
     // `aria-hidden`: o mesmo texto já é o `<legend>` do compartimento e o

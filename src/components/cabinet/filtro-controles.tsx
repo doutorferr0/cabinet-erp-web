@@ -97,7 +97,7 @@ export function SeletorDeCampo({
                   setAberto(false)
                 }}
               >
-                {campo.icon ? <campo.icon className="size-4 text-modulo" /> : null}
+                {campo.icon ? <campo.icon className="size-4" /> : null}
                 <span className="truncate">{campo.rotulo}</span>
               </CommandItem>
             ))}

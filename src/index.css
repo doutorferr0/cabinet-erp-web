@@ -47,39 +47,39 @@
      enquanto o traço estiver lá. Suavizar a borda depois não deixa a folha
      "mais leve": faz a folha DESAPARECER. É a mesma economia do ornamento, em
      que o traço delimita e o preenchimento fica livre. */
-  --background: 216 12% 92%; /* #E8EAED — bancada cinza */
-  --foreground: 0 0% 0%; /* traço e texto: preto puro */
+  --background: 0 0% 95%; /* #F1F1F1 — fundo Polaris (bg do admin Shopify) */
+  --foreground: 0 0% 7%; /* preto de tinta — user pediu peso acima do #303030 do Polaris */
   /* A folha: um degrau de LUZ acima da bancada, e só. Ver a nota do
      `--background` — o contorno preto é que a delimita. */
-  --card: 220 16% 96%; /* #F4F5F7 — folha cinza clara */
-  --card-foreground: 0 0% 0%;
-  --popover: 220 16% 96%;
-  --popover-foreground: 0 0% 0%;
+  --card: 0 0% 100%; /* cartão BRANCO sobre fundo cinza — o par Polaris */
+  --card-foreground: 0 0% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
   /* Degrau INTERNO da folha (zebra, hover, trilho). Desce junto com a folha
      para manter os 4 pontos de luz que separavam 98 de 94 — a 2 pontos a zebra
      some numa listagem de 25 linhas. Cai no mesmo nível de luz da bancada, e
      tudo bem: são regiões que nunca se encostam sem o contorno preto entre elas. */
-  --surface-sunken: 220 13% 92%;
-  --neutral: 220 13% 92%; /* hover de item, trilho, skeleton */
+  --surface-sunken: 0 0% 97%;
+  --neutral: 0 0% 96%; /* hover de item, trilho, skeleton */
   /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
-  --primary: 241 100% 66%;
-  --primary-hover: 241 77% 57%;
+  --primary: 0 0% 7%;
+  --primary-hover: 0 0% 10%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 16% 96%; /* acompanha a Folha */
-  --secondary-foreground: 0 0% 0%;
-  --muted: 220 13% 92%;
+  --secondary: 0 0% 100%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 95%;
   /* Texto secundário. DESCE de L 43% para 41% junto com as superfícies, e o
      número é medido: a folha caiu de 98% para 96% e a zebra de 94% para 92%,
      e a 43% o secundário sobre a ZEBRA dava 4,38:1 — abaixo do piso, na linha
      alternada de toda listagem. A 41% dá 4,72:1 na zebra, 4,73:1 na bancada e
      5,19:1 na folha. Mesmo remédio que a 1.5 aplicou ao verde e ao vermelho:
      matiz e saturação intactas, só a luz. */
-  --muted-foreground: 213 10% 41%;
+  --muted-foreground: 0 0% 30%;
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
   /* Cinzas da paleta flat — separador, desabilitado, texto alternativo. */
-  --rule-hair: 210 10% 86%; /* #CCD1D9 — separador leve */
-  --text-strong: 215 13% 30%; /* #434A54 — texto forte alternativo ao preto */
+  --rule-hair: 0 0% 72%;
+  --text-strong: 0 0% 7%;
   /* DESABILITADO — o par que substituiu a tinta apagada (decisão do user,
      2026-08-14, core @regras). Existia aqui um `--text-disabled` de valor
      `210 8% 74%`, e ele ERA o defeito: um token cujo emprego é clarear
@@ -93,7 +93,7 @@
      e quem diz "morto" é o fundo rebaixado com o contorno cinza em volta.
      A superfície desce de luz nos DOIS temas, como a `--surface-sunken`:
      afundar no escuro é escurecer, não clarear. */
-  --surface-disabled: 216 10% 80%;
+  --surface-disabled: 0 0% 92%;
   --rule-disabled: 210 8% 40%;
   /* Preenchimentos flat para os DONOS (dinheiro, foco, erro). Contorno preto
      por fora, preenchimento forte por dentro — mesma técnica do ornamento:
@@ -139,11 +139,13 @@
      que é o mesmo remédio que a 1.5 aplicou ao verde e ao vermelho quando eles
      caíram sobre a zona de valor. No escuro ele volta a 74% (ver `.dark`). */
   --empresa: 234 91% 60%;
-  /* Traço: 2px preto em tudo que é caixa. */
-  --border: 0 0% 0%;
-  --input: 0 0% 0%;
-  --ring: 47 100% 50%; /* amarelo do anel de foco — receita em `focus-ring` */
-  --rule-strong: 0 0% 0%;
+  /* POLARIS: borda sutil #E3E3E3, input um degrau mais firme, foco AZUL
+     (anel do admin Shopify). O contorno preto morreu com a folha cinza:
+     cartão branco sobre fundo cinza se delimita sozinho. */
+  --border: 0 0% 55%; /* linha FIRME — segunda rodada de peso a pedido do user */
+  --input: 0 0% 45%;
+  --ring: 213 100% 41%; /* #005BD3 — foco Polaris */
+  --rule-strong: 0 0% 20%;
   /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata).
      FASE 1.6 — as cinco deixam de ser CREMES TINGIDOS e passam a ser os pastéis
      /02 da paleta (`paleta-vitra.md` §2). Era daqui que vinha metade do "sem
@@ -185,16 +187,16 @@
      quase invisível, e a cortina existe justamente para dizer "o que está atrás
      não recebe clique agora". No escuro ela precisa ser bem mais densa. */
   --veil: 0 0% 0% / 0.2;
-  --grid-line: hsl(216 12% 83%); /* a grade pousa sobre a bancada cinza */
+  --grid-line: hsl(0 0% 95%); /* POLARIS: sem textura de grade — linha = fundo */
   /* Sidebar: o mesmo cinza da bancada; item ativo = Folha com traço preto. */
-  --sidebar: hsl(216 12% 92%); /* #E8EAED — bancada cinza */
-  --sidebar-foreground: hsl(0 0% 0%);
-  --sidebar-primary: hsl(241 100% 66%);
+  --sidebar: hsl(0 0% 95%); /* POLARIS: sidebar no cinza do fundo */
+  --sidebar-foreground: hsl(0 0% 7%);
+  --sidebar-primary: hsl(0 0% 7%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(220 13% 92%); /* hover de item */
-  --sidebar-accent-foreground: hsl(0 0% 0%);
-  --sidebar-border: hsl(0 0% 0%);
-  --sidebar-ring: hsl(47 100% 50%);
+  --sidebar-accent: hsl(0 0% 91%); /* hover de item */
+  --sidebar-accent-foreground: hsl(0 0% 7%);
+  --sidebar-border: hsl(0 0% 55%);
+  --sidebar-ring: hsl(213 100% 41%);
 }
 
 /* COR DE MÓDULO — um par por módulo, trocado por ESCOPO e não por classe.
@@ -508,15 +510,16 @@
   /* CANTO POR NATUREZA (supersede o "radius 0 é lei"): o que é ITEM — chip,
      aba, página, item de menu, célula, etiqueta — continua reto, porque itens
      encostam uns nos outros e canto arredondado abre fresta entre eles. */
-  --radius-item: 0px;
-  --radius-data: 2px;
-  --radius-control: 4px;
-  --radius-card: 6px;
-  --radius-panel: 10px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 10px;
+  /* POLARIS (2026-08-17): cantos generosos — cartão 12, controle 8. */
+  --radius-item: 8px;
+  --radius-data: 4px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-panel: 12px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   /* ELEVAÇÃO em 5 degraus, sombra sem blur da família quente do papel.
      `el-1` apoio · `el-2` campo · `el-3` padrão · `el-4` destaque · `el-5` modal. */
   /* FASE 1.6 — escada 2/3/4/6/8 no lugar de 2/3/5/7/10. Os degraus de cima
@@ -1060,4 +1063,24 @@ h1 {
   font-family: var(--font-nome);
   font-weight: 700;
   letter-spacing: -0.005em;
+}
+
+/* POLARIS (2026-08-17): o repo inteiro escreve `border-2` — assinatura do
+   brutalism. Em vez de tocar centenas de arquivos, as utilities de 2px valem
+   1px aqui, uma vez. Quando a migração por componente acontecer (fases 2+),
+   estas overrides morrem. */
+@utility border-2 {
+  border-width: 1px;
+}
+@utility border-t-2 {
+  border-top-width: 1px;
+}
+@utility border-b-2 {
+  border-bottom-width: 1px;
+}
+@utility border-l-2 {
+  border-left-width: 1px;
+}
+@utility border-r-2 {
+  border-right-width: 1px;
 }

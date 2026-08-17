@@ -55,6 +55,57 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
   CPF/CNPJ sem máscara no dado.
 - **Desativação é lógica.** Existe `active`; nada é excluído de verdade.
 
+## Sessão no contrato — `security`, e as quatro exceções
+
+Até 2026-08-17 **nenhuma das 58 operações declarava autenticação**: o backend
+exigia sessão em tudo fora de `/health*` e `/auth/login|logout`, respondia 401 e
+403, e o contrato não sabia de nada. Front e back concordavam de fato e
+discordavam no papel — e é o papel que gera cliente, mock e documentação.
+
+O esquema é `sessaoCabinet`: **`apiKey` + `in: cookie` + `name: cabinet_sessao`**.
+Não existe tipo `cookieSession` no OpenAPI, e descrever a sessão como
+`http`/`bearer` descreveria OUTRO mecanismo — o cliente gerado passaria a montar
+um cabeçalho que o servidor ignora. O cookie é **opaco** (ADR-010, sem JWT): leva
+um identificador e nada mais; papel, empresa ativa e validade moram no servidor,
+onde podem ser revogados de um lado só. O front não o lê nem o monta — pede com
+`credentials: 'include'` e o navegador faz o resto.
+
+**A exigência vem por HERANÇA**, do `security` no topo do documento. Quem não a
+tem desliga explicitamente com `security: []`, e são quatro:
+
+| operação | por que fica aberta |
+|---|---|
+| `Health` · `HealthDb` | prova de vida é lida por ORQUESTRADOR, que não tem sessão — exigir uma faria o balanceador derrubar a instância por não saber logar nela |
+| `AuthLogin` | é o caminho que CRIA a sessão |
+| `AuthLogout` | encerrar o que já não existe é 204 — um 401 aqui deixaria o cliente sem como limpar cookie vencido |
+
+Padrão exige, exceção se declara. O contrário faz a próxima operação nascer sem
+autenticação por esquecimento, que foi como o buraco apareceu.
+
+### 401 e 403 são respostas REUTILIZÁVEIS
+
+`components/responses/NaoAutenticado` e `components/responses/SemPermissao`. Toda
+operação aponta para elas com `$ref`; nenhuma repete a descrição.
+
+- **401 = sem sessão** (ausente, expirada, encerrada) — e só isso. O cliente
+  trata num lugar só: redirecionar ao login preservando a rota de origem.
+- **403 = autenticado e barrado**, em três casos: `mustChangePassword`, empresa
+  ativa sem vínculo, e papel sem a permissão. Quem os distingue é `type` (URN
+  estável), não o texto de `detail`.
+
+**O 403 passou a valer na LEITURA também.** Antes ele estava declarado só nas 24
+escritas; mas `mustChangePassword` bloqueia o domínio inteiro, e metade dele
+devolvia um código que o contrato não previa.
+
+**A exceção declarada:** o 401 de `AuthLogin` **não** é o reutilizável. Lá ele diz
+"credencial inválida", com mensagem genérica de propósito (distinguir e-mail
+inexistente de senha errada enumera contas), e continua descrito na própria
+operação.
+
+**A guarda é `src/data/security-do-contrato.test.ts`**, que lê o contrato direto e
+cobra a regra por caminho: operação nova nasce exigindo sessão, e abrir exceção
+exige vir ao teste declarar o motivo.
+
 ## Problem Details — o formato ÚNICO de erro (RFC 9457)
 
 O contrato definia sucesso com precisão e deixava o erro subespecificado. Sem
@@ -110,7 +161,10 @@ quebrar a tela. `ErroDoServidor` (`src/components/cabinet/`) é o componente ún
 que mostra os quatro textos em papéis distintos e leva o foco ao campo recusado.
 
 **A guarda é `src/data/problem-details.test.ts`**, que lê o contrato DIRETO:
-caminho novo com 4xx entra na verificação sozinho.
+caminho novo com 4xx entra na verificação sozinho. Ela **segue o `$ref` de
+`components/responses`** antes de olhar dentro — sem isso, concluiria que 401 e
+403 não têm `ProblemDetails` e reprovaria justamente a mudança que tirou a
+duplicação.
 
 ### Latência artificial no mock
 

@@ -28,6 +28,11 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   `pnpm codegen` (Orval + pós-codegen), saída em `src/api/gerado/`, **commitada**, com
   `@ts-nocheck` posto pelo passo pós-codegen. **Nunca editar `src/api/gerado/` à mão**;
   conflito de merge nele se resolve rodando o codegen.
+- **Operação nova NASCE exigindo sessão.** O `security` do topo do documento vale por herança;
+  abrir exceção é declarar `security: []` na operação E justificar em
+  `src/data/security-do-contrato.test.ts`, que é a guarda. Toda operação autenticada declara
+  **401** e toda operação de domínio declara **403**, por `$ref` a `components/responses` —
+  nunca copiando a descrição. Ver `docs/integracao.md` §Sessão no contrato.
 - **A guarda do contrato é o CI:** o passo `Codegen is up to date` refaz o codegen e reprova se
   `src/api/gerado` divergir de `contracts/`. É a guarda inteira — mexeu no contrato, rodou
   codegen e commitou o gerado no mesmo PR.

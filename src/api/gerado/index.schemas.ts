@@ -1701,6 +1701,28 @@ export interface PagedResultOfActivityDto {
   total: number;
 }
 
+/**
+ * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
+ *
+ * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
+ *
+ * Exceção declarada: o 401 de `AuthLogin` NÃO é este — lá ele diz "credencial inválida", com mensagem genérica de propósito, e continua descrito na própria operação.
+ */
+export type NaoAutenticadoResponse = ProblemDetails;
+
+/**
+ * Autenticado e barrado. Três casos, e os três são 403 por decisão:
+ *
+ * 1. **`mustChangePassword`** — a credencial vale, falta um passo. 401 aqui derrubaria a sessão recém-criada e o cliente tentaria logar de novo, em laço.
+ * 2. **Empresa ativa sem vínculo** — 403 e não 404, porque o `tenantId` não é segredo (ele viaja em `GET /auth/tenants`). O que é controlado é o acesso, não a existência.
+ * 3. **Papel sem a permissão da operação** (RBAC por empresa).
+ *
+ * Quem distingue os três é `type` (URN estável), não o texto de `detail`: código é para código, frase é para gente. O cliente mostra a tela própria de "sem permissão", nunca o erro genérico.
+ *
+ * **Não cobre "não encontrado nesta empresa"**, que é 404: dizer "existe, mas não é sua" confirmaria um registro da empresa vizinha.
+ */
+export type SemPermissaoResponse = ProblemDetails;
+
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;

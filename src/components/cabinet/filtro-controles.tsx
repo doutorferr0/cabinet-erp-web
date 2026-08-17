@@ -73,7 +73,7 @@ export function SeletorDeCampo({
         className={cn('justify-between font-normal', className)}
       >
         <span className="truncate">{atual?.rotulo ?? 'Escolha o campo'}</span>
-        <ChevronsUpDown className="ml-1 size-4 shrink-0 text-muted-foreground" />
+        <ChevronsUpDown className="ml-1 size-4 shrink-0 text-foreground" />
       </Button>
       <Popover className="w-56 p-0">
         <Command>
@@ -216,7 +216,7 @@ export function ControleDeValor({
           className={cn('justify-between font-normal', className)}
         >
           <span className="truncate">{resumo}</span>
-          <ChevronsUpDown className="ml-1 size-4 shrink-0 text-muted-foreground" />
+          <ChevronsUpDown className="ml-1 size-4 shrink-0 text-foreground" />
         </Button>
         <Popover className="w-56 p-0">
           <Command>

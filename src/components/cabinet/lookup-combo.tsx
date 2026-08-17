@@ -101,7 +101,7 @@ export function LookupCombo({
           )}
         >
           <span className="truncate">{escolhido ?? `Selecione ${label.toLowerCase()}…`}</span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 text-foreground" />
         </Button>
         <Popover className="w-(--trigger-width) p-0">
           <Command>

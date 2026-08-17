@@ -17,7 +17,8 @@ export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')(
 
 function ColaboradorEditPage() {
   const { colaboradorId } = Route.useParams()
-  const readOnly = isConsulta(Route.useSearch())
+  const { modulo: moduloEmFoco, ...search } = Route.useSearch()
+  const readOnly = isConsulta(search)
   const isNovo = colaboradorId === 'novo'
   const navigate = useNavigate()
 
@@ -59,11 +60,11 @@ function ColaboradorEditPage() {
         titulo="Cadastro de Colaboradores"
         contexto={query.data.nome}
         aoFechar={() => void navigate({ to: '/cadastros/colaboradores' })}
-        aoEditar={() =>
+        aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/colaboradores/$colaboradorId',
             params: { colaboradorId },
-            search: {},
+            search: moduloId ? { modulo: moduloId } : {},
           })
         }
       />
@@ -77,6 +78,7 @@ function ColaboradorEditPage() {
       colaborador={query.data}
       readOnly={readOnly}
       contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nome}
+      {...(moduloEmFoco ? { moduloEmFoco } : {})}
     />
   )
 }

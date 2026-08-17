@@ -67,10 +67,6 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface LoginFalhou {
-  detail: string;
-}
-
 export interface LoginOk {
   mustChangePassword: boolean;
 }
@@ -392,17 +388,49 @@ export interface PartnerWriteRequest {
   parentId?: string | null;
 }
 
+/**
+ * Um campo que a validação recusou.
+ */
+export interface ProblemFieldError {
+  /** Caminho do campo no CORPO da requisição, como o cliente o mandou (`code`, `variants.0.priceCents`). É a chave que a tela usa para achar o controle — nome de coluna do banco não serve, porque a tela não conhece o banco. */
+  path: string;
+  /** O que há de errado com ESTE campo, na frase que o operador lê ao lado do controle. */
+  message: string;
+}
+
+/**
+ * O formato ÚNICO de erro do contrato — RFC 9457 Problem Details, servido como `application/problem+json`. Toda resposta 4xx/5xx aponta para cá: sem formato único, cada caminho inventaria o seu e a tela trataria caso a caso. **`title` e `status` são obrigatórios** — `title` é o rótulo estável do TIPO de erro (não muda com a instância) e `status` repete o da resposta, porque o corpo circula fora dela (log, fila, tela). `detail` é a frase daquele caso, e é a única informação acionável que o servidor escolheu dar: a tela mostra o que veio, nunca \"algo deu errado\".\n\nA RFC permite MEMBROS DE EXTENSÃO, e o contrato usa dois: `fields` (validação por campo) e `existingPartnerId` (no 409 de documento repetido, que é o que habilita a oferta de vincular). Extensão nova entra aqui, documentada — não solta na resposta de um caminho só.
+ */
 export interface ProblemDetails {
-  /** @nullable */
+  /**
+     * URI que identifica o TIPO do problema. `about:blank` quando o tipo é o próprio status HTTP.
+     * @nullable
+     */
   type?: string | null;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  status?: number | null;
-  /** @nullable */
+  /** Rótulo curto e ESTÁVEL do tipo — não varia de uma ocorrência para outra. É o que a tela mostra como cabeçalho do erro. */
+  title: string;
+  /** O mesmo status da resposta HTTP, repetido no corpo: o problem+json circula fora da resposta (log, fila, tela) e sem ele perde o que aconteceu. */
+  status: number;
+  /**
+     * A frase DESTA ocorrência, para o operador. É a única parte acionável — trocá-la por texto genérico na tela joga fora o que o servidor escolheu dizer.
+     * @nullable
+     */
   detail?: string | null;
-  /** @nullable */
+  /**
+     * URI da ocorrência específica, quando existir.
+     * @nullable
+     */
   instance?: string | null;
+  /**
+     * Validação POR CAMPO — o membro de extensão que deixa o erro chegar ao controle certo do formulário, em vez de virar uma frase solta no topo. Vazio ou ausente = o erro não é de campo. **Viaja no 400 que o contrato já usa para validação; não existe 422 aqui** — dois códigos para a mesma coisa obrigariam cada caminho a escolher um, e a tela a tratar os dois.
+     * @nullable
+     */
+  fields?: ProblemFieldError[] | null;
+  /**
+     * Só no 409 de parceiro com documento já cadastrado: o id do cadastro que já existe. É ele que habilita \"vincular esta empresa ao cadastro existente\" (`POST /api/partners/{id}/link`) — sem o campo, o 409 vira beco sem saída.
+     * @nullable
+     */
+  existingPartnerId?: string | null;
 }
 
 export interface ProductVariantDto {

@@ -1,0 +1,113 @@
+import { Button } from '@/components/ui/button'
+import { ErroDaApi } from '@/data/api-provider'
+import { cn } from '@/lib/utils'
+
+/**
+ * O ERRO DO SERVIDOR, na forma que o contrato promete — um só componente.
+ *
+ * O contrato serve toda falha como `application/problem+json` (RFC 9457) e
+ * **todas as 4xx/5xx apontam para o mesmo schema**. Este componente é o outro
+ * lado dessa promessa: se o formato é um, a tela que o mostra também deve ser
+ * uma. Sem isto, cada tela escreve o seu `<p className="text-destructive">` e as
+ * diferenças aparecem onde mais custam — uma mostra `detail`, outra o
+ * `message`, a terceira "algo deu errado".
+ *
+ * ## O que ele mostra, e por quê nessa ordem
+ *
+ * 1. **`title` do servidor** — rótulo ESTÁVEL do tipo de erro. É o cabeçalho.
+ * 2. **a frase de quem chamou** (`mensagem`) — "Falha ao gravar o produto":
+ *    diz o que se estava fazendo, que o servidor não tem como saber.
+ * 3. **`detail`** — a frase DAQUELA ocorrência, a única parte acionável.
+ * 4. **`fields[]`** — a validação por campo, quando veio.
+ *
+ * Os quatro são fontes diferentes e nenhum substitui o outro: juntar `title` e
+ * `detail` numa string só foi o que fez o repo perder, mais de uma vez, a frase
+ * que o backend escolheu dizer.
+ *
+ * ## `fields[]` aparece aqui E no campo — não é redundância
+ *
+ * O formulário longo rola: o operador que apertou `Gravar` está no RODAPÉ, e o
+ * campo recusado pode estar três telas acima. A lista aqui é o índice do que
+ * recusou; quem leva ao controle é o `aoIrParaCampo`, que a tela liga ao seu
+ * `setFocus` do react-hook-form. Sem a lista, o erro seria invisível de onde o
+ * operador está olhando.
+ *
+ * ## Não é o `FalhaDoPainel`
+ *
+ * Aquele é para CONSULTA que não chegou (rede fora, painel do Dashboard) e
+ * oferece "Tentar de novo". Este é para ESCRITA recusada: o servidor respondeu,
+ * entendeu o pedido e disse não. Repetir a mesma requisição daria o mesmo não —
+ * o que falta é o operador corrigir algo.
+ */
+export function ErroDoServidor({
+  erro,
+  mensagem,
+  aoIrParaCampo,
+  className,
+}: {
+  /** O erro como veio da fronteira. Não-`ErroDaApi` cai no texto genérico. */
+  erro: unknown
+  /** O que a TELA estava fazendo — "Falha ao gravar o produto." */
+  mensagem: string
+  /**
+   * Levar o foco ao controle recusado. Ausente: a lista continua legível, só
+   * não navegável — tela sem formulário (uma exclusão, por exemplo) não tem
+   * para onde levar.
+   */
+  aoIrParaCampo?: (path: string) => void
+  className?: string
+}) {
+  if (!erro) return null
+
+  const daApi = erro instanceof ErroDaApi ? erro : null
+  const campos = daApi?.campos ?? []
+
+  return (
+    <div
+      // `role="alert"`: a escrita foi recusada DEPOIS de um clique do operador —
+      // ele está olhando para outro lugar (o rodapé, o botão) e precisa ser
+      // avisado, não descobrir rolando.
+      role="alert"
+      data-slot="erro-do-servidor"
+      className={cn('flex flex-col gap-1 border-2 border-destructive bg-card p-3', className)}
+    >
+      <p className="font-semibold text-destructive">{daApi?.titulo ?? mensagem}</p>
+
+      {/* Quando o `title` do servidor ocupou o cabeçalho, a frase da tela entra
+          aqui: as duas dizem coisas diferentes e a de baixo é a que dá contexto. */}
+      {daApi?.titulo ? <p className="text-sm">{mensagem}</p> : null}
+
+      {daApi?.detail ? <p className="text-sm text-muted-foreground">{daApi.detail}</p> : null}
+
+      {!daApi ? (
+        // Erro que não é do servidor (rede fora, exceção de código): não há
+        // `detail` para mostrar, e inventar um seria pior que a frase da tela.
+        <p className="text-sm text-muted-foreground">
+          {erro instanceof Error ? erro.message : 'Erro inesperado.'}
+        </p>
+      ) : null}
+
+      {campos.length > 0 ? (
+        <ul className="mt-1 flex flex-col gap-0.5 text-sm">
+          {campos.map((campo) => (
+            <li key={campo.path} className="flex items-baseline gap-2">
+              {aoIrParaCampo ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-1 py-0 underline underline-offset-2"
+                  onClick={() => aoIrParaCampo(campo.path)}
+                >
+                  {campo.path}
+                </Button>
+              ) : (
+                <span className="font-mono text-[0.75rem]">{campo.path}</span>
+              )}
+              <span className="text-muted-foreground">{campo.message}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}

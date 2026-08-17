@@ -18,6 +18,7 @@ import { http, HttpResponse } from 'msw'
 import { handlersDeAtividades } from './atividades'
 import { handlersDoCrm } from './crm'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { problemaJson } from './problema'
 import { handlersDeOrcamento } from './quotes'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -41,13 +42,6 @@ import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
  * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
-
-function problemaJson(status: number, detail: string, extras: Record<string, unknown> = {}) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail, ...extras },
-    { status, headers: { 'content-type': 'application/problem+json' } },
-  )
-}
 
 const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
 const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
@@ -171,7 +165,7 @@ export const handlers = [
     const demoPass = import.meta.env.VITE_DEMO_PASS
     if (demoUser && demoPass) {
       if (corpo.email !== demoUser || corpo.password !== demoPass) {
-        return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })
+        return problemaJson(401, 'E-mail ou senha inválidos.')
       }
       store.logado = true
       store.mustChangePassword = false
@@ -180,7 +174,7 @@ export const handlers = [
     }
     // Senha 'errada' falha de propósito — é o caminho de teste do 401 na tela.
     if (corpo.password === 'errada') {
-      return HttpResponse.json({ detail: 'E-mail ou senha inválidos.' }, { status: 401 })
+      return problemaJson(401, 'E-mail ou senha inválidos.')
     }
     store.logado = true
     // Senha 'temporaria' liga o fluxo de troca obrigatória — exercita a guarda.
@@ -270,8 +264,20 @@ export const handlers = [
     if (!store.logado) return SEM_SESSAO()
     if (!store.activeTenantId) return SEM_EMPRESA()
     const corpo = (await request.json()) as ProductWriteRequest
+    // `fields[]` (extensão do problem+json): o erro chega ao CONTROLE, não vira
+    // frase solta no topo do formulário. Sem ele, o operador de um cadastro de
+    // 20 campos lê "campos obrigatórios" e caça qual.
+    //
+    // A condição fica no `if`, e não numa lista montada antes, porque é ela que
+    // estreita `code`/`description` para `string` no resto do handler — o
+    // contrato os declara anuláveis.
     if (!corpo.code || !corpo.description) {
-      return problemaJson(400, 'Código e descrição são obrigatórios.')
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [
+          ...(corpo.code ? [] : [{ path: 'code', message: 'Informe o código do produto.' }]),
+          ...(corpo.description ? [] : [{ path: 'description', message: 'Informe a descrição.' }]),
+        ],
+      })
     }
     if (store.produtos.some((p) => p.code === corpo.code)) {
       return problemaJson(409, `Já existe produto com o código ${corpo.code}.`)
@@ -433,7 +439,11 @@ export const handlers = [
     if (!store.logado) return SEM_SESSAO()
     if (!store.activeTenantId) return SEM_EMPRESA()
     const corpo = (await request.json()) as PartnerWriteRequest
-    if (!corpo.legalName) return problemaJson(400, 'Razão social é obrigatória.')
+    if (!corpo.legalName) {
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [{ path: 'legalName', message: 'Informe a razão social.' }],
+      })
+    }
     const existente = corpo.document
       ? store.parceiros.find((p) => p.document === corpo.document)
       : undefined
@@ -474,7 +484,11 @@ export const handlers = [
       return problemaJson(404, 'Parceiro não encontrado.')
     }
     const corpo = (await request.json()) as PartnerWriteRequest
-    if (!corpo.legalName) return problemaJson(400, 'Razão social é obrigatória.')
+    if (!corpo.legalName) {
+      return problemaJson(400, 'Confira os campos destacados.', {
+        fields: [{ path: 'legalName', message: 'Informe a razão social.' }],
+      })
+    }
     parceiro.legalName = corpo.legalName
     parceiro.tradeName = corpo.tradeName ?? null
     parceiro.document = corpo.document ?? null

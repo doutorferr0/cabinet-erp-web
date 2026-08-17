@@ -1,8 +1,10 @@
+import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
 import type { z } from 'zod'
 
@@ -71,10 +73,38 @@ export function CadastroForm<T extends FieldValues>({
     defaultValues,
   })
 
+  /**
+   * "O `Gravar` já foi apertado" — em `ref` e em estado, de propósito.
+   *
+   * O `ref` é lido pela guarda de navegação no MESMO tique do `submit`: quem
+   * grava navega dentro do `onGravar`, antes de qualquer re-render, e uma
+   * guarda que lesse estado veria o valor do render anterior e barraria a saída
+   * provocada pelo próprio botão. O estado existe para a barra sumir na tela.
+   *
+   * Volta a valer na primeira tecla seguinte: gravação que falhou deixa o
+   * operador editando de novo, e a partir daí há trabalho a proteger outra vez.
+   */
+  const enviadoRef = useRef(false)
+  const [enviado, setEnviado] = useState(false)
+
+  function rearmar() {
+    enviadoRef.current = false
+    if (enviado) setEnviado(false)
+  }
+
+  // Modo consulta não tem o que gravar; e depois do `Gravar` a barra sai de
+  // cena para não pedir de novo o que já foi pedido.
+  const temAlteracaoPendente = form.formState.isDirty && !readOnly && !enviado
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onGravar)}
+        onSubmit={form.handleSubmit((values) => {
+          enviadoRef.current = true
+          setEnviado(true)
+          onGravar(values)
+        })}
+        onChange={rearmar}
         className="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
       >
         {/* `disabled` no fieldset cobre todo descendente sem prop por campo.
@@ -84,6 +114,19 @@ export function CadastroForm<T extends FieldValues>({
         {/* Fora do `<fieldset disabled>`: a banda é identidade, não campo — em
             modo consulta ela continua legível, não apagada com o formulário. */}
         {titulo ? <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
+        {/* Acima do aviso e dos campos, colada no topo: é a única coisa da tela
+            que fala do ESTADO do trabalho, e ela precisa continuar à vista com a
+            página rolada. */}
+        {temAlteracaoPendente ? (
+          <AlteracoesNaoSalvas
+            gravando={gravando}
+            podeSair={() => enviadoRef.current}
+            onDescartar={() => {
+              form.reset()
+              rearmar()
+            }}
+          />
+        ) : null}
         {aviso}
         {/* `min-w-0` nos dois: sem ele, um item de `flex-col` nasce com
             `min-width: auto` e uma grade larga (Orçamento, 14 colunas) empurra
@@ -109,10 +152,19 @@ export function CadastroForm<T extends FieldValues>({
                 <X />
                 Cancelar
               </Button>
-              <Button type="submit" disabled={gravando}>
-                <Check />
-                Gravar
-              </Button>
+              {/* O `Gravar` SOBE para a barra de alterações enquanto ela está no
+                  ar — dois botões com o mesmo rótulo e o mesmo efeito na mesma
+                  tela fariam o operador procurar a diferença entre eles. Com o
+                  formulário limpo ele fica aqui, que é onde o legado o pôs e
+                  onde o cadastro novo (ainda sem uma tecla digitada) precisa
+                  dele: campo preenchido por janela de busca não marca o
+                  formulário como sujo. */}
+              {temAlteracaoPendente ? null : (
+                <Button type="submit" disabled={gravando}>
+                  <Check />
+                  Gravar
+                </Button>
+              )}
             </>
           )}
         </div>

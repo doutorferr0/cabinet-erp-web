@@ -4,6 +4,7 @@ import {
 } from '@/components/cabinet/estado-de-consulta'
 import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { data } from '@/data'
+import { useRotulosDeApoio } from '@/data/lookups-api'
 import { colaborador as esquema } from '@/features/cadastro/modulos'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -19,6 +20,8 @@ function ColaboradorEditPage() {
   const { colaboradorId } = Route.useParams()
   const { modulo: moduloEmFoco, ...search } = Route.useSearch()
   const readOnly = isConsulta(search)
+  // A outra metade da #94: traduz o id de lista de apoio no nome, na leitura.
+  const { carregando: carregandoApoio, rotulos } = useRotulosDeApoio()
   const isNovo = colaboradorId === 'novo'
   const navigate = useNavigate()
 
@@ -27,7 +30,7 @@ function ColaboradorEditPage() {
     queryFn: () => (isNovo ? data.colaboradores.empty() : data.colaboradores.get(colaboradorId, 0)),
   })
 
-  if (query.isPending) {
+  if (query.isPending || carregandoApoio) {
     return <EsqueletoDeCarregamento />
   }
 
@@ -52,10 +55,12 @@ function ColaboradorEditPage() {
   // o uso mais frequente do cadastro, e o caminho de volta à edição é o lápis
   // por módulo. `Incluir` nunca cai aqui — não há o que ler num registro que
   // ainda não existe.
+
   if (readOnly && !isNovo) {
     return (
       <FichaDeCadastro
         entidade={esquema}
+        {...(rotulos ? { rotulos } : {})}
         registro={query.data}
         titulo="Cadastro de Colaboradores"
         contexto={query.data.nome}

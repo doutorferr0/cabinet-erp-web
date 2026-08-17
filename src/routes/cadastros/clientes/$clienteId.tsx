@@ -3,6 +3,7 @@ import {
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
 import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { useRotulosDeApoio } from '@/data/lookups-api'
 import { cliente as esquema } from '@/features/cadastro/modulos'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
@@ -23,13 +24,15 @@ function ClienteEditPage() {
   const { clienteId } = Route.useParams()
   const { modulo: moduloEmFoco, ...search } = Route.useSearch()
   const readOnly = isConsulta(search)
+  // A outra metade da #94: traduz o id de lista de apoio no nome, na leitura.
+  const { carregando: carregandoApoio, rotulos } = useRotulosDeApoio()
   const navigate = useNavigate()
   const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
     papelCliente,
     clienteId,
   )
 
-  if (!isNovo && query.isPending) {
+  if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
   }
 
@@ -82,10 +85,12 @@ function ClienteEditPage() {
   )
 
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103).
+
   if (readOnly && !isNovo) {
     return (
       <FichaDeCadastro
         entidade={esquema}
+        {...(rotulos ? { rotulos } : {})}
         registro={registro}
         titulo="Cadastro de Clientes"
         contexto={registro.nome}

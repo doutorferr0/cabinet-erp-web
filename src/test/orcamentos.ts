@@ -3,7 +3,7 @@ import { linhaPassaNosFiltros } from '@/lib/filtro-de-consulta'
 import type { FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
 import { orcamentos } from '@/mocks/orcamentos'
 import { json, problema } from '@/test/servidor'
-import { type FetchStub, respostaSessao, respostaVinculos } from '@/test/utils'
+import { type FetchStub, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * Servidor falso de `/api/quotes` para os testes de TELA do orçamento.
@@ -31,6 +31,7 @@ export function servidorDeOrcamentos(extra?: FetchStub): FetchStub {
 
     if (caminho === '/auth/me') return respostaSessao()
     if (caminho === '/auth/tenants') return respostaVinculos()
+    if (caminho === '/api/catalog-lookups') return respostaLookups()
 
     if (caminho === '/api/quotes' && metodo === 'GET') {
       const q = endereco.searchParams.get('q')?.toLowerCase() ?? ''

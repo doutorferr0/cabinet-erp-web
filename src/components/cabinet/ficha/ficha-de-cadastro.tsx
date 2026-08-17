@@ -76,6 +76,11 @@ export interface FichaDeCadastroProps {
    * sem módulo, veio do rodapé e é o cadastro inteiro.
    */
   aoEditar: (moduloId?: string) => void
+  /**
+   * Valor guardado → texto legível (id de lista de apoio → nome). Vem de
+   * `useRotulosDeApoio()` na rota; sem ele a ficha imprime o valor cru.
+   */
+  rotulos?: Readonly<Record<string, string>>
 }
 
 export function FichaDeCadastro({
@@ -87,6 +92,7 @@ export function FichaDeCadastro({
   abaixo,
   aoFechar,
   aoEditar,
+  rotulos,
 }: FichaDeCadastroProps) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4" data-slot="ficha-de-cadastro">
@@ -106,6 +112,7 @@ export function FichaDeCadastro({
           <FichaDeModulos
             entidade={entidade}
             registro={registro}
+            {...(rotulos ? { rotulos } : {})}
             onEditarModulo={aoEditar}
             // Preencher e Alterar levam ao mesmo lugar — a diferença entre eles é o
             // estado do módulo, não o destino. Módulo vazio dá ao operador o convite

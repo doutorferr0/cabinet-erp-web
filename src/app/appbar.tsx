@@ -99,10 +99,7 @@ function AbaDeSecao({
             está fora de `@layer` e vence a camada `utilities`), e `index.css`
             não é zona desta issue. Fundo pinta. */}
         {ativa ? (
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-[3px] bg-modulo-cheia"
-          />
+          <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[3px] bg-foreground" />
         ) : null}
       </button>
       <Tooltip>{secao.rotulo}</Tooltip>

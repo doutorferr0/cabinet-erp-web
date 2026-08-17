@@ -227,38 +227,38 @@
 }
 
 [data-modulo="produtos"] {
-  --modulo-01: 186 100% 50%; /* Cyan neon #00E5FF — era Cyan #22D2ED */
-  --modulo-02: 185 92% 90%; /* #CEF9FD */
+  --modulo-01: 187 92% 53%; /* #22D3EE cyan-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 185 96% 90%; /* #CFFAFE cyan-100 */
 }
 
 [data-modulo="estoque"] {
-  --modulo-01: 206 100% 50%; /* Azure neon #0091FF — era Maya blue #61BCFF */
-  --modulo-02: 205 100% 91%; /* #D1ECFF */
+  --modulo-01: 213 94% 68%; /* #60A5FA blue-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 214 95% 93%; /* #DBEAFE blue-100 */
 }
 
 [data-modulo="vendas"] {
-  --modulo-01: 260 100% 62%; /* Violeta neon #7C3DFF — era Purple mimosa #A68AF8 */
-  --modulo-02: 251 84% 95%; /* #ECE8FD */
+  --modulo-01: 255 92% 76%; /* #A78BFA violet-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 251 91% 95%; /* #EDE9FE violet-100 */
 }
 
 [data-modulo="compras"] {
-  --modulo-01: 330 100% 59%; /* Magenta neon #FF2D95 — era Violet #E779F8 */
-  --modulo-02: 287 92% 95%; /* #F9E7FE */
+  --modulo-01: 329 86% 70%; /* #F472B6 pink-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 326 78% 95%; /* #FCE7F3 pink-100 */
 }
 
 [data-modulo="clientes"] {
-  --modulo-01: 293 100% 56%; /* Fúcsia neon #E620FF — era Lavender blue #C7B9FF */
-  --modulo-02: 268 100% 95%; /* #F0E3FF */
+  --modulo-01: 292 91% 73%; /* #E879F9 fuchsia-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 287 100% 95%; /* #FAE8FF fuchsia-100 */
 }
 
 [data-modulo="fornecedores"] {
-  --modulo-01: 231 99% 62%; /* Índigo neon #3D5AFE — era Soft blue #828DF9 */
-  --modulo-02: 226 100% 94%; /* #E0E7FF */
+  --modulo-01: 234 89% 74%; /* #818CF8 indigo-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 226 100% 94%; /* #E0E7FF indigo-100 */
 }
 
 [data-modulo="profissionais"] {
-  --modulo-01: 278 100% 57%; /* Púrpura neon #B026FF — era Easter purple #D47FFB */
-  --modulo-02: 279 100% 95%; /* #F7E8FF */
+  --modulo-01: 270 95% 75%; /* #C084FC purple-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 269 100% 95%; /* #F3E8FF purple-100 */
 }
 
 [data-modulo="crm"] {
@@ -267,13 +267,13 @@
      que já é do Compras: dois módulos no mesmo matiz derrubam a regra "mesmo
      módulo, mesma cor". 151 é a única faixa larga livre — todo o resto se
      aperta entre 186 e 330. */
-  --modulo-01: 151 100% 45%; /* Verde neon #00E676 */
-  --modulo-02: 150 92% 90%; /* #D2FCE7 */
+  --modulo-01: 83 78% 55%; /* #A3E635 lime-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 80 89% 89%; /* #ECFCCB lime-100 */
 }
 
 [data-modulo="boletim"] {
-  --modulo-01: 18 100% 59%; /* Laranja neon #FF6B2C — era Fusion coral #FF8577 */
-  --modulo-02: 7 100% 93%; /* #FFDFDB */
+  --modulo-01: 27 96% 61%; /* #FB923C orange-400 — fill claro, tinta PRETA (ref. brutalism.tailwinddashboard, 2026-08-17) */
+  --modulo-02: 34 100% 92%; /* #FFEDD5 orange-100 */
 }
 
 /* MODO ESCURO — recalculado na fase 3 sobre a paleta da 1.6.

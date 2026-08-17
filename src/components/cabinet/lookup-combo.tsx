@@ -162,7 +162,7 @@ export function LookupCombo({
             disabled={disabled ?? false}
             onClick={() => setAddOpen(true)}
           >
-            <MoreHorizontal className="size-4 text-modulo" />
+            <MoreHorizontal className="size-4" />
           </Button>
           <Dialog isOpen={addOpen} onOpenChange={setAddOpen} className="max-w-sm">
             <DialogHeader>

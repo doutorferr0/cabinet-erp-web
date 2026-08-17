@@ -162,8 +162,10 @@ function ClienteCorpo({
 
       {/* Tudo que trava o Gravar mora aqui, e este bloco não colapsa. */}
       <BlocoDoModulo emFoco={moduloEmFoco} id="identificacao">
+        {/* Ordem do mockup, uma pergunta por linha: quem é (tipo), como chama
+            (nome), como acha (cpf · celular · email). Ativo fecha a primeira
+            linha porque é estado, não dado de preenchimento. */}
         <div className="grid grid-cols-12 items-end gap-3">
-          <TextField name="nome" label="Nome" voz="nome" className="col-span-12 sm:col-span-6" />
           <RadioField
             name="tipoPessoa"
             label="Tipo de pessoa"
@@ -171,17 +173,18 @@ function ClienteCorpo({
               { value: 'FISICA', label: 'FÍSICA' },
               { value: 'JURIDICA', label: 'JURÍDICA' },
             ]}
-            className="col-span-12 sm:col-span-4"
+            className="col-span-8 sm:col-span-9"
           />
-          <CheckboxField name="ativo" label="Ativo" className="col-span-6 sm:col-span-2" />
+          <CheckboxField name="ativo" label="Ativo" className="col-span-4 sm:col-span-3" />
+          <TextField name="nome" label="Nome" voz="nome" className="col-span-12" />
           <TextField
             name="cpf"
             label="CPF"
             placeholder="___.___.___-__"
-            className="col-span-6 sm:col-span-3"
+            className="col-span-6 sm:col-span-4"
           />
-          <TextField name="celular" label="Celular" className="col-span-6 sm:col-span-3" />
-          <TextField name="email" label="Email" className="col-span-12 sm:col-span-6" />
+          <TextField name="celular" label="Celular" className="col-span-6 sm:col-span-4" />
+          <TextField name="email" label="Email" className="col-span-12 sm:col-span-4" />
         </div>
       </BlocoDoModulo>
 

@@ -1,7 +1,13 @@
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { parceiro } from '@/test/parceiros'
 import { json } from '@/test/servidor'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
+import {
+  type FetchStub,
+  renderRoute,
+  respostaLookups,
+  respostaSessao,
+  respostaVinculos,
+} from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -70,6 +76,7 @@ function servidor({ parentId = null as string | null, parentName = null as strin
       })
     }
 
+    if (caminho === '/api/catalog-lookups') return respostaLookups()
     return Promise.reject(new Error(`fetch sem stub: ${url}`))
   }
 

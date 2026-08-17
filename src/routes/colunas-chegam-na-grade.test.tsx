@@ -78,15 +78,15 @@ describe('a coluna que o operador liga chega à grade', () => {
     expect(nome.querySelector('[data-modulo="clientes"]')).not.toBeNull()
   })
 
-  // Colaborador NÃO tem cor atribuída (a nona cor é decisão do user, ver o
-  // schema). Inventar uma para o ponto caber seria pintar módulo por conta
-  // própria — então a grade fica sem ponto, e isso é o comportamento certo.
-  it('Colaboradores — sem cor no schema, o cabeçalho não ganha ponto', async () => {
+  // Colaborador GANHOU cor em 2026-08-17 (PR #188, decisão do user: cor forte
+  // em todas as opções de cadastro) — veste o púrpura de Pessoas
+  // (`profissionais`). O ponto do cabeçalho acompanha o schema.
+  it('Colaboradores — com a cor de Pessoas, o cabeçalho ganha ponto', async () => {
     renderRoute('/cadastros/colaboradores')
 
     await screen.findByText('Cadastro de Colaboradores')
     const nome = await grade().findByRole('columnheader', { name: /Nome/ })
-    expect(nome.querySelector('[data-modulo]')).toBeNull()
+    expect(nome.querySelector('[data-modulo="profissionais"]')).not.toBeNull()
   })
 
   // `CPF / CNPJ` é `col: true` no schema do cliente e a listagem NÃO o desenha.

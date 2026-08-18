@@ -8,6 +8,7 @@ import { camposDoContrato, profissional as esquema } from '@/features/cadastro/m
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
+import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { ProfissionalForm } from '@/features/profissional/profissional-form'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
@@ -94,7 +95,7 @@ function ProfissionalEditPage() {
       <FichaDeCadastro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
-        registro={registro}
+        registro={registroParaFicha(registro, esquema)}
         titulo="Cadastro de Profissional Externo"
         contexto={registro.nomeApresentacao}
         aviso={aviso}

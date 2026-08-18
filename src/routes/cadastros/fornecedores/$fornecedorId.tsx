@@ -9,6 +9,7 @@ import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
+import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -94,7 +95,7 @@ function FornecedorEditPage() {
       <FichaDeCadastro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
-        registro={registro}
+        registro={registroParaFicha(registro, esquema)}
         titulo="Cadastro de Fornecedores"
         contexto={registro.nomeFantasia}
         aviso={aviso}

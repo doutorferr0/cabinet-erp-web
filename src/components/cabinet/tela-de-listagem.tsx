@@ -1,3 +1,4 @@
+import { ConfirmarCancelamento } from '@/components/cabinet/confirmar-cancelamento'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import type { DataTableAction } from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
@@ -22,6 +23,25 @@ export interface DesativacaoProps<T> {
   onConfirmar: () => void
 }
 
+/**
+ * O `Cancelar` das listagens de DOCUMENTO — irmão de `DesativacaoProps`, e
+ * separado dele porque as duas ações dizem coisas opostas ao operador (ver
+ * `ConfirmarCancelamento`). Uma listagem declara uma OU outra: cadastro
+ * desativa, documento cancela.
+ */
+export interface CancelamentoProps<T> {
+  /** Nome do documento em minúscula, como entra na frase ('orçamento'). */
+  documento: string
+  /** Documento marcado para cancelar; `null` fecha o diálogo. */
+  registro: T | null
+  numero: (row: T) => string
+  cancelado: (row: T) => boolean
+  pendente: boolean
+  erro: unknown
+  onFechar: () => void
+  onConfirmar: () => void
+}
+
 export interface TelaDeListagemProps<T> {
   titulo: string
   /** Texto pequeno ao lado do título (ex.: "Banco Principal" em Produtos). */
@@ -31,6 +51,8 @@ export interface TelaDeListagemProps<T> {
   fetcher: TableFetcher<T>
   actions: DataTableAction<T>[]
   desativacao?: DesativacaoProps<T>
+  /** Confirmação do `Cancelar` — só nas listagens de documento. */
+  cancelamento?: CancelamentoProps<T>
   /** Conteúdo extra abaixo da tabela (os botões de rodapé do Orçamento). */
   rodape?: ReactNode
   /**
@@ -100,6 +122,7 @@ export function TelaDeListagem<T>({
   fetcher,
   actions,
   desativacao,
+  cancelamento,
   rodape,
   filtros,
   modoDeFiltro,
@@ -165,6 +188,18 @@ export function TelaDeListagem<T>({
         {...(entidadeDoSchema ? { entidade: entidadeDoSchema } : {})}
       />
       {rodape}
+      {cancelamento?.registro ? (
+        <ConfirmarCancelamento
+          documento={cancelamento.documento}
+          numero={cancelamento.numero(cancelamento.registro)}
+          cancelado={cancelamento.cancelado(cancelamento.registro)}
+          aberto
+          pendente={cancelamento.pendente}
+          erro={mensagemDoErro(cancelamento.erro, 'Não foi possível cancelar. Tente de novo.')}
+          onFechar={cancelamento.onFechar}
+          onConfirmar={cancelamento.onConfirmar}
+        />
+      ) : null}
       {desativacao?.registro ? (
         <ConfirmarDesativacao
           entidade={desativacao.entidade}

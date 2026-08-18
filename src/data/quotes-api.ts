@@ -6,11 +6,11 @@ import {
   createApiListProvider,
   dadosOuErro,
   itemOuNulo,
-  repetirSeValeAPena,
 } from '@/data/api-provider'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
+import { avisar } from '@/lib/avisos'
 import { type Orcamento, orcamentoVazio } from '@/mocks/orcamentos'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DO ORÇAMENTO — `/api/quotes`.
@@ -64,9 +64,16 @@ export const ORDENAVEIS_ORCAMENTO: readonly string[] = [
 /** A mesma lista serve ao `filters`: o contrato publica as duas iguais. */
 export const FILTRAVEIS_ORCAMENTO = ORDENAVEIS_ORCAMENTO
 
-/** Chaves de cache num lugar só: mutação que invalida a chave errada é bug mudo. */
+/**
+ * Chaves de cache num lugar só: mutação que invalida a chave errada é bug mudo.
+ *
+ * São DUAS raízes porque são duas telas com formas diferentes do mesmo
+ * documento — `raiz` é a listagem (`QuoteDto` cru), `detalhe` é a folha
+ * (`Orcamento`), montada pela `TelaDeDocumento` com `queryKeyBase="orcamento"`.
+ */
 export const CHAVES_ORCAMENTO = {
   raiz: ['orcamentos'] as const,
+  detalhe: ['orcamento'] as const,
   um: (id: string) => ['orcamento', id] as const,
 }
 
@@ -200,41 +207,32 @@ export const orcamentosApi: OrcamentosProvider = {
   empty: () => orcamentoVazio(),
 }
 
-/** Um orçamento por id; `null` quando não existe. */
-export function useOrcamento(id: string | null) {
-  return useQuery({
-    queryKey: CHAVES_ORCAMENTO.um(id ?? ''),
-    enabled: id !== null,
-    retry: repetirSeValeAPena,
-    queryFn: async () => {
-      const resposta: RespostaDaApi = await getQuote(id as string)
-      const dto = itemOuNulo<QuoteDetailDto>(resposta, 'o orçamento')
-      return dto ? paraOrcamento(dto) : null
-    },
-  })
-}
-
 /**
- * Toda mutação invalida o mesmo tronco.
+ * Toda mutação invalida o mesmo tronco — e são DOIS troncos, não um.
  *
  * Invalidação fina economizaria requisição e pagaria com a classe de bug que
  * este repo já conhece: gravar um orçamento muda a linha da listagem, o total,
  * e — quando ele vier de uma oportunidade (#89) — o vínculo do outro lado.
+ *
+ * **`['orcamento']` não é prefixo de `['orcamentos']`.** A comparação do
+ * TanStack é elemento a elemento, então invalidar só o singular deixava a
+ * LISTAGEM de fora — que é justamente a tela para onde o `Gravar` navega. Não
+ * dava sintoma porque a listagem remonta e o `staleTime` padrão é zero: a
+ * consulta refazia por outro motivo, e a invalidação estava escrita mas não
+ * valia. Por isso as duas chaves saem de `CHAVES_ORCAMENTO`, que existe
+ * exatamente para isso e até agora não tinha um chamador.
  */
 function useInvalidarOrcamentos() {
   const cliente = useQueryClient()
-  return () => cliente.invalidateQueries({ queryKey: ['orcamento'], exact: false })
+  return () => {
+    void cliente.invalidateQueries({ queryKey: CHAVES_ORCAMENTO.raiz, exact: false })
+    void cliente.invalidateQueries({ queryKey: CHAVES_ORCAMENTO.detalhe, exact: false })
+  }
 }
 
-export function useCriarOrcamento() {
-  const invalidar = useInvalidarOrcamentos()
-  return useMutation({
-    mutationFn: async (corpo: QuoteWriteRequest) => {
-      const resposta: RespostaDaApi = await createQuote(corpo)
-      return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao criar o orçamento.')
-    },
-    onSuccess: invalidar,
-  })
+async function criarOrcamento(corpo: QuoteWriteRequest) {
+  const resposta: RespostaDaApi = await createQuote(corpo)
+  return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao criar o orçamento.')
 }
 
 /**
@@ -242,18 +240,51 @@ export function useCriarOrcamento() {
  * monta a partir do registro que veio do servidor, nunca só dos campos da tela.
  * Campo ausente é campo apagado.
  */
-export function useAlterarOrcamento() {
+async function alterarOrcamento(id: string, corpo: QuoteWriteRequest) {
+  const resposta: RespostaDaApi = await updateQuote(id, corpo)
+  return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao gravar o orçamento.')
+}
+
+/**
+ * O `Gravar` do formulário — UM hook que decide `POST` ou `PUT` pelo id.
+ *
+ * Dois hooks exportados lado a lado é a armadilha que a #207 mediu no CRM:
+ * `useCriarFunil` e `useAlterarFunil` PARECIAM o caminho e não eram, e chamar o
+ * errado gravava calado pela metade. Aqui a decisão é do id — documento novo
+ * nasce com `id` vazio (`orcamentoVazio`), porque número e id são do servidor —
+ * e ela não pode morar na tela: seria a mesma escolha repetida em cada
+ * chamador, com uma chance de errar por chamador.
+ *
+ * A TRADUÇÃO também é daqui (`paraEscrita`): a tela fala a língua da
+ * transcrição e o contrato fala inglês, e é esta fronteira que faz a ponte
+ * desde a #134.
+ */
+export function useGravarOrcamento() {
   const invalidar = useInvalidarOrcamentos()
   return useMutation({
-    mutationFn: async ({ id, corpo }: { id: string; corpo: QuoteWriteRequest }) => {
-      const resposta: RespostaDaApi = await updateQuote(id, corpo)
-      return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao gravar o orçamento.')
+    mutationFn: async (orcamento: Orcamento) => {
+      const corpo = paraEscrita(orcamento)
+      return orcamento.id ? alterarOrcamento(orcamento.id, corpo) : criarOrcamento(corpo)
     },
-    onSuccess: invalidar,
+    onSuccess: (gravado) => {
+      invalidar()
+      // O `Gravar` navega de volta para a listagem no mesmo tique, e a tela que
+      // daria o aviso já está sendo desmontada — por isso a fila do aviso mora
+      // em estado de módulo (#208, `lib/avisos.ts`). Sem isto, a escrita
+      // acontece e o único sinal é a tela fechar, que é também o que acontece
+      // quando se cancela.
+      avisar('Orçamento gravado.', gravado.number ? `Nº ${gravado.number}` : undefined)
+    },
   })
 }
 
-/** Cancelar é verbo PRÓPRIO: documento cancela, não desativa. */
+/**
+ * Cancelar é verbo PRÓPRIO: documento cancela, não desativa.
+ *
+ * Caminho próprio no contrato (`POST /api/quotes/{id}/cancel`) e **terminal** —
+ * não há reabertura publicada. É por isso que a listagem confirma antes: a
+ * desativação de cadastro se desfaz pelo `Alterar`, esta não se desfaz.
+ */
 export function useCancelarOrcamento() {
   const invalidar = useInvalidarOrcamentos()
   return useMutation({
@@ -261,7 +292,13 @@ export function useCancelarOrcamento() {
       const resposta: RespostaDaApi = await cancelQuote(id)
       return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao cancelar o orçamento.')
     },
-    onSuccess: invalidar,
+    onSuccess: (cancelado) => {
+      invalidar()
+      avisar(
+        `Orçamento ${cancelado.number} cancelado.`,
+        'O documento continua na listagem, marcado como cancelado.',
+      )
+    },
   })
 }
 

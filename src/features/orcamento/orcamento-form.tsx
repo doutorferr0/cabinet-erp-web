@@ -6,6 +6,7 @@ import {
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/cabinet/documento'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import {
   DateField,
   LookupSelectField,
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
 import { useLookupOptions } from '@/data/lookups-api'
+import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
 import { PERCENT_ESCALA, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
@@ -44,9 +46,23 @@ export const orcamentoSchema = z.object({
   dataValidade: z.string().nullable(),
   dataFechamento: z.string().nullable(),
   cliente: z.string().min(1, 'Cliente é obrigatório'),
+  // OS IDs PRECISAM ESTAR DECLARADOS, mesmo sem campo na tela: o Zod **remove**
+  // o que não declara, e o que chega ao `onGravar` é o resultado do parse. Sem
+  // esta linha o `PUT` — que é INTEGRAL — sairia com `customerId: undefined` e
+  // apagaria o cliente do documento; a tela mostraria o nome o tempo todo,
+  // porque o nome (`cliente`) está declarado e o id não estava. É a mesma regra
+  // que o formulário da oportunidade escreve: todo campo do corpo de escrita
+  // atravessa o formulário, inclusive o que ele não deixa editar.
+  clienteId: z.string(),
   descricaoObra: z.string(),
   consultor: z.string().nullable(),
+  consultorId: z.string().nullable(),
   profissionalExterno: z.string().nullable(),
+  profissionalId: z.string().nullable(),
+  // Situação do documento: não se edita aqui (muda por `/cancel`), mas some do
+  // registro se não for declarada — e a ficha passaria a mostrar "aberto" para
+  // um orçamento cancelado.
+  cancelado: z.boolean(),
   modoDesconto: z.enum(['PRODUTO', 'GERAL']),
   descontoPercentual: z.number(),
   itens: z.array(
@@ -431,11 +447,16 @@ export function OrcamentoForm({
   readOnly = false,
 }: { orcamento: Orcamento; readOnly?: boolean }) {
   const navigate = useNavigate()
+  const gravar = useGravarOrcamento()
 
   function onGravar(values: Orcamento) {
-    // Mock only: sem backend. Na integração, mutation do TanStack Query.
-    console.info('[mock] Gravar orçamento', values)
-    void navigate({ to: '/vendas/orcamentos' })
+    // O id decide POST ou PUT, e quem decide é a fronteira — ver
+    // `useGravarOrcamento`. A navegação é do SUCESSO: sair da tela depois de uma
+    // recusa mostraria o mesmo desfecho de uma gravação que deu certo, que é
+    // exatamente o defeito que este trecho tinha (`console.info` + navigate).
+    gravar.mutate(values, {
+      onSuccess: () => void navigate({ to: '/vendas/orcamentos' }),
+    })
   }
 
   return (
@@ -445,7 +466,15 @@ export function OrcamentoForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/vendas/orcamentos' })}
       readOnly={readOnly}
+      gravando={gravar.isPending}
     >
+      {/* A recusa do servidor em destaque, ANTES das abas (#138): o `detail` do
+          problem+json é a frase que o backend escolheu para o caso, e sem ela o
+          operador não sabe POR QUE o documento não gravou. Sem mapa de campos —
+          o orçamento não tem, no contrato, validação por campo que a tela saiba
+          apontar; inventar o mapa daria link para campo que o formulário não
+          registra, que é link morto sem aviso. */}
+      <ErroDeGravacao erro={gravar.error} mensagem="Não foi possível gravar o orçamento." />
       <Tabs defaultValue="principal">
         <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
           <AbaPrincipal />

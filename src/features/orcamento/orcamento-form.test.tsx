@@ -29,10 +29,8 @@ describe('tela Orçamento', () => {
     await screen.findByText('ANDRÉ BATALHA')
     expect(screen.getByText('17 registros')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /Data Emissão/ }))
+    await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Data Emissão/ }))
     await user.selectOptions(screen.getByLabelText('Operador do filtro 1'), 'isBetween')
 
     // Faixa FECHADA: 01/08 a 02/08 traz os dois dias inteiros (2 + 3 linhas).
@@ -46,10 +44,8 @@ describe('tela Orçamento', () => {
     const { user } = renderRoute('/vendas/orcamentos', servidorDeOrcamentos())
     await screen.findByText('ANDRÉ BATALHA')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /Data Validade/ }))
+    await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Data Validade/ }))
 
     // `type="date"` é o que dispensa a dependência de calendário e mantém o
     // dado em ISO, que é a convenção do repo.

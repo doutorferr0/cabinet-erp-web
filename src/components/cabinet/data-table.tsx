@@ -1,4 +1,7 @@
-import { ConsultasFavoritas } from '@/components/cabinet/consultas-favoritas'
+import { AbasDeConsulta } from '@/components/cabinet/filtros/abas-de-consulta'
+import { consultaDaUrl } from '@/components/cabinet/filtros/filtro-na-url'
+import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
+import { SincroniaComAUrl } from '@/components/cabinet/filtros/sincronia-com-a-url'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
 import {
   PontoDoModulo,
@@ -8,7 +11,6 @@ import {
 } from '@/components/cabinet/listagem/colunas-da-grade'
 import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
-import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -38,6 +40,7 @@ import { PAGE_SIZE_MAX } from '@/data/api-provider'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import {
+  type ConsultaSalva,
   type FavoritoDeConsulta,
   comPadrao,
   consultaDoFavorito,
@@ -57,6 +60,7 @@ import {
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import {
   ArrowDown,
@@ -186,11 +190,12 @@ export interface VitraDataTableProps<T> {
    */
   filtros?: readonly CampoFiltravel[]
   /**
-   * `lista` (padrão) = query-builder em painel, denso, várias condições à vista.
-   * `menu` = paleta de comandos com etiquetas na própria barra. A escolha é da
-   * tela porque depende do que ela filtra, não do componente.
+   * `pilulas` (padrão) = uma frase removível por condição, na própria barra
+   * (#199). `lista` = query-builder em painel, denso, para montar pergunta
+   * longa. `modulo` = a faixa de chips por assunto do cadastro (#104). A
+   * escolha é da tela porque depende do que ela filtra, não do componente.
    */
-  modoDeFiltro?: 'lista' | 'menu' | 'modulo'
+  modoDeFiltro?: 'pilulas' | 'lista' | 'modulo'
   /**
    * Visões ALTERNATIVAS à tabela. A tabela existe sempre e não entra na lista —
    * é a visão que toda listagem do ERP tem, e declarar a mesma entrada em oito
@@ -216,6 +221,17 @@ export interface VitraDataTableProps<T> {
    * agrupamento — qual campo pertence a que assunto.
    */
   entidade?: EntidadeCadastro
+  /**
+   * A consulta desta listagem VIVE no endereço da janela (#199).
+   *
+   * Ligada, busca e filtro viram `?q=…&filters=…` e a tela volta ao mesmo lugar
+   * depois do F5 ou do link colado no chat. Desligada por padrão porque a MESMA
+   * tabela também é montada dentro do dialog da janela de busca (padrão 5) e
+   * dentro de teste de componente: ali o endereço é o da tela de trás, e
+   * escrever nele faria a busca do dialog filtrar a listagem de baixo ao fechar.
+   * Quem liga é a `TelaDeListagem`, que é a tela inteira.
+   */
+  consultaNoEndereco?: boolean
   /**
    * ABRE a linha — e ligar esta prop muda o gesto da listagem inteira
    * (IndexTable, #198).
@@ -414,7 +430,8 @@ export function VitraDataTable<T>({
   pageSizeOptions = [10, 20, 50],
   rowNumbers = false,
   filtros: camposFiltraveis,
-  modoDeFiltro = 'lista',
+  modoDeFiltro = 'pilulas',
+  consultaNoEndereco = false,
   visoes,
   agrupamentos,
   visaoInicial = VISAO_LISTA,
@@ -422,12 +439,33 @@ export function VitraDataTable<T>({
   aoAbrirLinha,
   acoesDeSelecao,
 }: VitraDataTableProps<T>) {
-  const [qInput, setQInput] = useState('')
+  /**
+   * O ENDEREÇO É O PONTO DE PARTIDA da consulta (#199).
+   *
+   * Lido UMA vez, no primeiro render, e já dentro do estado inicial — semear
+   * por efeito faria a listagem buscar a lista inteira, mandar o resultado para
+   * a tela e só então refazer a consulta filtrada, com o operador vendo os dois.
+   * Fora do modo (`consultaNoEndereco` desligado) devolve o vazio de sempre.
+   */
+  // `warn: false` porque a MESMA tabela também roda fora do router (janela de
+  // busca, teste de componente): ali não há endereço, e avisar no console a
+  // cada render seria ruído sobre um caso que é de projeto.
+  const router = useRouter({ warn: false })
+  const [daUrl] = useState(() =>
+    consultaNoEndereco && router
+      ? consultaDaUrl(
+          router.state.location.search as Record<string, unknown>,
+          camposFiltraveis ?? [],
+        )
+      : { q: '', filtros: [], juncao: 'and' as Juncao },
+  )
+  const [qInput, setQInput] = useState(daUrl.q)
   const [state, setState] = useState<TableQueryState>({
-    q: '',
+    q: daUrl.q,
     sort: null,
     page: 1,
     pageSize: pageSizeOptions[0] ?? 10,
+    ...(daUrl.filtros.length > 0 ? { filtros: daUrl.filtros, juncao: daUrl.juncao } : {}),
   })
   /**
    * SELEÇÃO EM LISTA, não em linha única (#198): o checkbox marca várias, e a
@@ -449,8 +487,8 @@ export function VitraDataTable<T>({
   // Rascunho do filtro, como `qInput` é o rascunho da busca: o painel responde
   // à tecla na hora e só a frase COMPLETA vira consulta, depois do debounce.
   // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
-  const [filtrosInput, setFiltrosInput] = useState<FiltroDaTabela[]>([])
-  const [juncao, setJuncao] = useState<Juncao>('and')
+  const [filtrosInput, setFiltrosInput] = useState<FiltroDaTabela[]>(daUrl.filtros)
+  const [juncao, setJuncao] = useState<Juncao>(daUrl.juncao)
   // Colunas OPCIONAIS ligadas pelo seletor. Vazio = a grade que a tela declarou,
   // e é por isso que o estado nasce aqui e não na tela: quem monta a listagem
   // escolhe a identidade da linha, não o que o operador quer ver hoje.
@@ -543,15 +581,55 @@ export function VitraDataTable<T>({
   // O favorito PADRÃO abre a tela: é a consulta que se repete todo dia, e
   // obrigar dois cliques nela seria cobrar pelo caso mais frequente. Roda uma
   // vez por tela — `telaId` só muda quando a listagem muda.
+  // **Endereço explícito VENCE o favorito padrão.** Um link com filtro dentro
+  // foi escolhido agora, por alguém; o padrão foi escolhido uma vez, meses
+  // atrás. Aplicar o padrão por cima faria o link colado no chat abrir noutra
+  // consulta — e o defeito seria invisível para quem mandou o link.
+  const veioDoEndereco = daUrl.q !== '' || daUrl.filtros.length > 0
   useEffect(() => {
+    if (veioDoEndereco) return
     const padrao = favoritoPadrao(lerFavoritos(telaId))
     if (padrao) aplicarConsulta(padrao)
-  }, [telaId, aplicarConsulta])
+  }, [telaId, aplicarConsulta, veioDoEndereco])
 
   function atualizarFavoritos(proximos: FavoritoDeConsulta[]) {
     setFavoritos(proximos)
     gravarFavoritos(telaId, proximos)
   }
+
+  /**
+   * A aba `Todos`: a listagem crua de volta.
+   *
+   * Desfaz TUDO que a consulta salva sabe guardar — filtro, junção, ordenação,
+   * visão, agrupamento e densidade —, e não só o filtro. Voltar para `Todos`
+   * deixando o quadro agrupado no lugar mostraria a listagem inteira com o
+   * desenho da pergunta anterior, e a aba acesa diria que não há pergunta.
+   * A BUSCA fica: ela é texto livre, digitado à parte, e some no `×` do campo.
+   */
+  function limparConsulta() {
+    setFiltrosInput([])
+    setJuncao('and')
+    setVisaoId(visaoInicial)
+    setAgruparPor(agrupamentoInicial)
+    setDensidade('padrao')
+    updateState((s) => ({ ...s, sort: null, page: 1 }))
+  }
+
+  /** O que está montado na tela AGORA, na forma que a consulta salva guarda. */
+  const consultaAtual: ConsultaSalva = {
+    filtros: filtrosValidos(filtrosInput),
+    juncao,
+    sort: state.sort,
+    visao: visaoId,
+    agruparPor,
+    densidade,
+  }
+  const temConsulta =
+    consultaAtual.filtros.length > 0 ||
+    state.sort !== null ||
+    visaoId !== visaoInicial ||
+    agruparPor !== agrupamentoInicial ||
+    densidade !== 'padrao'
 
   /**
    * A visão que desenha colunas pede o conjunto INTEIRO, não uma página.
@@ -618,6 +696,48 @@ export function VitraDataTable<T>({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Não desenha nada: só mantém o endereço contando a mesma história que a
+          barra. Fica sob `consultaNoEndereco` porque a janela de busca monta a
+          MESMA tabela sobre a tela de trás. */}
+      {consultaNoEndereco ? (
+        <SincroniaComAUrl q={state.q} filtros={state.filtros ?? []} juncao={juncao} />
+      ) : null}
+
+      {/* As consultas salvas ficam ACIMA da barra, e não dentro dela: a barra
+          responde "que pergunta estou montando", a tira responde "que perguntas
+          esta tela já tem prontas". Empilhá-las no mesmo popover foi o que
+          manteve a #92 a dois cliques de distância de quem precisava dela. */}
+      {camposFiltraveis && camposFiltraveis.length > 0 ? (
+        <AbasDeConsulta
+          favoritos={favoritos}
+          atual={consultaAtual}
+          temConsulta={temConsulta}
+          onAplicar={aplicarConsulta}
+          onLimpar={limparConsulta}
+          onSalvar={(nome) =>
+            atualizarFavoritos([
+              ...favoritos,
+              {
+                id: novoFavoritoId(),
+                nome,
+                filtros: consultaAtual.filtros,
+                juncao,
+                sort: state.sort,
+                visao: visaoId,
+                agruparPor,
+                densidade,
+                padrao: false,
+              },
+            ])
+          }
+          onRenomear={(id, nome) =>
+            atualizarFavoritos(favoritos.map((f) => (f.id === id ? { ...f, nome } : f)))
+          }
+          onExcluir={(id) => atualizarFavoritos(favoritos.filter((f) => f.id !== id))}
+          onTornarPadrao={(id) => atualizarFavoritos(comPadrao(favoritos, id))}
+        />
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-72">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -635,55 +755,15 @@ export function VitraDataTable<T>({
           // ordem em oito telas, e dois caminhos para "filtrar" lado a lado
           // fariam o operador escolher qual dos dois é o de verdade.
           if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
-            // O painel de filtro e a lista de consultas salvas saem JUNTOS deste
-            // slot: são o mesmo assunto ("que pergunta esta tela está fazendo"),
-            // e separá-los pela barra afastaria montar de repetir.
-            const salvas = (
-              <ConsultasFavoritas
-                key="consultas"
-                favoritos={favoritos}
-                // Visão e agrupamento CONTAM como consulta montada: "o funil em
-                // quadro, agrupado por responsável" é uma pergunta com nome,
-                // mesmo sem filtro nenhum. Comparar com o estado inicial da
-                // tela, e não com um valor fixo, evita oferecer salvar o que a
-                // tela já faz sozinha ao abrir.
-                podeSalvar={
-                  filtrosValidos(filtrosInput).length > 0 ||
-                  state.sort !== null ||
-                  visaoId !== visaoInicial ||
-                  agruparPor !== agrupamentoInicial ||
-                  densidade !== 'padrao'
-                }
-                onAplicar={aplicarConsulta}
-                onSalvar={(nome) =>
-                  atualizarFavoritos([
-                    ...favoritos,
-                    {
-                      id: novoFavoritoId(),
-                      nome,
-                      filtros: filtrosValidos(filtrosInput),
-                      juncao,
-                      sort: state.sort,
-                      visao: visaoId,
-                      agruparPor,
-                      densidade,
-                      padrao: false,
-                    },
-                  ])
-                }
-                onExcluir={(id) => atualizarFavoritos(favoritos.filter((f) => f.id !== id))}
-                onTornarPadrao={(id) => atualizarFavoritos(comPadrao(favoritos, id))}
-              />
-            )
             // O modo por módulo (#104) troca a barra plana pela faixa de
             // chips. Reusa o MESMO `filtrosInput`, então debounce, consulta
-            // favorita e a recusa na fronteira continuam valendo de graça — a
+            // salva e a recusa na fronteira continuam valendo de graça — a
             // diferença é só como o operador monta a pergunta.
             if (modoDeFiltro === 'modulo' && entidade) {
               // O seletor de colunas sai no MESMO slot, e não numa barra
-              // própria: filtro, consulta salva e colunas respondem juntos "como
-              // esta listagem está montada agora". Separá-los faria o operador
-              // procurar em dois lugares o ajuste da mesma pergunta.
+              // própria: filtro e colunas respondem juntos "como esta listagem
+              // está montada agora". Separá-los faria o operador procurar em
+              // dois lugares o ajuste da mesma pergunta.
               return (
                 <span key={action.id} className="contents">
                   <FiltroPorModulo
@@ -697,21 +777,10 @@ export function VitraDataTable<T>({
                     fixas={declaradas}
                     onChange={setColunasExtras}
                   />
-                  {salvas}
                 </span>
               )
             }
-            return modoDeFiltro === 'menu' ? (
-              <span key={action.id} className="contents">
-                <MenuDeFiltros
-                  campos={camposFiltraveis}
-                  filtros={filtrosInput}
-                  juncao={juncao}
-                  onFiltrosChange={setFiltrosInput}
-                />
-                {salvas}
-              </span>
-            ) : (
+            return modoDeFiltro === 'lista' ? (
               <span key={action.id} className="contents">
                 <ListaDeFiltros
                   campos={camposFiltraveis}
@@ -720,7 +789,16 @@ export function VitraDataTable<T>({
                   onFiltrosChange={setFiltrosInput}
                   onJuncaoChange={setJuncao}
                 />
-                {salvas}
+              </span>
+            ) : (
+              <span key={action.id} className="contents">
+                <PilulasDeFiltro
+                  campos={camposFiltraveis}
+                  filtros={filtrosInput}
+                  juncao={juncao}
+                  onFiltrosChange={setFiltrosInput}
+                  onJuncaoChange={setJuncao}
+                />
               </span>
             )
           }

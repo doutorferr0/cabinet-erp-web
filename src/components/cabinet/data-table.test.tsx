@@ -391,6 +391,22 @@ describe('VitraDataTable', () => {
   })
 })
 
+/**
+ * Monta uma pílula como o operador monta (#199): `Adicionar filtro` abre a lista
+ * de campos, o campo escolhido nasce como pílula com o popover JÁ aberto, e o
+ * valor se digita nele.
+ */
+async function montarPilula(
+  user: ReturnType<typeof userEvent.setup>,
+  campo: string,
+  valor: string,
+) {
+  await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+  await user.click(await screen.findByRole('menuitem', { name: campo }))
+  await user.type(await screen.findByLabelText('Valor do filtro 1'), valor)
+  await user.keyboard('{Escape}')
+}
+
 describe('VitraDataTable — filtro estruturado', () => {
   const camposFiltraveis: CampoFiltravel[] = [{ id: 'marca', rotulo: 'Marca', variante: 'text' }]
 
@@ -410,9 +426,13 @@ describe('VitraDataTable — filtro estruturado', () => {
     setupComFiltro()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
 
-    // Um só caminho para filtrar: o gatilho é o mesmo botão da barra padrão.
-    expect(screen.getAllByRole('button', { name: /^Filtro/ })).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Filtro — nenhum aplicado' })).toBeInTheDocument()
+    // Um só caminho para filtrar: o gatilho é o mesmo botão da barra padrão,
+    // agora com o rótulo das pílulas (#199).
+    expect(screen.queryByRole('button', { name: /^Filtro/ })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Adicionar filtro/ })).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Adicionar filtro — nenhum aplicado' }),
+    ).toBeInTheDocument()
   })
 
   it('sem campos filtráveis a barra segue com o botão Filtro de sempre', async () => {
@@ -435,9 +455,7 @@ describe('VitraDataTable — filtro estruturado', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     expect(screen.getByText('45 registros')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.type(await screen.findByLabelText('Valor do filtro 1'), 'stella')
+    await montarPilula(user, 'Marca', 'stella')
 
     // Debounce de 300ms, como o da busca: a consulta sai com a frase pronta.
     // 12 marcas cíclicas sobre 44 linhas geradas — STELLA cai em 4 delas.
@@ -449,9 +467,7 @@ describe('VitraDataTable — filtro estruturado', () => {
     const { user } = setupComFiltro()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.type(await screen.findByLabelText('Valor do filtro 1'), 'marca-que-nao-existe')
+    await montarPilula(user, 'Marca', 'marca-que-nao-existe')
 
     // Mandar cadastrar registro que existe e está fora do filtro é o erro que
     // faz o operador duplicar cadastro.
@@ -459,7 +475,7 @@ describe('VitraDataTable — filtro estruturado', () => {
   })
 })
 
-describe('VitraDataTable — consultas favoritas', () => {
+describe('VitraDataTable — consultas salvas em abas', () => {
   const camposFiltraveis: CampoFiltravel[] = [{ id: 'marca', rotulo: 'Marca', variante: 'text' }]
 
   function setupComFavoritos(queryKey: readonly unknown[] = ['produtos-fav']) {
@@ -475,10 +491,14 @@ describe('VitraDataTable — consultas favoritas', () => {
   }
 
   async function montarFiltro(user: ReturnType<typeof userEvent.setup>, valor: string) {
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.type(await screen.findByLabelText('Valor do filtro 1'), valor)
-    await user.keyboard('{Escape}')
+    await montarPilula(user, 'Marca', valor)
+  }
+
+  /** Salva a consulta que está na tela pelo `Salvar consulta` da tira de abas. */
+  async function salvarConsulta(user: ReturnType<typeof userEvent.setup>, nome: string) {
+    await user.click(screen.getByRole('button', { name: /Salvar consulta/ }))
+    await user.type(await screen.findByLabelText('Nome'), nome)
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
   }
 
   beforeEach(() => {
@@ -486,51 +506,64 @@ describe('VitraDataTable — consultas favoritas', () => {
   })
 
   it('sem filtro montado não há o que salvar', async () => {
-    const { user } = setupComFavoritos()
+    setupComFavoritos()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
 
-    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
-    expect(await screen.findByRole('button', { name: /Salvar consulta atual/ })).toBeDisabled()
+    // A tira nasce em `Todos`: nada montado, nada a nomear.
+    expect(screen.getByRole('tab', { name: 'Todos' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: /Salvar consulta/ })).toBeDisabled()
   })
 
-  it('salva a consulta montada e a lista passa a mostrá-la', async () => {
+  it('salva a consulta montada e ela vira ABA no topo da lista', async () => {
     const { user } = setupComFavoritos()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await montarFiltro(user, 'stella')
 
-    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
-    await user.click(await screen.findByRole('button', { name: /Salvar consulta atual/ }))
-    await user.type(await screen.findByLabelText('Nome'), 'Só Stella')
-    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+    // Consulta montada e ainda sem nome: a aba diz isso em vez de deixar a tira
+    // sem nenhuma acesa.
+    expect(await screen.findByRole('tab', { name: 'Não salva' })).toBeInTheDocument()
 
-    expect(await screen.findByRole('button', { name: 'Consultas salvas — 1' })).toBeInTheDocument()
+    await salvarConsulta(user, 'Só Stella')
+
+    const aba = await screen.findByRole('tab', { name: 'Só Stella' })
+    expect(aba).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('tab', { name: 'Não salva' })).not.toBeInTheDocument()
   })
 
-  it('aplicar uma consulta salva reconstrói o filtro na tela', async () => {
+  it('a aba acesa segue o que ESTÁ na tela, não o último clique', async () => {
     const { user } = setupComFavoritos()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await montarFiltro(user, 'stella')
+    await salvarConsulta(user, 'Só Stella')
+    await screen.findByRole('tab', { name: 'Só Stella' })
 
-    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
-    await user.click(await screen.findByRole('button', { name: /Salvar consulta atual/ }))
-    await user.type(await screen.findByLabelText('Nome'), 'Só Stella')
-    await user.click(screen.getByRole('button', { name: 'Gravar' }))
-
-    // Limpa e reaplica pela consulta salva.
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Limpar filtros' }))
-    // `Escape` fecha porque o foco voltou para dentro do painel (`Adicionar
-    // filtro`); sem essa devolução ele cairia num nó já removido.
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Adicionar filtro' })).toHaveFocus()
-    })
-    await user.keyboard('{Escape}')
+    // Volta para `Todos` e reaplica pela aba: é o ciclo completo da consulta
+    // salva, sem passar por popover nenhum.
+    await user.click(screen.getByRole('tab', { name: 'Todos' }))
     expect(await screen.findByText('45 registros')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Todos' })).toHaveAttribute('aria-selected', 'true')
 
-    await user.click(screen.getByRole('button', { name: /^Consultas salvas/ }))
-    await user.click(await screen.findByRole('button', { name: 'Só Stella' }))
-
+    await user.click(screen.getByRole('tab', { name: 'Só Stella' }))
     expect(await screen.findByText('4 registros')).toBeInTheDocument()
+  })
+
+  it('mexer no filtro de uma consulta salva APAGA a aba dela', async () => {
+    const { user } = setupComFavoritos()
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await montarFiltro(user, 'stella')
+    await salvarConsulta(user, 'Só Stella')
+    await screen.findByRole('tab', { name: 'Só Stella' })
+
+    // Um clique remove a pílula — e a tela deixa de ser a consulta salva.
+    await user.click(screen.getByRole('button', { name: /^Remover o filtro 1/ }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Só Stella' })).toHaveAttribute(
+        'aria-selected',
+        'false',
+      )
+    })
+    expect(await screen.findByText('45 registros')).toBeInTheDocument()
   })
 
   it('a consulta PADRÃO abre a tela sozinha — o caso de todo dia é zero clique', async () => {
@@ -573,7 +606,8 @@ describe('VitraDataTable — consultas favoritas', () => {
     setupComFavoritos(['outra-tela'])
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
 
-    expect(screen.getByRole('button', { name: 'Consultas salvas — nenhuma' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Só Stella' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('tab')).toHaveLength(1)
   })
 
   it('favorito gravado ilegível não derruba a listagem', async () => {
@@ -584,7 +618,7 @@ describe('VitraDataTable — consultas favoritas', () => {
     // A tela abre normalmente, sem favorito — perder a listagem por causa de um
     // valor gravado seria defeito; perder o favorito é aborrecimento.
     expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Consultas salvas — nenhuma' })).toBeInTheDocument()
+    expect(screen.getAllByRole('tab')).toHaveLength(1)
   })
 })
 
@@ -752,8 +786,7 @@ describe('VitraDataTable — densidade', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
 
-    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
-    await user.click(screen.getByRole('button', { name: 'Salvar consulta atual…' }))
+    await user.click(screen.getByRole('button', { name: /Salvar consulta/ }))
     await user.type(screen.getByLabelText('Nome'), 'Apertada')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
@@ -762,8 +795,7 @@ describe('VitraDataTable — densidade', () => {
 
     // Volta ao padrão e reaplica o favorito: a densidade tem de voltar junto.
     await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
-    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
-    await user.click(screen.getByRole('button', { name: 'Apertada' }))
+    await user.click(screen.getByRole('tab', { name: 'Apertada' }))
 
     expect(tabela().className).toContain('[&_td]:h-10')
   })
@@ -783,8 +815,7 @@ describe('VitraDataTable — densidade', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
 
-    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
-    await user.click(screen.getByRole('button', { name: 'De antes' }))
+    await user.click(screen.getByRole('tab', { name: 'De antes' }))
 
     expect(tabela().className).toContain('[&_td]:h-10')
   })

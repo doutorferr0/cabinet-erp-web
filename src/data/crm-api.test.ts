@@ -11,6 +11,8 @@ import { ErroDaApi } from '@/data/api-provider'
 import { dadosOuErro, itemOuNulo } from '@/data/api-provider'
 import {
   FILTRAVEIS_OPORTUNIDADE,
+  ORDENAVEIS_FUNIL,
+  ORDENAVEIS_MOTIVO_DE_PERDA,
   ORDENAVEIS_OPORTUNIDADE,
   funis,
   motivosDePerda,
@@ -254,6 +256,32 @@ describe('whitelist de ordenação', () => {
       expect(descricao, `campo ${campo} não está na descrição do contrato`).toContain(
         `\`${campo}\``,
       )
+    }
+  })
+
+  /**
+   * As DUAS irmãs, pelo mesmo motivo — e é por isso que elas continuam
+   * exportadas depois da varredura de órfãos (#186): eram constantes que
+   * ninguém lia, e uma whitelist do contrato que ninguém confere não é
+   * documentação, é palpite guardado. Com a trava aqui, elas passam a ser o que
+   * prometiam ser: a cópia do contrato que quebra o teste quando o contrato
+   * muda.
+   */
+  it('ORDENAVEIS_FUNIL e ORDENAVEIS_MOTIVO_DE_PERDA são o que o contrato aceita', () => {
+    const paths = (
+      contrato as unknown as { paths: Record<string, { get: { description: string } }> }
+    ).paths
+    for (const campo of ORDENAVEIS_FUNIL) {
+      expect(
+        paths['/api/crm/pipelines']?.get?.description,
+        `campo ${campo} não está na descrição do contrato`,
+      ).toContain(`\`${campo}\``)
+    }
+    for (const campo of ORDENAVEIS_MOTIVO_DE_PERDA) {
+      expect(
+        paths['/api/crm/lost-reasons']?.get?.description,
+        `campo ${campo} não está na descrição do contrato`,
+      ).toContain(`\`${campo}\``)
     }
   })
 

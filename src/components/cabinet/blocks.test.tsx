@@ -1,4 +1,4 @@
-import { EnderecoBlock, RedesSociaisBlock, TelefonesBlock } from '@/components/cabinet/blocks'
+import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FormProvider, useForm } from 'react-hook-form'
@@ -22,21 +22,18 @@ function Harness() {
   return (
     <FormProvider {...form}>
       <EnderecoBlock prefix="end" />
-      <TelefonesBlock prefix="tel" />
       <RedesSociaisBlock prefix="rs" />
     </FormProvider>
   )
 }
 
 describe('blocos compartilhados', () => {
-  it('renderiza campos de endereço, telefones e redes sociais', () => {
+  it('renderiza campos de endereço e redes sociais', () => {
     render(<Harness />)
     expect(screen.getByLabelText('Endereço')).toBeInTheDocument()
     expect(screen.getByLabelText('Número')).toBeInTheDocument()
     expect(screen.getByLabelText('Bairro')).toBeInTheDocument()
     expect(screen.getByLabelText('Cidade')).toBeInTheDocument()
-    expect(screen.getByLabelText('Fone Comer.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Celular')).toBeInTheDocument()
     expect(screen.getByLabelText('FaceBook')).toBeInTheDocument()
     expect(screen.getByLabelText('Instagram')).toBeInTheDocument()
   })

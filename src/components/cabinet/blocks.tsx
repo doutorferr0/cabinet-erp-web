@@ -107,28 +107,6 @@ export function EnderecoBlock({
   )
 }
 
-/** Telefones — transcrição §9: Comer., Resid., Celular, FAX (4 variações fixas). */
-export function TelefonesBlock({ prefix }: { prefix: string }) {
-  return (
-    // Doze avos, não `grid-cols-4`: bloco reutilizável precisa alinhar a borda
-    // esquerda com a fileira vizinha da tela (DESIGN.md, Regra dos Doze Avos).
-    <div className="grid grid-cols-12 items-end gap-3">
-      <TextField
-        name={`${prefix}.foneComercial`}
-        label="Fone Comer."
-        className="col-span-6 sm:col-span-3"
-      />
-      <TextField
-        name={`${prefix}.foneResidencial`}
-        label="Fone Resid."
-        className="col-span-6 sm:col-span-3"
-      />
-      <TextField name={`${prefix}.celular`} label="Celular" className="col-span-6 sm:col-span-3" />
-      <TextField name={`${prefix}.fax`} label="FAX" className="col-span-6 sm:col-span-3" />
-    </div>
-  )
-}
-
 /** Comunicadores — transcrição §9: sempre DOIS pares de [combo] + [texto]. */
 export function ComunicadoresBlock({ prefix }: { prefix: string }) {
   const { setValue, watch } = useFormContext()

@@ -25,7 +25,6 @@ import {
   getCrmOpportunity,
   getCrmPipeline,
   listCrmLostReasons,
-  listCrmOpportunities,
   listCrmPipelines,
   listCrmStages,
   listEmployees,
@@ -75,6 +74,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
  * **Posição nunca sai daqui.** `order` é escrito pelo servidor. Índice é
  * posição numa lista que pode estar filtrada; vizinho é um fato sobre dois
  * registros que o servidor confere.
+ *
+ * ## A fronteira publica o que as telas CHAMAM (#186)
+ *
+ * Até 17/08 este módulo exportava dezessete símbolos que ninguém chamava — oito
+ * hooks de `criar`/`alterar` de oportunidade, funil e estágio, dois de detalhe,
+ * um de listagem, e as funções de gravação que só ele mesmo usa. Não eram
+ * inofensivos: **dead code em fronteira de dados é pior que em tela**, porque os
+ * dois conjuntos parecem igualmente oficiais e a próxima tela escolhe o errado.
+ * `useCriarFunil` + `useAlterarFunil` pareciam o caminho, quando o caminho é
+ * `useGravarFunil`, que decide entre `POST` e `PUT` E reconcilia os estágios —
+ * chamar os primeiros gravaria o cabeçalho e perderia as colunas, calado.
+ *
+ * A regra que ficou: **caminho novo do contrato ganha hook quando uma tela o
+ * chama**, não quando o contrato o publica. O cliente gerado já está lá para
+ * quem precisar antes disso.
  */
 
 export const URL_FUNIS = '/api/crm/pipelines'
@@ -170,7 +184,7 @@ export function oportunidadesDoFunil(pipelineId: string): ListProvider<CrmOpport
 }
 
 /** Chaves de cache num lugar só: mutação que invalida a chave errada é bug mudo. */
-export const CHAVES_CRM = {
+const CHAVES_CRM = {
   funis: ['crm', 'funis'] as const,
   funil: (id: string) => ['crm', 'funil', id] as const,
   estagios: (pipelineId: string) => ['crm', 'estagios', pipelineId] as const,
@@ -214,26 +228,6 @@ export function useFunis(apenasAtivos = true) {
 }
 
 /**
- * Um funil por id; `null` quando não existe.
- *
- * Existe para o caminho que a listagem não alcança — link direto para o quadro
- * (`/crm/funil/{id}`) e recarga da página. O 409 de sessão sem empresa ativa
- * NÃO vira `null`: `itemOuNulo` converte só 404, senão quem apenas não escolheu
- * empresa sairia procurando um funil que está lá.
- */
-export function useFunil(id: string | null) {
-  return useQuery({
-    queryKey: CHAVES_CRM.funil(id ?? ''),
-    enabled: id !== null,
-    retry: repetirSeValeAPena,
-    queryFn: async () => {
-      const resposta: RespostaDaApi = await getCrmPipeline(id as string)
-      return itemOuNulo<CrmPipelineDto>(resposta, 'o funil')
-    },
-  })
-}
-
-/**
  * Os estágios do funil — as COLUNAS do quadro, na ordem de `sort`.
  *
  * Array inteiro, sem paginação, e é o contrato que decide assim: quadro com
@@ -249,43 +243,6 @@ export function useEstagios(pipelineId: string | null) {
     queryFn: async () => {
       const resposta: RespostaDaApi = await listCrmStages(pipelineId as string)
       return dadosOuErro<CrmStageDto[]>(resposta, 'Falha ao carregar os estágios do funil.')
-    },
-  })
-}
-
-/**
- * As oportunidades de um recorte. Os filtros são os do contrato e todos
- * opcionais; `open: true` traz só as abertas — filtro por PROPRIEDADE do
- * estágio, que o cliente não teria como montar sem antes listar os estágios
- * ganhos e perdidos de cada funil.
- */
-export function useOportunidades(filtro: ListCrmOpportunitiesParams = {}) {
-  return useQuery({
-    queryKey: CHAVES_CRM.oportunidades(filtro),
-    retry: repetirSeValeAPena,
-    queryFn: async () => {
-      const resposta: RespostaDaApi = await listCrmOpportunities({
-        page: 1,
-        pageSize: PAGE_SIZE_MAX,
-        ...filtro,
-      })
-      return dadosOuErro<{ rows?: CrmOpportunityDto[]; total?: number }>(
-        resposta,
-        'Falha ao carregar as oportunidades.',
-      )
-    },
-  })
-}
-
-/** Uma oportunidade por id; `null` quando não existe. Mesmo DTO da listagem. */
-export function useOportunidade(id: string | null) {
-  return useQuery({
-    queryKey: CHAVES_CRM.oportunidade(id ?? ''),
-    enabled: id !== null,
-    retry: repetirSeValeAPena,
-    queryFn: async () => {
-      const resposta: RespostaDaApi = await getCrmOpportunity(id as string)
-      return itemOuNulo<CrmOpportunityDto>(resposta, 'a oportunidade')
     },
   })
 }
@@ -369,34 +326,6 @@ function useInvalidarCrm() {
   return () => cliente.invalidateQueries({ queryKey: ['crm'] })
 }
 
-export function useCriarOportunidade() {
-  const invalidar = useInvalidarCrm()
-  return useMutation({
-    mutationFn: async (corpo: CrmOpportunityWriteRequest) => {
-      const resposta: RespostaDaApi = await createCrmOpportunity(corpo)
-      return dadosOuErro<CrmOpportunityDto>(resposta, 'Falha ao criar a oportunidade.')
-    },
-    onSuccess: invalidar,
-  })
-}
-
-/**
- * `PUT` substitui a oportunidade INTEIRA — o corpo se monta a partir do
- * registro que veio do servidor, nunca só dos campos da tela. Campo ausente é
- * campo apagado, e a guarda de `cobertura-de-escrita.test.ts` existe porque
- * esse apagamento não tem sintoma nenhum na hora.
- */
-export function useAlterarOportunidade() {
-  const invalidar = useInvalidarCrm()
-  return useMutation({
-    mutationFn: async ({ id, corpo }: { id: string; corpo: CrmOpportunityWriteRequest }) => {
-      const resposta: RespostaDaApi = await updateCrmOpportunity(id, corpo)
-      return dadosOuErro<CrmOpportunityDto>(resposta, 'Falha ao gravar a oportunidade.')
-    },
-    onSuccess: invalidar,
-  })
-}
-
 /**
  * O movimento do quadro: UMA intenção, UMA requisição.
  *
@@ -414,62 +343,6 @@ export function useMoverOportunidade() {
     }: { id: string; destino: CrmOpportunityStagePatchRequest }) => {
       const resposta: RespostaDaApi = await moveCrmOpportunityStage(id, destino)
       return dadosOuErro<CrmOpportunityDto>(resposta, 'Falha ao mover a oportunidade.')
-    },
-    onSuccess: invalidar,
-  })
-}
-
-export function useCriarFunil() {
-  const invalidar = useInvalidarCrm()
-  return useMutation({
-    mutationFn: async (corpo: CrmPipelineWriteRequest) => {
-      const resposta: RespostaDaApi = await createCrmPipeline(corpo)
-      return dadosOuErro<CrmPipelineDto>(resposta, 'Falha ao criar o funil.')
-    },
-    onSuccess: invalidar,
-  })
-}
-
-/** Desativar funil é `active: false` por aqui — não existe DELETE no contrato. */
-export function useAlterarFunil() {
-  const invalidar = useInvalidarCrm()
-  return useMutation({
-    mutationFn: async ({ id, corpo }: { id: string; corpo: CrmPipelineWriteRequest }) => {
-      const resposta: RespostaDaApi = await updateCrmPipeline(id, corpo)
-      return dadosOuErro<CrmPipelineDto>(resposta, 'Falha ao gravar o funil.')
-    },
-    onSuccess: invalidar,
-  })
-}
-
-/**
- * Estágio nasce e vive DENTRO de um funil: o `pipelineId` vem do caminho, e não
- * do corpo, para que os dois não possam divergir.
- */
-export function useCriarEstagio() {
-  const invalidar = useInvalidarCrm()
-  return useMutation({
-    mutationFn: async ({
-      pipelineId,
-      corpo,
-    }: { pipelineId: string; corpo: CrmStageWriteRequest }) => {
-      const resposta: RespostaDaApi = await createCrmStage(pipelineId, corpo)
-      return dadosOuErro<CrmStageDto>(resposta, 'Falha ao criar o estágio.')
-    },
-    onSuccess: invalidar,
-  })
-}
-
-export function useAlterarEstagio() {
-  const invalidar = useInvalidarCrm()
-  return useMutation({
-    mutationFn: async ({
-      pipelineId,
-      id,
-      corpo,
-    }: { pipelineId: string; id: string; corpo: CrmStageWriteRequest }) => {
-      const resposta: RespostaDaApi = await updateCrmStage(pipelineId, id, corpo)
-      return dadosOuErro<CrmStageDto>(resposta, 'Falha ao gravar o estágio.')
     },
     onSuccess: invalidar,
   })
@@ -627,7 +500,7 @@ export function funilParaContrato(funil: Funil): CrmPipelineWriteRequest {
  * inventaria o modelo de venda da empresa — que é justamente o que muda de
  * empresa para empresa, e a razão de existirem vários funis.
  */
-export function funilVazio(): Funil {
+function funilVazio(): Funil {
   return { id: '', nome: '', ordem: '', padrao: false, ativo: true, estagios: [] }
 }
 
@@ -649,7 +522,7 @@ export const estagioVazio: EstagioDeFunil = {
  * `PUT` do funil. `null` quando o funil não existe (404); qualquer outra falha
  * REJEITA, para "não escolheu empresa" não virar "não encontrado".
  */
-export async function obterFunil(id: string): Promise<Funil | null> {
+async function obterFunil(id: string): Promise<Funil | null> {
   const cabecalho: RespostaDaApi = await getCrmPipeline(id)
   const dto = itemOuNulo<CrmPipelineDto>(cabecalho, 'o funil')
   if (!dto) return null
@@ -726,10 +599,7 @@ export interface GravacaoDeFunil {
  * Alterar (PUT → 200). Recebe o corpo montado do registro INTEIRO — `PUT`
  * substitui tudo, e corpo parcial apaga o que não veio.
  */
-export async function escreverFunil(
-  id: string,
-  corpo: CrmPipelineWriteRequest,
-): Promise<CrmPipelineDto> {
+async function escreverFunil(id: string, corpo: CrmPipelineWriteRequest): Promise<CrmPipelineDto> {
   const resposta: RespostaDaApi = id
     ? await updateCrmPipeline(id, corpo)
     : await createCrmPipeline(corpo)
@@ -750,7 +620,7 @@ export async function escreverFunil(
  * A ordem não é estética — no Incluir, o `pipelineId` que as colunas penduram
  * só existe depois do 201.
  */
-export async function gravarFunil({ values, original }: GravacaoDeFunil): Promise<CrmPipelineDto> {
+async function gravarFunil({ values, original }: GravacaoDeFunil): Promise<CrmPipelineDto> {
   const gravado = await escreverFunil(values.id, funilParaContrato(values))
   await gravarEstagios(gravado.id, values.estagios, original?.estagios ?? [])
   return gravado
@@ -900,7 +770,7 @@ export async function obterOportunidade(id: string): Promise<Oportunidade | null
  * escrita o modo de falhar é ERRO ALTO (400 validação, 403 escopo, 409), nunca
  * silêncio.
  */
-export async function gravarOportunidade(valores: Oportunidade): Promise<CrmOpportunityDto> {
+async function gravarOportunidade(valores: Oportunidade): Promise<CrmOpportunityDto> {
   const corpo = oportunidadeParaContrato(valores)
   const resposta: RespostaDaApi = valores.id
     ? await updateCrmOpportunity(valores.id, corpo)

@@ -1,5 +1,5 @@
 import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
-import { acaoDoCabecalho, renderRoute } from '@/test/utils'
+import { acaoNaLinha, renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -33,8 +33,7 @@ describe('tela Fornecedor', () => {
   it('Alterar abre o formulário com o que veio na linha', async () => {
     const { user } = renderRoute('/cadastros/fornecedores', stubDeParceiros())
 
-    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await acaoDoCabecalho(user, 'Alterar')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Alterar')
 
     expect(await screen.findByLabelText('Razão Social')).toHaveValue('STELLA ILUMINAÇÃO LTDA')
     expect(screen.getByLabelText('Nome Fantasia')).toHaveValue('STELLA')
@@ -49,8 +48,7 @@ describe('tela Fornecedor', () => {
   it('o título vem antes do aviso de cobertura', async () => {
     const { user } = renderRoute('/cadastros/fornecedores', stubDeParceiros())
 
-    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await acaoDoCabecalho(user, 'Alterar')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Alterar')
 
     const titulo = await screen.findByRole('heading', { level: 1 })
     const aviso = screen.getByText(/envia ao servidor apenas/)
@@ -64,8 +62,7 @@ describe('tela Fornecedor', () => {
     ])
     const { router, user } = renderRoute('/cadastros/fornecedores', stub)
 
-    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await acaoDoCabecalho(user, 'Alterar')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Alterar')
 
     const fantasia = await screen.findByLabelText('Nome Fantasia')
     await user.clear(fantasia)
@@ -272,8 +269,7 @@ describe('tela Fornecedor', () => {
     const { stub, chamadas } = servidorDeParceiros([parceiro({ code: 'F001', active: true })])
     const { user } = renderRoute('/cadastros/fornecedores', stub)
 
-    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Excluir')
 
     const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('Desativar fornecedor?')
@@ -295,8 +291,7 @@ describe('tela Fornecedor', () => {
     const { stub, chamadas } = servidorDeParceiros()
     const { user } = renderRoute('/cadastros/fornecedores', stub)
 
-    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Excluir')
     await user.click(
       within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }),
     )
@@ -311,8 +306,7 @@ describe('tela Fornecedor', () => {
     const { stub, chamadas } = servidorDeParceiros([parceiro({ active: false })])
     const { user } = renderRoute('/cadastros/fornecedores', stub)
 
-    await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Excluir')
 
     const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('já está inativo')

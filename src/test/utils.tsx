@@ -9,7 +9,7 @@ import {
   createMemoryHistory,
   createRouter,
 } from '@tanstack/react-router'
-import { type RenderResult, render, screen } from '@testing-library/react'
+import { type RenderResult, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
 import { vi } from 'vitest'
@@ -156,21 +156,23 @@ export function renderWithQuery(ui: ReactElement): RenderWithQueryResult {
 }
 
 /**
- * Aciona uma ação SECUNDÁRIA do cabeçalho da página — a que mora no `⋯`.
+ * Marca a linha pelo CHECKBOX e aciona a ação na barra de seleção.
  *
- * Existe porque a barra de sete botões saiu das listagens (Polaris-2, #197):
- * `Alterar`, `Consul.`, `Excluir` e `Imprimir` deixaram de ser botão à vista e
- * passaram a ser item de menu. Os testes de tela alcançavam os quatro por
- * `getByRole('button')`; centralizar o caminho aqui evita que o próximo passo
- * do Polaris (a linha clicável da #198, que vai mudá-lo de novo) precise de
- * uma varredura por dez arquivos de teste.
+ * É o gesto que a #198 instalou: clicar na linha ABRE o registro, então o teste
+ * que quer `Alterar` ou `Excluir` precisa marcar primeiro — como o operador. O
+ * caminho mora aqui porque já mudou duas vezes (barra fixa → `⋯` do cabeçalho →
+ * barra de seleção) e cada mudança custava uma varredura por dez arquivos.
  */
-export async function acaoDoCabecalho(
+export async function acaoNaLinha(
   user: ReturnType<typeof userEvent.setup>,
-  nome: string | RegExp,
+  textoDaLinha: string | RegExp,
+  acao: string | RegExp,
 ) {
-  await user.click(screen.getByRole('button', { name: 'Mais ações' }))
-  await user.click(await screen.findByRole('menuitem', { name: nome }))
+  const celula = await screen.findByText(textoDaLinha)
+  const linha = celula.closest('tr')
+  if (!linha) throw new Error('O texto informado não está numa linha de tabela.')
+  await user.click(within(linha).getByRole('checkbox'))
+  await user.click(screen.getByRole('button', { name: acao }))
 }
 
 /**

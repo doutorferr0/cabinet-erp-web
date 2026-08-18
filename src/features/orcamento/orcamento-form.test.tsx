@@ -10,14 +10,16 @@ describe('tela Orçamento', () => {
 
     expect(await screen.findByText('ANDRÉ BATALHA')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Margem de Lucro' })).toBeInTheDocument()
-    // §8.1: orçamento não se apaga, se cancela. Desde a #197 a ação de registro
-    // mora no `⋯` do cabeçalho — o teste ABRE o menu em vez de conferir a
-    // ausência de um botão, que passaria verde numa tela sem ação nenhuma.
-    // O menu é modal: o que está atrás dele sai da árvore acessível, então o
-    // rodapé é conferido ANTES de abrir.
-    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
-    expect(await screen.findByRole('menuitem', { name: /Cancelar/ })).toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: /Excluir/ })).not.toBeInTheDocument()
+
+    // §8.1: orçamento não se apaga, se cancela. A ação mora na barra de
+    // SELEÇÃO desde a #198, então o teste marca a linha em vez de conferir a
+    // ausência de um botão — ausência passaria verde numa tela sem ação nenhuma.
+    const linha = screen.getByText('ANDRÉ BATALHA').closest('tr')
+    if (!linha) throw new Error('sem linha')
+    await user.click(within(linha).getByRole('checkbox'))
+
+    expect(await screen.findByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Excluir' })).not.toBeInTheDocument()
   })
 
   // "Os orçamentos de agosto", "o que vence esta semana": é a consulta que uma

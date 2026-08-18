@@ -2,7 +2,7 @@ import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json, problema } from '@/test/servidor'
 import {
   type FetchStub,
-  acaoDoCabecalho,
+  acaoNaLinha,
   renderRoute,
   respostaSessao,
   respostaVinculos,
@@ -206,8 +206,7 @@ describe('listagem de produtos', () => {
     const escrita = servidorComEscrita(() => json({ ...LINHA, active: false }))
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
-    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'PENDENTE REDONDO ALUMÍNIO PRETO', 'Excluir')
 
     const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('Desativar produto?')
@@ -253,8 +252,7 @@ describe('listagem de produtos', () => {
     const escrita = servidorComEscrita(() => json({ ...LINHA, active: false }))
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
-    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'PENDENTE REDONDO ALUMÍNIO PRETO', 'Excluir')
     await user.click(
       within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }),
     )
@@ -271,8 +269,7 @@ describe('listagem de produtos', () => {
     })
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
-    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'PENDENTE REDONDO ALUMÍNIO PRETO', 'Excluir')
 
     const dialogo = await screen.findByRole('alertdialog')
     expect(dialogo).toHaveTextContent('já está inativo')
@@ -288,8 +285,7 @@ describe('listagem de produtos', () => {
     )
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
-    await user.click(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO'))
-    await acaoDoCabecalho(user, 'Excluir')
+    await acaoNaLinha(user, 'PENDENTE REDONDO ALUMÍNIO PRETO', 'Excluir')
     const dialogo = await screen.findByRole('alertdialog')
     await user.click(within(dialogo).getByRole('button', { name: 'Desativar' }))
 

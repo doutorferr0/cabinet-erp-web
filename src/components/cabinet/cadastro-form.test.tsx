@@ -2,7 +2,7 @@ import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { acaoDoCabecalho, renderRoute, renderWithQuery } from '@/test/utils'
+import { acaoNaLinha, renderRoute, renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
@@ -87,11 +87,12 @@ describe('CadastroForm em modo consulta', () => {
     expect(screen.queryByRole('button', { name: /Fechar/ })).not.toBeInTheDocument()
   })
 
-  it('ação Consul. da listagem leva ao modo consulta', async () => {
+  it('a LINHA leva ao modo consulta — o botão Consul. deixou de existir', async () => {
     const { router, user } = renderRoute('/cadastros/colaboradores')
 
+    // #198: clicar na linha abre o registro em consulta. O passo "marca a
+    // linha, procura o botão" morreu com ela.
     await user.click(await screen.findByText('CARLA SOUZA'))
-    await acaoDoCabecalho(user, 'Consul.')
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
@@ -100,11 +101,10 @@ describe('CadastroForm em modo consulta', () => {
     expect(await screen.findByRole('button', { name: /Fechar/ })).toBeInTheDocument()
   })
 
-  it('ação Alterar da mesma listagem NÃO entra em consulta', async () => {
+  it('Alterar da barra de seleção NÃO entra em consulta', async () => {
     const { router, user } = renderRoute('/cadastros/colaboradores')
 
-    await user.click(await screen.findByText('CARLA SOUZA'))
-    await acaoDoCabecalho(user, 'Alterar')
+    await acaoNaLinha(user, 'CARLA SOUZA', 'Alterar')
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')

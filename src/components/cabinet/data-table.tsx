@@ -251,11 +251,34 @@ export interface VitraDataTableProps<T> {
    * dia inteiro esperando um clique que quase nunca vem antes delas.
    */
   acoesDeSelecao?: readonly DataTableAction<T>[]
+  /**
+   * A saída do vazio de MÓDULO — "não há nada cadastrado aqui" com o botão que
+   * resolve isso (#201).
+   *
+   * Chega por prop, e não da lista de `actions`, porque desde a #202 o
+   * `Incluir` mora no cabeçalho da PÁGINA: a tabela deixou de conhecê-lo, e a
+   * caixa que anuncia o vazio ficou informando um problema sem oferecer o passo
+   * seguinte. Quem liga é a `TelaDeListagem`, que é dona das duas peças.
+   *
+   * Opcional porque a MESMA tabela é montada na janela de busca (padrão 5): lá
+   * o vazio termina em cadastro que ninguém pediu no meio de outro formulário.
+   */
+  acaoDoVazio?: { label: string; onClick: () => void }
 }
 
 const SEARCH_DEBOUNCE_MS = 300
 
 const SKELETON_ROWS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5'] as const
+
+/**
+ * Larguras do esqueleto, cicladas por linha e coluna.
+ *
+ * Texto de verdade não tem a mesma largura duas vezes; uma grade de barras
+ * iguais lê como carregamento em bloco, não como tabela chegando. Ciclo fixo, e
+ * não sorteio: `Math.random` mudaria o desenho a cada render e o esqueleto
+ * piscaria em larguras diferentes enquanto o operador olha.
+ */
+const LARGURAS_DE_ESQUELETO = ['h-4 w-4/5', 'h-4 w-3/5', 'h-4 w-2/3'] as const
 
 /**
  * Igualdade do filtro por VALOR, não por referência.
@@ -322,10 +345,20 @@ function FalhaDaConsulta({ erro, aoTentar }: { erro: unknown; aoTentar: () => vo
  * nada cadastrado aqui" mandaria cadastrar registro que existe e está do lado de
  * fora do filtro.
  */
-function VazioDaConsulta({ q, temFiltro }: { q: string; temFiltro: boolean }) {
+function VazioDaConsulta({
+  q,
+  temFiltro,
+  acao,
+  aoLimpar,
+}: {
+  q: string
+  temFiltro: boolean
+  acao?: { label: string; onClick: () => void } | undefined
+  aoLimpar: () => void
+}) {
   const houveConsulta = q !== '' || temFiltro
   return (
-    <Empty>
+    <Empty data-testid="vazio-da-consulta">
       <EmptyMedia>
         {houveConsulta ? (
           <Ornamento shape="busca-vazia" tom="info" tamanho={96} />
@@ -345,6 +378,22 @@ function VazioDaConsulta({ q, temFiltro }: { q: string; temFiltro: boolean }) {
                 : 'Ainda não há nada cadastrado aqui.'}
         </EmptyDescription>
       </EmptyHeader>
+      {/* A saída acompanha o diagnóstico, e por isso são DUAS.
+          Módulo vazio termina em cadastrar. Consulta vazia termina em DESFAZER
+          a pergunta — oferecer `Incluir` aqui mandaria cadastrar de novo um
+          registro que provavelmente existe, do lado de fora do termo digitado,
+          e o cadastro duplicado só apareceria semanas depois. */}
+      <EmptyContent>
+        {houveConsulta ? (
+          <Button variant="outline" size="sm" onClick={aoLimpar}>
+            {q && temFiltro ? 'Limpar busca e filtros' : q ? 'Limpar busca' : 'Limpar filtros'}
+          </Button>
+        ) : acao ? (
+          <Button size="sm" onClick={acao.onClick}>
+            {acao.label}
+          </Button>
+        ) : null}
+      </EmptyContent>
     </Empty>
   )
 }
@@ -438,6 +487,7 @@ export function VitraDataTable<T>({
   entidade,
   aoAbrirLinha,
   acoesDeSelecao,
+  acaoDoVazio,
 }: VitraDataTableProps<T>) {
   /**
    * O ENDEREÇO É O PONTO DE PARTIDA da consulta (#199).
@@ -613,6 +663,20 @@ export function VitraDataTable<T>({
     setAgruparPor(agrupamentoInicial)
     setDensidade('padrao')
     updateState((s) => ({ ...s, sort: null, page: 1 }))
+  }
+
+  /**
+   * A saída do vazio de CONSULTA: desfaz a pergunta INTEIRA, busca inclusive.
+   *
+   * `limparConsulta` sozinha não serve aqui e a diferença é a razão de o botão
+   * existir: ela é a aba `Todos`, que preserva a busca de propósito (texto
+   * livre, digitado à parte, morre no `×` do campo). No vazio, quem clica está
+   * dizendo "tire o que escondeu meus registros" — deixar o termo de pé
+   * devolveria a MESMA caixa vazia, e o operador clicaria de novo.
+   */
+  function limparBuscaEFiltros() {
+    setQInput('')
+    limparConsulta()
   }
 
   /** O que está montado na tela AGORA, na forma que a consulta salva guarda. */
@@ -921,7 +985,12 @@ export function VitraDataTable<T>({
             </div>
           ) : rows.length === 0 ? (
             <div className="rounded-data border-2 border-border py-8 shadow-el3">
-              <VazioDaConsulta q={state.q} temFiltro={temFiltro} />
+              <VazioDaConsulta
+                q={state.q}
+                temFiltro={temFiltro}
+                acao={acaoDoVazio}
+                aoLimpar={limparBuscaEFiltros}
+              />
             </div>
           ) : (
             visaoAtiva.render({ rows, agruparPor })
@@ -1041,11 +1110,33 @@ export function VitraDataTable<T>({
             </TableHeader>
             <TableBody>
               {query.isPending ? (
-                SKELETON_ROWS.map((rowKey) => (
-                  <TableRow key={rowKey}>
-                    <TableCell colSpan={totalColSpan}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
+                /* ESQUELETO COM A FORMA DA PÁGINA (#201), e não uma barra por
+                   linha. A barra única (`colSpan` de tudo) desenha uma grade
+                   que não existe: a linha nasce inteira e se parte em cinco
+                   quando o dado chega, com as colunas achando sua largura na
+                   frente do operador. Uma célula por coluna reserva o lugar
+                   certo desde o primeiro quadro — é a diferença entre esperar
+                   e ver a tela pular.
+                   As larguras VARIAM por coluna (nome longo, código curto):
+                   cinco barras idênticas leem como barra de progresso, não
+                   como tabela. */
+                SKELETON_ROWS.map((rowKey, linha) => (
+                  <TableRow key={rowKey} data-testid="linha-de-esqueleto">
+                    {rowNumbers ? (
+                      <TableCell>
+                        <Skeleton className="h-4 w-6" />
+                      </TableCell>
+                    ) : null}
+                    {marcavel ? (
+                      <TableCell>
+                        <Skeleton className="size-4" />
+                      </TableCell>
+                    ) : null}
+                    {table.getAllLeafColumns().map((coluna, indice) => (
+                      <TableCell key={coluna.id} data-testid="celula-de-esqueleto">
+                        <Skeleton className={LARGURAS_DE_ESQUELETO[(linha + indice) % 3]} />
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))
               ) : query.isError ? (
@@ -1057,7 +1148,12 @@ export function VitraDataTable<T>({
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={totalColSpan} className="py-8">
-                    <VazioDaConsulta q={state.q} temFiltro={temFiltro} />
+                    <VazioDaConsulta
+                      q={state.q}
+                      temFiltro={temFiltro}
+                      acao={acaoDoVazio}
+                      aoLimpar={limparBuscaEFiltros}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

@@ -143,6 +143,20 @@ export function TelaDeListagem<T>({
             { aoAbrirLinha: (linha: T) => abrir.onClick?.(linha) }
           : {})}
         {...(filtros ? { filtros } : {})}
+        // A MESMA ação primária do cabeçalho, repetida DENTRO do vazio (#201).
+        // Não é duplicata gratuita: o cabeçalho é onde `Incluir` mora sempre, e
+        // a caixa do vazio é onde o operador está olhando quando descobre que
+        // não há nada — mandá-lo procurar o botão lá em cima é cobrar um passo
+        // por um estado que a própria tela acabou de anunciar. Some assim que
+        // houver uma linha, porque aí o vazio não existe mais.
+        {...(primaria?.onClick && primaria.disabled !== true
+          ? {
+              acaoDoVazio: {
+                label: primaria.label,
+                onClick: () => primaria.onClick?.(null),
+              },
+            }
+          : {})}
         // A tela INTEIRA é dona do endereço; a janela de busca (padrão 5), que
         // monta a mesma tabela por cima dela, não é. Por isso a consulta na URL
         // (#199) se liga aqui, e não dentro do componente.

@@ -53,10 +53,20 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
  * virar várias requisições, e não há transação entre elas (o contrato não
  * oferece uma). As demais abas seguem sem escrita, e a tela diz isso.
  *
- * Nenhum corpo leva `id` ou `tenantId` (decisão do backend: a empresa vem da
- * sessão, o id vem da rota — campo que o cliente não escolhe não existe no
- * corpo). Na escrita, o escopo errado não falha em silêncio: o RLS recusa com
- * 403 e o `detail` chega à tela.
+ * ## Produto é da ORGANIZAÇÃO; preço e estoque são da EMPRESA
+ *
+ * Os dois níveis estão no próprio contrato, e é o que explica a repartição
+ * acima: `ProductWriteRequest` não tem um único campo de empresa, enquanto
+ * `VariantWriteRequest` leva `priceCents` e `minStock`, que são por empresa. O
+ * catálogo é do grupo — as empresas veem os MESMOS produtos e divergem no que de
+ * fato varia. Por isso `GET /api/products` **não é recortado por empresa**, e o
+ * recorte reaparece em `ProductVariantDto`.
+ *
+ * Nenhum corpo leva `id` ou `tenantId` (decisão do backend: o id vem da rota e a
+ * empresa vem da sessão — campo que o cliente não escolhe não existe no corpo).
+ * **O 403 da escrita não é mais "escopo errado":** produto não tem escopo de
+ * empresa para errar. Ele é `mustChangePassword` ou papel sem permissão, e o
+ * `detail` do problem+json é o que diz qual — a tela mostra o que veio.
  *
  * **O que NÃO se escreve:** estoque atual. Desde o kardex (`stock_movements`,
  * append-only), o saldo é derivado de movimento — `POST
@@ -325,7 +335,9 @@ export interface CamposGravaveis {
  * não porque não se grave (agora se grava), mas porque ela tem endpoint PRÓPRIO:
  * `POST/PUT /api/products/{productId}/variants[/{id}]`. Empacotá-la neste corpo
  * seria pedir ao servidor que ignorasse campo. `id` e `tenantId` ficam fora pelo
- * motivo de sempre: o id vai na rota do PUT e a empresa vem da sessão.
+ * motivo de sempre — e no caso do `tenantId` há um motivo a mais: **produto é
+ * cadastro da organização**, então não há empresa a informar. Quem carrega a
+ * parte por empresa é o corpo da VARIANTE.
  */
 export function produtoParaContrato(values: CamposGravaveis): ProductWriteRequest {
   return {
@@ -393,6 +405,11 @@ export function corpoDeDesativacao(linha: ProductDto): ProductWriteRequest {
  * (`stock_movements`, append-only — ADR-009 do backend), então não se escreve
  * nele: escreve-se movimento, por outro endpoint. `Est.Mínimo` continua sendo do
  * cadastro e viaja daqui.
+ *
+ * **É este corpo que carrega a metade POR EMPRESA do catálogo:** `priceCents` e
+ * `minStock` são da empresa ativa, enquanto `finish`/`size` são a identidade da
+ * variante no grupo. Uma requisição, dois níveis — o mesmo arranjo de
+ * `PartnerWriteRequest`.
  *
  * `indice` e `tipoValor` da §6.3 seguem sem lugar no contrato — a grade os mostra
  * e eles não vão a lugar nenhum. É o mesmo tipo de buraco das outras abas, e a
@@ -482,9 +499,9 @@ export interface GravacaoDeProduto {
  * formulário — a desativação parte da linha da listagem.
  *
  * Toda falha vira `ErroDaApi` com o `detail` do problem+json — na escrita o
- * modo de falhar é ERRO ALTO (400 validação, 403 escopo recusado pelo RLS, 409
- * conflito/sem empresa ativa), nunca silêncio. A tela mostra o `detail`, que é
- * a frase que o backend escolheu para o caso.
+ * modo de falhar é ERRO ALTO (400 validação, 403 sem permissão, 409 conflito ou
+ * sem empresa ativa), nunca silêncio. A tela mostra o `detail`, que é a frase
+ * que o backend escolheu para o caso.
  */
 export async function escreverProduto(id: string, body: ProductWriteRequest): Promise<ProductDto> {
   const resposta: RespostaDaApi = id ? await updateProduct(id, body) : await createProduct(body)

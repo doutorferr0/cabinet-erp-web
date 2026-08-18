@@ -1,4 +1,5 @@
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
@@ -12,7 +13,6 @@ import {
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ErroDaApi } from '@/data/api-provider'
 import { useGravarProduto } from '@/data/produtos-api'
 import { tabelas } from '@/data/tabelas'
 import { parseQuantidade } from '@/lib/formatters'
@@ -552,6 +552,19 @@ function AbaTributacao() {
   )
 }
 
+/**
+ * O que o contrato recusa, e como esses campos se chamam NESTA tela.
+ *
+ * Produto ainda não vem do schema de módulos (só os quatro cadastros vêm), então
+ * aqui o mapa é escrito — curto de propósito: são os dois campos que o servidor
+ * valida hoje (`code`, `description`). Path fora dele continua legível na lista,
+ * só não vira link para um campo que não existe.
+ */
+const CAMPOS_DO_CONTRATO = {
+  code: { nome: 'nossoCodigo', rotulo: 'Nosso Código' },
+  description: { nome: 'nossaDescricao', rotulo: 'Nossa Descrição' },
+} as const
+
 export function ProdutoForm({
   produto,
   readOnly = false,
@@ -601,13 +614,16 @@ export function ProdutoForm({
           A `message` entra junto porque a falha de VARIANTE é a que diz qual
           linha caiu e que o produto já foi gravado — perder isso deixaria o
           operador tentando de novo sobre um estado que já mudou. */}
-      {gravar.isError ? (
-        <p role="alert" className="text-[0.75rem] text-destructive">
-          {gravar.error instanceof ErroDaApi
-            ? [gravar.error.message, gravar.error.detail].filter(Boolean).join(' ')
-            : 'Não foi possível gravar o produto. Tente de novo.'}
-        </p>
-      ) : null}
+      {/* O componente ÚNICO de erro do servidor (#138). Era uma string só, com
+          `message` e `detail` colados — o que separava os quatro papéis já
+          existia no repo e não tinha consumidor. O mapa é curto porque a
+          validação do contrato para produto é curta: o mock recusa `code` e
+          `description`, e são esses dois que o operador precisa alcançar. */}
+      <ErroDeGravacao
+        erro={gravar.error}
+        mensagem="Não foi possível gravar o produto."
+        campos={CAMPOS_DO_CONTRATO}
+      />
       <Tabs defaultValue="dadosPrincipais">
         <TabsList className="flex-wrap">
           <TabsTrigger value="dadosPrincipais">Dados Principais</TabsTrigger>

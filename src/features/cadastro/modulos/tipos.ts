@@ -173,6 +173,30 @@ export function semLastro(entidade: EntidadeCadastro): readonly CampoCadastro[] 
 }
 
 /**
+ * Do `path` que o servidor recusa ao campo que o operador vê — derivado do
+ * schema, não escrito à mão.
+ *
+ * O `fields[]` do problem+json vem em vocabulário de contrato (`legalName`), o
+ * formulário registra `nome` e a etiqueta diz `Nome completo`. Os três já
+ * convivem em cada `CampoCadastro` (`dto`, `campo`, `r`) — e é justamente por
+ * isso que a tradução NÃO pode ser uma tabela à parte: um mapa escrito à mão
+ * envelheceria calado no dia em que um campo trocasse de `dto`, e o operador
+ * voltaria a ler o nome da API sem ninguém perceber.
+ *
+ * Campo sem `dto` fica de fora: o servidor não tem como recusar o que não
+ * recebe.
+ */
+export function camposDoContrato(
+  entidade: EntidadeCadastro,
+): Readonly<Record<string, { nome: string; rotulo: string }>> {
+  const mapa: Record<string, { nome: string; rotulo: string }> = {}
+  for (const campo of camposDe(entidade)) {
+    if (campo.dto && campo.campo) mapa[campo.dto] = { nome: campo.campo, rotulo: campo.r }
+  }
+  return mapa
+}
+
+/**
  * Indicadores que a ficha ainda NÃO tem como calcular — hoje, todos.
  *
  * Separado de `semLastro` porque a falta é de outra natureza: campo sem lastro

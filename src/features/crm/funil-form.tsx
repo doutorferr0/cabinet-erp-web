@@ -1,8 +1,8 @@
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { CheckboxField, TextField } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
-import { ErroDaApi } from '@/data/api-provider'
 import { type Funil, estagioVazio, useGravarFunil } from '@/data/crm-api'
 import { useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -81,17 +81,12 @@ export function FunilForm({
       titulo="Cadastro de Funis"
       {...(contexto ? { contexto } : {})}
     >
-      {gravar.isError ? (
-        // O `detail` do problem+json é a frase que o servidor escolheu; a
-        // `message` é a que diz qual COLUNA caiu e que o funil já foi gravado.
-        // Perder qualquer uma das duas deixa o operador clicando de novo sobre
-        // um estado que já mudou.
-        <p role="alert" className="text-[0.75rem] text-destructive">
-          {gravar.error instanceof ErroDaApi
-            ? [gravar.error.message, gravar.error.detail].filter(Boolean).join(' ')
-            : 'Falha ao gravar o funil.'}
-        </p>
-      ) : null}
+      {/* `message` e `detail` continuam ambos à vista, agora em papéis
+          separados: a `message` é a que diz qual COLUNA caiu e que o funil já
+          foi gravado, e o `detail` é a frase que o servidor escolheu. Perder
+          qualquer uma das duas deixa o operador clicando de novo sobre um
+          estado que já mudou. */}
+      <ErroDeGravacao erro={gravar.error} mensagem="Falha ao gravar o funil." />
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-12 items-end gap-3">

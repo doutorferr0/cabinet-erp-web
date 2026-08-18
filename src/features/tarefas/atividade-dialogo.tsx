@@ -1,4 +1,5 @@
 import type { ActivityDtoKind } from '@/api/gerado'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import {
   DateField,
   SelectIdField,
@@ -14,7 +15,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
-import { ErroDaApi } from '@/data/api-provider'
 import {
   type Atividade,
   atividadeParaContrato,
@@ -154,13 +154,7 @@ export function DialogoDeAtividade({
 
           <TextareaField name="observacao" label="Observação" rows={2} />
 
-          {gravar.isError ? (
-            <p role="alert" className="text-[0.75rem] text-destructive">
-              {gravar.error instanceof ErroDaApi
-                ? [gravar.error.message, gravar.error.detail].filter(Boolean).join(' ')
-                : 'Falha ao gravar a atividade.'}
-            </p>
-          ) : null}
+          <ErroDeGravacao erro={gravar.error} mensagem="Falha ao gravar a atividade." />
 
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>

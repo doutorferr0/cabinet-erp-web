@@ -1,6 +1,27 @@
 import { Button } from '@/components/ui/button'
 import { ErroDaApi } from '@/data/api-provider'
 import { cn } from '@/lib/utils'
+import { useFormContext } from 'react-hook-form'
+
+/**
+ * De que campo da TELA fala este `path` do contrato.
+ *
+ * O servidor recusa `legalName`; o formulário chama o mesmo campo de `nome` e o
+ * operador lê `Nome`. São três vocabulários, e o mapa existe porque nenhum dos
+ * três pode ser deduzido dos outros: imprimir o `path` cru manda o operador
+ * procurar na tela uma palavra que não está nela, e chamar `setFocus(path)`
+ * falaria com um campo que o formulário não tem — silenciosamente, porque o
+ * react-hook-form não reclama de nome inexistente.
+ */
+export interface CampoDoFormulario {
+  /** Nome do campo no react-hook-form — é o que o `setFocus` recebe. */
+  nome: string
+  /** Como o campo se chama NA TELA, do jeito que o `<label>` o escreve. */
+  rotulo: string
+}
+
+/** Contrato → tela, por `path`. Path fora do mapa continua legível, só não navegável. */
+export type CamposDoContrato = Readonly<Record<string, CampoDoFormulario>>
 
 /**
  * O ERRO DO SERVIDOR, na forma que o contrato promete — um só componente.
@@ -42,6 +63,7 @@ import { cn } from '@/lib/utils'
 export function ErroDoServidor({
   erro,
   mensagem,
+  campos: mapaDeCampos,
   aoIrParaCampo,
   className,
 }: {
@@ -49,6 +71,12 @@ export function ErroDoServidor({
   erro: unknown
   /** O que a TELA estava fazendo — "Falha ao gravar o produto." */
   mensagem: string
+  /**
+   * Como cada `path` do contrato se chama nesta tela. Sem o mapa a lista sai
+   * com o nome do contrato (`legalName`), que é jargão de API impresso para
+   * quem está lendo `Razão Social` na etiqueta ao lado.
+   */
+  campos?: CamposDoContrato
   /**
    * Levar o foco ao controle recusado. Ausente: a lista continua legível, só
    * não navegável — tela sem formulário (uma exclusão, por exemplo) não tem
@@ -89,25 +117,83 @@ export function ErroDoServidor({
 
       {campos.length > 0 ? (
         <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-          {campos.map((campo) => (
-            <li key={campo.path} className="flex items-baseline gap-2">
-              {aoIrParaCampo ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto px-1 py-0 underline underline-offset-2"
-                  onClick={() => aoIrParaCampo(campo.path)}
-                >
-                  {campo.path}
-                </Button>
-              ) : (
-                <span className="font-mono text-[0.75rem]">{campo.path}</span>
-              )}
-              <span className="text-muted-foreground">{campo.message}</span>
-            </li>
-          ))}
+          {campos.map((campo) => {
+            const naTela = mapaDeCampos?.[campo.path]
+            return (
+              <li key={campo.path} className="flex items-baseline gap-2">
+                {aoIrParaCampo ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1 py-0 underline underline-offset-2"
+                    onClick={() => aoIrParaCampo(campo.path)}
+                  >
+                    {naTela?.rotulo ?? campo.path}
+                  </Button>
+                ) : (
+                  // Sem tradução o `path` sai em MONO: assim ele se lê como
+                  // nome técnico, e não como a etiqueta de um campo da tela que
+                  // o operador procuraria em vão.
+                  <span className={naTela ? '' : 'font-mono text-[0.75rem]'}>
+                    {naTela?.rotulo ?? campo.path}
+                  </span>
+                )}
+                <span className="text-muted-foreground">{campo.message}</span>
+              </li>
+            )
+          })}
         </ul>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * O MESMO erro, dentro de um formulário — a forma que as telas usam.
+ *
+ * A diferença é só quem liga o `aoIrParaCampo`: aqui ele sai do
+ * `react-hook-form` que já está no ar, sem a tela precisar passar `setFocus`
+ * por prop até o lugar onde o aviso é desenhado. Isso importa porque o aviso é
+ * montado FORA do formulário (a rota o entrega ao `CadastroForm` na prop
+ * `aviso`) e RENDERIZADO dentro dele — quem lê o contexto tem que ser o
+ * componente, não o closure de quem o criou.
+ *
+ * `useFormContext` devolve `null` fora de um formulário, e isso é caso REAL, não
+ * defesa: a ficha (`Consul.`) monta o mesmo bloco de aviso sem formulário
+ * nenhum. Sem contexto, a lista continua legível — só não leva a lugar nenhum,
+ * porque não há campo para focar.
+ */
+export function ErroDeGravacao({
+  erro,
+  mensagem,
+  campos,
+  className,
+}: {
+  erro: unknown
+  mensagem: string
+  campos?: CamposDoContrato
+  className?: string
+}) {
+  const form = useFormContext()
+  const podeFocar = form !== null && campos !== undefined
+
+  return (
+    <ErroDoServidor
+      erro={erro}
+      mensagem={mensagem}
+      {...(campos ? { campos } : {})}
+      {...(className ? { className } : {})}
+      {...(podeFocar
+        ? {
+            aoIrParaCampo: (path: string) => {
+              // Path fora do mapa não vira `setFocus` de nome inventado: o
+              // react-hook-form aceita qualquer string calado, e o operador
+              // clicaria num link que não faz nada.
+              const nome = campos[path]?.nome
+              if (nome) form.setFocus(nome)
+            },
+          }
+        : {})}
+    />
   )
 }

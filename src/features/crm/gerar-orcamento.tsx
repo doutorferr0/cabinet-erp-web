@@ -1,5 +1,5 @@
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
-import { ErroDaApi } from '@/data/api-provider'
 import { type Oportunidade, useGerarOrcamento } from '@/data/crm-api'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { FileText } from 'lucide-react'
@@ -99,13 +99,7 @@ export function GerarOrcamento({ readOnly }: { readOnly: boolean }) {
         </span>
       )}
 
-      {gerar.isError ? (
-        <p role="alert" className="text-[0.75rem] text-destructive">
-          {gerar.error instanceof ErroDaApi
-            ? [gerar.error.message, gerar.error.detail].filter(Boolean).join(' ')
-            : 'Falha ao gerar o orçamento.'}
-        </p>
-      ) : null}
+      <ErroDeGravacao erro={gerar.error} mensagem="Falha ao gerar o orçamento." />
     </div>
   )
 }

@@ -4,7 +4,7 @@ import {
 } from '@/components/cabinet/estado-de-consulta'
 import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { useRotulosDeApoio } from '@/data/lookups-api'
-import { profissional as esquema } from '@/features/cadastro/modulos'
+import { camposDoContrato, profissional as esquema } from '@/features/cadastro/modulos'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
@@ -64,6 +64,9 @@ function ProfissionalEditPage() {
         isNovo={isNovo}
         erro={isNovo ? (vincular.error ?? incluir.error) : gravar.error}
         camposDeEdicao={papelProfissional.camposDeEdicao}
+        // O `fields[]` da recusa LEVA ao campo: o mapa sai do mesmo schema
+        // que desenha o formulário, então não há tabela paralela para envelhecer.
+        campos={camposDoContrato(esquema)}
         {...(jaExiste && !vincular.error
           ? {
               vincular: () =>

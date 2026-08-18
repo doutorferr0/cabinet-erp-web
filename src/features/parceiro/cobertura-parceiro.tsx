@@ -1,12 +1,19 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
+import type { CamposDoContrato } from '@/components/cabinet/erro-do-servidor'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
-import { detalheDoErro } from '@/lib/erros'
 
 export interface CoberturaParceiroProps {
   isNovo: boolean
   erro: unknown
   /** Lista de campos que o Gravar envia na EDIÇÃO — específica de cada papel. */
   camposDeEdicao: string
+  /**
+   * `path` do contrato → campo desta tela, para o `fields[]` da recusa levar ao
+   * controle. Sai de `camposDoContrato(schema)` na rota — o mesmo schema que
+   * desenha o formulário.
+   */
+  campos?: CamposDoContrato
   /** Presente quando o 409 trouxe o cadastro que já existe no grupo. */
   vincular?: () => void
   vinculando?: boolean
@@ -24,12 +31,24 @@ export function CoberturaParceiro({
   isNovo,
   erro,
   camposDeEdicao,
+  campos,
   vincular,
   vinculando,
 }: CoberturaParceiroProps) {
   const falha = erro ? (
-    <div role="alert" className="flex flex-col items-start gap-2">
-      <p className="text-sm text-destructive">Não foi possível gravar. {detalheDoErro(erro)}</p>
+    <div className="flex flex-col items-start gap-2">
+      {/* Era `<p>Não foi possível gravar. {detalheDoErro(erro)}</p>` — uma
+          string só, montada aqui (#138). O componente único separa o que o
+          servidor mandou em quatro papéis: `title` (tipo do erro), a frase da
+          tela, `detail` (a ocorrência) e `fields[]` (a validação por campo).
+          O `fields[]` era o que se perdia: o mock já o manda no 400 dos
+          parceiros e ele não chegava a lugar nenhum. */}
+      <ErroDeGravacao
+        erro={erro}
+        mensagem="Não foi possível gravar este cadastro."
+        {...(campos ? { campos } : {})}
+        className="w-full"
+      />
       {/* Vincular NÃO edita o cadastro do grupo: liga esta empresa a ele. O
           que a empresa vizinha cadastrou fica como está — ajustar depois é o
           Alterar, que é explícito. */}

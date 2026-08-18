@@ -1,13 +1,13 @@
 import type { PartnerDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { DateField, MoneyField, SelectIdField, TextField } from '@/components/cabinet/form-controls'
 import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Input } from '@/components/ui/input'
 import { data } from '@/data'
-import { ErroDaApi } from '@/data/api-provider'
 import {
   type Oportunidade,
   useColaboradoresParaEscolha,
@@ -179,13 +179,7 @@ export function OportunidadeForm({
       titulo="Oportunidade"
       {...(contexto ? { contexto } : {})}
     >
-      {gravar.isError ? (
-        <p role="alert" className="text-[0.75rem] text-destructive">
-          {gravar.error instanceof ErroDaApi
-            ? [gravar.error.message, gravar.error.detail].filter(Boolean).join(' ')
-            : 'Falha ao gravar a oportunidade.'}
-        </p>
-      ) : null}
+      <ErroDeGravacao erro={gravar.error} mensagem="Falha ao gravar a oportunidade." />
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-12 items-end gap-3">

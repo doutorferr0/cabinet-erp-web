@@ -39,7 +39,7 @@ export interface TelaDeListagemProps<T> {
    * como estava.
    */
   filtros?: readonly CampoFiltravel[]
-  modoDeFiltro?: 'lista' | 'menu' | 'modulo'
+  modoDeFiltro?: 'pilulas' | 'lista' | 'modulo'
   /** A entidade do schema de módulos — obrigatória em `modoDeFiltro: 'modulo'`. */
   entidadeDoSchema?: EntidadeCadastro
 }
@@ -143,6 +143,10 @@ export function TelaDeListagem<T>({
             { aoAbrirLinha: (linha: T) => abrir.onClick?.(linha) }
           : {})}
         {...(filtros ? { filtros } : {})}
+        // A tela INTEIRA é dona do endereço; a janela de busca (padrão 5), que
+        // monta a mesma tabela por cima dela, não é. Por isso a consulta na URL
+        // (#199) se liga aqui, e não dentro do componente.
+        consultaNoEndereco
         {...(modoDeFiltro ? { modoDeFiltro } : {})}
         {...(entidadeDoSchema ? { entidade: entidadeDoSchema } : {})}
       />

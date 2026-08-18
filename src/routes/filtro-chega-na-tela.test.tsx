@@ -23,7 +23,8 @@ import { describe, expect, it } from 'vitest'
  *
  * Desde o #179 as listagens têm DUAS formas de controle, e o teste cobra a que
  * cada tela escolheu: os quatro cadastros de parceiro/colaborador desenham a
- * faixa de chips por módulo; as demais, a barra plana com o botão `Filtro`.
+ * faixa de chips por módulo; as demais, as pílulas com o `Adicionar filtro`
+ * (#199).
  * Trocar a forma sem trocar a asserção deixaria o teste verde sobre tela morta
  * de novo — as duas foram revalidadas por mutação nas duas props que guardam o
  * bloco (`filtros` e `entidadeDoSchema`), cada uma vermelha só na tela mutada.
@@ -38,10 +39,10 @@ const servidorDeProdutos: FetchStub = (entrada) => {
   return Promise.reject(new Error(`fetch sem stub no teste: ${url}`))
 }
 
-/** Barra plana: o botão `Filtro` abre o painel de condições. */
+/** Pílulas (#199): o `Adicionar filtro` abre a lista de campos filtráveis. */
 async function exigeFiltroVivo(user: ReturnType<typeof renderRoute>['user']) {
-  await user.click(await screen.findByRole('button', { name: /^Filtro/ }))
-  expect(await screen.findByRole('button', { name: 'Adicionar filtro' })).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: /^Adicionar filtro/ }))
+  expect(await screen.findByPlaceholderText('Buscar campo…')).toBeInTheDocument()
 }
 
 /**

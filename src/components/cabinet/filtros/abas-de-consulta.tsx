@@ -1,0 +1,306 @@
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import type { ConsultaSalva, FavoritoDeConsulta } from '@/lib/favoritos-de-consulta'
+import { cn } from '@/lib/utils'
+import { MoreHorizontal, Plus, Star } from 'lucide-react'
+import { useId, useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
+
+/**
+ * ABAS DE CONSULTA (#199, fecha a #92) — a consulta salva vira aba no topo.
+ *
+ * Antes as consultas salvas moravam num popover `Consultas` na barra de ações:
+ * duas telas de distância entre "esta lista está filtrada" e "existe uma lista
+ * pronta para isto". A aba resolve as duas de uma vez — as consultas ficam
+ * VISÍVEIS sem clique, e trocar entre elas custa um. É o padrão
+ * `polaris.shopify.com/components/…/index-filters`.
+ *
+ * ## A aba ativa é DEDUZIDA, não guardada
+ *
+ * Nada aqui lembra "qual aba foi clicada". A aba acesa é aquela cuja consulta
+ * salva BATE com o que está na tela agora. É o que faz a coisa continuar honesta
+ * quando a pessoa aplica uma consulta e mexe num filtro: a aba apaga e nasce a
+ * `Não salva`, em vez de a tela seguir dizendo "Vencendo" mostrando outra
+ * coisa. Guardar a aba clicada custaria o mesmo e mentiria nesse caso.
+ *
+ * **Campo vazio no favorito é curinga.** `visao: ''` quer dizer "este favorito
+ * não fala de visão" (ver `FavoritoDeConsulta`), e comparar vazio com a visão
+ * atual faria todo favorito gravado antes dos view modes deixar de bater com a
+ * própria consulta.
+ *
+ * ## `Todos` é a aba sem consulta, e por isso ela não se apaga
+ *
+ * A primeira aba é a listagem crua: sem filtro, sem ordenação, com o desenho
+ * padrão da tela. Ela não sai do lugar nem ganha menu — é o chão para onde se
+ * volta, e um `Excluir` ali seria a promessa de apagar a própria listagem.
+ *
+ * ## Sobrevive ao re-login porque não depende de sessão
+ *
+ * A persistência é a mesma da #92: `localStorage` por tela
+ * (`favoritos-de-consulta.ts`). Não há backend de preferência de usuário, e
+ * amarrar a consulta salva à sessão faria o `Sair` levar junto o trabalho de
+ * quem montou a lista.
+ */
+
+export interface AbasDeConsultaProps {
+  favoritos: readonly FavoritoDeConsulta[]
+  /** O que está montado na tela agora — é com isto que cada aba se compara. */
+  atual: ConsultaSalva
+  /** Há algo montado? `false` acende a aba `Todos`. */
+  temConsulta: boolean
+  onAplicar: (favorito: FavoritoDeConsulta) => void
+  /** Volta à listagem crua (aba `Todos`). */
+  onLimpar: () => void
+  onSalvar: (nome: string) => void
+  onRenomear: (id: string, nome: string) => void
+  onExcluir: (id: string) => void
+  onTornarPadrao: (id: string) => void
+}
+
+/** `''` no favorito é curinga: ele não fala daquilo, então não desempata nada. */
+function mesmoOuAusente(doFavorito: string, daTela: string): boolean {
+  return doFavorito === '' || doFavorito === daTela
+}
+
+/**
+ * A consulta salva descreve o que está na tela?
+ *
+ * Compara o que o favorito GUARDA — filtros, junção, ordenação, visão,
+ * agrupamento e densidade —, na ordem em que os filtros foram montados. Ordem
+ * conta porque `filtroId` é chave de linha e some ao gravar: duas listas com as
+ * mesmas condições em ordens diferentes são a mesma pergunta, mas tratá-las como
+ * iguais custaria uma normalização que só serviria para acender aba.
+ */
+export function consultaBate(favorito: FavoritoDeConsulta, atual: ConsultaSalva): boolean {
+  if (favorito.filtros.length !== atual.filtros.length) return false
+  const mesmosFiltros = favorito.filtros.every((filtro, i) => {
+    const outro = atual.filtros[i]
+    if (!outro) return false
+    return (
+      filtro.id === outro.id &&
+      filtro.operador === outro.operador &&
+      JSON.stringify(filtro.valor) === JSON.stringify(outro.valor)
+    )
+  })
+  if (!mesmosFiltros) return false
+  if (favorito.juncao !== atual.juncao) return false
+  if (favorito.sort?.id !== atual.sort?.id || favorito.sort?.desc !== atual.sort?.desc) return false
+  return (
+    mesmoOuAusente(favorito.visao, atual.visao) &&
+    mesmoOuAusente(favorito.agruparPor, atual.agruparPor) &&
+    mesmoOuAusente(favorito.densidade, atual.densidade)
+  )
+}
+
+const ABA_TODOS = 'todos'
+const ABA_NAO_SALVA = 'nao-salva'
+
+/**
+ * Aba como `<button role="tab">`, e não a `Tabs` do react-aria.
+ *
+ * A `Tabs` do repo casa cada aba com um `TabsContent` que ela monta e desmonta.
+ * Aqui o "painel" é a tabela inteira, que vive FORA e guarda o estado da
+ * consulta — deixá-la sob a tira faria trocar de aba remontar a listagem e
+ * perder página, seleção e rascunho de filtro. A tira sozinha é o que se
+ * precisa, e ela cabe em `role="tablist"`.
+ *
+ * Todas as abas continuam alcançáveis por `Tab`/`Shift+Tab` (navegação nativa,
+ * CLAUDE.md) em vez do foco rotativo por seta do APG: a régua deste repo é
+ * interface por clique, sem tecla a memorizar.
+ */
+function Aba({
+  ativa,
+  children,
+  onClick,
+}: { ativa: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={ativa}
+      className={cn(
+        'flex items-center gap-1.5 border-2 border-transparent px-3 py-1.5 text-sm outline-none',
+        '-mb-0.5 border-b-2',
+        'hover:text-foreground focus-visible:focus-ring',
+        ativa
+          ? 'border-b-foreground font-semibold text-foreground'
+          : 'border-b-transparent text-muted-foreground',
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function AbasDeConsulta({
+  favoritos,
+  atual,
+  temConsulta,
+  onAplicar,
+  onLimpar,
+  onSalvar,
+  onRenomear,
+  onExcluir,
+  onTornarPadrao,
+}: AbasDeConsultaProps) {
+  const [salvando, setSalvando] = useState(false)
+  const [renomeando, setRenomeando] = useState<FavoritoDeConsulta | null>(null)
+  const [nome, setNome] = useState('')
+  const campoId = useId()
+
+  const casada = favoritos.find((favorito) => consultaBate(favorito, atual)) ?? null
+  const abaAtiva = casada ? casada.id : temConsulta ? ABA_NAO_SALVA : ABA_TODOS
+
+  function abrirSalvar() {
+    setNome('')
+    setSalvando(true)
+  }
+
+  function abrirRenomear(favorito: FavoritoDeConsulta) {
+    setNome(favorito.nome)
+    setRenomeando(favorito)
+  }
+
+  function confirmar() {
+    const limpo = nome.trim()
+    if (!limpo) return
+    if (renomeando) onRenomear(renomeando.id, limpo)
+    else onSalvar(limpo)
+    setNome('')
+    setSalvando(false)
+    setRenomeando(null)
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end gap-1 border-b-2 border-border">
+        <div role="tablist" aria-label="Consultas salvas" className="flex flex-wrap items-end">
+          <Aba ativa={abaAtiva === ABA_TODOS} onClick={onLimpar}>
+            Todos
+          </Aba>
+
+          {favoritos.map((favorito) => (
+            <Aba
+              key={favorito.id}
+              ativa={abaAtiva === favorito.id}
+              onClick={() => onAplicar(favorito)}
+            >
+              {favorito.padrao ? (
+                <Star aria-label="Abre por padrão" className="size-3.5 fill-current text-modulo" />
+              ) : null}
+              <span className="max-w-40 truncate">{favorito.nome}</span>
+            </Aba>
+          ))}
+
+          {abaAtiva === ABA_NAO_SALVA ? (
+            // A consulta montada à mão também é uma aba: sem ela a tira ficaria
+            // com nenhuma acesa, e "nenhuma aba acesa" se lê como defeito, não
+            // como "esta pergunta ainda não tem nome".
+            <Aba ativa onClick={() => undefined}>
+              <span className="italic">Não salva</span>
+            </Aba>
+          ) : null}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1 pb-1">
+          {casada ? (
+            <DropdownMenuTrigger>
+              <ButtonAria
+                aria-label={`Ações da consulta “${casada.nome}”`}
+                className="grid size-7 place-content-center border-2 border-transparent text-muted-foreground outline-none hover:text-foreground focus-visible:focus-ring"
+              >
+                <MoreHorizontal className="size-4" />
+              </ButtonAria>
+              <DropdownMenu placement="bottom end">
+                <DropdownMenuItem textValue="Renomear" onAction={() => abrirRenomear(casada)}>
+                  Renomear…
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  textValue="Abrir por padrão"
+                  onAction={() => onTornarPadrao(casada.id)}
+                >
+                  {casada.padrao ? 'Não abrir por padrão' : 'Abrir por padrão'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem textValue="Excluir" onAction={() => onExcluir(casada.id)}>
+                  Excluir consulta
+                </DropdownMenuItem>
+              </DropdownMenu>
+            </DropdownMenuTrigger>
+          ) : null}
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={!temConsulta || casada !== null}
+            title={
+              temConsulta
+                ? casada
+                  ? 'Esta consulta já está salva.'
+                  : undefined
+                : 'Monte um filtro ou uma ordenação para salvar.'
+            }
+            onClick={abrirSalvar}
+          >
+            <Plus aria-hidden="true" className="text-modulo" />
+            Salvar consulta
+          </Button>
+        </div>
+      </div>
+
+      <Dialog
+        isOpen={salvando || renomeando !== null}
+        onOpenChange={(aberto) => {
+          if (aberto) return
+          setSalvando(false)
+          setRenomeando(null)
+        }}
+        className="max-w-sm"
+      >
+        <DialogHeader>
+          <DialogTitle>{renomeando ? 'Renomear consulta' : 'Salvar consulta'}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={campoId}>Nome</Label>
+          <Input
+            id={campoId}
+            autoFocus
+            value={nome}
+            placeholder="Ex.: Inativos de São Paulo"
+            onChange={(e) => setNome(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return
+              e.preventDefault()
+              confirmar()
+            }}
+          />
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setSalvando(false)
+              setRenomeando(null)
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button type="button" disabled={!nome.trim()} onClick={confirmar}>
+            Gravar
+          </Button>
+        </DialogFooter>
+      </Dialog>
+    </>
+  )
+}

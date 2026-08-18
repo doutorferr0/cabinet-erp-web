@@ -246,8 +246,7 @@ describe('consulta favorita guarda a visão', () => {
     await screen.findByRole('region', { name: 'Contato' })
     await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'ownerName')
 
-    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
-    await user.click(screen.getByRole('button', { name: 'Salvar consulta atual…' }))
+    await user.click(screen.getByRole('button', { name: /Salvar consulta/ }))
     await user.type(screen.getByLabelText('Nome'), 'Por vendedor')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
@@ -284,8 +283,7 @@ describe('consulta favorita guarda a visão', () => {
     const { user } = renderRoute('/crm/funil/funil-1', servidorDoFunil([]))
 
     await screen.findByRole('region', { name: 'Contato' })
-    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
-    await user.click(screen.getByRole('button', { name: 'Tabelão' }))
+    await user.click(screen.getByRole('tab', { name: 'Tabelão' }))
 
     expect(await screen.findByRole('columnheader', { name: /Título/ })).toBeInTheDocument()
   })
@@ -308,8 +306,7 @@ describe('consulta favorita guarda a visão', () => {
     const { user } = renderRoute('/crm/funil/funil-1', servidorDoFunil([]))
 
     await screen.findByRole('region', { name: 'Contato' })
-    await user.click(screen.getByRole('button', { name: /Consultas salvas/ }))
-    await user.click(screen.getByRole('button', { name: 'De antes' }))
+    await user.click(screen.getByRole('tab', { name: 'De antes' }))
 
     expect(await screen.findByRole('region', { name: 'Contato' })).toBeInTheDocument()
   })

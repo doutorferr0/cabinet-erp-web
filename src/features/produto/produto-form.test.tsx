@@ -175,8 +175,8 @@ describe('listagem de produtos', () => {
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
+    await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Nosso Código' }))
     await user.type(await screen.findByLabelText('Valor do filtro 1'), 'cristal')
 
     await waitFor(() => {

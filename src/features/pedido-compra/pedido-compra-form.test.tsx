@@ -16,10 +16,8 @@ describe('tela Pedido de Compra', () => {
     const { user } = renderRoute('/compras/pedidos')
     await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /Fornecedores/ }))
+    await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Fornecedores/ }))
     await user.type(await screen.findByLabelText('Valor do filtro 1'), 'fillamento')
 
     // O pedido tem Evoled E Fillamento: procurar por um dos dois tem de achá-lo.
@@ -31,10 +29,8 @@ describe('tela Pedido de Compra', () => {
     const { user } = renderRoute('/compras/pedidos')
     await screen.findByText('EVOLED (ATIVA COMERCIAL) - FILLAMENTO')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /Pedido de Venda/ }))
+    await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Pedido de Venda/ }))
     await user.selectOptions(screen.getByLabelText('Operador do filtro 1'), 'isEmpty')
 
     // Operador que dispensa valor: some o campo, e a consulta sai assim mesmo.

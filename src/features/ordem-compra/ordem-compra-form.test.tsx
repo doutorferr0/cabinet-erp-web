@@ -16,10 +16,8 @@ describe('tela Ordem de Compra', () => {
     const { user } = renderRoute('/compras/ordens')
     await screen.findByText('EVOLED (ATIVA COMERCIAL)')
 
-    await user.click(screen.getByRole('button', { name: /^Filtro/ }))
-    await user.click(await screen.findByRole('button', { name: 'Adicionar filtro' }))
-    await user.click(screen.getByRole('button', { name: 'Campo do filtro 1' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /Data Prevista/ }))
+    await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
+    await user.click(await screen.findByRole('menuitem', { name: /Data Prevista/ }))
 
     expect(await screen.findByLabelText('Valor do filtro 1')).toHaveAttribute('type', 'date')
   })

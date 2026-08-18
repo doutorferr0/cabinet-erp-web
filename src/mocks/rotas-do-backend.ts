@@ -29,7 +29,14 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * backend responde algo diferente de 501 nela. Rota adiantada é pior que rota
  * ausente: o mock deixa de responder e a tela toma 501 sem ninguém ter pedido.
  *
- * Estado medido em `cabinet-erp-api` main `246bf6f`: 14 operações.
+ * **MEDIDO ao vivo em 2026-08-18** contra `cabinet-erp-api` main `c34f763` (dois commits além do
+ * `246bf6f` que originou esta lista): as 14 respondem, e nenhuma outra do contrato respondeu.
+ * `src/mocks/ao-vivo.test.ts` reproduz a medição com o par local de pé.
+ *
+ * A sonda que vale é ESCRITA COM CORPO VÁLIDO. Corpo vazio devolve 400 em quase toda operação —
+ * a validação de schema dispara ANTES do handler que responde 501 — e isso faz uma varredura
+ * ingênua ler "implementado" em vinte rotas que não existem. `POST /api/products` com corpo
+ * completo é 501; com `{}` é 400.
  */
 
 type Verbo = 'get' | 'post' | 'put' | 'patch' | 'delete'

@@ -156,6 +156,29 @@ backend, e morre junto com o modo mock no dia em que as duas metades se encontra
 
 Variáveis documentadas em `.env.example` (copiar para `.env.local`, que é gitignored).
 
+**Provar contra o backend real** (feito em 2026-08-18, `cabinet-erp-api` `c34f763`):
+
+```
+cd ../cabinet-erp-api && cp .env.example .env && pnpm setup:dev && pnpm dev   # :3000
+VITE_API_PROXY=http://localhost:3000 pnpm dev                                # :5173
+CABINET_AO_VIVO=1 npx vitest run src/mocks/ao-vivo.test.ts
+```
+
+**O banco de dev nasce VAZIO** — os testes do backend semeiam por Testcontainers, e `setup:dev`
+só migra. Sem um `employees` com hash de senha de verdade (`protegerSenha`), mais `tenants` e
+`employee_company`, não há login real para provar. Semear é dado de ambiente, não código do outro
+repo.
+
+Três armadilhas de MEDIÇÃO, pagas nesta sessão:
+1. **curl no `:5173` não prova a divisão.** O MSW vive no navegador; curl atravessa o proxy e
+   recebe o 501 do backend em rota que, na tela, o mock responderia. curl serve para o cookie e
+   para o backend; a divisão se prova pelo `ao-vivo.test.ts`, que monta os mesmos handlers.
+2. **Os padrões do mock começam com `*` e casam QUALQUER origem** — inclusive `localhost:3000`.
+   Medir o backend de dentro de um processo com MSW ligado devolve a resposta do MOCK, e o
+   resultado parece integração. Precisa de `msw.use(http.X(url, () => passthrough()))` explícito.
+3. **Escrita com corpo vazio mede errado:** a validação de schema responde 400 antes do 501. Só
+   corpo VÁLIDO distingue "implementado" de "no contrato, sem servidor".
+
 **Armadilha medida:** `pnpm check-types` (`tsc -b`) já passou verde com erro real de tipo,
 reaproveitando build info. Quando a mudança mexe em assinatura de provider, conferir com
 `npx tsc -p tsconfig.app.json --noEmit`. E **nunca filtrar a saída da suíte com `tail`** na

@@ -11,13 +11,63 @@ import { detalheDoErro, ehSemPermissao } from '@/lib/erros'
  * seguinte); só o MARKUP de cada estado é compartilhado.
  */
 
-/** `<Skeleton className="h-8 w-64" /> + <Skeleton className="h-64 w-full" />`, igual nas 6 telas de detalhe. */
+/** Pares de campo do esqueleto — largura de rótulo variada, como texto de verdade. */
+const CAMPOS_DO_ESQUELETO = [
+  { id: 'campo-1', rotulo: 'w-20' },
+  { id: 'campo-2', rotulo: 'w-28' },
+  { id: 'campo-3', rotulo: 'w-24' },
+  { id: 'campo-4', rotulo: 'w-32' },
+  { id: 'campo-5', rotulo: 'w-24' },
+  { id: 'campo-6', rotulo: 'w-20' },
+  { id: 'campo-7', rotulo: 'w-28' },
+  { id: 'campo-8', rotulo: 'w-24' },
+] as const
+
+/**
+ * O esqueleto tem a FORMA DA FOLHA que vem depois (#201) — nove telas de
+ * detalhe passam por aqui.
+ *
+ * A versão anterior era uma barra de 8 e um bloco de 64: uma mancha do tamanho
+ * errado, trocada de repente por cabeçalho, tira de abas e duas colunas de
+ * campo. Esqueleto serve para RESERVAR o lugar do que vem; quando o lugar não
+ * bate, ele não evita o salto, só o anuncia mais cedo.
+ *
+ * O que ele desenha é o que toda folha de cadastro tem: título com a ação forte
+ * à direita (#202), abas (§9 padrão 4) e pares rótulo+campo em duas colunas.
+ *
+ * `<output>` (que já é `role="status"`) com o texto: as barras são
+ * `aria-hidden`, e sem a frase quem ouve a tela encontra uma região que mudou e
+ * não tem o que dizer sobre ela.
+ */
 export function EsqueletoDeCarregamento() {
   return (
-    <div className="flex flex-col gap-3">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-64 w-full" />
-    </div>
+    <output className="flex flex-col gap-4" aria-busy="true">
+      <span className="sr-only">Carregando…</span>
+      <div
+        className="flex items-center justify-between gap-4"
+        data-testid="esqueleto-cabecalho"
+        aria-hidden="true"
+      >
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-9 w-28" />
+      </div>
+      <div className="flex gap-2" data-testid="esqueleto-abas" aria-hidden="true">
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-28" />
+      </div>
+      {/* Uma coluna no telefone, duas a partir do `sm` — a mesma quebra dos
+          blocos de formulário. Esqueleto que ignora a quebra promete lado a
+          lado o que vai chegar empilhado. */}
+      <div className="grid gap-4 rounded-data border-2 border-border p-4 shadow-el3 sm:grid-cols-2">
+        {CAMPOS_DO_ESQUELETO.map((campo) => (
+          <div key={campo.id} className="flex flex-col gap-2" data-testid="esqueleto-campo">
+            <Skeleton className={`h-3 ${campo.rotulo}`} aria-hidden="true" />
+            <Skeleton className="h-9 w-full" aria-hidden="true" />
+          </div>
+        ))}
+      </div>
+    </output>
   )
 }
 

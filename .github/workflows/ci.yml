@@ -49,6 +49,15 @@ jobs:
           git diff --exit-code -- src/api/gerado \
             || { echo '::error::src/api/gerado está fora de sincronia com contracts/openapi-v1.json — rode `pnpm codegen` e commite.'; exit 1; }
 
+      # O DESIGN.md publica NÚMERO de contraste e o `.impeccable/design.json` copia
+      # os tokens. Os dois já mentiram: a leva Polaris trocou 12 valores no CSS e
+      # a página seguiu descrevendo a fase 1.6 por cinco dias, com três assentos
+      # lendo aquilo como lei. `--conferir` recalcula do CSS e reprova a divergência.
+      - name: Design doc em dia (tokens e contraste)
+        run: |
+          python3 docs/design/medir-contraste.py --conferir \
+            || { echo '::error::DESIGN.md fora de sincronia com src/index.css — rode `python3 docs/design/medir-contraste.py --escrever` e confira o frontmatter.'; exit 1; }
+
       - name: Lint and format check
         run: pnpm exec biome ci .
 

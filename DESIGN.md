@@ -2,18 +2,18 @@
 name: Cabinet
 description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
 colors:
-  bench: "hsl(216 12% 92%)"
-  sheet: "hsl(220 16% 96%)"
-  sheet-sunken: "hsl(220 13% 92%)"
-  neutral: "hsl(220 13% 92%)"
-  ink: "hsl(0 0% 0%)"
-  ink-muted: "hsl(213 10% 41%)"
-  ink-strong: "hsl(215 13% 30%)"
-  rule-hair: "hsl(210 10% 86%)"
-  surface-disabled: "hsl(216 10% 80%)"
+  bench: "hsl(0 0% 95%)"
+  sheet: "hsl(0 0% 100%)"
+  sheet-sunken: "hsl(0 0% 97%)"
+  neutral: "hsl(0 0% 96%)"
+  ink: "hsl(0 0% 7%)"
+  ink-muted: "hsl(0 0% 30%)"
+  ink-strong: "hsl(0 0% 7%)"
+  rule-hair: "hsl(0 0% 72%)"
+  surface-disabled: "hsl(0 0% 92%)"
   rule-disabled: "hsl(210 8% 40%)"
-  main: "hsl(241 100% 66%)"
-  main-hover: "hsl(241 77% 57%)"
+  main: "hsl(0 0% 7%)"
+  main-hover: "hsl(0 0% 10%)"
   main-foreground: "hsl(0 0% 100%)"
   accent: "hsl(262 97% 76%)"
   info: "hsl(225 71% 75%)"
@@ -113,7 +113,27 @@ effects:
   border-heavy: "3px solid hsl(0 0% 0%)"
 ---
 
-# Design System: Cabinet — fase 1.6 + identidade própria (2026-08-13)
+# Design System: Cabinet — Polaris por baixo, Cabinet por cima (2026-08-18)
+
+> **A UNIÃO (decisão do user, 2026-08-18).** A leva Polaris (#195 em diante) trouxe superfícies,
+> raios e densidade prontos, e levou junto três peças que são a identidade deste sistema. Elas
+> voltam, e a divisão de donos passa a ser esta:
+>
+> | camada | dono | valor |
+> |---|---|---|
+> | fundo, cartão, afundado | Polaris | `#F1F1F1` · branco · `#F7F7F7` |
+> | raios | Polaris | 8px controle/item · 12px cartão/painel |
+> | cinzas de texto, densidade | Polaris | `--muted-foreground` 30% |
+> | **contorno** | **Cabinet** | preto de tinta 2px, **inclusive entre linhas da grade** |
+> | **foco** | **Cabinet** | anel amarelo 3px + fio preto 4px |
+> | **tipografia e hierarquia** | **Cabinet** | Newsreader · Sora · Inter · PT Mono, regra semântica |
+> | **sombra** | **Cabinet** | hard-offset, 5 degraus, nunca preta |
+> | zonas, ornamento, cor de módulo | **Cabinet** | intactos |
+>
+> **A ação é PRETA**, não violeta: ela se distingue do contorno por preenchimento, não por matiz.
+> Toda frase desta página que chame o violeta de "cor que move" descreve a fase 1.6 e está
+> anotada como histórico onde aparece.
+
 
 > **A identidade do Cabinet passou a ser dele** (sessão com o user, 2026-08-13): marca desenhada
 > pelo user em dois pesos, tipografia de 4 famílias com regra SEMÂNTICA, superfícies cinzas no
@@ -143,8 +163,9 @@ trabalho de oito horas. A 1.5 mantém o traço de 2px e a densidade, e troca o r
 2. **Canto por natureza** — o raio diz o que a coisa é: painel 10px, cartão 6px, controle 4px, dado 2px,
    **item 0**. Item é o que encosta em item (chip, aba, página, célula, item de menu, etiqueta): canto
    arredondado ali abre fresta e desmancha a fileira.
-3. **Cor que move** — violeta saturado é a AÇÃO (primária, seleção, aba ativa). O amarelo recua para o
-   que ele sempre foi bom: foco e pendência.
+3. **Cor que move** — ~~violeta saturado~~ **preto cheio** é a AÇÃO (primária, linha selecionada,
+   aba ativa), desde a leva Polaris; o violeta ficou com marca e realce. O amarelo segue no que ele
+   sempre foi bom: **foco** e pendência — e o foco é dele de volta desde 2026-08-18.
 
 Princípios que NÃO mudaram: densidade de comanda vence respiro decorativo · vocabulário literal do
 legado SoftLux · desktop-only, largura inteira · número tabular à direita · mono para identificador ·
@@ -173,33 +194,41 @@ por máscara, jamais preta.
 
 ## Colors
 
-### Superfícies — as duas CINZAS (2026-08-13)
+### Superfícies — fundo cinza e cartão branco (Polaris, 2026-08-18)
 | papel | uso |
 |---|---|
-| Bancada `#E8EAED` (`216 12% 92%`) | fundo do app, sidebar e header |
-| Folha `#F4F5F7` (`220 16% 96%`) | superfície de trabalho: painel, cartão, campo, tabela |
-| Afundado `220 13% 92%` | degrau INTERNO da folha: zebra, compartimento, trilho |
-| Neutro `220 13% 92%` | hover de item, skeleton |
+| Fundo `#F1F1F1` (`0 0% 95%`) | fundo do app, sidebar e header |
+| Cartão `#FFFFFF` (`0 0% 100%`) | superfície de trabalho: painel, cartão, campo, tabela |
+| Afundado `0 0% 97%` | degrau INTERNO do cartão: compartimento, trilho, skeleton |
+| Neutro `0 0% 96%` | hover de item, cabeçalho de grade |
+
+O par anterior (Bancada `#E8EAED` × Folha `#F4F5F7`, 2026-08-13) é histórico. O mecanismo abaixo
+NÃO é: ele vale igual, e com folga menor — o degrau de luz caiu de 1,10:1 para **1,12:1** entre
+duas superfícies que agora são cinza e branco.
 
 **O creme SAIU, e o que se perde junto é um MECANISMO — não um tom.** Até 2026-08-12 bancada e
 folha se separavam por **matiz**: creme quente embaixo, cinza frio em cima (decisão do user de
 2026-08-09). O degrau térmico carregava a separação sozinho, e por isso a diferença de luz podia
-ser mínima. Agora as duas são cinza e a separação é só de **luminância**, de propósito baixa:
-**1,10:1 medido** — o próprio par que o user escolheu, não um desvio dele.
+ser mínima. Hoje o par é fundo cinza × cartão branco e a separação continua sendo só de
+**luminância**, de propósito baixa: **1,12:1 medido**.
 
-**Consequência dura, e é a linha mais importante desta seção: quem delimita a folha passa a ser o
+**Consequência dura, e é a linha mais importante desta seção: quem delimita o cartão é o
 CONTORNO PRETO de 2px.** Confirmado em listagem densa renderizada. Funciona, mas só enquanto o
-traço estiver lá — se alguém propuser "suavizar a borda" depois, a folha não fica mais leve, ela
+traço estiver lá — se alguém propuser "suavizar a borda" depois, o cartão não fica mais leve, ele
 **desaparece**. É a mesma economia do ornamento: o traço delimita, e aí o preenchimento fica livre.
 
-O **Afundado** desceu junto (94% → 92%) para manter os 4 pontos de luz que o separavam da folha; a
-2 pontos a zebra some numa listagem de 25 linhas. Ele cai no mesmo nível de luz da bancada, e tudo
-bem — são regiões que nunca se encostam sem o contorno preto entre elas.
+**Isto já foi desfeito uma vez e custou caro:** a leva Polaris baixou `--border` para 55% de luz
+(3,35:1 sobre o cartão) e a caixa virou sugestão. Voltou a preto de tinta em 2026-08-18 —
+**18,76:1 sobre o cartão, 16,79:1 sobre o fundo** — com teste de invariante segurando o token,
+porque regra escrita em página não impediu a primeira vez.
+
+O **Afundado** fica a 3 pontos de luz do cartão. Ele não é zebra de listagem — a grade separa
+linha por TRAÇO, não por alternância de fundo; o afundado serve compartimento, trilho e skeleton.
 
 **Contrastes remedidos**, todos na §Medição de contraste — daqui em diante os números moram lá, e
-esta seção só guarda o que a medição OBRIGOU: **o texto secundário desceu de L 43% para 41%**,
-porque a 43% ele dava 4,38:1 sobre a zebra, abaixo do piso, na linha alternada de toda listagem.
-Os números anteriores desta página foram medidos contra a bancada creme e **não valem mais**.
+esta seção só guarda o que a medição OBRIGOU. O texto secundário está em **L 30%** (Polaris):
+**8,52:1** sobre o cartão, **7,63:1** sobre o fundo, **7,98:1** sobre o afundado. Os números
+anteriores desta página foram medidos contra as superfícies da 1.6 e **não valem mais**.
 
 ### Zonas por conteúdo — os pastéis /02 da paleta (1.6)
 Valor `#D2FEEB` · Identidade `#E9DCFE` · Apoio `#E9EEFB` · Pendência `#FFFAE5` · Bloqueio
@@ -493,15 +522,15 @@ dois papéis com tintas diferentes, e os dois entram.
 <!-- tabela:vozes -->
 | Voz | papel | tinta | Folha | Bancada | escuro: Folha | escuro: Bancada | veredito |
 |---|---|---|---|---|---|---|---|
-| quem — Newsreader | nome de entidade, H1 | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
-| o quê — Sora | produto na listagem | `--muted-foreground` | 5,19:1 | 4,73:1 | 6,77:1 | 8,30:1 | passa |
-| o quê — Sora | produto como assunto, H2+ | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
-| UI — Inter | rótulo, botão, mensagem | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
-| UI — Inter | texto secundário | `--muted-foreground` | 5,19:1 | 4,73:1 | 6,77:1 | 8,30:1 | passa |
-| UI — Inter | texto forte alternativo | `--text-strong` | 8,06:1 | 7,35:1 | 8,90:1 | 10,91:1 | passa |
-| quanto — PT Mono | código, data, quantidade | `--foreground` | 19,12:1 | 17,44:1 | 12,50:1 | 15,33:1 | passa |
-| quanto — PT Mono | dinheiro | `--money` | 5,03:1 | 4,58:1 | 8,49:1 | 10,42:1 | passa |
-| quanto — PT Mono | valor negativo | `--destructive` | 5,51:1 | 5,02:1 | 5,09:1 | 6,24:1 | passa |
+| quem — Newsreader | nome de entidade, H1 | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| o quê — Sora | produto na listagem | `--muted-foreground` | 8,52:1 | 7,63:1 | 6,77:1 | 8,30:1 | passa |
+| o quê — Sora | produto como assunto, H2+ | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| UI — Inter | rótulo, botão, mensagem | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| UI — Inter | texto secundário | `--muted-foreground` | 8,52:1 | 7,63:1 | 6,77:1 | 8,30:1 | passa |
+| UI — Inter | texto forte alternativo | `--text-strong` | 18,76:1 | 16,79:1 | 8,90:1 | 10,91:1 | passa |
+| quanto — PT Mono | código, data, quantidade | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| quanto — PT Mono | dinheiro | `--money` | 5,52:1 | 4,94:1 | 8,49:1 | 10,42:1 | passa |
+| quanto — PT Mono | valor negativo | `--destructive` | 6,05:1 | 5,42:1 | 5,09:1 | 6,24:1 | passa |
 <!-- /tabela:vozes -->
 
 **As quatro vozes passam AA nas duas superfícies e nos dois temas.** A troca de papel não custou
@@ -515,15 +544,15 @@ são o que está em volta.
 <!-- tabela:pasteis-02 -->
 | Módulo | /02 × Folha | /02 × Bancada | escuro: /02 × Folha | veredito |
 |---|---|---|---|---|
-| Produtos | 1,02:1 | 1,07:1 | 1,32:1 | REPROVA |
-| Estoque | 1,10:1 | 1,01:1 | 1,15:1 | REPROVA |
-| Vendas / Orçamento | 1,10:1 | 1,01:1 | 1,05:1 | REPROVA |
-| Compras / Pedidos | 1,06:1 | 1,03:1 | 1,03:1 | REPROVA |
-| Clientes | 1,08:1 | 1,02:1 | 1,02:1 | REPROVA |
-| Fornecedores | 1,12:1 | 1,02:1 | 1,01:1 | REPROVA |
-| Profissionais | 1,09:1 | 1,00:1 | 1,01:1 | REPROVA |
-| CRM | 1,01:1 | 1,11:1 | 1,34:1 | REPROVA |
-| Boletim | 1,04:1 | 1,05:1 | 1,06:1 | REPROVA |
+| Produtos | 1,12:1 | 1,01:1 | 1,32:1 | REPROVA |
+| Estoque | 1,21:1 | 1,08:1 | 1,15:1 | REPROVA |
+| Vendas / Orçamento | 1,21:1 | 1,08:1 | 1,05:1 | REPROVA |
+| Compras / Pedidos | 1,17:1 | 1,04:1 | 1,03:1 | REPROVA |
+| Clientes | 1,18:1 | 1,06:1 | 1,02:1 | REPROVA |
+| Fornecedores | 1,23:1 | 1,10:1 | 1,01:1 | REPROVA |
+| Profissionais | 1,20:1 | 1,08:1 | 1,01:1 | REPROVA |
+| CRM | 1,09:1 | 1,03:1 | 1,34:1 | REPROVA |
+| Boletim | 1,14:1 | 1,02:1 | 1,06:1 | REPROVA |
 <!-- /tabela:pasteis-02 -->
 
 A cheia /01 do mesmo módulo, medida contra as mesmas superfícies (é ela que pinta ornamento, ícone
@@ -533,15 +562,15 @@ e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** �
 <!-- tabela:cheia-01 -->
 | Módulo | /01 × Folha | /01 × Bancada | escuro: /01 × Folha | escuro: /01 × Bancada |
 |---|---|---|---|---|
-| Produtos | 1,52:1 | 1,39:1 | 8,60:1 | 10,55:1 |
-| Estoque | 2,30:1 | 2,10:1 | 5,69:1 | 6,98:1 |
-| Vendas / Orçamento | 2,52:1 | 2,29:1 | 5,20:1 | 6,38:1 |
-| Compras / Pedidos | 2,43:1 | 2,22:1 | 5,39:1 | 6,61:1 |
-| Clientes | 2,21:1 | 2,01:1 | 5,92:1 | 7,27:1 |
-| Fornecedores | 2,68:1 | 2,44:1 | 4,88:1 | 5,99:1 |
-| Profissionais | 2,43:1 | 2,22:1 | 5,37:1 | 6,59:1 |
-| CRM | 1,38:1 | 1,26:1 | 9,48:1 | 11,63:1 |
-| Boletim | 2,06:1 | 1,88:1 | 6,35:1 | 7,79:1 |
+| Produtos | 1,67:1 | 1,50:1 | 8,60:1 | 10,55:1 |
+| Estoque | 2,52:1 | 2,26:1 | 5,69:1 | 6,98:1 |
+| Vendas / Orçamento | 2,76:1 | 2,47:1 | 5,20:1 | 6,38:1 |
+| Compras / Pedidos | 2,67:1 | 2,39:1 | 5,39:1 | 6,61:1 |
+| Clientes | 2,43:1 | 2,17:1 | 5,92:1 | 7,27:1 |
+| Fornecedores | 2,94:1 | 2,63:1 | 4,88:1 | 5,99:1 |
+| Profissionais | 2,67:1 | 2,39:1 | 5,37:1 | 6,59:1 |
+| CRM | 1,52:1 | 1,36:1 | 9,48:1 | 11,63:1 |
+| Boletim | 2,26:1 | 2,03:1 | 6,35:1 | 7,79:1 |
 <!-- /tabela:cheia-01 -->
 
 Abaixo de 3:1 — no claro **quatro** contra a Folha (produtos, estoque, boletim e o CRM novo) e
@@ -556,11 +585,11 @@ pastel /02, não regressão da troca de superfície**:
 <!-- tabela:zonas -->
 | Zona | × Folha | × Bancada | escuro × Folha |
 |---|---|---|---|
-| Valor | 1,00:1 | 1,10:1 | 1,25:1 |
-| Identidade | 1,18:1 | 1,08:1 | 1,02:1 |
-| Apoio | 1,05:1 | 1,04:1 | 1,06:1 |
-| Pendência | 1,05:1 | 1,15:1 | 1,25:1 |
-| Bloqueio | 1,05:1 | 1,04:1 | 1,04:1 |
+| Valor | 1,10:1 | 1,02:1 | 1,25:1 |
+| Identidade | 1,30:1 | 1,16:1 | 1,02:1 |
+| Apoio | 1,16:1 | 1,04:1 | 1,06:1 |
+| Pendência | 1,05:1 | 1,07:1 | 1,25:1 |
+| Bloqueio | 1,16:1 | 1,04:1 | 1,04:1 |
 <!-- /tabela:zonas -->
 
 **O que a reprovação significa, e o que ela NÃO significa.** A 1.4.11 pede 3:1 do que delimita o
@@ -582,15 +611,15 @@ do tema.
 <!-- tabela:estados-fundo -->
 | Módulo | claro: tinta × /01 | escuro: tinta × /01 |
 |---|---|---|
-| Produtos | 12,57:1 | **1,45:1** |
-| Estoque | 8,32:1 | **2,19:1** |
-| Vendas / Orçamento | 7,60:1 | **2,40:1** |
-| Compras / Pedidos | 7,87:1 | **2,32:1** |
-| Clientes | 8,66:1 | **2,11:1** |
-| Fornecedores | 7,14:1 | **2,56:1** |
-| Profissionais | 7,85:1 | **2,33:1** |
-| CRM | 13,86:1 | **1,32:1** |
-| Boletim | 9,28:1 | **1,97:1** |
+| Produtos | 11,23:1 | **1,45:1** |
+| Estoque | 7,43:1 | **2,19:1** |
+| Vendas / Orçamento | 6,79:1 | **2,40:1** |
+| Compras / Pedidos | 7,03:1 | **2,32:1** |
+| Clientes | 7,73:1 | **2,11:1** |
+| Fornecedores | 6,37:1 | **2,56:1** |
+| Profissionais | 7,02:1 | **2,33:1** |
+| CRM | 12,38:1 | **1,32:1** |
+| Boletim | 8,29:1 | **1,97:1** |
 <!-- /tabela:estados-fundo -->
 
 **Piso 4,5:1, não 3:1** — o rótulo do item é 14px em `font-bold`, e "texto grande" pela WCAG começa
@@ -622,18 +651,18 @@ Os demais estados, com o par que o componente resolve de verdade — um deles ta
 <!-- tabela:estados-demais -->
 | par | claro | escuro |
 |---|---|---|
-| texto sobre hover de item (`--neutral`) | 17,39:1 | 10,02:1 |
-| secundário sobre hover de item | 4,72:1 | 5,43:1 |
-| linha selecionada: `--primary-foreground` × `--primary` | 5,22:1 | 5,13:1 |
-| linha selecionada × folha (a mudança de estado) | 4,76:1 | 4,18:1 |
-| carimbo `open` (`bg-stamp-open` + `text-foreground`) | 13,49:1 | 1,30:1 |
+| texto sobre hover de item (`--neutral`) | 17,17:1 | 10,02:1 |
+| secundário sobre hover de item | 7,80:1 | 5,43:1 |
+| linha selecionada: `--primary-foreground` × `--primary` | 18,76:1 | 5,13:1 |
+| linha selecionada × folha (a mudança de estado) | 18,76:1 | 4,18:1 |
+| carimbo `open` (`bg-stamp-open` + `text-foreground`) | 12,05:1 | 1,30:1 |
 | carimbo `done` (`bg-stamp-done` + `text-primary-foreground`) | 5,52:1 | 10,42:1 |
-| carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 6,41:1 | 6,60:1 |
-| carimbo `void` (`text-stamp-void`, fundo transparente) | 5,51:1 | 5,09:1 |
-| desabilitado: tinta × superfície apagada | 12,89:1 | 14,55:1 |
-| desabilitado: traço apagado × superfície apagada | 3,58:1 | 3,49:1 |
-| desabilitado: superfície apagada × Folha | 1,48:1 | 1,16:1 |
-| desabilitado: secundário × superfície apagada | 3,50:1 | 7,88:1 |
+| carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 7,04:1 | 6,60:1 |
+| carimbo `void` (`text-stamp-void`, fundo transparente) | 6,05:1 | 5,09:1 |
+| desabilitado: tinta × superfície apagada | 15,68:1 | 14,55:1 |
+| desabilitado: traço apagado × superfície apagada | 4,87:1 | 3,49:1 |
+| desabilitado: superfície apagada × Folha | 1,20:1 | 1,16:1 |
+| desabilitado: secundário × superfície apagada | 7,12:1 | 7,88:1 |
 <!-- /tabela:estados-demais -->
 
 ### Os estados da NAVEGAÇÃO — hover e ativo, nos dois temas (Nav-2, issue #140)
@@ -645,15 +674,15 @@ estou" de três jeitos, e cada um responde a um piso diferente da WCAG.
 <!-- tabela:nav-estados -->
 | Módulo | claro: tinta × /02 | escuro: tinta × /02 | claro: fio /01 × fundo | escuro: fio /01 × fundo | claro: ícone /01 × /02 | escuro: ícone /01 × /02 |
 |---|---|---|---|---|---|---|
-| Produtos | 18,69:1 | 9,48:1 | **1,39:1** | 10,55:1 | **1,49:1** | 6,52:1 |
-| Estoque | 17,35:1 | 10,88:1 | **2,10:1** | 6,98:1 | **2,09:1** | 4,96:1 |
-| Vendas / Orçamento | 17,35:1 | 13,10:1 | **2,29:1** | 6,38:1 | **2,28:1** | 5,45:1 |
-| Compras / Pedidos | 18,02:1 | 12,14:1 | **2,22:1** | 6,61:1 | **2,29:1** | 5,23:1 |
-| Clientes | 17,75:1 | 12,69:1 | **2,01:1** | 7,27:1 | **2,05:1** | 6,01:1 |
-| Fornecedores | 17,12:1 | 12,39:1 | **2,44:1** | 5,99:1 | **2,40:1** | 4,84:1 |
-| Profissionais | 17,48:1 | 12,38:1 | **2,22:1** | 6,59:1 | **2,22:1** | 5,33:1 |
-| CRM | 19,31:1 | 9,32:1 | **1,26:1** | 11,63:1 | **1,39:1** | 7,07:1 |
-| Boletim | 18,38:1 | 11,84:1 | **1,88:1** | 7,79:1 | **1,98:1** | 6,02:1 |
+| Produtos | 16,69:1 | 9,48:1 | **1,50:1** | 10,55:1 | **1,49:1** | 6,52:1 |
+| Estoque | 15,50:1 | 10,88:1 | **2,26:1** | 6,98:1 | **2,09:1** | 4,96:1 |
+| Vendas / Orçamento | 15,50:1 | 13,10:1 | **2,47:1** | 6,38:1 | **2,28:1** | 5,45:1 |
+| Compras / Pedidos | 16,10:1 | 12,14:1 | **2,39:1** | 6,61:1 | **2,29:1** | 5,23:1 |
+| Clientes | 15,86:1 | 12,69:1 | **2,17:1** | 7,27:1 | **2,05:1** | 6,01:1 |
+| Fornecedores | 15,29:1 | 12,39:1 | **2,63:1** | 5,99:1 | **2,40:1** | 4,84:1 |
+| Profissionais | 15,61:1 | 12,38:1 | **2,39:1** | 6,59:1 | **2,22:1** | 5,33:1 |
+| CRM | 17,24:1 | 9,32:1 | **1,36:1** | 11,63:1 | **1,39:1** | 7,07:1 |
+| Boletim | 16,41:1 | 11,84:1 | **2,03:1** | 7,79:1 | **1,98:1** | 6,02:1 |
 <!-- /tabela:nav-estados -->
 
 **O rótulo passa com folga; o que reprova é o SINAL do estado.**
@@ -751,10 +780,10 @@ cheia /01 e o `--stamp-open` — não.
 #### Aferições de apoio
 
 <!-- tabela:apoio -->
-- degrau Bancada × Folha: **1,10:1** claro · **1,23:1** escuro
-- secundário sobre o Afundado (zebra): **4,72:1** claro · **7,67:1** escuro
-- traço `--border` sobre a Folha: **19,12:1** claro · **5,88:1** escuro
-- tinta sobre os pastéis /02 de módulo: **17,12–19,31:1** claro · **9,32–13,10:1** escuro
+- degrau Bancada × Folha: **1,12:1** claro · **1,23:1** escuro
+- secundário sobre o Afundado (zebra): **7,98:1** claro · **7,67:1** escuro
+- traço `--border` sobre a Folha: **18,76:1** claro · **5,88:1** escuro
+- tinta sobre os pastéis /02 de módulo: **15,29–17,24:1** claro · **9,32–13,10:1** escuro
 <!-- /tabela:apoio -->
 
 #### Pendências — nenhuma cor foi mexida aqui
@@ -932,12 +961,19 @@ na **consulta favorita**, junto com visão e agrupamento.
 4. **Hover-lift é de PEÇA SOLTA** — botão e cartão clicável, o que tem caixa e sombra próprias e espaço em volta para se mover. **Item de menu NÃO levanta**: `.menu-item:hover` da amostra troca fundo e cor de borda, e só. Item encosta em item — levantar um abre fresta na fileira, que é o mesmo motivo de item não arredondar. Linha e célula de grade também não: lá o amarelo marca foco e o violeta marca seleção.
 
 ### Foco
-**Amarelo sozinho não sobrevive ao papel claro.** O `--ring` da amostra dá **1,42:1** sobre a Folha
-e **1,29:1** sobre a Bancada (remedido em 2026-08-13; eram 1,45 e 1,14 sobre as superfícies cremes) — a WCAG 1.4.11 pede 3:1 de um indicador de foco, e um anel que só o
-operador de vista boa enxerga não é indicador. Quem carrega o contraste é um **fio preto de 1px por
-fora do amarelo**; o amarelo continua sendo a identidade do foco, como manda a amostra.
+**Amarelo sozinho não sobrevive ao papel claro.** O `--ring` dá **1,56:1** sobre o cartão branco
+(era 1,42:1 sobre a Folha da 1.6) — a WCAG 1.4.11 pede 3:1 de um indicador de foco, e um anel que
+só o operador de vista boa enxerga não é indicador. Quem carrega o contraste é o **fio preto por
+fora do amarelo**: 18,76:1 contra o cartão, e 12,05:1 entre o amarelo e o próprio fio. O amarelo é
+a IDENTIDADE do foco; o preto é o contraste. São dois papéis, e é por isso que o anel não precisa
+de uma cor "que passe sozinha".
 
-Leitura de dentro para fora: borda preta do controle · 3px amarelos · 1px preto · papel.
+**O azul Polaris `#005BD3` esteve aqui e saiu (2026-08-18).** Ele passava sozinho (5,96:1) e por
+isso pareceu equivalente — mas trocou a marca de foco que o operador reconhece de longe por um
+anel igual ao de qualquer admin, para resolver um problema que a receita já resolvia. Há teste de
+invariante segurando `--ring` amarelo.
+
+Leitura de dentro para fora: borda preta do controle · 3px amarelos · 4px preto · papel.
 
 A receita mora num ponto só, em `src/index.css`:
 - **`focus-ring`** — peça com borda própria (botão, campo, aba, item de menu). `outline` amarelo de

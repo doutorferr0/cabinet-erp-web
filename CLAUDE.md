@@ -121,13 +121,40 @@ pnpm build
 pnpm codegen        # regera src/api/gerado/ a partir de contracts/openapi-v1.json
 ```
 
-**Par local:** front em 5173 + o `cabinet-erp-api`, que sobe em **:3000** (`pnpm setup:dev` e
-`pnpm dev` lá). `VITE_API_PROXY` continua **sem padrão** — e agora é decisão, não falta de
-candidato: apontar sozinho para uma porta faria a suíte e o `pnpm dev` de quem não subiu o
-backend baterem num servidor que não existe, em vez de usarem o mock. Sem a variável o desvio
-não é montado. O proxy existe por causa do COOKIE (sessão opaca): apontar
-direto para a porta do backend tornaria tudo cross-origin e exigiria `SameSite=None; Secure` só
-em dev. O mecanismo é a metade `http` do toggle previsto `VITE_API_MODE=mock|http`.
+**Par local — PASSTHROUGH POR ROTA, não modo http global** (decisão do user, 2026-08-18):
+
+```
+pnpm dev                                          # mock puro — o padrão
+VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real nas rotas que ele já serve
+```
+
+Sem a variável, o MSW responde tudo e nada sai da origem — é o modo de quem não subiu o backend
+e o do site público. **Com ela, e só com ela**, as operações listadas em
+`src/mocks/rotas-do-backend.ts` saem do mock e atravessam o proxy; todo o resto continua
+mockado e a tela não sabe a diferença. Hoje passam 14 operações: `/health`, `/health/db`,
+`/auth/*` (6), `GET /api/products` e `/api/partners` (5) — o que o `cabinet-erp-api` implementa
+na `main` `246bf6f`. **Trocar `VITE_API_MODE` para `http` NÃO é a forma de falar com o backend:**
+o que ele ainda não implementa responde **501**, e o toggle global entregaria vinte telas
+quebradas para ganhar quatro integradas.
+
+Uma variável governa as duas metades de propósito — o `vite.config.ts` a lê de `process.env`, o
+`browser.ts` de `import.meta.env` (o Vite expõe ao cliente tudo que tem prefixo `VITE_`). Duas
+chaves poderiam divergir, e a divergência é silenciosa: passthrough sem proxy faz `/api` cair no
+fallback da SPA e a tela recebe `index.html` com status 200.
+
+O proxy existe por causa do COOKIE (`cabinet_sessao`, sessão opaca): atravessando o Vite, `/api` e
+`/auth` saem da MESMA origem da página e o cookie viaja sozinho — apontar o front direto para
+:3000 tornaria tudo cross-origin e exigiria `SameSite=None; Secure` + CORS só em dev.
+Com backend real o **autologin do mock não roda** (`VITE_MOCK_AUTOLOGIN` é ignorada): quem diz se
+há sessão é o servidor, e semear o store abriria uma sessão que só existe no navegador.
+
+**Ao acrescentar rota à lista, o par é obrigatório:** a operação existe no contrato (o teste
+`src/mocks/rotas-do-backend.test.ts` falha se não existir) **e** o backend responde algo diferente
+de 501. Rota adiantada é pior que ausente — o mock deixa de responder e a tela toma 501 sem
+ninguém ter pedido. A lista é dívida deliberada: existe enquanto o contrato for maior que o
+backend, e morre junto com o modo mock no dia em que as duas metades se encontrarem.
+
+Variáveis documentadas em `.env.example` (copiar para `.env.local`, que é gitignored).
 
 **Armadilha medida:** `pnpm check-types` (`tsc -b`) já passou verde com erro real de tipo,
 reaproveitando build info. Quando a mudança mexe em assinatura de provider, conferir com

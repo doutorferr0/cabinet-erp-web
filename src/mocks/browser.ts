@@ -6,6 +6,7 @@ import {
   expirarSessaoAgora,
   semearSessaoAutenticada,
 } from './api/store'
+import { handlersDePassagem } from './rotas-do-backend'
 
 /**
  * Worker do modo mock (`VITE_API_MODE=mock`): intercepta o fetch NO NAVEGADOR,
@@ -39,7 +40,28 @@ const atraso = http.all('*', async () => {
   return undefined
 })
 
-export const worker = setupWorker(atraso, ...handlers)
+/**
+ * PASSTHROUGH POR ROTA — o que o backend já serve sai do mock, o resto fica.
+ *
+ * **Uma variável só governa as duas metades**, e é de propósito:
+ * `VITE_API_PROXY` é lida aqui (`import.meta.env`) e no `vite.config.ts`
+ * (`process.env`) — o Vite expõe ao cliente toda variável de ambiente com
+ * prefixo `VITE_`. Duas chaves (uma para o proxy, outra para o passthrough)
+ * poderiam divergir, e a divergência é silenciosa dos dois lados: passthrough
+ * sem proxy faz `/api` cair no fallback da SPA e a tela recebe `index.html`
+ * com status 200; proxy sem passthrough deixa o mock responder e o backend
+ * nunca é exercitado.
+ *
+ * **O site público continua 100% mock.** O build da Cloudflare não define
+ * `VITE_API_PROXY` (as env do painel são as do modo demo), então `passagem`
+ * nasce vazia e nada em `cabinetonline.cc` tenta falar com `localhost:3000`.
+ * Publicar o passthrough por padrão daria erro de rede em produção para
+ * ganhar conveniência em dev.
+ */
+const backendReal = import.meta.env.VITE_API_PROXY
+const passagem = backendReal ? handlersDePassagem() : []
+
+export const worker = setupWorker(...passagem, atraso, ...handlers)
 
 /**
  * Autologin de dev — LIGADO por padrão, e só aqui dentro.
@@ -57,7 +79,21 @@ export const worker = setupWorker(atraso, ...handlers)
  *     VITE_MOCK_AUTOLOGIN=0 pnpm dev    # 401 → tela de login, fluxo completo
  */
 const desligado = ['0', 'false'].includes(import.meta.env.VITE_MOCK_AUTOLOGIN ?? '')
-if (!desligado) semearSessaoAutenticada()
+
+/**
+ * COM BACKEND REAL, NÃO SE SEMEIA NADA — e isto não é preferência, é a única
+ * saída correta.
+ *
+ * `/auth/*` inteiro está na lista de passagem: quem diz se há sessão passa a
+ * ser o cookie `cabinet_sessao` do servidor. Semear o store aqui abriria uma
+ * sessão que só existe dentro do navegador — a guarda deixaria a tela montar,
+ * a appbar mostraria a empresa escolhida, e a primeira consulta traria 401 do
+ * servidor. Dois donos da mesma verdade, e o operador vendo a errada.
+ *
+ * Quem roda contra o backend faz login de verdade, que é o ponto de rodar
+ * contra o backend.
+ */
+if (!backendReal && !desligado) semearSessaoAutenticada()
 
 /**
  * Ensaio de sessão, à mão, no console do navegador (#124, ponto 4).
@@ -69,6 +105,11 @@ if (!desligado) semearSessaoAutenticada()
  *
  *     cabinetMock.expirarProximaEscrita()   // preencha, clique em Gravar → 401
  *     cabinetMock.expirarSessao()           // qualquer tela → login, com a rota guardada
+ *
+ * **Com `VITE_API_PROXY` ligada o ensaio não vale para a SESSÃO**: `/auth/*`
+ * passa direto e quem a derruba é o servidor, não este store. `expirarSessao()`
+ * mexeria num store que ninguém mais consulta. O de escrita continua valendo
+ * nas rotas que seguem mockadas.
  *
  * Fica AQUI, e não num componente ou rota de dev: este arquivo só é importado
  * pelo modo mock (import dinâmico no `main.tsx`), então `VITE_API_MODE=http`

@@ -9,6 +9,7 @@ import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
+import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
 import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -94,7 +95,7 @@ function ClienteEditPage() {
       <FichaDeCadastro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
-        registro={registro}
+        registro={registroParaFicha(registro, esquema)}
         titulo="Cadastro de Clientes"
         contexto={registro.nome}
         aviso={aviso}

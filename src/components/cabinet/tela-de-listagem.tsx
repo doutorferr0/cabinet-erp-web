@@ -8,7 +8,7 @@ import { mensagemDoErro } from '@/lib/erros'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import type { TableFetcher } from '@/lib/table-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { type ReactNode, useState } from 'react'
+import type { ReactNode } from 'react'
 
 export interface DesativacaoProps<T> {
   entidade: string
@@ -48,29 +48,25 @@ export interface TelaDeListagemProps<T> {
 const ACAO_FILTRO = 'filtro'
 /** Id da ação PRIMÁRIA da listagem — a única peça forte do cabeçalho. */
 const ACAO_PRIMARIA = 'incluir'
+/** Id da ação que a LINHA passou a fazer sozinha (#198). */
+const ACAO_ABRIR = 'consultar'
 
 /**
  * Traduz a ação da barra da tabela para a do cabeçalho.
  *
- * A diferença que importa é o clique: a `DataTableAction` recebe a linha
- * (`(row) => …`) porque nascia dentro da tabela, dona da seleção; o cabeçalho
- * está fora dela e fecha sobre a linha que a tela guardou. É por isso que a
- * seleção subiu de nível — sem isso, `Alterar` no topo abriria `null`.
+ * Só as que NÃO dependem de linha chegam aqui desde a #198 — as de registro
+ * moram na barra de seleção, dentro da tabela, que é quem sabe o que está
+ * marcado.
  */
-function paraCabecalho<T>(acao: DataTableAction<T>, selecionado: T | null): AcaoDeCabecalho {
-  const precisaDeLinha = acao.needsSelection === true
-  const semLinha = precisaDeLinha && selecionado === null
+function paraCabecalho<T>(acao: DataTableAction<T>): AcaoDeCabecalho {
   return {
     id: acao.id,
     label: acao.label,
     ...(acao.icon ? { icon: acao.icon } : {}),
-    disabled: acao.disabled === true || semLinha,
-    // O motivo do `title` (contrato sem detalhe por id, orçamento que não
-    // cancela) vale sempre que a ação está morta POR ELA — a falta de linha
-    // tem aviso próprio, de grupo, e repeti-lo em três itens seria ruído.
+    disabled: acao.disabled === true,
     ...(acao.title && acao.disabled === true ? { motivo: acao.title } : {}),
     ...(acao.variant === 'destructive' ? { destrutiva: true } : {}),
-    onClick: () => acao.onClick?.(precisaDeLinha ? selecionado : null),
+    onClick: () => acao.onClick?.(null),
   }
 }
 
@@ -80,18 +76,21 @@ function paraCabecalho<T>(acao: DataTableAction<T>, selecionado: T | null): Acao
  * o diálogo de confirmação. `cadastroActions` e `VitraDataTable` continuam
  * sendo quem decide o comportamento; este componente só compõe.
  *
- * **A barra de sete botões saiu daqui (Polaris-2, #197).** A mesma lista de
- * `actions` que as dez telas já entregam é repartida em três destinos, sem
- * nenhuma rota mudar:
+ * ## Onde cada ação foi parar, e por quê
  *
- * - `Filtro` FICA na tabela — é onde moram colunas e consultas salvas, e os
- *   três são a mesma pergunta ("como esta listagem está montada agora");
- * - `Incluir` vira a ação primária do cabeçalho;
- * - o resto vai para o `⋯`, desabilitado enquanto não houver linha marcada.
+ * A mesma lista de `actions` que as dez telas entregam é repartida em QUATRO
+ * destinos, sem nenhuma rota mudar — as duas primeiras vieram da #197, as duas
+ * últimas da #198:
  *
- * A repartição mora AQUI, e não em cada rota, porque é a mesma em dez telas —
- * e porque `cadastroActions` continua sendo a fonte única dos rótulos, ícones e
- * motivos que o legado fixou.
+ * | ação | destino | por quê |
+ * |---|---|---|
+ * | `Filtro` | barra da tabela | é irmão de `Colunas` e das consultas salvas |
+ * | `Incluir` | ação primária do cabeçalho | única peça forte da tela |
+ * | `Consul.` | **a própria linha** | clicar na linha abre o registro; o botão virava um passo a mais para fazer o que o clique já dizia |
+ * | `Alterar`, `Excluir`, … | barra de SELEÇÃO | só existem depois de marcar, e é lá que a marcação está |
+ *
+ * Sobra no `⋯` do cabeçalho o que não depende de linha nenhuma (`Imprimir`).
+ * A repartição mora AQUI, e não em cada rota, porque é a mesma em dez telas.
  */
 export function TelaDeListagem<T>({
   titulo,
@@ -106,33 +105,43 @@ export function TelaDeListagem<T>({
   modoDeFiltro,
   entidadeDoSchema,
 }: TelaDeListagemProps<T>) {
-  // A linha marcada sobe da tabela para cá: o cabeçalho está fora dela e precisa
-  // saber sobre QUAL registro `Alterar`, `Consul.` e `Excluir` agem. A tabela
-  // continua dona do estado — aqui é cópia para leitura, avisada por callback.
-  const [selecionado, setSelecionado] = useState<T | null>(null)
-
   const acoesDaTabela = actions.filter((a) => a.id === ACAO_FILTRO)
   const primaria = actions.find((a) => a.id === ACAO_PRIMARIA)
-  const secundarias = actions.filter((a) => a.id !== ACAO_FILTRO && a.id !== ACAO_PRIMARIA)
-  const esperandoLinha = selecionado === null && secundarias.some((a) => a.needsSelection === true)
+  const abrir = actions.find((a) => a.id === ACAO_ABRIR)
+  // Ação de registro desce para a barra de seleção; o que não depende de linha
+  // fica no `⋯`. `Consul.` sai das duas: quem a faz agora é a linha.
+  const acoesDeSelecao = actions.filter(
+    (a) => a.needsSelection === true && a.id !== ACAO_ABRIR && a.disabled !== true,
+  )
+  const secundarias = actions.filter(
+    (a) =>
+      a.id !== ACAO_FILTRO &&
+      a.id !== ACAO_PRIMARIA &&
+      a.id !== ACAO_ABRIR &&
+      (a.needsSelection !== true || a.disabled === true),
+  )
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         titulo={titulo}
         {...(contexto ? { contexto } : {})}
-        {...(primaria ? { primaria: paraCabecalho(primaria, selecionado) } : {})}
-        secundarias={secundarias.map((a) => paraCabecalho(a, selecionado))}
-        {...(esperandoLinha
-          ? { avisoDasSecundarias: 'Escolha uma linha na listagem para usar as ações de registro.' }
-          : {})}
+        {...(primaria ? { primaria: paraCabecalho(primaria) } : {})}
+        secundarias={secundarias.map(paraCabecalho)}
       />
       <VitraDataTable
         columns={columns}
         queryKey={queryKey}
         fetcher={fetcher}
         actions={acoesDaTabela}
-        onSelecaoChange={setSelecionado}
+        acoesDeSelecao={acoesDeSelecao}
+        {...(abrir?.onClick && abrir.disabled !== true
+          ? // A linha abre em CONSULTA, que é o uso mais frequente de um
+            // cadastro. Recurso cujo contrato ainda não publica detalhe por id
+            // manda a ação desabilitada — ali a linha continua só marcando, em
+            // vez de prometer uma tela que não existe.
+            { aoAbrirLinha: (linha: T) => abrir.onClick?.(linha) }
+          : {})}
         {...(filtros ? { filtros } : {})}
         {...(modoDeFiltro ? { modoDeFiltro } : {})}
         {...(entidadeDoSchema ? { entidade: entidadeDoSchema } : {})}

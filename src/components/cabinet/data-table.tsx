@@ -11,6 +11,7 @@ import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo
 import { MenuDeFiltros } from '@/components/cabinet/menu-de-filtros'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Empty,
   EmptyContent,
@@ -216,15 +217,24 @@ export interface VitraDataTableProps<T> {
    */
   entidade?: EntidadeCadastro
   /**
-   * Avisa quem monta a tela qual linha está marcada — inclusive o `null` de
-   * quando a seleção se perde (troca de página, busca nova, filtro).
+   * ABRE a linha — e ligar esta prop muda o gesto da listagem inteira
+   * (IndexTable, #198).
    *
-   * Existe porque a ação de registro saiu da barra e subiu para o cabeçalho da
-   * página (Polaris-2, #197): `Alterar` fora da tabela precisa saber sobre qual
-   * registro age. A tabela CONTINUA dona da seleção — isto é notificação, não
-   * controle: passar a linha de volta para cá daria dois donos do mesmo estado.
+   * Com ela, clicar na linha ABRE o registro, como em qualquer lista de
+   * aplicativo: some o passo "marca a linha, procura o botão, clica". Marcar
+   * passa a ser trabalho do CHECKBOX, que é um alvo declarado, e as ações que
+   * dependem de seleção descem para a barra que aparece ao marcar.
+   *
+   * Sem ela a tabela segue como era: clique na linha MARCA. É o que a janela de
+   * busca (§9 padrão 5) precisa — lá escolher é o fim, não o meio.
    */
-  onSelecaoChange?: (row: T | null) => void
+  aoAbrirLinha?: (row: T) => void
+  /**
+   * Ações que agem sobre a SELEÇÃO. Só aparecem quando há linha marcada, e na
+   * barra de seleção — não na barra de consulta, onde ficariam desabilitadas o
+   * dia inteiro esperando um clique que quase nunca vem antes delas.
+   */
+  acoesDeSelecao?: readonly DataTableAction<T>[]
 }
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -323,6 +333,78 @@ function VazioDaConsulta({ q, temFiltro }: { q: string; temFiltro: boolean }) {
   )
 }
 
+/**
+ * A BARRA DE SELEÇÃO (IndexTable, #198) — aparece ao marcar, some ao limpar.
+ *
+ * É a outra metade da linha clicável: se abrir o registro é o clique, marcar
+ * precisa levar a algum lugar, e esse lugar não pode ser um botão que passa o
+ * dia desabilitado no topo da tela. A barra existe SÓ quando há seleção, e diz
+ * quantas linhas estão marcadas antes de oferecer qualquer ação — o número é o
+ * que o operador confere antes de apertar algo destrutivo.
+ *
+ * ## Ação de UM registro com VÁRIAS linhas marcadas
+ *
+ * `Alterar` abre um cadastro; `Excluir` desativa um por vez, com confirmação
+ * que nomeia o registro. Nenhuma das duas tem hoje uma versão em lote na
+ * fronteira de dados — o contrato não publica escrita em lote e um laço de N
+ * requisições no cliente falha pela metade sem ninguém saber quantas passaram.
+ * Então elas ficam DESABILITADAS com mais de uma linha marcada, dizendo o
+ * motivo. Prometer massa e agir na primeira linha seria a promessa errada no
+ * botão mais caro da tela.
+ */
+function BarraDeSelecao<T>({
+  quantidade,
+  acoes,
+  linhas,
+  aoLimpar,
+}: {
+  quantidade: number
+  acoes: readonly DataTableAction<T>[]
+  linhas: readonly T[]
+  aoLimpar: () => void
+}) {
+  const varias = quantidade > 1
+  return (
+    <div
+      data-slot="barra-de-selecao"
+      className="flex flex-wrap items-center gap-2 rounded-card border-2 border-border bg-muted px-3 py-2"
+    >
+      {/* `<output>`: o número muda a cada checkbox e quem não vê a tela precisa
+          ouvir o total, não o evento. */}
+      <output className="font-semibold text-sm">
+        {quantidade === 1 ? '1 linha marcada' : `${quantidade} linhas marcadas`}
+      </output>
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        {acoes.map((acao) => {
+          const morta = acao.disabled === true || varias
+          return (
+            <Button
+              key={acao.id}
+              variant={acao.variant ?? 'outline'}
+              size="sm"
+              disabled={morta}
+              title={
+                acao.disabled === true
+                  ? acao.title
+                  : varias
+                    ? `${acao.label} age em um registro por vez — desmarque as outras linhas.`
+                    : undefined
+              }
+              onClick={() => acao.onClick?.(linhas[0] ?? null)}
+            >
+              {acao.icon ? <acao.icon aria-hidden="true" className="text-modulo" /> : null}
+              {acao.label}
+            </Button>
+          )
+        })}
+        <Button type="button" variant="ghost" size="sm" onClick={aoLimpar}>
+          Limpar seleção
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function VitraDataTable<T>({
   columns,
   queryKey,
@@ -337,7 +419,8 @@ export function VitraDataTable<T>({
   agrupamentos,
   visaoInicial = VISAO_LISTA,
   entidade,
-  onSelecaoChange,
+  aoAbrirLinha,
+  acoesDeSelecao,
 }: VitraDataTableProps<T>) {
   const [qInput, setQInput] = useState('')
   const [state, setState] = useState<TableQueryState>({
@@ -346,7 +429,23 @@ export function VitraDataTable<T>({
     page: 1,
     pageSize: pageSizeOptions[0] ?? 10,
   })
-  const [selected, setSelected] = useState<T | null>(null)
+  /**
+   * SELEÇÃO EM LISTA, não em linha única (#198): o checkbox marca várias, e a
+   * barra de seleção diz quantas. `selected` continua existindo como "a
+   * primeira marcada" porque a barra de AÇÕES antiga (janela de busca, funil)
+   * age sobre uma linha só — quem tem uma tem a primeira.
+   */
+  const [selecionadas, setSelecionadas] = useState<readonly T[]>([])
+  const selected = selecionadas[0] ?? null
+  /** Modo IndexTable: a linha abre, o checkbox marca. Ver `aoAbrirLinha`. */
+  const linhaAbre = aoAbrirLinha !== undefined
+  const marcavel = (acoesDeSelecao?.length ?? 0) > 0
+
+  function alternarLinha(linha: T) {
+    setSelecionadas((atuais) =>
+      atuais.includes(linha) ? atuais.filter((l) => l !== linha) : [...atuais, linha],
+    )
+  }
   // Rascunho do filtro, como `qInput` é o rascunho da busca: o painel responde
   // à tecla na hora e só a frase COMPLETA vira consulta, depois do debounce.
   // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
@@ -383,13 +482,9 @@ export function VitraDataTable<T>({
   // consulta favorita), e chamar o callback em cada um deles deixaria o
   // cabeçalho da página com uma linha que a tabela já esqueceu no dia em que
   // alguém acrescentasse o sétimo.
-  useEffect(() => {
-    onSelecaoChange?.(selected)
-  }, [selected, onSelecaoChange])
-
   // Toda mudança de estado de consulta limpa a seleção.
   function updateState(updater: (s: TableQueryState) => TableQueryState) {
-    setSelected(null)
+    setSelecionadas([])
     setState(updater)
   }
 
@@ -398,7 +493,7 @@ export function VitraDataTable<T>({
     const t = setTimeout(() => {
       setState((s) => {
         if (s.q === qInput) return s
-        setSelected(null)
+        setSelecionadas([])
         return { ...s, q: qInput, page: 1 }
       })
     }, SEARCH_DEBOUNCE_MS)
@@ -419,7 +514,7 @@ export function VitraDataTable<T>({
           assinaturaDoFiltro(s.filtros, s.juncao ?? 'and') === assinaturaDoFiltro(validos, juncao)
         )
           return s
-        setSelected(null)
+        setSelecionadas([])
         return { ...s, filtros: validos, juncao, page: 1 }
       })
     }, SEARCH_DEBOUNCE_MS)
@@ -431,7 +526,7 @@ export function VitraDataTable<T>({
     const consulta = consultaDoFavorito(favorito)
     setFiltrosInput(consulta.filtros)
     setJuncao(consulta.juncao)
-    setSelected(null)
+    setSelecionadas([])
     // Vazio = o favorito não fala de visão (foi gravado antes dos view modes).
     // Tratá-lo como "volte ao padrão" mudaria o desenho da tela sem ninguém ter
     // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
@@ -501,9 +596,13 @@ export function VitraDataTable<T>({
   })
 
   // Folha total de colunas (grupos contam as folhas) + a numeração opcional.
-  const totalColSpan = table.getAllLeafColumns().length + (rowNumbers ? 1 : 0)
+  const totalColSpan = table.getAllLeafColumns().length + (rowNumbers ? 1 : 0) + (marcavel ? 1 : 0)
 
   const temFiltro = (state.filtros?.length ?? 0) > 0
+  // "Todas" é sempre "todas as DESTA PÁGINA" — ver o rótulo do checkbox do
+  // cabeçalho.
+  const algumaMarcada = selecionadas.length > 0
+  const todasMarcadas = rows.length > 0 && selecionadas.length === rows.length
 
   function toggleSort(columnId: string) {
     updateState((s) => {
@@ -703,7 +802,7 @@ export function VitraDataTable<T>({
                         // A seleção é da TABELA; ao sair dela não há linha
                         // marcada, e voltar com a seleção velha apontaria para
                         // uma linha que a consulta pode nem ter trazido de novo.
-                        setSelected(null)
+                        setSelecionadas([])
                         setVisaoId(visao.id)
                       }}
                     />
@@ -716,6 +815,15 @@ export function VitraDataTable<T>({
           </div>
         ) : null}
       </div>
+
+      {marcavel && algumaMarcada ? (
+        <BarraDeSelecao
+          quantidade={selecionadas.length}
+          acoes={acoesDeSelecao ?? []}
+          linhas={selecionadas}
+          aoLimpar={() => setSelecionadas([])}
+        />
+      ) : null}
 
       {visaoAtiva ? (
         // A visão troca só o DESENHO. Carregando, falha e vazio continuam sendo
@@ -742,10 +850,16 @@ export function VitraDataTable<T>({
           )}
         </div>
       ) : (
-        /* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e
-          `overflow-hidden` — sem o overflow, o canto arredondado do contêiner
-          apareceria por baixo do cabeçalho quadrado da primeira fileira. */
-        <div className="overflow-hidden rounded-data border-2 border-border shadow-el3">
+        /* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e recorte —
+          sem ele, o canto arredondado do contêiner apareceria por baixo do
+          cabeçalho quadrado da primeira fileira.
+          `overflow-clip` e NÃO `overflow-hidden`, e a diferença é medida:
+           `hidden` cria um scroll container, e `position: sticky` se prende ao
+           scrollport mais próximo — o cabeçalho ficaria "fixo" dentro de uma
+           caixa que não rola, ou seja, parado. `clip` recorta igual e não cria
+           scrollport, então a fixação passa a valer contra a rolagem da PÁGINA,
+           que é onde a listagem rola de verdade. */
+        <div className="overflow-clip rounded-data border-2 border-border shadow-el3">
           {/* `tabular-nums` na TABELA inteira, e não coluna a coluna.
               Medido em `docs/design/medir-tabular.py`: no Inter do corpo o `1`
               avança 833/2048 de em e o `4`, 1323 — numa coluna de valores isso
@@ -766,7 +880,12 @@ export function VitraDataTable<T>({
               densidade === 'compacta' && '[&_td]:h-10',
             )}
           >
-            <TableHeader>
+            {/* Cabeçalho FIXO na rolagem (#198): numa listagem de cinquenta
+                linhas o operador perde o nome da coluna antes da décima, e passa
+                a contar posição no olho. `bg-card` é obrigatório junto do
+                `sticky` — sem fundo opaco as linhas passam por baixo e o texto
+                do cabeçalho se mistura ao dado. */}
+            <TableHeader className="sticky top-0 z-10 bg-card">
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
                 // por Fio (a sublinha forte fica na fileira das folhas).
@@ -774,6 +893,20 @@ export function VitraDataTable<T>({
                   key={headerGroup.id}
                   className={cn(hgIndex < headerGroups.length - 1 && 'border-rule-hair!')}
                 >
+                  {marcavel && hgIndex === 0 ? (
+                    <TableHead className="w-10" rowSpan={headerGroups.length}>
+                      {/* Marcar tudo é marcar A PÁGINA, e o rótulo diz isso: a
+                          consulta pode ter mil linhas e o operador vê vinte.
+                          Prometer "todas" e agir sobre vinte seria a promessa
+                          errada num botão que apaga cadastro. */}
+                      <Checkbox
+                        aria-label="Marcar todas as linhas desta página"
+                        isSelected={todasMarcadas}
+                        isIndeterminate={algumaMarcada && !todasMarcadas}
+                        onChange={() => setSelecionadas(todasMarcadas ? [] : rows)}
+                      />
+                    </TableHead>
+                  ) : null}
                   {rowNumbers && hgIndex === 0 ? (
                     <TableHead className="w-10" rowSpan={headerGroups.length} />
                   ) : null}
@@ -851,7 +984,7 @@ export function VitraDataTable<T>({
                 </TableRow>
               ) : (
                 table.getRowModel().rows.map((row, rowIndex) => {
-                  const isSelected = selected !== null && row.original === selected
+                  const isSelected = selecionadas.includes(row.original)
                   return (
                     // Seleção = VIOLETA cheio com texto branco (§DataTable): o
                     // violeta é a cor da AÇÃO, e a linha selecionada é sobre o
@@ -861,10 +994,12 @@ export function VitraDataTable<T>({
                     <TableRow
                       key={row.id}
                       data-state={isSelected ? 'selected' : undefined}
-                      // A linha É o controle de seleção da listagem: parada de
-                      // foco, estado anunciado e Enter/Espaço com a mesma regra do
-                      // clique (bater de novo solta). Não é atalho — nenhuma tecla
-                      // memorizada entra aqui, é o teclado nativo do controle.
+                      // A linha é parada de FOCO nos dois modos, e o que ela faz
+                      // muda com o gesto da tela: onde a linha abre (#198), Enter
+                      // abre e o Espaço marca — o mesmo par que qualquer lista de
+                      // aplicativo tem; onde a linha marca (janela de busca), os
+                      // dois marcam, como era. Não é atalho: é o teclado nativo do
+                      // controle, e nenhuma tecla precisa ser memorizada.
                       tabIndex={0}
                       aria-selected={isSelected}
                       className={cn(
@@ -879,15 +1014,42 @@ export function VitraDataTable<T>({
                         isSelected &&
                           'font-semibold [&>td]:bg-primary [&>td]:text-primary-foreground [&>td_.bg-zone-money]:bg-transparent',
                       )}
-                      onClick={() => setSelected(isSelected ? null : row.original)}
+                      onClick={() => {
+                        if (linhaAbre) aoAbrirLinha(row.original)
+                        else alternarLinha(row.original)
+                      }}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter' && e.key !== ' ') return
                         // Espaço rolaria a página; Enter dentro de célula com
                         // controle não deve chegar aqui duas vezes.
                         e.preventDefault()
-                        setSelected(isSelected ? null : row.original)
+                        if (linhaAbre && e.key === 'Enter') aoAbrirLinha(row.original)
+                        else alternarLinha(row.original)
                       }}
                     >
+                      {marcavel ? (
+                        // A célula do checkbox NÃO propaga o clique: mirar o
+                        // quadradinho é dizer "marque esta", e abrir o registro
+                        // junto tiraria da tela quem só queria montar a seleção.
+                        // MEDIDO: hoje a barreira é redundante — o sistema de
+                        // press do react-aria já não propaga, e tirar estas duas
+                        // linhas não derruba o teste. Ficam como guarda do dia em
+                        // que o checkbox virar `<input>` nativo, que propaga: o
+                        // sintoma seria a tela abrindo o registro no meio da
+                        // montagem da seleção, e o teste que o pega é o de
+                        // comportamento acima, não este arquivo.
+                        <TableCell
+                          className="w-10"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            isSelected={isSelected}
+                            onChange={() => alternarLinha(row.original)}
+                            aria-label={`Marcar linha ${(state.page - 1) * state.pageSize + rowIndex + 1}`}
+                          />
+                        </TableCell>
+                      ) : null}
                       {rowNumbers ? (
                         // Numeração em Meta, sequencial global da consulta.
                         <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">

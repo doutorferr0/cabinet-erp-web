@@ -1,7 +1,7 @@
 import { json } from '@/test/servidor'
 import {
   type FetchStub,
-  acaoDoCabecalho,
+  acaoNaLinha,
   renderRoute,
   respostaSessao,
   respostaVinculos,
@@ -78,8 +78,7 @@ describe('motivos de perda', () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/crm/motivos', stub)
 
-    await user.click(await screen.findByText('Preço acima do orçamento'))
-    await acaoDoCabecalho(user, /Alterar/)
+    await acaoNaLinha(user, 'Preço acima do orçamento', /Alterar/)
 
     const campo = await screen.findByLabelText('Motivo')
     expect(campo).toHaveValue('Preço acima do orçamento')
@@ -97,8 +96,7 @@ describe('motivos de perda', () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/crm/motivos', stub)
 
-    await user.click(await screen.findByText('Preço acima do orçamento'))
-    await acaoDoCabecalho(user, /Excluir/)
+    await acaoNaLinha(user, 'Preço acima do orçamento', /Excluir/)
     await user.click(await screen.findByRole('button', { name: /Desativar/ }))
 
     await waitFor(() => expect(escritas).toHaveLength(1))

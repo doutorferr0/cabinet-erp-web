@@ -1,5 +1,11 @@
 import { json } from '@/test/servidor'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
+import {
+  type FetchStub,
+  acaoDoCabecalho,
+  renderRoute,
+  respostaSessao,
+  respostaVinculos,
+} from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -73,7 +79,7 @@ describe('motivos de perda', () => {
     const { user } = renderRoute('/crm/motivos', stub)
 
     await user.click(await screen.findByText('Preço acima do orçamento'))
-    await user.click(screen.getByRole('button', { name: /Alterar/ }))
+    await acaoDoCabecalho(user, /Alterar/)
 
     const campo = await screen.findByLabelText('Motivo')
     expect(campo).toHaveValue('Preço acima do orçamento')
@@ -92,7 +98,7 @@ describe('motivos de perda', () => {
     const { user } = renderRoute('/crm/motivos', stub)
 
     await user.click(await screen.findByText('Preço acima do orçamento'))
-    await user.click(screen.getByRole('button', { name: /Excluir/ }))
+    await acaoDoCabecalho(user, /Excluir/)
     await user.click(await screen.findByRole('button', { name: /Desativar/ }))
 
     await waitFor(() => expect(escritas).toHaveLength(1))

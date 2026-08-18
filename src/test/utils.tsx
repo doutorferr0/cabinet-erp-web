@@ -9,7 +9,7 @@ import {
   createMemoryHistory,
   createRouter,
 } from '@tanstack/react-router'
-import { type RenderResult, render } from '@testing-library/react'
+import { type RenderResult, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
 import { vi } from 'vitest'
@@ -153,6 +153,24 @@ export function renderWithQuery(ui: ReactElement): RenderWithQueryResult {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const result = render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
   return { ...result, user, queryClient }
+}
+
+/**
+ * Aciona uma ação SECUNDÁRIA do cabeçalho da página — a que mora no `⋯`.
+ *
+ * Existe porque a barra de sete botões saiu das listagens (Polaris-2, #197):
+ * `Alterar`, `Consul.`, `Excluir` e `Imprimir` deixaram de ser botão à vista e
+ * passaram a ser item de menu. Os testes de tela alcançavam os quatro por
+ * `getByRole('button')`; centralizar o caminho aqui evita que o próximo passo
+ * do Polaris (a linha clicável da #198, que vai mudá-lo de novo) precise de
+ * uma varredura por dez arquivos de teste.
+ */
+export async function acaoDoCabecalho(
+  user: ReturnType<typeof userEvent.setup>,
+  nome: string | RegExp,
+) {
+  await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+  await user.click(await screen.findByRole('menuitem', { name: nome }))
 }
 
 /**

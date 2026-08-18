@@ -215,6 +215,16 @@ export interface VitraDataTableProps<T> {
    * agrupamento — qual campo pertence a que assunto.
    */
   entidade?: EntidadeCadastro
+  /**
+   * Avisa quem monta a tela qual linha está marcada — inclusive o `null` de
+   * quando a seleção se perde (troca de página, busca nova, filtro).
+   *
+   * Existe porque a ação de registro saiu da barra e subiu para o cabeçalho da
+   * página (Polaris-2, #197): `Alterar` fora da tabela precisa saber sobre qual
+   * registro age. A tabela CONTINUA dona da seleção — isto é notificação, não
+   * controle: passar a linha de volta para cá daria dois donos do mesmo estado.
+   */
+  onSelecaoChange?: (row: T | null) => void
 }
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -327,6 +337,7 @@ export function VitraDataTable<T>({
   agrupamentos,
   visaoInicial = VISAO_LISTA,
   entidade,
+  onSelecaoChange,
 }: VitraDataTableProps<T>) {
   const [qInput, setQInput] = useState('')
   const [state, setState] = useState<TableQueryState>({
@@ -366,6 +377,15 @@ export function VitraDataTable<T>({
   // armazenamento a cada render seria I/O síncrono por tecla digitada.
   const telaId = useMemo(() => idDaTela(queryKey), [queryKey])
   const [favoritos, setFavoritos] = useState<FavoritoDeConsulta[]>(() => lerFavoritos(telaId))
+
+  // O aviso sai de UM lugar, e por efeito: a seleção se perde em seis pontos
+  // diferentes (clique na linha, troca de página, busca, filtro, visão,
+  // consulta favorita), e chamar o callback em cada um deles deixaria o
+  // cabeçalho da página com uma linha que a tabela já esqueceu no dia em que
+  // alguém acrescentasse o sétimo.
+  useEffect(() => {
+    onSelecaoChange?.(selected)
+  }, [selected, onSelecaoChange])
 
   // Toda mudança de estado de consulta limpa a seleção.
   function updateState(updater: (s: TableQueryState) => TableQueryState) {

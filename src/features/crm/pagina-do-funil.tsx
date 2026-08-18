@@ -1,6 +1,7 @@
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { type VisaoDaListagem, VitraDataTable } from '@/components/cabinet/data-table'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { oportunidadesDoFunil, useEstagios, useFunis } from '@/data/crm-api'
@@ -248,11 +249,36 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
     })
   }
 
+  /**
+   * `Incluir` sobe para o cabeçalho da página (Polaris-2, #197) e SAI da barra
+   * da tabela: é a ação forte da tela, e ela mora no mesmo canto em toda a
+   * seção.
+   *
+   * As ações de LINHA ficam onde estão, e aqui isso não é meia-migração: nesta
+   * tela a seleção depende da VISÃO — o quadro não tem linha para marcar, e é a
+   * barra da tabela que sabe disso e explica ("Só na visão Lista: …"). Levá-las
+   * para um `⋯` que não conhece a visão trocaria a explicação certa por
+   * "escolha uma linha" numa tela onde não há linha nenhuma. A #198 (linha
+   * clicável) é quem resolve isso para valer.
+   */
+  const incluir = actions.find((a) => a.id === 'incluir')
+  const acoesDaTabela = actions.filter((a) => a.id !== 'incluir')
+
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center gap-2">
-        <h1 className="font-display text-lg font-bold">{atual?.name ?? 'Funil'}</h1>
-
+      <PageHeader
+        titulo={atual?.name ?? 'Funil'}
+        {...(incluir
+          ? {
+              primaria: {
+                id: incluir.id,
+                label: incluir.label,
+                ...(incluir.icon ? { icon: incluir.icon } : {}),
+                onClick: () => incluir.onClick?.(null),
+              },
+            }
+          : {})}
+      >
         {funis.isPending ? (
           <Skeleton className="h-8 w-40" />
         ) : (
@@ -282,13 +308,7 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
             e não em painel fixo — é pergunta ocasional, e um painel permanente
             custaria uma requisição por visita ao quadro para respondê-la
             quando ninguém perguntou. */}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          onClick={() => setPerdasAbertas(true)}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => setPerdasAbertas(true)}>
           <TrendingDown aria-hidden="true" className="text-modulo" />
           Perdas por motivo
         </Button>
@@ -298,7 +318,7 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
         <Link to="/crm/funis" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
           Configurar funis
         </Link>
-      </header>
+      </PageHeader>
 
       {semEtapas ? (
         // Funil sem etapa é estado legítimo: funil nasce vazio, de propósito. E
@@ -316,7 +336,7 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
           // filtra por etapa de um funil não faz sentido no funil do lado.
           queryKey={['crm', 'oportunidades', 'listagem', pipelineId]}
           fetcher={fetcher}
-          actions={actions}
+          actions={acoesDaTabela}
           searchPlaceholder="Busca por título ou cliente:"
           filtros={camposFiltraveis}
           visoes={visoes}

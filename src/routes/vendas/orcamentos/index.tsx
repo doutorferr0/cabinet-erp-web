@@ -3,11 +3,13 @@ import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
+import { useCancelarOrcamento } from '@/data/quotes-api'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CalendarDays, HardHat, Hash, User } from 'lucide-react'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/vendas/orcamentos/')({
   component: OrcamentosPage,
@@ -109,6 +111,8 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
 
 function OrcamentosPage() {
   const navigate = useNavigate()
+  const [paraCancelar, setParaCancelar] = useState<QuoteDto | null>(null)
+  const cancelar = useCancelarOrcamento()
 
   function abrir(orcamentoId: string, modo?: 'consulta') {
     void navigate({
@@ -125,13 +129,18 @@ function OrcamentosPage() {
     onConsultar: (o) => abrir(o.id, 'consulta'),
   })
 
-  // Orçamento não se apaga, se cancela (§8.1).
+  // Orçamento não se apaga, se cancela (§8.1) — e cancelar é caminho PRÓPRIO
+  // do contrato (`POST /api/quotes/{id}/cancel`), não um `PUT` com situação
+  // trocada: quem decide a transição é o servidor.
   const actionsOrcamento = actions.map((a) =>
     a.id === 'excluir'
       ? {
           ...a,
           label: 'Cancelar',
-          onClick: (o: QuoteDto | null) => console.info('[mock] Cancelar orçamento', o),
+          // Abre a confirmação; a escrita só sai de lá. Cancelamento é
+          // terminal (o contrato não publica reabertura), e ação irreversível
+          // atrás de um clique só é a que o operador dá sem querer.
+          onClick: (o: QuoteDto | null) => setParaCancelar(o),
         }
       : a,
   )
@@ -145,6 +154,25 @@ function OrcamentosPage() {
       actions={actionsOrcamento}
       filtros={camposFiltraveis}
       rodape={<RodapeDeOrcamento />}
+      cancelamento={{
+        documento: 'orçamento',
+        registro: paraCancelar,
+        numero: (o) => o.number,
+        cancelado: (o) => o.status === 'cancelled',
+        pendente: cancelar.isPending,
+        erro: cancelar.error,
+        onFechar: () => {
+          setParaCancelar(null)
+          cancelar.reset()
+        },
+        onConfirmar: () => {
+          if (!paraCancelar) return
+          // Fecha no SUCESSO. Fechar antes esconderia a recusa do servidor
+          // junto com o diálogo, e a listagem voltaria igual — indistinguível
+          // de um cancelamento que deu certo.
+          cancelar.mutate(paraCancelar.id, { onSuccess: () => setParaCancelar(null) })
+        },
+      }}
     />
   )
 }

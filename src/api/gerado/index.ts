@@ -23,6 +23,9 @@ import type {
   CrmStageDto,
   CrmStageWriteRequest,
   DashboardSummaryDto,
+  EmployeeDetailDto,
+  EmployeeLinkRequest,
+  EmployeeWriteRequest,
   GetCrmLostReasonsReportParams,
   HealthStatus,
   ListActivitiesParams,
@@ -32,6 +35,7 @@ import type {
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
   ListEmployeesParams,
+  ListOrdersParams,
   ListPartnersParams,
   ListProductsParams,
   ListProjectsParams,
@@ -41,12 +45,15 @@ import type {
   LoginOk,
   LoginRequest,
   NaoAutenticadoResponse,
+  OrderDetailDto,
+  OrderWriteRequest,
   PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
+  PagedResultOfOrderDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
@@ -1799,6 +1806,64 @@ export const listEmployees = async (params?: ListEmployeesParams, options?: Para
 
 
 
+export type createEmployeeResponse201 = {
+  data: EmployeeDetailDto
+  status: 201
+}
+
+export type createEmployeeResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createEmployeeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createEmployeeResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createEmployeeResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createEmployeeResponseSuccess = (createEmployeeResponse201) & {
+  headers: Headers;
+};
+export type createEmployeeResponseError = (createEmployeeResponse400 | createEmployeeResponse401 | createEmployeeResponse403 | createEmployeeResponse409) & {
+  headers: Headers;
+};
+
+export type createEmployeeResponse = (createEmployeeResponseSuccess | createEmployeeResponseError)
+
+export const getCreateEmployeeUrl = () => {
+
+
+
+
+  return `/api/employees`
+}
+
+/**
+ * Proposto. Cria o colaborador na ORGANIZAÇÃO e o vincula à empresa ativa em um passo — cadastrar alguém que não trabalha em empresa nenhuma é estado que a tela não sabe mostrar. E-mail já usado no grupo é 409.
+ */
+export const createEmployee = async (employeeWriteRequest: EmployeeWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createEmployeeResponse> => {
+
+  return apiFetch<createEmployeeResponse>(getCreateEmployeeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(employeeWriteRequest)
+  }
+);}
+
+
+
 export type listQuotesResponse200 = {
   data: PagedResultOfQuoteDto
   status: 200
@@ -3344,6 +3409,597 @@ export const getCompleteActivityUrl = (id: string,) => {
 export const completeActivity = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<completeActivityResponse> => {
 
   return apiFetch<completeActivityResponse>(getCompleteActivityUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type getEmployeeResponse200 = {
+  data: EmployeeDetailDto
+  status: 200
+}
+
+export type getEmployeeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getEmployeeResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getEmployeeResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getEmployeeResponseSuccess = (getEmployeeResponse200) & {
+  headers: Headers;
+};
+export type getEmployeeResponseError = (getEmployeeResponse401 | getEmployeeResponse403 | getEmployeeResponse404) & {
+  headers: Headers;
+};
+
+export type getEmployeeResponse = (getEmployeeResponseSuccess | getEmployeeResponseError)
+
+export const getGetEmployeeUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}`
+}
+
+/**
+ * Proposto. A ficha, com os campos do vínculo resolvidos pela empresa ativa.
+ */
+export const getEmployee = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getEmployeeResponse> => {
+
+  return apiFetch<getEmployeeResponse>(getGetEmployeeUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateEmployeeResponse200 = {
+  data: EmployeeDetailDto
+  status: 200
+}
+
+export type updateEmployeeResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateEmployeeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateEmployeeResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateEmployeeResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateEmployeeResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateEmployeeResponseSuccess = (updateEmployeeResponse200) & {
+  headers: Headers;
+};
+export type updateEmployeeResponseError = (updateEmployeeResponse400 | updateEmployeeResponse401 | updateEmployeeResponse403 | updateEmployeeResponse404 | updateEmployeeResponse409) & {
+  headers: Headers;
+};
+
+export type updateEmployeeResponse = (updateEmployeeResponseSuccess | updateEmployeeResponseError)
+
+export const getUpdateEmployeeUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}`
+}
+
+/**
+ * Proposto. Substitui os dados de ORGANIZAÇÃO. Não toca no vínculo: cargo, setor e papel mudam por `/link`.
+ */
+export const updateEmployee = async (id: string,
+    employeeWriteRequest: EmployeeWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateEmployeeResponse> => {
+
+  return apiFetch<updateEmployeeResponse>(getUpdateEmployeeUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(employeeWriteRequest)
+  }
+);}
+
+
+
+export type linkEmployeeResponse201 = {
+  data: EmployeeDetailDto
+  status: 201
+}
+
+export type linkEmployeeResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type linkEmployeeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type linkEmployeeResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type linkEmployeeResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type linkEmployeeResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type linkEmployeeResponseSuccess = (linkEmployeeResponse201) & {
+  headers: Headers;
+};
+export type linkEmployeeResponseError = (linkEmployeeResponse400 | linkEmployeeResponse401 | linkEmployeeResponse403 | linkEmployeeResponse404 | linkEmployeeResponse409) & {
+  headers: Headers;
+};
+
+export type linkEmployeeResponse = (linkEmployeeResponseSuccess | linkEmployeeResponseError)
+
+export const getLinkEmployeeUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/link`
+}
+
+/**
+ * Proposto. Vincula à empresa ATIVA da sessão — nunca a uma empresa passada no corpo, que seria escrever no vizinho por parâmetro. Vínculo já existente é 409.
+ */
+export const linkEmployee = async (id: string,
+    employeeLinkRequest: EmployeeLinkRequest, options?: Parameters<typeof apiFetch>[1]): Promise<linkEmployeeResponse> => {
+
+  return apiFetch<linkEmployeeResponse>(getLinkEmployeeUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(employeeLinkRequest)
+  }
+);}
+
+
+
+export type updateEmployeeLinkResponse200 = {
+  data: EmployeeDetailDto
+  status: 200
+}
+
+export type updateEmployeeLinkResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateEmployeeLinkResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateEmployeeLinkResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateEmployeeLinkResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateEmployeeLinkResponseSuccess = (updateEmployeeLinkResponse200) & {
+  headers: Headers;
+};
+export type updateEmployeeLinkResponseError = (updateEmployeeLinkResponse400 | updateEmployeeLinkResponse401 | updateEmployeeLinkResponse403 | updateEmployeeLinkResponse404) & {
+  headers: Headers;
+};
+
+export type updateEmployeeLinkResponse = (updateEmployeeLinkResponseSuccess | updateEmployeeLinkResponseError)
+
+export const getUpdateEmployeeLinkUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/link`
+}
+
+/**
+ * Proposto. Substitui o vínculo com a empresa ativa — é por aqui que cargo e setor mudam. Colaborador sem vínculo aqui é 404: alterar o que não existe não vira criação silenciosa.
+ */
+export const updateEmployeeLink = async (id: string,
+    employeeLinkRequest: EmployeeLinkRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateEmployeeLinkResponse> => {
+
+  return apiFetch<updateEmployeeLinkResponse>(getUpdateEmployeeLinkUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(employeeLinkRequest)
+  }
+);}
+
+
+
+export type listOrdersResponse200 = {
+  data: PagedResultOfOrderDto
+  status: 200
+}
+
+export type listOrdersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listOrdersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listOrdersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listOrdersResponseSuccess = (listOrdersResponse200) & {
+  headers: Headers;
+};
+export type listOrdersResponseError = (listOrdersResponse400 | listOrdersResponse401 | listOrdersResponse403) & {
+  headers: Headers;
+};
+
+export type listOrdersResponse = (listOrdersResponseSuccess | listOrdersResponseError)
+
+export const getListOrdersUrl = (params?: ListOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders?${stringifiedParams}` : `/api/orders`
+}
+
+/**
+ * Proposto. Pedidos de venda da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `customerName` e `projectName`; fora da lista é 400.
+ */
+export const listOrders = async (params?: ListOrdersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listOrdersResponse> => {
+
+  return apiFetch<listOrdersResponse>(getListOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createOrderResponse201 = {
+  data: OrderDetailDto
+  status: 201
+}
+
+export type createOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createOrderResponseSuccess = (createOrderResponse201) & {
+  headers: Headers;
+};
+export type createOrderResponseError = (createOrderResponse400 | createOrderResponse401 | createOrderResponse403 | createOrderResponse409) & {
+  headers: Headers;
+};
+
+export type createOrderResponse = (createOrderResponseSuccess | createOrderResponseError)
+
+export const getCreateOrderUrl = () => {
+
+
+
+
+  return `/api/orders`
+}
+
+/**
+ * Proposto. Cria pedido direto, sem orçamento de origem. O número é atribuído aqui, na mesma sequência global do grupo.
+ */
+export const createOrder = async (orderWriteRequest: OrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createOrderResponse> => {
+
+  return apiFetch<createOrderResponse>(getCreateOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(orderWriteRequest)
+  }
+);}
+
+
+
+export type getOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type getOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getOrderResponseSuccess = (getOrderResponse200) & {
+  headers: Headers;
+};
+export type getOrderResponseError = (getOrderResponse401 | getOrderResponse403 | getOrderResponse404) & {
+  headers: Headers;
+};
+
+export type getOrderResponse = (getOrderResponseSuccess | getOrderResponseError)
+
+export const getGetOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}`
+}
+
+/**
+ * Proposto. O documento inteiro, com ambientes e itens.
+ */
+export const getOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getOrderResponse> => {
+
+  return apiFetch<getOrderResponse>(getGetOrderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type updateOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateOrderResponseSuccess = (updateOrderResponse200) & {
+  headers: Headers;
+};
+export type updateOrderResponseError = (updateOrderResponse400 | updateOrderResponse401 | updateOrderResponse403 | updateOrderResponse404 | updateOrderResponse409) & {
+  headers: Headers;
+};
+
+export type updateOrderResponse = (updateOrderResponseSuccess | updateOrderResponseError)
+
+export const getUpdateOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}`
+}
+
+/**
+ * Proposto. Substitui o documento INTEIRO. Pedido cancelado não aceita alteração — é 409, não 400.
+ */
+export const updateOrder = async (id: string,
+    orderWriteRequest: OrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateOrderResponse> => {
+
+  return apiFetch<updateOrderResponse>(getUpdateOrderUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(orderWriteRequest)
+  }
+);}
+
+
+
+export type cancelOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type cancelOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelOrderResponseSuccess = (cancelOrderResponse200) & {
+  headers: Headers;
+};
+export type cancelOrderResponseError = (cancelOrderResponse401 | cancelOrderResponse403 | cancelOrderResponse404 | cancelOrderResponse409) & {
+  headers: Headers;
+};
+
+export type cancelOrderResponse = (cancelOrderResponseSuccess | cancelOrderResponseError)
+
+export const getCancelOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.
+ */
+export const cancelOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelOrderResponse> => {
+
+  return apiFetch<cancelOrderResponse>(getCancelOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type createOrderFromQuoteResponse201 = {
+  data: OrderDetailDto
+  status: 201
+}
+
+export type createOrderFromQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createOrderFromQuoteResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createOrderFromQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createOrderFromQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createOrderFromQuoteResponseSuccess = (createOrderFromQuoteResponse201) & {
+  headers: Headers;
+};
+export type createOrderFromQuoteResponseError = (createOrderFromQuoteResponse401 | createOrderFromQuoteResponse403 | createOrderFromQuoteResponse404 | createOrderFromQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type createOrderFromQuoteResponse = (createOrderFromQuoteResponseSuccess | createOrderFromQuoteResponseError)
+
+export const getCreateOrderFromQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}/order`
+}
+
+/**
+ * Proposto. Converte o orçamento em pedido de venda. No legado a conversão era troca de `Ven_Tipo` no mesmo registro; aqui são dois agregados, então converter é COPIAR — cabeçalho, ambientes e itens, com o preço congelado no momento da conversão. O orçamento fica intacto e rastreável por `OrderDto.quoteId`. Orçamento cancelado é 409, e converter duas vezes também: pedido em duplicata é o erro que o operador não vê até a compra sair dobrada.
+ */
+export const createOrderFromQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<createOrderFromQuoteResponse> => {
+
+  return apiFetch<createOrderFromQuoteResponse>(getCreateOrderFromQuoteUrl(id),
   {
     ...options,
     method: 'POST'

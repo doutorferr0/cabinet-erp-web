@@ -4,7 +4,11 @@
     "title": "Vitra ERP",
     "version": "v1"
   },
-  "security": [{ "sessaoCabinet": [] }],
+  "security": [
+    {
+      "sessaoCabinet": []
+    }
+  ],
   "paths": {
     "/health": {
       "get": {
@@ -125,8 +129,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       }
     },
@@ -217,8 +225,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -265,8 +277,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -306,8 +322,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -375,8 +395,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -446,8 +470,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -526,8 +554,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -645,8 +677,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -693,8 +729,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -734,8 +774,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -803,8 +847,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -870,8 +918,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -941,8 +993,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1030,8 +1086,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1124,7 +1184,9 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          }
         }
       }
     },
@@ -1143,7 +1205,9 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          }
         }
       }
     },
@@ -1165,7 +1229,9 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          }
         }
       }
     },
@@ -1197,8 +1263,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       }
     },
@@ -1206,7 +1276,7 @@
       "get": {
         "tags": ["dashboard"],
         "operationId": "GetDashboardSummary",
-        "description": "Proposto. Os quatro indicadores da faixa de KPI do Dashboard, da EMPRESA ATIVA da sess\u00e3o. N\u00fameros derivados do movimento \u2014 o servidor apura, o front s\u00f3 formata. Sess\u00e3o sem empresa ativa responde tudo em zero, pela mesma regra das listagens (lista vazia, n\u00e3o erro).",
+        "description": "Proposto. Os quatro indicadores da faixa de KPI do Dashboard, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata. Sessão sem empresa ativa responde tudo em zero, pela mesma regra das listagens (lista vazia, não erro).",
         "responses": {
           "200": {
             "description": "OK",
@@ -1218,8 +1288,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1237,13 +1311,13 @@
       "get": {
         "tags": ["dashboard"],
         "operationId": "ListAgendaEvents",
-        "description": "Proposto. Compromissos com data dentro do intervalo [from, to], da empresa ativa. UMA consulta serve o mini-calend\u00e1rio (o m\u00eas inteiro, para marcar os dias) e a Agenda de hoje (o recorte do dia) \u2014 dois caminhos devolveriam a mesma coisa em granularidades diferentes e sairiam do ar em desacordo.",
+        "description": "Proposto. Compromissos com data dentro do intervalo [from, to], da empresa ativa. UMA consulta serve o mini-calendário (o mês inteiro, para marcar os dias) e a Agenda de hoje (o recorte do dia) — dois caminhos devolveriam a mesma coisa em granularidades diferentes e sairiam do ar em desacordo.",
         "parameters": [
           {
             "name": "from",
             "in": "query",
             "required": true,
-            "description": "In\u00edcio do intervalo, inclusivo (data ISO).",
+            "description": "Início do intervalo, inclusivo (data ISO).",
             "schema": {
               "type": "string",
               "format": "date"
@@ -1284,8 +1358,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       }
     },
@@ -1293,12 +1371,12 @@
       "get": {
         "tags": ["dashboard"],
         "operationId": "ListTasks",
-        "description": "Proposto. As tarefas do quadro da empresa ativa. N\u00c3O \u00e9 `PagedResult`, e \u00e9 decis\u00e3o: um quadro kanban mostra as quatro colunas de uma vez e uma p\u00e1gina de 10 cortaria coluna no meio, dando contagem de coluna errada. Se o volume crescer, o corte certo \u00e9 por per\u00edodo/respons\u00e1vel, n\u00e3o por p\u00e1gina.",
+        "description": "Proposto. As tarefas do quadro da empresa ativa. NÃO é `PagedResult`, e é decisão: um quadro kanban mostra as quatro colunas de uma vez e uma página de 10 cortaria coluna no meio, dando contagem de coluna errada. Se o volume crescer, o corte certo é por período/responsável, não por página.",
         "parameters": [
           {
             "name": "status",
             "in": "query",
-            "description": "Filtra uma coluna s\u00f3. Ausente = o quadro inteiro.",
+            "description": "Filtra uma coluna só. Ausente = o quadro inteiro.",
             "schema": {
               "type": "string",
               "enum": ["todo", "doing", "review", "done"]
@@ -1307,7 +1385,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Busca em t\u00edtulo e descri\u00e7\u00e3o.",
+            "description": "Busca em título e descrição.",
             "schema": {
               "type": "string"
             }
@@ -1337,8 +1415,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       },
       "post": {
@@ -1376,8 +1458,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1395,7 +1481,7 @@
       "patch": {
         "tags": ["dashboard"],
         "operationId": "PatchTask",
-        "description": "Proposto. Mudan\u00e7a PARCIAL de uma tarefa \u2014 \u00e9 o verbo do quadro: mover de coluna muda `status` e nada mais. \u00c9 a \u00fanica exce\u00e7\u00e3o ao `PUT` substitui o registro inteiro que vale no resto do contrato, e ela existe porque o cart\u00e3o do quadro n\u00e3o carrega o registro completo; um `PUT` a partir dele apagaria o que a tela n\u00e3o mostra.",
+        "description": "Proposto. Mudança PARCIAL de uma tarefa — é o verbo do quadro: mover de coluna muda `status` e nada mais. É a única exceção ao `PUT` substitui o registro inteiro que vale no resto do contrato, e ela existe porque o cartão do quadro não carrega o registro completo; um `PUT` a partir dele apagaria o que a tela não mostra.",
         "parameters": [
           {
             "name": "taskId",
@@ -1438,8 +1524,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1457,7 +1547,7 @@
       "get": {
         "tags": ["dashboard"],
         "operationId": "ListTodos",
-        "description": "Proposto. A lista A fazer \u2014 lembrete curto do OPERADOR na empresa ativa, sem respons\u00e1vel, sem prazo e sem coluna. Recurso separado de `tasks` de prop\u00f3sito: fundir os dois obrigaria todo lembrete a carregar prioridade, prazo e respons\u00e1vel em branco, e a tela teria de adivinhar o que \u00e9 lembrete e o que \u00e9 tarefa de quadro.",
+        "description": "Proposto. A lista A fazer — lembrete curto do OPERADOR na empresa ativa, sem responsável, sem prazo e sem coluna. Recurso separado de `tasks` de propósito: fundir os dois obrigaria todo lembrete a carregar prioridade, prazo e responsável em branco, e a tela teria de adivinhar o que é lembrete e o que é tarefa de quadro.",
         "responses": {
           "200": {
             "description": "OK",
@@ -1472,8 +1562,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       }
     },
@@ -1524,8 +1618,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1543,7 +1641,7 @@
       "get": {
         "tags": ["planner"],
         "operationId": "ListProjects",
-        "description": "Proposto. Projetos da empresa ativa \u2014 o que o seletor do Planner lista.",
+        "description": "Proposto. Projetos da empresa ativa — o que o seletor do Planner lista.",
         "parameters": [
           {
             "name": "status",
@@ -1578,8 +1676,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       }
     },
@@ -1587,7 +1689,7 @@
       "get": {
         "tags": ["planner"],
         "operationId": "GetProjectPlan",
-        "description": "Proposto. O plano do projeto: fases e, dentro delas, os itens com data de in\u00edcio e fim \u2014 \u00e9 o que o gantt do Planner desenha. Vem em UMA resposta porque a tela desenha a grade inteira de uma vez; fases e itens em caminhos separados fariam a linha aparecer depois da faixa.",
+        "description": "Proposto. O plano do projeto: fases e, dentro delas, os itens com data de início e fim — é o que o gantt do Planner desenha. Vem em UMA resposta porque a tela desenha a grade inteira de uma vez; fases e itens em caminhos separados fariam a linha aparecer depois da faixa.",
         "parameters": [
           {
             "name": "projectId",
@@ -1610,8 +1712,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1629,7 +1735,7 @@
       "get": {
         "tags": ["cadastros"],
         "operationId": "ListEmployees",
-        "description": "Proposto. Colaboradores da empresa ativa. Somente leitura neste corte \u2014 \u00e9 daqui que sai o combo de Consultor(a) do or\u00e7amento.",
+        "description": "Proposto. Colaboradores da empresa ativa. Somente leitura neste corte — é daqui que sai o combo de Consultor(a) do orçamento.",
         "parameters": [
           {
             "name": "q",
@@ -1690,8 +1796,65 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["cadastros"],
+        "operationId": "CreateEmployee",
+        "description": "Proposto. Cria o colaborador na ORGANIZAÇÃO e o vincula à empresa ativa em um passo — cadastrar alguém que não trabalha em empresa nenhuma é estado que a tela não sabe mostrar. E-mail já usado no grupo é 409.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1699,7 +1862,7 @@
       "get": {
         "tags": ["vendas"],
         "operationId": "ListQuotes",
-        "description": "Proposto. Or\u00e7amentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName` e `projectName`; fora da lista \u00e9 400.",
+        "description": "Proposto. Orçamentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName` e `projectName`; fora da lista é 400.",
         "parameters": [
           {
             "name": "q",
@@ -1783,14 +1946,18 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       },
       "post": {
         "tags": ["vendas"],
         "operationId": "CreateQuote",
-        "description": "Proposto. Cria or\u00e7amento na empresa ativa. O n\u00famero \u00e9 atribu\u00eddo aqui.",
+        "description": "Proposto. Cria orçamento na empresa ativa. O número é atribuído aqui.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1822,8 +1989,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1864,8 +2035,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1881,7 +2056,7 @@
       "put": {
         "tags": ["vendas"],
         "operationId": "UpdateQuote",
-        "description": "Proposto. Substitui o documento INTEIRO, itens e ambientes junto. Or\u00e7amento cancelado n\u00e3o aceita altera\u00e7\u00e3o \u2014 \u00e9 409, n\u00e3o 400.",
+        "description": "Proposto. Substitui o documento INTEIRO, itens e ambientes junto. Orçamento cancelado não aceita alteração — é 409, não 400.",
         "parameters": [
           {
             "name": "id",
@@ -1924,8 +2099,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1953,7 +2132,7 @@
       "post": {
         "tags": ["vendas"],
         "operationId": "CancelQuote",
-        "description": "Proposto. Cancela o or\u00e7amento (`status: cancelled`). Documento n\u00e3o se apaga nem se desativa: a listagem continua mostrando, com a situa\u00e7\u00e3o. Cancelar duas vezes \u00e9 409.",
+        "description": "Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.",
         "parameters": [
           {
             "name": "id",
@@ -1976,8 +2155,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2066,8 +2249,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       },
       "post": {
@@ -2105,8 +2292,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -2147,8 +2338,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2207,8 +2402,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2262,8 +2461,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2322,8 +2525,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2393,8 +2600,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2531,8 +2742,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       },
       "post": {
@@ -2570,8 +2785,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2612,8 +2831,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2672,8 +2895,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2744,8 +2971,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -2826,8 +3057,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -2906,8 +3141,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       },
       "post": {
@@ -2945,8 +3184,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -3007,8 +3250,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3059,8 +3306,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3184,8 +3435,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
         }
       },
       "post": {
@@ -3223,8 +3478,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3295,8 +3554,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3337,8 +3600,654 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/NaoAutenticado" },
-          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/employees/{id}": {
+      "get": {
+        "tags": ["cadastros"],
+        "operationId": "GetEmployee",
+        "description": "Proposto. A ficha, com os campos do vínculo resolvidos pela empresa ativa.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["cadastros"],
+        "operationId": "UpdateEmployee",
+        "description": "Proposto. Substitui os dados de ORGANIZAÇÃO. Não toca no vínculo: cargo, setor e papel mudam por `/link`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/employees/{id}/link": {
+      "post": {
+        "tags": ["cadastros"],
+        "operationId": "LinkEmployee",
+        "description": "Proposto. Vincula à empresa ATIVA da sessão — nunca a uma empresa passada no corpo, que seria escrever no vizinho por parâmetro. Vínculo já existente é 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["cadastros"],
+        "operationId": "UpdateEmployeeLink",
+        "description": "Proposto. Substitui o vínculo com a empresa ativa — é por aqui que cargo e setor mudam. Colaborador sem vínculo aqui é 404: alterar o que não existe não vira criação silenciosa.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "ListOrders",
+        "description": "Proposto. Pedidos de venda da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `customerName` e `projectName`; fora da lista é 400.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Mesma mecânica do orçamento: array JSON url-encoded, somado ao `q` com AND. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CreateOrder",
+        "description": "Proposto. Cria pedido direto, sem orçamento de origem. O número é atribuído aqui, na mesma sequência global do grupo.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetOrder",
+        "description": "Proposto. O documento inteiro, com ambientes e itens.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["vendas"],
+        "operationId": "UpdateOrder",
+        "description": "Proposto. Substitui o documento INTEIRO. Pedido cancelado não aceita alteração — é 409, não 400.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/cancel": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CancelOrder",
+        "description": "Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}/order": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CreateOrderFromQuote",
+        "description": "Proposto. Converte o orçamento em pedido de venda. No legado a conversão era troca de `Ven_Tipo` no mesmo registro; aqui são dois agregados, então converter é COPIAR — cabeçalho, ambientes e itens, com o preço congelado no momento da conversão. O orçamento fica intacto e rastreável por `OrderDto.quoteId`. Orçamento cancelado é 409, e converter duas vezes também: pedido em duplicata é o erro que o operador não vê até a compra sair dobrada.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -3655,7 +4564,14 @@
             "description": "Proposto. Registro Profissional — CREA, CAU ou CFT (§3). Vive no cadastro do parceiro (ORG), não no vínculo com a empresa: o conselho é do profissional, não da empresa que o contrata. Vazio em cliente e fornecedor."
           },
           "payoutBankInfo": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/PartnerPayoutBankInfo" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerPayoutBankInfo"
+              }
+            ],
             "description": "Proposto. Conta para pagamento de comissão. `null` quando o parceiro não tem conta cadastrada."
           },
           "parentId": {
@@ -3734,7 +4650,14 @@
             "description": "Proposto. Registro Profissional (CREA, CAU, CFT). `PUT` substitui o registro inteiro: omitir apaga."
           },
           "payoutBankInfo": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/PartnerPayoutBankInfo" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerPayoutBankInfo"
+              }
+            ],
             "description": "Proposto. Conta de comissão. Vale a mesma regra do `PUT`: mandar `null` apaga a conta cadastrada."
           },
           "parentId": {
@@ -3868,7 +4791,14 @@
             "description": "Proposto. Nome da fábrica, para exibição."
           },
           "specs": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductSpecs" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductSpecs"
+              }
+            ],
             "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
           },
           "variants": {
@@ -3883,10 +4813,22 @@
         "type": "object",
         "description": "Proposto. Medidas de uma caixa: as quatro do bloco §6.2, em string decimal pelo mesmo motivo da quantidade — 3 casas, e float perde centésimo. Sem unidade no valor: a unidade é do CAMPO (cm), não do dado; guardar \"10 cm\" tornaria o número inutilizável para conta e para filtro.",
         "properties": {
-          "height": { "type": ["null", "string"], "description": "`Altura`." },
-          "width": { "type": ["null", "string"], "description": "`Largura`." },
-          "length": { "type": ["null", "string"], "description": "`Comprimento`." },
-          "radius": { "type": ["null", "string"], "description": "`Raio`." }
+          "height": {
+            "type": ["null", "string"],
+            "description": "`Altura`."
+          },
+          "width": {
+            "type": ["null", "string"],
+            "description": "`Largura`."
+          },
+          "length": {
+            "type": ["null", "string"],
+            "description": "`Comprimento`."
+          },
+          "radius": {
+            "type": ["null", "string"],
+            "description": "`Raio`."
+          }
         }
       },
       "ProductSpecs": {
@@ -3897,19 +4839,46 @@
             "type": ["null", "string"],
             "description": "`Qtd. lâmp. por reator`."
           },
-          "watts": { "type": ["null", "string"], "description": "`Consumo (Watts)`." },
-          "volts": { "type": ["null", "string"], "description": "`Tensão (Volts)`." },
-          "biVolts": { "type": ["null", "string"], "description": "`Tensão (BiVolts)`." },
+          "watts": {
+            "type": ["null", "string"],
+            "description": "`Consumo (Watts)`."
+          },
+          "volts": {
+            "type": ["null", "string"],
+            "description": "`Tensão (Volts)`."
+          },
+          "biVolts": {
+            "type": ["null", "string"],
+            "description": "`Tensão (BiVolts)`."
+          },
           "colorTemperature": {
             "type": ["null", "string"],
             "description": "`Temperatura de Cor`."
           },
-          "beamAngle": { "type": ["null", "string"], "description": "`Ângulo`." },
-          "lumen": { "type": ["null", "string"], "description": "`Lúmen`." },
-          "clearSpan": { "type": ["null", "string"], "description": "`Vão livre`." },
-          "nicheCut": { "type": ["null", "string"], "description": "`Corte do nicho`." },
-          "netWeight": { "type": ["null", "string"], "description": "`Peso líquido`." },
-          "grossWeight": { "type": ["null", "string"], "description": "`Peso bruto`." },
+          "beamAngle": {
+            "type": ["null", "string"],
+            "description": "`Ângulo`."
+          },
+          "lumen": {
+            "type": ["null", "string"],
+            "description": "`Lúmen`."
+          },
+          "clearSpan": {
+            "type": ["null", "string"],
+            "description": "`Vão livre`."
+          },
+          "nicheCut": {
+            "type": ["null", "string"],
+            "description": "`Corte do nicho`."
+          },
+          "netWeight": {
+            "type": ["null", "string"],
+            "description": "`Peso líquido`."
+          },
+          "grossWeight": {
+            "type": ["null", "string"],
+            "description": "`Peso bruto`."
+          },
           "installationMinutes": {
             "type": ["null", "string"],
             "description": "`Tempo de instalação`, em minutos."
@@ -3919,11 +4888,25 @@
             "description": "`Garantia`, em meses."
           },
           "productDimensions": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductDimensions" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductDimensions"
+              }
+            ],
             "description": "Medidas do PRODUTO."
           },
           "packageDimensions": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductDimensions" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductDimensions"
+              }
+            ],
             "description": "Medidas da EMBALAGEM — são outras, e é por isso que são dois blocos."
           }
         }
@@ -3997,7 +4980,14 @@
             "description": "Proposto. Nome da fábrica, para exibição."
           },
           "specs": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductSpecs" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductSpecs"
+              }
+            ],
             "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
           }
         }
@@ -4086,7 +5076,14 @@
             "description": "Proposto. Só o id — ver `productTypeId`."
           },
           "specs": {
-            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ProductSpecs" }],
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductSpecs"
+              }
+            ],
             "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
           }
         }
@@ -4137,7 +5134,7 @@
             "type": "boolean"
           },
           "displayName": {
-            "description": "Proposto. Como o operador se chama na tela \u2014 a sauda\u00e7\u00e3o do Dashboard. `null` quando o servidor n\u00e3o sabe: a tela ent\u00e3o cumprimenta sem nome, em vez de exibir e-mail ou id, que \u00e9 identificador de sistema e n\u00e3o nome de gente.",
+            "description": "Proposto. Como o operador se chama na tela — a saudação do Dashboard. `null` quando o servidor não sabe: a tela então cumprimenta sem nome, em vez de exibir e-mail ou id, que é identificador de sistema e não nome de gente.",
             "type": ["string", "null"]
           }
         }
@@ -4244,7 +5241,7 @@
             "type": "string"
           },
           "features": {
-            "description": "Proposto. Recursos CONTRATADOS por esta empresa \u2014 o que ela opera, n\u00e3o o que o usu\u00e1rio pode fazer nela (isso \u00e9 `role`). Conjunto fechado; valor fora dele \u00e9 ignorado pelo cliente. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo \u2014 aus\u00eancia viraria 'n\u00e3o sei' e o front teria de adivinhar entre esconder tudo e mostrar tudo.",
+            "description": "Proposto. Recursos CONTRATADOS por esta empresa — o que ela opera, não o que o usuário pode fazer nela (isso é `role`). Conjunto fechado; valor fora dele é ignorado pelo cliente. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo — ausência viraria 'não sei' e o front teria de adivinhar entre esconder tudo e mostrar tudo.",
             "type": "array",
             "items": {
               "type": "string",
@@ -4254,7 +5251,7 @@
         }
       },
       "DashboardSummaryDto": {
-        "description": "Proposto. Os quatro n\u00fameros da faixa de KPI. Dinheiro em CENTAVOS, inteiro \u2014 a regra do repo vale no contrato.",
+        "description": "Proposto. Os quatro números da faixa de KPI. Dinheiro em CENTAVOS, inteiro — a regra do repo vale no contrato.",
         "required": [
           "openQuotes",
           "openQuotesDueThisWeek",
@@ -4267,12 +5264,12 @@
         "type": "object",
         "properties": {
           "openQuotes": {
-            "description": "Or\u00e7amentos abertos.",
+            "description": "Orçamentos abertos.",
             "type": "integer",
             "format": "int32"
           },
           "openQuotesDueThisWeek": {
-            "description": "Destes, quantos vencem nos pr\u00f3ximos 7 dias.",
+            "description": "Destes, quantos vencem nos próximos 7 dias.",
             "type": "integer",
             "format": "int32"
           },
@@ -4282,22 +5279,22 @@
             "format": "int32"
           },
           "incomingOrdersToday": {
-            "description": "Destes, quantos com previs\u00e3o para hoje.",
+            "description": "Destes, quantos com previsão para hoje.",
             "type": "integer",
             "format": "int32"
           },
           "criticalStockItems": {
-            "description": "Variantes com saldo abaixo do m\u00ednimo.",
+            "description": "Variantes com saldo abaixo do mínimo.",
             "type": "integer",
             "format": "int32"
           },
           "monthSalesCents": {
-            "description": "Vendas do m\u00eas corrente, em centavos.",
+            "description": "Vendas do mês corrente, em centavos.",
             "type": "integer",
             "format": "int64"
           },
           "previousMonthSalesCents": {
-            "description": "Vendas do m\u00eas anterior fechado, em centavos. O front deriva a varia\u00e7\u00e3o dos dois \u2014 percentual pronto no DTO seria n\u00famero que ningu\u00e9m consegue conferir na tela.",
+            "description": "Vendas do mês anterior fechado, em centavos. O front deriva a variação dos dois — percentual pronto no DTO seria número que ninguém consegue conferir na tela.",
             "type": "integer",
             "format": "int64"
           }
@@ -4313,7 +5310,7 @@
             "format": "uuid"
           },
           "startsAt": {
-            "description": "In\u00edcio, com hora (ISO 8601).",
+            "description": "Início, com hora (ISO 8601).",
             "type": "string",
             "format": "date-time"
           },
@@ -4325,7 +5322,7 @@
             "type": ["string", "null"]
           },
           "kind": {
-            "description": "Conjunto fechado \u2014 \u00e9 ele que d\u00e1 a cor da barra e a legenda do calend\u00e1rio.",
+            "description": "Conjunto fechado — é ele que dá a cor da barra e a legenda do calendário.",
             "type": "string",
             "enum": ["delivery", "quote", "meeting", "payment"]
           }
@@ -4344,13 +5341,13 @@
             "type": "string"
           },
           "initials": {
-            "description": "As iniciais que o avatar mostra. V\u00eam do servidor porque quem sabe partir 'Maria da Silva' em 'MS' \u00e9 quem guarda o nome \u2014 o front partindo string faria 'DS' em nome com preposi\u00e7\u00e3o.",
+            "description": "As iniciais que o avatar mostra. Vêm do servidor porque quem sabe partir 'Maria da Silva' em 'MS' é quem guarda o nome — o front partindo string faria 'DS' em nome com preposição.",
             "type": "string"
           }
         }
       },
       "TaskDto": {
-        "description": "Proposto. Um cart\u00e3o do quadro.",
+        "description": "Proposto. Um cartão do quadro.",
         "required": [
           "id",
           "title",
@@ -4403,7 +5400,7 @@
         }
       },
       "TaskWriteRequest": {
-        "description": "Proposto. Corpo de cria\u00e7\u00e3o de tarefa.",
+        "description": "Proposto. Corpo de criação de tarefa.",
         "required": ["title", "status", "priority"],
         "type": "object",
         "properties": {
@@ -4430,7 +5427,7 @@
         }
       },
       "TaskPatchRequest": {
-        "description": "Proposto. Corpo do PATCH: s\u00f3 o que muda. Campo ausente fica como est\u00e1 \u2014 ausente N\u00c3O \u00e9 o mesmo que `null`, que apaga.",
+        "description": "Proposto. Corpo do PATCH: só o que muda. Campo ausente fica como está — ausente NÃO é o mesmo que `null`, que apaga.",
         "type": "object",
         "properties": {
           "title": {
@@ -4513,7 +5510,7 @@
             "type": "string"
           },
           "kind": {
-            "description": "O que a barra \u00e9 \u2014 d\u00e1 o r\u00f3tulo da pill.",
+            "description": "O que a barra é — dá o rótulo da pill.",
             "type": "string",
             "enum": ["task", "order", "delivery"]
           },
@@ -4522,12 +5519,12 @@
             "format": "date"
           },
           "endsOn": {
-            "description": "Previs\u00e3o de t\u00e9rmino, inclusiva.",
+            "description": "Previsão de término, inclusiva.",
             "type": "string",
             "format": "date"
           },
           "progressPercent": {
-            "description": "0 a 100. Progresso N\u00c3O \u00e9 dinheiro \u2014 a tela n\u00e3o o pinta de verde.",
+            "description": "0 a 100. Progresso NÃO é dinheiro — a tela não o pinta de verde.",
             "type": "integer",
             "format": "int32"
           }
@@ -4579,7 +5576,7 @@
         }
       },
       "EmployeeDto": {
-        "description": "Proposto. Colaborador da empresa ativa. Somente leitura neste corte: existe para resolver o `salespersonId` do or\u00e7amento e a listagem de Colaboradores. O formul\u00e1rio de RH (transcri\u00e7\u00e3o \u00a72, ~30 campos) entra num corte pr\u00f3prio, com POST e PUT. N\u00e3o h\u00e1 `code`: o legado identifica funcion\u00e1rio por CPF e n\u00e3o guarda c\u00f3digo humano, ent\u00e3o a coluna `C\u00f3digo` da listagem sai da tela em vez de exibir um uuid.",
+        "description": "Proposto. Colaborador da empresa ativa. Somente leitura neste corte: existe para resolver o `salespersonId` do orçamento e a listagem de Colaboradores. O formulário de RH (transcrição §2, ~30 campos) entra num corte próprio, com POST e PUT. Não há `code`: o legado identifica funcionário por CPF e não guarda código humano, então a coluna `Código` da listagem sai da tela em vez de exibir um uuid.",
         "required": ["id", "name", "active"],
         "type": "object",
         "properties": {
@@ -4591,11 +5588,11 @@
             "type": "string"
           },
           "sector": {
-            "description": "Setor \u2014 kind `SETOR`.",
+            "description": "Setor — kind `SETOR`.",
             "type": ["string", "null"]
           },
           "jobTitle": {
-            "description": "Cargo \u2014 kind `CARGO`.",
+            "description": "Cargo — kind `CARGO`.",
             "type": ["string", "null"]
           },
           "active": {
@@ -4620,28 +5617,28 @@
         }
       },
       "QuoteEnvironmentDto": {
-        "description": "Proposto. Ambiente da obra DENTRO do or\u00e7amento \u2014 o `Ambiente F5` da tela. S\u00e3o tr\u00eas camadas, e esta \u00e9 a do meio: o cat\u00e1logo por empresa vive em `GET /api/catalog-lookups?kind=AMBIENTE`, esta \u00e9 a inst\u00e2ncia no documento, e o item aponta para ela por `environmentCode`. O `name` \u00e9 CONGELADO na emiss\u00e3o, como o legado j\u00e1 faz em `VendaAmbiente.VenAmb_Descricao`: renomear o ambiente no cat\u00e1logo n\u00e3o pode reescrever or\u00e7amento fechado, e reescrever item a item seria pior ainda. Ambiente sem item nenhum \u00e9 estado leg\u00edtimo \u2014 por isso \u00e9 cole\u00e7\u00e3o pr\u00f3pria, n\u00e3o um campo derivado dos itens.",
+        "description": "Proposto. Ambiente da obra DENTRO do orçamento — o `Ambiente F5` da tela. São três camadas, e esta é a do meio: o catálogo por empresa vive em `GET /api/catalog-lookups?kind=AMBIENTE`, esta é a instância no documento, e o item aponta para ela por `environmentCode`. O `name` é CONGELADO na emissão, como o legado já faz em `VendaAmbiente.VenAmb_Descricao`: renomear o ambiente no catálogo não pode reescrever orçamento fechado, e reescrever item a item seria pior ainda. Ambiente sem item nenhum é estado legítimo — por isso é coleção própria, não um campo derivado dos itens.",
         "required": ["code", "name", "order"],
         "type": "object",
         "properties": {
           "code": {
-            "description": "Id do ambiente no cat\u00e1logo (`CatalogLookupDto.id`, kind `AMBIENTE`).",
+            "description": "Id do ambiente no catálogo (`CatalogLookupDto.id`, kind `AMBIENTE`).",
             "type": "string",
             "format": "uuid"
           },
           "name": {
-            "description": "Nome congelado na emiss\u00e3o.",
+            "description": "Nome congelado na emissão.",
             "type": "string"
           },
           "order": {
-            "description": "Ordem de exibi\u00e7\u00e3o. O PDF do or\u00e7amento agrupa por ambiente e vai para o cliente, ent\u00e3o a ordem \u00e9 dado, n\u00e3o apresenta\u00e7\u00e3o. N\u00c3O vem do legado \u2014 `VendaAmbiente` n\u00e3o tem coluna de ordem.",
+            "description": "Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem.",
             "type": "integer",
             "format": "int32"
           }
         }
       },
       "QuoteItemDto": {
-        "description": "Proposto. Linha da grade do or\u00e7amento. Os campos de descri\u00e7\u00e3o, acabamento, tamanho e pre\u00e7o s\u00e3o SNAPSHOT da emiss\u00e3o, n\u00e3o leitura do cat\u00e1logo: documento comercial congela spec e pre\u00e7o, sen\u00e3o corrigir o cadastro reescreveria or\u00e7amento do ano passado.",
+        "description": "Proposto. Linha da grade do orçamento. Os campos de descrição, acabamento, tamanho e preço são SNAPSHOT da emissão, não leitura do catálogo: documento comercial congela spec e preço, senão corrigir o cadastro reescreveria orçamento do ano passado.",
         "required": [
           "lineNumber",
           "description",
@@ -4658,17 +5655,17 @@
             "format": "int32"
           },
           "environmentCode": {
-            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` \u00e9 nul\u00e1vel).",
+            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "variantId": {
-            "description": "Variante do cat\u00e1logo (produto \u00d7 acabamento \u00d7 tamanho). `null` quando a linha n\u00e3o veio do cat\u00e1logo.",
+            "description": "Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "description": {
-            "description": "Descri\u00e7\u00e3o congelada na emiss\u00e3o.",
+            "description": "Descrição congelada na emissão.",
             "type": "string"
           },
           "finish": {
@@ -4680,7 +5677,7 @@
             "type": ["string", "null"]
           },
           "quantity": {
-            "description": "At\u00e9 3 casas.",
+            "description": "Até 3 casas.",
             "type": "number",
             "format": "double"
           },
@@ -4688,12 +5685,12 @@
             "type": ["string", "null"]
           },
           "unitPriceCents": {
-            "description": "Valor unit\u00e1rio congelado, em centavos.",
+            "description": "Valor unitário congelado, em centavos.",
             "type": "integer",
             "format": "int64"
           },
           "discountPercent": {
-            "description": "Desconto do item. Int com 4 casas impl\u00edcitas: `10000` = 1%.",
+            "description": "Desconto do item. Int com 4 casas implícitas: `10000` = 1%.",
             "type": "integer",
             "format": "int32"
           },
@@ -4706,7 +5703,7 @@
             "type": ["string", "null"]
           },
           "supplierCode": {
-            "description": "C\u00f3digo do produto NO fornecedor \u2014 a l\u00edngua em que o item \u00e9 pedido.",
+            "description": "Código do produto NO fornecedor — a língua em que o item é pedido.",
             "type": ["string", "null"]
           },
           "supplierDescription": {
@@ -4717,18 +5714,18 @@
             "type": ["string", "null"]
           },
           "pieceType": {
-            "description": "Tipo da pe\u00e7a \u2014 kind `TIPO_PECA`.",
+            "description": "Tipo da peça — kind `TIPO_PECA`.",
             "type": ["string", "null"]
           },
           "totalCents": {
-            "description": "Valor do item. Calculado pelo servidor \u2014 a escrita n\u00e3o manda.",
+            "description": "Valor do item. Calculado pelo servidor — a escrita não manda.",
             "type": "integer",
             "format": "int64"
           }
         }
       },
       "QuoteItemWriteRequest": {
-        "description": "Proposto. Linha da grade na escrita. Sem `totalCents`: quem soma \u00e9 o servidor.",
+        "description": "Proposto. Linha da grade na escrita. Sem `totalCents`: quem soma é o servidor.",
         "required": ["lineNumber", "description", "quantity", "unitPriceCents", "discountPercent"],
         "type": "object",
         "properties": {
@@ -4738,17 +5735,17 @@
             "format": "int32"
           },
           "environmentCode": {
-            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` \u00e9 nul\u00e1vel).",
+            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "variantId": {
-            "description": "Variante do cat\u00e1logo (produto \u00d7 acabamento \u00d7 tamanho). `null` quando a linha n\u00e3o veio do cat\u00e1logo.",
+            "description": "Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "description": {
-            "description": "Descri\u00e7\u00e3o congelada na emiss\u00e3o.",
+            "description": "Descrição congelada na emissão.",
             "type": "string"
           },
           "finish": {
@@ -4760,7 +5757,7 @@
             "type": ["string", "null"]
           },
           "quantity": {
-            "description": "At\u00e9 3 casas.",
+            "description": "Até 3 casas.",
             "type": "number",
             "format": "double"
           },
@@ -4768,12 +5765,12 @@
             "type": ["string", "null"]
           },
           "unitPriceCents": {
-            "description": "Valor unit\u00e1rio congelado, em centavos.",
+            "description": "Valor unitário congelado, em centavos.",
             "type": "integer",
             "format": "int64"
           },
           "discountPercent": {
-            "description": "Desconto do item. Int com 4 casas impl\u00edcitas: `10000` = 1%.",
+            "description": "Desconto do item. Int com 4 casas implícitas: `10000` = 1%.",
             "type": "integer",
             "format": "int32"
           },
@@ -4786,7 +5783,7 @@
             "type": ["string", "null"]
           },
           "supplierCode": {
-            "description": "C\u00f3digo do produto NO fornecedor \u2014 a l\u00edngua em que o item \u00e9 pedido.",
+            "description": "Código do produto NO fornecedor — a língua em que o item é pedido.",
             "type": ["string", "null"]
           },
           "supplierDescription": {
@@ -4797,13 +5794,13 @@
             "type": ["string", "null"]
           },
           "pieceType": {
-            "description": "Tipo da pe\u00e7a \u2014 kind `TIPO_PECA`.",
+            "description": "Tipo da peça — kind `TIPO_PECA`.",
             "type": ["string", "null"]
           }
         }
       },
       "QuoteDto": {
-        "description": "Proposto. Or\u00e7amento na listagem \u2014 s\u00f3 o que a grade mostra.",
+        "description": "Proposto. Orçamento na listagem — só o que a grade mostra.",
         "required": ["id", "number", "customerId", "customerName", "status", "totalCents"],
         "type": "object",
         "properties": {
@@ -4812,20 +5809,20 @@
             "format": "uuid"
           },
           "number": {
-            "description": "N\u00famero do documento. Sequ\u00eancia GLOBAL do grupo, atribu\u00edda pelo servidor \u2014 por isso n\u00e3o existe na escrita. No legado `Ven_CodigoPre` j\u00e1 \u00e9 \u00fanica entre as empresas, e cliente que escolhe n\u00famero colide entre elas.",
+            "description": "Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas.",
             "type": "string"
           },
           "series": {
-            "description": "S\u00e9rie do documento.",
+            "description": "Série do documento.",
             "type": ["string", "null"]
           },
           "issuedAt": {
-            "description": "Data de emiss\u00e3o.",
+            "description": "Data de emissão.",
             "type": ["string", "null"],
             "format": "date"
           },
           "expiresAt": {
-            "description": "Data de validade \u2014 curta, ~5 dias na opera\u00e7\u00e3o atual.",
+            "description": "Data de validade — curta, ~5 dias na operação atual.",
             "type": ["string", "null"],
             "format": "date"
           },
@@ -4834,27 +5831,27 @@
             "format": "uuid"
           },
           "customerName": {
-            "description": "Nome do cliente na emiss\u00e3o.",
+            "description": "Nome do cliente na emissão.",
             "type": "string"
           },
           "projectName": {
-            "description": "`Descri\u00e7\u00e3o da Obra` \u2014 como o operador chama a obra.",
+            "description": "`Descrição da Obra` — como o operador chama a obra.",
             "type": ["string", "null"]
           },
           "status": {
-            "description": "Documento CANCELA, n\u00e3o desativa: `active` de cadastro n\u00e3o serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
             "type": "string",
             "enum": ["active", "cancelled"]
           },
           "totalCents": {
-            "description": "Total do or\u00e7amento, em centavos. Calculado pelo servidor.",
+            "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
             "type": "integer",
             "format": "int64"
           }
         }
       },
       "QuoteDetailDto": {
-        "description": "Proposto. O or\u00e7amento inteiro: cabe\u00e7alho, ambientes e itens numa resposta s\u00f3. Itens e ambientes viajam embutidos porque n\u00e3o t\u00eam identidade fora do documento, e porque sub-recurso por linha faria um `Gravar` virar N requisi\u00e7\u00f5es sem transa\u00e7\u00e3o entre elas \u2014 falha no meio deixaria metade da grade gravada.",
+        "description": "Proposto. O orçamento inteiro: cabeçalho, ambientes e itens numa resposta só. Itens e ambientes viajam embutidos porque não têm identidade fora do documento, e porque sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas — falha no meio deixaria metade da grade gravada.",
         "required": [
           "id",
           "number",
@@ -4874,20 +5871,20 @@
             "format": "uuid"
           },
           "number": {
-            "description": "N\u00famero do documento. Sequ\u00eancia GLOBAL do grupo, atribu\u00edda pelo servidor \u2014 por isso n\u00e3o existe na escrita. No legado `Ven_CodigoPre` j\u00e1 \u00e9 \u00fanica entre as empresas, e cliente que escolhe n\u00famero colide entre elas.",
+            "description": "Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas.",
             "type": "string"
           },
           "series": {
-            "description": "S\u00e9rie do documento.",
+            "description": "Série do documento.",
             "type": ["string", "null"]
           },
           "issuedAt": {
-            "description": "Data de emiss\u00e3o.",
+            "description": "Data de emissão.",
             "type": ["string", "null"],
             "format": "date"
           },
           "expiresAt": {
-            "description": "Data de validade \u2014 curta, ~5 dias na opera\u00e7\u00e3o atual.",
+            "description": "Data de validade — curta, ~5 dias na operação atual.",
             "type": ["string", "null"],
             "format": "date"
           },
@@ -4896,25 +5893,25 @@
             "format": "uuid"
           },
           "customerName": {
-            "description": "Nome do cliente na emiss\u00e3o.",
+            "description": "Nome do cliente na emissão.",
             "type": "string"
           },
           "projectName": {
-            "description": "`Descri\u00e7\u00e3o da Obra` \u2014 como o operador chama a obra.",
+            "description": "`Descrição da Obra` — como o operador chama a obra.",
             "type": ["string", "null"]
           },
           "status": {
-            "description": "Documento CANCELA, n\u00e3o desativa: `active` de cadastro n\u00e3o serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
             "type": "string",
             "enum": ["active", "cancelled"]
           },
           "totalCents": {
-            "description": "Total do or\u00e7amento, em centavos. Calculado pelo servidor.",
+            "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
             "type": "integer",
             "format": "int64"
           },
           "folderNumber": {
-            "description": "`N\u00ba Pasta`.",
+            "description": "`Nº Pasta`.",
             "type": ["string", "null"]
           },
           "closedAt": {
@@ -4923,7 +5920,7 @@
             "format": "date"
           },
           "salespersonId": {
-            "description": "Consultor(a) que atende \u2014 `EmployeeDto.id`.",
+            "description": "Consultor(a) que atende — `EmployeeDto.id`.",
             "type": ["string", "null"],
             "format": "uuid"
           },
@@ -4931,7 +5928,7 @@
             "type": ["string", "null"]
           },
           "professionalId": {
-            "description": "Profissional Externo (arquiteto/especificador) \u2014 \u00e9 `PartnerDto.id` com papel `professional`, n\u00e3o cadastro \u00e0 parte.",
+            "description": "Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.",
             "type": ["string", "null"],
             "format": "uuid"
           },
@@ -4939,17 +5936,17 @@
             "type": ["string", "null"]
           },
           "discountMode": {
-            "description": "Desconto por produto ou geral \u2014 `Ven_TipoDesc` do legado (P/G).",
+            "description": "Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).",
             "type": "string",
             "enum": ["product", "general"]
           },
           "discountPercent": {
-            "description": "Desconto geral. Int com 4 casas impl\u00edcitas: `10000` = 1%. Zero quando o modo \u00e9 `product`.",
+            "description": "Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`.",
             "type": "integer",
             "format": "int32"
           },
           "environments": {
-            "description": "Ambientes do documento, na ordem de exibi\u00e7\u00e3o.",
+            "description": "Ambientes do documento, na ordem de exibição.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuoteEnvironmentDto"
@@ -4964,21 +5961,21 @@
         }
       },
       "QuoteWriteRequest": {
-        "description": "Proposto. Corpo de cria\u00e7\u00e3o e de altera\u00e7\u00e3o. **`PUT` substitui o documento INTEIRO**, itens e ambientes junto: corpo parcial apaga o que n\u00e3o veio. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`), sem `totalCents` nem `customerName` (o servidor calcula e resolve).",
+        "description": "Proposto. Corpo de criação e de alteração. **`PUT` substitui o documento INTEIRO**, itens e ambientes junto: corpo parcial apaga o que não veio. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`), sem `totalCents` nem `customerName` (o servidor calcula e resolve).",
         "required": ["customerId", "discountMode", "discountPercent", "environments", "items"],
         "type": "object",
         "properties": {
           "series": {
-            "description": "S\u00e9rie do documento.",
+            "description": "Série do documento.",
             "type": ["string", "null"]
           },
           "issuedAt": {
-            "description": "Data de emiss\u00e3o.",
+            "description": "Data de emissão.",
             "type": ["string", "null"],
             "format": "date"
           },
           "expiresAt": {
-            "description": "Data de validade \u2014 curta, ~5 dias na opera\u00e7\u00e3o atual.",
+            "description": "Data de validade — curta, ~5 dias na operação atual.",
             "type": ["string", "null"],
             "format": "date"
           },
@@ -4987,11 +5984,11 @@
             "format": "uuid"
           },
           "projectName": {
-            "description": "`Descri\u00e7\u00e3o da Obra` \u2014 como o operador chama a obra.",
+            "description": "`Descrição da Obra` — como o operador chama a obra.",
             "type": ["string", "null"]
           },
           "folderNumber": {
-            "description": "`N\u00ba Pasta`.",
+            "description": "`Nº Pasta`.",
             "type": ["string", "null"]
           },
           "closedAt": {
@@ -5000,27 +5997,27 @@
             "format": "date"
           },
           "salespersonId": {
-            "description": "Consultor(a) que atende \u2014 `EmployeeDto.id`.",
+            "description": "Consultor(a) que atende — `EmployeeDto.id`.",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "professionalId": {
-            "description": "Profissional Externo (arquiteto/especificador) \u2014 \u00e9 `PartnerDto.id` com papel `professional`, n\u00e3o cadastro \u00e0 parte.",
+            "description": "Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "discountMode": {
-            "description": "Desconto por produto ou geral \u2014 `Ven_TipoDesc` do legado (P/G).",
+            "description": "Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).",
             "type": "string",
             "enum": ["product", "general"]
           },
           "discountPercent": {
-            "description": "Desconto geral. Int com 4 casas impl\u00edcitas: `10000` = 1%. Zero quando o modo \u00e9 `product`.",
+            "description": "Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`.",
             "type": "integer",
             "format": "int32"
           },
           "environments": {
-            "description": "Ambientes do documento, na ordem de exibi\u00e7\u00e3o.",
+            "description": "Ambientes do documento, na ordem de exibição.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuoteEnvironmentDto"
@@ -5615,6 +6612,569 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ActivityDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EmployeeDetailDto": {
+        "description": "Proposto. A ficha do colaborador — o cadastro que o legado tem em `Funcionario` e que a listagem só arranhava. Os campos vêm de DOIS níveis e o corpo os junta de propósito: nome, documento e contato são da ORGANIZAÇÃO (a mesma pessoa nas duas empresas do grupo), enquanto papel, cargo, setor e as datas de vínculo são da EMPRESA ATIVA — o mesmo colaborador pode ser vendedor numa e gerente na outra (decisão do user, 2026-08-18). Colaborador sem vínculo na empresa ativa devolve os campos do vínculo em `null`, e não 404: ele existe, só não trabalha aqui.",
+        "required": ["id", "name", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "document": {
+            "description": "CPF. O legado identifica funcionário por ele, e é por isso que não existe código humano nesta ficha.",
+            "type": ["string", "null"]
+          },
+          "email": {
+            "description": "Também é a credencial de acesso: `employees` guarda o hash da senha e o e-mail é único, sem diferença de caixa. Trocar aqui troca o login.",
+            "type": ["string", "null"]
+          },
+          "phone": {
+            "type": ["string", "null"]
+          },
+          "photoUrl": {
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo.",
+            "type": "boolean"
+          },
+          "role": {
+            "description": "Papel de PERMISSÃO na empresa ativa (`employee_company.role`) — não é cargo. `null` quando não há vínculo.",
+            "type": ["string", "null"]
+          },
+          "sectorId": {
+            "description": "Setor na empresa ativa — `CatalogLookupDto.id`, kind `SETOR`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "sector": {
+            "description": "Nome do setor, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "jobTitleId": {
+            "description": "Cargo na empresa ativa — `CatalogLookupDto.id`, kind `CARGO`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "jobTitle": {
+            "description": "Nome do cargo, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "hiredAt": {
+            "description": "Admissão NESTA empresa.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "dismissedAt": {
+            "description": "Demissão NESTA empresa. Preenchida = vínculo encerrado aqui, sem apagar a pessoa da organização.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerFacing": {
+            "description": "`Atendimento ao cliente` do legado — é quem aparece no combo de Consultor(a) do orçamento. `null` quando não há vínculo.",
+            "type": ["boolean", "null"]
+          },
+          "linkActive": {
+            "description": "Vínculo ativo NESTA empresa. Separado de `active` porque as duas perguntas são diferentes: sair de uma empresa não é sair do grupo.",
+            "type": ["boolean", "null"]
+          }
+        }
+      },
+      "EmployeeWriteRequest": {
+        "description": "Proposto. Só o nível ORGANIZAÇÃO. Cargo, setor e papel não entram aqui — moram no vínculo e mudam por `/link`, senão gravar a ficha numa empresa reescreveria em silêncio o cargo que a pessoa tem na outra. **Salário e o resto do bloco de RH ficam fora deste corte**: a pergunta de LGPD sobre dado sensível de funcionário segue sem resposta, e campo sem regra de acesso é pior que campo ausente. `PUT` substitui o registro inteiro: omitir apaga.",
+        "required": ["name", "document", "email", "phone", "active"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "document": {
+            "type": ["string", "null"]
+          },
+          "email": {
+            "description": "Único no produto inteiro, sem diferença de caixa — é a credencial. E-mail repetido é 409, não 400.",
+            "type": ["string", "null"]
+          },
+          "phone": {
+            "type": ["string", "null"]
+          },
+          "photoUrl": {
+            "type": ["string", "null"]
+          },
+          "active": {
+            "type": ["null", "boolean"]
+          }
+        }
+      },
+      "EmployeeLinkRequest": {
+        "description": "Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).",
+        "required": ["role", "active"],
+        "type": "object",
+        "properties": {
+          "role": {
+            "description": "Papel de permissão. Conjunto validado pelo servidor; valor fora dele é 400.",
+            "type": "string"
+          },
+          "sectorId": {
+            "description": "`CatalogLookupDto.id`, kind `SETOR`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "jobTitleId": {
+            "description": "`CatalogLookupDto.id`, kind `CARGO`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "hiredAt": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "dismissedAt": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerFacing": {
+            "type": ["null", "boolean"]
+          },
+          "active": {
+            "type": ["null", "boolean"]
+          }
+        }
+      },
+      "OrderEnvironmentDto": {
+        "description": "Proposto. Ambiente da obra dentro do PEDIDO. Mesma forma do ambiente do orçamento e schema próprio de propósito: os dois documentos são agregados distintos (decisão de 2026-08-10), e compartilhar o tipo faria uma mudança no orçamento chegar ao pedido sem ninguém pedir. O nome continua CONGELADO na emissão.",
+        "required": ["code", "name", "order"],
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Id do ambiente no catálogo (`CatalogLookupDto.id`, kind `AMBIENTE`).",
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Nome congelado na emissão.",
+            "type": "string"
+          },
+          "order": {
+            "description": "Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OrderItemDto": {
+        "description": "Proposto. Linha do pedido. Snapshot da CONVERSÃO, não do orçamento: o pedido nasce com cópia de descrição, acabamento, tamanho e preço, e repreçar o orçamento depois não move o pedido.",
+        "required": [
+          "lineNumber",
+          "description",
+          "quantity",
+          "unitPriceCents",
+          "discountPercent",
+          "totalCents"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "Coluna `Item`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environmentCode": {
+            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "variantId": {
+            "description": "Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descrição congelada na emissão.",
+            "type": "string"
+          },
+          "finish": {
+            "description": "Acabamento congelado.",
+            "type": ["string", "null"]
+          },
+          "size": {
+            "description": "Tamanho congelado.",
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Até 3 casas.",
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "unitPriceCents": {
+            "description": "Valor unitário congelado, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "discountPercent": {
+            "description": "Desconto do item. Int com 4 casas implícitas: `10000` = 1%.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierId": {
+            "description": "Fornecedor da linha (`PartnerDto.id`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          },
+          "supplierCode": {
+            "description": "Código do produto NO fornecedor — a língua em que o item é pedido.",
+            "type": ["string", "null"]
+          },
+          "supplierDescription": {
+            "type": ["string", "null"]
+          },
+          "productGroup": {
+            "description": "Grupo de produto.",
+            "type": ["string", "null"]
+          },
+          "pieceType": {
+            "description": "Tipo da peça — kind `TIPO_PECA`.",
+            "type": ["string", "null"]
+          },
+          "totalCents": {
+            "description": "Valor do item. Calculado pelo servidor — a escrita não manda.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OrderItemWriteRequest": {
+        "description": "Proposto. Linha do pedido na escrita. Sem `totalCents`: quem soma é o servidor.",
+        "required": ["lineNumber", "description", "quantity", "unitPriceCents", "discountPercent"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "Coluna `Item`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environmentCode": {
+            "description": "Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "variantId": {
+            "description": "Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descrição congelada na emissão.",
+            "type": "string"
+          },
+          "finish": {
+            "description": "Acabamento congelado.",
+            "type": ["string", "null"]
+          },
+          "size": {
+            "description": "Tamanho congelado.",
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Até 3 casas.",
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "unitPriceCents": {
+            "description": "Valor unitário congelado, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "discountPercent": {
+            "description": "Desconto do item. Int com 4 casas implícitas: `10000` = 1%.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "supplierId": {
+            "description": "Fornecedor da linha (`PartnerDto.id`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          },
+          "supplierCode": {
+            "description": "Código do produto NO fornecedor — a língua em que o item é pedido.",
+            "type": ["string", "null"]
+          },
+          "supplierDescription": {
+            "type": ["string", "null"]
+          },
+          "productGroup": {
+            "description": "Grupo de produto.",
+            "type": ["string", "null"]
+          },
+          "pieceType": {
+            "description": "Tipo da peça — kind `TIPO_PECA`.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "OrderDto": {
+        "description": "Proposto. Pedido de venda na listagem. É a metade que faltava da cadeia do legado (Pedido de Venda → Pedido de Compra → Ordem de Compra): sem pedido, Compras não tem de onde puxar.",
+        "required": ["id", "number", "customerId", "customerName", "status", "totalCents"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas.",
+            "type": "string"
+          },
+          "series": {
+            "description": "Série do documento.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Data de emissão.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "description": "Nome do cliente na emissão.",
+            "type": "string"
+          },
+          "projectName": {
+            "description": "`Descrição da Obra` — como o operador chama a obra.",
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "type": "string",
+            "enum": ["active", "cancelled"]
+          },
+          "totalCents": {
+            "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "quoteId": {
+            "description": "Orçamento de origem. `null` quando o pedido foi lançado direto, que o legado permite.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        }
+      },
+      "OrderDetailDto": {
+        "description": "Proposto. O pedido inteiro: cabeçalho, ambientes e itens numa resposta só, pela mesma razão do orçamento — item não tem identidade fora do documento e gravar em N requisições deixaria metade da grade salva.",
+        "required": [
+          "id",
+          "number",
+          "customerId",
+          "customerName",
+          "status",
+          "totalCents",
+          "discountMode",
+          "discountPercent",
+          "environments",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas.",
+            "type": "string"
+          },
+          "series": {
+            "description": "Série do documento.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Data de emissão.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "description": "Nome do cliente na emissão.",
+            "type": "string"
+          },
+          "projectName": {
+            "description": "`Descrição da Obra` — como o operador chama a obra.",
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "type": "string",
+            "enum": ["active", "cancelled"]
+          },
+          "totalCents": {
+            "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "folderNumber": {
+            "description": "`Nº Pasta`.",
+            "type": ["string", "null"]
+          },
+          "closedAt": {
+            "description": "Data de fechamento.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "salespersonId": {
+            "description": "Consultor(a) que atende — `EmployeeDto.id`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "salespersonName": {
+            "type": ["string", "null"]
+          },
+          "professionalId": {
+            "description": "Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "professionalName": {
+            "type": ["string", "null"]
+          },
+          "discountMode": {
+            "description": "Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).",
+            "type": "string",
+            "enum": ["product", "general"]
+          },
+          "discountPercent": {
+            "description": "Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environments": {
+            "description": "Ambientes do documento, na ordem de exibição.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderEnvironmentDto"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemDto"
+            }
+          },
+          "quoteId": {
+            "description": "Orçamento de origem, quando houve conversão.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "quoteNumber": {
+            "description": "Número do orçamento de origem, resolvido pelo servidor — a tela mostra 'veio do orçamento 1234' sem uma segunda consulta.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "OrderWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração do pedido. `PUT` substitui o documento INTEIRO, itens e ambientes junto. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`) e sem `quoteId`: a origem se estabelece na conversão e não se reescreve, senão um `PUT` mudaria de qual orçamento o pedido nasceu.",
+        "required": ["customerId", "discountMode", "discountPercent", "environments", "items"],
+        "type": "object",
+        "properties": {
+          "series": {
+            "description": "Série do documento.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Data de emissão.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectName": {
+            "description": "`Descrição da Obra` — como o operador chama a obra.",
+            "type": ["string", "null"]
+          },
+          "folderNumber": {
+            "description": "`Nº Pasta`.",
+            "type": ["string", "null"]
+          },
+          "closedAt": {
+            "description": "Data de fechamento.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "salespersonId": {
+            "description": "Consultor(a) que atende — `EmployeeDto.id`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "professionalId": {
+            "description": "Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "discountMode": {
+            "description": "Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).",
+            "type": "string",
+            "enum": ["product", "general"]
+          },
+          "discountPercent": {
+            "description": "Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "environments": {
+            "description": "Ambientes do documento, na ordem de exibição.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderEnvironmentDto"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemWriteRequest"
+            }
+          }
+        }
+      },
+      "PagedResultOfOrderDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderDto"
             }
           },
           "total": {

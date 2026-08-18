@@ -171,6 +171,24 @@ export interface CamposEditaveis {
 }
 
 /**
+ * Campo de texto vazio volta como `null`, não como `''`.
+ *
+ * Medido no par local (2026-08-18): o parceiro do Postgres chega com `email` e
+ * `paymentTerms` em `null`, o formulário os carrega como string vazia — input
+ * controlado precisa de string — e os devolvia assim. Como o `PUT` é INTEGRAL,
+ * abrir o cadastro e clicar em `Gravar` **sem editar nada** trocava "não
+ * informado" por "texto vazio" no servidor.
+ *
+ * Vale nos dois sentidos: quem APAGA um e-mail que existia também quer `null`
+ * ali, não `''`. `legalName` fica fora — é obrigatório no formulário, e vazio
+ * ali é erro de validação, não ausência a preservar.
+ */
+function textoOuNulo(valor: string | null | undefined): string | null {
+  const texto = (valor ?? '').trim()
+  return texto === '' ? null : texto
+}
+
+/**
  * Linha original + campos editados → corpo do `PUT`.
  *
  * **O que a tela não mostra é devolvido como veio.** `PUT` substitui o registro
@@ -185,14 +203,33 @@ export function corpoDeEscrita(
   original: PartnerDto,
   editado: CamposEditaveis,
 ): PartnerWriteRequest {
+  // AUSENTE não é NULO. `registration`, `payoutBankInfo` e `parentId` não estão
+  // no `required` do `PartnerDto` — o contrato PERMITE que a listagem os omita,
+  // e o tipo gerado já os declara `| undefined`. Com `PUT` integral, um
+  // `?? null` aqui trataria "o servidor não mandou" como "apague": é a classe de
+  // defeito que apagou a ficha técnica do produto (core @regras: campo que a
+  // listagem não devolve nunca vira corpo de PUT).
+  //
+  // Hoje o `cabinet-erp-api` manda os três na listagem — medido em 2026-08-18,
+  // registro rico com conselho, conta bancária e vínculo pai. Isto é a guarda
+  // para o dia em que parar de mandar, e ela RECUSA em vez de gravar: um
+  // `Gravar` que falha em voz alta é melhor que um que grava apagando.
+  for (const campo of ['registration', 'payoutBankInfo', 'parentId'] as const) {
+    if (editado[campo] === undefined && !(campo in original)) {
+      throw new Error(
+        `O registro veio do servidor sem \`${campo}\`, e o PUT substitui o cadastro inteiro: gravar assim apagaria o campo. Nada foi enviado.`,
+      )
+    }
+  }
+
   return {
     legalName: editado.legalName,
-    tradeName: editado.tradeName,
-    document: editado.document,
-    email: editado.email,
+    tradeName: textoOuNulo(editado.tradeName),
+    document: textoOuNulo(editado.document),
+    email: textoOuNulo(editado.email),
     active: editado.active,
-    code: original.code,
-    paymentTerms: original.paymentTerms,
+    code: textoOuNulo(original.code),
+    paymentTerms: textoOuNulo(original.paymentTerms),
     isCustomer: original.isCustomer,
     isSupplier: original.isSupplier,
     isProfessional: original.isProfessional,

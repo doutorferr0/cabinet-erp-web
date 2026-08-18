@@ -1,7 +1,7 @@
 # CLAUDE.md — cabinet-erp-web
 
 Orientação para o agente (claude ou kimi) neste repositório. Ler antes de qualquer tarefa.
-Este repo = **front do Cabinet** (React SPA) e **dono do contrato** (`contracts/openapi-v1.json`). O backend é trilho de outro desenvolvedor e ainda não existe — não há repositório de servidor a consultar. Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
+Este repo = **front do Cabinet** (React SPA) e **dono do contrato** (`contracts/openapi-v1.json`). **O backend EXISTE desde 2026-08-17: `doutorferr0/cabinet-erp-api`** (Fastify + TS, privado), escrito no mesmo trilho — não há outro dev. Ele **consome** este contrato: mantém uma cópia conferida no CI dele e implementa o que está escrito aqui. Continua valendo que o contrato muda só por PR NESTE repo; o que mudou é que agora há com quem conferir. Memória compartilhada = `doutorferr0/projetos-claude` → `projetosClaude/vertz-erp`.
 
 ## Estilo de comunicação
 PT-BR. Comprimir prosa, nunca substância. Cortar filler/cordialidade/preâmbulo. Preservar raciocínio de decisão, trade-offs, causalidade. Não inventar dado — falta = "sem dado". Revisão começa por problemas. Responder só o perguntado.
@@ -10,9 +10,11 @@ PT-BR. Comprimir prosa, nunca substância. Cortar filler/cordialidade/preâmbulo
 **A fase mock ACABOU e o contrato não vem mais de fora.** `contracts/openapi-v1.json` é a
 especificação de **entrada** que o backend precisa implementar, não cópia que o front recebe.
 
-- **Contrato muda SÓ por PR neste repositório.** Caminho novo definido pelo front, antes de
-  existir servidor, entra marcado **`Proposto`** — o leitor precisa distinguir o que já foi
-  implementado do que é pedido. Não há repo de backend para conferir contra.
+- **Contrato muda SÓ por PR neste repositório.** Caminho que o front define antes de o servidor
+  implementar entra marcado **`Proposto`** — o leitor precisa distinguir o que já foi implementado
+  do que é pedido. **O `Proposto` continua sendo marca de INTENÇÃO, não de ausência de backend:**
+  o `cabinet-erp-api` existe e implementa por partes, e operação do contrato que ele ainda não
+  serve responde **501** (não 404), justamente para a diferença ficar visível.
 - **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos e
   variantes (`/api/products`, `…/variants`), os três papéis de parceiro — cliente, fornecedor,
   profissional (`/api/partners`, filtro `role`) — e o **orçamento** (`/api/quotes`, #134). Ver
@@ -119,9 +121,11 @@ pnpm build
 pnpm codegen        # regera src/api/gerado/ a partir de contracts/openapi-v1.json
 ```
 
-**Par local:** front em 5173 + o que quer que implemente o contrato, no endereço de
-`VITE_API_PROXY` — **não há porta padrão**, porque não há servidor canônico para chutar. Sem a
-variável o desvio não é montado. O proxy existe por causa do COOKIE (sessão opaca): apontar
+**Par local:** front em 5173 + o `cabinet-erp-api`, que sobe em **:3000** (`pnpm setup:dev` e
+`pnpm dev` lá). `VITE_API_PROXY` continua **sem padrão** — e agora é decisão, não falta de
+candidato: apontar sozinho para uma porta faria a suíte e o `pnpm dev` de quem não subiu o
+backend baterem num servidor que não existe, em vez de usarem o mock. Sem a variável o desvio
+não é montado. O proxy existe por causa do COOKIE (sessão opaca): apontar
 direto para a porta do backend tornaria tudo cross-origin e exigiria `SameSite=None; Secure` só
 em dev. O mecanismo é a metade `http` do toggle previsto `VITE_API_MODE=mock|http`.
 

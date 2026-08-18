@@ -1,6 +1,6 @@
 import { limparAvisos } from '@/lib/avisos'
 import { parceiro, servidorDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
+import { acaoDoCabecalho, renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -42,7 +42,9 @@ describe('aviso de conclusão', () => {
     const { user } = renderRoute('/cadastros/fornecedores', stub)
 
     await user.click(await screen.findByText('STELLA ILUMINAÇÃO LTDA'))
-    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    // `Excluir` mora no `⋯` do cabeçalho desde a #197 — a barra de sete botões
+    // saiu das listagens.
+    await acaoDoCabecalho(user, 'Excluir')
 
     await screen.findByRole('alertdialog')
     await user.click(screen.getByRole('button', { name: 'Desativar' }))

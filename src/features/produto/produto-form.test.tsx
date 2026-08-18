@@ -202,7 +202,7 @@ describe('listagem de produtos', () => {
   // `Excluir` na UI de cadastro é DESATIVAÇÃO (padrão 8), e antes disto o botão
   // era destrutivo na aparência e inerte no efeito: sem `onExcluir`, a ação caía
   // no `console.info` e o operador concluía que tinha desativado.
-  it('Excluir confirma, desativa por PUT e manda a linha inteira', async () => {
+  it('Excluir confirma, desativa por PUT e manda o registro inteiro', async () => {
     const escrita = servidorComEscrita(() => json({ ...LINHA, active: false }))
     const { user } = renderRoute('/cadastros/produtos', escrita.stub)
 
@@ -226,21 +226,26 @@ describe('listagem de produtos', () => {
             active: false,
             // Os seis que entraram no contrato em 2026-08-13 e que a LISTAGEM
             // não mostra: voltam como vieram, senão desativar apagaria os
-            // códigos e as unidades do cadastro.
-            specialCode: '',
-            shortCode: '',
+            // códigos e as unidades do cadastro. **Vazio viaja como `null`, e
+            // não como `''`** — medido no par local: o Postgres devolve `null` e
+            // o `PUT` é integral, então `''` gravaria texto vazio onde havia
+            // "não informado" (ver `gravar-sem-editar.test.tsx`).
+            specialCode: null,
+            shortCode: null,
             unitIn: null,
-            unitInQty: '',
+            unitInQty: null,
             unitOut: null,
-            unitOutQty: '',
+            unitOutQty: null,
             // A LINHA traz a classificação e ela volta como veio: desativar não
             // pode apagar a marca do produto.
             productTypeId: '11111111-1111-4111-8111-111111111111',
             brandId: '22222222-2222-4222-8222-222222222222',
             factoryId: '33333333-3333-4333-8333-333333333333',
-            // A LINHA da listagem não traz ficha técnica: o campo existe no DTO
-            // e o fixture não o preenche. Vazio vira `null` — desativar não
-            // inventa ficha.
+            // A ficha técnica agora vem do DETALHE relido, não da linha: o
+            // backend real NÃO manda `specs` na listagem, e montar o corpo com
+            // a linha apagava watts/lúmen/garantia para desativar o produto
+            // (ver `desativar-preserva-ficha.test.tsx`). Aqui o fixture não tem
+            // ficha, então `null` continua sendo a resposta certa.
             specs: null,
           },
         },
@@ -404,12 +409,15 @@ describe('formulário de produto', () => {
           code: '9999',
           description: 'PENDENTE TESTE',
           active: true,
-          specialCode: '',
-          shortCode: '',
+          // Campo vazio no formulário viaja como `null`: é o que o contrato
+          // declara para ausência, e o que o Postgres devolve na leitura
+          // seguinte. `''` faria a inclusão gravar texto vazio.
+          specialCode: null,
+          shortCode: null,
           unitIn: null,
-          unitInQty: '',
+          unitInQty: null,
           unitOut: null,
-          unitOutQty: '',
+          unitOutQty: null,
           productTypeId: null,
           brandId: null,
           factoryId: null,

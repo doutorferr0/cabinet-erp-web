@@ -39,11 +39,12 @@
      2026-08-12 bancada e folha se separavam por MATIZ — creme quente embaixo,
      cinza frio em cima (decisão do user de 2026-08-09). O degrau térmico
      carregava a separação sozinho, e por isso a diferença de luz podia ser
-     mínima. Agora as duas são cinza e a separação é só de LUMINÂNCIA, de
-     propósito baixa (~1,15:1).
+     mínima. Depois da leva Polaris a dupla é fundo cinza `#F1F1F1` × cartão
+     BRANCO, e a separação continua sendo só de LUMINÂNCIA, ainda mais baixa:
+     **1,12:1**.
 
-     **Consequência dura: quem delimita a folha passa a ser o CONTORNO PRETO de
-     2px.** Confirmado em listagem densa renderizada — funciona, mas só
+     **Consequência dura: quem delimita a folha é o CONTORNO PRETO de
+     2px** — e é por isso que ele voltou em 2026-08-18. Confirmado em listagem densa renderizada — funciona, mas só
      enquanto o traço estiver lá. Suavizar a borda depois não deixa a folha
      "mais leve": faz a folha DESAPARECER. É a mesma economia do ornamento, em
      que o traço delimita e o preenchimento fica livre. */
@@ -61,19 +62,23 @@
      tudo bem: são regiões que nunca se encostam sem o contorno preto entre elas. */
   --surface-sunken: 0 0% 97%;
   --neutral: 0 0% 96%; /* hover de item, trilho, skeleton */
-  /* Ação: violeta saturado. É a cor que MOVE (primária, seleção, aba ativa). */
+  /* Ação: PRETO cheio (Polaris, mantido na união de 2026-08-18). É a cor que
+     MOVE — primária, linha selecionada, aba ativa — e ela se distingue do
+     contorno por PREENCHIMENTO, não por matiz: a caixa é traço preto sobre
+     papel claro, a ação é papel preto com tinta clara (18,76:1 nos dois
+     sentidos). O comentário anterior aqui dizia "violeta saturado" e descrevia
+     o token da fase 1.6, que este valor já não era. */
   --primary: 0 0% 7%;
   --primary-hover: 0 0% 10%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 100%;
   --secondary-foreground: 0 0% 7%;
   --muted: 0 0% 95%;
-  /* Texto secundário. DESCE de L 43% para 41% junto com as superfícies, e o
-     número é medido: a folha caiu de 98% para 96% e a zebra de 94% para 92%,
-     e a 43% o secundário sobre a ZEBRA dava 4,38:1 — abaixo do piso, na linha
-     alternada de toda listagem. A 41% dá 4,72:1 na zebra, 4,73:1 na bancada e
-     5,19:1 na folha. Mesmo remédio que a 1.5 aplicou ao verde e ao vermelho:
-     matiz e saturação intactas, só a luz. */
+  /* Texto secundário. O comentário que morava aqui justificava L 41% com três
+     números medidos contra as superfícies da fase 1.6 — e o valor era 30% desde
+     a leva Polaris. Número colado à mão envelhece calado; estes são remedidos
+     contra as superfícies de HOJE: **8,52:1** sobre o cartão branco, **7,63:1**
+     sobre o fundo e **7,98:1** sobre o afundado. Folga larga em todas. */
   --muted-foreground: 0 0% 30%;
   --accent: 262 97% 76%; /* roxo — marca/realce, nunca ação */
   --accent-foreground: 0 0% 0%;
@@ -139,12 +144,32 @@
      que é o mesmo remédio que a 1.5 aplicou ao verde e ao vermelho quando eles
      caíram sobre a zona de valor. No escuro ele volta a 74% (ver `.dark`). */
   --empresa: 234 91% 60%;
-  /* POLARIS: borda sutil #E3E3E3, input um degrau mais firme, foco AZUL
-     (anel do admin Shopify). O contorno preto morreu com a folha cinza:
-     cartão branco sobre fundo cinza se delimita sozinho. */
-  --border: 0 0% 55%; /* linha FIRME — segunda rodada de peso a pedido do user */
-  --input: 0 0% 45%;
-  --ring: 213 100% 41%; /* #005BD3 — foco Polaris */
+  /* O TRAÇO VOLTA A SER PRETO (decisão do user, 2026-08-18). A leva Polaris
+     trouxe as superfícies (fundo cinza, cartão branco, raio de 8/12px) e o
+     traço veio junto, a 55% de luz — 3,35:1 sobre o cartão. Isso apagou a peça
+     que carregava a identidade do Cabinet: a caixa desenhada a tinta.
+
+     O par que fica: **superfície Polaris, contorno Cabinet.** Preto de tinta
+     (a mesma do `--foreground`, não `#000` — o preto puro é a única tinta que
+     este tema não usa em lugar nenhum) a 2px, e vale para TUDO que é caixa,
+     inclusive a divisão entre linhas da grade: `--border` tem um dono só de
+     propósito, e a listagem densa é grade de verdade, não lista de cartões.
+     18,76:1 sobre o cartão · 16,79:1 sobre o fundo.
+
+     Quem NÃO é caixa continua no fio cinza: separador de menu, trilho da
+     sidebar, divisão interna de popover — `--rule-hair`. Trocar um pelo outro
+     é o erro que transforma menu em grade. */
+  --border: 0 0% 7%;
+  --input: 0 0% 7%;
+  /* FOCO AMARELO (decisão do user, 2026-08-18). O azul `#005BD3` do Polaris
+     entrou por cima de uma receita que já resolvia o problema dele: o amarelo
+     sozinho dá **1,56:1** sobre o branco e nunca cumpriu a WCAG 1.4.11 — quem
+     cumpre é o fio preto de 4px que a utility `focus-ring` desenha por fora
+     (18,76:1). O amarelo é a IDENTIDADE do foco; o preto é o contraste. Trocar
+     este token por uma cor "que já passa sozinha" é confundir os dois papéis e
+     jogar fora a única marca de foco que o operador reconhece de longe.
+     Amarelo × fio preto: 12,05:1. */
+  --ring: 47 100% 50%;
   --rule-strong: 0 0% 20%;
   /* Zonas tintadas por CONTEÚDO (a cor diz do que a área trata).
      FASE 1.6 — as cinco deixam de ser CREMES TINGIDOS e passam a ser os pastéis

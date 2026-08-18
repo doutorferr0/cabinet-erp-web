@@ -1,3 +1,4 @@
+import { RegiaoDeAvisos } from '@/components/cabinet/regiao-de-avisos'
 import { repetirSeValeAPena } from '@/data/api-provider'
 import { ThemeProvider } from '@/hooks/use-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -51,7 +52,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
        */}
       <MotionConfig reducedMotion="user">
         {/* RAC não precisa de provider de tooltip — o TooltipTrigger é local. */}
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          {/* Fora de qualquer tela, e é o ponto: o aviso nasce na tela que SAI
+              (o `Gravar` navega de volta para a listagem) e é lido na que
+              entra. Dentro do `ThemeProvider` porque ele pinta com os tokens
+              do tema ativo. */}
+          <RegiaoDeAvisos />
+        </ThemeProvider>
       </MotionConfig>
     </QueryClientProvider>
   )

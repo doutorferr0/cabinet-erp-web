@@ -1702,6 +1702,465 @@ export interface PagedResultOfActivityDto {
 }
 
 /**
+ * Proposto. A ficha do colaborador — o cadastro que o legado tem em `Funcionario` e que a listagem só arranhava. Os campos vêm de DOIS níveis e o corpo os junta de propósito: nome, documento e contato são da ORGANIZAÇÃO (a mesma pessoa nas duas empresas do grupo), enquanto papel, cargo, setor e as datas de vínculo são da EMPRESA ATIVA — o mesmo colaborador pode ser vendedor numa e gerente na outra (decisão do user, 2026-08-18). Colaborador sem vínculo na empresa ativa devolve os campos do vínculo em `null`, e não 404: ele existe, só não trabalha aqui.
+ */
+export interface EmployeeDetailDto {
+  id: string;
+  name: string;
+  /**
+     * CPF. O legado identifica funcionário por ele, e é por isso que não existe código humano nesta ficha.
+     * @nullable
+     */
+  document?: string | null;
+  /**
+     * Também é a credencial de acesso: `employees` guarda o hash da senha e o e-mail é único, sem diferença de caixa. Trocar aqui troca o login.
+     * @nullable
+     */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo. */
+  active: boolean;
+  /**
+     * Papel de PERMISSÃO na empresa ativa (`employee_company.role`) — não é cargo. `null` quando não há vínculo.
+     * @nullable
+     */
+  role?: string | null;
+  /**
+     * Setor na empresa ativa — `CatalogLookupDto.id`, kind `SETOR`.
+     * @nullable
+     */
+  sectorId?: string | null;
+  /**
+     * Nome do setor, resolvido pelo servidor.
+     * @nullable
+     */
+  sector?: string | null;
+  /**
+     * Cargo na empresa ativa — `CatalogLookupDto.id`, kind `CARGO`.
+     * @nullable
+     */
+  jobTitleId?: string | null;
+  /**
+     * Nome do cargo, resolvido pelo servidor.
+     * @nullable
+     */
+  jobTitle?: string | null;
+  /**
+     * Admissão NESTA empresa.
+     * @nullable
+     */
+  hiredAt?: string | null;
+  /**
+     * Demissão NESTA empresa. Preenchida = vínculo encerrado aqui, sem apagar a pessoa da organização.
+     * @nullable
+     */
+  dismissedAt?: string | null;
+  /**
+     * `Atendimento ao cliente` do legado — é quem aparece no combo de Consultor(a) do orçamento. `null` quando não há vínculo.
+     * @nullable
+     */
+  customerFacing?: boolean | null;
+  /**
+     * Vínculo ativo NESTA empresa. Separado de `active` porque as duas perguntas são diferentes: sair de uma empresa não é sair do grupo.
+     * @nullable
+     */
+  linkActive?: boolean | null;
+}
+
+/**
+ * Proposto. Só o nível ORGANIZAÇÃO. Cargo, setor e papel não entram aqui — moram no vínculo e mudam por `/link`, senão gravar a ficha numa empresa reescreveria em silêncio o cargo que a pessoa tem na outra. **Salário e o resto do bloco de RH ficam fora deste corte**: a pergunta de LGPD sobre dado sensível de funcionário segue sem resposta, e campo sem regra de acesso é pior que campo ausente. `PUT` substitui o registro inteiro: omitir apaga.
+ */
+export interface EmployeeWriteRequest {
+  name: string;
+  /** @nullable */
+  document: string | null;
+  /**
+     * Único no produto inteiro, sem diferença de caixa — é a credencial. E-mail repetido é 409, não 400.
+     * @nullable
+     */
+  email: string | null;
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  active: boolean | null;
+}
+
+/**
+ * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
+ */
+export interface EmployeeLinkRequest {
+  /** Papel de permissão. Conjunto validado pelo servidor; valor fora dele é 400. */
+  role: string;
+  /**
+     * `CatalogLookupDto.id`, kind `SETOR`.
+     * @nullable
+     */
+  sectorId?: string | null;
+  /**
+     * `CatalogLookupDto.id`, kind `CARGO`.
+     * @nullable
+     */
+  jobTitleId?: string | null;
+  /** @nullable */
+  hiredAt?: string | null;
+  /** @nullable */
+  dismissedAt?: string | null;
+  /** @nullable */
+  customerFacing?: boolean | null;
+  /** @nullable */
+  active: boolean | null;
+}
+
+/**
+ * Proposto. Ambiente da obra dentro do PEDIDO. Mesma forma do ambiente do orçamento e schema próprio de propósito: os dois documentos são agregados distintos (decisão de 2026-08-10), e compartilhar o tipo faria uma mudança no orçamento chegar ao pedido sem ninguém pedir. O nome continua CONGELADO na emissão.
+ */
+export interface OrderEnvironmentDto {
+  /** Id do ambiente no catálogo (`CatalogLookupDto.id`, kind `AMBIENTE`). */
+  code: string;
+  /** Nome congelado na emissão. */
+  name: string;
+  /** Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem. */
+  order: number;
+}
+
+/**
+ * Proposto. Linha do pedido. Snapshot da CONVERSÃO, não do orçamento: o pedido nasce com cópia de descrição, acabamento, tamanho e preço, e repreçar o orçamento depois não move o pedido.
+ */
+export interface OrderItemDto {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /**
+     * Acabamento congelado.
+     * @nullable
+     */
+  finish?: string | null;
+  /**
+     * Tamanho congelado.
+     * @nullable
+     */
+  size?: string | null;
+  /** Até 3 casas. */
+  quantity: number;
+  /** @nullable */
+  unit?: string | null;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /** Desconto do item. Int com 4 casas implícitas: `10000` = 1%. */
+  discountPercent: number;
+  /**
+     * Fornecedor da linha (`PartnerDto.id`).
+     * @nullable
+     */
+  supplierId?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /**
+     * Código do produto NO fornecedor — a língua em que o item é pedido.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /** @nullable */
+  supplierDescription?: string | null;
+  /**
+     * Grupo de produto.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /**
+     * Tipo da peça — kind `TIPO_PECA`.
+     * @nullable
+     */
+  pieceType?: string | null;
+  /** Valor do item. Calculado pelo servidor — a escrita não manda. */
+  totalCents: number;
+}
+
+/**
+ * Proposto. Linha do pedido na escrita. Sem `totalCents`: quem soma é o servidor.
+ */
+export interface OrderItemWriteRequest {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o item pertence. `null` = item fora de ambiente, que o legado permite (`VendaProduto.CodAmbiente` é nulável).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Variante do catálogo (produto × acabamento × tamanho). `null` quando a linha não veio do catálogo.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /**
+     * Acabamento congelado.
+     * @nullable
+     */
+  finish?: string | null;
+  /**
+     * Tamanho congelado.
+     * @nullable
+     */
+  size?: string | null;
+  /** Até 3 casas. */
+  quantity: number;
+  /** @nullable */
+  unit?: string | null;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /** Desconto do item. Int com 4 casas implícitas: `10000` = 1%. */
+  discountPercent: number;
+  /**
+     * Fornecedor da linha (`PartnerDto.id`).
+     * @nullable
+     */
+  supplierId?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /**
+     * Código do produto NO fornecedor — a língua em que o item é pedido.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /** @nullable */
+  supplierDescription?: string | null;
+  /**
+     * Grupo de produto.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /**
+     * Tipo da peça — kind `TIPO_PECA`.
+     * @nullable
+     */
+  pieceType?: string | null;
+}
+
+/**
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ */
+export type OrderDtoStatus = typeof OrderDtoStatus[keyof typeof OrderDtoStatus];
+
+
+export const OrderDtoStatus = {
+  active: 'active',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Pedido de venda na listagem. É a metade que faltava da cadeia do legado (Pedido de Venda → Pedido de Compra → Ordem de Compra): sem pedido, Compras não tem de onde puxar.
+ */
+export interface OrderDto {
+  id: string;
+  /** Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas. */
+  number: string;
+  /**
+     * Série do documento.
+     * @nullable
+     */
+  series?: string | null;
+  /**
+     * Data de emissão.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  customerId: string;
+  /** Nome do cliente na emissão. */
+  customerName: string;
+  /**
+     * `Descrição da Obra` — como o operador chama a obra.
+     * @nullable
+     */
+  projectName?: string | null;
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  status: OrderDtoStatus;
+  /** Total do orçamento, em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * Orçamento de origem. `null` quando o pedido foi lançado direto, que o legado permite.
+     * @nullable
+     */
+  quoteId?: string | null;
+}
+
+/**
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ */
+export type OrderDetailDtoStatus = typeof OrderDetailDtoStatus[keyof typeof OrderDetailDtoStatus];
+
+
+export const OrderDetailDtoStatus = {
+  active: 'active',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ */
+export type OrderDetailDtoDiscountMode = typeof OrderDetailDtoDiscountMode[keyof typeof OrderDetailDtoDiscountMode];
+
+
+export const OrderDetailDtoDiscountMode = {
+  product: 'product',
+  general: 'general',
+} as const;
+
+/**
+ * Proposto. O pedido inteiro: cabeçalho, ambientes e itens numa resposta só, pela mesma razão do orçamento — item não tem identidade fora do documento e gravar em N requisições deixaria metade da grade salva.
+ */
+export interface OrderDetailDto {
+  id: string;
+  /** Número do documento. Sequência GLOBAL do grupo, atribuída pelo servidor — por isso não existe na escrita. No legado `Ven_CodigoPre` já é única entre as empresas, e cliente que escolhe número colide entre elas. */
+  number: string;
+  /**
+     * Série do documento.
+     * @nullable
+     */
+  series?: string | null;
+  /**
+     * Data de emissão.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  customerId: string;
+  /** Nome do cliente na emissão. */
+  customerName: string;
+  /**
+     * `Descrição da Obra` — como o operador chama a obra.
+     * @nullable
+     */
+  projectName?: string | null;
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  status: OrderDetailDtoStatus;
+  /** Total do orçamento, em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * `Nº Pasta`.
+     * @nullable
+     */
+  folderNumber?: string | null;
+  /**
+     * Data de fechamento.
+     * @nullable
+     */
+  closedAt?: string | null;
+  /**
+     * Consultor(a) que atende — `EmployeeDto.id`.
+     * @nullable
+     */
+  salespersonId?: string | null;
+  /** @nullable */
+  salespersonName?: string | null;
+  /**
+     * Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.
+     * @nullable
+     */
+  professionalId?: string | null;
+  /** @nullable */
+  professionalName?: string | null;
+  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  discountMode: OrderDetailDtoDiscountMode;
+  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  discountPercent: number;
+  /** Ambientes do documento, na ordem de exibição. */
+  environments: OrderEnvironmentDto[];
+  items: OrderItemDto[];
+  /**
+     * Orçamento de origem, quando houve conversão.
+     * @nullable
+     */
+  quoteId?: string | null;
+  /**
+     * Número do orçamento de origem, resolvido pelo servidor — a tela mostra 'veio do orçamento 1234' sem uma segunda consulta.
+     * @nullable
+     */
+  quoteNumber?: string | null;
+}
+
+/**
+ * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ */
+export type OrderWriteRequestDiscountMode = typeof OrderWriteRequestDiscountMode[keyof typeof OrderWriteRequestDiscountMode];
+
+
+export const OrderWriteRequestDiscountMode = {
+  product: 'product',
+  general: 'general',
+} as const;
+
+/**
+ * Proposto. Corpo de criação e de alteração do pedido. `PUT` substitui o documento INTEIRO, itens e ambientes junto. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`) e sem `quoteId`: a origem se estabelece na conversão e não se reescreve, senão um `PUT` mudaria de qual orçamento o pedido nasceu.
+ */
+export interface OrderWriteRequest {
+  /**
+     * Série do documento.
+     * @nullable
+     */
+  series?: string | null;
+  /**
+     * Data de emissão.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  customerId: string;
+  /**
+     * `Descrição da Obra` — como o operador chama a obra.
+     * @nullable
+     */
+  projectName?: string | null;
+  /**
+     * `Nº Pasta`.
+     * @nullable
+     */
+  folderNumber?: string | null;
+  /**
+     * Data de fechamento.
+     * @nullable
+     */
+  closedAt?: string | null;
+  /**
+     * Consultor(a) que atende — `EmployeeDto.id`.
+     * @nullable
+     */
+  salespersonId?: string | null;
+  /**
+     * Profissional Externo (arquiteto/especificador) — é `PartnerDto.id` com papel `professional`, não cadastro à parte.
+     * @nullable
+     */
+  professionalId?: string | null;
+  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  discountMode: OrderWriteRequestDiscountMode;
+  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  discountPercent: number;
+  /** Ambientes do documento, na ordem de exibição. */
+  environments: OrderEnvironmentDto[];
+  items: OrderItemWriteRequest[];
+}
+
+export interface PagedResultOfOrderDto {
+  rows: OrderDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -1931,4 +2390,20 @@ export const ListActivitiesEntityType = {
   quote: 'quote',
   purchaseOrder: 'purchaseOrder',
 } as const;
+
+export type ListOrdersParams = {
+q?: string;
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Proposto. Mesma mecânica do orçamento: array JSON url-encoded, somado ao `q` com AND. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
+};
 

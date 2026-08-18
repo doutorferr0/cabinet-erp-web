@@ -19,6 +19,7 @@ import {
   getAuthLoginResponseMock,
   getAuthMeResponseMock,
   getAuthTenantsResponseMock,
+  getCancelOrderResponseMock,
   getCancelQuoteResponseMock,
   getCompleteActivityResponseMock,
   getCreateActivityResponseMock,
@@ -26,6 +27,9 @@ import {
   getCreateCrmOpportunityResponseMock,
   getCreateCrmPipelineResponseMock,
   getCreateCrmStageResponseMock,
+  getCreateEmployeeResponseMock,
+  getCreateOrderFromQuoteResponseMock,
+  getCreateOrderResponseMock,
   getCreatePartnerResponseMock,
   getCreateProductResponseMock,
   getCreateQuoteFromOpportunityResponseMock,
@@ -37,12 +41,15 @@ import {
   getGetCrmOpportunityResponseMock,
   getGetCrmPipelineResponseMock,
   getGetDashboardSummaryResponseMock,
+  getGetEmployeeResponseMock,
+  getGetOrderResponseMock,
   getGetPartnerResponseMock,
   getGetProductResponseMock,
   getGetProjectPlanResponseMock,
   getGetQuoteResponseMock,
   getHealthDbResponseMock,
   getHealthResponseMock,
+  getLinkEmployeeResponseMock,
   getLinkPartnerResponseMock,
   getListActivitiesResponseMock,
   getListAgendaEventsResponseMock,
@@ -52,6 +59,7 @@ import {
   getListCrmPipelinesResponseMock,
   getListCrmStagesResponseMock,
   getListEmployeesResponseMock,
+  getListOrdersResponseMock,
   getListPartnersResponseMock,
   getListProductsResponseMock,
   getListProjectsResponseMock,
@@ -67,6 +75,9 @@ import {
   getUpdateCrmOpportunityResponseMock,
   getUpdateCrmPipelineResponseMock,
   getUpdateCrmStageResponseMock,
+  getUpdateEmployeeLinkResponseMock,
+  getUpdateEmployeeResponseMock,
+  getUpdateOrderResponseMock,
   getUpdatePartnerResponseMock,
   getUpdateProductResponseMock,
   getUpdateQuoteResponseMock,
@@ -82,14 +93,17 @@ import type {
   CrmPipelineDto,
   CrmStageDto,
   DashboardSummaryDto,
+  EmployeeDetailDto,
   HealthStatus,
   LoginOk,
+  OrderDetailDto,
   PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
+  PagedResultOfOrderDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
@@ -109,7 +123,7 @@ import type {
   VinculoDeEmpresa
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getCreateQuoteFromOpportunityResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getCreateEmployeeResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getCreateQuoteFromOpportunityResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock, getGetEmployeeResponseMock, getUpdateEmployeeResponseMock, getLinkEmployeeResponseMock, getUpdateEmployeeLinkResponseMock, getListOrdersResponseMock, getCreateOrderResponseMock, getGetOrderResponseMock, getUpdateOrderResponseMock, getCancelOrderResponseMock, getCreateOrderFromQuoteResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -490,6 +504,18 @@ export const getListEmployeesMockHandler = (overrideResponse?: PagedResultOfEmpl
   }, options)
 }
 
+export const getCreateEmployeeMockHandler = (overrideResponse?: EmployeeDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<EmployeeDetailDto> | EmployeeDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/employees', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateEmployeeResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
 export const getListQuotesMockHandler = (overrideResponse?: PagedResultOfQuoteDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfQuoteDto> | PagedResultOfQuoteDto), options?: RequestHandlerOptions) => {
   return http.get('*/api/quotes', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -801,6 +827,126 @@ export const getCompleteActivityMockHandler = (overrideResponse?: ActivityDto | 
       })
   }, options)
 }
+
+export const getGetEmployeeMockHandler = (overrideResponse?: EmployeeDetailDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<EmployeeDetailDto> | EmployeeDetailDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/employees/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetEmployeeResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateEmployeeMockHandler = (overrideResponse?: EmployeeDetailDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<EmployeeDetailDto> | EmployeeDetailDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/employees/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateEmployeeResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getLinkEmployeeMockHandler = (overrideResponse?: EmployeeDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<EmployeeDetailDto> | EmployeeDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/employees/:id/link', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getLinkEmployeeResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getUpdateEmployeeLinkMockHandler = (overrideResponse?: EmployeeDetailDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<EmployeeDetailDto> | EmployeeDetailDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/employees/:id/link', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateEmployeeLinkResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListOrdersMockHandler = (overrideResponse?: PagedResultOfOrderDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfOrderDto> | PagedResultOfOrderDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/orders', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListOrdersResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateOrderMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/orders', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateOrderResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getGetOrderMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/orders/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateOrderMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/orders/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCancelOrderMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/orders/:id/cancel', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCancelOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateOrderFromQuoteMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/quotes/:id/order', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateOrderFromQuoteResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
 export const getVitraERPMock = () => [
   getHealthMockHandler(),
   getHealthDbMockHandler(),
@@ -834,6 +980,7 @@ export const getVitraERPMock = () => [
   getListProjectsMockHandler(),
   getGetProjectPlanMockHandler(),
   getListEmployeesMockHandler(),
+  getCreateEmployeeMockHandler(),
   getListQuotesMockHandler(),
   getCreateQuoteMockHandler(),
   getGetQuoteMockHandler(),
@@ -859,5 +1006,15 @@ export const getVitraERPMock = () => [
   getListActivitiesMockHandler(),
   getCreateActivityMockHandler(),
   getUpdateActivityMockHandler(),
-  getCompleteActivityMockHandler()
+  getCompleteActivityMockHandler(),
+  getGetEmployeeMockHandler(),
+  getUpdateEmployeeMockHandler(),
+  getLinkEmployeeMockHandler(),
+  getUpdateEmployeeLinkMockHandler(),
+  getListOrdersMockHandler(),
+  getCreateOrderMockHandler(),
+  getGetOrderMockHandler(),
+  getUpdateOrderMockHandler(),
+  getCancelOrderMockHandler(),
+  getCreateOrderFromQuoteMockHandler()
 ]

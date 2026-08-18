@@ -352,14 +352,16 @@ describe('escrita de produto', () => {
       code: '1201',
       description: 'PENDENTE REDONDO ALUMÍNIO PRETO',
       active: false,
-      // Linha sem os campos novos (servidor que ainda não os implementou):
-      // vazio, e não `undefined` — o corpo tem o mesmo shape sempre.
-      specialCode: '',
-      shortCode: '',
+      // Registro sem os campos novos: `null`, e não `''` nem `undefined`. O
+      // shape do corpo é sempre o mesmo (senão o `PUT` integral apagaria o que
+      // faltasse), e a AUSÊNCIA viaja como `null`, que é o que o contrato
+      // declara e o que o Postgres devolve — medido no par local em 2026-08-18.
+      specialCode: null,
+      shortCode: null,
       unitIn: null,
-      unitInQty: '',
+      unitInQty: null,
       unitOut: null,
-      unitOutQty: '',
+      unitOutQty: null,
       productTypeId: null,
       brandId: null,
       factoryId: null,
@@ -383,12 +385,12 @@ describe('escrita de produto', () => {
       code: '9999',
       description: 'X',
       active: true,
-      specialCode: '',
-      shortCode: '',
+      specialCode: null,
+      shortCode: null,
       unitIn: null,
-      unitInQty: '',
+      unitInQty: null,
       unitOut: null,
-      unitOutQty: '',
+      unitOutQty: null,
       productTypeId: null,
       brandId: null,
       factoryId: null,

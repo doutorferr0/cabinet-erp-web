@@ -329,6 +329,27 @@ export interface CamposGravaveis {
 }
 
 /**
+ * Campo de texto vazio volta como `null`, não como `''`.
+ *
+ * Medido no par local (2026-08-18): o produto do Postgres chega com
+ * `specialCode`, `shortCode` e os dois `unitQty` em `null`, o formulário os
+ * carrega como string vazia — porque input controlado precisa de string — e os
+ * devolvia assim. Como o `PUT` é INTEGRAL, abrir a tela e clicar em `Gravar`
+ * **sem editar nada** trocava "não informado" por "texto vazio" no servidor: uma
+ * alteração que ninguém pediu, num registro que o operador só foi conferir.
+ *
+ * Vale nos dois sentidos, e é por isso que a regra é do CORPO e não da leitura:
+ * quem APAGA um código especial que existia também quer `null` ali, não `''`.
+ *
+ * `code` e `description` ficam fora de propósito — são obrigatórios no
+ * formulário, e um vazio ali é erro de validação, não ausência a preservar.
+ */
+function textoOuNulo(valor: string | null | undefined): string | null {
+  const texto = (valor ?? '').trim()
+  return texto === '' ? null : texto
+}
+
+/**
  * Registro do formulário → corpo da escrita do PRODUTO.
  *
  * SÓ os 3 campos do `ProductWriteRequest`. A grade de variantes NÃO entra aqui —
@@ -344,12 +365,12 @@ export function produtoParaContrato(values: CamposGravaveis): ProductWriteReques
     code: values.nossoCodigo,
     description: values.nossaDescricao,
     active: values.ativo,
-    specialCode: values.codigoEspecial,
-    shortCode: values.codigoReduzido,
+    specialCode: textoOuNulo(values.codigoEspecial),
+    shortCode: textoOuNulo(values.codigoReduzido),
     unitIn: values.unidadeEntradaUnidade,
-    unitInQty: values.unidadeEntradaQuantidade,
+    unitInQty: textoOuNulo(values.unidadeEntradaQuantidade),
     unitOut: values.unidadeSaidaUnidade,
-    unitOutQty: values.unidadeSaidaQuantidade,
+    unitOutQty: textoOuNulo(values.unidadeSaidaQuantidade),
     // Só o ID viaja, e ele vem da LEITURA, não do combo: o formulário escolhe
     // por nome e o contrato escreve por id. Mandar nulo porque a tela não tem o
     // id apagaria a classificação do produto no `PUT`.
@@ -369,9 +390,16 @@ export function produtoParaContrato(values: CamposGravaveis): ProductWriteReques
  * mandados como nulo porque "a listagem não é o formulário" apagariam o cadastro
  * inteiro para desativá-lo. Mesmo argumento do `corpoDeDesativacao` de parceiros.
  *
- * A linha basta porque o `ProductWriteRequest` é subconjunto do `ProductDto` —
- * ela já traz todo campo gravável, e reler o detalhe por id antes de desativar
- * pediria ao servidor o que acabou de chegar.
+ * **A LINHA NÃO BASTA, e isso foi medido (2026-08-18).** `ProductWriteRequest` é
+ * subconjunto do `ProductDto` no papel, mas `specs` é OPCIONAL no `ProductDto` e
+ * o `cabinet-erp-api` não o manda na listagem — a ficha técnica só vem no
+ * detalhe. Com `PUT` integral, desativar pela listagem apagava watts, lúmen,
+ * garantia e as medidas do produto. Por isso quem chama esta função passa o
+ * DETALHE relido (`useDesativarProduto`), não a linha: o parâmetro continua
+ * tipado como `ProductDto` porque o detalhe o satisfaz, e é o detalhe que traz
+ * `specs` preenchido.
+ *
+ * O mock escondia: a listagem mockada devolve o objeto inteiro, `specs` dentro.
  */
 export function corpoDeDesativacao(linha: ProductDto): ProductWriteRequest {
   return produtoParaContrato({
@@ -567,7 +595,27 @@ export function useGravarProduto() {
 export function useDesativarProduto() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (linha: ProductDto) => escreverProduto(linha.id, corpoDeDesativacao(linha)),
+    /**
+     * Relê o DETALHE antes de gravar. Não é cautela: a listagem do backend não
+     * traz `specs` (medido), o `PUT` é integral, e montar o corpo com a linha
+     * apagaria a ficha técnica para mudar uma situação.
+     *
+     * Detalhe que não vem é motivo para NÃO gravar. Cair de volta na linha
+     * gravaria o registro incompleto — que é exatamente o defeito — e um
+     * `Excluir` que falha em voz alta é melhor que um que desativa e apaga.
+     */
+    mutationFn: async (linha: ProductDto) => {
+      const detalhe = itemOuNulo<ProductDetailDto>(
+        await getProduct(linha.id),
+        `o produto ${linha.id}`,
+      )
+      if (!detalhe) {
+        throw new Error(
+          `Não foi possível reler o produto ${linha.code} para desativá-lo. Nada foi gravado.`,
+        )
+      }
+      return escreverProduto(linha.id, corpoDeDesativacao(detalhe))
+    },
     onSuccess: (_, linha) => {
       avisar(
         `${linha.description ?? 'Produto'} foi desativado.`,

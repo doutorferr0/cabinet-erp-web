@@ -96,6 +96,26 @@ describe('security do contrato', () => {
     expect(sem).toEqual([])
   })
 
+  it('toda ESCRITA de domínio declara 409', () => {
+    // "Sem empresa ativa" não é erro de formulário: o pedido está bem formado e
+    // falta uma ESCOLHA da pessoa. A borda do backend recusa toda escrita de
+    // `/api/` com 409 — antes de olhar o corpo, antes de qualquer query — e oito
+    // operações respondiam esse 409 sem o contrato declarar: PATCH de
+    // tarefa e de A fazer, PUT de atividade e de vínculo, e as quatro do funil.
+    //
+    // O buraco é do mesmo tipo do 401/403 acima e apareceu pela mesma razão: a
+    // regra vale por CAMINHO e estava sendo copiada operação a operação. Quem
+    // não declara não gera tipo, e o cliente cai no ramo de erro genérico —
+    // "algo deu errado" no lugar de "escolha a empresa".
+    const ESCRITAS = ['post', 'put', 'patch', 'delete']
+    const sem = operacoes()
+      .filter(({ caminho }) => caminho.startsWith('/api/'))
+      .filter(({ verbo }) => ESCRITAS.includes(verbo))
+      .filter(({ op }) => op.responses?.['409'] === undefined)
+      .map(({ verbo, caminho }) => `${verbo.toUpperCase()} ${caminho}`)
+    expect(sem).toEqual([])
+  })
+
   it('401 e 403 apontam para a resposta REUTILIZÁVEL, nunca para uma cópia', () => {
     // Duas descrições do mesmo erro divergem com o tempo, e a que diverge é
     // sempre a que ninguém está lendo.

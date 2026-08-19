@@ -1492,10 +1492,15 @@ export type patchTaskResponse404 = {
   status: 404
 }
 
+export type patchTaskResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type patchTaskResponseSuccess = (patchTaskResponse200) & {
   headers: Headers;
 };
-export type patchTaskResponseError = (patchTaskResponse400 | patchTaskResponse401 | patchTaskResponse403 | patchTaskResponse404) & {
+export type patchTaskResponseError = (patchTaskResponse400 | patchTaskResponse401 | patchTaskResponse403 | patchTaskResponse404 | patchTaskResponse409) & {
   headers: Headers;
 };
 
@@ -1599,10 +1604,15 @@ export type patchTodoResponse404 = {
   status: 404
 }
 
+export type patchTodoResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type patchTodoResponseSuccess = (patchTodoResponse200) & {
   headers: Headers;
 };
-export type patchTodoResponseError = (patchTodoResponse400 | patchTodoResponse401 | patchTodoResponse403 | patchTodoResponse404) & {
+export type patchTodoResponseError = (patchTodoResponse400 | patchTodoResponse401 | patchTodoResponse403 | patchTodoResponse404 | patchTodoResponse409) & {
   headers: Headers;
 };
 
@@ -2470,10 +2480,15 @@ export type createCrmStageResponse404 = {
   status: 404
 }
 
+export type createCrmStageResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type createCrmStageResponseSuccess = (createCrmStageResponse201) & {
   headers: Headers;
 };
-export type createCrmStageResponseError = (createCrmStageResponse400 | createCrmStageResponse401 | createCrmStageResponse403 | createCrmStageResponse404) & {
+export type createCrmStageResponseError = (createCrmStageResponse400 | createCrmStageResponse401 | createCrmStageResponse403 | createCrmStageResponse404 | createCrmStageResponse409) & {
   headers: Headers;
 };
 
@@ -2529,10 +2544,15 @@ export type updateCrmStageResponse404 = {
   status: 404
 }
 
+export type updateCrmStageResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type updateCrmStageResponseSuccess = (updateCrmStageResponse200) & {
   headers: Headers;
 };
-export type updateCrmStageResponseError = (updateCrmStageResponse400 | updateCrmStageResponse401 | updateCrmStageResponse403 | updateCrmStageResponse404) & {
+export type updateCrmStageResponseError = (updateCrmStageResponse400 | updateCrmStageResponse401 | updateCrmStageResponse403 | updateCrmStageResponse404 | updateCrmStageResponse409) & {
   headers: Headers;
 };
 
@@ -2650,10 +2670,15 @@ export type createCrmOpportunityResponse404 = {
   status: 404
 }
 
+export type createCrmOpportunityResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type createCrmOpportunityResponseSuccess = (createCrmOpportunityResponse201) & {
   headers: Headers;
 };
-export type createCrmOpportunityResponseError = (createCrmOpportunityResponse400 | createCrmOpportunityResponse401 | createCrmOpportunityResponse403 | createCrmOpportunityResponse404) & {
+export type createCrmOpportunityResponseError = (createCrmOpportunityResponse400 | createCrmOpportunityResponse401 | createCrmOpportunityResponse403 | createCrmOpportunityResponse404 | createCrmOpportunityResponse409) & {
   headers: Headers;
 };
 
@@ -3074,10 +3099,15 @@ export type updateCrmLostReasonResponse404 = {
   status: 404
 }
 
+export type updateCrmLostReasonResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type updateCrmLostReasonResponseSuccess = (updateCrmLostReasonResponse200) & {
   headers: Headers;
 };
-export type updateCrmLostReasonResponseError = (updateCrmLostReasonResponse400 | updateCrmLostReasonResponse401 | updateCrmLostReasonResponse403 | updateCrmLostReasonResponse404) & {
+export type updateCrmLostReasonResponseError = (updateCrmLostReasonResponse400 | updateCrmLostReasonResponse401 | updateCrmLostReasonResponse403 | updateCrmLostReasonResponse404 | updateCrmLostReasonResponse409) & {
   headers: Headers;
 };
 
@@ -3327,10 +3357,15 @@ export type updateActivityResponse404 = {
   status: 404
 }
 
+export type updateActivityResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type updateActivityResponseSuccess = (updateActivityResponse200) & {
   headers: Headers;
 };
-export type updateActivityResponseError = (updateActivityResponse400 | updateActivityResponse401 | updateActivityResponse403 | updateActivityResponse404) & {
+export type updateActivityResponseError = (updateActivityResponse400 | updateActivityResponse401 | updateActivityResponse403 | updateActivityResponse404 | updateActivityResponse409) & {
   headers: Headers;
 };
 
@@ -3625,10 +3660,15 @@ export type updateEmployeeLinkResponse404 = {
   status: 404
 }
 
+export type updateEmployeeLinkResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
 export type updateEmployeeLinkResponseSuccess = (updateEmployeeLinkResponse200) & {
   headers: Headers;
 };
-export type updateEmployeeLinkResponseError = (updateEmployeeLinkResponse400 | updateEmployeeLinkResponse401 | updateEmployeeLinkResponse403 | updateEmployeeLinkResponse404) & {
+export type updateEmployeeLinkResponseError = (updateEmployeeLinkResponse400 | updateEmployeeLinkResponse401 | updateEmployeeLinkResponse403 | updateEmployeeLinkResponse404 | updateEmployeeLinkResponse409) & {
   headers: Headers;
 };
 

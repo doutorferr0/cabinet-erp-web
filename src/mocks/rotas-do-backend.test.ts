@@ -27,7 +27,7 @@ const MARCA = 'backend-de-verdade'
 let servidorDeVerdade: Server
 let base: string
 
-const msw = setupServer(...handlersDePassagem(), ...handlers)
+const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...handlers)
 
 beforeAll(async () => {
   servidorDeVerdade = createServer((req, res) => {
@@ -65,7 +65,9 @@ describe('passthrough por rota', () => {
   })
 
   it('rota fora da lista é atendida pelo MOCK, sem tocar a rede', async () => {
-    const r = await fetch(`${base}/api/quotes`)
+    // `/api/crm/opportunities` é 501 no backend e por isso segue mockada — é o
+    // caminho que sustenta o funil inteiro fora da lista de passagem.
+    const r = await fetch(`${base}/api/crm/opportunities`)
 
     expect(r.headers.get('x-origem')).toBeNull()
     expect(r.status).toBe(200)
@@ -86,6 +88,55 @@ describe('passthrough por rota', () => {
     expect(escrita.headers.get('x-origem')).toBeNull()
     expect(escrita.status).toBe(201)
     expect(await escrita.json()).toMatchObject({ code: 'PASS-1' })
+  })
+
+  it('sem backend real a lista nasce VAZIA — é o que mantém o site público mock', () => {
+    // `cabinetonline.cc` builda sem `VITE_API_PROXY`. Se a passagem fosse
+    // montada mesmo assim, a tela publicada tentaria falar com um `localhost`
+    // que não existe para quem abre o site — erro de rede em produção, e não
+    // um mock respondendo. Enquanto a condição vivia numa expressão do
+    // `browser.ts`, nada a testava: aquele arquivo importa `msw/browser` e não
+    // roda em Node.
+    expect(handlersDePassagem(undefined)).toEqual([])
+    expect(handlersDePassagem('')).toEqual([])
+    expect(handlersDePassagem('http://localhost:3000')).toHaveLength(ROTAS_DO_BACKEND.length)
+  })
+
+  it.each([
+    // Cada par é uma tela que consome as duas metades. Meia passagem põe id do
+    // servidor de um lado e id inventado do outro, e o resultado tem cara de
+    // dado — não de erro. A regra é a mesma que o registry aplica ao `get`,
+    // lida no tamanho da TELA.
+    {
+      tela: 'quadro do funil',
+      metade: '/api/crm/pipelines',
+      outraMetade: '/api/crm/opportunities',
+    },
+    {
+      // `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` neste combo:
+      // atividade real com pessoa do mock grava no Postgres um uuid que o
+      // servidor não conhece, e o responsável volta em branco.
+      tela: 'diálogo de atividade',
+      metade: '/api/activities',
+      outraMetade: '/api/employees',
+    },
+    {
+      // `ActivityDto.entityType` inclui `opportunity`: atividade real pendurada
+      // em oportunidade do mock é registro apontando para id inexistente.
+      tela: 'atividade sobre oportunidade',
+      metade: '/api/activities',
+      outraMetade: '/api/crm/opportunities',
+    },
+  ])('$tela: $metade não entra sozinha, sem $outraMetade', ({ metade, outraMetade }) => {
+    const listado = (caminho: string) =>
+      ROTAS_DO_BACKEND.some((r) => r.caminho === caminho || r.caminho.startsWith(`${caminho}/`))
+
+    if (listado(metade)) {
+      expect(
+        listado(outraMetade),
+        `${metade} passa direto, mas ${outraMetade} continua no mock — a mesma tela lê as duas`,
+      ).toBe(true)
+    }
   })
 
   it('toda rota da lista existe no contrato — typo aqui seria silencioso', () => {

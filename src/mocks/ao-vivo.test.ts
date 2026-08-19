@@ -34,9 +34,28 @@ const BACKEND = process.env.CABINET_BACKEND ?? 'http://localhost:3000'
 const EMAIL = process.env.CABINET_EMAIL ?? 'demo@vertz.dev'
 const SENHA = process.env.CABINET_SENHA ?? 'senha-de-desenvolvimento'
 
-const msw = setupServer(...handlersDePassagem(), ...handlers)
+const msw = setupServer(...handlersDePassagem(APP), ...handlers)
 
 let cookie = ''
+
+/**
+ * Mede o BACKEND, não o mock.
+ *
+ * Os padrões da passagem começam com `*` e casam qualquer origem — inclusive a
+ * do backend. Sem este `use()` explícito por chamada, medir `${BACKEND}/x` seria
+ * atendido pelo próprio mock e o resultado pareceria integração. Custou uma
+ * medição errada antes de aparecer, e reaparece toda vez que alguém acrescenta
+ * uma asserção nova aqui.
+ */
+async function noBackend(metodo: 'get' | 'post', caminho: string, corpo?: unknown) {
+  msw.use(http[metodo](`${BACKEND}${caminho}`, () => passthrough()))
+  const init: RequestInit = { method: metodo.toUpperCase(), headers: { cookie } }
+  if (corpo !== undefined) {
+    init.headers = { 'content-type': 'application/json', cookie }
+    init.body = JSON.stringify(corpo)
+  }
+  return fetch(`${BACKEND}${caminho}`, init)
+}
 
 describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
   beforeAll(async () => {
@@ -69,31 +88,22 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect(corpo.activeTenantId).toBeTruthy()
   })
 
-  it('GET /api/products vem do BACKEND — códigos que só existem no Postgres', async () => {
-    const r = await fetch(`${APP}/api/products`, { headers: { cookie } })
-    expect(r.status).toBe(200)
-    const corpo = (await r.json()) as { rows: { code: string }[] }
-    // o seed do mock usa outros códigos; um deles aqui significaria que o
-    // passthrough não aconteceu
-    expect(corpo.rows.some((p) => p.code.startsWith('LUM-'))).toBe(true)
+  it('a LEITURA de produto passa inteira — listagem e detalhe do mesmo id', async () => {
+    // O par importa mais que cada metade: com a listagem no servidor e o
+    // detalhe no mock, `Alterar` pedia ao mock um uuid que só existe no
+    // Postgres e o formulário nem abria.
+    const lista = await fetch(`${APP}/api/products`, { headers: { cookie } })
+    expect(lista.status).toBe(200)
+    const { rows } = (await lista.json()) as { rows: { id: string }[] }
+    const primeiro = rows[0]
+    if (!primeiro) return // banco de dev vazio: nada a casar
+
+    const detalhe = await fetch(`${APP}/api/products/${primeiro.id}`, { headers: { cookie } })
+    expect(detalhe.status).toBe(200)
+    expect((await detalhe.json()) as { id: string }).toMatchObject({ id: primeiro.id })
   })
 
-  it('GET /api/quotes fica no MOCK — no backend a mesma rota é 501', async () => {
-    const pelaTela = await fetch(`${APP}/api/quotes`, { headers: { cookie } })
-    expect(pelaTela.status).toBe(200)
-    expect(await pelaTela.json()).toHaveProperty('rows')
-
-    // **A armadilha de medição desta bateria:** os padrões do mock começam com
-    // `*`, então casam QUALQUER origem — inclusive o endereço do backend. Sem
-    // este `use()` explícito, a chamada abaixo seria atendida pelo próprio mock
-    // e o teste "provaria" um 200 que o servidor nunca deu. Custou uma medição
-    // errada antes de aparecer.
-    msw.use(http.get(`${BACKEND}/api/quotes`, () => passthrough()))
-    const noBackend = await fetch(`${BACKEND}/api/quotes`, { headers: { cookie } })
-    expect(noBackend.status).toBe(501)
-  })
-
-  it('POST /api/products fica no mock — a divisão é por verbo', async () => {
+  it('a ESCRITA de produto fica no mock — a divisão é por verbo', async () => {
     const corpo = { code: 'AO-VIVO-1', description: 'Só no mock', active: true }
 
     const pelaTela = await fetch(`${APP}/api/products`, {
@@ -103,14 +113,132 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     })
     expect(pelaTela.status).toBe(201)
 
-    msw.use(http.post(`${BACKEND}/api/products`, () => passthrough()))
-    const noBackend = await fetch(`${BACKEND}/api/products`, {
+    // GET passa, POST não: o backend ainda não implementa a escrita, e é por
+    // isso que o caminho inteiro não pode entrar na lista.
+    expect((await noBackend('post', '/api/products', corpo)).status).toBe(501)
+  })
+
+  it('o ORÇAMENTO inteiro passa — listagem do servidor, com o shape do contrato', async () => {
+    const r = await fetch(`${APP}/api/quotes`, { headers: { cookie } })
+    expect(r.status).toBe(200)
+    const corpo = (await r.json()) as {
+      total: number
+      rows: { id: string; customerName: string | null }[]
+    }
+
+    // PROVA POSITIVA de quem respondeu: a mesma consulta feita direto no
+    // backend tem de dar o mesmo conjunto de ids. Comparar só o shape não
+    // distingue mock de servidor — os dois montam `{rows,total}`, que é o
+    // ponto do contrato.
+    const direto = (await (await noBackend('get', '/api/quotes')).json()) as {
+      total: number
+      rows: { id: string }[]
+    }
+    expect(corpo.total).toBe(direto.total)
+    expect(corpo.rows.map((l) => l.id)).toEqual(direto.rows.map((l) => l.id))
+
+    // O dado do servidor traz `null` onde o mock sempre mandou valor. Quem
+    // consome estas linhas é `quotes-api.ts`, e é ele que precisa aguentar.
+    for (const linha of corpo.rows) expect(linha).toHaveProperty('customerName')
+  })
+
+  it('a ordenação do orçamento usa a whitelist do SERVIDOR — fora dela é 400', async () => {
+    // `ORDENAVEIS_ORCAMENTO` do front e o `CAMPOS` do backend publicam os
+    // mesmos cinco campos. Traduzir a coluna para português quebraria a
+    // ordenação com 400 só ao clicar no cabeçalho — silencioso até o clique.
+    const ok = await fetch(`${APP}/api/quotes?sortBy=customerName&sortDir=asc`, {
+      headers: { cookie },
+    })
+    expect(ok.status).toBe(200)
+
+    const fora = await fetch(`${APP}/api/quotes?sortBy=cliente`, { headers: { cookie } })
+    expect(fora.status).toBe(400)
+  })
+
+  it('regravar o orçamento NÃO troca o nome do ambiente pelo código', async () => {
+    // O defeito que ligar `/api/quotes` expôs: `environments` era derivado dos
+    // itens, e a grade guarda o CÓDIGO — a escrita saía com `name: code`. Como
+    // o `PUT` é integral, o servidor gravava o uuid por cima do nome congelado.
+    // Só o par de verdade prova: o mock aceitava os dois.
+    const parceiros = await fetch(`${APP}/api/partners?role=customer`, { headers: { cookie } })
+    const cliente = ((await parceiros.json()) as { rows: { id: string }[] }).rows[0]
+    if (!cliente) return // banco de dev sem cliente: nada a gravar
+
+    const ambiente = {
+      code: '9f1c7b20-3a55-4e18-8b90-6d2f4c1a7e33',
+      name: 'SALA DE ESTAR',
+      order: 1,
+    }
+    const corpo = {
+      customerId: cliente.id,
+      projectName: 'Prova ao vivo',
+      discountMode: 'product',
+      discountPercent: 0,
+      environments: [ambiente],
+      items: [
+        {
+          lineNumber: 1,
+          environmentCode: ambiente.code,
+          description: 'Pendente',
+          quantity: 1,
+          unitPriceCents: 10_000,
+          discountPercent: 0,
+        },
+      ],
+    }
+
+    const criado = await fetch(`${APP}/api/quotes`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
       body: JSON.stringify(corpo),
     })
-    // GET passa, POST não: o backend ainda não implementa a escrita, e é por
-    // isso que o caminho inteiro não pode entrar na lista.
-    expect(noBackend.status).toBe(501)
+    expect(criado.status).toBe(201)
+    const { id } = (await criado.json()) as { id: string }
+
+    const regravado = await fetch(`${APP}/api/quotes/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify(corpo),
+    })
+    expect(regravado.status).toBe(200)
+    expect(((await regravado.json()) as { environments: unknown[] }).environments).toEqual([
+      ambiente,
+    ])
+  })
+
+  it('tarefas e A fazer passam; os indicadores do dashboard continuam no mock', async () => {
+    const tarefas = await fetch(`${APP}/api/tasks`, { headers: { cookie } })
+    expect(tarefas.status).toBe(200)
+
+    const todos = await fetch(`${APP}/api/todos`, { headers: { cookie } })
+    expect(todos.status).toBe(200)
+
+    // O resumo é painel próprio, com consulta própria e sem id em comum: o mock
+    // responde e a tela monta. É o que separa este caso do funil.
+    const resumo = await fetch(`${APP}/api/dashboard/summary`, { headers: { cookie } })
+    expect(resumo.status).toBe(200)
+    expect((await noBackend('get', '/api/dashboard/summary')).status).toBe(501)
+  })
+
+  it('o FUNIL fica inteiro no mock — meia passagem deixaria o quadro vazio', async () => {
+    // `pagina-do-funil.tsx` lê funis, estágios e oportunidades. O backend serve
+    // os dois primeiros e responde 501 no terceiro: passar só o que ele serve
+    // faria o quadro pedir ao mock as oportunidades de um `pipelineId` que o
+    // mock nunca viu, e receber zero linhas com status 200.
+    const funis = await fetch(`${APP}/api/crm/pipelines`, { headers: { cookie } })
+    expect(funis.status).toBe(200)
+    const { rows } = (await funis.json()) as { rows: { id: string }[] }
+    const funil = rows[0]
+    expect(funil, 'o mock semeia funis; vazio aqui significa que a passagem vazou').toBeDefined()
+
+    const oportunidades = await fetch(`${APP}/api/crm/opportunities?pipelineId=${funil?.id}`, {
+      headers: { cookie },
+    })
+    expect(oportunidades.status).toBe(200)
+    // as duas metades vêm da MESMA origem, então o id casa
+    expect(((await oportunidades.json()) as { rows: unknown[] }).rows.length).toBeGreaterThan(0)
+
+    // e o backend, esse, não serve a segunda metade
+    expect((await noBackend('get', '/api/crm/opportunities')).status).toBe(501)
   })
 })

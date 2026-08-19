@@ -25,6 +25,27 @@ export interface OrcamentoItem {
 
 export type ModoDesconto = 'PRODUTO' | 'GERAL'
 
+/**
+ * Ambiente COMO O DOCUMENTO o guarda — a camada do meio das três que o contrato
+ * descreve em `QuoteEnvironmentDto`: o catálogo por empresa fica em
+ * `GET /api/catalog-lookups?kind=AMBIENTE`, esta é a instância no orçamento, e
+ * o item aponta para ela por `environmentCode`.
+ *
+ * **O documento precisa carregá-la, e não derivá-la dos itens.** O `name` é
+ * CONGELADO na emissão: derivar `environments` da coluna Ambiente da grade —
+ * que guarda o CÓDIGO — fazia a escrita mandar `name: code`, e como o `PUT` é
+ * integral o servidor gravava o uuid no lugar do nome do ambiente. Medido
+ * contra o backend real: o documento voltava com
+ * `name: "11111111-1111-…"`. Um `Gravar` sem nenhuma edição destruía o dado.
+ */
+export interface AmbienteDoOrcamento {
+  /** `CatalogLookupDto.id`, kind `AMBIENTE` — o contrato o declara `format: uuid`. */
+  codigo: string
+  /** Nome congelado na emissão. Renomear no catálogo não reescreve documento emitido. */
+  nome: string
+  ordem: number
+}
+
 export interface Orcamento {
   /**
    * Id do documento — TEXTO desde a migração para `/api/quotes` (#134).
@@ -62,6 +83,12 @@ export interface Orcamento {
   modoDesconto: ModoDesconto
   /** Desconto geral em % (4 casas implícitas) — §8.2. */
   descontoPercentual: number
+  /**
+   * Os ambientes do documento, como vieram. Coleção PRÓPRIA e não derivada dos
+   * itens — o contrato diz que "ambiente sem item nenhum é estado legítimo", e
+   * derivar perderia o nome congelado. Ver `AmbienteDoOrcamento`.
+   */
+  ambientes: AmbienteDoOrcamento[]
   itens: OrcamentoItem[]
 }
 
@@ -141,6 +168,10 @@ export const orcamentos: Orcamento[] = LINHAS.map((l, i) => ({
   cancelado: false,
   modoDesconto: 'PRODUTO',
   descontoPercentual: 0,
+  // No mock o CÓDIGO do ambiente é legível, como o id do próprio orçamento
+  // (`orc-0001`): o mock é o catálogo dele mesmo. O que importa é a coleção
+  // EXISTIR — é dela que a escrita tira o nome congelado.
+  ambientes: i % 3 === 0 ? [] : [{ codigo: 'SALA', nome: 'SALA', ordem: 1 }],
   itens:
     i % 3 === 0
       ? []
@@ -182,6 +213,7 @@ export function orcamentoVazio(id = ''): Orcamento {
     cancelado: false,
     modoDesconto: 'PRODUTO',
     descontoPercentual: 0,
+    ambientes: [],
     itens: [],
   }
 }

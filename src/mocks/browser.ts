@@ -59,7 +59,7 @@ const atraso = http.all('*', async () => {
  * ganhar conveniência em dev.
  */
 const backendReal = import.meta.env.VITE_API_PROXY
-const passagem = backendReal ? handlersDePassagem() : []
+const passagem = handlersDePassagem(backendReal)
 
 export const worker = setupWorker(...passagem, atraso, ...handlers)
 

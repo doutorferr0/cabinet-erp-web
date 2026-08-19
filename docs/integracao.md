@@ -219,6 +219,55 @@ com id inventado e responderia "não encontrado" para registro que existe.
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
 
+### O que sai do mock quando há backend — a lista de passagem (2026-08-19)
+
+A tabela acima diz o que a TELA fala por HTTP. Quem responde é outra pergunta, e ela tem uma
+segunda resposta desde que existe backend: com `VITE_API_PROXY`, as operações de
+`src/mocks/rotas-do-backend.ts` atravessam o proxy e o resto continua no MSW.
+
+**Medido em 2026-08-19 contra `cabinet-erp-api` `060f472`: das 69 operações do contrato, 50
+respondem e 19 são 501. A passagem declara 33.** (A `main` do outro repo cresceu durante a
+sessão — no começo eram 46; atividades entraram no meio. Remedir antes de concluir qualquer
+coisa a partir daqui.) A diferença não é atraso — é a regra de que **a divisão é por TELA, não
+por operação**. Meia tela integrada põe id do servidor de um lado e id inventado do outro, e o
+resultado tem cara de dado, não de erro. Ficam de fora, servidas:
+
+| módulo | servido | por que não passa |
+|---|---|---|
+| CRM funis e estágios | 7 operações | `pagina-do-funil.tsx` lê funis, estágios **e** oportunidades. `GET /api/crm/opportunities` é 501: o quadro pediria ao mock as oportunidades de um `pipelineId` que o mock nunca viu, e receberia zero linhas com status 200 — quadro vazio, e vazio parece "não há oportunidade" |
+| Atividades + colaborador | 4 + 6 operações | **Um cacho, não dois casos.** `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de `listEmployees` — atividade real com pessoa do mock grava no Postgres um uuid que o servidor não conhece. E `ActivityDto.entityType` é `opportunity \| partner \| quote \| purchaseOrder`: `opportunity` segue mockada e `purchaseOrder` nem caminho tem, então metade das atividades ficaria pendurada em id inexistente. Soma-se que `data.colaboradores` (a tela de cadastro) é provider de mock: passar `listEmployees` daria duas listas de quem trabalha aqui |
+
+**As oportunidades do CRM são a chave.** Servi-las libera de uma vez as **17 operações que o
+backend já responde e a passagem segura** — funil e estágios (7), atividades (4) e colaborador
+(6) — e com elas três telas. É o próximo item de maior alavancagem da fila do backend, do ponto
+de vista do front.
+
+Duas armadilhas de MEDIÇÃO, pagas nesta rodada e complementares:
+
+1. **Escrita com corpo vazio devolve 400 antes do 501** (já documentado) — a validação de schema
+   dispara antes do handler ausente.
+2. **A recíproca também morde: GET com query param obrigatório devolve 400 quando o param falta**,
+   e 400 não é 501. `/api/dashboard/agenda` e `/api/crm/reports/lost-reasons` foram lidos como
+   "servidos" por isso; com `from` e `to` os dois respondem 501. **Toda leitura de 400 numa sonda
+   é inconclusiva** — significa "a validação respondeu antes", e não diz nada sobre haver handler.
+
+#### O que o dado real revelou no orçamento
+
+Ligar `/api/quotes` no servidor de verdade expôs dois defeitos que o mock escondia, os dois
+corrigidos junto:
+
+- **`environments` era derivado dos itens**, e a grade guarda o CÓDIGO do ambiente. A escrita
+  montava `{ code, name: code }`; como o `PUT` é **integral**, um `Gravar` sem nenhuma edição
+  gravava o uuid por cima do nome congelado do ambiente. Medido: o documento voltou com
+  `name: "11111111-1111-…"`. O documento passou a CARREGAR os ambientes (`Orcamento.ambientes`),
+  que é o que o contrato descreve — inclusive porque "ambiente sem item nenhum é estado legítimo",
+  e derivação nenhuma representa isso.
+- **`environmentCode` é `format: uuid`** — id do ambiente no catálogo — e o botão `Ambiente`
+  insere uma linha com um nome de `tabelas.ambientes`, lista INVENTADA (§8.2 capturou a grade
+  vazia). Mandá-lo é **400 ao gravar**, e o operador perde o documento por causa de uma coluna.
+  Enquanto `GET /api/catalog-lookups` responder 501 e não existir kind `AMBIENTE`, código que o
+  documento não conhece não sai: a linha grava **sem ambiente** em vez de não gravar.
+
 ### Atividades — uma tabela polimórfica, um recurso só (2026-08-14)
 
 `activities` (schema mergeado, #66) serve QUATRO entidades pelo par

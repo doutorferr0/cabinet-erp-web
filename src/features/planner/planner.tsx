@@ -1,170 +1,89 @@
-import type { PlanItemDto, PlanItemDtoKind, PlanPhaseDto, ProjectPlanDto } from '@/api/gerado'
-import type { Modulo } from '@/app/modulo'
+import type { PlanItemDtoKind, ProjectPlanDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Barra as BarraDeProgresso, Painel } from '@/components/cabinet/painel'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FILTROS, type FiltroDeProjeto, usePlanoDoProjeto, useProjetos } from '@/data/planner-api'
-import { formatDateBR } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { Gantt } from '@svar-ui/react-gantt'
+import { useMemo, useState } from 'react'
 import {
-  type Escala,
-  escalaDoPlano,
-  faixaDoItem,
-  periodoDaFase,
-  posicaoDeHoje,
+  TIPOS,
+  janelaDoPlano,
   progressoDoProjeto,
-} from './escala'
+  tarefasDoPlano,
+  totalDeItens,
+} from './dados-do-gantt'
 
 /**
- * PLANNER — o gantt do projeto, em LEITURA.
+ * PLANNER — o gantt do projeto, em LEITURA, agora sobre `@svar-ui/react-gantt`.
  *
- * Fase 1 é ler: não arrasta barra, não redimensiona, não liga dependência entre
- * itens e não troca a escala de tempo (a spec põe os três fora). O que a tela
- * responde é "o que está acontecendo quando", que é a pergunta que hoje não tem
- * resposta em lugar nenhum do sistema.
+ * ## O que a troca tirou daqui
  *
- * ## A cor da barra segue o TIPO, não a fase
+ * Saiu `escala.ts` inteiro: a grade em porcentagem, o cabeçalho de meses, a
+ * largura mínima de um dia, a linha do agora e o empilhamento de barras que se
+ * sobrepõem. Era código correto e testado, e a razão de ir embora não é ele ser
+ * ruim — é ser NOSSO. Geometria de gantt é problema resolvido, e manter uma
+ * segunda solução ao lado da que a lib traz custa o dobro a cada mudança
+ * (decisão do user, 2026-08-19: substituir, não manter em paralelo).
  *
- * A memória deixou a escolha para cá e pediu que fosse registrada. Fase já é
- * lida pela coluna da esquerda, que agrupa e nomeia; pintar a barra pela fase
- * repetiria essa informação e desperdiçaria o único canal de cor que sobra. Pelo
- * TIPO, a cor passa a dizer o que a barra É — e usa o par de módulo que o
- * sistema já ensinou em outras telas: pedido é Compras, entrega é Estoque,
- * tarefa é Vendas. O mesmo mapa da agenda do Dashboard, de propósito.
+ * O que ficou é o que o SVAR não sabe: o recorte de projeto, o Andamento e as
+ * três frases de estado vazio — que são deste domínio, não do gantt.
  *
- * A barra de progresso é VIOLETA, não verde: verde é dinheiro, e progresso não
- * é dinheiro. O DESIGN.md já dá a barra de progresso ao violeta de ação.
+ * ## O que a troca NÃO ligou, de propósito
+ *
+ * `readonly` fica ligado, e as três coisas que a lib traz de graça — arrastar
+ * barra, redimensionar e ligar dependência — continuam desligadas: a spec
+ * aprovada (`topicos/dashboard.md` @planner) põe as três fora da fase 1, que é
+ * de leitura. A troca é de motor, não de escopo; ligá-las é decisão de produto e
+ * merece a própria issue.
+ *
+ * **Nada de `schedule`, `baselines` ou `criticalPath`:** os três existem na
+ * tipagem e são PRO PAGO no SVAR. A spec não pede nenhum, e por isso a troca
+ * passou sem virar blocker — mas ligar qualquer um deles depois é decisão
+ * comercial, não técnica.
+ *
+ * ## A cor continua seguindo o TIPO
+ *
+ * A decisão registrada quando o gantt era caseiro vale igual: a fase já é lida
+ * pela coluna da esquerda, e a barra usa o par de módulo que o sistema ensinou
+ * em outras telas. O que muda é ONDE isso é dito — antes era classe no botão,
+ * agora é o `taskTemplate`, que é o gancho do SVAR para o conteúdo da barra.
  */
 
-const TIPOS: Record<PlanItemDtoKind, { rotulo: string; modulo: Modulo }> = {
-  task: { rotulo: 'Tarefa', modulo: 'vendas' },
-  order: { rotulo: 'Pedido', modulo: 'compras' },
-  delivery: { rotulo: 'Entrega', modulo: 'estoque' },
-}
+/** Nomes de mês em pt-BR — o SVAR não traz locale nosso. */
+const MES = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' })
 
-function CabecalhoDeMeses({ escala }: { escala: Escala }) {
+/**
+ * Duas faixas no cabeçalho: ano e mês.
+ *
+ * A spec pede "13 colunas, ex. jan'26–jan'27". Uma faixa só de `mar 26` repete
+ * o ano treze vezes; separar em ano + mês devolve a leitura do mockup e libera
+ * a linha de baixo para o mês curto.
+ */
+const ESCALAS = [
+  { unit: 'year' as const, step: 1, format: 'yyyy' },
+  { unit: 'month' as const, step: 1, format: (data: Date) => MES.format(data) },
+]
+
+/**
+ * O conteúdo da barra. É aqui que a cor por TIPO entra.
+ *
+ * `data-modulo` é o mesmo atributo que o resto do app usa para puxar o par de
+ * cor do módulo — a barra não inventa cor, herda a que o design system já
+ * publicou. O `aria-label` repete tipo e nome porque a barra do SVAR é uma
+ * `div`: sem ele o leitor de tela anuncia só o texto solto.
+ */
+function BarraDoItem({ data }: { data: { text?: string; tipo?: PlanItemDtoKind } }) {
+  const tipo = data.tipo ? TIPOS[data.tipo] : null
   return (
-    <div
-      className="grid border-b-2"
-      style={{ gridTemplateColumns: `repeat(${escala.meses.length}, minmax(72px, 1fr))` }}
+    <span
+      data-slot="barra-do-plano"
+      {...(tipo ? { 'data-modulo': tipo.modulo } : {})}
+      className="flex h-full items-center overflow-hidden bg-modulo px-2 text-left"
+      aria-label={tipo ? `${tipo.rotulo}: ${data.text ?? ''}` : (data.text ?? '')}
     >
-      {escala.meses.map((mes, i) => (
-        <span
-          key={`${mes.ano}-${mes.mes}`}
-          className={cn(
-            'truncate px-2 py-1 text-center font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]',
-            // Coluna alternada com faixa de fundo: sem ela, uma grade de 13
-            // colunas vira listra indistinta e o olho perde a conta do mês.
-            i % 2 === 1 && 'bg-surface-sunken',
-          )}
-        >
-          {mes.rotulo}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function Barra({ item, escala }: { item: PlanItemDto; escala: Escala }) {
-  const faixa = faixaDoItem(item, escala)
-  const tipo = TIPOS[item.kind]
-
-  return (
-    <PopoverTrigger>
-      <Button
-        variant="outline"
-        // A barra é um controle de verdade (foco, Enter, leitor de tela), e não
-        // uma `div` clicável: é o que faz o gantt inteiro operável sem mouse.
-        //
-        // O pastel /02 do tipo entra no PRÓPRIO botão, e não numa camada por
-        // baixo: o `outline` já pinta `bg-card` opaco, e um fundo colorido atrás
-        // dele ficava escondido — na conferência renderizada as barras saíam
-        // todas brancas. O `cn` resolve o conflito de `bg-*` a favor de quem
-        // chega por último.
-        data-modulo={tipo.modulo}
-        className="absolute h-7 justify-start overflow-hidden bg-modulo px-2 text-left"
-        style={{ left: `${faixa.esquerda}%`, width: `${faixa.largura}%` }}
-        aria-label={`${tipo.rotulo}: ${item.label}`}
-      >
-        {/* Só o rótulo do item. A etiqueta do TIPO saiu daqui: numa barra de
-            duas semanas ela vinha truncada em "TA…" e ocupava metade do espaço
-            do nome. O tipo continua dito de três formas — na cor, no nome
-            acessível do botão e por escrito no cartão de detalhe. */}
-        <span className="truncate text-sm font-semibold">{item.label}</span>
-      </Button>
-
-      <Popover className="w-72 p-3">
-        <div className="flex flex-col gap-2">
-          <span className="font-display font-bold">{item.label}</span>
-          <dl className="grid grid-cols-2 gap-1 text-sm">
-            <dt className="text-muted-foreground">Tipo</dt>
-            <dd className="text-right">{tipo.rotulo}</dd>
-            <dt className="text-muted-foreground">Início</dt>
-            <dd className="text-right tabular-nums">{formatDateBR(item.startsOn)}</dd>
-            <dt className="text-muted-foreground">Previsão de término</dt>
-            <dd className="text-right tabular-nums">{formatDateBR(item.endsOn)}</dd>
-          </dl>
-          <div className="flex items-center gap-2">
-            {/* Trilho + preenchimento: a porcentagem também vai por escrito, ao
-                lado — barra sozinha obriga a estimar no olho. */}
-            {/* A barra é DESENHO do número que está escrito ao lado, e por isso
-                se declara decoração. Um `role="progressbar"` aqui anunciaria a
-                mesma porcentagem duas vezes no leitor de tela — e exigiria foco
-                num elemento que não faz nada quando focado. */}
-            <div aria-hidden="true" className="h-2.5 flex-1 border-2 bg-card">
-              <div className="h-full bg-primary" style={{ width: `${item.progressPercent}%` }} />
-            </div>
-            <span className="font-mono text-[0.75rem] font-medium tabular-nums">
-              {item.progressPercent}% concluído
-            </span>
-          </div>
-        </div>
-      </Popover>
-    </PopoverTrigger>
-  )
-}
-
-function Fase({ fase, escala }: { fase: PlanPhaseDto; escala: Escala }) {
-  const hoje = posicaoDeHoje(escala)
-  return (
-    <div className="grid grid-cols-[minmax(180px,240px)_1fr] items-stretch border-b-2 last:border-b-0">
-      <div className="flex gap-2 border-r-2 p-2">
-        {/* Barra vertical da fase: marca o bloco sem gastar uma cor de módulo,
-            que aqui já tem dono (o tipo do item). */}
-        <span aria-hidden="true" className="w-1.5 shrink-0 border-2 bg-accent" />
-        <div className="min-w-0">
-          <p className="truncate font-semibold">{fase.name}</p>
-          <p className="font-mono text-[0.75rem] font-medium text-muted-foreground">
-            {fase.items.length} {fase.items.length === 1 ? 'item' : 'itens'}
-          </p>
-          <p className="text-sm text-muted-foreground">{periodoDaFase(fase)}</p>
-        </div>
-      </div>
-
-      <div className="relative flex flex-col justify-center gap-1.5 py-2">
-        {/* A linha do AGORA atravessa cada faixa de fase, e por isso é desenhada
-            dentro dela: uma linha única por cima da grade teria de flutuar sobre
-            o cabeçalho e a coluna de fases, e passaria por dentro do texto. */}
-        {hoje !== null ? (
-          <span
-            aria-hidden="true"
-            data-slot="hoje"
-            className="absolute inset-y-0 w-0.5 bg-primary"
-            style={{ left: `${hoje}%` }}
-          />
-        ) : null}
-        {fase.items.map((item) => (
-          // Cada barra na própria faixa: duas barras da mesma fase que se
-          // sobrepõem no tempo se empilhariam e uma esconderia a outra.
-          <div key={item.id} className="relative h-7">
-            <Barra item={item} escala={escala} />
-          </div>
-        ))}
-      </div>
-    </div>
+      <span className="truncate text-sm font-semibold">{data.text}</span>
+    </span>
   )
 }
 
@@ -177,7 +96,9 @@ export function PlannerTela() {
   // seria uma tela vazia por decisão de ninguém.
   const projetoId = projetoEscolhido ?? projetos.data?.[0]?.id ?? null
   const plano = usePlanoDoProjeto(projetoId)
-  const escala = plano.data ? escalaDoPlano(plano.data.phases) : null
+
+  const tarefas = useMemo(() => (plano.data ? tarefasDoPlano(plano.data) : []), [plano.data])
+  const janela = useMemo(() => (plano.data ? janelaDoPlano(plano.data.phases) : null), [plano.data])
 
   return (
     <div className="flex flex-col gap-8">
@@ -254,25 +175,45 @@ export function PlannerTela() {
         <p className="rounded-panel border-2 bg-card p-6 text-center text-sm text-muted-foreground">
           Nenhum projeto neste recorte.
         </p>
-      ) : !escala ? (
+      ) : !janela ? (
         <p className="rounded-panel border-2 bg-card p-6 text-center text-sm text-muted-foreground">
           Este projeto ainda não tem fases planejadas.
         </p>
       ) : (
         <>
           {plano.data ? <AndamentoDoProjeto plano={plano.data} /> : null}
-          <div className="overflow-x-auto rounded-panel border-2 bg-card">
-            <div className="min-w-[840px]">
-              <div className="grid grid-cols-[minmax(180px,240px)_1fr]">
-                <span className="border-r-2 border-b-2 px-2 py-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                  Fase
-                </span>
-                <CabecalhoDeMeses escala={escala} />
-              </div>
-              {plano.data?.phases.map((fase) => (
-                <Fase key={fase.id} fase={fase} escala={escala} />
-              ))}
-            </div>
+          {/*
+            A moldura é NOSSA e o miolo é da lib. O `rounded-panel border-2` é o
+            mesmo da versão anterior e da folha das outras telas da seção — sem
+            ele o gantt apareceria como um retângulo estrangeiro no meio da
+            página, que é exatamente o que a issue quis evitar ao recusar a
+            suíte SVAR inteira.
+
+            `data-secao="dashboard"` mantém o Planner na cor da seção (laranja
+            `#FF6B2C`, s120): quem lê a cor sabe em que parte do sistema está, e
+            a troca de motor não pode mudar isso.
+          */}
+          <div
+            data-secao="dashboard"
+            data-slot="gantt"
+            className="overflow-hidden rounded-panel border-2 bg-card"
+          >
+            <Gantt
+              readonly
+              tasks={tarefas}
+              scales={ESCALAS}
+              {...(janela ? { start: janela.inicio, end: janela.fim } : {})}
+              taskTemplate={BarraDoItem}
+              // Uma coluna só, a de nome — a versão anterior também mostrava
+              // fase e nome e nada mais. `Duração` e `Início` do padrão do SVAR
+              // repetiriam o que a própria barra já diz na horizontal.
+              columns={[{ id: 'text', header: 'Fase', flexgrow: 1 }]}
+              // A linha do AGORA, que o gantt caseiro desenhava à mão. Sem
+              // `css`: uma classe própria aqui não teria folha de estilo — o
+              // `index.css` é de outra zona — e classe que não pinta nada se lê
+              // como pintada. Fica o marcador do SVAR, que já vem estilizado.
+              markers={[{ start: new Date(), text: 'Hoje' }]}
+            />
           </div>
         </>
       )}
@@ -288,6 +229,8 @@ export function PlannerTela() {
  * Fica ACIMA da grade porque responde a pergunta que se faz antes de olhar as
  * barras ("como está o projeto?"); a grade responde a seguinte ("o que acontece
  * quando?").
+ *
+ * Continua NOSSO depois da troca: o SVAR desenha o plano, não resume o projeto.
  */
 function AndamentoDoProjeto({ plano }: { plano: ProjectPlanDto }) {
   const p = progressoDoProjeto(plano)
@@ -300,9 +243,11 @@ function AndamentoDoProjeto({ plano }: { plano: ProjectPlanDto }) {
           <Grandeza rotulo="Concluídos" valor={p.concluidos} />
           <Grandeza rotulo="Em andamento" valor={p.emAndamento} />
           <Grandeza rotulo="Não iniciados" valor={p.naoIniciados} />
-          <Grandeza rotulo="Itens" valor={p.total} />
+          <Grandeza rotulo="Itens" valor={totalDeItens(plano)} />
         </div>
         <div className="flex min-w-[200px] flex-1 items-center gap-3">
+          {/* VIOLETA, não verde: verde é dinheiro e progresso não é dinheiro.
+              O DESIGN.md já dá a barra de progresso ao violeta de ação. */}
           <BarraDeProgresso percentual={p.percentual} />
           <span className="shrink-0 font-mono text-sm font-medium tabular-nums">
             {p.percentual}%

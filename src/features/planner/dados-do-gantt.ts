@@ -1,0 +1,207 @@
+import type { PlanItemDtoKind, PlanPhaseDto, ProjectPlanDto } from '@/api/gerado'
+import type { Modulo } from '@/app/modulo'
+
+/**
+ * O PLANO DO CONTRATO → o que o SVAR Gantt come.
+ *
+ * Este arquivo substitui `escala.ts`, e a troca é de RESPONSABILIDADE, não de
+ * implementação: a geometria da grade (de que mês a que mês, onde cada barra
+ * cai, largura mínima de um dia, onde hoje entra) era nossa e por isso precisava
+ * de teste; agora é do SVAR. O que sobra aqui é a TRADUÇÃO — e tradução é
+ * exatamente o que continua sendo nosso e continua testável sem montar tela.
+ *
+ * ## Fase é tarefa-resumo, item é filho
+ *
+ * O contrato dá `phases[].items[]`, duas camadas. O SVAR não tem "fase": tem
+ * árvore de tarefas com `parent`, e `type: 'summary'` para o pai. A fase vira
+ * resumo e o item vira filho — que é o que faz a coluna da esquerda agrupar
+ * sozinha, sem a coluna de fases desenhada à mão que a versão anterior tinha.
+ *
+ * **Ids ganham prefixo.** `phases[].id` e `items[].id` são uuids de tabelas
+ * diferentes e podem coincidir; no SVAR os dois viram nós do MESMO conjunto, e
+ * id repetido faz o filho virar pai de si mesmo. `fase:` e `item:` separam os
+ * dois espaços de nome, e a volta (`idOriginal`) desfaz.
+ */
+
+const DIA_MS = 86_400_000
+
+/** Meia-noite LOCAL do dia ISO. Nunca `new Date(iso)` cru: aquilo lê UTC. */
+export function dataDoDia(iso: string): Date {
+  const [ano, mes, dia] = iso.split('-').map(Number)
+  return new Date(ano ?? 1970, (mes ?? 1) - 1, dia ?? 1)
+}
+
+/**
+ * A cor da barra segue o TIPO, não a fase — decisão registrada quando o gantt
+ * era caseiro, e mantida na troca.
+ *
+ * A fase já é lida pela coluna da esquerda, que agrupa e nomeia; pintar a barra
+ * pela fase repetiria essa informação e gastaria o único canal de cor que
+ * sobra. Pelo TIPO, a cor diz o que a barra É, e usa o par de módulo que o
+ * sistema já ensinou em outras telas — o mesmo mapa da agenda do Dashboard.
+ */
+export const TIPOS: Record<PlanItemDtoKind, { rotulo: string; modulo: Modulo }> = {
+  task: { rotulo: 'Tarefa', modulo: 'vendas' },
+  order: { rotulo: 'Pedido', modulo: 'compras' },
+  delivery: { rotulo: 'Entrega', modulo: 'estoque' },
+}
+
+/** O que a barra precisa saber de si — o que o `taskTemplate` vai ler. */
+export interface TarefaDoGantt {
+  id: string
+  text: string
+  type: 'summary' | 'task'
+  start: Date
+  /**
+   * FIM EXCLUSIVO — e é a diferença de convenção que mais dá erro de um dia.
+   *
+   * O contrato diz `endsOn` inclusivo (uma entrega que começa e termina no dia
+   * 10 dura um dia). O SVAR trata `end` como limite exclusivo, então mandar o
+   * mesmo valor produziria barra de duração ZERO, que some da tela — e o
+   * operador concluiria que a entrega não está planejada.
+   */
+  end: Date
+  progress?: number
+  parent?: string
+  open?: boolean
+  /** Só nos filhos. O `taskTemplate` pinta por ele. */
+  tipo?: PlanItemDtoKind
+}
+
+/** `fase:<uuid>` / `item:<uuid>` — ver a nota de ids no topo. */
+export function idDaFase(id: string): string {
+  return `fase:${id}`
+}
+export function idDoItem(id: string): string {
+  return `item:${id}`
+}
+/** Desfaz o prefixo. Devolve `null` para id que não veio daqui. */
+export function idOriginal(id: string): string | null {
+  const corte = id.indexOf(':')
+  return corte < 0 ? null : id.slice(corte + 1)
+}
+
+/** Dia seguinte ao ISO — a ponta exclusiva que o SVAR espera. */
+function diaSeguinte(iso: string): Date {
+  return new Date(dataDoDia(iso).getTime() + DIA_MS)
+}
+
+/**
+ * As tarefas do plano, na ordem em que o contrato as deu.
+ *
+ * A ordem NÃO é reordenada por data de propósito: `phases` é a sequência que o
+ * projeto tem, e ordenar por início faria uma fase de preparo que começa tarde
+ * saltar para o meio da obra.
+ */
+export function tarefasDoPlano(plano: ProjectPlanDto): TarefaDoGantt[] {
+  const tarefas: TarefaDoGantt[] = []
+  for (const fase of plano.phases) {
+    tarefas.push({
+      id: idDaFase(fase.id),
+      text: fase.name,
+      type: 'summary',
+      start: dataDoDia(fase.startsOn),
+      end: diaSeguinte(fase.endsOn),
+      // Aberta: o plano existe para mostrar os itens. Fase fechada por padrão
+      // faria o Planner abrir com uma lista de fases e nenhuma barra.
+      open: true,
+    })
+    for (const item of fase.items) {
+      tarefas.push({
+        id: idDoItem(item.id),
+        parent: idDaFase(fase.id),
+        text: item.label,
+        type: 'task',
+        start: dataDoDia(item.startsOn),
+        end: diaSeguinte(item.endsOn),
+        // O contrato dá 0–100; o SVAR quer a mesma faixa. Guardado como veio.
+        progress: item.progressPercent,
+        tipo: item.kind,
+      })
+    }
+  }
+  return tarefas
+}
+
+export interface JanelaDoPlano {
+  inicio: Date
+  /** Exclusivo, como o `end` das tarefas. */
+  fim: Date
+}
+
+/**
+ * De quando a quando a grade vai — **fechando em MÊS INTEIRO nas duas pontas**.
+ *
+ * Regra herdada do gantt caseiro e mantida por ser visual, não técnica: um plano
+ * que começa dia 20 não pode abrir a grade no dia 20, senão a primeira coluna do
+ * cabeçalho de meses fica mais estreita que as outras — e o olho lê largura como
+ * duração.
+ *
+ * `null` no plano sem fase: grade de zero mês não é grade vazia, é "este projeto
+ * não tem plano", que é outra frase e outra tela.
+ */
+export function janelaDoPlano(fases: PlanPhaseDto[]): JanelaDoPlano | null {
+  if (fases.length === 0) return null
+
+  const inicios = fases.map((f) => f.startsOn).sort()
+  const fins = fases.map((f) => f.endsOn).sort()
+  const primeiro = dataDoDia(inicios[0] as string)
+  const ultimo = dataDoDia(fins[fins.length - 1] as string)
+
+  return {
+    inicio: new Date(primeiro.getFullYear(), primeiro.getMonth(), 1),
+    // Dia 1 do mês SEGUINTE ao último: é o mesmo "último dia do mês" da versão
+    // anterior, escrito na convenção exclusiva do SVAR.
+    fim: new Date(ultimo.getFullYear(), ultimo.getMonth() + 1, 1),
+  }
+}
+
+/** O período da fase, escrito para o humano: `mar 2026 — jun 2026`. */
+export function periodoDaFase(fase: PlanPhaseDto): string {
+  const curto = (iso: string) =>
+    new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(dataDoDia(iso))
+  return `${curto(fase.startsOn)} — ${curto(fase.endsOn)}`
+}
+
+/** Quantas barras o plano inteiro tem — o número do cabeçalho do projeto. */
+export function totalDeItens(plano: ProjectPlanDto): number {
+  return plano.phases.reduce((soma, fase) => soma + fase.items.length, 0)
+}
+
+export interface ProgressoDoProjeto {
+  concluidos: number
+  emAndamento: number
+  naoIniciados: number
+  total: number
+  /** Média simples do progresso dos itens; `null` no plano sem item nenhum. */
+  percentual: number | null
+}
+
+/**
+ * O andamento do projeto inteiro, derivado das barras do plano.
+ *
+ * **Média SIMPLES, e a tela diz que é dos itens.** Ponderar por duração daria um
+ * número mais "certo" e menos conferível: o operador olha a grade, conta as
+ * barras cheias e espera que a conta bata. Média ponderada bate com uma conta
+ * que ele não tem como fazer no olho, e número que não se confere é número em
+ * que ninguém confia.
+ *
+ * `null` no plano vazio: 0 de 0 não é "0% concluído" — é projeto sem plano.
+ */
+export function progressoDoProjeto(plano: ProjectPlanDto): ProgressoDoProjeto {
+  const itens = plano.phases.flatMap((fase) => fase.items)
+  const total = itens.length
+  const concluidos = itens.filter((i) => i.progressPercent >= 100).length
+  const naoIniciados = itens.filter((i) => i.progressPercent <= 0).length
+
+  return {
+    concluidos,
+    emAndamento: total - concluidos - naoIniciados,
+    naoIniciados,
+    total,
+    percentual:
+      total === 0
+        ? null
+        : Math.round(itens.reduce((soma, i) => soma + i.progressPercent, 0) / total),
+  }
+}

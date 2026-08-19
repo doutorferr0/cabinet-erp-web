@@ -442,12 +442,23 @@ const sidebarMenuButtonVariants = cva(
   // Repouso: liso, borda transparente nos 4 lados — a borda já existe apagada
   // para que aparecer no hover não empurre o texto meio pixel.
   // Hover: traço de Tinta + pastel /02 do módulo + lift (`lift-flat`).
-  // Ativo: cheia /01 do módulo. É elemento compacto, que é onde a /01 pode
-  // entrar (§2); a barra esquerda de 3px continua marcando a linha.
+  // Ativo: o MESMO pastel /02, distinguido pela barra esquerda em Tinta
+  // (`border-l-foreground`) e pelo negrito — as duas marcas já existiam.
+  //
+  // O ativo era a cheia /01, com o argumento de que item de menu é "elemento
+  // compacto". A medição derrubou o argumento: o que pousa na /01 não é a
+  // marca, é TEXTO com ÍCONE em cima, e a /01 como fundo de tinta mede
+  // 7,46:1 no claro e **2,45:1 no escuro** (§tabela:estados-fundo) — abaixo do
+  // piso de 4,5:1. Trocando por /02 o par vira tinta × /02: 16,88:1 claro e
+  // 9,32:1 escuro (§tabela:nav-estados). Zero token novo; a cor do módulo
+  // continua na superfície, só deixa de ser a cheia.
+  //
+  // É também o que o `--sidebar` do `index.css` já descrevia — "item ativo =
+  // Folha com traço preto" — e que o componente contrariava.
   //
   // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
   // sem ele, o par cai no padrão do `:root` e nada quebra.
-  'peer/menu-button group/menu-button lift-flat desabilitado rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none aria-disabled:pointer-events-none data-active:border-l-foreground data-active:bg-modulo-cheia data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button group/menu-button lift-flat desabilitado rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none aria-disabled:pointer-events-none data-active:border-l-foreground data-active:bg-modulo data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {

@@ -11,25 +11,39 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { COLUNAS, agruparPorColuna, useAlterarTarefa, useTarefas } from '@/data/dashboard-api'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
+import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Calendar, MessageSquare, MoreHorizontal, Paperclip } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Prioridade } from './prioridade'
 
 /**
  * O QUADRO — as tarefas nas quatro colunas do andamento.
  *
- * ## Move-se por CLIQUE, não por arrasto
+ * ## Move-se por CLIQUE **e** por arrasto — nesta ordem
+ *
+ * O arrasto entrou com `@atlaskit/pragmatic-drag-and-drop` (#229). O menu `⋯`
+ * NÃO saiu, e a ordem da frase é a regra: o clique continua sendo o caminho
+ * completo, o arrasto é atalho por cima dele.
  *
  * A decisão de interface por clique (user, 30/07/2026) diz que toda ação é
  * alcançável por mouse e nenhum fluxo depende de gesto ou tecla memorizada.
- * Arrastar cartão é o gesto clássico do kanban e falha exatamente nisso: não
- * existe para quem opera por teclado, não existe em leitor de tela, e num ERP
- * denso ainda concorre com a rolagem da coluna. Cada cartão traz o menu `⋯` com
- * as outras três colunas — um clique a mais que o arrasto, e alcançável por
- * todo mundo.
+ * Arrastar falha nisso sozinho: não existe para quem opera por teclado nem em
+ * leitor de tela. O que a issue pediu foi somar o gesto, e trocar um pelo outro
+ * teria REGREDIDO a acessibilidade que o menu garante — por isso o menu é o que
+ * os testes de teclado vigiam, e ele é a base de comparação, não o arrasto.
  *
- * Isto também é o que dispensa uma dependência nova (`dnd-kit` e parentes) num
- * repo com trava de idade de pacote — a alternativa não é "kanban pior", é
- * kanban operável.
+ * A peça foi escolhida por não ter opinião de estilo: ela publica eventos e não
+ * pinta nada, então o realce de coluna abaixo é escrito com os tokens do
+ * `DESIGN.md`, e não com CSS de terceiro.
+ *
+ * ## Arrastar troca de COLUNA, e só
+ *
+ * `TaskPatchRequest` tem `status`, e não tem campo de ordem — reordenar dentro
+ * da coluna não é coisa que o contrato saiba dizer, e inventar aqui seria
+ * escrever no servidor um pedido que ele não entende. Por isso a coluna inteira
+ * é o alvo do arrasto, e não a posição entre dois cartões: o realce diz "vai
+ * para esta coluna", que é a verdade do que vai acontecer. O quadro do funil
+ * reordena porque LÁ o contrato tem `precedeId`.
  *
  * ## A cor da coluna vem da SITUAÇÃO, não de módulo emprestado
  *
@@ -45,6 +59,31 @@ import { Prioridade } from './prioridade'
  * do carimbo `done`. O efeito do mockup fica de pé — quatro colunas, quatro
  * preenchimentos distintos — e nenhuma cor mente sobre o que significa.
  */
+/**
+ * A etiqueta do que está sendo arrastado.
+ *
+ * O adaptador de elemento é GLOBAL: um cartão do funil arrastado numa tela que
+ * também tenha o quadro de tarefas chegaria aqui como origem válida. A etiqueta
+ * é o que faz o alvo recusar o que não é dele, em vez de tentar mover pelo id.
+ */
+const TIPO_CARTAO = 'tarefa'
+
+/**
+ * Para qual coluna o cartão vai — `null` quando o arrasto não move nada.
+ *
+ * Pura e exportada porque é a decisão inteira do gesto: soltar fora de coluna
+ * nenhuma e soltar na coluna de origem são os dois casos que NÃO podem virar
+ * requisição. Um `PATCH` que grava o status que já estava lá volta 200, não
+ * muda nada na tela e some no log — o defeito mais caro de achar.
+ */
+export function colunaDoArrasto(
+  cartao: { status: TaskDtoStatus },
+  alvo: { status: TaskDtoStatus } | undefined,
+): TaskDtoStatus | null {
+  if (alvo === undefined) return null
+  return alvo.status === cartao.status ? null : alvo.status
+}
+
 const ZONA_DA_COLUNA: Record<TaskDtoStatus, string> = {
   todo: 'bg-zone-info',
   doing: 'bg-zone-id',
@@ -87,12 +126,66 @@ function Cartao({ tarefa }: { tarefa: TaskDto }) {
   const alterar = useAlterarTarefa()
   const destinos = COLUNAS.filter((coluna) => coluna.status !== tarefa.status)
   const concluida = tarefa.status === 'done'
+  const caixa = useRef<HTMLLIElement>(null)
+  const [arrastando, setArrastando] = useState(false)
+
+  /**
+   * O que o gesto precisa saber, sempre fresco, SEM entrar nas dependências.
+   *
+   * O efeito abaixo roda uma vez por cartão de propósito. Pôr `tarefa` ou o
+   * resultado de `useMutation` nas dependências parece mais correto e não é: o
+   * `useMutation` devolve objeto novo a cada render, e o próprio
+   * `setArrastando(true)` re-renderiza no meio do arrasto — o efeito
+   * desregistraria o `draggable` com o cartão no ar, e o `onDrop` nunca
+   * chegaria. Falha que só aparece com o mouse na mão.
+   */
+  const agora = useRef({ tarefa, alterar })
+  agora.current = { tarefa, alterar }
+
+  // Quem grava é o CARTÃO que foi arrastado, e não um monitor no alto do
+  // quadro: a mutação e o recado de falha já moram aqui, e um monitor de fora
+  // gravaria por uma segunda instância do hook — a falha apareceria longe do
+  // cartão que não se mexeu, ou não apareceria.
+  useEffect(() => {
+    const elemento = caixa.current
+    if (!elemento) return
+    return draggable({
+      element: elemento,
+      getInitialData: () => ({
+        tipo: TIPO_CARTAO,
+        id: agora.current.tarefa.id,
+        status: agora.current.tarefa.status,
+      }),
+      onDragStart: () => setArrastando(true),
+      onDrop: ({ location }) => {
+        setArrastando(false)
+        const alvo = location.current.dropTargets[0]?.data as { status?: TaskDtoStatus } | undefined
+        const destino = colunaDoArrasto(
+          agora.current.tarefa,
+          alvo?.status === undefined ? undefined : { status: alvo.status },
+        )
+        if (destino === null) return
+        agora.current.alterar.mutate({
+          id: agora.current.tarefa.id,
+          mudanca: { status: destino },
+        })
+      },
+    })
+  }, [])
 
   return (
     <li
+      ref={caixa}
       data-slot="tarefa"
       data-status={tarefa.status}
-      className="rounded-card border-2 bg-card p-2.5"
+      data-arrastando={arrastando ? '' : undefined}
+      className={cn(
+        'rounded-card border-2 bg-card p-2.5',
+        // O cartão em trânsito some pela metade: ele continua no lugar de
+        // origem enquanto o gesto não termina, e sem isso o operador vê duas
+        // cópias do mesmo cartão — a que ele arrasta e a que ficou.
+        arrastando && 'opacity-40',
+      )}
     >
       <div className="flex items-start gap-1">
         <span
@@ -173,16 +266,43 @@ function Coluna({
   tarefas: TaskDto[]
   aoIncluir: (status: TaskDtoStatus) => void
 }) {
+  const caixa = useRef<HTMLElement>(null)
+  const [sobVoo, setSobVoo] = useState(false)
+
+  useEffect(() => {
+    const elemento = caixa.current
+    if (!elemento) return
+    return dropTargetForElements({
+      element: elemento,
+      // A coluna de ORIGEM recusa o próprio cartão: sem isto ela acende junto
+      // com o resto e promete um movimento que `colunaDoArrasto` vai descartar.
+      canDrop: ({ source }) => source.data.tipo === TIPO_CARTAO && source.data.status !== status,
+      getData: () => ({ tipo: 'coluna', status }),
+      onDragEnter: () => setSobVoo(true),
+      onDragLeave: () => setSobVoo(false),
+      onDrop: () => setSobVoo(false),
+    })
+  }, [status])
+
   return (
     <section
+      ref={caixa}
       data-slot="coluna"
       data-status={status}
+      data-sob-voo={sobVoo ? '' : undefined}
       // A coluna vira caixa própria com o preenchimento da situação. Os cartões
       // ficam em `bg-card` por cima — é o contraste que separa a tarefa da
       // coluna, e sem ele a pilha some dentro da pastel.
       className={cn(
         'flex min-w-0 flex-col gap-2 rounded-panel border-2 p-2.5 shadow-el1',
         ZONA_DA_COLUNA[status],
+        // A coluna que vai receber sobe um DEGRAU de elevação (§Elevação), e
+        // não muda de cor: a cor daqui já significa a situação da tarefa, e um
+        // realce colorido diria que a coluna virou outra coisa enquanto o dedo
+        // passa. O amarelo também está fora — ele é a identidade do FOCO, e
+        // dois significados no mesmo tom é o que o DESIGN.md chama de duas
+        // leituras de estado brigando.
+        sobVoo && 'shadow-el2',
       )}
     >
       <header className="flex items-center gap-2 rounded-card border-2 bg-card px-2 py-1.5">

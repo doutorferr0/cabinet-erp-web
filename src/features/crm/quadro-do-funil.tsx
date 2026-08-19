@@ -11,8 +11,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useEstagios, useMoverOportunidade } from '@/data/crm-api'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
+import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Link } from '@tanstack/react-router'
 import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { type Apodrecimento, apodrecimentoDoCartao } from './apodrecimento'
 import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
 import { SeloDeApodrecimento } from './selo-de-apodrecimento'
@@ -24,17 +27,25 @@ import { SeloDeApodrecimento } from './selo-de-apodrecimento'
  * Atomic CRM (MIT — ver `NOTICE`); a anatomia visual é a do quadro de Tarefas
  * (`src/features/tarefas/quadro.tsx`), que já resolveu este problema aqui.
  *
- * ## Move-se por CLIQUE, não por arrasto — como o quadro de Tarefas
+ * ## Move-se por CLIQUE **e** por arrasto — como o quadro de Tarefas
  *
- * O material colhido trazia arrasto HTML5 nativo por cima do menu. Ele NÃO
- * atravessou, e o motivo já estava escrito no quadro de Tarefas: arrasto não
- * existe para quem opera por teclado nem em leitor de tela, e num ERP denso
- * concorre com a rolagem da coluna. Dois quadros no mesmo produto com regras de
- * interação diferentes seria pior que qualquer ganho de gesto.
+ * O arrasto entrou com `@atlaskit/pragmatic-drag-and-drop` (#229), nos dois
+ * quadros no mesmo trilho e de propósito: é o mesmo padrão de UX, e separá-los
+ * criaria duas implementações divergentes de kanban.
+ *
+ * **O menu `⋯` NÃO saiu, e essa é a parte que não pode ser lida como detalhe.**
+ * O material colhido do Atomic CRM trazia arrasto HTML5 nativo *no lugar* do
+ * menu, e foi assim que ele foi recusado da primeira vez: arrasto não existe
+ * para quem opera por teclado nem em leitor de tela. Somar o gesto é ganho;
+ * trocar um pelo outro seria regressão de acessibilidade, e é isso que os
+ * testes de teclado deste quadro vigiam.
  *
  * **A posição continua alcançável por clique:** o menu do cartão move para o
  * FIM de outra etapa, e — dentro da própria coluna — para o topo ou para o fim.
- * É o que faz o `precedeId` do contrato ser exercido sem gesto nenhum.
+ * É o que faz o `precedeId` do contrato ser exercido sem gesto nenhum. O
+ * arrasto exercita o MESMO `precedeId`, com uma diferença de precisão: soltar
+ * em cima de um cartão põe o arrastado na frente DELE, e não só no topo ou no
+ * fim.
  *
  * ## Uma intenção, uma requisição
  *
@@ -82,6 +93,61 @@ export interface Destino {
    * inclusive quando o cartão já está lá e só muda de posição na coluna.
    */
   perda: boolean
+}
+
+/**
+ * A etiqueta do que está sendo arrastado — o adaptador de elemento é global, e
+ * sem ela um cartão do quadro de Tarefas chegaria aqui como origem válida.
+ */
+const TIPO_CARTAO = 'oportunidade'
+
+/** Onde o cartão foi solto: no vazio da coluna, ou em cima de outro cartão. */
+export type AlvoDoArrasto =
+  | { tipo: 'coluna'; stageId: string }
+  | { tipo: 'cartao'; id: string; stageId: string }
+
+/**
+ * O `Destino` que o gesto pediu — `null` quando o arrasto não move nada.
+ *
+ * É a mesma moeda do menu de propósito: arrasto e clique produzem `Destino`, e
+ * daí para baixo existe UM caminho de escrita. Duas rotas até o `PATCH` é como
+ * o diálogo de motivo de perda ficaria de fora de uma delas.
+ *
+ * Os dois casos que NÃO viram requisição:
+ *
+ * 1. **Soltar em cima de si mesmo.** `precedeId` apontando para o próprio
+ *    cartão é um pedido que o servidor não sabe responder.
+ * 2. **Soltar onde ele já está.** Arrastar um cartão para a frente do vizinho
+ *    de baixo o deixa exatamente onde estava; mandar assim mesmo gasta uma
+ *    escrita e um `invalidate` para redesenhar a mesma coluna.
+ */
+export function destinoDoArrasto(
+  arrastado: CrmOpportunityDto,
+  alvo: AlvoDoArrasto | undefined,
+  etapas: readonly CrmStageDto[],
+  colunaDeDestino: readonly CrmOpportunityDto[],
+): Destino | null {
+  if (alvo === undefined) return null
+  if (alvo.tipo === 'cartao' && alvo.id === arrastado.id) return null
+
+  const precedeId = alvo.tipo === 'cartao' ? alvo.id : null
+
+  if (alvo.stageId === arrastado.stageId) {
+    const atual = colunaDeDestino.findIndex((c) => c.id === arrastado.id)
+    const jaEstaAli =
+      precedeId === null
+        ? atual === colunaDeDestino.length - 1
+        : colunaDeDestino[atual + 1]?.id === precedeId
+    if (atual !== -1 && jaEstaAli) return null
+  }
+
+  const etapa = etapas.find((e) => e.id === alvo.stageId)
+  return {
+    stageId: alvo.stageId,
+    precedeId,
+    rotulo: etapa?.name ?? 'Etapa',
+    perda: etapa?.isLost ?? false,
+  }
 }
 
 function destinosDoCartao(
@@ -143,6 +209,9 @@ function Cartao({
   mostraEtapa,
   apodrecimento,
   aoPerder,
+  etapas,
+  coluna,
+  arrastavel,
 }: {
   oportunidade: CrmOpportunityDto
   destinos: Destino[]
@@ -152,8 +221,16 @@ function Cartao({
   apodrecimento: Apodrecimento | null
   /** Pede o motivo antes de perder. Quem tem o diálogo é a PÁGINA. */
   aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
+  etapas: readonly CrmStageDto[]
+  /** Os cartões desta coluna, na ordem da tela — o arrasto compara posição. */
+  coluna: readonly CrmOpportunityDto[]
+  /** Só arrasta quando a coluna É etapa. Ver `Coluna`. */
+  arrastavel: boolean
 }) {
   const mover = useMoverOportunidade()
+  const caixa = useRef<HTMLLIElement>(null)
+  const [arrastando, setArrastando] = useState(false)
+  const [encaixeAcima, setEncaixeAcima] = useState(false)
   const quem = quemDoCartao(oportunidade)
   // O contrato declara os dois anuláveis E opcionais, então o tipo gerado é
   // `number | null | undefined`. Colapsar em `null` aqui evita repetir a
@@ -191,17 +268,88 @@ function Cartao({
     })
   }
 
+  /**
+   * O gesto e o menu desembocam na MESMA `escolher`.
+   *
+   * É o que garante que arrastar para uma etapa de perda também pare no
+   * diálogo do motivo: o contrato cobra `lostReasonId` toda vez que o destino
+   * é de perda, e um caminho de escrita próprio para o arrasto teria de repetir
+   * essa regra — até o dia em que repetisse errado.
+   */
+  /**
+   * O que o gesto precisa saber, sempre fresco, SEM entrar nas dependências —
+   * mesma razão do quadro de Tarefas: `setArrastando(true)` re-renderiza no
+   * meio do arrasto, e um efeito que depende de `oportunidade`/`escolher`
+   * desregistraria o `draggable` com o cartão no ar.
+   */
+  const agora = useRef({ oportunidade, etapas, coluna, escolher })
+  agora.current = { oportunidade, etapas, coluna, escolher }
+
+  useEffect(() => {
+    const elemento = caixa.current
+    if (!elemento || !arrastavel) return
+    return combine(
+      draggable({
+        element: elemento,
+        getInitialData: () => ({ tipo: TIPO_CARTAO, id: agora.current.oportunidade.id }),
+        onDragStart: () => setArrastando(true),
+        onDrop: ({ location }) => {
+          setArrastando(false)
+          const alvo = location.current.dropTargets[0]?.data as AlvoDoArrasto | undefined
+          const { oportunidade: atual, etapas: config, coluna: pilha } = agora.current
+          const destino = destinoDoArrasto(atual, alvo, config, pilha)
+          if (destino === null) return
+          agora.current.escolher(destino)
+        },
+      }),
+      // O cartão também RECEBE: soltar em cima dele é pedir a posição na frente
+      // dele, que é o `precedeId` do contrato. Sem isto o arrasto só saberia
+      // dizer "fim da coluna", e reordenar dentro da etapa continuaria sendo
+      // exclusividade do menu.
+      dropTargetForElements({
+        element: elemento,
+        canDrop: ({ source }) =>
+          source.data.tipo === TIPO_CARTAO && source.data.id !== agora.current.oportunidade.id,
+        getData: (): AlvoDoArrasto => ({
+          tipo: 'cartao',
+          id: agora.current.oportunidade.id,
+          stageId: agora.current.oportunidade.stageId,
+        }),
+        onDragEnter: () => setEncaixeAcima(true),
+        onDragLeave: () => setEncaixeAcima(false),
+        onDrop: () => setEncaixeAcima(false),
+      }),
+    )
+  }, [arrastavel])
+
   return (
     <li
+      ref={caixa}
       data-slot="cartao"
+      data-arrastando={arrastando ? '' : undefined}
       className={cn(
-        'rounded-card border-2 bg-card p-2.5',
+        'relative rounded-card border-2 bg-card p-2.5',
+        // Some pela metade enquanto viaja: o cartão continua desenhado na
+        // origem até o gesto terminar, e sem isto o operador vê duas cópias.
+        arrastando && 'opacity-40',
         // O TINGIMENTO é o terceiro degrau, e só no fim: nada → selo → selo +
         // cartão tingido. Tingir já no aviso gastaria o sinal forte antes de o
         // prazo estourar, e aí o vermelho não significaria mais nada.
         apodrecimento?.estado === 'apodrecido' && 'bg-zone-danger',
       )}
     >
+      {/* A MARCA DE ENCAIXE, no vão de 8px acima do cartão: traço preto de 2px,
+          que é a língua do resto do desenho. Posicionada por `absolute` de
+          propósito — um elemento no fluxo empurraria a pilha inteira para
+          baixo a cada passagem do ponteiro, e o quadro tremeria. */}
+      {encaixeAcima ? (
+        <span
+          data-slot="encaixe"
+          aria-hidden="true"
+          className="absolute -top-1.5 right-0 left-0 h-0.5 bg-foreground"
+        />
+      ) : null}
+
       <div className="flex items-start gap-1">
         {/* Link do router, não `onClick` na caixa: o cartão leva a uma URL
             própria, e link preserva meio-clique, "abrir em nova aba" e o
@@ -308,9 +456,36 @@ function Coluna({
   aoPerder: (oportunidade: CrmOpportunityDto, etapaId: string) => void
 }) {
   const { etapa, cartoes } = coluna
+  const caixa = useRef<HTMLElement>(null)
+  const [encaixeNoFim, setEncaixeNoFim] = useState(false)
+
+  /**
+   * A coluna só recebe quando ELA É a etapa.
+   *
+   * Agrupado por responsável, a coluna não é destino nenhum: soltar ali pediria
+   * ao servidor uma posição relativa a cartões de etapas diferentes — a mesma
+   * pergunta sem resposta que tira `Topo desta etapa` do menu. Sem alvo, o
+   * cartão volta para o lugar e nada acontece, que é a leitura honesta de
+   * "aqui esse gesto não significa nada".
+   */
+  useEffect(() => {
+    const elemento = caixa.current
+    if (!elemento || !etapa) return
+    return dropTargetForElements({
+      element: elemento,
+      canDrop: ({ source }) => source.data.tipo === TIPO_CARTAO,
+      getData: (): AlvoDoArrasto => ({ tipo: 'coluna', stageId: etapa.id }),
+      onDragEnter: () => setEncaixeNoFim(true),
+      onDragLeave: () => setEncaixeNoFim(false),
+      onDrop: () => setEncaixeNoFim(false),
+    })
+  }, [etapa])
+
   return (
     <section
+      ref={caixa}
       data-slot="coluna"
+      data-sob-voo={encaixeNoFim ? '' : undefined}
       aria-label={coluna.titulo}
       // A coluna é caixa própria na superfície afundada e os cartões ficam em
       // `bg-card` por cima — é o contraste que separa o cartão da coluna. O
@@ -325,6 +500,10 @@ function Coluna({
         // negócio fechado.
         etapa?.isWon && 'bg-zone-money',
         etapa?.isLost && 'bg-zone-warn',
+        // Um DEGRAU de elevação (§Elevação) enquanto o cartão passa por cima —
+        // nunca uma cor: aqui a cor já diz ganho e perda, e um realce colorido
+        // faria o quadro dizer que a etapa mudou de natureza durante o gesto.
+        encaixeNoFim && 'shadow-el2',
       )}
     >
       <header className="flex items-center gap-2 rounded-card border-2 bg-card px-2 py-1.5">
@@ -379,10 +558,20 @@ function Coluna({
               )}
               destinos={destinosDoCartao(oportunidade, etapas, cartoes, etapa !== undefined)}
               aoPerder={aoPerder}
+              etapas={etapas}
+              coluna={cartoes}
+              arrastavel={etapa !== undefined}
             />
           ))}
         </ul>
       )}
+
+      {/* A marca do FIM da coluna: soltar no vazio abaixo da pilha é `precedeId`
+          nulo, e o traço aparece onde o cartão vai parar. Só quando a coluna é
+          o alvo — em cima de um cartão quem marca é o cartão. */}
+      {encaixeNoFim ? (
+        <span data-slot="encaixe" aria-hidden="true" className="h-0.5 bg-foreground" />
+      ) : null}
     </section>
   )
 }

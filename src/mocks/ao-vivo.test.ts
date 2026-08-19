@@ -220,25 +220,41 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect((await noBackend('get', '/api/dashboard/summary')).status).toBe(501)
   })
 
-  it('o FUNIL fica inteiro no mock — meia passagem deixaria o quadro vazio', async () => {
+  it('colaborador, atividades e listas de apoio vêm do SERVIDOR', async () => {
+    // As três entraram na mesma leva, e a razão é uma só: o combo de
+    // responsável (`listEmployees`) alimenta a atividade, e o catálogo
+    // (`catalog-lookups`) alimenta setor e cargo do colaborador. Passar uma sem
+    // as outras põe id do servidor de um lado e id do mock do outro.
+    for (const caminho of ['/api/employees', '/api/activities', '/api/catalog-lookups']) {
+      const pelaTela = await fetch(`${APP}${caminho}`, { headers: { cookie } })
+      expect(pelaTela.status, caminho).toBe(200)
+
+      // PROVA POSITIVA de quem respondeu: a mesma consulta direto no backend
+      // tem de dar o mesmo total. O mock monta `{rows,total}` igualzinho, então
+      // comparar shape não distinguiria nada.
+      const direto = await (await noBackend('get', caminho)).json()
+      const viaTela = (await pelaTela.json()) as { total: number }
+      expect(viaTela.total, caminho).toBe((direto as { total: number }).total)
+    }
+  })
+
+  it('o FUNIL passa pela metade, e é por isso que a tela avisa', async () => {
     // `pagina-do-funil.tsx` lê funis, estágios e oportunidades. O backend serve
-    // os dois primeiros e responde 501 no terceiro: passar só o que ele serve
-    // faria o quadro pedir ao mock as oportunidades de um `pipelineId` que o
-    // mock nunca viu, e receber zero linhas com status 200.
+    // os dois primeiros e responde 501 no terceiro — então o quadro recebe
+    // colunas do Postgres e pede ao mock as oportunidades de um `pipelineId`
+    // que o mock nunca viu. A resposta é lista vazia com status 200, e vazio
+    // parece "não há negócio": `CoberturaDoFunil` é quem desfaz a leitura.
     const funis = await fetch(`${APP}/api/crm/pipelines`, { headers: { cookie } })
     expect(funis.status).toBe(200)
-    const { rows } = (await funis.json()) as { rows: { id: string }[] }
-    const funil = rows[0]
-    expect(funil, 'o mock semeia funis; vazio aqui significa que a passagem vazou').toBeDefined()
 
-    const oportunidades = await fetch(`${APP}/api/crm/opportunities?pipelineId=${funil?.id}`, {
-      headers: { cookie },
-    })
+    const doBackend = (await (await noBackend('get', '/api/crm/pipelines')).json()) as {
+      total: number
+    }
+    expect(((await funis.json()) as { total: number }).total).toBe(doBackend.total)
+
+    // a outra metade continua no mock, e o servidor não a serve
+    const oportunidades = await fetch(`${APP}/api/crm/opportunities`, { headers: { cookie } })
     expect(oportunidades.status).toBe(200)
-    // as duas metades vêm da MESMA origem, então o id casa
-    expect(((await oportunidades.json()) as { rows: unknown[] }).rows.length).toBeGreaterThan(0)
-
-    // e o backend, esse, não serve a segunda metade
     expect((await noBackend('get', '/api/crm/opportunities')).status).toBe(501)
   })
 })

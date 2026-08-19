@@ -225,31 +225,75 @@ A tabela acima diz o que a TELA fala por HTTP. Quem responde é outra pergunta, 
 segunda resposta desde que existe backend: com `VITE_API_PROXY`, as operações de
 `src/mocks/rotas-do-backend.ts` atravessam o proxy e o resto continua no MSW.
 
-**Medido em 2026-08-19 contra `cabinet-erp-api` `060f472`: das 69 operações do contrato, 50
-respondem e 19 são 501. A passagem declara 33.** (A `main` do outro repo cresceu durante a
-sessão — no começo eram 46; atividades entraram no meio. Remedir antes de concluir qualquer
-coisa a partir daqui.) A diferença não é atraso — é a regra de que **a divisão é por TELA, não
-por operação**. Meia tela integrada põe id do servidor de um lado e id inventado do outro, e o
-resultado tem cara de dado, não de erro. Ficam de fora, servidas:
+**Medido em 2026-08-19 contra `cabinet-erp-api` `744bd75`: das 69 operações do contrato, 51
+respondem e 18 são 501. A passagem declara as 51.** (A `main` do outro repo cresceu durante a
+sessão: `d40d1f3` dava 46, `060f472` deu 50. Remedir antes de concluir qualquer coisa a partir
+daqui — e remedir pela SONDA: contar `operationId` nos `rotas.ts` dos módulos deixou de fora
+`ListCatalogLookups`, que mora em `catalogo/lookups.ts`.)
 
-| módulo | servido | por que não passa |
-|---|---|---|
-| CRM funis e estágios | 7 operações | `pagina-do-funil.tsx` lê funis, estágios **e** oportunidades. `GET /api/crm/opportunities` é 501: o quadro pediria ao mock as oportunidades de um `pipelineId` que o mock nunca viu, e receberia zero linhas com status 200 — quadro vazio, e vazio parece "não há oportunidade" |
-| Atividades + colaborador | 4 + 6 operações | **Um cacho, não dois casos.** `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de `listEmployees` — atividade real com pessoa do mock grava no Postgres um uuid que o servidor não conhece. E `ActivityDto.entityType` é `opportunity \| partner \| quote \| purchaseOrder`: `opportunity` segue mockada e `purchaseOrder` nem caminho tem, então metade das atividades ficaria pendurada em id inexistente. Soma-se que `data.colaboradores` (a tela de cadastro) é provider de mock: passar `listEmployees` daria duas listas de quem trabalha aqui |
+**A unidade de ligação é a FAMÍLIA, não a rota.** O critério "existe no contrato e não é 501" mede
+uma rota; o que quebra é a tela. Meia família põe id do servidor de um lado e id inventado do
+outro, e o resultado tem cara de dado, não de erro. Duas entraram juntas, e separá-las seria o
+erro:
 
-**As oportunidades do CRM são a chave.** Servi-las libera de uma vez as **17 operações que o
-backend já responde e a passagem segura** — funil e estágios (7), atividades (4) e colaborador
-(6) — e com elas três telas. É o próximo item de maior alavancagem da fila do backend, do ponto
-de vista do front.
+| par | por que é indivisível |
+|---|---|
+| atividades + colaborador | `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de `listEmployees`. Atividade no Postgres com pessoa do mock grava o uuid de quem o servidor não conhece, e o `responsável` volta em branco no registro que TEM responsável |
+| listas de apoio + todo o resto | `catalog-lookups` é a raiz de quase todo combo: catálogo mockado ao lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para id que o mock nunca viu, e o rótulo sai em branco na leitura |
 
-Duas armadilhas de MEDIÇÃO, pagas nesta rodada e complementares:
+Ficam inteiras no mock, por terem operação em 501: **oportunidades e motivos de perda do CRM**,
+**indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex**.
 
-1. **Escrita com corpo vazio devolve 400 antes do 501** (já documentado) — a validação de schema
-   dispara antes do handler ausente.
+Duas armadilhas de MEDIÇÃO, complementares:
+
+1. **Escrita com corpo vazio devolve 400 antes do 501** — a validação de schema dispara antes do
+   handler ausente.
 2. **A recíproca também morde: GET com query param obrigatório devolve 400 quando o param falta**,
    e 400 não é 501. `/api/dashboard/agenda` e `/api/crm/reports/lost-reasons` foram lidos como
    "servidos" por isso; com `from` e `to` os dois respondem 501. **Toda leitura de 400 numa sonda
    é inconclusiva** — significa "a validação respondeu antes", e não diz nada sobre haver handler.
+
+#### A costura que sobrou: o quadro do funil
+
+`pagina-do-funil.tsx` lê funis e estágios (servidos) e as oportunidades (**501**). Com backend
+real o quadro recebe colunas do Postgres e pede ao mock as oportunidades de um `pipelineId` que o
+mock nunca viu: `{rows: [], total: 0}`, com status **200**.
+
+**Zero linhas com status 200 é a forma mais cara de errar** — o quadro montado e vazio se lê como
+uma afirmação sobre o negócio ("não há oportunidade neste funil"), e não sobre a integração. A
+tela não tem como distinguir as duas depois do fato: as duas chegam como lista vazia.
+
+`src/features/crm/cobertura-do-funil.tsx` diz isso ao operador, e **só quando há backend real** —
+sem `VITE_API_PROXY` o MSW responde as duas metades, os ids casam e o quadro funciona (é o caso do
+site público). Avisar ali inventaria um defeito que aquele ambiente não tem, e aviso que aparece
+quando não devia é o que ensina o operador a ignorar avisos. `rotas-do-backend.test.ts` amarra as
+duas pontas: enquanto as oportunidades faltarem, tirar o aviso reprova.
+
+#### A segunda costura: o cadastro de colaborador
+
+`GET /api/employees` entrou porque a família de atividades depende dele — o combo de responsável
+de `atividade-dialogo.tsx` sai de `listEmployees`, e atividade no Postgres com pessoa do mock
+gravaria o uuid de quem o servidor não conhece.
+
+**Mas a TELA de cadastro continua lendo o mock.** `data.colaboradores` é provider em memória: ele
+não fala com a rede, então nada quebra — o que acontece é pior de enxergar. Com o par local de pé,
+o combo oferece as pessoas do Postgres e o cadastro lista as vinte da transcrição: duas listas de
+quem trabalha aqui. `src/features/colaborador/cobertura-do-colaborador.tsx` diz isso na tela, pela
+mesma mecânica do funil (só com `VITE_API_PROXY`).
+
+**Por que a tela não migrou junto** — e o motivo é o MOCK, não o servidor:
+
+- não existe handler mock para `GET /api/employees/{id}`. Trocar o provider deixaria o cadastro
+  sem detalhe **no site público**, que é 100% mock: quebra de produção para ganhar coerência em dev;
+- as duas sementes de colaborador são conjuntos diferentes — `src/mocks/colaboradores.ts` (a tela)
+  e `crm.colaboradores` (que serve `GET /api/employees` no mock);
+- `Colaborador.id` é `number` e o contrato declara `format: uuid`, o que arrasta o schema de
+  módulos (`fonte: 'mock'` → `'http'`, e `dto` por campo) e ~34 testes que hoje afirmam a base de
+  demonstração;
+- o `Gravar` do colaborador ainda é `console.info`, e a escrita tem de ir junto.
+
+É trabalho próprio, com uma medida conhecida. Enquanto não acontece, a divergência está declarada
+em vez de silenciosa.
 
 #### O que o dado real revelou no orçamento
 

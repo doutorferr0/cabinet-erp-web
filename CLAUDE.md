@@ -131,21 +131,28 @@ VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real nas rotas que e
 Sem a variável, o MSW responde tudo e nada sai da origem — é o modo de quem não subiu o backend
 e o do site público. **Com ela, e só com ela**, as operações listadas em
 `src/mocks/rotas-do-backend.ts` saem do mock e atravessam o proxy; todo o resto continua
-mockado e a tela não sabe a diferença. Hoje passam **33 operações**: `/health`, `/health/db`,
-`/auth/*` (6), leitura de produto (2), `/api/partners` (5), o orçamento inteiro (6), o pedido de
-venda (5), tarefas e A fazer (5) e o planner (2). **Trocar `VITE_API_MODE` para `http` NÃO é a
-forma de falar com o backend:** o que ele ainda não implementa responde **501**, e o toggle global
-entregaria vinte telas quebradas para ganhar as integradas.
+mockado e a tela não sabe a diferença. Hoje passam **as 51 operações que o backend serve**:
+`/health` (2), `/auth/*` (6), leitura de produto (2), parceiro (5), orçamento (6), pedido de venda
+(5), tarefas e A fazer (5), planner (2), listas de apoio (1), atividades (4), colaborador (6) e
+funis+estágios do CRM (7). **Trocar `VITE_API_MODE` para `http` NÃO é a forma de falar com o
+backend:** o que ele ainda não implementa responde **501**, e o toggle global entregaria as telas
+dessas famílias quebradas.
 
-**A `main` do `cabinet-erp-api` (`d40d1f3`) serve 46 das 69 operações do contrato, e a passagem
-declara 33 — a diferença é DELIBERADA e a razão está no cabeçalho de `rotas-do-backend.ts`.** O
-critério deste repositório (a operação existe no contrato E o backend não responde 501) é
-necessário, não suficiente: ele mede uma rota, e o que quebra é a TELA. Passar metade dos
-caminhos que uma tela consome põe id do servidor de um lado e id inventado do outro, e o
-resultado tem cara de dado, não de erro — é a mesma regra que o registry já aplica ao `get`. Por
-isso o **CRM** (funis e estágios servidos, `/api/crm/opportunities` em 501: o mesmo quadro lê os
-dois) e o **colaborador** (`listEmployees` só é consumido por combos de módulos ainda mock) ficam
-de fora até o backend servir o outro lado. `rotas-do-backend.test.ts` guarda os dois pares.
+**A unidade de ligação é a FAMÍLIA, não a rota** (`cabinet-erp-api` `744bd75`: 51 servidas, 18 em
+501). O critério "existe no contrato E não é 501" é necessário, não suficiente: ele mede uma rota,
+e o que quebra é a TELA. Meia família põe id do servidor de um lado e id inventado do outro, e o
+resultado tem cara de dado, não de erro — a mesma regra que o registry aplica ao `get`. Ficam
+inteiras no mock, por terem operação em 501: **oportunidades e motivos de perda do CRM**,
+**indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex**.
+
+**Duas costuras deliberadas, as duas declaradas NA TELA** (só com `VITE_API_PROXY`, e amarradas por
+`rotas-do-backend.test.ts`): o **quadro do funil** — funis e estágios do servidor, oportunidades do
+mock (501), quadro vazio que parece "não há negócio" (`src/features/crm/cobertura-do-funil.tsx`); e
+o **cadastro de colaborador** — `listEmployees` passa (as atividades dependem dele) mas
+`data.colaboradores` ainda é provider de mock, e as duas listas de pessoas divergem
+(`src/features/colaborador/cobertura-do-colaborador.tsx`). Migrar a tela do colaborador exige antes
+o handler mock de `GET /api/employees/{id}` e unificar as duas sementes — sem isso o site público,
+que é 100% mock, ficaria sem detalhe.
 
 Uma variável governa as duas metades de propósito — o `vite.config.ts` a lê de `process.env`, o
 `browser.ts` de `import.meta.env` (o Vite expõe ao cliente tudo que tem prefixo `VITE_`). Duas

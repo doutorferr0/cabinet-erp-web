@@ -8,9 +8,9 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * ele ainda não serve responde **501** (é o combinado do `CLAUDE.md`, e é o que
  * torna a diferença visível). Virar o modo inteiro trocaria vinte telas que
  * funcionam por vinte telas que tomam 501, de uma vez, para ganhar quatro que
- * falam com o servidor de verdade. Então a divisão é por operação: o que está
- * NESTA lista sai do MSW e atravessa o proxy; todo o resto continua respondido
- * pela camada em memória, e a tela não sabe a diferença.
+ * falam com o servidor de verdade. Então a divisão é por FAMÍLIA (ver abaixo):
+ * o que está NESTA lista sai do MSW e atravessa o proxy; todo o resto continua
+ * respondido pela camada em memória, e a tela não sabe a diferença.
  *
  * **Esta lista é DÍVIDA DELIBERADA, não configuração permanente.** Ela existe
  * enquanto o contrato for maior que o backend, e o que ela mede — o quanto o
@@ -29,10 +29,15 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * backend responde algo diferente de 501 nela. Rota adiantada é pior que rota
  * ausente: o mock deixa de responder e a tela toma 501 sem ninguém ter pedido.
  *
- * **MEDIDO ao vivo em 2026-08-19** contra `cabinet-erp-api` main `060f472`: das 69 operações do
- * contrato, **50 respondem e 19 são 501**. `src/mocks/ao-vivo.test.ts` reproduz a medição com o
- * par local de pé. (A `main` do outro repo cresceu DURANTE a sessão — a medição do começo, em
- * `d40d1f3`, deu 46; atividades entraram no meio. Quem reabrir isto remede antes de concluir.)
+ * **MEDIDO ao vivo em 2026-08-19** contra `cabinet-erp-api` main `744bd75`: das 69 operações do
+ * contrato, **51 respondem e 18 são 501**, e as 51 estão TODAS aqui. `src/mocks/ao-vivo.test.ts`
+ * reproduz a medição com o par local de pé.
+ *
+ * A `main` do outro repo cresceu DURANTE a sessão — `d40d1f3` dava 46, `060f472` deu 50 — então
+ * quem reabrir isto remede antes de concluir qualquer coisa. E remede pela SONDA, não por leitura
+ * de código: contar `operationId` nos arquivos `rotas.ts` dos módulos do backend deixou de fora
+ * `ListCatalogLookups`, que mora em `catalogo/lookups.ts`, e a lista nasceu uma rota menor do que
+ * podia. A varredura HTTP não tem como errar isso.
  *
  * A sonda que vale é ESCRITA COM CORPO VÁLIDO. Corpo vazio devolve 400 em quase toda operação —
  * a validação de schema dispara ANTES do handler que responde 501 — e isso faz uma varredura
@@ -45,38 +50,44 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * duas respondem 501. Toda leitura de 400 numa sonda é INCONCLUSIVA: significa "a validação
  * respondeu antes", e não diz nada sobre haver handler atrás dela.
  *
- * ## Por que 33 e não 50 — a divisão é por TELA, não por operação
+ * ## FAMÍLIA INTEIRA — a unidade de ligação não é a rota
  *
  * O critério do `CLAUDE.md` (a operação existe no contrato E o backend não responde 501) é
- * NECESSÁRIO e não suficiente. Ele mede uma rota de cada vez, e o que quebra é a tela: passar
- * metade dos caminhos que UMA tela consome põe id do servidor de um lado e id inventado do
+ * NECESSÁRIO e não suficiente. Ele mede uma rota de cada vez, e o que quebra é a TELA: passar
+ * metade dos caminhos que uma tela consome põe id do servidor de um lado e id inventado do
  * outro, e o resultado tem cara de dado, não de erro. É a mesma regra que o registry já aplica
  * ao `get` ("`get` mock ao lado de listagem real casaria uuid do servidor com id inventado"),
- * lida no tamanho da tela em vez do recurso.
+ * lida no tamanho da família em vez do recurso.
  *
- * Ficam de fora, com o motivo medido:
+ * Então a lista liga por família fechada, e uma família só fecha quando o backend serve TODA a
+ * superfície que a tela consome dela. Hoje fecham todas as onze que ele serve, e por isso as 51
+ * estão aqui. As famílias que sobram no contrato têm operação em 501 e ficam inteiras no mock:
+ * **oportunidades e motivos de perda do CRM**, **indicadores e agenda do dashboard**, **escrita
+ * de produto**, **variantes** e **kardex**.
  *
- * - **CRM funis e estágios** (7 operações servidas). A MESMA tela — `pagina-do-funil.tsx` — lê
- *   funis e estágios por `useFunis`/`useEstagios` e as oportunidades por
- *   `oportunidadesDoFunil(pipelineId)`. `GET /api/crm/opportunities` é **501**, então as
- *   oportunidades continuariam no mock: o quadro receberia colunas do servidor e pediria ao mock
- *   as oportunidades de um `pipelineId` que o mock nunca viu. Resposta: zero linhas, com status
- *   200. O funil ficaria permanentemente vazio, e vazio é a aparência de "não há oportunidade",
- *   não a de "a integração está pela metade". Entra junto com as oportunidades.
- * - **Atividades e colaborador** (4 + 6 operações servidas), que são UM cacho, e não dois casos.
- *   `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de `listEmployees`: passar
- *   atividade sem colaborador gravaria no Postgres o uuid de uma pessoa que só existe no mock, e
- *   o `responsável` voltaria em branco no registro que tem responsável. E passar os dois esbarra
- *   no dono da atividade — `entityType` é `opportunity | partner | quote | purchaseOrder`, e
- *   `opportunity` continua mockada (501), `purchaseOrder` nem caminho tem. Metade das atividades
- *   ficaria pendurada em id que o servidor não conhece. Some-se que `data.colaboradores`, a tela
- *   de cadastro, é provider de mock: passar `listEmployees` daria duas listas diferentes de quem
- *   trabalha aqui.
- * - **Escrita de produto e variantes** (6 operações): 501 no backend.
+ * Duas famílias entraram JUNTAS, e separá-las seria o erro:
  *
- * **As oportunidades do CRM são a chave dos dois casos.** Não é caminho faltando no contrato nem
- * decisão daqui: servi-las libera de uma vez as 17 operações que o backend JÁ responde e esta
- * lista segura — funil e estágios (7), atividades (4) e colaborador (6) — e com elas três telas.
+ * - **Atividades + colaborador.** `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo
+ *   de `listEmployees`. Atividade no Postgres com pessoa do mock gravaria o uuid de quem o
+ *   servidor não conhece, e o `responsável` voltaria em branco no registro que TEM responsável.
+ * - **Listas de apoio + todo o resto.** `catalog-lookups` é a raiz de quase todo combo: catálogo
+ *   mockado ao lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para id que o
+ *   mock nunca viu, e o rótulo sai em branco na leitura.
+ *
+ * ## As duas costuras que a passagem abriu, e onde elas foram tratadas
+ *
+ * Ligar família servida ao lado de família em 501 deixa costura, e costura escondida é o defeito
+ * que esta lista existe para evitar. As duas foram para a TELA, que é onde o operador as vê:
+ *
+ * - **Quadro do funil**: colunas do servidor, oportunidades do mock (501). O quadro sai vazio, e
+ *   vazio parece "não há oportunidade". `cobertura-do-funil.tsx` diz que a metade que falta é a
+ *   do servidor.
+ * - **Cadastro de colaborador**: `listEmployees` passa, mas `data.colaboradores` ainda é provider
+ *   de mock — o combo de responsável oferece as pessoas do Postgres e a tela lista as da
+ *   transcrição. `cobertura-do-colaborador.tsx` diz isso ao operador. A tela não migrou junto de
+ *   propósito: falta o handler mock de `GET /api/employees/{id}` e as duas sementes de
+ *   colaborador são conjuntos diferentes — trocar o provider deixaria o cadastro sem detalhe no
+ *   SITE PÚBLICO, que é 100% mock.
  */
 
 type Verbo = 'get' | 'post' | 'put' | 'patch' | 'delete'
@@ -174,6 +185,51 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   // não há id de fora entrando na tela.
   { metodo: 'get', caminho: '/api/projects' },
   { metodo: 'get', caminho: '/api/projects/{projectId}/plan' },
+
+  // listas de apoio — os 19 kinds do padrão `[combo]`, numa operação só.
+  //
+  // Passa porque é a RAIZ de quase toda combinação: enquanto o catálogo vinha
+  // do mock e os registros vinham do servidor, todo `sectorId`/`jobTitleId` que
+  // o Postgres guarda apontava para um id que o mock nunca viu, e o rótulo saía
+  // em branco na leitura (`useRotulosDeApoio`). Catálogo e registro têm de vir
+  // do mesmo lugar, sempre.
+  //
+  // **Banco de dev vazio devolve combo vazio, e isso é a verdade dele**, não um
+  // defeito desta lista — a mesma situação de `GET /api/products` desde o
+  // primeiro dia. Semear é dado de ambiente.
+  { metodo: 'get', caminho: '/api/catalog-lookups' },
+
+  // atividades (4 operações) — o painel polimórfico de `entityType`.
+  { metodo: 'get', caminho: '/api/activities' },
+  { metodo: 'post', caminho: '/api/activities' },
+  { metodo: 'put', caminho: '/api/activities/{id}' },
+  { metodo: 'post', caminho: '/api/activities/{id}/done' },
+
+  // colaborador (6 operações). Vem JUNTO com atividades, e não por arredondar
+  // a lista: `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de
+  // `listEmployees`. Atividade no Postgres com pessoa do mock gravaria o uuid
+  // de quem o servidor não conhece, e o responsável voltaria em branco no
+  // registro que TEM responsável.
+  { metodo: 'get', caminho: '/api/employees' },
+  { metodo: 'post', caminho: '/api/employees' },
+  { metodo: 'get', caminho: '/api/employees/{id}' },
+  { metodo: 'put', caminho: '/api/employees/{id}' },
+  { metodo: 'post', caminho: '/api/employees/{id}/link' },
+  { metodo: 'put', caminho: '/api/employees/{id}/link' },
+
+  // CRM: funis e estágios (7 operações). As OPORTUNIDADES seguem em 501, e a
+  // consequência está tratada na tela, não escondida aqui: o quadro do funil
+  // recebe colunas do servidor e pediria ao mock as oportunidades de um
+  // `pipelineId` que o mock nunca viu — zero linhas com status 200. Vazio
+  // parece "não há oportunidade". `cobertura-do-funil.tsx` diz que a metade
+  // que falta é a do servidor, e por isso a passagem pode acontecer agora.
+  { metodo: 'get', caminho: '/api/crm/pipelines' },
+  { metodo: 'post', caminho: '/api/crm/pipelines' },
+  { metodo: 'get', caminho: '/api/crm/pipelines/{id}' },
+  { metodo: 'put', caminho: '/api/crm/pipelines/{id}' },
+  { metodo: 'get', caminho: '/api/crm/pipelines/{pipelineId}/stages' },
+  { metodo: 'post', caminho: '/api/crm/pipelines/{pipelineId}/stages' },
+  { metodo: 'put', caminho: '/api/crm/pipelines/{pipelineId}/stages/{id}' },
 ]
 
 /**

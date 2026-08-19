@@ -107,11 +107,10 @@ describe('passthrough por rota', () => {
     // servidor de um lado e id inventado do outro, e o resultado tem cara de
     // dado — não de erro. A regra é a mesma que o registry aplica ao `get`,
     // lida no tamanho da TELA.
-    {
-      tela: 'quadro do funil',
-      metade: '/api/crm/pipelines',
-      outraMetade: '/api/crm/opportunities',
-    },
+    //
+    // Estes pares estão CUMPRIDOS hoje (as duas metades passam): o teste existe
+    // para o dia em que alguém tirar uma delas da lista, que é quando a costura
+    // reaparece calada.
     {
       // `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` neste combo:
       // atividade real com pessoa do mock grava no Postgres um uuid que o
@@ -121,11 +120,19 @@ describe('passthrough por rota', () => {
       outraMetade: '/api/employees',
     },
     {
-      // `ActivityDto.entityType` inclui `opportunity`: atividade real pendurada
-      // em oportunidade do mock é registro apontando para id inexistente.
-      tela: 'atividade sobre oportunidade',
-      metade: '/api/activities',
-      outraMetade: '/api/crm/opportunities',
+      // `catalog-lookups` é a raiz de quase todo combo. Catálogo mockado ao
+      // lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para
+      // id que o mock nunca viu, e o rótulo sai em branco na leitura.
+      tela: 'cadastro de colaborador',
+      metade: '/api/employees',
+      outraMetade: '/api/catalog-lookups',
+    },
+    {
+      // O orçamento resolve o cliente por `customerId`: linha do servidor com
+      // parceiro do mock mostraria documento sem nome de cliente.
+      tela: 'orçamento',
+      metade: '/api/quotes',
+      outraMetade: '/api/partners',
     },
   ])('$tela: $metade não entra sozinha, sem $outraMetade', ({ metade, outraMetade }) => {
     const listado = (caminho: string) =>
@@ -137,6 +144,46 @@ describe('passthrough por rota', () => {
         `${metade} passa direto, mas ${outraMetade} continua no mock — a mesma tela lê as duas`,
       ).toBe(true)
     }
+  })
+
+  /**
+   * AS DUAS COSTURAS que a passagem por família deixou, e as duas são
+   * deliberadas.
+   *
+   * Ligar família servida ao lado de família em 501 (ou de tela ainda mockada)
+   * deixa costura, e costura ESCONDIDA é o defeito que esta lista existe para
+   * evitar. As duas foram para a tela, que é onde o operador as vê. Este teste
+   * amarra as pontas: tirar o aviso enquanto a metade faltar tem de doer.
+   */
+  it.each([
+    {
+      // O quadro do funil recebe colunas do servidor e pede as oportunidades ao
+      // mock, que nunca viu aquele `pipelineId`: lista vazia com status 200 — e
+      // vazio se lê como "não há negócio".
+      costura: 'quadro do funil',
+      passa: '/api/crm/pipelines',
+      falta: '/api/crm/opportunities',
+      tela: 'src/features/crm/pagina-do-funil.tsx',
+      aviso: '<CoberturaDoFunil />',
+    },
+    {
+      // `listEmployees` passa (as atividades dependem dele), mas
+      // `data.colaboradores` ainda é provider de mock: duas listas de quem
+      // trabalha aqui, cada tela mostrando uma.
+      costura: 'cadastro de colaborador',
+      passa: '/api/employees',
+      falta: '/api/employees/{id}-na-tela',
+      tela: 'src/routes/cadastros/colaboradores/index.tsx',
+      aviso: '<CoberturaDoColaborador />',
+    },
+  ])('$costura: passa pela metade, então a tela AVISA', ({ passa, tela, aviso }) => {
+    const passaMesmo = ROTAS_DO_BACKEND.some((r) => r.caminho.startsWith(passa))
+    if (!passaMesmo) return
+
+    expect(
+      readFileSync(tela, 'utf8').includes(aviso),
+      `${passa} passa e ${tela} não avisa — o operador lê a metade como se fosse o todo`,
+    ).toBe(true)
   })
 
   it('toda rota da lista existe no contrato — typo aqui seria silencioso', () => {

@@ -53,12 +53,8 @@ const PASTAS_FORA = ['components/ui/', 'test/', 'api/gerado/']
  * componente: código morto anônimo é pior que ausência.
  */
 const DIVIDAS: Record<string, string> = {
-  'components/cabinet/erro-do-servidor.tsx':
-    'nascido órfão na #131 (Problem Details): o formato existe, as telas ainda não o montam. Religa quem adotar problem+json na tela — #124 é o candidato. Pego pela guarda só no merge serial de 2026-08-17: a guarda nasceu na #184 e as duas CIs rodaram verdes isoladas.',
   'components/cabinet/ficha/ficha-de-modulos.tsx':
     'órfão desde o #137; a PR #182 liga a ficha nas 4 rotas de detalhe',
-  'features/login/reentrar.tsx':
-    'ReentrarNaSessao, #124 ponto 3: escrito e sem consumidor; a dívida está registrada na issue',
 }
 
 function arquivosDe(dir: string): string[] {

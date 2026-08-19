@@ -2,18 +2,15 @@ import { cn } from '@/lib/utils'
 import { LabelContext, Label as LabelPrimitive, type LabelProps } from 'react-aria-components'
 
 /**
- * Rótulo de campo como ETIQUETA INVERTIDA (DESIGN.md §Overview, `.rot` da
- * amostra): caixa clara de traço 2px com letra preta, mono 10px, caixa alta,
- * tracking 0.12em. A força vem da borda, da caixa e do tracking — não de fundo
- * cheio, que é o que a barra preta da fundação anterior fazia.
+ * Rótulo de campo DISCRETO (fusão v5, decisão do user 2026-08-19 — supersede a
+ * etiqueta invertida da fase 1.5): sem caixa, sem borda, sem mono. Sans 10px
+ * bold, caixa alta, tracking 0.1em, tinta secundária. O diagnóstico que abriu a
+ * fusão foi literalmente este: o rótulo-caixa gritava mais que o VALOR do
+ * campo — vinte telas × dezenas de campos com a moldura mais barulhenta que o
+ * dado. O rótulo agora sussurra; quem fala é o conteúdo.
  *
- * `w-fit` + `self-start` são parte da peça, não enfeite: a etiqueta é uma
- * caixa que embrulha o texto. Sem eles ela esticaria na largura do campo e
- * viraria uma faixa, que é outra coisa.
- *
- * Raio de ITEM (0): etiqueta encosta em campo, e canto arredondado ali abre
- * fresta. Ver §Foco para o anel — a etiqueta não é focável, quem recebe foco
- * é o controle que ela nomeia.
+ * `w-fit` + `self-start` continuam: o rótulo embrulha o próprio texto e não
+ * estica na largura do campo.
  *
  * Com o campo desabilitado a etiqueta NÃO muda (§Desabilitado): ela é o que diz
  * o que o campo é, e apagá-la tira o nome do dado justamente quando o operador
@@ -26,7 +23,7 @@ function Label({ className, htmlFor, slot, ...props }: LabelProps) {
     <LabelPrimitive
       data-slot="label"
       className={cn(
-        'inline-flex w-fit items-center gap-2 self-start rounded-item border-2 border-border bg-card px-[7px] py-[2px] font-mono text-[10px] leading-none tracking-[0.12em] text-foreground uppercase select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed',
+        'inline-flex w-fit items-center gap-2 self-start font-sans text-[10px] font-bold leading-none tracking-[0.1em] text-muted-foreground uppercase select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed',
         className,
       )}
       {...props}

@@ -40,10 +40,14 @@ export function BandaDeIdentidade({
   return (
     <div
       className={cn(
-        'flex items-center gap-3.5 border-2 border-border bg-zone-id px-3.5 py-2.5',
+        // FUSÃO v5: trilho de cor à esquerda (PREENCHIMENTO do acento — traço
+        // segue preto) + um degrau a mais de respiro. A banda é a peça que diz
+        // "que tela é esta"; o trilho é a assinatura de cor dela.
+        'relative flex items-center gap-3.5 overflow-hidden border-2 border-border bg-zone-id py-3 pr-3.5 pl-5',
         className,
       )}
     >
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-accent" />
       {/* Headline: o degrau mais alto da rampa, um por tela — e desde
           2026-08-13 na voz de QUEM (Newsreader, pelo seletor `h1` do
           `index.css`), porque título de tela responde "quem é esta tela" no

@@ -42,9 +42,11 @@ export function DocumentoHeader({ titulo, modo, numero, stamp }: DocumentoHeader
   return (
     <BandaDeIdentidade titulo={titulo} {...(modo ? { contexto: modo } : {})}>
       {numero !== undefined && (
+        // FUSÃO v5: o número é a ÂNCORA do documento — caixa preta, tinta
+        // clara, sombra de decisão. É a única peça escura do cabeçalho.
         <span
           data-slot="documento-numero"
-          className="font-bold font-mono text-2xl tracking-[-0.01em] tabular-nums"
+          className="rounded-item bg-primary px-3 py-0.5 font-bold font-mono text-2xl text-primary-foreground tracking-[-0.01em] tabular-nums shadow-el2"
         >
           {numero}
         </span>

@@ -397,7 +397,9 @@ export function FormGrid({
                           // que subtrai escreve em vermelho. Sem isso, um
                           // desconto se lê igualzinho a uma soma.
                           t.valorCentavos < 0 ? 'text-destructive' : 'text-money',
-                          t.destaque === true && 'text-lg font-extrabold',
+                          // FUSÃO v5: o Total é o número-herói da tela —
+                          // 2xl, o maior dado da malha. Ninguém procura o total.
+                          t.destaque === true && 'text-2xl font-extrabold',
                         )}
                       >
                         {formatMoneyBRL(t.valorCentavos)}

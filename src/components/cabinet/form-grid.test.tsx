@@ -186,11 +186,12 @@ describe('FormGrid — totais no pé da grade', () => {
     render(<HarnessTotais />)
 
     const total = screen.getByLabelText('Total')
-    expect(total.className).toContain('text-lg')
+    // Fusão v5: o Total é o número-herói da tela — 2xl, o maior dado da malha.
+    expect(total.className).toContain('text-2xl')
     expect(total.closest('tr')?.className).toContain('rule-strong-top')
 
     const subtotal = screen.getByLabelText('SubTotal')
-    expect(subtotal.className).not.toContain('text-lg')
+    expect(subtotal.className).not.toContain('text-2xl')
   })
 
   it('totais aparecem mesmo com a grade vazia (zero derivado)', () => {

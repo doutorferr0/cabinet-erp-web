@@ -2,7 +2,7 @@
 name: Cabinet
 description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
 colors:
-  bench: "hsl(0 0% 95%)"
+  bench: "hsl(47 31% 94%)"
   sheet: "hsl(0 0% 100%)"
   sheet-sunken: "hsl(0 0% 97%)"
   neutral: "hsl(0 0% 96%)"
@@ -30,11 +30,11 @@ colors:
   zone-info: "hsl(223 69% 95%)"
   zone-warn: "hsl(48 100% 95%)"
   zone-danger: "hsl(6 76% 95%)"
-  shadow-1: "hsl(214 10% 61%)"
-  shadow-2: "hsl(215 11% 47%)"
-  shadow-3: "hsl(216 13% 36%)"
-  shadow-4: "hsl(216 14% 27%)"
-  shadow-5: "hsl(217 16% 19%)"
+  shadow-1: "hsl(40 10% 60%)"
+  shadow-2: "hsl(40 11% 47%)"
+  shadow-3: "hsl(40 13% 36%)"
+  shadow-4: "hsl(40 14% 27%)"
+  shadow-5: "hsl(40 16% 19%)"
 typography:
   nome:
     fontFamily: "Newsreader, ui-serif, Georgia, serif"

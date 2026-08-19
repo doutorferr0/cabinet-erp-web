@@ -1471,3 +1471,27 @@ DataTable (cabeçalho claro, 42/52px, seleção violeta), banda com faixa de ace
 - **Don't** levantar linha ou célula de grade no hover — lift é de controle.
 - **Don't** improvisar o modo escuro tom a tom — ele é derivado desta paleta, com cada par medido.
 - **Don't** deixar a folha branca no escuro: lá ela é um degrau ACIMA da bancada, não o extremo.
+
+---
+
+## Fase 1.7 — Fusão v5 (2026-08-19, decisão do user via Cowork)
+
+Mockup aprovado: `docs/design/fusao-v5/mockup-orcamentos-v5.html` · espec: `espec-fusao-v5.md`.
+Fusão, não substituição: a cara do v5 entra SEM revogar as lições medidas das fases 1.5/1.6
+(contrastes remedidos, desabilitado por superfície, canto por natureza, 4 famílias self-hosted).
+
+**Nesta fase (aplicado):**
+- Bancada volta ao CREME `#F5F3EC` (supersede o cinza Polaris de 2026-08-13 apenas na bancada;
+  folha branca, afundado e neutros intactos). Degrau térmico + contorno preto somados.
+- Escada de sombras volta à família QUENTE (matiz 40, mesma escada de luz) — a regra de sempre:
+  a temperatura da sombra acompanha a do papel.
+
+**Pendências da fusão (1 issue por trilho):**
+- Subdivisão explícita: moldura-mãe do documento com etiqueta + seções numeradas com barra de
+  cor do módulo (`fsec`/`st-box` do mockup) nas telas de documento.
+- Foco por zona via `:focus-within`: zona ativa acende, resto recua (opacidade .78 / brilho .94,
+  220ms, sem escala). Desligado por padrão.
+- Voltar/cancelar universal no canto superior esquerdo (appbar/page-frame).
+- Display condensado (Bebas Neue, fontsource) para número-herói (total, nº do documento) —
+  avaliar contra o teto de 4 famílias: entra no lugar de quê, ou não entra.
+- Sidebar escura com dots de módulo (avaliar contra a bancada creme antes de decidir).

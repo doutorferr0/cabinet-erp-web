@@ -22,8 +22,10 @@
    - canto POR NATUREZA (painel 10 · cartão 6 · controle 4 · dado 2 · item 0),
      no lugar do "radius 0 é lei";
    - elevação em 6 níveis com sombra colorida, nunca preta (a família era
-     QUENTE enquanto o papel era creme; desde 2026-08-13 é neutra-fria, com as
-     superfícies cinzas — sombra quente sobre cinza lê como sujeira);
+     QUENTE enquanto o papel era creme; de 2026-08-13 a 2026-08-19 foi
+     neutra-fria com as superfícies cinzas — sombra quente sobre cinza lê como
+     sujeira. FUSÃO v5 2026-08-19: a bancada voltou ao creme, então a família
+     volta a esquentar — matiz 40, mesma escada de luz);
    - acento saturado (violeta) como cor de ação; o amarelo recua para foco e
      pendência;
    - etiqueta e cabeçalho de coluna INVERTIDOS: caixa clara com letra preta, no
@@ -48,7 +50,13 @@
      enquanto o traço estiver lá. Suavizar a borda depois não deixa a folha
      "mais leve": faz a folha DESAPARECER. É a mesma economia do ornamento, em
      que o traço delimita e o preenchimento fica livre. */
-  --background: 0 0% 95%; /* #F1F1F1 — fundo Polaris (bg do admin Shopify) */
+  /* FUSÃO v5 (2026-08-19, decisão do user): a bancada volta ao CREME — o
+     degrau térmico de 2026-08-09 retorna (creme quente embaixo, branco frio em
+     cima), somando-se ao contorno preto de 2026-08-18. Luminância ~94%, mesmo
+     nível do cinza que sai: o mecanismo de separação documentado acima segue
+     intacto. Supersede a paleta flat de 2026-08-13 APENAS na bancada; folha,
+     afundado e neutros continuam cinzas/brancos. Ref: docs/design/fusao-v5/. */
+  --background: 47 31% 94%; /* #F5F3EC — creme, nunca branco puro */
   --foreground: 0 0% 7%; /* preto de tinta — user pediu peso acima do #303030 do Polaris */
   /* A folha: um degrau de LUZ acima da bancada, e só. Ver a nota do
      `--background` — o contorno preto é que a delimita. */
@@ -194,14 +202,14 @@
      lê como sombra, lê como SUJEIRA — a mancha ganha um tom de bege que a
      bancada não tem em lugar nenhum. Mesma escada de luz, matiz neutralizada
      para o frio das superfícies novas. */
-  --shadow-1: 214 10% 61%;
-  --shadow-2: 215 11% 47%;
-  --shadow-3: 216 13% 36%;
-  --shadow-4: 216 14% 27%;
-  --shadow-5: 217 16% 19%;
+  --shadow-1: 40 10% 60%;
+  --shadow-2: 40 11% 47%;
+  --shadow-3: 40 13% 36%;
+  --shadow-4: 40 14% 27%;
+  --shadow-5: 40 16% 19%;
   /* Carimbo: os quatro tons continuam semânticos (o mapeamento tom → situação
      segue `[a resolver]` até a enumeração real do backend). */
-  --stamp-neutral: 216 13% 36%;
+  --stamp-neutral: 40 13% 36%;
   --stamp-open: 47 100% 50%;
   /* Acompanham `--money` e `--destructive`: `done` é PREENCHIDO com letra
      branca em cima (3,31:1 no verde antigo) e `void` é letra sobre papel. */

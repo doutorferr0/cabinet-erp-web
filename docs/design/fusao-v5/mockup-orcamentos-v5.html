@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CABINET — Mockup Orçamentos v5 (colorido + sidebar escura)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500&family=Archivo+Black&family=Bebas+Neue&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ===== SUPERFÍCIES ===== */
+  --bg: #F5F3EC;
+  --surface: #FFFFFF;
+  --surface-glass: rgba(255,255,255,.72);
+  --ink: #22221E;
+  --ink-2: #55554C;
+  --muted: #8A897D;
+  --hairline: #E6E2D5;
+  --line: #2A2A25;
+
+  /* ===== PALETA TONAL (cor + soft + text) ===== */
+  --violet: #7C6CF0;  --violet-soft: rgba(124,108,240,.13);  --violet-text: #4F3ED6;
+  --green:  #7FB94F;  --green-soft:  rgba(127,185,79,.16);   --green-text: #3E6B1D;
+  --lime:   #D7EC8F;  --lime-vivid: #D8F04A;
+  --teal:   #46B5A7;  --teal-soft:   rgba(70,181,167,.15);   --teal-text: #146F63;
+  --coral:  #F0876B;  --coral-soft:  rgba(240,135,107,.16);  --coral-text: #BA4526;
+  --amber:  #EFB93F;  --amber-soft:  rgba(239,185,63,.18);   --amber-text: #8A6208;
+  --blue:   #5C9DE0;  --blue-soft:   rgba(92,157,224,.15);   --blue-text: #205E9E;
+  --pink:   #E88BBB;  --pink-soft:   rgba(232,139,187,.16);  --pink-text: #B23578;
+  --red:    #E06055;  --red-soft:    rgba(224,96,85,.14);    --red-text: #A82A20;
+
+  /* ===== PROFUNDIDADE ===== */
+  --shadow-soft: 0 1px 2px rgba(34,34,30,.05), 0 6px 20px rgba(34,34,30,.07);
+  --shadow-card: 0 1px 3px rgba(34,34,30,.06), 0 10px 32px rgba(34,34,30,.08);
+  --shadow-hard: 3px 3px 0 var(--line);
+  --shadow-hard-lg: 5px 5px 0 var(--line);
+
+  --r: 10px;
+  --bw: 1.5px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Archivo',system-ui,sans-serif;
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(124,108,240,.07), transparent 60%),
+    radial-gradient(900px 400px at -10% 110%, rgba(70,181,167,.06), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-size:14px;line-height:1.5;
+  display:flex;min-height:100vh;
+}
+
+/* ===================== SIDEBAR — escura (da v4), acentos coloridos ===================== */
+aside{
+  width:216px;flex-shrink:0;
+  background:#141412;
+  color:#B9B8AE;
+  padding:18px 12px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.logo{
+  font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:1.5px;color:#fff;
+  padding:8px 10px 16px;border-bottom:1px solid #2C2C28;margin-bottom:14px;
+}
+.logo span{color:var(--lime-vivid)}
+.search{
+  border:1px solid #35352F;border-radius:8px;
+  padding:8px 11px;font-size:11.5px;color:#77766C;
+  background:#1D1D1A;margin-bottom:16px;
+  font-family:'Space Mono',monospace;
+}
+.nav-label{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:#6A695F;padding:8px 10px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:8px;
+  font-weight:600;font-size:13.5px;cursor:pointer;color:#B9B8AE;
+}
+.nav-item:hover{background:#222220;color:#fff}
+.dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.nav-item.comercial{color:#fff;font-weight:700;background:#26262F}
+.nav-item.comercial .dot{background:var(--violet);box-shadow:0 0 10px rgba(124,108,240,.7)}
+.nav-item.crm .dot{background:var(--pink)}
+.nav-item.estoque .dot{background:var(--green)}
+.nav-item.financeiro .dot{background:var(--amber)}
+.nav-item.pessoas .dot{background:var(--blue)}
+.nav-item.catalogo .dot{background:var(--teal)}
+.nav-item.inicio .dot{background:#55554C}
+.nav-group{margin:2px 0 8px 12px;border-left:2px solid rgba(124,108,240,.4);padding-left:8px}
+.nav-sub{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;font-size:12.5px;font-weight:600;
+  border-radius:8px;cursor:pointer;color:#8B8A80;
+}
+.nav-sub:hover{color:#fff}
+.nav-sub.active{
+  background:var(--violet);color:#fff;font-weight:700;
+  box-shadow:0 4px 16px rgba(124,108,240,.45);
+}
+.nav-sub .tag{
+  font-family:'Space Mono',monospace;font-size:8.5px;
+  border:1px solid currentColor;border-radius:4px;padding:0 4px;
+  margin-left:auto;opacity:.75;
+}
+
+/* ===================== MAIN ===================== */
+main{flex:1;padding:22px 28px;max-width:1420px}
+
+/* ---- topo: voltar sempre presente + breadcrumb ---- */
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.btn-back{
+  display:inline-flex;align-items:center;gap:8px;
+  border:var(--bw) solid var(--line);border-radius:10px;
+  background:var(--surface);color:var(--ink);
+  font-weight:700;font-size:13px;cursor:pointer;
+  padding:8px 16px;font-family:'Archivo',sans-serif;
+  box-shadow:var(--shadow-hard);
+  transition:transform .1s, box-shadow .1s;
+}
+.btn-back:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
+.btn-back:active{transform:translate(1px,1px);box-shadow:none}
+.breadcrumb{
+  font-family:'Space Mono',monospace;font-size:11.5px;color:var(--muted);
+}
+.breadcrumb b{color:var(--ink)}
+.focus-hint{
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);
+  margin-left:auto;
+}
+
+/* ---- header do documento: glass violeta ---- */
+.doc-header{
+  background:linear-gradient(120deg, rgba(124,108,240,.16), rgba(124,108,240,.06) 55%, rgba(70,181,167,.08));
+  backdrop-filter:blur(8px);
+  border:var(--bw) solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow-card);
+  padding:18px 24px;
+  display:flex;align-items:center;gap:18px;
+  margin-bottom:18px;
+  position:relative;overflow:hidden;
+}
+.doc-header::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
+  background:var(--violet);
+}
+.doc-header h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:36px;line-height:1;letter-spacing:1.5px;text-transform:uppercase;
+}
+.doc-header h1 small{
+  display:inline-block;font-family:'Archivo',sans-serif;
+  font-size:10px;font-weight:700;letter-spacing:2px;color:var(--violet-text);
+  background:var(--violet-soft);border:1px solid rgba(124,108,240,.35);
+  border-radius:6px;padding:2px 9px;margin-bottom:5px;
+}
+.doc-num{
+  font-family:'Space Mono',monospace;font-weight:700;font-size:24px;
+  background:var(--ink);color:var(--lime-vivid);
+  border-radius:8px;padding:4px 14px;
+  box-shadow:var(--shadow-hard);
+}
+.status-chip{
+  font-family:'Space Mono',monospace;font-weight:700;font-size:10.5px;letter-spacing:1.5px;
+  background:var(--amber-soft);color:var(--amber-text);
+  border:1.5px solid var(--amber);border-radius:20px;
+  padding:5px 14px;
+}
+.doc-meta{margin-left:auto;text-align:right;font-size:12px;line-height:1.7;color:var(--ink-2)}
+.doc-meta b{font-family:'Space Mono',monospace;color:var(--ink);font-size:12.5px}
+
+/* ---- tabs ---- */
+.tabs{
+  display:inline-flex;gap:4px;margin-bottom:18px;
+  background:var(--surface-glass);backdrop-filter:blur(8px);
+  border:var(--bw) solid var(--hairline);border-radius:12px;padding:4px;
+  box-shadow:var(--shadow-soft);
+}
+.tab{
+  border-radius:8px;
+  padding:7px 18px;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink-2);
+}
+.tab.active{
+  background:var(--ink);color:var(--bg);font-weight:700;
+  box-shadow:0 3px 10px rgba(34,34,30,.3);
+}
+.tab:hover:not(.active){background:rgba(34,34,30,.06);color:var(--ink)}
+
+/* ---- form card ---- */
+.card{
+  background:rgba(255,255,255,.45);
+  border:1px solid var(--hairline);border-radius:14px;
+  padding:16px;margin-bottom:16px;
+}
+.section-title{
+  font-size:13px;font-weight:800;letter-spacing:.3px;
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.section-title .n{
+  font-family:'Space Mono',monospace;font-size:10px;font-weight:400;
+  color:var(--muted);letter-spacing:1px;
+}
+.section-title::after{content:"";flex:1;border-top:1px solid var(--hairline);align-self:center}
+/* caixas coloridas em volta dos títulos de seção */
+.st-box{
+  display:inline-flex;align-items:center;
+  border-radius:7px;padding:4px 12px;
+  border:1px solid;font-weight:800;
+}
+.st-box.v{background:var(--violet-soft);color:var(--violet-text);border-color:rgba(124,108,240,.4)}
+.st-box.t{background:var(--teal-soft);color:var(--teal-text);border-color:rgba(70,181,167,.4)}
+.st-box.c{background:var(--coral-soft);color:var(--coral-text);border-color:rgba(240,135,107,.4)}
+.st-box.a{background:var(--amber-soft);color:var(--amber-text);border-color:rgba(239,185,63,.5)}
+.st-box.g{background:var(--green-soft);color:var(--green-text);border-color:rgba(127,185,79,.4)}
+.grid{display:grid;gap:14px 18px;margin-bottom:20px}
+.g6{grid-template-columns:repeat(6,1fr)}
+.g4{grid-template-columns:2.5fr 1.1fr 1fr 1.4fr}
+.field label{
+  display:block;font-size:10px;font-weight:700;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px;
+}
+.field .input{
+  border:var(--bw) solid #D9D5C8;border-radius:8px;
+  background:var(--surface);
+  padding:9px 12px;font-size:13.5px;font-weight:500;
+  font-family:'Space Mono',monospace;
+  display:flex;align-items:center;gap:6px;min-height:38px;
+  box-shadow:inset 0 1px 2px rgba(34,34,30,.04);
+  transition:border-color .12s;
+}
+.field .input:hover{border-color:var(--violet)}
+.field .input.big{
+  font-size:17px;font-weight:800;font-family:'Archivo',sans-serif;
+  border-color:var(--line);letter-spacing:-.2px;
+}
+.field .input.ro{background:#F4F1E8;border-style:dashed;color:var(--ink-2);box-shadow:none}
+.field .input .lock{margin-left:auto;font-size:11px;opacity:.4}
+.field .input select{border:none;background:none;font:inherit;width:100%;color:inherit}
+.field .input.empty{
+  color:var(--muted);font-weight:400;
+  font-family:'Instrument Serif',serif;font-style:italic;font-size:14.5px;
+}
+
+/* ---- desconto ---- */
+.radio-row{display:flex;align-items:center;gap:16px;font-weight:600;font-size:13px}
+.radio{display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--ink-2)}
+.radio.sel{color:var(--ink)}
+.radio .r{width:16px;height:16px;border:var(--bw) solid #B9B5A6;border-radius:50%;display:inline-block}
+.radio.sel .r{background:var(--violet);border-color:var(--violet-text);box-shadow:inset 0 0 0 3.5px #fff}
+.hint{font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;color:var(--muted);margin-left:auto}
+kbd{
+  font-family:'Space Mono',monospace;font-size:9.5px;
+  border:1px solid #C9C5B6;border-bottom-width:2.5px;border-radius:4px;
+  padding:1px 5px;background:var(--surface);color:var(--ink-2);
+}
+
+/* ---- toolbar itens ---- */
+.toolbar{display:flex;gap:10px;margin-bottom:12px;align-items:center}
+.btn{
+  border:var(--bw) solid #C9C5B6;border-radius:10px;
+  font-weight:700;font-size:12.5px;cursor:pointer;
+  padding:9px 16px;background:var(--surface);color:var(--ink);
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:'Archivo',sans-serif;
+  box-shadow:var(--shadow-soft);
+  transition:transform .1s, box-shadow .1s;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-card)}
+.btn:active{transform:translateY(1px);box-shadow:none}
+.btn.primary{
+  background:var(--violet);color:#fff;border-color:var(--violet-text);
+  box-shadow:var(--shadow-hard);
+}
+.btn.primary:hover{box-shadow:4px 4px 0 var(--line);transform:translate(-1px,-1px)}
+.btn.success{
+  background:var(--green);color:#fff;border-color:var(--green-text);
+  box-shadow:var(--shadow-hard);
+}
+.btn.success:hover{box-shadow:4px 4px 0 var(--line);transform:translate(-1px,-1px)}
+.btn.ghost{border-style:dashed;color:var(--ink-2);box-shadow:none;background:transparent}
+.btn.ghost:hover{background:var(--surface);color:var(--ink)}
+
+/* ---- tabela ---- */
+.table-wrap{
+  border:var(--bw) solid var(--line);border-radius:14px;overflow:hidden;
+  background:var(--surface);box-shadow:var(--shadow-card);
+}
+table{width:100%;border-collapse:collapse}
+thead th{
+  background:var(--ink);color:#CFCDC2;
+  font-family:'Space Mono',monospace;font-size:9.5px;font-weight:400;letter-spacing:1.2px;
+  text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;
+}
+thead th.num{text-align:right}
+tbody td{padding:12px;font-size:13px;border-top:1px solid var(--hairline);vertical-align:middle}
+tbody tr:nth-child(even){background:#FAF8F1}
+tbody tr:hover{background:var(--violet-soft)}
+td.num{font-family:'Space Mono',monospace;text-align:right;white-space:nowrap;color:var(--ink-2)}
+td .prod{font-weight:800;font-size:14px;letter-spacing:-.1px}
+td .prod-sub{font-family:'Instrument Serif',serif;font-style:italic;font-size:12.5px;color:var(--muted)}
+td.valor{font-family:'Space Mono',monospace;font-weight:700;text-align:right;font-size:14px;color:var(--ink)}
+.chip{
+  font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.5px;
+  border-radius:6px;padding:3px 8px;
+  display:inline-block;white-space:nowrap;
+}
+.chip.spot{background:var(--violet-soft);color:var(--violet-text);border:1px solid rgba(124,108,240,.4)}
+.chip.pend{background:var(--pink-soft);color:var(--pink-text);border:1px solid rgba(232,139,187,.5)}
+.chip.grupo{background:rgba(34,34,30,.05);color:var(--ink-2);border:1px solid var(--hairline)}
+.chip.amb{background:var(--teal-soft);color:var(--teal-text);border:1px solid rgba(70,181,167,.4)}
+td .qty{
+  font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:var(--ink);
+  border:1px solid #C9C5B6;border-radius:6px;padding:3px 9px;background:var(--surface);
+}
+.row-del{
+  width:24px;height:24px;border:1px solid var(--hairline);border-radius:6px;
+  background:transparent;cursor:pointer;font-weight:700;line-height:1;color:var(--muted);
+}
+.row-del:hover{background:var(--red-soft);color:var(--red-text);border-color:var(--red)}
+
+/* ---- totais ---- */
+.totais-row{display:flex;gap:18px;margin-top:18px;align-items:stretch}
+.totais-breakdown{
+  flex:1;border:var(--bw) solid var(--hairline);border-radius:14px;
+  background:var(--surface-glass);backdrop-filter:blur(8px);
+  box-shadow:var(--shadow-soft);
+  padding:16px 22px;
+  display:flex;flex-direction:column;justify-content:center;gap:8px;
+}
+.t-line{display:flex;justify-content:space-between;align-items:baseline;font-family:'Space Mono',monospace;font-size:13px}
+.t-line .lbl{font-family:'Archivo',sans-serif;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.t-line.desc span:last-child{color:var(--coral-text)}
+.total-box{
+  background:linear-gradient(135deg, var(--lime), #C3E370);
+  border:var(--bw) solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow-hard-lg);
+  padding:16px 28px;min-width:300px;
+  display:flex;flex-direction:column;justify-content:center;gap:2px;
+}
+.total-box .lbl{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2.5px;color:#4A5A1E}
+.total-box .val{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:48px;letter-spacing:.5px;line-height:1;color:var(--ink);
+}
+.total-box .val small{font-family:'Archivo',sans-serif;font-size:18px;font-weight:700;vertical-align:22px;letter-spacing:0}
+.total-box .sub{font-family:'Space Mono',monospace;font-size:10.5px;color:#5A6B2A}
+
+/* ---- footer ações ---- */
+.actions{display:flex;gap:10px;margin:24px 0;align-items:center}
+.actions .spacer{flex:1}
+
+/* ---- atividades ---- */
+.ativ{
+  background:linear-gradient(120deg, var(--amber-soft), rgba(239,185,63,.07));
+  border:var(--bw) solid var(--hairline);border-radius:14px;
+  box-shadow:var(--shadow-soft);
+  padding:18px 22px;
+  position:relative;overflow:hidden;
+}
+.ativ::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--amber)}
+.ativ-head{display:flex;align-items:center;margin-bottom:14px}
+.ativ-head h2{font-size:14px;font-weight:800;letter-spacing:.3px}
+.ativ-head .count{
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--amber-text);
+  background:var(--amber-soft);border:1px solid var(--amber);border-radius:12px;
+  padding:2px 9px;margin-left:10px;
+}
+.ativ-item{
+  background:var(--surface);
+  border:var(--bw) solid var(--hairline);border-radius:12px;
+  box-shadow:var(--shadow-soft);
+  padding:13px 16px;display:flex;align-items:center;gap:14px;
+}
+.ativ-item .tipo{
+  font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1px;
+  background:var(--blue-soft);color:var(--blue-text);
+  border:1px solid rgba(92,157,224,.4);border-radius:6px;padding:4px 10px;
+}
+.ativ-item .txt b{font-size:14px;font-weight:700}
+.ativ-item .quando{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted)}
+.ativ-item .end{margin-left:auto;display:flex;gap:8px}
+
+/* ============ SUBDIVISÃO EXPLÍCITA ============
+   Retângulo-mãe (documento) → retângulos-filhos (seções).
+   A hierarquia de contenção fica visível: tudo que está
+   dentro da moldura pertence ao documento.              */
+.doc-frame{
+  position:relative;
+  border:var(--bw) solid var(--line);border-radius:20px;
+  padding:20px;margin-bottom:26px;
+  background:rgba(255,255,255,.38);
+  box-shadow:var(--shadow-soft);
+}
+.frame-label{
+  position:absolute;top:-11px;left:22px;
+  font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1.5px;
+  background:var(--ink);color:var(--lime-vivid);
+  padding:3px 12px;border-radius:6px;
+  box-shadow:2px 2px 0 rgba(34,34,30,.25);
+}
+/* seção = retângulo-filho, com identidade de cor à esquerda */
+.fsec{
+  position:relative;
+  border:1px solid var(--hairline);border-radius:12px;
+  padding:16px 18px 14px;margin-bottom:16px;
+  background:var(--surface);
+}
+.fsec:last-child{margin-bottom:0}
+.fsec::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  border-radius:12px 0 0 12px;
+}
+.fsec.v::before{background:var(--violet)}
+.fsec.t::before{background:var(--teal)}
+.fsec.c::before{background:var(--coral)}
+.fsec.g::before{background:var(--green)}
+.fsec.l::before{background:var(--lime-vivid)}
+.st-box.l{background:rgba(216,240,74,.25);color:#556210;border-color:rgba(140,160,30,.5)}
+
+/* ============ ZONAS DE FOCO — sutil, desligado por padrão ============ */
+.zone{transition:opacity .22s ease, filter .22s ease, box-shadow .22s ease;border-radius:14px}
+body.focus .zone:not(.active){
+  opacity:.78;
+  filter:saturate(.75) brightness(.94);
+}
+body.focus .zone:not(.active):hover{opacity:.92;filter:none}
+body.focus .zone.active{
+  opacity:1;filter:none;
+  box-shadow:0 0 0 2px rgba(124,108,240,.3), var(--shadow-card);
+}
+body.focus aside{opacity:.85;filter:brightness(.9);transition:opacity .22s, filter .22s}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside>
+  <div class="logo">CABINET<span>▪</span></div>
+  <div class="search">⌕ filtrar…</div>
+
+  <div class="nav-item inicio"><span class="dot"></span>Início</div>
+  <div class="nav-label">Módulos</div>
+  <div class="nav-item comercial"><span class="dot"></span>Comercial</div>
+  <div class="nav-group">
+    <div class="nav-sub active">Orçamentos <span class="tag">N5</span></div>
+    <div class="nav-sub">Pedidos de Venda <span class="tag">FUTURO</span></div>
+  </div>
+  <div class="nav-item crm"><span class="dot"></span>CRM</div>
+  <div class="nav-item estoque"><span class="dot"></span>Estoque</div>
+  <div class="nav-item financeiro"><span class="dot"></span>Financeiro</div>
+  <div class="nav-item pessoas"><span class="dot"></span>Pessoas</div>
+  <div class="nav-item catalogo"><span class="dot"></span>Catálogo</div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main>
+  <!-- topo: VOLTAR sempre no canto superior esquerdo -->
+  <div class="topbar">
+    <button class="btn-back">← Voltar</button>
+    <div class="breadcrumb">Comercial / <b>Orçamentos</b></div>
+    <span class="focus-hint">clique numa zona pra focar · <kbd>Esc</kbd> limpa</span>
+  </div>
+
+  <!-- ============ MOLDURA DO DOCUMENTO: retângulo-mãe ============ -->
+  <section class="doc-frame">
+    <span class="frame-label">DOCUMENTO · ORÇAMENTO Nº 5</span>
+
+  <!-- header do documento -->
+  <div class="doc-header zone">
+    <h1><small>COMERCIAL</small>Orçamento</h1>
+    <span class="doc-num">Nº 5</span>
+    <span class="status-chip">CONSULTA</span>
+    <div class="doc-meta">
+      Pasta <b>DEV-VIAHF-ORC-1</b><br>
+      Emitido <b>16/08/2026</b> · Válido até <b>25/08/2026</b>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div class="tabs">
+    <div class="tab active">Principal</div>
+    <div class="tab">Serviços</div>
+    <div class="tab">Cliente</div>
+    <div class="tab">Pagamento</div>
+    <div class="tab">Outros Dados</div>
+  </div>
+
+  <div class="card zone">
+    <!-- cliente & obra -->
+    <div class="fsec v">
+    <div class="section-title"><span class="st-box v">Cliente &amp; Obra</span> <span class="n">01</span></div>
+    <div class="grid g4" style="margin-bottom:0">
+      <div class="field">
+        <label>Cliente</label>
+        <div class="input big">Construtora Horizonte Ltda</div>
+      </div>
+      <div class="field">
+        <label>Consultor(a)</label>
+        <div class="input"><select><option>(item fora da lista)</option></select></div>
+      </div>
+      <div class="field">
+        <label>Prof. externo</label>
+        <div class="input empty">nenhum</div>
+      </div>
+      <div class="field">
+        <label>Descrição da obra</label>
+        <div class="input">Loja Via HF — Fachada</div>
+      </div>
+    </div>
+    </div>
+
+    <!-- identificação -->
+    <div class="fsec t">
+    <div class="section-title"><span class="st-box t">Identificação</span> <span class="n">02</span></div>
+    <div class="grid g6" style="margin-bottom:0">
+      <div class="field"><label>Código</label><div class="input ro">5<span class="lock">🔒</span></div></div>
+      <div class="field"><label>Série</label><div class="input"><select><option>Selecione…</option></select></div></div>
+      <div class="field"><label>Nº pasta</label><div class="input ro">DEV-VIAHF-ORC-1<span class="lock">🔒</span></div></div>
+      <div class="field"><label>Emissão</label><div class="input">16/08/2026</div></div>
+      <div class="field"><label>Validade</label><div class="input">25/08/2026</div></div>
+      <div class="field"><label>Fechamento</label><div class="input empty">dd/mm/aaaa</div></div>
+    </div>
+    </div>
+
+    <!-- desconto -->
+    <div class="fsec c">
+    <div class="section-title"><span class="st-box c">Desconto</span> <span class="n">03</span></div>
+    <div class="radio-row">
+      <span class="radio sel"><span class="r"></span>Por produto</span>
+      <span class="radio"><span class="r"></span>Geral</span>
+      <button class="btn" style="padding:6px 12px;font-size:11.5px;box-shadow:none">Desconto grupo</button>
+      <span class="hint">imagem do produto: <kbd>Alt</kbd>+<kbd>I</kbd></span>
+    </div>
+    </div>
+  </div>
+
+  <!-- ============ ITENS ============ -->
+  <div class="fsec g zone">
+  <div class="section-title"><span class="st-box g">Itens</span> <span class="n">04</span></div>
+  <div class="toolbar">
+    <button class="btn primary">+ Produto <kbd style="border-color:rgba(255,255,255,.5);color:#fff;background:none">Alt+P</kbd></button>
+    <button class="btn">⌂ Ambiente <kbd>Alt+A</kbd></button>
+    <button class="btn ghost">Pré-produto</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Produto</th>
+          <th>Ambiente</th>
+          <th>Acab.</th>
+          <th>Tam.</th>
+          <th class="num">Qt.</th>
+          <th class="num">Unit.</th>
+          <th class="num">Desc%</th>
+          <th class="num">Valor</th>
+          <th>Grupo / Tipo</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td>
+          <td>
+            <div class="prod">Spot Embutido Card</div>
+            <div class="prod-sub">fornecedor: —</div>
+          </td>
+          <td><span class="chip amb">Fachada</span></td>
+          <td>Preto Fosco</td>
+          <td class="num">M</td>
+          <td class="num"><span class="qty">6</span> un</td>
+          <td class="num">94,90</td>
+          <td class="num" style="color:var(--muted)">0,00</td>
+          <td class="valor">R$ 569,40</td>
+          <td><span class="chip spot">SPOT</span> <span class="chip grupo">Iluminação</span></td>
+          <td><button class="row-del">✕</button></td>
+        </tr>
+        <tr>
+          <td class="num">2</td>
+          <td>
+            <div class="prod">Pendente Órbita</div>
+            <div class="prod-sub">fornecedor: —</div>
+          </td>
+          <td><span class="chip amb">Fachada</span></td>
+          <td>Preto Fosco</td>
+          <td class="num">M</td>
+          <td class="num"><span class="qty">2</span> un</td>
+          <td class="num">199,90</td>
+          <td class="num" style="color:var(--muted)">0,00</td>
+          <td class="valor">R$ 399,80</td>
+          <td><span class="chip pend">PENDENTE</span> <span class="chip grupo">Iluminação</span></td>
+          <td><button class="row-del">✕</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+
+  <!-- ============ TOTAIS ============ -->
+  <div class="fsec l zone" style="margin-top:16px">
+  <div class="section-title"><span class="st-box l">Totais</span> <span class="n">05</span></div>
+  <div class="totais-row" style="margin-top:0">
+    <div class="totais-breakdown">
+      <div class="t-line"><span class="lbl">Subtotal</span><span>R$ 969,20</span></div>
+      <div class="t-line desc"><span class="lbl">Desconto (0,0000%)</span><span>− R$ 0,00</span></div>
+      <div class="t-line"><span class="lbl">Frete</span><span>R$ 0,00</span></div>
+    </div>
+    <div class="total-box">
+      <span class="lbl">TOTAL</span>
+      <span class="val"><small>R$</small> 969,20</span>
+      <span class="sub">2 itens · 8 unidades</span>
+    </div>
+  </div>
+  </div>
+
+  <!-- ============ AÇÕES ============ -->
+  <div class="actions">
+    <button class="btn">📄 Orçamento</button>
+    <button class="btn">📦 Estoque</button>
+    <button class="btn ghost">Alterar limites</button>
+    <button class="btn ghost">🔒 Permissões</button>
+    <span class="spacer"></span>
+    <button class="btn">✕ Fechar</button>
+    <button class="btn success">✓ Concluir orçamento</button>
+  </div>
+
+  </section>
+  <!-- ============ fim da moldura do documento ============ -->
+
+  <!-- ============ ATIVIDADES ============ -->
+  <div class="ativ zone">
+    <div class="ativ-head">
+      <h2><span class="st-box a">Atividades</span></h2>
+      <span class="count">1 pendente</span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn" style="background:var(--ink);color:var(--bg);border-color:var(--ink)">+ Nova atividade</button>
+    </div>
+    <div class="ativ-item">
+      <span class="tipo">LIGAÇÃO</span>
+      <div class="txt">
+        <b>Confirmar recebimento do orçamento</b><br>
+        <span class="quando">20/08/2026 · Demonstração</span>
+      </div>
+      <div class="end">
+        <button class="btn" style="padding:6px 13px;font-size:12px">✓ Concluir</button>
+        <button class="btn ghost" style="padding:6px 13px;font-size:12px">✎ Alterar</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ===== FOCO POR ZONA — desligado por padrão, efeito sutil =====
+const zones = document.querySelectorAll('.zone');
+const setFocus = (z) => {
+  zones.forEach(o => o.classList.remove('active'));
+  if (z) { z.classList.add('active'); document.body.classList.add('focus'); }
+  else   { document.body.classList.remove('focus'); }
+};
+zones.forEach(z => z.addEventListener('click', (e) => { e.stopPropagation(); setFocus(z); }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setFocus(null); });
+document.addEventListener('click', () => setFocus(null)); // clique fora = limpa
+</script>
+</body>
+</html>

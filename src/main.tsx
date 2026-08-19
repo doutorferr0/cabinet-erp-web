@@ -2,6 +2,29 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+// CSS das libs de planning (issue #227, trilho Libs-0). Entram AQUI e não numa
+// tela porque nenhuma tela as monta ainda — este trilho só instala, e os
+// trilhos Libs-1/2/3 é que trocam os componentes.
+//
+// Os dois arquivos foram conferidos ANTES de virarem global: nenhum tem
+// seletor de elemento (`button`, `table`, `input`) nem toca `html`/`body`/`*`,
+// e o único `:root` é o do schedule-x, com 30 propriedades TODAS prefixadas
+// `--sx-`. CSS de lib importado global não fica dentro do componente — seria a
+// aplicação inteira herdando o tema de outro design system.
+//
+// **Custo medido, e é decisão de quem vier depois:** juntos somam 66 KB brutos
+// (~9 KB gzip) na folha única, em toda página, para libs que ainda não têm
+// consumidor. Quando Libs-1/2/3 montarem os componentes, mover cada import
+// para o módulo que o usa faz o Vite empacotá-lo no chunk daquela rota — o
+// número acima é o que essa troca economiza.
+//
+// O especificador do SVAR é `style.css` e NÃO `dist/index.css`: o `exports` do
+// pacote só publica `./style.css` (o tema do gantt) e `./all.css` (a suíte
+// inteira). Apontar para o caminho de arquivo derruba o build — não é aviso, é
+// erro de resolução. Fica `style.css` de propósito: `all.css` traz o CSS de
+// grid, editor, menu e toolbar, que este trilho não vai montar.
+import '@schedule-x/theme-default/dist/index.css'
+import '@svar-ui/react-gantt/style.css'
 import { configurarApi } from '@/api/cliente'
 import { Providers } from '@/app/providers'
 import { opcoesDoRouter } from '@/app/router'

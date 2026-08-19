@@ -2,7 +2,7 @@
 name: Cabinet
 description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
 colors:
-  bench: "hsl(0 0% 95%)"
+  bench: "hsl(47 31% 94%)"
   sheet: "hsl(0 0% 100%)"
   sheet-sunken: "hsl(0 0% 97%)"
   neutral: "hsl(0 0% 96%)"
@@ -30,11 +30,11 @@ colors:
   zone-info: "hsl(223 69% 95%)"
   zone-warn: "hsl(48 100% 95%)"
   zone-danger: "hsl(6 76% 95%)"
-  shadow-1: "hsl(214 10% 61%)"
-  shadow-2: "hsl(215 11% 47%)"
-  shadow-3: "hsl(216 13% 36%)"
-  shadow-4: "hsl(216 14% 27%)"
-  shadow-5: "hsl(217 16% 19%)"
+  shadow-1: "hsl(40 10% 60%)"
+  shadow-2: "hsl(40 11% 47%)"
+  shadow-3: "hsl(40 13% 36%)"
+  shadow-4: "hsl(40 14% 27%)"
+  shadow-5: "hsl(40 16% 19%)"
 typography:
   nome:
     fontFamily: "Newsreader, ui-serif, Georgia, serif"
@@ -522,13 +522,13 @@ dois papéis com tintas diferentes, e os dois entram.
 <!-- tabela:vozes -->
 | Voz | papel | tinta | Folha | Bancada | escuro: Folha | escuro: Bancada | veredito |
 |---|---|---|---|---|---|---|---|
-| quem — Newsreader | nome de entidade, H1 | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| quem — Newsreader | nome de entidade, H1 | `--foreground` | 18,76:1 | 16,80:1 | 12,50:1 | 15,33:1 | passa |
 | o quê — Sora | produto na listagem | `--muted-foreground` | 8,52:1 | 7,63:1 | 6,77:1 | 8,30:1 | passa |
-| o quê — Sora | produto como assunto, H2+ | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
-| UI — Inter | rótulo, botão, mensagem | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| o quê — Sora | produto como assunto, H2+ | `--foreground` | 18,76:1 | 16,80:1 | 12,50:1 | 15,33:1 | passa |
+| UI — Inter | rótulo, botão, mensagem | `--foreground` | 18,76:1 | 16,80:1 | 12,50:1 | 15,33:1 | passa |
 | UI — Inter | texto secundário | `--muted-foreground` | 8,52:1 | 7,63:1 | 6,77:1 | 8,30:1 | passa |
-| UI — Inter | texto forte alternativo | `--text-strong` | 18,76:1 | 16,79:1 | 8,90:1 | 10,91:1 | passa |
-| quanto — PT Mono | código, data, quantidade | `--foreground` | 18,76:1 | 16,79:1 | 12,50:1 | 15,33:1 | passa |
+| UI — Inter | texto forte alternativo | `--text-strong` | 18,76:1 | 16,80:1 | 8,90:1 | 10,91:1 | passa |
+| quanto — PT Mono | código, data, quantidade | `--foreground` | 18,76:1 | 16,80:1 | 12,50:1 | 15,33:1 | passa |
 | quanto — PT Mono | dinheiro | `--money` | 5,52:1 | 4,94:1 | 8,49:1 | 10,42:1 | passa |
 | quanto — PT Mono | valor negativo | `--destructive` | 6,05:1 | 5,42:1 | 5,09:1 | 6,24:1 | passa |
 <!-- /tabela:vozes -->
@@ -567,7 +567,7 @@ e item de menu inativo). **No escuro os `--modulo-01` não são redefinidos** �
 | Vendas / Orçamento | 2,76:1 | 2,47:1 | 5,20:1 | 6,38:1 |
 | Compras / Pedidos | 2,67:1 | 2,39:1 | 5,39:1 | 6,61:1 |
 | Clientes | 2,43:1 | 2,17:1 | 5,92:1 | 7,27:1 |
-| Fornecedores | 2,94:1 | 2,63:1 | 4,88:1 | 5,99:1 |
+| Fornecedores | 2,94:1 | 2,64:1 | 4,88:1 | 5,99:1 |
 | Profissionais | 2,67:1 | 2,39:1 | 5,37:1 | 6,59:1 |
 | CRM | 1,52:1 | 1,36:1 | 9,48:1 | 11,63:1 |
 | Boletim | 2,26:1 | 2,03:1 | 6,35:1 | 7,79:1 |
@@ -657,7 +657,7 @@ Os demais estados, com o par que o componente resolve de verdade — um deles ta
 | linha selecionada × folha (a mudança de estado) | 18,76:1 | 4,18:1 |
 | carimbo `open` (`bg-stamp-open` + `text-foreground`) | 12,05:1 | 1,30:1 |
 | carimbo `done` (`bg-stamp-done` + `text-primary-foreground`) | 5,52:1 | 10,42:1 |
-| carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 7,04:1 | 6,60:1 |
+| carimbo `neutral` (`text-stamp-neutral`, fundo transparente) | 6,24:1 | 6,60:1 |
 | carimbo `void` (`text-stamp-void`, fundo transparente) | 6,05:1 | 5,09:1 |
 | desabilitado: tinta × superfície apagada | 15,68:1 | 14,55:1 |
 | desabilitado: traço apagado × superfície apagada | 4,87:1 | 3,49:1 |
@@ -679,7 +679,7 @@ estou" de três jeitos, e cada um responde a um piso diferente da WCAG.
 | Vendas / Orçamento | 15,50:1 | 13,10:1 | **2,47:1** | 6,38:1 | **2,28:1** | 5,45:1 |
 | Compras / Pedidos | 16,10:1 | 12,14:1 | **2,39:1** | 6,61:1 | **2,29:1** | 5,23:1 |
 | Clientes | 15,86:1 | 12,69:1 | **2,17:1** | 7,27:1 | **2,05:1** | 6,01:1 |
-| Fornecedores | 15,29:1 | 12,39:1 | **2,63:1** | 5,99:1 | **2,40:1** | 4,84:1 |
+| Fornecedores | 15,29:1 | 12,39:1 | **2,64:1** | 5,99:1 | **2,40:1** | 4,84:1 |
 | Profissionais | 15,61:1 | 12,38:1 | **2,39:1** | 6,59:1 | **2,22:1** | 5,33:1 |
 | CRM | 17,24:1 | 9,32:1 | **1,36:1** | 11,63:1 | **1,39:1** | 7,07:1 |
 | Boletim | 16,41:1 | 11,84:1 | **2,03:1** | 7,79:1 | **1,98:1** | 6,02:1 |
@@ -1471,3 +1471,27 @@ DataTable (cabeçalho claro, 42/52px, seleção violeta), banda com faixa de ace
 - **Don't** levantar linha ou célula de grade no hover — lift é de controle.
 - **Don't** improvisar o modo escuro tom a tom — ele é derivado desta paleta, com cada par medido.
 - **Don't** deixar a folha branca no escuro: lá ela é um degrau ACIMA da bancada, não o extremo.
+
+---
+
+## Fase 1.7 — Fusão v5 (2026-08-19, decisão do user via Cowork)
+
+Mockup aprovado: `docs/design/fusao-v5/mockup-orcamentos-v5.html` · espec: `espec-fusao-v5.md`.
+Fusão, não substituição: a cara do v5 entra SEM revogar as lições medidas das fases 1.5/1.6
+(contrastes remedidos, desabilitado por superfície, canto por natureza, 4 famílias self-hosted).
+
+**Nesta fase (aplicado):**
+- Bancada volta ao CREME `#F5F3EC` (supersede o cinza Polaris de 2026-08-13 apenas na bancada;
+  folha branca, afundado e neutros intactos). Degrau térmico + contorno preto somados.
+- Escada de sombras volta à família QUENTE (matiz 40, mesma escada de luz) — a regra de sempre:
+  a temperatura da sombra acompanha a do papel.
+
+**Pendências da fusão (1 issue por trilho):**
+- Subdivisão explícita: moldura-mãe do documento com etiqueta + seções numeradas com barra de
+  cor do módulo (`fsec`/`st-box` do mockup) nas telas de documento.
+- Foco por zona via `:focus-within`: zona ativa acende, resto recua (opacidade .78 / brilho .94,
+  220ms, sem escala). Desligado por padrão.
+- Voltar/cancelar universal no canto superior esquerdo (appbar/page-frame).
+- Display condensado (Bebas Neue, fontsource) para número-herói (total, nº do documento) —
+  avaliar contra o teto de 4 famílias: entra no lugar de quê, ou não entra.
+- Sidebar escura com dots de módulo (avaliar contra a bancada creme antes de decidir).

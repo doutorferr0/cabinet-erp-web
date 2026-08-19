@@ -43,6 +43,8 @@ describe('PageFrame — a folha', () => {
       </PageFrame>,
     )
 
-    expect(container.querySelector('[data-slot="page-frame"]')?.className).toContain('shadow-el3')
+    // FUSÃO v5 (fase 1.7): superfície estática usa a sombra MACIA; a escada
+    // dura el1-5 ficou para o que é interativo ou decisão.
+    expect(container.querySelector('[data-slot="page-frame"]')?.className).toContain('shadow-macia')
   })
 })

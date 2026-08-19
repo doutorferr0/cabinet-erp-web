@@ -559,6 +559,10 @@
      encurtam: a 10px a sombra do modal virava uma segunda peça na tela, do
      tamanho de uma borda grossa. A escada nova cresce devagar embaixo, onde os
      degraus se distinguem, e para em 8px, onde ainda se lê como sombra. */
+  /* FUSÃO v5 (fase 1.7): sombra MACIA para superfície ESTÁTICA — a folha
+     repousa, não salta. A escada dura (el1-5) segue sendo a voz do que é
+     interativo ou decisão (botão, menu, modal). Família quente como as demais. */
+  --shadow-macia: 0 1px 3px hsl(40 16% 19% / 0.06), 0 10px 32px hsl(40 14% 27% / 0.1);
   --shadow-el1: 2px 2px 0 0 hsl(var(--shadow-1));
   --shadow-el2: 3px 3px 0 0 hsl(var(--shadow-2));
   --shadow-el3: 4px 4px 0 0 hsl(var(--shadow-3));
@@ -1069,6 +1073,15 @@
 
 body {
   background-color: hsl(var(--background));
+  /* FUSÃO v5: dois halos radiais quase-invisíveis (violeta da marca, ciano)
+     dão à bancada creme um degrau de profundidade sem virar decoração —
+     hierarquia de fundo, não ornamento. Fixos: não rolam com o conteúdo. */
+  background-image: radial-gradient(
+      1200px 500px at 85% -10%,
+      hsl(262 97% 76% / 0.05),
+      transparent 60%
+    ), radial-gradient(900px 400px at -10% 110%, hsl(187 92% 53% / 0.04), transparent 60%);
+  background-attachment: fixed;
   color: hsl(var(--foreground));
   font-family: var(--font-sans);
   font-size: 14px;

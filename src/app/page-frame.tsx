@@ -10,6 +10,10 @@ import { Entrada } from '@/components/cabinet/entrada'
  * as telas são região única (listagem, formulário, documento). Quando uma
  * tela precisar de duas folhas (ex.: painel lateral próprio), compor dois
  * `<PageFrame>` na tela e remover o wrap do shell para ela.
+ *
+ * FUSÃO v5 (fase 1.7): a sombra da folha é MACIA (`shadow-macia`), não mais o
+ * degrau duro `el3` — sombra dura ficou reservada ao que é interativo ou
+ * decisão. A folha é superfície estática: repousa sobre a bancada.
  */
 export function PageFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -17,7 +21,7 @@ export function PageFrame({ children }: { children: React.ReactNode }) {
     // aparece uma vez por navegação. Quem garante o "uma vez" é a `key` que o
     // shell passa — sem ela, qualquer re-render remontaria a animação.
     <Entrada
-      className="flex min-h-0 flex-1 flex-col rounded-panel border-2 border-border bg-card p-4 shadow-el3"
+      className="flex min-h-0 flex-1 flex-col rounded-panel border-2 border-border bg-card p-4 shadow-macia"
       data-slot="page-frame"
     >
       {children}

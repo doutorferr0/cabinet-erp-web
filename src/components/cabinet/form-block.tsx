@@ -270,7 +270,11 @@ export function FormBlock({
           )}
         </>
       ) : legend ? (
-        <legend className="px-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-text-strong">
+        // FUSÃO v5 (fase 1.7): o nome do compartimento cru veste CAIXA — pastel
+        // /02 do módulo ambiente (preenchimento, nunca traço: o contorno segue
+        // preto) + contorno fino. O groupbox ganha identidade de cor sem que
+        // nenhuma das vinte telas precise passar propriedade nova.
+        <legend className="rounded-data border bg-modulo px-2 py-0.5 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-text-strong">
           {legend}
         </legend>
       ) : null}

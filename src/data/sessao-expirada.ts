@@ -25,7 +25,7 @@ export function ehSessaoExpirada(erro: unknown): boolean {
 }
 
 /** O mínimo de uma mutação que este módulo precisa — não amarra tipo de retorno. */
-type MutacaoObservavel<TVars> = Pick<
+export type MutacaoObservavel<TVars> = Pick<
   UseMutationResult<unknown, Error, TVars>,
   'error' | 'variables' | 'isPending'
 > & { mutate: (variaveis: TVars) => void }

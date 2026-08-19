@@ -156,7 +156,11 @@ export function PerderOportunidadeDialog({
           </p>
         ) : null}
 
-        <ErroDeGravacao erro={mover.error} mensagem="Falha ao marcar como perdida." />
+        <ErroDeGravacao
+          mutacao={mover}
+          erro={mover.error}
+          mensagem="Falha ao marcar como perdida."
+        />
       </div>
 
       <DialogFooter>

@@ -86,7 +86,7 @@ export function FunilForm({
           foi gravado, e o `detail` é a frase que o servidor escolheu. Perder
           qualquer uma das duas deixa o operador clicando de novo sobre um
           estado que já mudou. */}
-      <ErroDeGravacao erro={gravar.error} mensagem="Falha ao gravar o funil." />
+      <ErroDeGravacao mutacao={gravar} erro={gravar.error} mensagem="Falha ao gravar o funil." />
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-12 items-end gap-3">

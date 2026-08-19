@@ -474,7 +474,11 @@ export function OrcamentoForm({
           o orçamento não tem, no contrato, validação por campo que a tela saiba
           apontar; inventar o mapa daria link para campo que o formulário não
           registra, que é link morto sem aviso. */}
-      <ErroDeGravacao erro={gravar.error} mensagem="Não foi possível gravar o orçamento." />
+      <ErroDeGravacao
+        mutacao={gravar}
+        erro={gravar.error}
+        mensagem="Não foi possível gravar o orçamento."
+      />
       <Tabs defaultValue="principal">
         <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
           <AbaPrincipal />

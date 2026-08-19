@@ -99,7 +99,7 @@ export function GerarOrcamento({ readOnly }: { readOnly: boolean }) {
         </span>
       )}
 
-      <ErroDeGravacao erro={gerar.error} mensagem="Falha ao gerar o orçamento." />
+      <ErroDeGravacao mutacao={gerar} erro={gerar.error} mensagem="Falha ao gerar o orçamento." />
     </div>
   )
 }

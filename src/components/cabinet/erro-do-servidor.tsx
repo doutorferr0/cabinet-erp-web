@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { ErroDaApi } from '@/data/api-provider'
+import { type MutacaoObservavel, ehSessaoExpirada } from '@/data/sessao-expirada'
+import { ReentrarNaSessao } from '@/features/login/reentrar'
 import { cn } from '@/lib/utils'
 import { useFormContext } from 'react-hook-form'
 
@@ -163,19 +165,39 @@ export function ErroDoServidor({
  * nenhum. Sem contexto, a lista continua legível — só não leva a lugar nenhum,
  * porque não há campo para focar.
  */
-export function ErroDeGravacao({
+export function ErroDeGravacao<TVars>({
   erro,
   mensagem,
   campos,
   className,
+  mutacao,
 }: {
   erro: unknown
   mensagem: string
   campos?: CamposDoContrato
   className?: string
+  /**
+   * A mutação que produziu o erro — só para o caso da SESSÃO VENCIDA (#124).
+   *
+   * Quando o 401 chega, "Não foi possível gravar" é verdade e é inútil: não
+   * houve nada de errado com o que o operador digitou, e a única saída é entrar
+   * de novo. Com a mutação em mãos, o bloco troca a mensagem pelo caminho —
+   * reautenticar aqui mesmo e reenviar o payload que o React Query guardou.
+   *
+   * Opcional porque nem toda chamada tem uma mutação para oferecer (a ficha
+   * mostra erro de LEITURA); sem ela o 401 cai na mensagem genérica, como antes.
+   */
+  mutacao?: MutacaoObservavel<TVars>
 }) {
   const form = useFormContext()
   const podeFocar = form !== null && campos !== undefined
+
+  // A recusa por sessão vencida não é recusa do documento: mostrar as duas
+  // coisas faria o operador procurar o campo errado antes de reparar na frase
+  // que resolve.
+  if (mutacao && ehSessaoExpirada(erro)) {
+    return <ReentrarNaSessao mutacao={mutacao} />
+  }
 
   return (
     <ErroDoServidor

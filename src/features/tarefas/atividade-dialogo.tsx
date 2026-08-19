@@ -154,6 +154,14 @@ export function DialogoDeAtividade({
 
           <TextareaField name="observacao" label="Observação" rows={2} />
 
+          {/* SEM `mutacao` aqui, e é dívida declarada, não esquecimento: neste
+              diálogo `gravar` é uma UNIÃO de duas mutações (criar e alterar)
+              com variáveis de tipos diferentes, e a reentrada precisa de UM
+              payload para reenviar. Quem religa é quem unificar as duas num
+              `useGravarAtividade` que decida POST/PUT — o mesmo movimento que o
+              orçamento fez na #221. Até lá, o 401 aqui cai na mensagem
+              genérica: a atividade é um diálogo curto, não a folha de cinquenta
+              campos que motivou a #124. */}
           <ErroDeGravacao erro={gravar.error} mensagem="Falha ao gravar a atividade." />
 
           <DialogFooter>

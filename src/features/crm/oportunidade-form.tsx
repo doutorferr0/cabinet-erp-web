@@ -179,7 +179,11 @@ export function OportunidadeForm({
       titulo="Oportunidade"
       {...(contexto ? { contexto } : {})}
     >
-      <ErroDeGravacao erro={gravar.error} mensagem="Falha ao gravar a oportunidade." />
+      <ErroDeGravacao
+        mutacao={gravar}
+        erro={gravar.error}
+        mensagem="Falha ao gravar a oportunidade."
+      />
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-12 items-end gap-3">

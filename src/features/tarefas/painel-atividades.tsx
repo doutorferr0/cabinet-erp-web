@@ -29,19 +29,22 @@ import { DialogoDeAtividade, ROTULO_DO_TIPO } from './atividade-dialogo'
  * que ele mora em `features/tarefas/` e não dentro do CRM — atividade não é do
  * módulo onde aparece.
  *
- * **Montado hoje na oportunidade e nos três papéis de parceiro** (Cliente,
- * Fornecedor, Profissional). Os dois têm id do SERVIDOR: uuid que o backend
- * emitiu, e é ele que vai no `entityId`.
+ * **Montado hoje na oportunidade, nos três papéis de parceiro** (Cliente,
+ * Fornecedor, Profissional) **e no orçamento**. Todos têm id do SERVIDOR: uuid
+ * que o backend emitiu, e é ele que vai no `entityId`.
  *
- * **Orçamento e pedido de compra ficaram de FORA, e não por esquecimento.** Os
- * dois ainda são mock puro (`docs/integracao.md`), com id inventado no front —
- * pendurar atividade neles casaria um `entityId` que o contrato declara `uuid`
- * com uma chave que nenhum servidor conhece. A atividade sobreviveria à troca
- * mock→HTTP apontando para um registro que não existe, e o painel do orçamento
- * de verdade abriria vazio. É a mesma regra que já governa o registry: método
- * que depende do servidor só entra quando o caminho existe de verdade. Entram
- * no dia em que `/api/quotes` e o pedido tiverem id do servidor — sem mudar
- * uma linha deste arquivo.
+ * **O orçamento entrou quando a condição venceu, não quando alguém lembrou.**
+ * Ele ficou de fora enquanto era mock puro, com id inventado no front:
+ * pendurar atividade ali casaria um `entityId` que o contrato declara `uuid`
+ * com uma chave que nenhum servidor conhece, e a atividade sobreviveria à troca
+ * mock→HTTP apontando para um registro que não existe. Com `/api/quotes` no ar
+ * (#134), o id passou a ser do servidor e o impedimento acabou — sem mudar uma
+ * linha deste arquivo, como estava previsto.
+ *
+ * **O pedido de compra segue de FORA, pelo mesmo motivo que valia para os
+ * dois:** continua mock, com id do front. Entra no dia em que o contrato
+ * publicar o caminho dele. É a mesma regra que governa o registry — método que
+ * depende do servidor só entra quando o caminho existe de verdade.
  *
  * ## O que o painel mostra, e o que ele NÃO faz
  *

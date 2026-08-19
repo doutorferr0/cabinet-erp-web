@@ -73,14 +73,16 @@ const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
-  // Cabeçalho de coluna = ETIQUETA INVERTIDA: fundo Neutro, letra preta, Meta
-  // (mono 11px, tracking .12em), 42px, régua inferior de 3px. Peso 400 e não
-  // 600 — quem dá a força é a régua e a caixa alta; negrito por cima disso
-  // vira grito duplo (valores do `thead th` da amostra).
+  // Cabeçalho de coluna = BARRA PRETA (fusão v5, decisão do user 2026-08-19,
+  // supersede a etiqueta invertida da 1.5 AQUI, e só aqui): papel preto, tinta
+  // clara, mono 10px tracking largo. Com o rótulo de campo rebaixado a
+  // sussurro, o topo da grade vira a única peça escura da malha — âncora que
+  // separa cabeçalho de dado sem régua de 3px. Peso 400: a caixa alta e o
+  // contraste já são a força.
   <th
     ref={ref}
     className={cn(
-      'h-[42px] border-b-[3px] border-border bg-neutral px-3 text-left align-middle font-mono text-[11px] font-normal tracking-[0.12em] text-foreground uppercase [&:has([role=checkbox])]:pr-0',
+      'h-[38px] bg-primary px-3 text-left align-middle font-mono text-[10px] font-normal tracking-[0.12em] text-primary-foreground uppercase [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}

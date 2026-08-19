@@ -200,17 +200,17 @@ describe('VitraDataTable', () => {
     expect(select.className).not.toContain('rounded')
   })
 
-  it('cabeçalho é etiqueta INVERTIDA em 42px: caixa clara, letra preta, régua de 3px', async () => {
+  it('cabeçalho é BARRA PRETA em 38px: papel preto, tinta clara (fusão v5)', async () => {
     setup()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const head = screen.getByRole('columnheader', { name: 'Marca' })
-    expect(head.className).toContain('h-[42px]')
-    // A barra preta sólida da fundação anterior é o que sai (DESIGN.md §Don'ts):
-    // a força vem da régua e da caixa alta, não de um bloco de tinta.
-    expect(head.className).toContain('bg-neutral')
-    expect(head.className).toContain('text-foreground')
-    expect(head.className).toContain('border-b-[3px]')
-    expect(head.className).not.toContain('bg-primary')
+    expect(head.className).toContain('h-[38px]')
+    // Fusão v5 (decisão do user, 2026-08-19): com o rótulo de campo rebaixado
+    // a sussurro, o topo da grade vira a única peça escura da malha — âncora
+    // que separa cabeçalho de dado sem precisar de régua de 3px.
+    expect(head.className).toContain('bg-primary')
+    expect(head.className).toContain('text-primary-foreground')
+    expect(head.className).not.toContain('bg-neutral')
     expect(head.className).toContain('font-mono')
     expect(head.className).toContain('uppercase')
     expect(head.className).toContain('tracking-[0.12em]')

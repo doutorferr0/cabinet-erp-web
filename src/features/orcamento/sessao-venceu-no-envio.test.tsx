@@ -76,6 +76,9 @@ function servidor(escritas: Escrita[], logins: unknown[], statusInicial = 401) {
     if (url.includes('/auth/me')) return respostaSessao()
     if (url.includes('/auth/tenants')) return respostaVinculos()
     if (url.includes('/api/catalog-lookups')) return respostaLookups()
+    // O painel de Atividades (#90) passou a montar nesta rota; sem resposta
+    // aqui o `fetch` do teste devolve `undefined` e a falha aparece longe.
+    if (url.includes('/api/activities')) return json({ rows: [], total: 0 })
 
     if (url.includes('/api/quotes')) {
       if (metodo !== 'GET') {

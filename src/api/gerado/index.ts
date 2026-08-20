@@ -39,12 +39,14 @@ import type {
   ListCrmPipelinesParams,
   ListEmployeesParams,
   ListOrdersParams,
+  ListPartnerContactsParams,
   ListPartnersParams,
   ListProductsParams,
   ListProjectsParams,
   ListQuotesParams,
   ListStockMovementsParams,
   ListTasksParams,
+  ListWorksParams,
   LoginOk,
   LoginRequest,
   NaoAutenticadoResponse,
@@ -57,10 +59,14 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfOrderDto,
+  PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
   PagedResultOfStockMovementDto,
+  PagedResultOfWorkDto,
+  PartnerContactDto,
+  PartnerContactWriteRequest,
   PartnerDto,
   PartnerLinkRequest,
   PartnerWriteRequest,
@@ -85,7 +91,9 @@ import type {
   TodoPatchRequest,
   TrocarEmpresaRequest,
   VariantWriteRequest,
-  VinculoDeEmpresa
+  VinculoDeEmpresa,
+  WorkDto,
+  WorkWriteRequest
 } from './index.schemas';
 
 import { apiFetch } from '../http';
@@ -337,6 +345,200 @@ export const updateCatalogLookup = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(catalogLookupUpdateRequest)
+  }
+);}
+
+
+
+export type listPartnerContactsResponse200 = {
+  data: PagedResultOfPartnerContactDto
+  status: 200
+}
+
+export type listPartnerContactsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPartnerContactsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPartnerContactsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPartnerContactsResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listPartnerContactsResponseSuccess = (listPartnerContactsResponse200) & {
+  headers: Headers;
+};
+export type listPartnerContactsResponseError = (listPartnerContactsResponse400 | listPartnerContactsResponse401 | listPartnerContactsResponse403 | listPartnerContactsResponse404) & {
+  headers: Headers;
+};
+
+export type listPartnerContactsResponse = (listPartnerContactsResponseSuccess | listPartnerContactsResponseError)
+
+export const getListPartnerContactsUrl = (partnerId: string,
+    params?: ListPartnerContactsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/partners/${partnerId}/contacts?${stringifiedParams}` : `/api/partners/${partnerId}/contacts`
+}
+
+/**
+ * Proposto. Os contatos do parceiro — a grade que as telas de Fornecedor e Profissional já desenham. Sub-recurso e não `contacts[]` no `PartnerDto`: ver a descrição de `PartnerContactDto`, e a mesma forma das variantes do produto.
+ */
+export const listPartnerContacts = async (partnerId: string,
+    params?: ListPartnerContactsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPartnerContactsResponse> => {
+
+  return apiFetch<listPartnerContactsResponse>(getListPartnerContactsUrl(partnerId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPartnerContactResponse201 = {
+  data: PartnerContactDto
+  status: 201
+}
+
+export type createPartnerContactResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPartnerContactResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPartnerContactResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPartnerContactResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createPartnerContactResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPartnerContactResponseSuccess = (createPartnerContactResponse201) & {
+  headers: Headers;
+};
+export type createPartnerContactResponseError = (createPartnerContactResponse400 | createPartnerContactResponse401 | createPartnerContactResponse403 | createPartnerContactResponse404 | createPartnerContactResponse409) & {
+  headers: Headers;
+};
+
+export type createPartnerContactResponse = (createPartnerContactResponseSuccess | createPartnerContactResponseError)
+
+export const getCreatePartnerContactUrl = (partnerId: string,) => {
+
+
+
+
+  return `/api/partners/${partnerId}/contacts`
+}
+
+export const createPartnerContact = async (partnerId: string,
+    partnerContactWriteRequest: PartnerContactWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPartnerContactResponse> => {
+
+  return apiFetch<createPartnerContactResponse>(getCreatePartnerContactUrl(partnerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(partnerContactWriteRequest)
+  }
+);}
+
+
+
+export type updatePartnerContactResponse200 = {
+  data: PartnerContactDto
+  status: 200
+}
+
+export type updatePartnerContactResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePartnerContactResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePartnerContactResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePartnerContactResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePartnerContactResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePartnerContactResponseSuccess = (updatePartnerContactResponse200) & {
+  headers: Headers;
+};
+export type updatePartnerContactResponseError = (updatePartnerContactResponse400 | updatePartnerContactResponse401 | updatePartnerContactResponse403 | updatePartnerContactResponse404 | updatePartnerContactResponse409) & {
+  headers: Headers;
+};
+
+export type updatePartnerContactResponse = (updatePartnerContactResponseSuccess | updatePartnerContactResponseError)
+
+export const getUpdatePartnerContactUrl = (partnerId: string,
+    contactId: string,) => {
+
+
+
+
+  return `/api/partners/${partnerId}/contacts/${contactId}`
+}
+
+/**
+ * Proposto. Altera UM contato. Não existe DELETE: contato que saiu da empresa vai a `active: false` e continua legível no documento antigo que o citou (§9 padrão 8) — apagar deixaria a linha do pedido apontando para ninguém.
+ */
+export const updatePartnerContact = async (partnerId: string,
+    contactId: string,
+    partnerContactWriteRequest: PartnerContactWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePartnerContactResponse> => {
+
+  return apiFetch<updatePartnerContactResponse>(getUpdatePartnerContactUrl(partnerId,contactId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(partnerContactWriteRequest)
   }
 );}
 
@@ -1994,6 +2196,240 @@ export const createEmployee = async (employeeWriteRequest: EmployeeWriteRequest,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(employeeWriteRequest)
+  }
+);}
+
+
+
+export type listWorksResponse200 = {
+  data: PagedResultOfWorkDto
+  status: 200
+}
+
+export type listWorksResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listWorksResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listWorksResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listWorksResponseSuccess = (listWorksResponse200) & {
+  headers: Headers;
+};
+export type listWorksResponseError = (listWorksResponse400 | listWorksResponse401 | listWorksResponse403) & {
+  headers: Headers;
+};
+
+export type listWorksResponse = (listWorksResponseSuccess | listWorksResponseError)
+
+export const getListWorksUrl = (params?: ListWorksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/works?${stringifiedParams}` : `/api/works`
+}
+
+/**
+ * Proposto. As obras — coleção PRÓPRIA, e não `/api/partners/{id}/works`. A obra é escolhida no orçamento partindo do cliente, e é isso que o `filters` com `customerId` resolve; um caminho aninhado daria um segundo dialeto de listagem (paginação, ordenação e filtro próprios) para responder a mesma pergunta.
+ */
+export const listWorks = async (params?: ListWorksParams, options?: Parameters<typeof apiFetch>[1]): Promise<listWorksResponse> => {
+
+  return apiFetch<listWorksResponse>(getListWorksUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createWorkResponse201 = {
+  data: WorkDto
+  status: 201
+}
+
+export type createWorkResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createWorkResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createWorkResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createWorkResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createWorkResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createWorkResponseSuccess = (createWorkResponse201) & {
+  headers: Headers;
+};
+export type createWorkResponseError = (createWorkResponse400 | createWorkResponse401 | createWorkResponse403 | createWorkResponse404 | createWorkResponse409) & {
+  headers: Headers;
+};
+
+export type createWorkResponse = (createWorkResponseSuccess | createWorkResponseError)
+
+export const getCreateWorkUrl = () => {
+
+
+
+
+  return `/api/works`
+}
+
+export const createWork = async (workWriteRequest: WorkWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createWorkResponse> => {
+
+  return apiFetch<createWorkResponse>(getCreateWorkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(workWriteRequest)
+  }
+);}
+
+
+
+export type getWorkResponse200 = {
+  data: WorkDto
+  status: 200
+}
+
+export type getWorkResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getWorkResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getWorkResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getWorkResponseSuccess = (getWorkResponse200) & {
+  headers: Headers;
+};
+export type getWorkResponseError = (getWorkResponse401 | getWorkResponse403 | getWorkResponse404) & {
+  headers: Headers;
+};
+
+export type getWorkResponse = (getWorkResponseSuccess | getWorkResponseError)
+
+export const getGetWorkUrl = (id: string,) => {
+
+
+
+
+  return `/api/works/${id}`
+}
+
+/**
+ * Proposto. Uma obra por id — o caminho do link direto e da recarga, o mesmo buraco que `GET /api/partners/{id}` fechou. Responde o MESMO `WorkDto` da listagem: não há DTO de detalhe.
+ */
+export const getWork = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getWorkResponse> => {
+
+  return apiFetch<getWorkResponse>(getGetWorkUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateWorkResponse200 = {
+  data: WorkDto
+  status: 200
+}
+
+export type updateWorkResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateWorkResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateWorkResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateWorkResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateWorkResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateWorkResponseSuccess = (updateWorkResponse200) & {
+  headers: Headers;
+};
+export type updateWorkResponseError = (updateWorkResponse400 | updateWorkResponse401 | updateWorkResponse403 | updateWorkResponse404 | updateWorkResponse409) & {
+  headers: Headers;
+};
+
+export type updateWorkResponse = (updateWorkResponseSuccess | updateWorkResponseError)
+
+export const getUpdateWorkUrl = (id: string,) => {
+
+
+
+
+  return `/api/works/${id}`
+}
+
+export const updateWork = async (id: string,
+    workWriteRequest: WorkWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateWorkResponse> => {
+
+  return apiFetch<updateWorkResponse>(getUpdateWorkUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(workWriteRequest)
   }
 );}
 

@@ -92,6 +92,18 @@ export interface ParceiroDaOrg {
   notes: string | null
   facebook: string | null
   instagram: string | null
+  /**
+   * Bloco 2 (#255). Publicados pelo mock desde o primeiro dia por uma razão
+   * medida: campo do `PartnerDto` que o mock omite faz `corpoDeEscrita` RECUSAR
+   * o Gravar de toda tela de parceiro no modo mock — o do site público. Foi o
+   * defeito da #249, e ele volta a cada campo novo que esquecer daqui.
+   */
+  billingAddress: PartnerAddress | null
+  businessAddress: PartnerAddress | null
+  businessName: string | null
+  businessRole: string | null
+  businessDocument: string | null
+  foundedOn: string | null
   /** Vínculo por empresa (tenantId → dados do vínculo). Sem entrada = não vinculado. */
   vinculos: Record<string, VinculoDeParceiro>
 }
@@ -217,6 +229,14 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       notes: null,
       facebook: null,
       instagram: '@evoled.oficial',
+      // Bloco 2 (#255): fornecedor sem cobrança/comercial próprios — é o
+      // caso comum, e `null` no objeto inteiro é o dado, não descuido.
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
       mobilePhone: '11987650001',
       businessPhone: '1133330001',
       homePhone: null,
@@ -259,6 +279,23 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       notes: 'Atende obras de alto padrão; prefere contato por WhatsApp.',
       facebook: null,
       instagram: '@mh.arquitetura',
+      // A cliente do seed é quem exercita o bloco 2 no navegador: cobrança
+      // em endereço DIFERENTE do cadastro (é o ponto do campo) e o vínculo
+      // de trabalho preenchido.
+      billingAddress: {
+        zipCode: '13024000',
+        street: 'Rua Coronel Quirino',
+        number: '1450',
+        complement: 'Sala 8',
+        district: 'Cambuí',
+        city: 'CAMPINAS',
+        state: 'SP',
+      },
+      businessAddress: null,
+      businessName: 'MH ARQUITETURA E INTERIORES LTDA',
+      businessRole: 'SÓCIA-ARQUITETA',
+      businessDocument: '55666777000188',
+      foundedOn: '2014-03-12',
       payoutBankInfo: {
         bankNumber: '341',
         bankName: 'ITAÚ UNIBANCO',
@@ -306,6 +343,12 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       notes: null,
       facebook: null,
       instagram: null,
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
       // Cadastro SEM contato e SEM endereço: o `null` do objeto inteiro é um
       // estado do contrato, não um descuido do seed.
       mobilePhone: null,
@@ -771,6 +814,13 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     // diverge, e é por isso que a escrita não os aceita de volta.
     categoryName: nomeDeApoio(p.categoryId),
     specifierName: nomeDeApoio(p.specifierId),
+    // Bloco 2 (#255): as seis chaves saem SEMPRE, mesmo nulas.
+    billingAddress: p.billingAddress,
+    businessAddress: p.businessAddress,
+    businessName: p.businessName,
+    businessRole: p.businessRole,
+    businessDocument: p.businessDocument,
+    foundedOn: p.foundedOn,
   }
 }
 

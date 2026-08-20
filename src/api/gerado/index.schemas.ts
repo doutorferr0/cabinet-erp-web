@@ -272,6 +272,30 @@ export interface PartnerDto {
      * @nullable
      */
   instagram?: string | null;
+  /** Proposto. Endereço de COBRANÇA (`Cli_*_cob` no legado) — para onde vai o boleto, que não é onde o cliente mora. `null` quando cobrança e cadastro são o mesmo endereço, que é o caso comum: repetir o endereço principal aqui obrigaria a tela a manter os dois em sincronia e a errar na primeira mudança de um só. */
+  billingAddress?: null | PartnerAddress;
+  /** Proposto. Endereço COMERCIAL (`Cli_*_cor`) — onde a pessoa trabalha, que no cliente pessoa física é o endereço da empresa dela. Junto dele vêm `businessName`, `businessRole`, `businessDocument` e `foundedOn`, que descrevem esse mesmo vínculo de trabalho. */
+  businessAddress?: null | PartnerAddress;
+  /**
+     * Proposto. Empresa onde a pessoa trabalha (`Cli_empresa_cor`). É informação do CLIENTE, não um segundo cadastro: a Vertz vende para a pessoa, e a empresa dela é contexto de crédito e de contato.
+     * @nullable
+     */
+  businessName?: string | null;
+  /**
+     * Proposto. Cargo dela nessa empresa (`Cli_cargo_cor`).
+     * @nullable
+     */
+  businessRole?: string | null;
+  /**
+     * Proposto. CNPJ comercial (`cli_CNPJComercial`) — o da empresa onde trabalha, não o do cadastro. Sem máscara no dado, como `document`. Campo próprio e não uma segunda gravação em `document`: sobrescrever ali trocaria a identidade do cliente pela da empregadora dele.
+     * @nullable
+     */
+  businessDocument?: string | null;
+  /**
+     * Proposto. Data de fundação da empresa comercial (`Cli_DataFundacao_cor`). ISO no dado, exibição pt-BR na borda.
+     * @nullable
+     */
+  foundedOn?: string | null;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -474,6 +498,137 @@ export interface PagedResultOfStockMovementDto {
   total: number;
 }
 
+/**
+ * Proposto. A OBRA do cliente — `Obras` no legado (9.454 linhas), entidade própria e não um campo do orçamento: um cliente tem várias, elas duram mais que um documento, e a `Venda` aponta para ela por `Obr_codigo`. É pré-requisito do orçamento, cujo corpo é agrupado por AMBIENTE da obra (sala, cozinha…), o conceito central de projeto luminotécnico.
+ *
+ * **CAMADA: EMPRESA (RLS), não organização — e isto não foi deduzido, foi medido.** A tabela `Obras` do legado carrega `Emp_codigo`, e a `Venda` que a referencia é da empresa. O cadastro do CLIENTE é da organização porque é identidade (o mesmo CNPJ é o mesmo cliente em qualquer empresa do grupo); a obra é COMÉRCIO — ela existe porque alguém está vendendo para ela. Publicá-la como dado da organização faria a matriz enxergar o endereço e os ambientes do projeto que a filial está atendendo, sem que ninguém tenha pedido. A consequência para o backend é uma só e vale escrever: `works` entra nas políticas de RLS por `tenant_id`, como `quotes`, e NÃO no conjunto mestre de `partners`.
+ */
+export interface WorkDto {
+  id: string;
+  /** O cliente de quem é a obra (`Obras.Cli_codigo`). Obrigatório: obra sem cliente não é obra, é endereço solto — e o orçamento chega nela partindo do cliente. */
+  customerId: string;
+  /**
+     * Razão social do cliente, para a listagem de obras mostrar de quem é sem uma segunda consulta. Par `id`+`name` como `parentId`/`parentName` — o id é para escrever, o nome é o que a tela lê.
+     * @nullable
+     */
+  customerName: string | null;
+  /** Como o operador chama a obra (`Obr_Descricao`): "APARTAMENTO IBIRAPUERA", "CASA ALPHAVILLE". É por ela que a obra é escolhida no orçamento, e é a única coluna que a listagem de orçamentos mostra além do cliente. */
+  description: string;
+  /**
+     * Tipo da obra (`Obr_tipoObra`): residencial, comercial, corporativa. Texto e não item de lista de apoio POR ORA — o legado guarda string livre de 11 caracteres, e promovê-la a `kind` exigiria saber o vocabulário fechado, que a extração não fixou. Vira lookup no dia em que a lista for conhecida; o campo não muda de nome quando isso acontecer.
+     * @nullable
+     */
+  workType: string | null;
+  /** Onde a obra fica. **Reusa `PartnerAddress`** — é o mesmo formato de endereço do parceiro, e um `WorkAddress` idêntico seria a segunda definição da mesma coisa, divergindo na primeira mudança. `null` quando ainda não se sabe o endereço: no legado a obra costuma nascer com a descrição e ganhar o endereço depois. */
+  address: null | PartnerAddress;
+  /** Desativação lógica (§9 padrão 8). Obra terminada não some — os orçamentos dela continuam apontando para cá, e uma obra apagada deixaria documento órfão. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Corpo de escrita da obra. `PUT` substitui o registro inteiro, como no resto do contrato: o que não vier é apagado.
+ */
+export interface WorkWriteRequest {
+  /** O cliente. **Trocar o cliente de uma obra existente é 409**, não 200: os orçamentos já emitidos apontam para esta obra, e mudar o dono faria documento fechado passar a pertencer a outra pessoa. Obra do cliente errado se resolve desativando e cadastrando de novo. */
+  customerId: string;
+  /** Descrição da obra. Vazia é 400 — é o nome pelo qual ela é escolhida no orçamento. */
+  description: string;
+  /**
+     * Tipo da obra. Omitir apaga.
+     * @nullable
+     */
+  workType?: string | null;
+  /** Endereço da obra, INTEIRO: mandar `null` apaga o endereço cadastrado, e mandar o objeto com um campo a menos apaga aquele campo. Não há atualização parcial de endereço. */
+  address?: null | PartnerAddress;
+  /** Desativa a obra sem apagá-la. */
+  active: boolean;
+}
+
+export interface PagedResultOfWorkDto {
+  rows: WorkDto[];
+  total: number;
+}
+
+/**
+ * Proposto. UM contato do parceiro — a pessoa que atende, com o vínculo dela (`Contatos` no legado: `Con_nome`, `Con_vinculo`, `Con_fone`, `Con_fax`, `Con_celular`, `Con_email`). É lista, não campo: fornecedor tem representante, gerente e financeiro, e o cadastro já traz uma GRADE para isso nas telas de Fornecedor e Profissional.
+ *
+ * **CAMADA: ORGANIZAÇÃO, e também medido.** A tabela `Contatos` do legado NÃO tem `Emp_codigo` — ela é discriminada por `Con_tpcadastro` (cliente, fornecedor, transportadora) e vive junto do cadastro. Faz sentido: quem atende no fornecedor é a mesma pessoa para as duas empresas do grupo, e duplicá-la por empresa criaria dois registros da mesma pessoa que divergem no dia em que o telefone dela mudar. É o mesmo raciocínio que põe `legalName` na organização e `paymentTerms` no vínculo.
+ *
+ * **Por que sub-recurso e não `contacts[]` dentro do `PartnerDto`:** o `PUT /api/partners/{id}` é INTEGRAL, e uma coleção dentro dele obrigaria toda tela a devolver as N linhas que não mostra — a regra "ausente ≠ nulo" resolve escalar, não coleção: a primeira leitura velha venceria e apagaria o contato que outra tela acabou de incluir. É a mesma forma que o contrato já usa para as variantes do produto (`/api/products/{productId}/variants`), e pela mesma razão.
+ */
+export interface PartnerContactDto {
+  id: string;
+  /** Nome de quem atende (`Con_nome`). */
+  name: string;
+  /**
+     * O VÍNCULO dele com o cadastro (`Con_vinculo`): representante, gerente, comprador, cônjuge. Texto livre, como no legado — não é cargo formal, é "o que essa pessoa é para nós".
+     * @nullable
+     */
+  role: string | null;
+  /**
+     * Telefone (`Con_fone`).
+     * @nullable
+     */
+  phone: string | null;
+  /**
+     * Celular (`Con_celular`).
+     * @nullable
+     */
+  mobilePhone: string | null;
+  /**
+     * Fax (`Con_fax`). Continua no cadastro do legado.
+     * @nullable
+     */
+  fax: string | null;
+  /**
+     * E-mail (`Con_email`).
+     * @nullable
+     */
+  email: string | null;
+  /** Desativação lógica: contato que saiu da empresa some da grade e continua legível no documento antigo que o citou. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Corpo de escrita de um contato. `PUT` substitui o contato inteiro.
+ */
+export interface PartnerContactWriteRequest {
+  /** Nome. Vazio é 400 — contato sem nome não identifica ninguém. */
+  name: string;
+  /**
+     * Vínculo com o cadastro. Omitir apaga.
+     * @nullable
+     */
+  role?: string | null;
+  /**
+     * Telefone. Omitir apaga.
+     * @nullable
+     */
+  phone?: string | null;
+  /**
+     * Celular. Omitir apaga.
+     * @nullable
+     */
+  mobilePhone?: string | null;
+  /**
+     * Fax. Omitir apaga.
+     * @nullable
+     */
+  fax?: string | null;
+  /**
+     * E-mail. Omitir apaga.
+     * @nullable
+     */
+  email?: string | null;
+  /** Desativa o contato sem apagá-lo. */
+  active: boolean;
+}
+
+export interface PagedResultOfPartnerContactDto {
+  rows: PartnerContactDto[];
+  total: number;
+}
+
 export interface PartnerLinkRequest {
   /** @nullable */
   code: string | null;
@@ -573,6 +728,30 @@ export interface PartnerWriteRequest {
      * @nullable
      */
   instagram?: string | null;
+  /** Proposto. Endereço de cobrança. O objeto viaja INTEIRO: `null` apaga o endereço cadastrado, e um campo a menos apaga aquele campo. */
+  billingAddress?: null | PartnerAddress;
+  /** Proposto. Endereço comercial. Mesma regra do endereço de cobrança. */
+  businessAddress?: null | PartnerAddress;
+  /**
+     * Proposto. Empresa onde a pessoa trabalha (`Cli_empresa_cor`). É informação do CLIENTE, não um segundo cadastro: a Vertz vende para a pessoa, e a empresa dela é contexto de crédito e de contato. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  businessName?: string | null;
+  /**
+     * Proposto. Cargo dela nessa empresa (`Cli_cargo_cor`). `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  businessRole?: string | null;
+  /**
+     * Proposto. CNPJ comercial (`cli_CNPJComercial`) — o da empresa onde trabalha, não o do cadastro. Sem máscara no dado, como `document`. Campo próprio e não uma segunda gravação em `document`: sobrescrever ali trocaria a identidade do cliente pela da empregadora dele. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  businessDocument?: string | null;
+  /**
+     * Proposto. Data de fundação da empresa comercial (`Cli_DataFundacao_cor`). ISO no dado, exibição pt-BR na borda. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  foundedOn?: string | null;
 }
 
 /**
@@ -2378,6 +2557,17 @@ page?: number;
 pageSize?: number;
 };
 
+export type ListPartnerContactsParams = {
+q?: string;
+/**
+ * Whitelist: `name`, `role`, `active`.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
 export type ListProductsParams = {
 q?: string;
 sortBy?: string;
@@ -2463,6 +2653,27 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+};
+
+export type ListWorksParams = {
+q?: string;
+/**
+ * Whitelist: `customerId`, `description`, `workType`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Proposto. Filtro estruturado, no mesmo formato dos outros recursos (array JSON url-encoded). **Whitelist deste recurso: `customerId`, `description`, `workType`, `active`** — a mesma do `sortBy`. Campo fora dela é 400.
+ *
+ * `customerId` está aqui porque é COMO a tela pergunta "as obras deste cliente": um `GET /api/partners/{id}/works` seria uma segunda forma de perguntar a mesma coisa, com paginação, ordenação e filtro próprios para manter — a decisão que o contrato já tomou quando recusou `/api/partners/{id}/children` e mandou a hierarquia sair de `filters`. Publicar este parâmetro não contradiz "publicar o dado não é publicar a consulta": aquela regra vale para campo NOVO em recurso existente, cujo índice no servidor não mudou; aqui a coleção nasce agora, e uma listagem de 9.454 obras sem recorte por cliente não serve à tela que a pede.
+ */
+filters?: ListFilter[];
+/**
+ * Proposto. Como as condições de `filters` se somam. Padrão `and`.
+ */
+joinOperator?: ListFilterJoin;
 };
 
 export type ListQuotesParams = {

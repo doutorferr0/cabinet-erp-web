@@ -11,6 +11,18 @@ import { type FetchStub, respostaLookups, respostaSessao, respostaVinculos } fro
  * servidor não devolve.
  */
 
+/** O endereço do contrato, como o helper o monta — um só tipo para os três
+ *  campos de endereço do parceiro (cadastro, cobrança e comercial). */
+interface PartnerAddress {
+  zipCode: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  district: string | null
+  city: string | null
+  state: string | null
+}
+
 /** Linha no shape EXATO do `PartnerDto`. */
 export function parceiro(over: Record<string, unknown> = {}) {
   return {
@@ -52,15 +64,7 @@ export function parceiro(over: Record<string, unknown> = {}) {
     businessPhone: null as string | null,
     homePhone: null as string | null,
     fax: null as string | null,
-    address: null as {
-      zipCode: string | null
-      street: string | null
-      number: string | null
-      complement: string | null
-      district: string | null
-      city: string | null
-      state: string | null
-    } | null,
+    address: null as PartnerAddress | null,
     // Fase 1 (#250). Nascem NULOS e a chave EXISTE: é a distinção que a guarda
     // de `corpoDeEscrita` lê — ausente é "a listagem não mandou", `null` é "não
     // tem". O helper representa a linha COMPLETA do contrato, não a que o
@@ -75,6 +79,15 @@ export function parceiro(over: Record<string, unknown> = {}) {
     notes: null as string | null,
     facebook: null as string | null,
     instagram: null as string | null,
+    // Bloco 2 (#255): cobrança, comercial e o vínculo de trabalho. Nascem
+    // NULOS e as chaves EXISTEM — a distinção que a guarda de `corpoDeEscrita`
+    // lê. `PartnerAddress` reusado, e por isso o tipo é o mesmo do `address`.
+    billingAddress: null as PartnerAddress | null,
+    businessAddress: null as PartnerAddress | null,
+    businessName: null as string | null,
+    businessRole: null as string | null,
+    businessDocument: null as string | null,
+    foundedOn: null as string | null,
     ...over,
   }
 }

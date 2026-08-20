@@ -267,6 +267,258 @@
         }
       }
     },
+    "/api/partners/{partnerId}/contacts": {
+      "get": {
+        "tags": ["parceiros"],
+        "operationId": "ListPartnerContacts",
+        "description": "Proposto. Os contatos do parceiro — a grade que as telas de Fornecedor e Profissional já desenham. Sub-recurso e não `contacts[]` no `PartnerDto`: ver a descrição de `PartnerContactDto`, e a mesma forma das variantes do produto.",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `name`, `role`, `active`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPartnerContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o parceiro não existe ou não tem vínculo com a empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["parceiros"],
+        "operationId": "CreatePartnerContact",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerContactWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão. O pedido está bem formado e falta uma ESCOLHA da pessoa; a borda recusa toda escrita de `/api/` antes de olhar o corpo.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/partners/{partnerId}/contacts/{contactId}": {
+      "put": {
+        "tags": ["parceiros"],
+        "operationId": "UpdatePartnerContact",
+        "description": "Proposto. Altera UM contato. Não existe DELETE: contato que saiu da empresa vai a `active: false` e continua legível no documento antigo que o citou (§9 padrão 8) — apagar deixaria a linha do pedido apontando para ninguém.",
+        "parameters": [
+          {
+            "name": "partnerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "contactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerContactWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerContactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o contato não é deste parceiro, ou o parceiro não está ao alcance da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão. O pedido está bem formado e falta uma ESCOLHA da pessoa; a borda recusa toda escrita de `/api/` antes de olhar o corpo.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/products": {
       "get": {
         "tags": ["catalogo"],
@@ -1996,6 +2248,285 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/works": {
+      "get": {
+        "tags": ["obras"],
+        "operationId": "ListWorks",
+        "description": "Proposto. As obras — coleção PRÓPRIA, e não `/api/partners/{id}/works`. A obra é escolhida no orçamento partindo do cliente, e é isso que o `filters` com `customerId` resolve; um caminho aninhado daria um segundo dialeto de listagem (paginação, ordenação e filtro próprios) para responder a mesma pergunta.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `customerId`, `description`, `workType`, `active`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "Proposto. Filtro estruturado, no mesmo formato dos outros recursos (array JSON url-encoded). **Whitelist deste recurso: `customerId`, `description`, `workType`, `active`** — a mesma do `sortBy`. Campo fora dela é 400.\n\n`customerId` está aqui porque é COMO a tela pergunta \"as obras deste cliente\": um `GET /api/partners/{id}/works` seria uma segunda forma de perguntar a mesma coisa, com paginação, ordenação e filtro próprios para manter — a decisão que o contrato já tomou quando recusou `/api/partners/{id}/children` e mandou a hierarquia sair de `filters`. Publicar este parâmetro não contradiz \"publicar o dado não é publicar a consulta\": aquela regra vale para campo NOVO em recurso existente, cujo índice no servidor não mudou; aqui a coleção nasce agora, e uma listagem de 9.454 obras sem recorte por cliente não serve à tela que a pede.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListFilter"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "joinOperator",
+            "in": "query",
+            "description": "Proposto. Como as condições de `filters` se somam. Padrão `and`.",
+            "schema": {
+              "$ref": "#/components/schemas/ListFilterJoin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfWorkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["obras"],
+        "operationId": "CreateWork",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o cliente de `customerId` não existe, ou não tem vínculo com a empresa ativa. 404 e não 400: do ponto de vista de quem pergunta, o cliente não está lá.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão. O pedido está bem formado e falta uma ESCOLHA da pessoa; a borda recusa toda escrita de `/api/` antes de olhar o corpo.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/works/{id}": {
+      "get": {
+        "tags": ["obras"],
+        "operationId": "GetWork",
+        "description": "Proposto. Uma obra por id — o caminho do link direto e da recarga, o mesmo buraco que `GET /api/partners/{id}` fechou. Responde o MESMO `WorkDto` da listagem: não há DTO de detalhe.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["obras"],
+        "operationId": "UpdateWork",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão. O pedido está bem formado e falta uma ESCOLHA da pessoa; a borda recusa toda escrita de `/api/` antes de olhar o corpo. Também é 409 TROCAR O CLIENTE de uma obra que já tem orçamento: documento fechado não muda de dono.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4748,6 +5279,198 @@
           }
         }
       },
+      "WorkDto": {
+        "required": [
+          "id",
+          "customerId",
+          "customerName",
+          "description",
+          "workType",
+          "address",
+          "active"
+        ],
+        "type": "object",
+        "description": "Proposto. A OBRA do cliente — `Obras` no legado (9.454 linhas), entidade própria e não um campo do orçamento: um cliente tem várias, elas duram mais que um documento, e a `Venda` aponta para ela por `Obr_codigo`. É pré-requisito do orçamento, cujo corpo é agrupado por AMBIENTE da obra (sala, cozinha…), o conceito central de projeto luminotécnico.\n\n**CAMADA: EMPRESA (RLS), não organização — e isto não foi deduzido, foi medido.** A tabela `Obras` do legado carrega `Emp_codigo`, e a `Venda` que a referencia é da empresa. O cadastro do CLIENTE é da organização porque é identidade (o mesmo CNPJ é o mesmo cliente em qualquer empresa do grupo); a obra é COMÉRCIO — ela existe porque alguém está vendendo para ela. Publicá-la como dado da organização faria a matriz enxergar o endereço e os ambientes do projeto que a filial está atendendo, sem que ninguém tenha pedido. A consequência para o backend é uma só e vale escrever: `works` entra nas políticas de RLS por `tenant_id`, como `quotes`, e NÃO no conjunto mestre de `partners`.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O cliente de quem é a obra (`Obras.Cli_codigo`). Obrigatório: obra sem cliente não é obra, é endereço solto — e o orçamento chega nela partindo do cliente."
+          },
+          "customerName": {
+            "type": ["null", "string"],
+            "description": "Razão social do cliente, para a listagem de obras mostrar de quem é sem uma segunda consulta. Par `id`+`name` como `parentId`/`parentName` — o id é para escrever, o nome é o que a tela lê."
+          },
+          "description": {
+            "type": "string",
+            "description": "Como o operador chama a obra (`Obr_Descricao`): \"APARTAMENTO IBIRAPUERA\", \"CASA ALPHAVILLE\". É por ela que a obra é escolhida no orçamento, e é a única coluna que a listagem de orçamentos mostra além do cliente."
+          },
+          "workType": {
+            "type": ["null", "string"],
+            "description": "Tipo da obra (`Obr_tipoObra`): residencial, comercial, corporativa. Texto e não item de lista de apoio POR ORA — o legado guarda string livre de 11 caracteres, e promovê-la a `kind` exigiria saber o vocabulário fechado, que a extração não fixou. Vira lookup no dia em que a lista for conhecida; o campo não muda de nome quando isso acontecer."
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Onde a obra fica. **Reusa `PartnerAddress`** — é o mesmo formato de endereço do parceiro, e um `WorkAddress` idêntico seria a segunda definição da mesma coisa, divergindo na primeira mudança. `null` quando ainda não se sabe o endereço: no legado a obra costuma nascer com a descrição e ganhar o endereço depois."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativação lógica (§9 padrão 8). Obra terminada não some — os orçamentos dela continuam apontando para cá, e uma obra apagada deixaria documento órfão."
+          }
+        }
+      },
+      "WorkWriteRequest": {
+        "required": ["customerId", "description", "active"],
+        "type": "object",
+        "description": "Proposto. Corpo de escrita da obra. `PUT` substitui o registro inteiro, como no resto do contrato: o que não vier é apagado.",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O cliente. **Trocar o cliente de uma obra existente é 409**, não 200: os orçamentos já emitidos apontam para esta obra, e mudar o dono faria documento fechado passar a pertencer a outra pessoa. Obra do cliente errado se resolve desativando e cadastrando de novo."
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição da obra. Vazia é 400 — é o nome pelo qual ela é escolhida no orçamento."
+          },
+          "workType": {
+            "type": ["null", "string"],
+            "description": "Tipo da obra. Omitir apaga."
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Endereço da obra, INTEIRO: mandar `null` apaga o endereço cadastrado, e mandar o objeto com um campo a menos apaga aquele campo. Não há atualização parcial de endereço."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativa a obra sem apagá-la."
+          }
+        }
+      },
+      "PagedResultOfWorkDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PartnerContactDto": {
+        "required": ["id", "name", "role", "phone", "mobilePhone", "fax", "email", "active"],
+        "type": "object",
+        "description": "Proposto. UM contato do parceiro — a pessoa que atende, com o vínculo dela (`Contatos` no legado: `Con_nome`, `Con_vinculo`, `Con_fone`, `Con_fax`, `Con_celular`, `Con_email`). É lista, não campo: fornecedor tem representante, gerente e financeiro, e o cadastro já traz uma GRADE para isso nas telas de Fornecedor e Profissional.\n\n**CAMADA: ORGANIZAÇÃO, e também medido.** A tabela `Contatos` do legado NÃO tem `Emp_codigo` — ela é discriminada por `Con_tpcadastro` (cliente, fornecedor, transportadora) e vive junto do cadastro. Faz sentido: quem atende no fornecedor é a mesma pessoa para as duas empresas do grupo, e duplicá-la por empresa criaria dois registros da mesma pessoa que divergem no dia em que o telefone dela mudar. É o mesmo raciocínio que põe `legalName` na organização e `paymentTerms` no vínculo.\n\n**Por que sub-recurso e não `contacts[]` dentro do `PartnerDto`:** o `PUT /api/partners/{id}` é INTEGRAL, e uma coleção dentro dele obrigaria toda tela a devolver as N linhas que não mostra — a regra \"ausente ≠ nulo\" resolve escalar, não coleção: a primeira leitura velha venceria e apagaria o contato que outra tela acabou de incluir. É a mesma forma que o contrato já usa para as variantes do produto (`/api/products/{productId}/variants`), e pela mesma razão.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome de quem atende (`Con_nome`)."
+          },
+          "role": {
+            "type": ["null", "string"],
+            "description": "O VÍNCULO dele com o cadastro (`Con_vinculo`): representante, gerente, comprador, cônjuge. Texto livre, como no legado — não é cargo formal, é \"o que essa pessoa é para nós\"."
+          },
+          "phone": {
+            "type": ["null", "string"],
+            "description": "Telefone (`Con_fone`)."
+          },
+          "mobilePhone": {
+            "type": ["null", "string"],
+            "description": "Celular (`Con_celular`)."
+          },
+          "fax": {
+            "type": ["null", "string"],
+            "description": "Fax (`Con_fax`). Continua no cadastro do legado."
+          },
+          "email": {
+            "type": ["null", "string"],
+            "description": "E-mail (`Con_email`)."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativação lógica: contato que saiu da empresa some da grade e continua legível no documento antigo que o citou."
+          }
+        }
+      },
+      "PartnerContactWriteRequest": {
+        "required": ["name", "active"],
+        "type": "object",
+        "description": "Proposto. Corpo de escrita de um contato. `PUT` substitui o contato inteiro.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nome. Vazio é 400 — contato sem nome não identifica ninguém."
+          },
+          "role": {
+            "type": ["null", "string"],
+            "description": "Vínculo com o cadastro. Omitir apaga."
+          },
+          "phone": {
+            "type": ["null", "string"],
+            "description": "Telefone. Omitir apaga."
+          },
+          "mobilePhone": {
+            "type": ["null", "string"],
+            "description": "Celular. Omitir apaga."
+          },
+          "fax": {
+            "type": ["null", "string"],
+            "description": "Fax. Omitir apaga."
+          },
+          "email": {
+            "type": ["null", "string"],
+            "description": "E-mail. Omitir apaga."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativa o contato sem apagá-lo."
+          }
+        }
+      },
+      "PagedResultOfPartnerContactDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerContactDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PartnerAddress": {
         "required": ["zipCode", "street", "number", "complement", "district", "city", "state"],
         "type": "object",
@@ -4925,6 +5648,45 @@
           "instagram": {
             "type": ["null", "string"],
             "description": "Proposto. Perfil no Instagram (`Cli_Instagram`). Mesma regra do Facebook."
+          },
+          "billingAddress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço de COBRANÇA (`Cli_*_cob` no legado) — para onde vai o boleto, que não é onde o cliente mora. `null` quando cobrança e cadastro são o mesmo endereço, que é o caso comum: repetir o endereço principal aqui obrigaria a tela a manter os dois em sincronia e a errar na primeira mudança de um só."
+          },
+          "businessAddress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço COMERCIAL (`Cli_*_cor`) — onde a pessoa trabalha, que no cliente pessoa física é o endereço da empresa dela. Junto dele vêm `businessName`, `businessRole`, `businessDocument` e `foundedOn`, que descrevem esse mesmo vínculo de trabalho."
+          },
+          "businessName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Empresa onde a pessoa trabalha (`Cli_empresa_cor`). É informação do CLIENTE, não um segundo cadastro: a Vertz vende para a pessoa, e a empresa dela é contexto de crédito e de contato."
+          },
+          "businessRole": {
+            "type": ["null", "string"],
+            "description": "Proposto. Cargo dela nessa empresa (`Cli_cargo_cor`)."
+          },
+          "businessDocument": {
+            "type": ["null", "string"],
+            "description": "Proposto. CNPJ comercial (`cli_CNPJComercial`) — o da empresa onde trabalha, não o do cadastro. Sem máscara no dado, como `document`. Campo próprio e não uma segunda gravação em `document`: sobrescrever ali trocaria a identidade do cliente pela da empregadora dele."
+          },
+          "foundedOn": {
+            "type": ["null", "string"],
+            "format": "date",
+            "description": "Proposto. Data de fundação da empresa comercial (`Cli_DataFundacao_cor`). ISO no dado, exibição pt-BR na borda."
           }
         }
       },
@@ -5064,6 +5826,45 @@
           "instagram": {
             "type": ["null", "string"],
             "description": "Proposto. Instagram. Mesma regra do `PUT`: omitir apaga."
+          },
+          "billingAddress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço de cobrança. O objeto viaja INTEIRO: `null` apaga o endereço cadastrado, e um campo a menos apaga aquele campo."
+          },
+          "businessAddress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço comercial. Mesma regra do endereço de cobrança."
+          },
+          "businessName": {
+            "type": ["null", "string"],
+            "description": "Proposto. Empresa onde a pessoa trabalha (`Cli_empresa_cor`). É informação do CLIENTE, não um segundo cadastro: a Vertz vende para a pessoa, e a empresa dela é contexto de crédito e de contato. `PUT` substitui o registro inteiro: omitir apaga."
+          },
+          "businessRole": {
+            "type": ["null", "string"],
+            "description": "Proposto. Cargo dela nessa empresa (`Cli_cargo_cor`). `PUT` substitui o registro inteiro: omitir apaga."
+          },
+          "businessDocument": {
+            "type": ["null", "string"],
+            "description": "Proposto. CNPJ comercial (`cli_CNPJComercial`) — o da empresa onde trabalha, não o do cadastro. Sem máscara no dado, como `document`. Campo próprio e não uma segunda gravação em `document`: sobrescrever ali trocaria a identidade do cliente pela da empregadora dele. `PUT` substitui o registro inteiro: omitir apaga."
+          },
+          "foundedOn": {
+            "type": ["null", "string"],
+            "format": "date",
+            "description": "Proposto. Data de fundação da empresa comercial (`Cli_DataFundacao_cor`). ISO no dado, exibição pt-BR na borda. `PUT` substitui o registro inteiro: omitir apaga."
           }
         }
       },

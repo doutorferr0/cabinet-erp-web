@@ -45,6 +45,17 @@ const LINHA: PartnerDto = {
   homePhone: null,
   fax: null,
   address: null,
+  // Fase 1 (#250) — mesma leitura: chaves presentes e nulas. A janela de
+  // recusa é a mesma, e agora com sete campos a mais dentro dela.
+  stateRegistration: null,
+  ruralProducerRegistration: null,
+  categoryId: null,
+  categoryName: null,
+  specifierId: null,
+  specifierName: null,
+  notes: null,
+  facebook: null,
+  instagram: null,
 } as PartnerDto
 
 describe('corpo do PUT de parceiro', () => {

@@ -193,26 +193,36 @@ export function moduloBancario(): ModuloCadastro {
 
 /** Redes sociais. Existe em Cliente, Fornecedor, Profissional e Colaborador —
  *  os quatro guardam o mesmo par. */
-export function moduloRedesSociais(): ModuloCadastro {
+export function moduloRedesSociais(publicado = false): ModuloCadastro {
+  const doContrato = (nome: string) => (publicado ? { dto: nome } : {})
   return {
     id: 'redes',
     titulo: 'Redes sociais',
     cor: 'compras',
     resumo: 'Instagram · Facebook',
     campos: [
-      { k: 'instagram', r: 'Instagram', campo: 'redesSociais.instagram' },
-      { k: 'facebook', r: 'Facebook', campo: 'redesSociais.facebook' },
+      // Os três papéis de parceiro publicam as duas (#250); o Colaborador é
+      // recurso mock e não cita contrato — daí o `publicado`.
+      {
+        k: 'instagram',
+        r: 'Instagram',
+        campo: 'redesSociais.instagram',
+        ...doContrato('instagram'),
+      },
+      { k: 'facebook', r: 'Facebook', campo: 'redesSociais.facebook', ...doContrato('facebook') },
     ],
   }
 }
 
 /** Observação interna. Não vira coluna de propósito: texto livre numa grade de
  *  25 linhas empurra todas as colunas úteis para fora da tela. */
-export function moduloObservacao(campo = 'observacao'): ModuloCadastro {
+export function moduloObservacao(campo = 'observacao', dto?: string): ModuloCadastro {
   return {
     id: 'observacao',
     titulo: 'Observação interna',
     resumo: 'Só a equipe vê. Não sai em documento.',
-    campos: [{ k: 'obs', r: 'Anotações', t: 'area', campo }],
+    // O `dto` só existe onde o contrato publica a observação — hoje, o
+    // parceiro (`notes`, #250). Colaborador é recurso mock e não cita contrato.
+    campos: [{ k: 'obs', r: 'Anotações', t: 'area', campo, ...(dto ? { dto } : {}) }],
   }
 }

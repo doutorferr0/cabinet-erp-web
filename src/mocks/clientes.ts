@@ -95,7 +95,7 @@ export const clientes: Cliente[] = NOMES.map((nome, i) => ({
   email: `${nome.split(' ')[0]?.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')}@email.com`,
   ativo: i !== 14,
   profissional: idDeApoio('PROFISSIONAL', PROFISSIONAIS[i % PROFISSIONAIS.length]),
-  categoria: idDeApoio('CATEGORIA', i % 3 === 0 ? 'ARQUITETO' : 'CONSUMIDOR FINAL'),
+  categoria: idDeApoio('CATEGORIA_CLIENTE', i % 3 === 0 ? 'ARQUITETO' : 'CONSUMIDOR FINAL'),
   dtNascimento: `19${60 + (i % 35)}-0${(i % 9) + 1}-1${i % 9}`,
   redesSociais: { facebook: '', instagram: '' },
   inscEstProdutorRural: '',

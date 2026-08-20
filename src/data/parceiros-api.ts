@@ -186,6 +186,25 @@ export interface CamposEditaveis {
   homePhone?: string | null
   fax?: string | null
   address?: PartnerAddress | null
+  /**
+   * Fase 1 do comparativo Softlux (#250), e o recorte por tela é o mais
+   * desigual de todos: a Inscrição Estadual só o Fornecedor edita
+   * (`inscEst`); a IE de Produtor Rural, a categoria, o especificador e a
+   * observação só o Cliente tem; as redes sociais os três têm. Quem não edita
+   * devolve como veio — a regra do `corpoDeEscrita` logo abaixo.
+   *
+   * **`specifierId` NÃO é `parentId`.** Um liga o cliente a quem o indicou; o
+   * outro liga o profissional ao escritório de que ele faz parte. Coexistem no
+   * mesmo cadastro, e trocá-los pagaria comissão de indicação a quem não
+   * especificou nada.
+   */
+  stateRegistration?: string | null
+  ruralProducerRegistration?: string | null
+  categoryId?: string | null
+  specifierId?: string | null
+  notes?: string | null
+  facebook?: string | null
+  instagram?: string | null
 }
 
 /**
@@ -244,6 +263,18 @@ export function corpoDeEscrita(
     'homePhone',
     'fax',
     'address',
+    // E os sete do #250, pela MESMA razão: são campos que só uma das três telas
+    // edita, e um `?? null` aqui faria o Gravar do Fornecedor apagar a
+    // observação e o especificador que a tela de Clientes gravou no mesmo
+    // cadastro. A janela em que a listagem HTTP ainda não os manda é a mesma já
+    // declarada em `docs/integracao.md`, e fecha com a migração do backend.
+    'stateRegistration',
+    'ruralProducerRegistration',
+    'categoryId',
+    'specifierId',
+    'notes',
+    'facebook',
+    'instagram',
   ] as const) {
     if (editado[campo] === undefined && !(campo in original)) {
       throw new Error(
@@ -291,6 +322,30 @@ export function corpoDeEscrita(
     homePhone: editado.homePhone !== undefined ? editado.homePhone : (original.homePhone ?? null),
     fax: editado.fax !== undefined ? editado.fax : (original.fax ?? null),
     address: editado.address !== undefined ? editado.address : (original.address ?? null),
+    // Fase 1 (#250). Os de texto passam por `textoOuNulo` quando a tela os
+    // edita — input controlado devolve `''`, e `''` gravado troca "não
+    // informado" por "vazio" a cada Gravar. Os dois de VÍNCULO (`categoryId` e
+    // `specifierId`) não passam: id é escolha, não texto digitado, e `null` ali
+    // já é "nenhum".
+    stateRegistration:
+      editado.stateRegistration !== undefined
+        ? textoOuNulo(editado.stateRegistration)
+        : (original.stateRegistration ?? null),
+    ruralProducerRegistration:
+      editado.ruralProducerRegistration !== undefined
+        ? textoOuNulo(editado.ruralProducerRegistration)
+        : (original.ruralProducerRegistration ?? null),
+    categoryId:
+      editado.categoryId !== undefined ? editado.categoryId : (original.categoryId ?? null),
+    specifierId:
+      editado.specifierId !== undefined ? editado.specifierId : (original.specifierId ?? null),
+    notes: editado.notes !== undefined ? textoOuNulo(editado.notes) : (original.notes ?? null),
+    facebook:
+      editado.facebook !== undefined ? textoOuNulo(editado.facebook) : (original.facebook ?? null),
+    instagram:
+      editado.instagram !== undefined
+        ? textoOuNulo(editado.instagram)
+        : (original.instagram ?? null),
   }
 }
 
@@ -426,6 +481,15 @@ export function corpoDeInclusao(
     homePhone: editado.homePhone ?? null,
     fax: editado.fax ?? null,
     address: editado.address ?? null,
+    // Na INCLUSÃO não há registro anterior a preservar: o que a tela não edita
+    // nasce nulo. Vale para os sete do #250 como já valia para o conselho.
+    stateRegistration: textoOuNulo(editado.stateRegistration),
+    ruralProducerRegistration: textoOuNulo(editado.ruralProducerRegistration),
+    categoryId: editado.categoryId ?? null,
+    specifierId: editado.specifierId ?? null,
+    notes: textoOuNulo(editado.notes),
+    facebook: textoOuNulo(editado.facebook),
+    instagram: textoOuNulo(editado.instagram),
   }
 }
 

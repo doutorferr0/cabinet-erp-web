@@ -134,7 +134,12 @@ export const cliente: EntidadeCadastro = {
       resumo: 'Inscrição estadual · Contribuinte — necessário só para emitir NF-e',
       cor: 'vendas',
       campos: [
-        { k: 'ieRural', r: 'Insc. estadual produtor rural', campo: 'inscEstProdutorRural' },
+        {
+          k: 'ieRural',
+          r: 'Insc. estadual produtor rural',
+          campo: 'inscEstProdutorRural',
+          dto: 'ruralProducerRegistration',
+        },
         { k: 'contrib', r: 'Contribuinte ICMS', t: 'select', fil: 'sel' },
         { k: 'regime', r: 'Regime tributário', t: 'select', fil: 'sel' },
       ],
@@ -152,8 +157,18 @@ export const cliente: EntidadeCadastro = {
           col: true,
           fil: 'texto',
           campo: 'profissional',
+          // O ESPECIFICADOR. `specifierId` e não `parentId`: um é quem indicou
+          // o cliente, o outro é o escritório de que um profissional faz parte.
+          dto: 'specifierId',
         },
-        { k: 'categoria', r: 'Categoria', t: 'select', fil: 'sel', campo: 'categoria' },
+        {
+          k: 'categoria',
+          r: 'Categoria',
+          t: 'select',
+          fil: 'sel',
+          campo: 'categoria',
+          dto: 'categoryId',
+        },
         // Do mockup, sem onde gravar hoje.
         { k: 'origem', r: 'Como conheceu', t: 'select', fil: 'sel' },
         { k: 'tabela', r: 'Tabela de preço', t: 'select', fil: 'sel' },
@@ -169,8 +184,8 @@ export const cliente: EntidadeCadastro = {
         { k: 'ultima', r: 'Última compra', t: 'data', col: true, fil: 'data' },
       ],
     },
-    moduloRedesSociais(),
-    moduloObservacao(),
+    moduloRedesSociais(true),
+    moduloObservacao('observacao', 'notes'),
   ],
   // Literais do mockup aprovado (`mockup-consulta-modelo.html`, `kpis` do
   // Cliente). Nenhum tem `campo` nem `dto`: os quatro saem de agregação que o
@@ -241,7 +256,7 @@ export const fornecedor: EntidadeCadastro = {
       resumo: 'IE · Regime · CNAE — necessário para entrada de nota',
       cor: 'vendas',
       campos: [
-        { k: 'ie', r: 'Inscrição estadual', campo: 'inscEst' },
+        { k: 'ie', r: 'Inscrição estadual', campo: 'inscEst', dto: 'stateRegistration' },
         // Do mockup, sem onde gravar hoje.
         { k: 'regime', r: 'Regime tributário', t: 'select', fil: 'sel' },
         { k: 'cnae', r: 'CNAE principal' },
@@ -325,7 +340,7 @@ export const fornecedor: EntidadeCadastro = {
       ],
     },
     moduloEndereco(),
-    moduloRedesSociais(),
+    moduloRedesSociais(true),
   ],
   indicadores: [
     { k: 'produtos', r: 'Produtos ativos' },
@@ -443,7 +458,7 @@ export const profissional: EntidadeCadastro = {
         { k: 'gerado', r: 'Gerado no ano', t: 'dinheiro', grana: true, col: true },
       ],
     },
-    moduloRedesSociais(),
+    moduloRedesSociais(true),
   ],
   // `Gerado no ano` e `Clientes indicados` também são CAMPO do módulo Comercial
   // (com `col`, para a listagem) — e repetir aqui não é engano: no módulo eles

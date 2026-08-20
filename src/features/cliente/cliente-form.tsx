@@ -252,7 +252,7 @@ function ClienteCorpo({
           <LookupField
             name="categoria"
             label="Categoria"
-            kind="categoria"
+            kind="categoriaCliente"
             className="col-span-12 sm:col-span-4"
           />
         </div>

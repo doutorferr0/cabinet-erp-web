@@ -475,6 +475,13 @@ export const handlers = [
       homePhone: corpo.homePhone ?? null,
       fax: corpo.fax ?? null,
       address: corpo.address ?? null,
+      stateRegistration: corpo.stateRegistration ?? null,
+      ruralProducerRegistration: corpo.ruralProducerRegistration ?? null,
+      categoryId: corpo.categoryId ?? null,
+      specifierId: corpo.specifierId ?? null,
+      notes: corpo.notes ?? null,
+      facebook: corpo.facebook ?? null,
+      instagram: corpo.instagram ?? null,
       vinculos: {
         [store.activeTenantId]: {
           code: corpo.code ?? null,
@@ -519,6 +526,13 @@ export const handlers = [
     parceiro.homePhone = corpo.homePhone ?? null
     parceiro.fax = corpo.fax ?? null
     parceiro.address = corpo.address ?? null
+    parceiro.stateRegistration = corpo.stateRegistration ?? null
+    parceiro.ruralProducerRegistration = corpo.ruralProducerRegistration ?? null
+    parceiro.categoryId = corpo.categoryId ?? null
+    parceiro.specifierId = corpo.specifierId ?? null
+    parceiro.notes = corpo.notes ?? null
+    parceiro.facebook = corpo.facebook ?? null
+    parceiro.instagram = corpo.instagram ?? null
     parceiro.vinculos[store.activeTenantId] = {
       code: corpo.code ?? null,
       paymentTerms: corpo.paymentTerms ?? null,

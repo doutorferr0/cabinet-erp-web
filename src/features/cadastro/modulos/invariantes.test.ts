@@ -190,7 +190,11 @@ describe('a lacuna entre a espec e o que o repo guarda', () => {
       entidades.map(([id, entidade]) => [id, semConsulta(entidade).map((campo) => campo.k)]),
     )
     expect(retrato).toEqual({
-      cliente: ['cel', 'bairro', 'cidade', 'uf'],
+      // `indicou` e `categoria` entraram com o #250: o contrato passou a
+      // publicar o especificador e a categoria do cliente, e nenhum dos dois
+      // está na whitelist. O mockup pede coluna e filtro para os dois — é
+      // exatamente a distância que este retrato existe para medir.
+      cliente: ['cel', 'bairro', 'cidade', 'uf', 'indicou', 'categoria'],
       colaborador: [],
       // `fax` do fornecedor não aparece: publicado, mas não pede coluna nem
       // filtro no mockup — só entra aqui o que promete consulta e não a tem.

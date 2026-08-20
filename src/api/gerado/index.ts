@@ -11,6 +11,9 @@ import type {
   ActivityDto,
   ActivityWriteRequest,
   AgendaEventDto,
+  CatalogLookupCreateRequest,
+  CatalogLookupDto,
+  CatalogLookupUpdateRequest,
   ChangePasswordRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
@@ -212,6 +215,128 @@ export const listCatalogLookups = async (params?: ListCatalogLookupsParams, opti
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type createCatalogLookupResponse201 = {
+  data: CatalogLookupDto
+  status: 201
+}
+
+export type createCatalogLookupResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCatalogLookupResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createCatalogLookupResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createCatalogLookupResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCatalogLookupResponseSuccess = (createCatalogLookupResponse201) & {
+  headers: Headers;
+};
+export type createCatalogLookupResponseError = (createCatalogLookupResponse400 | createCatalogLookupResponse401 | createCatalogLookupResponse403 | createCatalogLookupResponse409) & {
+  headers: Headers;
+};
+
+export type createCatalogLookupResponse = (createCatalogLookupResponseSuccess | createCatalogLookupResponseError)
+
+export const getCreateCatalogLookupUrl = () => {
+
+
+
+
+  return `/api/catalog-lookups`
+}
+
+/**
+ * Proposto. Cadastra um item de lista de apoio — o `+...` que todo combo do legado tem ao lado (§9 padrão 2). Sem ele, cadastrar produto ou cliente novo trava no primeiro combo vazio, e o operador precisa sair da tela para voltar depois. O item nasce dentro de UM `kind`, e o `kind` é do corpo porque a tabela é única e discriminada (ADR-011).
+ */
+export const createCatalogLookup = async (catalogLookupCreateRequest: CatalogLookupCreateRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCatalogLookupResponse> => {
+
+  return apiFetch<createCatalogLookupResponse>(getCreateCatalogLookupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(catalogLookupCreateRequest)
+  }
+);}
+
+
+
+export type updateCatalogLookupResponse200 = {
+  data: CatalogLookupDto
+  status: 200
+}
+
+export type updateCatalogLookupResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCatalogLookupResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateCatalogLookupResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateCatalogLookupResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateCatalogLookupResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateCatalogLookupResponseSuccess = (updateCatalogLookupResponse200) & {
+  headers: Headers;
+};
+export type updateCatalogLookupResponseError = (updateCatalogLookupResponse400 | updateCatalogLookupResponse401 | updateCatalogLookupResponse403 | updateCatalogLookupResponse404 | updateCatalogLookupResponse409) & {
+  headers: Headers;
+};
+
+export type updateCatalogLookupResponse = (updateCatalogLookupResponseSuccess | updateCatalogLookupResponseError)
+
+export const getUpdateCatalogLookupUrl = (id: string,) => {
+
+
+
+
+  return `/api/catalog-lookups/${id}`
+}
+
+/**
+ * Proposto. Renomeia ou desativa um item de lista de apoio. **`kind` não entra no corpo, e é decisão:** mover um item de lista mudaria o significado de todo registro que já aponta para ele — um `CARGO` que vira `SETOR` deixa para trás fichas de colaborador dizendo o que ninguém escreveu. Trocar de lista é desativar aqui e cadastrar lá.
+ */
+export const updateCatalogLookup = async (id: string,
+    catalogLookupUpdateRequest: CatalogLookupUpdateRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCatalogLookupResponse> => {
+
+  return apiFetch<updateCatalogLookupResponse>(getUpdateCatalogLookupUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(catalogLookupUpdateRequest)
   }
 );}
 

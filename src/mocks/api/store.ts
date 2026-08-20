@@ -13,7 +13,7 @@ import type {
   VinculoDeEmpresa,
 } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
-import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
+import { VOCABULARIO_DE_APOIO, idDeApoio } from '@/mocks/lookups'
 
 /**
  * Estado em memória do modo mock (`VITE_API_MODE=mock`).
@@ -75,6 +75,23 @@ export interface ParceiroDaOrg {
   fax: string | null
   /** `null` = nenhum campo preenchido. Endereço PARCIAL é caso normal. */
   address: PartnerAddress | null
+  /**
+   * Fase 1 do comparativo Softlux (#250). Todos no CADASTRO da organização: a
+   * IE é da empresa, a categoria e o especificador são do relacionamento
+   * comercial do grupo, e a observação é a mesma para quem atende as duas
+   * empresas. O que muda por empresa continua sendo código, prazo e `active`.
+   *
+   * `specifierId` e `parentId` convivem aqui de propósito — são dois vínculos
+   * diferentes, e o mock precisa poder ter os dois preenchidos ao mesmo tempo
+   * para que a tela prove que não os confunde.
+   */
+  stateRegistration: string | null
+  ruralProducerRegistration: string | null
+  categoryId: string | null
+  specifierId: string | null
+  notes: string | null
+  facebook: string | null
+  instagram: string | null
   /** Vínculo por empresa (tenantId → dados do vínculo). Sem entrada = não vinculado. */
   vinculos: Record<string, VinculoDeParceiro>
 }
@@ -192,6 +209,14 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       registration: null,
       payoutBankInfo: null,
       parentId: null,
+      // IE de empresa: o fornecedor tem, e é o único dos três que a edita.
+      stateRegistration: '110042490114',
+      ruralProducerRegistration: null,
+      categoryId: null,
+      specifierId: null,
+      notes: null,
+      facebook: null,
+      instagram: '@evoled.oficial',
       mobilePhone: '11987650001',
       businessPhone: '1133330001',
       homePhone: null,
@@ -223,6 +248,17 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       // A ÚNICA profissional do seed, e por isso a única com conselho e conta —
       // é nela que o `Alterar` da tela §3 se exercita no navegador.
       registration: 'CAU A123456-7',
+      // A cliente-profissional do seed: categoria E especificador preenchidos,
+      // que é o par que prova que `specifierId` não é `parentId` — ela não
+      // pende de escritório nenhum (`parentId: null`) e mesmo assim tem quem a
+      // indicou.
+      stateRegistration: null,
+      ruralProducerRegistration: null,
+      categoryId: idDeApoio('CATEGORIA_CLIENTE', 'ARQUITETO'),
+      specifierId: idDeApoio('PROFISSIONAL', 'ANA RIBEIRO'),
+      notes: 'Atende obras de alto padrão; prefere contato por WhatsApp.',
+      facebook: null,
+      instagram: '@mh.arquitetura',
       payoutBankInfo: {
         bankNumber: '341',
         bankName: 'ITAÚ UNIBANCO',
@@ -263,6 +299,13 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       registration: null,
       payoutBankInfo: null,
       parentId: null,
+      stateRegistration: null,
+      ruralProducerRegistration: null,
+      categoryId: null,
+      specifierId: null,
+      notes: null,
+      facebook: null,
+      instagram: null,
       // Cadastro SEM contato e SEM endereço: o `null` do objeto inteiro é um
       // estado do contrato, não um descuido do seed.
       mobilePhone: null,
@@ -716,5 +759,23 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     homePhone: p.homePhone,
     fax: p.fax,
     address: p.address,
+    // Fase 1 (#250), pela mesma regra das cinco de cima: a chave sai SEMPRE.
+    stateRegistration: p.stateRegistration,
+    ruralProducerRegistration: p.ruralProducerRegistration,
+    categoryId: p.categoryId,
+    specifierId: p.specifierId,
+    notes: p.notes,
+    facebook: p.facebook,
+    instagram: p.instagram,
+    // DERIVADOS do id, como `parentName` — nome guardado é nome que um dia
+    // diverge, e é por isso que a escrita não os aceita de volta.
+    categoryName: nomeDeApoio(p.categoryId),
+    specifierName: nomeDeApoio(p.specifierId),
   }
+}
+
+/** Nome de um item de lista de apoio, pelo id. `null` quando não há id. */
+function nomeDeApoio(id: string | null): string | null {
+  if (!id) return null
+  return store.lookups.find((l) => l.id === id)?.name ?? null
 }

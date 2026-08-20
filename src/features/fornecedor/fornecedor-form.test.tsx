@@ -106,6 +106,17 @@ describe('tela Fornecedor', () => {
       homePhone: null,
       fax: null,
       address: null,
+      // #250: a tela de Fornecedor edita a Inscrição Estadual e as redes; a
+      // categoria, o especificador, a IE de produtor rural e a observação são
+      // da tela de Cliente e voltam como vieram — é o que impede o Gravar de um
+      // fornecedor de apagar o que a outra tela gravou no mesmo cadastro.
+      stateRegistration: null,
+      facebook: null,
+      instagram: null,
+      ruralProducerRegistration: null,
+      categoryId: null,
+      specifierId: null,
+      notes: null,
     })
     // 15s: este caso monta DUAS telas (listagem e formulário completo) e ainda
     // digita — o limite padrão de 5s do vitest não cobre isso nesta máquina.

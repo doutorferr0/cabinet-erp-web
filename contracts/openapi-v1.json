@@ -5631,11 +5631,11 @@
           "specifierId": {
             "type": ["null", "string"],
             "format": "uuid",
-            "description": "Proposto. O ESPECIFICADOR — o profissional que indicou este cliente (`Ind_codigo` no legado), item da lista `PROFISSIONAL`. **NÃO é `parentId`, e os dois coexistem no mesmo cadastro:** `parentId` liga um profissional ao ESCRITÓRIO de que ele faz parte; `specifierId` liga um CLIENTE a quem o trouxe. Colapsar os dois faria a comissão de indicação ser paga a um escritório que nunca especificou nada."
+            "description": "Proposto. O ESPECIFICADOR — o profissional que indicou este cliente (`Ind_codigo` no legado). **É um `partners.id`, e não item de lista de apoio.** A descrição anterior dizia que era item da lista `PROFISSIONAL` e estava errada: o profissional externo JÁ É um parceiro (`isProfessional`, um dos três papéis do mesmo cadastro), então uma lista paralela com os mesmos nomes seria o par duplicado que o 409 de `catalog-lookups` existe para impedir — e ela não teria onde guardar o conselho (`registration`) nem a participação, que são justamente o que faz alguém ser especificador. O servidor confere: uuid que não exista em `partners` é 400. **NÃO é `parentId`, e os dois coexistem no mesmo cadastro:** `parentId` liga um profissional ao ESCRITÓRIO de que ele faz parte; `specifierId` liga um CLIENTE a quem o trouxe. Colapsar os dois faria a comissão de indicação ser paga a um escritório que nunca especificou nada. Mesmo shape, vínculos diferentes — e é por serem o mesmo shape que a tela busca os dois em `GET /api/partners`, o especificador com `role=professional`."
           },
           "specifierName": {
             "type": ["null", "string"],
-            "description": "Proposto. Nome do especificador, pela mesma razão de `categoryName`. Acompanha `specifierId`."
+            "description": "Proposto. Nome do especificador — a razão social do PARCEIRO apontado por `specifierId`, não o rótulo de um item de lista. Acompanha `specifierId`: os dois são `null` juntos."
           },
           "notes": {
             "type": ["null", "string"],
@@ -5813,7 +5813,7 @@
           "specifierId": {
             "type": ["null", "string"],
             "format": "uuid",
-            "description": "Proposto. Especificador (o profissional que indicou). Só o ID, pela mesma razão de `categoryId`. `null` DESVINCULA — vincular e desvincular são o mesmo ato com valores diferentes."
+            "description": "Proposto. Especificador — o `partners.id` do profissional que indicou o cliente. Só o ID, pela mesma razão de `categoryId`. **Apontar para si mesmo é 400**, como em `parentId`: cliente que se indica sozinho não é indicação. `null` DESVINCULA — vincular e desvincular são o mesmo ato com valores diferentes."
           },
           "notes": {
             "type": ["null", "string"],

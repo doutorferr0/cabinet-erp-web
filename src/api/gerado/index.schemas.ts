@@ -248,12 +248,12 @@ export interface PartnerDto {
      */
   categoryName?: string | null;
   /**
-     * Proposto. O ESPECIFICADOR — o profissional que indicou este cliente (`Ind_codigo` no legado), item da lista `PROFISSIONAL`. **NÃO é `parentId`, e os dois coexistem no mesmo cadastro:** `parentId` liga um profissional ao ESCRITÓRIO de que ele faz parte; `specifierId` liga um CLIENTE a quem o trouxe. Colapsar os dois faria a comissão de indicação ser paga a um escritório que nunca especificou nada.
+     * Proposto. O ESPECIFICADOR — o profissional que indicou este cliente (`Ind_codigo` no legado). **É um `partners.id`, e não item de lista de apoio.** A descrição anterior dizia que era item da lista `PROFISSIONAL` e estava errada: o profissional externo JÁ É um parceiro (`isProfessional`, um dos três papéis do mesmo cadastro), então uma lista paralela com os mesmos nomes seria o par duplicado que o 409 de `catalog-lookups` existe para impedir — e ela não teria onde guardar o conselho (`registration`) nem a participação, que são justamente o que faz alguém ser especificador. O servidor confere: uuid que não exista em `partners` é 400. **NÃO é `parentId`, e os dois coexistem no mesmo cadastro:** `parentId` liga um profissional ao ESCRITÓRIO de que ele faz parte; `specifierId` liga um CLIENTE a quem o trouxe. Colapsar os dois faria a comissão de indicação ser paga a um escritório que nunca especificou nada. Mesmo shape, vínculos diferentes — e é por serem o mesmo shape que a tela busca os dois em `GET /api/partners`, o especificador com `role=professional`.
      * @nullable
      */
   specifierId?: string | null;
   /**
-     * Proposto. Nome do especificador, pela mesma razão de `categoryName`. Acompanha `specifierId`.
+     * Proposto. Nome do especificador — a razão social do PARCEIRO apontado por `specifierId`, não o rótulo de um item de lista. Acompanha `specifierId`: os dois são `null` juntos.
      * @nullable
      */
   specifierName?: string | null;
@@ -709,7 +709,7 @@ export interface PartnerWriteRequest {
      */
   categoryId?: string | null;
   /**
-     * Proposto. Especificador (o profissional que indicou). Só o ID, pela mesma razão de `categoryId`. `null` DESVINCULA — vincular e desvincular são o mesmo ato com valores diferentes.
+     * Proposto. Especificador — o `partners.id` do profissional que indicou o cliente. Só o ID, pela mesma razão de `categoryId`. **Apontar para si mesmo é 400**, como em `parentId`: cliente que se indica sozinho não é indicação. `null` DESVINCULA — vincular e desvincular são o mesmo ato com valores diferentes.
      * @nullable
      */
   specifierId?: string | null;

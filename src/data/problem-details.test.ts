@@ -1,7 +1,14 @@
 import { configurarApi } from '@/api/cliente'
-import { authLogin, authSetActiveTenant, createPartner, createProduct } from '@/api/gerado'
+import {
+  ProblemType,
+  authLogin,
+  authSetActiveTenant,
+  createPartner,
+  createProduct,
+} from '@/api/gerado'
 import { type ErroDaApi, dadosOuErro } from '@/data/api-provider'
 import { handlers } from '@/mocks/api/handlers'
+import { tituloDoProblema } from '@/mocks/api/problema'
 import { TENANT_MATRIZ, resetStore } from '@/mocks/api/store'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -97,6 +104,37 @@ describe('Problem Details no contrato', () => {
   it('não sobrou schema de erro paralelo (LoginFalhou saiu)', () => {
     expect(Object.keys(doc.components.schemas)).not.toContain('LoginFalhou')
   })
+
+  /**
+   * `type` é o DISCRIMINADOR, e por isso é obrigatório e vem de um vocabulário
+   * FECHADO. Enquanto era `string` livre, cada servidor podia inventar a URN
+   * dele — e inventou: o backend real já emitia 22 tipos que este contrato não
+   * conhecia, e a tela que quisesse tratar um deles teria de escrevê-lo à mão.
+   */
+  it('`type` é obrigatório e aponta para o vocabulário declarado', () => {
+    const schema = doc.components.schemas.ProblemDetails as {
+      required?: string[]
+      properties: Record<string, Json>
+    }
+    expect(schema.required).toContain('type')
+    expect(schema.properties.type).toMatchObject({
+      $ref: '#/components/schemas/ProblemType',
+    })
+  })
+
+  /**
+   * A tabela do `ProblemType` é onde mora o `title` canônico e o "quando" de
+   * cada URN. Enum sem linha na tabela é vocabulário sem significado declarado —
+   * o servidor manda, e nem a tela nem o outro repo sabem o que fazer com ele.
+   */
+  it('toda URN do vocabulário está descrita na tabela', () => {
+    const schema = doc.components.schemas.ProblemType as {
+      enum: string[]
+      description: string
+    }
+    const semLinha = schema.enum.filter((urn) => !schema.description.includes(`\`${urn}\``))
+    expect(semLinha).toEqual([])
+  })
 })
 
 const servidor = setupServer(...handlers)
@@ -171,10 +209,19 @@ describe('Problem Details no mock', () => {
   it('o title DISTINGUE o tipo do erro, em vez de dizer "Erro" sempre', async () => {
     const naoEncontrado = await fetch('http://mock.teste/api/products/prod-que-nao-existe')
     expect(naoEncontrado.status).toBe(404)
-    expect(((await naoEncontrado.json()) as Json).title).toBe('Não encontrado')
+    expect(await naoEncontrado.json()).toMatchObject({
+      type: 'urn:cabinet:erro:nao-encontrado',
+      title: 'Não encontrado',
+    })
 
+    // O 400 da ordenação e o 400 da validação são o MESMO status e tipos
+    // diferentes — é essa distinção que o `type` existe para carregar, e o
+    // título canônico de cada um a repete para quem só lê o cabeçalho.
     const invalido = await fetch('http://mock.teste/api/products?page=1&pageSize=10&sortBy=xpto')
-    expect(((await invalido.json()) as Json).title).toBe('Requisição inválida')
+    expect(await invalido.json()).toMatchObject({
+      type: 'urn:cabinet:erro:ordenacao-invalida',
+      title: 'Ordenação inválida',
+    })
   })
 
   it('o handler do CRM usa o MESMO helper — formato em duas cópias vira dois formatos', async () => {
@@ -204,7 +251,29 @@ describe('Problem Details no mock', () => {
     expect(resposta.status).toBe(409)
     const corpo = resposta.data as unknown as Json
     expect(corpo.fields).toBeUndefined()
-    // A extensão do 409 continua: é ela que habilita a oferta de vincular.
+    // A extensão do 409 continua: é ela que habilita a oferta de vincular. E o
+    // `type` é o que diz à tela QUAL 409 é este — sem ele, "documento repetido"
+    // e "saldo negativo" chegam com o mesmo 409 e o mesmo `Conflito` em cima.
     expect(corpo.existingPartnerId).toBeTruthy()
+    expect(corpo.type).toBe('urn:cabinet:erro:documento-ja-cadastrado')
+  })
+
+  /**
+   * O `title` do mock é o do CONTRATO, e a prova é textual: cada título sai da
+   * tabela do `ProblemType`, escrito lá entre crases. Título escolhido no mock
+   * faria o mesmo erro aparecer com um cabeçalho no modo mock e outro contra o
+   * backend — a divergência que só aparece no dia da migração.
+   */
+  it('todo título do mock é o que a tabela do contrato escreve', () => {
+    const tabela = (doc.components.schemas.ProblemType as { description: string }).description
+    const foraDaTabela = Object.values(ProblemType)
+      .map((tipo) => tituloDoProblema(tipo, 400))
+      .filter((titulo) => !tabela.includes(`\`${titulo}\``))
+    expect(foraDaTabela).toEqual([])
+
+    const genericos = [400, 401, 403, 404, 409, 500].map((status) =>
+      tituloDoProblema('about:blank', status),
+    )
+    expect(genericos.filter((titulo) => !tabela.includes(`\`${titulo}\``))).toEqual([])
   })
 })

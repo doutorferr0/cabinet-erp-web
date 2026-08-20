@@ -755,6 +755,70 @@ export interface PartnerWriteRequest {
 }
 
 /**
+ * O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.
+ *
+ * Existe porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.
+ *
+ * **URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.
+ *
+ * `title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.
+ *
+ * | `type` | status | `title` | quando |
+ * | --- | --- | --- | --- |
+ * | `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |
+ * | `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |
+ * | `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |
+ * | `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |
+ * | `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |
+ * | `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |
+ * | `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |
+ * | `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |
+ * | `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |
+ * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | papel pedido no vínculo não existe na matriz do servidor |
+ * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
+ * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
+ * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
+ * | `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |
+ * | `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |
+ * | `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |
+ * | `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe "vincular ao existente", duas pessoas não compartilham login |
+ * | `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |
+ * | `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |
+ * | `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |
+ * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
+ * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
+ *
+ * O 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.
+ */
+export type ProblemType = typeof ProblemType[keyof typeof ProblemType];
+
+
+export const ProblemType = {
+  'about:blank': 'about:blank',
+  'urn:cabinet:erro:sem-sessao': 'urn:cabinet:erro:sem-sessao',
+  'urn:cabinet:erro:senha-precisa-trocar': 'urn:cabinet:erro:senha-precisa-trocar',
+  'urn:cabinet:erro:sem-vinculo-com-empresa': 'urn:cabinet:erro:sem-vinculo-com-empresa',
+  'urn:cabinet:erro:papel-insuficiente': 'urn:cabinet:erro:papel-insuficiente',
+  'urn:cabinet:erro:campos-invalidos': 'urn:cabinet:erro:campos-invalidos',
+  'urn:cabinet:erro:ordenacao-invalida': 'urn:cabinet:erro:ordenacao-invalida',
+  'urn:cabinet:erro:paginacao-invalida': 'urn:cabinet:erro:paginacao-invalida',
+  'urn:cabinet:erro:filtro-invalido': 'urn:cabinet:erro:filtro-invalido',
+  'urn:cabinet:erro:papel-invalido': 'urn:cabinet:erro:papel-invalido',
+  'urn:cabinet:erro:hierarquia-em-laco': 'urn:cabinet:erro:hierarquia-em-laco',
+  'urn:cabinet:erro:senha-atual-invalida': 'urn:cabinet:erro:senha-atual-invalida',
+  'urn:cabinet:erro:senha-fraca': 'urn:cabinet:erro:senha-fraca',
+  'urn:cabinet:erro:nao-encontrado': 'urn:cabinet:erro:nao-encontrado',
+  'urn:cabinet:erro:sem-empresa-ativa': 'urn:cabinet:erro:sem-empresa-ativa',
+  'urn:cabinet:erro:documento-ja-cadastrado': 'urn:cabinet:erro:documento-ja-cadastrado',
+  'urn:cabinet:erro:email-ja-cadastrado': 'urn:cabinet:erro:email-ja-cadastrado',
+  'urn:cabinet:erro:codigo-ja-cadastrado': 'urn:cabinet:erro:codigo-ja-cadastrado',
+  'urn:cabinet:erro:vinculo-ja-existe': 'urn:cabinet:erro:vinculo-ja-existe',
+  'urn:cabinet:erro:pedido-ja-convertido': 'urn:cabinet:erro:pedido-ja-convertido',
+  'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
+  'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
+} as const;
+
+/**
  * Um campo que a validação recusou.
  */
 export interface ProblemFieldError {
@@ -766,14 +830,13 @@ export interface ProblemFieldError {
 
 /**
  * O formato ÚNICO de erro do contrato — RFC 9457 Problem Details, servido como `application/problem+json`. Toda resposta 4xx/5xx aponta para cá: sem formato único, cada caminho inventaria o seu e a tela trataria caso a caso. **`title` e `status` são obrigatórios** — `title` é o rótulo estável do TIPO de erro (não muda com a instância) e `status` repete o da resposta, porque o corpo circula fora dela (log, fila, tela). `detail` é a frase daquele caso, e é a única informação acionável que o servidor escolheu dar: a tela mostra o que veio, nunca \"algo deu errado\".\n\nA RFC permite MEMBROS DE EXTENSÃO, e o contrato usa dois: `fields` (validação por campo) e `existingPartnerId` (no 409 de documento repetido, que é o que habilita a oferta de vincular). Extensão nova entra aqui, documentada — não solta na resposta de um caminho só.
+ *
+ * **Quem diz QUAL erro é o `type`**, do vocabulário fechado de `ProblemType` — `status` agrupa e `detail` é frase para gente. Ler o tipo pelo texto foi o que este contrato passou a impedir.
  */
 export interface ProblemDetails {
-  /**
-     * URI que identifica o TIPO do problema. `about:blank` quando o tipo é o próprio status HTTP.
-     * @nullable
-     */
-  type?: string | null;
-  /** Rótulo curto e ESTÁVEL do tipo — não varia de uma ocorrência para outra. É o que a tela mostra como cabeçalho do erro. */
+  /** O DISCRIMINADOR de máquina do erro — ver `ProblemType` para o vocabulário inteiro e o `title` canônico de cada um. Obrigatório: a RFC deixa `about:blank` como padrão do membro ausente, mas erro sem `type` obriga a tela a adivinhar pelo texto de `detail`, e texto muda na primeira revisão de frase. */
+  type: ProblemType;
+  /** Rótulo curto e ESTÁVEL do tipo — não varia de uma ocorrência para outra. É o que a tela mostra como cabeçalho do erro, e por isso vem em PT-BR: a aplicação imprime o `title` como veio, sem camada de tradução. **O texto de cada `type` é o da tabela do `ProblemType`** — título escolhido caso a caso faria o mesmo erro aparecer com dois cabeçalhos. */
   title: string;
   /** O mesmo status da resposta HTTP, repetido no corpo: o problem+json circula fora da resposta (log, fila, tela) e sem ele perde o que aconteceu. */
   status: number;

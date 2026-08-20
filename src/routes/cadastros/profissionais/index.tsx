@@ -4,6 +4,7 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useDesativarParceiro } from '@/data/parceiros-api'
 import { profissional as esquemaProfissional } from '@/features/cadastro/modulos'
 import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
@@ -104,6 +105,7 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
 function ProfissionaisPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { readOnly } = useReadOnlyPorPapel('partners')
 
   function abrir(profissionalId: string, modo?: 'consulta') {
     void navigate({
@@ -134,6 +136,7 @@ function ProfissionaisPage() {
 
   const actions = cadastroActions<PartnerDto>({
     entidade: 'profissional',
+    readOnly,
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrirParceiro(p),
     onConsultar: (p) => abrirParceiro(p, 'consulta'),

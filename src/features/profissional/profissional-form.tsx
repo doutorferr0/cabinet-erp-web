@@ -263,6 +263,7 @@ export function ProfissionalForm({
       onCancelar={() => void navigate({ to: '/cadastros/profissionais' })}
       readOnly={readOnly}
       titulo="Cadastro de Profissional Externo"
+      familia="partners"
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >

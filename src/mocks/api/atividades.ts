@@ -2,6 +2,7 @@ import type { ActivityDto, ActivityWriteRequest } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { crm } from './crm'
+import { verificarEscrita } from './permissao'
 import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { novoId, store } from './store'
 
@@ -226,6 +227,8 @@ export const handlersDeAtividades = [
   http.post('*/api/activities', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('activities')
+    if (semPermissao) return semPermissao
 
     const corpo = (await request.json()) as ActivityWriteRequest
     const erro = corpoInvalido(corpo)
@@ -253,6 +256,8 @@ export const handlersDeAtividades = [
   http.put('*/api/activities/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('activities')
+    if (semPermissao) return semPermissao
 
     const achada = atividades.atividades.find((a) => a.id === String(params.id))
     if (!achada) return naoEncontrado('Atividade não encontrada.')
@@ -277,6 +282,8 @@ export const handlersDeAtividades = [
   http.post('*/api/activities/:id/done', ({ params }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('activities')
+    if (semPermissao) return semPermissao
 
     const achada = atividades.atividades.find((a) => a.id === String(params.id))
     if (!achada) return naoEncontrado('Atividade não encontrada.')

@@ -686,7 +686,9 @@ export function criarStore(): StoreDaApi {
       {
         tenantId: TENANT_FILIAL,
         name: 'Vertz Iluminação — Filial',
-        role: 'member',
+        // `viewer` é o papel válido de só-leitura; `member` não existe no CHECK
+        // do backend. Usar `viewer` aqui exercita a matriz de papéis no mock.
+        role: 'viewer',
         features: [],
       },
     ],

@@ -333,6 +333,7 @@ export function OrdemCompraForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/compras/ordens' })}
       readOnly={readOnly}
+      familia="orders"
     >
       <Tabs defaultValue="principal">
         <TabsList className="flex-wrap">

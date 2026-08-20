@@ -7,6 +7,7 @@ import type {
 } from '@/api/gerado'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
+import { verificarEscrita } from './permissao'
 import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { store } from './store'
 
@@ -302,6 +303,8 @@ export const handlersDeOrcamento = [
   http.post('*/api/quotes', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('quotes')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
 
@@ -311,6 +314,8 @@ export const handlersDeOrcamento = [
   http.put('*/api/quotes/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('quotes')
+    if (semPermissao) return semPermissao
     const indice = estado.linhas.findIndex((o) => o.id === String(params.id))
     if (indice < 0) return naoEncontrado('Orçamento não encontrado.')
     const corpo = (await request.json()) as QuoteWriteRequest
@@ -324,6 +329,8 @@ export const handlersDeOrcamento = [
   http.post('*/api/quotes/:id/cancel', ({ params }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('quotes')
+    if (semPermissao) return semPermissao
     const achado = estado.linhas.find((o) => o.id === String(params.id))
     if (!achado) return naoEncontrado('Orçamento não encontrado.')
     // Cancelar é verbo PRÓPRIO, e não um `PUT` com `status` dentro: mudar

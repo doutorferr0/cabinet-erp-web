@@ -79,6 +79,7 @@ export function FunilForm({
       readOnly={readOnly}
       gravando={gravar.isPending}
       titulo="Cadastro de Funis"
+      familia="crm"
       {...(contexto ? { contexto } : {})}
     >
       {/* `message` e `detail` continuam ambos à vista, agora em papéis

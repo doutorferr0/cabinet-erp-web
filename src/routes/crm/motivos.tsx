@@ -4,6 +4,7 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { motivosDePerda, useAlterarMotivoDePerda } from '@/data/crm-api'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { MotivoDePerdaDialog } from '@/features/crm/motivo-de-perda-dialog'
 import { createFileRoute } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -43,6 +44,7 @@ function MotivosPage() {
   const [aberto, setAberto] = useState(false)
   const [aDesativar, setADesativar] = useState<CrmLostReasonDto | null>(null)
   const desativar = useAlterarMotivoDePerda()
+  const { readOnly } = useReadOnlyPorPapel('crm')
 
   function abrir(motivo: CrmLostReasonDto | null) {
     setEmEdicao(motivo)
@@ -51,6 +53,7 @@ function MotivosPage() {
 
   const actions = cadastroActions<CrmLostReasonDto>({
     entidade: 'motivo de perda',
+    readOnly,
     onIncluir: () => abrir(null),
     onAbrir: (m) => abrir(m),
     // `Consul.` abre o mesmo diálogo: com dois campos, uma versão somente

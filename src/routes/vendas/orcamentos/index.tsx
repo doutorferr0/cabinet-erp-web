@@ -3,6 +3,7 @@ import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarOrcamento } from '@/data/quotes-api'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
@@ -113,6 +114,7 @@ function OrcamentosPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<QuoteDto | null>(null)
   const cancelar = useCancelarOrcamento()
+  const { readOnly } = useReadOnlyPorPapel('quotes')
 
   function abrir(orcamentoId: string, modo?: 'consulta') {
     void navigate({
@@ -124,6 +126,7 @@ function OrcamentosPage() {
 
   const actions = cadastroActions<QuoteDto>({
     entidade: 'orçamento',
+    readOnly,
     onIncluir: () => abrir('novo'),
     onAbrir: (o) => abrir(o.id),
     onConsultar: (o) => abrir(o.id, 'consulta'),

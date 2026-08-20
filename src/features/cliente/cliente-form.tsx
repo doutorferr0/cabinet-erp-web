@@ -327,6 +327,7 @@ export function ClienteForm({
       onCancelar={() => void navigate({ to: '/cadastros/clientes' })}
       readOnly={readOnly}
       titulo="Cadastro de Clientes"
+      familia="partners"
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >

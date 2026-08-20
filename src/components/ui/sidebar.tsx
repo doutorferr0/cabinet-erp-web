@@ -458,7 +458,7 @@ const sidebarMenuButtonVariants = cva(
   //
   // A cor do módulo vem do `data-modulo` que o shell escreve em cada item —
   // sem ele, o par cai no padrão do `:root` e nada quebra.
-  'peer/menu-button group/menu-button lift-flat desabilitado rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo focus-visible:focus-ring disabled:pointer-events-none aria-disabled:pointer-events-none data-active:border-l-foreground data-active:bg-modulo data-active:font-bold [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button group/menu-button lift-flat desabilitado rounded-control flex w-full cursor-pointer items-center gap-2 overflow-hidden border-2 border-transparent border-l-[3px] p-2 text-left text-sm outline-hidden group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:border-l-2 group-data-[collapsible=icon]:p-2! hover:border-border hover:bg-modulo hover:text-foreground focus-visible:focus-ring disabled:pointer-events-none aria-disabled:pointer-events-none data-active:border-l-foreground data-active:bg-modulo data-active:font-bold data-active:text-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       variant: {

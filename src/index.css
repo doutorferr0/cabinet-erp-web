@@ -13,6 +13,10 @@
    famílias vale para pesos também, e cada peso é um woff2 na carga. */
 @import "@fontsource/newsreader/400.css";
 @import "@fontsource/newsreader/700.css";
+/* FUSÃO v5 r3: display CONDENSADO para o nome de documento e número-herói —
+   quinta família, decisão do user (2026-08-19) sobre o teto de quatro: entra
+   com UM peso e emprego único (issue #236). */
+@import "@fontsource/bebas-neue/400.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -222,14 +226,19 @@
   --veil: 0 0% 0% / 0.2;
   --grid-line: hsl(0 0% 95%); /* POLARIS: sem textura de grade — linha = fundo */
   /* Sidebar: o mesmo cinza da bancada; item ativo = Folha com traço preto. */
-  --sidebar: hsl(0 0% 95%); /* POLARIS: sidebar no cinza do fundo */
-  --sidebar-foreground: hsl(0 0% 7%);
-  --sidebar-primary: hsl(0 0% 7%);
+  /* FUSÃO v5 r3 (decisão do user, 2026-08-19): sidebar ESCURA — a âncora de
+     contraste da tela, referência Devora/mockup v5. Supersede o "sidebar no
+     cinza do fundo" do Polaris. Os chips pastel /02 de hover/ativo dos itens
+     PULAM sobre o quase-preto — é o efeito do mockup (item ativo = chip de
+     cor sobre carvão), sem mudar uma linha dos itens. */
+  --sidebar: hsl(60 4% 8%); /* #141412 — carvão quente */
+  --sidebar-foreground: hsl(55 7% 72%);
+  --sidebar-primary: hsl(262 97% 76%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(0 0% 91%); /* hover de item */
-  --sidebar-accent-foreground: hsl(0 0% 7%);
-  --sidebar-border: hsl(0 0% 55%);
-  --sidebar-ring: hsl(213 100% 41%);
+  --sidebar-accent: hsl(60 3% 14%); /* hover de item sem módulo */
+  --sidebar-accent-foreground: hsl(0 0% 100%);
+  --sidebar-border: hsl(60 5% 18%);
+  --sidebar-ring: hsl(262 97% 76%);
 }
 
 /* COR DE MÓDULO — um par por módulo, trocado por ESCOPO e não por classe.
@@ -583,6 +592,7 @@
      formulário, célula, combo, migalha, banda e diálogo, e depender de lembrar
      da classe falha na terceira tela. */
   --font-nome: "Newsreader", ui-serif, Georgia, serif;
+  --font-display-condensada: "Bebas Neue", "Archivo Narrow", ui-sans-serif, sans-serif;
   --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "PT Mono", ui-monospace, monospace;

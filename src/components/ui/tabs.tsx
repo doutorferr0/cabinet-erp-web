@@ -36,9 +36,11 @@ function Tabs({
   )
 }
 
-/** Tira de abas brut: régua inferior 2px Tinta; aba ativa = Tinta sólida. */
+/** FUSÃO v5 r3: a tira de abas vira PILL DE VIDRO (mockup v5) — cartão
+ *  translúcido com desfoque, abas dentro; a ativa segue Tinta sólida com
+ *  sombra de decisão. Supersede a régua inferior de 2px. */
 const tabsListVariants = cva(
-  'group/tabs-list inline-flex w-fit items-end gap-1 border-b-2 border-border text-muted-foreground group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col',
+  'group/tabs-list inline-flex w-fit items-center gap-1 rounded-control border-2 border-border bg-card/70 p-1 backdrop-blur-md text-muted-foreground group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col',
   {
     variants: {
       variant: {

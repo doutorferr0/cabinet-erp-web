@@ -56,6 +56,13 @@ const LINHA: PartnerDto = {
   notes: null,
   facebook: null,
   instagram: null,
+  // Bloco 2 (#255) — mesma leitura: chaves presentes e nulas.
+  billingAddress: null,
+  businessAddress: null,
+  businessName: null,
+  businessRole: null,
+  businessDocument: null,
+  foundedOn: null,
 } as PartnerDto
 
 describe('corpo do PUT de parceiro', () => {

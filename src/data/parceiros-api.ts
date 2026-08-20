@@ -205,6 +205,21 @@ export interface CamposEditaveis {
   notes?: string | null
   facebook?: string | null
   instagram?: string | null
+  /**
+   * Bloco 2 do comparativo (#255): os dois endereços que o cliente tem além do
+   * principal, e o vínculo de trabalho que os acompanha.
+   *
+   * Nenhuma das três telas os edita HOJE — quem os liga é a #254. Entram aqui
+   * porque o `PartnerWriteRequest` passou a tê-los e `PUT` é integral: sem
+   * atravessar `corpoDeEscrita`, o primeiro Gravar de qualquer tela apagaria o
+   * endereço de cobrança que o operador cadastrou por outro caminho.
+   */
+  billingAddress?: PartnerAddress | null
+  businessAddress?: PartnerAddress | null
+  businessName?: string | null
+  businessRole?: string | null
+  businessDocument?: string | null
+  foundedOn?: string | null
 }
 
 /**
@@ -275,6 +290,15 @@ export function corpoDeEscrita(
     'notes',
     'facebook',
     'instagram',
+    // Bloco 2 (#255). Os dois endereços são o caso que mais pede a guarda: o
+    // objeto vai INTEIRO, então um `?? null` aqui apagaria as sete linhas do
+    // endereço de cobrança num Gravar de tela que nem desenha o bloco.
+    'billingAddress',
+    'businessAddress',
+    'businessName',
+    'businessRole',
+    'businessDocument',
+    'foundedOn',
   ] as const) {
     if (editado[campo] === undefined && !(campo in original)) {
       throw new Error(
@@ -346,6 +370,30 @@ export function corpoDeEscrita(
       editado.instagram !== undefined
         ? textoOuNulo(editado.instagram)
         : (original.instagram ?? null),
+    // Bloco 2 (#255). Hoje TODOS caem no ramo "devolve como veio" — nenhuma
+    // tela os edita ainda (#254 é quem os liga), e é exatamente por isso que
+    // eles precisam passar por aqui: o que não atravessa o corpo é apagado.
+    billingAddress:
+      editado.billingAddress !== undefined
+        ? editado.billingAddress
+        : (original.billingAddress ?? null),
+    businessAddress:
+      editado.businessAddress !== undefined
+        ? editado.businessAddress
+        : (original.businessAddress ?? null),
+    businessName:
+      editado.businessName !== undefined
+        ? textoOuNulo(editado.businessName)
+        : (original.businessName ?? null),
+    businessRole:
+      editado.businessRole !== undefined
+        ? textoOuNulo(editado.businessRole)
+        : (original.businessRole ?? null),
+    businessDocument:
+      editado.businessDocument !== undefined
+        ? textoOuNulo(editado.businessDocument)
+        : (original.businessDocument ?? null),
+    foundedOn: editado.foundedOn !== undefined ? editado.foundedOn : (original.foundedOn ?? null),
   }
 }
 
@@ -490,6 +538,12 @@ export function corpoDeInclusao(
     notes: textoOuNulo(editado.notes),
     facebook: textoOuNulo(editado.facebook),
     instagram: textoOuNulo(editado.instagram),
+    billingAddress: editado.billingAddress ?? null,
+    businessAddress: editado.businessAddress ?? null,
+    businessName: textoOuNulo(editado.businessName),
+    businessRole: textoOuNulo(editado.businessRole),
+    businessDocument: textoOuNulo(editado.businessDocument),
+    foundedOn: editado.foundedOn ?? null,
   }
 }
 

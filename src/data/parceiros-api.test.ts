@@ -155,6 +155,14 @@ describe('escrita', () => {
       notes: null,
       facebook: null,
       instagram: null,
+      // Bloco 2 (#255): nenhuma tela os edita ainda, e é por isso que estar no
+      // corpo importa — `PUT` integral apaga a chave que não vier.
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
     })
   })
 
@@ -383,6 +391,14 @@ describe('desativação (o Excluir da listagem)', () => {
       notes: linha.notes ?? null,
       facebook: linha.facebook ?? null,
       instagram: linha.instagram ?? null,
+      // E o bloco 2 (#255): desativar um cliente não pode apagar o endereço de
+      // cobrança dele — quem reativar depois encontraria a ficha esvaziada.
+      billingAddress: linha.billingAddress ?? null,
+      businessAddress: linha.businessAddress ?? null,
+      businessName: linha.businessName ?? null,
+      businessRole: linha.businessRole ?? null,
+      businessDocument: linha.businessDocument ?? null,
+      foundedOn: linha.foundedOn ?? null,
     })
   })
 

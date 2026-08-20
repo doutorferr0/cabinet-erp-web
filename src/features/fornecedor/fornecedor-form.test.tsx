@@ -117,6 +117,15 @@ describe('tela Fornecedor', () => {
       categoryId: null,
       specifierId: null,
       notes: null,
+      // #255: cobrança, comercial e vínculo de trabalho. NENHUMA tela os edita
+      // ainda (é a #254 que os liga) — atravessam o corpo como vieram, que é o
+      // que impede o primeiro Gravar de apagá-los.
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
     })
     // 15s: este caso monta DUAS telas (listagem e formulário completo) e ainda
     // digita — o limite padrão de 5s do vitest não cobre isso nesta máquina.

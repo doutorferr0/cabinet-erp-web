@@ -482,6 +482,12 @@ export const handlers = [
       notes: corpo.notes ?? null,
       facebook: corpo.facebook ?? null,
       instagram: corpo.instagram ?? null,
+      billingAddress: corpo.billingAddress ?? null,
+      businessAddress: corpo.businessAddress ?? null,
+      businessName: corpo.businessName ?? null,
+      businessRole: corpo.businessRole ?? null,
+      businessDocument: corpo.businessDocument ?? null,
+      foundedOn: corpo.foundedOn ?? null,
       vinculos: {
         [store.activeTenantId]: {
           code: corpo.code ?? null,
@@ -533,6 +539,12 @@ export const handlers = [
     parceiro.notes = corpo.notes ?? null
     parceiro.facebook = corpo.facebook ?? null
     parceiro.instagram = corpo.instagram ?? null
+    parceiro.billingAddress = corpo.billingAddress ?? null
+    parceiro.businessAddress = corpo.businessAddress ?? null
+    parceiro.businessName = corpo.businessName ?? null
+    parceiro.businessRole = corpo.businessRole ?? null
+    parceiro.businessDocument = corpo.businessDocument ?? null
+    parceiro.foundedOn = corpo.foundedOn ?? null
     parceiro.vinculos[store.activeTenantId] = {
       code: corpo.code ?? null,
       paymentTerms: corpo.paymentTerms ?? null,

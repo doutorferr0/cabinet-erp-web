@@ -100,7 +100,6 @@ function ProfissionalEditPage() {
         contexto={registro.nomeApresentacao}
         aviso={aviso}
         abaixo={atividades}
-        aoFechar={() => void navigate({ to: '/cadastros/profissionais' })}
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/profissionais/$profissionalId',

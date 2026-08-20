@@ -731,3 +731,24 @@ export function gruposVisiveis(tem: (recurso: RecursoDaEmpresa) => boolean): Nav
     .map((grupo) => ({ ...grupo, items: itensNavegaveis(grupo) }))
     .filter((grupo) => grupo.items.length > 0)
 }
+
+/**
+ * Para onde o `Voltar` universal leva — `undefined` quando a tela NÃO tem
+ * saída, que é o caso de todo destino do menu.
+ *
+ * A espec da fusão v5 manda o `Voltar` estar sempre no canto superior esquerdo
+ * (§"Regras fixas de página"), e "sempre" precisa de um limite: numa tela que a
+ * barra lateral publica, voltar levaria ao lugar onde o operador já está. O
+ * limite é a própria taxonomia — o mesmo `itemDaRota` que a guarda de recurso
+ * usa. Detalhe (`/cadastros/clientes/9a1f`) e inclusão
+ * (`/cadastros/clientes/novo`) estão DEPOIS de um destino, e voltam para ele.
+ *
+ * É a rota-mãe declarada, não o caminho cortado no último `/`: `/compras` é pai
+ * colapsável sem tela, e um corte de string mandaria a ordem de compra para uma
+ * rota que o roteador recusa.
+ */
+export function rotaMaeDe(pathname: string): string | undefined {
+  const item = itemDaRota(pathname)
+  if (!item || pathname === item.url) return undefined
+  return item.url
+}

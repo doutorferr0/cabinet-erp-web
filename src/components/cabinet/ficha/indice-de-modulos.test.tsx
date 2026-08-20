@@ -22,7 +22,6 @@ function montar(aoEditar = vi.fn()) {
       entidade={entidadeCliente}
       registro={registro()}
       titulo="Cadastro de Clientes"
-      aoFechar={vi.fn()}
       aoEditar={aoEditar}
     />,
   )

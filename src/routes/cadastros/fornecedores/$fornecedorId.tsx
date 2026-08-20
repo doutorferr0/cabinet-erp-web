@@ -100,7 +100,6 @@ function FornecedorEditPage() {
         contexto={registro.nomeFantasia}
         aviso={aviso}
         abaixo={atividades}
-        aoFechar={() => void navigate({ to: '/cadastros/fornecedores' })}
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/fornecedores/$fornecedorId',

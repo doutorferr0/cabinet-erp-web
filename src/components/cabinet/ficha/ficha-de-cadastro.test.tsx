@@ -37,7 +37,11 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
     expect(screen.queryByLabelText('Nome completo')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Buscar naturalidade' })).toBeNull()
 
-    expect(screen.getByRole('button', { name: /Fechar/ })).toBeInTheDocument()
+    // UMA saída, e uma só (#235). A ficha era a única tela que trazia a sua
+    // própria (`Fechar`, no cabeçalho); com o `Voltar` da folha, mantê-la daria
+    // dois botões que fazem a mesma coisa a três centímetros um do outro. Esta
+    // contagem é o que reprova quem devolver o `voltar` ao `PageHeader`.
+    expect(screen.getAllByRole('button', { name: /^(Voltar|Fechar)$/ })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /Gravar/ })).toBeNull()
   })
 
@@ -74,10 +78,10 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
     expect(await screen.findByLabelText('Nome completo')).toBeEnabled()
   })
 
-  it('Fechar volta para a listagem', async () => {
+  it('a saída da folha volta para a listagem', async () => {
     const { router, user } = renderRoute('/cadastros/colaboradores/1?modo=consulta')
 
-    await user.click(await screen.findByRole('button', { name: /Fechar/ }))
+    await user.click(await screen.findByRole('button', { name: 'Voltar' }))
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/cadastros/colaboradores')

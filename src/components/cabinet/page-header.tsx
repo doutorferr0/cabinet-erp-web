@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { ArrowLeft, type LucideIcon, MoreHorizontal } from 'lucide-react'
+import { type LucideIcon, MoreHorizontal } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
@@ -42,8 +42,6 @@ export interface PageHeaderProps {
   titulo: string
   /** Contexto que qualifica o título (empresa, banco, nº do documento). */
   contexto?: string
-  /** Saída da tela — volta para a listagem. Só onde há para onde voltar. */
-  voltar?: { label?: string; onClick: () => void }
   /**
    * A ÚNICA ação forte da tela. Uma, e à direita: é o que separa este cabeçalho
    * da barra Softlux, onde `Incluir` tinha o mesmo peso de `Imprimir`.
@@ -88,11 +86,20 @@ export interface PageHeaderProps {
  * A banda preta da `BandaDeIdentidade` não vem junto: com a fundação Polaris
  * (#195) o título é hierarquia tipográfica, não caixa pintada. Ela segue em pé
  * onde ainda não houve troca — formulário, documento, boletim.
+ *
+ * ## A SAÍDA NÃO MORA AQUI (issue #235)
+ *
+ * Havia a prop `voltar`, opt-in, e de três consumidores deste cabeçalho **um**
+ * a passava: as outras telas ficavam sem saída visível. Desde a #235 quem monta
+ * a saída é a folha (`PageFrame` → `BotaoVoltar`), no canto superior esquerdo
+ * de toda tela — a regra fixa da espec da fusão v5.
+ *
+ * Devolver a prop devolve o buraco: volta a existir tela com saída e tela sem,
+ * e a que tiver passa a mostrar duas.
  */
 export function PageHeader({
   titulo,
   contexto,
-  voltar,
   primaria,
   secundarias = [],
   avisoDasSecundarias,
@@ -101,13 +108,6 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2', className)}>
-      {voltar ? (
-        <Button type="button" variant="ghost" size="sm" onClick={voltar.onClick}>
-          <ArrowLeft aria-hidden="true" />
-          {voltar.label ?? 'Voltar'}
-        </Button>
-      ) : null}
-
       {/* Headline: um por tela, na voz de QUEM (o seletor `h1` do `index.css`
           dá a serifada). `min-w-0` + `truncate` porque título de documento
           carrega nome de cliente, e nome comprido não pode empurrar a ação

@@ -100,7 +100,6 @@ function ClienteEditPage() {
         contexto={registro.nome}
         aviso={aviso}
         abaixo={atividades}
-        aoFechar={() => void navigate({ to: '/cadastros/clientes' })}
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/clientes/$clienteId',

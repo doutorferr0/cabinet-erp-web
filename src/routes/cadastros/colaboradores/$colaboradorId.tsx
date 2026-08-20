@@ -64,7 +64,6 @@ function ColaboradorEditPage() {
         registro={query.data}
         titulo="Cadastro de Colaboradores"
         contexto={query.data.nome}
-        aoFechar={() => void navigate({ to: '/cadastros/colaboradores' })}
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/colaboradores/$colaboradorId',

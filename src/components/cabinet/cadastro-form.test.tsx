@@ -98,7 +98,9 @@ describe('CadastroForm em modo consulta', () => {
       expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
     })
     expect(router.state.location.search).toEqual({ modo: 'consulta' })
-    expect(await screen.findByRole('button', { name: /Fechar/ })).toBeInTheDocument()
+    // A saída da tela é o `Voltar` da folha (#235). Era o `Fechar` do cabeçalho
+    // da ficha, que só esta tela tinha.
+    expect(await screen.findByRole('button', { name: 'Voltar' })).toBeInTheDocument()
   })
 
   it('Alterar da barra de seleção NÃO entra em consulta', async () => {

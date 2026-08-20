@@ -107,14 +107,21 @@ describe('PageHeader', () => {
     ).toHaveLength(1)
   })
 
-  it('a saída existe só onde há para onde voltar', async () => {
-    const voltar = vi.fn()
-    const user = userEvent.setup()
-    const { rerender } = render(<PageHeader titulo="Cadastro de Clientes" />)
-    expect(screen.queryByRole('button', { name: /Fechar|Voltar/ })).not.toBeInTheDocument()
+  /**
+   * GUARDA INVERTIDA (#235): o cabeçalho NÃO tem saída.
+   *
+   * Ela existia aqui como prop `voltar`, opt-in, e um único consumidor a
+   * passava — as demais telas ficavam sem saída. A saída passou a ser da folha
+   * (`PageFrame` → `BotaoVoltar`), no mesmo canto em toda tela.
+   *
+   * Este teste fixa o DESENHO — cabeçalho sem saída. Quem reprova a regressão
+   * de fato é a contagem em `ficha-de-cadastro.test.tsx` (`toHaveLength(1)`):
+   * devolvida a prop e passada pela ficha, ela mede dois botões de saída e
+   * falha. Verificado devolvendo o `voltar` e rodando as duas.
+   */
+  it('não tem saída própria — o `Voltar` é da folha, não do cabeçalho', () => {
+    render(<PageHeader titulo="Cliente 1042" primaria={{ id: 'alterar', label: 'Alterar' }} />)
 
-    rerender(<PageHeader titulo="Cliente 1042" voltar={{ label: 'Fechar', onClick: voltar }} />)
-    await user.click(screen.getByRole('button', { name: 'Fechar' }))
-    expect(voltar).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: /Fechar|Voltar/ })).not.toBeInTheDocument()
   })
 })

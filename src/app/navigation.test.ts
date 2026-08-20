@@ -1,5 +1,12 @@
 import { moduloDaRota } from '@/app/modulo'
-import { gruposVisiveis, itemDaRota, navGroups, navSecoes, secoesVisiveis } from '@/app/navigation'
+import {
+  gruposVisiveis,
+  itemDaRota,
+  navGroups,
+  navSecoes,
+  rotaMaeDe,
+  secoesVisiveis,
+} from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import { describe, expect, it } from 'vitest'
 
@@ -264,5 +271,47 @@ describe('item externo', () => {
     for (const item of navGroups.flatMap((grupo) => grupo.items)) {
       if (item.url.endsWith('.html')) expect(item.externo).toBe(true)
     }
+  })
+})
+
+/**
+ * A REGRA DO `Voltar` UNIVERSAL (issue #235, espec fusão v5 §"Regras fixas de
+ * página": *"Voltar/cancelar SEMPRE no canto superior esquerdo"*).
+ *
+ * O botão é do FRAME, não da tela — mas ele não pode aparecer em toda tela: na
+ * listagem de Clientes não há para onde voltar, e um botão que leva ao lugar
+ * onde já se está é pior que botão nenhum. Quem separa os dois casos é esta
+ * função, e a separação é a mesma que a barra lateral já faz: **destino do
+ * menu não volta; o que está DEPOIS de um destino, volta para ele.**
+ *
+ * Não é heurística de string (`pathname.split('/')`): o pai de
+ * `/cadastros/clientes/abc` é a tela que o menu publica, e é ela que a
+ * taxonomia sabe. Cortar o último segmento acertaria aqui e erraria em toda
+ * rota de três níveis que o menu não publica no meio.
+ */
+describe('rotaMaeDe — para onde o `Voltar` universal leva', () => {
+  it('tela do menu NÃO volta: ela é o destino, não o desvio', () => {
+    expect(rotaMaeDe('/cadastros/clientes')).toBeUndefined()
+    expect(rotaMaeDe('/')).toBeUndefined()
+  })
+
+  it('detalhe volta para a listagem que o publica', () => {
+    expect(rotaMaeDe('/cadastros/clientes/9a1f')).toBe('/cadastros/clientes')
+  })
+
+  it('inclusão volta para a listagem — o formulário em branco também tem saída', () => {
+    expect(rotaMaeDe('/cadastros/clientes/novo')).toBe('/cadastros/clientes')
+  })
+
+  /**
+   * O caso que o corte de string erra: `/compras` é PAI COLAPSÁVEL, não tela.
+   * A mãe de uma ordem é `/compras/ordens`, que é o que o menu publica.
+   */
+  it('sub-rota de filha volta para a filha, não para o pai colapsável', () => {
+    expect(rotaMaeDe('/compras/ordens/7')).toBe('/compras/ordens')
+  })
+
+  it('caminho fora do menu não inventa mãe — quem responde por ele é o 404', () => {
+    expect(rotaMaeDe('/nao-existe/aqui')).toBeUndefined()
   })
 })

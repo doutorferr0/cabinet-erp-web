@@ -67,8 +67,6 @@ export interface FichaDeCadastroProps {
   aviso?: ReactNode
   /** O que continua abaixo da ficha — o painel de atividades das três telas de parceiro. */
   abaixo?: ReactNode
-  /** Volta para a listagem. */
-  aoFechar: () => void
   /**
    * Leva ao modo edição da MESMA rota (sem `?modo=consulta`). Com módulo, veio
    * do lápis (ou do `+ Preencher`) de uma seção e o bloco dele nasce aberto;
@@ -89,22 +87,24 @@ export function FichaDeCadastro({
   contexto,
   aviso,
   abaixo,
-  aoFechar,
   aoEditar,
   rotulos,
 }: FichaDeCadastroProps) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4" data-slot="ficha-de-cadastro">
-      {/* Cabeçalho de página (Polaris-2, #197): sair à esquerda, `Alterar` como
-          a única peça forte à direita. Era a tira colada no rodapé — e ela
-          contava a mesma história duas vezes, porque o lápis de cada módulo já
-          leva ao mesmo lugar. No topo, a ação da tela fica onde a ação da tela
-          fica em toda a seção, em vez de depender de o operador chegar ao fim
-          de uma ficha de quarenta linhas para descobrir que existe. */}
+      {/* Cabeçalho de página (Polaris-2, #197): `Alterar` como a única peça
+          forte à direita. Era a tira colada no rodapé — e ela contava a mesma
+          história duas vezes, porque o lápis de cada módulo já leva ao mesmo
+          lugar. No topo, a ação da tela fica onde a ação da tela fica em toda a
+          seção, em vez de depender de o operador chegar ao fim de uma ficha de
+          quarenta linhas para descobrir que existe.
+
+          A SAÍDA saiu daqui na #235: era o `Fechar` desta ficha, e ele estava
+          num canto que só esta tela tinha. Agora é o `Voltar` da folha, no
+          mesmo lugar em todas — inclusive nas que não tinham nenhum. */}
       <PageHeader
         titulo={titulo}
         {...(contexto ? { contexto } : {})}
-        voltar={{ label: 'Fechar', onClick: aoFechar }}
         primaria={{ id: 'alterar', label: 'Alterar', icon: Pencil, onClick: () => aoEditar() }}
       />
       {aviso}

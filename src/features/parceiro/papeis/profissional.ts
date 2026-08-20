@@ -42,6 +42,12 @@ function dtoParaForm(dto: PartnerDto): Profissional {
       fax: dto.fax ?? '',
     },
     endereco: enderecoDoContrato(dto.address),
+    // Fase 1 (#250): as redes sociais, que a tela §3 desenha e não gravava.
+    // IE, categoria, especificador e observação NÃO são campos desta tela.
+    redesSociais: {
+      facebook: dto.facebook ?? '',
+      instagram: dto.instagram ?? '',
+    },
   }
 }
 
@@ -61,6 +67,8 @@ function contatoEEndereco(values: Profissional) {
     homePhone: textoOuNulo(values.telefones.foneResidencial),
     fax: textoOuNulo(values.telefones.fax),
     address: enderecoParaContrato(values.endereco),
+    facebook: textoOuNulo(values.redesSociais.facebook),
+    instagram: textoOuNulo(values.redesSociais.instagram),
   }
 }
 
@@ -87,7 +95,7 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
   rota: '/cadastros/profissionais',
   queryKeyListagem: ['profissionais'],
   camposDeEdicao:
-    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários, Telefones, Endereço e Ativo',
+    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários, Telefones, Endereço, Redes sociais e Ativo',
   vazio: profissionalVazio,
   dtoParaForm,
   paraEscrita: (values) => ({

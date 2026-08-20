@@ -76,6 +76,28 @@ export interface LoginRequest {
   password: string;
 }
 
+/**
+ * Proposto. Corpo do `+...`. `kind` viaja aqui e não no caminho porque a tabela é UMA, discriminada por ele (ADR-011) — e porque o mesmo diálogo de cadastro rápido serve os 22 kinds, parametrizado. O VOCABULÁRIO de kinds não é enumerado no contrato de propósito: ele é dado da instalação, não forma do documento, e enumerá-lo faria cadastrar uma lista nova virar PR de contrato.
+ */
+export interface CatalogLookupCreateRequest {
+  /** A lista em que o item nasce, em MAIÚSCULA_COM_UNDERSCORE (`CATEGORIA_CLIENTE`). Kind desconhecido é 400: aceitar qualquer string criaria lista fantasma que combo nenhum lê. */
+  kind: string;
+  /** O que o operador lê no combo. Único entre os ATIVOS do mesmo kind — repetido é 409. */
+  name: string;
+  /** Nasce `true` na prática (o operador está cadastrando para usar agora), mas viaja explícito: o `+...` de um diálogo de manutenção pode cadastrar já desativado, e um padrão implícito no servidor esconderia isso da tela. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Renomear e desativar — as duas únicas edições que um item de apoio aceita. **Sem `kind`**: ver a descrição da operação. `PUT` substitui o registro inteiro, como no resto do contrato.
+ */
+export interface CatalogLookupUpdateRequest {
+  /** Nome novo. Único entre os ATIVOS do kind — repetido é 409. */
+  name: string;
+  /** `false` é a desativação LÓGICA do §9 padrão 8: o item some do combo e continua legível na ficha de quem já apontava para ele. Não existe DELETE aqui, e é por isso. */
+  active: boolean;
+}
+
 export interface PagedResultOfCatalogLookupDto {
   rows: CatalogLookupDto[];
   total: number;
@@ -205,6 +227,51 @@ export interface PartnerDto {
   fax?: string | null;
   /** Proposto. Endereço do parceiro; `null` quando não há nenhum campo preenchido. Fora da whitelist de `sortBy`/`filters` de propósito: publicar o dado não é publicar a consulta — filtrar por cidade pede coluna indexada no servidor, e isso é decisão própria. */
   address?: null | PartnerAddress;
+  /**
+     * Proposto. Inscrição Estadual (`Cli_IE_rg` do Cliente, `For_IE` do Fornecedor no legado). **Não se confunde com `registration`**, que é o conselho profissional (CREA/CAU/CFT) de quem é Profissional Externo: um é do fisco e vale para a empresa, o outro é da pessoa e vale para o ofício. Estavam sendo lidos como o mesmo campo, e não são.
+     * @nullable
+     */
+  stateRegistration?: string | null;
+  /**
+     * Proposto. Inscrição Estadual de Produtor Rural (`Cli_IEProdRural`). Campo próprio e não uma segunda IE: o produtor rural pessoa física tem inscrição de produtor SEM ter IE de empresa, e guardar os dois no mesmo lugar apagaria um deles na primeira gravação.
+     * @nullable
+     */
+  ruralProducerRegistration?: string | null;
+  /**
+     * Proposto. Categoria do cliente (ARQUITETO, CONSUMIDOR FINAL, REVENDA…), item da lista de apoio `CATEGORIA_CLIENTE`. É o que decide tabela de preço e desconto na conversa comercial, e hoje a tela oferece o combo sem ter onde gravar a escolha.
+     * @nullable
+     */
+  categoryId?: string | null;
+  /**
+     * Proposto. Nome da categoria, para a tela mostrar sem uma segunda consulta. Mesmo par `id`+`name` de `productTypeId`/`productTypeName`: o id é para escrever, o nome é o que a tela lê. Acompanha `categoryId` — os dois são `null` juntos.
+     * @nullable
+     */
+  categoryName?: string | null;
+  /**
+     * Proposto. O ESPECIFICADOR — o profissional que indicou este cliente (`Ind_codigo` no legado), item da lista `PROFISSIONAL`. **NÃO é `parentId`, e os dois coexistem no mesmo cadastro:** `parentId` liga um profissional ao ESCRITÓRIO de que ele faz parte; `specifierId` liga um CLIENTE a quem o trouxe. Colapsar os dois faria a comissão de indicação ser paga a um escritório que nunca especificou nada.
+     * @nullable
+     */
+  specifierId?: string | null;
+  /**
+     * Proposto. Nome do especificador, pela mesma razão de `categoryName`. Acompanha `specifierId`.
+     * @nullable
+     */
+  specifierName?: string | null;
+  /**
+     * Proposto. Observação interna (`Cli_OBS`/`for_obs`), texto livre e longo. Só a equipe lê — não sai em documento —, e é por isso que ela não vira coluna de listagem: texto livre numa grade de 25 linhas empurra as colunas úteis para fora da tela.
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * Proposto. Perfil no Facebook (`Cli_Facebook`). Guardado como o operador digitou: URL completa e `@usuario` convivem no legado, e normalizar aqui inventaria endereço que ninguém conferiu.
+     * @nullable
+     */
+  facebook?: string | null;
+  /**
+     * Proposto. Perfil no Instagram (`Cli_Instagram`). Mesma regra do Facebook.
+     * @nullable
+     */
+  instagram?: string | null;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -471,6 +538,41 @@ export interface PartnerWriteRequest {
   fax?: string | null;
   /** Proposto. Endereço. Vale a regra do `PUT` INTEGRAL, e aqui ela morde mais que nos outros campos: mandar `null` APAGA o endereço inteiro, e omitir na gravação feita por uma tela que não desenha o bloco apagaria o que outra tela gravou. Quem não edita endereço devolve o objeto como veio. */
   address?: null | PartnerAddress;
+  /**
+     * Proposto. Inscrição Estadual. `PUT` substitui o registro inteiro: omitir APAGA.
+     * @nullable
+     */
+  stateRegistration?: string | null;
+  /**
+     * Proposto. IE de Produtor Rural. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  ruralProducerRegistration?: string | null;
+  /**
+     * Proposto. Categoria do cliente. **Só o ID viaja na escrita** — `categoryName` é derivado, e aceitá-lo de volta abriria a porta para o nome divergir do id, exatamente como o contrato já decidiu em `parentName` e em `productTypeId`.
+     * @nullable
+     */
+  categoryId?: string | null;
+  /**
+     * Proposto. Especificador (o profissional que indicou). Só o ID, pela mesma razão de `categoryId`. `null` DESVINCULA — vincular e desvincular são o mesmo ato com valores diferentes.
+     * @nullable
+     */
+  specifierId?: string | null;
+  /**
+     * Proposto. Observação interna. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * Proposto. Facebook. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  facebook?: string | null;
+  /**
+     * Proposto. Instagram. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  instagram?: string | null;
 }
 
 /**

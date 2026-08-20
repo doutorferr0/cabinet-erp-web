@@ -145,6 +145,16 @@ describe('escrita', () => {
       homePhone: null,
       fax: null,
       address: null,
+      // Fase 1 (#250): a linha do helper é o cadastro sem nenhum deles, e o
+      // que este `toEqual` garante é que as CHAVES estão no corpo — com `PUT`
+      // integral, chave ausente é chave apagada.
+      stateRegistration: null,
+      ruralProducerRegistration: null,
+      categoryId: null,
+      specifierId: null,
+      notes: null,
+      facebook: null,
+      instagram: null,
     })
   })
 
@@ -364,6 +374,15 @@ describe('desativação (o Excluir da listagem)', () => {
       homePhone: linha.homePhone ?? null,
       fax: linha.fax ?? null,
       address: linha.address ?? null,
+      // E os sete da fase 1 (#250), pela mesma razão: desativar um cliente não
+      // pode levar junto a categoria, quem o indicou e a observação da equipe.
+      stateRegistration: linha.stateRegistration ?? null,
+      ruralProducerRegistration: linha.ruralProducerRegistration ?? null,
+      categoryId: linha.categoryId ?? null,
+      specifierId: linha.specifierId ?? null,
+      notes: linha.notes ?? null,
+      facebook: linha.facebook ?? null,
+      instagram: linha.instagram ?? null,
     })
   })
 

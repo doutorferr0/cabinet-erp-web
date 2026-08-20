@@ -24,7 +24,20 @@ const KINDS = {
   nacionalidade: { label: 'Nacionalidade', backend: 'NACIONALIDADE' },
   cargo: { label: 'Cargo', backend: 'CARGO' },
   vinculo: { label: 'Vínculo', backend: 'VINCULO' },
-  categoria: { label: 'Categoria', backend: 'CATEGORIA' },
+  // Era `CATEGORIA`, genérica. O legado tem TRÊS listas de categoria
+  // (`categoriacliente`, `categoriaprofissionaisexterno` e a de produto), e a
+  // que o combo do Cliente lia era a do cliente — o nome curto escondia isso.
+  // Renomeada junto com o campo `categoryId` do contrato (#250), que aponta
+  // para `CATEGORIA_CLIENTE`: manter as duas conviveria com duas listas que
+  // significam a mesma coisa, que é o par duplicado que o 409 existe para
+  // impedir.
+  categoriaCliente: { label: 'Categoria do Cliente', backend: 'CATEGORIA_CLIENTE' },
+  // Kinds do comparativo Softlux (#250) — vocabulário que a fase 1 vai
+  // consumir. `ORGAO_REGISTRO` é o conselho que EMITE o registro profissional
+  // (CREA/CAU/CFT), e não o órgão expedidor do RG, que é outro campo e mora no
+  // bloco de Documentos.
+  orgaoRegistro: { label: 'Órgão de Registro', backend: 'ORGAO_REGISTRO' },
+  categoriaProfissional: { label: 'Categoria do Profissional', backend: 'CATEGORIA_PROFISSIONAL' },
   profissional: { label: 'Profissional', backend: 'PROFISSIONAL' },
   tipoProduto: { label: 'Tipo de Produto', backend: 'TIPO_PRODUTO' },
   tipoPeca: { label: 'Tipo da Peça', backend: 'TIPO_PECA' },

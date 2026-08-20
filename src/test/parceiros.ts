@@ -61,6 +61,20 @@ export function parceiro(over: Record<string, unknown> = {}) {
       city: string | null
       state: string | null
     } | null,
+    // Fase 1 (#250). Nascem NULOS e a chave EXISTE: é a distinção que a guarda
+    // de `corpoDeEscrita` lê — ausente é "a listagem não mandou", `null` é "não
+    // tem". O helper representa a linha COMPLETA do contrato, não a que o
+    // backend serve hoje; quem quiser testar a linha incompleta tira a chave à
+    // mão, e é assim que o caso da recusa se escreve.
+    stateRegistration: null as string | null,
+    ruralProducerRegistration: null as string | null,
+    categoryId: null as string | null,
+    categoryName: null as string | null,
+    specifierId: null as string | null,
+    specifierName: null as string | null,
+    notes: null as string | null,
+    facebook: null as string | null,
+    instagram: null as string | null,
     ...over,
   }
 }

@@ -31,14 +31,25 @@ function dtoParaForm(dto: PartnerDto): Cliente {
     foneResidencial: dto.homePhone ?? '',
     fax: dto.fax ?? '',
     endereco: enderecoDoContrato(dto.address),
+    // Fase 1 (#250): quatro campos que a tela já desenhava sobre o vazio.
+    // `profissional` é o ESPECIFICADOR — o combo `Profissional que indicou`,
+    // que no contrato é `specifierId` e não tem nada a ver com `parentId`.
+    inscEstProdutorRural: dto.ruralProducerRegistration ?? '',
+    categoria: dto.categoryId ?? null,
+    profissional: dto.specifierId ?? null,
+    observacao: dto.notes ?? '',
+    redesSociais: {
+      facebook: dto.facebook ?? '',
+      instagram: dto.instagram ?? '',
+    },
   }
 }
 
 /**
- * Formulário → campos editáveis. Os cinco de contato e endereço viajam SEMPRE
- * a partir daqui: a tela de Cliente desenha os dois blocos inteiros, então
- * omitir qualquer um seria devolver como veio um campo que o operador acabou
- * de editar.
+ * Formulário → campos editáveis. Contato, endereço e os campos da fase 1
+ * viajam SEMPRE a partir daqui: a tela de Cliente desenha os blocos inteiros,
+ * então omitir qualquer um seria devolver como veio um campo que o operador
+ * acabou de editar.
  */
 function contatoEEndereco(values: Cliente) {
   return {
@@ -47,6 +58,17 @@ function contatoEEndereco(values: Cliente) {
     homePhone: textoOuNulo(values.foneResidencial),
     fax: textoOuNulo(values.fax),
     address: enderecoParaContrato(values.endereco),
+    // Fase 1 (#250). Os dois de VÍNCULO não passam por `textoOuNulo`: o combo
+    // já entrega `null` quando ninguém escolheu, e id não é texto a aparar.
+    ruralProducerRegistration: textoOuNulo(values.inscEstProdutorRural),
+    categoryId: values.categoria,
+    specifierId: values.profissional,
+    notes: textoOuNulo(values.observacao),
+    facebook: textoOuNulo(values.redesSociais.facebook),
+    instagram: textoOuNulo(values.redesSociais.instagram),
+    // `stateRegistration` NÃO entra: a tela de Cliente não tem campo de IE
+    // (só a de Fornecedor tem), e mandar `null` daqui apagaria a IE que o
+    // cadastro tenha por outro caminho. Volta como veio — ver `corpoDeEscrita`.
   }
 }
 
@@ -54,7 +76,8 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
   role: 'customer',
   rota: '/cadastros/clientes',
   queryKeyListagem: ['clientes'],
-  camposDeEdicao: 'Nome, CPF/CNPJ, E-mail, Telefones, Endereço e Ativo',
+  camposDeEdicao:
+    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
   vazio: clienteVazio,
   dtoParaForm,
   paraEscrita: (values, linha) => ({

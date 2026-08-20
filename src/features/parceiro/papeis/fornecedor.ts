@@ -29,6 +29,14 @@ function dtoParaForm(dto: PartnerDto): Fornecedor {
     fone1: dto.businessPhone ?? '',
     fax: dto.fax ?? '',
     endereco: enderecoDoContrato(dto.address),
+    // Fase 1 (#250). A IE do Fornecedor (`For_IE` no legado) é a Inscrição
+    // Estadual da empresa — nada a ver com `registration`, que é o conselho
+    // profissional de pessoa.
+    inscEst: dto.stateRegistration ?? '',
+    redesSociais: {
+      facebook: dto.facebook ?? '',
+      instagram: dto.instagram ?? '',
+    },
   }
 }
 
@@ -51,6 +59,13 @@ function contatoEEndereco(values: Fornecedor) {
     businessPhone: textoOuNulo(values.fone1),
     fax: textoOuNulo(values.fax),
     address: enderecoParaContrato(values.endereco),
+    // Fase 1 (#250). Só o que ESTA tela desenha: IE e redes. Categoria,
+    // especificador, IE de produtor rural e observação são campos da tela de
+    // Cliente — omitidos aqui, voltam como vieram, e é o que impede o Gravar do
+    // Fornecedor de apagar o que a outra tela gravou no mesmo cadastro.
+    stateRegistration: textoOuNulo(values.inscEst),
+    facebook: textoOuNulo(values.redesSociais.facebook),
+    instagram: textoOuNulo(values.redesSociais.instagram),
   }
 }
 
@@ -58,7 +73,8 @@ export const papelFornecedor: PapelDeCadastro<Fornecedor> = {
   role: 'supplier',
   rota: '/cadastros/fornecedores',
   queryKeyListagem: ['fornecedores'],
-  camposDeEdicao: 'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail, Fone 1, FAX, Endereço e Ativo',
+  camposDeEdicao:
+    'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail, Fone 1, FAX, Endereço, Inscrição Estadual, Redes sociais e Ativo',
   vazio: fornecedorVazio,
   dtoParaForm,
   paraEscrita: (values) => ({

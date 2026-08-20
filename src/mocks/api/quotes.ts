@@ -7,6 +7,7 @@ import type {
 } from '@/api/gerado'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
+import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { store } from './store'
 
 /**
@@ -39,19 +40,6 @@ import { store } from './store'
  * - **`PUT` substitui o documento inteiro**, itens e ambientes junto.
  * - **`status` não muda por `PUT`** — só por `POST …/cancel`.
  */
-
-const PROBLEMA = 'application/problem+json'
-
-/** Cópia local dos utilitários de `handlers.ts` — ver a nota em `crm.ts`. */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
-
-const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
-const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 
 /** Whitelist de `sortBy` — a MESMA da descrição do contrato. */
 const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'projectName']
@@ -260,7 +248,7 @@ export function detalheDoOrcamento(o: Orcamento): QuoteDetailDto {
 
 export const handlersDeOrcamento = [
   http.get('*/api/quotes', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
 
     const url = new URL(request.url)
@@ -271,10 +259,15 @@ export const handlersDeOrcamento = [
     const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
 
     if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+      return problemaJson(
+        400,
+        'Paginação inválida: page é 1-based e pageSize vai até 100.',
+        {},
+        TIPO.paginacaoInvalida,
+      )
     }
     if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`)
+      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
     }
 
     let linhas = estado.linhas.map(resumoDto)
@@ -299,16 +292,16 @@ export const handlersDeOrcamento = [
   }),
 
   http.get('*/api/quotes/:id', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = estado.linhas.find((o) => o.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Orçamento não encontrado.')
+    if (!achado) return naoEncontrado('Orçamento não encontrado.')
     return HttpResponse.json(detalheDto(achado))
   }),
 
   http.post('*/api/quotes', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
 
@@ -316,10 +309,10 @@ export const handlersDeOrcamento = [
   }),
 
   http.put('*/api/quotes/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const indice = estado.linhas.findIndex((o) => o.id === String(params.id))
-    if (indice < 0) return problemaJson(404, 'Orçamento não encontrado.')
+    if (indice < 0) return naoEncontrado('Orçamento não encontrado.')
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
 
@@ -329,10 +322,10 @@ export const handlersDeOrcamento = [
   }),
 
   http.post('*/api/quotes/:id/cancel', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = estado.linhas.find((o) => o.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Orçamento não encontrado.')
+    if (!achado) return naoEncontrado('Orçamento não encontrado.')
     // Cancelar é verbo PRÓPRIO, e não um `PUT` com `status` dentro: mudar
     // situação por substituição do documento deixaria o cliente escolher o
     // estado de um fluxo que é do servidor.

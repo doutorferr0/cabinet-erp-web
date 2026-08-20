@@ -1,5 +1,13 @@
 import type { PartnerContactDto, PartnerContactWriteRequest } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
+import {
+  TIPO,
+  camposInvalidos,
+  naoEncontrado,
+  problemaJson,
+  semEmpresaAtiva,
+  semSessao,
+} from './problema'
 import { novoId, store } from './store'
 
 /**
@@ -28,18 +36,6 @@ import { novoId, store } from './store'
  * produto, e a razão está escrita na descrição de `PartnerContactDto`.
  */
 
-const PROBLEMA = 'application/problem+json'
-
-/** Cópia local — importar de `handlers.ts` criaria ciclo. Ver `atividades.ts`. */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
-
-const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
-const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 const ORDENAVEIS = ['name', 'role', 'active']
 
 /** O contato COMO O STORE o guarda: o DTO mais de quem ele é. */
@@ -133,19 +129,24 @@ function parceiroAoAlcance(partnerId: string): boolean {
 
 export const handlersDeContatos = [
   http.get('*/api/partners/:partnerId/contacts', ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const partnerId = String(params.partnerId)
-    if (!parceiroAoAlcance(partnerId)) return problemaJson(404, 'Parceiro não encontrado.')
+    if (!parceiroAoAlcance(partnerId)) return naoEncontrado('Parceiro não encontrado.')
 
     const url = new URL(request.url)
     const sortBy = url.searchParams.get('sortBy')
     if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`)
+      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
     }
     const page = Number(url.searchParams.get('page') ?? '1')
     const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
     if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+      return problemaJson(
+        400,
+        'Paginação inválida: page é 1-based e pageSize vai até 100.',
+        {},
+        TIPO.paginacaoInvalida,
+      )
     }
 
     let linhas = contatos.contatos.filter((c) => c.partnerId === partnerId).map(contactDto)
@@ -176,14 +177,14 @@ export const handlersDeContatos = [
   }),
 
   http.post('*/api/partners/:partnerId/contacts', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const partnerId = String(params.partnerId)
-    if (!parceiroAoAlcance(partnerId)) return problemaJson(404, 'Parceiro não encontrado.')
+    if (!parceiroAoAlcance(partnerId)) return naoEncontrado('Parceiro não encontrado.')
 
     const corpo = (await request.json()) as PartnerContactWriteRequest
     if (!corpo.name) {
-      return problemaJson(400, 'Confira os campos destacados.')
+      return camposInvalidos([{ path: 'name', message: 'Informe o nome do contato.' }])
     }
 
     const contato: ContatoDoParceiro = {
@@ -202,10 +203,10 @@ export const handlersDeContatos = [
   }),
 
   http.put('*/api/partners/:partnerId/contacts/:contactId', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const partnerId = String(params.partnerId)
-    if (!parceiroAoAlcance(partnerId)) return problemaJson(404, 'Parceiro não encontrado.')
+    if (!parceiroAoAlcance(partnerId)) return naoEncontrado('Parceiro não encontrado.')
 
     // O contato precisa ser DESTE parceiro: casar só pelo id do contato deixaria
     // `PUT /api/partners/A/contacts/{de-B}` gravar no cadastro do vizinho, e o
@@ -213,11 +214,11 @@ export const handlersDeContatos = [
     const contato = contatos.contatos.find(
       (c) => c.id === params.contactId && c.partnerId === partnerId,
     )
-    if (!contato) return problemaJson(404, 'Contato não encontrado.')
+    if (!contato) return naoEncontrado('Contato não encontrado.')
 
     const corpo = (await request.json()) as PartnerContactWriteRequest
     if (!corpo.name) {
-      return problemaJson(400, 'Confira os campos destacados.')
+      return camposInvalidos([{ path: 'name', message: 'Informe o nome do contato.' }])
     }
 
     // `PUT` INTEGRAL, como no resto do contrato.

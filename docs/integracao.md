@@ -135,6 +135,39 @@ parte acionável: a tela mostra o que veio, nunca "algo deu errado".
 o cliente o mandou — nome de coluna do banco não serve, porque a tela não conhece
 o banco.
 
+### O vocabulário de `type` — o discriminador de MÁQUINA (2026-08-20)
+
+`type` era `string` livre com uma frase de descrição, e virou **enum fechado**
+(`ProblemType`) com **22 URNs**, obrigatório no corpo. O motivo é medido, não
+estético: o `cabinet-erp-api` já emitia essas 22 e **nenhuma existia no
+contrato** — cada lado sabia do vocabulário por leitura do código do outro, e a
+tela que quisesse tratar um tipo teria de escrever a URN à mão, que é o que o
+codegen existe para impedir.
+
+O que o `type` resolve e o `status` não: **409 é o conflito de sete coisas**
+diferentes. Documento já cadastrado oferece vincular, pedido já convertido
+oferece abrir o pedido, sem empresa ativa pede para escolher empresa — três
+saídas distintas atrás do mesmo código. Distinguir por `detail` quebra na
+primeira revisão de frase.
+
+**`title` passou a ser derivado do `type`**, com um texto canônico por URN escrito
+na tabela do `ProblemType` — é o rótulo do TIPO (RFC 9457 §3.1.2), então título
+por status devolvia a informação que o status já dava (`Conflict` em cima de sete
+conflitos). Em PT-BR porque a tela imprime o `title` como veio, sem tradução.
+
+O mock passou a mandar as mesmas URNs e os mesmos títulos
+(`src/mocks/api/problema.ts` — `TIPO` é apelido do enum GERADO, e o `satisfies`
+reprova URN inventada). Duas divergências dele com o backend real foram fechadas
+junto: o 403 de empresa sem vínculo (era 400) e o `fields[]` que faltava em duas
+validações que diziam "confira os campos destacados" sem destacar nenhum.
+O que o mock **não** manda é `instance` — está escrito em `problema.ts`.
+
+**Fica pendente do lado do servidor** (`cabinet-erp-api`): adotar os títulos
+canônicos, e trocar o `type` do 401 de `POST /auth/login`, que hoje sai como
+`sem-sessao` — o contrato reserva essa URN para sessão ausente/expirada, e
+mandá-la na resposta do próprio login manda o cliente reautenticar quem acabou de
+tentar.
+
 ### Não existe 422
 
 A DoD do trilho pedia 422 para validação. **Não entrou, e é decisão:** o contrato

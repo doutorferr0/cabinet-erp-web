@@ -31,7 +31,8 @@ describe('DocumentoHeader', () => {
   it('é a banda de identidade, não um cabeçalho paralelo', () => {
     const { container } = render(<DocumentoHeader titulo="Pedido de Compra" numero="PC-001" />)
     const banda = screen.getByRole('heading', { level: 1 }).closest('div')
-    expect(banda?.className).toContain('bg-zone-id')
+    // r5: zona de identidade em gradiente — ver banda-identidade.test.
+    expect(banda?.className).toContain('hsl(var(--zone-id))')
     expect(banda?.className).toContain('border-2')
     expect(container.querySelector('header')).toBeNull()
   })

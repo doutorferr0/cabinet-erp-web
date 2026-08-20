@@ -29,7 +29,9 @@ describe('BandaDeIdentidade', () => {
   it('é zona de identidade em caixa preta (creme-avermelhado, 2px, radius 0)', () => {
     const { container } = render(<BandaDeIdentidade titulo="Orçamento" />)
     const banda = container.firstElementChild as HTMLElement
-    expect(banda.className).toContain('bg-zone-id')
+    // r5: a zona de identidade virou GRADIENTE (id → info suave) — mais um
+    // degrau de detalhe das referências; a âncora segue sendo a zona-id.
+    expect(banda.className).toContain('hsl(var(--zone-id))')
     expect(banda.className).toContain('border-2')
     expect(banda.className).not.toContain('rounded')
   })

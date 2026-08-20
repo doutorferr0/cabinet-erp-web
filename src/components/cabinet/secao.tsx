@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import type { LucideIcon } from 'lucide-react'
 
 /**
  * SEÇÃO de documento (fusão v5 r4, mockup `docs/design/fusao-v5/`): a
@@ -28,15 +29,26 @@ const CAIXA = {
   money: 'bg-zone-money border-money',
 } as const
 
+/** Tinta do NÚMERO ordinal — display condensado na cor da zona (r5). */
+const NUMERO = {
+  id: 'text-accent',
+  info: 'text-info',
+  warn: 'text-warn',
+  money: 'text-money',
+} as const
+
 export type SecaoCor = keyof typeof BARRA
 
 export function Secao({
   numero,
   titulo,
   cor = 'id',
+  icone: Icone,
   className,
   children,
 }: {
+  /** Símbolo da seção, traço preto sobre a caixa pastel (referências r5). */
+  icone?: LucideIcon
   /** Ordinal em Meta ("01", "02"…) — o mapa da página. */
   numero?: string
   titulo: string
@@ -53,14 +65,20 @@ export function Secao({
       <div className="mb-3 flex items-center gap-2.5">
         <h2
           className={cn(
-            'rounded-item border px-2.5 py-1 font-extrabold text-[0.8125rem] text-foreground leading-none',
+            'inline-flex items-center gap-1.5 rounded-item border px-2.5 py-1 font-extrabold text-[0.875rem] text-foreground leading-none',
             CAIXA[cor],
           )}
         >
+          {Icone ? <Icone aria-hidden="true" className="size-3.5 shrink-0" /> : null}
           {titulo}
         </h2>
         {numero ? (
-          <span className="font-mono text-[10px] text-muted-foreground tracking-[0.1em]">
+          <span
+            className={cn(
+              'font-[family-name:var(--font-display-condensada)] text-[1.125rem] leading-none tracking-[0.06em]',
+              NUMERO[cor],
+            )}
+          >
             {numero}
           </span>
         ) : null}

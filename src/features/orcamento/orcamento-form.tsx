@@ -29,7 +29,7 @@ import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { FileText, Home, Lock, Package, User } from 'lucide-react'
+import { FileText, Hash, Home, Lock, Package, Percent, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -175,11 +175,11 @@ function Cabecalho() {
     <>
       {/* FUSÃO v5 r4 (mockup): o formulário fala em SEÇÕES numeradas, e quem
           importa vem primeiro — Cliente & Obra antes da burocracia. */}
-      <Secao numero="01" titulo="Cliente & Obra" cor="id">
+      <Secao numero="01" titulo="Cliente & Obra" cor="id" icone={User}>
         <div className="grid grid-cols-12 items-end gap-3">
           <div className="col-span-12 sm:col-span-5">
             <div className="flex items-end gap-1">
-              <TextField name="cliente" label="Cliente" className="flex-1" />
+              <TextField name="cliente" label="Cliente" className="campo-heroi flex-1" />
               <Button
                 type="button"
                 variant="outline"
@@ -237,7 +237,7 @@ function Cabecalho() {
         </div>
       </Secao>
 
-      <Secao numero="02" titulo="Identificação" cor="info">
+      <Secao numero="02" titulo="Identificação" cor="info" icone={Hash}>
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="numero" label="Código" className="col-span-6 sm:col-span-2" />
           <SelectField
@@ -410,11 +410,13 @@ function AbaPrincipal() {
   return (
     <div className="flex flex-col gap-4">
       <Cabecalho />
-      <Secao numero="03" titulo="Desconto" cor="warn">
+      <Secao numero="03" titulo="Desconto" cor="warn" icone={Percent}>
         <ControlesDesconto />
       </Secao>
 
-      <p className="text-sm text-muted-foreground">
+      {/* r5: nota de rodapé fala na voz editorial (serifa itálica) — degrau
+          tipográfico das referências para o que é conselho, não dado. */}
+      <p className="font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic">
         Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.
       </p>
 

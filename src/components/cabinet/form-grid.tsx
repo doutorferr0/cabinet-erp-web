@@ -376,7 +376,9 @@ export function FormGrid({
                       // Zona de dinheiro: creme-esverdeado é exclusivo das
                       // fileiras de total — dado comum da malha fica em tinta
                       // normal, senão a cor deixa de significar.
-                      'bg-zone-money hover:bg-zone-money',
+                      t.destaque === true
+                        ? 'bg-fill-money hover:bg-fill-money'
+                        : 'bg-zone-money hover:bg-zone-money',
                       // Sem fio duplo: a régua forte do Total substitui o fio da fileira acima.
                       totals.rows[i + 1]?.destaque === true && 'border-b-0',
                       t.destaque === true && 'rule-strong-top',

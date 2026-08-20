@@ -12,7 +12,7 @@ import type {
 } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
-import { problemaJson } from './problema'
+import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { criarOrcamento, detalheDoOrcamento } from './quotes'
 import { novoId, store } from './store'
 
@@ -41,9 +41,6 @@ import { novoId, store } from './store'
  *   outro funil com 400, como a FK composta do banco recusaria.
  */
 
-const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
-const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
-
 function listar<T>(
   itens: readonly T[],
   url: URL,
@@ -58,10 +55,15 @@ function listar<T>(
   const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
 
   if (page < 1 || pageSize < 1 || pageSize > 100) {
-    return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+    return problemaJson(
+      400,
+      'Paginação inválida: page é 1-based e pageSize vai até 100.',
+      {},
+      TIPO.paginacaoInvalida,
+    )
   }
   if (sortBy && !ordenaveis.includes(sortBy)) {
-    return problemaJson(400, `sortBy inválido: ${sortBy}.`)
+    return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
   }
 
   let rows = [...itens]
@@ -71,7 +73,7 @@ function listar<T>(
   }
 
   const filtradas = aplicarFiltros(rows, url, filtraveis)
-  if (typeof filtradas === 'string') return problemaJson(400, filtradas)
+  if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
   rows = filtradas
 
   if (sortBy) {
@@ -370,7 +372,7 @@ export const handlersDoCrm = [
   // ---------------- funis ----------------
 
   http.get('*/api/crm/pipelines', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     return listar(
       [...crm.funis].sort((a, b) => a.sort - b.sort),
@@ -381,8 +383,8 @@ export const handlersDoCrm = [
   }),
 
   http.post('*/api/crm/pipelines', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as CrmPipelineWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do funil é obrigatório.')
 
@@ -399,18 +401,18 @@ export const handlersDoCrm = [
   }),
 
   http.get('*/api/crm/pipelines/:id', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = funil(String(params.id))
-    if (!achado) return problemaJson(404, 'Funil não encontrado.')
+    if (!achado) return naoEncontrado('Funil não encontrado.')
     return HttpResponse.json(achado)
   }),
 
   http.put('*/api/crm/pipelines/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = funil(String(params.id))
-    if (!achado) return problemaJson(404, 'Funil não encontrado.')
+    if (!achado) return naoEncontrado('Funil não encontrado.')
     const corpo = (await request.json()) as CrmPipelineWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do funil é obrigatório.')
 
@@ -428,20 +430,20 @@ export const handlersDoCrm = [
   // ---------------- estágios ----------------
 
   http.get('*/api/crm/pipelines/:pipelineId/stages', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json([])
     const id = String(params.pipelineId)
-    if (!funil(id)) return problemaJson(404, 'Funil não encontrado.')
+    if (!funil(id)) return naoEncontrado('Funil não encontrado.')
     return HttpResponse.json(
       crm.estagios.filter((e) => e.pipelineId === id).sort((a, b) => a.sort - b.sort),
     )
   }),
 
   http.post('*/api/crm/pipelines/:pipelineId/stages', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const pipelineId = String(params.pipelineId)
-    if (!funil(pipelineId)) return problemaJson(404, 'Funil não encontrado.')
+    if (!funil(pipelineId)) return naoEncontrado('Funil não encontrado.')
     const corpo = (await request.json()) as CrmStageWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do estágio é obrigatório.')
 
@@ -462,11 +464,11 @@ export const handlersDoCrm = [
   }),
 
   http.put('*/api/crm/pipelines/:pipelineId/stages/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = estagio(String(params.id))
     if (!achado || achado.pipelineId !== String(params.pipelineId)) {
-      return problemaJson(404, 'Estágio não encontrado neste funil.')
+      return naoEncontrado('Estágio não encontrado neste funil.')
     }
     const corpo = (await request.json()) as CrmStageWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do estágio é obrigatório.')
@@ -483,7 +485,7 @@ export const handlersDoCrm = [
   // ---------------- oportunidades ----------------
 
   http.get('*/api/crm/opportunities', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     const url = new URL(request.url)
 
@@ -529,8 +531,8 @@ export const handlersDoCrm = [
   }),
 
   http.post('*/api/crm/opportunities', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as CrmOpportunityWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Título da oportunidade é obrigatório.')
 
@@ -569,18 +571,18 @@ export const handlersDoCrm = [
   }),
 
   http.get('*/api/crm/opportunities/:id', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Oportunidade não encontrada.')
+    if (!achado) return naoEncontrado('Oportunidade não encontrada.')
     return HttpResponse.json(oportunidadeDto(achado))
   }),
 
   http.put('*/api/crm/opportunities/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Oportunidade não encontrada.')
+    if (!achado) return naoEncontrado('Oportunidade não encontrada.')
     const corpo = (await request.json()) as CrmOpportunityWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Título da oportunidade é obrigatório.')
 
@@ -628,14 +630,14 @@ export const handlersDoCrm = [
    * deslocada, e cada uma seria transação própria.
    */
   http.patch('*/api/crm/opportunities/:id/stage', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Oportunidade não encontrada.')
+    if (!achado) return naoEncontrado('Oportunidade não encontrada.')
 
     const corpo = (await request.json()) as CrmOpportunityStagePatchRequest
     const destino = estagio(corpo.stageId)
-    if (!destino) return problemaJson(404, 'Estágio não encontrado.')
+    if (!destino) return naoEncontrado('Estágio não encontrado.')
     if (destino.pipelineId !== achado.pipelineId) {
       return problemaJson(
         400,
@@ -689,11 +691,11 @@ export const handlersDoCrm = [
    * inventado daria documento com preço que ninguém cotou.
    */
   http.post('*/api/crm/opportunities/:id/quote', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
 
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Oportunidade não encontrada.')
+    if (!achado) return naoEncontrado('Oportunidade não encontrada.')
     if (achado.quoteId) {
       return problemaJson(409, 'Esta oportunidade já tem orçamento.')
     }
@@ -720,7 +722,7 @@ export const handlersDoCrm = [
   // ---------------- colaboradores (ver EstadoDoCrm.colaboradores) ----------------
 
   http.get('*/api/employees', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     return listar(
       crm.colaboradores,
@@ -733,14 +735,14 @@ export const handlersDoCrm = [
   // ---------------- motivos de perda ----------------
 
   http.get('*/api/crm/lost-reasons', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     return listar(crm.motivos, new URL(request.url), ['name', 'active'], (m) => [m.name])
   }),
 
   http.post('*/api/crm/lost-reasons', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as CrmLostReasonWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do motivo é obrigatório.')
     const novo: CrmLostReasonDto = {
@@ -753,10 +755,10 @@ export const handlersDoCrm = [
   }),
 
   http.put('*/api/crm/lost-reasons/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const achado = crm.motivos.find((m) => m.id === String(params.id))
-    if (!achado) return problemaJson(404, 'Motivo não encontrado.')
+    if (!achado) return naoEncontrado('Motivo não encontrado.')
     const corpo = (await request.json()) as CrmLostReasonWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do motivo é obrigatório.')
     achado.name = corpo.name
@@ -776,8 +778,8 @@ export const handlersDoCrm = [
    * fará.
    */
   http.get('*/api/crm/reports/lost-reasons', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
 
     const url = new URL(request.url)
     const de = url.searchParams.get('from')

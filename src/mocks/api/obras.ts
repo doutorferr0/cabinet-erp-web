@@ -1,6 +1,14 @@
 import type { WorkDto, WorkWriteRequest } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import {
+  TIPO,
+  camposInvalidos,
+  naoEncontrado,
+  problemaJson,
+  semEmpresaAtiva,
+  semSessao,
+} from './problema'
 import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
 
 /**
@@ -33,23 +41,6 @@ import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
  * é uma regra diferente da que o contrato escreveu. Quando `workId` entrar no
  * orçamento, a checagem nasce AQUI, e o teste que a cobra nasce junto.
  */
-
-const PROBLEMA = 'application/problem+json'
-
-/**
- * Cópia LOCAL dos utilitários de `handlers.ts` — importá-los de lá criaria
- * ciclo, porque `handlers.ts` importa este arquivo para registrar os handlers.
- * Mesma decisão de `crm.ts` e `atividades.ts`, pelo mesmo motivo.
- */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
-
-const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
-const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 
 /** A whitelist que o contrato publica para `sortBy` e `filters` deste recurso. */
 const ORDENAVEIS = ['customerId', 'description', 'workType', 'active']
@@ -161,7 +152,7 @@ function clienteAoAlcance(customerId: string, tenantId: string): boolean {
 
 export const handlersDeObras = [
   http.get('*/api/works', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     // Sem empresa ativa o domínio responde VAZIO, não erro (semântica da Etapa
     // 0) — e para uma coleção que É da empresa, vazio é literalmente a verdade.
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
@@ -169,12 +160,17 @@ export const handlersDeObras = [
     const url = new URL(request.url)
     const sortBy = url.searchParams.get('sortBy')
     if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`)
+      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
     }
     const page = Number(url.searchParams.get('page') ?? '1')
     const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
     if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+      return problemaJson(
+        400,
+        'Paginação inválida: page é 1-based e pageSize vai até 100.',
+        {},
+        TIPO.paginacaoInvalida,
+      )
     }
 
     let linhas = daEmpresa(store.activeTenantId).map(workDto)
@@ -190,7 +186,7 @@ export const handlersDeObras = [
     }
 
     const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS)
-    if (typeof filtradas === 'string') return problemaJson(400, filtradas)
+    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
     linhas = filtradas
 
     if (sortBy) {
@@ -211,23 +207,23 @@ export const handlersDeObras = [
   }),
 
   http.get('*/api/works/:id', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return problemaJson(404, 'Obra não encontrada.')
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return naoEncontrado('Obra não encontrada.')
     const obra = daEmpresa(store.activeTenantId).find((o) => o.id === params.id)
-    if (!obra) return problemaJson(404, 'Obra não encontrada.')
+    if (!obra) return naoEncontrado('Obra não encontrada.')
     return HttpResponse.json(workDto(obra))
   }),
 
   http.post('*/api/works', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as WorkWriteRequest
 
     if (!corpo.description) {
-      return problemaJson(400, 'Confira os campos destacados.')
+      return camposInvalidos([{ path: 'description', message: 'Informe a descrição da obra.' }])
     }
     if (!clienteAoAlcance(corpo.customerId, store.activeTenantId)) {
-      return problemaJson(404, 'Cliente não encontrado.')
+      return naoEncontrado('Cliente não encontrado.')
     }
 
     const obra: ObraDaEmpresa = {
@@ -244,17 +240,17 @@ export const handlersDeObras = [
   }),
 
   http.put('*/api/works/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const obra = daEmpresa(store.activeTenantId).find((o) => o.id === params.id)
-    if (!obra) return problemaJson(404, 'Obra não encontrada.')
+    if (!obra) return naoEncontrado('Obra não encontrada.')
 
     const corpo = (await request.json()) as WorkWriteRequest
     if (!corpo.description) {
-      return problemaJson(400, 'Confira os campos destacados.')
+      return camposInvalidos([{ path: 'description', message: 'Informe a descrição da obra.' }])
     }
     if (!clienteAoAlcance(corpo.customerId, store.activeTenantId)) {
-      return problemaJson(404, 'Cliente não encontrado.')
+      return naoEncontrado('Cliente não encontrado.')
     }
 
     // `PUT` INTEGRAL: o que o corpo não trouxer é apagado, e não preservado.

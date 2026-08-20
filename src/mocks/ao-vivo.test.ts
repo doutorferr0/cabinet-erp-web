@@ -3,7 +3,7 @@ import { setupServer } from 'msw/node'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { semearSessaoAutenticada } from './api/store'
-import { handlersDePassagem } from './rotas-do-backend'
+import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
 
 /**
  * A PROVA AO VIVO — desligada por padrão, e é o único jeito honesto.
@@ -103,6 +103,65 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect((await detalhe.json()) as { id: string }).toMatchObject({ id: primeiro.id })
   })
 
+  /**
+   * O BLOCO 2, ligado em 2026-08-20 (obra `api#48`, contatos `api#53`).
+   *
+   * As duas famílias entraram inteiras, e é aqui que "inteira" deixa de ser
+   * palavra: o registro é criado ATRAVÉS do app e relido DIRETO no backend. Se
+   * o mock tivesse respondido a escrita, o id não existiria do outro lado.
+   */
+  it('a OBRA passa inteira — o que a tela cria existe no Postgres, pelo mesmo id', async () => {
+    const parceiros = await fetch(`${APP}/api/partners?role=customer`, { headers: { cookie } })
+    const cliente = ((await parceiros.json()) as { rows: { id: string }[] }).rows[0]
+    if (!cliente) return // banco de dev sem cliente: nada a instalar
+
+    const criado = await fetch(`${APP}/api/works`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        customerId: cliente.id,
+        description: 'OBRA DA PROVA AO VIVO',
+        workType: 'RESIDENCIAL',
+        address: null,
+        active: true,
+      }),
+    })
+    expect(criado.status).toBe(201)
+    const obra = (await criado.json()) as { id: string; customerName: string | null }
+
+    // `customerName` é junção com `partners` — o mock semeia outros nomes, e
+    // por isso o corpo distingue quem respondeu. Status 201 sozinho não.
+    expect(obra.customerName).toBeTruthy()
+
+    const direto = await noBackend('get', `/api/works/${obra.id}`)
+    expect(direto.status, 'a obra criada pela tela não existe no backend').toBe(200)
+    expect(await direto.json()).toMatchObject({
+      id: obra.id,
+      description: 'OBRA DA PROVA AO VIVO',
+    })
+  })
+
+  it('os CONTATOS do parceiro passam — sub-recurso e dono vindo do mesmo lugar', async () => {
+    const parceiros = await fetch(`${APP}/api/partners`, { headers: { cookie } })
+    const parceiro = ((await parceiros.json()) as { rows: { id: string }[] }).rows[0]
+    if (!parceiro) return
+
+    const criado = await fetch(`${APP}/api/partners/${parceiro.id}/contacts`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: 'CONTATO DA PROVA AO VIVO', role: 'COMPRAS', active: true }),
+    })
+    expect(criado.status).toBe(201)
+    const contato = (await criado.json()) as { id: string }
+
+    // A listagem lida DIRETO no backend tem de conter o que a tela gravou: é o
+    // par (sub-recurso + dono) que a costura quebraria.
+    const direto = (await (
+      await noBackend('get', `/api/partners/${parceiro.id}/contacts`)
+    ).json()) as { rows: { id: string }[] }
+    expect(direto.rows.map((c) => c.id)).toContain(contato.id)
+  })
+
   it('a ESCRITA de produto fica no mock — a divisão é por verbo', async () => {
     const corpo = { code: 'AO-VIVO-1', description: 'Só no mock', active: true }
 
@@ -113,9 +172,23 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     })
     expect(pelaTela.status).toBe(201)
 
-    // GET passa, POST não: o backend ainda não implementa a escrita, e é por
-    // isso que o caminho inteiro não pode entrar na lista.
-    expect((await noBackend('post', '/api/products', corpo)).status).toBe(501)
+    // A ESCRITA JÁ EXISTE DO OUTRO LADO — medido em 2026-08-20 contra
+    // `cabinet-erp-api` `33db0df`, onde `POST /api/products` responde 201 (e
+    // 409 na segunda vez, por código repetido). O que este caso mede deixou de
+    // ser "o backend não implementa" e passou a ser DÍVIDA: quem grava produto
+    // na tela continua sendo o mock, porque a família de produto ainda tem
+    // operação em 501 (variantes) e meia família é a costura que esta lista
+    // existe para evitar.
+    //
+    // Asserção pelo que é verdade hoje: o servidor RESPONDE (não é 501) e a
+    // passagem NÃO liga. No dia em que a família fechar, o segundo `expect`
+    // fica vermelho e cobra a ligação — que é o serviço que ele presta.
+    const noServidor = await noBackend('post', '/api/products', corpo)
+    expect(noServidor.status, 'se voltou a ser 501, remeça a família').not.toBe(501)
+    expect(
+      ROTAS_DO_BACKEND.some((r) => r.metodo === 'post' && r.caminho === '/api/products'),
+      'o backend já grava produto: ou liga a família inteira, ou este caso passa a mentir',
+    ).toBe(false)
   })
 
   it('o ORÇAMENTO inteiro passa — listagem do servidor, com o shape do contrato', async () => {
@@ -217,7 +290,12 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     // responde e a tela monta. É o que separa este caso do funil.
     const resumo = await fetch(`${APP}/api/dashboard/summary`, { headers: { cookie } })
     expect(resumo.status).toBe(200)
-    expect((await noBackend('get', '/api/dashboard/summary')).status).toBe(501)
+
+    // MEDIDO em 2026-08-20: o backend passou a servir o resumo (200, com
+    // números do Postgres) — era 501 quando este caso foi escrito. Continua
+    // fora da passagem, e agora por decisão a tomar, não por ausência de
+    // servidor. Ver `## Para o hub` da PR que ligou o bloco 2.
+    expect((await noBackend('get', '/api/dashboard/summary')).status).not.toBe(501)
   })
 
   it('colaborador, atividades e listas de apoio vêm do SERVIDOR', async () => {
@@ -252,9 +330,17 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     }
     expect(((await funis.json()) as { total: number }).total).toBe(doBackend.total)
 
-    // a outra metade continua no mock, e o servidor não a serve
+    // A outra metade continua no MOCK — mas não mais por falta de servidor.
+    // MEDIDO em 2026-08-20: `GET /api/crm/opportunities` responde 200 com
+    // oportunidades do Postgres. Enquanto a passagem não a liga, a costura que
+    // `CoberturaDoFunil` descreve continua existindo, e agora ela é dívida
+    // nossa, não do outro repo.
     const oportunidades = await fetch(`${APP}/api/crm/opportunities`, { headers: { cookie } })
     expect(oportunidades.status).toBe(200)
-    expect((await noBackend('get', '/api/crm/opportunities')).status).toBe(501)
+    expect((await noBackend('get', '/api/crm/opportunities')).status).not.toBe(501)
+    expect(
+      ROTAS_DO_BACKEND.some((r) => r.caminho === '/api/crm/opportunities'),
+      'o funil pode fechar inteiro: o backend já serve oportunidades',
+    ).toBe(false)
   })
 })

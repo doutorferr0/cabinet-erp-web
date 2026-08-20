@@ -33,6 +33,21 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * contrato, **51 respondem e 18 são 501**, e as 51 estão TODAS aqui. `src/mocks/ao-vivo.test.ts`
  * reproduz a medição com o par local de pé.
  *
+ * **REMEDIDO em 2026-08-20** contra `cabinet-erp-api` main `33db0df`, e a lista foi de 51 para
+ * **58**: entraram as duas famílias do bloco 2 — **obra** (`api#48`) e **contatos do parceiro**
+ * (`api#53`) —, que até aqui viviam numa constante própria à espera do servidor. As sete
+ * operações foram exercidas uma a uma contra o Postgres, pelo CORPO e não pelo status: `POST
+ * /api/works` 201 devolvendo `customerName` resolvido por junção (nome que o seed do mock não
+ * tem), `GET`/`PUT` do mesmo id refletindo a alteração, e o trio de contatos criando, listando e
+ * renomeando o mesmo registro.
+ *
+ * **Armadilha nova, e ela não estava em nenhuma das três já anotadas:** o backend que atende em
+ * `:3000` pode ser um PROCESSO VELHO. `node src/main.ts` não recarrega sozinho, e o que estava no
+ * ar tinha 26 horas — servia parceiro SEM os campos da fase 1 e do bloco 2, e respondia como se o
+ * contrato não os tivesse. A medição só ficou honesta subindo uma segunda instância do fonte
+ * atual (`PORT=3001`) contra o MESMO banco. Antes de concluir qualquer coisa do par local:
+ * conferir a idade do processo (`ps -o lstart`), não só o `/health`.
+ *
  * A `main` do outro repo cresceu DURANTE a sessão — `d40d1f3` dava 46, `060f472` deu 50 — então
  * quem reabrir isto remede antes de concluir qualquer coisa. E remede pela SONDA, não por leitura
  * de código: contar `operationId` nos arquivos `rotas.ts` dos módulos do backend deixou de fora
@@ -230,41 +245,24 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/crm/pipelines/{pipelineId}/stages' },
   { metodo: 'post', caminho: '/api/crm/pipelines/{pipelineId}/stages' },
   { metodo: 'put', caminho: '/api/crm/pipelines/{pipelineId}/stages/{id}' },
-]
 
-/**
- * O BLOCO 2 — escrito, conferido contra o contrato, e FORA da passagem.
- *
- * As seis operações existem no `contracts/openapi-v1.json` desde a #255, e o
- * `cabinet-erp-api` **ainda não as serve**: são as issues `api#42` (obra) e
- * `api#43` (contatos), e até elas mergearem toda chamada atravessaria o proxy
- * para receber 501.
- *
- * Por isso a lista mora AQUI e não lá em cima. A regra do `CLAUDE.md` é
- * explícita e já custou caro uma vez: *"rota adiantada é pior que rota ausente
- * — o mock deixa de responder e a tela toma 501 sem ninguém ter pedido"*.
- * Deixá-las prontas numa constante própria custa nada e responde a pergunta que
- * vai aparecer daqui a dois dias ("o que falta ligar?") sem obrigar ninguém a
- * reler o contrato inteiro.
- *
- * **Como ligar, quando o par estiver medido:** mova as entradas para
- * `ROTAS_DO_BACKEND` — as duas famílias INTEIRAS, nunca meia — e remede com
- * `CABANET_AO_VIVO=1 npx vitest run src/mocks/ao-vivo.test.ts` contra o par
- * local. Meia família põe id do servidor de um lado e id do mock do outro, e o
- * resultado tem cara de dado, não de erro.
- *
- * O teste desta lista garante as duas metades: que cada operação EXISTE no
- * contrato, e que nenhuma delas está em `ROTAS_DO_BACKEND` — ligar por engano
- * quebra o build, não o site.
- */
-export const ROTAS_DO_BLOCO_2: readonly RotaDoBackend[] = [
-  // obra do cliente — `api#42`
+  // obra do cliente (4 operações) — `api#48`, medida em 2026-08-20.
+  //
+  // Família INTEIRA de saída: a listagem devolve `customerName` resolvido por
+  // junção com `partners`, e o `customerId` de cada linha é uuid do Postgres.
+  // Meia família aqui casaria obra do servidor com cliente do mock, e a tela
+  // mostraria obra sem dono — que tem cara de cadastro incompleto, não de erro.
   { metodo: 'get', caminho: '/api/works' },
   { metodo: 'post', caminho: '/api/works' },
   { metodo: 'get', caminho: '/api/works/{id}' },
   { metodo: 'put', caminho: '/api/works/{id}' },
 
-  // contatos do parceiro — `api#43`
+  // contatos do parceiro (3 operações) — `api#53`, medida em 2026-08-20.
+  //
+  // Sub-recurso de `/api/partners/{partnerId}`, que já passa: são as duas
+  // metades da MESMA tela. Contato mockado pendurado em parceiro do servidor
+  // (ou o inverso) daria grade cheia num cadastro vazio, e o `PUT` gravaria em
+  // `partnerId` que o outro lado não conhece.
   { metodo: 'get', caminho: '/api/partners/{partnerId}/contacts' },
   { metodo: 'post', caminho: '/api/partners/{partnerId}/contacts' },
   { metodo: 'put', caminho: '/api/partners/{partnerId}/contacts/{contactId}' },

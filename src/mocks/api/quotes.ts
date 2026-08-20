@@ -159,15 +159,12 @@ function itemDto(item: Orcamento['itens'][number], indice: number): QuoteItemDto
 }
 
 function ambientesDto(o: Orcamento): QuoteEnvironmentDto[] {
-  // Ambiente não é cadastro à parte no seed: ele existe porque um item o cita.
-  const vistos: string[] = []
-  for (const item of o.itens) {
-    if (item.ambiente && !vistos.includes(item.ambiente)) vistos.push(item.ambiente)
-  }
-  // `name` é CONGELADO no documento (o contrato diz, e o legado já faz em
-  // `VendaAmbiente.VenAmb_Descricao`): renomear no catálogo não reescreve
-  // orçamento emitido. No seed o código é o próprio nome.
-  return vistos.map((code, i) => ({ code, name: code, order: i + 1 }))
+  // Coleção PRÓPRIA do documento, não derivada dos itens. Derivar montava
+  // `name: code` — o único nome disponível era o código — e o servidor de
+  // verdade grava o que recebe: um `Gravar` sem edição substituía o nome
+  // congelado do ambiente pelo uuid dele. O mock precisa errar (e acertar) do
+  // mesmo jeito que o backend, senão a tela só descobre no dia da troca.
+  return o.ambientes.map((a) => ({ code: a.codigo, name: a.nome, order: a.ordem }))
 }
 
 function detalheDto(o: Orcamento): QuoteDetailDto {
@@ -211,6 +208,14 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
       corpo.professionalId === base.profissionalId ? base.profissionalExterno : null,
     modoDesconto: corpo.discountMode === 'general' ? 'GERAL' : 'PRODUTO',
     descontoPercentual: corpo.discountPercent,
+    // O corpo é INTEGRAL: o que ele não trouxer, o documento perde. Guardar os
+    // ambientes que vieram — em vez de manter os de `base` — é o que faz o mock
+    // reproduzir isso.
+    ambientes: (corpo.environments ?? []).map((a) => ({
+      codigo: a.code,
+      nome: a.name,
+      ordem: a.order,
+    })),
     itens: (corpo.items ?? []).map((item, i) => ({
       item: String(i + 1),
       codigoFornecedor: item.supplierCode ?? '',
@@ -355,6 +360,7 @@ function vazio(): Orcamento {
     cancelado: false,
     modoDesconto: 'PRODUTO',
     descontoPercentual: 0,
+    ambientes: [],
     itens: [],
   }
 }

@@ -65,6 +65,12 @@ export const orcamentoSchema = z.object({
   cancelado: z.boolean(),
   modoDesconto: z.enum(['PRODUTO', 'GERAL']),
   descontoPercentual: z.number(),
+  // Os ambientes do documento — não se editam aqui, e ainda assim precisam ser
+  // DECLARADOS, pela mesma razão de `cancelado` logo acima: o resolver estrai a
+  // chave que o schema não conhece, e o que chega em `paraEscrita` é um
+  // documento sem ambiente nenhum. Como o `PUT` é integral, gravar apagaria os
+  // ambientes do orçamento a cada edição.
+  ambientes: z.array(z.object({ codigo: z.string(), nome: z.string(), ordem: z.number() })),
   itens: z.array(
     z.object({
       item: z.string(),

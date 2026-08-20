@@ -97,6 +97,14 @@ export function paraOrcamento(dto: QuoteDetailDto): Orcamento {
     cancelado: dto.status === 'cancelled',
     modoDesconto: dto.discountMode === 'general' ? 'GERAL' : 'PRODUTO',
     descontoPercentual: dto.discountPercent,
+    // Coleção própria, e não derivada dos itens: é ela que guarda o nome
+    // CONGELADO na emissão. Sem carregá-la, a escrita não tem de onde tirar o
+    // `name` e acaba mandando o código no lugar dele.
+    ambientes: (dto.environments ?? []).map((a) => ({
+      codigo: a.code,
+      nome: a.name,
+      ordem: a.order,
+    })),
     itens: (dto.items ?? []).map((item) => ({
       item: String(item.lineNumber),
       codigoFornecedor: item.supplierCode ?? '',
@@ -126,16 +134,27 @@ export function paraOrcamento(dto: QuoteDetailDto): Orcamento {
  * muda por `/cancel`, e total que o cliente manda é total que diverge do item na
  * primeira arredondada.
  *
- * `environments` sai dos ITENS, e não de um cadastro à parte: no documento o
- * ambiente existe porque um item o cita (`Ambiente F5` da §8.2). O `name` é
- * congelado aqui, como o contrato manda — renomear o ambiente no catálogo não
- * pode reescrever orçamento emitido.
+ * **`environments` vem do DOCUMENTO, não dos itens** — e isto foi corrigido ao
+ * ligar `/api/quotes` no backend real. Derivá-los da coluna Ambiente da grade
+ * montava `{ code, name: code }`, porque a grade guarda o CÓDIGO e o nome
+ * congelado não estava em lugar nenhum. Como o `PUT` é integral, um `Gravar`
+ * sem nenhuma edição gravava o uuid por cima do nome do ambiente: medido contra
+ * o backend, o documento voltou com `name: "11111111-1111-…"`. O contrato é
+ * explícito nos dois pontos — o nome é congelado na emissão, e "ambiente sem
+ * item nenhum é estado legítimo", que derivação nenhuma consegue representar.
+ *
+ * **Código que o documento não conhece não sai daqui.** `environmentCode` é
+ * `format: uuid` no contrato — o id do ambiente no catálogo — e o botão
+ * `Ambiente` insere uma linha com um nome da lista de `tabelas.ambientes`, que
+ * é INVENTADA (§8.2 capturou a grade vazia) e não tem id de catálogo nenhum.
+ * Mandá-lo é 400 na hora de gravar, e o operador perde o documento inteiro por
+ * causa da coluna. Enquanto `GET /api/catalog-lookups` responder 501 e não
+ * houver kind `AMBIENTE`, a linha grava sem ambiente em vez de não gravar.
  */
 export function paraEscrita(o: Orcamento): QuoteWriteRequest {
-  const codigos: string[] = []
-  for (const item of o.itens) {
-    if (item.ambiente && !codigos.includes(item.ambiente)) codigos.push(item.ambiente)
-  }
+  const conhecido = new Set(o.ambientes.map((a) => a.codigo))
+  const codigoDoItem = (item: { ambiente: string }) =>
+    item.ambiente && conhecido.has(item.ambiente) ? item.ambiente : null
 
   return {
     series: o.serie || null,
@@ -152,10 +171,10 @@ export function paraEscrita(o: Orcamento): QuoteWriteRequest {
     // o percentual guardado faria o servidor aplicar um desconto geral que a
     // tela não está mostrando.
     discountPercent: o.modoDesconto === 'GERAL' ? o.descontoPercentual : 0,
-    environments: codigos.map((code, i) => ({ code, name: code, order: i + 1 })),
+    environments: o.ambientes.map((a) => ({ code: a.codigo, name: a.nome, order: a.ordem })),
     items: o.itens.map((item, i) => ({
       lineNumber: i + 1,
-      environmentCode: item.ambiente || null,
+      environmentCode: codigoDoItem(item),
       // O item da grade fala a língua do FORNECEDOR (§8.2) e não aponta para o
       // catálogo. `null` é honesto — inventar um `variantId` casaria com
       // produto que não existe.

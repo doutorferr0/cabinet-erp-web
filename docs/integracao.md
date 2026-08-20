@@ -219,6 +219,99 @@ com id inventado e responderia "não encontrado" para registro que existe.
 **Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
 cidades · resumo do Boletim.
 
+### O que sai do mock quando há backend — a lista de passagem (2026-08-19)
+
+A tabela acima diz o que a TELA fala por HTTP. Quem responde é outra pergunta, e ela tem uma
+segunda resposta desde que existe backend: com `VITE_API_PROXY`, as operações de
+`src/mocks/rotas-do-backend.ts` atravessam o proxy e o resto continua no MSW.
+
+**Medido em 2026-08-19 contra `cabinet-erp-api` `744bd75`: das 69 operações do contrato, 51
+respondem e 18 são 501. A passagem declara as 51.** (A `main` do outro repo cresceu durante a
+sessão: `d40d1f3` dava 46, `060f472` deu 50. Remedir antes de concluir qualquer coisa a partir
+daqui — e remedir pela SONDA: contar `operationId` nos `rotas.ts` dos módulos deixou de fora
+`ListCatalogLookups`, que mora em `catalogo/lookups.ts`.)
+
+**A unidade de ligação é a FAMÍLIA, não a rota.** O critério "existe no contrato e não é 501" mede
+uma rota; o que quebra é a tela. Meia família põe id do servidor de um lado e id inventado do
+outro, e o resultado tem cara de dado, não de erro. Duas entraram juntas, e separá-las seria o
+erro:
+
+| par | por que é indivisível |
+|---|---|
+| atividades + colaborador | `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de `listEmployees`. Atividade no Postgres com pessoa do mock grava o uuid de quem o servidor não conhece, e o `responsável` volta em branco no registro que TEM responsável |
+| listas de apoio + todo o resto | `catalog-lookups` é a raiz de quase todo combo: catálogo mockado ao lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para id que o mock nunca viu, e o rótulo sai em branco na leitura |
+
+Ficam inteiras no mock, por terem operação em 501: **oportunidades e motivos de perda do CRM**,
+**indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex**.
+
+Duas armadilhas de MEDIÇÃO, complementares:
+
+1. **Escrita com corpo vazio devolve 400 antes do 501** — a validação de schema dispara antes do
+   handler ausente.
+2. **A recíproca também morde: GET com query param obrigatório devolve 400 quando o param falta**,
+   e 400 não é 501. `/api/dashboard/agenda` e `/api/crm/reports/lost-reasons` foram lidos como
+   "servidos" por isso; com `from` e `to` os dois respondem 501. **Toda leitura de 400 numa sonda
+   é inconclusiva** — significa "a validação respondeu antes", e não diz nada sobre haver handler.
+
+#### A costura que sobrou: o quadro do funil
+
+`pagina-do-funil.tsx` lê funis e estágios (servidos) e as oportunidades (**501**). Com backend
+real o quadro recebe colunas do Postgres e pede ao mock as oportunidades de um `pipelineId` que o
+mock nunca viu: `{rows: [], total: 0}`, com status **200**.
+
+**Zero linhas com status 200 é a forma mais cara de errar** — o quadro montado e vazio se lê como
+uma afirmação sobre o negócio ("não há oportunidade neste funil"), e não sobre a integração. A
+tela não tem como distinguir as duas depois do fato: as duas chegam como lista vazia.
+
+`src/features/crm/cobertura-do-funil.tsx` diz isso ao operador, e **só quando há backend real** —
+sem `VITE_API_PROXY` o MSW responde as duas metades, os ids casam e o quadro funciona (é o caso do
+site público). Avisar ali inventaria um defeito que aquele ambiente não tem, e aviso que aparece
+quando não devia é o que ensina o operador a ignorar avisos. `rotas-do-backend.test.ts` amarra as
+duas pontas: enquanto as oportunidades faltarem, tirar o aviso reprova.
+
+#### A segunda costura: o cadastro de colaborador
+
+`GET /api/employees` entrou porque a família de atividades depende dele — o combo de responsável
+de `atividade-dialogo.tsx` sai de `listEmployees`, e atividade no Postgres com pessoa do mock
+gravaria o uuid de quem o servidor não conhece.
+
+**Mas a TELA de cadastro continua lendo o mock.** `data.colaboradores` é provider em memória: ele
+não fala com a rede, então nada quebra — o que acontece é pior de enxergar. Com o par local de pé,
+o combo oferece as pessoas do Postgres e o cadastro lista as vinte da transcrição: duas listas de
+quem trabalha aqui. `src/features/colaborador/cobertura-do-colaborador.tsx` diz isso na tela, pela
+mesma mecânica do funil (só com `VITE_API_PROXY`).
+
+**Por que a tela não migrou junto** — e o motivo é o MOCK, não o servidor:
+
+- não existe handler mock para `GET /api/employees/{id}`. Trocar o provider deixaria o cadastro
+  sem detalhe **no site público**, que é 100% mock: quebra de produção para ganhar coerência em dev;
+- as duas sementes de colaborador são conjuntos diferentes — `src/mocks/colaboradores.ts` (a tela)
+  e `crm.colaboradores` (que serve `GET /api/employees` no mock);
+- `Colaborador.id` é `number` e o contrato declara `format: uuid`, o que arrasta o schema de
+  módulos (`fonte: 'mock'` → `'http'`, e `dto` por campo) e ~34 testes que hoje afirmam a base de
+  demonstração;
+- o `Gravar` do colaborador ainda é `console.info`, e a escrita tem de ir junto.
+
+É trabalho próprio, com uma medida conhecida. Enquanto não acontece, a divergência está declarada
+em vez de silenciosa.
+
+#### O que o dado real revelou no orçamento
+
+Ligar `/api/quotes` no servidor de verdade expôs dois defeitos que o mock escondia, os dois
+corrigidos junto:
+
+- **`environments` era derivado dos itens**, e a grade guarda o CÓDIGO do ambiente. A escrita
+  montava `{ code, name: code }`; como o `PUT` é **integral**, um `Gravar` sem nenhuma edição
+  gravava o uuid por cima do nome congelado do ambiente. Medido: o documento voltou com
+  `name: "11111111-1111-…"`. O documento passou a CARREGAR os ambientes (`Orcamento.ambientes`),
+  que é o que o contrato descreve — inclusive porque "ambiente sem item nenhum é estado legítimo",
+  e derivação nenhuma representa isso.
+- **`environmentCode` é `format: uuid`** — id do ambiente no catálogo — e o botão `Ambiente`
+  insere uma linha com um nome de `tabelas.ambientes`, lista INVENTADA (§8.2 capturou a grade
+  vazia). Mandá-lo é **400 ao gravar**, e o operador perde o documento por causa de uma coluna.
+  Enquanto `GET /api/catalog-lookups` responder 501 e não existir kind `AMBIENTE`, código que o
+  documento não conhece não sai: a linha grava **sem ambiente** em vez de não gravar.
+
 ### Atividades — uma tabela polimórfica, um recurso só (2026-08-14)
 
 `activities` (schema mergeado, #66) serve QUATRO entidades pelo par

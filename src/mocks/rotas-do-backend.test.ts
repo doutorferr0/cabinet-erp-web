@@ -27,7 +27,7 @@ const MARCA = 'backend-de-verdade'
 let servidorDeVerdade: Server
 let base: string
 
-const msw = setupServer(...handlersDePassagem(), ...handlers)
+const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...handlers)
 
 beforeAll(async () => {
   servidorDeVerdade = createServer((req, res) => {
@@ -65,7 +65,9 @@ describe('passthrough por rota', () => {
   })
 
   it('rota fora da lista é atendida pelo MOCK, sem tocar a rede', async () => {
-    const r = await fetch(`${base}/api/quotes`)
+    // `/api/crm/opportunities` é 501 no backend e por isso segue mockada — é o
+    // caminho que sustenta o funil inteiro fora da lista de passagem.
+    const r = await fetch(`${base}/api/crm/opportunities`)
 
     expect(r.headers.get('x-origem')).toBeNull()
     expect(r.status).toBe(200)
@@ -86,6 +88,102 @@ describe('passthrough por rota', () => {
     expect(escrita.headers.get('x-origem')).toBeNull()
     expect(escrita.status).toBe(201)
     expect(await escrita.json()).toMatchObject({ code: 'PASS-1' })
+  })
+
+  it('sem backend real a lista nasce VAZIA — é o que mantém o site público mock', () => {
+    // `cabinetonline.cc` builda sem `VITE_API_PROXY`. Se a passagem fosse
+    // montada mesmo assim, a tela publicada tentaria falar com um `localhost`
+    // que não existe para quem abre o site — erro de rede em produção, e não
+    // um mock respondendo. Enquanto a condição vivia numa expressão do
+    // `browser.ts`, nada a testava: aquele arquivo importa `msw/browser` e não
+    // roda em Node.
+    expect(handlersDePassagem(undefined)).toEqual([])
+    expect(handlersDePassagem('')).toEqual([])
+    expect(handlersDePassagem('http://localhost:3000')).toHaveLength(ROTAS_DO_BACKEND.length)
+  })
+
+  it.each([
+    // Cada par é uma tela que consome as duas metades. Meia passagem põe id do
+    // servidor de um lado e id inventado do outro, e o resultado tem cara de
+    // dado — não de erro. A regra é a mesma que o registry aplica ao `get`,
+    // lida no tamanho da TELA.
+    //
+    // Estes pares estão CUMPRIDOS hoje (as duas metades passam): o teste existe
+    // para o dia em que alguém tirar uma delas da lista, que é quando a costura
+    // reaparece calada.
+    {
+      // `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` neste combo:
+      // atividade real com pessoa do mock grava no Postgres um uuid que o
+      // servidor não conhece, e o responsável volta em branco.
+      tela: 'diálogo de atividade',
+      metade: '/api/activities',
+      outraMetade: '/api/employees',
+    },
+    {
+      // `catalog-lookups` é a raiz de quase todo combo. Catálogo mockado ao
+      // lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para
+      // id que o mock nunca viu, e o rótulo sai em branco na leitura.
+      tela: 'cadastro de colaborador',
+      metade: '/api/employees',
+      outraMetade: '/api/catalog-lookups',
+    },
+    {
+      // O orçamento resolve o cliente por `customerId`: linha do servidor com
+      // parceiro do mock mostraria documento sem nome de cliente.
+      tela: 'orçamento',
+      metade: '/api/quotes',
+      outraMetade: '/api/partners',
+    },
+  ])('$tela: $metade não entra sozinha, sem $outraMetade', ({ metade, outraMetade }) => {
+    const listado = (caminho: string) =>
+      ROTAS_DO_BACKEND.some((r) => r.caminho === caminho || r.caminho.startsWith(`${caminho}/`))
+
+    if (listado(metade)) {
+      expect(
+        listado(outraMetade),
+        `${metade} passa direto, mas ${outraMetade} continua no mock — a mesma tela lê as duas`,
+      ).toBe(true)
+    }
+  })
+
+  /**
+   * AS DUAS COSTURAS que a passagem por família deixou, e as duas são
+   * deliberadas.
+   *
+   * Ligar família servida ao lado de família em 501 (ou de tela ainda mockada)
+   * deixa costura, e costura ESCONDIDA é o defeito que esta lista existe para
+   * evitar. As duas foram para a tela, que é onde o operador as vê. Este teste
+   * amarra as pontas: tirar o aviso enquanto a metade faltar tem de doer.
+   */
+  it.each([
+    {
+      // O quadro do funil recebe colunas do servidor e pede as oportunidades ao
+      // mock, que nunca viu aquele `pipelineId`: lista vazia com status 200 — e
+      // vazio se lê como "não há negócio".
+      costura: 'quadro do funil',
+      passa: '/api/crm/pipelines',
+      falta: '/api/crm/opportunities',
+      tela: 'src/features/crm/pagina-do-funil.tsx',
+      aviso: '<CoberturaDoFunil />',
+    },
+    {
+      // `listEmployees` passa (as atividades dependem dele), mas
+      // `data.colaboradores` ainda é provider de mock: duas listas de quem
+      // trabalha aqui, cada tela mostrando uma.
+      costura: 'cadastro de colaborador',
+      passa: '/api/employees',
+      falta: '/api/employees/{id}-na-tela',
+      tela: 'src/routes/cadastros/colaboradores/index.tsx',
+      aviso: '<CoberturaDoColaborador />',
+    },
+  ])('$costura: passa pela metade, então a tela AVISA', ({ passa, tela, aviso }) => {
+    const passaMesmo = ROTAS_DO_BACKEND.some((r) => r.caminho.startsWith(passa))
+    if (!passaMesmo) return
+
+    expect(
+      readFileSync(tela, 'utf8').includes(aviso),
+      `${passa} passa e ${tela} não avisa — o operador lê a metade como se fosse o todo`,
+    ).toBe(true)
   })
 
   it('toda rota da lista existe no contrato — typo aqui seria silencioso', () => {

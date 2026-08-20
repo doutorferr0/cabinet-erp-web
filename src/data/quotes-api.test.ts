@@ -189,6 +189,53 @@ describe('tradução de ida e volta', () => {
     expect(paraEscrita(porProduto).discountPercent).toBe(0)
   })
 
+  /**
+   * MEDIDO contra o backend real ao ligar `/api/quotes` na lista de passagem.
+   *
+   * `environments` era DERIVADO dos itens, e a grade guarda o CÓDIGO do
+   * ambiente — o único nome disponível era o próprio código, então a escrita
+   * saía com `name: code`. Como o `PUT` é integral, um `Gravar` sem nenhuma
+   * edição gravava o uuid por cima do nome congelado: o documento voltou do
+   * servidor com `name: "11111111-1111-…"`.
+   */
+  it('o nome do ambiente é CONGELADO — regravar não o troca pelo código', () => {
+    const doServidor = {
+      ...DETALHE,
+      environments: [{ code: '9f1c7b20-3a55-4e18-8b90-6d2f4c1a7e33', name: 'SALA', order: 1 }],
+      items: [{ ...DETALHE.items[0], environmentCode: '9f1c7b20-3a55-4e18-8b90-6d2f4c1a7e33' }],
+    } as typeof DETALHE
+
+    const escrita = paraEscrita(paraOrcamento(doServidor))
+
+    expect(escrita.environments).toEqual([
+      { code: '9f1c7b20-3a55-4e18-8b90-6d2f4c1a7e33', name: 'SALA', order: 1 },
+    ])
+  })
+
+  /**
+   * `environmentCode` é `format: uuid` — o id do ambiente no catálogo. O botão
+   * `Ambiente` insere uma linha com um nome de `tabelas.ambientes`, lista
+   * INVENTADA que não tem id de catálogo nenhum: mandá-lo é **400 ao gravar**,
+   * e o operador perde o documento inteiro por causa de uma coluna. Enquanto
+   * `GET /api/catalog-lookups` for 501 e não existir kind `AMBIENTE`, a linha
+   * grava SEM ambiente em vez de não gravar.
+   */
+  it('ambiente que o documento não conhece não sai na escrita', () => {
+    const comAmbienteInventado = paraOrcamento(DETALHE)
+    const primeiro = comAmbienteInventado.itens[0]
+    if (!primeiro) throw new Error('o DETALHE do teste precisa de ao menos um item')
+    // veio do botão `Ambiente`, que insere um nome de `tabelas.ambientes` — não
+    // um id de catálogo
+    comAmbienteInventado.itens.push({ ...primeiro, item: '2', ambiente: 'COZINHA' })
+
+    const escrita = paraEscrita(comAmbienteInventado)
+
+    expect(escrita.environments?.map((a) => a.code)).toEqual(['SALA'])
+    expect(escrita.items?.[1]?.environmentCode).toBeNull()
+    // e o que o documento conhece continua saindo
+    expect(escrita.items?.[0]?.environmentCode).toBe('SALA')
+  })
+
   it('cancelado vem do `status`, não da data de fechamento', () => {
     expect(paraOrcamento({ ...DETALHE, status: 'cancelled' }).cancelado).toBe(true)
     // Documento FECHADO continua ativo: fechar não é cancelar.

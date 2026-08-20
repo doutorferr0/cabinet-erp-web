@@ -12,6 +12,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Calendar, LayoutGrid, TrendingDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { apodrecimentoDoCartao } from './apodrecimento'
+import { CoberturaDoFunil } from './cobertura-do-funil'
 import { AGRUPAMENTOS_DO_FUNIL, quemDoCartao } from './funil-agrupa'
 import { PerderOportunidadeDialog } from './perder-oportunidade-dialog'
 import { QuadroDoFunil } from './quadro-do-funil'
@@ -319,6 +320,11 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
           Configurar funis
         </Link>
       </PageHeader>
+
+      {/* Com backend real as colunas vêm do Postgres e os cartões do mock — o
+          quadro sai vazio e vazio parece "não há negócio". Ver
+          `cobertura-do-funil.tsx`; some junto com o 501 das oportunidades. */}
+      <CoberturaDoFunil />
 
       {semEtapas ? (
         // Funil sem etapa é estado legítimo: funil nasce vazio, de propósito. E

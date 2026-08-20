@@ -10,13 +10,13 @@ import { describe, expect, it } from 'vitest'
 describe('DocumentoHeader', () => {
   it('título em Headline à esquerda e número em Número do Documento à direita', () => {
     render(<DocumentoHeader titulo="Orçamento" numero="ORÇ-2026-00184" />)
-    // Headline da banda: 700, SEM caixa alta. As duas mudanças são de
-    // 2026-08-13, quando o título passou à voz de QUEM (Newsreader): a família
-    // entra com 400 e 700 só (800 viraria negrito sintético), e serifada não
-    // leva caixa alta — a maiúscula fica na inicial do texto, não no CSS.
+    // FUSÃO v5 r3 (decisão do user, 2026-08-19): o título da banda fala em
+    // display CONDENSADO (Bebas Neue) e CAIXA ALTA — a regra "serifada não
+    // leva caixa alta" era da Newsreader e sai junto com ela AQUI; a serifa
+    // continua sendo a voz de QUEM no <Nome> e nos H1 de cadastro.
     const titulo = screen.getByRole('heading', { name: 'Orçamento' })
-    expect(titulo.className).toContain('font-bold')
-    expect(titulo.className).not.toContain('uppercase')
+    expect(titulo.className).toContain('font-[family-name:var(--font-display-condensada)]')
+    expect(titulo.className).toContain('uppercase')
     // Nº do Documento: mono 700, 1.5rem — a âncora do cabeçalho.
     const numero = screen.getByText('ORÇ-2026-00184')
     expect(numero.className).toContain('font-mono')

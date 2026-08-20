@@ -111,7 +111,7 @@ export function Appbar({
   return (
     <div
       data-slot="appbar"
-      className="flex h-12 shrink-0 items-center gap-3 border-rule-strong border-b-2 bg-card px-4"
+      className="flex h-12 shrink-0 items-center gap-3 border-rule-strong border-b-2 bg-card/75 px-4 backdrop-blur-md"
     >
       {/* A MARCA à esquerda da topbar — posição Polaris (o logo do admin
           Shopify). Ela subiu da barra lateral quando a navegação desceu:

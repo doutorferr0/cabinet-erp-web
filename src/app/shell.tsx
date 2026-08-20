@@ -172,9 +172,12 @@ function ItemDaBarra({
           type="button"
           onClick={() => aoAlternar(item.title)}
           aria-expanded={aberto}
-          className="flex w-full items-center gap-2 border-2 border-transparent px-2 py-1.5 text-left font-medium text-sm outline-none hover:bg-modulo focus-visible:focus-ring"
+          className="flex w-full items-center gap-2 border-2 border-transparent px-2 py-1.5 text-left font-medium text-sm outline-none hover:bg-modulo hover:text-foreground focus-visible:focus-ring"
         >
-          <item.icon aria-hidden="true" className="size-4 shrink-0 text-modulo" />
+          <item.icon
+            aria-hidden="true"
+            className="size-4 shrink-0 fill-[hsl(var(--modulo-02)/0.5)] text-modulo"
+          />
           <span className={cn('min-w-0 flex-1 truncate', algumaAtiva && 'font-bold')}>
             {item.title}
           </span>

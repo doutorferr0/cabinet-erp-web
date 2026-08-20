@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^2.0.2",
+    "@fontsource/bebas-neue": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/newsreader": "^5.3.0",
     "@fontsource/pt-mono": "^5.3.0",

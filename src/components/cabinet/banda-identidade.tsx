@@ -61,9 +61,13 @@ export function BandaDeIdentidade({
           Peso 700 e não 800: o Newsreader entra com dois pesos só (400/700), e
           `font-extrabold` sem arquivo de 800 vira negrito SINTÉTICO — o browser
           engorda o traço por conta e fecha as hastes finas. */}
-      <h1 className="font-bold text-2xl">{titulo}</h1>
+      <h1 className="font-[family-name:var(--font-display-condensada)] text-[1.75rem] leading-none tracking-[0.02em] uppercase">
+        {titulo}
+      </h1>
       {contexto ? (
-        <span className="font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em] text-text-strong">
+        // FUSÃO v5 r3: o MODO da tela é situação, não título — pill âmbar
+        // (zona de pendência/foco), como o carimbo CONSULTA do mockup.
+        <span className="rounded-full border-2 border-warn bg-zone-warn px-3 py-0.5 font-bold font-mono text-[0.65rem] uppercase tracking-[0.12em] text-foreground">
           {contexto}
         </span>
       ) : null}

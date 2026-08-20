@@ -12,13 +12,14 @@ import {
   TextareaField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { tabelas } from '@/data/tabelas'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { PedidoCompra } from '@/mocks/pedidos-compra'
 import { useNavigate } from '@tanstack/react-router'
-import { Package } from 'lucide-react'
+import { Hash, Package } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -119,19 +120,21 @@ export function PedidoCompraForm({
       onCancelar={() => void navigate({ to: '/compras/pedidos' })}
       readOnly={readOnly}
     >
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-12 items-end gap-3">
-          <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
-          <TextField name="pedVenda" label="Ped. Venda" className="col-span-6 sm:col-span-2" />
-          <TextField name="serie" label="Série" className="col-span-4 sm:col-span-1" />
-          <DateField name="data" label="Data" className="col-span-8 sm:col-span-2" />
-          <SelectField
-            name="codigoProduto"
-            label="Código do Produto"
-            options={tabelas.codigoProduto}
-            className="col-span-6 sm:col-span-2"
-          />
-        </div>
+      <div data-zonas className="flex flex-col gap-4">
+        <Secao numero="01" titulo="Identificação" cor="info" icone={Hash}>
+          <div className="grid grid-cols-12 items-end gap-3">
+            <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
+            <TextField name="pedVenda" label="Ped. Venda" className="col-span-6 sm:col-span-2" />
+            <TextField name="serie" label="Série" className="col-span-4 sm:col-span-1" />
+            <DateField name="data" label="Data" className="col-span-8 sm:col-span-2" />
+            <SelectField
+              name="codigoProduto"
+              label="Código do Produto"
+              options={tabelas.codigoProduto}
+              className="col-span-6 sm:col-span-2"
+            />
+          </div>
+        </Secao>
 
         {/* Um pedido tem N fornecedores (§7.3): grade própria, não combo único. */}
         <FormBlock legend="Fornecedores">

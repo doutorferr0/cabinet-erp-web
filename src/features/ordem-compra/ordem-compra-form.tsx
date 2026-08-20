@@ -15,6 +15,7 @@ import {
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
+import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
@@ -25,7 +26,7 @@ import type { OrdemCompra } from '@/mocks/ordens-compra'
 import type { Transportadora } from '@/mocks/transportadoras'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Package, Search } from 'lucide-react'
+import { Building2, Hash, Package, Percent, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -64,41 +65,60 @@ export const ordemCompraSchema = z.object({
 
 function Cabecalho() {
   return (
-    <div className="grid grid-cols-12 items-end gap-3">
-      <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
-      <DateField name="dataOrdem" label="Data Ordem" className="col-span-6 sm:col-span-2" />
-      <DateField name="dataEnvio" label="Data Envio" className="col-span-6 sm:col-span-2" />
-      <DateField name="dataPrevista" label="Data Prevista" className="col-span-6 sm:col-span-2" />
-      <DateField name="reagendamento" label="Reagendamento" className="col-span-6 sm:col-span-2" />
-      <SelectField
-        name="codigoProduto"
-        label="Código do Produto"
-        options={tabelas.codigoProduto}
-        className="col-span-6 sm:col-span-2"
-      />
-      <TextField
-        name="filtroSobreVendaNumero"
-        label="Filtro Sobre Venda — Número"
-        className="col-span-6 sm:col-span-3"
-      />
-      <SelectField
-        name="empresaCompradora"
-        label="Empresa Compradora"
-        options={tabelas.empresasCompradoras}
-        className="col-span-6 sm:col-span-3"
-      />
-      <SelectField
-        name="fornecedor"
-        label="Fornecedor"
-        options={tabelas.fornecedoresDocumento}
-        className="col-span-12 sm:col-span-4"
-      />
-      <MoneyField
-        name="faturamentoMinimoCentavos"
-        label="Faturamento mínimo"
-        className="col-span-6 sm:col-span-2"
-      />
-    </div>
+    <>
+      {/* FUSÃO v5 r6: o padrão de seções do orçamento chega à ordem — quem
+          importa primeiro (de quem se compra), burocracia depois. */}
+      <Secao numero="01" titulo="Fornecedor & Compra" cor="id" icone={Building2}>
+        <div className="grid grid-cols-12 items-end gap-3">
+          <SelectField
+            name="fornecedor"
+            label="Fornecedor"
+            options={tabelas.fornecedoresDocumento}
+            className="campo-heroi col-span-12 sm:col-span-4"
+          />
+          <SelectField
+            name="empresaCompradora"
+            label="Empresa Compradora"
+            options={tabelas.empresasCompradoras}
+            className="col-span-6 sm:col-span-3"
+          />
+          <TextField
+            name="filtroSobreVendaNumero"
+            label="Filtro Sobre Venda — Número"
+            className="col-span-6 sm:col-span-3"
+          />
+          <MoneyField
+            name="faturamentoMinimoCentavos"
+            label="Faturamento mínimo"
+            className="col-span-6 sm:col-span-2"
+          />
+        </div>
+      </Secao>
+
+      <Secao numero="02" titulo="Identificação" cor="info" icone={Hash}>
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
+          <DateField name="dataOrdem" label="Data Ordem" className="col-span-6 sm:col-span-2" />
+          <DateField name="dataEnvio" label="Data Envio" className="col-span-6 sm:col-span-2" />
+          <DateField
+            name="dataPrevista"
+            label="Data Prevista"
+            className="col-span-6 sm:col-span-2"
+          />
+          <DateField
+            name="reagendamento"
+            label="Reagendamento"
+            className="col-span-6 sm:col-span-2"
+          />
+          <SelectField
+            name="codigoProduto"
+            label="Código do Produto"
+            options={tabelas.codigoProduto}
+            className="col-span-6 sm:col-span-2"
+          />
+        </div>
+      </Secao>
+    </>
   )
 }
 
@@ -233,7 +253,7 @@ function GradeItens() {
 
 function AbaPrincipal() {
   return (
-    <div className="flex flex-col gap-4">
+    <div data-zonas className="flex flex-col gap-4">
       <Cabecalho />
 
       <div className="flex flex-wrap gap-2">
@@ -265,7 +285,9 @@ function AbaPrincipal() {
 
       <GradeItens />
 
-      <Ajustes />
+      <Secao numero="03" titulo="Ajustes" cor="warn" icone={Percent}>
+        <Ajustes />
+      </Secao>
 
       <BlocoTransportadora />
 

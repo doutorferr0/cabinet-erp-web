@@ -408,7 +408,7 @@ function GradeItens() {
 
 function AbaPrincipal() {
   return (
-    <div className="flex flex-col gap-4">
+    <div data-zonas className="flex flex-col gap-4">
       <Cabecalho />
       <Secao numero="03" titulo="Desconto" cor="warn" icone={Percent}>
         <ControlesDesconto />

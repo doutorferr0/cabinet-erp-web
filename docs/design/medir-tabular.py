@@ -34,7 +34,8 @@ import sys
 import zlib
 from pathlib import Path
 
-# As quatro famílias da identidade, com o papel de cada uma. O PESO não vem
+# As famílias da identidade, com o papel de cada uma — quatro até a fusão v5 r3,
+# CINCO desde que o display condensado entrou. O PESO não vem
 # escrito aqui: sai dos `@import` do `src/index.css`, que é a lista do que a
 # aplicação de fato baixa.
 #
@@ -49,6 +50,11 @@ FAMILIAS = [
     ("Sora", "títulos (--font-display)", "sora"),
     ("Newsreader", "nome próprio (--font-nome)", "newsreader"),
     ("PT Mono", "meta e número grande (--font-mono)", "pt-mono"),
+    # A QUINTA, e ela chegou depois desta lista: a fusão v5 r3 trouxe o display
+    # condensado para o nome do documento e o número-herói (issue #236, decisão
+    # do user sobre o teto de quatro famílias). Ficou dois dias fora da medição
+    # — ver `familias_nao_medidas`, que existe por causa disto.
+    ("Bebas Neue", "display condensado (--font-display-condensada)", "bebas-neue"),
 ]
 
 RAIZ = Path(__file__).resolve().parents[2]
@@ -67,6 +73,24 @@ def pesos_importados(pacote: str) -> list[str]:
         raise SystemExit(f"{pacote}: nenhum @import em src/index.css — a família ainda é usada?")
     # `dict.fromkeys` tira repetido preservando a ordem em que o CSS declara.
     return list(dict.fromkeys(achados))
+
+
+def familias_nao_medidas() -> list[str]:
+    """Pacotes que o CSS importa e que a lista acima não cobre.
+
+    `pesos_importados` já impede que um PESO novo escape da medição, lendo os
+    `@import` em vez de repetir a lista. Mas o mesmo silêncio existia um nível
+    acima: **família nova não escapava por peso, escapava por família.** Foi o
+    que aconteceu com a Bebas Neue — importada na fusão v5 r3, medida só dois
+    dias depois, e só porque alguém foi olhar.
+
+    A conta é a mesma do outro lado do problema: o CSS é a lista do que a
+    aplicação de fato baixa, e o que ela baixa é o que precisa alinhar dígito.
+    """
+    css = CSS.read_text(encoding="utf-8")
+    importados = dict.fromkeys(re.findall(r'@import\s+"@fontsource/([a-z0-9-]+)/', css))
+    declarados = {pacote for _, _, pacote in FAMILIAS}
+    return [pacote for pacote in importados if pacote not in declarados]
 
 
 def tabelas_do_woff(caminho: Path) -> dict[str, bytes]:
@@ -160,6 +184,16 @@ def recursos_gsub(tabelas: dict[str, bytes]) -> set[str]:
 def medir() -> int:
     print("MEDIÇÃO — algarismo tabular nas famílias da identidade\n")
     falhou = False
+
+    # Antes de medir, cobrar a LISTA: família que o CSS baixa e ninguém mediu é
+    # exatamente o caso que passou despercebido, e ele não se anuncia — a saída
+    # continua bonita, só que menor.
+    for pacote in familias_nao_medidas():
+        print(f"× @fontsource/{pacote} — importado em src/index.css e FORA de FAMILIAS")
+        print("  A aplicação baixa esta família e esta medição não a cobre.")
+        print("  Acrescente-a a FAMILIAS com o papel dela, ou tire o @import.\n")
+        falhou = True
+
     for nome, papel, pacote in FAMILIAS:
         for peso in pesos_importados(pacote):
             arquivo = f"{pacote}-latin-{peso}-normal.woff"

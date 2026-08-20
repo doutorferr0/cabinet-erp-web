@@ -138,6 +138,13 @@ describe('escrita', () => {
       // Hierarquia pai/filho (#91): nenhuma das três telas tem campo para ela,
       // então ela viaja de volta pela mesma regra do `code` e do `registration`.
       parentId: null,
+      // Contato e endereço (#244), na mesma regra: a tela de Fornecedores não
+      // desenha celular, e gravar por ela não pode apagar o do Cliente.
+      mobilePhone: null,
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: null,
     })
   })
 
@@ -350,6 +357,13 @@ describe('desativação (o Excluir da listagem)', () => {
       // montado da LINHA, e desativar um arquiteto não pode desligá-lo do
       // escritório — quem reativar depois encontraria o vínculo perdido.
       parentId: linha.parentId ?? null,
+      // E o contato e o endereço (#244): desativar um cliente não pode apagar
+      // onde ele mora. Quem reativa depois encontraria a ficha esvaziada.
+      mobilePhone: linha.mobilePhone ?? null,
+      businessPhone: linha.businessPhone ?? null,
+      homePhone: linha.homePhone ?? null,
+      fax: linha.fax ?? null,
+      address: linha.address ?? null,
     })
   })
 

@@ -99,6 +99,13 @@ describe('tela Fornecedor', () => {
       // Hierarquia pai/filho (#91): o vínculo não é campo desta tela e volta
       // como veio, pela mesma regra do registro profissional acima.
       parentId: null,
+      // #244: a tela de Fornecedor edita `Fone 1`, `FAX` e o endereço; celular
+      // e residencial ela não tem, e voltam como vieram (nulos, nesta linha).
+      mobilePhone: null,
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: null,
     })
     // 15s: este caso monta DUAS telas (listagem e formulário completo) e ainda
     // digita — o limite padrão de 5s do vitest não cobre isso nesta máquina.

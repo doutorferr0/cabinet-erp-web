@@ -107,6 +107,47 @@ export interface PartnerPayoutBankInfo {
   accountNumber: string | null;
 }
 
+/**
+ * Proposto. O endereço do parceiro — um só, na ordem em que a tela o desenha. Objeto e não sete campos soltos no `PartnerDto`, pela mesma razão do `PartnerPayoutBankInfo`: parceiro sem endereço manda o objeto inteiro em `null` em vez de sete nulos que a tela teria de recombinar. **Todo campo é anulável, e endereço PARCIAL é o caso normal, não a exceção** — do legado vem muita ficha com cidade e UF e nada mais, e exigir CEP para gravar o resto obrigaria a inventar um. É o PRIMEIRO endereço do contrato: colaborador e oportunidade seguem sem ele, e se algum dia precisarem, este schema é o que se reaproveita.
+ */
+export interface PartnerAddress {
+  /**
+     * CEP, sem máscara. String e não número: CEP tem zero à esquerda.
+     * @nullable
+     */
+  zipCode: string | null;
+  /**
+     * Logradouro.
+     * @nullable
+     */
+  street: string | null;
+  /**
+     * Número. String porque `S/N`, `12-A` e `KM 4` são o que o operador digita.
+     * @nullable
+     */
+  number: string | null;
+  /**
+     * Complemento — apartamento, bloco, sala.
+     * @nullable
+     */
+  complement: string | null;
+  /**
+     * Bairro.
+     * @nullable
+     */
+  district: string | null;
+  /**
+     * Nome da cidade, como texto. **Não é o id de uma tabela de cidades** — o contrato não publica nenhuma, e a busca de CEP da tela devolve nome. O dia em que houver cadastro de cidade, o id entra ao lado deste campo, não no lugar dele: a ficha antiga continua valendo pelo nome que gravou.
+     * @nullable
+     */
+  city: string | null;
+  /**
+     * UF, duas letras.
+     * @nullable
+     */
+  state: string | null;
+}
+
 export interface PartnerDto {
   id: string;
   /** @nullable */
@@ -142,6 +183,28 @@ export interface PartnerDto {
      * @nullable
      */
   parentName?: string | null;
+  /**
+     * Proposto. Celular. É o telefone que a tela de Cliente pede como OBRIGATÓRIO, e o contrato o publica anulável assim mesmo: a obrigatoriedade é regra de tela, e parceiro importado do legado sem telefone precisa entrar.
+     * @nullable
+     */
+  mobilePhone?: string | null;
+  /**
+     * Proposto. Telefone comercial.
+     * @nullable
+     */
+  businessPhone?: string | null;
+  /**
+     * Proposto. Telefone residencial.
+     * @nullable
+     */
+  homePhone?: string | null;
+  /**
+     * Proposto. Fax. Continua na ficha do legado e ainda é o único canal de alguns fornecedores.
+     * @nullable
+     */
+  fax?: string | null;
+  /** Proposto. Endereço do parceiro; `null` quando não há nenhum campo preenchido. Fora da whitelist de `sortBy`/`filters` de propósito: publicar o dado não é publicar a consulta — filtrar por cidade pede coluna indexada no servidor, e isso é decisão própria. */
+  address?: null | PartnerAddress;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -386,6 +449,28 @@ export interface PartnerWriteRequest {
      * @nullable
      */
   parentId?: string | null;
+  /**
+     * Proposto. Celular. É o telefone que a tela de Cliente pede como OBRIGATÓRIO, e o contrato o publica anulável assim mesmo: a obrigatoriedade é regra de tela, e parceiro importado do legado sem telefone precisa entrar.
+     * @nullable
+     */
+  mobilePhone?: string | null;
+  /**
+     * Proposto. Telefone comercial.
+     * @nullable
+     */
+  businessPhone?: string | null;
+  /**
+     * Proposto. Telefone residencial.
+     * @nullable
+     */
+  homePhone?: string | null;
+  /**
+     * Proposto. Fax. Continua na ficha do legado e ainda é o único canal de alguns fornecedores.
+     * @nullable
+     */
+  fax?: string | null;
+  /** Proposto. Endereço. Vale a regra do `PUT` INTEGRAL, e aqui ela morde mais que nos outros campos: mandar `null` APAGA o endereço inteiro, e omitir na gravação feita por uma tela que não desenha o bloco apagaria o que outra tela gravou. Quem não edita endereço devolve o objeto como veio. */
+  address?: null | PartnerAddress;
 }
 
 /**

@@ -24,5 +24,6 @@ export {
   colunasDe,
   filtrosDe,
   indicadoresSemOrigem,
+  semConsulta,
   semLastro,
 } from './tipos'

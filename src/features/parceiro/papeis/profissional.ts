@@ -1,4 +1,9 @@
 import type { PartnerDto } from '@/api/gerado'
+import {
+  enderecoDoContrato,
+  enderecoParaContrato,
+  textoOuNulo,
+} from '@/features/parceiro/papeis/contato-e-endereco'
 import type { PapelDeCadastro } from '@/features/parceiro/usar-parceiro'
 import { type Profissional, profissionalVazio } from '@/mocks/profissionais'
 
@@ -27,6 +32,35 @@ function dtoParaForm(dto: PartnerDto): Profissional {
     nomeBanco: dto.payoutBankInfo?.bankName ?? '',
     numeroAgencia: dto.payoutBankInfo?.branchNumber ?? '',
     numeroConta: dto.payoutBankInfo?.accountNumber ?? '',
+    // Contato e endereço (#244). Os quatro telefones do Profissional moram sob
+    // `telefones.*` no schema local — o mesmo dado, outro caminho —, e é por
+    // isso que a tradução é por campo e não por espalhamento do objeto.
+    telefones: {
+      celular: dto.mobilePhone ?? '',
+      foneComercial: dto.businessPhone ?? '',
+      foneResidencial: dto.homePhone ?? '',
+      fax: dto.fax ?? '',
+    },
+    endereco: enderecoDoContrato(dto.address),
+  }
+}
+
+/**
+ * Formulário → campos editáveis.
+ *
+ * **O endereço da AGÊNCIA (`enderecoBanco`) não viaja**, e a ausência é
+ * declarada: o contrato publica UM endereço por parceiro, e o próprio
+ * `PartnerPayoutBankInfo` já diz por escrito que o endereço do banco fica de
+ * fora. Mandá-lo em `address` gravaria a agência no lugar da casa do
+ * profissional — o campo existe, o valor estaria errado, e ninguém veria.
+ */
+function contatoEEndereco(values: Profissional) {
+  return {
+    mobilePhone: textoOuNulo(values.telefones.celular),
+    businessPhone: textoOuNulo(values.telefones.foneComercial),
+    homePhone: textoOuNulo(values.telefones.foneResidencial),
+    fax: textoOuNulo(values.telefones.fax),
+    address: enderecoParaContrato(values.endereco),
   }
 }
 
@@ -53,7 +87,7 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
   rota: '/cadastros/profissionais',
   queryKeyListagem: ['profissionais'],
   camposDeEdicao:
-    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários e Ativo',
+    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários, Telefones, Endereço e Ativo',
   vazio: profissionalVazio,
   dtoParaForm,
   paraEscrita: (values) => ({
@@ -64,6 +98,7 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
     active: values.ativo,
     registration: values.registroProfissional,
     payoutBankInfo: contaDaComissao(values),
+    ...contatoEEndereco(values),
   }),
   paraInclusao: (values) => ({
     legalName: values.nome,
@@ -73,5 +108,6 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
     active: values.ativo,
     registration: values.registroProfissional,
     payoutBankInfo: contaDaComissao(values),
+    ...contatoEEndereco(values),
   }),
 }

@@ -75,7 +75,16 @@ export interface CampoCadastro {
   op?: readonly string[]
   /** Caminho no schema Zod da entidade. Ausente = o repo ainda não guarda. */
   campo?: string
-  /** Nome no contrato. Ausente = o servidor ainda não publica. */
+  /**
+   * Nome no contrato. Ausente = o servidor ainda não publica.
+   *
+   * **Publicar o dado não é publicar a consulta.** O `dto` é também o nome que
+   * VIAJA em `sortBy`/`filters` (ver `idDoFiltro`), e o servidor só aceita os
+   * da whitelist — campo fora dela é 400. Desde #244 o contrato publica campos
+   * que a whitelist não alcança (os telefones e o endereço do parceiro), então
+   * `dto` diz "existe no DTO", e quem decide se vira coluna ou filtro é
+   * `temLastroDeConsulta`, cruzando com a `whitelist` da entidade.
+   */
   dto?: string
 }
 
@@ -146,10 +155,20 @@ export function camposDe(entidade: EntidadeCadastro): readonly CampoCadastro[] {
   return entidade.modulos.flatMap((modulo) => modulo.campos)
 }
 
-/** Um campo só tem lastro para ordenar/filtrar se a FONTE da entidade souber
- *  resolvê-lo: o servidor pelo `dto`, o provider mock pelo `campo`. */
+/**
+ * Um campo só tem lastro para ordenar/filtrar se a FONTE da entidade souber
+ * resolvê-lo: o servidor pelo `dto`, o provider mock pelo `campo`.
+ *
+ * No `http` não basta o `dto` existir — ele precisa estar na WHITELIST que o
+ * contrato publica. Foi o que #244 separou: `mobilePhone` e `address` são
+ * campos do `PartnerDto`, e nenhum dos dois é ordenável nem filtrável, porque
+ * filtrar por cidade pede coluna indexada no servidor e essa é decisão própria.
+ * Sem este cruzamento, publicar um campo no contrato ligaria sozinho uma coluna
+ * que responde 400 no primeiro clique do operador.
+ */
 function temLastroDeConsulta(entidade: EntidadeCadastro, campo: CampoCadastro): boolean {
-  return entidade.fonte === 'http' ? campo.dto !== undefined : campo.campo !== undefined
+  if (entidade.fonte !== 'http') return campo.campo !== undefined
+  return campo.dto !== undefined && (entidade.whitelist?.includes(campo.dto) ?? false)
 }
 
 /**
@@ -164,6 +183,27 @@ export function colunasDe(entidade: EntidadeCadastro): readonly CampoCadastro[] 
 /** Os filtros que a listagem PODE oferecer hoje. Mesma regra da coluna. */
 export function filtrosDe(entidade: EntidadeCadastro): readonly CampoCadastro[] {
   return camposDe(entidade).filter((campo) => campo.fil && temLastroDeConsulta(entidade, campo))
+}
+
+/**
+ * O que o CONTRATO publica e a consulta não alcança — coluna e filtro que o
+ * campo pede no mockup e o servidor não sabe responder.
+ *
+ * Terceira lacuna do arquivo, e de natureza própria: `semLastro` é dado que
+ * ninguém guarda, `indicadoresSemOrigem` é agregação que o contrato não publica,
+ * e esta é dado GUARDADO cuja consulta não foi publicada. Só existe para
+ * entidade `http` — no mock quem consulta é o provider, e ele resolve qualquer
+ * campo do schema.
+ *
+ * Contável pelo mesmo motivo das outras: no dia em que a whitelist do contrato
+ * ganhar `city`, o número CAI aqui e a coluna liga sozinha.
+ */
+export function semConsulta(entidade: EntidadeCadastro): readonly CampoCadastro[] {
+  if (entidade.fonte !== 'http') return []
+  return camposDe(entidade).filter(
+    (campo) =>
+      (campo.col || campo.fil) && campo.dto !== undefined && !temLastroDeConsulta(entidade, campo),
+  )
 }
 
 /** O que o user desenhou e o repo ainda não guarda. Existe para ser CONTADO —

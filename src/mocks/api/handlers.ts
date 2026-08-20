@@ -464,6 +464,11 @@ export const handlers = [
       isSupplier: corpo.isSupplier ?? false,
       isProfessional: corpo.isProfessional ?? false,
       registrationActive: true,
+      mobilePhone: corpo.mobilePhone ?? null,
+      businessPhone: corpo.businessPhone ?? null,
+      homePhone: corpo.homePhone ?? null,
+      fax: corpo.fax ?? null,
+      address: corpo.address ?? null,
       vinculos: {
         [store.activeTenantId]: {
           code: corpo.code ?? null,
@@ -496,6 +501,15 @@ export const handlers = [
     parceiro.isCustomer = corpo.isCustomer ?? false
     parceiro.isSupplier = corpo.isSupplier ?? false
     parceiro.isProfessional = corpo.isProfessional ?? false
+    // `PUT` substitui o registro inteiro: o que o corpo não trouxer é apagado,
+    // e é por isso que a tela devolve como veio o que não edita. O mock
+    // apagando de verdade é o que torna a regra observável no navegador — um
+    // mock que preservasse o campo omitido esconderia o defeito até a produção.
+    parceiro.mobilePhone = corpo.mobilePhone ?? null
+    parceiro.businessPhone = corpo.businessPhone ?? null
+    parceiro.homePhone = corpo.homePhone ?? null
+    parceiro.fax = corpo.fax ?? null
+    parceiro.address = corpo.address ?? null
     parceiro.vinculos[store.activeTenantId] = {
       code: corpo.code ?? null,
       paymentTerms: corpo.paymentTerms ?? null,

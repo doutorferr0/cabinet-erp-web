@@ -98,7 +98,7 @@ export const cliente: EntidadeCadastro = {
           campo: 'cpf',
           dto: 'document',
         },
-        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'celular' },
+        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'celular', dto: 'mobilePhone' },
         { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
         CAMPO_ATIVO,
       ],
@@ -227,7 +227,10 @@ export const fornecedor: EntidadeCadastro = {
           campo: 'cnpjCpf',
           dto: 'document',
         },
-        { k: 'tel', r: 'Telefone', req: true, col: true, campo: 'fone1' },
+        // `fone1` é o comercial do fornecedor — `businessPhone` no contrato.
+        // `fone2` continua sem `dto`: o contrato publica quatro telefones e
+        // nenhum é "o segundo comercial" (ver o papel do Fornecedor).
+        { k: 'tel', r: 'Telefone', req: true, col: true, campo: 'fone1', dto: 'businessPhone' },
         { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
         CAMPO_ATIVO,
       ],
@@ -301,7 +304,7 @@ export const fornecedor: EntidadeCadastro = {
       campos: [
         { k: 'contatos', r: 'Contatos', campo: 'contatos' },
         { k: 'fone2', r: 'Telefone 2', campo: 'fone2' },
-        { k: 'fax', r: 'Fax', campo: 'fax' },
+        { k: 'fax', r: 'Fax', campo: 'fax', dto: 'fax' },
         { k: 'site', r: 'Site', campo: 'site' },
         {
           k: 'com1tipo',
@@ -376,7 +379,14 @@ export const profissional: EntidadeCadastro = {
           campo: 'cpf',
           dto: 'document',
         },
-        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'telefones.celular' },
+        {
+          k: 'cel',
+          r: 'Celular',
+          req: true,
+          col: true,
+          campo: 'telefones.celular',
+          dto: 'mobilePhone',
+        },
         { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
         CAMPO_ATIVO,
       ],

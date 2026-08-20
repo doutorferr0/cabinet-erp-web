@@ -1,8 +1,9 @@
 import { useAgenda } from '@/data/dashboard-api'
+import { useTheme } from '@/hooks/use-theme'
 import { type Mes, diaLocalISO, limitesDoMes } from '@/lib/datas'
 import { createViewMonthAgenda } from '@schedule-x/calendar'
 import { ScheduleXCalendar, useCalendarApp } from '@schedule-x/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CALENDARIOS, paraEventoScheduleX } from './eventos'
 
 /**
@@ -16,8 +17,14 @@ import { CALENDARIOS, paraEventoScheduleX } from './eventos'
  * Cada tipo de compromisso (`delivery`, `quote`, `meeting`, `payment`) tem uma
  * cor fixa, igual à do dashboard, para que o operador reencontre o significado
  * da marca em qualquer tela.
+ *
+ * O tema do calendário é AMARRADO ao do app: o Schedule-X guarda claro e escuro
+ * em conjuntos separados e só troca quando alguém manda (`isDark` no início,
+ * `setTheme` depois). Sem essa amarra, o botão de tema viraria a folha e a
+ * agenda continuaria pastel, com a tinta lida contra o papel errado.
  */
 export function AgendaTela() {
+  const { resolved } = useTheme()
   const [mes, setMes] = useState<Mes>(() => {
     const hoje = new Date()
     return { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 }
@@ -48,6 +55,7 @@ export function AgendaTela() {
   const calendarApp = useCalendarApp(
     {
       views: [createViewMonthAgenda()],
+      isDark: resolved === 'dark',
       selectedDate: Temporal.PlainDate.from(diaLocalISO()),
       locale: 'pt-BR',
       firstDayOfWeek: 1,
@@ -59,6 +67,10 @@ export function AgendaTela() {
     },
     plugins,
   )
+
+  useEffect(() => {
+    calendarApp?.setTheme(resolved)
+  }, [calendarApp, resolved])
 
   return (
     <div className="agenda-schedule-x flex h-[calc(100vh-12rem)] flex-col gap-4">

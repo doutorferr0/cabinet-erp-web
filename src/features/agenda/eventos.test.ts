@@ -1,6 +1,6 @@
 import 'temporal-polyfill/global'
 import { describe, expect, it } from 'vitest'
-import { paraEventoScheduleX } from './eventos'
+import { CALENDARIOS, paraEventoScheduleX } from './eventos'
 
 describe('paraEventoScheduleX', () => {
   it('converte início ISO em ZonedDateTime e dá duração de 1h', () => {
@@ -40,5 +40,29 @@ describe('paraEventoScheduleX', () => {
     const convertido = paraEventoScheduleX(evento)
 
     expect(convertido.description).toBeUndefined()
+  })
+})
+
+describe('CALENDARIOS', () => {
+  it('tira do token o que é global e copia só o que é escopado', () => {
+    // Dinheiro e tinta têm token na raiz — viram com o tema sozinhos, e por
+    // isso claro e escuro são o MESMO valor.
+    expect(CALENDARIOS.payment.lightColors?.main).toBe('hsl(var(--money))')
+    expect(CALENDARIOS.payment.darkColors?.main).toBe('hsl(var(--money))')
+    expect(CALENDARIOS.payment.lightColors?.container).toBe('hsl(var(--zone-money))')
+
+    for (const calendario of Object.values(CALENDARIOS)) {
+      expect(calendario.lightColors?.onContainer).toBe('hsl(var(--foreground))')
+      expect(calendario.darkColors?.onContainer).toBe('hsl(var(--foreground))')
+    }
+  })
+
+  it('mantém a cheia /01 e troca só a pastel /02 no escuro', () => {
+    // A regra é do index.css: no escuro só `--modulo-02` muda.
+    for (const kind of ['delivery', 'quote', 'meeting'] as const) {
+      const { lightColors, darkColors } = CALENDARIOS[kind]
+      expect(darkColors?.main).toBe(lightColors?.main)
+      expect(darkColors?.container).not.toBe(lightColors?.container)
+    }
   })
 })

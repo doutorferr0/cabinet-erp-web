@@ -3,6 +3,7 @@ import type {
   CatalogLookupDto,
   PartnerAddress,
   PartnerDto,
+  PartnerPayoutBankInfo,
   ProductDetailDto,
   ProjectDto,
   ProjectPlanDto,
@@ -48,6 +49,20 @@ export interface ParceiroDaOrg {
   isSupplier: boolean
   isProfessional: boolean
   registrationActive: boolean
+  /**
+   * O conselho, a conta de comissão e o vínculo pai — os três opcionais que o
+   * contrato publica desde 2026-08-13 e o mock não guardava.
+   *
+   * A falta não era inofensiva: `corpoDeEscrita` RECUSA gravar quando o
+   * registro chega sem um campo que o `PUT` substitui, então alterar um
+   * parceiro no modo mock — o modo do site público — lançava
+   * `O registro veio do servidor sem \`registration\`` em vez de gravar. É a
+   * mesma regra que o #244 já aplicou aos cinco campos de contato, faltando
+   * aos três mais antigos.
+   */
+  registration: string | null
+  payoutBankInfo: PartnerPayoutBankInfo | null
+  parentId: string | null
   /**
    * Contato e endereço são do CADASTRO da organização, não do vínculo — o
    * mesmo lugar onde moram nome e documento. O celular de quem atende as duas
@@ -172,6 +187,11 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: true,
       isProfessional: false,
       registrationActive: true,
+      // Fornecedor não tem conselho nem conta de comissão: os três nascem nulos
+      // e o `null` é o dado, não a ausência dele.
+      registration: null,
+      payoutBankInfo: null,
+      parentId: null,
       mobilePhone: '11987650001',
       businessPhone: '1133330001',
       homePhone: null,
@@ -200,6 +220,16 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: false,
       isProfessional: true,
       registrationActive: true,
+      // A ÚNICA profissional do seed, e por isso a única com conselho e conta —
+      // é nela que o `Alterar` da tela §3 se exercita no navegador.
+      registration: 'CAU A123456-7',
+      payoutBankInfo: {
+        bankNumber: '341',
+        bankName: 'ITAÚ UNIBANCO',
+        branchNumber: '0710',
+        accountNumber: '55012-9',
+      },
+      parentId: null,
       mobilePhone: '19998880002',
       businessPhone: null,
       homePhone: null,
@@ -230,6 +260,9 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: false,
       isProfessional: false,
       registrationActive: true,
+      registration: null,
+      payoutBankInfo: null,
+      parentId: null,
       // Cadastro SEM contato e SEM endereço: o `null` do objeto inteiro é um
       // estado do contrato, não um descuido do seed.
       mobilePhone: null,
@@ -580,7 +613,12 @@ export function criarStore(): StoreDaApi {
     agenda: agendaDoSeed(),
     projetos: projetosDoSeed(),
     planos: planosDoSeed(),
-    proximoId: 1,
+    // COMEÇA ACIMA DO SEED, e não em 1. O contador é um só para todos os
+    // prefixos e o seed grava ids à mão (`parc-0001`, `prod-0003`): saindo de
+    // 1, o PRIMEIRO cadastro incluído nascia `parc-0002` — id que já existia.
+    // Nada quebrava na hora; quebrava na releitura por id, que encontrava o
+    // registro do seed e devolvia o cadastro errado, com cara de "não gravou".
+    proximoId: 1000,
   }
 }
 
@@ -660,6 +698,15 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     paymentTerms: vinculo?.paymentTerms ?? null,
     active: vinculo?.active ?? false,
     registrationActive: p.registrationActive,
+    registration: p.registration,
+    payoutBankInfo: p.payoutBankInfo,
+    // DERIVADO, nunca guardado: `parentName` que se grava é `parentName` que um
+    // dia diverge do `parentId` — a razão pela qual a escrita também não o
+    // aceita de volta (ver a descrição no contrato).
+    parentId: p.parentId,
+    parentName: p.parentId
+      ? (store.parceiros.find((outro) => outro.id === p.parentId)?.legalName ?? null)
+      : null,
     // As cinco chaves saem SEMPRE, mesmo nulas: `corpoDeEscrita` recusa gravar
     // quando o registro chega sem um campo que o `PUT` substitui — ausente não
     // é nulo, e um mock que omite ensinaria a tela a tratar os dois como a

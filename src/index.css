@@ -1087,9 +1087,59 @@
   color: hsl(var(--modulo-01));
 }
 
+/* FOCO POR ZONA (issue #234, fusão v5 r6): a zona onde o operador está
+   digitando vem pra frente; as irmãs recuam de leve. Desligado em repouso —
+   nada muda até um campo receber foco. Gatilho por :focus-within puro (CSS,
+   zero JS); o recuo é suave de propósito (opacidade e brilho, sem escala),
+   calibrado com o user em 2026-08-19 ("não tanto, mais suave"). */
+[data-zonas] > * {
+  transition: opacity 0.22s ease, filter 0.22s ease, box-shadow 0.22s ease;
+}
+[data-zonas]:focus-within > *:not(:focus-within) {
+  opacity: 0.72;
+  filter: saturate(0.7) brightness(0.97);
+}
+[data-zonas]:focus-within > *:focus-within {
+  box-shadow: 0 0 0 2px hsl(var(--accent) / 0.4), var(--shadow-macia);
+}
+
+/* ENTRADA ESCALONADA (r6): as zonas sobem uma atrás da outra na montagem —
+   60ms de degrau, `backwards` para não piscar nem prender o estado final
+   (fill `both` sobrescreveria a opacidade do foco por zona para sempre). */
+@keyframes zona-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+[data-zonas] > * {
+  animation: zona-sobe 0.3s cubic-bezier(0, 0, 0.2, 1) backwards;
+}
+[data-zonas] > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+[data-zonas] > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+[data-zonas] > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+[data-zonas] > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+[data-zonas] > *:nth-child(n + 6) {
+  animation-delay: 300ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-zonas] > * {
+    animation: none;
+  }
+}
+
 /* Campo-herói (fusão v5 r5): o dado que define o documento — Cliente no
    orçamento, Fornecedor na ordem — fala mais alto que os irmãos. */
-.campo-heroi input {
+.campo-heroi input,
+.campo-heroi select {
   border-color: hsl(var(--foreground));
   font-family: var(--font-sans);
   font-size: 1.0625rem;

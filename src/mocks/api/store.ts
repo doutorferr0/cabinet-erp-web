@@ -1,6 +1,7 @@
 import type {
   AgendaEventDto,
   CatalogLookupDto,
+  PartnerAddress,
   PartnerDto,
   ProductDetailDto,
   ProjectDto,
@@ -47,6 +48,18 @@ export interface ParceiroDaOrg {
   isSupplier: boolean
   isProfessional: boolean
   registrationActive: boolean
+  /**
+   * Contato e endereço são do CADASTRO da organização, não do vínculo — o
+   * mesmo lugar onde moram nome e documento. O celular de quem atende as duas
+   * empresas do grupo é um só; o que muda por empresa é código, prazo e o
+   * `active`, que continuam em `VinculoDeParceiro`.
+   */
+  mobilePhone: string | null
+  businessPhone: string | null
+  homePhone: string | null
+  fax: string | null
+  /** `null` = nenhum campo preenchido. Endereço PARCIAL é caso normal. */
+  address: PartnerAddress | null
   /** Vínculo por empresa (tenantId → dados do vínculo). Sem entrada = não vinculado. */
   vinculos: Record<string, VinculoDeParceiro>
 }
@@ -159,6 +172,19 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: true,
       isProfessional: false,
       registrationActive: true,
+      mobilePhone: '11987650001',
+      businessPhone: '1133330001',
+      homePhone: null,
+      fax: '1133330009',
+      address: {
+        zipCode: '01310930',
+        street: 'AVENIDA PAULISTA',
+        number: '1578',
+        complement: 'CONJ 42',
+        district: 'BELA VISTA',
+        city: 'SAO PAULO',
+        state: 'SP',
+      },
       vinculos: {
         [TENANT_MATRIZ]: { code: 'F-001', paymentTerms: '28/35/42', active: true },
         [TENANT_FILIAL]: { code: 'FOR-9', paymentTerms: 'À VISTA', active: true },
@@ -174,6 +200,22 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: false,
       isProfessional: true,
       registrationActive: true,
+      mobilePhone: '19998880002',
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      // Endereço PARCIAL — cidade e UF e nada mais. É o que vem do legado na
+      // maioria das fichas, e a tela precisa saber desenhar isto sem inventar
+      // CEP para completar.
+      address: {
+        zipCode: null,
+        street: null,
+        number: null,
+        complement: null,
+        district: null,
+        city: 'CAMPINAS',
+        state: 'SP',
+      },
       vinculos: {
         [TENANT_MATRIZ]: { code: 'C-010', paymentTerms: null, active: true },
       },
@@ -188,6 +230,13 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: false,
       isProfessional: false,
       registrationActive: true,
+      // Cadastro SEM contato e SEM endereço: o `null` do objeto inteiro é um
+      // estado do contrato, não um descuido do seed.
+      mobilePhone: null,
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: null,
       vinculos: {
         [TENANT_FILIAL]: { code: 'C-201', paymentTerms: '30/60', active: false },
       },
@@ -611,5 +660,14 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     paymentTerms: vinculo?.paymentTerms ?? null,
     active: vinculo?.active ?? false,
     registrationActive: p.registrationActive,
+    // As cinco chaves saem SEMPRE, mesmo nulas: `corpoDeEscrita` recusa gravar
+    // quando o registro chega sem um campo que o `PUT` substitui — ausente não
+    // é nulo, e um mock que omite ensinaria a tela a tratar os dois como a
+    // mesma coisa.
+    mobilePhone: p.mobilePhone,
+    businessPhone: p.businessPhone,
+    homePhone: p.homePhone,
+    fax: p.fax,
+    address: p.address,
   }
 }

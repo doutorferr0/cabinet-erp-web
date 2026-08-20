@@ -1,4 +1,9 @@
-import type { PartnerDto, PartnerPayoutBankInfo, PartnerWriteRequest } from '@/api/gerado'
+import type {
+  PartnerAddress,
+  PartnerDto,
+  PartnerPayoutBankInfo,
+  PartnerWriteRequest,
+} from '@/api/gerado'
 import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
 import {
   ErroDaApi,
@@ -168,6 +173,19 @@ export interface CamposEditaveis {
    * gravou por outro caminho.
    */
   parentId?: string | null
+  /**
+   * Contato e endereço (#244). Opcionais pela mesma razão dos de cima, e por
+   * uma a mais: as três telas desenham blocos DIFERENTES. Cliente tem Celular
+   * no bloco obrigatório e o de Endereço inteiro; Profissional guarda os
+   * telefones sob `telefones.*` e tem um SEGUNDO endereço (o da agência, que
+   * não viaja); Fornecedor tem `fone1`/`fone2` e nenhum campo de celular.
+   * Quem não edita o campo o devolve como veio — ver `corpoDeEscrita`.
+   */
+  mobilePhone?: string | null
+  businessPhone?: string | null
+  homePhone?: string | null
+  fax?: string | null
+  address?: PartnerAddress | null
 }
 
 /**
@@ -214,7 +232,19 @@ export function corpoDeEscrita(
   // registro rico com conselho, conta bancária e vínculo pai. Isto é a guarda
   // para o dia em que parar de mandar, e ela RECUSA em vez de gravar: um
   // `Gravar` que falha em voz alta é melhor que um que grava apagando.
-  for (const campo of ['registration', 'payoutBankInfo', 'parentId'] as const) {
+  for (const campo of [
+    'registration',
+    'payoutBankInfo',
+    'parentId',
+    // Os cinco de #244 entram na MESMA guarda, e o endereço é o que mais pede
+    // por ela: o objeto vai inteiro, então um `?? null` aqui apagaria as sete
+    // linhas de uma vez, num Gravar de tela que nem desenha o bloco.
+    'mobilePhone',
+    'businessPhone',
+    'homePhone',
+    'fax',
+    'address',
+  ] as const) {
     if (editado[campo] === undefined && !(campo in original)) {
       throw new Error(
         `O registro veio do servidor sem \`${campo}\`, e o PUT substitui o cadastro inteiro: gravar assim apagaria o campo. Nada foi enviado.`,
@@ -247,6 +277,20 @@ export function corpoDeEscrita(
     // uma hierarquia: o formulário não tem campo de vínculo, então omitir aqui
     // faria todo Gravar de Cliente desligar o profissional do escritório dele.
     parentId: editado.parentId !== undefined ? editado.parentId : (original.parentId ?? null),
+    // Contato e endereço (#244), na mesma regra. O caso que a issue mediu é
+    // este, do outro lado: o Celular que o operador digitou não chegava ao
+    // servidor porque o corpo é montado a partir do contrato, e o contrato não
+    // tinha o campo. Agora tem — e quem não o edita o devolve como veio, em vez
+    // de apagá-lo.
+    mobilePhone:
+      editado.mobilePhone !== undefined ? editado.mobilePhone : (original.mobilePhone ?? null),
+    businessPhone:
+      editado.businessPhone !== undefined
+        ? editado.businessPhone
+        : (original.businessPhone ?? null),
+    homePhone: editado.homePhone !== undefined ? editado.homePhone : (original.homePhone ?? null),
+    fax: editado.fax !== undefined ? editado.fax : (original.fax ?? null),
+    address: editado.address !== undefined ? editado.address : (original.address ?? null),
   }
 }
 
@@ -377,6 +421,11 @@ export function corpoDeInclusao(
     registration: editado.registration ?? null,
     payoutBankInfo: editado.payoutBankInfo ?? null,
     parentId: editado.parentId ?? null,
+    mobilePhone: editado.mobilePhone ?? null,
+    businessPhone: editado.businessPhone ?? null,
+    homePhone: editado.homePhone ?? null,
+    fax: editado.fax ?? null,
+    address: editado.address ?? null,
   }
 }
 

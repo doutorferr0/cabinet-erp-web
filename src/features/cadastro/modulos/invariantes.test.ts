@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ENTIDADES } from './entidades'
-import { camposDe, colunasDe, filtrosDe, indicadoresSemOrigem, semLastro } from './tipos'
+import {
+  camposDe,
+  colunasDe,
+  filtrosDe,
+  indicadoresSemOrigem,
+  semConsulta,
+  semLastro,
+} from './tipos'
 
 /**
  * AS INVARIANTES DO SCHEMA DE MÓDULOS — o ponto da issue #100.
@@ -15,14 +22,43 @@ import { camposDe, colunasDe, filtrosDe, indicadoresSemOrigem, semLastro } from 
  * nova nasce coberta, sem ninguém lembrar de acrescentar caso de teste.
  */
 
+interface PropriedadeDoContrato {
+  oneOf?: readonly { $ref?: string }[]
+}
+
+interface SchemaDoContrato {
+  properties?: Record<string, PropriedadeDoContrato | undefined>
+}
+
 const CONTRATO = JSON.parse(
   readFileSync(
     join(import.meta.dirname, '..', '..', '..', '..', 'contracts', 'openapi-v1.json'),
     'utf8',
   ),
-) as { components: { schemas: Record<string, { properties?: Record<string, unknown> }> } }
+) as { components: { schemas: Record<string, SchemaDoContrato> } }
 
-const CAMPOS_DO_PARTNER_DTO = Object.keys(CONTRATO.components.schemas.PartnerDto?.properties ?? {})
+const SCHEMAS = CONTRATO.components.schemas
+
+/**
+ * O `dto` existe no contrato? Resolve caminho PONTUADO (`address.city`).
+ *
+ * Endereço viaja como objeto (`PartnerAddress`), então o nome do campo tem dois
+ * níveis — e uma checagem só das chaves de topo diria que `address.city` foi
+ * inventado. Segue o `$ref` do próprio contrato em vez de guardar uma lista: o
+ * dia em que `city` for renomeado lá, quebra aqui.
+ */
+function existeNoContrato(dto: string): boolean {
+  const partes = dto.split('.')
+  const raiz = partes[0] ?? ''
+  const aninhado = partes[1]
+  const propriedade = SCHEMAS.PartnerDto?.properties?.[raiz]
+  if (!propriedade) return false
+  if (aninhado === undefined) return true
+  const ref = propriedade.oneOf?.find((alternativa) => alternativa.$ref !== undefined)?.$ref
+  const nome = ref?.split('/').pop()
+  if (nome === undefined) return false
+  return SCHEMAS[nome]?.properties?.[aninhado] !== undefined
+}
 
 const entidades = Object.entries(ENTIDADES)
 
@@ -90,7 +126,7 @@ describe('invariantes da consulta — o que a grade pode PEDIR ao servidor', () 
       // Lê o contrato de verdade, não uma cópia. Campo renomeado lá quebra aqui,
       // que é onde deve quebrar — e não na tela, em branco.
       const inventados = camposDe(entidade)
-        .filter((campo) => campo.dto && !CAMPOS_DO_PARTNER_DTO.includes(campo.dto))
+        .filter((campo) => campo.dto && !existeNoContrato(campo.dto))
         .map((campo) => `${campo.k} → ${campo.dto}`)
       expect(inventados).toEqual([])
     },
@@ -141,6 +177,25 @@ describe('a lacuna entre a espec e o que o repo guarda', () => {
       colaborador: ['login', 'cel', 'perfil', 'comissaoInterna', 'comissaoExterna', 'meta'],
       fornecedor: ['regime', 'cnae', 'custo', 'indice', 'frete', 'minimo'],
       profissional: ['pix', 'pct', 'operador', 'indicados', 'gerado'],
+    })
+  })
+
+  it('a lacuna de CONSULTA está medida: o contrato publica, a whitelist não alcança', () => {
+    // Nasceu com #244: telefone e endereço passaram a existir no `PartnerDto` e
+    // continuam fora de `sortBy`/`filters`. Sem este retrato, a diferença entre
+    // "o servidor não guarda" e "o servidor guarda e não deixa consultar" ficaria
+    // invisível — e é ela que decide se o conserto é uma coluna no banco ou um
+    // parâmetro no contrato.
+    const retrato = Object.fromEntries(
+      entidades.map(([id, entidade]) => [id, semConsulta(entidade).map((campo) => campo.k)]),
+    )
+    expect(retrato).toEqual({
+      cliente: ['cel', 'bairro', 'cidade', 'uf'],
+      colaborador: [],
+      // `fax` do fornecedor não aparece: publicado, mas não pede coluna nem
+      // filtro no mockup — só entra aqui o que promete consulta e não a tem.
+      fornecedor: ['tel', 'bairro', 'cidade', 'uf'],
+      profissional: ['cel', 'bairro', 'cidade', 'uf'],
     })
   })
 

@@ -1,4 +1,9 @@
-import type { CampoCadastro, EntidadeCadastro, ModuloCadastro } from '@/features/cadastro/modulos'
+import {
+  type CampoCadastro,
+  type EntidadeCadastro,
+  type ModuloCadastro,
+  filtrosDe,
+} from '@/features/cadastro/modulos'
 import type { FiltroDaTabela, VarianteDeFiltro } from '@/lib/filtro-de-consulta'
 import { novoFiltroId, operadorPadrao } from '@/lib/filtro-de-consulta'
 
@@ -57,10 +62,16 @@ export interface ModuloFiltravel {
  * se é a tela que está quebrada ou se ele entendeu errado a pergunta.
  */
 export function modulosFiltraveis(entidade: EntidadeCadastro): readonly ModuloFiltravel[] {
+  // Deriva de `filtrosDe`, e não de `idDoFiltro` sozinho: desde #244 existe
+  // campo PUBLICADO no contrato e fora da whitelist de `filters` (telefone e
+  // endereço do parceiro). Ter `dto` deixou de bastar — oferecer um chip de
+  // `Endereço` que responde 400 no primeiro recorte é pior que não oferecê-lo,
+  // porque o operador conclui que a tela está quebrada.
+  const comLastro = new Set(filtrosDe(entidade))
   return entidade.modulos
     .map((modulo) => ({
       modulo,
-      campos: modulo.campos.filter((campo) => campo.fil && idDoFiltro(entidade, campo)),
+      campos: modulo.campos.filter((campo) => comLastro.has(campo)),
     }))
     .filter((item) => item.campos.length > 0)
 }

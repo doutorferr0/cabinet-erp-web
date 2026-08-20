@@ -35,6 +35,16 @@ const LINHA: PartnerDto = {
   payoutBankInfo: null,
   parentId: null,
   parentName: null,
+  // Contato e endereço (#244). Nulos aqui porque o cadastro medido não os
+  // tinha — e as CHAVES existem porque o `PUT` as substitui. Enquanto a
+  // migração irmã (`cabinet-erp-api#35`) não estiver na `main` do backend, a
+  // listagem não manda estas chaves e `corpoDeEscrita` RECUSA gravar: é a
+  // recusa em voz alta, preferida a um Gravar que apaga endereço em silêncio.
+  mobilePhone: null,
+  businessPhone: null,
+  homePhone: null,
+  fax: null,
+  address: null,
 } as PartnerDto
 
 describe('corpo do PUT de parceiro', () => {

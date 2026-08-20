@@ -33,21 +33,66 @@ function em(prefixo: string, campo: string): string {
 
 /**
  * Endereço. `Cidade` é a única que vira coluna no mockup, e faz sentido: é o
- * recorte por que o operador procura ("clientes de Campinas"). Só ganha `dto`
- * quando o contrato publicar endereço — `PartnerDto` ainda não publica.
+ * recorte por que o operador procura ("clientes de Campinas").
+ *
+ * **Desde #244 o contrato publica endereço, e os campos ganham `dto`** — o
+ * `PartnerAddress`, com o caminho pontuado (`address.city`) porque o endereço
+ * viaja como objeto, do mesmo jeito que a conta de comissão.
+ *
+ * **Publicar não ligou a coluna, e é assim de propósito:** nenhum campo de
+ * endereço está na whitelist de `sortBy`/`filters` de `/api/partners`, então
+ * `temLastroDeConsulta` continua os deixando de fora da grade e do filtro. O
+ * "clientes de Campinas" do mockup só liga quando o servidor publicar a
+ * consulta — e aí o número de `semConsulta` cai sozinho.
+ *
+ * **Só o endereço PRINCIPAL é publicado.** O do banco (`enderecoBanco`, do
+ * Profissional) segue sem `dto`: o contrato tem um endereço por parceiro, e o
+ * `PartnerPayoutBankInfo` diz por escrito que o do banco fica fora. Marcá-lo
+ * com o mesmo `dto` faria a agência ser gravada como a casa do profissional.
  */
 export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
+  const principal = prefixo === 'endereco'
+  const publicado = (nome: string) => (principal ? { dto: `address.${nome}` } : {})
   return {
-    id: prefixo === 'endereco' ? 'endereco' : prefixo,
+    id: principal ? 'endereco' : prefixo,
     titulo: 'Endereço',
     cor: 'produtos',
     resumo: 'CEP preenche rua, bairro, cidade e UF automaticamente',
     campos: [
-      { k: 'cep', r: 'CEP', t: 'busca', w: 'medio', campo: em(prefixo, 'cep') },
-      { k: 'logradouro', r: 'Logradouro', campo: em(prefixo, 'logradouro') },
-      { k: 'numero', r: 'Número', w: 'curto', campo: em(prefixo, 'numero') },
-      { k: 'complemento', r: 'Complemento', campo: em(prefixo, 'complemento') },
-      { k: 'bairro', r: 'Bairro', fil: 'texto', campo: em(prefixo, 'bairro') },
+      {
+        k: 'cep',
+        r: 'CEP',
+        t: 'busca',
+        w: 'medio',
+        campo: em(prefixo, 'cep'),
+        ...publicado('zipCode'),
+      },
+      {
+        k: 'logradouro',
+        r: 'Logradouro',
+        campo: em(prefixo, 'logradouro'),
+        ...publicado('street'),
+      },
+      {
+        k: 'numero',
+        r: 'Número',
+        w: 'curto',
+        campo: em(prefixo, 'numero'),
+        ...publicado('number'),
+      },
+      {
+        k: 'complemento',
+        r: 'Complemento',
+        campo: em(prefixo, 'complemento'),
+        ...publicado('complement'),
+      },
+      {
+        k: 'bairro',
+        r: 'Bairro',
+        fil: 'texto',
+        campo: em(prefixo, 'bairro'),
+        ...publicado('district'),
+      },
       {
         k: 'cidade',
         r: 'Cidade',
@@ -55,8 +100,17 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
         col: true,
         fil: 'texto',
         campo: em(prefixo, 'cidadeNome'),
+        ...publicado('city'),
       },
-      { k: 'uf', r: 'UF', t: 'select', w: 'curto', fil: 'sel', campo: em(prefixo, 'uf') },
+      {
+        k: 'uf',
+        r: 'UF',
+        t: 'select',
+        w: 'curto',
+        fil: 'sel',
+        campo: em(prefixo, 'uf'),
+        ...publicado('state'),
+      },
     ],
   }
 }
@@ -81,9 +135,22 @@ export function moduloContatos({
     cor: 'boletim',
     resumo: 'Telefone comercial · Residencial · Fax · Comunicadores',
     campos: [
-      { k: 'comercial', r: 'Telefone comercial', campo: em(prefixo, 'foneComercial') },
-      { k: 'residencial', r: 'Telefone residencial', campo: em(prefixo, 'foneResidencial') },
-      { k: 'fax', r: 'Fax', campo: em(prefixo, 'fax') },
+      // Os três ganharam `dto` em #244. O prefixo continua importando: o mesmo
+      // telefone comercial mora em `foneComercial` no Cliente e em
+      // `telefones.foneComercial` no Profissional, e o contrato tem um nome só.
+      {
+        k: 'comercial',
+        r: 'Telefone comercial',
+        campo: em(prefixo, 'foneComercial'),
+        dto: 'businessPhone',
+      },
+      {
+        k: 'residencial',
+        r: 'Telefone residencial',
+        campo: em(prefixo, 'foneResidencial'),
+        dto: 'homePhone',
+      },
+      { k: 'fax', r: 'Fax', campo: em(prefixo, 'fax'), dto: 'fax' },
       {
         k: 'com1tipo',
         r: 'Comunicador',

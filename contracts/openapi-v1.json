@@ -4585,6 +4585,41 @@
           }
         }
       },
+      "PartnerAddress": {
+        "required": ["zipCode", "street", "number", "complement", "district", "city", "state"],
+        "type": "object",
+        "description": "Proposto. O endereço do parceiro — um só, na ordem em que a tela o desenha. Objeto e não sete campos soltos no `PartnerDto`, pela mesma razão do `PartnerPayoutBankInfo`: parceiro sem endereço manda o objeto inteiro em `null` em vez de sete nulos que a tela teria de recombinar. **Todo campo é anulável, e endereço PARCIAL é o caso normal, não a exceção** — do legado vem muita ficha com cidade e UF e nada mais, e exigir CEP para gravar o resto obrigaria a inventar um. É o PRIMEIRO endereço do contrato: colaborador e oportunidade seguem sem ele, e se algum dia precisarem, este schema é o que se reaproveita.",
+        "properties": {
+          "zipCode": {
+            "type": ["null", "string"],
+            "description": "CEP, sem máscara. String e não número: CEP tem zero à esquerda."
+          },
+          "street": {
+            "type": ["null", "string"],
+            "description": "Logradouro."
+          },
+          "number": {
+            "type": ["null", "string"],
+            "description": "Número. String porque `S/N`, `12-A` e `KM 4` são o que o operador digita."
+          },
+          "complement": {
+            "type": ["null", "string"],
+            "description": "Complemento — apartamento, bloco, sala."
+          },
+          "district": {
+            "type": ["null", "string"],
+            "description": "Bairro."
+          },
+          "city": {
+            "type": ["null", "string"],
+            "description": "Nome da cidade, como texto. **Não é o id de uma tabela de cidades** — o contrato não publica nenhuma, e a busca de CEP da tela devolve nome. O dia em que houver cadastro de cidade, o id entra ao lado deste campo, não no lugar dele: a ficha antiga continua valendo pelo nome que gravou."
+          },
+          "state": {
+            "type": ["null", "string"],
+            "description": "UF, duas letras."
+          }
+        }
+      },
       "PartnerDto": {
         "required": [
           "id",
@@ -4662,6 +4697,33 @@
           "parentName": {
             "type": ["null", "string"],
             "description": "Proposto. Nome do parceiro-pai, para a tela mostrar o vínculo sem uma segunda consulta. Mesmo par `id`+`name` que `productTypeId`/`productTypeName` já usa: o id é para escrever, o nome é o que a tela lê. Acompanha `parentId` — os dois são `null` juntos."
+          },
+          "mobilePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Celular. É o telefone que a tela de Cliente pede como OBRIGATÓRIO, e o contrato o publica anulável assim mesmo: a obrigatoriedade é regra de tela, e parceiro importado do legado sem telefone precisa entrar."
+          },
+          "businessPhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone comercial."
+          },
+          "homePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone residencial."
+          },
+          "fax": {
+            "type": ["null", "string"],
+            "description": "Proposto. Fax. Continua na ficha do legado e ainda é o único canal de alguns fornecedores."
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço do parceiro; `null` quando não há nenhum campo preenchido. Fora da whitelist de `sortBy`/`filters` de propósito: publicar o dado não é publicar a consulta — filtrar por cidade pede coluna indexada no servidor, e isso é decisão própria."
           }
         }
       },
@@ -4744,6 +4806,33 @@
             "type": ["null", "string"],
             "format": "uuid",
             "description": "Proposto. Vínculo pai/filho. Só o ID viaja na escrita — `parentName` é derivado, e aceitá-lo de volta abriria a porta para o nome divergir do id. `PUT` substitui o registro inteiro: omitir DESVINCULA. Apontar para si mesmo, ou para um descendente, é 400."
+          },
+          "mobilePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Celular. É o telefone que a tela de Cliente pede como OBRIGATÓRIO, e o contrato o publica anulável assim mesmo: a obrigatoriedade é regra de tela, e parceiro importado do legado sem telefone precisa entrar."
+          },
+          "businessPhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone comercial."
+          },
+          "homePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone residencial."
+          },
+          "fax": {
+            "type": ["null", "string"],
+            "description": "Proposto. Fax. Continua na ficha do legado e ainda é o único canal de alguns fornecedores."
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço. Vale a regra do `PUT` INTEGRAL, e aqui ela morde mais que nos outros campos: mandar `null` APAGA o endereço inteiro, e omitir na gravação feita por uma tela que não desenha o bloco apagaria o que outra tela gravou. Quem não edita endereço devolve o objeto como veio."
           }
         }
       },

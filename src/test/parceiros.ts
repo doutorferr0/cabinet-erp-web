@@ -44,6 +44,23 @@ export function parceiro(over: Record<string, unknown> = {}) {
     // os dois pelo `over`, à vista — e os dois andam JUNTOS, como o contrato diz.
     parentId: null as string | null,
     parentName: null as string | null,
+    // Contato e endereço (#244). Nascem NULOS, e as chaves existem SEMPRE: o
+    // `corpoDeEscrita` recusa gravar quando o registro chega sem um campo que o
+    // `PUT` substitui, e um helper que omitisse ensinaria a suíte a não ver a
+    // diferença entre ausente e nulo — que é justamente a que apaga endereço.
+    mobilePhone: null as string | null,
+    businessPhone: null as string | null,
+    homePhone: null as string | null,
+    fax: null as string | null,
+    address: null as {
+      zipCode: string | null
+      street: string | null
+      number: string | null
+      complement: string | null
+      district: string | null
+      city: string | null
+      state: string | null
+    } | null,
     ...over,
   }
 }

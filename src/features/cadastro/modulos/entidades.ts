@@ -98,7 +98,7 @@ export const cliente: EntidadeCadastro = {
           campo: 'cpf',
           dto: 'document',
         },
-        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'celular' },
+        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'celular', dto: 'mobilePhone' },
         { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
         CAMPO_ATIVO,
       ],
@@ -126,8 +126,8 @@ export const cliente: EntidadeCadastro = {
         { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'texto' },
       ],
     },
-    moduloEndereco(),
-    moduloContatos({ comunicadores: false }),
+    moduloEndereco('endereco', true),
+    moduloContatos({ comunicadores: false, publicado: true }),
     {
       id: 'fiscal',
       titulo: 'Fiscal',
@@ -227,7 +227,10 @@ export const fornecedor: EntidadeCadastro = {
           campo: 'cnpjCpf',
           dto: 'document',
         },
-        { k: 'tel', r: 'Telefone', req: true, col: true, campo: 'fone1' },
+        // O telefone obrigatório do Fornecedor é o COMERCIAL — é assim que ele
+        // viaja no contrato. `fone2` continua sem par: o contrato publica três
+        // telefones e nenhum é "o segundo comercial".
+        { k: 'tel', r: 'Telefone', req: true, col: true, campo: 'fone1', dto: 'businessPhone' },
         { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
         CAMPO_ATIVO,
       ],
@@ -301,7 +304,7 @@ export const fornecedor: EntidadeCadastro = {
       campos: [
         { k: 'contatos', r: 'Contatos', campo: 'contatos' },
         { k: 'fone2', r: 'Telefone 2', campo: 'fone2' },
-        { k: 'fax', r: 'Fax', campo: 'fax' },
+        { k: 'fax', r: 'Fax', campo: 'fax', dto: 'fax' },
         { k: 'site', r: 'Site', campo: 'site' },
         {
           k: 'com1tipo',
@@ -321,7 +324,7 @@ export const fornecedor: EntidadeCadastro = {
         { k: 'com2valor', r: 'Identificador', campo: 'comunicadores.comunicador2Valor' },
       ],
     },
-    moduloEndereco(),
+    moduloEndereco('endereco', true),
     moduloRedesSociais(),
   ],
   indicadores: [
@@ -376,7 +379,14 @@ export const profissional: EntidadeCadastro = {
           campo: 'cpf',
           dto: 'document',
         },
-        { k: 'cel', r: 'Celular', req: true, col: true, campo: 'telefones.celular' },
+        {
+          k: 'cel',
+          r: 'Celular',
+          req: true,
+          col: true,
+          campo: 'telefones.celular',
+          dto: 'mobilePhone',
+        },
         { k: 'email', r: 'E-mail', req: true, campo: 'email', dto: 'email' },
         CAMPO_ATIVO,
       ],
@@ -393,6 +403,10 @@ export const profissional: EntidadeCadastro = {
           col: true,
           fil: 'texto',
           campo: 'registroProfissional',
+          // O contrato publica `registration` desde 2026-08-13. O `dto` faltava
+          // aqui para o campo não virar coluna — hoje quem barra a coluna é a
+          // whitelist, e o `dto` volta a significar só "o servidor publica".
+          dto: 'registration',
         },
         { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'sel', campo: 'profissao' },
         { k: 'rg', r: 'RG', campo: 'rg' },
@@ -410,8 +424,8 @@ export const profissional: EntidadeCadastro = {
         { k: 'pis', r: 'PIS / PASEP / NIS', campo: 'pisPasepNis' },
       ],
     },
-    moduloEndereco(),
-    moduloContatos({ prefixo: 'telefones' }),
+    moduloEndereco('endereco', true),
+    moduloContatos({ prefixo: 'telefones', publicado: true }),
     moduloBancario(),
     // O endereço da agência é um SEGUNDO endereço no mesmo schema, e é por isso
     // que o módulo compartilhado recebe prefixo em vez de caminho fixo.

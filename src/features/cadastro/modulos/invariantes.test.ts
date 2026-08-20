@@ -15,14 +15,48 @@ import { camposDe, colunasDe, filtrosDe, indicadoresSemOrigem, semLastro } from 
  * nova nasce coberta, sem ninguém lembrar de acrescentar caso de teste.
  */
 
+interface SchemaDoContrato {
+  properties?: Record<string, SchemaDoContrato>
+  oneOf?: SchemaDoContrato[]
+  $ref?: string
+}
+
 const CONTRATO = JSON.parse(
   readFileSync(
     join(import.meta.dirname, '..', '..', '..', '..', 'contracts', 'openapi-v1.json'),
     'utf8',
   ),
-) as { components: { schemas: Record<string, { properties?: Record<string, unknown> }> } }
+) as { components: { schemas: Record<string, SchemaDoContrato> } }
 
-const CAMPOS_DO_PARTNER_DTO = Object.keys(CONTRATO.components.schemas.PartnerDto?.properties ?? {})
+/** Segue `$ref` e `oneOf` até o objeto que tem `properties`. */
+function resolver(schema: SchemaDoContrato | undefined): SchemaDoContrato | undefined {
+  if (!schema) return undefined
+  if (schema.$ref) {
+    return resolver(CONTRATO.components.schemas[schema.$ref.split('/').pop() as string])
+  }
+  // `oneOf: [null, $ref]` é como o contrato escreve objeto aninhado ANULÁVEL —
+  // `PartnerPayoutBankInfo` e `PartnerAddress` são os dois casos.
+  if (schema.oneOf) return resolver(schema.oneOf.find((parte) => parte.$ref))
+  return schema
+}
+
+/**
+ * O `dto` existe MESMO no `PartnerDto`? Caminho com ponto entra aninhado.
+ *
+ * Endereço é o primeiro campo do contrato que não é plano (`address.city`), e o
+ * ponto não é enfeite: é como o `fields[]` do problem+json nomeia o que o
+ * servidor recusou. Casar só o primeiro nível deixaria `address.qualquerCoisa`
+ * passar — e o erro do servidor chegaria à tela sem campo para destacar.
+ */
+function existeNoPartnerDto(caminho: string): boolean {
+  let atual = resolver(CONTRATO.components.schemas.PartnerDto)
+  for (const parte of caminho.split('.')) {
+    const propriedade = atual?.properties?.[parte]
+    if (!propriedade) return false
+    atual = resolver(propriedade)
+  }
+  return true
+}
 
 const entidades = Object.entries(ENTIDADES)
 
@@ -90,7 +124,7 @@ describe('invariantes da consulta — o que a grade pode PEDIR ao servidor', () 
       // Lê o contrato de verdade, não uma cópia. Campo renomeado lá quebra aqui,
       // que é onde deve quebrar — e não na tela, em branco.
       const inventados = camposDe(entidade)
-        .filter((campo) => campo.dto && !CAMPOS_DO_PARTNER_DTO.includes(campo.dto))
+        .filter((campo) => campo.dto && !existeNoPartnerDto(campo.dto))
         .map((campo) => `${campo.k} → ${campo.dto}`)
       expect(inventados).toEqual([])
     },

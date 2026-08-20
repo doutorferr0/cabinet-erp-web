@@ -1,7 +1,9 @@
 import type {
   AgendaEventDto,
   CatalogLookupDto,
+  PartnerAddress,
   PartnerDto,
+  PartnerPayoutBankInfo,
   ProductDetailDto,
   ProjectDto,
   ProjectPlanDto,
@@ -47,6 +49,27 @@ export interface ParceiroDaOrg {
   isSupplier: boolean
   isProfessional: boolean
   registrationActive: boolean
+  /**
+   * O CADASTRO INTEIRO, e não só o que o mock achava interessante.
+   *
+   * `registration`, `payoutBankInfo` e `parentId` faltavam aqui, e a falta não
+   * era inofensiva: `corpoDeEscrita` RECUSA gravar quando o registro chega sem
+   * um campo que o `PUT` substitui (é a guarda de "ausente não é nulo"), então
+   * alterar um cliente no modo mock — o modo do site público — lançava
+   * `O registro veio do servidor sem \`registration\`` em vez de gravar. Medido
+   * em 2026-08-20. Mock que publica menos que o contrato não é mock pequeno: é
+   * mock que mente sobre a resposta.
+   */
+  registration: string | null
+  payoutBankInfo: PartnerPayoutBankInfo | null
+  parentId: string | null
+  /** Contato e endereço (#244). `null` quando não há — nunca `undefined`: é a
+   *  diferença entre "não tem" e "o servidor não publica". */
+  mobilePhone: string | null
+  businessPhone: string | null
+  homePhone: string | null
+  fax: string | null
+  address: PartnerAddress | null
   /** Vínculo por empresa (tenantId → dados do vínculo). Sem entrada = não vinculado. */
   vinculos: Record<string, VinculoDeParceiro>
 }
@@ -159,6 +182,24 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: true,
       isProfessional: false,
       registrationActive: true,
+      registration: null,
+      payoutBankInfo: null,
+      parentId: null,
+      // Fornecedor com o cadastro COMPLETO: é o registro em que o round-trip de
+      // endereço e telefone se vê no navegador, não só no teste.
+      mobilePhone: '11 98877-1200',
+      businessPhone: '11 3322-1200',
+      homePhone: null,
+      fax: '11 3322-1201',
+      address: {
+        zipCode: '04571010',
+        street: 'Rua Verbo Divino',
+        number: '1400',
+        complement: 'Galpão 3',
+        district: 'Chácara Santo Antônio',
+        city: 'SÃO PAULO',
+        state: 'SP',
+      },
       vinculos: {
         [TENANT_MATRIZ]: { code: 'F-001', paymentTerms: '28/35/42', active: true },
         [TENANT_FILIAL]: { code: 'FOR-9', paymentTerms: 'À VISTA', active: true },
@@ -174,6 +215,27 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: false,
       isProfessional: true,
       registrationActive: true,
+      registration: 'CAU A123456-7',
+      payoutBankInfo: {
+        bankNumber: '341',
+        bankName: 'ITAÚ UNIBANCO',
+        branchNumber: '0710',
+        accountNumber: '55012-9',
+      },
+      parentId: null,
+      mobilePhone: '19 99712-4488',
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: {
+        zipCode: '13010111',
+        street: 'Avenida Francisco Glicério',
+        number: '213',
+        complement: '',
+        district: 'Centro',
+        city: 'CAMPINAS',
+        state: 'SP',
+      },
       vinculos: {
         [TENANT_MATRIZ]: { code: 'C-010', paymentTerms: null, active: true },
       },
@@ -188,6 +250,17 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       isSupplier: false,
       isProfessional: false,
       registrationActive: true,
+      registration: null,
+      payoutBankInfo: null,
+      parentId: null,
+      // O oposto do primeiro, e de propósito: cadastro sem contato e SEM
+      // endereço. `null` no objeto inteiro é o estado que o contrato descreve —
+      // sete campos em branco seriam um endereço vazio, que é outra coisa.
+      mobilePhone: null,
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: null,
       vinculos: {
         [TENANT_FILIAL]: { code: 'C-201', paymentTerms: '30/60', active: false },
       },
@@ -531,7 +604,12 @@ export function criarStore(): StoreDaApi {
     agenda: agendaDoSeed(),
     projetos: projetosDoSeed(),
     planos: planosDoSeed(),
-    proximoId: 1,
+    // COMEÇA ACIMA DO SEED, e não em 1. O contador é um só para todos os
+    // prefixos e o seed grava ids à mão (`parc-0001`, `prod-0003`): saindo de
+    // 1, o PRIMEIRO cadastro incluído nascia `parc-0002` — id que já existia.
+    // Nada quebrava na hora; quebrava na releitura por id, que encontrava o
+    // registro do seed e devolvia o cadastro errado, com cara de "não gravou".
+    proximoId: 1000,
   }
 }
 
@@ -595,7 +673,16 @@ export function novoId(prefixo: string): string {
   return `${prefixo}-${String(store.proximoId).padStart(4, '0')}`
 }
 
-/** O `PartnerDto` do contrato: cadastro da ORG + vínculo da empresa ativa. */
+/**
+ * O `PartnerDto` do contrato: cadastro da ORG + vínculo da empresa ativa.
+ *
+ * **Publica TODA propriedade do schema, inclusive as opcionais.** O contrato
+ * permite omitir `registration`, `payoutBankInfo`, `parentId`, os telefones e o
+ * endereço — e é justamente por isso que o front tem uma guarda que recusa
+ * gravar quando algum deles não veio (`corpoDeEscrita`): com `PUT` integral,
+ * "não veio" e "está vazio" são indistinguíveis, e adivinhar apagaria dado. Um
+ * mock que exercita a omissão faz toda a tela de cadastro recusar o Gravar.
+ */
 export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
   const vinculo = p.vinculos[tenantId]
   return {
@@ -611,5 +698,19 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     paymentTerms: vinculo?.paymentTerms ?? null,
     active: vinculo?.active ?? false,
     registrationActive: p.registrationActive,
+    registration: p.registration,
+    payoutBankInfo: p.payoutBankInfo,
+    parentId: p.parentId,
+    // Derivado, nunca guardado: `parentName` que se grava é `parentName` que um
+    // dia diverge do `parentId`. É a mesma razão pela qual a escrita não o
+    // aceita de volta (ver a descrição no contrato).
+    parentName: p.parentId
+      ? (store.parceiros.find((outro) => outro.id === p.parentId)?.legalName ?? null)
+      : null,
+    mobilePhone: p.mobilePhone,
+    businessPhone: p.businessPhone,
+    homePhone: p.homePhone,
+    fax: p.fax,
+    address: p.address,
   }
 }

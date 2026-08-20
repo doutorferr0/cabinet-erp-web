@@ -39,8 +39,28 @@ const VARIANTE_POR_FIL: Record<NonNullable<CampoCadastro['fil']>, VarianteDeFilt
 }
 
 /** O nome que viaja: `dto` no servidor, `campo` no provider em memória. */
-export function idDoFiltro(entidade: EntidadeCadastro, campo: CampoCadastro): string | undefined {
+export function nomeQueViaja(entidade: EntidadeCadastro, campo: CampoCadastro): string | undefined {
   return entidade.fonte === 'http' ? campo.dto : campo.campo
+}
+
+/**
+ * O id do FILTRO — o nome que viaja, e só quando o servidor sabe filtrá-lo.
+ *
+ * Publicar e saber filtrar deixaram de ser a mesma coisa com o #244: o
+ * `PartnerDto` traz `address.city` e `mobilePhone`, e a whitelist de
+ * `filters`/`sortBy` não os aceita. Sem esta recusa, o chip de Endereço
+ * apareceria na faixa, o operador filtraria por cidade e o servidor
+ * responderia 400 — a tela mostrando um recorte que nunca chega.
+ *
+ * A COLUNA não passa por aqui de propósito: coluna sem whitelist existe e só
+ * não ordena (`ordenavel`, em `colunas-da-grade`), porque mostrar o dado que a
+ * linha já traz não custa requisição nenhuma.
+ */
+export function idDoFiltro(entidade: EntidadeCadastro, campo: CampoCadastro): string | undefined {
+  const id = nomeQueViaja(entidade, campo)
+  if (id === undefined) return undefined
+  if (entidade.fonte !== 'http') return id
+  return (entidade.whitelist?.includes(id) ?? false) ? id : undefined
 }
 
 /** Um módulo com os campos que ele oferece para filtrar — vazio some da faixa. */
@@ -71,7 +91,9 @@ export function moduloDoFiltro(
   filtroId: string,
 ): ModuloCadastro | undefined {
   return entidade.modulos.find((modulo) =>
-    modulo.campos.some((campo) => idDoFiltro(entidade, campo) === filtroId),
+    // Pelo nome que VIAJA, não pelo id de filtro: `moduloDaColuna` delega a
+    // esta busca, e coluna existe para campo que não se filtra.
+    modulo.campos.some((campo) => nomeQueViaja(entidade, campo) === filtroId),
   )
 }
 
@@ -82,7 +104,7 @@ export function campoDoFiltro(
 ): CampoCadastro | undefined {
   return entidade.modulos
     .flatMap((modulo) => modulo.campos)
-    .find((campo) => idDoFiltro(entidade, campo) === filtroId)
+    .find((campo) => nomeQueViaja(entidade, campo) === filtroId)
 }
 
 /**

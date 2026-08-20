@@ -210,7 +210,7 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Produtos (listagem, detalhe, escrita, desativar) | `GET`/`POST` `/api/products` · `GET`/`PUT` `/api/products/{id}` | `src/data/produtos-api.ts` |
 | Variantes (grade de Valores) | `POST` `/api/products/{productId}/variants` · `PUT` `…/variants/{id}` | `src/data/produtos-api.ts` |
 | Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
-| Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
+| Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` — contato e endereço são `Proposto` e o backend ainda não os grava (ver abaixo) |
 
 | CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` · **`GET` `/api/crm/reports/lost-reasons`** | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
 
@@ -723,6 +723,46 @@ a conta bancária dele.
 conta"; um objeto com os quatro campos em branco seria um registro bancário que
 existe e não paga ninguém. Quem decide é a tela (`contaDaComissao`), e o contrato
 distingue os dois estados de propósito.
+
+### Contato e endereço — `Proposto`, e o front escreveu primeiro (2026-08-20, #244)
+
+`PartnerDto` e `PartnerWriteRequest` passaram a publicar **`mobilePhone`,
+`businessPhone`, `homePhone`, `fax`** e **`address`** (o schema novo
+`PartnerAddress`: `zipCode` · `street` · `number` · `complement` · `district` ·
+`city` · `state`). É o **primeiro endereço do contrato** — a ressalva escrita no
+`PartnerPayoutBankInfo` ("o contrato ainda não tem endereço de parceiro nenhum")
+deixou de valer, e o endereço da agência do Profissional continua fora por
+ESCOLHA: parceiro tem um endereço, o do cadastro.
+
+O motivo é medido, não estético: o formulário pedia **Celular como obrigatório**
+e desenhava o bloco de Endereço inteiro; o contrato não tinha nem um nem outro.
+Enquanto tudo era mock o valor ficava no navegador e parecia gravar. Ligado ao
+`cabinet-erp-api` pelo passthrough, o corpo do `POST`/`PUT` é montado a partir do
+contrato — e o campo era **descartado no caminho**, calado.
+
+Três decisões que o código honra:
+
+- **Obrigatoriedade é regra de TELA, não de contrato.** Todos entram anuláveis:
+  parceiro importado do legado sem telefone precisa entrar.
+- **`address` viaja INTEIRO**, como `payoutBankInfo`: `null` é "não tem
+  endereço", e sete strings vazias seriam "tem um endereço sem nada dentro"
+  (`enderecoOuNulo`). O **código da cidade não volta** — o contrato publica o
+  NOME, e o id do `LookupCombo` é de uma tabela de apoio que só existe no mock.
+- **Os cinco ficam FORA da guarda de campo ausente** (`corpoDeEscrita`), e essa é
+  a diferença entre eles e `registration`/`payoutBankInfo`/`parentId`: aqueles o
+  backend JÁ grava, e linha sem eles significa "a listagem deixou de mandar" —
+  gravar apagaria. Estes o backend ainda **não** implementou; contra o servidor
+  real toda linha chega sem eles, e vigiá-los faria o `Gravar` de qualquer
+  parceiro falhar em voz alta para proteger o que não existe. **Entram na lista
+  no dia em que a migração irmã do `cabinet-erp-api` subir.**
+
+**Publicar ≠ saber ordenar.** Nenhum dos cinco está na whitelist de
+`sortBy`/`filters` de `GET /api/partners`, e o schema de módulos passou a
+distinguir as duas coisas: `dto` diz que o servidor PUBLICA o campo; a
+`whitelist` diz que ele sabe consultá-lo. Filtro exige os dois (fora da
+whitelist é 400 na consulta inteira); **coluna exige só o `dto`** e apenas não
+ordena. Foi o que devolveu a verdade ao `registration`, que era publicado e
+vivia declarado sem `dto` só para não virar coluna.
 
 `Profissão`, a outra coluna que a §3 registra, **continua fora** — e agora por um
 motivo mais duro que falta de contrato: ela não existe no `PartnerDto` NEM na

@@ -107,6 +107,47 @@ export interface PartnerPayoutBankInfo {
   accountNumber: string | null;
 }
 
+/**
+ * Proposto. Endereço do parceiro — o bloco que as três telas de cadastro já desenham (`moduloEndereco`, um só para Cliente, Fornecedor e Profissional). Um objeto e não sete campos soltos no `PartnerDto`, pela mesma razão do `PartnerPayoutBankInfo`: os sete só fazem sentido juntos, e parceiro sem endereço manda o objeto inteiro em `null` em vez de sete nulos que a tela teria de recombinar. É o PRIMEIRO endereço do contrato, e por isso a ressalva escrita no `PartnerPayoutBankInfo` ("o contrato ainda não tem endereço de parceiro nenhum") deixou de valer: o endereço do BANCO continua fora, e agora por escolha, não por falta da regra. Colaborador e oportunidade não mudam aqui — se o endereço virar reutilizável, é refatoração posterior.
+ */
+export interface PartnerAddress {
+  /**
+     * CEP. String e não número: CEP tem zero à esquerda. Sem máscara no dado — quem põe o traço é o input da tela.
+     * @nullable
+     */
+  zipCode: string | null;
+  /**
+     * Logradouro.
+     * @nullable
+     */
+  street: string | null;
+  /**
+     * Número. String porque `s/n` e `120-A` são endereço tanto quanto `120`.
+     * @nullable
+     */
+  number: string | null;
+  /**
+     * Complemento — sala, bloco, apartamento.
+     * @nullable
+     */
+  complement: string | null;
+  /**
+     * Bairro.
+     * @nullable
+     */
+  district: string | null;
+  /**
+     * NOME da cidade, não id. A tela guarda também um código de cidade, mas ele vem de uma tabela de apoio que só existe no mock — publicar aqui um id que o servidor não conhece daria chave morta. Quando houver cadastro de cidade no contrato, entra o par `cityId`+`city`, como `productTypeId`/`productTypeName` já faz.
+     * @nullable
+     */
+  city: string | null;
+  /**
+     * UF, duas letras.
+     * @nullable
+     */
+  state: string | null;
+}
+
 export interface PartnerDto {
   id: string;
   /** @nullable */
@@ -142,6 +183,28 @@ export interface PartnerDto {
      * @nullable
      */
   parentName?: string | null;
+  /**
+     * Proposto. Celular — o telefone que o bloco de identificação das três telas pede. **A obrigatoriedade é regra de TELA, não de contrato**: parceiro importado do legado sem telefone precisa entrar, e recusar aqui travaria a migração inteira por um campo que o operador preenche depois.
+     * @nullable
+     */
+  mobilePhone?: string | null;
+  /**
+     * Proposto. Telefone comercial (bloco `Outros contatos`).
+     * @nullable
+     */
+  businessPhone?: string | null;
+  /**
+     * Proposto. Telefone residencial (bloco `Outros contatos`).
+     * @nullable
+     */
+  homePhone?: string | null;
+  /**
+     * Proposto. Fax. Continua no cadastro do legado e ainda é o único caminho de alguns fornecedores.
+     * @nullable
+     */
+  fax?: string | null;
+  /** Proposto. Endereço do parceiro. `null` quando não há endereço cadastrado — os sete campos vêm e vão JUNTOS. */
+  address?: null | PartnerAddress;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -386,6 +449,28 @@ export interface PartnerWriteRequest {
      * @nullable
      */
   parentId?: string | null;
+  /**
+     * Proposto. Celular. `PUT` substitui o registro inteiro: omitir APAGA o telefone gravado.
+     * @nullable
+     */
+  mobilePhone?: string | null;
+  /**
+     * Proposto. Telefone comercial. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  businessPhone?: string | null;
+  /**
+     * Proposto. Telefone residencial. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  homePhone?: string | null;
+  /**
+     * Proposto. Fax. Mesma regra do `PUT`: omitir apaga.
+     * @nullable
+     */
+  fax?: string | null;
+  /** Proposto. Endereço. O objeto viaja INTEIRO: mandar `null` apaga o endereço cadastrado, e mandar o objeto com um campo a menos apaga aquele campo. Não há atualização parcial de endereço, pela mesma razão que não há do resto do cadastro. */
+  address?: null | PartnerAddress;
 }
 
 /**

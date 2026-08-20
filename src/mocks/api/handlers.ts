@@ -464,6 +464,17 @@ export const handlers = [
       isSupplier: corpo.isSupplier ?? false,
       isProfessional: corpo.isProfessional ?? false,
       registrationActive: true,
+      // O cadastro NASCE com o que o corpo trouxe, campo a campo. Ignorar aqui
+      // o que a tela mandou faria o valor sumir entre o 201 e a primeira
+      // releitura — o defeito que o par local mostrou com o celular (#244).
+      registration: corpo.registration ?? null,
+      payoutBankInfo: corpo.payoutBankInfo ?? null,
+      parentId: corpo.parentId ?? null,
+      mobilePhone: corpo.mobilePhone ?? null,
+      businessPhone: corpo.businessPhone ?? null,
+      homePhone: corpo.homePhone ?? null,
+      fax: corpo.fax ?? null,
+      address: corpo.address ?? null,
       vinculos: {
         [store.activeTenantId]: {
           code: corpo.code ?? null,
@@ -496,6 +507,18 @@ export const handlers = [
     parceiro.isCustomer = corpo.isCustomer ?? false
     parceiro.isSupplier = corpo.isSupplier ?? false
     parceiro.isProfessional = corpo.isProfessional ?? false
+    // `PUT` INTEGRAL, como o contrato manda: o que não veio no corpo é apagado,
+    // e não preservado. Preservar aqui esconderia do teste (e do navegador) a
+    // consequência de um formulário que deixa de mandar um campo — que é
+    // exatamente o defeito que a guarda do `corpoDeEscrita` existe para pegar.
+    parceiro.registration = corpo.registration ?? null
+    parceiro.payoutBankInfo = corpo.payoutBankInfo ?? null
+    parceiro.parentId = corpo.parentId ?? null
+    parceiro.mobilePhone = corpo.mobilePhone ?? null
+    parceiro.businessPhone = corpo.businessPhone ?? null
+    parceiro.homePhone = corpo.homePhone ?? null
+    parceiro.fax = corpo.fax ?? null
+    parceiro.address = corpo.address ?? null
     parceiro.vinculos[store.activeTenantId] = {
       code: corpo.code ?? null,
       paymentTerms: corpo.paymentTerms ?? null,

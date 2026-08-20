@@ -138,6 +138,16 @@ describe('escrita', () => {
       // Hierarquia pai/filho (#91): nenhuma das três telas tem campo para ela,
       // então ela viaja de volta pela mesma regra do `code` e do `registration`.
       parentId: null,
+      // Contato e endereço (#244). A linha deste teste não os traz — é o
+      // parceiro como o `cabinet-erp-api` o serve HOJE, antes da migração irmã
+      // —, e a leitura certa nesse estado é `null`: não existe valor anterior a
+      // preservar. O que este `toEqual` garante é que eles ESTÃO no corpo:
+      // chave ausente, com `PUT` integral, é chave apagada.
+      mobilePhone: null,
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: null,
     })
   })
 
@@ -350,6 +360,15 @@ describe('desativação (o Excluir da listagem)', () => {
       // montado da LINHA, e desativar um arquiteto não pode desligá-lo do
       // escritório — quem reativar depois encontraria o vínculo perdido.
       parentId: linha.parentId ?? null,
+      // E o contato (#244): a linha do helper é o parceiro como o
+      // `cabinet-erp-api` o serve HOJE, sem os campos novos, e nesse estado o
+      // corpo leva `null` — o que importa aqui é que as chaves ESTEJAM lá, já
+      // que `PUT` integral apaga por omissão.
+      mobilePhone: null,
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: null,
     })
   })
 

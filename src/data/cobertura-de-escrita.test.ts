@@ -267,13 +267,31 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
   // Chave do contrato → campo do formulário que a edita, POR PAPEL. As três
   // telas usam o mesmo `PartnerWriteRequest` e editam conjuntos diferentes: o
   // Cliente não tem Nome Fantasia; só o Profissional tem conselho.
+  //
+  // Os telefones (#244) entraram aqui no dia em que o contrato passou a
+  // publicá-los, e é esta metade do teste que cobra a ligação: o defeito que
+  // originou a issue foi um operador digitar o celular no par local, gravar, e
+  // o valor não voltar — o campo existia na tela e não existia no corpo.
   const editaveisPorPapel: Record<string, Record<string, string>> = {
-    CLIENTE: { legalName: 'nome', document: 'cpf', email: 'email' },
+    CLIENTE: {
+      legalName: 'nome',
+      document: 'cpf',
+      email: 'email',
+      mobilePhone: 'celular',
+      businessPhone: 'foneComercial',
+      homePhone: 'foneResidencial',
+      fax: 'fax',
+    },
     FORNECEDOR: {
       legalName: 'razaoSocial',
       tradeName: 'nomeFantasia',
       document: 'cnpjCpf',
       email: 'email',
+      // O `Telefone` obrigatório do Fornecedor é o comercial. Celular e
+      // residencial ficam de fora porque a tela não os tem — e é `corpoDeEscrita`
+      // que os devolve como vieram, coberto na primeira metade deste teste.
+      businessPhone: 'fone1',
+      fax: 'fax',
     },
     PROFISSIONAL: {
       legalName: 'nome',
@@ -281,6 +299,10 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
       document: 'cpf',
       email: 'email',
       registration: 'registroProfissional',
+      mobilePhone: 'telefones.celular',
+      businessPhone: 'telefones.foneComercial',
+      homePhone: 'telefones.foneResidencial',
+      fax: 'telefones.fax',
     },
   }
 

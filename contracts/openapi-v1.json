@@ -4585,6 +4585,41 @@
           }
         }
       },
+      "PartnerAddress": {
+        "required": ["zipCode", "street", "number", "complement", "district", "city", "state"],
+        "type": "object",
+        "description": "Proposto. Endereço do parceiro — o bloco que as três telas de cadastro já desenham (`moduloEndereco`, um só para Cliente, Fornecedor e Profissional). Um objeto e não sete campos soltos no `PartnerDto`, pela mesma razão do `PartnerPayoutBankInfo`: os sete só fazem sentido juntos, e parceiro sem endereço manda o objeto inteiro em `null` em vez de sete nulos que a tela teria de recombinar. É o PRIMEIRO endereço do contrato, e por isso a ressalva escrita no `PartnerPayoutBankInfo` (\"o contrato ainda não tem endereço de parceiro nenhum\") deixou de valer: o endereço do BANCO continua fora, e agora por escolha, não por falta da regra. Colaborador e oportunidade não mudam aqui — se o endereço virar reutilizável, é refatoração posterior.",
+        "properties": {
+          "zipCode": {
+            "type": ["null", "string"],
+            "description": "CEP. String e não número: CEP tem zero à esquerda. Sem máscara no dado — quem põe o traço é o input da tela."
+          },
+          "street": {
+            "type": ["null", "string"],
+            "description": "Logradouro."
+          },
+          "number": {
+            "type": ["null", "string"],
+            "description": "Número. String porque `s/n` e `120-A` são endereço tanto quanto `120`."
+          },
+          "complement": {
+            "type": ["null", "string"],
+            "description": "Complemento — sala, bloco, apartamento."
+          },
+          "district": {
+            "type": ["null", "string"],
+            "description": "Bairro."
+          },
+          "city": {
+            "type": ["null", "string"],
+            "description": "NOME da cidade, não id. A tela guarda também um código de cidade, mas ele vem de uma tabela de apoio que só existe no mock — publicar aqui um id que o servidor não conhece daria chave morta. Quando houver cadastro de cidade no contrato, entra o par `cityId`+`city`, como `productTypeId`/`productTypeName` já faz."
+          },
+          "state": {
+            "type": ["null", "string"],
+            "description": "UF, duas letras."
+          }
+        }
+      },
       "PartnerDto": {
         "required": [
           "id",
@@ -4662,6 +4697,33 @@
           "parentName": {
             "type": ["null", "string"],
             "description": "Proposto. Nome do parceiro-pai, para a tela mostrar o vínculo sem uma segunda consulta. Mesmo par `id`+`name` que `productTypeId`/`productTypeName` já usa: o id é para escrever, o nome é o que a tela lê. Acompanha `parentId` — os dois são `null` juntos."
+          },
+          "mobilePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Celular — o telefone que o bloco de identificação das três telas pede. **A obrigatoriedade é regra de TELA, não de contrato**: parceiro importado do legado sem telefone precisa entrar, e recusar aqui travaria a migração inteira por um campo que o operador preenche depois."
+          },
+          "businessPhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone comercial (bloco `Outros contatos`)."
+          },
+          "homePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone residencial (bloco `Outros contatos`)."
+          },
+          "fax": {
+            "type": ["null", "string"],
+            "description": "Proposto. Fax. Continua no cadastro do legado e ainda é o único caminho de alguns fornecedores."
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço do parceiro. `null` quando não há endereço cadastrado — os sete campos vêm e vão JUNTOS."
           }
         }
       },
@@ -4744,6 +4806,33 @@
             "type": ["null", "string"],
             "format": "uuid",
             "description": "Proposto. Vínculo pai/filho. Só o ID viaja na escrita — `parentName` é derivado, e aceitá-lo de volta abriria a porta para o nome divergir do id. `PUT` substitui o registro inteiro: omitir DESVINCULA. Apontar para si mesmo, ou para um descendente, é 400."
+          },
+          "mobilePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Celular. `PUT` substitui o registro inteiro: omitir APAGA o telefone gravado."
+          },
+          "businessPhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone comercial. Mesma regra do `PUT`: omitir apaga."
+          },
+          "homePhone": {
+            "type": ["null", "string"],
+            "description": "Proposto. Telefone residencial. Mesma regra do `PUT`: omitir apaga."
+          },
+          "fax": {
+            "type": ["null", "string"],
+            "description": "Proposto. Fax. Mesma regra do `PUT`: omitir apaga."
+          },
+          "address": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartnerAddress"
+              }
+            ],
+            "description": "Proposto. Endereço. O objeto viaja INTEIRO: mandar `null` apaga o endereço cadastrado, e mandar o objeto com um campo a menos apaga aquele campo. Não há atualização parcial de endereço, pela mesma razão que não há do resto do cadastro."
           }
         }
       },

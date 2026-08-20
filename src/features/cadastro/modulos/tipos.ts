@@ -63,9 +63,10 @@ export interface CampoCadastro {
   /** Obrigatório. **Só pode viver em módulo `obrigatorio`** — campo que trava o
    *  Gravar dentro de bloco recolhível esconde o que impede de gravar. */
   req?: true
-  /** Quer ser coluna fixa da grade. Só vira coluna de verdade com `dto`. */
+  /** Quer ser coluna fixa da grade. Só vira coluna de verdade com lastro de
+   *  CONSULTA — `dto` na whitelist, quando a fonte é o servidor. */
   col?: true
-  /** Quer ser filtro, na variante indicada. Só vira filtro de verdade com `dto`. */
+  /** Quer ser filtro, na variante indicada. Mesma regra da coluna. */
   fil?: VarianteDeFiltro
   /** Largura no formulário. Vazio = a linha inteira. */
   w?: 'curto' | 'medio'
@@ -75,7 +76,14 @@ export interface CampoCadastro {
   op?: readonly string[]
   /** Caminho no schema Zod da entidade. Ausente = o repo ainda não guarda. */
   campo?: string
-  /** Nome no contrato. Ausente = o servidor ainda não publica. */
+  /**
+   * Nome no contrato. Ausente = o servidor ainda não publica.
+   *
+   * Caminho com ponto para campo aninhado (`address.city`) — é como o
+   * `fields[]` do problem+json nomeia o que recusou, e é o que `camposDoContrato`
+   * precisa casar. Publicado NÃO quer dizer ordenável: quem decide isso é a
+   * `whitelist` da entidade.
+   */
   dto?: string
 }
 
@@ -109,8 +117,9 @@ export interface EntidadeCadastro {
    * De onde a listagem vem, e isso MUDA a regra da coluna.
    *
    * `http` — quem ordena e filtra é o servidor, e ele só aceita os nomes da
-   * whitelist publicada no contrato. Coluna sem `dto` daria 400 ao primeiro
-   * clique no cabeçalho.
+   * whitelist publicada no contrato. Coluna com `dto` fora dela daria 400 ao
+   * primeiro clique no cabeçalho — publicar e saber ordenar são coisas
+   * diferentes.
    * `mock` — quem aplica é o provider, em memória, sobre o objeto do schema.
    * Ali o que vale é o `campo`, e não há whitelist a respeitar.
    */
@@ -146,10 +155,22 @@ export function camposDe(entidade: EntidadeCadastro): readonly CampoCadastro[] {
   return entidade.modulos.flatMap((modulo) => modulo.campos)
 }
 
-/** Um campo só tem lastro para ordenar/filtrar se a FONTE da entidade souber
- *  resolvê-lo: o servidor pelo `dto`, o provider mock pelo `campo`. */
+/**
+ * Um campo só tem lastro para ordenar/filtrar se a FONTE da entidade souber
+ * resolvê-lo: o provider mock pelo `campo`, o servidor pela WHITELIST.
+ *
+ * **Publicar não é saber ordenar, e a diferença passou a existir com o #244.**
+ * O contrato publica `mobilePhone` e `address` no `PartnerDto` — o servidor
+ * guarda os dois —, e nenhum dos dois está na whitelist de `sortBy`/`filters`
+ * de `GET /api/partners`. Enquanto `dto` sozinho bastasse, dar nome de contrato
+ * a um campo publicado o promovia a coluna, e o primeiro clique no cabeçalho
+ * respondia 400. `registration` vivia essa contradição desde 2026-08-13: o
+ * contrato o publica e o schema o declarava SEM `dto`, para não virar coluna —
+ * o que dizia ao leitor "o servidor não publica", que é falso.
+ */
 function temLastroDeConsulta(entidade: EntidadeCadastro, campo: CampoCadastro): boolean {
-  return entidade.fonte === 'http' ? campo.dto !== undefined : campo.campo !== undefined
+  if (entidade.fonte !== 'http') return campo.campo !== undefined
+  return campo.dto !== undefined && (entidade.whitelist?.includes(campo.dto) ?? false)
 }
 
 /**

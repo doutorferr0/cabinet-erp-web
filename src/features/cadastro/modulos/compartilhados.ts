@@ -33,21 +33,34 @@ function em(prefixo: string, campo: string): string {
 
 /**
  * Endereço. `Cidade` é a única que vira coluna no mockup, e faz sentido: é o
- * recorte por que o operador procura ("clientes de Campinas"). Só ganha `dto`
- * quando o contrato publicar endereço — `PartnerDto` ainda não publica.
+ * recorte por que o operador procura ("clientes de Campinas") — mas ela só
+ * vira coluna DE VERDADE quando o servidor souber ordenar por ela, e a
+ * whitelist de `/api/partners` não a publica. Ver `temLastroDeConsulta`.
+ *
+ * **`publicado` diz se ESTE endereço é o que o contrato guarda** (#244). O
+ * parceiro tem um só: o do cadastro. O `enderecoBanco` do Profissional usa o
+ * mesmo módulo com outro prefixo e continua sem `dto` — dar-lhe o nome do
+ * contrato faria dois blocos da mesma tela apontarem para o mesmo campo do
+ * servidor, e o segundo sobrescreveria o primeiro.
  */
-export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
+export function moduloEndereco(prefixo = 'endereco', publicado = false): ModuloCadastro {
+  const dto = (nome: string) => (publicado ? { dto: `address.${nome}` } : {})
   return {
     id: prefixo === 'endereco' ? 'endereco' : prefixo,
     titulo: 'Endereço',
     cor: 'produtos',
     resumo: 'CEP preenche rua, bairro, cidade e UF automaticamente',
     campos: [
-      { k: 'cep', r: 'CEP', t: 'busca', w: 'medio', campo: em(prefixo, 'cep') },
-      { k: 'logradouro', r: 'Logradouro', campo: em(prefixo, 'logradouro') },
-      { k: 'numero', r: 'Número', w: 'curto', campo: em(prefixo, 'numero') },
-      { k: 'complemento', r: 'Complemento', campo: em(prefixo, 'complemento') },
-      { k: 'bairro', r: 'Bairro', fil: 'texto', campo: em(prefixo, 'bairro') },
+      { k: 'cep', r: 'CEP', t: 'busca', w: 'medio', campo: em(prefixo, 'cep'), ...dto('zipCode') },
+      { k: 'logradouro', r: 'Logradouro', campo: em(prefixo, 'logradouro'), ...dto('street') },
+      { k: 'numero', r: 'Número', w: 'curto', campo: em(prefixo, 'numero'), ...dto('number') },
+      {
+        k: 'complemento',
+        r: 'Complemento',
+        campo: em(prefixo, 'complemento'),
+        ...dto('complement'),
+      },
+      { k: 'bairro', r: 'Bairro', fil: 'texto', campo: em(prefixo, 'bairro'), ...dto('district') },
       {
         k: 'cidade',
         r: 'Cidade',
@@ -55,8 +68,19 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
         col: true,
         fil: 'texto',
         campo: em(prefixo, 'cidadeNome'),
+        // O NOME da cidade, não o código: é o que o contrato publica, e é por
+        // isso que o par id+nome do `LookupCombo` não sobrevive à volta.
+        ...dto('city'),
       },
-      { k: 'uf', r: 'UF', t: 'select', w: 'curto', fil: 'sel', campo: em(prefixo, 'uf') },
+      {
+        k: 'uf',
+        r: 'UF',
+        t: 'select',
+        w: 'curto',
+        fil: 'sel',
+        campo: em(prefixo, 'uf'),
+        ...dto('state'),
+      },
     ],
   }
 }
@@ -69,21 +93,36 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
 export function moduloContatos({
   prefixo = '',
   comunicadores = true,
-}: { prefixo?: string; comunicadores?: boolean } = {}): ModuloCadastro {
+  publicado = false,
+}: { prefixo?: string; comunicadores?: boolean; publicado?: boolean } = {}): ModuloCadastro {
   // `comunicadores: false` NÃO tira os campos do módulo — deixa os dois pares
   // sem `campo`. Cliente não guarda comunicador hoje, e o mockup mostra que
   // deveria: apagar da espec faria a lacuna sumir; declarada, ela é contável
   // por `semLastro` e visível para quem for migrar a tela.
   const guardado = (caminho: string) => (comunicadores ? { campo: caminho } : {})
+  // Os TRÊS telefones entraram no contrato com o #244; os comunicadores não —
+  // são lista, não campo, e a issue os deixou de fora de propósito. `publicado`
+  // vale só para os três, e é `false` onde a entidade não é parceiro.
+  const doContrato = (nome: string) => (publicado ? { dto: nome } : {})
   return {
     id: 'contatos',
     titulo: 'Outros contatos',
     cor: 'boletim',
     resumo: 'Telefone comercial · Residencial · Fax · Comunicadores',
     campos: [
-      { k: 'comercial', r: 'Telefone comercial', campo: em(prefixo, 'foneComercial') },
-      { k: 'residencial', r: 'Telefone residencial', campo: em(prefixo, 'foneResidencial') },
-      { k: 'fax', r: 'Fax', campo: em(prefixo, 'fax') },
+      {
+        k: 'comercial',
+        r: 'Telefone comercial',
+        campo: em(prefixo, 'foneComercial'),
+        ...doContrato('businessPhone'),
+      },
+      {
+        k: 'residencial',
+        r: 'Telefone residencial',
+        campo: em(prefixo, 'foneResidencial'),
+        ...doContrato('homePhone'),
+      },
+      { k: 'fax', r: 'Fax', campo: em(prefixo, 'fax'), ...doContrato('fax') },
       {
         k: 'com1tipo',
         r: 'Comunicador',

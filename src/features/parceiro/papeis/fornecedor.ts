@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { enderecoDoContrato, enderecoOuNulo } from '@/data/parceiros-api'
 import type { PapelDeCadastro } from '@/features/parceiro/usar-parceiro'
 import { type Fornecedor, fornecedorVazio } from '@/mocks/fornecedores'
 
@@ -18,6 +19,13 @@ function dtoParaForm(dto: PartnerDto): Fornecedor {
     cnpjCpf: dto.document ?? '',
     email: dto.email ?? '',
     ativo: dto.active,
+    // O `Telefone` obrigatório do Fornecedor é o COMERCIAL, e é assim que ele
+    // viaja (#244). Fornecedor não tem celular nem residencial no cadastro —
+    // `mobilePhone` e `homePhone` existem no contrato e esta tela não os toca,
+    // então `corpoDeEscrita` os devolve como vieram.
+    fone1: dto.businessPhone ?? '',
+    fax: dto.fax ?? '',
+    endereco: enderecoDoContrato(dto.address),
   }
 }
 
@@ -25,7 +33,7 @@ export const papelFornecedor: PapelDeCadastro<Fornecedor> = {
   role: 'supplier',
   rota: '/cadastros/fornecedores',
   queryKeyListagem: ['fornecedores'],
-  camposDeEdicao: 'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail e Ativo',
+  camposDeEdicao: 'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail, Telefone, Fax, Endereço e Ativo',
   vazio: fornecedorVazio,
   dtoParaForm,
   paraEscrita: (values) => ({
@@ -34,6 +42,9 @@ export const papelFornecedor: PapelDeCadastro<Fornecedor> = {
     document: values.cnpjCpf,
     email: values.email,
     active: values.ativo,
+    businessPhone: values.fone1,
+    fax: values.fax,
+    address: enderecoOuNulo(values.endereco),
   }),
   paraInclusao: (values) => ({
     legalName: values.razaoSocial,
@@ -41,5 +52,8 @@ export const papelFornecedor: PapelDeCadastro<Fornecedor> = {
     document: values.cnpjCpf,
     email: values.email,
     active: values.ativo,
+    businessPhone: values.fone1,
+    fax: values.fax,
+    address: enderecoOuNulo(values.endereco),
   }),
 }

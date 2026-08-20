@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { enderecoDoContrato, enderecoOuNulo } from '@/data/parceiros-api'
 import type { PapelDeCadastro } from '@/features/parceiro/usar-parceiro'
 import { type Cliente, clienteVazio } from '@/mocks/clientes'
 
@@ -17,6 +18,13 @@ function dtoParaForm(dto: PartnerDto): Cliente {
     cpf: dto.document ?? '',
     email: dto.email ?? '',
     ativo: dto.active,
+    // Contato e endereço passaram a existir no contrato (#244): o que era bloco
+    // desenhado sobre o vazio agora carrega o que o servidor guardou.
+    celular: dto.mobilePhone ?? '',
+    foneComercial: dto.businessPhone ?? '',
+    foneResidencial: dto.homePhone ?? '',
+    fax: dto.fax ?? '',
+    endereco: enderecoDoContrato(dto.address),
   }
 }
 
@@ -24,7 +32,7 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
   role: 'customer',
   rota: '/cadastros/clientes',
   queryKeyListagem: ['clientes'],
-  camposDeEdicao: 'Nome, CPF/CNPJ, E-mail e Ativo',
+  camposDeEdicao: 'Nome, CPF/CNPJ, Celular, E-mail, Telefones, Endereço e Ativo',
   vazio: clienteVazio,
   dtoParaForm,
   paraEscrita: (values, linha) => ({
@@ -35,6 +43,11 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
     document: values.cpf,
     email: values.email,
     active: values.ativo,
+    mobilePhone: values.celular,
+    businessPhone: values.foneComercial,
+    homePhone: values.foneResidencial,
+    fax: values.fax,
+    address: enderecoOuNulo(values.endereco),
   }),
   paraInclusao: (values) => ({
     legalName: values.nome,
@@ -42,5 +55,10 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
     document: values.cpf,
     email: values.email,
     active: values.ativo,
+    mobilePhone: values.celular,
+    businessPhone: values.foneComercial,
+    homePhone: values.foneResidencial,
+    fax: values.fax,
+    address: enderecoOuNulo(values.endereco),
   }),
 }

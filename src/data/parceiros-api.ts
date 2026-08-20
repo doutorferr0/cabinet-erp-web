@@ -1,4 +1,9 @@
-import type { PartnerDto, PartnerPayoutBankInfo, PartnerWriteRequest } from '@/api/gerado'
+import type {
+  PartnerAddress,
+  PartnerDto,
+  PartnerPayoutBankInfo,
+  PartnerWriteRequest,
+} from '@/api/gerado'
 import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
 import {
   ErroDaApi,
@@ -168,6 +173,82 @@ export interface CamposEditaveis {
    * gravou por outro caminho.
    */
   parentId?: string | null
+  /**
+   * Contato e endereço (#244). Opcionais pela mesma razão dos três acima, e
+   * aqui o recorte é por TELA: o Cliente e o Profissional têm celular,
+   * telefone residencial e fax; o Fornecedor tem `Telefone` (comercial) e fax,
+   * e não tem celular nem residencial. Quem não edita não manda, e o campo
+   * viaja de volta como veio.
+   */
+  mobilePhone?: string | null
+  businessPhone?: string | null
+  homePhone?: string | null
+  fax?: string | null
+  /**
+   * O endereço viaja INTEIRO. Objeto e não sete campos soltos porque é assim
+   * que o contrato o publica, e porque endereço meio gravado não é endereço:
+   * `null` quando o formulário está todo em branco (ver `enderecoOuNulo`).
+   */
+  address?: PartnerAddress | null
+}
+
+/** O endereço do contrato no formato que os três formulários já validam. */
+export function enderecoDoContrato(endereco: PartnerAddress | null | undefined) {
+  return {
+    cep: endereco?.zipCode ?? '',
+    logradouro: endereco?.street ?? '',
+    numero: endereco?.number ?? '',
+    complemento: endereco?.complement ?? '',
+    bairro: endereco?.district ?? '',
+    // **O código da cidade não volta, e isso é declarado.** O formulário guarda
+    // um id de tabela de apoio que só existe no mock; o contrato publica o NOME
+    // (ver `PartnerAddress.city`). Devolver aqui um id inventado casaria a
+    // busca de cidade com uma chave que o servidor não conhece — em branco, o
+    // combo mostra o nome que veio e não afirma um vínculo que não existe.
+    cidadeCodigo: null as string | null,
+    cidadeNome: endereco?.city ?? '',
+    uf: endereco?.state ?? null,
+  }
+}
+
+/**
+ * Endereço em branco vira `null`, não um objeto de sete strings vazias.
+ *
+ * Mesma decisão do `contaDaComissao` do Profissional, e pelo mesmo motivo: o
+ * contrato distingue "não tem endereço" de "tem um endereço sem nada dentro", e
+ * gravar o segundo criaria registro que existe e não serve para entregar nada.
+ * Cada campo passa por `textoOuNulo` — o formulário carrega string vazia porque
+ * input controlado precisa de string, e `''` de volta ao servidor trocaria "não
+ * informado" por "vazio" a cada Gravar.
+ */
+export function enderecoOuNulo(endereco: {
+  cep: string
+  logradouro: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidadeNome: string
+  uf: string | null
+}): PartnerAddress | null {
+  const preenchido = [
+    endereco.cep,
+    endereco.logradouro,
+    endereco.numero,
+    endereco.complemento,
+    endereco.bairro,
+    endereco.cidadeNome,
+    endereco.uf ?? '',
+  ].some((valor) => valor.trim() !== '')
+  if (!preenchido) return null
+  return {
+    zipCode: textoOuNulo(endereco.cep),
+    street: textoOuNulo(endereco.logradouro),
+    number: textoOuNulo(endereco.numero),
+    complement: textoOuNulo(endereco.complemento),
+    district: textoOuNulo(endereco.bairro),
+    city: textoOuNulo(endereco.cidadeNome),
+    state: textoOuNulo(endereco.uf),
+  }
 }
 
 /**
@@ -199,6 +280,22 @@ function textoOuNulo(valor: string | null | undefined): string | null {
  * Os três papéis vêm da linha pelo mesmo motivo: quem é cliente E fornecedor não
  * pode deixar de ser fornecedor por ter sido gravado na tela de Clientes.
  */
+/**
+ * Os opcionais que o SERVIDOR JÁ GRAVA — e só esses.
+ *
+ * A guarda abaixo recusa o `PUT` quando um deles não veio na linha, e a recusa
+ * só faz sentido para campo implementado: ali "ausente" quer dizer "a listagem
+ * deixou de mandar", e gravar apagaria dado que existe.
+ *
+ * **Os cinco campos de contato do #244 ficam FORA de propósito.** Eles são
+ * `Proposto`: o contrato os publica, o `cabinet-erp-api` ainda não. Contra o
+ * servidor real toda linha chega sem eles, e vigiá-los aqui faria o Gravar de
+ * qualquer parceiro falhar em voz alta por um campo que ninguém tinha para
+ * apagar — travando o cadastro inteiro para proteger o que não existe. Quando o
+ * backend implementar a migração irmã, eles entram nesta lista.
+ */
+const OPCIONAIS_QUE_O_SERVIDOR_JA_GRAVA = ['registration', 'payoutBankInfo', 'parentId'] as const
+
 export function corpoDeEscrita(
   original: PartnerDto,
   editado: CamposEditaveis,
@@ -214,7 +311,7 @@ export function corpoDeEscrita(
   // registro rico com conselho, conta bancária e vínculo pai. Isto é a guarda
   // para o dia em que parar de mandar, e ela RECUSA em vez de gravar: um
   // `Gravar` que falha em voz alta é melhor que um que grava apagando.
-  for (const campo of ['registration', 'payoutBankInfo', 'parentId'] as const) {
+  for (const campo of OPCIONAIS_QUE_O_SERVIDOR_JA_GRAVA) {
     if (editado[campo] === undefined && !(campo in original)) {
       throw new Error(
         `O registro veio do servidor sem \`${campo}\`, e o PUT substitui o cadastro inteiro: gravar assim apagaria o campo. Nada foi enviado.`,
@@ -247,6 +344,26 @@ export function corpoDeEscrita(
     // uma hierarquia: o formulário não tem campo de vínculo, então omitir aqui
     // faria todo Gravar de Cliente desligar o profissional do escritório dele.
     parentId: editado.parentId !== undefined ? editado.parentId : (original.parentId ?? null),
+    // Telefones e endereço (#244) — devolvidos como vieram, e é isso que faz o
+    // cadastro sobreviver ao Gravar de OUTRA tela: o Fornecedor não tem campo
+    // de celular, e sem esta devolução desativar um fornecedor apagaria o
+    // telefone que a tela de Clientes gravou no mesmo cadastro. Sem a guarda de
+    // cima, porém: `?? null` aqui é a leitura certa enquanto o servidor não
+    // publica o campo — não há valor anterior a preservar.
+    mobilePhone:
+      editado.mobilePhone !== undefined
+        ? textoOuNulo(editado.mobilePhone)
+        : (original.mobilePhone ?? null),
+    businessPhone:
+      editado.businessPhone !== undefined
+        ? textoOuNulo(editado.businessPhone)
+        : (original.businessPhone ?? null),
+    homePhone:
+      editado.homePhone !== undefined
+        ? textoOuNulo(editado.homePhone)
+        : (original.homePhone ?? null),
+    fax: editado.fax !== undefined ? textoOuNulo(editado.fax) : (original.fax ?? null),
+    address: editado.address !== undefined ? editado.address : (original.address ?? null),
   }
 }
 
@@ -377,6 +494,11 @@ export function corpoDeInclusao(
     registration: editado.registration ?? null,
     payoutBankInfo: editado.payoutBankInfo ?? null,
     parentId: editado.parentId ?? null,
+    mobilePhone: textoOuNulo(editado.mobilePhone),
+    businessPhone: textoOuNulo(editado.businessPhone),
+    homePhone: textoOuNulo(editado.homePhone),
+    fax: textoOuNulo(editado.fax),
+    address: editado.address ?? null,
   }
 }
 

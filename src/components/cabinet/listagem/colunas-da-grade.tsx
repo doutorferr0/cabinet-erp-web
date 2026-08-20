@@ -4,7 +4,7 @@ import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulo
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
-import { idDoFiltro, moduloDoFiltro } from './modulos-da-consulta'
+import { moduloDoFiltro, nomeQueViaja } from './modulos-da-consulta'
 
 /**
  * COLUNAS OPCIONAIS DA GRADE (#104) — o que o seletor `Colunas` liga de verdade.
@@ -35,9 +35,17 @@ import { idDoFiltro, moduloDoFiltro } from './modulos-da-consulta'
  * ela — por isso a conferência é feita aqui, e não presumida.
  */
 
-/** O nome que a coluna usa é o MESMO que viaja no filtro: `dto` em http, `campo` em mock. */
+/**
+ * O nome que a coluna usa é o MESMO que viaja no filtro: `dto` em http, `campo`
+ * em mock — mas SEM a exigência de whitelist que o filtro faz.
+ *
+ * A diferença é o custo de errar. Filtro fora da whitelist é 400 na consulta
+ * inteira; coluna fora dela apenas não ordena, e o `ordenavel` logo abaixo já
+ * trata disso. É o que deixa `Cidade` e `Registro profissional` — publicados no
+ * `PartnerDto`, ausentes da whitelist — virarem coluna opcional.
+ */
 export function idDaColuna(entidade: EntidadeCadastro, campo: CampoCadastro): string | undefined {
-  return idDoFiltro(entidade, campo)
+  return nomeQueViaja(entidade, campo)
 }
 
 /**

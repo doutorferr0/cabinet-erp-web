@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { enderecoDoContrato, enderecoOuNulo } from '@/data/parceiros-api'
 import type { PapelDeCadastro } from '@/features/parceiro/usar-parceiro'
 import { type Profissional, profissionalVazio } from '@/mocks/profissionais'
 
@@ -27,6 +28,19 @@ function dtoParaForm(dto: PartnerDto): Profissional {
     nomeBanco: dto.payoutBankInfo?.bankName ?? '',
     numeroAgencia: dto.payoutBankInfo?.branchNumber ?? '',
     numeroConta: dto.payoutBankInfo?.accountNumber ?? '',
+    // Os quatro telefones do Profissional moram sob `telefones.` no schema da
+    // tela e são campos planos no contrato (#244) — o prefixo é do formulário,
+    // não do servidor.
+    telefones: {
+      celular: dto.mobilePhone ?? '',
+      foneComercial: dto.businessPhone ?? '',
+      foneResidencial: dto.homePhone ?? '',
+      fax: dto.fax ?? '',
+    },
+    // Só o endereço do CADASTRO. `enderecoBanco` continua sem lastro: o
+    // contrato publica um endereço por parceiro, e a descrição do
+    // `PartnerPayoutBankInfo` diz por quê.
+    endereco: enderecoDoContrato(dto.address),
   }
 }
 
@@ -53,7 +67,7 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
   rota: '/cadastros/profissionais',
   queryKeyListagem: ['profissionais'],
   camposDeEdicao:
-    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários e Ativo',
+    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Telefones, Endereço, Registro Profissional, Dados Bancários e Ativo',
   vazio: profissionalVazio,
   dtoParaForm,
   paraEscrita: (values) => ({
@@ -64,6 +78,11 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
     active: values.ativo,
     registration: values.registroProfissional,
     payoutBankInfo: contaDaComissao(values),
+    mobilePhone: values.telefones.celular,
+    businessPhone: values.telefones.foneComercial,
+    homePhone: values.telefones.foneResidencial,
+    fax: values.telefones.fax,
+    address: enderecoOuNulo(values.endereco),
   }),
   paraInclusao: (values) => ({
     legalName: values.nome,
@@ -73,5 +92,10 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
     active: values.ativo,
     registration: values.registroProfissional,
     payoutBankInfo: contaDaComissao(values),
+    mobilePhone: values.telefones.celular,
+    businessPhone: values.telefones.foneComercial,
+    homePhone: values.telefones.foneResidencial,
+    fax: values.telefones.fax,
+    address: enderecoOuNulo(values.endereco),
   }),
 }

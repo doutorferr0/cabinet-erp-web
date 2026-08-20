@@ -4,7 +4,7 @@ import type { CampoCadastro, EntidadeCadastro, ModuloCadastro } from '@/features
 import { cn } from '@/lib/utils'
 import { Columns3 } from 'lucide-react'
 import { useId, useState } from 'react'
-import { idDoFiltro } from './modulos-da-consulta'
+import { nomeQueViaja } from './modulos-da-consulta'
 
 /**
  * COLUNAS AGRUPADAS POR MÓDULO (#104) — o seletor que diz de onde cada coluna vem.
@@ -43,12 +43,20 @@ export interface ColunasPorModuloProps {
   onChange: (extras: string[]) => void
 }
 
-/** Campos que podem virar coluna: têm lastro na fonte da entidade. */
+/**
+ * Campos que podem virar coluna: têm nome na fonte da entidade.
+ *
+ * Pelo nome que VIAJA, não pelo id de filtro. Os dois eram a mesma função até o
+ * #244 separar publicar de saber consultar — e como `email` nunca esteve na
+ * whitelist de `/api/partners`, usar o id de filtro aqui tiraria `E-mail` do
+ * seletor de colunas de todo parceiro. Coluna sem whitelist existe e só não
+ * ordena; quem cuida disso é `colunasDaGrade`.
+ */
 function colunasDoModulo(
   entidade: EntidadeCadastro,
   modulo: ModuloCadastro,
 ): readonly CampoCadastro[] {
-  return modulo.campos.filter((campo) => idDoFiltro(entidade, campo))
+  return modulo.campos.filter((campo) => nomeQueViaja(entidade, campo))
 }
 
 export function ColunasPorModulo({ entidade, extras, fixas, onChange }: ColunasPorModuloProps) {
@@ -93,7 +101,7 @@ export function ColunasPorModulo({ entidade, extras, fixas, onChange }: ColunasP
                 {modulo.titulo}
               </legend>
               {colunasDoModulo(entidade, modulo).map((campo) => {
-                const id = idDoFiltro(entidade, campo) as string
+                const id = nomeQueViaja(entidade, campo) as string
                 const fixa = fixas ? fixas.includes(id) : campo.col === true
                 return (
                   // O `Checkbox` do react-aria JÁ é o `<label>` e associa o

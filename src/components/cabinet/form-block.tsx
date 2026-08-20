@@ -1,4 +1,4 @@
-import { type ModuloCor, classeDaTintaDaFaixa } from '@/components/cabinet/modulo-cores'
+import type { ModuloCor } from '@/components/cabinet/modulo-cores'
 import { cn } from '@/lib/utils'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -163,9 +163,14 @@ export function FormBlock({
     }
   })
 
+  // FUSÃO v5 r4 (decisão do user, 2026-08-19): a faixa NUNCA veste a cheia /01
+  // de fundo — seis blocos gritando em neon era a antítese das referências
+  // (Theo Wilder: pastel + contorno preto amarram multi-cor; Devora: cheia é
+  // ração mínima). A cheia recua para MICRO-ACENTO: barra de 4px e ícone.
+  // Fundo da faixa é a pastel /02; a tinta volta a ser a do tema.
   const faixa = cn(
-    'flex w-full items-center gap-2 px-3 py-2 text-left',
-    cor ? cn('bg-modulo-cheia', classeDaTintaDaFaixa(cor)) : 'bg-surface-sunken text-text-strong',
+    'relative flex w-full items-center gap-2 px-3 py-2 pl-4 text-left',
+    cor ? 'bg-modulo text-foreground' : 'bg-surface-sunken text-text-strong',
     // Régua entre faixa e corpo só com o bloco aberto — fechado, a faixa É o
     // bloco inteiro e uma linha embaixo dela penduraria no vazio. A separação é
     // por ESPESSURA, nunca por cor: utility de cor de borda não vale neste repo
@@ -176,7 +181,14 @@ export function FormBlock({
   // Regra do user (2026-08-17): traço é SEMPRE preto — cor só em preenchimento.
   // O ícone herda a tinta da faixa (preta em todos os módulos) em vez de vestir
   // a /01; o quadrado-selo saiu junto: na faixa clara ele só somava moldura.
-  const selo = Icone ? <Icone aria-hidden="true" className="size-4 shrink-0" /> : null
+  const selo = Icone ? (
+    <Icone aria-hidden="true" className={cn('size-4 shrink-0', cor && 'text-modulo')} />
+  ) : null
+
+  // A cheia /01 vive AQUI, e só aqui: 4px na borda esquerda da faixa.
+  const barra = cor ? (
+    <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-modulo-cheia" />
+  ) : null
 
   const nomeDaFaixa = (
     // `aria-hidden`: o mesmo texto já é o `<legend>` do compartimento e o
@@ -253,6 +265,7 @@ export function FormBlock({
               onClick={() => setAberto((estava) => !estava)}
               className={cn(faixa, 'cursor-pointer focus-visible:focus-ring-inset')}
             >
+              {barra}
               {selo}
               {nomeDaFaixa}
               {carimbos}
@@ -263,6 +276,7 @@ export function FormBlock({
             </button>
           ) : (
             <div className={faixa}>
+              {barra}
               {selo}
               {nomeDaFaixa}
               {carimbos}
@@ -282,7 +296,7 @@ export function FormBlock({
         <div
           id={idCorpo}
           {...(podeColapsar && !aberto ? { hidden: true } : {})}
-          className={cn('p-3', cor && 'bg-modulo')}
+          className={cn('p-3', cor && 'bg-card')}
         >
           {children}
         </div>

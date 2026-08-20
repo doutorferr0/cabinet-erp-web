@@ -1081,6 +1081,22 @@
   border-color: hsl(var(--rule-disabled));
 }
 
+/* FUSÃO v5 r4: sobre o CARVÃO da sidebar a regra "traço sempre preto" inverte —
+   o traço do ícone é claro por padrão, veste a cheia /01 onde o item tem
+   módulo, e volta a ser tinta escura quando pousa no chip pastel de
+   hover/ativo (o chip é papel claro; ali a regra original volta a valer). */
+[data-slot="sidebar"] svg {
+  color: hsl(var(--sidebar-foreground));
+}
+[data-slot="sidebar"] [data-modulo] svg {
+  color: hsl(var(--modulo-01));
+}
+[data-slot="sidebar"]
+  :is(button:hover, a:hover, [data-active] a, a[data-active], [data-active])
+  svg {
+  color: hsl(var(--foreground));
+}
+
 body {
   background-color: hsl(var(--background));
   /* FUSÃO v5: dois halos radiais quase-invisíveis (violeta da marca, ciano)

@@ -188,8 +188,10 @@ describe('AppShell', () => {
     const futuro = barra().getByText('Reserva Técnica').closest('[aria-disabled="true"]')
     expect(futuro).not.toBeNull()
     expect(futuro).toHaveTextContent('futuro')
-    // Apagado no FUNDO, nunca na tinta: o item continua legível.
-    expect(futuro?.className).toContain('bg-muted')
+    // Apagado no FUNDO, nunca na tinta — e desde a fusão v5 r4 o fundo apagado
+    // da sidebar escura é o accent dela rebaixado, não o muted claro (que
+    // virava holofote sobre o carvão).
+    expect(futuro?.className).toContain('bg-sidebar-accent/60')
   })
 
   it('o item colapsável abre as filhas, e o estado fica lembrado', async () => {

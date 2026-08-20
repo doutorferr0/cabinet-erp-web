@@ -35,6 +35,8 @@ export interface Cliente {
     facebook: string
     instagram: string
   }
+  /** Inscrição Estadual (`Cli_IE_rg` no legado) — a da EMPRESA, no fisco. */
+  inscEst: string
   inscEstProdutorRural: string
   observacao: string
 }
@@ -98,6 +100,7 @@ export const clientes: Cliente[] = NOMES.map((nome, i) => ({
   categoria: idDeApoio('CATEGORIA_CLIENTE', i % 3 === 0 ? 'ARQUITETO' : 'CONSUMIDOR FINAL'),
   dtNascimento: `19${60 + (i % 35)}-0${(i % 9) + 1}-1${i % 9}`,
   redesSociais: { facebook: '', instagram: '' },
+  inscEst: '',
   inscEstProdutorRural: '',
   observacao: '',
 }))
@@ -132,6 +135,7 @@ export function clienteVazio(id: number): Cliente {
     categoria: null,
     dtNascimento: null,
     redesSociais: { facebook: '', instagram: '' },
+    inscEst: '',
     inscEstProdutorRural: '',
     observacao: '',
   }

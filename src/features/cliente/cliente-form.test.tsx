@@ -1,5 +1,5 @@
 import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
+import { acaoNaLinha, renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -125,6 +125,45 @@ describe('tela Cliente', () => {
       expect(screen.getByText(/Falta:/)).not.toHaveTextContent('Nome')
     })
   }, 15_000)
+
+  /**
+   * A IE DA EMPRESA ESTÁ NA TELA, e é campo PRÓPRIO (#254).
+   *
+   * Duas inscrições, dois campos: `Cli_IE_rg` (empresa) e `Cli_IEProdRural`
+   * (produtor rural). Produtor rural pessoa física tem a segunda sem ter a
+   * primeira — juntá-las num campo só apagaria uma na primeira gravação.
+   */
+  it('o bloco Fiscal tem as DUAS inscrições, e o Gravar leva a que foi digitada', async () => {
+    const { stub, chamadas } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+    await user.click(screen.getByRole('button', { name: 'Fiscal' }))
+
+    const ie = screen.getByLabelText('Inscrição Estadual')
+    expect(ie).toBeVisible()
+    expect(screen.getByLabelText('Inscrição Estadual Produtor Rural')).toBeVisible()
+
+    await user.type(ie, '110055443322')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes')
+      },
+      { timeout: 5000 },
+    )
+
+    // O que o operador digitou chegou ao corpo do `PUT`. Sem o campo na tela, a
+    // IE do cliente só existia se outra tela a tivesse gravado.
+    expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
+      stateRegistration: '110055443322',
+      ruralProducerRegistration: null,
+    })
+  }, 20_000)
 
   it('busca de cidade (janela auxiliar) preenche cidade e UF', async () => {
     const { user } = renderRoute('/cadastros/clientes/novo')

@@ -49,6 +49,8 @@ export interface Fornecedor {
   }
   empresaCompradora: string | null
   contatos: FornecedorContato[]
+  /** Observação interna (`for_obs` no legado) — só a equipe lê. */
+  observacao: string
 }
 
 export const EMPRESAS_COMPRADORAS = ['VERTZ ILUMINAÇÃO', 'VIA HF'] as const
@@ -106,6 +108,7 @@ export const fornecedores: Fornecedor[] = NOMES.map((nome, i) => ({
   redesSociais: { facebook: '', instagram: '' },
   empresaCompradora: EMPRESAS_COMPRADORAS[i % EMPRESAS_COMPRADORAS.length] ?? null,
   contatos: [],
+  observacao: '',
 }))
 
 export function fornecedorVazio(id: number): Fornecedor {
@@ -145,5 +148,6 @@ export function fornecedorVazio(id: number): Fornecedor {
     redesSociais: { facebook: '', instagram: '' },
     empresaCompradora: null,
     contatos: [],
+    observacao: '',
   }
 }

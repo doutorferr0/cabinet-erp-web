@@ -267,13 +267,32 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
   // Chave do contrato → campo do formulário que a edita, POR PAPEL. As três
   // telas usam o mesmo `PartnerWriteRequest` e editam conjuntos diferentes: o
   // Cliente não tem Nome Fantasia; só o Profissional tem conselho.
+  // Os campos da fase 1 (#250/#254) entram aqui POR PAPEL, e o recorte é a
+  // declaração: a IE e a observação são editáveis em telas diferentes, e a
+  // categoria/especificador só existem na de Cliente. Campo que muda de lado
+  // muda nesta lista, à vista.
   const editaveisPorPapel: Record<string, Record<string, string>> = {
-    CLIENTE: { legalName: 'nome', document: 'cpf', email: 'email' },
+    CLIENTE: {
+      legalName: 'nome',
+      document: 'cpf',
+      email: 'email',
+      stateRegistration: 'inscEst',
+      ruralProducerRegistration: 'inscEstProdutorRural',
+      categoryId: 'categoria',
+      specifierId: 'profissional',
+      notes: 'observacao',
+      facebook: 'redesSociais.facebook',
+      instagram: 'redesSociais.instagram',
+    },
     FORNECEDOR: {
       legalName: 'razaoSocial',
       tradeName: 'nomeFantasia',
       document: 'cnpjCpf',
       email: 'email',
+      stateRegistration: 'inscEst',
+      notes: 'observacao',
+      facebook: 'redesSociais.facebook',
+      instagram: 'redesSociais.instagram',
     },
     PROFISSIONAL: {
       legalName: 'nome',
@@ -281,6 +300,9 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
       document: 'cpf',
       email: 'email',
       registration: 'registroProfissional',
+      notes: 'observacao',
+      facebook: 'redesSociais.facebook',
+      instagram: 'redesSociais.instagram',
     },
   }
 

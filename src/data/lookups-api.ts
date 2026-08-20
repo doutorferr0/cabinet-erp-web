@@ -1,6 +1,11 @@
-import { type PagedResultOfCatalogLookupDto, listCatalogLookups } from '@/api/gerado'
+import {
+  type CatalogLookupDto,
+  type PagedResultOfCatalogLookupDto,
+  createCatalogLookup,
+  listCatalogLookups,
+} from '@/api/gerado'
 import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * LISTAS DE APOIO — o padrão `[combo]`/`[combo +...]` da transcrição (§9 padrão 2).
@@ -174,5 +179,81 @@ export function useRotulosDeApoio(): {
   return {
     carregando: false,
     rotulos: Object.fromEntries(query.data.rows.map((r) => [r.id, r.name])),
+  }
+}
+
+/**
+ * O que o `+...` do combo devolveu — CRIADO ou DUPLICADO, nunca "erro".
+ *
+ * O 409 do contrato não é falha: é a resposta de que o item que o operador quer
+ * já existe naquele kind. Tratá-lo como erro genérico ("Falha ao cadastrar")
+ * mandaria o operador procurar o que ele já tinha na mão — e a alternativa
+ * pior, cadastrar de novo, é justamente o par duplicado que o 409 impede.
+ *
+ * O contrato diz por escrito que o 409 **não carrega membro de extensão**: quem
+ * acha o item existente é o cliente, PELO NOME que acabou de digitar, na lista
+ * do kind que ele já tem em cache. Por isso `existente` pode vir `undefined` —
+ * item desativado, ou lista cortada no teto de 100 — e a diferença aparece na
+ * tela em vez de virar um id chutado.
+ */
+export type CadastroDeApoio =
+  | { estado: 'criado'; item: OpcaoDeLookup }
+  | { estado: 'duplicado'; nome: string; existente: OpcaoDeLookup | undefined }
+
+/**
+ * O `+...` da transcrição (§9 padrão 2) virando `POST /api/catalog-lookups`.
+ *
+ * Era estado local: o combo inventava `novo:<kind>:<NOME>` e o punha na lista.
+ * O id nunca existiu no servidor — e desde que `categoryId`/`specifierId`
+ * entraram no contrato (#250, uuid), gravar um cadastro feito por ali mandava
+ * essa string no corpo do `PUT`. O campo aceita digitação, o operador vê o nome
+ * que escolheu, e o servidor recusa (ou pior, guarda) um id que combo nenhum
+ * consegue reler.
+ *
+ * `active: true` viaja explícito porque o contrato o exige explícito: o item
+ * nasce para ser usado agora, e um padrão implícito do servidor esconderia da
+ * tela quem decidiu isso.
+ */
+export function useCadastrarItemDeApoio(kind: LookupKind) {
+  const queryClient = useQueryClient()
+  const kindDoBackend = KINDS[kind].backend
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      nome,
+      opcoesCarregadas,
+    }: { nome: string; opcoesCarregadas: readonly OpcaoDeLookup[] }): Promise<CadastroDeApoio> => {
+      const resposta: RespostaDaApi = await createCatalogLookup({
+        kind: kindDoBackend,
+        name: nome,
+        active: true,
+      })
+
+      if (resposta.status === 409) {
+        const igual = (o: OpcaoDeLookup) => o.nome.toLocaleUpperCase() === nome.toLocaleUpperCase()
+        return { estado: 'duplicado', nome, existente: opcoesCarregadas.find(igual) }
+      }
+
+      const dto = dadosOuErro<CatalogLookupDto>(
+        resposta,
+        `Falha ao cadastrar o item da lista ${kindDoBackend}.`,
+      )
+      return { estado: 'criado', item: { id: dto.id, nome: dto.name } }
+    },
+    onSuccess: async (resultado) => {
+      // Só o CRIADO mexeu na lista do servidor. Invalidar no duplicado
+      // recarregaria as opções para nada — e a lista de rótulos junto.
+      if (resultado.estado === 'criado') {
+        await queryClient.invalidateQueries({ queryKey: ['catalog-lookups'] })
+      }
+    },
+  })
+
+  return {
+    cadastrar: mutation.mutateAsync,
+    gravando: mutation.isPending,
+    /** Falha de verdade (400/500/rede). O 409 sai por `CadastroDeApoio`, não por aqui. */
+    erro: mutation.error,
+    limparErro: mutation.reset,
   }
 }

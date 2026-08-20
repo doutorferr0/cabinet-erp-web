@@ -5,7 +5,7 @@ import { setupServer } from 'msw/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
-import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
+import { ROTAS_DO_BACKEND, ROTAS_DO_BLOCO_2, handlersDePassagem } from './rotas-do-backend'
 
 /**
  * PROVA A DIVISÃO, não a lista.
@@ -201,5 +201,55 @@ describe('passthrough por rota', () => {
         `operação inexistente: ${metodo} ${caminho}`,
       ).toBeDefined()
     }
+  })
+
+  /**
+   * O BLOCO 2 ESTÁ ESCRITO E CONTINUA DESLIGADO — as duas metades importam.
+   *
+   * A lista `ROTAS_DO_BLOCO_2` existe para responder "o que falta ligar?" sem
+   * obrigar ninguém a reler o contrato, e o risco dela é exatamente o de ser
+   * ligada cedo: o `cabinet-erp-api` só serve obra e contatos quando `api#42` e
+   * `api#43` mergearem, e rota adiantada faz o mock parar de responder para a
+   * tela receber 501. Enquanto isso não acontece, ligar por engano tem de
+   * quebrar o BUILD, e não o site.
+   */
+  it('as rotas do bloco 2 existem no contrato — a lista não é palpite', () => {
+    const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
+      paths: Record<string, Record<string, unknown>>
+    }
+
+    for (const { metodo, caminho } of ROTAS_DO_BLOCO_2) {
+      expect(
+        contrato.paths[caminho]?.[metodo],
+        `operação inexistente: ${metodo} ${caminho}`,
+      ).toBeDefined()
+    }
+  })
+
+  it('e NENHUMA delas está na passagem — o backend ainda responde 501', () => {
+    const naPassagem = ROTAS_DO_BLOCO_2.filter(({ metodo, caminho }) =>
+      ROTAS_DO_BACKEND.some((r) => r.metodo === metodo && r.caminho === caminho),
+    ).map(({ metodo, caminho }) => `${metodo.toUpperCase()} ${caminho}`)
+
+    expect(
+      naPassagem,
+      'ligue só depois de medir o par local: rota adiantada tira o mock e entrega 501 à tela',
+    ).toEqual([])
+  })
+
+  it('o mock RESPONDE as rotas do bloco 2 — é ele quem as serve hoje', async () => {
+    // A prova positiva do parágrafo acima: o par (contrato tem, passagem não
+    // tem) só vale alguma coisa se alguém estiver respondendo. Sem handler, a
+    // requisição sairia para a rede e a SPA devolveria `index.html` com 200 —
+    // o defeito que a #226 descreve, e que não se vê pelo status.
+    const obras = await fetch(`${base}/api/works`)
+    expect(obras.headers.get('x-origem')).toBeNull()
+    expect(obras.status).toBe(200)
+    expect(await obras.json()).toHaveProperty('rows')
+
+    const contatos = await fetch(`${base}/api/partners/parc-0001/contacts`)
+    expect(contatos.headers.get('x-origem')).toBeNull()
+    expect(contatos.status).toBe(200)
+    expect(await contatos.json()).toHaveProperty('rows')
   })
 })

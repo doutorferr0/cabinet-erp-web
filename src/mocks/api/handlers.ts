@@ -16,8 +16,10 @@ import type {
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDeAtividades } from './atividades'
+import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { handlersDeObras } from './obras'
 import { problemaJson } from './problema'
 import { handlersDeOrcamento } from './quotes'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
@@ -745,6 +747,20 @@ export const handlers = [
   // painel monta em oportunidade, parceiro, orçamento e pedido — o estado não é
   // de nenhum módulo em particular.
   ...handlersDeAtividades,
+
+  // ---------------- bloco 2 do comparativo (#255) ----------------
+  //
+  // Obra e contatos moram em arquivo próprio, como CRM e atividades: estado que
+  // não é do store das telas antigas, e arquivo novo não conflita com quem
+  // edita o vizinho.
+  //
+  // Os contatos convivem com `*/api/partners/:id`, que está mais acima: o
+  // parâmetro do MSW não atravessa `/`, então `/api/partners/x/contacts` não
+  // casa o padrão do detalhe. Isso é sutileza de matcher, e sutileza que a
+  // rota certa depende para responder merece teste — tem um, e ele falha se
+  // o dia em que a biblioteca mudar de ideia chegar.
+  ...handlersDeObras,
+  ...handlersDeContatos,
 
   // ---------------- health ----------------
   http.get('*/health', () => HttpResponse.json({ status: 'ok' })),

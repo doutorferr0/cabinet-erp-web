@@ -233,6 +233,44 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 ]
 
 /**
+ * O BLOCO 2 — escrito, conferido contra o contrato, e FORA da passagem.
+ *
+ * As seis operações existem no `contracts/openapi-v1.json` desde a #255, e o
+ * `cabinet-erp-api` **ainda não as serve**: são as issues `api#42` (obra) e
+ * `api#43` (contatos), e até elas mergearem toda chamada atravessaria o proxy
+ * para receber 501.
+ *
+ * Por isso a lista mora AQUI e não lá em cima. A regra do `CLAUDE.md` é
+ * explícita e já custou caro uma vez: *"rota adiantada é pior que rota ausente
+ * — o mock deixa de responder e a tela toma 501 sem ninguém ter pedido"*.
+ * Deixá-las prontas numa constante própria custa nada e responde a pergunta que
+ * vai aparecer daqui a dois dias ("o que falta ligar?") sem obrigar ninguém a
+ * reler o contrato inteiro.
+ *
+ * **Como ligar, quando o par estiver medido:** mova as entradas para
+ * `ROTAS_DO_BACKEND` — as duas famílias INTEIRAS, nunca meia — e remede com
+ * `CABANET_AO_VIVO=1 npx vitest run src/mocks/ao-vivo.test.ts` contra o par
+ * local. Meia família põe id do servidor de um lado e id do mock do outro, e o
+ * resultado tem cara de dado, não de erro.
+ *
+ * O teste desta lista garante as duas metades: que cada operação EXISTE no
+ * contrato, e que nenhuma delas está em `ROTAS_DO_BACKEND` — ligar por engano
+ * quebra o build, não o site.
+ */
+export const ROTAS_DO_BLOCO_2: readonly RotaDoBackend[] = [
+  // obra do cliente — `api#42`
+  { metodo: 'get', caminho: '/api/works' },
+  { metodo: 'post', caminho: '/api/works' },
+  { metodo: 'get', caminho: '/api/works/{id}' },
+  { metodo: 'put', caminho: '/api/works/{id}' },
+
+  // contatos do parceiro — `api#43`
+  { metodo: 'get', caminho: '/api/partners/{partnerId}/contacts' },
+  { metodo: 'post', caminho: '/api/partners/{partnerId}/contacts' },
+  { metodo: 'put', caminho: '/api/partners/{partnerId}/contacts/{contactId}' },
+]
+
+/**
  * Caminho do contrato → padrão do MSW.
  *
  * O `*` na frente casa QUALQUER origem, que é o que os testes exigem (eles

@@ -116,6 +116,53 @@ describe('contatos — sub-recurso, e não uma lista dentro do parceiro', () => 
   })
 })
 
+/**
+ * O ESPECIFICADOR APONTA PARA PARCEIRO — e a descrição do contrato já afirmou o
+ * contrário (#258).
+ *
+ * A #250 escreveu "item da lista `PROFISSIONAL`" olhando o mock, que guardava
+ * `idDeApoio('PROFISSIONAL', …)`. O backend, lendo a mesma issue, gravou
+ * `specifier_id uuid REFERENCES partners (id)`. As duas fontes de verdade
+ * conviveram por horas sem sintoma: contra o MOCK os dois formatos são string,
+ * o teste passa verde, e o 400 só aparece no par local.
+ *
+ * É por isso que a guarda é sobre a DESCRIÇÃO. O `format: uuid` não distingue
+ * lookup de parceiro — os dois são uuid —, então o único lugar onde a decisão
+ * pode viver é a prosa que o backend lê. Guardá-la aqui é o que impede a frase
+ * de voltar a dizer "lista" na próxima edição distraída.
+ */
+describe('especificador — parceiro, não item de lista', () => {
+  it('a descrição diz `partners.id`, e não mais lista de apoio', () => {
+    const dto = schemas.PartnerDto?.properties?.specifierId?.description ?? ''
+    expect(dto).toContain('partners.id')
+    // A negativa mira a AFIRMAÇÃO errada, não a palavra: a descrição cita o
+    // engano anterior de propósito ("dizia que era item da lista … e estava
+    // errada"), porque quem for implementar precisa saber que a frase mudou.
+    // Proibir a palavra proibiria a explicação.
+    expect(dto).not.toMatch(/é item da lista/)
+  })
+
+  it('e o corpo de escrita diz a mesma coisa — as duas pontas juntas', () => {
+    // Divergir DTO e WriteRequest seria a mesma classe de defeito num tamanho
+    // menor: quem lê a escrita para implementar mandaria o id errado.
+    const escrita = schemas.PartnerWriteRequest?.properties?.specifierId?.description ?? ''
+    expect(escrita).toContain('partners.id')
+  })
+
+  it('`specifierName` é razão social de parceiro, não rótulo de lookup', () => {
+    expect(schemas.PartnerDto?.properties?.specifierName?.description ?? '').toContain('PARCEIRO')
+  })
+
+  it('continua distinto de `parentId` — são dois vínculos, não um', () => {
+    // A correção não pode colapsar os dois: `parentId` liga o profissional ao
+    // escritório; `specifierId` liga o cliente a quem o trouxe. Mesmo shape,
+    // e é justamente por isso que a confusão é fácil.
+    const dto = schemas.PartnerDto?.properties?.specifierId?.description ?? ''
+    expect(dto).toContain('NÃO é `parentId`')
+    expect(Object.keys(schemas.PartnerDto?.properties ?? {})).toContain('parentId')
+  })
+})
+
 describe('cobrança e comercial — publicados, e fora da consulta', () => {
   const NOVOS = [
     'billingAddress',

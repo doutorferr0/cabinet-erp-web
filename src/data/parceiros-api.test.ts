@@ -163,6 +163,12 @@ describe('escrita', () => {
       businessRole: null,
       businessDocument: null,
       foundedOn: null,
+      personType: null,
+      identityDocument: null,
+      identityIssuer: null,
+      identityIssuerState: null,
+      gender: null,
+      birthDate: null,
     })
   })
 
@@ -399,6 +405,12 @@ describe('desativação (o Excluir da listagem)', () => {
       businessRole: linha.businessRole ?? null,
       businessDocument: linha.businessDocument ?? null,
       foundedOn: linha.foundedOn ?? null,
+      personType: linha.personType ?? null,
+      identityDocument: linha.identityDocument ?? null,
+      identityIssuer: linha.identityIssuer ?? null,
+      identityIssuerState: linha.identityIssuerState ?? null,
+      gender: linha.gender ?? null,
+      birthDate: linha.birthDate ?? null,
     })
   })
 

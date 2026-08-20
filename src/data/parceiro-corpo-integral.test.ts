@@ -63,6 +63,12 @@ const LINHA: PartnerDto = {
   businessRole: null,
   businessDocument: null,
   foundedOn: null,
+  personType: null,
+  identityDocument: null,
+  identityIssuer: null,
+  identityIssuerState: null,
+  gender: null,
+  birthDate: null,
 } as PartnerDto
 
 describe('corpo do PUT de parceiro', () => {

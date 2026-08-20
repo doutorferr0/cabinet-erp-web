@@ -170,6 +170,18 @@ export interface PartnerAddress {
   state: string | null;
 }
 
+/**
+ * Proposto. Pessoa FÍSICA ou JURÍDICA — o radio da aba `Principal` do cadastro de cliente. **Campo próprio e não inferência de `document`:** dá para adivinhar pelo tamanho (11 dígitos CPF, 14 CNPJ), mas desde 31/07/2026 o CNPJ é ALFANUMÉRICO, e regra que lê formato de documento envelhece junto com a Receita. O legado também não infere: o radio é preenchido antes do documento, porque o cadastro nasce com o nome e ganha o CPF depois. `null` é o cadastro que nunca respondeu, não um terceiro tipo.
+ * @nullable
+ */
+export type PartnerDtoPersonType = typeof PartnerDtoPersonType[keyof typeof PartnerDtoPersonType] | null;
+
+
+export const PartnerDtoPersonType = {
+  individual: 'individual',
+  company: 'company',
+} as const;
+
 export interface PartnerDto {
   id: string;
   /** @nullable */
@@ -296,6 +308,36 @@ export interface PartnerDto {
      * @nullable
      */
   foundedOn?: string | null;
+  /**
+     * Proposto. Pessoa FÍSICA ou JURÍDICA — o radio da aba `Principal` do cadastro de cliente. **Campo próprio e não inferência de `document`:** dá para adivinhar pelo tamanho (11 dígitos CPF, 14 CNPJ), mas desde 31/07/2026 o CNPJ é ALFANUMÉRICO, e regra que lê formato de documento envelhece junto com a Receita. O legado também não infere: o radio é preenchido antes do documento, porque o cadastro nasce com o nome e ganha o CPF depois. `null` é o cadastro que nunca respondeu, não um terceiro tipo.
+     * @nullable
+     */
+  personType?: PartnerDtoPersonType;
+  /**
+     * Proposto. RG da pessoa física (aba `Principal`). Sem máscara no dado, como `document`. A coluna do legado não foi capturada na extração — este campo vem do print da tela, não do schema.
+     * @nullable
+     */
+  identityDocument?: string | null;
+  /**
+     * Proposto. Órgão expedidor do RG (`SSP`, `DETRAN`, `Ministério da Defesa`). Texto livre e NÃO lista de apoio por ora, pela mesma razão de `workType`: o legado guarda string e a extração não fixou o vocabulário. Vira lookup no dia em que a lista for conhecida, e o campo não muda de nome quando isso acontecer.
+     * @nullable
+     */
+  identityIssuer?: string | null;
+  /**
+     * Proposto. UF do órgão expedidor — combo PRÓPRIO na tela do legado, separado da UF do endereço. São coisas diferentes: quem tirou o RG em Minas e mora em São Paulo tem as duas divergindo, e reusar `address.state` apagaria uma delas.
+     * @nullable
+     */
+  identityIssuerState?: string | null;
+  /**
+     * Proposto. Sexo, combo na aba `Principal`. Texto livre e não `enum`: a captura mostra o combo mas NÃO os valores dele, e fechar o vocabulário aqui seria inventar o legado em vez de copiá-lo. **Dado pessoal (LGPD)** — o contrato publica porque o legado já coleta; quem decide exibição e permissão é a tela.
+     * @nullable
+     */
+  gender?: string | null;
+  /**
+     * Proposto. Data de nascimento da pessoa física (`Dt. de Nasc.`, aba `Principal`). **Não confundir com `foundedOn`**, que é a fundação da EMPRESA onde a pessoa trabalha e entrou no bloco 2: uma descreve a pessoa, a outra o vínculo de trabalho, e o mesmo cadastro pode ter as duas preenchidas. ISO no dado, exibição pt-BR na borda. **Dado pessoal (LGPD).**
+     * @nullable
+     */
+  birthDate?: string | null;
 }
 
 export interface PagedResultOfPartnerDto {
@@ -638,6 +680,18 @@ export interface PartnerLinkRequest {
   active: boolean | null;
 }
 
+/**
+ * Proposto. Pessoa FÍSICA ou JURÍDICA — o radio da aba `Principal` do cadastro de cliente. **Campo próprio e não inferência de `document`:** dá para adivinhar pelo tamanho (11 dígitos CPF, 14 CNPJ), mas desde 31/07/2026 o CNPJ é ALFANUMÉRICO, e regra que lê formato de documento envelhece junto com a Receita. O legado também não infere: o radio é preenchido antes do documento, porque o cadastro nasce com o nome e ganha o CPF depois. `null` é o cadastro que nunca respondeu, não um terceiro tipo. `PUT` substitui o registro inteiro: omitir apaga.
+ * @nullable
+ */
+export type PartnerWriteRequestPersonType = typeof PartnerWriteRequestPersonType[keyof typeof PartnerWriteRequestPersonType] | null;
+
+
+export const PartnerWriteRequestPersonType = {
+  individual: 'individual',
+  company: 'company',
+} as const;
+
 export interface PartnerWriteRequest {
   /** @nullable */
   document: string | null;
@@ -752,6 +806,36 @@ export interface PartnerWriteRequest {
      * @nullable
      */
   foundedOn?: string | null;
+  /**
+     * Proposto. Pessoa FÍSICA ou JURÍDICA — o radio da aba `Principal` do cadastro de cliente. **Campo próprio e não inferência de `document`:** dá para adivinhar pelo tamanho (11 dígitos CPF, 14 CNPJ), mas desde 31/07/2026 o CNPJ é ALFANUMÉRICO, e regra que lê formato de documento envelhece junto com a Receita. O legado também não infere: o radio é preenchido antes do documento, porque o cadastro nasce com o nome e ganha o CPF depois. `null` é o cadastro que nunca respondeu, não um terceiro tipo. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  personType?: PartnerWriteRequestPersonType;
+  /**
+     * Proposto. RG da pessoa física (aba `Principal`). Sem máscara no dado, como `document`. A coluna do legado não foi capturada na extração — este campo vem do print da tela, não do schema. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  identityDocument?: string | null;
+  /**
+     * Proposto. Órgão expedidor do RG (`SSP`, `DETRAN`, `Ministério da Defesa`). Texto livre e NÃO lista de apoio por ora, pela mesma razão de `workType`: o legado guarda string e a extração não fixou o vocabulário. Vira lookup no dia em que a lista for conhecida, e o campo não muda de nome quando isso acontecer. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  identityIssuer?: string | null;
+  /**
+     * Proposto. UF do órgão expedidor — combo PRÓPRIO na tela do legado, separado da UF do endereço. São coisas diferentes: quem tirou o RG em Minas e mora em São Paulo tem as duas divergindo, e reusar `address.state` apagaria uma delas. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  identityIssuerState?: string | null;
+  /**
+     * Proposto. Sexo, combo na aba `Principal`. Texto livre e não `enum`: a captura mostra o combo mas NÃO os valores dele, e fechar o vocabulário aqui seria inventar o legado em vez de copiá-lo. **Dado pessoal (LGPD)** — o contrato publica porque o legado já coleta; quem decide exibição e permissão é a tela. `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  gender?: string | null;
+  /**
+     * Proposto. Data de nascimento da pessoa física (`Dt. de Nasc.`, aba `Principal`). **Não confundir com `foundedOn`**, que é a fundação da EMPRESA onde a pessoa trabalha e entrou no bloco 2: uma descreve a pessoa, a outra o vínculo de trabalho, e o mesmo cadastro pode ter as duas preenchidas. ISO no dado, exibição pt-BR na borda. **Dado pessoal (LGPD).** `PUT` substitui o registro inteiro: omitir apaga.
+     * @nullable
+     */
+  birthDate?: string | null;
 }
 
 /**

@@ -464,6 +464,12 @@ export const handlers = [
       isSupplier: corpo.isSupplier ?? false,
       isProfessional: corpo.isProfessional ?? false,
       registrationActive: true,
+      // Nasce com o que o corpo trouxe, campo a campo. O conselho e a conta
+      // vêm da tela de Profissional; ignorá-los aqui faria o cadastro novo
+      // perdê-los entre o 201 e a primeira releitura.
+      registration: corpo.registration ?? null,
+      payoutBankInfo: corpo.payoutBankInfo ?? null,
+      parentId: corpo.parentId ?? null,
       mobilePhone: corpo.mobilePhone ?? null,
       businessPhone: corpo.businessPhone ?? null,
       homePhone: corpo.homePhone ?? null,
@@ -505,6 +511,9 @@ export const handlers = [
     // e é por isso que a tela devolve como veio o que não edita. O mock
     // apagando de verdade é o que torna a regra observável no navegador — um
     // mock que preservasse o campo omitido esconderia o defeito até a produção.
+    parceiro.registration = corpo.registration ?? null
+    parceiro.payoutBankInfo = corpo.payoutBankInfo ?? null
+    parceiro.parentId = corpo.parentId ?? null
     parceiro.mobilePhone = corpo.mobilePhone ?? null
     parceiro.businessPhone = corpo.businessPhone ?? null
     parceiro.homePhone = corpo.homePhone ?? null

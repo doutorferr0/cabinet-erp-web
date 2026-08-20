@@ -2,6 +2,7 @@ import type { ActivityDto, ActivityWriteRequest } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { crm } from './crm'
+import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { novoId, store } from './store'
 
 /**
@@ -25,23 +26,6 @@ import { novoId, store } from './store'
  *   (sem prazo por último), depois as concluídas da mais recente para a mais
  *   antiga. É a ordem que o contrato publica, e o painel não reordena nada.
  */
-
-const PROBLEMA = 'application/problem+json'
-
-/**
- * Cópia LOCAL dos utilitários de `handlers.ts` — importá-los de lá criaria
- * ciclo, porque `handlers.ts` importa este arquivo para registrar os handlers.
- * É a mesma decisão, pelo mesmo motivo, que `crm.ts` já tinha tomado.
- */
-function problemaJson(status: number, detail: string) {
-  return HttpResponse.json(
-    { type: 'about:blank', title: 'Erro', status, detail },
-    { status, headers: { 'content-type': PROBLEMA } },
-  )
-}
-
-const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
-const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 
 const ORDENAVEIS = ['dueDate', 'doneAt', 'kind', 'title']
 
@@ -179,7 +163,7 @@ function corpoInvalido(corpo: ActivityWriteRequest): string | null {
 
 export const handlersDeAtividades = [
   http.get('*/api/activities', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
 
     const url = new URL(request.url)
@@ -199,10 +183,15 @@ export const handlersDeAtividades = [
       return problemaJson(400, 'entityType e entityId viajam juntos.')
     }
     if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+      return problemaJson(
+        400,
+        'Paginação inválida: page é 1-based e pageSize vai até 100.',
+        {},
+        TIPO.paginacaoInvalida,
+      )
     }
     if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`)
+      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
     }
 
     let linhas = atividades.atividades.map(comResponsavel)
@@ -235,14 +224,14 @@ export const handlersDeAtividades = [
   }),
 
   http.post('*/api/activities', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
 
     const corpo = (await request.json()) as ActivityWriteRequest
     const erro = corpoInvalido(corpo)
     if (erro) return problemaJson(400, erro)
     if (!alvoExiste(corpo.entityType, corpo.entityId)) {
-      return problemaJson(404, 'Registro da atividade não encontrado.')
+      return naoEncontrado('Registro da atividade não encontrado.')
     }
 
     const nova: ActivityDto = {
@@ -262,11 +251,11 @@ export const handlersDeAtividades = [
   }),
 
   http.put('*/api/activities/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
 
     const achada = atividades.atividades.find((a) => a.id === String(params.id))
-    if (!achada) return problemaJson(404, 'Atividade não encontrada.')
+    if (!achada) return naoEncontrado('Atividade não encontrada.')
 
     const corpo = (await request.json()) as ActivityWriteRequest
     const erro = corpoInvalido(corpo)
@@ -286,11 +275,11 @@ export const handlersDeAtividades = [
   }),
 
   http.post('*/api/activities/:id/done', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
 
     const achada = atividades.atividades.find((a) => a.id === String(params.id))
-    if (!achada) return problemaJson(404, 'Atividade não encontrada.')
+    if (!achada) return naoEncontrado('Atividade não encontrada.')
     if (achada.doneAt) return problemaJson(409, 'Atividade já concluída.')
 
     achada.doneAt = new Date().toISOString()

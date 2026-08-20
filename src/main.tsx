@@ -2,6 +2,10 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+// Polyfill do Temporal — peer obrigatório do @schedule-x/calendar (issue #230).
+// A lib usa o global `Temporal` mas NÃO o importa; sem este carregamento o
+// calendário explode no mount (`ReferenceError: Temporal is not defined`).
+import 'temporal-polyfill/global'
 // CSS das libs de planning (issue #227, trilho Libs-0). Entram AQUI e não numa
 // tela porque nenhuma tela as monta ainda — este trilho só instala, e os
 // trilhos Libs-1/2/3 é que trocam os componentes.

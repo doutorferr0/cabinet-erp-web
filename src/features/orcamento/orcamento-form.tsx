@@ -17,6 +17,7 @@ import {
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
+import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
@@ -172,76 +173,93 @@ function Cabecalho() {
 
   return (
     <>
-      <div className="grid grid-cols-12 items-end gap-3">
-        <TextField name="numero" label="Código" className="col-span-6 sm:col-span-2" />
-        <SelectField
-          name="serie"
-          label="Série"
-          options={tabelas.series}
-          className="col-span-6 sm:col-span-1"
-        />
-        <TextField name="numeroPasta" label="Nº Pasta" className="col-span-6 sm:col-span-2" />
-        <DateField name="dataEmissao" label="Data Emissão" className="col-span-6 sm:col-span-2" />
-        <DateField name="dataValidade" label="Data Validade" className="col-span-6 sm:col-span-2" />
-        <DateField
-          name="dataFechamento"
-          label="Data Fechamento"
-          className="col-span-6 sm:col-span-2"
-        />
-        <div className="col-span-12 sm:col-span-5">
-          <div className="flex items-end gap-1">
-            <TextField name="cliente" label="Cliente" className="flex-1" />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setBuscaClienteOpen(true)}
-            >
-              <User className="size-4" /> Cliente
-            </Button>
+      {/* FUSÃO v5 r4 (mockup): o formulário fala em SEÇÕES numeradas, e quem
+          importa vem primeiro — Cliente & Obra antes da burocracia. */}
+      <Secao numero="01" titulo="Cliente & Obra" cor="id">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <div className="col-span-12 sm:col-span-5">
+            <div className="flex items-end gap-1">
+              <TextField name="cliente" label="Cliente" className="flex-1" />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setBuscaClienteOpen(true)}
+              >
+                <User className="size-4" /> Cliente
+              </Button>
+            </div>
           </div>
-        </div>
-        {/* `[busca +...]` na transcrição (§8.2), não `[combo]` — ficou como
+          {/* `[busca +...]` na transcrição (§8.2), não `[combo]` — ficou como
             `LookupSelectField kind="cargo"` por engano até esta correção: Cargo
             é a categoria de função trabalhista do Colaborador (§2), sem relação
             com "quem consultou a venda". O alvo certo segue sem tela própria
             identificável na transcrição (§10 não elucida), então o campo
             continua como estava até haver captura — só o TODO fica registrado. */}
-        {/* TODO(transcricao): `Consultor(a)` é `[busca +...]` no legado; o
+          {/* TODO(transcricao): `Consultor(a)` é `[busca +...]` no legado; o
             cadastro que ela busca não foi identificado (§10). Não trocar por
             SearchDialog sem saber contra qual tabela. */}
-        <LookupSelectField
-          name="consultor"
-          label="Consultor(a)"
-          kind="cargo"
-          className="col-span-6 sm:col-span-3"
-        />
-        {/* `Profissional Externo` é `[busca +...]` (§8.2), e o alvo É óbvio: o
+          <LookupSelectField
+            name="consultor"
+            label="Consultor(a)"
+            kind="cargo"
+            className="col-span-6 sm:col-span-3"
+          />
+          {/* `Profissional Externo` é `[busca +...]` (§8.2), e o alvo É óbvio: o
             NOME bate literalmente com o cadastro já construído
             (`/cadastros/profissionais`). Estava como `LookupSelectField
             kind="profissional"` — a MESMA categoria genérica que o campo
             "Profissional" do Cliente usa (§5, "arquiteto"/"designer" como
             texto livre) — casando a PESSOA específica da obra com uma
             categoria solta. Corrigido para buscar a pessoa de verdade. */}
-        <div className="col-span-6 sm:col-span-4">
-          <div className="flex items-end gap-1">
-            <TextField name="profissionalExterno" label="Profissional Externo" className="flex-1" />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setBuscaProfissionalOpen(true)}
-            >
-              <User className="size-4" /> Buscar
-            </Button>
+          <div className="col-span-6 sm:col-span-4">
+            <div className="flex items-end gap-1">
+              <TextField
+                name="profissionalExterno"
+                label="Profissional Externo"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setBuscaProfissionalOpen(true)}
+              >
+                <User className="size-4" /> Buscar
+              </Button>
+            </div>
           </div>
+          <TextField
+            name="descricaoObra"
+            label="Descrição da Obra"
+            className="col-span-12 sm:col-span-6"
+          />
         </div>
-        <TextField
-          name="descricaoObra"
-          label="Descrição da Obra"
-          className="col-span-12 sm:col-span-6"
-        />
-      </div>
+      </Secao>
+
+      <Secao numero="02" titulo="Identificação" cor="info">
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField name="numero" label="Código" className="col-span-6 sm:col-span-2" />
+          <SelectField
+            name="serie"
+            label="Série"
+            options={tabelas.series}
+            className="col-span-6 sm:col-span-1"
+          />
+          <TextField name="numeroPasta" label="Nº Pasta" className="col-span-6 sm:col-span-2" />
+          <DateField name="dataEmissao" label="Data Emissão" className="col-span-6 sm:col-span-2" />
+          <DateField
+            name="dataValidade"
+            label="Data Validade"
+            className="col-span-6 sm:col-span-2"
+          />
+          <DateField
+            name="dataFechamento"
+            label="Data Fechamento"
+            className="col-span-6 sm:col-span-2"
+          />
+        </div>
+      </Secao>
 
       <SearchDialog
         open={buscaClienteOpen}
@@ -277,7 +295,7 @@ function ControlesDesconto() {
     <div className="flex flex-wrap items-end gap-3">
       <RadioField
         name="modoDesconto"
-        label="Desconto"
+        label="Modo"
         options={[
           { value: 'PRODUTO', label: 'Desconto por Produto' },
           { value: 'GERAL', label: 'Desconto Geral' },
@@ -392,7 +410,9 @@ function AbaPrincipal() {
   return (
     <div className="flex flex-col gap-4">
       <Cabecalho />
-      <ControlesDesconto />
+      <Secao numero="03" titulo="Desconto" cor="warn">
+        <ControlesDesconto />
+      </Secao>
 
       <p className="text-sm text-muted-foreground">
         Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.

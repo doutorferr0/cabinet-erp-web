@@ -147,13 +147,16 @@ describe('FormBlock com hierarquia', () => {
     const bloco = screen.getByRole('group', { name: 'Fornecimento' })
     expect(bloco).toHaveAttribute('data-modulo', 'fornecedores')
     expect(bloco.tagName).toBe('FIELDSET')
-    // Faixa na cheia, corpo na pastel — as duas utilities leem o par do escopo.
-    const faixa = bloco.querySelector('.bg-modulo-cheia')
-    expect(faixa).not.toBeNull()
-    expect(screen.getByLabelText('Prazo').parentElement?.className).toContain('bg-modulo')
-    // A tinta da faixa é MEDIDA, não a do tema. Desde a paleta 400 (ref.
-    // brutalism.tailwinddashboard, 2026-08-17) o fill é claro e o preto passa
-    // em TODOS os módulos — traço e tinta sempre pretos, cor só preenchimento.
-    expect(faixa?.className).toContain('text-black')
+    // FUSÃO v5 r4 (decisão do user, 2026-08-19): a cor INVERTEU de lugar —
+    // faixa na pastel /02, cheia /01 só na barra de 4px, corpo branco. Seis
+    // faixas neon na tela de Clientes foram o defeito fotografado que decidiu.
+    const barra = bloco.querySelector('.bg-modulo-cheia')
+    expect(barra).not.toBeNull()
+    const corpo = screen.getByLabelText('Prazo').parentElement
+    expect(corpo?.className).toContain('bg-card')
+    expect(corpo?.className).not.toContain('bg-modulo')
+    // A barra é decorativa (aria-hidden) e a tinta da faixa é a do tema sobre
+    // pastel — contraste folgado em todos os módulos por construção.
+    expect(barra?.getAttribute('aria-hidden')).toBe('true')
   })
 })

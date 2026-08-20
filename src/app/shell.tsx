@@ -142,11 +142,13 @@ function ItemDaBarra({
             navega por teclado tem o direito de saber que a tela vai existir. */}
         <div
           aria-disabled="true"
-          className="flex cursor-not-allowed items-center gap-2 border-2 border-transparent bg-muted px-2 py-1.5 text-sm"
+          // FUSÃO v5 r4: sobre o carvão, "apagado no fundo" é fundo MAIS escuro
+          // com tinta rebaixada — a caixa clara de antes virava holofote.
+          className="flex cursor-not-allowed items-center gap-2 rounded-control border-2 border-transparent bg-sidebar-accent/60 px-2 py-1.5 text-sidebar-foreground/60 text-sm"
         >
-          <item.icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+          <item.icon aria-hidden="true" className="size-4 shrink-0 opacity-60" />
           <span className="min-w-0 flex-1 truncate">{item.title}</span>
-          <span className="shrink-0 border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
+          <span className="shrink-0 rounded-item border border-sidebar-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
             futuro
           </span>
         </div>

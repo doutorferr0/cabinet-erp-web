@@ -573,4 +573,109 @@ describe('AppShell', () => {
       ).toBeInTheDocument()
     })
   })
+  /**
+   * A GUARDA DO CONTRASTE — issue #140, último item da DoD.
+   *
+   * A cheia `/01` do módulo é neon: ela mede 1,36–2,63:1 contra o fundo da
+   * barra no tema claro e 1,39–2,40:1 contra a própria `/02`
+   * (§tabela:nav-estados do `DESIGN.md`), as duas abaixo do piso de 3:1 da
+   * WCAG 1.4.11. Enquanto ela foi o preenchimento do item ativo, o fio da
+   * seção ativa e um dos lados do par do ícone, três sinais da navegação eram
+   * invisíveis no tema claro — e o rótulo do item ativo reprovava AA no escuro
+   * (2,45:1, §tabela:estados-fundo).
+   *
+   * O teste é INVERTIDO de propósito: ele não confere que a barra está bonita,
+   * confere que a `/01` não voltou a carregar texto, ícone ou sinal de estado.
+   * Sem ele, a próxima mão que achasse o pastel apagado devolveria o neon e
+   * nada ficaria vermelho.
+   */
+  describe('contraste da navegação (#140)', () => {
+    /**
+     * Tudo aqui se mede na RAIZ, e não numa rota de módulo, porque só a seção
+     * da rota vem aberta: entrar em `/produtos` deixaria os itens de Catálogo
+     * montados e os das outras seis fora do DOM. Na raiz, Início está aberta e
+     * o Boletim (`/`) é o item ATIVO — o par ativo × inativo que a guarda
+     * precisa cabe dentro de uma seção só.
+     */
+    async function itemDaBarra(url: string): Promise<HTMLElement> {
+      return await waitFor(() => {
+        const alvo = document.querySelector(`[data-slot="sidebar"] a[href="${url}"]`)
+        expect(alvo).toBeInTheDocument()
+        return alvo as HTMLElement
+      })
+    }
+
+    it('a /01 do módulo não pinta fundo de texto nem sinal de estado na barra', async () => {
+      setup()
+      await itemDaBarra('/')
+
+      const barra = document.querySelector('[data-slot="sidebar"]')
+      // O ÚNICO uso legítimo da /01 na barra é o quadradinho do grupo: 8px,
+      // `aria-hidden`, sem nada pousado em cima. Qualquer outro é regressão.
+      const cheias = [...(barra?.querySelectorAll('.bg-modulo-cheia') ?? [])]
+      expect(cheias.length).toBeGreaterThan(0)
+      for (const peca of cheias) {
+        expect(peca).toHaveClass('size-2')
+        expect(peca).toHaveAttribute('aria-hidden', 'true')
+        expect(peca.textContent).toBe('')
+        expect(peca.children).toHaveLength(0)
+      }
+    })
+
+    it('o item ativo é distinguido por barra e negrito, não pela cheia /01', async () => {
+      setup()
+      const item = await itemDaBarra('/')
+
+      expect(item).toHaveAttribute('data-active', 'true')
+      // As duas marcas que sobrevivem à troca de fundo, e que já existiam.
+      expect(item.className).toContain('data-active:border-l-foreground')
+      expect(item.className).toContain('data-active:font-bold')
+      // A superfície do ativo é a MESMA /02 do hover — tinta × /02 mede
+      // 16,88:1 no claro e 9,32:1 no escuro.
+      expect(item.className).toContain('data-active:bg-modulo ')
+      expect(item.className).not.toContain('data-active:bg-modulo-cheia')
+    })
+
+    it('o ícone do item não troca de tom com o estado — herda a tinta do rótulo', async () => {
+      setup()
+      const ativo = (await itemDaBarra('/')).querySelector('[data-slot="ornamento"]')
+      const inativo = (await itemDaBarra('/dashboard')).querySelector('[data-slot="ornamento"]')
+      expect(ativo).toBeInTheDocument()
+      expect(inativo).toBeInTheDocument()
+
+      // O par que reprovava era o ícone contra o PRÓPRIO fundo, e ele nascia
+      // de o ícone e a superfície trocarem de tom juntos, em sentidos opostos.
+      // Sem tom de módulo no ícone, o par deixa de existir nos dois estados.
+      for (const icone of [ativo, inativo]) {
+        expect(icone).not.toHaveClass('text-modulo')
+        expect(icone).not.toHaveClass('text-modulo-suave')
+      }
+      // O módulo continua sendo dito pelo SHAPE — é isso que sobra no ícone.
+      expect(ativo).toHaveAttribute('data-shape', 'boletim')
+      expect(inativo).toHaveAttribute('data-shape', 'dashboard')
+    })
+
+    it('o fio da seção ativa é tinta, e seção inativa não desenha fio', async () => {
+      setup()
+      await itemDaBarra('/')
+
+      const acesa = document.querySelectorAll('[data-slot="sidebar"] [aria-current="true"]')
+      // Uma seção acesa, e uma só: duas fariam o operador ler dois lugares.
+      expect(acesa).toHaveLength(1)
+      const cabecalho = acesa[0] as HTMLElement
+      expect(cabecalho.textContent).toContain('Início')
+
+      const fio = cabecalho.querySelector('span[aria-hidden="true"]')
+      expect(fio).toHaveClass('bg-foreground')
+      expect(fio).not.toHaveClass('bg-modulo-cheia')
+
+      // Seção inativa não desenha fio nenhum — o estado é do cabeçalho aceso.
+      const inativa = [...document.querySelectorAll('[data-slot="sidebar"] button[aria-expanded]')]
+        .filter((b) => b.textContent?.includes('Financeiro'))
+        .at(0)
+      expect(inativa).toBeDefined()
+      expect(inativa).not.toHaveAttribute('aria-current')
+      expect(inativa?.querySelector('span[aria-hidden="true"]')).toBeNull()
+    })
+  })
 })

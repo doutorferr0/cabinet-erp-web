@@ -79,11 +79,34 @@ function casa(titulo: string, termo: string): boolean {
   return normalize(titulo).includes(normalize(termo))
 }
 
-/** O ícone do item: o shape do módulo quando existe, o lucide quando não. */
-function IconeDoItem({ item, ativo }: { item: NavItem; ativo: boolean }) {
+/**
+ * O ícone do item: o shape do módulo quando existe, o lucide quando não.
+ *
+ * ## A cor NÃO acompanha mais o estado
+ *
+ * Ela acompanhava — ativo na `/02`, inativo na `/01` — e o preenchimento do
+ * item acompanhava junto, na ordem INVERSA. Ícone e fundo trocavam de lugar no
+ * mesmo par: `/01` sobre `/02` no hover, `/02` sobre `/01` no ativo. O par mede
+ * **1,39–2,40:1 no tema claro** nos nove módulos (§tabela:nav-estados), contra
+ * o piso de 3:1 da WCAG 1.4.11 — o ícone sumia dentro do próprio realce.
+ *
+ * Em tinta ele passa nos três estados, porque acompanha o rótulo que já passa:
+ * 18,76:1 em repouso e 16,88–18,81:1 sobre a `/02` do hover e do ativo.
+ *
+ * É o que o tom `icone` do `Ornamento` já previa por escrito — *"um ícone
+ * acompanha o texto ao lado em hover, ativo e desabilitado; com token fixo,
+ * cada um desses estados precisaria de uma SEGUNDA regra de cor só para o
+ * ornamento"*. Ele existia sem consumidor; agora tem.
+ *
+ * **A cor do módulo não sai da barra**: continua na superfície do item (hover e
+ * ativo em `/02`) e no quadradinho do grupo. E no ícone quem diz o módulo passa
+ * a ser o SHAPE, que já era a informação dele — o desenho de Produtos não é o
+ * de Clientes esteja ele em ciano ou em tinta.
+ */
+function IconeDoItem({ item }: { item: NavItem }) {
   const shape = moduloDaRota(item.url) ?? item.aparencia?.shape
-  if (!shape) return <item.icon className={ativo ? 'text-modulo-suave' : 'text-modulo'} />
-  return <Ornamento shape={shape} tom={ativo ? 'modulo-suave' : 'modulo'} tamanho={18} />
+  if (!shape) return <item.icon />
+  return <Ornamento shape={shape} tom="icone" tamanho={18} />
 }
 
 /**
@@ -187,13 +210,13 @@ function ItemDaBarra({
             para o roteador — 404 com o arquivo ali do lado. */}
         {item.externo ? (
           <a href={item.url} target="_blank" rel="noreferrer">
-            <IconeDoItem item={item} ativo={ativo} />
+            <IconeDoItem item={item} />
             <span>{item.title}</span>
             <span className="sr-only">(abre em nova aba)</span>
           </a>
         ) : (
           <Link to={item.url}>
-            <IconeDoItem item={item} ativo={ativo} />
+            <IconeDoItem item={item} />
             <span>{item.title}</span>
           </Link>
         )}
@@ -315,16 +338,29 @@ function AppSidebar({
                     className={cn(
                       'relative flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:focus-ring',
                       // A SEÇÃO ATIVA se anuncia como o Polaris anuncia o item
-                      // selecionado: pill preenchida + negrito + fio de módulo
-                      // na borda esquerda (o acento que o Odoo põe no app
-                      // corrente). Hover sozinho não é indicação.
+                      // selecionado: pill preenchida + negrito + fio na borda
+                      // esquerda (o acento que o Odoo põe no app corrente).
+                      // Hover sozinho não é indicação.
                       ativa ? 'bg-sidebar-accent font-bold' : 'font-medium',
                     )}
                   >
                     {ativa ? (
+                      // O fio é TINTA, não a cheia /01 do módulo. Em cor de
+                      // módulo ele media **1,36–2,63:1** contra o fundo da
+                      // barra no tema claro (§tabela:nav-estados), contra o
+                      // piso de 3:1 da WCAG 1.4.11 — um indicador de 3px que
+                      // ninguém enxerga. Em tinta são 17,44:1 no claro e
+                      // 15,33:1 no escuro.
+                      //
+                      // Não é perda de identidade: a marca de "você está aqui"
+                      // já é tinta em toda a barra — o item ativo usa
+                      // `border-l-foreground` desde sempre, e o fio da seção
+                      // era o único em cor de módulo. O módulo continua sendo
+                      // anunciado pelo quadradinho de cada grupo e pelo shape
+                      // de cada ícone.
                       <span
                         aria-hidden="true"
-                        className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-modulo-cheia"
+                        className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-foreground"
                       />
                     ) : null}
                     <secao.icon aria-hidden="true" className="size-4 shrink-0" />

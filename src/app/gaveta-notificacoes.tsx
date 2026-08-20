@@ -102,16 +102,26 @@ export function GavetaDeNotificacoes({
       data-slot="gaveta-notificacoes"
       data-modulo="boletim"
       data-aberta={aberta}
-      // Laranja cheia do Boletim (§@casca-global): a NEON /01 do módulo, texto
-      // no `text-foreground` padrão — o mesmo par que o item ATIVO da sidebar já
-      // usa (`data-active:bg-modulo-cheia`, `sidebar.tsx`), medido AA nos dois
-      // temas. Nenhum token novo.
+      // Laranja PASTEL do Boletim: a /02 do módulo, texto no `text-foreground`
+      // padrão — o mesmo par que o item ativo da sidebar usa
+      // (`data-active:bg-modulo`, `sidebar.tsx`).
+      //
+      // Era a NEON /01, e o comentário daqui afirmava que o par estava "medido
+      // AA nos dois temas". Não estava: tinta sobre a /01 do Boletim mede
+      // 7,46:1 no claro e **2,45:1 no escuro** (§tabela:estados-fundo), abaixo
+      // do piso de 4,5:1 — e o cabeçalho "Notificações" (18px bold, aquém dos
+      // 18,66px de texto grande) e o vazio "Nenhuma notificação." pousam nela.
+      // O precedente que o comentário citava era justamente um dos casos
+      // reprovados. Na /02 o par vai a 16,88:1 claro e 9,32:1 escuro.
+      //
+      // Os CARTÕES não entram nessa conta: eles têm `bg-card` próprio, então o
+      // texto secundário deles pousa na Folha, não na superfície da gaveta.
       //
       // A régua da esquerda só existe ABERTA: fechada, largura zero não tem o
       // que separar, e a borda de 0px encolhendo junto com o width evita o
       // traço preto solto no instante final da transição.
       className={cn(
-        'flex shrink-0 flex-col overflow-hidden bg-modulo-cheia transition-[width] duration-200 ease-out',
+        'flex shrink-0 flex-col overflow-hidden bg-modulo transition-[width] duration-200 ease-out',
         aberta ? 'w-[312px] border-l-2 border-border' : 'w-0 border-l-0',
       )}
     >

@@ -437,23 +437,28 @@ def _estados_fundo(claro, escuro, mod_claro, mod_escuro) -> str:
 def _nav_estados(claro, escuro, mod_claro, mod_escuro) -> str:
     """Os estados da NAVEGAÇÃO (Nav-2, issue #140) — hover e ativo, nos dois temas.
 
-    Três pares, porque a navegação pinta o estado de três jeitos diferentes e cada
-    um responde a um piso da WCAG:
+    ATENÇÃO ao ler: das três colunas, **só a primeira ainda descreve o que a barra
+    pinta hoje**. As outras duas ficaram como GUARDA — elas medem os dois pares que
+    a navegação usava e deixou de usar, e continuam publicadas para que reintroduzir
+    qualquer um deles tenha o número na frente.
 
-    - **tinta × /02** — o rótulo/ícone sobre a superfície de hover e de ativo da aba
-      do topo (`hover:bg-modulo`, `ativa && 'bg-modulo'` em `appbar.tsx`) e sobre o
-      hover do item da lateral. É TEXTO: piso **4,5:1**.
-    - **/01 × superfície** — o fio de 3px que marca a aba ativa
-      (`bg-modulo-cheia` sobre `--background`). É componente NÃO-TEXTO (WCAG 1.4.11):
-      piso **3:1**. E ele carrega sozinho o estado, porque a /02 sob a aba fica em
-      1,00–1,17:1 contra a superfície — invisível (ver §tabela:pasteis-02).
-    - **/01 × /02** — o ícone do item da lateral contra o próprio preenchimento:
-      ativo é `text-modulo-suave` (/02) sobre `bg-modulo-cheia` (/01), e hover é o
-      inverso. Mesmo par nos dois sentidos. NÃO-TEXTO: piso **3:1**.
+    - **tinta × /02** — o rótulo E o ícone sobre a superfície de hover e de ativo do
+      item da lateral (`hover:bg-modulo`, `data-active:bg-modulo` em `sidebar.tsx`).
+      É TEXTO: piso **4,5:1**. **Este é o par vigente**, e passa nos dois temas.
+    - **/01 × superfície** — era o fio de 3px da seção ativa (`bg-modulo-cheia` sobre
+      o fundo da barra). NÃO-TEXTO (WCAG 1.4.11): piso **3:1**, e reprovava nos nove
+      módulos no tema claro. Hoje o fio é `bg-foreground` (`shell.tsx`), pelo mesmo
+      motivo que o item ativo já usava `border-l-foreground`.
+    - **/01 × /02** — era o ícone do item contra o próprio preenchimento: a cor do
+      ícone e a do fundo trocavam de lugar entre hover e ativo, dando o mesmo par nos
+      dois sentidos. NÃO-TEXTO: piso **3:1**, reprovava nos dois sentidos no claro.
+      Hoje o ícone é `tom="icone"` e herda a tinta do rótulo (`shell.tsx`), então cai
+      na primeira coluna.
 
-    O quarto par da navegação — tinta × /01, o RÓTULO do item ativo da lateral —
-    não se repete aqui: já é a §tabela:estados-fundo, e a reprovação dele está
-    registrada como pendência do user.
+    O quarto par — tinta × /01, o RÓTULO do item ativo da lateral — era a
+    §tabela:estados-fundo e saiu da navegação junto com a /01: o item ativo passou a
+    ser pintado pela /02. A tabela continua lá porque a /01 segue sendo fundo em
+    outros lugares.
     """
     linhas = [
         "| Módulo | claro: tinta × /02 | escuro: tinta × /02 "

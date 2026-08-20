@@ -43,7 +43,7 @@ export function BandaDeIdentidade({
         // FUSÃO v5: trilho de cor à esquerda (PREENCHIMENTO do acento — traço
         // segue preto) + um degrau a mais de respiro. A banda é a peça que diz
         // "que tela é esta"; o trilho é a assinatura de cor dela.
-        'relative flex items-center gap-3.5 overflow-hidden border-2 border-border bg-zone-id py-3 pr-3.5 pl-5',
+        'relative flex items-center gap-3.5 overflow-hidden border-2 border-border bg-[linear-gradient(115deg,hsl(var(--zone-id)),hsl(var(--zone-id)/0.55)_58%,hsl(var(--zone-info)/0.5))] py-3 pr-3.5 pl-5',
         className,
       )}
     >

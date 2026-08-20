@@ -226,18 +226,17 @@
   --veil: 0 0% 0% / 0.2;
   --grid-line: hsl(0 0% 95%); /* POLARIS: sem textura de grade — linha = fundo */
   /* Sidebar: o mesmo cinza da bancada; item ativo = Folha com traço preto. */
-  /* FUSÃO v5 r3 (decisão do user, 2026-08-19): sidebar ESCURA — a âncora de
-     contraste da tela, referência Devora/mockup v5. Supersede o "sidebar no
-     cinza do fundo" do Polaris. Os chips pastel /02 de hover/ativo dos itens
-     PULAM sobre o quase-preto — é o efeito do mockup (item ativo = chip de
-     cor sobre carvão), sem mudar uma linha dos itens. */
-  --sidebar: hsl(60 4% 8%); /* #141412 — carvão quente */
-  --sidebar-foreground: hsl(55 7% 72%);
-  --sidebar-primary: hsl(262 97% 76%);
+  /* FUSÃO v5 r5 (decisão do user, 2026-08-20): sidebar volta ao CLARO — o
+     carvão da r3 durou um dia; vendo em produção o user preferiu a barra
+     clara. Fica da r3/r4: dots coloridos, chips pastel de hover/ativo e o
+     item FUTURO sem holofote. Creme da bancada, não cinza: a barra é papel. */
+  --sidebar: hsl(47 25% 96%);
+  --sidebar-foreground: hsl(0 0% 7%);
+  --sidebar-primary: hsl(0 0% 7%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(60 3% 14%); /* hover de item sem módulo */
-  --sidebar-accent-foreground: hsl(0 0% 100%);
-  --sidebar-border: hsl(60 5% 18%);
+  --sidebar-accent: hsl(47 15% 90%); /* hover de item sem módulo */
+  --sidebar-accent-foreground: hsl(0 0% 7%);
+  --sidebar-border: hsl(45 12% 78%);
   --sidebar-ring: hsl(262 97% 76%);
 }
 
@@ -1081,20 +1080,21 @@
   border-color: hsl(var(--rule-disabled));
 }
 
-/* FUSÃO v5 r4: sobre o CARVÃO da sidebar a regra "traço sempre preto" inverte —
-   o traço do ícone é claro por padrão, veste a cheia /01 onde o item tem
-   módulo, e volta a ser tinta escura quando pousa no chip pastel de
-   hover/ativo (o chip é papel claro; ali a regra original volta a valer). */
-[data-slot="sidebar"] svg {
-  color: hsl(var(--sidebar-foreground));
-}
+/* FUSÃO v5 r5: com a sidebar clara de volta (decisão do user, 2026-08-20) a
+   inversão de traço da r4 saiu — traço volta ao preto da regra geral; o
+   módulo segue falando pelo dot do grupo e pela cheia /01 do ícone. */
 [data-slot="sidebar"] [data-modulo] svg {
   color: hsl(var(--modulo-01));
 }
-[data-slot="sidebar"]
-  :is(button:hover, a:hover, [data-active] a, a[data-active], [data-active])
-  svg {
-  color: hsl(var(--foreground));
+
+/* Campo-herói (fusão v5 r5): o dado que define o documento — Cliente no
+   orçamento, Fornecedor na ordem — fala mais alto que os irmãos. */
+.campo-heroi input {
+  border-color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 body {

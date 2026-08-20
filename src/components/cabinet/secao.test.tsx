@@ -26,7 +26,11 @@ describe('Secao — caixa-filha numerada', () => {
         <p>campos</p>
       </Secao>,
     )
-    expect(screen.getByText('02').className).toContain('font-mono')
+    // r5: o ordinal fala em display condensado na cor da zona.
+    expect(screen.getByText('02').className).toContain(
+      'font-[family-name:var(--font-display-condensada)]',
+    )
+    expect(screen.getByText('02').className).toContain('text-info')
     expect(container.querySelector('[data-slot="secao"] > span')?.className).toContain('bg-info')
   })
 })

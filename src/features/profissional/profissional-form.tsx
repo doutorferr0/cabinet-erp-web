@@ -71,6 +71,7 @@ export const profissionalSchema = z.object({
     facebook: z.string(),
     instagram: z.string(),
   }),
+  observacao: z.string(),
 })
 
 type PrefixoCidade = 'endereco' | 'enderecoBanco'

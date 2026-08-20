@@ -7,6 +7,7 @@ import {
   LookupField,
   SelectField,
   TextField,
+  TextareaField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
@@ -63,6 +64,7 @@ export const fornecedorSchema = z.object({
     facebook: z.string(),
     instagram: z.string(),
   }),
+  observacao: z.string(),
   empresaCompradora: z.string().nullable(),
   contatos: z.array(
     z.object({
@@ -270,6 +272,10 @@ function FornecedorCorpo({
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="redes">
         <RedesSociaisBlock prefix="redesSociais" />
+      </BlocoDoModulo>
+
+      <BlocoDoModulo emFoco={moduloEmFoco} id="observacao">
+        <TextareaField name="observacao" label="Observação" rows={3} />
       </BlocoDoModulo>
     </div>
   )

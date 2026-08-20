@@ -48,6 +48,61 @@ async function corpoDaResposta(response: Response): Promise<unknown> {
   }
 }
 
+/**
+ * Os DOIS únicos tipos que o contrato devolve com corpo — conferido varrendo
+ * `contracts/openapi-v1.json`: toda resposta com `content` declara
+ * `application/json` ou `application/problem+json`, e nada mais.
+ *
+ * Por isso a regra pode ser fechada em vez de heurística: corpo que chega com
+ * outro tipo NÃO é a API.
+ */
+function ehJsonDoContrato(tipo: string | null): boolean {
+  if (!tipo) return false
+  const base = tipo.split(';')[0]?.trim().toLowerCase() ?? ''
+  return base === 'application/json' || base.endsWith('+json')
+}
+
+/**
+ * `200` NÃO PROVA QUE A RESPOSTA É DA API — e este é o ponto onde isso para de
+ * passar batido (issue #226).
+ *
+ * O par local tem uma forma de mentir que não gera erro nenhum no caminho: o
+ * MSW libera a passagem de uma rota, o proxy do dev server não está montado, e
+ * `/api/...` cai no **fallback da SPA**, que responde o `index.html` com status
+ * **200**. `respostaOk()` vê 200, `dadosOuErro()` devolve a string HTML como se
+ * fosse o corpo, e o defeito só aparece na primeira operação de array, longe
+ * daqui — `empresas.find is not a function`, que não diz nada sobre proxy.
+ *
+ * A resposta vira falha com `status: 0`, o mesmo canal de "não houve resposta
+ * utilizável" que a rede fora já usa: os helpers da porta única o tratam como
+ * falha e nenhum deles precisa aprender um caso novo. Mas o corpo sintético
+ * carrega a CAUSA PROVÁVEL, para a tela ter o que dizer — `detalheDoProblema`
+ * lê `detail`, então a frase chega ao operador em vez de morrer no console.
+ *
+ * Só vale quando HÁ corpo: `204` e `205` não têm `content-type` e são resposta
+ * legítima de `logout`, `active-tenant` e `change-password`.
+ */
+function respostaQueNaoEDaApi(url: string, response: Response): RespostaBruta {
+  return {
+    data: {
+      type: 'urn:cabinet:erro:resposta-nao-json',
+      title: 'Resposta não é da API',
+      status: response.status,
+      detail: `\`${url}\` respondeu ${response.status} com \`${
+        response.headers.get('content-type') ?? 'sem content-type'
+      }\`, e o contrato só devolve JSON. A causa provável é o proxy do dev server não estar no ar: sem ele \`/api\` e \`/auth\` caem no fallback da SPA, que devolve o index.html com status 200. Suba o par local com \`VITE_API_PROXY\` (ver .env.example).`,
+    },
+    status: 0,
+    headers: response.headers,
+  }
+}
+
+interface RespostaBruta {
+  data: unknown
+  status: number
+  headers: Headers
+}
+
 export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T> => {
   try {
     // `fetch(new Request(...))`, e não `fetch(url, init)`: o servidor falso dos
@@ -59,8 +114,12 @@ export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T>
         ...options,
       }),
     )
+    const data = await corpoDaResposta(response)
+    if (data !== undefined && !ehJsonDoContrato(response.headers.get('content-type'))) {
+      return respostaQueNaoEDaApi(url, response) as T
+    }
     return {
-      data: await corpoDaResposta(response),
+      data,
       status: response.status,
       headers: response.headers,
     } as T

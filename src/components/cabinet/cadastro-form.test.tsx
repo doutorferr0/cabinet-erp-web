@@ -121,7 +121,7 @@ describe('CadastroForm em modo consulta', () => {
     expect(await screen.findByLabelText('SubTotal')).toHaveTextContent('309,81')
     // …mas nenhuma célula aceita digitação.
     expect(screen.getByLabelText('Quantidade linha 1')).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Busca \(Alt\+T\)/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Busca Alt\+T/ })).toBeDisabled()
   })
 
   it('rodapé fixo usa régua forte na borda superior (DESIGN.md)', async () => {

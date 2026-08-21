@@ -5,7 +5,7 @@ import { setupServer } from 'msw/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
-import { ROTAS_DO_BACKEND, ROTAS_DO_BLOCO_2, handlersDePassagem } from './rotas-do-backend'
+import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
 
 /**
  * PROVA A DIVISÃO, não a lista.
@@ -134,6 +134,22 @@ describe('passthrough por rota', () => {
       metade: '/api/quotes',
       outraMetade: '/api/partners',
     },
+    {
+      // A grade de contatos vive DENTRO do cadastro do parceiro, e o `PUT` de
+      // contato leva o `partnerId` no caminho: contato do mock pendurado em
+      // parceiro do servidor gravaria em um id que o outro lado não conhece.
+      tela: 'contatos do parceiro',
+      metade: '/api/partners/{partnerId}/contacts',
+      outraMetade: '/api/partners',
+    },
+    {
+      // A obra aponta o cliente por `customerId` e a listagem devolve
+      // `customerName` resolvido por junção: obra do servidor com parceiro do
+      // mock mostraria obra sem dono.
+      tela: 'obra do cliente',
+      metade: '/api/works',
+      outraMetade: '/api/partners',
+    },
   ])('$tela: $metade não entra sozinha, sem $outraMetade', ({ metade, outraMetade }) => {
     const listado = (caminho: string) =>
       ROTAS_DO_BACKEND.some((r) => r.caminho === caminho || r.caminho.startsWith(`${caminho}/`))
@@ -204,52 +220,64 @@ describe('passthrough por rota', () => {
   })
 
   /**
-   * O BLOCO 2 ESTÁ ESCRITO E CONTINUA DESLIGADO — as duas metades importam.
+   * O BLOCO 2 FOI LIGADO, e agora o risco trocou de lado.
    *
-   * A lista `ROTAS_DO_BLOCO_2` existe para responder "o que falta ligar?" sem
-   * obrigar ninguém a reler o contrato, e o risco dela é exatamente o de ser
-   * ligada cedo: o `cabinet-erp-api` só serve obra e contatos quando `api#42` e
-   * `api#43` mergearem, e rota adiantada faz o mock parar de responder para a
-   * tela receber 501. Enquanto isso não acontece, ligar por engano tem de
-   * quebrar o BUILD, e não o site.
+   * Enquanto `api#48`/`api#53` não existiam, a lista `ROTAS_DO_BLOCO_2` vivia
+   * separada e o teste garantia que ninguém a ligasse cedo — rota adiantada
+   * tira o mock e entrega 501 à tela. Medido o par local em 2026-08-20, as
+   * sete entraram em `ROTAS_DO_BACKEND` e a constante morreu junto.
+   *
+   * O que este teste passa a proteger é o inverso: que elas continuem lá, e
+   * INTEIRAS. Tirar uma volta a pôr id do servidor de um lado e id do mock do
+   * outro, que é a costura calada de sempre.
    */
-  it('as rotas do bloco 2 existem no contrato — a lista não é palpite', () => {
+  it.each([
+    { familia: 'obra', caminhos: ['/api/works', '/api/works/{id}'] },
+    {
+      familia: 'contatos do parceiro',
+      caminhos: [
+        '/api/partners/{partnerId}/contacts',
+        '/api/partners/{partnerId}/contacts/{contactId}',
+      ],
+    },
+  ])('$familia passa INTEIRA — nenhuma operação dela ficou no mock', ({ caminhos }) => {
     const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
       paths: Record<string, Record<string, unknown>>
     }
 
-    for (const { metodo, caminho } of ROTAS_DO_BLOCO_2) {
-      expect(
-        contrato.paths[caminho]?.[metodo],
-        `operação inexistente: ${metodo} ${caminho}`,
-      ).toBeDefined()
+    // A conta sai do CONTRATO, não de uma lista escrita aqui: operação nova no
+    // caminho (um `delete` de contato, por exemplo) entra na verificação
+    // sozinha, e a família só continua inteira se ela também for ligada.
+    for (const caminho of caminhos) {
+      for (const metodo of Object.keys(contrato.paths[caminho] ?? {})) {
+        expect(
+          ROTAS_DO_BACKEND.some((r) => r.caminho === caminho && r.metodo === metodo),
+          `${metodo.toUpperCase()} ${caminho} está no contrato e ficou fora da passagem`,
+        ).toBe(true)
+      }
     }
   })
 
-  it('e NENHUMA delas está na passagem — o backend ainda responde 501', () => {
-    const naPassagem = ROTAS_DO_BLOCO_2.filter(({ metodo, caminho }) =>
-      ROTAS_DO_BACKEND.some((r) => r.metodo === metodo && r.caminho === caminho),
-    ).map(({ metodo, caminho }) => `${metodo.toUpperCase()} ${caminho}`)
-
-    expect(
-      naPassagem,
-      'ligue só depois de medir o par local: rota adiantada tira o mock e entrega 501 à tela',
-    ).toEqual([])
-  })
-
-  it('o mock RESPONDE as rotas do bloco 2 — é ele quem as serve hoje', async () => {
-    // A prova positiva do parágrafo acima: o par (contrato tem, passagem não
-    // tem) só vale alguma coisa se alguém estiver respondendo. Sem handler, a
-    // requisição sairia para a rede e a SPA devolveria `index.html` com 200 —
-    // o defeito que a #226 descreve, e que não se vê pelo status.
+  it('obra e contato SAEM para a rede — o mock não os responde mais', async () => {
+    // A prova é a mesma das outras rotas ligadas: só quem está do outro lado da
+    // rede pode testemunhar que a requisição saiu. Sem isto, "ligado" seria uma
+    // linha numa lista que ninguém exercita.
     const obras = await fetch(`${base}/api/works`)
-    expect(obras.headers.get('x-origem')).toBeNull()
-    expect(obras.status).toBe(200)
-    expect(await obras.json()).toHaveProperty('rows')
+    expect(obras.headers.get('x-origem')).toBe(MARCA)
+    expect(await obras.json()).toMatchObject({ origem: MARCA, metodo: 'GET' })
 
     const contatos = await fetch(`${base}/api/partners/parc-0001/contacts`)
-    expect(contatos.headers.get('x-origem')).toBeNull()
-    expect(contatos.status).toBe(200)
-    expect(await contatos.json()).toHaveProperty('rows')
+    expect(contatos.headers.get('x-origem')).toBe(MARCA)
+
+    // O sub-recurso passa no VERBO de escrita também — a grade do parceiro
+    // grava contato, e meia família aqui gravaria no mock o que a tela leu do
+    // servidor.
+    const criado = await fetch(`${base}/api/partners/parc-0001/contacts`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'CONTATO DA PASSAGEM', active: true }),
+    })
+    expect(criado.headers.get('x-origem')).toBe(MARCA)
+    expect(await criado.json()).toMatchObject({ metodo: 'POST' })
   })
 })

@@ -1,10 +1,11 @@
 import type {
+  PagedResultOfPartnerDto,
   PartnerAddress,
   PartnerDto,
   PartnerPayoutBankInfo,
   PartnerWriteRequest,
 } from '@/api/gerado'
-import { createPartner, getPartner, linkPartner, updatePartner } from '@/api/gerado'
+import { createPartner, getPartner, linkPartner, listPartners, updatePartner } from '@/api/gerado'
 import {
   ErroDaApi,
   PAGE_SIZE_MAX,
@@ -15,7 +16,7 @@ import {
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE PARCEIROS — `GET /api/partners`.
@@ -656,4 +657,62 @@ export async function vincularParceiro(id: string, ativo: boolean): Promise<Part
     active: ativo,
   })
   return dadosOuErro<PartnerDto>(resposta, `Falha ao vincular o parceiro ${id}.`)
+}
+
+/**
+ * AS OPÇÕES DO ESPECIFICADOR — do CADASTRO, não da lista de apoio (#265).
+ *
+ * `specifierId` é um `partners.id`. A #250 escrevera "item da lista
+ * `PROFISSIONAL`" olhando o mock, e a #265 corrigiu o contrato para o que o
+ * backend sempre fez: `specifier_id uuid REFERENCES partners (id)`. Enquanto o
+ * combo lia `GET /api/catalog-lookups?kind=PROFISSIONAL`, o id que ele escolhia
+ * existia em `catalog_lookups` e não em `partners` — e o `PUT` levava um uuid
+ * que `conferirApoios` recusa com 400 `O especificador não existe.`. Contra o
+ * mock isso passava verde: os dois lados são uuid, e mock nenhum confere FK.
+ *
+ * **Por que uma consulta própria e não a listagem da tela.** A listagem de
+ * Profissionais carrega página, ordenação e filtros do operador; o combo quer
+ * sempre o mesmo recorte — os profissionais, por nome. Reusar aquela traria o
+ * estado da grade para dentro do campo.
+ *
+ * **Divergência declarada:** `role=professional` é filtro da listagem, que é
+ * recortada pela EMPRESA ativa; o backend aceita como especificador qualquer
+ * parceiro do GRUPO (`cadastroDoGrupo`, e de propósito — o profissional que
+ * atende o grupo inteiro e só está vinculado à loja da esquina não pode sumir
+ * da escrita). Então o combo oferece MENOS do que o servidor aceita, nunca
+ * mais. O caminho que falta é busca, não combo: quando a lista passar de 100 o
+ * componente muda, e `truncada` é quem avisa que esse dia chegou.
+ */
+export function useEspecificadorOptions(excluir?: string | undefined): {
+  options: { id: string; nome: string }[]
+  truncada: boolean
+  carregando: boolean
+  erro: boolean
+} {
+  const query = useQuery({
+    queryKey: ['partners', 'especificadores'],
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listPartners({
+        role: 'professional',
+        pageSize: PAGE_SIZE_MAX,
+        sortBy: 'legalName',
+      })
+      return dadosOuErro<PagedResultOfPartnerDto>(resposta, 'Falha ao carregar os profissionais.')
+    },
+  })
+
+  const linhas = query.data?.rows ?? []
+  // O PRÓPRIO REGISTRO fora da lista: `conferirApoios` responde 400
+  // (`Um parceiro não pode ser o próprio especificador.`) e a `0023` tem o
+  // `CHECK` embaixo. Oferecer a opção seria desenhar o caminho para um erro
+  // que a tela já sabe evitar — e o cliente-profissional do seed (um cadastro,
+  // dois papéis) é exatamente quem cairia nele.
+  const oferecidos = excluir ? linhas.filter((p) => p.id !== excluir) : linhas
+
+  return {
+    options: oferecidos.map((p) => ({ id: p.id, nome: p.legalName })),
+    truncada: (query.data?.total ?? 0) > linhas.length,
+    carregando: query.isPending,
+    erro: query.isError,
+  }
 }

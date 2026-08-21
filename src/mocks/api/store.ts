@@ -275,7 +275,12 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       stateRegistration: null,
       ruralProducerRegistration: null,
       categoryId: idDeApoio('CATEGORIA_CLIENTE', 'ARQUITETO'),
-      specifierId: idDeApoio('PROFISSIONAL', 'ANA RIBEIRO'),
+      // O ESPECIFICADOR é um `partners.id` (#265) — aqui, `parc-0004`. Era
+      // `idDeApoio('PROFISSIONAL', 'ANA RIBEIRO')`, id de `catalog_lookups`,
+      // que contra o backend real não existe em `partners` e leva 400.
+      // Ela é cliente E profissional, então o especificador tinha de ser OUTRO
+      // parceiro: `ck_partners_especificador_nao_e_ele_mesmo` recusa o próprio.
+      specifierId: 'parc-0004',
       notes: 'Atende obras de alto padrão; prefere contato por WhatsApp.',
       facebook: null,
       instagram: '@mh.arquitetura',
@@ -358,6 +363,103 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       address: null,
       vinculos: {
         [TENANT_FILIAL]: { code: 'C-201', paymentTerms: '30/60', active: false },
+      },
+    },
+    {
+      // O ESPECIFICADOR do seed, e ele existe por causa da #265: enquanto
+      // `specifierId` era item de lista, um nome bastava; sendo `partners.id`,
+      // quem indica precisa ser um CADASTRO. O seed tinha uma profissional só
+      // (`parc-0002`), e ela é a INDICADA — apontá-la para si mesma é o 400 de
+      // `conferirApoios`.
+      id: 'parc-0004',
+      legalName: 'ANA RIBEIRO ARQUITETURA LTDA',
+      tradeName: 'ANA RIBEIRO',
+      document: '77444555000122',
+      email: 'ana@anaribeiro.dev',
+      isCustomer: false,
+      isSupplier: false,
+      isProfessional: true,
+      registrationActive: true,
+      registration: 'CAU A987654-3',
+      payoutBankInfo: null,
+      parentId: null,
+      stateRegistration: null,
+      ruralProducerRegistration: null,
+      categoryId: null,
+      // Quem indica não foi indicado por ninguém: o especificador do
+      // especificador é `null`, e a cadeia para aqui.
+      specifierId: null,
+      notes: null,
+      facebook: null,
+      instagram: '@anaribeiro.arq',
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
+      mobilePhone: '19991110004',
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: {
+        zipCode: '13010200',
+        street: 'RUA BARAO DE JAGUARA',
+        number: '1481',
+        complement: null,
+        district: 'CENTRO',
+        city: 'CAMPINAS',
+        state: 'SP',
+      },
+      vinculos: {
+        [TENANT_MATRIZ]: { code: 'P-002', paymentTerms: null, active: true },
+      },
+    },
+    {
+      // O SEGUNDO profissional, e ele não é enfeite: combo com uma opção só
+      // não distingue "escolheu" de "só havia isso", e a bateria não teria
+      // para onde MUDAR o especificador — trocar por um id qualquer provaria
+      // que o campo viaja, não que ele viaja para um parceiro.
+      id: 'parc-0005',
+      legalName: 'ESTUDIO FERRARI ARQUITETURA LTDA',
+      tradeName: 'ESTÚDIO FERRARI',
+      document: '33222111000199',
+      email: 'contato@estudioferrari.dev',
+      isCustomer: false,
+      isSupplier: false,
+      isProfessional: true,
+      registrationActive: true,
+      registration: 'CAU A555222-1',
+      payoutBankInfo: null,
+      parentId: null,
+      stateRegistration: null,
+      ruralProducerRegistration: null,
+      categoryId: null,
+      specifierId: null,
+      notes: null,
+      facebook: 'fb.com/estudioferrari',
+      instagram: null,
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
+      mobilePhone: '19991110005',
+      businessPhone: null,
+      homePhone: null,
+      fax: null,
+      address: {
+        zipCode: '13025320',
+        street: 'RUA CONCEICAO',
+        number: '233',
+        complement: 'SALA 12',
+        district: 'CENTRO',
+        city: 'CAMPINAS',
+        state: 'SP',
+      },
+      vinculos: {
+        [TENANT_MATRIZ]: { code: 'P-003', paymentTerms: null, active: true },
       },
     },
   ]
@@ -813,7 +915,11 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     // DERIVADOS do id, como `parentName` — nome guardado é nome que um dia
     // diverge, e é por isso que a escrita não os aceita de volta.
     categoryName: nomeDeApoio(p.categoryId),
-    specifierName: nomeDeApoio(p.specifierId),
+    // `specifierName` é razão social de PARCEIRO (#265), pela mesma consulta
+    // do `parentName`. Enquanto saía de `nomeDeApoio`, um `specifierId` que
+    // apontasse para parceiro devolvia `null` aqui — e a ficha imprimia o
+    // campo vazio para um vínculo que existe.
+    specifierName: nomeDeParceiro(p.specifierId),
     // Bloco 2 (#255): as seis chaves saem SEMPRE, mesmo nulas.
     billingAddress: p.billingAddress,
     businessAddress: p.businessAddress,
@@ -822,6 +928,12 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     businessDocument: p.businessDocument,
     foundedOn: p.foundedOn,
   }
+}
+
+/** Razão social de um parceiro, pelo id. `null` quando não há id. */
+function nomeDeParceiro(id: string | null): string | null {
+  if (!id) return null
+  return store.parceiros.find((p) => p.id === id)?.legalName ?? null
 }
 
 /** Nome de um item de lista de apoio, pelo id. `null` quando não há id. */

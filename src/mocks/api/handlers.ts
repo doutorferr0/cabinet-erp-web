@@ -1,6 +1,4 @@
 import type {
-  CatalogLookupCreateRequest,
-  CatalogLookupDto,
   LoginRequest,
   PartnerLinkRequest,
   PartnerWriteRequest,
@@ -252,36 +250,14 @@ export const handlers = [
     return listar(base, lerConsulta(url), ['name', 'kind'], (l) => [l.name, l.kind])
   }),
 
-  // O `+...` do combo (§9 padrão 2). O 409 é a peça central: nome repetido no
-  // mesmo kind faria o combo mostrar duas linhas iguais, e escolher entre elas
-  // vira sorteio — dois ids que o operador lê como a mesma coisa.
-  http.post('*/api/catalog-lookups', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    const corpo = (await request.json()) as CatalogLookupCreateRequest
-    const nome = corpo.name?.trim()
-    if (!corpo.kind || !nome) return problemaJson(400, 'Kind e nome são obrigatórios.')
-
-    // Comparação sem caixa: `Arquiteto` e `ARQUITETO` são o par duplicado que o
-    // 409 existe para impedir, não dois itens.
-    const existente = store.lookups.find(
-      (l) =>
-        l.kind === corpo.kind &&
-        l.active &&
-        l.name.toLocaleUpperCase() === nome.toLocaleUpperCase(),
-    )
-    if (existente) {
-      return problemaJson(409, `Já existe "${existente.name}" na lista ${corpo.kind}.`)
-    }
-
-    const novo: CatalogLookupDto = {
-      id: novoId(`lk-${corpo.kind}`),
-      kind: corpo.kind,
-      name: nome,
-      active: corpo.active ?? true,
-    }
-    store.lookups.push(novo)
-    return HttpResponse.json(novo, { status: 201 })
-  }),
+  // O `POST` do `+...` NÃO mora aqui: ele é `handlersDeLookups`, em
+  // `lookups.ts` (#269), com o vocabulário de `kind`, o `fields[]` e o
+  // `sem-empresa-ativa` que o backend real responde. Esta PR chegou a escrever
+  // um segundo handler neste arquivo, e o rebase mostrou o preço: registrado
+  // ANTES do outro, o MSW casava o ingênuo e o da #269 nunca rodava — cinco
+  // asserções do vocabulário de erro ficaram vermelhas sem que ninguém
+  // tivesse mexido nelas. Rota com dois donos é a rota que responde pelo dono
+  // errado.
 
   // ---------------- products ----------------
   http.get('*/api/products/:id', ({ params }) => {

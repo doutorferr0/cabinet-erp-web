@@ -49,6 +49,40 @@ describe('tela Profissional Externo', () => {
     })
   }, 15_000)
 
+  /**
+   * A OBSERVAÇÃO É DO PARCEIRO, e a tela §3 passou a desenhá-la (#254).
+   *
+   * A CATEGORIA não veio junto: o contrato publica um `categoryId` só, apontando
+   * para `CATEGORIA_CLIENTE`. Um combo de `CATEGORIA_PROFISSIONAL` gravando ali
+   * poria o item de uma lista no campo da outra, e a ficha do cliente leria uma
+   * categoria que ninguém escolheu para ele.
+   */
+  it('a observação interna vai ao servidor; categoria do profissional NÃO existe na tela', async () => {
+    const { stub, chamadas } = servidorDeParceiros()
+    const { router, user } = renderRoute('/cadastros/profissionais/novo', stub)
+
+    await user.type(await screen.findByLabelText('Nome de apresentação'), 'PROFISSIONAL TESTE')
+    await user.click(screen.getByRole('button', { name: 'Observação interna' }))
+    await user.type(screen.getByLabelText('Anotações'), 'Especifica muito na zona sul.')
+
+    // O contrato não tem onde gravar categoria de profissional — e a tela não
+    // oferece um combo que descartaria a escolha no Gravar.
+    expect(screen.queryByLabelText(/Categoria/)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/profissionais')
+      },
+      { timeout: 5000 },
+    )
+
+    expect(chamadas.find((c) => c.metodo === 'POST')?.corpo).toMatchObject({
+      notes: 'Especifica muito na zona sul.',
+    })
+  }, 20_000)
+
   // O CONTRATO CRESCEU (2026-08-13): a engenharia reversa do legado confirmou
   // `partners.registration` (CREA/CAU/CFT) e os dados bancários de comissão, e
   // os dois entraram como `Proposto`. Antes disto o formulário mostrava os

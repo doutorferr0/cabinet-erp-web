@@ -31,7 +31,10 @@ function dtoParaForm(dto: PartnerDto): Cliente {
     foneResidencial: dto.homePhone ?? '',
     fax: dto.fax ?? '',
     endereco: enderecoDoContrato(dto.address),
-    // Fase 1 (#250): quatro campos que a tela já desenhava sobre o vazio.
+    // Fase 1 (#250/#254). A IE da empresa (`Cli_IE_rg`) entrou com a tela que
+    // a desenha: enquanto o campo não existia aqui, o Cliente devolvia a IE
+    // como veio, e quem editava era só o Fornecedor.
+    inscEst: dto.stateRegistration ?? '',
     // `profissional` é o ESPECIFICADOR — o combo `Profissional que indicou`,
     // que no contrato é `specifierId` e não tem nada a ver com `parentId`.
     inscEstProdutorRural: dto.ruralProducerRegistration ?? '',
@@ -60,15 +63,13 @@ function contatoEEndereco(values: Cliente) {
     address: enderecoParaContrato(values.endereco),
     // Fase 1 (#250). Os dois de VÍNCULO não passam por `textoOuNulo`: o combo
     // já entrega `null` quando ninguém escolheu, e id não é texto a aparar.
+    stateRegistration: textoOuNulo(values.inscEst),
     ruralProducerRegistration: textoOuNulo(values.inscEstProdutorRural),
     categoryId: values.categoria,
     specifierId: values.profissional,
     notes: textoOuNulo(values.observacao),
     facebook: textoOuNulo(values.redesSociais.facebook),
     instagram: textoOuNulo(values.redesSociais.instagram),
-    // `stateRegistration` NÃO entra: a tela de Cliente não tem campo de IE
-    // (só a de Fornecedor tem), e mandar `null` daqui apagaria a IE que o
-    // cadastro tenha por outro caminho. Volta como veio — ver `corpoDeEscrita`.
   }
 }
 
@@ -77,7 +78,7 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
   rota: '/cadastros/clientes',
   queryKeyListagem: ['clientes'],
   camposDeEdicao:
-    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
+    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, Inscrição Estadual, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
   vazio: clienteVazio,
   dtoParaForm,
   paraEscrita: (values, linha) => ({

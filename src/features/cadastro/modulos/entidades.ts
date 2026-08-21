@@ -134,6 +134,11 @@ export const cliente: EntidadeCadastro = {
       resumo: 'Inscrição estadual · Contribuinte — necessário só para emitir NF-e',
       cor: 'vendas',
       campos: [
+        // A IE da empresa e a de produtor rural são campos DIFERENTES, e o
+        // contrato as separa de propósito: o produtor rural pessoa física tem
+        // inscrição de produtor sem ter IE, e guardar as duas no mesmo lugar
+        // apagaria uma na primeira gravação.
+        { k: 'ie', r: 'Inscrição estadual', campo: 'inscEst', dto: 'stateRegistration' },
         {
           k: 'ieRural',
           r: 'Insc. estadual produtor rural',
@@ -341,6 +346,7 @@ export const fornecedor: EntidadeCadastro = {
     },
     moduloEndereco(),
     moduloRedesSociais(true),
+    moduloObservacao('observacao', 'notes'),
   ],
   indicadores: [
     { k: 'produtos', r: 'Produtos ativos' },
@@ -459,6 +465,13 @@ export const profissional: EntidadeCadastro = {
       ],
     },
     moduloRedesSociais(true),
+    // A observação é do PARCEIRO, e o contrato publica uma só (`notes`) para os
+    // três papéis. A CATEGORIA não veio junto de propósito: o contrato publica
+    // `categoryId` apontando para `CATEGORIA_CLIENTE`, e não há campo de
+    // categoria do profissional. Oferecer o combo de `CATEGORIA_PROFISSIONAL`
+    // aqui gravaria o item de uma lista no campo da outra — o campo aceitaria a
+    // escolha e a ficha do cliente leria "ARQUITETO" vindo da lista errada.
+    moduloObservacao('observacao', 'notes'),
   ],
   // `Gerado no ano` e `Clientes indicados` também são CAMPO do módulo Comercial
   // (com `col`, para a listagem) — e repetir aqui não é engano: no módulo eles

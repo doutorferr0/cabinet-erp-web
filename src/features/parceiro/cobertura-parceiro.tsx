@@ -64,9 +64,15 @@ export function CoberturaParceiro({
     <AvisoDeCobertura {...(falha ? { erro: falha } : {})}>
       <p>
         {isNovo ? (
+          // A lista da INCLUSÃO é a mesma da edição desde que o contrato passou
+          // a publicar contato, endereço e os campos da fase 1: `paraInclusao` e
+          // `paraEscrita` mandam o mesmo recorte, mudando só o papel. O texto
+          // fixo em {nome, documento, e-mail e situação} descrevia o `POST` de
+          // 2026-08 e virou aviso que subestima o que o Gravar faz — pior que
+          // aviso nenhum, porque o operador confere só o que o aviso nomeia.
           <>
-            <strong>Gravar</strong> cria o cadastro com {'{'}nome, documento, e-mail e situação{'}'}{' '}
-            e o papel desta tela. Os demais campos não são enviados — o contrato ainda não os tem.
+            <strong>Gravar</strong> cria o cadastro com {camposDeEdicao}, mais o papel desta tela.
+            Os demais campos não são enviados — o contrato ainda não os tem.
           </>
         ) : (
           <>

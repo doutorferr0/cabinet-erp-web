@@ -42,10 +42,35 @@ import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
  * orçamento, a checagem nasce AQUI, e o teste que a cobra nasce junto.
  */
 
-/** A whitelist que o contrato publica para `sortBy` e `filters` deste recurso. */
-const ORDENAVEIS = ['customerId', 'description', 'workType', 'active']
-const FILTRAVEIS: CamposFiltraveis = {
+/**
+ * As DUAS whitelists que o contrato publica — e aqui elas não são a mesma lista.
+ *
+ * `customerName` ordena e não filtra? Não: ordena **e** filtra. Quem diverge é
+ * `customerId`, que **filtra e não ordena**. As razões estão escritas no
+ * contrato e são de tela:
+ *
+ * - ordenar 9.454 obras por uuid é ordem sem significado — ninguém procura "a
+ *   obra que vem depois de `parc-0002`". Por isso `customerId` saiu do `sortBy`;
+ * - filtrar por uuid é COMO a tela pergunta "as obras deste cliente", e é a
+ *   razão de a obra ser coleção própria em vez de caminho aninhado em parceiro.
+ *   Por isso ele fica no `filters`;
+ * - `customerName` entrou nas duas: é a coluna que a listagem mostra (o DTO diz
+ *   isso), e procurar por TRECHO do nome é o que a tela de busca faz.
+ *
+ * Exportadas para `src/data/contrato-bloco2.test.ts` conferi-las contra a
+ * DESCRIÇÃO do contrato, com a mesma leitura que a guarda do `cabinet-erp-api`
+ * faz (`tests/filtros-do-contrato.test.ts`). É a divergência que dói de
+ * verdade: whitelist do mock diferente da publicada faz a tela ordenar em dev
+ * e tomar 400 contra o `:3000`, e o site público é 100% mock.
+ *
+ * Manter as duas como um array e um mapa, e não uma constante só, é o que
+ * permite a divergência existir. Precedente do contrato: `/api/crm/opportunities`
+ * publica `expectedValueCents` no `sortBy` e não no `filters`.
+ */
+export const ORDENAVEIS = ['customerName', 'description', 'workType', 'active']
+export const FILTRAVEIS: CamposFiltraveis = {
   customerId: 'text',
+  customerName: 'text',
   description: 'text',
   workType: 'text',
   active: 'boolean',

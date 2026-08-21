@@ -596,8 +596,8 @@ mentira com cara de dado do servidor.
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
 sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
 onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
-`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86) e
-`GET /api/quotes` (#134).
+`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86),
+`GET /api/quotes` (#134), `GET /api/orders` e `GET /api/works`.
 
 ### Como viaja
 
@@ -645,6 +645,23 @@ dinheiro trafega em centavos e o filtro **não tem variante de dinheiro** (ver
 R$ 10,00 para quem procurava mil reais — número certo, significado errado, sem
 sintoma. Ordenar por centavos continua valendo: a ordem é a mesma. Sobram `name`,
 `partnerName`, `stageName`, `expectedCloseDate` e `stageChangedAt`.
+
+**Obra (#273) é o segundo caso, e não é do mesmo tipo:** lá a whitelist do filtro
+não é MENOR, é **diferente nas duas pontas**. `customerId` filtra e não ordena —
+é COMO a tela pergunta "as obras deste cliente", mas ordenar 9.454 obras por uuid
+é ordem sem significado. `customerName` faz as duas — é a coluna que a listagem
+mostra, e procurar por trecho do nome é o que a tela de busca faz. `sortBy` tem
+`customerName`, `description`, `workType`, `active`; `filters` tem esses quatro
+mais `customerId`.
+
+**A lição das duas juntas: "a whitelist do `filters` é a do `sortBy`" é
+coincidência frequente, não regra.** Vale conferir a descrição de cada parâmetro
+antes de assumir o alias — no front, `FILTRAVEIS = ORDENAVEIS` em `produtos-api.ts`
+e `parceiros-api.ts` continua correto porque aqueles dois contratos dizem isso,
+não porque seja o padrão. Do lado do servidor a fusão das duas listas era um
+defeito real: até `cabinet-erp-api#62` havia UM mapa servindo as duas, seis
+operações aceitavam `filters` que o contrato não publica, e a subtração de
+oportunidade era **inexprimível** — declarada no contrato e não cumprida.
 
 No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts` e
 `parceiros-api.ts`; lista própria em `crm-api.ts`) e **`filtrosDaTabela` barra antes

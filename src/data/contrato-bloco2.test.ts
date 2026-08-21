@@ -1,4 +1,8 @@
-import { FILTRAVEIS, ORDENAVEIS } from '@/data/parceiros-api'
+import {
+  FILTRAVEIS as FILTRAVEIS_DO_PARCEIRO,
+  ORDENAVEIS as ORDENAVEIS_DO_PARCEIRO,
+} from '@/data/parceiros-api'
+import { FILTRAVEIS, ORDENAVEIS } from '@/mocks/api/obras'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -48,6 +52,66 @@ describe('obra — coleção própria, e a camada está escrita', () => {
     expect(doc.paths['/api/partners/{partnerId}/works']).toBeUndefined()
     const filters = doc.paths['/api/works']?.get?.parameters?.find((p) => p.name === 'filters')
     expect(filters?.description).toContain('customerId')
+  })
+
+  /**
+   * `sortBy` e `filters` da obra deixaram de ser a MESMA lista (#273).
+   *
+   * O par `id`+`name` do `WorkDto` diz que "o id é para escrever, o nome é o que
+   * a tela lê", e a listagem ordenava só pelo uuid — a coluna "Cliente" nasceria
+   * sem ordenação, ou quebraria com 400 no clique do cabeçalho. `/api/quotes` e
+   * `/api/orders`, que carregam o MESMO par, já ordenam pelo nome; a obra era a
+   * exceção.
+   *
+   * As duas listas são conferidas contra o MOCK aqui em cima porque é o mock que
+   * responde em dev e no site público: whitelist que diverge faz a tela ordenar
+   * em dev e tomar 400 contra o backend real. Do outro lado a mesma leitura já
+   * existe — `tests/filtros-do-contrato.test.ts` do `cabinet-erp-api` lê ESTA
+   * descrição e sonda o servidor campo a campo.
+   */
+  describe('as duas whitelists da obra, e elas não são a mesma', () => {
+    const parametro = (nome: string) =>
+      doc.paths['/api/works']?.get?.parameters?.find((p) => p.name === nome)?.description ?? ''
+
+    /**
+     * Os campos em crase logo depois de "Whitelist…:", até o fim da FRASE.
+     *
+     * É a mesma leitura que `tests/filtros-do-contrato.test.ts` do
+     * `cabinet-erp-api` faz nesta mesma descrição, e o corte no travessão / no
+     * ponto / no `**` não é enfeite: as descrições seguem falando de campos
+     * depois de terminar a lista ("a do `sortBy` MAIS `customerId`", "MENOS
+     * `expectedValueCents`"), e um parser guloso cobraria justamente o que a
+     * frase está excluindo.
+     */
+    function whitelist(descricao: string): string[] {
+      const texto = descricao.replace(/\s+/g, ' ')
+      const rotulo = /Whitelist( deste recurso)?:/.exec(texto)
+      if (rotulo === null) return []
+      const resto = texto.slice(rotulo.index + rotulo[0].length)
+      const fim = resto.search(/—|\.\s|\*\*/)
+      return [...(fim === -1 ? resto : resto.slice(0, fim)).matchAll(/`([^`]+)`/g)].map(
+        (m) => m[1] as string,
+      )
+    }
+
+    it('`customerName` ORDENA, e `customerId` não', () => {
+      const ordenaveis = whitelist(parametro('sortBy'))
+
+      expect(ordenaveis).toContain('customerName')
+      expect(ordenaveis).not.toContain('customerId')
+    })
+
+    it('`customerId` FILTRA, e `customerName` também', () => {
+      const filtraveis = whitelist(parametro('filters'))
+
+      expect(filtraveis).toContain('customerId')
+      expect(filtraveis).toContain('customerName')
+    })
+
+    it('o mock serve exatamente o que o contrato publica', () => {
+      expect([...ORDENAVEIS].sort()).toEqual(whitelist(parametro('sortBy')).sort())
+      expect(Object.keys(FILTRAVEIS).sort()).toEqual(whitelist(parametro('filters')).sort())
+    })
   })
 
   /**
@@ -191,8 +255,8 @@ describe('cobrança e comercial — publicados, e fora da consulta', () => {
     // cabeçalho. Filtrar por cidade de cobrança pede coluna indexada, e isso é
     // decisão própria — não carona nesta PR.
     for (const campo of NOVOS) {
-      expect(ORDENAVEIS, campo).not.toContain(campo)
-      expect(FILTRAVEIS, campo).not.toContain(campo)
+      expect(ORDENAVEIS_DO_PARCEIRO, campo).not.toContain(campo)
+      expect(FILTRAVEIS_DO_PARCEIRO, campo).not.toContain(campo)
     }
   })
 })

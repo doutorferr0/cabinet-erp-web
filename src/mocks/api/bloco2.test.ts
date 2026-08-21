@@ -134,6 +134,47 @@ describe('obra — dado de EMPRESA', () => {
     expect((await listWorks({ sortBy: 'description' })).status).toBe(200)
   })
 
+  it('ordena pelo NOME do cliente, que é a coluna que a tela mostra', async () => {
+    // `WorkDto.customerName` existe declaradamente "para a listagem de obras
+    // mostrar de quem é sem uma segunda consulta". Campo publicado para ser
+    // coluna e não ordenável é a coluna que quebra com 400 no clique do
+    // cabeçalho — o padrão 1 do `CLAUDE.md` descreve esse modo de falhar.
+    // `/api/quotes` e `/api/orders` já ordenam pelo mesmo par; obra era a
+    // exceção, e deixou de ser (#273).
+    await entrar()
+    const resposta = await listWorks({ sortBy: 'customerName', pageSize: 50 })
+    expect(resposta.status).toBe(200)
+    if (resposta.status !== 200) return
+
+    const nomes = resposta.data.rows.map((obra) => obra.customerName ?? '')
+    expect(nomes.length).toBeGreaterThan(1)
+    expect([...nomes].sort((a, b) => a.localeCompare(b))).toEqual(nomes)
+  })
+
+  it('as DUAS whitelists divergem: uuid filtra e não ordena', async () => {
+    // O ponto da #273, e o que a separação torna exprimível. `customerId`
+    // continua sendo COMO a tela pede "as obras deste cliente" — o caso acima
+    // prova que o filtro por ele recorta —, mas ordenar por uuid é ordem sem
+    // significado, e o contrato parou de publicar isso.
+    await entrar()
+    expect((await listWorks({ sortBy: 'customerId' })).status).toBe(400)
+
+    const porNome = new URLSearchParams({
+      pageSize: '50',
+      filters: JSON.stringify([
+        { field: 'customerName', operator: 'iLike', value: 'MARIA HELENA' },
+      ]),
+    })
+    const resposta = await fetch(`http://mock.teste/api/works?${porNome}`)
+    expect(resposta.status).toBe(200)
+    const pagina = (await resposta.json()) as { rows: { customerName: string }[]; total: number }
+    // Filtrar pelo TRECHO do nome é o que a tela de busca faz; com só o uuid, a
+    // única pergunta possível era a igualdade exata de um valor que ninguém
+    // digita.
+    expect(pagina.total).toBe(2)
+    expect(pagina.rows.every((obra) => obra.customerName.includes('MARIA HELENA'))).toBe(true)
+  })
+
   it('incluir para cliente que a empresa não atende é 404', async () => {
     // `parc-0003` só tem vínculo com a filial. Aceitar aqui criaria obra
     // pendurada num cliente que a tela desta empresa nunca lista.

@@ -258,11 +258,23 @@ A tabela acima diz o que a TELA fala por HTTP. Quem responde é outra pergunta, 
 segunda resposta desde que existe backend: com `VITE_API_PROXY`, as operações de
 `src/mocks/rotas-do-backend.ts` atravessam o proxy e o resto continua no MSW.
 
-**Medido em 2026-08-19 contra `cabinet-erp-api` `744bd75`: das 69 operações do contrato, 51
-respondem e 18 são 501. A passagem declara as 51.** (A `main` do outro repo cresceu durante a
-sessão: `d40d1f3` dava 46, `060f472` deu 50. Remedir antes de concluir qualquer coisa a partir
-daqui — e remedir pela SONDA: contar `operationId` nos `rotas.ts` dos módulos deixou de fora
-`ListCatalogLookups`, que mora em `catalogo/lookups.ts`.)
+**Medido em 2026-08-21 (#274) contra `cabinet-erp-api` `3089106`: o contrato tem 78 operações,
+NENHUMA responde 501, e a passagem declara as 78 — ela está COMPLETA.** Com `VITE_API_PROXY` de
+pé, nenhum caminho de `/api` chega ao MSW; sem a variável, todos chegam.
+
+A lista deixou de medir dívida do backend e virou **o interruptor entre dois ambientes**. Por isso
+ela e o `browser.ts` não foram apagados quando fechou, e `VITE_API_MODE=http` continua fora de
+questão: o **site público é 100% mock**, e o modo http o apagaria.
+
+*(Histórico da conta, porque ela envelhece calada: em `744bd75` (2026-08-19) eram 69 operações, 51
+servidas e 18 em 501; em `33db0df` a passagem foi a 58; em `3af4f01` o 501 zerou e sobraram 20 por
+decisão nossa. Remedir antes de citar — e remedir pela SONDA: contar `operationId` nos `rotas.ts`
+dos módulos deixou de fora `ListCatalogLookups`, que mora em `catalogo/lookups.ts`.)*
+
+**Uma operação da passagem responde 403, e é de propósito:** `POST`/`PUT /api/catalog-lookups`
+recusam o papel `operator-full` (a matriz do backend as reserva a `admin`), então com o par local
+de pé o `+...` do `LookupCombo` deixa de gravar em 19 telas. Ligada assim mesmo, para que o mock
+não ensine que funciona algo que o servidor recusa. Decisão de produto em `api#66`.
 
 **A unidade de ligação é a FAMÍLIA, não a rota.** O critério "existe no contrato e não é 501" mede
 uma rota; o que quebra é a tela. Meia família põe id do servidor de um lado e id inventado do

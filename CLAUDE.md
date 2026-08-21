@@ -15,13 +15,15 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   do que é pedido. **O `Proposto` continua sendo marca de INTENÇÃO, não de ausência de backend:**
   o `cabinet-erp-api` existe e implementa por partes, e operação do contrato que ele ainda não
   serve responde **501** (não 404), justamente para a diferença ficar visível.
-- **Já é HTTP:** sessão (`/auth/*`), listas de apoio (`/api/catalog-lookups`), produtos e
-  variantes (`/api/products`, `…/variants`), os três papéis de parceiro — cliente, fornecedor,
-  profissional (`/api/partners`, filtro `role`) — e o **orçamento** (`/api/quotes`, #134). Ver
-  `docs/integracao.md`.
-- **Também HTTP, por caminho `Proposto` que o front escreveu:** dashboard (indicadores, agenda,
-  tarefas, A fazer) e planner (projetos, plano). Nenhum backend os implementa ainda — no modo
-  mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a diferença.
+- **Já é HTTP, e desde a #274 é TUDO que o contrato publica:** as **78 operações** têm servidor
+  do outro lado — sessão (`/auth/*`), listas de apoio, produto com variantes e kardex, os três
+  papéis de parceiro (`/api/partners`, filtro `role`), orçamento, pedido de venda, obra, contatos,
+  colaborador, atividades, tarefas e A fazer, planner, dashboard e o CRM inteiro. Ver
+  `docs/integracao.md` e `src/mocks/rotas-do-backend.ts`.
+- **O que o `Proposto` marca continua sendo INTENÇÃO, não ausência de servidor.** Dashboard e
+  planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
+  respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
+  diferença: é isso que mantém `cabinetonline.cc` de pé sem backend nenhum.
 - **Ainda mock:** colaborador, pedido de compra, ordem de compra, cidades, boletim
   — **por falta de caminho no contrato, não por escolha.** Esses seguem a regra antiga: dados
   tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
@@ -125,42 +127,56 @@ pnpm codegen        # regera src/api/gerado/ a partir de contracts/openapi-v1.js
 
 ```
 pnpm dev                                          # mock puro — o padrão
-VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real nas rotas que ele já serve
+VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real em TODAS as rotas de /api
 ```
 
 Sem a variável, o MSW responde tudo e nada sai da origem — é o modo de quem não subiu o backend
 e o do site público. **Com ela, e só com ela**, as operações listadas em
-`src/mocks/rotas-do-backend.ts` saem do mock e atravessam o proxy; todo o resto continua
-mockado e a tela não sabe a diferença. Hoje passam **58 operações**:
-`/health` (2), `/auth/*` (6), leitura de produto (2), parceiro (5), orçamento (6), pedido de venda
-(5), tarefas e A fazer (5), planner (2), listas de apoio (1), atividades (4), colaborador (6),
-funis+estágios do CRM (7), **obra (4)** e **contatos do parceiro (3)** — as duas últimas ligadas em
-2026-08-20, medidas contra `cabinet-erp-api` `33db0df` (`api#48` e `api#53`). **Trocar `VITE_API_MODE` para `http` NÃO é a forma de falar com o
-backend:** o que ele ainda não implementa responde **501**, e o toggle global entregaria as telas
-dessas famílias quebradas.
+`src/mocks/rotas-do-backend.ts` saem do mock e atravessam o proxy.
 
-**A unidade de ligação é a FAMÍLIA, não a rota** (medido em `744bd75`: 51 servidas, 18 em 501;
-em `33db0df` a passagem foi para 58). **A contagem de 501 VENCE rápido, e já venceu até o zero:**
-remedido em `3af4f01` (2026-08-20, no rebase), o contrato tem **78 operações e NENHUMA responde
-501**. As 20 fora da passagem estão fora por decisão nossa — família não conferida —, não por
-falta de servidor. Remedir antes de citar, e não citar número deste arquivo sem remedir: ele não
-roda, então envelhece calado. **E confira a IDADE do processo em `:3000`**: `node src/main.ts`
-não recarrega, e um servidor de ontem responde como o contrato de ontem — foi o que quase
-transformou "o backend não serve" em conclusão errada. O critério "existe no contrato E não é 501" é necessário, não suficiente: ele mede uma rota,
-e o que quebra é a TELA. Meia família põe id do servidor de um lado e id inventado do outro, e o
-resultado tem cara de dado, não de erro — a mesma regra que o registry aplica ao `get`. Ficam
-inteiras no mock: **oportunidades e motivos de perda do CRM**, **indicadores e agenda do
-dashboard**, **escrita de produto**, **variantes** e **kardex** — não mais por 501 (elas
-respondem), e sim porque ninguém conferiu cada família contra a tela que a consome.
+**Desde a #274 (2026-08-21) a lista tem as 78 operações do contrato — a passagem está COMPLETA.**
+Com o proxy de pé, o MSW não responde a nenhuma rota de `/api`; sem ele, responde a todas.
+`rotas-do-backend.ts` deixou de ser "a lista do que já dá para ligar" e virou **o interruptor
+entre dois ambientes**. Medido contra `cabinet-erp-api` `3089106`, por round-trip e com sessão
+real: das 20 que faltavam, **18 respondem 200/201 e 2 respondem 403 por PAPEL** — nenhuma é 501.
 
-**Duas costuras deliberadas, as duas declaradas NA TELA** (só com `VITE_API_PROXY`, e amarradas por
-`rotas-do-backend.test.ts`): o **quadro do funil** — funis e estágios do servidor, oportunidades do
-mock (hoje já servidas, e ainda não ligadas), quadro vazio que parece "não há negócio" (`src/features/crm/cobertura-do-funil.tsx`); e
-o **cadastro de colaborador** — `listEmployees` passa (as atividades dependem dele) mas
-`data.colaboradores` ainda é provider de mock, e as duas listas de pessoas divergem
-(`src/features/colaborador/cobertura-do-colaborador.tsx`). Migrar a tela do colaborador exige antes
-o handler mock de `GET /api/employees/{id}` e unificar as duas sementes — sem isso o site público,
-que é 100% mock, ficaria sem detalhe.
+**Trocar `VITE_API_MODE` para `http` continua NÃO sendo a forma de falar com o backend**, e a
+razão mudou: já não é o 501, é que o **site público é 100% mock** e o modo http o apagaria. Por
+isso nem `rotas-do-backend.ts` nem `browser.ts` foram removidos quando a lista fechou.
+
+**A unidade de ligação é a FAMÍLIA, não a rota** — regra que não morre com a lista cheia, só troca
+de direção: antes dizia o que ainda não podia ENTRAR, agora diz o que não pode SAIR. Remover uma
+linha exige o mesmo argumento que exigiu pô-la, e o teste `a passagem cobre o contrato INTEIRO`
+(em `rotas-do-backend.test.ts`) aponta qual operação faltou. Operação NOVA no contrato é o único
+caso em que uma linha pode faltar — e falta com o 501 medido como motivo escrito, nunca em
+silêncio. **Não citar número deste arquivo sem remedir:** ele não roda, então envelhece calado.
+
+**E confira a IDADE do processo em `:3000`** — a armadilha reincidiu na #274, por quatro minutos:
+o processo nasceu 22:11 e o checkout do backend foi 22:15. `node src/main.ts` não recarrega, e um
+servidor de minutos atrás já responde como o contrato de antes. A medida não é a idade, é a
+comparação: `mtime` de `.git/refs/heads/main` do outro repo contra `stat -c %y /proc/<pid>` (pid
+pelo `ss -ltnp`; `ps -o lstart` derrapa no WSL2). Medir sem derrubar o processo alheio = subir uma
+segunda instância (`PORT=3020`) do fonte de hoje contra o MESMO banco.
+
+**A costura do quadro do funil ACABOU** — a #274 ligou oportunidades, motivos de perda e o
+`.../quote`, as duas metades do quadro passaram a vir do mesmo lado e `cobertura-do-funil.tsx` foi
+removido. Aviso de falta que não existe mais é a mesma mentira com o sinal trocado.
+
+**Duas costuras continuam declaradas NA TELA** (só com `VITE_API_PROXY`):
+
+- **Cadastro de colaborador** — `listEmployees` passa (as atividades dependem dele) mas
+  `data.colaboradores` ainda é provider de mock, e as duas listas de pessoas divergem
+  (`src/features/colaborador/cobertura-do-colaborador.tsx`). **Nunca foi buraco da passagem**: o
+  que falta é do lado do mock — handler de `GET /api/employees/{id}` e unificar as duas sementes.
+  Sem isso o site público, que é 100% mock, ficaria sem detalhe.
+- **⚠ Escrita de lista de apoio, e esta é NOVA** — `POST`/`PUT /api/catalog-lookups` estão na
+  passagem e respondem **403 `papel-insuficiente`** para `operator-full`, o papel do usuário demo:
+  a matriz do backend reserva o caminho a `admin`. Com o par local de pé, o `+...` do
+  `LookupCombo` (padrão 2, **19 telas**) passa a recusar em vez de gravar. Ligamos assim mesmo
+  (decisão do user) porque mock que grava enquanto o servidor recusa ensina que funciona, e o
+  defeito só apareceria com a tela já construída em cima da ficção. O conserto do lado da tela
+  (esconder o controle com `src/data/papeis.ts`) e a decisão de produto (`api#66`) ficam para
+  outra PR.
 
 Uma variável governa as duas metades de propósito — o `vite.config.ts` a lê de `process.env`, o
 `browser.ts` de `import.meta.env` (o Vite expõe ao cliente tudo que tem prefixo `VITE_`). Duas

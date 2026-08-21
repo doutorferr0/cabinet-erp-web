@@ -38,16 +38,59 @@ function Harness({ kind = 'marca' as const }) {
 
 let chamadas: string[] = []
 
-beforeEach(() => {
-  chamadas = []
-  configurarApi('http://api.teste')
+/** O papel do vínculo que o dublê declara; o `+...` depende dele. */
+let papelDaSessao = 'admin'
+
+const TENANT = 'tenant-teste'
+
+function respostaJson(corpo: unknown) {
+  return new Response(JSON.stringify(corpo), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
+/**
+ * O dublê responde POR ROTA, e não a mesma coisa para tudo.
+ *
+ * Ele já foi um `fetch` que devolvia a lista de apoio para qualquer URL. Isso
+ * bastou enquanto o combo pedia uma coisa só; hoje ele também pergunta o PAPEL
+ * do vínculo, para esconder o `+...` de quem não escreve lista de apoio. Com o
+ * dublê cego, `/auth/tenants` respondia `{rows,total}` onde o código espera um
+ * array de vínculos — e o sintoma era `empresas.find is not a function`, um
+ * TypeError que não fala de papel nem de sessão.
+ *
+ * Responder por rota é o que o teste já dizia querer no cabeçalho: exercitar o
+ * cliente gerado de verdade. Um dublê que casa qualquer caminho não exercita
+ * caminho nenhum.
+ */
+function dublarFetch(deLookup: () => Response) {
   vi.stubGlobal(
     'fetch',
     vi.fn((entrada: RequestInfo | URL) => {
-      chamadas.push(String(entrada instanceof Request ? entrada.url : entrada))
-      return Promise.resolve(respostaDaApi(OPCOES))
+      const url = String(entrada instanceof Request ? entrada.url : entrada)
+      if (url.includes('/auth/tenants')) {
+        return Promise.resolve(
+          respostaJson([{ tenantId: TENANT, tradeName: 'Matriz', role: papelDaSessao }]),
+        )
+      }
+      if (url.includes('/auth/me')) {
+        return Promise.resolve(respostaJson({ activeTenantId: TENANT }))
+      }
+      // `chamadas` conta só as da LISTA DE APOIO — é sobre elas que as
+      // asserções de URL falam, e somar as de sessão faria "uma requisição"
+      // virar três sem nada ter mudado no que o teste mede.
+      chamadas.push(url)
+      return Promise.resolve(deLookup())
     }),
   )
+}
+
+beforeEach(() => {
+  chamadas = []
+  papelDaSessao = 'admin'
+  configurarApi('http://api.teste')
+  dublarFetch(() => respostaDaApi(OPCOES))
 })
 
 afterEach(() => {
@@ -273,19 +316,11 @@ describe('LookupCombo', () => {
   // procurado pode nem estar ali — e sem aviso o operador cadastraria duplicado
   // pelo botão "...".
   it('avisa quando a lista veio cortada no teto do contrato', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(
-            JSON.stringify({
-              rows: OPCOES.map((name, i) => ({ id: `id-${i}`, kind: 'MARCA', name, active: true })),
-              total: 240,
-            }),
-            { status: 200, headers: { 'content-type': 'application/json' } },
-          ),
-        ),
-      ),
+    dublarFetch(() =>
+      respostaJson({
+        rows: OPCOES.map((name, i) => ({ id: `id-${i}`, kind: 'MARCA', name, active: true })),
+        total: 240,
+      }),
     )
 
     const { user } = renderWithQuery(<Harness />)
@@ -305,14 +340,62 @@ describe('LookupCombo', () => {
   it('falha do servidor NÃO se disfarça de lista vazia', async () => {
     // Estados distintos importam: o operador precisa saber se deve esperar,
     // avisar alguém, ou se a lista está mesmo vazia.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response('', { status: 500 }))),
-    )
+    dublarFetch(() => new Response('', { status: 500 }))
 
     const { user } = renderWithQuery(<Harness />)
     await user.click(screen.getByRole('button', { name: /Selecione marca/i }))
 
     expect(await screen.findByText(/não foi possível carregar/i)).toBeInTheDocument()
+  })
+  /**
+   * O `+...` por PAPEL — a metade da #245 que a PR #257 deixou de fora.
+   *
+   * A matriz de papéis existe desde a #257, mas nenhum componente a consumia:
+   * o botão aparecia para todo mundo, em 19 telas, e a recusa só chegava
+   * depois de a pessoa abrir o diálogo e digitar o nome.
+   */
+  describe('o + ... obedece ao papel do vínculo', () => {
+    it('some para quem não escreve lista de apoio', async () => {
+      papelDaSessao = 'operator-sales'
+
+      renderWithQuery(<Harness />)
+
+      // O combo em si continua inteiro: LEITURA não é filtrada por papel.
+      expect(await screen.findByRole('button', { name: /Selecione marca/i })).toBeInTheDocument()
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: /Cadastrar marca/i })).not.toBeInTheDocument(),
+      )
+    })
+
+    it('fica para operator-full — a decisão da api#66', async () => {
+      papelDaSessao = 'operator-full'
+
+      renderWithQuery(<Harness />)
+
+      expect(await screen.findByRole('button', { name: /Cadastrar marca/i })).toBeInTheDocument()
+    })
+
+    /**
+     * Enquanto o vínculo não chega, a tela NÃO afirma que não pode.
+     *
+     * Esconder no desconhecido piscaria o botão em toda montagem e negaria
+     * antes de saber; e o 403 do servidor continua tratado do outro lado, que
+     * é o que torna este otimismo barato.
+     */
+    it('continua visível quando o vínculo não chegou', async () => {
+      dublarFetch(() => respostaDaApi(OPCOES))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((entrada: RequestInfo | URL) => {
+          const url = String(entrada instanceof Request ? entrada.url : entrada)
+          if (url.includes('/auth/')) return Promise.resolve(new Response('', { status: 500 }))
+          return Promise.resolve(respostaDaApi(OPCOES))
+        }),
+      )
+
+      renderWithQuery(<Harness />)
+
+      expect(await screen.findByRole('button', { name: /Cadastrar marca/i })).toBeInTheDocument()
+    })
   })
 })

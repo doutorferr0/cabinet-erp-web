@@ -2805,14 +2805,20 @@ pageSize?: number;
 export type ListWorksParams = {
 q?: string;
 /**
- * Whitelist: `customerId`, `description`, `workType`, `active`. Campo fora dela é 400.
+ * Whitelist: `customerId`, `description`, `workType`, `active` e `customerName`. Campo fora dela é 400.
+ *
+ * `customerName` ordena pela razão social do cliente, resolvida por junção, e é o único campo daqui que NÃO está no `filters`. Entra porque o próprio `WorkDto` diz que ele existe "para a listagem de obras mostrar de quem é": coluna de listagem que não ordena obriga a tela a escolher entre desenhar o cabeçalho morto ou quebrar com 400 no clique. Ordenar por `customerId` não substitui — é uuid, e ordem de uuid não significa nada para quem lê.
+ *
+ * Ordenar por coluna de junção não é precedente novo: `/api/crm/opportunities` já faz isso em `partnerName` (`LEFT JOIN partners`).
  */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 /**
- * Proposto. Filtro estruturado, no mesmo formato dos outros recursos (array JSON url-encoded). **Whitelist deste recurso: `customerId`, `description`, `workType`, `active`** — a mesma do `sortBy`. Campo fora dela é 400.
+ * Proposto. Filtro estruturado, no mesmo formato dos outros recursos (array JSON url-encoded). **Whitelist deste recurso: `customerId`, `description`, `workType`, `active`**. Campo fora dela é 400.
+ *
+ * **Não é mais a mesma lista do `sortBy`**, que aceita `customerName` além destes quatro. Filtrar por nome de cliente seria uma segunda forma de perguntar o que `customerId` já responde, e é por `customerId` que a tela pergunta — o combo escolhe o cliente e manda o id. Ordenar é outra coisa: acontece sobre o que já veio, e o operador ordena pelo que LÊ.
  *
  * `customerId` está aqui porque é COMO a tela pergunta "as obras deste cliente": um `GET /api/partners/{id}/works` seria uma segunda forma de perguntar a mesma coisa, com paginação, ordenação e filtro próprios para manter — a decisão que o contrato já tomou quando recusou `/api/partners/{id}/children` e mandou a hierarquia sair de `filters`. Publicar este parâmetro não contradiz "publicar o dado não é publicar a consulta": aquela regra vale para campo NOVO em recurso existente, cujo índice no servidor não mudou; aqui a coleção nasce agora, e uma listagem de 9.454 obras sem recorte por cliente não serve à tela que a pede.
  */

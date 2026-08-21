@@ -104,6 +104,17 @@ export interface ParceiroDaOrg {
   businessRole: string | null
   businessDocument: string | null
   foundedOn: string | null
+  /**
+   * Bloco 3 (#270): o que sobrou da aba `Principal` do cliente. Guardadas no
+   * mestre porque são identidade — o mesmo CPF é a mesma pessoa em qualquer
+   * empresa do grupo, como o resto de `partners`.
+   */
+  personType: NonNullable<PartnerDto['personType']> | null
+  identityDocument: string | null
+  identityIssuer: string | null
+  identityIssuerState: string | null
+  gender: string | null
+  birthDate: string | null
   /** Vínculo por empresa (tenantId → dados do vínculo). Sem entrada = não vinculado. */
   vinculos: Record<string, VinculoDeParceiro>
 }
@@ -237,6 +248,12 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       businessRole: null,
       businessDocument: null,
       foundedOn: null,
+      personType: null,
+      identityDocument: null,
+      identityIssuer: null,
+      identityIssuerState: null,
+      gender: null,
+      birthDate: null,
       mobilePhone: '11987650001',
       businessPhone: '1133330001',
       homePhone: null,
@@ -296,6 +313,14 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       businessRole: 'SÓCIA-ARQUITETA',
       businessDocument: '55666777000188',
       foundedOn: '2014-03-12',
+      // Bloco 3 (#270): a única semente com valor, para a tela ter o que
+      // desenhar quando a #254 ligar os campos. RG sem máscara, como `document`.
+      personType: 'individual',
+      identityDocument: '321456789',
+      identityIssuer: 'SSP',
+      identityIssuerState: 'SP',
+      gender: 'Feminino',
+      birthDate: '1985-07-22',
       payoutBankInfo: {
         bankNumber: '341',
         bankName: 'ITAÚ UNIBANCO',
@@ -349,6 +374,12 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       businessRole: null,
       businessDocument: null,
       foundedOn: null,
+      personType: null,
+      identityDocument: null,
+      identityIssuer: null,
+      identityIssuerState: null,
+      gender: null,
+      birthDate: null,
       // Cadastro SEM contato e SEM endereço: o `null` do objeto inteiro é um
       // estado do contrato, não um descuido do seed.
       mobilePhone: null,
@@ -823,6 +854,14 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     businessRole: p.businessRole,
     businessDocument: p.businessDocument,
     foundedOn: p.foundedOn,
+    // Bloco 3 (#270): as seis chaves saem SEMPRE, mesmo nulas — é a distinção
+    // ausente ≠ nulo que a guarda de `corpoDeEscrita` lê do outro lado.
+    personType: p.personType,
+    identityDocument: p.identityDocument,
+    identityIssuer: p.identityIssuer,
+    identityIssuerState: p.identityIssuerState,
+    gender: p.gender,
+    birthDate: p.birthDate,
   }
 }
 

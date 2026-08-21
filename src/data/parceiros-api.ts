@@ -220,6 +220,21 @@ export interface CamposEditaveis {
   businessRole?: string | null
   businessDocument?: string | null
   foundedOn?: string | null
+  /**
+   * Bloco 3 do comparativo (#270): o que sobrou da aba `Principal` do cliente —
+   * tipo de pessoa, RG com órgão e UF, sexo e data de nascimento.
+   *
+   * Mesma situação do bloco 2: nenhuma tela os edita HOJE, e é justamente por
+   * isso que precisam existir aqui. `PUT` é integral, então campo que não
+   * atravessa `corpoDeEscrita` é campo apagado no primeiro Gravar de qualquer
+   * uma das três telas.
+   */
+  personType?: PartnerWriteRequest['personType']
+  identityDocument?: string | null
+  identityIssuer?: string | null
+  identityIssuerState?: string | null
+  gender?: string | null
+  birthDate?: string | null
 }
 
 /**
@@ -299,6 +314,15 @@ export function corpoDeEscrita(
     'businessRole',
     'businessDocument',
     'foundedOn',
+    // Bloco 3 (#270), pela MESMA razão dos anteriores: o servidor pode ainda não
+    // mandá-los na listagem, e nesse dia a guarda RECUSA em vez de gravar
+    // apagando o RG que o operador cadastrou por outro caminho.
+    'personType',
+    'identityDocument',
+    'identityIssuer',
+    'identityIssuerState',
+    'gender',
+    'birthDate',
   ] as const) {
     if (editado[campo] === undefined && !(campo in original)) {
       throw new Error(
@@ -394,6 +418,24 @@ export function corpoDeEscrita(
         ? textoOuNulo(editado.businessDocument)
         : (original.businessDocument ?? null),
     foundedOn: editado.foundedOn !== undefined ? editado.foundedOn : (original.foundedOn ?? null),
+    // Bloco 3 (#270). Como os do bloco 2, todos caem hoje no ramo "devolve como
+    // veio" — nenhuma tela os edita, e o que não atravessa o corpo é apagado.
+    personType:
+      editado.personType !== undefined ? editado.personType : (original.personType ?? null),
+    identityDocument:
+      editado.identityDocument !== undefined
+        ? textoOuNulo(editado.identityDocument)
+        : (original.identityDocument ?? null),
+    identityIssuer:
+      editado.identityIssuer !== undefined
+        ? textoOuNulo(editado.identityIssuer)
+        : (original.identityIssuer ?? null),
+    identityIssuerState:
+      editado.identityIssuerState !== undefined
+        ? textoOuNulo(editado.identityIssuerState)
+        : (original.identityIssuerState ?? null),
+    gender: editado.gender !== undefined ? textoOuNulo(editado.gender) : (original.gender ?? null),
+    birthDate: editado.birthDate !== undefined ? editado.birthDate : (original.birthDate ?? null),
   }
 }
 
@@ -544,6 +586,13 @@ export function corpoDeInclusao(
     businessRole: textoOuNulo(editado.businessRole),
     businessDocument: textoOuNulo(editado.businessDocument),
     foundedOn: editado.foundedOn ?? null,
+    // Bloco 3 (#270): na inclusão não há registro anterior a preservar.
+    personType: editado.personType ?? null,
+    identityDocument: textoOuNulo(editado.identityDocument),
+    identityIssuer: textoOuNulo(editado.identityIssuer),
+    identityIssuerState: textoOuNulo(editado.identityIssuerState),
+    gender: textoOuNulo(editado.gender),
+    birthDate: editado.birthDate ?? null,
   }
 }
 

@@ -128,6 +128,12 @@ describe('tela Fornecedor', () => {
       businessRole: null,
       businessDocument: null,
       foundedOn: null,
+      personType: null,
+      identityDocument: null,
+      identityIssuer: null,
+      identityIssuerState: null,
+      gender: null,
+      birthDate: null,
     })
     // 15s: este caso monta DUAS telas (listagem e formulário completo) e ainda
     // digita — o limite padrão de 5s do vitest não cobre isso nesta máquina.

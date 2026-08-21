@@ -114,7 +114,7 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * Ligar família servida ao lado de família em 501 deixa costura, e costura escondida é o defeito
  * que esta lista existe para evitar. As duas foram para a TELA, que é onde o operador as vê:
  *
- * - **Quadro do funil**: colunas do servidor, oportunidades do mock (501). O quadro sai vazio, e
+ * - **Quadro do funil**: colunas do servidor, oportunidades do mock. O quadro sai vazio, e
  *   vazio parece "não há oportunidade". `cobertura-do-funil.tsx` diz que a metade que falta é a
  *   do servidor.
  * - **Cadastro de colaborador**: `listEmployees` passa, mas `data.colaboradores` ainda é provider

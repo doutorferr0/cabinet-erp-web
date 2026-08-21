@@ -51,7 +51,8 @@ describe('cliente — categoria, especificador, IE rural, observação e redes',
     // O que o seed já tem, LIDO pelo formulário: sem isto, o teste provaria só
     // a escrita e a tela abriria em branco sobre um cadastro cheio.
     expect(registro.categoria).toBe(idDeApoio('CATEGORIA_CLIENTE', 'ARQUITETO'))
-    expect(registro.profissional).toBe(idDeApoio('PROFISSIONAL', 'ANA RIBEIRO'))
+    // Um `partners.id` (#265), não um `lk-PROFISSIONAL-n`.
+    expect(registro.profissional).toBe('parc-0004')
     expect(registro.observacao).toContain('alto padrão')
     expect(registro.redesSociais.instagram).toBe('@mh.arquitetura')
 
@@ -59,7 +60,7 @@ describe('cliente — categoria, especificador, IE rural, observação e redes',
       ...registro,
       inscEstProdutorRural: '123456789',
       categoria: idDeApoio('CATEGORIA_CLIENTE', 'REVENDA'),
-      profissional: idDeApoio('PROFISSIONAL', 'MAURO TAGLIARI'),
+      profissional: 'parc-0005',
       observacao: 'Passou a comprar para revenda.',
       redesSociais: { facebook: 'fb.com/mharq', instagram: '@mh.arq' },
     }
@@ -71,7 +72,7 @@ describe('cliente — categoria, especificador, IE rural, observação e redes',
     const relido = await parceiroDoSeed(linha.id)
     expect(relido.ruralProducerRegistration).toBe('123456789')
     expect(relido.categoryId).toBe(idDeApoio('CATEGORIA_CLIENTE', 'REVENDA'))
-    expect(relido.specifierId).toBe(idDeApoio('PROFISSIONAL', 'MAURO TAGLIARI'))
+    expect(relido.specifierId).toBe('parc-0005')
     expect(relido.notes).toBe('Passou a comprar para revenda.')
     expect(relido.facebook).toBe('fb.com/mharq')
     expect(relido.instagram).toBe('@mh.arq')
@@ -83,7 +84,10 @@ describe('cliente — categoria, especificador, IE rural, observação e redes',
     // id na primeira renomeação da lista de apoio.
     const relido = await parceiroDoSeed('parc-0002')
     expect(relido.categoryName).toBe('ARQUITETO')
-    expect(relido.specifierName).toBe('ANA RIBEIRO')
+    // Razão social do PARCEIRO apontado, não rótulo de item de lista (#265).
+    // É a asserção que teria pegado a divergência: enquanto `specifierName`
+    // saía de `nomeDeApoio`, um id de parceiro devolvia `null` aqui.
+    expect(relido.specifierName).toBe('ANA RIBEIRO ARQUITETURA LTDA')
   })
 
   it('o combo esvaziado DESVINCULA — `null` é escolha, não campo esquecido', async () => {
@@ -115,10 +119,10 @@ describe('cliente — categoria, especificador, IE rural, observação e redes',
     const comPai = { ...linha, parentId: 'parc-0001' }
 
     const registro = papelCliente.dtoParaForm(comPai)
-    const editado = { ...registro, profissional: idDeApoio('PROFISSIONAL', 'ESTÚDIO FERRARI') }
+    const editado = { ...registro, profissional: 'parc-0005' }
     const corpo = corpoDeEscrita(comPai, papelCliente.paraEscrita(editado, comPai))
 
-    expect(corpo.specifierId).toBe(idDeApoio('PROFISSIONAL', 'ESTÚDIO FERRARI'))
+    expect(corpo.specifierId).toBe('parc-0005')
     expect(corpo.parentId).toBe('parc-0001')
   })
 

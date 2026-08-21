@@ -5,6 +5,7 @@ import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
   DateField,
+  EspecificadorField,
   LookupField,
   RadioField,
   SelectField,
@@ -89,6 +90,7 @@ export const clienteSchema = z.object({
   email: z.string(),
   ativo: z.boolean(),
   profissional: z.string().nullable(),
+  profissionalNome: z.string().nullable(),
   categoria: z.string().nullable(),
   dtNascimento: z.string().nullable(),
   redesSociais: z.object({
@@ -156,7 +158,13 @@ function BuscaCidade({
 function ClienteCorpo({
   onBuscaCidade,
   moduloEmFoco,
-}: { onBuscaCidade: () => void; moduloEmFoco: string | undefined }) {
+  idDoRegistro,
+}: {
+  onBuscaCidade: () => void
+  moduloEmFoco: string | undefined
+  /** O uuid deste cliente — ausente na inclusão, e aí não há quem excluir. */
+  idDoRegistro: string | undefined
+}) {
   return (
     <div className="flex flex-col gap-3">
       <ProgressoObrigatorios entidade={entidadeCliente} />
@@ -252,10 +260,15 @@ function ClienteCorpo({
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="comercial">
         <div className="grid grid-cols-12 items-end gap-3">
-          <LookupField
+          {/* O ESPECIFICADOR (#265): parceiro, não item de lista de apoio. O
+              rótulo vem de `specifierName`, e `excluir` tira o próprio
+              registro das opções — o cliente que também é profissional não se
+              indica sozinho. */}
+          <EspecificadorField
             name="profissional"
-            label="Profissional"
-            kind="profissional"
+            label="Profissional que indicou"
+            rotuloDe="profissionalNome"
+            excluir={idDoRegistro}
             className="col-span-12 sm:col-span-4"
           />
           <LookupField
@@ -284,10 +297,18 @@ export function ClienteForm({
   contexto,
   aviso,
   moduloEmFoco,
+  idDoRegistro,
   onGravar: gravarDeFora,
 }: {
   cliente: Cliente
   readOnly?: boolean
+  /**
+   * O uuid deste cliente, quando ele já existe. Serve a um campo só: o
+   * especificador não pode oferecer o próprio registro — `conferirApoios`
+   * responde 400 e a `0023` tem o `CHECK` embaixo. Ausente na inclusão, onde
+   * ainda não há id que possa apontar para si mesmo.
+   */
+  idDoRegistro?: string | undefined
   /**
    * Módulo que o lápis da ficha mandou editar (issue #103): o bloco dele nasce
    * aberto em vez de recolhido. Ausente, todos os opcionais nascem fechados.
@@ -331,7 +352,11 @@ export function ClienteForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <ClienteCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} moduloEmFoco={moduloEmFoco} />
+      <ClienteCorpo
+        onBuscaCidade={() => setBuscaCidadeOpen(true)}
+        moduloEmFoco={moduloEmFoco}
+        idDoRegistro={idDoRegistro}
+      />
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

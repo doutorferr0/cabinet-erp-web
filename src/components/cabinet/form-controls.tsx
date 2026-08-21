@@ -1,4 +1,4 @@
-import { LookupCombo } from '@/components/cabinet/lookup-combo'
+import { EspecificadorCombo, LookupCombo } from '@/components/cabinet/lookup-combo'
 import { VOZ_DE_NOME } from '@/components/cabinet/nome'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -418,6 +418,44 @@ export function LookupField({
               onChange={field.onChange}
               rotulo={rotulo}
               hideQuickAdd={hideQuickAdd}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
+/**
+ * O ESPECIFICADOR — combo cujas opções são PARCEIROS, não itens de lista (#265).
+ *
+ * `rotuloDe` aponta para o campo irmão que guarda `specifierName`, pelo mesmo
+ * motivo do `LookupField`: o id pode não estar entre as opções carregadas —
+ * profissional sem vínculo com a empresa ativa, ou lista cortada no teto —, e
+ * campo em branco que se grava de novo apaga um vínculo que ninguém mandou
+ * apagar.
+ */
+export function EspecificadorField({
+  name,
+  label,
+  className,
+  rotuloDe,
+  excluir,
+}: BaseProps & { rotuloDe?: string; excluir?: string | undefined }) {
+  const rotulo = useRotuloIrmao(rotuloDe)
+  return (
+    <FormField
+      name={name}
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <EspecificadorCombo
+              value={field.value ?? null}
+              onChange={field.onChange}
+              rotulo={rotulo}
+              excluir={excluir}
             />
           </FormControl>
           <FormMessage />

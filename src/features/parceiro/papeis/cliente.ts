@@ -40,6 +40,10 @@ function dtoParaForm(dto: PartnerDto): Cliente {
     inscEstProdutorRural: dto.ruralProducerRegistration ?? '',
     categoria: dto.categoryId ?? null,
     profissional: dto.specifierId ?? null,
+    // Só para EXIBIR: o combo mostra este nome quando o id escolhido não está
+    // entre os profissionais que a empresa ativa lista. Não volta em
+    // `paraEscrita` — nome guardado é nome que um dia diverge do id.
+    profissionalNome: dto.specifierName ?? null,
     observacao: dto.notes ?? '',
     redesSociais: {
       facebook: dto.facebook ?? '',

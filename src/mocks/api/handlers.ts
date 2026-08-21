@@ -251,6 +251,15 @@ export const handlers = [
     return listar(base, lerConsulta(url), ['name', 'kind'], (l) => [l.name, l.kind])
   }),
 
+  // O `POST` do `+...` NÃO mora aqui: ele é `handlersDeLookups`, em `lookups.ts`
+  // (#269), com o vocabulário de `kind`, o `fields[]` e o `sem-empresa-ativa`
+  // que o backend real responde. A #264 chegou a escrever um SEGUNDO handler
+  // neste arquivo, e o rebase mostrou o preço: registrado ANTES do outro, o MSW
+  // casava o ingênuo e o da #269 nunca rodava — cinco asserções do vocabulário
+  // de erro ficaram vermelhas sem que ninguém tivesse mexido nelas. Rota com
+  // dois donos é a rota que responde pelo dono errado, e o diff dela é verde
+  // dos dois lados: por isso a nota fica, mesmo com o handler já removido.
+
   // ---------------- products ----------------
   http.get('*/api/products/:id', ({ params }) => {
     if (!store.logado) return semSessao()

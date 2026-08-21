@@ -1,6 +1,7 @@
 import {
   type CatalogLookupDto,
   type PagedResultOfCatalogLookupDto,
+  ProblemType,
   createCatalogLookup,
   listCatalogLookups,
 } from '@/api/gerado'
@@ -43,7 +44,12 @@ const KINDS = {
   // bloco de Documentos.
   orgaoRegistro: { label: 'Órgão de Registro', backend: 'ORGAO_REGISTRO' },
   categoriaProfissional: { label: 'Categoria do Profissional', backend: 'CATEGORIA_PROFISSIONAL' },
-  profissional: { label: 'Profissional', backend: 'PROFISSIONAL' },
+  // `profissional` SAIU (#265). Era o kind do especificador, e o especificador
+  // é um `partners.id` — o profissional externo já É um parceiro. Lista de
+  // apoio paralela com os mesmos nomes é o par duplicado que o 409 de
+  // `catalog-lookups` existe para impedir, e o id que ela devolvia não existe
+  // em `partners`: o `PUT` levava 400 de `conferirApoios`. Quem serve o combo
+  // agora é `useEspecificadorOptions`, em `parceiros-api.ts`.
   tipoProduto: { label: 'Tipo de Produto', backend: 'TIPO_PRODUTO' },
   tipoPeca: { label: 'Tipo da Peça', backend: 'TIPO_PECA' },
   tipoLinha: { label: 'Tipo da Linha', backend: 'TIPO_LINHA' },
@@ -214,6 +220,19 @@ export type CadastroDeApoio =
  * nasce para ser usado agora, e um padrão implícito do servidor esconderia da
  * tela quem decidiu isso.
  */
+/**
+ * `sem-empresa-ativa` é o único 409 desta rota que NÃO é nome repetido — e o
+ * único que o combo não pode confundir com duplicado. Vem do enum GERADO: URN
+ * escrita à mão aqui seria a dívida que o codegen existe para não pagar.
+ */
+const TIPO_SEM_EMPRESA: ProblemType = ProblemType['urn:cabinet:erro:sem-empresa-ativa']
+
+/** O `type` do problem+json — `undefined` quando o corpo não é um. */
+function tipoDoProblema(resposta: RespostaDaApi): string | undefined {
+  const corpo = resposta.data as { type?: unknown } | null | undefined
+  return typeof corpo?.type === 'string' ? corpo.type : undefined
+}
+
 export function useCadastrarItemDeApoio(kind: LookupKind) {
   const queryClient = useQueryClient()
   const kindDoBackend = KINDS[kind].backend
@@ -229,7 +248,16 @@ export function useCadastrarItemDeApoio(kind: LookupKind) {
         active: true,
       })
 
-      if (resposta.status === 409) {
+      // **409 NÃO É UM ERRO SÓ** (#269): o contrato o descreve como o conflito
+      // de sete coisas, e quem diz QUAL é o `type`. Enquanto esta linha lia só
+      // o status, o 409 de `sem-empresa-ativa` — o operador ainda sem empresa
+      // escolhida — chegava aqui como "duplicado", e o combo dizia "já existe
+      // ARQUITETO" de um item que ninguém cadastrou, apontando o operador para
+      // uma lista onde ele não vai achar nada. A recusa por nome repetido é a
+      // GENÉRICA (`about:blank`): o vocabulário não reserva URN para ela, e é
+      // por isso que a condição é escrita como "não é sem-empresa-ativa" em
+      // vez de "é lookup-duplicado" — URN que não existe não se inventa aqui.
+      if (resposta.status === 409 && tipoDoProblema(resposta) !== TIPO_SEM_EMPRESA) {
         const igual = (o: OpcaoDeLookup) => o.nome.toLocaleUpperCase() === nome.toLocaleUpperCase()
         return { estado: 'duplicado', nome, existente: opcoesCarregadas.find(igual) }
       }

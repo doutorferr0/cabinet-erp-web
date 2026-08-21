@@ -256,7 +256,7 @@ export const handlers = [
   // mesmo kind faria o combo mostrar duas linhas iguais, e escolher entre elas
   // vira sorteio — dois ids que o operador lê como a mesma coisa.
   http.post('*/api/catalog-lookups', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const corpo = (await request.json()) as CatalogLookupCreateRequest
     const nome = corpo.name?.trim()
     if (!corpo.kind || !nome) return problemaJson(400, 'Kind e nome são obrigatórios.')

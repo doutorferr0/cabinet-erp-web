@@ -273,9 +273,9 @@ export function FormGrid({
               <TableRow>
                 <TableCell
                   colSpan={columns.length + 1}
-                  className="h-16 text-center text-muted-foreground"
+                  className="h-16 text-center font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic"
                 >
-                  Nenhum item.
+                  Nenhum item ainda — os botões acima incluem o primeiro.
                 </TableCell>
               </TableRow>
             ) : (

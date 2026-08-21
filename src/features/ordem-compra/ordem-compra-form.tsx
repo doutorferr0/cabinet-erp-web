@@ -68,7 +68,13 @@ function Cabecalho() {
     <>
       {/* FUSÃO v5 r6: o padrão de seções do orçamento chega à ordem — quem
           importa primeiro (de quem se compra), burocracia depois. */}
-      <Secao numero="01" titulo="Fornecedor & Compra" cor="id" icone={Building2}>
+      <Secao
+        numero="01"
+        titulo="Fornecedor & Compra"
+        cor="id"
+        icone={Building2}
+        nota="de quem se compra, e por qual empresa"
+      >
         <div className="grid grid-cols-12 items-end gap-3">
           <SelectField
             name="fornecedor"
@@ -95,7 +101,13 @@ function Cabecalho() {
         </div>
       </Secao>
 
-      <Secao numero="02" titulo="Identificação" cor="info" icone={Hash}>
+      <Secao
+        numero="02"
+        titulo="Identificação"
+        cor="info"
+        icone={Hash}
+        nota="números e datas do documento"
+      >
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
           <DateField name="dataOrdem" label="Data Ordem" className="col-span-6 sm:col-span-2" />
@@ -171,7 +183,7 @@ function BlocoTransportadora() {
           <output aria-label="UF da transportadora">{transportadora?.uf || '—'}</output>
         </span>
         <Button type="button" variant="outline" size="sm" onClick={() => setBuscaAberta(true)}>
-          <Search /> Busca ({shortcutLabel(SHORTCUTS.transportadora)})
+          <Search /> Busca <kbd>{shortcutLabel(SHORTCUTS.transportadora)}</kbd>
         </Button>
       </div>
       <SearchDialog
@@ -285,7 +297,13 @@ function AbaPrincipal() {
 
       <GradeItens />
 
-      <Secao numero="03" titulo="Ajustes" cor="warn" icone={Percent}>
+      <Secao
+        numero="03"
+        titulo="Ajustes"
+        cor="warn"
+        icone={Percent}
+        nota="o que soma e o que subtrai do total"
+      >
         <Ajustes />
       </Secao>
 

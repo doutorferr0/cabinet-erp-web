@@ -67,7 +67,7 @@ describe('tela Orçamento', () => {
     await screen.findByLabelText('Código')
     expect(screen.getByLabelText('Total')).toHaveTextContent('0,00')
 
-    await user.click(screen.getByRole('button', { name: /Produto \(Alt\+P\)/ }))
+    await user.click(screen.getByRole('button', { name: /Produto Alt\+P/ }))
 
     await user.type(await screen.findByLabelText('Quant. linha 1'), '3')
     await user.type(screen.getByLabelText('Valor Unit. linha 1'), '10000')
@@ -83,7 +83,7 @@ describe('tela Orçamento', () => {
     const { user } = renderRoute('/vendas/orcamentos/novo', servidorDeOrcamentos())
 
     await screen.findByLabelText('Código')
-    await user.click(screen.getByRole('button', { name: /Produto \(Alt\+P\)/ }))
+    await user.click(screen.getByRole('button', { name: /Produto Alt\+P/ }))
 
     await user.type(await screen.findByLabelText('Quant. linha 1'), '1')
     await user.type(screen.getByLabelText('Valor Unit. linha 1'), '20000')
@@ -100,7 +100,7 @@ describe('tela Orçamento', () => {
     const { user } = renderRoute('/vendas/orcamentos/novo', servidorDeOrcamentos())
 
     await screen.findByLabelText('Código')
-    await user.click(screen.getByRole('button', { name: /Ambiente \(Alt\+A\)/ }))
+    await user.click(screen.getByRole('button', { name: /Ambiente Alt\+A/ }))
 
     expect(await screen.findByLabelText('Ambiente linha 1')).toHaveValue('SALA')
   })

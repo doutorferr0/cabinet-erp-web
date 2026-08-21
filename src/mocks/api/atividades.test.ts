@@ -105,7 +105,7 @@ describe('atividades no mock', () => {
 
     expect(criada.data.doneAt ?? null).toBeNull()
     // O nome NÃO vem no corpo de escrita: quem o resolve é quem guarda o id.
-    expect(criada.data.assigneeName).toBe('Ana Beatriz Lima')
+    expect(criada.data.assigneeName).toBe('PEDRO HENRIQUE ALMEIDA')
   })
 
   it('concluir carimba a hora NO SERVIDOR, e a segunda vez é 409', async () => {

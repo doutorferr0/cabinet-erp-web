@@ -55,8 +55,9 @@ describe('obra — coleção própria, e a camada está escrita', () => {
   })
 
   /**
-   * `sortBy` e `filters` da obra deixaram de ser a MESMA lista (#273/#280), e o
-   * que este bloco guarda não é a decisão — é a CÓPIA dela no mock.
+   * `sortBy` e `filters` da obra deixaram de ser a MESMA lista (#273/#280), e a
+   * #273 fechou com elas divergindo dos DOIS lados, não de um. O que este bloco
+   * guarda não é a decisão — é a CÓPIA dela no mock.
    *
    * O mock é quem responde em dev e no site público (100% mock). Whitelist que
    * diverge da publicada faz a tela ordenar em dev e tomar 400 contra o `:3000`,
@@ -88,12 +89,17 @@ describe('obra — coleção própria, e a camada está escrita', () => {
       expect(whitelist(parametro('filters')).length).toBeGreaterThanOrEqual(4)
     })
 
-    it('`customerName` ORDENA e não filtra — a segunda subtração do contrato', () => {
-      // A primeira foi `expectedValueCents` em `/api/crm/opportunities`. Ali o
-      // motivo era a unidade (centavos); aqui é a segunda forma de perguntar: o
-      // combo escolhe o cliente e manda o id.
+    it('a divergência é dos DOIS lados — não é subtração de uma lista só', () => {
+      // `/api/crm/opportunities` subtrai `expectedValueCents` do filtro e nada
+      // mais; aqui cada lista tem um campo que a outra não tem. `customerId`
+      // filtra porque é assim que a tela pergunta "as obras deste cliente", e
+      // não ordena porque ordem de uuid não significa nada para quem lê.
+      // `customerName` faz as duas: é a coluna, e é por trecho dela que a janela
+      // de busca procura quando não se tem o id.
       expect(whitelist(parametro('sortBy'))).toContain('customerName')
-      expect(whitelist(parametro('filters'))).not.toContain('customerName')
+      expect(whitelist(parametro('sortBy'))).not.toContain('customerId')
+      expect(whitelist(parametro('filters'))).toContain('customerName')
+      expect(whitelist(parametro('filters'))).toContain('customerId')
     })
 
     it('o mock serve exatamente o que o contrato publica, nas duas listas', () => {

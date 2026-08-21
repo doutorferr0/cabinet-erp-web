@@ -43,21 +43,24 @@ import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
  */
 
 /**
- * A whitelist de `sortBy` — e ela NÃO é mais a de `filters`.
+ * A whitelist de `sortBy` — e ela NÃO é a de `filters`.
  *
- * `customerName` ordena e não filtra, e é o contrato que separa as duas: filtrar
- * por nome de cliente seria uma segunda forma de perguntar o que `customerId` já
- * responde (o combo escolhe o cliente e manda o id), enquanto ordenar acontece
- * sobre o que já veio — e o operador ordena pelo que LÊ, que é o nome.
+ * As duas divergem nas DUAS pontas: `customerId` filtra e não ordena,
+ * `customerName` faz as duas. Ordem de uuid não põe nada em ordem para quem lê a
+ * tela; o operador ordena pelo que LÊ, que é o nome.
  *
  * Ordenar aqui é barato porque a lista já foi montada com `workDto`, que resolve
  * `customerName` a partir de `store.parceiros`. No servidor o campo sai de
  * `LEFT JOIN partners`, como `partnerName` em `/api/crm/opportunities`.
  */
-export const ORDENAVEIS = ['customerId', 'description', 'workType', 'active', 'customerName']
+export const ORDENAVEIS = ['customerName', 'description', 'workType', 'active']
 
 /**
- * A de `filters`, menor de propósito — ver acima.
+ * A de `filters`, maior de propósito — ver acima.
+ *
+ * `customerId` está aqui porque é COMO a tela pergunta "as obras deste cliente",
+ * com o id que o combo já lhe deu. `customerName` está porque procurar obra por
+ * TRECHO do nome é o que a janela de busca faz, e ali ninguém tem o id na mão.
  *
  * As duas são exportadas para `src/data/contrato-bloco2.test.ts` conferi-las
  * contra a DESCRIÇÃO do contrato, com a mesma leitura que a guarda do
@@ -67,6 +70,7 @@ export const ORDENAVEIS = ['customerId', 'description', 'workType', 'active', 'c
  */
 export const FILTRAVEIS: CamposFiltraveis = {
   customerId: 'text',
+  customerName: 'text',
   description: 'text',
   workType: 'text',
   active: 'boolean',

@@ -129,7 +129,7 @@ describe('obra — dado de EMPRESA', () => {
     expect((await fetch(`http://mock.teste/api/works?${fora}`)).status).toBe(400)
   })
 
-  it('`sortBy` fora da whitelist é 400 — o contrato publica cinco campos', async () => {
+  it('`sortBy` fora da whitelist é 400 — o contrato publica quatro campos', async () => {
     await entrar()
     expect((await listWorks({ sortBy: 'address' })).status).toBe(400)
     expect((await listWorks({ sortBy: 'description' })).status).toBe(200)
@@ -192,15 +192,74 @@ describe('obra — dado de EMPRESA', () => {
     expect(desc.data.rows.map((obra) => obra.customerName ?? '')).toEqual([...nomes].reverse())
   })
 
-  it('`customerName` ordena mas NÃO filtra — as duas listas divergem de propósito', async () => {
+  it('`customerId` filtra e NÃO ordena — a divergência é dos dois lados', async () => {
     // A divergência é a parte fácil de perder: enquanto as duas whitelists foram
-    // a mesma constante, acrescentar um campo ao `sortBy` ligava o filtro de
-    // brinde. Filtro que o contrato não publica tem de ser 400, não silêncio.
+    // a mesma constante, acrescentar um campo a uma ligava a outra de brinde.
+    // Aqui cada lista tem um campo que a outra não tem, e o caso mede a ponta
+    // que ninguém repara — ordenar por uuid tem de ser 400, não uma ordem que
+    // não significa nada. O 200 no `filters` prova que o campo não foi tirado
+    // das duas listas de uma vez.
     await entrar()
-    const porNome = new URLSearchParams({
-      filters: JSON.stringify([{ field: 'customerName', operator: 'eq', value: 'x' }]),
+    expect((await listWorks({ sortBy: 'customerId' })).status).toBe(400)
+
+    const porId = new URLSearchParams({
+      filters: JSON.stringify([{ field: 'customerId', operator: 'eq', value: 'parc-0002' }]),
     })
-    expect((await fetch(`http://mock.teste/api/works?${porNome}`)).status).toBe(400)
+    expect((await fetch(`http://mock.teste/api/works?${porId}`)).status).toBe(200)
+  })
+
+  it('`customerName` filtra por TRECHO — a busca de quem não tem o id', async () => {
+    // O outro lado da divergência. Quem já escolheu o cliente no combo manda
+    // `customerId`; a janela de busca não tem id nenhum, e digita pedaço do
+    // nome. `iLike` com um trecho que não é o nome inteiro é o que distingue
+    // "filtrou" de "aceitou e devolveu tudo" — por isso a asserção compara o
+    // recorte com a lista sem filtro, e não só o status.
+    //
+    // A semente tem UM cliente na empresa ativa, e com um nome só o recorte é a
+    // lista inteira e a comparação passa sem medir nada. O segundo cliente é
+    // criado aqui pelas rotas de verdade, como no caso da ordenação.
+    await entrar()
+    const outro = await createPartner({
+      legalName: 'ZZZ EMPREITEIRA FORA DO TRECHO LTDA',
+      tradeName: null,
+      document: '11222333000262',
+      email: null,
+      isCustomer: true,
+      isSupplier: false,
+      isProfessional: false,
+      code: null,
+      paymentTerms: null,
+      active: true,
+    })
+    expect(outro.status).toBe(201)
+    if (outro.status !== 201) return
+    expect(
+      (
+        await createWork({
+          customerId: outro.data.id,
+          description: 'OBRA FORA DO TRECHO',
+          active: true,
+        })
+      ).status,
+    ).toBe(201)
+
+    const todas = await listWorks({ page: 1, pageSize: 50 })
+    expect(todas.status).toBe(200)
+    if (todas.status !== 200) return
+
+    const porTrecho = new URLSearchParams({
+      filters: JSON.stringify([{ field: 'customerName', operator: 'iLike', value: 'maria hel' }]),
+      pageSize: '50',
+    })
+    const resposta = await fetch(`http://mock.teste/api/works?${porTrecho}`)
+    expect(resposta.status).toBe(200)
+    const recorte = (await resposta.json()) as { rows: { customerName: string | null }[] }
+
+    expect(recorte.rows.length).toBeGreaterThan(0)
+    expect(recorte.rows.length).toBeLessThan(todas.data.rows.length)
+    for (const obra of recorte.rows) {
+      expect(obra.customerName?.toLowerCase()).toContain('maria hel')
+    }
   })
 
   it('incluir para cliente que a empresa não atende é 404', async () => {

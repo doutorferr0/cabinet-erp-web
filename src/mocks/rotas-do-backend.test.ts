@@ -65,8 +65,9 @@ describe('passthrough por rota', () => {
   })
 
   it('rota fora da lista é atendida pelo MOCK, sem tocar a rede', async () => {
-    // `/api/crm/opportunities` é 501 no backend e por isso segue mockada — é o
-    // caminho que sustenta o funil inteiro fora da lista de passagem.
+    // `/api/crm/opportunities` segue mockada — não por 501 (o backend a serve
+    // desde `3af4f01`), e sim porque a família dela não fechou. É o caminho que
+    // sustenta o funil inteiro fora da lista de passagem.
     const r = await fetch(`${base}/api/crm/opportunities`)
 
     expect(r.headers.get('x-origem')).toBeNull()

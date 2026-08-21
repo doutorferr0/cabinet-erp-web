@@ -372,7 +372,7 @@ describe('formulário de produto', () => {
     const { user } = renderRoute('/cadastros/produtos/novo', servidorDeProdutos())
 
     await screen.findByLabelText('Nosso Código')
-    expect(screen.getAllByText('Nenhum item.').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Nenhum item ainda/).length).toBeGreaterThan(0)
 
     // A primeira grade da aba Dados Principais é a de Fornecedor.
     await user.click(screen.getAllByRole('button', { name: /Incluir$/ })[0] as HTMLElement)

@@ -42,7 +42,7 @@ describe('tela Ordem de Compra', () => {
     await screen.findByLabelText('Código')
     expect(screen.getByLabelText('Nome da transportadora')).toHaveTextContent('—')
 
-    await user.click(screen.getByRole('button', { name: /Busca \(Alt\+T\)/ }))
+    await user.click(screen.getByRole('button', { name: /Busca Alt\+T/ }))
 
     // janela de busca com a MESMA DataTable, contra `data.transportadoras`.
     const dialog = await screen.findByRole('dialog')

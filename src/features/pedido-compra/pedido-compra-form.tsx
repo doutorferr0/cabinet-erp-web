@@ -65,7 +65,7 @@ function BotaoProduto({ onInserir }: { onInserir: () => void }) {
 
   return (
     <Button type="button" variant="outline" size="sm" onClick={onInserir}>
-      <Package className="size-4" /> Produto ({shortcutLabel(SHORTCUTS.produto)})
+      <Package className="size-4" /> Produto <kbd>{shortcutLabel(SHORTCUTS.produto)}</kbd>
     </Button>
   )
 }
@@ -121,7 +121,13 @@ export function PedidoCompraForm({
       readOnly={readOnly}
     >
       <div data-zonas className="flex flex-col gap-4">
-        <Secao numero="01" titulo="Identificação" cor="info" icone={Hash}>
+        <Secao
+          numero="01"
+          titulo="Identificação"
+          cor="info"
+          icone={Hash}
+          nota="números e datas do documento"
+        >
           <div className="grid grid-cols-12 items-end gap-3">
             <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
             <TextField name="pedVenda" label="Ped. Venda" className="col-span-6 sm:col-span-2" />

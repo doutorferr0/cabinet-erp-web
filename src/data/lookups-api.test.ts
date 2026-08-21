@@ -3,12 +3,13 @@ import {
   type CatalogLookupDto,
   type PagedResultOfCatalogLookupDto,
   authLogin,
+  authSetActiveTenant,
   createCatalogLookup,
   listCatalogLookups,
 } from '@/api/gerado'
 import { nomeDoLookup } from '@/data/lookups-api'
 import { handlers } from '@/mocks/api/handlers'
-import { resetStore } from '@/mocks/api/store'
+import { TENANT_MATRIZ, resetStore } from '@/mocks/api/store'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -81,6 +82,7 @@ describe('POST /api/catalog-lookups — o cadastro rápido no mock', () => {
     resetStore()
     configurarApi('http://mock.teste')
     await authLogin({ email: 'admin@vertz.dev', password: 'qualquer' })
+    await authSetActiveTenant({ tenantId: TENANT_MATRIZ })
   })
 
   it('cria o item e a lista do kind passa a devolvê-lo', async () => {
@@ -111,7 +113,7 @@ describe('POST /api/catalog-lookups — o cadastro rápido no mock', () => {
     })
 
     expect(repetido.status).toBe(409)
-    expect((repetido.data as { detail?: string }).detail).toContain('ARQUITETO')
+    expect((repetido.data as { detail?: string }).detail).toContain('Arquiteto')
 
     const lista = await listCatalogLookups({ kind: 'CATEGORIA_CLIENTE', pageSize: 100 })
     const arquitetos = (lista.data as PagedResultOfCatalogLookupDto).rows.filter(

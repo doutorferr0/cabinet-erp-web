@@ -28,10 +28,8 @@ function ClienteEditPage() {
   // A outra metade da #94: traduz o id de lista de apoio no nome, na leitura.
   const { carregando: carregandoApoio, rotulos } = useRotulosDeApoio()
   const navigate = useNavigate()
-  const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
-    papelCliente,
-    clienteId,
-  )
+  const { query, isNovo, registro, ausentesNaFicha, gravar, incluir, vincular, jaExiste } =
+    usarParceiro(papelCliente, clienteId)
 
   if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
@@ -95,7 +93,7 @@ function ClienteEditPage() {
       <FichaDeCadastro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
-        registro={registroParaFicha(registro, esquema)}
+        registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
         titulo="Cadastro de Clientes"
         contexto={registro.nome}
         aviso={aviso}

@@ -28,10 +28,8 @@ function ProfissionalEditPage() {
   // A outra metade da #94: traduz o id de lista de apoio no nome, na leitura.
   const { carregando: carregandoApoio, rotulos } = useRotulosDeApoio()
   const navigate = useNavigate()
-  const { query, isNovo, registro, gravar, incluir, vincular, jaExiste } = usarParceiro(
-    papelProfissional,
-    profissionalId,
-  )
+  const { query, isNovo, registro, ausentesNaFicha, gravar, incluir, vincular, jaExiste } =
+    usarParceiro(papelProfissional, profissionalId)
 
   if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
@@ -95,7 +93,7 @@ function ProfissionalEditPage() {
       <FichaDeCadastro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
-        registro={registroParaFicha(registro, esquema)}
+        registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
         titulo="Cadastro de Profissional Externo"
         contexto={registro.nomeApresentacao}
         aviso={aviso}

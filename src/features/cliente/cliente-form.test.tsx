@@ -165,6 +165,74 @@ describe('tela Cliente', () => {
     })
   }, 20_000)
 
+  // Bloco 3 (#270). Antes disto o operador abria `Documentos e dados pessoais`,
+  // preenchia os cinco campos, gravava — e voltava tudo em branco: o corpo do
+  // `PUT` é montado a partir do contrato, e o contrato não publicava nenhum
+  // deles. É o mesmo defeito que a #244 consertou para o telefone.
+  it('o bloco Documentos leva RG, órgão, UF, nascimento e sexo ao servidor', async () => {
+    const { stub, chamadas } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+    await user.click(screen.getByRole('button', { name: /Documentos e dados pessoais/ }))
+
+    await user.type(await screen.findByLabelText('RG'), '123456789')
+    await user.type(screen.getByLabelText('Órgão Expedição'), 'SSP')
+    await user.selectOptions(screen.getByLabelText('UF'), 'SP')
+    await user.type(screen.getByLabelText('Dt. de Nasc.'), '1985-04-12')
+    await user.selectOptions(screen.getByLabelText('Sexo'), 'FEMININO')
+
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes')
+      },
+      { timeout: 5000 },
+    )
+
+    // Os nomes são os do contrato, e `personType` não está aqui: o radio fica
+    // no bloco obrigatório e tem teste próprio, porque é o único que traduz
+    // vocabulário em vez de só trocar de nome.
+    expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
+      identityDocument: '123456789',
+      identityIssuer: 'SSP',
+      identityIssuerState: 'SP',
+      birthDate: '1985-04-12',
+      gender: 'FEMININO',
+    })
+  }, 20_000)
+
+  // O `enum` do contrato é `individual`/`company`; o radio mostra os rótulos do
+  // legado. Mandar `JURIDICA` dá 400 na validação — medido contra o servidor
+  // real em 2026-08-21.
+  it('o Tipo de pessoa viaja no vocabulário do contrato, não no do radio', async () => {
+    const { stub, chamadas } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+
+    await user.click(screen.getByRole('radio', { name: 'JURÍDICA' }))
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes')
+      },
+      { timeout: 5000 },
+    )
+
+    expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
+      personType: 'company',
+    })
+  }, 20_000)
+
   it('busca de cidade (janela auxiliar) preenche cidade e UF', async () => {
     const { user } = renderRoute('/cadastros/clientes/novo')
 

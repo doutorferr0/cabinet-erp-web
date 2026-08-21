@@ -78,6 +78,10 @@ export const cliente: EntidadeCadastro = {
           req: true,
           op: ['Física', 'Jurídica'],
           campo: 'tipoPessoa',
+          // Bloco 3 (#270). O contrato fala `individual`/`company` — a
+          // tradução do rótulo mora em `papeis/pessoa.ts`, porque mandar
+          // `FISICA` dá 400 no enum.
+          dto: 'personType',
         },
         {
           k: 'nome',
@@ -109,9 +113,27 @@ export const cliente: EntidadeCadastro = {
       resumo: 'RG · Nascimento · Estado civil · Profissão · Cônjuge',
       cor: 'estoque',
       campos: [
-        { k: 'rg', r: 'RG', campo: 'rg' },
-        { k: 'orgao', r: 'Órgão expedidor', w: 'medio', campo: 'orgaoExpedicao' },
-        { k: 'ufrg', r: 'UF do RG', t: 'select', w: 'curto', campo: 'ufRg' },
+        // Bloco 3 (#270). Os cinco ganharam `dto` com a tela que os grava: até
+        // aqui o operador digitava o RG e o valor não voltava, porque o corpo
+        // do PUT é montado a partir do contrato e o contrato não os publicava.
+        { k: 'rg', r: 'RG', campo: 'rg', dto: 'identityDocument' },
+        {
+          k: 'orgao',
+          r: 'Órgão expedidor',
+          w: 'medio',
+          campo: 'orgaoExpedicao',
+          dto: 'identityIssuer',
+        },
+        // A UF do RG é campo PRÓPRIO, não `address.state`: quem tirou o RG em
+        // Minas e mora em São Paulo tem as duas divergindo.
+        {
+          k: 'ufrg',
+          r: 'UF do RG',
+          t: 'select',
+          w: 'curto',
+          campo: 'ufRg',
+          dto: 'identityIssuerState',
+        },
         {
           k: 'nasc',
           r: 'Data de nascimento',
@@ -119,8 +141,9 @@ export const cliente: EntidadeCadastro = {
           w: 'medio',
           fil: 'data',
           campo: 'dtNascimento',
+          dto: 'birthDate',
         },
-        { k: 'sexo', r: 'Sexo', t: 'select', w: 'medio', campo: 'sexo' },
+        { k: 'sexo', r: 'Sexo', t: 'select', w: 'medio', campo: 'sexo', dto: 'gender' },
         // Do mockup, sem onde gravar hoje.
         { k: 'civil', r: 'Estado civil', t: 'select', fil: 'sel' },
         { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'texto' },
@@ -379,6 +402,10 @@ export const profissional: EntidadeCadastro = {
           req: true,
           op: ['Física', 'Jurídica'],
           campo: 'tipoPessoa',
+          // Bloco 3 (#270). O contrato fala `individual`/`company` — a
+          // tradução do rótulo mora em `papeis/pessoa.ts`, porque mandar
+          // `FISICA` dá 400 no enum.
+          dto: 'personType',
         },
         {
           k: 'apres',
@@ -426,7 +453,10 @@ export const profissional: EntidadeCadastro = {
           campo: 'registroProfissional',
         },
         { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'sel', campo: 'profissao' },
-        { k: 'rg', r: 'RG', campo: 'rg' },
+        // Bloco 3 (#270). A §3 desenha RG e nascimento, e não tem órgão
+        // expedidor, UF do RG nem sexo — por isso só estes dois têm `dto`
+        // aqui, e os outros três continuam voltando como vieram.
+        { k: 'rg', r: 'RG', campo: 'rg', dto: 'identityDocument' },
         {
           k: 'nasc',
           r: 'Data de nascimento',
@@ -434,6 +464,7 @@ export const profissional: EntidadeCadastro = {
           w: 'medio',
           fil: 'data',
           campo: 'dtNascimento',
+          dto: 'birthDate',
         },
         { k: 'civil', r: 'Estado civil', t: 'select', fil: 'sel', campo: 'estadoCivil' },
         { k: 'conjuge', r: 'Nome do cônjuge', campo: 'nomeConjuge' },

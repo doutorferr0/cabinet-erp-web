@@ -8,8 +8,11 @@ import type {
   CrmPipelineWriteRequest,
   CrmStageDto,
   CrmStageWriteRequest,
+  EmployeeDetailDto,
   EmployeeDto,
 } from '@/api/gerado'
+import { idDeColaborador, colaboradores as pessoas } from '@/mocks/colaboradores'
+import { nomeDeApoio } from '@/mocks/lookups'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { verificarEscrita } from './permissao'
@@ -235,29 +238,26 @@ function estadoInicial(): EstadoDoCrm {
     }),
   ]
 
-  const colaboradores: EmployeeDto[] = [
-    {
-      id: 'emp-admin',
-      name: 'Henrique Ferro',
-      sector: 'COMERCIAL',
-      jobTitle: 'DIRETOR',
-      active: true,
-    },
-    {
-      id: 'emp-0002',
-      name: 'Ana Beatriz Lima',
-      sector: 'COMERCIAL',
-      jobTitle: 'CONSULTORA',
-      active: true,
-    },
-    {
-      id: 'emp-0003',
-      name: 'Caio Nogueira',
-      sector: 'PROJETOS',
-      jobTitle: 'PROJETISTA',
-      active: true,
-    },
-  ]
+  /**
+   * As pessoas vêm da MESMA semente que a tela de colaborador lê
+   * (`src/mocks/colaboradores.ts`), e não de uma lista escrita à mão aqui.
+   *
+   * Antes da #276 eram duas: três nomes neste arquivo alimentavam o combo de
+   * responsável das atividades, dez outros alimentavam o cadastro, e a
+   * interseção era VAZIA — no mock puro, que é o `cabinetonline.cc`. Duas
+   * listas de quem trabalha aqui, e o operador via a errada dependendo da tela.
+   *
+   * `sector` e `jobTitle` saem como RÓTULO porque é o que o `EmployeeDto`
+   * publica; a semente guarda o id do item de apoio, e `nomeDeApoio` faz a
+   * volta. Os dois lados (`sectorId` + `sector`) só existem no DTO de DETALHE.
+   */
+  const colaboradores: EmployeeDto[] = pessoas.map((p) => ({
+    id: idDeColaborador(p.id),
+    name: p.nome,
+    sector: nomeDeApoio(p.setor),
+    jobTitle: nomeDeApoio(p.cargo),
+    active: p.ativo,
+  }))
 
   return { funis, estagios, oportunidades, motivos, colaboradores }
 }
@@ -747,6 +747,50 @@ export const handlersDoCrm = [
       ['name', 'sector', 'jobTitle', 'active'],
       (c) => [c.name, c.sector, c.jobTitle],
     )
+  }),
+
+  /**
+   * O DETALHE do colaborador — o handler que faltava.
+   *
+   * O contrato publica `GET /api/employees/{id}` e o backend o serve; o mock
+   * não tinha nenhum, e era o pré-requisito que o `CLAUDE.md` já registrava
+   * para a tela migrar: sem ele o cadastro ficaria sem detalhe **no site
+   * público**, que é 100% mock.
+   *
+   * Sai da MESMA semente da listagem, então o que o combo oferece e o que o
+   * detalhe abre são a mesma pessoa. Campo que a transcrição não tem sai
+   * `null` — `document`, `email`, `phone`, `photoUrl`, `role`, `linkActive` —,
+   * e não preenchido com invenção: dado de mentira com cara de dado do
+   * servidor é exatamente o que o `AvisoDeCobertura` existe para evitar.
+   *
+   * Aqui os dois lados do par aparecem, ao contrário do `EmployeeDto`: o
+   * `EmployeeDetailDto` publica `sectorId` E `sector`, porque o formulário
+   * precisa do id para gravar e do rótulo para mostrar.
+   */
+  http.get('*/api/employees/:id', ({ params }) => {
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
+    const achada = pessoas.find((p) => idDeColaborador(p.id) === String(params.id))
+    if (!achada) return naoEncontrado('Colaborador não encontrado.')
+    const detalhe: EmployeeDetailDto = {
+      id: idDeColaborador(achada.id),
+      name: achada.nome,
+      document: null,
+      email: null,
+      phone: null,
+      photoUrl: null,
+      active: achada.ativo,
+      role: null,
+      sectorId: achada.setor,
+      sector: nomeDeApoio(achada.setor),
+      jobTitleId: achada.cargo,
+      jobTitle: nomeDeApoio(achada.cargo),
+      hiredAt: achada.dataAdmissao,
+      dismissedAt: achada.dataDemissao,
+      customerFacing: achada.atendimentoCliente,
+      linkActive: null,
+    }
+    return HttpResponse.json(detalhe)
   }),
 
   // ---------------- motivos de perda ----------------

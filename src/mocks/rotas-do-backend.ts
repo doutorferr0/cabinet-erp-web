@@ -94,12 +94,16 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * lida no tamanho da família em vez do recurso.
  *
  * Então a lista liga por família fechada, e uma família só fecha quando o backend serve TODA a
- * superfície que a tela consome dela. Hoje fecham catorze famílias, e por isso as **64** estão
+ * superfície que a tela consome dela. Hoje fecham quinze famílias, e por isso as **66** estão
  * aqui. As que sobram ficam inteiras no mock — **oportunidades, motivos de perda e relatório de
- * perdas do CRM**, **indicadores e agenda do dashboard** e a **escrita de listas de apoio** —
- * e isso é escolha nossa, não limite do servidor: elas respondem. As duas primeiras ficam porque
- * ninguém conferiu a família inteira contra a tela que a consome; a terceira fica por PAPEL, que
- * é caso diferente e está escrito abaixo.
+ * perdas do CRM** e **indicadores e agenda do dashboard** — e isso é escolha nossa, não limite do
+ * servidor: elas respondem. Ficam porque ninguém conferiu a família inteira contra a tela que a
+ * consome, que é o passo que falta.
+ *
+ * **Nenhum caminho do contrato fica PARTIDO por verbo**, e isso deixou de ser coincidência: é
+ * asserção em `rotas-do-backend.test.ts`. Foi ela que mediu a última meia família — `GET
+ * /api/catalog-lookups` dentro e a escrita fora — que ninguém tinha visto porque o sintoma é item
+ * que some depois de gravar, não erro.
  *
  * **REMEDIDO em 2026-08-20** contra `cabinet-erp-api` main `3089106`, e a lista foi de 58 para
  * **64**: entrou a família de **produto** inteira — escrita, variantes e kardex (#274).
@@ -111,12 +115,18 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * volta `'12.000'` — o servidor normaliza quantidade em três casas, que é a convenção do repo. O
  * mock ecoava o que recebia; depois desta ligação, quem digita `12` relê `12.000`.
  *
- * **A escrita de listas de apoio NÃO entrou, e o motivo não é 501:** `POST` e `PUT` de
- * `/api/catalog-lookups` respondem **403 `papel-insuficiente`** para `operator-full`, que é o
- * papel do usuário demo — a matriz do backend reserva esse caminho a `admin`. Ligá-la trocaria um
- * `+...` que grava por um `+...` que recusa, em 19 telas. A decisão de quem cadastra item de lista
- * está em `api#66`; enquanto ela não vem, `GET` passa e a escrita fica. É por isso que o teste da
- * divisão por VERBO passou a usar `catalog-lookups` como exemplo, no lugar de produto.
+ * **A escrita de listas de apoio entrou junto, e a história dela vale a pena.** Ela ficou de fora
+ * enquanto respondia **403 `papel-insuficiente`** para `operator-full` — a matriz do backend
+ * reservava `/api/catalog-lookups` a `admin`, e ligá-la teria trocado o `+...` que grava por um
+ * que recusa, em 19 telas. Só que aquele `admin` era **herança**: a linha nasceu fechada quando
+ * não havia escrita no contrato, e a escrita chegou depois sem ninguém reabrir a linha de
+ * propósito (`api#66`). O `api#70` afrouxou para `operator-full`, e aí o que restava era meia
+ * família nossa — o `GET` já atravessava.
+ *
+ * A escrita de **colaborador** continua fora por papel, e ali é DECISÃO, não herança: a matriz
+ * reserva `/api/employees` a `admin` porque vínculo é o que decide o papel dos outros. Medido em
+ * `edef47f`: `PUT /api/employees/{id}` segue 403 para `operator-full`. Não afeta esta lista — as
+ * seis operações de colaborador já passam, e a tela ainda não grava.
  *
  * Duas famílias entraram JUNTAS, e separá-las seria o erro:
  *
@@ -257,7 +267,20 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/projects' },
   { metodo: 'get', caminho: '/api/projects/{projectId}/plan' },
 
-  // listas de apoio — os 19 kinds do padrão `[combo]`, numa operação só.
+  // listas de apoio — os 19 kinds do padrão `[combo]`, FAMÍLIA INTEIRA (3).
+  //
+  // A escrita entrou junto com produto, e conserta meia família que a `main`
+  // carregava: `GET` já atravessava e o `+...` do `LookupCombo` gravava no MOCK.
+  // Com o par local de pé, o operador cadastrava um setor pelo `+...`, recebia
+  // 201, e o item NÃO aparecia no combo — porque o combo lê do servidor. Item
+  // que some depois de gravar, sem erro nenhum, é a costura calada que esta
+  // lista existe para impedir.
+  //
+  // Ficou de fora até 2026-08-21 por PAPEL, não por 501: respondia 403
+  // `papel-insuficiente` para `operator-full`, que é o papel do usuário demo. O
+  // `api#70` afrouxou a matriz para `operator-full` (`api#66` — a linha estava
+  // em `admin` por herança de quando não havia escrita), e medido em `edef47f`
+  // o `POST` responde 201 e o `PUT` 200.
   //
   // Passa porque é a RAIZ de quase toda combinação: enquanto o catálogo vinha
   // do mock e os registros vinham do servidor, todo `sectorId`/`jobTitleId` que
@@ -269,6 +292,8 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   // defeito desta lista — a mesma situação de `GET /api/products` desde o
   // primeiro dia. Semear é dado de ambiente.
   { metodo: 'get', caminho: '/api/catalog-lookups' },
+  { metodo: 'post', caminho: '/api/catalog-lookups' },
+  { metodo: 'put', caminho: '/api/catalog-lookups/{id}' },
 
   // atividades (4 operações) — o painel polimórfico de `entityType`.
   { metodo: 'get', caminho: '/api/activities' },

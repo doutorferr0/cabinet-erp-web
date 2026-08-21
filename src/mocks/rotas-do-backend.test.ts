@@ -76,26 +76,48 @@ describe('passthrough por rota', () => {
     expect(await r.json()).toHaveProperty('rows')
   })
 
-  it('a divisão é por VERBO: GET /api/catalog-lookups sai, POST fica', async () => {
-    const leitura = await fetch(`${base}/api/catalog-lookups`)
-    expect(leitura.headers.get('x-origem')).toBe(MARCA)
+  /**
+   * A GUARDA QUE MEDE MEIA FAMÍLIA.
+   *
+   * Aqui vivia um teste de "divisão por VERBO": `GET /api/products` saía e
+   * `POST` ficava, e o caso existia porque o backend respondia 501 na escrita.
+   * Ele deixou de existir — produto foi inteiro (#274) —, e ao procurar outro
+   * exemplo apareceu o último caminho partido da lista: `GET
+   * /api/catalog-lookups` atravessava e a escrita ficava no mock.
+   *
+   * **Ninguém tinha visto, porque o sintoma não é erro.** Com o par local de
+   * pé, o operador cadastrava um setor pelo `+...` do `LookupCombo`, recebia
+   * 201 do mock, e o item não aparecia no combo — que lê do servidor. Item que
+   * some depois de gravar.
+   *
+   * Então o teste trocou de pergunta, e a nova é mais forte que a antiga: em
+   * vez de conferir UM exemplo de divisão, conferir que **nenhum caminho do
+   * contrato está partido**. É a regra "a unidade de ligação é a FAMÍLIA" dita
+   * em código, e ela não envelhece com a lista — caminho novo entra na conta
+   * sozinho.
+   */
+  it('nenhum caminho do contrato fica PARTIDO por verbo', () => {
+    const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
+      paths: Record<string, Record<string, unknown>>
+    }
+    const VERBOS = ['get', 'post', 'put', 'patch', 'delete']
 
-    const escrita = await fetch(`${base}/api/catalog-lookups`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ kind: 'MARCA', name: 'MARCA DO TESTE', active: true }),
-    })
+    const partidos: string[] = []
+    for (const [caminho, operacoes] of Object.entries(contrato.paths)) {
+      const metodos = Object.keys(operacoes).filter((m) => VERBOS.includes(m))
+      const dentro = metodos.filter((m) =>
+        ROTAS_DO_BACKEND.some((r) => r.caminho === caminho && r.metodo === m),
+      )
+      if (dentro.length > 0 && dentro.length !== metodos.length) {
+        const fora = metodos.filter((m) => !dentro.includes(m))
+        partidos.push(`${caminho}: passa ${dentro.join('/')}, fica ${fora.join('/')}`)
+      }
+    }
 
-    // O exemplo era produto até a #274, e mudou porque produto passou a ir
-    // INTEIRO. Aqui a razão de a escrita ficar não é 501 — o backend a
-    // implementa e responde **403 `papel-insuficiente`** para `operator-full`,
-    // que é o papel do usuário demo. Ligar isto trocaria o `+...` que grava por
-    // um `+...` que recusa, em 19 telas. Ver `api#66`.
-    //
-    // O 201 com id de mock (`lk...`) é a prova positiva de quem gravou.
-    expect(escrita.headers.get('x-origem')).toBeNull()
-    expect(escrita.status).toBe(201)
-    expect(await escrita.json()).toMatchObject({ kind: 'MARCA', name: 'MARCA DO TESTE' })
+    expect(
+      partidos,
+      'caminho com um verbo na passagem e outro no mock: a tela lê de um lado e grava no outro',
+    ).toEqual([])
   })
 
   it('sem backend real a lista nasce VAZIA — é o que mantém o site público mock', () => {

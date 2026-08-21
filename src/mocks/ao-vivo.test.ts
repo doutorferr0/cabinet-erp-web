@@ -47,14 +47,18 @@ let cookie = ''
  * medição errada antes de aparecer, e reaparece toda vez que alguém acrescenta
  * uma asserção nova aqui.
  */
-async function noBackend(metodo: 'get' | 'post', caminho: string, corpo?: unknown) {
+async function noBackend(metodo: 'get' | 'post', caminho: string, corpo?: unknown, busca?: string) {
+  // A `busca` vai SÓ na requisição, nunca no padrão do handler: o MSW casa por
+  // caminho e avisa que query no padrão é redundante — pior, ela muda a
+  // correspondência sem dizer. Quem precisa do parâmetro é a URL; quem precisa
+  // do padrão é o `passthrough`.
   msw.use(http[metodo](`${BACKEND}${caminho}`, () => passthrough()))
   const init: RequestInit = { method: metodo.toUpperCase(), headers: { cookie } }
   if (corpo !== undefined) {
     init.headers = { 'content-type': 'application/json', cookie }
     init.body = JSON.stringify(corpo)
   }
-  return fetch(`${BACKEND}${caminho}`, init)
+  return fetch(`${BACKEND}${caminho}${busca ?? ''}`, init)
 }
 
 describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
@@ -336,6 +340,29 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
       const viaTela = (await pelaTela.json()) as { total: number }
       expect(viaTela.total, caminho).toBe((direto as { total: number }).total)
     }
+  })
+
+  it('o `+...` do combo grava no SERVIDOR — item cadastrado aparece na lista', async () => {
+    // A meia família que a #274 fechou: `GET /api/catalog-lookups` já
+    // atravessava e a ESCRITA ficava no mock. O operador cadastrava um setor
+    // pelo `+...`, recebia 201, e o item não aparecia no combo — porque o combo
+    // lê do servidor. Item que some depois de gravar, sem erro nenhum.
+    const nome = `AO VIVO ${Date.now()}`
+    const criado = await fetch(`${APP}/api/catalog-lookups`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ kind: 'SETOR', name: nome, active: true }),
+    })
+    expect(criado.status, 'escrita de lista de apoio recusada — papel do usuário?').toBe(201)
+    const item = (await criado.json()) as { id: string }
+
+    // Lido DIRETO no backend: é onde o combo vai buscá-lo na próxima abertura.
+    const direto = (await (
+      await noBackend('get', '/api/catalog-lookups', undefined, '?pageSize=100')
+    ).json()) as {
+      rows: { id: string; name: string }[]
+    }
+    expect(direto.rows.map((l) => l.id)).toContain(item.id)
   })
 
   it('o FUNIL passa pela metade, e é por isso que a tela avisa', async () => {

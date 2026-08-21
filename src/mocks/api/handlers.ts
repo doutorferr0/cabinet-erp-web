@@ -506,6 +506,12 @@ export const handlers = [
       businessRole: corpo.businessRole ?? null,
       businessDocument: corpo.businessDocument ?? null,
       foundedOn: corpo.foundedOn ?? null,
+      personType: corpo.personType ?? null,
+      identityDocument: corpo.identityDocument ?? null,
+      identityIssuer: corpo.identityIssuer ?? null,
+      identityIssuerState: corpo.identityIssuerState ?? null,
+      gender: corpo.gender ?? null,
+      birthDate: corpo.birthDate ?? null,
       vinculos: {
         [store.activeTenantId]: {
           code: corpo.code ?? null,
@@ -561,6 +567,12 @@ export const handlers = [
     parceiro.businessRole = corpo.businessRole ?? null
     parceiro.businessDocument = corpo.businessDocument ?? null
     parceiro.foundedOn = corpo.foundedOn ?? null
+    parceiro.personType = corpo.personType ?? null
+    parceiro.identityDocument = corpo.identityDocument ?? null
+    parceiro.identityIssuer = corpo.identityIssuer ?? null
+    parceiro.identityIssuerState = corpo.identityIssuerState ?? null
+    parceiro.gender = corpo.gender ?? null
+    parceiro.birthDate = corpo.birthDate ?? null
     parceiro.vinculos[store.activeTenantId] = {
       code: corpo.code ?? null,
       paymentTerms: corpo.paymentTerms ?? null,

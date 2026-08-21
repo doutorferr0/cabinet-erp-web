@@ -88,6 +88,14 @@ export function parceiro(over: Record<string, unknown> = {}) {
     businessRole: null as string | null,
     businessDocument: null as string | null,
     foundedOn: null as string | null,
+    // Bloco 3 (#270): a metade que faltava da aba `Principal`. Nascem NULOS e
+    // as chaves EXISTEM, pela mesma razão do bloco 2 acima.
+    personType: null as 'individual' | 'company' | null,
+    identityDocument: null as string | null,
+    identityIssuer: null as string | null,
+    identityIssuerState: null as string | null,
+    gender: null as string | null,
+    birthDate: null as string | null,
     ...over,
   }
 }

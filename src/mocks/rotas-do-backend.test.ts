@@ -366,9 +366,11 @@ describe('passthrough por rota', () => {
     },
     { familia: 'dashboard', caminhos: ['/api/dashboard/summary', '/api/dashboard/agenda'] },
     {
-      // Inteira INCLUSIVE a escrita, que responde 403 por papel. O 403 é a
-      // verdade do servidor: mockar a gravação enquanto ele recusa ensinaria
-      // que o `+...` funciona, e o defeito só apareceria no dia da ligação.
+      // Inteira INCLUSIVE a escrita. Ela entrou respondendo 403 por papel, e
+      // ligamos assim mesmo porque mockar a gravação enquanto o servidor recusa
+      // ensinaria que o `+...` funciona. O 403 caiu logo depois (`api#70`
+      // afrouxou a matriz, que tinha `admin` por herança): medido em
+      // `30a098e`, `POST` é 201 e `PUT` é 200.
       familia: 'listas de apoio',
       caminhos: ['/api/catalog-lookups', '/api/catalog-lookups/{id}'],
     },
@@ -438,8 +440,10 @@ describe('passthrough por rota', () => {
       metodo: 'GET',
       url: '/api/crm/reports/lost-reasons?from=2026-01-01&to=2026-12-31',
     },
-    // A escrita de lookup sai para a rede mesmo sabendo que o servidor responde
-    // 403 por papel: é ele quem tem de recusar, não o mock quem tem de fingir.
+    // A escrita de lookup sai para a rede: quem decide se ela é aceita é o
+    // servidor, não o mock. Entrou quando ele ainda recusava com 403 por papel,
+    // e continua valendo agora que ele aceita (`api#70`) — o que este teste
+    // prova é a SAÍDA, e ela não depende da resposta.
     { familia: 'escrita de lista de apoio', metodo: 'POST', url: '/api/catalog-lookups' },
   ])('$familia ($metodo) SAI para a rede', async ({ metodo, url }) => {
     const init: RequestInit = { method: metodo }

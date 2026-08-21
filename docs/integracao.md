@@ -271,10 +271,17 @@ servidas e 18 em 501; em `33db0df` a passagem foi a 58; em `3af4f01` o 501 zerou
 decisão nossa. Remedir antes de citar — e remedir pela SONDA: contar `operationId` nos `rotas.ts`
 dos módulos deixou de fora `ListCatalogLookups`, que mora em `catalogo/lookups.ts`.)*
 
-**Uma operação da passagem responde 403, e é de propósito:** `POST`/`PUT /api/catalog-lookups`
-recusam o papel `operator-full` (a matriz do backend as reserva a `admin`), então com o par local
-de pé o `+...` do `LookupCombo` deixa de gravar em 19 telas. Ligada assim mesmo, para que o mock
-não ensine que funciona algo que o servidor recusa. Decisão de produto em `api#66`.
+**Duas operações da passagem entraram respondendo 403, de propósito — e já não respondem.**
+`POST`/`PUT /api/catalog-lookups` recusavam o papel `operator-full` (a matriz do backend as
+reservava a `admin`), e foram ligadas assim mesmo para que o mock não ensinasse que funciona algo
+que o servidor recusa. Aquele `admin` era **herança**: a linha nasceu fechada quando não havia
+escrita de lookup no contrato, e a escrita chegou depois sem ninguém reabrir a linha
+(`api#66`). O `api#70` afrouxou para `operator-full`; medido em `30a098e`, **`POST` é 201 e `PUT`
+é 200**, e o `+...` do `LookupCombo` grava onde o combo lê.
+
+A escrita de **colaborador** continua 403 para `operator-full`, e ali é **decisão e não herança**:
+`/api/employees` é `admin` porque vínculo é o que decide o papel dos outros. Papel que recusa não é
+sempre a mesma coisa — vale perguntar se a linha foi decidida ou herdada antes de aceitar o custo.
 
 **A unidade de ligação é a FAMÍLIA, não a rota.** O critério "existe no contrato e não é 501" mede
 uma rota; o que quebra é a tela. Meia família põe id do servidor de um lado e id inventado do

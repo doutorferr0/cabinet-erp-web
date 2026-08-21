@@ -53,14 +53,18 @@ let cookie = ''
  * medição errada antes de aparecer, e reaparece toda vez que alguém acrescenta
  * uma asserção nova aqui.
  */
-async function noBackend(metodo: 'get' | 'post', caminho: string, corpo?: unknown) {
+async function noBackend(metodo: 'get' | 'post', caminho: string, corpo?: unknown, busca?: string) {
+  // A `busca` vai SÓ na requisição, nunca no padrão do handler: o MSW avisa que
+  // query no padrão é redundante, e pior — ela muda a correspondência sem
+  // dizer. Quem precisa do parâmetro é a URL; quem precisa do padrão é o
+  // `passthrough`.
   msw.use(http[metodo](`${BACKEND}${caminho}`, () => passthrough()))
   const init: RequestInit = { method: metodo.toUpperCase(), headers: { cookie } }
   if (corpo !== undefined) {
     init.headers = { 'content-type': 'application/json', cookie }
     init.body = JSON.stringify(corpo)
   }
-  return fetch(`${BACKEND}${caminho}`, init)
+  return fetch(`${BACKEND}${caminho}${busca ?? ''}`, init)
 }
 
 describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
@@ -390,39 +394,47 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect(relatorio.status).toBe(200)
   })
 
-  it('a ESCRITA de lista de apoio sai para o servidor — e ele RECUSA por papel', async () => {
-    // A costura declarada da #274, e o caso existe para que ela não seja
-    // descoberta por acidente.
+  it('a ESCRITA de lista de apoio grava no SERVIDOR — o `+...` grava onde o combo lê', async () => {
+    // ESTE CASO ERA O CONTRÁRIO, e virou vermelho como foi projetado para virar.
     //
-    // `POST /api/catalog-lookups` está na passagem e responde **403
-    // `papel-insuficiente`** para `operator-full`, que é o papel do usuário do
-    // seed: a matriz do backend reserva o caminho a `admin`. O efeito visível é
-    // o `+...` do `LookupCombo` — o cadastro rápido do padrão 2, em 19 telas —
-    // deixando de gravar quando o par local está de pé.
+    // A #274 ligou `POST`/`PUT /api/catalog-lookups` sabendo que respondiam
+    // **403 `papel-insuficiente`** para `operator-full`, e escreveu aqui um
+    // caso que afirmava o 403 com a instrução: *"se não é mais 403, api#66 foi
+    // decidido — releia a costura"*. Foi decidido: aquele `admin` da matriz era
+    // HERANÇA (a linha nasceu fechada quando não havia escrita no contrato), e
+    // o `api#70` afrouxou para `operator-full`.
     //
-    // Ligamos assim mesmo (decisão do user, 2026-08-21) porque mock que grava
-    // enquanto o servidor recusa ensina que funciona, e o defeito só apareceria
-    // com a tela já construída em cima da ficção.
-    //
-    // **Este caso vira vermelho quando `api#66` for decidido**, e é isso que ele
-    // presta: se a matriz afrouxar para `operator-full`, o 403 deixa de vir e
-    // alguém tem de reescrever isto — e esconder ou não o `+...` deixa de ser
-    // pergunta em aberto.
-    const r = await fetch(`${APP}/api/catalog-lookups`, {
+    // Medido contra `30a098e`: `POST` 201, `PUT` 200. O que era costura virou
+    // caminho, e o `+...` do `LookupCombo` — cadastro rápido do padrão 2, em 19
+    // telas — grava no mesmo lugar de onde o combo lê.
+    const nome = `SETOR DA PROVA AO VIVO ${Date.now()}`
+    const criado = await fetch(`${APP}/api/catalog-lookups`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ kind: 'SETOR', name: 'SETOR DA PROVA AO VIVO', active: true }),
+      body: JSON.stringify({ kind: 'SETOR', name: nome, active: true }),
     })
 
-    expect(r.status, 'se não é mais 403, api#66 foi decidido — releia a costura').toBe(403)
-    expect(await r.json()).toMatchObject({
-      type: 'urn:cabinet:erro:papel-insuficiente',
-      status: 403,
-    })
+    expect(
+      criado.status,
+      'se voltou 403, a matriz de papéis apertou de novo — releia api#66/api#70',
+    ).toBe(201)
+    const item = (await criado.json()) as { id: string }
 
-    // A LEITURA continua passando: é ela que alimenta todo combo, e o 403 é só
-    // da escrita.
-    expect((await fetch(`${APP}/api/catalog-lookups`, { headers: { cookie } })).status).toBe(200)
+    // PROVA POSITIVA de quem gravou: lido DIRETO no backend, que é onde o combo
+    // vai buscá-lo na próxima abertura. Se o mock tivesse respondido, o id não
+    // existiria deste lado.
+    const direto = (await (
+      await noBackend('get', '/api/catalog-lookups', undefined, '?pageSize=100')
+    ).json()) as { rows: { id: string }[] }
+    expect(direto.rows.map((l) => l.id)).toContain(item.id)
+
+    // E o `PUT`, que é a outra metade do `+...` quando o item já existe.
+    const alterado = await fetch(`${APP}/api/catalog-lookups/${item.id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: `${nome} (alterado)`, active: true }),
+    })
+    expect(alterado.status).toBe(200)
   })
 
   it('nenhuma rota de /api sobrou no mock — a passagem cobre o contrato', () => {

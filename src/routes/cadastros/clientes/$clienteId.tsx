@@ -118,6 +118,7 @@ function ClienteEditPage() {
       <ClienteForm
         cliente={registro}
         readOnly={readOnly}
+        {...(isNovo ? {} : { idDoRegistro: clienteId })}
         {...(moduloEmFoco ? { moduloEmFoco } : {})}
         contexto={isNovo ? 'Incluir' : registro.nome}
         aviso={aviso}

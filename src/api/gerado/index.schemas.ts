@@ -2698,6 +2698,11 @@ export type SemPermissaoResponse = ProblemDetails;
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;
+/**
+ * Whitelist: `kind`, `name`, `active`. Campo fora dela é 400.
+ *
+ * Esta operação NÃO publica `filters` — o recorte por `kind` é parâmetro próprio, porque toda tela que abre uma lista de apoio já sabe qual quer.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2717,6 +2722,11 @@ pageSize?: number;
 
 export type ListProductsParams = {
 q?: string;
+/**
+ * Whitelist: `code`, `description`, `active`. Campo fora dela é 400.
+ *
+ * É a MESMA de `filters` — os três campos planos do `ProductDto`. `productTypeName`/`brandName` ficam de fora dos dois: vêm de junção com a lista de apoio, e o par `id`+`name` publicado no DTO existe para a tela MOSTRAR, não para o servidor indexar.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2734,6 +2744,11 @@ joinOperator?: ListFilterJoin;
 export type ListPartnersParams = {
 role?: string;
 q?: string;
+/**
+ * Whitelist: `code`, `legalName`, `tradeName`, `document`, `active`, `parentId`. Campo fora dela é 400.
+ *
+ * É a MESMA de `filters`. `categoryName`, `parentName` e `specifierName` ficam de fora dos dois — são junções, como em produtos. `parentId` está aqui porque a hierarquia sai por `filters`, e não por um caminho aninhado.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2749,6 +2764,11 @@ joinOperator?: ListFilterJoin;
 };
 
 export type ListStockMovementsParams = {
+/**
+ * Whitelist: `occurredAt`, `delta`, `reason`. Campo fora dela é 400.
+ *
+ * `occurredAt` é o padrão, e descendente: kardex se lê do mais recente para trás.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2796,6 +2816,11 @@ status?: string;
 
 export type ListEmployeesParams = {
 q?: string;
+/**
+ * Whitelist: `name`, `sector`, `jobTitle`, `active`. Campo fora dela é 400.
+ *
+ * `sector` e `jobTitle` são listas de apoio resolvidas por junção, e entram porque a listagem de pessoas é organizada por elas — é a exceção que o par `id`+`name` justifica quando a coluna É o critério de leitura.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2831,6 +2856,11 @@ joinOperator?: ListFilterJoin;
 
 export type ListQuotesParams = {
 q?: string;
+/**
+ * Whitelist: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt`. Campo fora dela é 400.
+ *
+ * É a MESMA de `filters` — inclusive `customerName` e `projectName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2847,6 +2877,11 @@ joinOperator?: ListFilterJoin;
 
 export type ListCrmPipelinesParams = {
 q?: string;
+/**
+ * Whitelist: `name`, `sort`, `active`. Campo fora dela é 400.
+ *
+ * `sort` é a ordem manual do funil, e é por ela que o quadro desenha as colunas.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2871,6 +2906,11 @@ ownerEmployeeId?: string;
  */
 open?: boolean;
 q?: string;
+/**
+ * Whitelist: `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate`, `stageChangedAt`. Campo fora dela é 400.
+ *
+ * **NÃO é a mesma de `filters`:** `expectedValueCents` ordena e não filtra. A ordem por centavos é a mesma que por reais, mas o FILTRO não tem variante de dinheiro — `1000` traria R$ 10,00 para quem procura mil reais. É a primeira das duas subtrações do contrato; a outra é a obra, ao contrário.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2902,6 +2942,9 @@ to: string;
 
 export type ListCrmLostReasonsParams = {
 q?: string;
+/**
+ * Whitelist: `name`, `active`. Campo fora dela é 400.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2926,6 +2969,11 @@ open?: boolean;
  */
 assigneeEmployeeId?: string;
 q?: string;
+/**
+ * Whitelist: `dueDate`, `doneAt`, `kind`, `title`. Campo fora dela é 400.
+ *
+ * `assigneeName` fica de fora: é junção com o colaborador. Esta operação NÃO publica `filters`, e pedir o parâmetro é 400 — a agenda recorta por `entityType`/`entityId`, que são caminho, não filtro.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
@@ -2944,6 +2992,11 @@ export const ListActivitiesEntityType = {
 
 export type ListOrdersParams = {
 q?: string;
+/**
+ * Whitelist: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.
+ *
+ * A MESMA de `filters`, e a mesma do orçamento menos `expiresAt` — pedido não vence.
+ */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;

@@ -132,10 +132,10 @@ function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
   return (
     <>
       <Button type="button" variant="outline" size="sm" onClick={inserirAmbiente}>
-        <Home className="size-4" /> Ambiente ({shortcutLabel(SHORTCUTS.ambiente)})
+        <Home className="size-4" /> Ambiente <kbd>{shortcutLabel(SHORTCUTS.ambiente)}</kbd>
       </Button>
       <Button type="button" variant="outline" size="sm" onClick={inserirProduto}>
-        <Package className="size-4" /> Produto ({shortcutLabel(SHORTCUTS.produto)})
+        <Package className="size-4" /> Produto <kbd>{shortcutLabel(SHORTCUTS.produto)}</kbd>
       </Button>
       <Button
         type="button"
@@ -175,7 +175,13 @@ function Cabecalho() {
     <>
       {/* FUSÃO v5 r4 (mockup): o formulário fala em SEÇÕES numeradas, e quem
           importa vem primeiro — Cliente & Obra antes da burocracia. */}
-      <Secao numero="01" titulo="Cliente & Obra" cor="id" icone={User}>
+      <Secao
+        numero="01"
+        titulo="Cliente & Obra"
+        cor="id"
+        icone={User}
+        nota="para quem, e para qual obra"
+      >
         <div className="grid grid-cols-12 items-end gap-3">
           <div className="col-span-12 sm:col-span-5">
             <div className="flex items-end gap-1">
@@ -237,7 +243,13 @@ function Cabecalho() {
         </div>
       </Secao>
 
-      <Secao numero="02" titulo="Identificação" cor="info" icone={Hash}>
+      <Secao
+        numero="02"
+        titulo="Identificação"
+        cor="info"
+        icone={Hash}
+        nota="números e datas do documento"
+      >
         <div className="grid grid-cols-12 items-end gap-3">
           <TextField name="numero" label="Código" className="col-span-6 sm:col-span-2" />
           <SelectField
@@ -410,7 +422,13 @@ function AbaPrincipal() {
   return (
     <div data-zonas className="flex flex-col gap-4">
       <Cabecalho />
-      <Secao numero="03" titulo="Desconto" cor="warn" icone={Percent}>
+      <Secao
+        numero="03"
+        titulo="Desconto"
+        cor="warn"
+        icone={Percent}
+        nota="a regra que os itens herdam"
+      >
         <ControlesDesconto />
       </Secao>
 

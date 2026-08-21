@@ -58,7 +58,7 @@ describe('tela Pedido de Compra', () => {
     const { user } = renderRoute('/compras/pedidos/novo')
 
     await screen.findByLabelText('Código')
-    await user.click(screen.getByRole('button', { name: /Produto \(Alt\+P\)/ }))
+    await user.click(screen.getByRole('button', { name: /Produto Alt\+P/ }))
 
     // §7.4: o item comprado já nasce com destino definido.
     expect(await screen.findByLabelText('Destino linha 1')).toHaveValue('ESTOQUE')

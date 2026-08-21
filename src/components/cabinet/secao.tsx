@@ -44,11 +44,14 @@ export function Secao({
   titulo,
   cor = 'id',
   icone: Icone,
+  nota,
   className,
   children,
 }: {
   /** Símbolo da seção, traço preto sobre a caixa pastel (referências r5). */
   icone?: LucideIcon
+  /** Meia-frase em serifa itálica ao lado do título — a voz editorial (r7). */
+  nota?: string
   /** Ordinal em Meta ("01", "02"…) — o mapa da página. */
   numero?: string
   titulo: string
@@ -80,6 +83,11 @@ export function Secao({
             )}
           >
             {numero}
+          </span>
+        ) : null}
+        {nota ? (
+          <span className="font-[family-name:var(--font-nome)] text-[0.875rem] text-muted-foreground italic">
+            {nota}
           </span>
         ) : null}
         <span aria-hidden="true" className="flex-1 border-rule-hair border-t border-dashed" />

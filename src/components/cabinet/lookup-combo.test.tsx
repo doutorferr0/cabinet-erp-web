@@ -1,5 +1,6 @@
 import { configurarApi } from '@/api/cliente'
 import { LookupCombo } from '@/components/cabinet/lookup-combo'
+import { instalarServidor, json, problema } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
@@ -107,18 +108,109 @@ describe('LookupCombo', () => {
     expect(await screen.findByRole('button', { name: /Selecione marca/i })).toBeInTheDocument()
   })
 
-  it('cadastra item novo sem sair da tela (botão "...")', async () => {
+  /**
+   * O `+...` VIRA `POST /api/catalog-lookups` (#254).
+   *
+   * Era estado local: o combo inventava `novo:<kind>:<NOME>`, punha na lista e
+   * o formulário gravava essa string. Desde que `categoryId`/`specifierId`
+   * entraram no contrato como uuid (#250), esse id ia no corpo do `PUT` — o
+   * operador via o nome que escolheu e o servidor recebia uma referência que
+   * combo nenhum relê.
+   *
+   * Os três testes abaixo medem o CORPO da requisição e o que o campo passou a
+   * valer, não o status: 201 e 409 com o campo em branco seriam os dois
+   * "passou" de um teste que só olha o número da resposta.
+   */
+  it('cadastra pelo servidor e escolhe o item que ELE devolveu', async () => {
     const { user } = renderWithQuery(<Harness />)
     await waitFor(() => expect(chamadas).toHaveLength(1))
+
+    // Instalado no meio: o GET já respondeu, e agora o servidor precisa saber
+    // responder ao POST e devolver a lista JÁ com o item novo — é a releitura
+    // que prova que o cadastro existe do lado de lá.
+    const criado = { id: 'id-do-servidor', kind: 'MARCA', name: 'MARCA NOVA X', active: true }
+    const servidor = instalarServidor(
+      {
+        '/api/catalog-lookups': (chamada) => {
+          if (chamada.metodo === 'POST') return json(criado, 201)
+          return json({
+            rows: [
+              ...OPCOES.map((name, i) => ({ id: `id-${i}`, kind: 'MARCA', name, active: true })),
+              criado,
+            ],
+            total: 3,
+          })
+        },
+      },
+      'http://api.teste',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
     await user.type(screen.getByLabelText('Nome'), 'Marca Nova X')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
-    // O cadastro rápido é LOCAL (mock): o id carrega prefixo `novo:` para não
-    // ser confundido com um que veio do servidor. O operador vê o nome.
-    expect(screen.getByTestId('valor')).toHaveTextContent('novo:marca:MARCA NOVA X')
+    const post = servidor.em('/api/catalog-lookups').find((c) => c.metodo === 'POST')
+    // Vocabulário de apoio é caixa alta no legado inteiro; `active` viaja
+    // explícito porque o contrato o exige explícito.
+    expect(post?.corpo).toEqual({ kind: 'MARCA', name: 'MARCA NOVA X', active: true })
+
+    // O id gravado é o do SERVIDOR — não um inventado aqui.
+    await waitFor(() => expect(screen.getByTestId('valor')).toHaveTextContent('id-do-servidor'))
     expect(screen.getByRole('button', { name: /MARCA NOVA X/ })).toBeInTheDocument()
+  })
+
+  it('409 escolhe o item que já existe, em vez de dizer que falhou', async () => {
+    const { user } = renderWithQuery(<Harness />)
+    await waitFor(() => expect(chamadas).toHaveLength(1))
+
+    instalarServidor(
+      {
+        '/api/catalog-lookups': (chamada) => {
+          if (chamada.metodo === 'POST') {
+            return problema(409, 'Já existe "STELLA" na lista MARCA.', 'Conflict')
+          }
+          return respostaDaApi(OPCOES)
+        },
+      },
+      'http://api.teste',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
+    await user.type(screen.getByLabelText('Nome'), 'Stella')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    // O contrato diz que o 409 NÃO carrega o id: quem acha o item existente é o
+    // cliente, pelo nome, na lista que já tem. Cadastrar de novo seria o par
+    // duplicado que o 409 existe para impedir.
+    await waitFor(() => expect(screen.getByTestId('valor')).toHaveTextContent('id-1'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('409 de item FORA da lista carregada não escolhe nada — e diz por quê', async () => {
+    const { user } = renderWithQuery(<Harness />)
+    await waitFor(() => expect(chamadas).toHaveLength(1))
+
+    instalarServidor(
+      {
+        '/api/catalog-lookups': (chamada) => {
+          if (chamada.metodo === 'POST') {
+            return problema(409, 'Já existe "MARCA APOSENTADA" na lista MARCA.', 'Conflict')
+          }
+          return respostaDaApi(OPCOES)
+        },
+      },
+      'http://api.teste',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
+    await user.type(screen.getByLabelText('Nome'), 'Marca Aposentada')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    // Item desativado, ou lista cortada no teto de 100. Escolher um id chutado
+    // gravaria a referência errada; ficar calado mandaria o operador cadastrar
+    // de novo o que já existe.
+    expect(await screen.findByRole('alert')).toHaveTextContent(/fora das opções carregadas/i)
+    expect(screen.getByTestId('valor')).toHaveTextContent('')
   })
 
   it('busca filtra as opções', async () => {

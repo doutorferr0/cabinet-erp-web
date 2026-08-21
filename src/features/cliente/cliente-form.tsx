@@ -95,6 +95,7 @@ export const clienteSchema = z.object({
     facebook: z.string(),
     instagram: z.string(),
   }),
+  inscEst: z.string(),
   inscEstProdutorRural: z.string(),
   observacao: z.string(),
 })
@@ -233,6 +234,14 @@ function ClienteCorpo({
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="fiscal">
         <div className="grid grid-cols-12 items-end gap-3">
+          {/* Duas inscrições, dois campos: a da empresa (`Cli_IE_rg`) e a de
+              produtor rural (`Cli_IEProdRural`). O produtor rural pessoa física
+              tem a segunda sem ter a primeira. */}
+          <TextField
+            name="inscEst"
+            label="Inscrição Estadual"
+            className="col-span-12 sm:col-span-6"
+          />
           <TextField
             name="inscEstProdutorRural"
             label="Inscrição Estadual Produtor Rural"

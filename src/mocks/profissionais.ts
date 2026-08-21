@@ -53,6 +53,8 @@ export interface Profissional {
     facebook: string
     instagram: string
   }
+  /** Observação interna — só a equipe lê, não sai em documento. */
+  observacao: string
 }
 
 const REGISTROS = [
@@ -154,6 +156,7 @@ export const profissionais: Profissional[] = REGISTROS.map((r, i) => ({
   pisPasepNis: '',
   registroProfissional: r.registro,
   redesSociais: { facebook: '', instagram: '' },
+  observacao: '',
 }))
 
 function enderecoVazio(): EnderecoMock {
@@ -200,5 +203,6 @@ export function profissionalVazio(id: number): Profissional {
     pisPasepNis: '',
     registroProfissional: '',
     redesSociais: { facebook: '', instagram: '' },
+    observacao: '',
   }
 }

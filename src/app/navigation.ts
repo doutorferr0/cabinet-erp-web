@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   BookUser,
   Boxes,
+  CalendarDays,
   CircleDollarSign,
   Filter,
   GanttChart,
@@ -247,6 +248,16 @@ export const navSecoes: NavSecao[] = [
             // SEM `aparencia`: `moduloDaRota('/')` já responde `boletim`, por
             // casamento exato. Ele não é tela sem módulo — é a única com módulo
             // e sem prefixo, e o empréstimo não tem o que fazer aqui.
+          },
+          {
+            title: 'Agenda',
+            url: '/agenda',
+            icon: CalendarDays,
+            descricao: 'Compromissos do mês e agenda do dia, num calendário só.',
+            // Blocker: a agenda precisa de um ShapeDeLugar em
+            // src/components/cabinet/ornamento.tsx (componente compartilhado).
+            // Sem decisão do user, fica com o ícone lucide puro para não
+            // improvisar uma cor/shape (regra da issue #230).
           },
         ],
       },

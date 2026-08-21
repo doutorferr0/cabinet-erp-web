@@ -11,7 +11,13 @@ import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
  * `rotas-do-backend.test.ts` prova a DIVISÃO contra um servidor de mentira: que
  * o passthrough sai para a rede e que o resto fica no mock. O que ele não pode
  * provar é que do outro lado da rede existe um backend que ENTENDE o que sai —
- * a sessão por cookie, o shape da listagem, o 501 no que não foi implementado.
+ * a sessão por cookie, o shape da listagem, o papel que recusa a escrita.
+ *
+ * **Desde a #274 (2026-08-21) a passagem cobre as 78 operações do contrato**, e
+ * isso mudou o que este arquivo mede. Ele nasceu para separar o que passava do
+ * que ficava; agora quase todo caso é prova POSITIVA de que o dado veio do
+ * Postgres — o mock monta `{rows,total}` igualzinho, então o que distingue é o
+ * conjunto de ids, nunca o shape.
  * Isso exige o par local de pé, e por isso não pode viver na suíte: o CI não
  * tem Postgres, e teste que precisa de infra externa vira teste vermelho por
  * ambiente, que é como uma suíte aprende a ser ignorada.
@@ -60,8 +66,9 @@ async function noBackend(metodo: 'get' | 'post', caminho: string, corpo?: unknow
 describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
   beforeAll(async () => {
     msw.listen({ onUnhandledRequest: 'bypass' })
-    // as rotas que seguem mockadas exigem sessão do MOCK; a de verdade vem do
-    // cookie, e as duas coexistem sem se ver
+    // Semeia a sessão do MOCK por garantia, não por necessidade: desde a #274
+    // nenhuma rota de `/api` chega até ele com o proxy de pé. Sai do caminho no
+    // dia em que o mock deixar de ser o backend do site público — não antes.
     semearSessaoAutenticada()
 
     const login = await fetch(`${APP}/auth/login`, {
@@ -162,8 +169,23 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect(direto.rows.map((c) => c.id)).toContain(contato.id)
   })
 
-  it('a ESCRITA de produto fica no mock — a divisão é por verbo', async () => {
-    const corpo = { code: 'AO-VIVO-1', description: 'Só no mock', active: true }
+  it('a ESCRITA de produto passa — o que a tela grava existe no Postgres', async () => {
+    // ESTE CASO COBROU A PRÓPRIA VIRADA, e é bom registrar que funcionou.
+    //
+    // Ele afirmava "a escrita fica no mock" e terminava com um
+    // `expect(...está na passagem...).toBe(false)` acompanhado do aviso "no dia
+    // em que a família fechar, este expect fica vermelho e cobra a ligação —
+    // que é o serviço que ele presta". A família fechou na #274, o expect ficou
+    // vermelho, e o caso foi reescrito para medir o outro lado.
+    //
+    // O código carrega o instante para não colidir com a corrida anterior: o
+    // servidor responde 409 em código repetido, e 409 aqui pareceria recusa da
+    // escrita quando é só o teste tropeçando em si mesmo.
+    const corpo = {
+      code: `AO-VIVO-${Date.now()}`,
+      description: 'Gravado pela tela, lido no backend',
+      active: true,
+    }
 
     const pelaTela = await fetch(`${APP}/api/products`, {
       method: 'POST',
@@ -171,24 +193,14 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
       body: JSON.stringify(corpo),
     })
     expect(pelaTela.status).toBe(201)
+    const criado = (await pelaTela.json()) as { id: string }
 
-    // A ESCRITA JÁ EXISTE DO OUTRO LADO — medido em 2026-08-20 contra
-    // `cabinet-erp-api` `33db0df`, onde `POST /api/products` responde 201 (e
-    // 409 na segunda vez, por código repetido). O que este caso mede deixou de
-    // ser "o backend não implementa" e passou a ser DÍVIDA: quem grava produto
-    // na tela continua sendo o mock, porque a família de produto ainda tem
-    // operação em 501 (variantes) e meia família é a costura que esta lista
-    // existe para evitar.
-    //
-    // Asserção pelo que é verdade hoje: o servidor RESPONDE (não é 501) e a
-    // passagem NÃO liga. No dia em que a família fechar, o segundo `expect`
-    // fica vermelho e cobra a ligação — que é o serviço que ele presta.
-    const noServidor = await noBackend('post', '/api/products', corpo)
-    expect(noServidor.status, 'se voltou a ser 501, remeça a família').not.toBe(501)
-    expect(
-      ROTAS_DO_BACKEND.some((r) => r.metodo === 'post' && r.caminho === '/api/products'),
-      'o backend já grava produto: ou liga a família inteira, ou este caso passa a mentir',
-    ).toBe(false)
+    // A prova de que não foi o mock: o id só existe do outro lado se a escrita
+    // saiu de verdade. Status 201 sozinho não distingue — o mock também devolve
+    // 201, com id dele (`prod...`).
+    const direto = await noBackend('get', `/api/products/${criado.id}`)
+    expect(direto.status, 'o produto gravado pela tela não existe no backend').toBe(200)
+    expect(await direto.json()).toMatchObject({ id: criado.id, code: corpo.code })
   })
 
   it('o ORÇAMENTO inteiro passa — listagem do servidor, com o shape do contrato', async () => {
@@ -279,23 +291,33 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     ])
   })
 
-  it('tarefas e A fazer passam; os indicadores do dashboard continuam no mock', async () => {
+  it('tarefas, A fazer e o DASHBOARD passam — os dois painéis contam a mesma história', async () => {
     const tarefas = await fetch(`${APP}/api/tasks`, { headers: { cookie } })
     expect(tarefas.status).toBe(200)
 
     const todos = await fetch(`${APP}/api/todos`, { headers: { cookie } })
     expect(todos.status).toBe(200)
 
-    // O resumo é painel próprio, com consulta própria e sem id em comum: o mock
-    // responde e a tela monta. É o que separa este caso do funil.
+    // O RESUMO ENTROU NA PASSAGEM na #274. Enquanto ficou no mock, o quadro de
+    // tarefas contava o Postgres e os indicadores contavam a ficção, lado a
+    // lado na mesma tela — dois painéis discordando. Não era costura de id
+    // (painel próprio, consulta própria), mas era discordância visível.
     const resumo = await fetch(`${APP}/api/dashboard/summary`, { headers: { cookie } })
     expect(resumo.status).toBe(200)
 
-    // MEDIDO em 2026-08-20: o backend passou a servir o resumo (200, com
-    // números do Postgres) — era 501 quando este caso foi escrito. Continua
-    // fora da passagem, e agora por decisão a tomar, não por ausência de
-    // servidor. Ver `## Para o hub` da PR que ligou o bloco 2.
-    expect((await noBackend('get', '/api/dashboard/summary')).status).not.toBe(501)
+    // Prova positiva de quem respondeu: os mesmos números, medidos direto.
+    const direto = (await (await noBackend('get', '/api/dashboard/summary')).json()) as Record<
+      string,
+      unknown
+    >
+    expect(await resumo.json()).toEqual(direto)
+
+    // A agenda exige `from`/`to` — sem eles é 400, e 400 já foi lido como "não
+    // implementado" numa varredura desta lista.
+    const agenda = await fetch(`${APP}/api/dashboard/agenda?from=2026-08-01&to=2026-08-31`, {
+      headers: { cookie },
+    })
+    expect(agenda.status).toBe(200)
   })
 
   it('colaborador, atividades e listas de apoio vêm do SERVIDOR', async () => {
@@ -316,31 +338,105 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     }
   })
 
-  it('o FUNIL passa pela metade, e é por isso que a tela avisa', async () => {
-    // `pagina-do-funil.tsx` lê funis, estágios e oportunidades. O backend serve
-    // os dois primeiros e responde 501 no terceiro — então o quadro recebe
-    // colunas do Postgres e pede ao mock as oportunidades de um `pipelineId`
-    // que o mock nunca viu. A resposta é lista vazia com status 200, e vazio
-    // parece "não há negócio": `CoberturaDoFunil` é quem desfaz a leitura.
+  it('o FUNIL passa INTEIRO — as duas metades do quadro vêm do mesmo lado', async () => {
+    // O CASO QUE MUDOU DE SINAL na #274.
+    //
+    // Ele media a costura: `pagina-do-funil.tsx` lê funis, estágios e
+    // oportunidades, o backend servia os dois primeiros e as oportunidades
+    // ficavam no mock — o quadro recebia colunas do Postgres e pedia ao mock os
+    // cartões de um `pipelineId` que o mock nunca viu. Lista vazia com status
+    // 200, que se lê como "não há negócio". Agora as três passam, e o que se
+    // mede é a coerência: os ids têm de casar dos dois lados.
     const funis = await fetch(`${APP}/api/crm/pipelines`, { headers: { cookie } })
     expect(funis.status).toBe(200)
-
     const doBackend = (await (await noBackend('get', '/api/crm/pipelines')).json()) as {
       total: number
     }
     expect(((await funis.json()) as { total: number }).total).toBe(doBackend.total)
 
-    // A outra metade continua no MOCK — mas não mais por falta de servidor.
-    // MEDIDO em 2026-08-20: `GET /api/crm/opportunities` responde 200 com
-    // oportunidades do Postgres. Enquanto a passagem não a liga, a costura que
-    // `CoberturaDoFunil` descreve continua existindo, e agora ela é dívida
-    // nossa, não do outro repo.
-    const oportunidades = await fetch(`${APP}/api/crm/opportunities`, { headers: { cookie } })
-    expect(oportunidades.status).toBe(200)
-    expect((await noBackend('get', '/api/crm/opportunities')).status).not.toBe(501)
-    expect(
-      ROTAS_DO_BACKEND.some((r) => r.caminho === '/api/crm/opportunities'),
-      'o funil pode fechar inteiro: o backend já serve oportunidades',
-    ).toBe(false)
+    const pelaTela = (await (
+      await fetch(`${APP}/api/crm/opportunities`, { headers: { cookie } })
+    ).json()) as { rows: { id: string; pipelineId: string }[]; total: number }
+    const direto = (await (await noBackend('get', '/api/crm/opportunities')).json()) as {
+      rows: { id: string }[]
+      total: number
+    }
+
+    // Prova positiva: o mock monta `{rows,total}` igualzinho, então só o
+    // conjunto de ids distingue quem respondeu.
+    expect(pelaTela.total).toBe(direto.total)
+    expect(pelaTela.rows.map((o) => o.id)).toEqual(direto.rows.map((o) => o.id))
+  })
+
+  it('os MOTIVOS DE PERDA vêm do mesmo lado das oportunidades', async () => {
+    // Entraram junto na #274, e não por arredondar a família: `lostReasonId` é
+    // campo da oportunidade, e o `PATCH .../stage` o exige ao mover para um
+    // estágio de perda. Catálogo mockado ao lado de oportunidade do servidor
+    // gravaria um motivo que o Postgres não conhece, e o relatório — que agrega
+    // por esse id — sairia vazio num funil cheio de negócios perdidos.
+    const pelaTela = await fetch(`${APP}/api/crm/lost-reasons`, { headers: { cookie } })
+    expect(pelaTela.status).toBe(200)
+    const direto = (await (await noBackend('get', '/api/crm/lost-reasons')).json()) as {
+      total: number
+    }
+    expect(((await pelaTela.json()) as { total: number }).total).toBe(direto.total)
+
+    // O relatório é GET com `from`/`to` OBRIGATÓRIOS: sem eles responde 400, e
+    // 400 já foi lido como "servida" numa varredura desta lista.
+    const relatorio = await fetch(
+      `${APP}/api/crm/reports/lost-reasons?from=2026-01-01&to=2026-12-31`,
+      { headers: { cookie } },
+    )
+    expect(relatorio.status).toBe(200)
+  })
+
+  it('a ESCRITA de lista de apoio sai para o servidor — e ele RECUSA por papel', async () => {
+    // A costura declarada da #274, e o caso existe para que ela não seja
+    // descoberta por acidente.
+    //
+    // `POST /api/catalog-lookups` está na passagem e responde **403
+    // `papel-insuficiente`** para `operator-full`, que é o papel do usuário do
+    // seed: a matriz do backend reserva o caminho a `admin`. O efeito visível é
+    // o `+...` do `LookupCombo` — o cadastro rápido do padrão 2, em 19 telas —
+    // deixando de gravar quando o par local está de pé.
+    //
+    // Ligamos assim mesmo (decisão do user, 2026-08-21) porque mock que grava
+    // enquanto o servidor recusa ensina que funciona, e o defeito só apareceria
+    // com a tela já construída em cima da ficção.
+    //
+    // **Este caso vira vermelho quando `api#66` for decidido**, e é isso que ele
+    // presta: se a matriz afrouxar para `operator-full`, o 403 deixa de vir e
+    // alguém tem de reescrever isto — e esconder ou não o `+...` deixa de ser
+    // pergunta em aberto.
+    const r = await fetch(`${APP}/api/catalog-lookups`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ kind: 'SETOR', name: 'SETOR DA PROVA AO VIVO', active: true }),
+    })
+
+    expect(r.status, 'se não é mais 403, api#66 foi decidido — releia a costura').toBe(403)
+    expect(await r.json()).toMatchObject({
+      type: 'urn:cabinet:erro:papel-insuficiente',
+      status: 403,
+    })
+
+    // A LEITURA continua passando: é ela que alimenta todo combo, e o 403 é só
+    // da escrita.
+    expect((await fetch(`${APP}/api/catalog-lookups`, { headers: { cookie } })).status).toBe(200)
+  })
+
+  it('nenhuma rota de /api sobrou no mock — a passagem cobre o contrato', () => {
+    // A afirmação central da #274, conferida onde o leitor deste arquivo está.
+    //
+    // Sem número mágico de propósito: `toHaveLength(78)` ficaria vermelho na
+    // primeira operação nova do contrato, num arquivo que só roda com o par
+    // local de pé — quebraria em silêncio e ensinaria a ignorar a suíte. A
+    // guarda estrutural (contrato × lista, que sabe apontar QUAL operação
+    // faltou) vive em `rotas-do-backend.test.ts` e roda no CI.
+    //
+    // O que se afirma aqui é o fato que muda a leitura de todos os casos acima:
+    // com `VITE_API_PROXY` de pé, nenhum caminho de `/api` chega ao mock.
+    const dominio = ROTAS_DO_BACKEND.filter((r) => r.caminho.startsWith('/api/'))
+    expect(dominio.length).toBeGreaterThan(60)
   })
 })

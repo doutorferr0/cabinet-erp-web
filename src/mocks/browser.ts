@@ -57,6 +57,13 @@ const atraso = http.all('*', async () => {
  * nasce vazia e nada em `cabinetonline.cc` tenta falar com `localhost:3000`.
  * Publicar o passthrough por padrão daria erro de rede em produção para
  * ganhar conveniência em dev.
+ *
+ * **Desde a #274 essa garantia carrega todo o peso.** A passagem passou a
+ * cobrir as 78 operações do contrato: com a variável, o MSW não responde a
+ * NENHUMA rota de `/api`; sem ela, responde a todas. `passagem` deixou de ser
+ * uma lista parcial e virou o interruptor entre dois ambientes — e a única
+ * coisa que separa o site publicado de uma tela inteira de erro de rede é esta
+ * variável nascer indefinida no build da Cloudflare.
  */
 const backendReal = import.meta.env.VITE_API_PROXY
 const passagem = handlersDePassagem(backendReal)
@@ -106,10 +113,15 @@ if (!backendReal && !desligado) semearSessaoAutenticada()
  *     cabinetMock.expirarProximaEscrita()   // preencha, clique em Gravar → 401
  *     cabinetMock.expirarSessao()           // qualquer tela → login, com a rota guardada
  *
- * **Com `VITE_API_PROXY` ligada o ensaio não vale para a SESSÃO**: `/auth/*`
- * passa direto e quem a derruba é o servidor, não este store. `expirarSessao()`
- * mexeria num store que ninguém mais consulta. O de escrita continua valendo
- * nas rotas que seguem mockadas.
+ * **Com `VITE_API_PROXY` ligada o ensaio não vale PARA NADA, e desde a #274 isso
+ * inclui a escrita.** `/auth/*` passa direto e quem derruba a sessão é o
+ * servidor, não este store — `expirarSessao()` mexeria num store que ninguém
+ * mais consulta. Até aqui `expirarProximaEscrita()` ainda servia "nas rotas que
+ * seguem mockadas"; **não sobrou nenhuma**: a passagem cobre as 78 operações do
+ * contrato. Com o par local de pé, os dois comandos são no-op silencioso.
+ *
+ * O ensaio continua valendo inteiro no `pnpm dev` sem proxy, que é o modo do
+ * site público — e é lá que ele sempre foi usado.
  *
  * Fica AQUI, e não num componente ou rota de dev: este arquivo só é importado
  * pelo modo mock (import dinâmico no `main.tsx`), então `VITE_API_MODE=http`

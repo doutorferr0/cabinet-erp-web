@@ -13,7 +13,6 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Calendar, LayoutGrid, TrendingDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { apodrecimentoDoCartao } from './apodrecimento'
-import { CoberturaDoFunil } from './cobertura-do-funil'
 import { AGRUPAMENTOS_DO_FUNIL, quemDoCartao } from './funil-agrupa'
 import { PerderOportunidadeDialog } from './perder-oportunidade-dialog'
 import { QuadroDoFunil } from './quadro-do-funil'
@@ -324,10 +323,12 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
         </Link>
       </PageHeader>
 
-      {/* Com backend real as colunas vêm do Postgres e os cartões do mock — o
-          quadro sai vazio e vazio parece "não há negócio". Ver
-          `cobertura-do-funil.tsx`; some junto com o 501 das oportunidades. */}
-      <CoberturaDoFunil />
+      {/* Aqui ficava o `<CoberturaDoFunil />`: com backend real as colunas vinham
+          do Postgres e os cartões do mock, o quadro saía vazio, e vazio parece
+          "não há negócio". A #274 ligou `/api/crm/opportunities` (com motivos de
+          perda e o `.../quote`), as duas metades passaram a vir do mesmo lado e o
+          aviso saiu junto — descrever uma falta que não existe mais é a mesma
+          mentira com o sinal trocado, e ensina a ignorar o próximo aviso. */}
 
       {semEtapas ? (
         // Funil sem etapa é estado legítimo: funil nasce vazio, de propósito. E

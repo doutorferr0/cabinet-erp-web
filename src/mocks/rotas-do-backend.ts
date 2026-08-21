@@ -4,30 +4,64 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * AS ROTAS QUE O `cabinet-erp-api` JÁ SERVE — passthrough POR ROTA, não modo global.
  *
  * Decisão do user (2026-08-18): o front NÃO vira `VITE_API_MODE=http` de uma vez.
- * O backend existe e implementa **por partes** — toda operação do contrato que
- * ele ainda não serve responde **501** (é o combinado do `CLAUDE.md`, e é o que
- * torna a diferença visível). Virar o modo inteiro trocaria vinte telas que
+ * O backend existe e implementava **por partes** — toda operação do contrato que
+ * ele ainda não servisse respondia **501** (é o combinado do `CLAUDE.md`, e era o
+ * que tornava a diferença visível). Virar o modo inteiro trocaria vinte telas que
  * funcionam por vinte telas que tomam 501, de uma vez, para ganhar quatro que
  * falam com o servidor de verdade. Então a divisão é por FAMÍLIA (ver abaixo):
  * o que está NESTA lista sai do MSW e atravessa o proxy; todo o resto continua
  * respondido pela camada em memória, e a tela não sabe a diferença.
  *
+ * **Desde a #274 (2026-08-21) a lista tem as 78 operações do contrato, e nenhuma
+ * responde 501.** O argumento acima não caducou junto — ele é o que explica por
+ * que o `VITE_API_MODE=http` continua sem ser o caminho, e a razão mudou: já não
+ * é o backend que falta, é o site público que precisa do mock. Ver a seção "O
+ * dia em que as duas metades se encontraram", abaixo.
+ *
  * **Esta lista é DÍVIDA DELIBERADA, não configuração permanente.** Ela existe
  * enquanto o contrato for maior que o backend, e o que ela mede — o quanto o
- * mock ainda finge — encolhe a cada módulo entregue do outro lado. No dia em que
- * as duas metades se encontrarem, o certo não é manter este arquivo com o
- * contrato inteiro dentro: é apagá-lo junto com `browser.ts` e ligar o modo
- * http, que era o plano desde sempre.
+ * mock ainda finge — encolhe a cada módulo entregue do outro lado.
  *
  * *(Nota de leitura, porque o enunciado da tarefa diz o contrário e alguém vai
  * conferir: a lista em si CRESCE a cada entrega — mais rotas reais. O que
  * encolhe é a superfície mockada. Escrevi as duas metades para ninguém
  * "consertar" a direção achando que passou batido.)*
  *
+ * ## O dia em que as duas metades se encontraram foi ESTE (2026-08-21, #274)
+ *
+ * A frase que vivia aqui — "no dia em que as duas metades se encontrarem, o
+ * certo não é manter este arquivo com o contrato inteiro dentro: é apagá-lo
+ * junto com `browser.ts` e ligar o modo http" — chegou ao seu dia, e a
+ * conclusão dela está ERRADA pela metade. **A lista agora contém as 78
+ * operações do contrato**, e mesmo assim nem ela nem o `browser.ts` podem ser
+ * apagados, por uma razão que não existia quando aquilo foi escrito:
+ *
+ * **o site público é 100% mock e continua precisando do MSW.**
+ * `cabinetonline.cc` builda sem `VITE_API_PROXY`, `handlersDePassagem` nasce
+ * vazia lá, e é o mock inteiro que serve a demonstração. Ligar
+ * `VITE_API_MODE=http` apagaria o site público para ganhar um `if` a menos em
+ * dev. Então o que este arquivo passou a ser não é mais "a lista do que já
+ * dá para ligar" — é **o interruptor entre dois ambientes**: com
+ * `VITE_API_PROXY`, nada é mockado; sem ela, tudo é.
+ *
+ * A consequência prática, para quem for mexer aqui: **não há mais rota do
+ * contrato do lado do mock quando o par local está de pé.** Um caminho que
+ * saia desta lista não vira "família mockada" — vira o único buraco no meio de
+ * uma passagem completa, que é a costura mais fácil de não perceber. Tirar
+ * qualquer linha daqui exige o mesmo argumento que exigiu pô-la.
+ *
  * Ao acrescentar rota aqui, o par obrigatório é: (1) a operação existe no
  * `contracts/openapi-v1.json` — o teste desta lista falha se não existir; (2) o
  * backend responde algo diferente de 501 nela. Rota adiantada é pior que rota
  * ausente: o mock deixa de responder e a tela toma 501 sem ninguém ter pedido.
+ *
+ * **Isso vale agora para o contrato CRESCER, não para esta lista alcançá-lo.** A
+ * lista está completa; quem publicar operação nova no contrato tem de medi-la
+ * contra o par local antes de pô-la aqui — e o teste `a passagem cobre o
+ * contrato INTEIRO` vai apontar a operação nova no momento em que ela nascer.
+ * Operação recém-escrita no contrato que o backend ainda não serve é o único
+ * caso em que uma linha PODE faltar aqui, e ela falta com o 501 como motivo
+ * escrito, não em silêncio.
  *
  * **MEDIDO ao vivo em 2026-08-19** contra `cabinet-erp-api` main `744bd75`: das 69 operações do
  * contrato, **51 respondem e 18 são 501**, e as 51 estão TODAS aqui. `src/mocks/ao-vivo.test.ts`
@@ -43,14 +77,40 @@ import { http, type RequestHandler, passthrough } from 'msw'
  *
  * **REMEDIDO no rebase, em 2026-08-20**, contra `cabinet-erp-api` main `3af4f01`, e o resultado
  * INVERTE a premissa desta lista: das **78** operações do contrato (não 69 — ele cresceu de novo),
- * **zero respondem 501**. As 20 que ficam fora da lista abaixo não estão fora porque o servidor
- * não as serve; estão fora porque a FAMÍLIA delas ainda não foi conferida inteira. A dívida
- * mudou de lado — era do backend, virou nossa.
+ * **zero respondem 501**. As 20 que ficavam fora não estavam fora porque o servidor não as serve;
+ * estavam fora porque a FAMÍLIA delas ainda não fora conferida inteira. A dívida mudou de lado —
+ * era do backend, virou nossa.
  *
- * Isso não autoriza acrescentá-las aqui em bloco: o critério de família fechada continua valendo,
- * e é ele que segura. Produto arrasta variantes e kardex; o funil arrasta motivos de perda e
- * `crm/opportunities/{id}/quote`; o dashboard é painel próprio. Cada uma é uma decisão de tela,
- * uma por vez.
+ * **REMEDIDO em 2026-08-21 (#274) contra `cabinet-erp-api` main `3089106`, e a lista fechou: 58 →
+ * 78.** As 20 que faltavam entraram TODAS, em cinco famílias — escrita de produto e variantes,
+ * kardex, dashboard, CRM (oportunidades, motivos de perda e o relatório) e a escrita de listas de
+ * apoio. A dívida que esta lista mede acabou; o que sobra dela é o papel de interruptor descrito
+ * acima.
+ *
+ * A sonda foi de ROUND-TRIP, não de status: cada escrita foi relida e conferida campo a campo — o
+ * `PUT` de produto voltando a descrição alterada, a variante criada e alterada pelo mesmo produto,
+ * o movimento devolvendo `balanceAfter: 5`, a oportunidade movida de `Contato` para `Proposta` e
+ * o `stageId` conferido na releitura, o orçamento gerado abrindo em `GET /api/quotes/{id}`.
+ *
+ * **Resultado: 18 das 20 respondem 200/201, 2 respondem 403 por PAPEL, nenhuma responde 501.** As
+ * duas do 403 são `POST`/`PUT /api/catalog-lookups`, e entraram assim mesmo — a decisão, o custo
+ * e o motivo estão escritos no bloco delas, na lista abaixo.
+ *
+ * Duas leituras erradas foram desfeitas nesta rodada, as duas MINHAS e não do servidor, e ficam
+ * anotadas porque nenhuma estava nas armadilhas já catalogadas:
+ *
+ * 1. **A armadilha do processo velho REINCIDIU, e por quatro minutos.** Ela já está anotada mais
+ *    abaixo, com "26 horas" — e é justamente por isso que quase passou: quatro minutos parecem
+ *    fresco. O processo do `:3000` nasceu 22:11 e o checkout do backend para `3089106` é de
+ *    22:15. **A idade do processo não é a medida certa; a comparação é.** O sinal é o `mtime` de
+ *    `.git/refs/heads/main` do outro repo contra o instante de nascimento do processo
+ *    (`stat -c %y /proc/<pid>`), e o pid vem do `ss -ltnp`, não do `ps -o lstart` — que derrapa
+ *    no WSL2. A medição honesta saiu de uma segunda instância (`PORT=3020`) do fonte de hoje,
+ *    contra o MESMO banco, sem derrubar a que estava no ar.
+ * 2. **`GET /api/crm/pipelines/{id}/stages` devolve ARRAY PURO**, não o `{rows, total}` das
+ *    listagens paginadas. Ler `.rows` ali dá `undefined`, que parece "pipeline sem estágio" — e
+ *    fez a primeira sonda mover a oportunidade para o MESMO estágio e ler 200 de um no-op. Com os
+ *    cinco estágios de verdade, o `PATCH` moveu e a releitura confirmou.
  *
  * **A sonda desta rodada não deixou 400 por resolver, e isso é o que a torna conclusiva.** Das 78
  * operações, 16 pararam em 400 na primeira passada — inconclusivo pela regra do parágrafo acima.
@@ -74,15 +134,19 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * podia. A varredura HTTP não tem como errar isso.
  *
  * A sonda que vale é ESCRITA COM CORPO VÁLIDO. Corpo vazio devolve 400 em quase toda operação —
- * a validação de schema dispara ANTES do handler que responde 501 — e isso faz uma varredura
- * ingênua ler "implementado" em vinte rotas que não existem. `POST /api/products` com corpo
- * completo é 501; com `{}` é 400.
+ * a validação de schema dispara ANTES do handler — e isso faz uma varredura ingênua ler
+ * "implementado" em rota que não existe. Quando isto foi escrito, `POST /api/products` com corpo
+ * completo era 501 e com `{}` era 400; hoje as duas leituras mudaram (201 e 400), e é a REGRA que
+ * sobrevive ao exemplo: o status que a validação devolve não fala do handler atrás dela.
  *
- * **A recíproca também morde, e custou uma leitura errada nesta rodada:** GET com query param
- * obrigatório devolve 400 quando o param falta, e 400 não é 501 — a varredura marcou
- * `/api/dashboard/agenda` e `/api/crm/reports/lost-reasons` como servidas. Com `from` e `to` as
- * duas respondem 501. Toda leitura de 400 numa sonda é INCONCLUSIVA: significa "a validação
- * respondeu antes", e não diz nada sobre haver handler atrás dela.
+ * **A recíproca também morde, e custou uma leitura errada:** GET com query param obrigatório
+ * devolve 400 quando o param falta, e 400 não é 501 — a varredura chegou a marcar
+ * `/api/dashboard/agenda` e `/api/crm/reports/lost-reasons` como servidas por engano, quando as
+ * duas ainda eram 501. **As duas estão na lista desde a #274, e com `from`/`to` respondem 200** —
+ * o que não desfaz a lição: toda leitura de 400 numa sonda é INCONCLUSIVA, significa "a validação
+ * respondeu antes" e não diz nada sobre haver handler atrás dela. Nesta rodada a regra pagou de
+ * novo: `POST /api/crm/opportunities` leu 400 com `stageId: undefined` e virou 201 com o par
+ * pipeline/estágio derivado de leitura real.
  *
  * ## FAMÍLIA INTEIRA — a unidade de ligação não é a rota
  *
@@ -94,11 +158,13 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * lida no tamanho da família em vez do recurso.
  *
  * Então a lista liga por família fechada, e uma família só fecha quando o backend serve TODA a
- * superfície que a tela consome dela. Hoje fecham treze famílias, e por isso as 58 estão aqui.
- * As que sobram ficam inteiras no mock — **oportunidades e motivos de perda do CRM**,
- * **indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex** —
- * e desde `3af4f01` isso é escolha nossa, não limite do servidor: elas respondem. Ficam porque
- * ninguém conferiu a família inteira contra a tela que a consome, que é o passo que falta.
+ * superfície que a tela consome dela. **Desde a #274 fecham TODAS**, e por isso as 78 estão aqui:
+ * nenhuma operação do contrato ficou do lado do mock.
+ *
+ * A regra não morre com a lista cheia — ela troca de direção. Enquanto faltava rota, a família
+ * dizia o que ainda NÃO podia entrar; com a lista completa, ela diz o que não pode SAIR. O teste
+ * desta lista passou a medir a cobertura contra o contrato inteiro, justamente para que remover
+ * uma linha exija o mesmo argumento que exigiu acrescentá-la.
  *
  * Duas famílias entraram JUNTAS, e separá-las seria o erro:
  *
@@ -109,20 +175,32 @@ import { http, type RequestHandler, passthrough } from 'msw'
  *   mockado ao lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para id que o
  *   mock nunca viu, e o rótulo sai em branco na leitura.
  *
- * ## As duas costuras que a passagem abriu, e onde elas foram tratadas
+ * ## As costuras: uma MORREU nesta rodada, a outra continua — e não é desta lista
  *
- * Ligar família servida ao lado de família em 501 deixa costura, e costura escondida é o defeito
- * que esta lista existe para evitar. As duas foram para a TELA, que é onde o operador as vê:
+ * Ligar família servida ao lado de família mockada deixa costura, e costura escondida é o defeito
+ * que esta lista existe para evitar. As duas foram para a TELA, que é onde o operador as vê.
  *
- * - **Quadro do funil**: colunas do servidor, oportunidades do mock. O quadro sai vazio, e
- *   vazio parece "não há oportunidade". `cobertura-do-funil.tsx` diz que a metade que falta é a
- *   do servidor.
- * - **Cadastro de colaborador**: `listEmployees` passa, mas `data.colaboradores` ainda é provider
- *   de mock — o combo de responsável oferece as pessoas do Postgres e a tela lista as da
- *   transcrição. `cobertura-do-colaborador.tsx` diz isso ao operador. A tela não migrou junto de
- *   propósito: falta o handler mock de `GET /api/employees/{id}` e as duas sementes de
- *   colaborador são conjuntos diferentes — trocar o provider deixaria o cadastro sem detalhe no
- *   SITE PÚBLICO, que é 100% mock.
+ * - **Quadro do funil — RESOLVIDA, e o aviso saiu junto.** Enquanto as oportunidades ficaram
+ *   fora, o quadro recebia colunas do servidor e cartões do mock: `{rows: [], total: 0}` com
+ *   status 200, que se lê como "não há negócio". `cobertura-do-funil.tsx` existia para desfazer
+ *   essa leitura, e ele mesmo dizia que sairia inteiro quando a família fechasse. Fechou aqui, e
+ *   ele saiu. **Aviso de falta que não existe mais é a mesma mentira com o sinal trocado**, e é
+ *   pior que a original: ensina o operador a ignorar avisos, e o próximo será de verdade.
+ *
+ * - **Cadastro de colaborador — CONTINUA, e nunca foi buraco desta lista.** As seis operações de
+ *   `/api/employees` passam desde antes; o que falta é do lado do MOCK, não do backend:
+ *   `data.colaboradores` ainda é provider de mock, sem handler de `GET /api/employees/{id}` e com
+ *   duas sementes de pessoas que são conjuntos diferentes. `cobertura-do-colaborador.tsx` diz
+ *   isso ao operador e segue no lugar. Migrar a tela deixaria o cadastro sem detalhe no SITE
+ *   PÚBLICO, que é 100% mock — está em curso na #276/PR #277, fora daqui.
+ *
+ * ## A costura NOVA que esta rodada abriu, e ela é de PAPEL
+ *
+ * `POST`/`PUT /api/catalog-lookups` entram ligadas e respondem **403** para o papel do usuário
+ * demo. Não é falta de servidor nem meia família: é a matriz de papéis do backend recusando o
+ * `operator-full`. O efeito visível é o `+...` do `LookupCombo` deixando de gravar, em 19 telas,
+ * quando o par local está de pé. Está escrito no bloco daquela família, e o conserto — esconder o
+ * controle por papel, com `src/data/papeis.ts` — é outra PR.
  */
 
 type Verbo = 'get' | 'post' | 'put' | 'patch' | 'delete'
@@ -155,17 +233,50 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/auth/tenants' },
   { metodo: 'put', caminho: '/auth/active-tenant' },
 
-  // produtos: LEITURA. A escrita (`POST`/`PUT`, e as variantes) segue no mock
-  // porque o backend responde 501 nela.
+  // produto: FAMÍLIA INTEIRA — leitura, escrita, variantes e kardex.
   //
-  // O detalhe ENTROU agora, e conserta um defeito que a lista anterior tinha:
-  // com a listagem no servidor e `GET /api/products/{id}` no mock, `Alterar` e
-  // `Consul.` pediam ao mock um uuid que só existe no Postgres e recebiam "não
-  // encontrado" — o formulário nem abria. O par leitura-inteira é o menor
-  // recorte coerente que existe aqui: ler o que o servidor tem, e falhar na
-  // gravação, que é onde a cobertura realmente acaba.
+  // "A escrita segue no mock porque o backend responde 501 nela" era o motivo
+  // escrito aqui, e ele VENCEU. Medido contra `3089106` com corpo válido e
+  // sessão real: `POST` 201, `PUT` 200, variantes 201/200. Nenhuma é 501.
+  //
+  // O par leitura-inteira já estava certo (listagem + detalhe juntos: com o
+  // detalhe no mock, `Alterar` pedia ao mock um uuid que só existe no
+  // Postgres e o formulário nem abria). A escrita entra pelo MESMO argumento,
+  // um passo adiante: abrir o formulário com o registro do servidor e gravar
+  // no mock devolveria "gravado" sobre uma cópia que a próxima leitura não
+  // traz. A metade que faltava era justo a que o operador aperta.
+  //
+  // As VARIANTES entram junto por obrigação, não por simetria: são gravadas
+  // pelo MESMO botão do produto (`salvarProduto` em `src/data/produtos-api.ts`
+  // grava o produto e em seguida cada variante editada). Produto no Postgres
+  // com variante no mock deixaria a grade apontando para um `productId` que o
+  // mock nunca viu — metade da gravação de cada lado.
+  //
+  // **Um campo não volta idêntico, e está medido:** `unitInQty: '12'` volta
+  // `'12.000'` (o servidor normaliza quantidade em três casas, que é a
+  // convenção do repo). O mock ecoava o que recebia; depois desta ligação,
+  // quem digita `12` relê `12.000`.
   { metodo: 'get', caminho: '/api/products' },
   { metodo: 'get', caminho: '/api/products/{id}' },
+  { metodo: 'post', caminho: '/api/products' },
+  { metodo: 'put', caminho: '/api/products/{id}' },
+  { metodo: 'post', caminho: '/api/products/{productId}/variants' },
+  { metodo: 'put', caminho: '/api/products/{productId}/variants/{id}' },
+
+  // kardex (2 operações) — e estas ainda NÃO TÊM TELA.
+  //
+  // `/estoque/movimentacao` é `TelaNaoCapturada`: o slot existe no menu e o
+  // print nunca foi capturado. Ligar aqui não muda nada que o operador veja, e
+  // a medição destas duas é só de HTTP (`POST` 201 com `balanceAfter: 5`,
+  // `GET` 200 com a linha).
+  //
+  // Entram assim mesmo, e o motivo é a ordem em que as coisas quebram: o
+  // movimento pende da VARIANTE, que acabou de passar. Enquanto o mock os
+  // responder, quem for escrever a tela mede contra a ficção e só descobre o
+  // servidor depois de pronta. Sem consumidor, o risco de ligar é ZERO e o de
+  // adiar é uma tela inteira construída no lugar errado.
+  { metodo: 'post', caminho: '/api/variants/{variantId}/stock-movements' },
+  { metodo: 'get', caminho: '/api/variants/{variantId}/stock-movements' },
 
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
@@ -232,7 +343,32 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   // **Banco de dev vazio devolve combo vazio, e isso é a verdade dele**, não um
   // defeito desta lista — a mesma situação de `GET /api/products` desde o
   // primeiro dia. Semear é dado de ambiente.
+  //
+  // ⚠ **A ESCRITA ENTRA COM UM 403 CONHECIDO, e isto é decisão tomada de olhos
+  // abertos** (do user, 2026-08-21). `POST` e `PUT` de `/api/catalog-lookups`
+  // NÃO são 501: são **403 `urn:cabinet:erro:papel-insuficiente`** para
+  // `operator-full`, que é o papel do usuário do seed. A matriz do backend
+  // (`src/core/http/classificacao.ts`) reserva o caminho a `admin`, e o
+  // comentário dela diz que aquilo foi fechado por precaução, quando não havia
+  // escrita no contrato — não uma decisão sobre quem cadastra um setor.
+  //
+  // A consequência é VISÍVEL e está aqui para ninguém a descobrir por acidente:
+  // com `VITE_API_PROXY` ligado, o botão `+...` do `LookupCombo` — o cadastro
+  // rápido do padrão 2, usado em 19 telas — passa a recusar com 403 em vez de
+  // gravar. O site público não muda: lá a lista nasce vazia e o mock responde.
+  //
+  // Ligamos assim mesmo porque a alternativa é pior: mock que grava enquanto o
+  // servidor recusa ensina que funciona, e o defeito só apareceria no dia em
+  // que a família ligasse — com a tela já construída em cima da ficção. O 403
+  // é a verdade do backend, e esta lista existe para mostrar a verdade.
+  //
+  // O conserto do lado da TELA (esconder o `+...` para quem não é `admin`,
+  // usando `src/data/papeis.ts`, que já espelha a matriz) é outra PR, fora da
+  // zona desta. A decisão de produto — se `operator-full` cadastra item de
+  // lista — está em `api#66`.
   { metodo: 'get', caminho: '/api/catalog-lookups' },
+  { metodo: 'post', caminho: '/api/catalog-lookups' },
+  { metodo: 'put', caminho: '/api/catalog-lookups/{id}' },
 
   // atividades (4 operações) — o painel polimórfico de `entityType`.
   { metodo: 'get', caminho: '/api/activities' },
@@ -252,12 +388,7 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'post', caminho: '/api/employees/{id}/link' },
   { metodo: 'put', caminho: '/api/employees/{id}/link' },
 
-  // CRM: funis e estágios (7 operações). As OPORTUNIDADES seguem em 501, e a
-  // consequência está tratada na tela, não escondida aqui: o quadro do funil
-  // recebe colunas do servidor e pediria ao mock as oportunidades de um
-  // `pipelineId` que o mock nunca viu — zero linhas com status 200. Vazio
-  // parece "não há oportunidade". `cobertura-do-funil.tsx` diz que a metade
-  // que falta é a do servidor, e por isso a passagem pode acontecer agora.
+  // CRM: funis e estágios (7 operações).
   { metodo: 'get', caminho: '/api/crm/pipelines' },
   { metodo: 'post', caminho: '/api/crm/pipelines' },
   { metodo: 'get', caminho: '/api/crm/pipelines/{id}' },
@@ -265,6 +396,59 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/crm/pipelines/{pipelineId}/stages' },
   { metodo: 'post', caminho: '/api/crm/pipelines/{pipelineId}/stages' },
   { metodo: 'put', caminho: '/api/crm/pipelines/{pipelineId}/stages/{id}' },
+
+  // CRM: oportunidades (6 operações) — **e é isto que MATA a costura do funil**.
+  //
+  // Enquanto elas ficaram fora, o quadro recebia colunas do servidor e pedia ao
+  // mock as oportunidades de um `pipelineId` que o mock nunca viu: `{rows: [],
+  // total: 0}` com status 200, que se lê como "não há negócio neste funil".
+  // `cobertura-do-funil.tsx` existia só para desfazer essa leitura. Com as duas
+  // metades no mesmo lado, a costura deixa de existir e o aviso saiu junto —
+  // manter um aviso de falta que não há é a mesma mentira, com o sinal trocado.
+  //
+  // `opportunities/{id}/quote` entra por ser escrita do módulo, como
+  // `quotes/{id}/order` já entrava: converter oportunidade em orçamento com o
+  // orçamento vindo do Postgres e a oportunidade do mock gravaria um documento
+  // pendurado num negócio que o servidor não conhece. Medido de ponta a ponta —
+  // **201**, e o `quoteId` devolvido abre em `GET /api/quotes/{id}` (número 13).
+  //
+  // O 400 que a medição anterior leu aqui era regra de DOMÍNIO, não falta de
+  // handler: "Converta o lead em cliente antes de gerar o orçamento" — a
+  // oportunidade da sonda não tinha `partnerId`. Com uma que tem, 201.
+  { metodo: 'get', caminho: '/api/crm/opportunities' },
+  { metodo: 'post', caminho: '/api/crm/opportunities' },
+  { metodo: 'get', caminho: '/api/crm/opportunities/{id}' },
+  { metodo: 'put', caminho: '/api/crm/opportunities/{id}' },
+  { metodo: 'patch', caminho: '/api/crm/opportunities/{id}/stage' },
+  { metodo: 'post', caminho: '/api/crm/opportunities/{id}/quote' },
+
+  // CRM: motivos de perda (3) e o relatório que os agrega (1).
+  //
+  // Vêm JUNTO das oportunidades e não depois: `lostReasonId` é campo da
+  // oportunidade, e o `PATCH .../stage` o exige ao mover para um estágio de
+  // perda. Catálogo mockado ao lado de oportunidade do servidor gravaria um
+  // motivo que o Postgres não conhece, e o relatório — que agrega por esse id —
+  // sairia com a coluna vazia num funil cheio de negócios perdidos.
+  //
+  // O relatório é GET com `from`/`to` OBRIGATÓRIOS. Sem eles responde 400, e
+  // 400 já enganou uma varredura desta lista: leu-se "servida" onde havia 501.
+  // Hoje, com o par de datas, responde 200.
+  { metodo: 'get', caminho: '/api/crm/lost-reasons' },
+  { metodo: 'post', caminho: '/api/crm/lost-reasons' },
+  { metodo: 'put', caminho: '/api/crm/lost-reasons/{id}' },
+  { metodo: 'get', caminho: '/api/crm/reports/lost-reasons' },
+
+  // dashboard (2 operações) — indicadores e agenda.
+  //
+  // Painel próprio, sem id em comum com o quadro de tarefas que já passava: o
+  // que se ganha é a contagem do resumo voltar a bater com o quadro ao lado.
+  // Enquanto ficaram no mock, os dois painéis discordavam — o resumo contava a
+  // ficção e o quadro contava o Postgres.
+  //
+  // `agenda` é GET com `from`/`to` obrigatórios, mesma armadilha do relatório
+  // de perdas: com o par de datas, 200 e dez itens.
+  { metodo: 'get', caminho: '/api/dashboard/summary' },
+  { metodo: 'get', caminho: '/api/dashboard/agenda' },
 
   // obra do cliente (4 operações) — `api#48`, medida em 2026-08-20.
   //

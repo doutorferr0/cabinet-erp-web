@@ -64,31 +64,60 @@ describe('passthrough por rota', () => {
     expect(await r.json()).toMatchObject({ origem: MARCA, metodo: 'GET' })
   })
 
-  it('rota fora da lista é atendida pelo MOCK, sem tocar a rede', async () => {
-    // `/api/crm/opportunities` segue mockada — não por 501 (o backend a serve
-    // desde `3af4f01`), e sim porque a família dela não fechou. É o caminho que
-    // sustenta o funil inteiro fora da lista de passagem.
-    const r = await fetch(`${base}/api/crm/opportunities`)
+  it('o MOCK continua íntegro — é ele quem serve o site público', async () => {
+    // Este teste TROCOU de alvo na #274, e a troca é o fato mais importante
+    // desta rodada. Ele provava "rota fora da lista é atendida pelo mock", e
+    // usava `/api/crm/opportunities` como exemplo. **Não existe mais rota do
+    // contrato fora da lista** — as 78 passam —, então o exemplo morreu e a
+    // pergunta teve de mudar: o que ainda depende do mock?
+    //
+    // O SITE PÚBLICO. `cabinetonline.cc` builda sem `VITE_API_PROXY`, a
+    // passagem nasce vazia lá e o mock serve tudo. Por isso a prova aqui é
+    // montada SEM os handlers de passagem: é o worker do site publicado.
+    const soMock = setupServer(...handlers)
+    soMock.listen({ onUnhandledRequest: 'bypass' })
+    try {
+      const r = await fetch(`${base}/api/crm/opportunities`)
 
-    expect(r.headers.get('x-origem')).toBeNull()
-    expect(r.status).toBe(200)
-    // shape da listagem do contrato (`{ rows, total }`), que só o mock monta
-    expect(await r.json()).toHaveProperty('rows')
+      expect(r.headers.get('x-origem')).toBeNull()
+      expect(r.status).toBe(200)
+      // shape da listagem do contrato (`{ rows, total }`), que só o mock monta
+      expect(await r.json()).toHaveProperty('rows')
+    } finally {
+      soMock.close()
+    }
   })
 
-  it('a divisão é por VERBO, não por caminho: GET /api/products sai, POST fica', async () => {
-    const escrita = await fetch(`${base}/api/products`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: 'PASS-1', description: 'Produto do teste', active: true }),
-    })
+  it('a divisão continua sendo por VERBO — caminho com N verbos tem N entradas', () => {
+    // Enquanto o backend respondia 501 na escrita, este teste exercitava a
+    // divisão de verdade: `GET /api/products` saía e `POST /api/products`
+    // ficava no mock. Hoje os dois saem, e exercitar deixou de ser possível —
+    // mas a ESTRUTURA que tornava aquilo possível continua sendo o que segura
+    // a próxima operação que nascer sem servidor, e é ela que se prova aqui.
+    //
+    // A conta sai do contrato: se um caminho publica quatro verbos, a lista tem
+    // de trazer os quatro em linhas separadas. Uma entrada por caminho (em vez
+    // de por par verbo+caminho) reabriria a porta que a divisão fechou.
+    const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
+      paths: Record<string, Record<string, unknown>>
+    }
+    const VERBOS = ['get', 'post', 'put', 'patch', 'delete']
 
-    // O backend responde 501 em `POST /api/products`; deixar o verbo inteiro
-    // passar quebraria o cadastro de produto para ganhar a consulta. O 201 com
-    // id de mock (`prod...`) é a prova positiva de quem gravou.
-    expect(escrita.headers.get('x-origem')).toBeNull()
-    expect(escrita.status).toBe(201)
-    expect(await escrita.json()).toMatchObject({ code: 'PASS-1' })
+    const multiverbo = Object.entries(contrato.paths).filter(
+      ([, ops]) => Object.keys(ops).filter((m) => VERBOS.includes(m)).length > 1,
+    )
+    // Se isto zerar, o teste virou tautologia e alguém precisa saber.
+    expect(multiverbo.length).toBeGreaterThan(0)
+
+    for (const [caminho, ops] of multiverbo) {
+      const noContrato = Object.keys(ops).filter((m) => VERBOS.includes(m))
+      const naLista = ROTAS_DO_BACKEND.filter((r) => r.caminho === caminho).map((r) => r.metodo)
+
+      expect(
+        [...naLista].sort(),
+        `${caminho} publica ${noContrato.join('/')} e a lista traz ${naLista.join('/') || 'nada'}`,
+      ).toEqual([...noContrato].sort())
+    }
   })
 
   it('sem backend real a lista nasce VAZIA — é o que mantém o site público mock', () => {
@@ -164,32 +193,26 @@ describe('passthrough por rota', () => {
   })
 
   /**
-   * AS DUAS COSTURAS que a passagem por família deixou, e as duas são
-   * deliberadas.
+   * A COSTURA QUE SOBROU — e ela não é mais desta lista.
    *
-   * Ligar família servida ao lado de família em 501 (ou de tela ainda mockada)
-   * deixa costura, e costura ESCONDIDA é o defeito que esta lista existe para
-   * evitar. As duas foram para a tela, que é onde o operador as vê. Este teste
-   * amarra as pontas: tirar o aviso enquanto a metade faltar tem de doer.
+   * Eram duas. A do **quadro do funil** morreu na #274: as oportunidades
+   * entraram na passagem junto com os motivos de perda e o `.../quote`, as duas
+   * metades do quadro passaram a vir do mesmo lado e `cobertura-do-funil.tsx`
+   * saiu inteiro — como o próprio componente dizia que sairia. O teste dele
+   * saiu junto, e de propósito: um caso que só verifica um arquivo apagado
+   * passa verde para sempre sem medir nada.
+   *
+   * A que fica é a do **colaborador**, e a diferença importa: as seis operações
+   * de `/api/employees` passam desde antes, o buraco é do lado do MOCK (sem
+   * handler de `GET /api/employees/{id}`, com duas sementes de pessoas que são
+   * conjuntos diferentes). Enquanto `data.colaboradores` for provider de mock, a
+   * tela tem de dizer isso ao operador — e tirar o aviso antes da hora tem de
+   * doer.
    */
   it.each([
     {
-      // O quadro do funil recebe colunas do servidor e pede as oportunidades ao
-      // mock, que nunca viu aquele `pipelineId`: lista vazia com status 200 — e
-      // vazio se lê como "não há negócio".
-      costura: 'quadro do funil',
-      passa: '/api/crm/pipelines',
-      falta: '/api/crm/opportunities',
-      tela: 'src/features/crm/pagina-do-funil.tsx',
-      aviso: '<CoberturaDoFunil />',
-    },
-    {
-      // `listEmployees` passa (as atividades dependem dele), mas
-      // `data.colaboradores` ainda é provider de mock: duas listas de quem
-      // trabalha aqui, cada tela mostrando uma.
       costura: 'cadastro de colaborador',
       passa: '/api/employees',
-      falta: '/api/employees/{id}-na-tela',
       tela: 'src/routes/cadastros/colaboradores/index.tsx',
       aviso: '<CoberturaDoColaborador />',
     },
@@ -201,6 +224,77 @@ describe('passthrough por rota', () => {
       readFileSync(tela, 'utf8').includes(aviso),
       `${passa} passa e ${tela} não avisa — o operador lê a metade como se fosse o todo`,
     ).toBe(true)
+  })
+
+  it('o funil não avisa mais de uma falta que não existe', () => {
+    // O CONTRÁRIO do teste acima, e a #274 precisou dos dois.
+    //
+    // `CoberturaDoFunil` dizia ao operador que "as oportunidades ainda não vêm
+    // do servidor". Com a família ligada, isso virou falso — e aviso de falta
+    // inexistente é a mesma mentira com o sinal trocado, com o agravante de
+    // ensinar que avisos deste tipo podem ser ignorados. O próximo será de
+    // verdade.
+    const funilPassaInteiro = ['/api/crm/pipelines', '/api/crm/opportunities'].every((c) =>
+      ROTAS_DO_BACKEND.some((r) => r.caminho.startsWith(c)),
+    )
+    if (!funilPassaInteiro) return
+
+    // A prova é o IMPORT, não a string solta: a tela guarda no comentário o
+    // registro de que o aviso existiu ali e por que saiu, e procurar o nome no
+    // arquivo inteiro daria vermelho por causa da própria nota histórica.
+    // Componente só monta se for importado.
+    const tela = readFileSync('src/features/crm/pagina-do-funil.tsx', 'utf8')
+    expect(
+      /^import\s.*\bCoberturaDoFunil\b/m.test(tela),
+      'o funil passa inteiro e a tela ainda monta o aviso da costura — ele descreve uma metade que não falta mais',
+    ).toBe(false)
+  })
+
+  it('a passagem cobre o contrato INTEIRO — nenhuma operação ficou no mock', () => {
+    // A GUARDA QUE SUBSTITUI A DÍVIDA.
+    //
+    // Enquanto o contrato era maior que o backend, o que precisava de guarda
+    // era o excesso: rota adiantada tirava o mock e entregava 501 à tela. Com
+    // as 78 ligadas (#274), o risco inverteu de lado e ficou mais silencioso:
+    //
+    // - **operação nova no contrato** que ninguém pôs aqui fica mockada no meio
+    //   de uma passagem completa. A tela lê dado do Postgres em toda parte e
+    //   ficção num canto só, e nada na interface distingue os dois.
+    // - **linha removida daqui** por engano (num rebase, num conflito deste
+    //   arquivo — que já teve três mãos no mesmo dia) produz exatamente a mesma
+    //   costura, sem nenhum sintoma.
+    //
+    // Falhar aqui NÃO significa "acrescente a linha": significa medir a
+    // operação nova contra o par local. Se ela responder 501, o certo é deixá-la
+    // fora e escrever o porquê — e este teste é o lugar onde essa exceção tem de
+    // ser declarada, para nunca ser um esquecimento passando por decisão.
+    const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
+      paths: Record<string, Record<string, unknown>>
+    }
+    const VERBOS = ['get', 'post', 'put', 'patch', 'delete']
+
+    /**
+     * Operações que o contrato publica e a passagem NÃO liga, com o motivo.
+     * Vazio desde a #274 — o backend `3089106` não responde 501 em nenhuma das
+     * 78. Entrada nova aqui exige a medição junto, no comentário.
+     */
+    const FORA_DE_PROPOSITO: readonly string[] = []
+
+    const naLista = new Set(ROTAS_DO_BACKEND.map((r) => `${r.metodo} ${r.caminho}`))
+    const faltando: string[] = []
+
+    for (const [caminho, ops] of Object.entries(contrato.paths)) {
+      for (const metodo of Object.keys(ops)) {
+        if (!VERBOS.includes(metodo)) continue
+        const op = `${metodo} ${caminho}`
+        if (!naLista.has(op) && !FORA_DE_PROPOSITO.includes(op)) faltando.push(op)
+      }
+    }
+
+    expect(
+      faltando,
+      `operação no contrato e fora da passagem: ${faltando.join(', ')} — meça contra o par local antes de acrescentar, e se for 501 declare em FORA_DE_PROPOSITO com o motivo`,
+    ).toEqual([])
   })
 
   it('toda rota da lista existe no contrato — typo aqui seria silencioso', () => {
@@ -221,16 +315,22 @@ describe('passthrough por rota', () => {
   })
 
   /**
-   * O BLOCO 2 FOI LIGADO, e agora o risco trocou de lado.
+   * FAMÍLIA INTEIRA — e agora o risco é só de REMOÇÃO.
    *
    * Enquanto `api#48`/`api#53` não existiam, a lista `ROTAS_DO_BLOCO_2` vivia
    * separada e o teste garantia que ninguém a ligasse cedo — rota adiantada
    * tira o mock e entrega 501 à tela. Medido o par local em 2026-08-20, as
    * sete entraram em `ROTAS_DO_BACKEND` e a constante morreu junto.
    *
-   * O que este teste passa a proteger é o inverso: que elas continuem lá, e
-   * INTEIRAS. Tirar uma volta a pôr id do servidor de um lado e id do mock do
-   * outro, que é a costura calada de sempre.
+   * O que este teste protege é o inverso: que elas continuem lá, e INTEIRAS.
+   * Tirar uma volta a pôr id do servidor de um lado e id do mock do outro, que
+   * é a costura calada de sempre.
+   *
+   * As famílias da #274 entraram aqui pelo mesmo motivo, e cada uma tem a sua
+   * razão de não poder ser dividida — escritas no bloco de cada uma em
+   * `rotas-do-backend.ts`. As mais frágeis: produto e variantes são gravados
+   * pelo MESMO botão, e motivos de perda são o catálogo que a oportunidade
+   * referencia por `lostReasonId`.
    */
   it.each([
     { familia: 'obra', caminhos: ['/api/works', '/api/works/{id}'] },
@@ -240,6 +340,37 @@ describe('passthrough por rota', () => {
         '/api/partners/{partnerId}/contacts',
         '/api/partners/{partnerId}/contacts/{contactId}',
       ],
+    },
+    {
+      familia: 'produto com variantes e kardex',
+      caminhos: [
+        '/api/products',
+        '/api/products/{id}',
+        '/api/products/{productId}/variants',
+        '/api/products/{productId}/variants/{id}',
+        '/api/variants/{variantId}/stock-movements',
+      ],
+    },
+    {
+      familia: 'oportunidades do CRM',
+      caminhos: [
+        '/api/crm/opportunities',
+        '/api/crm/opportunities/{id}',
+        '/api/crm/opportunities/{id}/stage',
+        '/api/crm/opportunities/{id}/quote',
+      ],
+    },
+    {
+      familia: 'motivos de perda',
+      caminhos: ['/api/crm/lost-reasons', '/api/crm/lost-reasons/{id}'],
+    },
+    { familia: 'dashboard', caminhos: ['/api/dashboard/summary', '/api/dashboard/agenda'] },
+    {
+      // Inteira INCLUSIVE a escrita, que responde 403 por papel. O 403 é a
+      // verdade do servidor: mockar a gravação enquanto ele recusa ensinaria
+      // que o `+...` funciona, e o defeito só apareceria no dia da ligação.
+      familia: 'listas de apoio',
+      caminhos: ['/api/catalog-lookups', '/api/catalog-lookups/{id}'],
     },
   ])('$familia passa INTEIRA — nenhuma operação dela ficou no mock', ({ caminhos }) => {
     const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
@@ -280,5 +411,48 @@ describe('passthrough por rota', () => {
     })
     expect(criado.headers.get('x-origem')).toBe(MARCA)
     expect(await criado.json()).toMatchObject({ metodo: 'POST' })
+  })
+
+  it.each([
+    // As cinco famílias que a #274 ligou, exercitadas na ROTA e não só na
+    // lista: "ligado" numa constante que ninguém chama é uma linha, não uma
+    // passagem. Cada caso é o caminho que a tela realmente pede.
+    { familia: 'escrita de produto', metodo: 'POST', url: '/api/products' },
+    { familia: 'variante', metodo: 'POST', url: '/api/products/prod-0001/variants' },
+    { familia: 'kardex', metodo: 'GET', url: '/api/variants/var-0001/stock-movements' },
+    { familia: 'indicadores', metodo: 'GET', url: '/api/dashboard/summary' },
+    {
+      familia: 'agenda',
+      metodo: 'GET',
+      url: '/api/dashboard/agenda?from=2026-08-01&to=2026-08-31',
+    },
+    { familia: 'oportunidades', metodo: 'GET', url: '/api/crm/opportunities' },
+    {
+      familia: 'oportunidade → orçamento',
+      metodo: 'POST',
+      url: '/api/crm/opportunities/opo-1/quote',
+    },
+    { familia: 'motivos de perda', metodo: 'GET', url: '/api/crm/lost-reasons' },
+    {
+      familia: 'relatório de perdas',
+      metodo: 'GET',
+      url: '/api/crm/reports/lost-reasons?from=2026-01-01&to=2026-12-31',
+    },
+    // A escrita de lookup sai para a rede mesmo sabendo que o servidor responde
+    // 403 por papel: é ele quem tem de recusar, não o mock quem tem de fingir.
+    { familia: 'escrita de lista de apoio', metodo: 'POST', url: '/api/catalog-lookups' },
+  ])('$familia ($metodo) SAI para a rede', async ({ metodo, url }) => {
+    const init: RequestInit = { method: metodo }
+    if (metodo === 'POST') {
+      init.headers = { 'content-type': 'application/json' }
+      // Corpo qualquer: quem responde aqui é o servidor de mentira, e o que se
+      // mede é a requisição ter SAÍDO. O corpo válido importa na sonda contra o
+      // par local, que é outro teste (`ao-vivo.test.ts`).
+      init.body = JSON.stringify({ marca: MARCA })
+    }
+    const r = await fetch(base + url, init)
+
+    expect(r.headers.get('x-origem')).toBe(MARCA)
+    expect(await r.json()).toMatchObject({ origem: MARCA, metodo })
   })
 })

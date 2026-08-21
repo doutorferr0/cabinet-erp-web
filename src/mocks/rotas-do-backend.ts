@@ -47,6 +47,14 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * não as serve; estão fora porque a FAMÍLIA delas ainda não foi conferida inteira. A dívida
  * mudou de lado — era do backend, virou nossa.
  *
+ * **REMEDIDO em 2026-08-21** contra `cabinet-erp-api` `origin/main` `3089106`, e a lista foi de
+ * **58 para 64**: entrou o **passo 2 da fila da #274** — escrita de produto, variantes e kardex.
+ * As seis foram exercidas uma a uma com CORPO válido e sessão real, e nenhuma é 501: `POST
+ * /api/products` 201 · `PUT` 200 · `POST`/`PUT` de variante 201/200 · `POST` de movimento 201
+ * devolvendo `balanceAfter: 5` · `GET` do kardex 200 com a linha. **As duas do kardex não têm
+ * TELA** (`/estoque/movimentacao` é `TelaNaoCapturada`), então entraram sem nada para medir do
+ * lado do operador — está escrito no bloco delas, abaixo.
+ *
  * Isso não autoriza acrescentá-las aqui em bloco: o critério de família fechada continua valendo,
  * e é ele que segura. Produto arrasta variantes e kardex; o funil arrasta motivos de perda e
  * `crm/opportunities/{id}/quote`; o dashboard é painel próprio. Cada uma é uma decisão de tela,
@@ -94,11 +102,16 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * lida no tamanho da família em vez do recurso.
  *
  * Então a lista liga por família fechada, e uma família só fecha quando o backend serve TODA a
- * superfície que a tela consome dela. Hoje fecham treze famílias, e por isso as 58 estão aqui.
- * As que sobram ficam inteiras no mock — **oportunidades e motivos de perda do CRM**,
- * **indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex** —
- * e desde `3af4f01` isso é escolha nossa, não limite do servidor: elas respondem. Ficam porque
- * ninguém conferiu a família inteira contra a tela que a consome, que é o passo que falta.
+ * superfície que a tela consome dela. Hoje fecham quinze famílias, e por isso as **64** estão
+ * aqui. As que sobram ficam inteiras no mock — **oportunidades e motivos de perda do CRM**,
+ * **indicadores e agenda do dashboard** e a **escrita de listas de apoio** — e desde `3af4f01`
+ * isso é escolha nossa, não limite do servidor: elas respondem. As duas primeiras ficam porque
+ * ninguém conferiu a família inteira contra a tela que a consome. A terceira **acabou de deixar
+ * de estar bloqueada**: até `3089106` o `POST` respondia 403 ao papel do operador do seed, porque
+ * a matriz do backend exigia `admin` por herança; a `api#66` decidiu e a `#70` (`edef47f`) baixou
+ * para `operator-full` — medido aqui, o mesmo `POST` responde **201**. Ela fica de fora só porque
+ * é o passo 5 da fila da #274 e ninguém conferiu o `+...` contra as 19 telas do padrão 2, que é
+ * trabalho de outra PR.
  *
  * Duas famílias entraram JUNTAS, e separá-las seria o erro:
  *
@@ -155,17 +168,48 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/auth/tenants' },
   { metodo: 'put', caminho: '/auth/active-tenant' },
 
-  // produtos: LEITURA. A escrita (`POST`/`PUT`, e as variantes) segue no mock
-  // porque o backend responde 501 nela.
+  // produto INTEIRO — leitura E escrita, com as variantes (#274, passo 2).
   //
-  // O detalhe ENTROU agora, e conserta um defeito que a lista anterior tinha:
-  // com a listagem no servidor e `GET /api/products/{id}` no mock, `Alterar` e
-  // `Consul.` pediam ao mock um uuid que só existe no Postgres e recebiam "não
-  // encontrado" — o formulário nem abria. O par leitura-inteira é o menor
-  // recorte coerente que existe aqui: ler o que o servidor tem, e falhar na
-  // gravação, que é onde a cobertura realmente acaba.
+  // "A escrita segue no mock porque o backend responde 501 nela" era o motivo
+  // escrito aqui, e ele VENCEU: medido contra `origin/main` `3089106`, com corpo
+  // válido e sessão real, `POST /api/products` responde **201**, o `PUT` **200**,
+  // e as duas das variantes **201/200**. Nenhuma é 501 — a dívida que esta lista
+  // mede acabou nesta família.
+  //
+  // O par leitura-inteira já estava certo (listagem + detalhe juntos: com o
+  // detalhe no mock, `Alterar` pedia ao mock um uuid que só existe no Postgres).
+  // A escrita entra pelo MESMO argumento, um passo adiante: abrir o formulário
+  // com o registro do servidor e gravar no mock devolveria "gravado" sobre uma
+  // cópia que a próxima leitura não traz. Meia família é pior que família
+  // nenhuma, e aqui a metade que faltava era justo a que o operador aperta.
+  //
+  // As VARIANTES entram junto porque são o mesmo Gravar: `salvarProduto`
+  // (`src/data/produtos-api.ts`) grava o produto e em seguida cada variante
+  // editada. Servir o produto e mockar a variante gravaria o pai no Postgres e
+  // o filho em memória, e a releitura mostraria um produto sem as variantes que
+  // o operador acabou de digitar.
   { metodo: 'get', caminho: '/api/products' },
   { metodo: 'get', caminho: '/api/products/{id}' },
+  { metodo: 'post', caminho: '/api/products' },
+  { metodo: 'put', caminho: '/api/products/{id}' },
+  { metodo: 'post', caminho: '/api/products/{productId}/variants' },
+  { metodo: 'put', caminho: '/api/products/{productId}/variants/{id}' },
+
+  // kardex (2 operações) — **e estas ainda não têm TELA**.
+  //
+  // `/estoque/movimentacao` é `TelaNaoCapturada`: o slot existe no menu e o
+  // print nunca foi capturado. Então ligar aqui não muda nada que o operador
+  // veja, e não há tela para medir no par local — a medição destas duas é só de
+  // HTTP (`POST` 201 com `balanceAfter: 5`, `GET` 200 com a linha).
+  //
+  // Entram assim mesmo, e o motivo é a ordem em que as coisas quebram: enquanto
+  // o mock as responde, quem for escrever a tela mede contra a ficção e só
+  // descobre o servidor depois de pronta. Sem consumidor, o risco de ligar é
+  // ZERO e o de deixar para depois é uma tela inteira construída no lugar
+  // errado. Registrado aqui para que a próxima pessoa saiba que a passagem já
+  // está feita e a conta que falta é a da tela.
+  { metodo: 'post', caminho: '/api/variants/{variantId}/stock-movements' },
+  { metodo: 'get', caminho: '/api/variants/{variantId}/stock-movements' },
 
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe

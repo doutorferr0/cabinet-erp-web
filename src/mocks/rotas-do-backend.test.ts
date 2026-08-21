@@ -22,7 +22,7 @@ import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
  * a requisição saiu. Handler nenhum consegue provar isso sobre si mesmo.
  */
 
-const MARCA = 'backend-de-verdade'
+const MARCA_DO_SERVIDOR = 'backend-de-verdade'
 
 let servidorDeVerdade: Server
 let base: string
@@ -31,8 +31,8 @@ const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...h
 
 beforeAll(async () => {
   servidorDeVerdade = createServer((req, res) => {
-    res.writeHead(200, { 'content-type': 'application/json', 'x-origem': MARCA })
-    res.end(JSON.stringify({ origem: MARCA, metodo: req.method, caminho: req.url }))
+    res.writeHead(200, { 'content-type': 'application/json', 'x-origem': MARCA_DO_SERVIDOR })
+    res.end(JSON.stringify({ origem: MARCA_DO_SERVIDOR, metodo: req.method, caminho: req.url }))
   })
   await new Promise<void>((ok) => servidorDeVerdade.listen(0, '127.0.0.1', ok))
   base = `http://127.0.0.1:${(servidorDeVerdade.address() as AddressInfo).port}`
@@ -60,8 +60,8 @@ describe('passthrough por rota', () => {
   it('rota da lista SAI para a rede — o servidor de verdade responde', async () => {
     const r = await fetch(`${base}/api/products`)
 
-    expect(r.headers.get('x-origem')).toBe(MARCA)
-    expect(await r.json()).toMatchObject({ origem: MARCA, metodo: 'GET' })
+    expect(r.headers.get('x-origem')).toBe(MARCA_DO_SERVIDOR)
+    expect(await r.json()).toMatchObject({ origem: MARCA_DO_SERVIDOR, metodo: 'GET' })
   })
 
   it('rota fora da lista é atendida pelo MOCK, sem tocar a rede', async () => {
@@ -76,19 +76,28 @@ describe('passthrough por rota', () => {
     expect(await r.json()).toHaveProperty('rows')
   })
 
-  it('a divisão é por VERBO, não por caminho: GET /api/products sai, POST fica', async () => {
-    const escrita = await fetch(`${base}/api/products`, {
+  it('a divisão é por VERBO: GET /api/catalog-lookups sai, POST fica', async () => {
+    // O exemplo era produto, e VENCEU: desde a #274 (passo 2) a escrita de
+    // produto passa junto com a leitura. Trocado por `catalog-lookups`, que é
+    // onde a divisão por verbo vive HOJE: a leitura é a raiz de quase todo
+    // combo e precisa ser a do servidor; a ESCRITA é o passo 5 da fila e ainda
+    // não foi conferida contra as 19 telas do padrão 2. (Ela chegou a estar
+    // bloqueada por PAPEL — 403 `admin` por herança —, e não está mais: a
+    // api#66 decidiu e a #70 baixou para `operator-full`.)
+    const leitura = await fetch(`${base}/api/catalog-lookups?kind=MARCA`)
+    expect(leitura.headers.get('x-origem')).toBe(MARCA_DO_SERVIDOR)
+
+    const escrita = await fetch(`${base}/api/catalog-lookups`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: 'PASS-1', description: 'Produto do teste', active: true }),
+      body: JSON.stringify({ kind: 'MARCA', name: 'PASS-1', active: true }),
     })
 
-    // O backend responde 501 em `POST /api/products`; deixar o verbo inteiro
-    // passar quebraria o cadastro de produto para ganhar a consulta. O 201 com
-    // id de mock (`prod...`) é a prova positiva de quem gravou.
+    // Prova POSITIVA de quem gravou: 201 com corpo do mock, sem a marca do
+    // servidor de verdade.
     expect(escrita.headers.get('x-origem')).toBeNull()
     expect(escrita.status).toBe(201)
-    expect(await escrita.json()).toMatchObject({ code: 'PASS-1' })
+    expect(await escrita.json()).toMatchObject({ kind: 'MARCA', name: 'PASS-1' })
   })
 
   it('sem backend real a lista nasce VAZIA — é o que mantém o site público mock', () => {
@@ -234,6 +243,17 @@ describe('passthrough por rota', () => {
    */
   it.each([
     { familia: 'obra', caminhos: ['/api/works', '/api/works/{id}'] },
+    // #274, passo 2. O produto é a família em que "meia" doeria mais: a tela
+    // abre o registro do servidor e grava — deixar o `POST`/`PUT` no mock
+    // devolveria "gravado" sobre uma cópia que a próxima leitura não traz.
+    { familia: 'produto', caminhos: ['/api/products', '/api/products/{id}'] },
+    {
+      // Mesmo Gravar do produto (`salvarProduto` grava o pai e depois cada
+      // variante editada): pai no Postgres e filho em memória é o registro que
+      // volta sem as variantes que o operador acabou de digitar.
+      familia: 'variantes do produto',
+      caminhos: ['/api/products/{productId}/variants', '/api/products/{productId}/variants/{id}'],
+    },
     {
       familia: 'contatos do parceiro',
       caminhos: [
@@ -264,11 +284,11 @@ describe('passthrough por rota', () => {
     // rede pode testemunhar que a requisição saiu. Sem isto, "ligado" seria uma
     // linha numa lista que ninguém exercita.
     const obras = await fetch(`${base}/api/works`)
-    expect(obras.headers.get('x-origem')).toBe(MARCA)
-    expect(await obras.json()).toMatchObject({ origem: MARCA, metodo: 'GET' })
+    expect(obras.headers.get('x-origem')).toBe(MARCA_DO_SERVIDOR)
+    expect(await obras.json()).toMatchObject({ origem: MARCA_DO_SERVIDOR, metodo: 'GET' })
 
     const contatos = await fetch(`${base}/api/partners/parc-0001/contacts`)
-    expect(contatos.headers.get('x-origem')).toBe(MARCA)
+    expect(contatos.headers.get('x-origem')).toBe(MARCA_DO_SERVIDOR)
 
     // O sub-recurso passa no VERBO de escrita também — a grade do parceiro
     // grava contato, e meia família aqui gravaria no mock o que a tela leu do
@@ -278,7 +298,7 @@ describe('passthrough por rota', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: 'CONTATO DA PASSAGEM', active: true }),
     })
-    expect(criado.headers.get('x-origem')).toBe(MARCA)
+    expect(criado.headers.get('x-origem')).toBe(MARCA_DO_SERVIDOR)
     expect(await criado.json()).toMatchObject({ metodo: 'POST' })
   })
 })

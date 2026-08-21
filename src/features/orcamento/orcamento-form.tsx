@@ -513,6 +513,7 @@ export function OrcamentoForm({
       onCancelar={() => void navigate({ to: '/vendas/orcamentos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      familia="quotes"
     >
       {/* A recusa do servidor em destaque, ANTES das abas (#138): o `detail` do
           problem+json é a frase que o backend escolheu para o caso, e sem ela o

@@ -1,6 +1,7 @@
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
 import type { PedidoCompra } from '@/mocks/pedidos-compra'
@@ -69,6 +70,7 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
 
 function PedidosCompraPage() {
   const navigate = useNavigate()
+  const { readOnly } = useReadOnlyPorPapel('orders')
 
   function abrir(pedidoId: string, modo?: 'consulta') {
     void navigate({
@@ -80,6 +82,7 @@ function PedidosCompraPage() {
 
   const actions = cadastroActions<PedidoCompra>({
     entidade: 'pedido de compra',
+    readOnly,
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrir(String(p.id)),
     onConsultar: (p) => abrir(String(p.id), 'consulta'),

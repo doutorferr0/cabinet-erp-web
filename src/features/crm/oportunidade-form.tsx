@@ -177,6 +177,7 @@ export function OportunidadeForm({
       readOnly={readOnly}
       gravando={gravar.isPending}
       titulo="Oportunidade"
+      familia="crm"
       {...(contexto ? { contexto } : {})}
     >
       <ErroDeGravacao

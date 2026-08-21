@@ -2,6 +2,7 @@ import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
+import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, X } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -48,6 +49,11 @@ export interface CadastroFormProps<T extends FieldValues> {
    * sem saber ainda do que ela fala.
    */
   aviso?: React.ReactNode
+  /**
+   * Família de caminho do recurso. Quando o papel do vínculo ativo não alcança
+   * a escrita, o formulário vira somente-leitura automaticamente.
+   */
+  familia?: FamiliaDeCaminho
   children: React.ReactNode
 }
 
@@ -61,12 +67,16 @@ export function CadastroForm<T extends FieldValues>({
   onGravar,
   onCancelar,
   gravando = false,
-  readOnly = false,
+  readOnly: readOnlyProp = false,
   titulo,
   contexto,
   aviso,
+  familia,
   children,
 }: CadastroFormProps<T>) {
+  const { readOnly: readOnlyDoPapel } = useReadOnlyPorPapel(familia)
+  const readOnly = readOnlyProp || readOnlyDoPapel
+
   const form = useForm<T>({
     // zodResolver tipa pelo schema; com T genérico o casamento é garantido pelo caller.
     resolver: zodResolver(schema as unknown as z.ZodType<T, FieldValues>) as unknown as Resolver<T>,

@@ -207,6 +207,7 @@ export function ColaboradorForm({
       onCancelar={() => void navigate({ to: '/cadastros/colaboradores' })}
       readOnly={readOnly}
       titulo="Cadastro de Colaboradores"
+      familia="employees"
       {...(contexto ? { contexto } : {})}
     >
       {/* FotoFrame (~224px) é coluna lateral do bloco campos+abas, não sibling

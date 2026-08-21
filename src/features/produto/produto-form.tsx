@@ -605,6 +605,7 @@ export function ProdutoForm({
       readOnly={readOnly}
       gravando={gravar.isPending}
       titulo="Cadastro de Produtos"
+      familia="products"
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >

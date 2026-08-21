@@ -12,6 +12,7 @@ import type {
 } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { verificarEscrita } from './permissao'
 import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { criarOrcamento, detalheDoOrcamento } from './quotes'
 import { novoId, store } from './store'
@@ -385,6 +386,8 @@ export const handlersDoCrm = [
   http.post('*/api/crm/pipelines', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as CrmPipelineWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do funil é obrigatório.')
 
@@ -411,6 +414,8 @@ export const handlersDoCrm = [
   http.put('*/api/crm/pipelines/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const achado = funil(String(params.id))
     if (!achado) return naoEncontrado('Funil não encontrado.')
     const corpo = (await request.json()) as CrmPipelineWriteRequest
@@ -442,6 +447,8 @@ export const handlersDoCrm = [
   http.post('*/api/crm/pipelines/:pipelineId/stages', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const pipelineId = String(params.pipelineId)
     if (!funil(pipelineId)) return naoEncontrado('Funil não encontrado.')
     const corpo = (await request.json()) as CrmStageWriteRequest
@@ -466,6 +473,8 @@ export const handlersDoCrm = [
   http.put('*/api/crm/pipelines/:pipelineId/stages/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const achado = estagio(String(params.id))
     if (!achado || achado.pipelineId !== String(params.pipelineId)) {
       return naoEncontrado('Estágio não encontrado neste funil.')
@@ -533,6 +542,8 @@ export const handlersDoCrm = [
   http.post('*/api/crm/opportunities', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as CrmOpportunityWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Título da oportunidade é obrigatório.')
 
@@ -581,6 +592,8 @@ export const handlersDoCrm = [
   http.put('*/api/crm/opportunities/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
     if (!achado) return naoEncontrado('Oportunidade não encontrada.')
     const corpo = (await request.json()) as CrmOpportunityWriteRequest
@@ -632,6 +645,8 @@ export const handlersDoCrm = [
   http.patch('*/api/crm/opportunities/:id/stage', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
     if (!achado) return naoEncontrado('Oportunidade não encontrada.')
 
@@ -693,6 +708,8 @@ export const handlersDoCrm = [
   http.post('*/api/crm/opportunities/:id/quote', ({ params }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
 
     const achado = crm.oportunidades.find((o) => o.id === String(params.id))
     if (!achado) return naoEncontrado('Oportunidade não encontrada.')
@@ -743,6 +760,8 @@ export const handlersDoCrm = [
   http.post('*/api/crm/lost-reasons', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as CrmLostReasonWriteRequest
     if (!corpo.name?.trim()) return problemaJson(400, 'Nome do motivo é obrigatório.')
     const novo: CrmLostReasonDto = {
@@ -757,6 +776,8 @@ export const handlersDoCrm = [
   http.put('*/api/crm/lost-reasons/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('crm')
+    if (semPermissao) return semPermissao
     const achado = crm.motivos.find((m) => m.id === String(params.id))
     if (!achado) return naoEncontrado('Motivo não encontrado.')
     const corpo = (await request.json()) as CrmLostReasonWriteRequest

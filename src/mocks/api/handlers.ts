@@ -21,6 +21,7 @@ import { handlersDoCrm } from './crm'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
+import { verificarEscrita } from './permissao'
 import {
   TIPO,
   camposInvalidos,
@@ -285,6 +286,8 @@ export const handlers = [
   http.post('*/api/products', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('products')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as ProductWriteRequest
     // `fields[]` (extensão do problem+json): o erro chega ao CONTROLE, não vira
     // frase solta no topo do formulário. Sem ele, o operador de um cadastro de
@@ -317,6 +320,8 @@ export const handlers = [
   http.put('*/api/products/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('products')
+    if (semPermissao) return semPermissao
     const produto = store.produtos.find((p) => p.id === params.id)
     if (!produto) return naoEncontrado('Produto não encontrado.')
     const corpo = (await request.json()) as ProductWriteRequest
@@ -335,6 +340,8 @@ export const handlers = [
   http.post('*/api/products/:productId/variants', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('variants')
+    if (semPermissao) return semPermissao
     const produto = store.produtos.find((p) => p.id === params.productId)
     if (!produto) return naoEncontrado('Produto não encontrado.')
     const corpo = (await request.json()) as VariantWriteRequest
@@ -354,6 +361,8 @@ export const handlers = [
   http.put('*/api/products/:productId/variants/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('variants')
+    if (semPermissao) return semPermissao
     const produto = store.produtos.find((p) => p.id === params.productId)
     const variante = produto?.variants.find((v) => v.id === params.id)
     if (!produto || !variante) return naoEncontrado('Variante não encontrada.')
@@ -378,6 +387,8 @@ export const handlers = [
   http.post('*/api/variants/:variantId/stock-movements', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('variants')
+    if (semPermissao) return semPermissao
     const variante = store.produtos
       .flatMap((p) => p.variants)
       .find((v) => v.id === params.variantId)
@@ -458,6 +469,8 @@ export const handlers = [
   http.post('*/api/partners', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('partners')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as PartnerWriteRequest
     if (!corpo.legalName) {
       return camposInvalidos([{ path: 'legalName', message: 'Informe a razão social.' }])
@@ -527,6 +540,8 @@ export const handlers = [
   http.put('*/api/partners/:id', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('partners')
+    if (semPermissao) return semPermissao
     const parceiro = store.parceiros.find((p) => p.id === params.id)
     if (!parceiro || !parceiro.vinculos[store.activeTenantId]) {
       return naoEncontrado('Parceiro não encontrado.')
@@ -584,6 +599,8 @@ export const handlers = [
   http.post('*/api/partners/:id/link', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('partners')
+    if (semPermissao) return semPermissao
     const parceiro = store.parceiros.find((p) => p.id === params.id)
     if (!parceiro) return naoEncontrado('Parceiro não encontrado.')
     const corpo = (await request.json()) as PartnerLinkRequest
@@ -679,6 +696,8 @@ export const handlers = [
   http.post('*/api/tasks', async ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('tasks')
+    if (semPermissao) return semPermissao
     const corpo = (await request.json()) as TaskWriteRequest
     if (!corpo.title?.trim()) return problemaJson(400, 'Título é obrigatório.')
 
@@ -706,6 +725,8 @@ export const handlers = [
   http.patch('*/api/tasks/:taskId', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('tasks')
+    if (semPermissao) return semPermissao
     const tarefa = store.tarefas.find((t) => t.id === params.taskId)
     if (!tarefa) return naoEncontrado('Tarefa não encontrada.')
 
@@ -730,6 +751,8 @@ export const handlers = [
   http.patch('*/api/todos/:todoId', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('todos')
+    if (semPermissao) return semPermissao
     const item = store.todos.find((t) => t.id === params.todoId)
     if (!item) return naoEncontrado('Item não encontrado.')
     const corpo = (await request.json()) as TodoPatchRequest

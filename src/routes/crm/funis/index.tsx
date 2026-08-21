@@ -5,6 +5,7 @@ import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarFunil } from '@/data/crm-api'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useState } from 'react'
@@ -51,6 +52,7 @@ const columns: ColumnDef<CrmPipelineDto>[] = [
 
 function FunisPage() {
   const navigate = useNavigate()
+  const { readOnly } = useReadOnlyPorPapel('crm')
 
   function abrir(funilId: string, modo?: 'consulta') {
     void navigate({
@@ -71,6 +73,7 @@ function FunisPage() {
 
   const actions = cadastroActions<CrmPipelineDto>({
     entidade: 'funil',
+    readOnly,
     onIncluir: () => abrir('novo'),
     // Sem semear cache com a LINHA: o formulário edita funil + colunas, e a
     // linha da listagem só tem o cabeçalho. Semear metade do registro faria a

@@ -119,6 +119,7 @@ export function PedidoCompraForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/compras/pedidos' })}
       readOnly={readOnly}
+      familia="orders"
     >
       <div data-zonas className="flex flex-col gap-4">
         <Secao

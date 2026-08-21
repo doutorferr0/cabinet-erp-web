@@ -3,6 +3,7 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
 import { CoberturaDoColaborador } from '@/features/colaborador/cobertura-do-colaborador'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
@@ -81,6 +82,7 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
 
 function ColaboradoresPage() {
   const navigate = useNavigate()
+  const { readOnly } = useReadOnlyPorPapel('employees')
 
   function abrir(colaboradorId: string, modo?: 'consulta') {
     void navigate({
@@ -92,6 +94,7 @@ function ColaboradoresPage() {
 
   const actions = cadastroActions<Colaborador>({
     entidade: 'colaborador',
+    readOnly,
     onIncluir: () => abrir('novo'),
     onAbrir: (c) => abrir(String(c.id)),
     onConsultar: (c) => abrir(String(c.id), 'consulta'),

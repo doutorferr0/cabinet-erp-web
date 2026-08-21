@@ -325,6 +325,7 @@ export function FornecedorForm({
       onCancelar={() => void navigate({ to: '/cadastros/fornecedores' })}
       readOnly={readOnly}
       titulo="Cadastro de Fornecedores"
+      familia="partners"
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >

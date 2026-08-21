@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/cabinet/page-header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { oportunidadesDoFunil, useEstagios, useFunis } from '@/data/crm-api'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -119,6 +120,7 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
   const funis = useFunis()
   const etapas = useEstagios(pipelineId)
   const navigate = useNavigate()
+  const { readOnly } = useReadOnlyPorPapel('crm')
   const atual = funis.data?.find((funil) => funil.id === pipelineId)
 
   // O provider carrega o `pipelineId`: as duas visões perguntam pelo funil que
@@ -214,6 +216,7 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
 
   const actions = cadastroActions<CrmOpportunityDto>({
     entidade: 'oportunidade',
+    readOnly,
     onIncluir: () => {
       if (!primeiraEtapa) return
       void navigate({

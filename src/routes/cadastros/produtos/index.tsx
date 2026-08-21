@@ -4,6 +4,7 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Produto } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useDesativarProduto } from '@/data/produtos-api'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -93,6 +94,7 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
 
 function ProdutosPage() {
   const navigate = useNavigate()
+  const { readOnly } = useReadOnlyPorPapel('products')
 
   function abrir(produtoId: string, modo?: 'consulta') {
     void navigate({
@@ -111,6 +113,7 @@ function ProdutosPage() {
 
   const actions = cadastroActions<ProductDto>({
     entidade: 'produto',
+    readOnly,
     onIncluir: () => abrir('novo'),
     onAbrir: (p) => abrir(p.id),
     onConsultar: (p) => abrir(p.id, 'consulta'),

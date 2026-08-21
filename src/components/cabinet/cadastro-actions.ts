@@ -36,6 +36,15 @@ export interface CadastroActionsOptions<T> {
    * fingir uma ação que o servidor recusaria.
    */
   motivoSemExcluir?: string
+  /**
+   * Quando `true`, as ações de ESCRITA (`Incluir`, `Alterar`, `Excluir`) são
+   * desabilitadas. A tela passa o resultado de `useReadOnlyPorPapel(familia)`;
+   * a família em si fica fora desta fábrica porque `cadastroActions` não é um
+   * hook.
+   */
+  readOnly?: boolean
+  /** Motivo exibido quando `readOnly` desabilita uma ação. */
+  motivoReadOnly?: string
   onImprimir?: () => void
   onFiltro?: () => void
 }
@@ -52,6 +61,8 @@ export function cadastroActions<T>({
   onConsultar,
   onExcluir,
   motivoSemExcluir,
+  readOnly,
+  motivoReadOnly,
   onImprimir,
   onFiltro,
 }: CadastroActionsOptions<T>): DataTableAction<T>[] {
@@ -59,16 +70,30 @@ export function cadastroActions<T>({
   // As duas ações que precisam do registro inteiro. `Incluir` continua: abrir em
   // branco não depende de detalhe do servidor.
   const semDetalhe = onAbrir === undefined
+  const tituloReadOnly = motivoReadOnly ?? 'O papel deste vínculo não permite alterações.'
   return [
     { id: 'filtro', label: 'Filtro', icon: Filter, onClick: onFiltro ?? focarBusca },
-    { id: 'incluir', label: 'Incluir', icon: Plus, onClick: onIncluir },
+    {
+      id: 'incluir',
+      label: 'Incluir',
+      icon: Plus,
+      disabled: !!readOnly,
+      ...(readOnly ? { title: tituloReadOnly } : {}),
+      onClick: onIncluir,
+    },
     {
       id: 'alterar',
       label: 'Alterar',
       icon: Pencil,
       needsSelection: true,
-      disabled: semDetalhe,
-      ...(motivoSemAbrir && semDetalhe ? { title: motivoSemAbrir } : {}),
+      disabled: semDetalhe || !!readOnly,
+      ...(semDetalhe || readOnly
+        ? {
+            title: semDetalhe
+              ? (motivoSemAbrir ?? 'Abertura de registro não disponível.')
+              : tituloReadOnly,
+          }
+        : {}),
       onClick: (row) => row && onAbrir?.(row),
     },
     {
@@ -93,7 +118,12 @@ export function cadastroActions<T>({
       icon: Ban,
       needsSelection: true,
       variant: 'destructive',
-      ...(motivoSemExcluir ? { disabled: true, title: motivoSemExcluir } : {}),
+      ...(motivoSemExcluir || readOnly
+        ? {
+            disabled: true,
+            title: readOnly ? tituloReadOnly : motivoSemExcluir,
+          }
+        : {}),
       onClick: (row) =>
         row &&
         (onExcluir

@@ -42,8 +42,21 @@ import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
  * orçamento, a checagem nasce AQUI, e o teste que a cobra nasce junto.
  */
 
-/** A whitelist que o contrato publica para `sortBy` e `filters` deste recurso. */
-const ORDENAVEIS = ['customerId', 'description', 'workType', 'active']
+/**
+ * A whitelist de `sortBy` — e ela NÃO é mais a de `filters`.
+ *
+ * `customerName` ordena e não filtra, e é o contrato que separa as duas: filtrar
+ * por nome de cliente seria uma segunda forma de perguntar o que `customerId` já
+ * responde (o combo escolhe o cliente e manda o id), enquanto ordenar acontece
+ * sobre o que já veio — e o operador ordena pelo que LÊ, que é o nome.
+ *
+ * Ordenar aqui é barato porque a lista já foi montada com `workDto`, que resolve
+ * `customerName` a partir de `store.parceiros`. No servidor o campo sai de
+ * `LEFT JOIN partners`, como `partnerName` em `/api/crm/opportunities`.
+ */
+const ORDENAVEIS = ['customerId', 'description', 'workType', 'active', 'customerName']
+
+/** A de `filters`, menor de propósito — ver acima. */
 const FILTRAVEIS: CamposFiltraveis = {
   customerId: 'text',
   description: 'text',

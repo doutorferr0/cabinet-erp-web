@@ -2,6 +2,7 @@ import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
   authSetActiveTenant,
+  createPartner,
   createPartnerContact,
   createWork,
   getWork,
@@ -128,10 +129,78 @@ describe('obra — dado de EMPRESA', () => {
     expect((await fetch(`http://mock.teste/api/works?${fora}`)).status).toBe(400)
   })
 
-  it('`sortBy` fora da whitelist é 400 — o contrato publica quatro campos', async () => {
+  it('`sortBy` fora da whitelist é 400 — o contrato publica cinco campos', async () => {
     await entrar()
     expect((await listWorks({ sortBy: 'address' })).status).toBe(400)
     expect((await listWorks({ sortBy: 'description' })).status).toBe(200)
+  })
+
+  it('ordena por `customerName`, que é a coluna que a tela LÊ', async () => {
+    // `customerId` é uuid: ordenar por ele devolve uma ordem que não significa
+    // nada para quem olha a tela. O contrato publica `customerName` no `sortBy`
+    // exatamente por isso, e a asserção aqui é sobre a ORDEM — status 200 não
+    // distingue "ordenou" de "aceitou e ignorou".
+    //
+    // **A semente tem um cliente só na empresa ativa** (`MARIA HELENA`), e com
+    // um nome só `toEqual(sort())` passa sem medir nada. Por isso o segundo
+    // cliente é criado aqui, pelas rotas de verdade, em vez de a asserção
+    // confiar no que a semente por acaso tem.
+    await entrar()
+    const cliente = await createPartner({
+      legalName: 'AAA CONSTRUTORA DA ORDEM LTDA',
+      tradeName: null,
+      document: '11222333000181',
+      email: null,
+      isCustomer: true,
+      isSupplier: false,
+      isProfessional: false,
+      code: null,
+      paymentTerms: null,
+      active: true,
+    })
+    expect(cliente.status).toBe(201)
+    if (cliente.status !== 201) return
+    expect(
+      (
+        await createWork({
+          customerId: cliente.data.id,
+          description: 'OBRA DA ORDEM',
+          active: true,
+        })
+      ).status,
+    ).toBe(201)
+
+    const asc = await listWorks({ sortBy: 'customerName', page: 1, pageSize: 50 })
+    expect(asc.status).toBe(200)
+    if (asc.status !== 200) return
+    const nomes = asc.data.rows.map((obra) => obra.customerName ?? '')
+
+    // A guarda que a primeira versão deste caso não tinha, e que reprovou nela:
+    // sem dois nomes distintos, a comparação com a lista ordenada é tautologia.
+    expect(new Set(nomes).size).toBeGreaterThan(1)
+    expect(nomes).toEqual([...nomes].sort((a, b) => a.localeCompare(b)))
+    expect(nomes[0]).toBe('AAA CONSTRUTORA DA ORDEM LTDA')
+
+    const desc = await listWorks({
+      sortBy: 'customerName',
+      sortDesc: true,
+      page: 1,
+      pageSize: 50,
+    })
+    expect(desc.status).toBe(200)
+    if (desc.status !== 200) return
+    expect(desc.data.rows.map((obra) => obra.customerName ?? '')).toEqual([...nomes].reverse())
+  })
+
+  it('`customerName` ordena mas NÃO filtra — as duas listas divergem de propósito', async () => {
+    // A divergência é a parte fácil de perder: enquanto as duas whitelists foram
+    // a mesma constante, acrescentar um campo ao `sortBy` ligava o filtro de
+    // brinde. Filtro que o contrato não publica tem de ser 400, não silêncio.
+    await entrar()
+    const porNome = new URLSearchParams({
+      filters: JSON.stringify([{ field: 'customerName', operator: 'eq', value: 'x' }]),
+    })
+    expect((await fetch(`http://mock.teste/api/works?${porNome}`)).status).toBe(400)
   })
 
   it('incluir para cliente que a empresa não atende é 404', async () => {

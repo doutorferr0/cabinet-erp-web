@@ -54,10 +54,18 @@ import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
  * `customerName` a partir de `store.parceiros`. No servidor o campo sai de
  * `LEFT JOIN partners`, como `partnerName` em `/api/crm/opportunities`.
  */
-const ORDENAVEIS = ['customerId', 'description', 'workType', 'active', 'customerName']
+export const ORDENAVEIS = ['customerId', 'description', 'workType', 'active', 'customerName']
 
-/** A de `filters`, menor de propósito — ver acima. */
-const FILTRAVEIS: CamposFiltraveis = {
+/**
+ * A de `filters`, menor de propósito — ver acima.
+ *
+ * As duas são exportadas para `src/data/contrato-bloco2.test.ts` conferi-las
+ * contra a DESCRIÇÃO do contrato, com a mesma leitura que a guarda do
+ * `cabinet-erp-api` faz (`tests/filtros-do-contrato.test.ts`). É a divergência
+ * que dói de verdade: whitelist do mock diferente da publicada faz a tela
+ * ordenar em dev e tomar 400 contra o `:3000` — e o site público é 100% mock.
+ */
+export const FILTRAVEIS: CamposFiltraveis = {
   customerId: 'text',
   description: 'text',
   workType: 'text',

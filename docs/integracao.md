@@ -596,8 +596,8 @@ mentira com cara de dado do servidor.
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de
 sadmann7/shadcn-table — ver `NOTICE`), e desde a issue #77 o contrato publica por
 onde isso viaja: **`filters` e `joinOperator`, os dois `Proposto`**, em
-`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86) e
-`GET /api/quotes` (#134).
+`GET /api/products`, `GET /api/partners`, `GET /api/crm/opportunities` (#86),
+`GET /api/quotes` (#134), `GET /api/orders` e `GET /api/works`.
 
 ### Como viaja
 
@@ -645,6 +645,23 @@ dinheiro trafega em centavos e o filtro **não tem variante de dinheiro** (ver
 R$ 10,00 para quem procurava mil reais — número certo, significado errado, sem
 sintoma. Ordenar por centavos continua valendo: a ordem é a mesma. Sobram `name`,
 `partnerName`, `stageName`, `expectedCloseDate` e `stageChangedAt`.
+
+**Obra (#273/#280) é a segunda, e a subtração tem outro motivo.** `sortBy` aceita
+`customerId`, `description`, `workType`, `active` **e `customerName`**; `filters`
+aceita os quatro primeiros. `customerName` fica de fora do filtro porque filtrar
+por nome de cliente seria uma **segunda forma de perguntar** o que `customerId` já
+responde — o combo escolhe o cliente e manda o id, que é como a tela pede "as
+obras deste cliente". Ordenar é outra coisa: acontece sobre o que já veio, e o
+operador ordena pelo que LÊ, que é o nome (`WorkDto.customerName` existe
+declaradamente "para a listagem mostrar de quem é a obra"). No servidor o campo
+sai de `LEFT JOIN partners`, como `partnerName` em oportunidades.
+
+**A lição das duas juntas: "a whitelist do `filters` é a do `sortBy`" deixou de
+ser regra e virou coincidência de dois recursos.** Cada listagem declara as suas
+DUAS listas, e quem lê o contrato lê as duas descrições — a do `sortBy` e a do
+`filters` — em vez de supor que uma repete a outra. Do lado do servidor a
+separação existe desde a `cabinet-erp-api#62`: antes, um mapa só servia às duas, e
+a subtração que o contrato já escrevia era inexprimível lá.
 
 No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts` e
 `parceiros-api.ts`; lista própria em `crm-api.ts`) e **`filtrosDaTabela` barra antes

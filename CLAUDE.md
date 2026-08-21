@@ -138,7 +138,9 @@ e o do site público. **Com ela, e só com ela**, as operações listadas em
 Com o proxy de pé, o MSW não responde a nenhuma rota de `/api`; sem ele, responde a todas.
 `rotas-do-backend.ts` deixou de ser "a lista do que já dá para ligar" e virou **o interruptor
 entre dois ambientes**. Medido contra `cabinet-erp-api` `3089106`, por round-trip e com sessão
-real: das 20 que faltavam, **18 respondem 200/201 e 2 respondem 403 por PAPEL** — nenhuma é 501.
+real: das 20 que faltavam, **18 respondem 200/201 e 2 respondiam 403 por PAPEL** — nenhuma é 501.
+Remedido em `30a098e`: as duas do 403 (escrita de lista de apoio) **passaram a responder 201/200**,
+porque o `api#70` afrouxou a matriz no mesmo dia.
 
 **Trocar `VITE_API_MODE` para `http` continua NÃO sendo a forma de falar com o backend**, e a
 razão mudou: já não é o 501, é que o **site público é 100% mock** e o modo http o apagaria. Por
@@ -169,14 +171,17 @@ removido. Aviso de falta que não existe mais é a mesma mentira com o sinal tro
   (`src/features/colaborador/cobertura-do-colaborador.tsx`). **Nunca foi buraco da passagem**: o
   que falta é do lado do mock — handler de `GET /api/employees/{id}` e unificar as duas sementes.
   Sem isso o site público, que é 100% mock, ficaria sem detalhe.
-- **⚠ Escrita de lista de apoio, e esta é NOVA** — `POST`/`PUT /api/catalog-lookups` estão na
-  passagem e respondem **403 `papel-insuficiente`** para `operator-full`, o papel do usuário demo:
-  a matriz do backend reserva o caminho a `admin`. Com o par local de pé, o `+...` do
-  `LookupCombo` (padrão 2, **19 telas**) passa a recusar em vez de gravar. Ligamos assim mesmo
-  (decisão do user) porque mock que grava enquanto o servidor recusa ensina que funciona, e o
-  defeito só apareceria com a tela já construída em cima da ficção. O conserto do lado da tela
-  (esconder o controle com `src/data/papeis.ts`) e a decisão de produto (`api#66`) ficam para
-  outra PR.
+- **Escrita de lista de apoio — costura que VENCEU em menos de um dia.** `POST`/`PUT
+  /api/catalog-lookups` entraram na passagem respondendo **403 `papel-insuficiente`** para
+  `operator-full`, e ligamos assim mesmo (decisão do user) porque mock que grava enquanto o
+  servidor recusa ensina que funciona. **Não é mais o caso:** aquele `admin` da matriz era
+  HERANÇA — a linha nasceu fechada quando não havia escrita no contrato e ninguém a reabriu quando
+  a escrita chegou (`api#66`) —, o `api#70` afrouxou para `operator-full`, e remedido em
+  `30a098e` o `POST` é **201** e o `PUT` é **200**. O `+...` grava onde o combo lê, e
+  `ao-vivo.test.ts` cobra isso. **A escrita de COLABORADOR continua 403 e ali é DECISÃO, não
+  herança:** `/api/employees` é `admin` porque vínculo é o que decide o papel dos outros. Papel
+  que recusa não é sempre a mesma coisa — perguntar se a linha foi decidida ou herdada antes de
+  aceitar o custo.
 
 Uma variável governa as duas metades de propósito — o `vite.config.ts` a lê de `process.env`, o
 `browser.ts` de `import.meta.env` (o Vite expõe ao cliente tudo que tem prefixo `VITE_`). Duas

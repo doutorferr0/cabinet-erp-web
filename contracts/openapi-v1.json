@@ -79,6 +79,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `kind`, `name`, `active`. Campo fora dela é 400.\n\nEsta operação NÃO publica `filters` — o recorte por `kind` é parâmetro próprio, porque toda tela que abre uma lista de apoio já sabe qual quer.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -533,6 +534,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `code`, `description`, `active`. Campo fora dela é 400.\n\nÉ a MESMA de `filters` — os três campos planos do `ProductDto`. `productTypeName`/`brandName` ficam de fora dos dois: vêm de junção com a lista de apoio, e o par `id`+`name` publicado no DTO existe para a tela MOSTRAR, não para o servidor indexar.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -985,6 +987,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `code`, `legalName`, `tradeName`, `document`, `active`, `parentId`. Campo fora dela é 400.\n\nÉ a MESMA de `filters`. `categoryName`, `parentName` e `specifierName` ficam de fora dos dois — são junções, como em produtos. `parentId` está aqui porque a hierarquia sai por `filters`, e não por um caminho aninhado.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -1417,6 +1420,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `occurredAt`, `delta`, `reason`. Campo fora dela é 400.\n\n`occurredAt` é o padrão, e descendente: kardex se lê do mais recente para trás.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -2147,6 +2151,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `name`, `sector`, `jobTitle`, `active`. Campo fora dela é 400.\n\n`sector` e `jobTitle` são listas de apoio resolvidas por junção, e entram porque a listagem de pessoas é organizada por elas — é a exceção que o par `id`+`name` justifica quando a coluna É o critério de leitura.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -2553,6 +2558,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt`. Campo fora dela é 400.\n\nÉ a MESMA de `filters` — inclusive `customerName` e `projectName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -2879,6 +2885,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `name`, `sort`, `active`. Campo fora dela é 400.\n\n`sort` é a ordem manual do funil, e é por ela que o quadro desenha as colunas.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -3369,6 +3376,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `name`, `partnerName`, `stageName`, `expectedValueCents`, `expectedCloseDate`, `stageChangedAt`. Campo fora dela é 400.\n\n**NÃO é a mesma de `filters`:** `expectedValueCents` ordena e não filtra. A ordem por centavos é a mesma que por reais, mas o FILTRO não tem variante de dinheiro — `1000` traria R$ 10,00 para quem procura mil reais. É a primeira das duas subtrações do contrato; a outra é a obra, ao contrário.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -3801,6 +3809,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `name`, `active`. Campo fora dela é 400.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -4105,6 +4114,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `dueDate`, `doneAt`, `kind`, `title`. Campo fora dela é 400.\n\n`assigneeName` fica de fora: é junção com o colaborador. Esta operação NÃO publica `filters`, e pedir o parâmetro é 400 — a agenda recorta por `entityType`/`entityId`, que são caminho, não filtro.",
             "in": "query",
             "schema": {
               "type": "string"
@@ -4644,6 +4654,7 @@
           },
           {
             "name": "sortBy",
+            "description": "Whitelist: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.\n\nA MESMA de `filters`, e a mesma do orçamento menos `expiresAt` — pedido não vence.",
             "in": "query",
             "schema": {
               "type": "string"

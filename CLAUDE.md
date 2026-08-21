@@ -140,20 +140,22 @@ backend:** o que ele ainda não implementa responde **501**, e o toggle global e
 dessas famílias quebradas.
 
 **A unidade de ligação é a FAMÍLIA, não a rota** (medido em `744bd75`: 51 servidas, 18 em 501;
-em `33db0df` a passagem foi para 58). **A contagem de 501 VENCE rápido** — na remedição de
-2026-08-20, `POST /api/products`, `GET /api/dashboard/summary`, `/api/dashboard/agenda` e
-`/api/crm/opportunities` já respondiam, e a lista abaixo continua descrevendo o dia em que foi
-escrita. Remedir antes de citar. **E confira a IDADE do processo em `:3000`**: `node src/main.ts`
+em `33db0df` a passagem foi para 58). **A contagem de 501 VENCE rápido, e já venceu até o zero:**
+remedido em `3af4f01` (2026-08-20, no rebase), o contrato tem **78 operações e NENHUMA responde
+501**. As 20 fora da passagem estão fora por decisão nossa — família não conferida —, não por
+falta de servidor. Remedir antes de citar, e não citar número deste arquivo sem remedir: ele não
+roda, então envelhece calado. **E confira a IDADE do processo em `:3000`**: `node src/main.ts`
 não recarrega, e um servidor de ontem responde como o contrato de ontem — foi o que quase
 transformou "o backend não serve" em conclusão errada. O critério "existe no contrato E não é 501" é necessário, não suficiente: ele mede uma rota,
 e o que quebra é a TELA. Meia família põe id do servidor de um lado e id inventado do outro, e o
 resultado tem cara de dado, não de erro — a mesma regra que o registry aplica ao `get`. Ficam
-inteiras no mock, por terem operação em 501: **oportunidades e motivos de perda do CRM**,
-**indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex**.
+inteiras no mock: **oportunidades e motivos de perda do CRM**, **indicadores e agenda do
+dashboard**, **escrita de produto**, **variantes** e **kardex** — não mais por 501 (elas
+respondem), e sim porque ninguém conferiu cada família contra a tela que a consome.
 
 **Duas costuras deliberadas, as duas declaradas NA TELA** (só com `VITE_API_PROXY`, e amarradas por
 `rotas-do-backend.test.ts`): o **quadro do funil** — funis e estágios do servidor, oportunidades do
-mock (501), quadro vazio que parece "não há negócio" (`src/features/crm/cobertura-do-funil.tsx`); e
+mock (hoje já servidas, e ainda não ligadas), quadro vazio que parece "não há negócio" (`src/features/crm/cobertura-do-funil.tsx`); e
 o **cadastro de colaborador** — `listEmployees` passa (as atividades dependem dele) mas
 `data.colaboradores` ainda é provider de mock, e as duas listas de pessoas divergem
 (`src/features/colaborador/cobertura-do-colaborador.tsx`). Migrar a tela do colaborador exige antes

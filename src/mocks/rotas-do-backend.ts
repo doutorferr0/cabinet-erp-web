@@ -41,6 +41,25 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * tem), `GET`/`PUT` do mesmo id refletindo a alteração, e o trio de contatos criando, listando e
  * renomeando o mesmo registro.
  *
+ * **REMEDIDO no rebase, em 2026-08-20**, contra `cabinet-erp-api` main `3af4f01`, e o resultado
+ * INVERTE a premissa desta lista: das **78** operações do contrato (não 69 — ele cresceu de novo),
+ * **zero respondem 501**. As 20 que ficam fora da lista abaixo não estão fora porque o servidor
+ * não as serve; estão fora porque a FAMÍLIA delas ainda não foi conferida inteira. A dívida
+ * mudou de lado — era do backend, virou nossa.
+ *
+ * Isso não autoriza acrescentá-las aqui em bloco: o critério de família fechada continua valendo,
+ * e é ele que segura. Produto arrasta variantes e kardex; o funil arrasta motivos de perda e
+ * `crm/opportunities/{id}/quote`; o dashboard é painel próprio. Cada uma é uma decisão de tela,
+ * uma por vez.
+ *
+ * **A sonda desta rodada não deixou 400 por resolver, e isso é o que a torna conclusiva.** Das 78
+ * operações, 16 pararam em 400 na primeira passada — inconclusivo pela regra do parágrafo acima.
+ * Refeitas com corpo derivado de LEITURA real (o registro que o servidor devolveu, sem o `id`) e
+ * com `content-type` omitido onde não há corpo, as 16 viraram 200/201/204/409: resposta de
+ * DOMÍNIO, que só existe se houver handler atrás. Duas armadilhas próprias apareceram aí —
+ * `POST /auth/logout` no começo da varredura derruba a sessão e faz as 15 seguintes lerem 401, e
+ * `POST .../stages` com corpo derivado de uma listagem VAZIA manda `{}` e lê 400 por engano.
+ *
  * **Armadilha nova, e ela não estava em nenhuma das três já anotadas:** o backend que atende em
  * `:3000` pode ser um PROCESSO VELHO. `node src/main.ts` não recarrega sozinho, e o que estava no
  * ar tinha 26 horas — servia parceiro SEM os campos da fase 1 e do bloco 2, e respondia como se o
@@ -75,10 +94,11 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * lida no tamanho da família em vez do recurso.
  *
  * Então a lista liga por família fechada, e uma família só fecha quando o backend serve TODA a
- * superfície que a tela consome dela. Hoje fecham todas as onze que ele serve, e por isso as 51
- * estão aqui. As famílias que sobram no contrato têm operação em 501 e ficam inteiras no mock:
- * **oportunidades e motivos de perda do CRM**, **indicadores e agenda do dashboard**, **escrita
- * de produto**, **variantes** e **kardex**.
+ * superfície que a tela consome dela. Hoje fecham treze famílias, e por isso as 58 estão aqui.
+ * As que sobram ficam inteiras no mock — **oportunidades e motivos de perda do CRM**,
+ * **indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex** —
+ * e desde `3af4f01` isso é escolha nossa, não limite do servidor: elas respondem. Ficam porque
+ * ninguém conferiu a família inteira contra a tela que a consome, que é o passo que falta.
  *
  * Duas famílias entraram JUNTAS, e separá-las seria o erro:
  *

@@ -121,6 +121,32 @@ describe('cliente — categoria, especificador, IE rural, observação e redes',
     expect(corpo.specifierId).toBe(idDeApoio('PROFISSIONAL', 'ESTÚDIO FERRARI'))
     expect(corpo.parentId).toBe('parc-0001')
   })
+
+  /**
+   * A IE DA EMPRESA ENTROU NA TELA DE CLIENTE (#254).
+   *
+   * Enquanto o campo não existia aqui, o Cliente devolvia `stateRegistration`
+   * como veio e só o Fornecedor a editava — o que é correto para um campo que a
+   * tela não desenha, e errado para um que ela desenha. As duas inscrições
+   * continuam SEPARADAS: produtor rural pessoa física tem a segunda sem ter a
+   * primeira, e guardá-las no mesmo lugar apagaria uma na primeira gravação.
+   */
+  it('a IE da empresa e a de produtor rural viajam em campos diferentes', async () => {
+    const linha = await parceiroDoSeed('parc-0002')
+    const registro = papelCliente.dtoParaForm(linha)
+
+    const editado = { ...registro, inscEst: '110055443322', inscEstProdutorRural: '987654321' }
+    await atualizarParceiro(
+      linha.id,
+      corpoDeEscrita(linha, papelCliente.paraEscrita(editado, linha)),
+    )
+
+    const relido = await parceiroDoSeed(linha.id)
+    expect(relido.stateRegistration).toBe('110055443322')
+    expect(relido.ruralProducerRegistration).toBe('987654321')
+    // O conselho profissional é outro campo, e não foi tocado.
+    expect(relido.registration).toBe(linha.registration ?? null)
+  })
 })
 
 describe('fornecedor — a Inscrição Estadual é da EMPRESA, não o conselho da pessoa', () => {
@@ -150,7 +176,27 @@ describe('fornecedor — a Inscrição Estadual é da EMPRESA, não o conselho d
 
     expect(corpo.categoryId).toBe(linha.categoryId)
     expect(corpo.specifierId).toBe(linha.specifierId)
-    expect(corpo.notes).toBe(linha.notes)
+    expect(corpo.ruralProducerRegistration).toBe(linha.ruralProducerRegistration)
+  })
+
+  /**
+   * `notes` SAIU dessa lista em #254: a observação interna (`for_obs`) é campo
+   * do fornecedor no legado, a tela passou a desenhá-la, e campo desenhado é
+   * campo que viaja. Devolvê-la como veio agora seria o defeito espelhado — o
+   * operador digita e o Gravar não leva.
+   */
+  it('a observação interna vai e volta pela tela de Fornecedor', async () => {
+    const linha = await parceiroDoSeed('parc-0001')
+    const registro = papelFornecedor.dtoParaForm(linha)
+
+    const editado = { ...registro, observacao: 'Entrega só com agendamento.' }
+    await atualizarParceiro(
+      linha.id,
+      corpoDeEscrita(linha, papelFornecedor.paraEscrita(editado, linha)),
+    )
+
+    const relido = await parceiroDoSeed(linha.id)
+    expect(relido.notes).toBe('Entrega só com agendamento.')
   })
 })
 
@@ -168,5 +214,29 @@ describe('profissional — as redes sociais que a tela §3 desenhava e não grav
     expect(corpo.facebook).toBe('fb.com/mh')
     expect(corpo.instagram).toBe('@mh.studio')
     expect(corpo.stateRegistration).toBe(linha.stateRegistration ?? null)
+  })
+
+  /**
+   * A OBSERVAÇÃO É DO PARCEIRO — uma só, `notes`, para as três telas.
+   *
+   * A CATEGORIA não veio junto de propósito: o contrato publica `categoryId`
+   * apontando para `CATEGORIA_CLIENTE`, e não há campo para a categoria do
+   * profissional. Um combo de `CATEGORIA_PROFISSIONAL` gravando ali poria o
+   * item de uma lista no campo da outra.
+   */
+  it('a observação vai e volta, e a categoria do CLIENTE segue intocada', async () => {
+    const linha = await parceiroDoSeed('parc-0002')
+    const registro = papelProfissional.dtoParaForm(linha)
+    expect(registro.observacao).toBe(linha.notes ?? '')
+
+    const editado = { ...registro, observacao: 'Especifica muito na zona sul.' }
+    await atualizarParceiro(
+      linha.id,
+      corpoDeEscrita(linha, papelProfissional.paraEscrita(editado, linha)),
+    )
+
+    const relido = await parceiroDoSeed(linha.id)
+    expect(relido.notes).toBe('Especifica muito na zona sul.')
+    expect(relido.categoryId).toBe(linha.categoryId)
   })
 })

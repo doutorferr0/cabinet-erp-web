@@ -70,10 +70,33 @@ function Cartao({ indicador }: { indicador: Indicador }) {
             sintético — o browser engorda o traço por conta. Quem dá presença ao
             número aqui é a largura da mono e a tabularidade, não o peso
             (decisão do user, 2026-08-13). */}
-        <span className={cn('font-mono text-2xl tabular-nums', indicador.dinheiro && 'text-money')}>
+        {/* r7 (ref. Devora): a CONTAGEM fala em display condensado grande —
+            número-herói do cartão. Dinheiro continua na voz de QUANTO (mono,
+            regra de 2026-08-13): moeda não troca de voz por moda. */}
+        <span
+          className={cn(
+            indicador.dinheiro
+              ? 'font-mono text-2xl tabular-nums text-money'
+              : 'font-[family-name:var(--font-display-condensada)] text-[2.375rem] leading-none tracking-[0.02em]',
+          )}
+        >
           {indicador.valor}
         </span>
-        <span className="text-sm text-muted-foreground">{indicador.apoio}</span>
+        {/* Delta com sinal vira CHIP tonal — verde soma, coral subtrai. */}
+        {/^[+−-]/.test(indicador.apoio) ? (
+          <span
+            className={cn(
+              'w-fit rounded-item border px-1.5 py-0.5 font-mono text-[0.6875rem] tabular-nums',
+              indicador.apoio.startsWith('+')
+                ? 'border-money/40 bg-zone-money text-money'
+                : 'border-destructive/40 bg-zone-danger text-destructive',
+            )}
+          >
+            {indicador.apoio}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">{indicador.apoio}</span>
+        )}
       </span>
     </>
   )

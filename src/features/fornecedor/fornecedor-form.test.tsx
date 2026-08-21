@@ -106,17 +106,19 @@ describe('tela Fornecedor', () => {
       homePhone: null,
       fax: null,
       address: null,
-      // #250: a tela de Fornecedor edita a Inscrição Estadual e as redes; a
-      // categoria, o especificador, a IE de produtor rural e a observação são
-      // da tela de Cliente e voltam como vieram — é o que impede o Gravar de um
-      // fornecedor de apagar o que a outra tela gravou no mesmo cadastro.
+      // #250/#254: a tela de Fornecedor edita a Inscrição Estadual, a
+      // observação interna e as redes; a categoria, o especificador e a IE de
+      // produtor rural são da tela de Cliente e voltam como vieram — é o que
+      // impede o Gravar de um fornecedor de apagar o que a outra tela gravou no
+      // mesmo cadastro. Os editáveis chegam nulos aqui porque o registro veio
+      // em branco, e não por não viajarem.
       stateRegistration: null,
       facebook: null,
       instagram: null,
+      notes: null,
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
-      notes: null,
       // #255: cobrança, comercial e vínculo de trabalho. NENHUMA tela os edita
       // ainda (é a #254 que os liga) — atravessam o corpo como vieram, que é o
       // que impede o primeiro Gravar de apagá-los.
@@ -136,6 +138,38 @@ describe('tela Fornecedor', () => {
     // 15s: este caso monta DUAS telas (listagem e formulário completo) e ainda
     // digita — o limite padrão de 5s do vitest não cobre isso nesta máquina.
   }, 15_000)
+
+  /**
+   * A OBSERVAÇÃO INTERNA (`for_obs`) É CAMPO DO FORNECEDOR — #254.
+   *
+   * A tela não a desenhava, então o `notes` do cadastro só existia se a tela de
+   * Cliente o tivesse gravado. Campo desenhado é campo que viaja: o teste mede
+   * o corpo do `PUT`, não o que aparece na tela.
+   */
+  it('a observação interna aparece no formulário e chega ao PUT', async () => {
+    const { stub, chamadas } = servidorDeParceiros([parceiro({ code: 'F001' })])
+    const { router, user } = renderRoute('/cadastros/fornecedores', stub)
+
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Alterar')
+    await screen.findByLabelText('Razão Social')
+    await user.click(screen.getByRole('button', { name: 'Observação interna' }))
+
+    const observacao = screen.getByLabelText('Observação')
+    expect(observacao).toBeVisible()
+    await user.type(observacao, 'Entrega só com agendamento.')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
+      },
+      { timeout: 5000 },
+    )
+
+    expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
+      notes: 'Entrega só com agendamento.',
+    })
+  }, 20_000)
 
   it('formulário inclui contato na grade e grava (volta para a listagem)', async () => {
     const { stub } = servidorDeParceiros()

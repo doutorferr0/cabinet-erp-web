@@ -1147,6 +1147,44 @@
   letter-spacing: -0.01em;
 }
 
+/* DETALHES r7 (referências + inspiração online): os micro-acabamentos que
+   fazem o sistema parecer DESENHADO, não montado. */
+::selection {
+  background: hsl(var(--accent) / 0.55);
+  color: hsl(var(--foreground));
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--rule-hair)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--rule-hair));
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+/* Atalho de teclado como TECLA (mockup v5): borda com base grossa = keycap. */
+kbd {
+  border: 1px solid hsl(var(--rule-hair));
+  border-bottom-width: 3px;
+  border-radius: 5px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--card));
+  vertical-align: 1px;
+}
+
 body {
   background-color: hsl(var(--background));
   /* FUSÃO v5: dois halos radiais quase-invisíveis (violeta da marca, ciano)

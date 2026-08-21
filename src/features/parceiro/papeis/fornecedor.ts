@@ -33,6 +33,9 @@ function dtoParaForm(dto: PartnerDto): Fornecedor {
     // Estadual da empresa — nada a ver com `registration`, que é o conselho
     // profissional de pessoa.
     inscEst: dto.stateRegistration ?? '',
+    // #254: a observação interna (`for_obs`) é a mesma `notes` das outras duas
+    // telas — um campo do PARCEIRO, editado por quem o desenha.
+    observacao: dto.notes ?? '',
     redesSociais: {
       facebook: dto.facebook ?? '',
       instagram: dto.instagram ?? '',
@@ -59,11 +62,12 @@ function contatoEEndereco(values: Fornecedor) {
     businessPhone: textoOuNulo(values.fone1),
     fax: textoOuNulo(values.fax),
     address: enderecoParaContrato(values.endereco),
-    // Fase 1 (#250). Só o que ESTA tela desenha: IE e redes. Categoria,
-    // especificador, IE de produtor rural e observação são campos da tela de
+    // Fase 1 (#250/#254). Só o que ESTA tela desenha: IE, observação e redes.
+    // Categoria, especificador e IE de produtor rural são campos da tela de
     // Cliente — omitidos aqui, voltam como vieram, e é o que impede o Gravar do
     // Fornecedor de apagar o que a outra tela gravou no mesmo cadastro.
     stateRegistration: textoOuNulo(values.inscEst),
+    notes: textoOuNulo(values.observacao),
     facebook: textoOuNulo(values.redesSociais.facebook),
     instagram: textoOuNulo(values.redesSociais.instagram),
   }
@@ -74,7 +78,7 @@ export const papelFornecedor: PapelDeCadastro<Fornecedor> = {
   rota: '/cadastros/fornecedores',
   queryKeyListagem: ['fornecedores'],
   camposDeEdicao:
-    'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail, Fone 1, FAX, Endereço, Inscrição Estadual, Redes sociais e Ativo',
+    'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail, Fone 1, FAX, Endereço, Inscrição Estadual, Observação, Redes sociais e Ativo',
   vazio: fornecedorVazio,
   dtoParaForm,
   paraEscrita: (values) => ({

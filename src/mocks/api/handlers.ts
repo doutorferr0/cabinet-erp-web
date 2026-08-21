@@ -19,8 +19,17 @@ import { handlersDeAtividades } from './atividades'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
-import { problemaJson } from './problema'
+import {
+  TIPO,
+  camposInvalidos,
+  conflito,
+  naoEncontrado,
+  problemaJson,
+  semEmpresaAtiva,
+  semSessao,
+} from './problema'
 import { handlersDeOrcamento } from './quotes'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -44,9 +53,6 @@ import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
  * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
-
-const SEM_SESSAO = () => problemaJson(401, 'Não autenticado.')
-const SEM_EMPRESA = () => problemaJson(409, 'Nenhuma empresa ativa na sessão.')
 
 interface ConsultaDeLista {
   q: string | null
@@ -93,10 +99,15 @@ function listar<T>(
   filtraveis?: CamposFiltraveis,
 ) {
   if (consulta.page < 1 || consulta.pageSize < 1 || consulta.pageSize > 100) {
-    return problemaJson(400, 'Paginação inválida: page é 1-based e pageSize vai até 100.')
+    return problemaJson(
+      400,
+      'Paginação inválida: page é 1-based e pageSize vai até 100.',
+      {},
+      TIPO.paginacaoInvalida,
+    )
   }
   if (consulta.sortBy && !ordenaveis.includes(consulta.sortBy)) {
-    return problemaJson(400, `sortBy inválido: ${consulta.sortBy}.`)
+    return problemaJson(400, `sortBy inválido: ${consulta.sortBy}.`, {}, TIPO.ordenacaoInvalida)
   }
 
   let rows = [...itens]
@@ -106,7 +117,7 @@ function listar<T>(
   }
 
   const filtradas = aplicarFiltros(rows, consulta.url, filtraveis)
-  if (typeof filtradas === 'string') return problemaJson(400, filtradas)
+  if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
   rows = filtradas
 
   if (consulta.sortBy) {
@@ -154,7 +165,7 @@ export const handlers = [
     if (new URL(request.url).pathname.endsWith('/auth/login')) return undefined
 
     store.expiraProximaEscrita = false
-    return SEM_SESSAO()
+    return semSessao()
   }),
 
   // ---------------- auth ----------------
@@ -192,30 +203,39 @@ export const handlers = [
   }),
 
   http.get('*/auth/me', () => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     return HttpResponse.json(sessaoAtual())
   }),
 
   http.post('*/auth/change-password', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const corpo = (await request.json()) as { currentPassword?: string }
     if (corpo.currentPassword === 'errada') {
-      return problemaJson(400, 'A senha atual não confere.')
+      return problemaJson(400, 'A senha atual não confere.', {}, TIPO.senhaAtualInvalida)
     }
     store.mustChangePassword = false
     return new HttpResponse(null, { status: 204 })
   }),
 
   http.get('*/auth/tenants', () => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     return HttpResponse.json(store.empresas)
   }),
 
   http.put('*/auth/active-tenant', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const corpo = (await request.json()) as TrocarEmpresaRequest
+    // 403, e não o 400 que estava aqui: escolher empresa fora dos vínculos é
+    // pedido BEM formado que o servidor recusa — é o caso 2 do `SemPermissao`
+    // do contrato, e é o que o backend real responde. 404 seria pior ainda:
+    // esconderia a existência de uma empresa cujo id viaja em `/auth/tenants`.
     if (!store.empresas.some((e) => e.tenantId === corpo.tenantId)) {
-      return problemaJson(400, 'Empresa fora dos vínculos do usuário.')
+      return problemaJson(
+        403,
+        'Usuário não tem vínculo com a empresa informada.',
+        {},
+        TIPO.semVinculoComEmpresa,
+      )
     }
     store.activeTenantId = corpo.tenantId
     return new HttpResponse(null, { status: 204 })
@@ -223,7 +243,7 @@ export const handlers = [
 
   // ---------------- catalog-lookups (da ORG — respondem sem empresa ativa) ----------------
   http.get('*/api/catalog-lookups', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const url = new URL(request.url)
     const kind = url.searchParams.get('kind')
     const base = kind ? store.lookups.filter((l) => l.kind === kind) : store.lookups
@@ -232,15 +252,15 @@ export const handlers = [
 
   // ---------------- products ----------------
   http.get('*/api/products/:id', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const produto = store.produtos.find((p) => p.id === params.id)
-    if (!produto) return problemaJson(404, 'Produto não encontrado.')
+    if (!produto) return naoEncontrado('Produto não encontrado.')
     return HttpResponse.json(produto)
   }),
 
   http.get('*/api/products', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const url = new URL(request.url)
     // Sem empresa ativa o domínio devolve VAZIO, não erro — modo de falhar da
     // Etapa 0, intacto até no mock.
@@ -263,8 +283,8 @@ export const handlers = [
   }),
 
   http.post('*/api/products', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as ProductWriteRequest
     // `fields[]` (extensão do problem+json): o erro chega ao CONTROLE, não vira
     // frase solta no topo do formulário. Sem ele, o operador de um cadastro de
@@ -274,15 +294,13 @@ export const handlers = [
     // estreita `code`/`description` para `string` no resto do handler — o
     // contrato os declara anuláveis.
     if (!corpo.code || !corpo.description) {
-      return problemaJson(400, 'Confira os campos destacados.', {
-        fields: [
-          ...(corpo.code ? [] : [{ path: 'code', message: 'Informe o código do produto.' }]),
-          ...(corpo.description ? [] : [{ path: 'description', message: 'Informe a descrição.' }]),
-        ],
-      })
+      return camposInvalidos([
+        ...(corpo.code ? [] : [{ path: 'code', message: 'Informe o código do produto.' }]),
+        ...(corpo.description ? [] : [{ path: 'description', message: 'Informe a descrição.' }]),
+      ])
     }
     if (store.produtos.some((p) => p.code === corpo.code)) {
-      return problemaJson(409, `Já existe produto com o código ${corpo.code}.`)
+      return conflito(`Já existe produto com o código ${corpo.code}.`, TIPO.codigoJaCadastrado)
     }
     const produto = {
       id: novoId('prod'),
@@ -297,10 +315,10 @@ export const handlers = [
   }),
 
   http.put('*/api/products/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const produto = store.produtos.find((p) => p.id === params.id)
-    if (!produto) return problemaJson(404, 'Produto não encontrado.')
+    if (!produto) return naoEncontrado('Produto não encontrado.')
     const corpo = (await request.json()) as ProductWriteRequest
     if (!corpo.code || !corpo.description) {
       return problemaJson(400, 'Código e descrição são obrigatórios.')
@@ -315,10 +333,10 @@ export const handlers = [
 
   // ---------------- variants ----------------
   http.post('*/api/products/:productId/variants', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const produto = store.produtos.find((p) => p.id === params.productId)
-    if (!produto) return problemaJson(404, 'Produto não encontrado.')
+    if (!produto) return naoEncontrado('Produto não encontrado.')
     const corpo = (await request.json()) as VariantWriteRequest
     const variante: ProductVariantDto = {
       id: novoId('var'),
@@ -334,11 +352,11 @@ export const handlers = [
   }),
 
   http.put('*/api/products/:productId/variants/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const produto = store.produtos.find((p) => p.id === params.productId)
     const variante = produto?.variants.find((v) => v.id === params.id)
-    if (!produto || !variante) return problemaJson(404, 'Variante não encontrada.')
+    if (!produto || !variante) return naoEncontrado('Variante não encontrada.')
     const corpo = (await request.json()) as VariantWriteRequest
     variante.finish = corpo.finish ?? ''
     variante.size = corpo.size ?? ''
@@ -350,7 +368,7 @@ export const handlers = [
 
   // ---------------- kardex (ADR-009: saldo é DERIVADO do movimento) ----------------
   http.get('*/api/variants/:variantId/stock-movements', ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     const url = new URL(request.url)
     const rows = store.movimentos.filter((m) => m.variantId === params.variantId).reverse()
@@ -358,12 +376,12 @@ export const handlers = [
   }),
 
   http.post('*/api/variants/:variantId/stock-movements', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const variante = store.produtos
       .flatMap((p) => p.variants)
       .find((v) => v.id === params.variantId)
-    if (!variante) return problemaJson(404, 'Variante não encontrada.')
+    if (!variante) return naoEncontrado('Variante não encontrada.')
     const corpo = (await request.json()) as StockMovementRequest
     if (!corpo.delta || !corpo.reason) {
       return problemaJson(400, 'Movimento exige delta diferente de zero e um motivo.')
@@ -388,25 +406,25 @@ export const handlers = [
 
   // ---------------- partners ----------------
   http.get('*/api/partners/:id', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const parceiro = store.parceiros.find((p) => p.id === params.id)
     // Sem vínculo com a empresa ativa = 404: buscar no cadastro da ORG abriria
     // parceiro da vizinha (mesma regra do backend — 404, não 403).
     if (!parceiro || !parceiro.vinculos[store.activeTenantId]) {
-      return problemaJson(404, 'Parceiro não encontrado.')
+      return naoEncontrado('Parceiro não encontrado.')
     }
     return HttpResponse.json(partnerDto(parceiro, store.activeTenantId))
   }),
 
   http.get('*/api/partners', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     const url = new URL(request.url)
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     const tenantId = store.activeTenantId
     const role = url.searchParams.get('role')
     if (role && !['customer', 'supplier', 'professional'].includes(role)) {
-      return problemaJson(400, `role inválido: ${role}.`)
+      return problemaJson(400, `role inválido: ${role}.`, {}, TIPO.papelInvalido)
     }
     const doPapel = (p: ParceiroDaOrg) =>
       role === 'customer'
@@ -438,13 +456,11 @@ export const handlers = [
   }),
 
   http.post('*/api/partners', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as PartnerWriteRequest
     if (!corpo.legalName) {
-      return problemaJson(400, 'Confira os campos destacados.', {
-        fields: [{ path: 'legalName', message: 'Informe a razão social.' }],
-      })
+      return camposInvalidos([{ path: 'legalName', message: 'Informe a razão social.' }])
     }
     const existente = corpo.document
       ? store.parceiros.find((p) => p.document === corpo.document)
@@ -452,7 +468,7 @@ export const handlers = [
     if (existente) {
       // O 409 carrega o membro de extensão que a tela usa para oferecer o
       // vínculo — é a semântica do backend, não invenção do mock.
-      return problemaJson(409, 'Documento já cadastrado no grupo.', {
+      return conflito('Documento já cadastrado no grupo.', TIPO.documentoJaCadastrado, {
         existingPartnerId: existente.id,
       })
     }
@@ -509,17 +525,15 @@ export const handlers = [
   }),
 
   http.put('*/api/partners/:id', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const parceiro = store.parceiros.find((p) => p.id === params.id)
     if (!parceiro || !parceiro.vinculos[store.activeTenantId]) {
-      return problemaJson(404, 'Parceiro não encontrado.')
+      return naoEncontrado('Parceiro não encontrado.')
     }
     const corpo = (await request.json()) as PartnerWriteRequest
     if (!corpo.legalName) {
-      return problemaJson(400, 'Confira os campos destacados.', {
-        fields: [{ path: 'legalName', message: 'Informe a razão social.' }],
-      })
+      return camposInvalidos([{ path: 'legalName', message: 'Informe a razão social.' }])
     }
     parceiro.legalName = corpo.legalName
     parceiro.tradeName = corpo.tradeName ?? null
@@ -568,10 +582,10 @@ export const handlers = [
   }),
 
   http.post('*/api/partners/:id/link', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const parceiro = store.parceiros.find((p) => p.id === params.id)
-    if (!parceiro) return problemaJson(404, 'Parceiro não encontrado.')
+    if (!parceiro) return naoEncontrado('Parceiro não encontrado.')
     const corpo = (await request.json()) as PartnerLinkRequest
     parceiro.vinculos[store.activeTenantId] = {
       code: corpo.code ?? null,
@@ -591,7 +605,7 @@ export const handlers = [
    * mexer no cadastro, e ninguém desconfia de um KPI parado.
    */
   http.get('*/api/dashboard/summary', () => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     // Sem empresa ativa o domínio responde VAZIO, não erro (semântica da Etapa
     // 0) — e vazio, para número, é zero.
     if (!store.activeTenantId) {
@@ -625,7 +639,7 @@ export const handlers = [
   }),
 
   http.get('*/api/dashboard/agenda', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json([])
     const url = new URL(request.url)
     const de = url.searchParams.get('from')
@@ -646,7 +660,7 @@ export const handlers = [
   }),
 
   http.get('*/api/tasks', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json([])
     const url = new URL(request.url)
     const status = url.searchParams.get('status')
@@ -663,8 +677,8 @@ export const handlers = [
   }),
 
   http.post('*/api/tasks', async ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const corpo = (await request.json()) as TaskWriteRequest
     if (!corpo.title?.trim()) return problemaJson(400, 'Título é obrigatório.')
 
@@ -690,10 +704,10 @@ export const handlers = [
    * `null` como ausente e tornaria impossível limpar um prazo.
    */
   http.patch('*/api/tasks/:taskId', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const tarefa = store.tarefas.find((t) => t.id === params.taskId)
-    if (!tarefa) return problemaJson(404, 'Tarefa não encontrada.')
+    if (!tarefa) return naoEncontrado('Tarefa não encontrada.')
 
     const corpo = (await request.json()) as TaskPatchRequest
     if ('title' in corpo) {
@@ -708,16 +722,16 @@ export const handlers = [
   }),
 
   http.get('*/api/todos', () => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json([])
     return HttpResponse.json(store.todos)
   }),
 
   http.patch('*/api/todos/:todoId', async ({ params, request }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const item = store.todos.find((t) => t.id === params.todoId)
-    if (!item) return problemaJson(404, 'Item não encontrado.')
+    if (!item) return naoEncontrado('Item não encontrado.')
     const corpo = (await request.json()) as TodoPatchRequest
     if (typeof corpo.done !== 'boolean') return problemaJson(400, 'done é obrigatório.')
     item.done = corpo.done
@@ -727,7 +741,7 @@ export const handlers = [
   // ---------------- planner ----------------
 
   http.get('*/api/projects', ({ request }) => {
-    if (!store.logado) return SEM_SESSAO()
+    if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json([])
     const status = new URL(request.url).searchParams.get('status')
     if (!status) return HttpResponse.json(store.projetos)
@@ -738,10 +752,10 @@ export const handlers = [
   }),
 
   http.get('*/api/projects/:projectId/plan', ({ params }) => {
-    if (!store.logado) return SEM_SESSAO()
-    if (!store.activeTenantId) return SEM_EMPRESA()
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
     const plano = store.planos[String(params.projectId)]
-    if (!plano) return problemaJson(404, 'Projeto não encontrado.')
+    if (!plano) return naoEncontrado('Projeto não encontrado.')
     return HttpResponse.json(plano)
   }),
 
@@ -773,6 +787,11 @@ export const handlers = [
   // o dia em que a biblioteca mudar de ideia chegar.
   ...handlersDeObras,
   ...handlersDeContatos,
+
+  // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
+  // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da
+  // escrita moram no arquivo próprio — ver o cabeçalho de `lookups.ts`.
+  ...handlersDeLookups,
 
   // ---------------- health ----------------
   http.get('*/health', () => HttpResponse.json({ status: 'ok' })),

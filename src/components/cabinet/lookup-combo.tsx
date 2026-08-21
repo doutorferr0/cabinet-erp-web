@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import {
+  type CadastroDeApoio,
   type LookupKind,
-  type OpcaoDeLookup,
   lookupLabel,
   nomeDoLookup,
+  useCadastrarItemDeApoio,
   useLookupOptions,
 } from '@/data/lookups-api'
 import { cn } from '@/lib/utils'
@@ -52,37 +53,68 @@ export function LookupCombo({
   const [open, setOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [newItem, setNewItem] = useState('')
-  // Cadastros rápidos ficam em estado local (mock); somem ao recarregar. O id
-  // é local também, e é por isso que ele carrega o prefixo: um id inventado no
-  // front não pode ser confundido com um que veio do servidor, nem no depurador
-  // nem numa gravação que chegue a existir antes de o cadastro rápido virar
-  // `POST` de verdade.
-  const [added, setAdded] = useState<OpcaoDeLookup[]>([])
+  /**
+   * O nome que o servidor recusou por 409 E que esta lista não tem — o único
+   * caso que o combo não resolve sozinho, e por isso o único que vira aviso.
+   */
+  const [duplicadoForaDaLista, setDuplicadoForaDaLista] = useState<string | null>(null)
   const fallbackId = useId()
   const listId = id ?? fallbackId
 
   const label = lookupLabel(kind)
 
   // As opções vêm do servidor (ADR-011). O rótulo continua local: rótulo é UI, não dado.
-  const { options: doServidor, truncada, carregando, erro } = useLookupOptions(kind)
-  const options = [...doServidor, ...added]
+  const { options, truncada, carregando, erro } = useLookupOptions(kind)
+  const { cadastrar, gravando, erro: erroDoCadastro, limparErro } = useCadastrarItemDeApoio(kind)
 
   // O que aparece no botão: o nome do id escolhido; se o id não está na lista,
   // o rótulo que o registro trouxe. Ver `rotulo` nas props.
   const escolhido = nomeDoLookup(options, value) ?? (value ? (rotulo ?? undefined) : undefined)
 
-  function confirmAdd() {
-    const nome = newItem.trim().toUpperCase()
+  /**
+   * O cadastro rápido é `POST /api/catalog-lookups` — não mais um item de
+   * mentira em estado local.
+   *
+   * Caixa alta porque o vocabulário de apoio é caixa alta no legado inteiro, e
+   * um `arquiteto` minúsculo no meio de uma lista maiúscula parece outro item.
+   *
+   * **409 não é erro, é a resposta.** O item que o operador quer já existe, e o
+   * combo escolhe o existente em vez de dizer "falhou": cadastrar de novo é o
+   * par duplicado que o contrato recusa. Quando o nome não está entre as opções
+   * carregadas (item desativado, ou lista cortada no teto de 100), o campo NÃO
+   * escolhe nada — id chutado gravaria a referência errada — e diz por quê.
+   */
+  async function confirmAdd() {
+    const nome = newItem.trim().toLocaleUpperCase()
     if (!nome) return
-    const existente = options.find((o) => o.nome === nome)
-    if (existente) {
-      onChange(existente.id)
-    } else {
-      const novo = { id: `novo:${kind}:${nome}`, nome }
-      setAdded((a) => [...a, novo])
-      onChange(novo.id)
+
+    let resultado: CadastroDeApoio
+    try {
+      resultado = await cadastrar({ nome, opcoesCarregadas: options })
+    } catch {
+      // Falha de verdade (400/500/rede) fica em `erroDoCadastro` e aparece no
+      // diálogo — o campo não fecha, e nada é escolhido no lugar.
+      return
     }
+
+    if (resultado.estado === 'duplicado') {
+      if (resultado.existente) {
+        onChange(resultado.existente.id)
+        fecharCadastro()
+        return
+      }
+      setDuplicadoForaDaLista(resultado.nome)
+      return
+    }
+
+    onChange(resultado.item.id)
+    fecharCadastro()
+  }
+
+  function fecharCadastro() {
     setNewItem('')
+    setDuplicadoForaDaLista(null)
+    limparErro()
     setAddOpen(false)
     setOpen(false)
   }
@@ -164,7 +196,11 @@ export function LookupCombo({
           >
             <MoreHorizontal className="size-4" />
           </Button>
-          <Dialog isOpen={addOpen} onOpenChange={setAddOpen} className="max-w-sm">
+          <Dialog
+            isOpen={addOpen}
+            onOpenChange={(aberto) => (aberto ? setAddOpen(true) : fecharCadastro())}
+            className="max-w-sm"
+          >
             <DialogHeader>
               <DialogTitle>Cadastrar {label}</DialogTitle>
             </DialogHeader>
@@ -174,21 +210,43 @@ export function LookupCombo({
                 id="lookup-quick-add-nome"
                 value={newItem}
                 autoFocus
-                onChange={(e) => setNewItem(e.target.value)}
+                onChange={(e) => {
+                  setNewItem(e.target.value)
+                  setDuplicadoForaDaLista(null)
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    confirmAdd()
+                    void confirmAdd()
                   }
                 }}
               />
+              {/* O 409 que o combo NÃO conseguiu resolver sozinho: o nome existe
+                  no kind, mas fora do que esta lista carregou. Dizer só "já
+                  existe" mandaria o operador procurar onde ele não vai achar. */}
+              {duplicadoForaDaLista && (
+                <p role="alert" className="text-[0.8rem] text-foreground">
+                  Já existe “{duplicadoForaDaLista}” em {label}, fora das opções carregadas aqui —
+                  item desativado, ou lista maior que o trecho exibido. Cadastrar de novo criaria a
+                  duplicata que o servidor recusou.
+                </p>
+              )}
+              {erroDoCadastro && (
+                <p role="alert" className="text-[0.8rem] text-foreground">
+                  Não foi possível cadastrar agora. O item não foi criado.
+                </p>
+              )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+              <Button type="button" variant="outline" onClick={fecharCadastro}>
                 Cancelar
               </Button>
-              <Button type="button" onClick={confirmAdd} disabled={!newItem.trim()}>
-                Gravar
+              <Button
+                type="button"
+                onClick={() => void confirmAdd()}
+                disabled={!newItem.trim() || gravando}
+              >
+                {gravando ? 'Gravando…' : 'Gravar'}
               </Button>
             </DialogFooter>
           </Dialog>

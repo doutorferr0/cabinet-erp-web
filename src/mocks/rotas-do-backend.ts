@@ -94,11 +94,29 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * lida no tamanho da família em vez do recurso.
  *
  * Então a lista liga por família fechada, e uma família só fecha quando o backend serve TODA a
- * superfície que a tela consome dela. Hoje fecham treze famílias, e por isso as 58 estão aqui.
- * As que sobram ficam inteiras no mock — **oportunidades e motivos de perda do CRM**,
- * **indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex** —
- * e desde `3af4f01` isso é escolha nossa, não limite do servidor: elas respondem. Ficam porque
- * ninguém conferiu a família inteira contra a tela que a consome, que é o passo que falta.
+ * superfície que a tela consome dela. Hoje fecham catorze famílias, e por isso as **64** estão
+ * aqui. As que sobram ficam inteiras no mock — **oportunidades, motivos de perda e relatório de
+ * perdas do CRM**, **indicadores e agenda do dashboard** e a **escrita de listas de apoio** —
+ * e isso é escolha nossa, não limite do servidor: elas respondem. As duas primeiras ficam porque
+ * ninguém conferiu a família inteira contra a tela que a consome; a terceira fica por PAPEL, que
+ * é caso diferente e está escrito abaixo.
+ *
+ * **REMEDIDO em 2026-08-20** contra `cabinet-erp-api` main `3089106`, e a lista foi de 58 para
+ * **64**: entrou a família de **produto** inteira — escrita, variantes e kardex (#274).
+ *
+ * A sonda foi de ROUND-TRIP, não de status: `POST /api/products` com o corpo CHEIO que o
+ * formulário monta (unidades, tipo, e `specs` com watts/volts/temperatura), releitura do detalhe
+ * campo a campo, `PUT`, variante criada e alterada pelo mesmo produto, movimento de kardex e o
+ * saldo voltando no detalhe. **Um campo não volta idêntico, e está medido:** `unitInQty: '12'`
+ * volta `'12.000'` — o servidor normaliza quantidade em três casas, que é a convenção do repo. O
+ * mock ecoava o que recebia; depois desta ligação, quem digita `12` relê `12.000`.
+ *
+ * **A escrita de listas de apoio NÃO entrou, e o motivo não é 501:** `POST` e `PUT` de
+ * `/api/catalog-lookups` respondem **403 `papel-insuficiente`** para `operator-full`, que é o
+ * papel do usuário demo — a matriz do backend reserva esse caminho a `admin`. Ligá-la trocaria um
+ * `+...` que grava por um `+...` que recusa, em 19 telas. A decisão de quem cadastra item de lista
+ * está em `api#66`; enquanto ela não vem, `GET` passa e a escrita fica. É por isso que o teste da
+ * divisão por VERBO passou a usar `catalog-lookups` como exemplo, no lugar de produto.
  *
  * Duas famílias entraram JUNTAS, e separá-las seria o erro:
  *
@@ -155,17 +173,35 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/auth/tenants' },
   { metodo: 'put', caminho: '/auth/active-tenant' },
 
-  // produtos: LEITURA. A escrita (`POST`/`PUT`, e as variantes) segue no mock
-  // porque o backend responde 501 nela.
+  // produto: FAMÍLIA INTEIRA (8 operações), desde a #274.
   //
-  // O detalhe ENTROU agora, e conserta um defeito que a lista anterior tinha:
-  // com a listagem no servidor e `GET /api/products/{id}` no mock, `Alterar` e
-  // `Consul.` pediam ao mock um uuid que só existe no Postgres e recebiam "não
-  // encontrado" — o formulário nem abria. O par leitura-inteira é o menor
-  // recorte coerente que existe aqui: ler o que o servidor tem, e falhar na
-  // gravação, que é onde a cobertura realmente acaba.
+  // A leitura já estava aqui; a escrita entrou agora, e com ela as variantes e o
+  // kardex. O recorte "leitura sim, escrita não" que vigorou até aqui era o
+  // menor coerente ENQUANTO o backend respondia 501 na gravação — não é mais o
+  // caso, e mantê-lo passaria a ser o defeito que esta lista evita: o operador
+  // consultaria produto do Postgres e gravaria no mock, e a alteração sumiria na
+  // próxima leitura sem erro nenhum.
+  //
+  // As variantes entram JUNTO por obrigação, não por conveniência: elas são
+  // gravadas pelo MESMO botão do produto (`escreverProduto` e depois
+  // `gravarVariantes`, em `produtos-api.ts`). Produto no Postgres com variante no
+  // mock deixaria a grade do formulário apontando para um `productId` que o mock
+  // nunca viu — metade da gravação de cada lado, que é a costura que a regra de
+  // família existe para impedir.
+  //
+  // O kardex entra pela mesma razão levada ao fim: ele pende da VARIANTE
+  // (`/api/variants/{variantId}/stock-movements`) e o saldo é derivado dele. Hoje
+  // nenhuma tela o consome — `produtos-api.ts` diz isso em voz alta —, então
+  // ligá-lo não muda nada visível; deixá-lo fora é que criaria a armadilha para
+  // quem escrever essa tela depois, com movimento no mock e variante no servidor.
   { metodo: 'get', caminho: '/api/products' },
   { metodo: 'get', caminho: '/api/products/{id}' },
+  { metodo: 'post', caminho: '/api/products' },
+  { metodo: 'put', caminho: '/api/products/{id}' },
+  { metodo: 'post', caminho: '/api/products/{productId}/variants' },
+  { metodo: 'put', caminho: '/api/products/{productId}/variants/{id}' },
+  { metodo: 'get', caminho: '/api/variants/{variantId}/stock-movements' },
+  { metodo: 'post', caminho: '/api/variants/{variantId}/stock-movements' },
 
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe

@@ -162,33 +162,55 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect(direto.rows.map((c) => c.id)).toContain(contato.id)
   })
 
-  it('a ESCRITA de produto fica no mock — a divisão é por verbo', async () => {
-    const corpo = { code: 'AO-VIVO-1', description: 'Só no mock', active: true }
-
-    const pelaTela = await fetch(`${APP}/api/products`, {
+  it('a ESCRITA de produto passa — e a variante grava no MESMO produto', async () => {
+    // Este teste dizia o contrário até a #274, e afirmava `501` na escrita. O
+    // backend passou a implementá-la; a asserção velha teria feito a prova ao
+    // vivo nascer vermelha para quem a rodasse.
+    const criado = await fetch(`${APP}/api/products`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify(corpo),
+      body: JSON.stringify({
+        code: `AO-VIVO-${Date.now()}`,
+        description: 'PRODUTO DA PROVA AO VIVO',
+        active: true,
+        unitIn: 'CX',
+        unitInQty: '12',
+      }),
     })
-    expect(pelaTela.status).toBe(201)
+    expect(criado.status).toBe(201)
+    const produto = (await criado.json()) as { id: string; unitInQty: string | null }
 
-    // A ESCRITA JÁ EXISTE DO OUTRO LADO — medido em 2026-08-20 contra
-    // `cabinet-erp-api` `33db0df`, onde `POST /api/products` responde 201 (e
-    // 409 na segunda vez, por código repetido). O que este caso mede deixou de
-    // ser "o backend não implementa" e passou a ser DÍVIDA: quem grava produto
-    // na tela continua sendo o mock, porque a família de produto ainda tem
-    // operação em 501 (variantes) e meia família é a costura que esta lista
-    // existe para evitar.
-    //
-    // Asserção pelo que é verdade hoje: o servidor RESPONDE (não é 501) e a
-    // passagem NÃO liga. No dia em que a família fechar, o segundo `expect`
-    // fica vermelho e cobra a ligação — que é o serviço que ele presta.
-    const noServidor = await noBackend('post', '/api/products', corpo)
-    expect(noServidor.status, 'se voltou a ser 501, remeça a família').not.toBe(501)
-    expect(
-      ROTAS_DO_BACKEND.some((r) => r.metodo === 'post' && r.caminho === '/api/products'),
-      'o backend já grava produto: ou liga a família inteira, ou este caso passa a mentir',
-    ).toBe(false)
+    // QUANTIDADE volta normalizada em três casas: mandei `'12'`, o servidor
+    // guarda `'12.000'`. O mock ecoava o que recebia — a diferença é do
+    // servidor e está aqui para ninguém a descobrir na tela.
+    expect(produto.unitInQty).toBe('12.000')
+
+    // Prova positiva de quem gravou: o mesmo id existe do outro lado.
+    const direto = await noBackend('get', `/api/products/${produto.id}`)
+    expect(direto.status, 'o produto criado pela tela não existe no backend').toBe(200)
+
+    // A variante é gravada pelo MESMO botão, logo depois do produto. Se ela
+    // ficasse no mock, este POST responderia 201 com um id que o Postgres não
+    // conhece, e o detalhe do produto voltaria sem variante nenhuma.
+    const variante = await fetch(`${APP}/api/products/${produto.id}/variants`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        finish: 'AO VIVO',
+        size: 'M',
+        active: true,
+        priceCents: 12345,
+        minStock: 1,
+      }),
+    })
+    expect(variante.status).toBe(201)
+
+    const comVariante = await noBackend('get', `/api/products/${produto.id}`)
+    const detalhe = (await comVariante.json()) as {
+      variants: { finish: string | null; priceCents: number | null }[]
+    }
+    expect(detalhe.variants).toHaveLength(1)
+    expect(detalhe.variants[0]).toMatchObject({ finish: 'AO VIVO', priceCents: 12345 })
   })
 
   it('o ORÇAMENTO inteiro passa — listagem do servidor, com o shape do contrato', async () => {

@@ -131,11 +131,12 @@ VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real nas rotas que e
 Sem a variável, o MSW responde tudo e nada sai da origem — é o modo de quem não subiu o backend
 e o do site público. **Com ela, e só com ela**, as operações listadas em
 `src/mocks/rotas-do-backend.ts` saem do mock e atravessam o proxy; todo o resto continua
-mockado e a tela não sabe a diferença. Hoje passam **58 operações**:
-`/health` (2), `/auth/*` (6), leitura de produto (2), parceiro (5), orçamento (6), pedido de venda
-(5), tarefas e A fazer (5), planner (2), listas de apoio (1), atividades (4), colaborador (6),
-funis+estágios do CRM (7), **obra (4)** e **contatos do parceiro (3)** — as duas últimas ligadas em
-2026-08-20, medidas contra `cabinet-erp-api` `33db0df` (`api#48` e `api#53`). **Trocar `VITE_API_MODE` para `http` NÃO é a forma de falar com o
+mockado e a tela não sabe a diferença. Hoje passam **64 operações**:
+`/health` (2), `/auth/*` (6), **produto inteiro (8 — leitura, escrita, variantes e kardex)**,
+parceiro (5), orçamento (6), pedido de venda (5), tarefas e A fazer (5), planner (2), leitura de
+listas de apoio (1), atividades (4), colaborador (6), funis+estágios do CRM (7), obra (4) e
+contatos do parceiro (3). Produto foi ligado em 2026-08-20 (#274), medido contra `3089106` por
+ROUND-TRIP — corpo cheio, releitura campo a campo, variante e kardex. **Trocar `VITE_API_MODE` para `http` NÃO é a forma de falar com o
 backend:** o que ele ainda não implementa responde **501**, e o toggle global entregaria as telas
 dessas famílias quebradas.
 
@@ -149,9 +150,12 @@ não recarrega, e um servidor de ontem responde como o contrato de ontem — foi
 transformou "o backend não serve" em conclusão errada. O critério "existe no contrato E não é 501" é necessário, não suficiente: ele mede uma rota,
 e o que quebra é a TELA. Meia família põe id do servidor de um lado e id inventado do outro, e o
 resultado tem cara de dado, não de erro — a mesma regra que o registry aplica ao `get`. Ficam
-inteiras no mock: **oportunidades e motivos de perda do CRM**, **indicadores e agenda do
-dashboard**, **escrita de produto**, **variantes** e **kardex** — não mais por 501 (elas
-respondem), e sim porque ninguém conferiu cada família contra a tela que a consome.
+inteiras no mock: **oportunidades, motivos de perda e relatório de perdas do CRM** e
+**indicadores e agenda do dashboard** — não mais por 501 (elas respondem), e sim porque ninguém
+conferiu cada família contra a tela que a consome. **A escrita de listas de apoio é caso à parte:
+ela fica por PAPEL** — `POST`/`PUT /api/catalog-lookups` respondem **403 `papel-insuficiente`**
+para `operator-full`, que é o papel do usuário demo, e ligá-la trocaria o `+...` que grava por um
+que recusa em 19 telas. Decisão em `api#66`.
 
 **Duas costuras deliberadas, as duas declaradas NA TELA** (só com `VITE_API_PROXY`, e amarradas por
 `rotas-do-backend.test.ts`): o **quadro do funil** — funis e estágios do servidor, oportunidades do

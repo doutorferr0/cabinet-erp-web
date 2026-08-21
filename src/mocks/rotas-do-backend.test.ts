@@ -76,19 +76,26 @@ describe('passthrough por rota', () => {
     expect(await r.json()).toHaveProperty('rows')
   })
 
-  it('a divisão é por VERBO, não por caminho: GET /api/products sai, POST fica', async () => {
-    const escrita = await fetch(`${base}/api/products`, {
+  it('a divisão é por VERBO: GET /api/catalog-lookups sai, POST fica', async () => {
+    const leitura = await fetch(`${base}/api/catalog-lookups`)
+    expect(leitura.headers.get('x-origem')).toBe(MARCA)
+
+    const escrita = await fetch(`${base}/api/catalog-lookups`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code: 'PASS-1', description: 'Produto do teste', active: true }),
+      body: JSON.stringify({ kind: 'MARCA', name: 'MARCA DO TESTE', active: true }),
     })
 
-    // O backend responde 501 em `POST /api/products`; deixar o verbo inteiro
-    // passar quebraria o cadastro de produto para ganhar a consulta. O 201 com
-    // id de mock (`prod...`) é a prova positiva de quem gravou.
+    // O exemplo era produto até a #274, e mudou porque produto passou a ir
+    // INTEIRO. Aqui a razão de a escrita ficar não é 501 — o backend a
+    // implementa e responde **403 `papel-insuficiente`** para `operator-full`,
+    // que é o papel do usuário demo. Ligar isto trocaria o `+...` que grava por
+    // um `+...` que recusa, em 19 telas. Ver `api#66`.
+    //
+    // O 201 com id de mock (`lk...`) é a prova positiva de quem gravou.
     expect(escrita.headers.get('x-origem')).toBeNull()
     expect(escrita.status).toBe(201)
-    expect(await escrita.json()).toMatchObject({ code: 'PASS-1' })
+    expect(await escrita.json()).toMatchObject({ kind: 'MARCA', name: 'MARCA DO TESTE' })
   })
 
   it('sem backend real a lista nasce VAZIA — é o que mantém o site público mock', () => {
@@ -241,6 +248,20 @@ describe('passthrough por rota', () => {
         '/api/partners/{partnerId}/contacts/{contactId}',
       ],
     },
+    {
+      // A família de produto é a maior ligada até aqui, e a mais fácil de
+      // partir pela metade: o mesmo botão grava o produto e depois as
+      // variantes, e o kardex pende da variante. Meia família aqui poria
+      // `productId` do Postgres na grade que o mock guarda.
+      familia: 'produto',
+      caminhos: [
+        '/api/products',
+        '/api/products/{id}',
+        '/api/products/{productId}/variants',
+        '/api/products/{productId}/variants/{id}',
+        '/api/variants/{variantId}/stock-movements',
+      ],
+    },
   ])('$familia passa INTEIRA — nenhuma operação dela ficou no mock', ({ caminhos }) => {
     const contrato = JSON.parse(readFileSync('contracts/openapi-v1.json', 'utf8')) as {
       paths: Record<string, Record<string, unknown>>
@@ -280,5 +301,33 @@ describe('passthrough por rota', () => {
     })
     expect(criado.headers.get('x-origem')).toBe(MARCA)
     expect(await criado.json()).toMatchObject({ metodo: 'POST' })
+  })
+
+  it('a ESCRITA de produto SAI para a rede — junto com variante e kardex', async () => {
+    // Até a #274 este era o caso contrário, e o teste acima provava que o POST
+    // ficava. O que mudou não foi o desenho: foi o backend, que deixou de
+    // responder 501 na gravação. Manter a leitura no servidor e a escrita no
+    // mock passaria a ser o defeito — o operador consultaria o produto do
+    // Postgres, gravaria no mock, e a alteração sumiria na leitura seguinte.
+    const gravado = await fetch(`${base}/api/products`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: 'PASS-2', description: 'Produto do teste', active: true }),
+    })
+    expect(gravado.headers.get('x-origem')).toBe(MARCA)
+    expect(await gravado.json()).toMatchObject({ metodo: 'POST' })
+
+    // A variante é gravada pelo MESMO botão do produto: se ela ficasse, a grade
+    // do formulário apontaria para um `productId` que o mock nunca viu.
+    const variante = await fetch(`${base}/api/products/prod-1/variants`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ finish: 'X', size: 'M', active: true, priceCents: 1, minStock: 0 }),
+    })
+    expect(variante.headers.get('x-origem')).toBe(MARCA)
+
+    // O kardex pende da variante, e o saldo é derivado dele.
+    const kardex = await fetch(`${base}/api/variants/var-1/stock-movements`)
+    expect(kardex.headers.get('x-origem')).toBe(MARCA)
   })
 })

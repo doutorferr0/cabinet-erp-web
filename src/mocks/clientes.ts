@@ -29,6 +29,14 @@ export interface Cliente {
   email: string
   ativo: boolean
   profissional: string | null
+  /**
+   * `specifierName` do contrato — DERIVADO, e é por isso que não entra em
+   * `paraEscrita`. Ele existe para o campo saber se exibir quando o
+   * `specifierId` não está entre as opções carregadas: o backend aceita como
+   * especificador qualquer parceiro do GRUPO, e o combo lista os da empresa
+   * ativa. Sem ele o campo apareceria em branco com o vínculo intacto embaixo.
+   */
+  profissionalNome: string | null
   categoria: string | null
   dtNascimento: string | null
   redesSociais: {
@@ -60,17 +68,6 @@ const NOMES = [
   'PATRICIA E MARCELO ROSSI',
 ] as const
 
-const PROFISSIONAIS = [
-  'MARIANA',
-  'ARIADINE',
-  'ANA ELIZA',
-  'MALU',
-  'GIORDANA',
-  'FLAVIO COSSA',
-  'SILVANIA',
-  'RICARDO',
-]
-
 export const clientes: Cliente[] = NOMES.map((nome, i) => ({
   id: i + 1,
   nome,
@@ -96,7 +93,11 @@ export const clientes: Cliente[] = NOMES.map((nome, i) => ({
   celular: `19 9${String(80000000 + i * 246813).slice(0, 8)}`,
   email: `${nome.split(' ')[0]?.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')}@email.com`,
   ativo: i !== 14,
-  profissional: idDeApoio('PROFISSIONAL', PROFISSIONAIS[i % PROFISSIONAIS.length]),
+  // `null`: desde a #265 este campo guarda um `partners.id`, e esta fixture
+  // local não conhece parceiro nenhum — inventar um id aqui seria semear a
+  // referência quebrada que o `conferirApoios` do backend recusa.
+  profissional: null,
+  profissionalNome: null,
   categoria: idDeApoio('CATEGORIA_CLIENTE', i % 3 === 0 ? 'ARQUITETO' : 'CONSUMIDOR FINAL'),
   dtNascimento: `19${60 + (i % 35)}-0${(i % 9) + 1}-1${i % 9}`,
   redesSociais: { facebook: '', instagram: '' },
@@ -132,6 +133,7 @@ export function clienteVazio(id: number): Cliente {
     email: '',
     ativo: true,
     profissional: null,
+    profissionalNome: null,
     categoria: null,
     dtNascimento: null,
     redesSociais: { facebook: '', instagram: '' },

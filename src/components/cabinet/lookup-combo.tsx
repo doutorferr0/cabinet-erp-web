@@ -8,13 +8,185 @@ import {
   type CadastroDeApoio,
   type LookupKind,
   lookupLabel,
-  nomeDoLookup,
   useCadastrarItemDeApoio,
   useLookupOptions,
 } from '@/data/lookups-api'
+import { useEspecificadorOptions } from '@/data/parceiros-api'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
 import { useId, useState } from 'react'
+
+/**
+ * A MOLDURA do combo — botão, popover, lista e o aviso de lista cortada.
+ *
+ * Existe porque o especificador deixou de ser lista de apoio (#265) e passou a
+ * sair de `GET /api/partners`. Sem esta peça, o campo novo nasceria como
+ * segunda cópia do popover, e o dia em que o aviso de `truncada` mudasse num
+ * lado e não no outro apareceria como dois combos que mentem diferente sobre a
+ * mesma coisa. O que varia entre os dois é a FONTE e o cadastro rápido, não o
+ * desenho.
+ */
+export interface ComboDeEscolhaProps {
+  /** Nome do que se escolhe, para os textos ("Selecione categoria…"). */
+  label: string
+  options: readonly OpcaoDeCombo[]
+  truncada: boolean
+  carregando: boolean
+  erro: boolean
+  value: string | null
+  onChange: (value: string | null) => void
+  rotulo?: string | null | undefined
+  disabled?: boolean | undefined
+  /** Resolvido pelo chamador (`useId`): o `<label>` do campo aponta para ele. */
+  id: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export interface OpcaoDeCombo {
+  id: string
+  nome: string
+}
+
+/** Nome de um id entre as opções carregadas — `undefined` quando não está lá. */
+function nomeNasOpcoes(options: readonly OpcaoDeCombo[], id: string | null): string | undefined {
+  if (!id) return undefined
+  return options.find((o) => o.id === id)?.nome
+}
+
+export function ComboDeEscolha({
+  label,
+  options,
+  truncada,
+  carregando,
+  erro,
+  value,
+  onChange,
+  rotulo,
+  disabled,
+  id,
+  open,
+  onOpenChange,
+}: ComboDeEscolhaProps) {
+  // O que aparece no botão: o nome do id escolhido; se o id não está na lista,
+  // o rótulo que o registro trouxe. Ver `rotulo` nas props do chamador.
+  const escolhido = nomeNasOpcoes(options, value) ?? (value ? (rotulo ?? undefined) : undefined)
+
+  return (
+    <PopoverTrigger isOpen={open} onOpenChange={onOpenChange}>
+      <Button
+        id={id}
+        type="button"
+        variant="outline"
+        disabled={disabled ?? false}
+        className={cn(
+          'w-full min-w-0 shrink justify-between font-normal',
+          !escolhido && 'text-muted-foreground',
+        )}
+      >
+        <span className="truncate">{escolhido ?? `Selecione ${label.toLowerCase()}…`}</span>
+        <ChevronsUpDown className="ml-2 size-4 shrink-0 text-foreground" />
+      </Button>
+      <Popover className="w-(--trigger-width) p-0">
+        <Command>
+          <CommandInput placeholder={`Buscar ${label.toLowerCase()}…`} />
+          <CommandList
+            renderEmptyState={() => (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {/* Estados distintos DE PROPÓSITO: "carregando" e "falhou" não podem
+                    parecer "lista vazia" — o operador precisa saber se deve esperar,
+                    avisar alguém, ou é a lista que está mesmo vazia. */}
+                {carregando
+                  ? 'Carregando…'
+                  : erro
+                    ? 'Não foi possível carregar a lista.'
+                    : 'Nenhum item encontrado.'}
+              </div>
+            )}
+          >
+            {options.map((option) => (
+              <CommandItem
+                key={option.id}
+                id={option.id}
+                textValue={option.nome}
+                onAction={() => {
+                  onChange(option.id === value ? null : option.id)
+                  onOpenChange(false)
+                }}
+              >
+                <Check
+                  className={cn('size-4', option.id === value ? 'opacity-100' : 'opacity-0')}
+                />
+                {option.nome}
+              </CommandItem>
+            ))}
+          </CommandList>
+          {/* A lista veio CORTADA no teto de 100 do contrato, e a busca deste
+              campo filtra só o que chegou: o item procurado pode nem estar
+              aqui. Sem este aviso, "não encontrei" e "não existe" viram a
+              mesma coisa — e o operador cadastraria duplicado pelo "...".
+              Fora do Menu: a coleção da RAC só aceita itens. */}
+          {truncada && (
+            <p className="border-rule-hair border-t px-2 py-1.5 text-[0.75rem] text-muted-foreground">
+              Mostrando os primeiros {options.length}. A lista é maior — se não achar aqui, o item
+              pode existir fora deste trecho.
+            </p>
+          )}
+        </Command>
+      </Popover>
+    </PopoverTrigger>
+  )
+}
+
+/**
+ * O ESPECIFICADOR — o profissional que indicou o cliente.
+ *
+ * `[combo]` puro, sem cadastro rápido: o "..." do `LookupCombo` é
+ * `POST /api/catalog-lookups`, e o especificador não é item de lista de apoio
+ * desde a #265 — é um PARCEIRO. Cadastrar profissional aqui seria criar um
+ * cadastro inteiro (documento, papéis, vínculo) por um campo de texto, e o
+ * lugar disso é a tela de Profissionais.
+ */
+export function EspecificadorCombo({
+  value,
+  onChange,
+  rotulo,
+  disabled,
+  id,
+  excluir,
+}: {
+  value: string | null
+  onChange: (value: string | null) => void
+  /** `specifierName` que o registro trouxe, para id fora da lista carregada. */
+  rotulo?: string | null | undefined
+  disabled?: boolean | undefined
+  id?: string | undefined
+  /** O id do próprio registro — não se indica sozinho. */
+  excluir?: string | undefined
+}) {
+  const [open, setOpen] = useState(false)
+  const fallbackId = useId()
+  const { options, truncada, carregando, erro } = useEspecificadorOptions(excluir)
+
+  return (
+    <div className="flex items-center gap-1">
+      <ComboDeEscolha
+        label="Profissional"
+        options={options}
+        truncada={truncada}
+        carregando={carregando}
+        erro={erro}
+        value={value}
+        onChange={onChange}
+        rotulo={rotulo}
+        disabled={disabled}
+        id={id ?? fallbackId}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </div>
+  )
+}
 
 export interface LookupComboProps {
   kind: LookupKind
@@ -67,10 +239,6 @@ export function LookupCombo({
   const { options, truncada, carregando, erro } = useLookupOptions(kind)
   const { cadastrar, gravando, erro: erroDoCadastro, limparErro } = useCadastrarItemDeApoio(kind)
 
-  // O que aparece no botão: o nome do id escolhido; se o id não está na lista,
-  // o rótulo que o registro trouxe. Ver `rotulo` nas props.
-  const escolhido = nomeDoLookup(options, value) ?? (value ? (rotulo ?? undefined) : undefined)
-
   /**
    * O cadastro rápido é `POST /api/catalog-lookups` — não mais um item de
    * mentira em estado local.
@@ -121,68 +289,20 @@ export function LookupCombo({
 
   return (
     <div className="flex items-center gap-1">
-      <PopoverTrigger isOpen={open} onOpenChange={setOpen}>
-        <Button
-          id={listId}
-          type="button"
-          variant="outline"
-          disabled={disabled ?? false}
-          className={cn(
-            'w-full min-w-0 shrink justify-between font-normal',
-            !escolhido && 'text-muted-foreground',
-          )}
-        >
-          <span className="truncate">{escolhido ?? `Selecione ${label.toLowerCase()}…`}</span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 text-foreground" />
-        </Button>
-        <Popover className="w-(--trigger-width) p-0">
-          <Command>
-            <CommandInput placeholder={`Buscar ${label.toLowerCase()}…`} />
-            <CommandList
-              renderEmptyState={() => (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  {/* Estados distintos DE PROPÓSITO: "carregando" e "falhou" não podem
-                      parecer "lista vazia" — o operador precisa saber se deve esperar,
-                      avisar alguém, ou é a lista que está mesmo vazia. */}
-                  {carregando
-                    ? 'Carregando…'
-                    : erro
-                      ? 'Não foi possível carregar a lista.'
-                      : 'Nenhum item encontrado.'}
-                </div>
-              )}
-            >
-              {options.map((option) => (
-                <CommandItem
-                  key={option.id}
-                  id={option.id}
-                  textValue={option.nome}
-                  onAction={() => {
-                    onChange(option.id === value ? null : option.id)
-                    setOpen(false)
-                  }}
-                >
-                  <Check
-                    className={cn('size-4', option.id === value ? 'opacity-100' : 'opacity-0')}
-                  />
-                  {option.nome}
-                </CommandItem>
-              ))}
-            </CommandList>
-            {/* A lista veio CORTADA no teto de 100 do contrato, e a busca deste
-                campo filtra só o que chegou: o item procurado pode nem estar
-                aqui. Sem este aviso, "não encontrei" e "não existe" viram a
-                mesma coisa — e o operador cadastraria duplicado pelo "...".
-                Fora do Menu: a coleção da RAC só aceita itens. */}
-            {truncada && (
-              <p className="border-rule-hair border-t px-2 py-1.5 text-[0.75rem] text-muted-foreground">
-                Mostrando os primeiros {options.length}. A lista é maior — se não achar aqui, o item
-                pode existir fora deste trecho.
-              </p>
-            )}
-          </Command>
-        </Popover>
-      </PopoverTrigger>
+      <ComboDeEscolha
+        label={label}
+        options={options}
+        truncada={truncada}
+        carregando={carregando}
+        erro={erro}
+        value={value}
+        onChange={onChange}
+        rotulo={rotulo}
+        disabled={disabled}
+        id={listId}
+        open={open}
+        onOpenChange={setOpen}
+      />
 
       {!hideQuickAdd && (
         <>

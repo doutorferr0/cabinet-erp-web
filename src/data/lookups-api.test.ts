@@ -82,6 +82,11 @@ describe('POST /api/catalog-lookups — o cadastro rápido no mock', () => {
     resetStore()
     configurarApi('http://mock.teste')
     await authLogin({ email: 'admin@vertz.dev', password: 'qualquer' })
+    // ESCOLHER EMPRESA faz parte do cenário. A escrita de lista de apoio
+    // exige empresa ativa e responde 409 `sem-empresa-ativa` sem ela (#269) —
+    // enquanto este arquivo logava e parava, o 201 que ele media vinha de um
+    // handler que não conferia a sessão, e a asserção passava por descuido do
+    // mock, não por acerto do servidor.
     await authSetActiveTenant({ tenantId: TENANT_MATRIZ })
   })
 
@@ -113,7 +118,16 @@ describe('POST /api/catalog-lookups — o cadastro rápido no mock', () => {
     })
 
     expect(repetido.status).toBe(409)
+    // O `detail` ecoa o nome PEDIDO (`Arquiteto`), não o do item existente —
+    // é o que o backend faz (`conflitoDeNome(nome)`, em `catalogo/lookups.ts`)
+    // e o que a #269 espelhou no mock. A asserção antes exigia `ARQUITETO`,
+    // medindo o handler duplicado que a #264 chegou a escrever: quem acha o existente é
+    // o COMBO, pelo nome, na lista que já tem em cache, e não esta frase.
     expect((repetido.data as { detail?: string }).detail).toContain('Arquiteto')
+    // E ele é o 409 GENÉRICO: o vocabulário fechado da #269 não reserva URN
+    // para nome repetido em lista de apoio, e é essa ausência que o combo lê
+    // como "duplicado" — daí ele só precisar excluir `sem-empresa-ativa`.
+    expect((repetido.data as { type?: string }).type).toBe('about:blank')
 
     const lista = await listCatalogLookups({ kind: 'CATEGORIA_CLIENTE', pageSize: 100 })
     const arquitetos = (lista.data as PagedResultOfCatalogLookupDto).rows.filter(

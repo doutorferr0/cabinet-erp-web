@@ -213,6 +213,52 @@ describe('LookupCombo', () => {
     expect(screen.getByTestId('valor')).toHaveTextContent('')
   })
 
+  /**
+   * **409 NÃO É UM ERRO SÓ** (#269). O contrato o descreve como o conflito de
+   * sete coisas, e quem diz QUAL é o `type` — `status` só agrupa.
+   *
+   * O caso que este teste fixa é real e chegava até a tela: operador recém-
+   * criado, ainda sem empresa escolhida, clica no `+...`. O servidor responde
+   * 409 `sem-empresa-ativa`, e enquanto o combo lia só o número ele anunciava
+   * "já existe MARCA NOVA" — um item que ninguém cadastrou, numa lista onde o
+   * operador não vai achar nada. A recusa por nome repetido é a GENÉRICA
+   * (`about:blank`), porque o vocabulário não reserva URN para ela.
+   */
+  it('409 `sem-empresa-ativa` NÃO é duplicado: não escolhe item nenhum', async () => {
+    const { user } = renderWithQuery(<Harness />)
+    await waitFor(() => expect(chamadas).toHaveLength(1))
+
+    instalarServidor(
+      {
+        '/api/catalog-lookups': (chamada) => {
+          if (chamada.metodo === 'POST') {
+            return new Response(
+              JSON.stringify({
+                type: 'urn:cabinet:erro:sem-empresa-ativa',
+                title: 'Nenhuma empresa ativa',
+                status: 409,
+                detail: 'Nenhuma empresa ativa na sessão.',
+              }),
+              { status: 409, headers: { 'content-type': 'application/problem+json' } },
+            )
+          }
+          return respostaDaApi(OPCOES)
+        },
+      },
+      'http://api.teste',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
+    await user.type(screen.getByLabelText('Nome'), 'Stella')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    // Falha de verdade: o diálogo continua aberto e nada foi escolhido. O que
+    // NÃO pode acontecer é o campo passar a valer `id-1` — seria o combo
+    // afirmando que "STELLA" foi recusada por já existir.
+    expect(await screen.findByRole('alert')).toHaveTextContent(/não foi possível cadastrar/i)
+    expect(screen.getByTestId('valor')).toHaveTextContent('')
+  })
+
   it('busca filtra as opções', async () => {
     const { user } = renderWithQuery(<Harness />)
 

@@ -58,6 +58,19 @@ jobs:
           python3 docs/design/medir-contraste.py --conferir \
             || { echo '::error::DESIGN.md fora de sincronia com src/index.css — rode `python3 docs/design/medir-contraste.py --escrever` e confira o frontmatter.'; exit 1; }
 
+      # A medição de algarismo tabular existia e NINGUÉM a rodava — só valia para
+      # quem a chamasse à mão. Foi assim que a Bebas Neue, quinta família trazida
+      # pela fusão v5 r3, ficou dois dias fora da conta: a saída do script
+      # continuava bonita, só que menor, e nada reprovava. Aqui ele passa a
+      # reprovar família importada no `src/index.css` que a lista não cobre.
+      #
+      # Depende do `Install dependencies` acima: a medição lê o WOFF de dentro de
+      # `node_modules/@fontsource`, que é o arquivo que o navegador vai baixar.
+      - name: Toda família importada é medida
+        run: |
+          python3 docs/design/medir-tabular.py \
+            || { echo '::error::família @fontsource fora de docs/design/medir-tabular.py — acrescente-a a FAMILIAS com o papel dela, ou tire o @import de src/index.css.'; exit 1; }
+
       - name: Lint and format check
         run: pnpm exec biome ci .
 

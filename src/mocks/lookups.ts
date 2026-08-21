@@ -52,3 +52,25 @@ export function idDeApoio(kind: string, nome: string | null | undefined): string
   const i = VOCABULARIO_DE_APOIO[kind]?.indexOf(nome) ?? -1
   return i < 0 ? null : `lk-${kind}-${i + 1}`
 }
+
+/**
+ * O NOME do item de apoio a partir do id — o inverso de `idDeApoio`.
+ *
+ * Existe porque o contrato publica os dois lados nos DTOs de pessoa
+ * (`sectorId` + `sector`, `jobTitleId` + `jobTitle`): o id é para escrever, o
+ * nome é o que a tela lê. A semente guarda o id, então a conversão para o DTO
+ * precisa voltar ao rótulo — e sem este helper cada handler faria a sua, com o
+ * índice cru, que é onde `lk-CARGO-3` vira o cargo errado no dia em que o
+ * vocabulário ganhar um item no meio.
+ *
+ * Id fora do vocabulário devolve `null`, pela mesma razão que `idDeApoio`
+ * devolve: rótulo inventado é pior que rótulo ausente.
+ */
+export function nomeDeApoio(id: string | null | undefined): string | null {
+  if (!id) return null
+  const partes = /^lk-(.+)-(\d+)$/.exec(id)
+  if (!partes) return null
+  const [, kind, posicao] = partes
+  if (!kind || !posicao) return null
+  return VOCABULARIO_DE_APOIO[kind]?.[Number(posicao) - 1] ?? null
+}

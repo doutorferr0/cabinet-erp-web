@@ -85,7 +85,24 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
   products: 'operator-full',
   variants: 'operator-full',
   employees: 'admin',
-  'catalog-lookups': 'admin',
+  /**
+   * Decisão, não herança (`cabinet-erp-api#66`).
+   *
+   * A linha nasceu `admin` como fechado-por-precaução, quando o contrato ainda
+   * não publicava escrita de lista de apoio. A escrita chegou (api#38) e a
+   * linha continuou `admin` sem ninguém decidir. O que fechou em
+   * `operator-full` é a natureza da tabela: `catalog_lookups` é GLOBAL — sem
+   * `tenant_id`, sem RLS — então cadastrar item de lista escreve para o GRUPO,
+   * e um nome errado aparece no combo das outras empresas, nas 19 telas, para
+   * sempre. É palavra por palavra o critério que esta matriz já usa para
+   * `products`/`variants`: o cadastro que vale para o grupo inteiro, onde o
+   * erro de um vaza para todo mundo.
+   *
+   * O argumento da OBRA (não travar o vendedor no meio do atendimento) não
+   * transfere: obra tem `tenant_id` e o erro fica dentro do tenant de quem
+   * errou.
+   */
+  'catalog-lookups': 'operator-full',
   projects: 'owner',
   dashboard: 'owner',
 }

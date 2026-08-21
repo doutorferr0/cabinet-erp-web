@@ -49,9 +49,42 @@ function Formulario({
   return <Form {...form}>{children}</Form>
 }
 
+const TENANT = 'tenant-teste'
+
+/**
+ * O dublê responde POR ROTA.
+ *
+ * Ele já devolveu a lista de apoio para QUALQUER URL, e isso bastou enquanto o
+ * combo pedia uma coisa só. Hoje ele também pergunta o PAPEL do vínculo, para
+ * esconder o `+...` de quem não escreve lista de apoio — e com o dublê cego
+ * `/auth/tenants` respondia `{rows,total}` onde o código espera um array de
+ * vínculos. O sintoma não fala de sessão nem de papel: a árvore inteira morre
+ * em `empresas.find is not a function` e o teste falha dizendo que o combo não
+ * carregou o valor.
+ *
+ * `owner` porque o assunto deste arquivo é o CAMPO, não a permissão — quem
+ * prova o `+...` por papel é `lookup-combo.test.tsx`.
+ */
+function responder(entrada: RequestInfo | URL) {
+  const url = String(entrada instanceof Request ? entrada.url : entrada)
+  if (url.includes('/auth/tenants')) {
+    return new Response(JSON.stringify([{ tenantId: TENANT, name: 'Matriz', role: 'owner' }]), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+  if (url.includes('/auth/me')) {
+    return new Response(JSON.stringify({ activeTenantId: TENANT }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+  return respostaDeApoio()
+}
+
 beforeEach(() => {
   configurarApi('http://api.teste')
-  vi.stubGlobal('fetch', vi.fn(respostaDeApoio))
+  vi.stubGlobal('fetch', vi.fn(responder))
 })
 
 afterEach(() => {

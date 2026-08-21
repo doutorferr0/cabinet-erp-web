@@ -250,7 +250,6 @@ export const handlers = [
     return listar(base, lerConsulta(url), ['name', 'kind'], (l) => [l.name, l.kind])
   }),
 
-
   // ---------------- products ----------------
   http.get('*/api/products/:id', ({ params }) => {
     if (!store.logado) return semSessao()

@@ -3,6 +3,18 @@ import { idDeApoio } from '@/mocks/lookups'
  * Mock de clientes — campos LITERAIS da transcrição §5 (aba Principal).
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
  */
+/** A forma do endereço no formulário — a mesma nos três que o cliente tem. */
+export interface EnderecoDoCliente {
+  cep: string
+  logradouro: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidadeCodigo: string | null
+  cidadeNome: string
+  uf: string | null
+}
+
 export interface Cliente {
   id: number
   nome: string
@@ -12,16 +24,24 @@ export interface Cliente {
   rg: string
   orgaoExpedicao: string
   ufRg: string | null
-  endereco: {
-    cep: string
-    logradouro: string
-    numero: string
-    complemento: string
-    bairro: string
-    cidadeCodigo: string | null
-    cidadeNome: string
-    uf: string | null
-  }
+  endereco: EnderecoDoCliente
+  /**
+   * Aba `Cobrança\Comercial` da §5 (#293). Não capturada na transcrição — os
+   * campos vêm do contrato, que os tirou das colunas do legado.
+   *
+   * `Cli_*_cob`: para onde vai o BOLETO, que não é onde o cliente mora.
+   */
+  enderecoCobranca: EnderecoDoCliente
+  /** `Cli_*_cor`: onde a pessoa TRABALHA — no cliente pessoa física, a empresa dela. */
+  enderecoComercial: EnderecoDoCliente
+  /** `Cli_empresa_cor` — a empresa onde trabalha. Contexto do cliente, não um segundo cadastro. */
+  empresaComercial: string
+  /** `Cli_cargo_cor`. */
+  cargoComercial: string
+  /** `cli_CNPJComercial` — o da empregadora, NUNCA gravado por cima de `cpf`. */
+  cnpjComercial: string
+  /** `Cli_DataFundacao_cor`, ISO. Não confundir com `dtNascimento`, que é da pessoa. */
+  dtFundacaoComercial: string | null
   foneComercial: string
   fax: string
   foneResidencial: string
@@ -87,6 +107,14 @@ export const clientes: Cliente[] = NOMES.map((nome, i) => ({
     cidadeNome: 'CAMPINAS',
     uf: 'SP',
   },
+  // Nascem VAZIOS de propósito: cobrança igual ao cadastro é o caso comum, e
+  // repetir o endereço principal aqui obrigaria a manter os dois em sincronia.
+  enderecoCobranca: enderecoVazio(),
+  enderecoComercial: enderecoVazio(),
+  empresaComercial: '',
+  cargoComercial: '',
+  cnpjComercial: '',
+  dtFundacaoComercial: null,
   foneComercial: '',
   fax: '',
   foneResidencial: `19 3${String(2000000 + i * 22222).slice(0, 7)}`,
@@ -106,6 +134,20 @@ export const clientes: Cliente[] = NOMES.map((nome, i) => ({
   observacao: '',
 }))
 
+/** Endereço em branco — os três do cliente nascem assim. */
+export function enderecoVazio(): EnderecoDoCliente {
+  return {
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidadeCodigo: null,
+    cidadeNome: '',
+    uf: null,
+  }
+}
+
 export function clienteVazio(id: number): Cliente {
   return {
     id,
@@ -116,16 +158,13 @@ export function clienteVazio(id: number): Cliente {
     rg: '',
     orgaoExpedicao: '',
     ufRg: null,
-    endereco: {
-      cep: '',
-      logradouro: '',
-      numero: '',
-      complemento: '',
-      bairro: '',
-      cidadeCodigo: null,
-      cidadeNome: '',
-      uf: null,
-    },
+    endereco: enderecoVazio(),
+    enderecoCobranca: enderecoVazio(),
+    enderecoComercial: enderecoVazio(),
+    empresaComercial: '',
+    cargoComercial: '',
+    cnpjComercial: '',
+    dtFundacaoComercial: null,
     foneComercial: '',
     fax: '',
     foneResidencial: '',

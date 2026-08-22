@@ -858,7 +858,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |
  * | `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |
  * | `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |
- * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | papel pedido no vínculo não existe na matriz do servidor |
+ * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
@@ -868,6 +868,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe "vincular ao existente", duas pessoas não compartilham login |
  * | `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |
  * | `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |
+ * | `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |
  * | `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
@@ -897,6 +898,7 @@ export const ProblemType = {
   'urn:cabinet:erro:email-ja-cadastrado': 'urn:cabinet:erro:email-ja-cadastrado',
   'urn:cabinet:erro:codigo-ja-cadastrado': 'urn:cabinet:erro:codigo-ja-cadastrado',
   'urn:cabinet:erro:vinculo-ja-existe': 'urn:cabinet:erro:vinculo-ja-existe',
+  'urn:cabinet:erro:papel-de-sistema': 'urn:cabinet:erro:papel-de-sistema',
   'urn:cabinet:erro:pedido-ja-convertido': 'urn:cabinet:erro:pedido-ja-convertido',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
@@ -2237,7 +2239,17 @@ export interface EmployeeDetailDto {
   /** Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo. */
   active: boolean;
   /**
-     * Papel de PERMISSÃO na empresa ativa (`employee_company.role`) — não é cargo. `null` quando não há vínculo.
+     * `RoleDto.id` do papel atribuído na empresa ativa. `null` quando não há vínculo, e também enquanto o vínculo ainda guarda um dos cinco papéis antigos — aí quem responde é `role` (api#84, fase 3).
+     * @nullable
+     */
+  roleId?: string | null;
+  /**
+     * Nome do papel, resolvido pelo servidor — o mesmo serviço que `sector` e `jobTitle` prestam. A tela imprime isto; sem ele imprimiria uuid ou faria uma busca só para achar o nome de uma linha.
+     * @nullable
+     */
+  roleName?: string | null;
+  /**
+     * Papel de PERMISSÃO na empresa ativa pelo identificador ANTIGO (`employee_company.role`) — não é cargo. `null` quando não há vínculo, e também quando o vínculo já aponta `roleId`. Sai na fase 3 do api#84.
      * @nullable
      */
   role?: string | null;
@@ -2305,10 +2317,20 @@ export interface EmployeeWriteRequest {
 
 /**
  * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
+ *
+ * **O papel entra por `roleId` OU por `role`, exatamente um dos dois** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.
  */
 export interface EmployeeLinkRequest {
-  /** Papel de permissão. Conjunto validado pelo servidor; valor fora dele é 400. */
-  role: string;
+  /**
+     * `RoleDto.id` — papel desta organização. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido`.
+     * @nullable
+     */
+  roleId?: string | null;
+  /**
+     * Papel de permissão pelo identificador ANTIGO. Conjunto validado pelo servidor; valor fora dele é 400. Deixa de existir na fase 3 do api#84 — quem já sabe o `roleId` manda `roleId` e omite este.
+     * @nullable
+     */
+  role?: string | null;
   /**
      * `CatalogLookupDto.id`, kind `SETOR`.
      * @nullable
@@ -2674,6 +2696,104 @@ export interface PagedResultOfOrderDto {
 }
 
 /**
+ * Proposto. Uma permissão do catálogo — uma AÇÃO, a unidade que vira uma caixa marcável.
+ */
+export interface PermissionDto {
+  /** A chave que o papel guarda, no formato `modulo:acao` — `produtos:editar`, `depositos:gerenciar`. É o valor que viaja em `RoleDetailDto.permissions`, e o front nunca o escreve à mão: quem enumera é este catálogo. */
+  key: string;
+  /** Rótulo em PT-BR, o texto da caixa. Do servidor, porque a lista é dele. */
+  label: string;
+  /**
+     * O que a permissão libera, em uma frase — a ajuda ao lado da caixa. `null` quando o rótulo já diz tudo; a tela não inventa texto no lugar.
+     * @nullable
+     */
+  description?: string | null;
+}
+
+/**
+ * Proposto. Um módulo do catálogo com as permissões dele — o agrupamento é do servidor porque é ele quem sabe a que módulo a permissão nova pertence.
+ */
+export interface PermissionModuleDto {
+  /** Identificador do módulo — o prefixo das chaves deste grupo (`produtos`, `estoque`). */
+  key: string;
+  /** Rótulo em PT-BR, o título da seção de caixas. */
+  label: string;
+  /** Nunca vazio: módulo sem permissão não é módulo, é ruído na tela. */
+  permissions: PermissionDto[];
+}
+
+/**
+ * Proposto. O catálogo inteiro. Não é `PagedResult`: não há página, não há total a paginar — o que vem é tudo que existe.
+ */
+export interface PermissionCatalogDto {
+  /** Versão do catálogo, OPACA. Muda quando o servidor acrescenta ou aposenta permissão, e serve para o cliente cachear com validade longa e comparar por IGUALDADE. Não tem formato prometido e não se ordena — tratar como texto. */
+  version: string;
+  modules: PermissionModuleDto[];
+}
+
+/**
+ * Proposto. A LINHA da listagem de papéis — o que a tabela desenha, sem o conjunto de permissões.
+ */
+export interface RoleDto {
+  id: string;
+  /** Nome do papel, como o admin o batizou ("Financeiro", "Vendedor externo"). Único na organização. */
+  name: string;
+  /**
+     * Para que serve, em uma frase. `null` é o normal — papel criado às pressas não ganha texto.
+     * @nullable
+     */
+  description?: string | null;
+  /** Papel de SISTEMA (`owner`, `admin`): existe em toda organização, não é editável nem desativável, e alterar é 409 `urn:cabinet:erro:papel-de-sistema`. A tela esconde `Alterar` na linha em vez de deixar o admin descobrir pelo erro. */
+  system: boolean;
+  /** Papel de FÁBRICA, entregue junto (Vendedor, Visualizador, Estoquista) como ponto de partida. Marca de ORIGEM, não de proteção: template é da organização, o admin edita, desativa e clona à vontade — quem recusa edição é `system`. Usar direto, sem clonar, também vale. */
+  template: boolean;
+  /** Desativação lógica: papel aposentado some da escolha do vínculo e continua legível em quem já o tem. É o que substitui o `DELETE` que este recurso não publica. */
+  active: boolean;
+  /** Quantas permissões o papel concede — a coluna da listagem. O conjunto está em `GET /api/roles/{id}`. */
+  permissionCount: number;
+}
+
+/**
+ * Proposto. O papel com o conjunto de permissões — o corpo que marca as caixas da tela e o que se lê para clonar um template.
+ */
+export interface RoleDetailDto {
+  id: string;
+  /** Nome do papel, único na organização. */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** Papel de sistema — alterar é 409 `urn:cabinet:erro:papel-de-sistema`. */
+  system: boolean;
+  /** Papel de fábrica; marca de origem, editável como qualquer outro. */
+  template: boolean;
+  /** Desativação lógica. */
+  active: boolean;
+  /** O tamanho de `permissions`, repetido para a linha e o detalhe terem a mesma forma. */
+  permissionCount: number;
+  /** As chaves de `PermissionDto.key` que este papel concede. Papel de sistema `admin` pode devolver o catálogo inteiro, e `[]` quer dizer papel que não concede nada — não é "não sei". */
+  permissions: string[];
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração do papel. `system` e `template` NÃO entram: são marcas do servidor, e papel que se declarasse de sistema pelo corpo burlaria a recusa de edição.
+ */
+export interface RoleWriteRequest {
+  /** Único na organização; repetido é 409. */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** O conjunto FINAL de chaves do catálogo — substitui o que havia, não acrescenta. Chave fora de `GET /api/permissions` é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` em `permissions`. */
+  permissions: string[];
+  /** Desativação lógica; `false` tira o papel da escolha do vínculo. */
+  active: boolean;
+}
+
+export interface PagedResultOfRoleDto {
+  rows: RoleDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -2993,6 +3113,20 @@ export const ListActivitiesEntityType = {
   quote: 'quote',
   purchaseOrder: 'purchaseOrder',
 } as const;
+
+export type ListRolesParams = {
+/**
+ * Busca por nome do papel.
+ */
+q?: string;
+/**
+ * Whitelist: `name`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
 
 export type ListOrdersParams = {
 q?: string;

@@ -44,6 +44,7 @@ import type {
   ListProductsParams,
   ListProjectsParams,
   ListQuotesParams,
+  ListRolesParams,
   ListStockMovementsParams,
   ListTasksParams,
   ListWorksParams,
@@ -63,6 +64,7 @@ import type {
   PagedResultOfPartnerDto,
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
+  PagedResultOfRoleDto,
   PagedResultOfStockMovementDto,
   PagedResultOfWorkDto,
   PartnerContactDto,
@@ -70,6 +72,7 @@ import type {
   PartnerDto,
   PartnerLinkRequest,
   PartnerWriteRequest,
+  PermissionCatalogDto,
   ProblemDetails,
   ProductDetailDto,
   ProductDto,
@@ -80,6 +83,8 @@ import type {
   QuoteDetailDto,
   QuoteWriteRequest,
   ReadinessStatus,
+  RoleDetailDto,
+  RoleWriteRequest,
   SemPermissaoResponse,
   SessaoAtual,
   StockMovementDto,
@@ -4255,6 +4260,307 @@ export const updateEmployeeLink = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(employeeLinkRequest)
+  }
+);}
+
+
+
+export type listPermissionsResponse200 = {
+  data: PermissionCatalogDto
+  status: 200
+}
+
+export type listPermissionsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPermissionsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPermissionsResponseSuccess = (listPermissionsResponse200) & {
+  headers: Headers;
+};
+export type listPermissionsResponseError = (listPermissionsResponse401 | listPermissionsResponse403) & {
+  headers: Headers;
+};
+
+export type listPermissionsResponse = (listPermissionsResponseSuccess | listPermissionsResponseError)
+
+export const getListPermissionsUrl = () => {
+
+
+
+
+  return `/api/permissions`
+}
+
+/**
+ * Proposto. O CATÁLOGO de permissões — tudo que um papel pode conceder, agrupado por módulo. É a lista de caixas que a tela de papéis desenha, e não é dado da empresa: vem do CÓDIGO do servidor, é igual para todas as organizações e só muda em deploy (api#84).
+ *
+ * **Viaja por HTTP justamente para o front NÃO ter a lista.** Só dev acrescenta permissão, e do lado do servidor — uma cópia aqui envelheceria em silêncio, e a tela desenharia o conjunto de ontem sem ninguém perceber. Pelo mesmo motivo o rótulo vem junto: permissão nova sem rótulo do servidor apareceria como chave crua ao lado da caixa.
+ *
+ * A granularidade é por AÇÃO, no formato `modulo:acao` — `produtos:editar`, `estoque:movimentar`, `depositos:gerenciar`, `orcamento:imprimir`. As chaves NÃO são enum deste contrato de propósito: congelá-las aqui faria cada permissão nova exigir PR de contrato mais codegen, que é exatamente o acoplamento que este caminho existe para desfazer.
+ *
+ * Sem paginação: o catálogo é o conjunto inteiro, sempre. Página aqui entregaria tela de checkbox com metade das caixas, e o admin gravaria papel sem as permissões que não chegou a ver.
+ */
+export const listPermissions = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listPermissionsResponse> => {
+
+  return apiFetch<listPermissionsResponse>(getListPermissionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listRolesResponse200 = {
+  data: PagedResultOfRoleDto
+  status: 200
+}
+
+export type listRolesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listRolesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listRolesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listRolesResponseSuccess = (listRolesResponse200) & {
+  headers: Headers;
+};
+export type listRolesResponseError = (listRolesResponse400 | listRolesResponse401 | listRolesResponse403) & {
+  headers: Headers;
+};
+
+export type listRolesResponse = (listRolesResponseSuccess | listRolesResponseError)
+
+export const getListRolesUrl = (params?: ListRolesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/roles?${stringifiedParams}` : `/api/roles`
+}
+
+/**
+ * Proposto. Papéis da ORGANIZAÇÃO — os de sistema, os templates de fábrica e os que o admin criou, na mesma lista. Papel é da organização e a ATRIBUIÇÃO é por empresa (`employee_company`): a mesma pessoa pode ser "Financeiro" numa empresa do grupo e nada na outra.
+ *
+ * A linha traz `permissionCount`, não o conjunto de permissões: a coluna que a tela desenha é "12 permissões", e mandar o array inteiro em cada linha multiplicaria o corpo pelo catálogo sem ninguém ler. Quem quer as caixas marcadas abre `GET /api/roles/{id}`.
+ *
+ * `sortBy` aceita `name` e `active`.
+ */
+export const listRoles = async (params?: ListRolesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listRolesResponse> => {
+
+  return apiFetch<listRolesResponse>(getListRolesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createRoleResponse201 = {
+  data: RoleDetailDto
+  status: 201
+}
+
+export type createRoleResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createRoleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createRoleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createRoleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createRoleResponseSuccess = (createRoleResponse201) & {
+  headers: Headers;
+};
+export type createRoleResponseError = (createRoleResponse400 | createRoleResponse401 | createRoleResponse403 | createRoleResponse409) & {
+  headers: Headers;
+};
+
+export type createRoleResponse = (createRoleResponseSuccess | createRoleResponseError)
+
+export const getCreateRoleUrl = () => {
+
+
+
+
+  return `/api/roles`
+}
+
+/**
+ * Proposto. Cria papel na organização, com as permissões que vierem no corpo. Nasce sempre `system: false` e `template: false` — as duas marcas são do servidor, e papel que se declara de sistema pelo corpo seria o caminho para burlar a recusa de edição.
+ *
+ * **Clonar um template é ler `GET /api/roles/{id}` e postar as `permissions` que vieram.** Não há operação de clonagem porque ela não diria nada que o corpo já não diga — e o admin quase sempre muda algo antes de gravar, que é o ponto de partir de um template.
+ *
+ * Nome repetido na organização é 409 `about:blank`: a tela não tem saída própria a oferecer, quem criou corrige o nome ali mesmo. Permissão que não está no catálogo é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` apontando `permissions`.
+ */
+export const createRole = async (roleWriteRequest: RoleWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createRoleResponse> => {
+
+  return apiFetch<createRoleResponse>(getCreateRoleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(roleWriteRequest)
+  }
+);}
+
+
+
+export type getRoleResponse200 = {
+  data: RoleDetailDto
+  status: 200
+}
+
+export type getRoleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getRoleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getRoleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getRoleResponseSuccess = (getRoleResponse200) & {
+  headers: Headers;
+};
+export type getRoleResponseError = (getRoleResponse401 | getRoleResponse403 | getRoleResponse404) & {
+  headers: Headers;
+};
+
+export type getRoleResponse = (getRoleResponseSuccess | getRoleResponseError)
+
+export const getGetRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/roles/${id}`
+}
+
+/**
+ * Proposto. O papel com o conjunto de permissões — é este corpo que marca as caixas da tela, e é por ele que se clona um template.
+ */
+export const getRole = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getRoleResponse> => {
+
+  return apiFetch<getRoleResponse>(getGetRoleUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateRoleResponse200 = {
+  data: RoleDetailDto
+  status: 200
+}
+
+export type updateRoleResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateRoleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateRoleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateRoleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateRoleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateRoleResponseSuccess = (updateRoleResponse200) & {
+  headers: Headers;
+};
+export type updateRoleResponseError = (updateRoleResponse400 | updateRoleResponse401 | updateRoleResponse403 | updateRoleResponse404 | updateRoleResponse409) & {
+  headers: Headers;
+};
+
+export type updateRoleResponse = (updateRoleResponseSuccess | updateRoleResponseError)
+
+export const getUpdateRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/roles/${id}`
+}
+
+/**
+ * Proposto. Substitui o papel INTEIRO — `permissions` que vier é o conjunto final, não um acréscimo: desmarcar caixa precisa ter efeito, e corpo que só soma nunca tira permissão.
+ *
+ * **Papel de sistema é 409 `urn:cabinet:erro:papel-de-sistema`,** em alterar e em desativar. `owner` e `admin` são a garantia de que a organização não se tranca para fora: um admin que se desmarcasse da permissão de gerenciar papéis perderia a própria tela que devolveria a permissão. Template de fábrica NÃO é de sistema — ele é da organização e o admin edita à vontade; `template: true` só conta de onde o papel veio.
+ *
+ * **Não há `DELETE`.** Vale o padrão de cadastro do produto: desativação lógica por `active: false`. Papel apagado deixaria vínculo apontando para o nada, e "quem podia o quê em março" ficaria sem resposta. Papel inativo some da escolha do vínculo e continua legível no que já foi atribuído.
+ */
+export const updateRole = async (id: string,
+    roleWriteRequest: RoleWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateRoleResponse> => {
+
+  return apiFetch<updateRoleResponse>(getUpdateRoleUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(roleWriteRequest)
   }
 );}
 

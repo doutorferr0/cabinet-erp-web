@@ -67,6 +67,7 @@ export const TIPO = {
   emailJaCadastrado: 'urn:cabinet:erro:email-ja-cadastrado',
   codigoJaCadastrado: 'urn:cabinet:erro:codigo-ja-cadastrado',
   vinculoJaExiste: 'urn:cabinet:erro:vinculo-ja-existe',
+  papelDeSistema: 'urn:cabinet:erro:papel-de-sistema',
   pedidoJaConvertido: 'urn:cabinet:erro:pedido-ja-convertido',
 } as const satisfies Record<string, ProblemType>
 
@@ -96,6 +97,7 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:email-ja-cadastrado': 'E-mail já cadastrado',
   'urn:cabinet:erro:codigo-ja-cadastrado': 'Código já cadastrado',
   'urn:cabinet:erro:vinculo-ja-existe': 'Vínculo já existe',
+  'urn:cabinet:erro:papel-de-sistema': 'Papel de sistema',
   'urn:cabinet:erro:pedido-ja-convertido': 'Pedido já gerado',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',

@@ -140,6 +140,8 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListOrders: 'pedido de venda ainda não tem listagem própria na tela',
+  ListOrderProfessionalHistory:
+    'a trilha de indicação (G13) é sub-recurso do pedido e nasce sem tela — cabeçalho ordenável exigiria a tela do pedido, que não existe',
   ListCatalogLookups: 'o combo pede por `kind` e não ordena — não há cabeçalho para clicar',
   ListStockMovements: 'kardex desenha em ordem fixa (`occurredAt` desc), sem coluna ordenável',
   ListEmployees: 'colaborador ainda é provider de mock, com lista própria lá',
@@ -265,6 +267,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   GetStockAgingReport: 'dias sem venda é agregação — o mock guarda linhas, não somas',
   GetQuoteVsStockReport: 'orçamento × estoque é agregação — o mock guarda linhas, não somas',
   GetBirthdaysReport: 'aniversariantes do mês é agregação — o mock guarda linhas, não somas',
+  ListOrderProfessionalHistory:
+    'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
 }
 
 /**

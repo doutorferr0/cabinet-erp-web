@@ -1,4 +1,5 @@
 import type {
+  CancelDocumentRequest,
   QuoteDetailDto,
   QuoteDto,
   QuoteEnvironmentDto,
@@ -7,6 +8,7 @@ import type {
   QuoteServiceItemWriteRequest,
   QuoteWriteRequest,
 } from '@/api/gerado'
+import { nomeDeApoio } from '@/mocks/lookups'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
@@ -109,6 +111,19 @@ export const FILTRAVEIS: CamposFiltraveis = {
 interface OrcamentoGuardado extends Orcamento {
   /** `QuoteDetailDto.workId` — a OBRA (`Venda.Obr_codigo` do legado). */
   obraId: string | null
+  /**
+   * O CANCELAMENTO por extenso (G13) — quando, por quê e a nota.
+   *
+   * `cancelado` (booleano do seed) continua sendo o que decide o `status`; estes
+   * três só existem quando ele é `true`. Guardar o motivo dentro do booleano
+   * seria trocar dois estados por quatro sem nome.
+   */
+  canceladoEm: string | null
+  motivoCancelamentoId: string | null
+  notaCancelamento: string | null
+  /** A REVISÃO (G13): 1 no original, e o id do anterior em cada revisão. */
+  revisao: number
+  revisaoDeId: string | null
 }
 
 interface Estado {
@@ -140,6 +155,13 @@ function estadoInicial(): Estado {
   const linhas = orcamentos.map((o) => ({
     ...o,
     obraId: null,
+    // As 17 linhas da §8.1 nascem SEM cancelamento e na revisão 1 — o seed é
+    // transcrição, e ele não capturou nem motivo nem cadeia de revisão.
+    canceladoEm: null,
+    motivoCancelamentoId: null,
+    notaCancelamento: null,
+    revisao: 1,
+    revisaoDeId: null,
     itens: o.itens.map((i) => ({ ...i })),
   }))
   const maior = linhas.reduce((max, o) => Math.max(max, Number(o.numero) || 0), 0)
@@ -265,6 +287,11 @@ function resumoDto(o: OrcamentoGuardado): QuoteDto {
     // contrato, espelhando `Ven_Situacao` (A/C) do legado. Data de FECHAMENTO
     // não é cancelamento: um orçamento fechado continua ativo.
     status: o.cancelado ? 'cancelled' : 'active',
+    // A REVISÃO viaja na LISTA, e não só no detalhe: é ali que os dois
+    // orçamentos do mesmo dia aparecem lado a lado, e é ali que "v2 do 1042"
+    // deixa de parecer um segundo negócio.
+    revision: o.revisao,
+    revisionOfId: o.revisaoDeId,
     totalCents: totalDoOrcamento(o),
   }
 }
@@ -324,6 +351,14 @@ function detalheDto(o: OrcamentoGuardado): QuoteDetailDto {
     ...resumoDto(o),
     folderNumber: o.numeroPasta,
     closedAt: o.dataFechamento,
+    cancelledAt: o.canceladoEm,
+    cancelReasonId: o.motivoCancelamentoId,
+    // Resolvido na LEITURA, como `workName`: o mock guarda o id e devolve o
+    // rótulo de hoje. Guardar o nome junto congelaria o texto do dia do
+    // cancelamento, que é decisão que ninguém tomou.
+    cancelReasonName: nomeDeApoio(o.motivoCancelamentoId),
+    cancelNote: o.notaCancelamento,
+    revisionOfNumber: estado.linhas.find((l) => l.id === o.revisaoDeId)?.numero ?? null,
     salespersonId: o.consultorId,
     salespersonName: o.consultor,
     professionalId: o.profissionalId,
@@ -556,7 +591,17 @@ function aplicarServicos(id: string, corpo: QuoteWriteRequest): void {
 export function criarOrcamento(corpo: QuoteWriteRequest): OrcamentoGuardado {
   const numero = String(estado.proximoNumero)
   estado.proximoNumero += 1
-  const novo = daEscrita(corpo, { ...vazio(), obraId: null, id: `orc-${numero}`, numero })
+  const novo = daEscrita(corpo, {
+    ...vazio(),
+    obraId: null,
+    canceladoEm: null,
+    motivoCancelamentoId: null,
+    notaCancelamento: null,
+    revisao: 1,
+    revisaoDeId: null,
+    id: `orc-${numero}`,
+    numero,
+  })
   aplicarServicos(novo.id, corpo)
   estado.linhas.unshift(novo)
   return novo
@@ -682,20 +727,104 @@ export const handlersDeOrcamento = [
     return HttpResponse.json(detalheDto(carimbado.orcamento))
   }),
 
-  http.post('*/api/quotes/:id/cancel', ({ params }) => {
+  http.post('*/api/quotes/:id/cancel', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
     const semPermissao = verificarEscrita('quotes')
     if (semPermissao) return semPermissao
     const achado = estado.linhas.find((o) => o.id === String(params.id))
     if (!achado) return naoEncontrado('Orçamento não encontrado.')
+    // **Cancelar duas vezes é 409**, e o mock passou a dizê-lo com o G13: o
+    // contrato sempre exigiu isso e o handler carimbava `cancelado = true` de
+    // novo, em silêncio. Repetição que responde 200 ensina a tela a oferecer
+    // Cancelar num documento cancelado — e agora o motivo do segundo pedido
+    // sobrescreveria o do primeiro, que é o dado que se queria guardar.
+    if (achado.cancelado) return jaCancelado()
+    // O corpo é OPCIONAL (contrato): quem cancela sem motivo continua valendo,
+    // e `request.json()` de corpo vazio ESTOURA — daí o `catch`.
+    const corpo = (await request.json().catch(() => null)) as CancelDocumentRequest | null
+    const erros = recusasDoCancelamento(corpo)
+    if (erros.length > 0) return camposInvalidos(erros)
     // Cancelar é verbo PRÓPRIO, e não um `PUT` com `status` dentro: mudar
     // situação por substituição do documento deixaria o cliente escolher o
     // estado de um fluxo que é do servidor.
     achado.cancelado = true
+    achado.canceladoEm = new Date().toISOString()
+    achado.motivoCancelamentoId = corpo?.reasonId ?? null
+    achado.notaCancelamento = corpo?.note ?? null
     return HttpResponse.json(detalheDto(achado))
   }),
+
+  http.post('*/api/quotes/:id/revise', ({ params }) => {
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('quotes')
+    if (semPermissao) return semPermissao
+    const id = String(params.id)
+    const original = estado.linhas.find((o) => o.id === id)
+    if (!original) return naoEncontrado('Orçamento não encontrado.')
+    // Revisar o que foi retirado da mesa é ressuscitar por outro nome.
+    if (original.cancelado) {
+      return problemaJson(409, 'Orçamento cancelado não se revisa.', {}, TIPO.transicaoInvalida)
+    }
+    // **A segunda revisão sai da PRIMEIRA.** Deixar duas revisões nascerem do
+    // mesmo pai faria a cadeia virar árvore, e "qual é a versão vigente" ficaria
+    // sem resposta — que é exatamente o problema dos dois orçamentos do mesmo
+    // dia que a revisão veio resolver.
+    if (estado.linhas.some((o) => o.revisaoDeId === id)) {
+      return problemaJson(
+        409,
+        'Este orçamento já tem revisão. Revise a mais recente.',
+        {},
+        TIPO.orcamentoJaRevisado,
+      )
+    }
+    const numero = String(estado.proximoNumero)
+    estado.proximoNumero += 1
+    const revisao: OrcamentoGuardado = {
+      ...original,
+      id: `orc-${numero}`,
+      numero,
+      revisao: original.revisao + 1,
+      revisaoDeId: original.id,
+      // A cópia é PROFUNDA nas coleções: compartilhar o array faria editar a
+      // revisão mudar o documento que o cliente já viu — o oposto do ponto.
+      ambientes: original.ambientes.map((a) => ({ ...a })),
+      itens: original.itens.map((i) => ({ ...i })),
+      parcelas: original.parcelas.map((p) => ({ ...p })),
+    }
+    estado.servicos[revisao.id] = servicosDe(original.id).map((s) => ({ ...s }))
+    estado.linhas.unshift(revisao)
+    return HttpResponse.json(detalheDto(revisao), { status: 201 })
+  }),
 ]
+
+/** 409 de documento já cancelado — o mesmo texto nos dois documentos. */
+function jaCancelado() {
+  return problemaJson(409, 'Documento já está cancelado.', {}, TIPO.transicaoInvalida)
+}
+
+/**
+ * As recusas do corpo de cancelamento — 400 com o campo NOMEADO.
+ *
+ * **O motivo é conferido pelo KIND, não só pela existência.** `nomeDeApoio`
+ * resolve qualquer id de apoio, então `lk-MARCA-1` voltaria 'EVOLED' e o
+ * cancelamento sairia motivado por uma marca de luminária. É o defeito da
+ * api#72 (escrita aceita lookup do kind errado) visto do lado do mock.
+ */
+function recusasDoCancelamento(corpo: CancelDocumentRequest | null) {
+  const erros: { path: string; message: string }[] = []
+  const motivo = corpo?.reasonId
+  if (motivo && !/^lk-MOTIVO_CANCELAMENTO-\d+$/.test(motivo)) {
+    erros.push({ path: 'reasonId', message: 'Motivo de cancelamento não encontrado.' })
+  } else if (motivo && !nomeDeApoio(motivo)) {
+    erros.push({ path: 'reasonId', message: 'Motivo de cancelamento não encontrado.' })
+  }
+  if ((corpo?.note?.length ?? 0) > 200) {
+    erros.push({ path: 'note', message: 'A observação tem no máximo 200 caracteres.' })
+  }
+  return erros
+}
 
 function vazio(): Orcamento {
   return {

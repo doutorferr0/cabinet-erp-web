@@ -2819,7 +2819,83 @@
       "post": {
         "tags": ["vendas"],
         "operationId": "CancelQuote",
-        "description": "Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.",
+        "description": "Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409. **Aceita motivo** (`CancelDocumentRequest`), e o corpo é OPCIONAL: quem já cancela hoje sem corpo continua valendo — exigir corpo agora quebraria o cliente que existe. O motivo fica no orçamento e volta em `cancelReasonId` / `cancelReasonName` / `cancelNote` do detalhe. Motivo é 400 quando o id não existe nesta empresa; cancelar duas vezes continua 409, com ou sem motivo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}/revise": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "ReviseQuote",
+        "description": "Proposto. **Cria a REVISÃO do orçamento** — documento novo, cópia de cabeçalho, ambientes e itens, com `revisionOfId` apontando o anterior e `revision` incrementado. O original fica intacto: foi ele que o cliente viu.\n\nResolve um caso REAL do legado, e não uma hipótese: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro. Quem lia a lista contava dois negócios; quem media conversão dividia por dois.\n\n**Recusas:** orçamento cancelado é 409 (revisar o que foi retirado da mesa é ressuscitar por outro nome); orçamento que JÁ tem revisão é 409 `urn:cabinet:erro:orcamento-ja-revisado` — a segunda revisão sai da PRIMEIRA, senão a cadeia vira árvore e \"qual é a versão vigente\" deixa de ter resposta.",
         "parameters": [
           {
             "name": "id",
@@ -2832,8 +2908,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -4961,7 +5037,7 @@
           {
             "name": "filters",
             "in": "query",
-            "description": "Proposto. Filtro estruturado do pedido, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.\n\n**Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta \"os documentos desta obra\", do mesmo jeito que `customerId` responde \"as obras deste cliente\" em `/api/works`. Campo fora da whitelist é 400.\n\nFicam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.",
+            "description": "Proposto. Filtro estruturado do pedido, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.\n\n**Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta \"os documentos desta obra\", do mesmo jeito que `customerId` responde \"as obras deste cliente\" em `/api/works`. Campo fora da whitelist é 400.\n\nFicam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.\n\n**`status` e `type` entram na whitelist com o ciclo de vida (G13), e é o que torna os dois estados úteis:** sem eles a tela não tem como perguntar \"o que ainda está em aberto\" nem \"quais demonstrações estão na rua\" — teria de puxar a lista inteira e contar no cliente, que é a conta que mente na página 2. Os dois são de VOCABULÁRIO FECHADO, então `eq`/`ne`/`inArray` bastam; valor fora do enum é 400, e não lista vazia: filtro que não casa nada e filtro que não existe são indistinguíveis para quem lê a tela.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5113,7 +5189,7 @@
       "put": {
         "tags": ["vendas"],
         "operationId": "UpdateOrder",
-        "description": "Proposto. Substitui o documento INTEIRO. Pedido cancelado não aceita alteração — é 409, não 400.",
+        "description": "Proposto. Substitui o documento INTEIRO. Pedido cancelado não aceita alteração — é 409, não 400.\n\n**Pedido `concluded` é 409, pela mesma razão que `cancelled` é:** o documento encerrado é o que foi combinado, e reescrevê-lo muda o passado de quem já leu. Corrigir pedido concluído é reabrir — e reabertura não existe de propósito: o legado não tem o estado, então não há caso real para copiar.",
         "parameters": [
           {
             "name": "id",
@@ -5189,7 +5265,83 @@
       "post": {
         "tags": ["vendas"],
         "operationId": "CancelOrder",
-        "description": "Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.",
+        "description": "Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409. **Aceita motivo** (`CancelDocumentRequest`), e o corpo é OPCIONAL: quem já cancela hoje sem corpo continua valendo — exigir corpo agora quebraria o cliente que existe. O motivo fica no pedido e volta em `cancelReasonId` / `cancelReasonName` / `cancelNote` do detalhe. Motivo é 400 quando o id não existe nesta empresa; cancelar duas vezes continua 409, com ou sem motivo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/conclude": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "ConcludeOrder",
+        "description": "Proposto. **Conclui o pedido** — `active → concluded`. É a \"Conclusão do Pedido de Venda\" do menu do legado (`FrmFecha_projeto`): o ponto em que o documento para de ser trabalho em curso. Carimba `closedAt` com a data de hoje quando ela está nula; a que o operador digitou fica como está.\n\n**Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.\n\n**O que esta operação NÃO faz, e é blocker escrito, não esquecimento:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial. Entrega não existe neste contrato — não há `/api/deliveries`, não há estado físico, não há quadro de cargas. Declarar aqui um `force` que nada libera seria publicar botão sem efeito, e a tela que o mostrasse ensinaria o operador a confiar num controle que não controla. A pré-condição entra junto com o módulo de entrega, e aí o `force` nasce com o que forçar.",
         "parameters": [
           {
             "name": "id",
@@ -5230,6 +5382,215 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/demo-return": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "ReturnDemoOrder",
+        "description": "Proposto. **Registra o RETORNO da demonstração** — carimba `demoReturnedAt` e devolve a peça ao saldo. O empréstimo tem duas pontas e esta é a segunda: sem ela, \"emprestado\" e \"vendido\" tiram do estoque do mesmo jeito, e o que está na rua vira diferença de balanço.\n\n**Não mexe no estado do documento.** Demonstração que voltou pode virar venda, e concluir é decisão de quem vendeu, não consequência de a peça ter voltado.\n\n**Recusas:** pedido `sale` é 409 `urn:cabinet:erro:transicao-invalida` — não há o que devolver. Devolver duas vezes, idem. Pedido cancelado também: o cancelamento já devolveu.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/professional": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "TransferOrderProfessional",
+        "description": "Proposto. **Transfere a venda entre profissionais** — a opção \"Transferência de Venda entre Profissionais\" do menu do legado. Fecha a vigência corrente em `VendaIndicacao` e abre outra; o documento passa a apontar o novo profissional.\n\nÉ operação própria, e não campo do `PUT`, porque a troca **tem data** e a comissão pergunta por ela. O `PUT` do pedido não move `professionalId` — quem o mandasse ali estaria reescrevendo a vigência inteira sem dizer.\n\n**Recusas:** parceiro sem papel `professional` é 400 apontando o campo; transferir para o MESMO profissional é 409 (vigência de duração zero não é trilha, é ruído); pedido cancelado ou concluído é 409 — documento encerrado não troca de dono.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferProfessionalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/professional-history": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "ListOrderProfessionalHistory",
+        "description": "Proposto. **A trilha de indicação do pedido**, da mais recente para a mais antiga. A linha com `endedAt` nulo é a corrente, e é ela que casa com `OrderDetailDto.professionalId` — se as duas divergirem, a trilha mente, e é por isso que ela vem do mesmo lugar e não de um espelho.\n\nPublica paginação como toda listagem, mas o conjunto é pequeno por natureza: a trilha de um documento tem tantas linhas quantas transferências houve.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `startedAt`. Uma só, e de propósito: a trilha é cronológica, e ordenar por nome de profissional esconderia a sequência que é o ponto dela.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderProfessionalAssignmentDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8132,7 +8493,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -8159,6 +8520,9 @@
           "urn:cabinet:erro:valor-nao-parcelavel",
           "urn:cabinet:erro:parcelas-acima-do-teto",
           "urn:cabinet:erro:parcela-abaixo-do-minimo",
+          "urn:cabinet:erro:transicao-invalida",
+          "urn:cabinet:erro:demonstracao-em-aberto",
+          "urn:cabinet:erro:orcamento-ja-revisado",
           "urn:cabinet:erro:nao-implementado",
           "urn:cabinet:erro:resposta-nao-json"
         ]
@@ -9434,6 +9798,16 @@
             "type": "string",
             "enum": ["active", "cancelled"]
           },
+          "revision": {
+            "description": "Número da revisão, 1-based. `1` é o orçamento original; `2` é a primeira revisão. Resolve um caso REAL do legado: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro — quem lia a lista contava dois negócios onde havia um.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "revisionOfId": {
+            "description": "O orçamento que esta revisão substitui, ou `null` no original. A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e itens) porque o anterior é o que foi mostrado ao cliente: sobrescrevê-lo apagaria a proposta que já saiu pela porta.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
           "totalCents": {
             "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
             "type": "integer",
@@ -9508,6 +9882,20 @@
             "type": "string",
             "enum": ["active", "cancelled"]
           },
+          "revision": {
+            "description": "Número da revisão, 1-based. `1` é o orçamento original; `2` é a primeira revisão. Resolve um caso REAL do legado: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro — quem lia a lista contava dois negócios onde havia um.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "revisionOfId": {
+            "description": "O orçamento que esta revisão substitui, ou `null` no original. A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e itens) porque o anterior é o que foi mostrado ao cliente: sobrescrevê-lo apagaria a proposta que já saiu pela porta.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "revisionOfNumber": {
+            "type": ["null", "string"],
+            "description": "Número do orçamento revisado, resolvido na leitura — o que a tela mostra sem uma segunda requisição."
+          },
           "totalCents": {
             "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
             "type": "integer",
@@ -9521,6 +9909,25 @@
             "description": "Data de fechamento.",
             "type": ["string", "null"],
             "format": "date"
+          },
+          "cancelledAt": {
+            "type": ["null", "string"],
+            "description": "Quando o documento foi cancelado. `null` enquanto não for.",
+            "format": "date-time"
+          },
+          "cancelReasonId": {
+            "description": "Motivo do cancelamento — id da lista de apoio. É o `Mod_codigo` que o legado gravava junto de `ven_situacao='C'`. O `kind` da lista NÃO passa pelo contrato (ADR-011): entra por linha no catálogo do servidor.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "cancelReasonName": {
+            "type": ["null", "string"],
+            "description": "Nome do motivo, resolvido na leitura. `null` quando cancelaram sem motivo."
+          },
+          "cancelNote": {
+            "type": ["null", "string"],
+            "description": "Observação livre de quem cancelou. O motivo diz a CLASSE; a nota diz o caso.",
+            "maxLength": 200
           },
           "salespersonId": {
             "description": "Consultor(a) que atende — `EmployeeDto.id`.",
@@ -10785,9 +11192,24 @@
             "type": ["string", "null"]
           },
           "status": {
-            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue \"pedido em andamento\" de \"pedido encerrado\" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409.",
             "type": "string",
-            "enum": ["active", "cancelled"]
+            "enum": ["active", "concluded", "cancelled"]
+          },
+          "type": {
+            "description": "O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.\n\n**`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem \"Pré-venda\", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.",
+            "type": "string",
+            "enum": ["sale", "demo"]
+          },
+          "demoDueDate": {
+            "type": ["null", "string"],
+            "description": "Prazo de retorno da demonstração — a data até quando a peça pode ficar fora. Só faz sentido com `type: demo`; em `sale` é `null` e a escrita que mandar valor é 400. É o que torna a demonstração cobrável: sem prazo, \"emprestado\" e \"perdido\" são o mesmo registro.",
+            "format": "date"
+          },
+          "demoReturnedAt": {
+            "type": ["null", "string"],
+            "description": "Quando a peça voltou (`POST .../demo-return`). `null` = ainda fora. Demonstração com `demoDueDate` vencida e `demoReturnedAt` nulo é o que a consulta de pendências procura.",
+            "format": "date-time"
           },
           "totalCents": {
             "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
@@ -10859,9 +11281,24 @@
             "type": ["string", "null"]
           },
           "status": {
-            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.",
+            "description": "Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue \"pedido em andamento\" de \"pedido encerrado\" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409.",
             "type": "string",
-            "enum": ["active", "cancelled"]
+            "enum": ["active", "concluded", "cancelled"]
+          },
+          "type": {
+            "description": "O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.\n\n**`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem \"Pré-venda\", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.",
+            "type": "string",
+            "enum": ["sale", "demo"]
+          },
+          "demoDueDate": {
+            "type": ["null", "string"],
+            "description": "Prazo de retorno da demonstração — a data até quando a peça pode ficar fora. Só faz sentido com `type: demo`; em `sale` é `null` e a escrita que mandar valor é 400. É o que torna a demonstração cobrável: sem prazo, \"emprestado\" e \"perdido\" são o mesmo registro.",
+            "format": "date"
+          },
+          "demoReturnedAt": {
+            "type": ["null", "string"],
+            "description": "Quando a peça voltou (`POST .../demo-return`). `null` = ainda fora. Demonstração com `demoDueDate` vencida e `demoReturnedAt` nulo é o que a consulta de pendências procura.",
+            "format": "date-time"
           },
           "totalCents": {
             "description": "Total do orçamento, em centavos. Calculado pelo servidor.",
@@ -10876,6 +11313,25 @@
             "description": "Data de fechamento.",
             "type": ["string", "null"],
             "format": "date"
+          },
+          "cancelledAt": {
+            "type": ["null", "string"],
+            "description": "Quando o documento foi cancelado. `null` enquanto não for.",
+            "format": "date-time"
+          },
+          "cancelReasonId": {
+            "description": "Motivo do cancelamento — id da lista de apoio. É o `Mod_codigo` que o legado gravava junto de `ven_situacao='C'`. O `kind` da lista NÃO passa pelo contrato (ADR-011): entra por linha no catálogo do servidor.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "cancelReasonName": {
+            "type": ["null", "string"],
+            "description": "Nome do motivo, resolvido na leitura. `null` quando cancelaram sem motivo."
+          },
+          "cancelNote": {
+            "type": ["null", "string"],
+            "description": "Observação livre de quem cancelou. O motivo diz a CLASSE; a nota diz o caso.",
+            "maxLength": 200
           },
           "salespersonId": {
             "description": "Consultor(a) que atende — `EmployeeDto.id`.",
@@ -10994,8 +11450,18 @@
             "type": ["string", "null"]
           },
           "closedAt": {
-            "description": "Data de fechamento.",
+            "description": "Data de fechamento digitada pelo operador, como no `FrmFecha_projeto`. Continua escrevível enquanto o pedido está `active`; `POST .../conclude` carimba a data de hoje quando ela está nula. O ESTADO não vem por aqui — `status` só se move pelas operações de ciclo de vida.",
             "type": ["string", "null"],
+            "format": "date"
+          },
+          "type": {
+            "description": "Só na CRIAÇÃO. `PUT` que troca o tipo é 409: demonstração e venda movimentam estoque de formas diferentes, e trocar a letra depois do movimento deixaria saldo sem documento que o explique. Ausente = `sale`.",
+            "type": ["null", "string"],
+            "enum": ["sale", "demo", null]
+          },
+          "demoDueDate": {
+            "type": ["null", "string"],
+            "description": "Prazo de retorno, obrigatório quando `type: demo` e proibido quando `sale` — as duas recusas são 400 apontando o campo.",
             "format": "date"
           },
           "salespersonId": {
@@ -11060,6 +11526,94 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OrderDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CancelDocumentRequest": {
+        "description": "Motivo do cancelamento. O corpo é OPCIONAL — cancelar sem dizer por quê continua valendo, e é o que os 3.354 cancelamentos do legado são: `Mod_codigo` existe lá, e a variante que o grava é uma de duas. Exigi-lo agora reprovaria o gesto que o operador já faz, para ganhar um campo que ele preencheria com o primeiro item da lista.",
+        "type": "object",
+        "properties": {
+          "reasonId": {
+            "description": "Motivo, da lista de apoio. O `kind` NÃO passa pelo contrato (ADR-011) — é linha no catálogo do servidor. Id que não existe, ou de outra empresa, é 400 apontando o campo.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "note": {
+            "description": "Observação livre. O motivo diz a CLASSE do cancelamento; a nota diz o caso — e é ela que sobrevive à pergunta \"por que este aqui?\".",
+            "type": ["null", "string"],
+            "maxLength": 200
+          }
+        }
+      },
+      "TransferProfessionalRequest": {
+        "description": "Troca o Profissional Externo do pedido. **Transferir não é editar o campo**: no legado a indicação vive em `VendaIndicacao`, com vigência, porque é ela que decide comissão — e comissão paga com base em quem estava no documento HOJE, sem saber quem estava ontem, não se audita. Por isso a troca é operação própria, com trilha, e o `PUT` do documento NÃO move `professionalId`.",
+        "type": "object",
+        "required": ["professionalId"],
+        "properties": {
+          "professionalId": {
+            "description": "O novo profissional — `PartnerDto.id` com papel `professional`. Parceiro sem esse papel é 400 apontando o campo. `null` REMOVE a indicação, e isso é caso legítimo: venda de balcão que entrou com especificador por engano.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "note": {
+            "description": "Por que transferiu. Fica na linha da trilha, não no documento.",
+            "type": ["null", "string"],
+            "maxLength": 200
+          }
+        }
+      },
+      "OrderProfessionalAssignmentDto": {
+        "description": "Uma linha da trilha de indicação — quem foi o profissional do pedido, e DE QUANDO ATÉ QUANDO. Modelada em `VendaIndicacao` (vigência), sem o percentual por grupo de produto: participação é assunto do Financeiro e não entra por esta porta.",
+        "required": ["id", "startedAt"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalId": {
+            "description": "O profissional desta vigência. `null` = período sem indicação.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "professionalName": {
+            "description": "Nome resolvido na leitura.",
+            "type": ["null", "string"]
+          },
+          "startedAt": {
+            "description": "Início da vigência.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "description": "Fim da vigência. `null` na linha CORRENTE — é ela que casa com `OrderDetailDto.professionalId`.",
+            "type": ["null", "string"],
+            "format": "date-time"
+          },
+          "changedByEmployeeId": {
+            "description": "Quem fez a troca que ABRIU esta vigência. `null` na linha que nasceu com o documento.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "note": {
+            "description": "A justificativa dada na troca.",
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "PagedResultOfOrderProfessionalAssignmentDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderProfessionalAssignmentDto"
             }
           },
           "total": {

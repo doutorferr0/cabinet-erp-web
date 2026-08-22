@@ -72,6 +72,9 @@ export const TIPO = {
   valorNaoParcelavel: 'urn:cabinet:erro:valor-nao-parcelavel',
   parcelasAcimaDoTeto: 'urn:cabinet:erro:parcelas-acima-do-teto',
   parcelaAbaixoDoMinimo: 'urn:cabinet:erro:parcela-abaixo-do-minimo',
+  transicaoInvalida: 'urn:cabinet:erro:transicao-invalida',
+  demonstracaoEmAberto: 'urn:cabinet:erro:demonstracao-em-aberto',
+  orcamentoJaRevisado: 'urn:cabinet:erro:orcamento-ja-revisado',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -105,6 +108,9 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:valor-nao-parcelavel': 'Valor não parcelável',
   'urn:cabinet:erro:parcelas-acima-do-teto': 'Parcelas acima do teto',
   'urn:cabinet:erro:parcela-abaixo-do-minimo': 'Parcela abaixo do mínimo',
+  'urn:cabinet:erro:transicao-invalida': 'Transição inválida',
+  'urn:cabinet:erro:demonstracao-em-aberto': 'Demonstração em aberto',
+  'urn:cabinet:erro:orcamento-ja-revisado': 'Orçamento já revisado',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }

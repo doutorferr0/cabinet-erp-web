@@ -7,6 +7,7 @@ import { useRotulosDeApoio } from '@/data/lookups-api'
 import { camposDoContrato, fornecedor as esquema } from '@/features/cadastro/modulos'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
+import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -88,6 +89,11 @@ function FornecedorEditPage() {
     <PainelDeAtividades alvo={{ tipo: 'partner', id: fornecedorId }} />
   )
 
+  // A ficha do `Consul.` não monta o formulário, então a grade de contatos
+  // precisa vir por aqui — o campo saiu do schema de módulos em #293, e sem
+  // isto quem consulta um fornecedor deixaria de ver quem atende nele.
+  const contatosNaFicha = isNovo ? null : <ContatosDoParceiro partnerId={fornecedorId} readOnly />
+
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103).
 
   if (readOnly && !isNovo) {
@@ -99,7 +105,12 @@ function FornecedorEditPage() {
         titulo="Cadastro de Fornecedores"
         contexto={registro.nomeFantasia}
         aviso={aviso}
-        abaixo={atividades}
+        abaixo={
+          <>
+            {contatosNaFicha}
+            {atividades}
+          </>
+        }
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/fornecedores/$fornecedorId',
@@ -118,6 +129,7 @@ function FornecedorEditPage() {
         readOnly={readOnly}
         {...(moduloEmFoco ? { moduloEmFoco } : {})}
         contexto={isNovo ? 'Incluir' : registro.nomeFantasia}
+        partnerId={isNovo ? null : fornecedorId}
         aviso={aviso}
         onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />

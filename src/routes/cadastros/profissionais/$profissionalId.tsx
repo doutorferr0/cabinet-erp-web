@@ -6,6 +6,7 @@ import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { useRotulosDeApoio } from '@/data/lookups-api'
 import { camposDoContrato, profissional as esquema } from '@/features/cadastro/modulos'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
+import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -99,7 +100,14 @@ function ProfissionalEditPage() {
         titulo="Cadastro de Profissional Externo"
         contexto={registro.nomeApresentacao}
         aviso={aviso}
-        abaixo={atividades}
+        abaixo={
+          <>
+            {/* A ficha do `Consul.` não monta o formulário — sem isto quem
+                consulta deixaria de ver quem atende no cadastro. */}
+            <ContatosDoParceiro partnerId={profissionalId} readOnly />
+            {atividades}
+          </>
+        }
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/profissionais/$profissionalId',
@@ -118,6 +126,7 @@ function ProfissionalEditPage() {
         readOnly={readOnly}
         {...(moduloEmFoco ? { moduloEmFoco } : {})}
         contexto={isNovo ? 'Incluir' : registro.nomeApresentacao}
+        partnerId={isNovo ? null : profissionalId}
         aviso={aviso}
         onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />

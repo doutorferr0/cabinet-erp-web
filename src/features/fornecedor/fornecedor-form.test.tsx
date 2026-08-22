@@ -1,4 +1,4 @@
-import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
+import { contatoDoParceiro, parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
 import { acaoNaLinha, renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -171,26 +171,62 @@ describe('tela Fornecedor', () => {
     })
   }, 20_000)
 
-  it('formulário inclui contato na grade e grava (volta para a listagem)', async () => {
-    const { stub } = servidorDeParceiros()
-    const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)
+  /**
+   * A GRADE DE CONTATOS, ligada ao servidor (#293).
+   *
+   * Antes disto ela era `<FormGrid name="contatos">` sobre o registro do
+   * formulário: o operador digitava, clicava no `Gravar` do rodapé, lia
+   * "Cadastro gravado" — e o contato não ia a lugar nenhum, porque contato é
+   * sub-recurso e não entra no corpo do `PUT` do parceiro.
+   */
+  it('a grade carrega os contatos do servidor', async () => {
+    const { user } = renderRoute(
+      '/cadastros/fornecedores',
+      stubDeParceiros([parceiro()], [contatoDoParceiro()]),
+    )
 
-    const razao = await screen.findByLabelText('Razão Social')
-    await user.type(razao, 'FORNECEDOR TESTE LTDA')
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Alterar')
+    await user.click(await screen.findByRole('button', { name: 'Representante e contatos' }))
 
-    // grade Contatos: o módulo `Representante e contatos` é opcional e nasce
-    // recolhido — a grade só existe depois de abrir. É a hierarquia da
-    // diretriz 3 funcionando, não um passo extra do teste.
-    await user.click(screen.getByRole('button', { name: 'Representante e contatos' }))
+    expect(await screen.findByDisplayValue('MARIA SOUZA')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('COMPRAS')).toBeInTheDocument()
+  })
+
+  it('o contato incluído vai por POST no sub-recurso, não no PUT do parceiro', async () => {
+    const { stub, chamadas } = servidorDeParceiros([parceiro()], { contatos: [] })
+    const { user } = renderRoute('/cadastros/fornecedores', stub)
+
+    await acaoNaLinha(user, 'STELLA ILUMINAÇÃO LTDA', 'Alterar')
+    // O módulo é opcional e nasce recolhido — a grade só existe depois de
+    // abrir. É a hierarquia da diretriz 3 funcionando, não um passo extra.
+    await user.click(await screen.findByRole('button', { name: 'Representante e contatos' }))
     await user.click(await screen.findByRole('button', { name: /Incluir/ }))
     await user.type(screen.getByLabelText('Nome linha 1'), 'MARIA')
     await user.type(screen.getByLabelText('Vínculo linha 1'), 'COMPRAS')
 
-    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+    await user.click(screen.getByRole('button', { name: 'Gravar contatos' }))
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
+      expect(chamadas.some((c) => c.metodo === 'POST' && c.caminho.endsWith('/contacts'))).toBe(
+        true,
+      )
     })
+    const inclusao = chamadas.find((c) => c.metodo === 'POST')
+    expect(inclusao?.corpo).toMatchObject({ name: 'MARIA', role: 'COMPRAS', active: true })
+    // O `Gravar` do rodapé continua sendo só do cadastro: nenhum PUT de
+    // parceiro saiu daqui, e nenhum corpo dele carrega contato.
+    expect(chamadas.filter((c) => c.metodo === 'PUT')).toEqual([])
+  }, 20_000)
+
+  it('no Incluir a grade não aparece, e a tela diz por quê', async () => {
+    const { stub } = servidorDeParceiros()
+    renderRoute('/cadastros/fornecedores/novo', stub)
+
+    await screen.findByLabelText('Razão Social')
+
+    // Sem cadastro gravado não há a que pendurar contato. Sumir calado leria-se
+    // como tela quebrada — o módulo promete contatos no próprio título.
+    expect(await screen.findByText(/depois de gravar o cadastro/)).toBeInTheDocument()
   })
 
   // `Cidade` era digitação livre — `EnderecoBlock` já suportava a busca, mas

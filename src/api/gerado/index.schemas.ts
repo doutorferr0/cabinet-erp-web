@@ -3956,7 +3956,10 @@ export interface SupplierMovementReportDto {
 export interface StockValuationRowDto {
   variantId: string;
   description: string;
-  /** @nullable */
+  /**
+     * O TIPO DE PRODUTO do cadastro, pelo nome. Nulo quando o produto não tem tipo — que é caso real e não ausência de dado: o cadastro mínimo do legado não exigia tipo.
+     * @nullable
+     */
   productGroup?: string | null;
   /** Saldo atual. */
   quantity: string;
@@ -4022,6 +4025,11 @@ export interface StockValuationReportDto {
 export interface StockAgingRowDto {
   variantId: string;
   description: string;
+  /**
+     * O TIPO DE PRODUTO do cadastro, pelo nome. Nulo quando o produto não tem tipo.
+     * @nullable
+     */
+  productGroup?: string | null;
   /** Saldo atual — quanto dinheiro está parado nele. */
   quantity: string;
   /**
@@ -4841,13 +4849,9 @@ pageSize?: number;
 
 export type GetStockValuationReportParams = {
 /**
- * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ * Só os itens deste grupo. **No estoque o grupo é o TIPO DE PRODUTO do cadastro** (`catalog_lookups`, kind `TIPO_PRODUTO`), comparado pelo NOME — e não o `productGroup` congelado na linha do documento, que é o dos relatórios de venda. São dois campos com o mesmo papel em lados diferentes da mesma pergunta: a linha do documento guarda o que valia na venda, e o cadastro guarda o que vale hoje. O nome é o que os aproxima; o id não, porque a linha congelada nunca guardou id.
  */
 productGroup?: string;
-/**
- * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
- */
-supplierId?: string;
 /**
  * Incluir itens com saldo zero. Padrão `false`: o inventário de quem tem 4000 SKUs cadastrados e 300 em casa não é uma lista de 4000 linhas com 3700 zeros.
  */
@@ -4888,13 +4892,9 @@ export type GetStockAgingReportParams = {
  */
 minDaysWithoutSale?: number;
 /**
- * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ * Só os itens deste grupo. **No estoque o grupo é o TIPO DE PRODUTO do cadastro** (`catalog_lookups`, kind `TIPO_PRODUTO`), comparado pelo NOME — e não o `productGroup` congelado na linha do documento, que é o dos relatórios de venda. São dois campos com o mesmo papel em lados diferentes da mesma pergunta: a linha do documento guarda o que valia na venda, e o cadastro guarda o que vale hoje. O nome é o que os aproxima; o id não, porque a linha congelada nunca guardou id.
  */
 productGroup?: string;
-/**
- * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
- */
-supplierId?: string;
 /**
  * Incluir itens com saldo zero.
  */

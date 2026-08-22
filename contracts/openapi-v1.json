@@ -6650,7 +6650,7 @@
       "get": {
         "tags": ["relatorios"],
         "operationId": "GetSupplierMovementReport",
-        "description": "Proposto. **Movimentação por fornecedor.** É o número que se leva para a mesa de negociação: quanto se vendeu do que ele fornece, no período. Agrega pelo fornecedor CONGELADO na linha do documento e não pelo cadastro atual do produto — trocar o fornecedor de um item hoje reescreveria a história da negociação do ano passado.",
+        "description": "Proposto. **Movimentação por fornecedor.** É o número que se leva para a mesa de negociação: quanto se vendeu do que ele fornece, no período. Agrega pelo fornecedor CONGELADO na linha do documento e não pelo cadastro atual do produto — trocar o fornecedor de um item hoje reescreveria a história da negociação do ano passado.\n\n**É o ÚNICO relatório que responde por fornecedor, e por falta de fonte e não por escolha:** o cadastro de produto não guarda fornecedor — quem guarda é a LINHA do documento, congelada na emissão. Por isso `supplierId` não existe nos relatórios de estoque: publicá-lo lá devolveria vazio e pareceria \"este fornecedor não tem nada em estoque\".",
         "parameters": [
           {
             "name": "from",
@@ -6771,16 +6771,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
-          },
-          {
-            "name": "supplierId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+            "description": "Só os itens deste grupo. **No estoque o grupo é o TIPO DE PRODUTO do cadastro** (`catalog_lookups`, kind `TIPO_PRODUTO`), comparado pelo NOME — e não o `productGroup` congelado na linha do documento, que é o dos relatórios de venda. São dois campos com o mesmo papel em lados diferentes da mesma pergunta: a linha do documento guarda o que valia na venda, e o cadastro guarda o que vale hoje. O nome é o que os aproxima; o id não, porque a linha congelada nunca guardou id."
           },
           {
             "name": "includeZero",
@@ -6893,16 +6884,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
-          },
-          {
-            "name": "supplierId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+            "description": "Só os itens deste grupo. **No estoque o grupo é o TIPO DE PRODUTO do cadastro** (`catalog_lookups`, kind `TIPO_PRODUTO`), comparado pelo NOME — e não o `productGroup` congelado na linha do documento, que é o dos relatórios de venda. São dois campos com o mesmo papel em lados diferentes da mesma pergunta: a linha do documento guarda o que valia na venda, e o cadastro guarda o que vale hoje. O nome é o que os aproxima; o id não, porque a linha congelada nunca guardou id."
           },
           {
             "name": "includeZero",
@@ -12450,7 +12432,8 @@
             "type": "string"
           },
           "productGroup": {
-            "type": ["string", "null"]
+            "type": ["string", "null"],
+            "description": "O TIPO DE PRODUTO do cadastro, pelo nome. Nulo quando o produto não tem tipo — que é caso real e não ausência de dado: o cadastro mínimo do legado não exigia tipo."
           },
           "quantity": {
             "description": "Saldo atual.",
@@ -12553,6 +12536,10 @@
           },
           "description": {
             "type": "string"
+          },
+          "productGroup": {
+            "description": "O TIPO DE PRODUTO do cadastro, pelo nome. Nulo quando o produto não tem tipo.",
+            "type": ["string", "null"]
           },
           "quantity": {
             "description": "Saldo atual — quanto dinheiro está parado nele.",

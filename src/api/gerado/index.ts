@@ -6111,6 +6111,8 @@ export const getGetSupplierMovementReportUrl = (params: GetSupplierMovementRepor
 
 /**
  * Proposto. **Movimentação por fornecedor.** É o número que se leva para a mesa de negociação: quanto se vendeu do que ele fornece, no período. Agrega pelo fornecedor CONGELADO na linha do documento e não pelo cadastro atual do produto — trocar o fornecedor de um item hoje reescreveria a história da negociação do ano passado.
+ *
+ * **É o ÚNICO relatório que responde por fornecedor, e por falta de fonte e não por escolha:** o cadastro de produto não guarda fornecedor — quem guarda é a LINHA do documento, congelada na emissão. Por isso `supplierId` não existe nos relatórios de estoque: publicá-lo lá devolveria vazio e pareceria "este fornecedor não tem nada em estoque".
  */
 export const getSupplierMovementReport = async (params: GetSupplierMovementReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSupplierMovementReportResponse> => {
 

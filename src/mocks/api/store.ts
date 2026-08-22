@@ -7,6 +7,8 @@ import type {
   ProductDetailDto,
   ProjectDto,
   ProjectPlanDto,
+  StockBalanceDto,
+  StockLocationDto,
   StockMovementDto,
   TaskDto,
   TodoDto,
@@ -141,6 +143,14 @@ export interface StoreDaApi {
   lookups: CatalogLookupDto[]
   produtos: ProductDetailDto[]
   parceiros: ParceiroDaOrg[]
+  /**
+   * Os DEPÓSITOS, por empresa (contrato #291) — o `tenantId` fica FORA do DTO
+   * pelo mesmo motivo da obra: o servidor não devolve a coluna de RLS, ele a
+   * USA para decidir o que devolver.
+   */
+  depositos: DepositoDaEmpresa[]
+  /** O saldo por (empresa, depósito, variante) — cache derivado do kardex. */
+  saldos: SaldoDoDeposito[]
   movimentos: StockMovementDto[]
   tarefas: TaskDto[]
   todos: TodoDto[]
@@ -153,6 +163,89 @@ export interface StoreDaApi {
 
 export const TENANT_MATRIZ = 'tenant-matriz'
 export const TENANT_FILIAL = 'tenant-filial'
+
+/** O depósito COMO O STORE o guarda: o `StockLocationDto` mais o `tenantId`. */
+export interface DepositoDaEmpresa extends StockLocationDto {
+  tenantId: string
+}
+
+/** O saldo como o store o guarda: o `StockBalanceDto` mais o `tenantId`. */
+export interface SaldoDoDeposito extends StockBalanceDto {
+  tenantId: string
+}
+
+/**
+ * Instante fixo do seed — o mock não pode nascer com relógio de execução, senão
+ * dois testes que comparam `updatedAt` divergem sem nada ter mudado.
+ */
+const ABERTURA_DO_SEED = '2026-08-01T12:00:00.000Z'
+
+/**
+ * Os depósitos do seed — MATRIZ com árvore, FILIAL com NENHUM, de propósito.
+ *
+ * A filial vazia é o estado que uma empresa nova tem: NENHUM depósito, porque
+ * o contrato não publica operação que crie o padrão — quem o cria é o primeiro
+ * movimento, e `depositos.test.ts` exercita esse caminho. No navegador ele não
+ * se vê pela filial, cujo vínculo do seed é `viewer` e não movimenta estoque.
+ *
+ * `RUA A` pendurada no `PRINCIPAL` existe para a árvore ter profundidade de
+ * verdade: os cinco níveis do legado (Estoque/Prédio/Rua/Número/Apto) viram
+ * `parentId`, e uma lista toda em raiz não provaria nada disso. `SHOWROOM`
+ * nasce INATIVO porque é o caso que o `POST` de movimento recusa com 409.
+ */
+function depositosDoSeed(): DepositoDaEmpresa[] {
+  return [
+    {
+      id: 'dep-0001',
+      tenantId: TENANT_MATRIZ,
+      parentId: null,
+      code: 'PRINCIPAL',
+      name: 'DEPÓSITO PRINCIPAL',
+      isDefault: true,
+      active: true,
+    },
+    {
+      id: 'dep-0002',
+      tenantId: TENANT_MATRIZ,
+      parentId: 'dep-0001',
+      code: 'PRINC-RUA-A',
+      name: 'RUA A',
+      isDefault: false,
+      active: true,
+    },
+    {
+      id: 'dep-0003',
+      tenantId: TENANT_MATRIZ,
+      parentId: null,
+      code: 'SHOWROOM',
+      name: 'SHOWROOM CENTRO',
+      isDefault: false,
+      active: false,
+    },
+  ]
+}
+
+/**
+ * O saldo de ABERTURA, derivado do `stockQty` que as variantes do seed já
+ * traziam — e é isso que mantém a reconciliação de dois níveis VERDADEIRA no
+ * mock: a soma dos depósitos de uma variante bate com o `stockQty` dela.
+ *
+ * Não é o mesmo que "inventar linha zerada por depósito", que o contrato recusa:
+ * variante com `stockQty` zero não ganha linha nenhuma, e o `SHOWROOM` nunca viu
+ * peça — depósito sem linha não aparece com zero, ele não aparece.
+ */
+function saldosDoSeed(produtos: ProductDetailDto[]): SaldoDoDeposito[] {
+  return produtos
+    .flatMap((produto) => produto.variants)
+    .filter((variante) => (variante.stockQty ?? 0) !== 0)
+    .map((variante) => ({
+      tenantId: TENANT_MATRIZ,
+      locationId: 'dep-0001',
+      variantId: variante.id,
+      qty: variante.stockQty as number,
+      updatedAt: ABERTURA_DO_SEED,
+    }))
+}
 
 function lookupsDoSeed(): CatalogLookupDto[] {
   return Object.entries(VOCABULARIO_DE_APOIO).flatMap(([kind, nomes]) =>
@@ -816,6 +909,10 @@ function planosDoSeed(): Record<string, ProjectPlanDto> {
 }
 
 export function criarStore(): StoreDaApi {
+  // O saldo de abertura SAI dos produtos do seed — montar as duas listas do
+  // mesmo objeto é o que impede a soma dos depósitos de divergir do `stockQty`
+  // já no primeiro segundo, que é a divergência que o contrato chama de bug.
+  const produtos = produtosDoSeed()
   return {
     logado: false,
     expiraProximaEscrita: false,
@@ -842,8 +939,10 @@ export function criarStore(): StoreDaApi {
       },
     ],
     lookups: lookupsDoSeed(),
-    produtos: produtosDoSeed(),
+    produtos,
     parceiros: parceirosDoSeed(),
+    depositos: depositosDoSeed(),
+    saldos: saldosDoSeed(produtos),
     movimentos: [],
     tarefas: tarefasDoSeed(),
     todos: todosDoSeed(),

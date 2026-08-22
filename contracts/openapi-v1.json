@@ -1335,6 +1335,7 @@
       "post": {
         "tags": ["estoque"],
         "operationId": "CreateStockMovement",
+        "description": "Proposto na parte do DEPÓSITO. O movimento passa a ter LOCAL, e `balanceAfter` passa a ser o saldo DELE — não o total do produto na empresa (api#79, decisão 2 do user em 2026-08-22).\n\n**`locationId` é opcional no corpo e obrigatório no movimento.** Omitir (ou mandar `null`) significa \"o depósito padrão da empresa ativa\", e o servidor o CRIA sob demanda se ela ainda não tem nenhum — mesmo precedente da linha de `product_tenant`, que já nasce no primeiro movimento de variante nunca precificada. **A criação implícita não é operação deste contrato: é comportamento do servidor**, escrito aqui para quem lê saber de onde saiu o depósito que ele não cadastrou. Não existe caminho para criá-la de outro jeito — o contrato não publica criação de empresa, então empresa nova não teria outro lugar onde ganhar o seu.\n\n404 quando `locationId` aponta para depósito que a empresa ativa não tem. 409 quando o depósito está inativo, e quando o movimento deixaria o saldo do DEPÓSITO negativo — a conta que recusa é a do local, não mais a do produto.",
         "parameters": [
           {
             "name": "variantId",
@@ -5295,6 +5296,307 @@
           }
         }
       }
+    },
+    "/api/stock-locations": {
+      "get": {
+        "tags": ["estoque"],
+        "operationId": "ListStockLocations",
+        "description": "Proposto. Os DEPÓSITOS da empresa ativa — a dimensão que faltava no estoque. Hoje o saldo é por variante × empresa; o legado tem `EstTp_Codigo` na chave de `Estoque_produto`, com quatro locais, e carregar sem a dimensão soma os quatro num número só. A perda é irreversível na carga, não dívida de tela.\n\n**Árvore, e ela vem PLANA.** Os cinco níveis do legado (Estoque/Prédio/Rua/Número/Apto) são profundidade, não cinco colunas: cada linha traz `parentId`, e quem monta a árvore é quem desenha. A tela pede o conjunto inteiro (`pageSize` no teto) e diz no rodapé quando o teto cortou — é o padrão 9, e é o que torna a montagem no cliente honesta.\n\n**Não publica `parentName`, e a razão vale para toda esta família.** Depósito é punhado de linhas por empresa: quem recebeu o conjunto já tem o pai na mão, e um nome derivado seria segunda cópia do que a resposta acabou de entregar. O precedente de `parentName` em parceiro não transfere — lá o pai fica FORA da página, entre milhares. Pela mesma razão nem `StockBalanceDto` nem `StockMovementDto` carregam o nome do depósito: quem lê saldo ou kardex pede esta listagem uma vez e resolve os nomes com ela.\n\n**Não publica `filters` de propósito.** O filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados; sobre um punhado de linhas que já vieram inteiras ele seria parâmetro sem consumidor — e recorte por `parentId` ou por `active` é escolha de quem desenha a árvore, feita sobre o conjunto que já está em mãos.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `code`, `name`, `active`. Campo fora dela é 400.\n\n`parentId` NÃO entra, pelo mesmo motivo que tirou `customerId` do `sortBy` da obra: ordem de uuid não põe nada em ordem para quem lê a tela. E `isDefault` também não — há UM padrão por empresa, e ordenar por uma coluna que separa 1 linha de todas as outras é agrupar, não ordenar.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfStockLocationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["estoque"],
+        "operationId": "CreateStockLocation",
+        "description": "Proposto. Cria um depósito na empresa ativa.\n\n**Papel: `admin` ou superior — e é INTERINO.** Criar depósito muda a leitura de saldo de todo mundo e não é operação de atendimento, então a linha nasce junto de `/api/employees` e não de `/api/variants`. Vira a permissão nomeada `depositos:gerenciar` quando o modelo por AÇÃO (api#84) entregar — o papel aqui é o piso enquanto a matriz é por papel.\n\n`isDefault` não entra no corpo: o padrão da empresa nasce do SERVIDOR (ver `CreateStockMovement`), e trocá-lo é outra operação — teria de apagar o padrão anterior na mesma transação para não haver dois, e essa operação ainda não está publicada.\n\n404 quando `parentId` aponta para depósito que a empresa ativa não tem: do ponto de vista de quem pergunta, o pai não está lá. 409 quando `code` já existe na empresa.\n\nCiclo não é caso desta operação — nó que acaba de nascer não tem descendente para se pendurar. Ele é caso do `PUT`, e lá a escrita é que confere o ancestral: o banco pega a auto-referência de um nível com CHECK, mas A→B→A não é exprimível em constraint.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockLocationWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockLocationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `parentId` não é depósito da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `code` repetido na empresa, pai que fecha ciclo, ou sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-locations/{id}": {
+      "put": {
+        "tags": ["estoque"],
+        "operationId": "UpdateStockLocation",
+        "description": "Proposto. Substitui o depósito INTEIRO; desativar é `active: false`.\n\n**Não há DELETE** — nem aqui nem em lugar nenhum do contrato. Apagar depósito deixaria saldo órfão em `stock_balances` e movimento apontando para local inexistente; desativação lógica é o padrão 8 e aqui ela também é integridade.\n\n**Não há GET por id**, pela razão que já valeu para o motivo de perda: a LINHA da listagem é o registro inteiro (seis campos, sem sub-recurso), e um caminho de detalhe seria requisição para buscar o que a tela já tem.\n\n409 em dois casos que mantêm a coerência do padrão: desativar o depósito PADRÃO da empresa (o servidor voltaria a criá-lo no movimento seguinte, e um padrão inativo é estado que não se sustenta) e pendurar o nó em descendente próprio, fechando ciclo. Desativar depósito COM saldo é permitido e não move nada: o saldo continua na listagem de saldos, e o que o depósito inativo perde é entrar em movimento novo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockLocationWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockLocationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o depósito, ou o `parentId`, não é da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `code` repetido, ciclo na árvore, desativação do depósito padrão, ou sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/variants/{variantId}/stock-balances": {
+      "get": {
+        "tags": ["estoque"],
+        "operationId": "ListStockBalances",
+        "description": "Proposto. O saldo da variante em CADA depósito da empresa ativa.\n\n`stock_balances` é cache DERIVADO do kardex, como manda o ADR-009 — e agora a reconciliação tem dois níveis: o último `balanceAfter` de cada (depósito, variante) bate com o `qty` daqui, e a SOMA dos depósitos bate com o `stockQty` de `ProductVariantDto`. Divergir é bug ou fraude, nunca rotina.\n\n**Depósito sem linha de saldo não aparece com zero.** A resposta traz só onde existe linha, e variante que nunca esteve em depósito nenhum responde lista VAZIA. Completar com zero por depósito cadastrado afirmaria contagem que ninguém fez — e um depósito que nunca viu a peça diz outra coisa de um que a zerou.\n\n**O inverso não está publicado** — o inventário de um depósito (todas as variantes que ele guarda) é outra pergunta, com outra tela e outra paginação, e nenhuma das duas existe ainda. Publicar consulta sem consumidor é dívida dos dois lados.",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `qty`. Campo fora dela é 400.\n\nÉ lista curta e a única ordem que responde pergunta de quem lê é \"onde tem mais\". `locationId` não ordena (uuid), e o nome do depósito não está nesta resposta de propósito — ver `ListStockLocations`. Sem `sortBy` a ordem é a da chave, estável e sem significado: quem recebeu o punhado de linhas ordena por nome com a listagem de depósitos em mãos.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfStockBalanceDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — a variante não existe.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6710,6 +7012,7 @@
         "required": [
           "id",
           "variantId",
+          "locationId",
           "delta",
           "balanceAfter",
           "reason",
@@ -6726,11 +7029,17 @@
             "type": "string",
             "format": "uuid"
           },
+          "locationId": {
+            "description": "O depósito onde o movimento aconteceu. Sempre presente: a coluna é `NOT NULL` e o movimento sem local é o que o backfill da migração eliminou, pendurando tudo que existia no padrão da empresa.",
+            "type": "string",
+            "format": "uuid"
+          },
           "delta": {
             "type": "number",
             "format": "double"
           },
           "balanceAfter": {
+            "description": "O saldo do DEPÓSITO depois deste movimento — não o total do produto na empresa. Mudou de sentido junto com `locationId` (api#79, decisão 2): é este número que reconcilia contra `GET /api/variants/{variantId}/stock-balances`. Enquanto houver um depósito só, local e total coincidem; a partir do segundo, não.",
             "type": "number",
             "format": "double"
           },
@@ -6751,6 +7060,11 @@
         "required": ["delta", "reason"],
         "type": "object",
         "properties": {
+          "locationId": {
+            "description": "Ausente ou `null` = o depósito PADRÃO da empresa ativa, criado sob demanda se ela ainda não tem nenhum (ver a descrição da operação). Fica FORA de `required` de propósito, ao contrário de `delta` e `reason`: aqui omitir é uma escolha com significado, e o tipo gerado precisa saber exprimi-la.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
           "delta": {
             "type": ["null", "number"],
             "format": "double"
@@ -8941,6 +9255,112 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RoleDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StockLocationDto": {
+        "required": ["id", "parentId", "code", "name", "isDefault", "active"],
+        "type": "object",
+        "description": "Proposto. Um DEPÓSITO da empresa ativa — nó da árvore de locais de estoque. Ver `ListStockLocations` para por que ele vem plano e sem o nome do pai.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "O nó acima, ou `null` na raiz. É o que faz a árvore: profundidade no lugar das cinco colunas do legado."
+          },
+          "code": {
+            "type": "string",
+            "description": "Código curto do depósito, único na empresa. É por ele que o ETL do legado casa `EstTp_Codigo`."
+          },
+          "name": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "O depósito para onde vai movimento sem `locationId`. UM por empresa, garantido por índice parcial. Não se escreve pelo corpo — nasce do servidor."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StockLocationWriteRequest": {
+        "required": ["parentId", "code", "name", "active"],
+        "type": "object",
+        "description": "Proposto. `PUT` substitui o registro INTEIRO: campo ausente APAGA, não preserva. `isDefault` e `id` não entram — ver `CreateStockLocation`.",
+        "properties": {
+          "parentId": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "code": {
+            "type": ["null", "string"]
+          },
+          "name": {
+            "type": ["null", "string"]
+          },
+          "active": {
+            "type": ["null", "boolean"]
+          }
+        }
+      },
+      "PagedResultOfStockLocationDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockLocationDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StockBalanceDto": {
+        "required": ["locationId", "variantId", "qty", "updatedAt"],
+        "type": "object",
+        "description": "Proposto. O saldo de UMA variante em UM depósito. Cache derivado do kardex (ADR-009) — anda por delta, na mesma transação do movimento.",
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "qty": {
+            "type": "number",
+            "format": "double",
+            "description": "Quantidade, até 3 casas. **O tipo admite negativo** — o ADR-009 ficou sem o CHECK de propósito (api#79, decisão 5), porque venda antes de a nota entrar acontece e carga do legado chega como está. Recusar que o saldo FIQUE negativo é decisão da operação que movimenta, não da coluna: `CreateStockMovement` recusa com 409, e uma carga que escreva direto no cache não passa por ela."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PagedResultOfStockBalanceDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockBalanceDto"
             }
           },
           "total": {

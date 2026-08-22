@@ -45,6 +45,8 @@ import type {
   ListProjectsParams,
   ListQuotesParams,
   ListRolesParams,
+  ListStockBalancesParams,
+  ListStockLocationsParams,
   ListStockMovementsParams,
   ListTasksParams,
   ListWorksParams,
@@ -65,6 +67,8 @@ import type {
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
   PagedResultOfRoleDto,
+  PagedResultOfStockBalanceDto,
+  PagedResultOfStockLocationDto,
   PagedResultOfStockMovementDto,
   PagedResultOfWorkDto,
   PartnerContactDto,
@@ -87,6 +91,8 @@ import type {
   RoleWriteRequest,
   SemPermissaoResponse,
   SessaoAtual,
+  StockLocationDto,
+  StockLocationWriteRequest,
   StockMovementDto,
   StockMovementRequest,
   TaskDto,
@@ -1242,6 +1248,13 @@ export const getCreateStockMovementUrl = (variantId: string,) => {
   return `/api/variants/${variantId}/stock-movements`
 }
 
+/**
+ * Proposto na parte do DEPÓSITO. O movimento passa a ter LOCAL, e `balanceAfter` passa a ser o saldo DELE — não o total do produto na empresa (api#79, decisão 2 do user em 2026-08-22).
+ *
+ * **`locationId` é opcional no corpo e obrigatório no movimento.** Omitir (ou mandar `null`) significa "o depósito padrão da empresa ativa", e o servidor o CRIA sob demanda se ela ainda não tem nenhum — mesmo precedente da linha de `product_tenant`, que já nasce no primeiro movimento de variante nunca precificada. **A criação implícita não é operação deste contrato: é comportamento do servidor**, escrito aqui para quem lê saber de onde saiu o depósito que ele não cadastrou. Não existe caminho para criá-la de outro jeito — o contrato não publica criação de empresa, então empresa nova não teria outro lugar onde ganhar o seu.
+ *
+ * 404 quando `locationId` aponta para depósito que a empresa ativa não tem. 409 quando o depósito está inativo, e quando o movimento deixaria o saldo do DEPÓSITO negativo — a conta que recusa é a do local, não mais a do produto.
+ */
 export const createStockMovement = async (variantId: string,
     stockMovementRequest: StockMovementRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createStockMovementResponse> => {
 
@@ -4910,6 +4923,286 @@ export const createOrderFromQuote = async (id: string, options?: Parameters<type
   {
     ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listStockLocationsResponse200 = {
+  data: PagedResultOfStockLocationDto
+  status: 200
+}
+
+export type listStockLocationsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listStockLocationsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listStockLocationsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listStockLocationsResponseSuccess = (listStockLocationsResponse200) & {
+  headers: Headers;
+};
+export type listStockLocationsResponseError = (listStockLocationsResponse400 | listStockLocationsResponse401 | listStockLocationsResponse403) & {
+  headers: Headers;
+};
+
+export type listStockLocationsResponse = (listStockLocationsResponseSuccess | listStockLocationsResponseError)
+
+export const getListStockLocationsUrl = (params?: ListStockLocationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stock-locations?${stringifiedParams}` : `/api/stock-locations`
+}
+
+/**
+ * Proposto. Os DEPÓSITOS da empresa ativa — a dimensão que faltava no estoque. Hoje o saldo é por variante × empresa; o legado tem `EstTp_Codigo` na chave de `Estoque_produto`, com quatro locais, e carregar sem a dimensão soma os quatro num número só. A perda é irreversível na carga, não dívida de tela.
+ *
+ * **Árvore, e ela vem PLANA.** Os cinco níveis do legado (Estoque/Prédio/Rua/Número/Apto) são profundidade, não cinco colunas: cada linha traz `parentId`, e quem monta a árvore é quem desenha. A tela pede o conjunto inteiro (`pageSize` no teto) e diz no rodapé quando o teto cortou — é o padrão 9, e é o que torna a montagem no cliente honesta.
+ *
+ * **Não publica `parentName`, e a razão vale para toda esta família.** Depósito é punhado de linhas por empresa: quem recebeu o conjunto já tem o pai na mão, e um nome derivado seria segunda cópia do que a resposta acabou de entregar. O precedente de `parentName` em parceiro não transfere — lá o pai fica FORA da página, entre milhares. Pela mesma razão nem `StockBalanceDto` nem `StockMovementDto` carregam o nome do depósito: quem lê saldo ou kardex pede esta listagem uma vez e resolve os nomes com ela.
+ *
+ * **Não publica `filters` de propósito.** O filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados; sobre um punhado de linhas que já vieram inteiras ele seria parâmetro sem consumidor — e recorte por `parentId` ou por `active` é escolha de quem desenha a árvore, feita sobre o conjunto que já está em mãos.
+ */
+export const listStockLocations = async (params?: ListStockLocationsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listStockLocationsResponse> => {
+
+  return apiFetch<listStockLocationsResponse>(getListStockLocationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createStockLocationResponse201 = {
+  data: StockLocationDto
+  status: 201
+}
+
+export type createStockLocationResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createStockLocationResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createStockLocationResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createStockLocationResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createStockLocationResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createStockLocationResponseSuccess = (createStockLocationResponse201) & {
+  headers: Headers;
+};
+export type createStockLocationResponseError = (createStockLocationResponse400 | createStockLocationResponse401 | createStockLocationResponse403 | createStockLocationResponse404 | createStockLocationResponse409) & {
+  headers: Headers;
+};
+
+export type createStockLocationResponse = (createStockLocationResponseSuccess | createStockLocationResponseError)
+
+export const getCreateStockLocationUrl = () => {
+
+
+
+
+  return `/api/stock-locations`
+}
+
+/**
+ * Proposto. Cria um depósito na empresa ativa.
+ *
+ * **Papel: `admin` ou superior — e é INTERINO.** Criar depósito muda a leitura de saldo de todo mundo e não é operação de atendimento, então a linha nasce junto de `/api/employees` e não de `/api/variants`. Vira a permissão nomeada `depositos:gerenciar` quando o modelo por AÇÃO (api#84) entregar — o papel aqui é o piso enquanto a matriz é por papel.
+ *
+ * `isDefault` não entra no corpo: o padrão da empresa nasce do SERVIDOR (ver `CreateStockMovement`), e trocá-lo é outra operação — teria de apagar o padrão anterior na mesma transação para não haver dois, e essa operação ainda não está publicada.
+ *
+ * 404 quando `parentId` aponta para depósito que a empresa ativa não tem: do ponto de vista de quem pergunta, o pai não está lá. 409 quando `code` já existe na empresa.
+ *
+ * Ciclo não é caso desta operação — nó que acaba de nascer não tem descendente para se pendurar. Ele é caso do `PUT`, e lá a escrita é que confere o ancestral: o banco pega a auto-referência de um nível com CHECK, mas A→B→A não é exprimível em constraint.
+ */
+export const createStockLocation = async (stockLocationWriteRequest: StockLocationWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createStockLocationResponse> => {
+
+  return apiFetch<createStockLocationResponse>(getCreateStockLocationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockLocationWriteRequest)
+  }
+);}
+
+
+
+export type updateStockLocationResponse200 = {
+  data: StockLocationDto
+  status: 200
+}
+
+export type updateStockLocationResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateStockLocationResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateStockLocationResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateStockLocationResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateStockLocationResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateStockLocationResponseSuccess = (updateStockLocationResponse200) & {
+  headers: Headers;
+};
+export type updateStockLocationResponseError = (updateStockLocationResponse400 | updateStockLocationResponse401 | updateStockLocationResponse403 | updateStockLocationResponse404 | updateStockLocationResponse409) & {
+  headers: Headers;
+};
+
+export type updateStockLocationResponse = (updateStockLocationResponseSuccess | updateStockLocationResponseError)
+
+export const getUpdateStockLocationUrl = (id: string,) => {
+
+
+
+
+  return `/api/stock-locations/${id}`
+}
+
+/**
+ * Proposto. Substitui o depósito INTEIRO; desativar é `active: false`.
+ *
+ * **Não há DELETE** — nem aqui nem em lugar nenhum do contrato. Apagar depósito deixaria saldo órfão em `stock_balances` e movimento apontando para local inexistente; desativação lógica é o padrão 8 e aqui ela também é integridade.
+ *
+ * **Não há GET por id**, pela razão que já valeu para o motivo de perda: a LINHA da listagem é o registro inteiro (seis campos, sem sub-recurso), e um caminho de detalhe seria requisição para buscar o que a tela já tem.
+ *
+ * 409 em dois casos que mantêm a coerência do padrão: desativar o depósito PADRÃO da empresa (o servidor voltaria a criá-lo no movimento seguinte, e um padrão inativo é estado que não se sustenta) e pendurar o nó em descendente próprio, fechando ciclo. Desativar depósito COM saldo é permitido e não move nada: o saldo continua na listagem de saldos, e o que o depósito inativo perde é entrar em movimento novo.
+ */
+export const updateStockLocation = async (id: string,
+    stockLocationWriteRequest: StockLocationWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateStockLocationResponse> => {
+
+  return apiFetch<updateStockLocationResponse>(getUpdateStockLocationUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockLocationWriteRequest)
+  }
+);}
+
+
+
+export type listStockBalancesResponse200 = {
+  data: PagedResultOfStockBalanceDto
+  status: 200
+}
+
+export type listStockBalancesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listStockBalancesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listStockBalancesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listStockBalancesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listStockBalancesResponseSuccess = (listStockBalancesResponse200) & {
+  headers: Headers;
+};
+export type listStockBalancesResponseError = (listStockBalancesResponse400 | listStockBalancesResponse401 | listStockBalancesResponse403 | listStockBalancesResponse404) & {
+  headers: Headers;
+};
+
+export type listStockBalancesResponse = (listStockBalancesResponseSuccess | listStockBalancesResponseError)
+
+export const getListStockBalancesUrl = (variantId: string,
+    params?: ListStockBalancesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/variants/${variantId}/stock-balances?${stringifiedParams}` : `/api/variants/${variantId}/stock-balances`
+}
+
+/**
+ * Proposto. O saldo da variante em CADA depósito da empresa ativa.
+ *
+ * `stock_balances` é cache DERIVADO do kardex, como manda o ADR-009 — e agora a reconciliação tem dois níveis: o último `balanceAfter` de cada (depósito, variante) bate com o `qty` daqui, e a SOMA dos depósitos bate com o `stockQty` de `ProductVariantDto`. Divergir é bug ou fraude, nunca rotina.
+ *
+ * **Depósito sem linha de saldo não aparece com zero.** A resposta traz só onde existe linha, e variante que nunca esteve em depósito nenhum responde lista VAZIA. Completar com zero por depósito cadastrado afirmaria contagem que ninguém fez — e um depósito que nunca viu a peça diz outra coisa de um que a zerou.
+ *
+ * **O inverso não está publicado** — o inventário de um depósito (todas as variantes que ele guarda) é outra pergunta, com outra tela e outra paginação, e nenhuma das duas existe ainda. Publicar consulta sem consumidor é dívida dos dois lados.
+ */
+export const listStockBalances = async (variantId: string,
+    params?: ListStockBalancesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listStockBalancesResponse> => {
+
+  return apiFetch<listStockBalancesResponse>(getListStockBalancesUrl(variantId,params),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

@@ -19,6 +19,7 @@ import { handlersDeAcesso } from './acesso'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
+import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
@@ -454,16 +455,31 @@ export const handlers = [
     if (!corpo.delta || !corpo.reason) {
       return problemaJson(400, 'Movimento exige delta diferente de zero e um motivo.')
     }
-    const saldoNovo = (variante.stockQty ?? 0) + corpo.delta
-    if (saldoNovo < 0) {
-      return problemaJson(409, 'Movimento deixaria o saldo negativo.')
+    // O DEPÓSITO entra aqui (contrato #291): corpo sem `locationId` vai para o
+    // padrão da empresa, que o servidor CRIA se ela ainda não tem nenhum.
+    const alvo = depositoDoMovimento(store.activeTenantId, corpo.locationId)
+    if ('erro' in alvo) return alvo.erro
+
+    // A conta que recusa é a do LOCAL, não mais a do produto — é o que
+    // `balanceAfter` passou a significar (api#79, decisão 2).
+    const saldoDoLocal = aplicarSaldo(
+      store.activeTenantId,
+      alvo.deposito.id,
+      variante.id,
+      corpo.delta,
+    )
+    if (saldoDoLocal === null) {
+      return problemaJson(409, 'Movimento deixaria o saldo do depósito negativo.')
     }
-    variante.stockQty = saldoNovo
+    // O total do produto continua andando junto: é o `stockQty` do
+    // `ProductVariantDto`, o segundo nível da reconciliação do ADR-009.
+    variante.stockQty = (variante.stockQty ?? 0) + corpo.delta
     const movimento = {
       id: novoId('mov'),
       variantId: variante.id,
+      locationId: alvo.deposito.id,
       delta: corpo.delta,
-      balanceAfter: saldoNovo,
+      balanceAfter: saldoDoLocal,
       reason: corpo.reason,
       occurredAt: new Date().toISOString(),
       employeeId: 'emp-admin',
@@ -857,6 +873,7 @@ export const handlers = [
   // rota certa depende para responder merece teste — tem um, e ele falha se
   // o dia em que a biblioteca mudar de ideia chegar.
   ...handlersDeObras,
+  ...handlersDeDepositos,
   ...handlersDeContatos,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------

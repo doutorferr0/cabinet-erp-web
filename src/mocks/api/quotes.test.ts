@@ -4,6 +4,7 @@ import { apiFetch } from '@/api/http'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
+import { resetObras } from './obras'
 import { resetQuotes } from './quotes'
 import { TENANT_MATRIZ, resetStore } from './store'
 
@@ -24,6 +25,7 @@ afterAll(() => servidor.close())
 beforeEach(async () => {
   resetStore()
   resetQuotes()
+  resetObras()
   configurarApi('http://mock.teste')
   await authLogin({ email: 'admin@vertz.dev', password: 'qualquer' })
   await authSetActiveTenant({ tenantId: TENANT_MATRIZ })
@@ -166,5 +168,109 @@ describe('orçamento no modo mock', () => {
     // oportunidade: quem digita mil reais procuraria R$ 10,00.
     expect(r.status).toBe(400)
     expect(((await r.json()) as { type: string }).type).toBe('urn:cabinet:erro:filtro-invalido')
+  })
+})
+
+/**
+ * O ELO COM A OBRA, E O DESCONTO POR GRUPO — o que o contrato passou a pedir.
+ *
+ * Os dois vieram do §2 do comparativo Softlux. O elo porque `Venda.Obr_codigo`
+ * existe no legado desde sempre e o contrato só publicava `projectName`, texto
+ * livre — e no seed da §8.1 esse texto guarda o nome do PROFISSIONAL, não o da
+ * obra: dois orçamentos da mesma obra nunca foram a mesma obra para ninguém.
+ *
+ * O desconto por grupo porque `VendaDesconto` tem **300.337 linhas** para 37.707
+ * vendas — é o modo mais usado da operação, e o único dos três que o contrato
+ * não publicava.
+ */
+describe('a obra e o desconto por grupo', () => {
+  it('workId viaja na escrita e volta com workName resolvido', async () => {
+    const criado = await criar(corpoMinimo({ customerId: 'parc-0002', workId: 'obra-0001' }))
+    expect(criado.status).toBe(201)
+
+    const detalhe = await getQuote(String(criado.data?.id))
+    expect(detalhe.status).toBe(200)
+    if (detalhe.status !== 200) return
+
+    expect(detalhe.data.workId).toBe('obra-0001')
+    // RESOLVIDO, nunca guardado: nome gravado ao lado do id diverge dele na
+    // primeira alteração — a mesma regra de `customerName` e `parentName`.
+    expect(detalhe.data.workName).toBe('APARTAMENTO IBIRAPUERA 142')
+  })
+
+  it('projectName e workName são dados DIFERENTES, e convivem', async () => {
+    const criado = await criar(
+      corpoMinimo({
+        customerId: 'parc-0002',
+        workId: 'obra-0001',
+        projectName: 'MARIANA',
+      }),
+    )
+    const detalhe = await getQuote(String(criado.data?.id))
+    if (detalhe.status !== 200) throw new Error('detalhe falhou')
+
+    // Um é o que foi digitado, o outro é como a obra se chama. Sobrescrever um
+    // com o outro apagaria o que o operador escreveu.
+    expect(detalhe.data.projectName).toBe('MARIANA')
+    expect(detalhe.data.workName).toBe('APARTAMENTO IBIRAPUERA 142')
+  })
+
+  it('obra de OUTRO cliente é 400 apontando workId, não vínculo reescrito', async () => {
+    // `obra-0001` é de `parc-0002`. A obra pertence ao cliente
+    // (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar
+    // calado penduraria o endereço de um cliente na venda de outro.
+    const r = await criar(corpoMinimo({ customerId: 'parc-0003', workId: 'obra-0001' }))
+    expect(r.status).toBe(400)
+  })
+
+  it('obra de OUTRA empresa não existe para quem pergunta', async () => {
+    // `obra-0003` é do TENANT_FILIAL. Some da listagem da matriz, e aqui recusa
+    // — o recorte por empresa vale para a ESCRITA também, senão o id de fora
+    // vira elo válido e o nome da obra alheia sai na resposta.
+    const r = await criar(corpoMinimo({ customerId: 'parc-0003', workId: 'obra-0003' }))
+    expect(r.status).toBe(400)
+  })
+
+  it('ordenar por workName é aceito — a whitelist publicada é a que vale', async () => {
+    const r = await listQuotes({ sortBy: 'workName', pageSize: 100 })
+    expect(r.status).toBe(200)
+  })
+
+  it('filtrar por workId RECORTA, e não devolve a lista inteira', async () => {
+    const criado = await criar(corpoMinimo({ customerId: 'parc-0002', workId: 'obra-0001' }))
+    expect(criado.status).toBe(201)
+
+    const inteira = await listQuotes({ page: 1, pageSize: 100 })
+    if (inteira.status !== 200) throw new Error('listagem falhou')
+
+    const busca = new URLSearchParams({
+      pageSize: '100',
+      filters: JSON.stringify([{ field: 'workId', operator: 'eq', value: 'obra-0001' }]),
+    })
+    const recortada = await fetch(`http://mock.teste/api/quotes?${busca}`)
+    const corpo = (await recortada.json()) as { total: number }
+
+    // O pior caso deste eixo não é recusar demais, é IGNORAR: filtro descartado
+    // em silêncio devolve a lista inteira com a condição desenhada no painel.
+    expect(corpo.total).toBe(1)
+    expect(inteira.data.total).toBeGreaterThan(1)
+  })
+
+  it('discountMode `group` é 400 em voz alta, não desconto por produto calado', async () => {
+    // O contrato publica os três modos; nem o backend nem o mock servem o
+    // terceiro. Sem esta recusa, `daEscrita` mapeia todo modo que não é
+    // `general` para PRODUTO — e o documento volta 200, com desconto que não é
+    // o pedido, no site que não tem servidor atrás para corrigir a impressão.
+    const r = await criar(corpoMinimo({ discountMode: 'group', discountPercent: 0 }))
+    expect(r.status).toBe(400)
+  })
+
+  it('groupDiscounts vem VAZIA, nunca ausente', async () => {
+    const criado = await criar(corpoMinimo())
+    const detalhe = await getQuote(String(criado.data?.id))
+    if (detalhe.status !== 200) throw new Error('detalhe falhou')
+
+    // Ausente e vazia leem igual na tela e diferente na conta.
+    expect(detalhe.data.groupDiscounts).toEqual([])
   })
 })

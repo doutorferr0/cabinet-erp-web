@@ -8,9 +8,17 @@ import type {
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { obras } from './obras'
 import { condicaoAtiva, planoDoDocumento, politicaDaEmpresa } from './pagamento'
 import { verificarEscrita } from './permissao'
-import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
+import {
+  TIPO,
+  camposInvalidos,
+  naoEncontrado,
+  problemaJson,
+  semEmpresaAtiva,
+  semSessao,
+} from './problema'
 import { store } from './store'
 
 /**
@@ -45,7 +53,14 @@ import { store } from './store'
  */
 
 /** Whitelist de `sortBy` — a MESMA da descrição do contrato. */
-export const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'projectName']
+export const ORDENAVEIS = [
+  'number',
+  'issuedAt',
+  'expiresAt',
+  'customerName',
+  'projectName',
+  'workName',
+]
 
 /**
  * A whitelist do `filters`, que é a MESMA do `sortBy` neste recurso — e o mock
@@ -59,6 +74,11 @@ export const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'p
  *
  * O TIPO de cada campo é do servidor, não da tela: `issuedAt`/`expiresAt` são
  * data (comparação por DIA), o resto é texto.
+ *
+ * `workId` entra aqui e NÃO no `sortBy`: é como a tela pergunta "os documentos
+ * desta obra", e uuid não põe nada em ordem para quem lê. `text` e não um tipo
+ * de id porque o vocabulário de filtro não tem um — o que a tela manda é
+ * igualdade sobre a chave, e é isso que `text` compara.
  */
 export const FILTRAVEIS: CamposFiltraveis = {
   number: 'text',
@@ -66,6 +86,8 @@ export const FILTRAVEIS: CamposFiltraveis = {
   projectName: 'text',
   issuedAt: 'date',
   expiresAt: 'date',
+  workId: 'text',
+  workName: 'text',
 }
 
 /**
@@ -73,15 +95,37 @@ export const FILTRAVEIS: CamposFiltraveis = {
  * transcrição capturou, e a tradução para o vocabulário do contrato acontece na
  * resposta — do mesmo jeito que os `*Name` do CRM são resolvidos na saída.
  */
+/**
+ * O orçamento como o MOCK o guarda — o `Orcamento` da tela mais o que o
+ * contrato passou a pedir e a tela ainda não tem.
+ *
+ * Tipo local de propósito: `Orcamento` é a forma que `orcamento-form.tsx` monta
+ * e valida, e acrescentar campo lá é mexer em tela. Aqui é estado de servidor
+ * falso — o mesmo lugar onde `number` e `totalCents` já são do servidor.
+ */
+interface OrcamentoGuardado extends Orcamento {
+  /** `QuoteDetailDto.workId` — a OBRA (`Venda.Obr_codigo` do legado). */
+  obraId: string | null
+}
+
 interface Estado {
-  linhas: Orcamento[]
+  linhas: OrcamentoGuardado[]
   proximoNumero: number
 }
 
 let estado: Estado = estadoInicial()
 
 function estadoInicial(): Estado {
-  const linhas = orcamentos.map((o) => ({ ...o, itens: o.itens.map((i) => ({ ...i })) }))
+  // `obraId: null` nas 17 linhas da §8.1, e é a leitura correta da transcrição:
+  // ela não capturou id de obra nenhum, e o `descricaoObra` de lá guarda o nome
+  // do PROFISSIONAL (§8.1, observação). Casar essas linhas com `obra-0001` seria
+  // inventar o elo justamente onde a fonte diz que ele não existe — e o elo
+  // inventado apareceria na demo pública como dado do servidor.
+  const linhas = orcamentos.map((o) => ({
+    ...o,
+    obraId: null,
+    itens: o.itens.map((i) => ({ ...i })),
+  }))
   const maior = linhas.reduce((max, o) => Math.max(max, Number(o.numero) || 0), 0)
   return { linhas, proximoNumero: maior + 1 }
 }
@@ -116,7 +160,23 @@ function totalDoOrcamento(o: Orcamento): number {
   return o.modoDesconto === 'GERAL' ? comDesconto(bruto, o.descontoPercentual) : bruto
 }
 
-function resumoDto(o: Orcamento): QuoteDto {
+/**
+ * Nome da obra, RESOLVIDO — nunca guardado ao lado do id.
+ *
+ * É a mesma regra de `customerName` e de `parentName`: nome gravado é nome que
+ * diverge do id na primeira alteração. E a busca é dentro da empresa ativa, pelo
+ * mesmo motivo que a listagem de obras recorta: obra de outra empresa não existe
+ * para quem pergunta, então id de fora resolve para `null`, não para o nome.
+ */
+function nomeDaObra(obraId: string | null): string | null {
+  if (!obraId) return null
+  const achada = obras.obras.find(
+    (obra) => obra.id === obraId && obra.tenantId === store.activeTenantId,
+  )
+  return achada?.description ?? null
+}
+
+function resumoDto(o: OrcamentoGuardado): QuoteDto {
   return {
     id: o.id,
     number: o.numero,
@@ -126,6 +186,11 @@ function resumoDto(o: Orcamento): QuoteDto {
     customerId: o.clienteId,
     customerName: o.cliente,
     projectName: o.descricaoObra,
+    // O par `id`+`name` da OBRA. `projectName` continua ao lado e NÃO é o mesmo
+    // dado: um é o texto digitado no documento, o outro é como a obra se chama
+    // hoje. Sobrescrever um com o outro apagaria o que o operador escreveu.
+    workId: o.obraId,
+    workName: nomeDaObra(o.obraId),
     // Documento CANCELA, não desativa — `active`/`cancelled` é o enum do
     // contrato, espelhando `Ven_Situacao` (A/C) do legado. Data de FECHAMENTO
     // não é cancelamento: um orçamento fechado continua ativo.
@@ -165,6 +230,11 @@ function itemDto(item: Orcamento['itens'][number], indice: number): QuoteItemDto
     supplierCode: item.codigoFornecedor,
     supplierDescription: item.descricaoFornecedor,
     productGroup: item.grupoProduto,
+    // A CHAVE do grupo, que o seed da transcrição não tem: §8.2 capturou o nome
+    // ("PENDENTES"), e nome não é chave. `null` é o honesto — inventar um id de
+    // `GRUPO_PRODUTO` casaria a linha com um grupo que lista nenhuma serve, e o
+    // desconto por grupo iria para o lugar errado sem ninguém acusar.
+    productGroupId: null,
     pieceType: item.tipoPeca,
     totalCents: Math.round(quantidade * unitario),
   }
@@ -179,7 +249,7 @@ function ambientesDto(o: Orcamento): QuoteEnvironmentDto[] {
   return o.ambientes.map((a) => ({ code: a.codigo, name: a.nome, order: a.ordem }))
 }
 
-function detalheDto(o: Orcamento): QuoteDetailDto {
+function detalheDto(o: OrcamentoGuardado): QuoteDetailDto {
   return {
     ...resumoDto(o),
     folderNumber: o.numeroPasta,
@@ -190,6 +260,10 @@ function detalheDto(o: Orcamento): QuoteDetailDto {
     professionalName: o.profissionalExterno,
     discountMode: o.modoDesconto === 'GERAL' ? 'general' : 'product',
     discountPercent: o.descontoPercentual,
+    // VAZIA, e não ausente: o contrato diz "nunca ausente por preguiça — ausente
+    // e vazia leem igual na tela e diferente na conta". Vazia é a resposta certa
+    // enquanto o mock não serve o modo `group` (ver `modoNaoServido`).
+    groupDiscounts: [],
     environments: ambientesDto(o),
     items: o.itens.map(itemDto),
     // O bloco PAGAMENTO é ECOADO, nunca recebido: quem manda `paymentTermId`
@@ -213,10 +287,10 @@ function detalheDto(o: Orcamento): QuoteDetailDto {
  * não pode gravar, e aparar (parcelar menos, arredondar até o mínimo) daria um
  * documento com plano que ninguém pediu.
  */
-function carimbarPagamento(
-  o: Orcamento,
+function carimbarPagamento<T extends Orcamento>(
+  o: T,
   tenantId: string,
-): { orcamento: Orcamento } | { erro: ReturnType<typeof problemaJson> } {
+): { orcamento: T } | { erro: ReturnType<typeof problemaJson> } {
   if (!o.condicaoPagamentoId) {
     return { orcamento: { ...o, condicaoPagamento: null, parcelas: [] } }
   }
@@ -244,9 +318,10 @@ function carimbarPagamento(
 }
 
 /** Corpo de escrita → a linha guardada. `id` e `numero` vêm de fora. */
-function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
+function daEscrita(corpo: QuoteWriteRequest, base: OrcamentoGuardado): OrcamentoGuardado {
   return {
     ...base,
+    obraId: corpo.workId ?? null,
     serie: corpo.series ?? '',
     numeroPasta: corpo.folderNumber ?? '',
     dataEmissao: corpo.issuedAt ?? null,
@@ -298,6 +373,49 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
 }
 
 /**
+ * O que a escrita recusa, além do cliente obrigatório — `null` quando passa.
+ *
+ * Duas recusas, e as duas em VOZ ALTA. Aceitar calado é o defeito que este repo
+ * persegue: no site público não há `:3000` atrás para corrigir a impressão, e
+ * um documento gravado com desconto que não é o pedido tem cara de dado.
+ *
+ * 1. **`workId` que a empresa ativa não alcança, ou que é de outro cliente.** A
+ *    obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve
+ *    esse vínculo — é o 400 que o contrato descreve em `workId`.
+ * 2. **`discountMode: 'group'`, que este mock ainda não serve.** O contrato o
+ *    publica (`VendaDesconto`, 300.337 linhas no legado) e nem o backend nem o
+ *    mock o implementam. A alternativa era o silêncio de hoje — o `?:` do
+ *    `daEscrita` mapeia todo modo que não é `general` para `PRODUTO` —, e aí o
+ *    documento volta com desconto por PRODUTO, número diferente do pedido e
+ *    status 200. Recusar nomeando o campo é menor que gravar errado.
+ */
+function recusasDaEscrita(corpo: QuoteWriteRequest) {
+  if (corpo.discountMode === 'group') {
+    return camposInvalidos([
+      {
+        path: 'discountMode',
+        message: 'Desconto por grupo ainda não é servido no modo mock.',
+      },
+    ])
+  }
+
+  const obraId = corpo.workId
+  if (obraId) {
+    const achada = obras.obras.find(
+      (obra) => obra.id === obraId && obra.tenantId === store.activeTenantId,
+    )
+    if (!achada) {
+      return camposInvalidos([{ path: 'workId', message: 'Obra não encontrada.' }])
+    }
+    if (achada.customerId !== corpo.customerId) {
+      return camposInvalidos([{ path: 'workId', message: 'A obra é de outro cliente.' }])
+    }
+  }
+
+  return null
+}
+
+/**
  * Cria o orçamento no estado do mock e devolve a linha GUARDADA.
  *
  * Exportada porque o CRM também cria orçamento — a conversão da oportunidade
@@ -308,16 +426,16 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
  * O NÚMERO é do servidor e a sequência é global do grupo — o contrato tira o
  * campo da escrita justamente para o cliente não o escolher.
  */
-export function criarOrcamento(corpo: QuoteWriteRequest): Orcamento {
+export function criarOrcamento(corpo: QuoteWriteRequest): OrcamentoGuardado {
   const numero = String(estado.proximoNumero)
   estado.proximoNumero += 1
-  const novo = daEscrita(corpo, { ...vazio(), id: `orc-${numero}`, numero })
+  const novo = daEscrita(corpo, { ...vazio(), obraId: null, id: `orc-${numero}`, numero })
   estado.linhas.unshift(novo)
   return novo
 }
 
 /** O DTO de detalhe de uma linha guardada — o CRM devolve o mesmo shape. */
-export function detalheDoOrcamento(o: Orcamento): QuoteDetailDto {
+export function detalheDoOrcamento(o: OrcamentoGuardado): QuoteDetailDto {
   return detalheDto(o)
 }
 
@@ -385,6 +503,8 @@ export const handlersDeOrcamento = [
     if (semPermissao) return semPermissao
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
+    const recusa = recusasDaEscrita(corpo)
+    if (recusa) return recusa
 
     const criado = criarOrcamento(corpo)
     const carimbado = carimbarPagamento(criado, store.activeTenantId)
@@ -411,8 +531,10 @@ export const handlersDeOrcamento = [
     if (indice < 0) return naoEncontrado('Orçamento não encontrado.')
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
+    const recusa = recusasDaEscrita(corpo)
+    if (recusa) return recusa
 
-    const anterior = estado.linhas[indice] as Orcamento
+    const anterior = estado.linhas[indice] as OrcamentoGuardado
     const carimbado = carimbarPagamento(daEscrita(corpo, anterior), store.activeTenantId)
     // Recusa não grava NADA: o documento anterior fica inteiro na coleção.
     if ('erro' in carimbado) return carimbado.erro

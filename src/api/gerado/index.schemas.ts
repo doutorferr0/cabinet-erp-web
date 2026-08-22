@@ -1506,10 +1506,15 @@ export interface QuoteItemDto {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -1570,10 +1575,15 @@ export interface QuoteItemWriteRequest {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -1618,10 +1628,25 @@ export interface QuoteDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: QuoteDtoStatus;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
@@ -1640,7 +1665,13 @@ export const QuoteDetailDtoStatus = {
 } as const;
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type QuoteDetailDtoDiscountMode = typeof QuoteDetailDtoDiscountMode[keyof typeof QuoteDetailDtoDiscountMode];
 
@@ -1648,7 +1679,33 @@ export type QuoteDetailDtoDiscountMode = typeof QuoteDetailDtoDiscountMode[keyof
 export const QuoteDetailDtoDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo de produto — `VendaDesconto` do legado (300.337 linhas). Vive DENTRO do documento, como ambiente e item: não tem identidade fora dele, e sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas.
+ *
+ * **Ficaram de fora, e a omissão é declarada:** `VenDesc_DescontoValor` (desconto digitado em dinheiro) seria uma segunda forma de dizer a mesma coisa que `discountPercent`, e conviver com as duas exige uma regra de desempate que a extração não fixou; `VenDesc_DescPorcUsuario` (o percentual que o usuário pediu, ao lado do que valeu) só faz sentido junto com a regra que os separa — o teto — e essa regra é do servidor. Entram quando houver decisão escrita, não antes.
+ */
+export interface QuoteGroupDiscountDto {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Nome do grupo CONGELADO na emissão, pelo mesmo motivo de `QuoteEnvironmentDto.name`: renomear o grupo no catálogo não pode reescrever orçamento fechado. */
+  productGroupName: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+  /** Soma das linhas do grupo ANTES do desconto (`VenDesc_ValorGrupo`), em centavos. Calculado pelo servidor. */
+  subtotalCents: number;
+  /** Quanto o desconto tirou, em centavos. Calculado pelo servidor, e não refeito na tela: percentual de 4 casas sobre centavos arredonda, e a conta refeita no cliente erra o último centavo em parte dos casos — o total do documento deixaria de fechar com a soma dos grupos. */
+  discountCents: number;
+  /** Total do grupo depois do desconto (`VenDesc_ValorGrupoDesc`), em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * Quantidade somada das linhas do grupo (`VenDesc_Quantidade`), até 3 casas. Calculada pelo servidor.
+     * @nullable
+     */
+  quantity?: number | null;
+}
 
 /**
  * Proposto. Uma parcela DO DOCUMENTO — o plano já resolvido em datas e centavos, não mais a regra.
@@ -1714,10 +1771,25 @@ export interface QuoteDetailDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: QuoteDetailDtoStatus;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
@@ -1746,10 +1818,30 @@ export interface QuoteDetailDto {
   professionalId?: string | null;
   /** @nullable */
   professionalName?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: QuoteDetailDtoDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: QuoteGroupDiscountDto[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: QuoteEnvironmentDto[];
   items: QuoteItemDto[];
@@ -1782,7 +1874,13 @@ export interface QuoteDetailDto {
 }
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type QuoteWriteRequestDiscountMode = typeof QuoteWriteRequestDiscountMode[keyof typeof QuoteWriteRequestDiscountMode];
 
@@ -1790,7 +1888,18 @@ export type QuoteWriteRequestDiscountMode = typeof QuoteWriteRequestDiscountMode
 export const QuoteWriteRequestDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo na ESCRITA — só o que o operador decide: o grupo e o percentual. `subtotalCents`, `discountCents`, `totalCents` e `quantity` são do servidor, como `totalCents` do item: a tela que os mandasse estaria propondo o próprio total.
+ */
+export interface QuoteGroupDiscountWriteRequest {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+}
 
 /**
  * Proposto. Corpo de criação e de alteração. **`PUT` substitui o documento INTEIRO**, itens e ambientes junto: corpo parcial apaga o que não veio. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`), sem `totalCents` nem `customerName` (o servidor calcula e resolve).
@@ -1813,10 +1922,20 @@ export interface QuoteWriteRequest {
   expiresAt?: string | null;
   customerId: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
   /**
      * `Nº Pasta`.
      * @nullable
@@ -1837,10 +1956,30 @@ export interface QuoteWriteRequest {
      * @nullable
      */
   professionalId?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: QuoteWriteRequestDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: QuoteGroupDiscountWriteRequest[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: QuoteEnvironmentDto[];
   items: QuoteItemWriteRequest[];
@@ -2491,10 +2630,15 @@ export interface OrderItemDto {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -2555,10 +2699,15 @@ export interface OrderItemWriteRequest {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -2598,10 +2747,25 @@ export interface OrderDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: OrderDtoStatus;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
@@ -2625,7 +2789,13 @@ export const OrderDetailDtoStatus = {
 } as const;
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type OrderDetailDtoDiscountMode = typeof OrderDetailDtoDiscountMode[keyof typeof OrderDetailDtoDiscountMode];
 
@@ -2633,7 +2803,33 @@ export type OrderDetailDtoDiscountMode = typeof OrderDetailDtoDiscountMode[keyof
 export const OrderDetailDtoDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo de produto — `VendaDesconto` do legado (300.337 linhas). Vive DENTRO do documento, como ambiente e item: não tem identidade fora dele, e sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas.
+ *
+ * **Ficaram de fora, e a omissão é declarada:** `VenDesc_DescontoValor` (desconto digitado em dinheiro) seria uma segunda forma de dizer a mesma coisa que `discountPercent`, e conviver com as duas exige uma regra de desempate que a extração não fixou; `VenDesc_DescPorcUsuario` (o percentual que o usuário pediu, ao lado do que valeu) só faz sentido junto com a regra que os separa — o teto — e essa regra é do servidor. Entram quando houver decisão escrita, não antes.
+ */
+export interface OrderGroupDiscountDto {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Nome do grupo CONGELADO na emissão, pelo mesmo motivo de `OrderEnvironmentDto.name`: renomear o grupo no catálogo não pode reescrever orçamento fechado. */
+  productGroupName: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+  /** Soma das linhas do grupo ANTES do desconto (`VenDesc_ValorGrupo`), em centavos. Calculado pelo servidor. */
+  subtotalCents: number;
+  /** Quanto o desconto tirou, em centavos. Calculado pelo servidor, e não refeito na tela: percentual de 4 casas sobre centavos arredonda, e a conta refeita no cliente erra o último centavo em parte dos casos — o total do documento deixaria de fechar com a soma dos grupos. */
+  discountCents: number;
+  /** Total do grupo depois do desconto (`VenDesc_ValorGrupoDesc`), em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * Quantidade somada das linhas do grupo (`VenDesc_Quantidade`), até 3 casas. Calculada pelo servidor.
+     * @nullable
+     */
+  quantity?: number | null;
+}
 
 /**
  * Proposto. O pedido inteiro: cabeçalho, ambientes e itens numa resposta só, pela mesma razão do orçamento — item não tem identidade fora do documento e gravar em N requisições deixaria metade da grade salva.
@@ -2656,10 +2852,25 @@ export interface OrderDetailDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: OrderDetailDtoStatus;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
@@ -2688,10 +2899,30 @@ export interface OrderDetailDto {
   professionalId?: string | null;
   /** @nullable */
   professionalName?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: OrderDetailDtoDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: OrderGroupDiscountDto[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: OrderEnvironmentDto[];
   items: OrderItemDto[];
@@ -2734,7 +2965,13 @@ export interface OrderDetailDto {
 }
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type OrderWriteRequestDiscountMode = typeof OrderWriteRequestDiscountMode[keyof typeof OrderWriteRequestDiscountMode];
 
@@ -2742,7 +2979,18 @@ export type OrderWriteRequestDiscountMode = typeof OrderWriteRequestDiscountMode
 export const OrderWriteRequestDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo na ESCRITA — só o que o operador decide: o grupo e o percentual. `subtotalCents`, `discountCents`, `totalCents` e `quantity` são do servidor, como `totalCents` do item: a tela que os mandasse estaria propondo o próprio total.
+ */
+export interface OrderGroupDiscountWriteRequest {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+}
 
 /**
  * Proposto. Corpo de criação e de alteração do pedido. `PUT` substitui o documento INTEIRO, itens e ambientes junto. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`) e sem `quoteId`: a origem se estabelece na conversão e não se reescreve, senão um `PUT` mudaria de qual orçamento o pedido nasceu.
@@ -2760,10 +3008,20 @@ export interface OrderWriteRequest {
   issuedAt?: string | null;
   customerId: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
   /**
      * `Nº Pasta`.
      * @nullable
@@ -2784,10 +3042,30 @@ export interface OrderWriteRequest {
      * @nullable
      */
   professionalId?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: OrderWriteRequestDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: OrderGroupDiscountWriteRequest[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: OrderEnvironmentDto[];
   items: OrderItemWriteRequest[];
@@ -3240,16 +3518,22 @@ joinOperator?: ListFilterJoin;
 export type ListQuotesParams = {
 q?: string;
 /**
- * Whitelist: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt`. Campo fora dela é 400.
+ * Whitelist: `number`, `issuedAt`, `expiresAt`, `customerName`, `projectName`, `workName`. Campo fora dela é 400 — a lista não volta em outra ordem, ela não volta.
  *
- * É a MESMA de `filters` — inclusive `customerName` e `projectName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ * É a de `filters` MENOS `workId` — inclusive `customerName`, `projectName` e `workName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ *
+ * `workName` ordena pelo nome da OBRA (`workId` resolvido), e não pelo `projectName` digitado: são dois dados, e ordenar pelo texto livre embaralha documentos da mesma obra. `workId` fica fora daqui — ordenar por uuid não põe nada em ordem para quem lê; ele serve em `filters`, para recortar.
  */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 /**
- * Proposto. Filtro estruturado da listagem, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt` — a do `sortBy`. Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` com 4 casas implícitas não têm variante que converta na borda. Campo fora da whitelist é 400.
+ * Proposto. Filtro estruturado do orçamento, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.
+ *
+ * **Whitelist deste recurso: `number`, `issuedAt`, `expiresAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
+ *
+ * Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.
  */
 filters?: ListFilter[];
 /**
@@ -3390,16 +3674,22 @@ pageSize?: number;
 export type ListOrdersParams = {
 q?: string;
 /**
- * Whitelist: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.
+ * Whitelist: `number`, `issuedAt`, `customerName`, `projectName`, `workName`. Campo fora dela é 400 — a lista não volta em outra ordem, ela não volta.
  *
- * A MESMA de `filters`, e a mesma do orçamento menos `expiresAt` — pedido não vence.
+ * É a de `filters` MENOS `workId` — inclusive `customerName`, `projectName` e `workName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ *
+ * `workName` ordena pelo nome da OBRA (`workId` resolvido), e não pelo `projectName` digitado: são dois dados, e ordenar pelo texto livre embaralha documentos da mesma obra. `workId` fica fora daqui — ordenar por uuid não põe nada em ordem para quem lê; ele serve em `filters`, para recortar.
  */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 /**
- * Proposto. Mesma mecânica do orçamento: array JSON url-encoded, somado ao `q` com AND. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.
+ * Proposto. Filtro estruturado do pedido, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.
+ *
+ * **Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
+ *
+ * Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.
  */
 filters?: ListFilter[];
 /**

@@ -9,7 +9,6 @@ import {
   TextField,
   TextareaField,
 } from '@/components/cabinet/form-controls'
-import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
 import { tabelas } from '@/data/tabelas'
 import {
@@ -18,6 +17,7 @@ import {
   propsDoIcone,
 } from '@/features/cadastro/modulos'
 import { ProgressoObrigatorios } from '@/features/cliente/progresso-obrigatorios'
+import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import type { Fornecedor } from '@/mocks/fornecedores'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -66,6 +66,11 @@ export const fornecedorSchema = z.object({
   }),
   observacao: z.string(),
   empresaCompradora: z.string().nullable(),
+  // `contatos` continua no registro do mock (é campo do tipo `Fornecedor`) e
+  // NENHUM controle desta tela o edita desde #293: a grade passou a ler e
+  // gravar o sub-recurso `/api/partners/{id}/contacts`, que tem ciclo próprio.
+  // Fica declarado para o schema seguir aceitando o registro que a listagem
+  // mock devolve — tirá-lo daqui rejeitaria o `defaultValues` inteiro.
   contatos: z.array(
     z.object({
       nome: z.string(),
@@ -155,7 +160,8 @@ function BlocoDoModulo({
 function FornecedorCorpo({
   onBuscaCidade,
   moduloEmFoco,
-}: { onBuscaCidade: () => void; moduloEmFoco: string | undefined }) {
+  partnerId,
+}: { onBuscaCidade: () => void; moduloEmFoco: string | undefined; partnerId: string | null }) {
   return (
     <div className="flex flex-col gap-3">
       <ProgressoObrigatorios entidade={entidadeFornecedor} />
@@ -252,17 +258,13 @@ function FornecedorCorpo({
           {/* A grade de contatos era a única aba capturada da §4, e vivia numa
               tira de abas com sete irmãs desabilitadas. O schema a coloca em
               `Representante e contatos`, que é onde ela sempre pertenceu —
-              e as sete abas mortas deixam de ocupar a tela. */}
-          <FormGrid
-            name="contatos"
-            columns={[
-              { key: 'nome', label: 'Nome' },
-              { key: 'vinculo', label: 'Vínculo' },
-              { key: 'fone', label: 'Fone' },
-              { key: 'fax', label: 'FAX' },
-            ]}
-            newRow={{ nome: '', vinculo: '', fone: '', fax: '' }}
-          />
+              e as sete abas mortas deixam de ocupar a tela.
+
+              Desde #293 ela fala com o servidor, e por isso deixou de ser
+              `<FormGrid name="contatos">` sobre o registro do formulário:
+              contato é sub-recurso, não entra no `PUT` do parceiro, e a grade
+              antiga só parecia gravar. */}
+          <ContatosDoParceiro partnerId={partnerId} />
         </div>
       </BlocoDoModulo>
 
@@ -287,10 +289,17 @@ export function FornecedorForm({
   contexto,
   aviso,
   moduloEmFoco,
+  partnerId = null,
   onGravar: gravarDeFora,
 }: {
   fornecedor: Fornecedor
   readOnly?: boolean
+  /**
+   * O uuid do cadastro, para o sub-recurso de contatos. `null` no `Incluir`:
+   * sem registro gravado não há a que pendurar contato. Não sai de
+   * `fornecedor.id` — esse é o id NUMÉRICO do mock, e o servidor fala uuid.
+   */
+  partnerId?: string | null
   /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
   moduloEmFoco?: string | undefined
   /** Modo ou registro aberto, ao lado do título na banda. */
@@ -329,7 +338,11 @@ export function FornecedorForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <FornecedorCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} moduloEmFoco={moduloEmFoco} />
+      <FornecedorCorpo
+        onBuscaCidade={() => setBuscaCidadeOpen(true)}
+        moduloEmFoco={moduloEmFoco}
+        partnerId={partnerId}
+      />
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

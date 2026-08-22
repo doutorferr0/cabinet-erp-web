@@ -45,19 +45,35 @@ function em(prefixo: string, campo: string): string {
  * "clientes de Campinas" do mockup só liga quando o servidor publicar a
  * consulta — e aí o número de `semConsulta` cai sozinho.
  *
- * **Só o endereço PRINCIPAL é publicado.** O do banco (`enderecoBanco`, do
- * Profissional) segue sem `dto`: o contrato tem um endereço por parceiro, e o
- * `PartnerPayoutBankInfo` diz por escrito que o do banco fica fora. Marcá-lo
- * com o mesmo `dto` faria a agência ser gravada como a casa do profissional.
+ * **Qual endereço do contrato o módulo publica vem por PARÂMETRO, e não do
+ * prefixo.** Desde o bloco 2 (#255) o parceiro tem três — `address`,
+ * `billingAddress` e `businessAddress` —, e o do banco (`enderecoBanco`, do
+ * Profissional) não tem nenhum: o `PartnerPayoutBankInfo` diz por escrito que
+ * ele fica fora, e marcá-lo com `address` faria a agência ser gravada como a
+ * casa do profissional. Deduzir o `dto` do prefixo dava conta enquanto havia um
+ * só; com três, quem sabe qual é a ENTIDADE que monta o módulo.
  */
-export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
+export function moduloEndereco(
+  prefixo = 'endereco',
+  opcoes: { dto?: string; titulo?: string; resumo?: string } = {},
+): ModuloCadastro {
   const principal = prefixo === 'endereco'
-  const publicado = (nome: string) => (principal ? { dto: `address.${nome}` } : {})
+  const raiz = opcoes.dto ?? (principal ? 'address' : null)
+  const publicado = (nome: string) => (raiz ? { dto: `${raiz}.${nome}` } : {})
+  /**
+   * Coluna e filtro são SÓ do endereço principal.
+   *
+   * O recorte que o mockup pede — "clientes de Campinas" — é sobre onde o
+   * cliente está, não sobre onde fica a empresa dele nem para onde vai o
+   * boleto. Repetir `col`/`fil` nos três daria três colunas `Cidade` na mesma
+   * grade, e três filtros com o mesmo rótulo dizendo coisas diferentes.
+   */
+  const consulta = <T extends object>(pedido: T) => (principal ? pedido : ({} as Partial<T>))
   return {
     id: principal ? 'endereco' : prefixo,
-    titulo: 'Endereço',
+    titulo: opcoes.titulo ?? 'Endereço',
     cor: 'produtos',
-    resumo: 'CEP preenche rua, bairro, cidade e UF automaticamente',
+    resumo: opcoes.resumo ?? 'CEP preenche rua, bairro, cidade e UF automaticamente',
     campos: [
       {
         k: 'cep',
@@ -89,7 +105,7 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
       {
         k: 'bairro',
         r: 'Bairro',
-        fil: 'texto',
+        ...consulta({ fil: 'texto' }),
         campo: em(prefixo, 'bairro'),
         ...publicado('district'),
       },
@@ -97,8 +113,7 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
         k: 'cidade',
         r: 'Cidade',
         t: 'busca',
-        col: true,
-        fil: 'texto',
+        ...consulta({ col: true, fil: 'texto' }),
         campo: em(prefixo, 'cidadeNome'),
         ...publicado('city'),
       },
@@ -107,7 +122,7 @@ export function moduloEndereco(prefixo = 'endereco'): ModuloCadastro {
         r: 'UF',
         t: 'select',
         w: 'curto',
-        fil: 'sel',
+        ...consulta({ fil: 'sel' }),
         campo: em(prefixo, 'uf'),
         ...publicado('state'),
       },

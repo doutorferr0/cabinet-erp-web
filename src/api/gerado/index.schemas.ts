@@ -2631,7 +2631,7 @@ export interface EmployeeWriteRequest {
 /**
  * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
  *
- * **O papel entra por `roleId` OU por `role`, exatamente um dos dois** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.
+ * **O papel entra por `roleId` OU por `role`; se ambos vierem, `roleId` vence** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.
  */
 export interface EmployeeLinkRequest {
   /**

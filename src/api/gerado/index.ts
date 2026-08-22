@@ -36,6 +36,8 @@ import type {
   GetCrmLostReasonsReportParams,
   GetProductsSoldReportParams,
   GetProfessionalRankingReportParams,
+  GetPurchaseArrivalForecastParams,
+  GetPurchaseStockReplenishmentParams,
   GetQuoteVsStockReportParams,
   GetSalesComparisonReportParams,
   GetSalespersonReportParams,
@@ -58,6 +60,8 @@ import type {
   ListPaymentTermsParams,
   ListProductsParams,
   ListProjectsParams,
+  ListPurchaseOrdersParams,
+  ListPurchaseRequestsParams,
   ListQuotesParams,
   ListRolesParams,
   ListServicesParams,
@@ -82,6 +86,10 @@ import type {
   PagedResultOfPartnerDto,
   PagedResultOfPaymentTermDto,
   PagedResultOfProductDto,
+  PagedResultOfPurchaseArrivalRowDto,
+  PagedResultOfPurchaseOrderDto,
+  PagedResultOfPurchaseReplenishmentRowDto,
+  PagedResultOfPurchaseRequestDto,
   PagedResultOfQuoteDto,
   PagedResultOfRoleDto,
   PagedResultOfServiceDto,
@@ -106,6 +114,12 @@ import type {
   ProfessionalRankingReportDto,
   ProjectDto,
   ProjectPlanDto,
+  PurchaseOrderDto,
+  PurchaseOrderRescheduleRequest,
+  PurchaseOrderSendRequest,
+  PurchaseOrderWriteRequest,
+  PurchaseRequestDto,
+  PurchaseRequestWriteRequest,
   QuoteDetailDto,
   QuoteVsStockReportDto,
   QuoteWriteRequest,
@@ -6357,6 +6371,916 @@ export const getGetBirthdaysReportUrl = (params: GetBirthdaysReportParams,) => {
 export const getBirthdaysReport = async (params: GetBirthdaysReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getBirthdaysReportResponse> => {
 
   return apiFetch<getBirthdaysReportResponse>(getGetBirthdaysReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listPurchaseRequestsResponse200 = {
+  data: PagedResultOfPurchaseRequestDto
+  status: 200
+}
+
+export type listPurchaseRequestsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPurchaseRequestsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPurchaseRequestsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPurchaseRequestsResponseSuccess = (listPurchaseRequestsResponse200) & {
+  headers: Headers;
+};
+export type listPurchaseRequestsResponseError = (listPurchaseRequestsResponse400 | listPurchaseRequestsResponse401 | listPurchaseRequestsResponse403) & {
+  headers: Headers;
+};
+
+export type listPurchaseRequestsResponse = (listPurchaseRequestsResponseSuccess | listPurchaseRequestsResponseError)
+
+export const getListPurchaseRequestsUrl = (params?: ListPurchaseRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchase-requests?${stringifiedParams}` : `/api/purchase-requests`
+}
+
+/**
+ * Proposto. Os PEDIDOS DE COMPRA da empresa ativa — a necessidade de comprar, antes de virar compromisso com fornecedor.
+ *
+ * É a primeira das duas listagens do módulo `Compras` do comparativo Softlux (vol. 03), e a tela que a consome é a de onde o comprador MONTA ordem: ela precisa das linhas em aberto, com o fornecedor de cada uma, para agrupar por fornecedor e chegar ao faturamento mínimo. Por isso `PurchaseRequestDto.items` vem na listagem, e não só no detalhe.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — semântica do contrato para toda leitura de lista.
+ *
+ * **Não publica `filters`.** O recorte que a tela faz é por `status` e por fornecedor, e os dois são parâmetro próprio aqui: o filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados, e uma lista de trabalho com dois recortes conhecidos não precisa do vocabulário inteiro. Ele entra no dia em que uma tela precisar.
+ */
+export const listPurchaseRequests = async (params?: ListPurchaseRequestsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPurchaseRequestsResponse> => {
+
+  return apiFetch<listPurchaseRequestsResponse>(getListPurchaseRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPurchaseRequestResponse201 = {
+  data: PurchaseRequestDto
+  status: 201
+}
+
+export type createPurchaseRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPurchaseRequestResponseSuccess = (createPurchaseRequestResponse201) & {
+  headers: Headers;
+};
+export type createPurchaseRequestResponseError = (createPurchaseRequestResponse400 | createPurchaseRequestResponse401 | createPurchaseRequestResponse403 | createPurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type createPurchaseRequestResponse = (createPurchaseRequestResponseSuccess | createPurchaseRequestResponseError)
+
+export const getCreatePurchaseRequestUrl = () => {
+
+
+
+
+  return `/api/purchase-requests`
+}
+
+/**
+ * Proposto. Cria um pedido de compra na empresa ativa.
+ *
+ * **Permissão: `compras:editar`.** Não é `pedidos:editar` (que é o pedido de VENDA) nem `estoque:movimentar`: comprar é comprometer dinheiro da empresa com um terceiro, e é a primeira ação deste contrato que faz isso. O vendedor que fecha a venda não é necessariamente quem compra — no legado o setor COMPRAS tem 92 opções de RBAC próprias.
+ *
+ * **400 quando uma linha tem `destination: "sale"` sem `orderId` no cabeçalho**, ou com `sourceOrderItemLine` que não existe naquele pedido de venda. Encomenda sem venda que a encomendou é reposição com outro nome.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const createPurchaseRequest = async (purchaseRequestWriteRequest: PurchaseRequestWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPurchaseRequestResponse> => {
+
+  return apiFetch<createPurchaseRequestResponse>(getCreatePurchaseRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseRequestWriteRequest)
+  }
+);}
+
+
+
+export type getPurchaseRequestResponse200 = {
+  data: PurchaseRequestDto
+  status: 200
+}
+
+export type getPurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getPurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getPurchaseRequestResponseSuccess = (getPurchaseRequestResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseRequestResponseError = (getPurchaseRequestResponse401 | getPurchaseRequestResponse403 | getPurchaseRequestResponse404 | getPurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type getPurchaseRequestResponse = (getPurchaseRequestResponseSuccess | getPurchaseRequestResponseError)
+
+export const getGetPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-requests/${id}`
+}
+
+/**
+ * Proposto. Um pedido de compra pelo id, com as linhas.
+ *
+ * Existe apesar de a listagem já trazer `items`, e a razão é a mesma de `quotes` e `orders`: o documento aberto na tela é recarregado sozinho depois de cada escrita, e buscar a página inteira para achar uma linha é o que faz a tela piscar.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const getPurchaseRequest = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseRequestResponse> => {
+
+  return apiFetch<getPurchaseRequestResponse>(getGetPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updatePurchaseRequestResponse200 = {
+  data: PurchaseRequestDto
+  status: 200
+}
+
+export type updatePurchaseRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePurchaseRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePurchaseRequestResponseSuccess = (updatePurchaseRequestResponse200) & {
+  headers: Headers;
+};
+export type updatePurchaseRequestResponseError = (updatePurchaseRequestResponse400 | updatePurchaseRequestResponse401 | updatePurchaseRequestResponse403 | updatePurchaseRequestResponse404 | updatePurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type updatePurchaseRequestResponse = (updatePurchaseRequestResponseSuccess | updatePurchaseRequestResponseError)
+
+export const getUpdatePurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-requests/${id}`
+}
+
+/**
+ * Proposto. Substitui o pedido INTEIRO, `items` incluído.
+ *
+ * **409 quando alguma linha já foi levada por uma ordem.** O pedido em `partially_ordered` ou `ordered` não se reescreve: a ordem já disse ao fornecedor o que comprou, e mudar a origem por baixo dela deixaria o par `sourceRequestId` + `sourceLineNumber` apontando para uma linha que virou outra coisa — com o par intacto, que é o que torna o defeito invisível. Desistir de uma linha nesse estado é cancelar o pedido e abrir outro, que é o que deixa rastro.
+ */
+export const updatePurchaseRequest = async (id: string,
+    purchaseRequestWriteRequest: PurchaseRequestWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePurchaseRequestResponse> => {
+
+  return apiFetch<updatePurchaseRequestResponse>(getUpdatePurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseRequestWriteRequest)
+  }
+);}
+
+
+
+export type cancelPurchaseRequestResponse200 = {
+  data: PurchaseRequestDto
+  status: 200
+}
+
+export type cancelPurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelPurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelPurchaseRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelPurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelPurchaseRequestResponseSuccess = (cancelPurchaseRequestResponse200) & {
+  headers: Headers;
+};
+export type cancelPurchaseRequestResponseError = (cancelPurchaseRequestResponse401 | cancelPurchaseRequestResponse403 | cancelPurchaseRequestResponse404 | cancelPurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type cancelPurchaseRequestResponse = (cancelPurchaseRequestResponseSuccess | cancelPurchaseRequestResponseError)
+
+export const getCancelPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-requests/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela o pedido de compra. Operação própria e não campo no PUT, pelo mesmo desenho de `quotes` e `orders`: cancelar é decisão de gente com rastro próprio, e um `status` aceito no corpo do PUT deixaria uma reedição distraída cancelar o documento.
+ *
+ * **409 quando alguma linha já está em ordem.** Cancelar o pedido cuja peça já foi comprada não desfaz a compra — ele só faria a ordem apontar para um documento cancelado. Nesse estado, o que se cancela é a ORDEM.
+ */
+export const cancelPurchaseRequest = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelPurchaseRequestResponse> => {
+
+  return apiFetch<cancelPurchaseRequestResponse>(getCancelPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listPurchaseOrdersResponse200 = {
+  data: PagedResultOfPurchaseOrderDto
+  status: 200
+}
+
+export type listPurchaseOrdersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPurchaseOrdersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPurchaseOrdersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPurchaseOrdersResponseSuccess = (listPurchaseOrdersResponse200) & {
+  headers: Headers;
+};
+export type listPurchaseOrdersResponseError = (listPurchaseOrdersResponse400 | listPurchaseOrdersResponse401 | listPurchaseOrdersResponse403) & {
+  headers: Headers;
+};
+
+export type listPurchaseOrdersResponse = (listPurchaseOrdersResponseSuccess | listPurchaseOrdersResponseError)
+
+export const getListPurchaseOrdersUrl = (params?: ListPurchaseOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchase-orders?${stringifiedParams}` : `/api/purchase-orders`
+}
+
+/**
+ * Proposto. As ORDENS DE COMPRA da empresa ativa — o compromisso com o fornecedor.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ *
+ * A empresa da SESSÃO recorta a listagem; `buyingTenantId` é OUTRA coisa — é qual empresa do grupo aparece como compradora no documento, e ela é dado da ordem, não recorte de acesso. As duas coincidem no caso normal e podem divergir por decisão comercial, que é exatamente o que a multi-empresa de compra do legado faz.
+ */
+export const listPurchaseOrders = async (params?: ListPurchaseOrdersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPurchaseOrdersResponse> => {
+
+  return apiFetch<listPurchaseOrdersResponse>(getListPurchaseOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPurchaseOrderResponse201 = {
+  data: PurchaseOrderDto
+  status: 201
+}
+
+export type createPurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPurchaseOrderResponseSuccess = (createPurchaseOrderResponse201) & {
+  headers: Headers;
+};
+export type createPurchaseOrderResponseError = (createPurchaseOrderResponse400 | createPurchaseOrderResponse401 | createPurchaseOrderResponse403 | createPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type createPurchaseOrderResponse = (createPurchaseOrderResponseSuccess | createPurchaseOrderResponseError)
+
+export const getCreatePurchaseOrderUrl = () => {
+
+
+
+
+  return `/api/purchase-orders`
+}
+
+/**
+ * Proposto. Cria uma ordem de compra agrupando linhas de N pedidos de compra do MESMO fornecedor.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * **As três recusas de negócio desta operação, e por que cada uma é 409 e não 400:**
+ *
+ * 1. `urn:cabinet:erro:fornecedor-divergente` — alguma linha vem de um pedido cujo item é de outro fornecedor. A ordem é de UM fornecedor por definição, e o corpo pode estar perfeitamente bem formado: o que está errado é o estado do documento de origem, que o cliente não tinha como validar sozinho.
+ * 2. `urn:cabinet:erro:item-ja-em-ordem` — a linha de pedido apontada já foi levada por outra ordem. É a corrida entre dois compradores montando ordem ao mesmo tempo, e é exatamente o caso que um 400 descreveria mal.
+ * 3. `urn:cabinet:erro:faturamento-minimo-nao-atingido` — o total não alcança o mínimo do fornecedor. **É a regra que o legado carrega no cadastro e cobra na ordem**, e ela é conferida contra `totalCents` (depois de desconto e acréscimo), mais os mínimos POR GRUPO quando o fornecedor tiver algum: o mínimo do grupo substitui o geral para os itens daquele grupo. `detail` diz quanto falta e para qual grupo — a tela não tem como calcular isso, porque o mínimo é cadastro do fornecedor.
+ *
+ * **A validação do mínimo roda na criação e no PUT, não no `send`.** Deixá-la para o envio permitiria montar e guardar uma ordem que nunca poderá sair, e o comprador descobriria no fim do trabalho em vez de no começo.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const createPurchaseOrder = async (purchaseOrderWriteRequest: PurchaseOrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPurchaseOrderResponse> => {
+
+  return apiFetch<createPurchaseOrderResponse>(getCreatePurchaseOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderWriteRequest)
+  }
+);}
+
+
+
+export type getPurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type getPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getPurchaseOrderResponseSuccess = (getPurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseOrderResponseError = (getPurchaseOrderResponse401 | getPurchaseOrderResponse403 | getPurchaseOrderResponse404 | getPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type getPurchaseOrderResponse = (getPurchaseOrderResponseSuccess | getPurchaseOrderResponseError)
+
+export const getGetPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}`
+}
+
+/**
+ * Proposto. Uma ordem de compra pelo id, com as linhas e a origem de cada uma.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const getPurchaseOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseOrderResponse> => {
+
+  return apiFetch<getPurchaseOrderResponse>(getGetPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updatePurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type updatePurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePurchaseOrderResponseSuccess = (updatePurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type updatePurchaseOrderResponseError = (updatePurchaseOrderResponse400 | updatePurchaseOrderResponse401 | updatePurchaseOrderResponse403 | updatePurchaseOrderResponse404 | updatePurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type updatePurchaseOrderResponse = (updatePurchaseOrderResponseSuccess | updatePurchaseOrderResponseError)
+
+export const getUpdatePurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}`
+}
+
+/**
+ * Proposto. Substitui a ordem INTEIRA.
+ *
+ * **409 na ordem já ENVIADA** (`urn:cabinet:erro:ordem-ja-enviada`). Depois do `send` o fornecedor tem o documento na mão; o que muda a partir dali é data, e por `POST /{id}/reschedule`. Uma ordem enviada que se reescreve é uma ordem que diverge, em silêncio, daquela que o fornecedor está atendendo.
+ *
+ * As três recusas do POST valem aqui igualmente, e a do faturamento mínimo é a que mais importa no PUT: é editando que o comprador tira a linha que sustentava o mínimo.
+ */
+export const updatePurchaseOrder = async (id: string,
+    purchaseOrderWriteRequest: PurchaseOrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePurchaseOrderResponse> => {
+
+  return apiFetch<updatePurchaseOrderResponse>(getUpdatePurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderWriteRequest)
+  }
+);}
+
+
+
+export type sendPurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type sendPurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type sendPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type sendPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type sendPurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type sendPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type sendPurchaseOrderResponseSuccess = (sendPurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type sendPurchaseOrderResponseError = (sendPurchaseOrderResponse400 | sendPurchaseOrderResponse401 | sendPurchaseOrderResponse403 | sendPurchaseOrderResponse404 | sendPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type sendPurchaseOrderResponse = (sendPurchaseOrderResponseSuccess | sendPurchaseOrderResponseError)
+
+export const getSendPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}/send`
+}
+
+/**
+ * Proposto. ENVIA a ordem ao fornecedor: `status` vai a `sent` e `sentAt` é gravada.
+ *
+ * É transição e não campo no PUT porque muda o que a ordem PERMITE — depois dela o documento para de ser editável. Um `status: "sent"` aceito no corpo do PUT faria essa passagem acontecer no meio de uma edição distraída, e ela não tem volta.
+ *
+ * **409 na ordem já enviada** — reenviar não é operação: se o fornecedor não recebeu, o que se reenvia é o e-mail, não o documento. Reenviar aqui reescreveria `sentAt` e apagaria quando a ordem de fato saiu, que é a data contra a qual todo atraso é medido.
+ */
+export const sendPurchaseOrder = async (id: string,
+    purchaseOrderSendRequest: PurchaseOrderSendRequest, options?: Parameters<typeof apiFetch>[1]): Promise<sendPurchaseOrderResponse> => {
+
+  return apiFetch<sendPurchaseOrderResponse>(getSendPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderSendRequest)
+  }
+);}
+
+
+
+export type reschedulePurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type reschedulePurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type reschedulePurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type reschedulePurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type reschedulePurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type reschedulePurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type reschedulePurchaseOrderResponseSuccess = (reschedulePurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type reschedulePurchaseOrderResponseError = (reschedulePurchaseOrderResponse400 | reschedulePurchaseOrderResponse401 | reschedulePurchaseOrderResponse403 | reschedulePurchaseOrderResponse404 | reschedulePurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type reschedulePurchaseOrderResponse = (reschedulePurchaseOrderResponseSuccess | reschedulePurchaseOrderResponseError)
+
+export const getReschedulePurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}/reschedule`
+}
+
+/**
+ * Proposto. REAGENDA a entrega: a data nova vai para `rescheduledAt` e `expectedAt` fica onde está.
+ *
+ * **As duas datas ficam, e é o ponto inteiro desta operação.** Sobrescrever `expectedAt` faria a ordem sempre parecer no prazo — o fornecedor que atrasou três vezes teria, no fim, uma data cumprida. É a diferença entre as duas que mede o atraso, e o comparativo lista o reagendamento como campo do legado justamente por isso.
+ *
+ * **Só ordem ENVIADA se reagenda** (409 na `draft`): antes do envio não há promessa a quebrar — o que se muda é `expectedAt`, pelo PUT.
+ *
+ * Reagendar de novo sobrescreve `rescheduledAt`, e isso é aceito: o que a ordem guarda é a promessa ORIGINAL e a VIGENTE. O histórico completo de reagendamentos é do log de auditoria, que grava cada chamada desta operação — não de mais uma coluna aqui.
+ */
+export const reschedulePurchaseOrder = async (id: string,
+    purchaseOrderRescheduleRequest: PurchaseOrderRescheduleRequest, options?: Parameters<typeof apiFetch>[1]): Promise<reschedulePurchaseOrderResponse> => {
+
+  return apiFetch<reschedulePurchaseOrderResponse>(getReschedulePurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderRescheduleRequest)
+  }
+);}
+
+
+
+export type cancelPurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type cancelPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelPurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelPurchaseOrderResponseSuccess = (cancelPurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type cancelPurchaseOrderResponseError = (cancelPurchaseOrderResponse401 | cancelPurchaseOrderResponse403 | cancelPurchaseOrderResponse404 | cancelPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type cancelPurchaseOrderResponse = (cancelPurchaseOrderResponseSuccess | cancelPurchaseOrderResponseError)
+
+export const getCancelPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela a ordem de compra e DEVOLVE as linhas de pedido que ela levava ao estado `open`.
+ *
+ * **A devolução é a razão de esta operação existir em vez de um `status` no PUT.** A ordem cancelada que deixasse as linhas de pedido marcadas como `ordered` criaria necessidade órfã: peça que o cliente espera, que nenhuma ordem vai trazer, e que nenhuma tela mostra como pendente. Cancelar a ordem tem de reabrir o pedido, e é escrita nos dois documentos — por isso ela é uma transação só, do lado do servidor.
+ *
+ * **Cancelar ordem ENVIADA é permitido**, e é decisão: o fornecedor cancela pedido, e um sistema que só deixasse cancelar rascunho obrigaria a operação a mentir sobre o que existe. O rastro fica no log de auditoria.
+ */
+export const cancelPurchaseOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelPurchaseOrderResponse> => {
+
+  return apiFetch<cancelPurchaseOrderResponse>(getCancelPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type getPurchaseArrivalForecastResponse200 = {
+  data: PagedResultOfPurchaseArrivalRowDto
+  status: 200
+}
+
+export type getPurchaseArrivalForecastResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getPurchaseArrivalForecastResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseArrivalForecastResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseArrivalForecastResponseSuccess = (getPurchaseArrivalForecastResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseArrivalForecastResponseError = (getPurchaseArrivalForecastResponse400 | getPurchaseArrivalForecastResponse401 | getPurchaseArrivalForecastResponse403) & {
+  headers: Headers;
+};
+
+export type getPurchaseArrivalForecastResponse = (getPurchaseArrivalForecastResponseSuccess | getPurchaseArrivalForecastResponseError)
+
+export const getGetPurchaseArrivalForecastUrl = (params?: GetPurchaseArrivalForecastParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchases/arrival-forecast?${stringifiedParams}` : `/api/purchases/arrival-forecast`
+}
+
+/**
+ * Proposto. PREVISÃO DE CHEGADA — o que vem, quando, e para quem. É a consulta de mesmo nome no menu `Compras` do legado.
+ *
+ * Linha a linha de ITEM, não de ordem: a pergunta que a tela responde é "quando chega a peça do cliente X". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ */
+export const getPurchaseArrivalForecast = async (params?: GetPurchaseArrivalForecastParams, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseArrivalForecastResponse> => {
+
+  return apiFetch<getPurchaseArrivalForecastResponse>(getGetPurchaseArrivalForecastUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getPurchaseStockReplenishmentResponse200 = {
+  data: PagedResultOfPurchaseReplenishmentRowDto
+  status: 200
+}
+
+export type getPurchaseStockReplenishmentResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getPurchaseStockReplenishmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseStockReplenishmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseStockReplenishmentResponseSuccess = (getPurchaseStockReplenishmentResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseStockReplenishmentResponseError = (getPurchaseStockReplenishmentResponse400 | getPurchaseStockReplenishmentResponse401 | getPurchaseStockReplenishmentResponse403) & {
+  headers: Headers;
+};
+
+export type getPurchaseStockReplenishmentResponse = (getPurchaseStockReplenishmentResponseSuccess | getPurchaseStockReplenishmentResponseError)
+
+export const getGetPurchaseStockReplenishmentUrl = (params?: GetPurchaseStockReplenishmentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchases/stock-replenishment?${stringifiedParams}` : `/api/purchases/stock-replenishment`
+}
+
+/**
+ * Proposto. COMPRAS PARA ESTOQUE / RESERVA — quanto há, quanto está prometido, quanto vem a caminho, e quanto falta comprar. É a `CompraEstoque` do legado.
+ *
+ * **Consome `stock_balances.quantity_allocated`** — a coluna de RESERVA que a migração `0035` criou e que, até este contrato, não saía por API nenhuma. Ela é a diferença entre esta consulta e uma listagem de saldo: sem a reserva, "disponível" é o saldo bruto, e o comprador repõe peça que já está prometida a um cliente que ainda não a levou.
+ *
+ * **As parcelas vêm abertas, não somadas.** O legado define a disponibilidade futura como um número só (ordem aberta − reserva − entrada por nota), e um número só não distingue "falta comprar" de "sobra reserva" — que pedem decisões opostas. A soma continua disponível: é `qtyAvailable + qtyOnOrder`.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — e aqui a semântica importa mais do que em qualquer outra lista: saldo é POR EMPRESA, e uma consulta de reposição que ignorasse a empresa somaria o galpão de todo mundo.
+ */
+export const getPurchaseStockReplenishment = async (params?: GetPurchaseStockReplenishmentParams, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseStockReplenishmentResponse> => {
+
+  return apiFetch<getPurchaseStockReplenishmentResponse>(getGetPurchaseStockReplenishmentUrl(params),
   {
     ...options,
     method: 'GET'

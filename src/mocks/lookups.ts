@@ -26,6 +26,19 @@ export const VOCABULARIO_DE_APOIO: Record<string, string[]> = {
   SETOR: ['VENDAS', 'ESTOQUE', 'FINANCEIRO', 'ADMINISTRATIVO', 'COMPRAS'],
   CARGO: ['VENDEDOR', 'PROJETISTA', 'GERENTE', 'COMPRADOR', 'AUXILIAR DE ESTOQUE'],
   MATERIAIS: ['ALUMÍNIO', 'LATÃO', 'ACRÍLICO'],
+  // Motivo do cancelamento de documento de venda — o `Mod_codigo` que o legado
+  // gravava junto de `ven_situacao='C'`. **Os rótulos são PROPOSTA**, como o
+  // `kind` de atividade: a tabela `Motivo` do legado não foi capturada, então o
+  // que existe é a COLUNA, não a lista. Inventar aqui é dado de instalação e
+  // troca-se por PR; inventar no contrato seria congelar o vocabulário de uma
+  // empresa dentro da especificação.
+  MOTIVO_CANCELAMENTO: [
+    'DESISTÊNCIA DO CLIENTE',
+    'PREÇO',
+    'PRAZO DE ENTREGA',
+    'ERRO DE DIGITAÇÃO',
+    'SUBSTITUÍDO POR OUTRO DOCUMENTO',
+  ],
   GRAU_INSTRUCAO: ['FUNDAMENTAL', 'MÉDIO', 'SUPERIOR', 'PÓS-GRADUAÇÃO'],
   PROFISSAO: ['ARQUITETO', 'DESIGNER DE INTERIORES', 'ENGENHEIRO', 'VENDEDOR'],
   RACA_COR: ['BRANCA', 'PRETA', 'PARDA', 'AMARELA', 'INDÍGENA'],

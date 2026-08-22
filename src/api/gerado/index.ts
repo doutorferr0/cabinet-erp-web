@@ -13,6 +13,7 @@ import type {
   ActivityWriteRequest,
   AgendaEventDto,
   BirthdaysReportDto,
+  CancelDocumentRequest,
   CatalogLookupCreateRequest,
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
@@ -52,6 +53,7 @@ import type {
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
   ListEmployeesParams,
+  ListOrderProfessionalHistoryParams,
   ListOrdersParams,
   ListPartnerContactsParams,
   ListPartnersParams,
@@ -78,6 +80,7 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfOrderDto,
+  PagedResultOfOrderProfessionalAssignmentDto,
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
   PagedResultOfPaymentTermDto,
@@ -130,6 +133,7 @@ import type {
   TaskWriteRequest,
   TodoDto,
   TodoPatchRequest,
+  TransferProfessionalRequest,
   TrocarEmpresaRequest,
   VariantWriteRequest,
   VinculoDeEmpresa,
@@ -2723,6 +2727,11 @@ export type cancelQuoteResponse200 = {
   status: 200
 }
 
+export type cancelQuoteResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
 export type cancelQuoteResponse401 = {
   data: NaoAutenticadoResponse
   status: 401
@@ -2746,7 +2755,7 @@ export type cancelQuoteResponse409 = {
 export type cancelQuoteResponseSuccess = (cancelQuoteResponse200) & {
   headers: Headers;
 };
-export type cancelQuoteResponseError = (cancelQuoteResponse401 | cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
+export type cancelQuoteResponseError = (cancelQuoteResponse400 | cancelQuoteResponse401 | cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
   headers: Headers;
 };
 
@@ -2761,11 +2770,74 @@ export const getCancelQuoteUrl = (id: string,) => {
 }
 
 /**
- * Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.
+ * Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409. **Aceita motivo** (`CancelDocumentRequest`), e o corpo é OPCIONAL: quem já cancela hoje sem corpo continua valendo — exigir corpo agora quebraria o cliente que existe. O motivo fica no orçamento e volta em `cancelReasonId` / `cancelReasonName` / `cancelNote` do detalhe. Motivo é 400 quando o id não existe nesta empresa; cancelar duas vezes continua 409, com ou sem motivo.
  */
-export const cancelQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelQuoteResponse> => {
+export const cancelQuote = async (id: string,
+    cancelDocumentRequest?: CancelDocumentRequest, options?: Parameters<typeof apiFetch>[1]): Promise<cancelQuoteResponse> => {
 
   return apiFetch<cancelQuoteResponse>(getCancelQuoteUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelDocumentRequest)
+  }
+);}
+
+
+
+export type reviseQuoteResponse201 = {
+  data: QuoteDetailDto
+  status: 201
+}
+
+export type reviseQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type reviseQuoteResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type reviseQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type reviseQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type reviseQuoteResponseSuccess = (reviseQuoteResponse201) & {
+  headers: Headers;
+};
+export type reviseQuoteResponseError = (reviseQuoteResponse401 | reviseQuoteResponse403 | reviseQuoteResponse404 | reviseQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type reviseQuoteResponse = (reviseQuoteResponseSuccess | reviseQuoteResponseError)
+
+export const getReviseQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}/revise`
+}
+
+/**
+ * Proposto. **Cria a REVISÃO do orçamento** — documento novo, cópia de cabeçalho, ambientes e itens, com `revisionOfId` apontando o anterior e `revision` incrementado. O original fica intacto: foi ele que o cliente viu.
+ *
+ * Resolve um caso REAL do legado, e não uma hipótese: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro. Quem lia a lista contava dois negócios; quem media conversão dividia por dois.
+ *
+ * **Recusas:** orçamento cancelado é 409 (revisar o que foi retirado da mesa é ressuscitar por outro nome); orçamento que JÁ tem revisão é 409 `urn:cabinet:erro:orcamento-ja-revisado` — a segunda revisão sai da PRIMEIRA, senão a cadeia vira árvore e "qual é a versão vigente" deixa de ter resposta.
+ */
+export const reviseQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<reviseQuoteResponse> => {
+
+  return apiFetch<reviseQuoteResponse>(getReviseQuoteUrl(id),
   {
     ...options,
     method: 'POST'
@@ -4829,6 +4901,8 @@ export const getUpdateOrderUrl = (id: string,) => {
 
 /**
  * Proposto. Substitui o documento INTEIRO. Pedido cancelado não aceita alteração — é 409, não 400.
+ *
+ * **Pedido `concluded` é 409, pela mesma razão que `cancelled` é:** o documento encerrado é o que foi combinado, e reescrevê-lo muda o passado de quem já leu. Corrigir pedido concluído é reabrir — e reabertura não existe de propósito: o legado não tem o estado, então não há caso real para copiar.
  */
 export const updateOrder = async (id: string,
     orderWriteRequest: OrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateOrderResponse> => {
@@ -4847,6 +4921,11 @@ export const updateOrder = async (id: string,
 export type cancelOrderResponse200 = {
   data: OrderDetailDto
   status: 200
+}
+
+export type cancelOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
 }
 
 export type cancelOrderResponse401 = {
@@ -4872,7 +4951,7 @@ export type cancelOrderResponse409 = {
 export type cancelOrderResponseSuccess = (cancelOrderResponse200) & {
   headers: Headers;
 };
-export type cancelOrderResponseError = (cancelOrderResponse401 | cancelOrderResponse403 | cancelOrderResponse404 | cancelOrderResponse409) & {
+export type cancelOrderResponseError = (cancelOrderResponse400 | cancelOrderResponse401 | cancelOrderResponse403 | cancelOrderResponse404 | cancelOrderResponse409) & {
   headers: Headers;
 };
 
@@ -4887,14 +4966,271 @@ export const getCancelOrderUrl = (id: string,) => {
 }
 
 /**
- * Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.
+ * Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409. **Aceita motivo** (`CancelDocumentRequest`), e o corpo é OPCIONAL: quem já cancela hoje sem corpo continua valendo — exigir corpo agora quebraria o cliente que existe. O motivo fica no pedido e volta em `cancelReasonId` / `cancelReasonName` / `cancelNote` do detalhe. Motivo é 400 quando o id não existe nesta empresa; cancelar duas vezes continua 409, com ou sem motivo.
  */
-export const cancelOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelOrderResponse> => {
+export const cancelOrder = async (id: string,
+    cancelDocumentRequest?: CancelDocumentRequest, options?: Parameters<typeof apiFetch>[1]): Promise<cancelOrderResponse> => {
 
   return apiFetch<cancelOrderResponse>(getCancelOrderUrl(id),
   {
     ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelDocumentRequest)
+  }
+);}
+
+
+
+export type concludeOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type concludeOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type concludeOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type concludeOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type concludeOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type concludeOrderResponseSuccess = (concludeOrderResponse200) & {
+  headers: Headers;
+};
+export type concludeOrderResponseError = (concludeOrderResponse401 | concludeOrderResponse403 | concludeOrderResponse404 | concludeOrderResponse409) & {
+  headers: Headers;
+};
+
+export type concludeOrderResponse = (concludeOrderResponseSuccess | concludeOrderResponseError)
+
+export const getConcludeOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/conclude`
+}
+
+/**
+ * Proposto. **Conclui o pedido** — `active → concluded`. É a "Conclusão do Pedido de Venda" do menu do legado (`FrmFecha_projeto`): o ponto em que o documento para de ser trabalho em curso. Carimba `closedAt` com a data de hoje quando ela está nula; a que o operador digitou fica como está.
+ *
+ * **Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.
+ *
+ * **O que esta operação NÃO faz, e é blocker escrito, não esquecimento:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial. Entrega não existe neste contrato — não há `/api/deliveries`, não há estado físico, não há quadro de cargas. Declarar aqui um `force` que nada libera seria publicar botão sem efeito, e a tela que o mostrasse ensinaria o operador a confiar num controle que não controla. A pré-condição entra junto com o módulo de entrega, e aí o `force` nasce com o que forçar.
+ */
+export const concludeOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<concludeOrderResponse> => {
+
+  return apiFetch<concludeOrderResponse>(getConcludeOrderUrl(id),
+  {
+    ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+
+export type returnDemoOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type returnDemoOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type returnDemoOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type returnDemoOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type returnDemoOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type returnDemoOrderResponseSuccess = (returnDemoOrderResponse200) & {
+  headers: Headers;
+};
+export type returnDemoOrderResponseError = (returnDemoOrderResponse401 | returnDemoOrderResponse403 | returnDemoOrderResponse404 | returnDemoOrderResponse409) & {
+  headers: Headers;
+};
+
+export type returnDemoOrderResponse = (returnDemoOrderResponseSuccess | returnDemoOrderResponseError)
+
+export const getReturnDemoOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/demo-return`
+}
+
+/**
+ * Proposto. **Registra o RETORNO da demonstração** — carimba `demoReturnedAt` e devolve a peça ao saldo. O empréstimo tem duas pontas e esta é a segunda: sem ela, "emprestado" e "vendido" tiram do estoque do mesmo jeito, e o que está na rua vira diferença de balanço.
+ *
+ * **Não mexe no estado do documento.** Demonstração que voltou pode virar venda, e concluir é decisão de quem vendeu, não consequência de a peça ter voltado.
+ *
+ * **Recusas:** pedido `sale` é 409 `urn:cabinet:erro:transicao-invalida` — não há o que devolver. Devolver duas vezes, idem. Pedido cancelado também: o cancelamento já devolveu.
+ */
+export const returnDemoOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<returnDemoOrderResponse> => {
+
+  return apiFetch<returnDemoOrderResponse>(getReturnDemoOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type transferOrderProfessionalResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type transferOrderProfessionalResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type transferOrderProfessionalResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type transferOrderProfessionalResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type transferOrderProfessionalResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type transferOrderProfessionalResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type transferOrderProfessionalResponseSuccess = (transferOrderProfessionalResponse200) & {
+  headers: Headers;
+};
+export type transferOrderProfessionalResponseError = (transferOrderProfessionalResponse400 | transferOrderProfessionalResponse401 | transferOrderProfessionalResponse403 | transferOrderProfessionalResponse404 | transferOrderProfessionalResponse409) & {
+  headers: Headers;
+};
+
+export type transferOrderProfessionalResponse = (transferOrderProfessionalResponseSuccess | transferOrderProfessionalResponseError)
+
+export const getTransferOrderProfessionalUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/professional`
+}
+
+/**
+ * Proposto. **Transfere a venda entre profissionais** — a opção "Transferência de Venda entre Profissionais" do menu do legado. Fecha a vigência corrente em `VendaIndicacao` e abre outra; o documento passa a apontar o novo profissional.
+ *
+ * É operação própria, e não campo do `PUT`, porque a troca **tem data** e a comissão pergunta por ela. O `PUT` do pedido não move `professionalId` — quem o mandasse ali estaria reescrevendo a vigência inteira sem dizer.
+ *
+ * **Recusas:** parceiro sem papel `professional` é 400 apontando o campo; transferir para o MESMO profissional é 409 (vigência de duração zero não é trilha, é ruído); pedido cancelado ou concluído é 409 — documento encerrado não troca de dono.
+ */
+export const transferOrderProfessional = async (id: string,
+    transferProfessionalRequest: TransferProfessionalRequest, options?: Parameters<typeof apiFetch>[1]): Promise<transferOrderProfessionalResponse> => {
+
+  return apiFetch<transferOrderProfessionalResponse>(getTransferOrderProfessionalUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(transferProfessionalRequest)
+  }
+);}
+
+
+
+export type listOrderProfessionalHistoryResponse200 = {
+  data: PagedResultOfOrderProfessionalAssignmentDto
+  status: 200
+}
+
+export type listOrderProfessionalHistoryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listOrderProfessionalHistoryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listOrderProfessionalHistoryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listOrderProfessionalHistoryResponseSuccess = (listOrderProfessionalHistoryResponse200) & {
+  headers: Headers;
+};
+export type listOrderProfessionalHistoryResponseError = (listOrderProfessionalHistoryResponse401 | listOrderProfessionalHistoryResponse403 | listOrderProfessionalHistoryResponse404) & {
+  headers: Headers;
+};
+
+export type listOrderProfessionalHistoryResponse = (listOrderProfessionalHistoryResponseSuccess | listOrderProfessionalHistoryResponseError)
+
+export const getListOrderProfessionalHistoryUrl = (id: string,
+    params?: ListOrderProfessionalHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/${id}/professional-history?${stringifiedParams}` : `/api/orders/${id}/professional-history`
+}
+
+/**
+ * Proposto. **A trilha de indicação do pedido**, da mais recente para a mais antiga. A linha com `endedAt` nulo é a corrente, e é ela que casa com `OrderDetailDto.professionalId` — se as duas divergirem, a trilha mente, e é por isso que ela vem do mesmo lugar e não de um espelho.
+ *
+ * Publica paginação como toda listagem, mas o conjunto é pequeno por natureza: a trilha de um documento tem tantas linhas quantas transferências houve.
+ */
+export const listOrderProfessionalHistory = async (id: string,
+    params?: ListOrderProfessionalHistoryParams, options?: Parameters<typeof apiFetch>[1]): Promise<listOrderProfessionalHistoryResponse> => {
+
+  return apiFetch<listOrderProfessionalHistoryResponse>(getListOrderProfessionalHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

@@ -876,6 +876,9 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |
  * | `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |
  * | `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |
+ * | `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |
+ * | `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria "recarregue" para um caso que se resolve com dois cliques |
+ * | `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
@@ -911,6 +914,9 @@ export const ProblemType = {
   'urn:cabinet:erro:valor-nao-parcelavel': 'urn:cabinet:erro:valor-nao-parcelavel',
   'urn:cabinet:erro:parcelas-acima-do-teto': 'urn:cabinet:erro:parcelas-acima-do-teto',
   'urn:cabinet:erro:parcela-abaixo-do-minimo': 'urn:cabinet:erro:parcela-abaixo-do-minimo',
+  'urn:cabinet:erro:transicao-invalida': 'urn:cabinet:erro:transicao-invalida',
+  'urn:cabinet:erro:demonstracao-em-aberto': 'urn:cabinet:erro:demonstracao-em-aberto',
+  'urn:cabinet:erro:orcamento-ja-revisado': 'urn:cabinet:erro:orcamento-ja-revisado',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -1738,6 +1744,16 @@ export interface QuoteDto {
   workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: QuoteDtoStatus;
+  /**
+     * Número da revisão, 1-based. `1` é o orçamento original; `2` é a primeira revisão. Resolve um caso REAL do legado: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro — quem lia a lista contava dois negócios onde havia um.
+     * @minimum 1
+     */
+  revision?: number;
+  /**
+     * O orçamento que esta revisão substitui, ou `null` no original. A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e itens) porque o anterior é o que foi mostrado ao cliente: sobrescrevê-lo apagaria a proposta que já saiu pela porta.
+     * @nullable
+     */
+  revisionOfId?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
 }
@@ -1881,6 +1897,21 @@ export interface QuoteDetailDto {
   workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: QuoteDetailDtoStatus;
+  /**
+     * Número da revisão, 1-based. `1` é o orçamento original; `2` é a primeira revisão. Resolve um caso REAL do legado: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro — quem lia a lista contava dois negócios onde havia um.
+     * @minimum 1
+     */
+  revision?: number;
+  /**
+     * O orçamento que esta revisão substitui, ou `null` no original. A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e itens) porque o anterior é o que foi mostrado ao cliente: sobrescrevê-lo apagaria a proposta que já saiu pela porta.
+     * @nullable
+     */
+  revisionOfId?: string | null;
+  /**
+     * Número do orçamento revisado, resolvido na leitura — o que a tela mostra sem uma segunda requisição.
+     * @nullable
+     */
+  revisionOfNumber?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
   /**
@@ -1893,6 +1924,27 @@ export interface QuoteDetailDto {
      * @nullable
      */
   closedAt?: string | null;
+  /**
+     * Quando o documento foi cancelado. `null` enquanto não for.
+     * @nullable
+     */
+  cancelledAt?: string | null;
+  /**
+     * Motivo do cancelamento — id da lista de apoio. É o `Mod_codigo` que o legado gravava junto de `ven_situacao='C'`. O `kind` da lista NÃO passa pelo contrato (ADR-011): entra por linha no catálogo do servidor.
+     * @nullable
+     */
+  cancelReasonId?: string | null;
+  /**
+     * Nome do motivo, resolvido na leitura. `null` quando cancelaram sem motivo.
+     * @nullable
+     */
+  cancelReasonName?: string | null;
+  /**
+     * Observação livre de quem cancelou. O motivo diz a CLASSE; a nota diz o caso.
+     * @maxLength 200
+     * @nullable
+     */
+  cancelNote?: string | null;
   /**
      * Consultor(a) que atende — `EmployeeDto.id`.
      * @nullable
@@ -2894,14 +2946,28 @@ export interface OrderServiceItemWriteRequest {
 }
 
 /**
- * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409.
  */
 export type OrderDtoStatus = typeof OrderDtoStatus[keyof typeof OrderDtoStatus];
 
 
 export const OrderDtoStatus = {
   active: 'active',
+  concluded: 'concluded',
   cancelled: 'cancelled',
+} as const;
+
+/**
+ * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+ *
+ * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+ */
+export type OrderDtoType = typeof OrderDtoType[keyof typeof OrderDtoType];
+
+
+export const OrderDtoType = {
+  sale: 'sale',
+  demo: 'demo',
 } as const;
 
 /**
@@ -2944,8 +3010,24 @@ export interface OrderDto {
      * @nullable
      */
   workName?: string | null;
-  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409. */
   status: OrderDtoStatus;
+  /**
+     * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+     *
+     * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+     */
+  type?: OrderDtoType;
+  /**
+     * Prazo de retorno da demonstração — a data até quando a peça pode ficar fora. Só faz sentido com `type: demo`; em `sale` é `null` e a escrita que mandar valor é 400. É o que torna a demonstração cobrável: sem prazo, "emprestado" e "perdido" são o mesmo registro.
+     * @nullable
+     */
+  demoDueDate?: string | null;
+  /**
+     * Quando a peça voltou (`POST .../demo-return`). `null` = ainda fora. Demonstração com `demoDueDate` vencida e `demoReturnedAt` nulo é o que a consulta de pendências procura.
+     * @nullable
+     */
+  demoReturnedAt?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
   /**
@@ -2956,14 +3038,28 @@ export interface OrderDto {
 }
 
 /**
- * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409.
  */
 export type OrderDetailDtoStatus = typeof OrderDetailDtoStatus[keyof typeof OrderDetailDtoStatus];
 
 
 export const OrderDetailDtoStatus = {
   active: 'active',
+  concluded: 'concluded',
   cancelled: 'cancelled',
+} as const;
+
+/**
+ * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+ *
+ * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+ */
+export type OrderDetailDtoType = typeof OrderDetailDtoType[keyof typeof OrderDetailDtoType];
+
+
+export const OrderDetailDtoType = {
+  sale: 'sale',
+  demo: 'demo',
 } as const;
 
 /**
@@ -3049,8 +3145,24 @@ export interface OrderDetailDto {
      * @nullable
      */
   workName?: string | null;
-  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409. */
   status: OrderDetailDtoStatus;
+  /**
+     * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+     *
+     * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+     */
+  type?: OrderDetailDtoType;
+  /**
+     * Prazo de retorno da demonstração — a data até quando a peça pode ficar fora. Só faz sentido com `type: demo`; em `sale` é `null` e a escrita que mandar valor é 400. É o que torna a demonstração cobrável: sem prazo, "emprestado" e "perdido" são o mesmo registro.
+     * @nullable
+     */
+  demoDueDate?: string | null;
+  /**
+     * Quando a peça voltou (`POST .../demo-return`). `null` = ainda fora. Demonstração com `demoDueDate` vencida e `demoReturnedAt` nulo é o que a consulta de pendências procura.
+     * @nullable
+     */
+  demoReturnedAt?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
   /**
@@ -3063,6 +3175,27 @@ export interface OrderDetailDto {
      * @nullable
      */
   closedAt?: string | null;
+  /**
+     * Quando o documento foi cancelado. `null` enquanto não for.
+     * @nullable
+     */
+  cancelledAt?: string | null;
+  /**
+     * Motivo do cancelamento — id da lista de apoio. É o `Mod_codigo` que o legado gravava junto de `ven_situacao='C'`. O `kind` da lista NÃO passa pelo contrato (ADR-011): entra por linha no catálogo do servidor.
+     * @nullable
+     */
+  cancelReasonId?: string | null;
+  /**
+     * Nome do motivo, resolvido na leitura. `null` quando cancelaram sem motivo.
+     * @nullable
+     */
+  cancelReasonName?: string | null;
+  /**
+     * Observação livre de quem cancelou. O motivo diz a CLASSE; a nota diz o caso.
+     * @maxLength 200
+     * @nullable
+     */
+  cancelNote?: string | null;
   /**
      * Consultor(a) que atende — `EmployeeDto.id`.
      * @nullable
@@ -3145,6 +3278,18 @@ export interface OrderDetailDto {
 }
 
 /**
+ * Só na CRIAÇÃO. `PUT` que troca o tipo é 409: demonstração e venda movimentam estoque de formas diferentes, e trocar a letra depois do movimento deixaria saldo sem documento que o explique. Ausente = `sale`.
+ * @nullable
+ */
+export type OrderWriteRequestType = typeof OrderWriteRequestType[keyof typeof OrderWriteRequestType] | null;
+
+
+export const OrderWriteRequestType = {
+  sale: 'sale',
+  demo: 'demo',
+} as const;
+
+/**
  * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
  *
  * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
@@ -3208,10 +3353,20 @@ export interface OrderWriteRequest {
      */
   folderNumber?: string | null;
   /**
-     * Data de fechamento.
+     * Data de fechamento digitada pelo operador, como no `FrmFecha_projeto`. Continua escrevível enquanto o pedido está `active`; `POST .../conclude` carimba a data de hoje quando ela está nula. O ESTADO não vem por aqui — `status` só se move pelas operações de ciclo de vida.
      * @nullable
      */
   closedAt?: string | null;
+  /**
+     * Só na CRIAÇÃO. `PUT` que troca o tipo é 409: demonstração e venda movimentam estoque de formas diferentes, e trocar a letra depois do movimento deixaria saldo sem documento que o explique. Ausente = `sale`.
+     * @nullable
+     */
+  type?: OrderWriteRequestType;
+  /**
+     * Prazo de retorno, obrigatório quando `type: demo` e proibido quando `sale` — as duas recusas são 400 apontando o campo.
+     * @nullable
+     */
+  demoDueDate?: string | null;
   /**
      * Consultor(a) que atende — `EmployeeDto.id`.
      * @nullable
@@ -3264,6 +3419,79 @@ export interface OrderWriteRequest {
 
 export interface PagedResultOfOrderDto {
   rows: OrderDto[];
+  total: number;
+}
+
+/**
+ * Motivo do cancelamento. O corpo é OPCIONAL — cancelar sem dizer por quê continua valendo, e é o que os 3.354 cancelamentos do legado são: `Mod_codigo` existe lá, e a variante que o grava é uma de duas. Exigi-lo agora reprovaria o gesto que o operador já faz, para ganhar um campo que ele preencheria com o primeiro item da lista.
+ */
+export interface CancelDocumentRequest {
+  /**
+     * Motivo, da lista de apoio. O `kind` NÃO passa pelo contrato (ADR-011) — é linha no catálogo do servidor. Id que não existe, ou de outra empresa, é 400 apontando o campo.
+     * @nullable
+     */
+  reasonId?: string | null;
+  /**
+     * Observação livre. O motivo diz a CLASSE do cancelamento; a nota diz o caso — e é ela que sobrevive à pergunta "por que este aqui?".
+     * @maxLength 200
+     * @nullable
+     */
+  note?: string | null;
+}
+
+/**
+ * Troca o Profissional Externo do pedido. **Transferir não é editar o campo**: no legado a indicação vive em `VendaIndicacao`, com vigência, porque é ela que decide comissão — e comissão paga com base em quem estava no documento HOJE, sem saber quem estava ontem, não se audita. Por isso a troca é operação própria, com trilha, e o `PUT` do documento NÃO move `professionalId`.
+ */
+export interface TransferProfessionalRequest {
+  /**
+     * O novo profissional — `PartnerDto.id` com papel `professional`. Parceiro sem esse papel é 400 apontando o campo. `null` REMOVE a indicação, e isso é caso legítimo: venda de balcão que entrou com especificador por engano.
+     * @nullable
+     */
+  professionalId: string | null;
+  /**
+     * Por que transferiu. Fica na linha da trilha, não no documento.
+     * @maxLength 200
+     * @nullable
+     */
+  note?: string | null;
+}
+
+/**
+ * Uma linha da trilha de indicação — quem foi o profissional do pedido, e DE QUANDO ATÉ QUANDO. Modelada em `VendaIndicacao` (vigência), sem o percentual por grupo de produto: participação é assunto do Financeiro e não entra por esta porta.
+ */
+export interface OrderProfessionalAssignmentDto {
+  id: string;
+  /**
+     * O profissional desta vigência. `null` = período sem indicação.
+     * @nullable
+     */
+  professionalId?: string | null;
+  /**
+     * Nome resolvido na leitura.
+     * @nullable
+     */
+  professionalName?: string | null;
+  /** Início da vigência. */
+  startedAt: string;
+  /**
+     * Fim da vigência. `null` na linha CORRENTE — é ela que casa com `OrderDetailDto.professionalId`.
+     * @nullable
+     */
+  endedAt?: string | null;
+  /**
+     * Quem fez a troca que ABRIU esta vigência. `null` na linha que nasceu com o documento.
+     * @nullable
+     */
+  changedByEmployeeId?: string | null;
+  /**
+     * A justificativa dada na troca.
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface PagedResultOfOrderProfessionalAssignmentDto {
+  rows: OrderProfessionalAssignmentDto[];
   total: number;
 }
 
@@ -4528,12 +4756,24 @@ pageSize?: number;
  * **Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
  *
  * Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.
+ *
+ * **`status` e `type` entram na whitelist com o ciclo de vida (G13), e é o que torna os dois estados úteis:** sem eles a tela não tem como perguntar "o que ainda está em aberto" nem "quais demonstrações estão na rua" — teria de puxar a lista inteira e contar no cliente, que é a conta que mente na página 2. Os dois são de VOCABULÁRIO FECHADO, então `eq`/`ne`/`inArray` bastam; valor fora do enum é 400, e não lista vazia: filtro que não casa nada e filtro que não existe são indistinguíveis para quem lê a tela.
  */
 filters?: ListFilter[];
 /**
  * Proposto. Como as condições de `filters` se somam. Padrão `and`.
  */
 joinOperator?: ListFilterJoin;
+};
+
+export type ListOrderProfessionalHistoryParams = {
+/**
+ * Whitelist: `startedAt`. Uma só, e de propósito: a trilha é cronológica, e ordenar por nome de profissional esconderia a sequência que é o ponto dela.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 
 export type ListServicesParams = {

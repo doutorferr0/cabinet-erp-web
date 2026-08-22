@@ -22,6 +22,7 @@ import {
   getCancelOrderResponseMock,
   getCancelQuoteResponseMock,
   getCompleteActivityResponseMock,
+  getConcludeOrderResponseMock,
   getCreateActivityResponseMock,
   getCreateCatalogLookupResponseMock,
   getCreateCrmLostReasonResponseMock,
@@ -79,6 +80,7 @@ import {
   getListCrmPipelinesResponseMock,
   getListCrmStagesResponseMock,
   getListEmployeesResponseMock,
+  getListOrderProfessionalHistoryResponseMock,
   getListOrdersResponseMock,
   getListPartnerContactsResponseMock,
   getListPartnersResponseMock,
@@ -98,6 +100,9 @@ import {
   getMoveCrmOpportunityStageResponseMock,
   getPatchTaskResponseMock,
   getPatchTodoResponseMock,
+  getReturnDemoOrderResponseMock,
+  getReviseQuoteResponseMock,
+  getTransferOrderProfessionalResponseMock,
   getUpdateActivityResponseMock,
   getUpdateCatalogLookupResponseMock,
   getUpdateCrmLostReasonResponseMock,
@@ -144,6 +149,7 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfOrderDto,
+  PagedResultOfOrderProfessionalAssignmentDto,
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
   PagedResultOfPaymentTermDto,
@@ -185,7 +191,7 @@ import type {
   WorkDto
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getCreateCatalogLookupResponseMock, getUpdateCatalogLookupResponseMock, getListPartnerContactsResponseMock, getCreatePartnerContactResponseMock, getUpdatePartnerContactResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getCreateEmployeeResponseMock, getListWorksResponseMock, getCreateWorkResponseMock, getGetWorkResponseMock, getUpdateWorkResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getCreateQuoteFromOpportunityResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock, getGetEmployeeResponseMock, getUpdateEmployeeResponseMock, getLinkEmployeeResponseMock, getUpdateEmployeeLinkResponseMock, getListPermissionsResponseMock, getListRolesResponseMock, getCreateRoleResponseMock, getGetRoleResponseMock, getUpdateRoleResponseMock, getListOrdersResponseMock, getCreateOrderResponseMock, getGetOrderResponseMock, getUpdateOrderResponseMock, getCancelOrderResponseMock, getCreateOrderFromQuoteResponseMock, getListServicesResponseMock, getCreateServiceResponseMock, getUpdateServiceResponseMock, getListStockLocationsResponseMock, getCreateStockLocationResponseMock, getUpdateStockLocationResponseMock, getListStockBalancesResponseMock, getListPaymentTermsResponseMock, getCreatePaymentTermResponseMock, getUpdatePaymentTermResponseMock, getGetInstallmentPolicyResponseMock, getUpdateInstallmentPolicyResponseMock, getGetAbcCurveReportResponseMock, getGetProductsSoldReportResponseMock, getGetSalesComparisonReportResponseMock, getGetSalespersonReportResponseMock, getGetProfessionalRankingReportResponseMock, getGetSupplierMovementReportResponseMock, getGetStockValuationReportResponseMock, getGetStockAgingReportResponseMock, getGetQuoteVsStockReportResponseMock, getGetBirthdaysReportResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getCreateCatalogLookupResponseMock, getUpdateCatalogLookupResponseMock, getListPartnerContactsResponseMock, getCreatePartnerContactResponseMock, getUpdatePartnerContactResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getCreateEmployeeResponseMock, getListWorksResponseMock, getCreateWorkResponseMock, getGetWorkResponseMock, getUpdateWorkResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getReviseQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getCreateQuoteFromOpportunityResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock, getGetEmployeeResponseMock, getUpdateEmployeeResponseMock, getLinkEmployeeResponseMock, getUpdateEmployeeLinkResponseMock, getListPermissionsResponseMock, getListRolesResponseMock, getCreateRoleResponseMock, getGetRoleResponseMock, getUpdateRoleResponseMock, getListOrdersResponseMock, getCreateOrderResponseMock, getGetOrderResponseMock, getUpdateOrderResponseMock, getCancelOrderResponseMock, getConcludeOrderResponseMock, getReturnDemoOrderResponseMock, getTransferOrderProfessionalResponseMock, getListOrderProfessionalHistoryResponseMock, getCreateOrderFromQuoteResponseMock, getListServicesResponseMock, getCreateServiceResponseMock, getUpdateServiceResponseMock, getListStockLocationsResponseMock, getCreateStockLocationResponseMock, getUpdateStockLocationResponseMock, getListStockBalancesResponseMock, getListPaymentTermsResponseMock, getCreatePaymentTermResponseMock, getUpdatePaymentTermResponseMock, getGetInstallmentPolicyResponseMock, getUpdateInstallmentPolicyResponseMock, getGetAbcCurveReportResponseMock, getGetProductsSoldReportResponseMock, getGetSalesComparisonReportResponseMock, getGetSalespersonReportResponseMock, getGetProfessionalRankingReportResponseMock, getGetSupplierMovementReportResponseMock, getGetStockValuationReportResponseMock, getGetStockAgingReportResponseMock, getGetQuoteVsStockReportResponseMock, getGetBirthdaysReportResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -746,6 +752,18 @@ export const getCancelQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((
   }, options)
 }
 
+export const getReviseQuoteMockHandler = (overrideResponse?: QuoteDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<QuoteDetailDto> | QuoteDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/quotes/:id/revise', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getReviseQuoteResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
 export const getListCrmPipelinesMockHandler = (overrideResponse?: PagedResultOfCrmPipelineDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfCrmPipelineDto> | PagedResultOfCrmPipelineDto), options?: RequestHandlerOptions) => {
   return http.get('*/api/crm/pipelines', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -1166,6 +1184,54 @@ export const getCancelOrderMockHandler = (overrideResponse?: OrderDetailDto | ((
   }, options)
 }
 
+export const getConcludeOrderMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/orders/:id/conclude', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getConcludeOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getReturnDemoOrderMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/orders/:id/demo-return', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getReturnDemoOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getTransferOrderProfessionalMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/orders/:id/professional', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getTransferOrderProfessionalResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListOrderProfessionalHistoryMockHandler = (overrideResponse?: PagedResultOfOrderProfessionalAssignmentDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfOrderProfessionalAssignmentDto> | PagedResultOfOrderProfessionalAssignmentDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/orders/:id/professional-history', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListOrderProfessionalHistoryResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getCreateOrderFromQuoteMockHandler = (overrideResponse?: OrderDetailDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderDetailDto> | OrderDetailDto), options?: RequestHandlerOptions) => {
   return http.post('*/api/quotes/:id/order', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -1489,6 +1555,7 @@ export const getVitraERPMock = () => [
   getGetQuoteMockHandler(),
   getUpdateQuoteMockHandler(),
   getCancelQuoteMockHandler(),
+  getReviseQuoteMockHandler(),
   getListCrmPipelinesMockHandler(),
   getCreateCrmPipelineMockHandler(),
   getGetCrmPipelineMockHandler(),
@@ -1524,6 +1591,10 @@ export const getVitraERPMock = () => [
   getGetOrderMockHandler(),
   getUpdateOrderMockHandler(),
   getCancelOrderMockHandler(),
+  getConcludeOrderMockHandler(),
+  getReturnDemoOrderMockHandler(),
+  getTransferOrderProfessionalMockHandler(),
+  getListOrderProfessionalHistoryMockHandler(),
   getCreateOrderFromQuoteMockHandler(),
   getListServicesMockHandler(),
   getCreateServiceMockHandler(),

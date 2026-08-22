@@ -120,6 +120,25 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'get /api/reports/stock-aging',
   'get /api/reports/quote-vs-stock',
   'get /api/reports/birthdays',
+  // O CICLO DE VIDA do documento de venda (G13) pela MESMA razão dos depósitos e
+  // dos serviços, e não pela do 501: o contrato especifica agora o que a fase B
+  // do api vai implementar, e no servidor de hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `0c8b13b`):** `git grep` por
+  // `conclude`, `demo-return`, `professional-history`, `revise` e `ConcludeOrder`
+  // em `src/` e `tests/` devolve ZERO nas cinco buscas. Não é o 501 da fase: é
+  // caminho que o servidor não tem, e o par local devolve o 404 do Fastify.
+  //
+  // **Estas NÃO saem em família com o resto de `/api/orders` e `/api/quotes`,** e
+  // aqui a regra da família aponta para o outro lado: as famílias já estão na
+  // passagem inteiras, e são as OPERAÇÕES novas que ainda não têm servidor.
+  // Ligá-las junto tiraria o mock de rota nenhuma (não há mock de pedido) para
+  // entregar 404 onde a tela esperaria documento.
+  'post /api/orders/{id}/conclude',
+  'post /api/orders/{id}/demo-return',
+  'post /api/orders/{id}/professional',
+  'get /api/orders/{id}/professional-history',
+  'post /api/quotes/{id}/revise',
 ]
 
 beforeAll(async () => {

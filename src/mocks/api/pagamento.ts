@@ -121,24 +121,28 @@ export function planoDoDocumento(
   const politica = politicaDaEmpresa(tenantId)
   const quantas = condicao.installments.length
 
+  // As três recusas têm `type` PRÓPRIO, e não `campos-invalidos`: são três
+  // correções diferentes na tela (oferecer só as condições de parcela única ·
+  // recortar por número de parcelas · dizer que esta condição não serve PARA
+  // ESTE total), e conflatá-las obrigaria a tela a ler a frase para saber qual.
   if (quantas > politica.maxInstallments) {
     return {
-      erro: camposInvalidos([
-        {
-          path: 'paymentTermId',
-          message: `A condição tem ${quantas} parcelas e o limite da empresa é ${politica.maxInstallments}.`,
-        },
-      ]),
+      erro: problemaJson(
+        400,
+        `A condição tem ${quantas} parcelas e o limite da empresa é ${politica.maxInstallments}.`,
+        {},
+        TIPO.parcelasAcimaDoTeto,
+      ),
     }
   }
   if (quantas > 1 && totalCents < politica.minTotalToInstallCents) {
     return {
-      erro: camposInvalidos([
-        {
-          path: 'paymentTermId',
-          message: 'O total do documento não alcança o mínimo para parcelar.',
-        },
-      ]),
+      erro: problemaJson(
+        400,
+        'O total do documento não alcança o mínimo para parcelar.',
+        {},
+        TIPO.valorNaoParcelavel,
+      ),
     }
   }
 
@@ -160,12 +164,12 @@ export function planoDoDocumento(
   const menor = parcelas.reduce((m, p) => Math.min(m, p.amountCents), Number.POSITIVE_INFINITY)
   if (quantas > 1 && menor < politica.minInstallmentCents) {
     return {
-      erro: camposInvalidos([
-        {
-          path: 'paymentTermId',
-          message: 'Alguma parcela ficaria abaixo do valor mínimo da empresa.',
-        },
-      ]),
+      erro: problemaJson(
+        400,
+        'Alguma parcela ficaria abaixo do valor mínimo da empresa.',
+        {},
+        TIPO.parcelaAbaixoDoMinimo,
+      ),
     }
   }
 
@@ -200,11 +204,16 @@ function corpoInvalido(corpo: PaymentTermWriteRequest, maxInstallments: number) 
   if (parcelas.length === 0) {
     fields.push({ path: 'installments', message: 'A condição precisa de ao menos uma parcela.' })
   }
+  // O TETO sai antes dos outros, e com `type` próprio: é a única recusa desta
+  // função que não é erro de preenchimento — o corpo está certo, a empresa é que
+  // não parcela tanto. `fields[]` a levaria ao controle errado (a grade inteira).
   if (parcelas.length > maxInstallments) {
-    fields.push({
-      path: 'installments',
-      message: `O limite de parcelas da empresa é ${maxInstallments}.`,
-    })
+    return problemaJson(
+      400,
+      `O limite de parcelas da empresa é ${maxInstallments}.`,
+      {},
+      TIPO.parcelasAcimaDoTeto,
+    )
   }
 
   const numeros = parcelas.map((p) => p.number)

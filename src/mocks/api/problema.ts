@@ -69,6 +69,9 @@ export const TIPO = {
   vinculoJaExiste: 'urn:cabinet:erro:vinculo-ja-existe',
   papelDeSistema: 'urn:cabinet:erro:papel-de-sistema',
   pedidoJaConvertido: 'urn:cabinet:erro:pedido-ja-convertido',
+  valorNaoParcelavel: 'urn:cabinet:erro:valor-nao-parcelavel',
+  parcelasAcimaDoTeto: 'urn:cabinet:erro:parcelas-acima-do-teto',
+  parcelaAbaixoDoMinimo: 'urn:cabinet:erro:parcela-abaixo-do-minimo',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -99,6 +102,9 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:vinculo-ja-existe': 'Vínculo já existe',
   'urn:cabinet:erro:papel-de-sistema': 'Papel de sistema',
   'urn:cabinet:erro:pedido-ja-convertido': 'Pedido já gerado',
+  'urn:cabinet:erro:valor-nao-parcelavel': 'Valor não parcelável',
+  'urn:cabinet:erro:parcelas-acima-do-teto': 'Parcelas acima do teto',
+  'urn:cabinet:erro:parcela-abaixo-do-minimo': 'Parcela abaixo do mínimo',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }

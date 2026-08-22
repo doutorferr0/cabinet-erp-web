@@ -39,6 +39,7 @@ import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
 } from '@/mocks/api/quotes'
+import { ORDENAVEIS_SERVICO } from '@/mocks/api/servicos'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -150,6 +151,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListStockBalances: 'saldo por depósito ainda não tem tela — idem, a lista é a do mock',
   ListPaymentTerms:
     'condição de pagamento ainda não tem tela — a lista existe no mock, e é lá que é conferida',
+  ListServices:
+    'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -199,6 +202,9 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   // Condição de pagamento nasce sem tela e COM mock (S4), como depósito: quem
   // recusa `sortBy` fora da whitelist, hoje, é o handler.
   ListPaymentTerms: ORDENAVEIS_CONDICAO,
+  // Serviço nasce sem tela e COM mock, pela mesma razão: quem recusa `sortBy`
+  // fora da whitelist, hoje, é o handler — e o site público é 100% mock.
+  ListServices: ORDENAVEIS_SERVICO,
 }
 
 /**

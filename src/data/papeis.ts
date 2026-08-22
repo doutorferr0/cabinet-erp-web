@@ -61,6 +61,7 @@ export type FamiliaDeCaminho =
   | 'todos'
   | 'products'
   | 'variants'
+  | 'services'
   | 'stock-locations'
   | 'payment-terms'
   | 'installment-policy'
@@ -88,6 +89,22 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
   todos: 'operator-sales',
   products: 'operator-full',
   variants: 'operator-full',
+  /**
+   * Serviço é CATÁLOGO, e a linha de corte é a de `products`, não a de
+   * `quotes`.
+   *
+   * O critério desta matriz para pôr algo acima do atendimento nunca foi
+   * "é caro" — é *o erro de um vaza para os documentos de todo mundo*. O
+   * preço e o percentual do eletricista de um serviço são congelados por
+   * cada orçamento novo até alguém notar, e o percentual errado vira
+   * pagamento errado a quem instalou. É palavra por palavra o que já pôs
+   * `products` aqui.
+   *
+   * Não sobe a `admin` como `stock-locations`: cadastrar serviço não muda a
+   * leitura de ninguém retroativamente — documento fechado guarda o
+   * snapshot.
+   */
+  services: 'operator-full',
   /**
    * Decisão do user em 2026-08-22 (api#79, ponto 4), e **INTERINA**.
    *
@@ -167,6 +184,7 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   todos: ['/api/todos'],
   products: ['/api/products'],
   variants: ['/api/products', '/api/variants'],
+  services: ['/api/services'],
   'stock-locations': ['/api/stock-locations'],
   'payment-terms': ['/api/payment-terms'],
   'installment-policy': ['/api/installment-policy'],

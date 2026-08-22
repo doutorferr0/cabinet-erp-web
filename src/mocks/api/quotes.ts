@@ -3,6 +3,8 @@ import type {
   QuoteDto,
   QuoteEnvironmentDto,
   QuoteItemDto,
+  QuoteServiceItemDto,
+  QuoteServiceItemWriteRequest,
   QuoteWriteRequest,
 } from '@/api/gerado'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
@@ -19,6 +21,7 @@ import {
   semEmpresaAtiva,
   semSessao,
 } from './problema'
+import { servicoDoCadastro } from './servicos'
 import { store } from './store'
 
 /**
@@ -110,6 +113,19 @@ interface OrcamentoGuardado extends Orcamento {
 
 interface Estado {
   linhas: OrcamentoGuardado[]
+  /**
+   * As linhas da ABA SERVIÇOS, por id de orçamento.
+   *
+   * Estado PRÓPRIO, e não um campo do `Orcamento` do seed: aquele array é a
+   * transcrição literal da §8.2 e a aba Serviços não foi capturada (a transcrição
+   * a lista entre as telas que ficaram de fora). Guardá-las aqui mantém o seed
+   * intacto e deixa claro de onde a seção veio — do legado (`VendaServico`), não
+   * da captura.
+   *
+   * Já é o DTO do contrato, e não um modelo de tela, porque não existe tela: o
+   * que precisa ser fiel aqui é a resposta.
+   */
+  servicos: Record<string, QuoteServiceItemDto[]>
   proximoNumero: number
 }
 
@@ -127,7 +143,46 @@ function estadoInicial(): Estado {
     itens: o.itens.map((i) => ({ ...i })),
   }))
   const maior = linhas.reduce((max, o) => Math.max(max, Number(o.numero) || 0), 0)
-  return { linhas, proximoNumero: maior + 1 }
+  return { linhas, servicos: servicosDoSeed(linhas), proximoNumero: maior + 1 }
+}
+
+/**
+ * A aba Serviços do PRIMEIRO orçamento do seed — e só dele.
+ *
+ * Um documento com serviço e os outros sem é o que torna as duas coisas
+ * observáveis: que `serviceItems` vem SEMPRE (vazio quando não há), e que o
+ * `totalCents` soma as DUAS coleções. Um seed em que todo orçamento tem serviço
+ * esconderia a primeira; um sem nenhum, a segunda.
+ *
+ * `electricianPercent` aqui está CONGELADO, como na emissão: os 400000 (40%) da
+ * instalação vieram do cadastro no dia em que a linha foi gravada, e mudar
+ * `serv-0001` agora não os reescreve. É a mesma regra que já vale para
+ * `description` e `unitPriceCents` do produto.
+ */
+function servicosDoSeed(linhas: Orcamento[]): Record<string, QuoteServiceItemDto[]> {
+  const primeiro = linhas[0]
+  if (!primeiro) return {}
+  return {
+    [primeiro.id]: [
+      {
+        lineNumber: 1,
+        environmentCode: null,
+        serviceId: 'serv-0001',
+        description: 'INSTALAÇÃO DE LUMINÁRIA',
+        quantity: 4,
+        unitPriceCents: 12000,
+        discountPercent: 0,
+        electricianPercent: 400000,
+        electricianAmountCents: 19200,
+        totalCents: 48000,
+      },
+    ],
+  }
+}
+
+/** As linhas de serviço de um orçamento — vazio quando ele não tem nenhuma. */
+function servicosDe(id: string): QuoteServiceItemDto[] {
+  return estado.servicos[id] ?? []
 }
 
 /** Volta ao seed entre testes — o par do `resetCrm`. */
@@ -149,7 +204,7 @@ function comDesconto(centavos: number, percentual: number | null): number {
  * é dele. Desconto por PRODUTO usa o do item; desconto GERAL usa o do cabeçalho.
  */
 function totalDoOrcamento(o: Orcamento): number {
-  const bruto = o.itens.reduce((soma, item) => {
+  const brutoDeProdutos = o.itens.reduce((soma, item) => {
     const quantidade = quantidadeDe(item.quantidade)
     const unitario = item.valorUnitarioCentavos ?? 0
     const linha = Math.round(quantidade * unitario)
@@ -157,7 +212,22 @@ function totalDoOrcamento(o: Orcamento): number {
       soma + (o.modoDesconto === 'PRODUTO' ? comDesconto(linha, item.descontoPercentual) : linha)
     )
   }, 0)
-  return o.modoDesconto === 'GERAL' ? comDesconto(bruto, o.descontoPercentual) : bruto
+  // A ABA SERVIÇOS ENTRA NO TOTAL. É o que o contrato diz ("o total do documento
+  // é a soma das DUAS, calculada pelo servidor"), e é a única forma de o número
+  // do rodapé bater com o que o cliente vai pagar: no legado, a instalação é
+  // linha de `VendaServico` e some da conta se o total olhar só os produtos.
+  const brutoDeServicos = servicosDe(o.id).reduce((soma, servico) => {
+    return soma + (o.modoDesconto === 'PRODUTO' ? servico.totalCents : servicoSemDesconto(servico))
+  }, 0)
+  const brutoDoDocumento = brutoDeProdutos + brutoDeServicos
+  return o.modoDesconto === 'GERAL'
+    ? comDesconto(brutoDoDocumento, o.descontoPercentual)
+    : brutoDoDocumento
+}
+
+/** O valor da linha de serviço ANTES do desconto dela — o que o modo GERAL soma. */
+function servicoSemDesconto(servico: QuoteServiceItemDto): number {
+  return Math.round(servico.quantity * servico.unitPriceCents)
 }
 
 /**
@@ -275,6 +345,10 @@ function detalheDto(o: OrcamentoGuardado): QuoteDetailDto {
     // foi feito não se inventa com a política de hoje — seria reescrever a regra
     // sob a qual o documento foi assinado.
     ...(o.politicaDeParcelamento ? { installmentPolicy: o.politicaDeParcelamento } : {}),
+    // Vem SEMPRE, vazia quando o documento não tem serviço — ausência e lista
+    // vazia significariam a mesma coisa, e a opcional só criaria um `?? []` em
+    // cada consumidor.
+    serviceItems: servicosDe(o.id),
   }
 }
 
@@ -314,6 +388,50 @@ function carimbarPagamento<T extends Orcamento>(
       parcelas: plano.parcelas,
       politicaDeParcelamento: politicaDaEmpresa(tenantId),
     },
+  }
+}
+
+/**
+ * A linha de serviço da escrita → a linha guardada, com o que o SERVIDOR
+ * resolve.
+ *
+ * Duas coisas acontecem aqui e em lugar nenhum do cliente:
+ *
+ * 1. **A herança de `electricianPercent`.** `null` no corpo significa "use o
+ *    que o cadastro diz", e é aqui que o cadastro é lido — uma vez, no momento
+ *    da gravação. Depois disso o número está CONGELADO. `0` não é `null`: zero
+ *    é "esta linha não paga instalador", e distinguir os dois é a razão de o
+ *    campo ser nulável na escrita e não-nulável na leitura.
+ * 2. **`totalCents` e `electricianAmountCents`.** O segundo vira PAGAMENTO
+ *    (`acerto_eletrecistas_servicos` no legado); recalculá-lo no cliente daria
+ *    um arredondamento por cliente sobre uma linha que alguém recebe.
+ *
+ * Serviço que não é da empresa ativa não é encontrado, e a linha cai no `0` —
+ * o mesmo desfecho de `serviceId: null`, que o contrato permite (descrição
+ * avulsa). Recusar seria inventar um 404 que o contrato não declara para esta
+ * operação.
+ */
+function servicoDaEscrita(
+  linha: QuoteServiceItemWriteRequest,
+  indice: number,
+): QuoteServiceItemDto {
+  const doCadastro = servicoDoCadastro(store.activeTenantId ?? '', linha.serviceId)
+  const percentual = linha.electricianPercent ?? doCadastro?.electricianPercent ?? 0
+  const totalCents = comDesconto(
+    Math.round((linha.quantity ?? 0) * (linha.unitPriceCents ?? 0)),
+    linha.discountPercent ?? 0,
+  )
+  return {
+    lineNumber: indice + 1,
+    environmentCode: linha.environmentCode ?? null,
+    serviceId: linha.serviceId ?? null,
+    description: linha.description,
+    quantity: linha.quantity ?? 0,
+    unitPriceCents: linha.unitPriceCents ?? 0,
+    discountPercent: linha.discountPercent ?? 0,
+    electricianPercent: percentual,
+    electricianAmountCents: Math.round((totalCents * percentual) / 1_000_000),
+    totalCents,
   }
 }
 
@@ -426,10 +544,20 @@ function recusasDaEscrita(corpo: QuoteWriteRequest) {
  * O NÚMERO é do servidor e a sequência é global do grupo — o contrato tira o
  * campo da escrita justamente para o cliente não o escolher.
  */
+function aplicarServicos(id: string, corpo: QuoteWriteRequest): void {
+  // AUSENTE É VAZIO, nunca "preserva o que estava". O `PUT` é integral, e a
+  // regra vale para os serviços como já vale para `items` e `environments`.
+  // Escrever `?? servicosDe(id)` aqui seria o mock ensinando à tela uma
+  // semântica que o servidor não vai ter — e o defeito apareceria só no dia da
+  // troca, como linha que reaparece depois de excluída.
+  estado.servicos[id] = (corpo.serviceItems ?? []).map(servicoDaEscrita)
+}
+
 export function criarOrcamento(corpo: QuoteWriteRequest): OrcamentoGuardado {
   const numero = String(estado.proximoNumero)
   estado.proximoNumero += 1
   const novo = daEscrita(corpo, { ...vazio(), obraId: null, id: `orc-${numero}`, numero })
+  aplicarServicos(novo.id, corpo)
   estado.linhas.unshift(novo)
   return novo
 }
@@ -514,6 +642,10 @@ export const handlersDeOrcamento = [
       // Devolvê-lo daria dois documentos com o mesmo número no dia em que duas
       // gravações falhassem em paralelo.
       estado.linhas = estado.linhas.filter((o) => o.id !== criado.id)
+      // A aba Serviços sai junto: `criarOrcamento` já a gravou (o total precisa
+      // dela para calcular as parcelas), e deixá-la aqui daria linha de serviço
+      // pendurada num id que não é mais documento nenhum.
+      delete estado.servicos[criado.id]
       return carimbado.erro
     }
     const indiceNovo = estado.linhas.findIndex((o) => o.id === criado.id)
@@ -535,9 +667,17 @@ export const handlersDeOrcamento = [
     if (recusa) return recusa
 
     const anterior = estado.linhas[indice] as OrcamentoGuardado
+    // A aba Serviços entra ANTES do carimbo: o total do documento a inclui, e é
+    // do total que saem as parcelas. Como recusa não grava NADA, ela é desfeita
+    // quando o carimbo recusa — senão o documento ficaria com serviço novo e
+    // pagamento velho.
+    const servicosAnteriores = servicosDe(anterior.id)
+    aplicarServicos(anterior.id, corpo)
     const carimbado = carimbarPagamento(daEscrita(corpo, anterior), store.activeTenantId)
-    // Recusa não grava NADA: o documento anterior fica inteiro na coleção.
-    if ('erro' in carimbado) return carimbado.erro
+    if ('erro' in carimbado) {
+      estado.servicos[anterior.id] = servicosAnteriores
+      return carimbado.erro
+    }
     estado.linhas[indice] = carimbado.orcamento
     return HttpResponse.json(detalheDto(carimbado.orcamento))
   }),

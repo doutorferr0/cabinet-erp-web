@@ -35,6 +35,7 @@ import {
   semSessao,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
+import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
 /**
@@ -876,6 +877,7 @@ export const handlers = [
   ...handlersDeObras,
   ...handlersDeDepositos,
   ...handlersDePagamento,
+  ...handlersDeServicos,
   ...handlersDeContatos,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------

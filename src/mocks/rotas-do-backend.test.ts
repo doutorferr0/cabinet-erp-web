@@ -96,6 +96,30 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'get /api/services',
   'post /api/services',
   'put /api/services/{id}',
+  // Os RELATÓRIOS (#310) pela MESMA razão dos depósitos e do pagamento, e não
+  // pela do 501: o contrato publica a família AGORA porque é ele que especifica
+  // o que a Fase B do api vai implementar (módulo `reports` só-leitura,
+  // api#111), e no servidor de hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `0c8b13b`):** `git grep` por
+  // `api/reports` em `src/` e `tests/` devolve ZERO, e a cópia do contrato de lá
+  // tem 87 operações — as 87 de antes desta PR. Não é o 501 da fase: é caminho
+  // que o servidor não tem, e o par local devolve o 404 do Fastify.
+  //
+  // Saem daqui em FAMÍLIA, e por uma razão própria desta: a tela de Relatórios
+  // (Fase C) é UMA seção com dez abas. Ligar metade poria seis abas lendo o
+  // Postgres e quatro lendo ficção na mesma tela, sem nada na interface
+  // distinguindo as duas — que é a costura mais cara de perceber deste repo.
+  'get /api/reports/abc-curve',
+  'get /api/reports/products-sold',
+  'get /api/reports/sales-comparison',
+  'get /api/reports/salesperson-performance',
+  'get /api/reports/professional-ranking',
+  'get /api/reports/supplier-movement',
+  'get /api/reports/stock-valuation',
+  'get /api/reports/stock-aging',
+  'get /api/reports/quote-vs-stock',
+  'get /api/reports/birthdays',
 ]
 
 beforeAll(async () => {

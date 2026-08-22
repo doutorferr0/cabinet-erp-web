@@ -8,9 +8,11 @@
  * OpenAPI spec version: v1
  */
 import type {
+  AbcCurveReportDto,
   ActivityDto,
   ActivityWriteRequest,
   AgendaEventDto,
+  BirthdaysReportDto,
   CatalogLookupCreateRequest,
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
@@ -29,7 +31,17 @@ import type {
   EmployeeDetailDto,
   EmployeeLinkRequest,
   EmployeeWriteRequest,
+  GetAbcCurveReportParams,
+  GetBirthdaysReportParams,
   GetCrmLostReasonsReportParams,
+  GetProductsSoldReportParams,
+  GetProfessionalRankingReportParams,
+  GetQuoteVsStockReportParams,
+  GetSalesComparisonReportParams,
+  GetSalespersonReportParams,
+  GetStockAgingReportParams,
+  GetStockValuationReportParams,
+  GetSupplierMovementReportParams,
   HealthStatus,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
@@ -90,21 +102,29 @@ import type {
   ProductDto,
   ProductVariantDto,
   ProductWriteRequest,
+  ProductsSoldReportDto,
+  ProfessionalRankingReportDto,
   ProjectDto,
   ProjectPlanDto,
   QuoteDetailDto,
+  QuoteVsStockReportDto,
   QuoteWriteRequest,
   ReadinessStatus,
   RoleDetailDto,
   RoleWriteRequest,
+  SalesComparisonReportDto,
+  SalespersonReportDto,
   SemPermissaoResponse,
   ServiceDto,
   ServiceWriteRequest,
   SessaoAtual,
+  StockAgingReportDto,
   StockLocationDto,
   StockLocationWriteRequest,
   StockMovementDto,
   StockMovementRequest,
+  StockValuationReportDto,
+  SupplierMovementReportDto,
   TaskDto,
   TaskPatchRequest,
   TaskWriteRequest,
@@ -5736,6 +5756,612 @@ export const updateInstallmentPolicy = async (installmentPolicyWriteRequest: Ins
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(installmentPolicyWriteRequest)
+  }
+);}
+
+
+
+export type getAbcCurveReportResponse200 = {
+  data: AbcCurveReportDto
+  status: 200
+}
+
+export type getAbcCurveReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getAbcCurveReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getAbcCurveReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getAbcCurveReportResponseSuccess = (getAbcCurveReportResponse200) & {
+  headers: Headers;
+};
+export type getAbcCurveReportResponseError = (getAbcCurveReportResponse400 | getAbcCurveReportResponse401 | getAbcCurveReportResponse403) & {
+  headers: Headers;
+};
+
+export type getAbcCurveReportResponse = (getAbcCurveReportResponseSuccess | getAbcCurveReportResponseError)
+
+export const getGetAbcCurveReportUrl = (params: GetAbcCurveReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/abc-curve?${stringifiedParams}` : `/api/reports/abc-curve`
+}
+
+/**
+ * Proposto. **Curva ABC — quais produtos fazem 80% do faturamento.** A ordem canônica é faturamento decrescente, e é a única em que a curva significa alguma coisa: `cumulativePercent` é acumulado, e acumulado sobre outra ordem é outro número.
+ *
+ * **Por isso a classe e o acumulado não saem da ordem PEDIDA, e sim da canônica.** O relatório aceita `sortBy` porque a tela é exportável e quem exporta reordena — mas `abcClass` e `cumulativePercent` de cada linha continuam os mesmos em qualquer ordem, calculados sobre o período inteiro antes de paginar. Se dependessem da ordem pedida, ordenar por descrição produziria um acumulado alfabético — que não significa nada e tem exatamente a mesma aparência.
+ *
+ * Entram as linhas de PEDIDO (`orders`) ativo com `issuedAt` no período; orçamento não é venda.
+ */
+export const getAbcCurveReport = async (params: GetAbcCurveReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getAbcCurveReportResponse> => {
+
+  return apiFetch<getAbcCurveReportResponse>(getGetAbcCurveReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getProductsSoldReportResponse200 = {
+  data: ProductsSoldReportDto
+  status: 200
+}
+
+export type getProductsSoldReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getProductsSoldReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getProductsSoldReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getProductsSoldReportResponseSuccess = (getProductsSoldReportResponse200) & {
+  headers: Headers;
+};
+export type getProductsSoldReportResponseError = (getProductsSoldReportResponse400 | getProductsSoldReportResponse401 | getProductsSoldReportResponse403) & {
+  headers: Headers;
+};
+
+export type getProductsSoldReportResponse = (getProductsSoldReportResponseSuccess | getProductsSoldReportResponseError)
+
+export const getGetProductsSoldReportUrl = (params: GetProductsSoldReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/products-sold?${stringifiedParams}` : `/api/reports/products-sold`
+}
+
+/**
+ * Proposto. **Produto vendido por quantidade ou por valor, no período.** É o relatório mais pedido da operação, e os dois eixos discordam de propósito: o parafuso lidera em quantidade e não paga a conta; a cozinha inteira lidera em valor e sai uma vez por mês. Trocar o eixo por `sortBy` é a PERGUNTA mudando, não um detalhe de apresentação — e é por isso que o relatório existe separado da curva ABC, que responde a uma só.
+ */
+export const getProductsSoldReport = async (params: GetProductsSoldReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getProductsSoldReportResponse> => {
+
+  return apiFetch<getProductsSoldReportResponse>(getGetProductsSoldReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getSalesComparisonReportResponse200 = {
+  data: SalesComparisonReportDto
+  status: 200
+}
+
+export type getSalesComparisonReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getSalesComparisonReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSalesComparisonReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSalesComparisonReportResponseSuccess = (getSalesComparisonReportResponse200) & {
+  headers: Headers;
+};
+export type getSalesComparisonReportResponseError = (getSalesComparisonReportResponse400 | getSalesComparisonReportResponse401 | getSalesComparisonReportResponse403) & {
+  headers: Headers;
+};
+
+export type getSalesComparisonReportResponse = (getSalesComparisonReportResponseSuccess | getSalesComparisonReportResponseError)
+
+export const getGetSalesComparisonReportUrl = (params: GetSalesComparisonReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/sales-comparison?${stringifiedParams}` : `/api/reports/sales-comparison`
+}
+
+/**
+ * Proposto. **Comparativo de valor de vendas entre períodos.** O servidor devolve a série JÁ COMPARADA (cada linha com o valor do período anterior ao lado) em vez de mandar a série crua e deixar a tela subtrair: com paginação, a linha do topo da página 2 não tem a anterior à mão, e a tela mostraria a primeira variação de cada página em branco. **Períodos sem venda aparecem com zero** — buraco na série é informação, e omitir a linha faz o gráfico ligar julho em setembro como se agosto não existisse.
+ */
+export const getSalesComparisonReport = async (params: GetSalesComparisonReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSalesComparisonReportResponse> => {
+
+  return apiFetch<getSalesComparisonReportResponse>(getGetSalesComparisonReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getSalespersonReportResponse200 = {
+  data: SalespersonReportDto
+  status: 200
+}
+
+export type getSalespersonReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getSalespersonReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSalespersonReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSalespersonReportResponseSuccess = (getSalespersonReportResponse200) & {
+  headers: Headers;
+};
+export type getSalespersonReportResponseError = (getSalespersonReportResponse400 | getSalespersonReportResponse401 | getSalespersonReportResponse403) & {
+  headers: Headers;
+};
+
+export type getSalespersonReportResponse = (getSalespersonReportResponseSuccess | getSalespersonReportResponseError)
+
+export const getGetSalespersonReportUrl = (params: GetSalespersonReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/salesperson-performance?${stringifiedParams}` : `/api/reports/salesperson-performance`
+}
+
+/**
+ * Proposto. **Demonstrativo por atendente — mensal, trimestral ou semestral.** Traz orçamento e pedido na MESMA linha porque a pergunta da gerência não é "quanto vendeu" e sim "quanto do que ele atendeu virou venda": o atendente que emite 4 orçamentos e fecha 3 é outro profissional do que emite 90 e fecha 4, e os dois podem faturar igual.
+ */
+export const getSalespersonReport = async (params: GetSalespersonReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSalespersonReportResponse> => {
+
+  return apiFetch<getSalespersonReportResponse>(getGetSalespersonReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getProfessionalRankingReportResponse200 = {
+  data: ProfessionalRankingReportDto
+  status: 200
+}
+
+export type getProfessionalRankingReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getProfessionalRankingReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getProfessionalRankingReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getProfessionalRankingReportResponseSuccess = (getProfessionalRankingReportResponse200) & {
+  headers: Headers;
+};
+export type getProfessionalRankingReportResponseError = (getProfessionalRankingReportResponse400 | getProfessionalRankingReportResponse401 | getProfessionalRankingReportResponse403) & {
+  headers: Headers;
+};
+
+export type getProfessionalRankingReportResponse = (getProfessionalRankingReportResponseSuccess | getProfessionalRankingReportResponseError)
+
+export const getGetProfessionalRankingReportUrl = (params: GetProfessionalRankingReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/professional-ranking?${stringifiedParams}` : `/api/reports/professional-ranking`
+}
+
+/**
+ * Proposto. **Ranking de profissional — quem indica quanto.** Ordenado por faturamento decrescente. **Só entram pedidos COM profissional**: a linha "sem indicação" seria a maior de todas em toda loja e enterraria o ranking que o relatório existe para mostrar — e é por isso que o `summary` daqui fala de "faturamento COM profissional" e não bate com o total de vendas da empresa, o que é correto e precisa estar escrito.
+ */
+export const getProfessionalRankingReport = async (params: GetProfessionalRankingReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getProfessionalRankingReportResponse> => {
+
+  return apiFetch<getProfessionalRankingReportResponse>(getGetProfessionalRankingReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getSupplierMovementReportResponse200 = {
+  data: SupplierMovementReportDto
+  status: 200
+}
+
+export type getSupplierMovementReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getSupplierMovementReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSupplierMovementReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSupplierMovementReportResponseSuccess = (getSupplierMovementReportResponse200) & {
+  headers: Headers;
+};
+export type getSupplierMovementReportResponseError = (getSupplierMovementReportResponse400 | getSupplierMovementReportResponse401 | getSupplierMovementReportResponse403) & {
+  headers: Headers;
+};
+
+export type getSupplierMovementReportResponse = (getSupplierMovementReportResponseSuccess | getSupplierMovementReportResponseError)
+
+export const getGetSupplierMovementReportUrl = (params: GetSupplierMovementReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/supplier-movement?${stringifiedParams}` : `/api/reports/supplier-movement`
+}
+
+/**
+ * Proposto. **Movimentação por fornecedor.** É o número que se leva para a mesa de negociação: quanto se vendeu do que ele fornece, no período. Agrega pelo fornecedor CONGELADO na linha do documento e não pelo cadastro atual do produto — trocar o fornecedor de um item hoje reescreveria a história da negociação do ano passado.
+ *
+ * **É o ÚNICO relatório que responde por fornecedor, e por falta de fonte e não por escolha:** o cadastro de produto não guarda fornecedor — quem guarda é a LINHA do documento, congelada na emissão. Por isso `supplierId` não existe nos relatórios de estoque: publicá-lo lá devolveria vazio e pareceria "este fornecedor não tem nada em estoque".
+ */
+export const getSupplierMovementReport = async (params: GetSupplierMovementReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSupplierMovementReportResponse> => {
+
+  return apiFetch<getSupplierMovementReportResponse>(getGetSupplierMovementReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getStockValuationReportResponse200 = {
+  data: StockValuationReportDto
+  status: 200
+}
+
+export type getStockValuationReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getStockValuationReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getStockValuationReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getStockValuationReportResponseSuccess = (getStockValuationReportResponse200) & {
+  headers: Headers;
+};
+export type getStockValuationReportResponseError = (getStockValuationReportResponse400 | getStockValuationReportResponse401 | getStockValuationReportResponse403) & {
+  headers: Headers;
+};
+
+export type getStockValuationReportResponse = (getStockValuationReportResponseSuccess | getStockValuationReportResponseError)
+
+export const getGetStockValuationReportUrl = (params?: GetStockValuationReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/stock-valuation?${stringifiedParams}` : `/api/reports/stock-valuation`
+}
+
+/**
+ * Proposto. **Estoque atual valorizado.** Foto do agora, sem período — por isso `from`/`to` não existem aqui e `asOf` existe. Ordenado por valor decrescente. O saldo é o da EMPRESA ativa (`product_tenant`), e o preço também: o mesmo produto vale diferente em duas empresas do grupo, e é isso que o relatório tem de mostrar.
+ */
+export const getStockValuationReport = async (params?: GetStockValuationReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getStockValuationReportResponse> => {
+
+  return apiFetch<getStockValuationReportResponse>(getGetStockValuationReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getStockAgingReportResponse200 = {
+  data: StockAgingReportDto
+  status: 200
+}
+
+export type getStockAgingReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getStockAgingReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getStockAgingReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getStockAgingReportResponseSuccess = (getStockAgingReportResponse200) & {
+  headers: Headers;
+};
+export type getStockAgingReportResponseError = (getStockAgingReportResponse400 | getStockAgingReportResponse401 | getStockAgingReportResponse403) & {
+  headers: Headers;
+};
+
+export type getStockAgingReportResponse = (getStockAgingReportResponseSuccess | getStockAgingReportResponseError)
+
+export const getGetStockAgingReportUrl = (params?: GetStockAgingReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/stock-aging?${stringifiedParams}` : `/api/reports/stock-aging`
+}
+
+/**
+ * Proposto. **Quantidade, dias sem venda e última venda — o dinheiro parado na prateleira.** Ordenado por `daysWithoutSale` decrescente, com os que NUNCA venderam no fim e não no começo: eles não têm dias a contar, e pô-los no topo enterraria os que já venderam e pararam, que é onde mora a decisão de queima de estoque. Só itens com saldo, salvo `includeZero`.
+ */
+export const getStockAgingReport = async (params?: GetStockAgingReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getStockAgingReportResponse> => {
+
+  return apiFetch<getStockAgingReportResponse>(getGetStockAgingReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getQuoteVsStockReportResponse200 = {
+  data: QuoteVsStockReportDto
+  status: 200
+}
+
+export type getQuoteVsStockReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getQuoteVsStockReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getQuoteVsStockReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getQuoteVsStockReportResponseSuccess = (getQuoteVsStockReportResponse200) & {
+  headers: Headers;
+};
+export type getQuoteVsStockReportResponseError = (getQuoteVsStockReportResponse400 | getQuoteVsStockReportResponse401 | getQuoteVsStockReportResponse403) & {
+  headers: Headers;
+};
+
+export type getQuoteVsStockReportResponse = (getQuoteVsStockReportResponseSuccess | getQuoteVsStockReportResponseError)
+
+export const getGetQuoteVsStockReportUrl = (params: GetQuoteVsStockReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/quote-vs-stock?${stringifiedParams}` : `/api/reports/quote-vs-stock`
+}
+
+/**
+ * Proposto. **Orçamento × estoque — o que já foi prometido contra o que existe em casa.** Só orçamentos ATIVOS (cancelado não promete nada) e só linhas com variante do catálogo: item digitado livre não tem saldo com que comparar. Ordenado por falta decrescente. **A soma dos orçamentos não desconta o que já virou pedido** — e isso é deliberado: o pedido consome estoque por conta própria, e abater aqui esconderia o compromisso duas vezes.
+ */
+export const getQuoteVsStockReport = async (params: GetQuoteVsStockReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getQuoteVsStockReportResponse> => {
+
+  return apiFetch<getQuoteVsStockReportResponse>(getGetQuoteVsStockReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getBirthdaysReportResponse200 = {
+  data: BirthdaysReportDto
+  status: 200
+}
+
+export type getBirthdaysReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getBirthdaysReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getBirthdaysReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getBirthdaysReportResponseSuccess = (getBirthdaysReportResponse200) & {
+  headers: Headers;
+};
+export type getBirthdaysReportResponseError = (getBirthdaysReportResponse400 | getBirthdaysReportResponse401 | getBirthdaysReportResponse403) & {
+  headers: Headers;
+};
+
+export type getBirthdaysReportResponse = (getBirthdaysReportResponseSuccess | getBirthdaysReportResponseError)
+
+export const getGetBirthdaysReportUrl = (params: GetBirthdaysReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/birthdays?${stringifiedParams}` : `/api/reports/birthdays`
+}
+
+/**
+ * Proposto. **Aniversariantes do mês.** Lê `birthDate` do parceiro (pessoa física) e só entram os VINCULADOS à empresa ativa e ativos — parceiro do grupo sem vínculo com esta empresa não é cliente desta loja, e a lista de aniversário é a lista de quem se liga. Ordenado por dia do mês. Sem período: a pergunta é sempre um mês inteiro, e é por isso que o parâmetro é `month` e não `from`/`to`.
+ */
+export const getBirthdaysReport = async (params: GetBirthdaysReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getBirthdaysReportResponse> => {
+
+  return apiFetch<getBirthdaysReportResponse>(getGetBirthdaysReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

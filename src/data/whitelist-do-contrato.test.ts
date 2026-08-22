@@ -14,7 +14,22 @@ import {
   ORDENAVEIS as ORDENAVEIS_PRODUTO,
 } from '@/data/produtos-api'
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
+import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
+import { ORDENAVEIS as ORDENAVEIS_CONTATO_MOCK } from '@/mocks/api/contatos'
+import {
+  ORDENAVEIS_COLABORADOR as ORDENAVEIS_COLABORADOR_MOCK,
+  ORDENAVEIS_FUNIL as ORDENAVEIS_FUNIL_MOCK,
+  ORDENAVEIS_MOTIVO as ORDENAVEIS_MOTIVO_MOCK,
+  ORDENAVEIS_OPORTUNIDADE as ORDENAVEIS_OPORTUNIDADE_MOCK,
+} from '@/mocks/api/crm'
+import {
+  ORDENAVEIS_LOOKUPS as ORDENAVEIS_LOOKUPS_MOCK,
+  ORDENAVEIS_MOVIMENTO as ORDENAVEIS_MOVIMENTO_MOCK,
+  ORDENAVEIS_PARCEIRO as ORDENAVEIS_PARCEIRO_MOCK,
+  ORDENAVEIS_PRODUTO as ORDENAVEIS_PRODUTO_MOCK,
+} from '@/mocks/api/handlers'
 import { FILTRAVEIS as FILTRAVEIS_OBRA, ORDENAVEIS as ORDENAVEIS_OBRA } from '@/mocks/api/obras'
+import { ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK } from '@/mocks/api/quotes'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -133,6 +148,46 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListWorks: ORDENAVEIS_OBRA,
 }
 
+/**
+ * O `sortBy` publicado × a lista que O MOCK recusa fora dela.
+ *
+ * Duas cópias diferentes da mesma frase: `src/data/*-api.ts` é o que a TELA
+ * manda, e estas são as que o MOCK aceita. As duas precisam bater com o
+ * contrato, e por motivos diferentes — a primeira porque o servidor recusa, a
+ * segunda porque **o site público é 100% mock** e ali quem recusa é ela.
+ *
+ * Três estavam menores que o contrato quando esta lista nasceu: `catalog-lookups`
+ * sem `active`, o kardex só com `occurredAt`, e o parceiro sem `parentId` — este
+ * com a TELA mandando `parentId`, ou seja, 400 garantido no clique do cabeçalho
+ * em `cabinetonline.cc`.
+ */
+const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
+  ListProducts: ORDENAVEIS_PRODUTO_MOCK,
+  ListPartners: ORDENAVEIS_PARCEIRO_MOCK,
+  ListCatalogLookups: ORDENAVEIS_LOOKUPS_MOCK,
+  ListStockMovements: ORDENAVEIS_MOVIMENTO_MOCK,
+  ListPartnerContacts: ORDENAVEIS_CONTATO_MOCK,
+  ListQuotes: ORDENAVEIS_ORCAMENTO_MOCK,
+  ListActivities: ORDENAVEIS_ATIVIDADE_MOCK,
+  ListCrmPipelines: ORDENAVEIS_FUNIL_MOCK,
+  ListCrmLostReasons: ORDENAVEIS_MOTIVO_MOCK,
+  ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE_MOCK,
+  ListEmployees: ORDENAVEIS_COLABORADOR_MOCK,
+  ListWorks: ORDENAVEIS_OBRA,
+}
+
+/**
+ * A listagem que o MOCK não serve, e por quê.
+ *
+ * `/api/orders` está no contrato e na passagem, e handler nenhum o responde: em
+ * modo mock ele cai no fallback da SPA e volta `index.html` com 200, que é o
+ * `urn:cabinet:erro:resposta-nao-json` do cliente. Hoje não morde porque tela
+ * nenhuma o consome — quando alguma consumir, é o site público que quebra.
+ */
+const SEM_HANDLER_NO_MOCK: Record<string, string> = {
+  ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
+}
+
 /** O `filters` publicado × a lista que o front manda, onde ele publica. */
 const FILTRAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListProducts: FILTRAVEIS_PRODUTO,
@@ -182,6 +237,29 @@ describe('3. a lista do front é a publicada', () => {
     expect([...(FILTRAVEIS_DO_FRONT[opid] as string[])].sort()).toEqual(
       [...(publicada as string[])].sort(),
     )
+  })
+})
+
+describe('3b. o MOCK aceita o que o contrato publica', () => {
+  it.each(Object.keys(ORDENAVEIS_DO_MOCK))('%s ordena pelo que o contrato aceita', (opid) => {
+    const publicada = listagens.find((l) => l.operationId === opid)?.sortBy
+    expect(publicada, `${opid} sumiu do contrato`).toBeDefined()
+    expect([...(ORDENAVEIS_DO_MOCK[opid] as string[])].sort()).toEqual(
+      [...(publicada as string[])].sort(),
+    )
+  })
+
+  it('toda listagem tem handler no mock, ou está nomeada com o motivo', () => {
+    const orfas = listagens
+      .map((l) => l.operationId)
+      .filter((id) => ORDENAVEIS_DO_MOCK[id] === undefined && SEM_HANDLER_NO_MOCK[id] === undefined)
+      .sort()
+
+    expect(
+      orfas,
+      'Listagem do contrato que o mock não serve e ninguém declarou: em modo mock ' +
+        'ela devolve o `index.html` da SPA com 200, e o site público é 100% mock.',
+    ).toEqual([])
   })
 })
 

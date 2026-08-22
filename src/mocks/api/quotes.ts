@@ -43,7 +43,7 @@ import { store } from './store'
  */
 
 /** Whitelist de `sortBy` — a MESMA da descrição do contrato. */
-const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'projectName']
+export const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'projectName']
 
 /**
  * O orçamento GUARDADO. É o `Orcamento` do seed: o mock guarda o que a

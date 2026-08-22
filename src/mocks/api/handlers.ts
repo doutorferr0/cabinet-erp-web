@@ -92,6 +92,30 @@ function lerConsulta(url: URL): ConsultaDeLista {
  * `cabinetonline.cc`, que roda em modo mock, isso não era limitação de mock; era
  * a tela afirmando o que não é.
  */
+/**
+ * AS WHITELISTS DE `sortBy` DO MOCK — e elas são cópia da descrição do contrato.
+ *
+ * Ficam exportadas porque `src/data/whitelist-do-contrato.test.ts` as confere
+ * contra o `contracts/openapi-v1.json`. Não é zelo: **o site público é 100% mock**,
+ * então whitelist menor aqui é coluna que ordena contra o `:3000` e responde 400
+ * na demo — o defeito aparece no clique do cabeçalho, nunca na suíte.
+ *
+ * Três estavam menores que o contrato quando a guarda nasceu (2026-08-22):
+ * `catalog-lookups` sem `active`, o kardex só com `occurredAt` e o parceiro sem
+ * `parentId` — este último com o front MANDANDO `parentId` no `ORDENAVEIS` dele.
+ */
+export const ORDENAVEIS_LOOKUPS = ['kind', 'name', 'active'] as const
+export const ORDENAVEIS_PRODUTO = ['code', 'description', 'active'] as const
+export const ORDENAVEIS_MOVIMENTO = ['occurredAt', 'delta', 'reason'] as const
+export const ORDENAVEIS_PARCEIRO = [
+  'code',
+  'legalName',
+  'tradeName',
+  'document',
+  'active',
+  'parentId',
+] as const
+
 function listar<T>(
   itens: readonly T[],
   consulta: ConsultaDeLista,
@@ -248,7 +272,7 @@ export const handlers = [
     const url = new URL(request.url)
     const kind = url.searchParams.get('kind')
     const base = kind ? store.lookups.filter((l) => l.kind === kind) : store.lookups
-    return listar(base, lerConsulta(url), ['name', 'kind'], (l) => [l.name, l.kind])
+    return listar(base, lerConsulta(url), ORDENAVEIS_LOOKUPS, (l) => [l.name, l.kind])
   }),
 
   // O `POST` do `+...` NÃO mora aqui: ele é `handlersDeLookups`, em `lookups.ts`
@@ -284,7 +308,7 @@ export const handlers = [
     return listar(
       rows,
       lerConsulta(url),
-      ['code', 'description', 'active'],
+      ORDENAVEIS_PRODUTO,
       (p) => [p.code, p.description],
       // A whitelist do contrato para `/api/products`, com o TIPO de cada campo —
       // é o servidor que sabe se `active` é booleano, não a tela.
@@ -390,7 +414,7 @@ export const handlers = [
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     const url = new URL(request.url)
     const rows = store.movimentos.filter((m) => m.variantId === params.variantId).reverse()
-    return listar(rows, lerConsulta(url), ['occurredAt'], (m) => [m.reason])
+    return listar(rows, lerConsulta(url), ORDENAVEIS_MOVIMENTO, (m) => [m.reason])
   }),
 
   http.post('*/api/variants/:variantId/stock-movements', async ({ params, request }) => {
@@ -460,7 +484,7 @@ export const handlers = [
     return listar(
       rows,
       lerConsulta(url),
-      ['code', 'legalName', 'tradeName', 'document', 'active'],
+      ORDENAVEIS_PARCEIRO,
       (p) => [p.code, p.legalName, p.tradeName, p.document],
       // A whitelist do contrato para `/api/partners`. `document` é `text` e o
       // dado é guardado SEM máscara — quem tira a pontuação do que o operador

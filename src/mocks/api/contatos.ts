@@ -36,7 +36,7 @@ import { novoId, store } from './store'
  * produto, e a razão está escrita na descrição de `PartnerContactDto`.
  */
 
-const ORDENAVEIS = ['name', 'role', 'active']
+export const ORDENAVEIS = ['name', 'role', 'active']
 
 /** O contato COMO O STORE o guarda: o DTO mais de quem ele é. */
 export interface ContatoDoParceiro extends PartnerContactDto {

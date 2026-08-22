@@ -129,4 +129,42 @@ describe('orçamento no modo mock', () => {
     const resposta = await getQuote('orc-que-nao-existe')
     expect(resposta.status).toBe(404)
   })
+
+  it('`filters` RECORTA — antes o handler ignorava o parâmetro', async () => {
+    // Ignorar filtro é pior que recusá-lo: a tela desenha a condição no painel,
+    // o mock devolve a lista inteira, e quem lê conclui que ela não estreita
+    // nada. Contra o `:3000` o mesmo pedido recorta, então o sintoma só existia
+    // onde não há servidor — o site público, que é 100% mock.
+    //
+    // A prova não depende da semente ter dois clientes: um nome que ninguém tem
+    // devolve ZERO enquanto a lista sem filtro tem linhas. Filtro ignorado
+    // devolveria as duas iguais.
+    const inteira = await listQuotes({ page: 1, pageSize: 100 })
+    expect(inteira.status).toBe(200)
+    if (inteira.status !== 200) return
+    expect(inteira.data.total).toBeGreaterThan(0)
+
+    const busca = new URLSearchParams({
+      pageSize: '100',
+      filters: JSON.stringify([
+        { field: 'customerName', operator: 'iLike', value: 'ZZZ CLIENTE QUE NAO EXISTE' },
+      ]),
+    })
+    const vazia = await fetch(`http://mock.teste/api/quotes?${busca}`)
+
+    expect(vazia.status).toBe(200)
+    expect(((await vazia.json()) as { total: number }).total).toBe(0)
+  })
+
+  it('campo fora da whitelist do `filters` é 400, não filtro descartado', async () => {
+    const busca = new URLSearchParams({
+      filters: JSON.stringify([{ field: 'totalCents', operator: 'eq', value: '1000' }]),
+    })
+    const r = await fetch(`http://mock.teste/api/quotes?${busca}`)
+
+    // `totalCents` é dinheiro em centavos, e a subtração é a mesma da
+    // oportunidade: quem digita mil reais procuraria R$ 10,00.
+    expect(r.status).toBe(400)
+    expect(((await r.json()) as { type: string }).type).toBe('urn:cabinet:erro:filtro-invalido')
+  })
 })

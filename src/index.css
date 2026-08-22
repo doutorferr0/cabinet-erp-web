@@ -557,6 +557,10 @@
   --radius-control: 8px;
   --radius-card: 12px;
   --radius-panel: 12px;
+  /* FUSÃO v5 §3 — a MOLDURA-MÃE do documento é mais redonda que a
+     seção-filha (20 contra 12). O degrau de raio é o que torna a
+     contenção legível sem uma segunda borda: mãe envolve, filha encaixa. */
+  --radius-frame: 20px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 12px;

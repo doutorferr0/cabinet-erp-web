@@ -65,6 +65,7 @@ export type FamiliaDeCaminho =
   | 'catalog-lookups'
   | 'projects'
   | 'dashboard'
+  | 'roles'
 
 /**
  * Papel mínimo por família de caminho — cópia da matriz do backend
@@ -105,6 +106,17 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
   'catalog-lookups': 'operator-full',
   projects: 'owner',
   dashboard: 'owner',
+  /**
+   * Gerenciar papéis é distribuir permissão para os outros — é a definição de
+   * `admin` na api#84 ("acesso completo, cria usuários e papéis"), e não uma
+   * escolha desta linha.
+   *
+   * A matriz continua sendo a escala ANTIGA de propósito: enquanto a conversão
+   * do api#84 não chega à fase 3, é por ela que o front esconde controle. O dia
+   * em que o vínculo publicar as permissões efetivas, esta matriz inteira morre
+   * junto com `alcanca()` — não só esta linha.
+   */
+  roles: 'admin',
 }
 
 /**
@@ -127,6 +139,7 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],
   dashboard: ['/api/dashboard'],
+  roles: ['/api/roles'],
 }
 
 /** Devolve a família de um caminho de API, ou `undefined` quando não se aplica. */

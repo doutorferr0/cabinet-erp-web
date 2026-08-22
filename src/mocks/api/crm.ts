@@ -55,6 +55,20 @@ import { novoId, store } from './store'
 export const ORDENAVEIS_FUNIL = ['name', 'sort', 'active'] as const
 export const ORDENAVEIS_MOTIVO = ['name', 'active'] as const
 export const ORDENAVEIS_COLABORADOR = ['name', 'sector', 'jobTitle', 'active'] as const
+/**
+ * A whitelist do FILTRO da oportunidade é a do `sortBy` **menos o dinheiro** —
+ * ver `FILTRAVEIS_OPORTUNIDADE` em `src/data/crm-api.ts`, onde a subtração está
+ * justificada: `1000` em centavos é R$ 10,00 para quem procurava mil reais.
+ * Aqui ela reaparece porque, em modo mock, quem recusa é este mapa.
+ */
+export const FILTRAVEIS_OPORTUNIDADE: CamposFiltraveis = {
+  name: 'text',
+  partnerName: 'text',
+  stageName: 'text',
+  expectedCloseDate: 'date',
+  stageChangedAt: 'date',
+}
+
 export const ORDENAVEIS_OPORTUNIDADE = [
   'name',
   'partnerName',
@@ -541,13 +555,7 @@ export const handlersDoCrm = [
       // A whitelist do filtro é a do `sortBy` MENOS o dinheiro — ver
       // `FILTRAVEIS_OPORTUNIDADE` em `src/data/crm-api.ts`, onde a subtração
       // está justificada. Aqui ela reaparece porque quem recusa é o servidor.
-      {
-        name: 'text',
-        partnerName: 'text',
-        stageName: 'text',
-        expectedCloseDate: 'date',
-        stageChangedAt: 'date',
-      },
+      FILTRAVEIS_OPORTUNIDADE,
     )
   }),
 

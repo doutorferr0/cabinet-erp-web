@@ -1,4 +1,9 @@
-import { DocumentoHeader, DocumentoTotais } from '@/components/cabinet/documento'
+import {
+  DocumentoBloco,
+  DocumentoFrame,
+  DocumentoHeader,
+  DocumentoTotais,
+} from '@/components/cabinet/documento'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -75,5 +80,86 @@ describe('DocumentoTotais', () => {
     const tira = container.firstElementChild
     expect(tira?.className).toContain('rounded-lg')
     expect(tira?.className).toContain('border')
+  })
+})
+
+/**
+ * MOLDURA-MÃE e CARD AGRUPADOR (fusão v5 §3 "subdivisão explícita"): a moldura
+ * envolve a entidade e carrega a etiqueta sobreposta na borda; o bloco é o pano
+ * semi-transparente que faz as seções-filhas brancas saltarem.
+ */
+describe('DocumentoFrame', () => {
+  it('renderiza a etiqueta com tipo e número do documento', () => {
+    render(
+      <DocumentoFrame tipo="Orçamento" numero="184">
+        <span>conteúdo</span>
+      </DocumentoFrame>,
+    )
+    const etiqueta = screen.getByText('DOCUMENTO · Orçamento Nº 184')
+    expect(etiqueta).toHaveAttribute('data-slot', 'documento-etiqueta')
+  })
+
+  it('em inclusão a etiqueta omite o número', () => {
+    render(
+      <DocumentoFrame tipo="Orçamento">
+        <span>conteúdo</span>
+      </DocumentoFrame>,
+    )
+    expect(screen.getByText('DOCUMENTO · Orçamento')).toBeInTheDocument()
+  })
+
+  it('a etiqueta é o NOME acessível da moldura, não texto solto ao lado dela', () => {
+    render(
+      <DocumentoFrame tipo="Orçamento" numero="184">
+        <span>conteúdo</span>
+      </DocumentoFrame>,
+    )
+    // Sem o `aria-labelledby` a moldura seria uma região anônima e a etiqueta,
+    // um fragmento de texto sem dono — a fronteira que ela desenha na tela
+    // não existiria para quem navega por leitor.
+    expect(screen.getByRole('region', { name: 'DOCUMENTO · Orçamento Nº 184' })).toBeInTheDocument()
+  })
+
+  it('moldura usa traço estrutural, raio de moldura, fundo translúcido e sombra macia', () => {
+    const { container } = render(
+      <DocumentoFrame tipo="Pedido de Compra" numero="PC-001">
+        <span>conteúdo</span>
+      </DocumentoFrame>,
+    )
+    const frame = container.querySelector('[data-slot="documento-frame"]')
+    expect(frame?.className).toContain('border-2')
+    expect(frame?.className).toContain('border-rule-strong')
+    expect(frame?.className).toContain('bg-card/40')
+    expect(frame?.className).toContain('shadow-macia')
+    // Raio 20 contra os 12 da seção-filha: é o degrau que torna a contenção
+    // legível. `rounded-card` aqui empataria mãe e filha.
+    expect(frame?.className).toContain('rounded-frame')
+  })
+
+  it('a etiqueta é chip invertido — legível nos dois temas, não lima de tema único', () => {
+    render(
+      <DocumentoFrame tipo="Orçamento" numero="9">
+        <span>conteúdo</span>
+      </DocumentoFrame>,
+    )
+    const etiqueta = screen.getByText('DOCUMENTO · Orçamento Nº 9')
+    expect(etiqueta.className).toContain('bg-foreground')
+    expect(etiqueta.className).toContain('text-background')
+    // `text-modulo` seria lilás claro sobre fundo claro no tema escuro.
+    expect(etiqueta.className).not.toContain('text-modulo')
+  })
+})
+
+describe('DocumentoBloco', () => {
+  it('renderiza o card agrupador semi-transparente', () => {
+    const { container } = render(
+      <DocumentoBloco>
+        <span>seções</span>
+      </DocumentoBloco>,
+    )
+    const bloco = container.querySelector('[data-slot="documento-bloco"]')
+    expect(bloco?.className).toContain('bg-card/55')
+    expect(bloco?.className).toContain('rounded-card')
+    expect(bloco?.className).toContain('border')
   })
 })

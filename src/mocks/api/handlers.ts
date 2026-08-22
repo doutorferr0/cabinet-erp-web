@@ -15,6 +15,7 @@ import type {
 } from '@/api/gerado'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
+import { handlersDeAcesso } from './acesso'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
@@ -107,6 +108,31 @@ function lerConsulta(url: URL): ConsultaDeLista {
 export const ORDENAVEIS_LOOKUPS = ['kind', 'name', 'active'] as const
 export const ORDENAVEIS_PRODUTO = ['code', 'description', 'active'] as const
 export const ORDENAVEIS_MOVIMENTO = ['occurredAt', 'delta', 'reason'] as const
+/**
+ * As whitelists de `filters` — o TIPO de cada campo é do SERVIDOR, não da tela:
+ * é ele que sabe se `active` é booleano e se `document` é texto sem máscara.
+ */
+export const FILTRAVEIS_PRODUTO: CamposFiltraveis = {
+  code: 'text',
+  description: 'text',
+  active: 'boolean',
+}
+
+/**
+ * `document` é `text` e o dado é guardado SEM máscara — quem tira a pontuação do
+ * que o operador digitou é o `normalizar` do campo, na saída da tela.
+ * `parentId` é a hierarquia saindo por `filters`, a decisão que o contrato tomou
+ * quando recusou `/api/partners/{id}/children`.
+ */
+export const FILTRAVEIS_PARCEIRO: CamposFiltraveis = {
+  code: 'text',
+  legalName: 'text',
+  tradeName: 'text',
+  document: 'text',
+  active: 'boolean',
+  parentId: 'text',
+}
+
 export const ORDENAVEIS_PARCEIRO = [
   'code',
   'legalName',
@@ -310,9 +336,7 @@ export const handlers = [
       lerConsulta(url),
       ORDENAVEIS_PRODUTO,
       (p) => [p.code, p.description],
-      // A whitelist do contrato para `/api/products`, com o TIPO de cada campo —
-      // é o servidor que sabe se `active` é booleano, não a tela.
-      { code: 'text', description: 'text', active: 'boolean' },
+      FILTRAVEIS_PRODUTO,
     )
   }),
 
@@ -486,16 +510,7 @@ export const handlers = [
       lerConsulta(url),
       ORDENAVEIS_PARCEIRO,
       (p) => [p.code, p.legalName, p.tradeName, p.document],
-      // A whitelist do contrato para `/api/partners`. `document` é `text` e o
-      // dado é guardado SEM máscara — quem tira a pontuação do que o operador
-      // digitou é o `normalizar` do campo, na saída da tela (§Filtro estruturado).
-      {
-        code: 'text',
-        legalName: 'text',
-        tradeName: 'text',
-        document: 'text',
-        active: 'boolean',
-      },
+      FILTRAVEIS_PARCEIRO,
     )
   }),
 
@@ -843,6 +858,12 @@ export const handlers = [
   // o dia em que a biblioteca mudar de ideia chegar.
   ...handlersDeObras,
   ...handlersDeContatos,
+
+  // ---------------- papéis e permissões (web#292 · api#84) ----------------
+  // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas
+  // antigas. Ainda SEM TELA — a de checkboxes é trilho próprio, e o que existe
+  // aqui é para o mock não ficar mudo em caminho publicado.
+  ...handlersDeAcesso,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da

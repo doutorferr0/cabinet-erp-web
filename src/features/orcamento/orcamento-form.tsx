@@ -2,6 +2,7 @@ import type { PartnerDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import {
+  DocumentoBloco,
   fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
@@ -29,7 +30,7 @@ import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { FileText, Hash, Home, Lock, Package, Percent, User } from 'lucide-react'
+import { Calculator, FileText, Hash, Home, List, Lock, Package, Percent, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -421,26 +422,39 @@ function GradeItens() {
 function AbaPrincipal() {
   return (
     <div data-zonas className="flex flex-col gap-4">
-      <Cabecalho />
-      <Secao
-        numero="03"
-        titulo="Desconto"
-        cor="warn"
-        icone={Percent}
-        nota="a regra que os itens herdam"
-      >
-        <ControlesDesconto />
+      {/* Card agrupador (mockup `.card`): o CABEÇALHO do documento — para quem,
+          que números, que regra de desconto — vive num pano só. Itens e Totais
+          ficam de fora porque são os dois blocos que o operador olha sozinhos. */}
+      <DocumentoBloco className="flex flex-col gap-4">
+        <Cabecalho />
+        <Secao
+          numero="03"
+          titulo="Desconto"
+          cor="warn"
+          icone={Percent}
+          nota="a regra que os itens herdam"
+        >
+          <ControlesDesconto />
+        </Secao>
+
+        {/* r5: nota de rodapé fala na voz editorial (serifa itálica) — degrau
+            tipográfico das referências para o que é conselho, não dado. */}
+        <p className="font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic">
+          Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.
+        </p>
+      </DocumentoBloco>
+
+      {/* 04 e 05 fecham a numeração do mockup (01–05). A cor é de ZONA, não de
+          módulo: o mockup tem cinco matizes e o repo tem quatro empregos fixos
+          (`id`/`info`/`warn`/`money`), então quem separa Identificação de Itens
+          é o ORDINAL, não um quinto tom inventado para a ocasião. */}
+      <Secao numero="04" titulo="Itens" cor="info" icone={List} nota="o que vai no orçamento">
+        <GradeItens />
       </Secao>
 
-      {/* r5: nota de rodapé fala na voz editorial (serifa itálica) — degrau
-          tipográfico das referências para o que é conselho, não dado. */}
-      <p className="font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic">
-        Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.
-      </p>
-
-      <GradeItens />
-
-      <TotaisOrcamento />
+      <Secao numero="05" titulo="Totais" cor="money" icone={Calculator} nota="o que o cliente paga">
+        <TotaisOrcamento />
+      </Secao>
 
       <div className="flex flex-wrap gap-2">
         <Button

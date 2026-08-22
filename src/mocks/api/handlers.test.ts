@@ -216,6 +216,30 @@ describe('filtro estruturado do servidor falso', () => {
     expect((await resposta.json()).detail).toContain('Operador inválido')
   })
 
+  it('o parceiro filtra por `parentId` — a hierarquia sai por `filters`', async () => {
+    await entrarComEmpresa()
+
+    // O contrato publica `parentId` nas DUAS whitelists do parceiro, e é a
+    // decisão que ele tomou quando recusou `/api/partners/{id}/children`. O mock
+    // não tinha o campo em nenhuma das duas: a tela desenha a coluna e manda a
+    // condição, e aqui vinha 400 — só aqui, porque contra o `:3000` funciona.
+    const comFiltro = async (valor: string) =>
+      fetch(
+        `http://mock.teste/api/partners?pageSize=100&filters=${encodeURIComponent(
+          JSON.stringify([{ field: 'parentId', operator: 'eq', value: valor }]),
+        )}`,
+      )
+
+    const inexistente = await comFiltro('parc-9999')
+    expect(inexistente.status).toBe(200)
+    // Zero, e não a lista inteira: é o que separa "filtrou" de "aceitou e
+    // ignorou" — um 200 sozinho não distingue os dois.
+    expect(((await inexistente.json()) as { total: number }).total).toBe(0)
+
+    const ordenado = await fetch('http://mock.teste/api/partners?sortBy=parentId&pageSize=100')
+    expect(ordenado.status).toBe(200)
+  })
+
   it('recurso que NÃO publica `filters` recusa em voz alta', async () => {
     await entrarComEmpresa()
 

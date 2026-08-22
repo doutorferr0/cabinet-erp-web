@@ -1,4 +1,4 @@
-import { type NavSecao, secoesVisiveis } from '@/app/navigation'
+import { type NavSecao, destinoDaSecao, secoesVisiveis } from '@/app/navigation'
 import { ATALHO_DA_PALETA } from '@/app/paleta-de-comandos'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { Marca } from '@/components/cabinet/marca'
@@ -15,6 +15,7 @@ import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { useLogout, useSessao } from '@/data/sessao'
+import { cn } from '@/lib/utils'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Bell, ChevronDown, Search } from 'lucide-react'
 import { Button as ButtonAria } from 'react-aria-components'
@@ -50,12 +51,135 @@ export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | un
 }
 
 /**
- * TOPBAR — no formato do admin Shopify (POLARIS, referência única desde
- * 2026-08-17): faixa fina e branca com a marca à esquerda, a busca no centro
- * e os globais à direita. A NAVEGAÇÃO NÃO MORA MAIS AQUI — as seções, com
- * rótulo, desceram para a barra lateral (sidebar-first), que é onde o Polaris
- * as põe. A fileira de seis ícones anônimos foi descartada junto com o
- * brutalism.
+ * O que vai DENTRO do ícone da seção: o desenho e, no ativo, o fio.
+ *
+ * Componente de topo, e não um fragmento montado dentro do `.map`: função
+ * declarada por render é um TIPO novo a cada render, e o React desmonta e
+ * remonta a subárvore inteira em vez de atualizá-la. Também resolve o `key`
+ * que o Biome cobra de filho solto de `<>…</>` dentro de iterável — e resolve
+ * pela estrutura, não pondo `key` em peça que não é lista.
+ */
+function MioloDoIcone({ secao, ativa }: { secao: NavSecao; ativa: boolean }) {
+  return (
+    <>
+      <secao.icon aria-hidden="true" className="size-5" />
+      {ativa ? (
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[3px] bg-foreground" />
+      ) : null}
+    </>
+  )
+}
+
+/**
+ * A FILEIRA DE SEÇÕES — só ÍCONE, o nome no hover (v7, `mockup-nav-shell.html`).
+ *
+ * ## O ícone sozinho, e o que paga por ele
+ *
+ * Ícone sem palavra é rápido para quem já sabe e mudo para quem não sabe. O
+ * preço se paga em três lugares, e nenhum é opcional: `aria-label` com o nome
+ * (é o nome que o leitor de tela anuncia), a dica no hover E NO FOCO — quem
+ * chega de Tab lê o mesmo rótulo que quem chega de mouse —, e a paleta
+ * `Ctrl+K`, que continua global e alcança toda tela por nome escrito.
+ *
+ * ## A dica é CSS, e não o `Tooltip` do design system — com número
+ *
+ * Sete `TooltipTrigger` do react-aria montam em TODA rota, porque a topbar
+ * está em toda rota. Medido em `src/routes/` (24 testes): **33,49s na `main`,
+ * 33,19s com a fileira sem dica, 36,30s com as sete dicas do react-aria** —
+ * +8,4%, e foi o que empurrou `atividades-no-orcamento` por cima do timeout na
+ * suíte cheia. Não é o teste que está frouxo: é custo de render que o operador
+ * também paga, sete assinaturas de overlay por tela.
+ *
+ * A dica sai então em `::after` com `content: attr(...)`, que é o mecanismo do
+ * próprio mockup (`.tab::after`) e custa zero em render. As classes copiam a
+ * aparência do `Tooltip`: tinta sólida, texto no fundo, PT Mono em caixa alta.
+ * O que se perde é a seta — e ela existe para desambiguar overlay em PORTAL,
+ * que flutua longe do gatilho; esta nasce ancorada no próprio ícone, centrada
+ * nele, e não tem como falar de outro.
+ *
+ * O texto vem de `data-rotulo` e não de `aria-label` de propósito: conteúdo
+ * gerado por CSS não entra no nome acessível, e ler o rótulo de lá deixaria a
+ * dica calada se alguém trocasse o rótulo por `aria-labelledby`.
+ *
+ * ## `<Link>` quando a seção tem tela; `<button>` quando não tem
+ *
+ * Clicar numa seção LEVA à primeira tela dela — é o que o mockup faz e o que
+ * Odoo e HubSpot fazem ao trocar de app. Como é rota de verdade, é `<Link>`:
+ * quem quiser abre Estoque em outra aba pelo próprio navegador, o que um
+ * `<button>` não permitiria.
+ *
+ * `Financeiro` é a exceção que prova a regra: só tem tela futura, e
+ * `destinoDaSecao` devolve `undefined`. Ali o ícone é `<button>` e só ABRE o
+ * menu da seção, sem navegar — inventar um `/financeiro` daria 404. As duas
+ * metades levam ao mesmo lugar visível: a barra passa a mostrar a seção.
+ *
+ * ## O fio é TINTA, o pastel é do módulo
+ *
+ * O mockup pinta o fio de 3px na CHEIA /01 do módulo. Ela mede 1,36–2,63:1
+ * contra o fundo da barra no tema claro, contra o piso de 3:1 da WCAG 1.4.11
+ * (§tabela:nav-estados) — foi o defeito que a #243 corrigiu na barra lateral,
+ * e repeti-lo aqui seria reintroduzi-lo. O fio sai em tinta; a cor do módulo
+ * entra pela SUPERFÍCIE, na pastel /02, que é o papel dela.
+ *
+ * Hover e ativo compartilham a pastel, como no mockup (`.tab:hover` e
+ * `.tab.ativo` têm o mesmo `background`). Quem separa os dois é o fio.
+ */
+function SecoesNoTopo({
+  secoes,
+  secaoAtiva,
+  aoEscolher,
+}: {
+  secoes: NavSecao[]
+  secaoAtiva: string | undefined
+  aoEscolher: (id: string) => void
+}) {
+  return (
+    <nav aria-label="Seções" className="flex shrink-0 items-stretch gap-0.5 self-stretch">
+      {secoes.map((secao) => {
+        const ativa = secao.id === secaoAtiva
+        const destino = destinoDaSecao(secao)
+        const comum = {
+          'aria-label': secao.rotulo,
+          'aria-current': ativa ? ('page' as const) : undefined,
+          ...(secao.modulo && { 'data-modulo': secao.modulo }),
+          'data-rotulo': secao.rotulo,
+          className: cn(
+            'relative grid w-11 shrink-0 place-content-center outline-none hover:bg-modulo focus-visible:focus-ring',
+            // A DICA: aparece no hover e no foco de teclado, some sem os dois.
+            'after:-translate-x-1/2 after:pointer-events-none after:absolute after:top-[calc(100%+6px)] after:left-1/2 after:z-50 after:whitespace-nowrap after:rounded-control after:bg-foreground after:px-2.5 after:py-1 after:font-mono after:font-semibold after:text-background after:text-xs after:uppercase after:tracking-[0.05em] after:opacity-0 after:transition-opacity after:content-[attr(data-rotulo)]',
+            'hover:after:opacity-100 focus-visible:after:opacity-100',
+            ativa && 'bg-modulo',
+          ),
+        }
+        return destino ? (
+          <Link key={secao.id} to={destino} {...comum}>
+            <MioloDoIcone secao={secao} ativa={ativa} />
+          </Link>
+        ) : (
+          <button key={secao.id} type="button" onClick={() => aoEscolher(secao.id)} {...comum}>
+            <MioloDoIcone secao={secao} ativa={ativa} />
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
+/**
+ * TOPBAR — faixa fina com a marca à esquerda, a FILEIRA DE SEÇÕES ao lado
+ * dela, a busca no centro e os globais à direita. Tipografia, cor e superfície
+ * continuam as do Polaris (2026-08-17); o que voltou para cá é só a
+ * NAVEGAÇÃO DE SEÇÃO.
+ *
+ * ## Por que a fileira voltou
+ *
+ * Ela existiu em 15/08 (#145), foi descartada em 17/08 pelo Polaris
+ * sidebar-first (#195) e o user a restaurou em 22/08, escolhendo o desenho v7
+ * do `mockup-nav-shell.html` e mandando manter os tokens do Polaris. As duas
+ * decisões não brigam: a v7 diz ONDE se troca de seção, o Polaris diz COM QUE
+ * COR se desenha. A barra lateral perdeu o acordeão de seções e passou a
+ * mostrar só a seção escolhida — duas listas da mesma taxonomia, uma em cima
+ * e outra do lado, seria a mesma escolha oferecida em dois lugares.
  *
  * ## Busca — abre a paleta
  *
@@ -85,12 +209,15 @@ export function secaoDaRota(secoes: NavSecao[], pathname: string): NavSecao | un
 export function Appbar({
   naoLidas,
   secaoAtiva,
+  aoEscolherSecao,
   aoAbrirGaveta,
   aoAbrirPaleta,
 }: {
   naoLidas: number
-  /** Id da seção da rota — quem a resolve é o `AppShell`. */
+  /** Id da seção em foco — quem a resolve é o `AppShell`. */
   secaoAtiva: string | undefined
+  /** Clique num ícone da fileira: escolhe a seção SEM navegar. */
+  aoEscolherSecao: (id: string) => void
   aoAbrirGaveta: () => void
   aoAbrirPaleta: () => void
 }) {
@@ -102,6 +229,8 @@ export function Appbar({
 
   const secoes = secoesVisiveis(tem)
   const config = secoes.find((secao) => secao.oculta)
+  /** A fileira desenha o que se OPERA: a seção-página fica atrás da engrenagem. */
+  const daBarra = secoes.filter((secao) => !secao.oculta)
   // Em const, e não lido de dentro do JSX: `exactOptionalPropertyTypes` recusa
   // `navigate({ to: config?.raiz })` porque a estreiteza se perde no callback.
   const raizDaConfig = config?.raiz
@@ -120,8 +249,15 @@ export function Appbar({
         <Marca variante="assinatura" tamanho={34} />
       </div>
 
-      {/* BUSCA CENTRAL, larga — a âncora da topbar no Polaris. */}
-      <div className="flex min-w-0 flex-1 justify-center">
+      <SecoesNoTopo secoes={daBarra} secaoAtiva={secaoAtiva} aoEscolher={aoEscolherSecao} />
+
+      {/* BUSCA CENTRAL — a âncora da topbar no Polaris.
+          O `min-w` não é enfeite: a fileira de seções come 320px da faixa, e
+          medido no par local a busca caía para **150px**, onde o rótulo sai
+          como "Pes…". Botão que não diz o que faz não é atalho, é enigma. O
+          piso é dela, e quem cede espaço é o seletor de empresa, que trunca o
+          nome sem perder a função. */}
+      <div className="flex min-w-56 flex-1 justify-center">
         <button
           type="button"
           onClick={aoAbrirPaleta}
@@ -139,7 +275,7 @@ export function Appbar({
         </button>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex min-w-0 shrink items-center gap-2">
         {config && raizDaConfig ? (
           <TooltipTrigger delay={200}>
             <Link
@@ -175,7 +311,10 @@ export function Appbar({
         {/* EMPRESA + OPERADOR juntos no canto direito — o par que o admin
             Shopify usa (nome da loja ao lado do avatar): escopo do dado e
             quem opera, lado a lado. */}
-        <div className="w-64 shrink-0">
+        {/* Encolhe quando a faixa aperta — é o único bloco da direita que
+            pode: engrenagem, sino e avatar já estão no tamanho do alvo de
+            toque, e o nome da empresa trunca sem deixar de ser clicável. */}
+        <div className="w-64 min-w-0 shrink">
           <CompanySwitcher />
         </div>
 

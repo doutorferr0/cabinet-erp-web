@@ -91,6 +91,17 @@ describe('podeEscrever', () => {
     expect(podeEscrever('operator-full', 'employees')).toBe(false)
   })
 
+  /**
+   * Lista de apoio é do GRUPO, não da empresa — `catalog_lookups` não tem
+   * `tenant_id`. Por isso o mínimo é `operator-full` e não `operator-sales`:
+   * o mesmo critério que a matriz já aplica a produto e variante (api#66).
+   */
+  it('operator-full escreve lista de apoio; operator-sales não', () => {
+    expect(podeEscrever('operator-full', 'catalog-lookups')).toBe(true)
+    expect(podeEscrever('operator-sales', 'catalog-lookups')).toBe(false)
+    expect(podeEscrever('viewer', 'catalog-lookups')).toBe(false)
+  })
+
   it('admin escreve em employees e catalog-lookups', () => {
     expect(podeEscrever('admin', 'employees')).toBe(true)
     expect(podeEscrever('admin', 'catalog-lookups')).toBe(true)

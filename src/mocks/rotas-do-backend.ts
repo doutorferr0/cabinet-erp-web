@@ -92,9 +92,11 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * o movimento devolvendo `balanceAfter: 5`, a oportunidade movida de `Contato` para `Proposta` e
  * o `stageId` conferido na releitura, o orçamento gerado abrindo em `GET /api/quotes/{id}`.
  *
- * **Resultado: 18 das 20 respondem 200/201, 2 respondem 403 por PAPEL, nenhuma responde 501.** As
- * duas do 403 são `POST`/`PUT /api/catalog-lookups`, e entraram assim mesmo — a decisão, o custo
- * e o motivo estão escritos no bloco delas, na lista abaixo.
+ * **Resultado: 18 das 20 respondem 200/201, 2 respondiam 403 por PAPEL, nenhuma responde 501.** As
+ * duas do 403 eram `POST`/`PUT /api/catalog-lookups`, e entraram assim mesmo, com o custo posto na
+ * mesa. **REMEDIDO em 2026-08-21 contra `30a098e`: não respondem mais 403 — `POST` é 201 e `PUT` é
+ * 200.** O `api#70` afrouxou a matriz de `admin` para `operator-full` horas depois da medição
+ * acima, e o custo aceito aqui deixou de existir antes de ser pago. Ver o bloco daquela família.
  *
  * Duas leituras erradas foram desfeitas nesta rodada, as duas MINHAS e não do servidor, e ficam
  * anotadas porque nenhuma estava nas armadilhas já catalogadas:
@@ -194,13 +196,24 @@ import { http, type RequestHandler, passthrough } from 'msw'
  *   isso ao operador e segue no lugar. Migrar a tela deixaria o cadastro sem detalhe no SITE
  *   PÚBLICO, que é 100% mock — está em curso na #276/PR #277, fora daqui.
  *
- * ## A costura NOVA que esta rodada abriu, e ela é de PAPEL
+ * ## A costura de PAPEL que esta rodada abriu, e que durou menos que a PR
  *
- * `POST`/`PUT /api/catalog-lookups` entram ligadas e respondem **403** para o papel do usuário
- * demo. Não é falta de servidor nem meia família: é a matriz de papéis do backend recusando o
- * `operator-full`. O efeito visível é o `+...` do `LookupCombo` deixando de gravar, em 19 telas,
- * quando o par local está de pé. Está escrito no bloco daquela família, e o conserto — esconder o
- * controle por papel, com `src/data/papeis.ts` — é outra PR.
+ * `POST`/`PUT /api/catalog-lookups` entraram ligadas **respondendo 403** para o papel do usuário
+ * demo: não era falta de servidor nem meia família, era a matriz de papéis do backend recusando o
+ * `operator-full`, e o efeito visível seria o `+...` do `LookupCombo` deixando de gravar em 19
+ * telas com o par local de pé. O custo foi aceito de olhos abertos.
+ *
+ * **Ele não se paga mais.** Aquele `admin` era HERANÇA — a linha da matriz nasceu fechada quando
+ * não havia escrita de lookup no contrato, e a escrita chegou depois sem ninguém reabrir a linha
+ * de propósito (`api#66`). O `api#70` afrouxou para `operator-full` no mesmo dia. Medido contra
+ * `30a098e` com sessão real: **`POST` 201, `PUT` 200**, e `ao-vivo.test.ts` passou a cobrar isso —
+ * item criado através do app e relido direto no backend.
+ *
+ * **Fica a distinção, que é o que vale guardar:** a escrita de COLABORADOR continua 403 para
+ * `operator-full`, e ali é DECISÃO e não herança — a matriz reserva `/api/employees` a `admin`
+ * porque vínculo é o que decide o papel dos outros. Remedido junto: segue 403. Papel que recusa
+ * não é sempre a mesma coisa; vale perguntar se a linha foi decidida ou herdada antes de aceitar
+ * o custo.
  */
 
 type Verbo = 'get' | 'post' | 'put' | 'patch' | 'delete'
@@ -344,28 +357,35 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   // defeito desta lista — a mesma situação de `GET /api/products` desde o
   // primeiro dia. Semear é dado de ambiente.
   //
-  // ⚠ **A ESCRITA ENTRA COM UM 403 CONHECIDO, e isto é decisão tomada de olhos
-  // abertos** (do user, 2026-08-21). `POST` e `PUT` de `/api/catalog-lookups`
-  // NÃO são 501: são **403 `urn:cabinet:erro:papel-insuficiente`** para
-  // `operator-full`, que é o papel do usuário do seed. A matriz do backend
-  // (`src/core/http/classificacao.ts`) reserva o caminho a `admin`, e o
-  // comentário dela diz que aquilo foi fechado por precaução, quando não havia
-  // escrita no contrato — não uma decisão sobre quem cadastra um setor.
+  // A ESCRITA entrou junto, e a história dela vale mais que o resultado.
   //
-  // A consequência é VISÍVEL e está aqui para ninguém a descobrir por acidente:
-  // com `VITE_API_PROXY` ligado, o botão `+...` do `LookupCombo` — o cadastro
-  // rápido do padrão 2, usado em 19 telas — passa a recusar com 403 em vez de
-  // gravar. O site público não muda: lá a lista nasce vazia e o mock responde.
+  // Ela foi ligada em 2026-08-21 **sabendo que respondia 403** — decisão do
+  // user, de olhos abertos: `POST` e `PUT` de `/api/catalog-lookups` não eram
+  // 501, eram **403 `urn:cabinet:erro:papel-insuficiente`** para
+  // `operator-full`, o papel do usuário do seed. A consequência aceita era
+  // visível: com `VITE_API_PROXY` ligado, o `+...` do `LookupCombo` — cadastro
+  // rápido do padrão 2, usado em 19 telas — recusaria em vez de gravar. Ligamos
+  // assim mesmo porque a alternativa era pior: mock que grava enquanto o
+  // servidor recusa ensina que funciona, e o defeito só apareceria no dia da
+  // ligação, com a tela já construída em cima da ficção.
   //
-  // Ligamos assim mesmo porque a alternativa é pior: mock que grava enquanto o
-  // servidor recusa ensina que funciona, e o defeito só apareceria no dia em
-  // que a família ligasse — com a tela já construída em cima da ficção. O 403
-  // é a verdade do backend, e esta lista existe para mostrar a verdade.
+  // **O custo não se paga mais, e o motivo interessa.** Aquele `admin` da
+  // matriz do backend (`src/core/http/classificacao.ts`) era HERANÇA: a linha
+  // nasceu fechada quando não havia escrita de lookup no contrato — o próprio
+  // comentário dela dizia "sem escrita no contrato de hoje" —, a escrita chegou
+  // depois (`api#38`) e ninguém reabriu a linha de propósito. Levantado em
+  // `api#66`, afrouxado para `operator-full` em `api#70`, no mesmo dia.
   //
-  // O conserto do lado da TELA (esconder o `+...` para quem não é `admin`,
-  // usando `src/data/papeis.ts`, que já espelha a matriz) é outra PR, fora da
-  // zona desta. A decisão de produto — se `operator-full` cadastra item de
-  // lista — está em `api#66`.
+  // **Remedido em 2026-08-21 contra `30a098e`, com sessão real de
+  // `operator-full`: `POST` → 201, `PUT` → 200.** O `+...` grava onde o combo
+  // lê, e `ao-vivo.test.ts` cobra isso: item criado através do app e relido
+  // DIRETO no backend.
+  //
+  // A escrita de COLABORADOR continua 403, e ali é DECISÃO e não herança — a
+  // matriz reserva `/api/employees` a `admin` porque vínculo é o que decide o
+  // papel dos outros, e isso tem razão própria escrita. Remedido junto: segue
+  // 403. **Papel que recusa não é sempre a mesma coisa:** antes de aceitar o
+  // custo de uma recusa, vale perguntar se a linha foi decidida ou herdada.
   { metodo: 'get', caminho: '/api/catalog-lookups' },
   { metodo: 'post', caminho: '/api/catalog-lookups' },
   { metodo: 'put', caminho: '/api/catalog-lookups/{id}' },

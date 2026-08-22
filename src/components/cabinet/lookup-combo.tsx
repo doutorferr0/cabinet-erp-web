@@ -11,6 +11,7 @@ import {
   useCadastrarItemDeApoio,
   useLookupOptions,
 } from '@/data/lookups-api'
+import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useEspecificadorOptions } from '@/data/parceiros-api'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
@@ -204,7 +205,13 @@ export interface LookupComboProps {
   rotulo?: string | null | undefined
   disabled?: boolean
   id?: string
-  /** Esconde o botão "..." (usado onde a transcrição tem `[combo]` puro, sem cadastro rápido). */
+  /**
+   * Esconde o botão "..." (usado onde a transcrição tem `[combo]` puro, sem
+   * cadastro rápido).
+   *
+   * É a decisão da TELA. O papel do vínculo esconde por conta própria, sem
+   * passar por aqui — ver o corpo do componente.
+   */
   hideQuickAdd?: boolean | undefined
 }
 
@@ -238,6 +245,27 @@ export function LookupCombo({
   // As opções vêm do servidor (ADR-011). O rótulo continua local: rótulo é UI, não dado.
   const { options, truncada, carregando, erro } = useLookupOptions(kind)
   const { cadastrar, gravando, erro: erroDoCadastro, limparErro } = useCadastrarItemDeApoio(kind)
+
+  /**
+   * O `+...` some quando o papel do vínculo não alcança a escrita de lista de
+   * apoio.
+   *
+   * O componente pergunta sozinho, em vez de receber por prop, porque o padrão
+   * 2 o usa em **19 telas**: por prop, esconder passaria a depender de 19 call
+   * sites lembrarem, e o que se esquece uma vez fica visível para sempre.
+   *
+   * **Esconder não é autorizar** — o servidor continua sendo a autoridade e o
+   * 403 segue tratado (`ehErroDePapelInsuficiente`). Isto existe para não
+   * deixar a pessoa abrir um diálogo, digitar um nome e só então descobrir que
+   * a recusa era certa desde antes do clique.
+   *
+   * `useReadOnlyPorPapel` só responde `true` quando o vínculo JÁ chegou e o
+   * papel não alcança. Enquanto não sabe, o botão continua visível — que é o
+   * comportamento de hoje, e some ao saber. O contrário (esconder enquanto
+   * carrega) piscaria o controle em toda montagem e negaria antes de saber.
+   */
+  const { readOnly: papelNaoAlcanca } = useReadOnlyPorPapel('catalog-lookups')
+  const mostrarCadastroRapido = !hideQuickAdd && !papelNaoAlcanca
 
   /**
    * O cadastro rápido é `POST /api/catalog-lookups` — não mais um item de
@@ -304,7 +332,7 @@ export function LookupCombo({
         onOpenChange={setOpen}
       />
 
-      {!hideQuickAdd && (
+      {mostrarCadastroRapido && (
         <>
           <Button
             type="button"

@@ -1,4 +1,4 @@
-import { DocumentoHeader } from '@/components/cabinet/documento'
+import { DocumentoFrame, DocumentoHeader } from '@/components/cabinet/documento'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
@@ -25,6 +25,13 @@ export interface TelaDeDocumentoProps<T> {
   /** Mensagem do braço de erro — "Não foi possível carregar o X." */
   erroAoCarregar: string
   children: (doc: T) => ReactNode
+  /**
+   * O que NÃO pertence ao documento (fusão v5 §3): painel de atividades,
+   * histórico, qualquer registro com gravação própria. Monta DEPOIS da
+   * moldura-mãe, porque a moldura é justamente a declaração de fronteira —
+   * pendurar dentro dela um registro de outra entidade desmentiria o desenho.
+   */
+  foraDaMoldura?: (doc: T) => ReactNode
 }
 
 /**
@@ -43,6 +50,7 @@ export function TelaDeDocumento<T>({
   naoEncontrado,
   erroAoCarregar,
   children,
+  foraDaMoldura,
 }: TelaDeDocumentoProps<T>) {
   const isNovo = idParam === 'novo'
 
@@ -73,14 +81,21 @@ export function TelaDeDocumento<T>({
     return <p className="text-muted-foreground">{naoEncontrado}</p>
   }
 
+  const numeroDoDocumento = isNovo ? undefined : numero(query.data)
+
   return (
-    <div className="flex flex-col gap-4">
-      <DocumentoHeader
-        titulo={titulo}
-        {...(modo ? { modo } : {})}
-        numero={isNovo ? undefined : numero(query.data)}
-      />
-      {children(query.data)}
+    // MOLDURA-MÃE (fusão v5 §3): o cabeçalho e o formulário são a MESMA
+    // entidade, e é por estarem juntos aqui que a moldura consegue envolver os
+    // dois — cada form embrulhando as próprias abas deixaria de fora justamente
+    // o cabeçalho que diz de que documento se trata. O que não é do documento
+    // sai por `foraDaMoldura` e fica DEPOIS do fecho, que é o ponto inteiro do
+    // desenho: a fronteira separa a entidade do que só está por perto.
+    <div className="flex flex-col gap-6">
+      <DocumentoFrame tipo={titulo} numero={numeroDoDocumento} className="flex flex-col gap-4">
+        <DocumentoHeader titulo={titulo} {...(modo ? { modo } : {})} numero={numeroDoDocumento} />
+        {children(query.data)}
+      </DocumentoFrame>
+      {foraDaMoldura?.(query.data)}
     </div>
   )
 }

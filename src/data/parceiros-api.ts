@@ -230,6 +230,22 @@ export interface CamposEditaveis {
    * atravessa `corpoDeEscrita` é campo apagado no primeiro Gravar de qualquer
    * uma das três telas.
    */
+  /**
+   * Fase A0 do módulo COMPRAS (G2): o que a ordem de compra precisa saber do
+   * fornecedor — prazo de entrega, faturamento mínimo (geral e por grupo) e o
+   * histórico de EMPRESA COMPRADORA com vigência.
+   *
+   * Mesma situação dos blocos 2 e 3, e por isso a mesma solução: nenhuma tela
+   * os edita HOJE (a ficha do Fornecedor é a Fase C do trilho), e é justamente
+   * por isso que precisam existir aqui. `PUT` é integral — campo que não
+   * atravessa `corpoDeEscrita` é campo apagado no primeiro Gravar de qualquer
+   * uma das três telas de parceiro, inclusive as de Cliente e Profissional, que
+   * nem desenham o bloco.
+   */
+  deliveryDays?: number | null
+  minimumBillingCents?: number | null
+  buyingCompanies?: PartnerWriteRequest['buyingCompanies']
+  groupMinimums?: PartnerWriteRequest['groupMinimums']
   personType?: PartnerWriteRequest['personType']
   identityDocument?: string | null
   identityIssuer?: string | null
@@ -318,6 +334,16 @@ export function corpoDeEscrita(
     // Bloco 3 (#270), pela MESMA razão dos anteriores: o servidor pode ainda não
     // mandá-los na listagem, e nesse dia a guarda RECUSA em vez de gravar
     // apagando o RG que o operador cadastrou por outro caminho.
+    // Fase A0 de COMPRAS (G2), pela MESMA razão de todos os anteriores: o
+    // servidor pode ainda não mandá-los na listagem, e nesse dia a guarda
+    // RECUSA em vez de gravar apagando o faturamento mínimo que o comprador
+    // negociou. As duas COLEÇÕES são o caso que mais pede a guarda — elas vão
+    // inteiras, então um `?? null` aqui apagaria o histórico de empresa
+    // compradora de uma vez só.
+    'deliveryDays',
+    'minimumBillingCents',
+    'buyingCompanies',
+    'groupMinimums',
     'personType',
     'identityDocument',
     'identityIssuer',
@@ -421,6 +447,25 @@ export function corpoDeEscrita(
     foundedOn: editado.foundedOn !== undefined ? editado.foundedOn : (original.foundedOn ?? null),
     // Bloco 3 (#270). Como os do bloco 2, todos caem hoje no ramo "devolve como
     // veio" — nenhuma tela os edita, e o que não atravessa o corpo é apagado.
+    // Fase A0 de COMPRAS (G2). Hoje TODOS caem no ramo "devolve como veio" —
+    // nenhuma tela os edita ainda. Os dois numéricos NÃO passam por
+    // `textoOuNulo`: eles não são texto, e `0` é valor legítimo e distinto de
+    // `null` nos dois (mínimo declarado e atendido por qualquer ordem × não
+    // impõe mínimo; entrega no mesmo dia × sem prazo acordado). As duas
+    // coleções vão como vieram, inteiras: `[]` apagaria o histórico, e o PUT
+    // não distingue "não mexi" de "esvaziei" sem que alguém decida aqui.
+    deliveryDays:
+      editado.deliveryDays !== undefined ? editado.deliveryDays : (original.deliveryDays ?? null),
+    minimumBillingCents:
+      editado.minimumBillingCents !== undefined
+        ? editado.minimumBillingCents
+        : (original.minimumBillingCents ?? null),
+    buyingCompanies:
+      editado.buyingCompanies !== undefined
+        ? editado.buyingCompanies
+        : (original.buyingCompanies ?? []),
+    groupMinimums:
+      editado.groupMinimums !== undefined ? editado.groupMinimums : (original.groupMinimums ?? []),
     personType:
       editado.personType !== undefined ? editado.personType : (original.personType ?? null),
     identityDocument:
@@ -587,6 +632,13 @@ export function corpoDeInclusao(
     businessRole: textoOuNulo(editado.businessRole),
     businessDocument: textoOuNulo(editado.businessDocument),
     foundedOn: editado.foundedOn ?? null,
+    // Fase A0 de COMPRAS (G2): idem — na inclusão não há o que preservar. As
+    // duas coleções nascem VAZIAS e não nulas: o contrato as declara array, e
+    // fornecedor novo sem histórico de empresa compradora tem lista vazia.
+    deliveryDays: editado.deliveryDays ?? null,
+    minimumBillingCents: editado.minimumBillingCents ?? null,
+    buyingCompanies: editado.buyingCompanies ?? [],
+    groupMinimums: editado.groupMinimums ?? [],
     // Bloco 3 (#270): na inclusão não há registro anterior a preservar.
     personType: editado.personType ?? null,
     identityDocument: textoOuNulo(editado.identityDocument),

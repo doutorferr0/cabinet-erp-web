@@ -1,12 +1,7 @@
 import type { PartnerDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
-import {
-  DocumentoBloco,
-  fileirasTotais,
-  totalItemCentavos,
-  useSubtotalCentavos,
-} from '@/components/cabinet/documento'
+import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import {
   DateField,
@@ -25,12 +20,24 @@ import { data } from '@/data'
 import { useLookupOptions } from '@/data/lookups-api'
 import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
-import { PERCENT_ESCALA, formatMoneyBRL, formatPercent } from '@/lib/formatters'
+import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
+import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Calculator, FileText, Hash, Home, List, Lock, Package, Percent, User } from 'lucide-react'
+import {
+  Calculator,
+  CreditCard,
+  FileText,
+  Hash,
+  Home,
+  List,
+  Lock,
+  Package,
+  Percent,
+  User,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -73,6 +80,27 @@ export const orcamentoSchema = z.object({
   // documento sem ambiente nenhum. Como o `PUT` é integral, gravar apagaria os
   // ambientes do orçamento a cada edição.
   ambientes: z.array(z.object({ codigo: z.string(), nome: z.string(), ordem: z.number() })),
+  // O BLOCO PAGAMENTO inteiro, e os quatro campos pela MESMA razão de
+  // `clienteId` acima — com um agravante MEDIDO: sem eles declarados, o Zod os
+  // removia, e `paraEscrita` mandava `paymentTermId: undefined` num `PUT` que é
+  // INTEGRAL. Abrir um documento com plano e clicar em `Gravar` sem editar nada
+  // APAGAVA a condição de pagamento do documento, com 200 e sem aviso nenhum.
+  //
+  // Só o id é editável; os outros três são CARIMBO do servidor e voltam ao
+  // formulário sem subirem no corpo (ver `paraEscrita`). Declará-los é o que os
+  // mantém vivos entre a leitura e a gravação.
+  condicaoPagamentoId: z.string().nullable(),
+  condicaoPagamento: z.string().nullable(),
+  parcelas: z.array(z.object({ number: z.number(), dueDate: z.string(), amountCents: z.number() })),
+  // AUSENTE — e não `null` — no documento gravado antes de a política existir.
+  // `.optional()` preserva a distinção que o contrato faz.
+  politicaDeParcelamento: z
+    .object({
+      minTotalToInstallCents: z.number(),
+      minInstallmentCents: z.number(),
+      maxInstallments: z.number(),
+    })
+    .optional(),
   itens: z.array(
     z.object({
       item: z.string(),
@@ -370,12 +398,13 @@ function GradeItens() {
   // viaja para o contrato, então nada se traduz no submit; fica anotado.
   const { options: opcoesDeTipoDePeca } = useLookupOptions('tipoPeca')
   const tiposDePeca = opcoesDeTipoDePeca.map((o) => o.nome)
-  const subtotal = useSubtotalCentavos('itens')
-  const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
-  const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
-  // Desconto geral incide sobre o subtotal; por produto já saiu na linha.
-  const descontoGeral =
-    modo === 'GERAL' ? Math.round((subtotal * percentual) / (PERCENT_ESCALA * 100)) : 0
+  // A conta dos totais mora em `useTotaisDoOrcamento` (bloco-pagamento.tsx)
+  // porque DUAS partes da tela dependem dela: o pé desta grade e o combo de
+  // condição de pagamento, que decide quais condições cabem no total. Em duas
+  // cópias, o dia em que o desconto mudar de fórmula deixa o combo oferecendo
+  // parcelamento sobre um total que a grade não mostra mais.
+  const { subtotalCentavos: subtotal, descontoGeralCentavos: descontoGeral } =
+    useTotaisDoOrcamento()
 
   return (
     <FormGrid
@@ -454,6 +483,20 @@ function AbaPrincipal() {
 
       <Secao numero="05" titulo="Totais" cor="money" icone={Calculator} nota="o que o cliente paga">
         <TotaisOrcamento />
+      </Secao>
+
+      {/* 06 fecha a folha DEPOIS dos totais, e a ordem é a da conversa: o
+          parcelamento só faz sentido sobre um total que já existe — é também a
+          ordem da aba `Pagamento` do legado, que vem depois de `Itens`. Zona
+          `money` porque o assunto é quanto e quando o cliente paga. */}
+      <Secao
+        numero="06"
+        titulo="Pagamento"
+        cor="money"
+        icone={CreditCard}
+        nota="quando o cliente paga"
+      >
+        <BlocoPagamento />
       </Secao>
 
       <div className="flex flex-wrap gap-2">

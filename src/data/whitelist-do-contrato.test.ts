@@ -150,7 +150,7 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'depósito ainda não tem tela — a lista existe no mock, e é lá que é conferida',
   ListStockBalances: 'saldo por depósito ainda não tem tela — idem, a lista é a do mock',
   ListPaymentTerms:
-    'condição de pagamento ainda não tem tela — a lista existe no mock, e é lá que é conferida',
+    'o bloco Pagamento do documento consome a lista inteira ordenada por `name` e não oferece ordenação ao operador — a whitelist existe no mock, e é lá que é conferida',
   ListServices:
     'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,

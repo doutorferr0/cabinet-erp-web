@@ -24,6 +24,7 @@ import {
   ORDENAVEIS_MOTIVO as ORDENAVEIS_MOTIVO_MOCK,
   ORDENAVEIS_OPORTUNIDADE as ORDENAVEIS_OPORTUNIDADE_MOCK,
 } from '@/mocks/api/crm'
+import { ORDENAVEIS_DEPOSITO, ORDENAVEIS_SALDO } from '@/mocks/api/depositos'
 import {
   FILTRAVEIS_PARCEIRO as FILTRAVEIS_PARCEIRO_MOCK,
   FILTRAVEIS_PRODUTO as FILTRAVEIS_PRODUTO_MOCK,
@@ -143,6 +144,9 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListPartnerContacts: 'a grade do parceiro é sub-recurso e não tem cabeçalho ordenável',
   ListRoles:
     'papéis nasceram no contrato antes da tela — a de checkboxes é trilho próprio, depois da fase 1 do api#84',
+  ListStockLocations:
+    'depósito ainda não tem tela — a lista existe no mock, e é lá que é conferida',
+  ListStockBalances: 'saldo por depósito ainda não tem tela — idem, a lista é a do mock',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -184,6 +188,11 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListEmployees: ORDENAVEIS_COLABORADOR_MOCK,
   ListWorks: ORDENAVEIS_OBRA,
   ListRoles: ORDENAVEIS_PAPEL_MOCK,
+  // Depósito e saldo nascem sem tela e COM mock (#291). É este eixo que os
+  // mede, e não o de cima: quem recusa `sortBy` fora da whitelist, hoje, é o
+  // handler — e o site público é 100% mock.
+  ListStockLocations: ORDENAVEIS_DEPOSITO,
+  ListStockBalances: ORDENAVEIS_SALDO,
 }
 
 /**

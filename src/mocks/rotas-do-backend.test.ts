@@ -51,6 +51,18 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'post /api/roles',
   'get /api/roles/{id}',
   'put /api/roles/{id}',
+  // Estoque por DEPÓSITO (#291) — mesma natureza dos papéis, e a mesma medição:
+  // não é o 501 da fase, é caminho que o servidor não tem. O contrato os publica
+  // AGORA porque é ele que especifica o que a fase 2 da api#79 vai implementar
+  // (migração `0030` + módulo Drizzle); no `cabinet-erp-api` de hoje não há
+  // handler nenhum, e o par local devolveria o 404 do Fastify.
+  //
+  // Saem daqui em FAMÍLIA, e só quando ela inteira responder: meia família põe
+  // id do servidor de um lado e id inventado do outro.
+  'get /api/stock-locations',
+  'post /api/stock-locations',
+  'put /api/stock-locations/{id}',
+  'get /api/variants/{variantId}/stock-balances',
 ]
 
 beforeAll(async () => {

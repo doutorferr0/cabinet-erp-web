@@ -345,7 +345,10 @@ export const fornecedor: EntidadeCadastro = {
       resumo: 'Quem atende a Vertz nesse fornecedor',
       cor: 'boletim',
       campos: [
-        { k: 'contatos', r: 'Contatos', campo: 'contatos' },
+        // Sub-recurso, não campo do registro (#270): o contrato publica
+        // contato em caminho próprio, com `POST`/`PUT` que o corpo do parceiro
+        // não carrega. Quem o desenha é `<ContatosDoParceiro>`.
+        { k: 'contatos', r: 'Contatos', sub: '/api/partners/{partnerId}/contacts' },
         { k: 'fone2', r: 'Telefone 2', campo: 'fone2' },
         { k: 'fax', r: 'Fax', campo: 'fax', dto: 'fax' },
         { k: 'site', r: 'Site', campo: 'site' },

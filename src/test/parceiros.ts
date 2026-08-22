@@ -122,6 +122,16 @@ export interface OpcoesDoServidor {
    * ser cobrada.
    */
   camposRecusados?: readonly { path: string; message: string }[]
+  /**
+   * Os contatos que `GET /api/partners/{id}/contacts` devolve.
+   *
+   * Sub-recurso tem caminho próprio, e sem esta entrada ele cairia no
+   * tratamento de `GET /api/partners/{id}` — que procuraria um parceiro de id
+   * `"<uuid>/contacts"`, não acharia, e responderia 404. O bloco de contatos
+   * mostraria "nenhum contato" para um cadastro que tem contatos, e o teste
+   * passaria sem afirmar nada.
+   */
+  contatos?: readonly unknown[]
 }
 
 export function servidorDeParceiros(
@@ -153,6 +163,28 @@ export function servidorDeParceiros(
           fields: opcoes.camposRecusados,
         }),
         { status: 400, headers: { 'content-type': 'application/problem+json' } },
+      )
+    }
+    // Contatos ANTES do detalhe por id: `/api/partners/{id}/contacts` casa o
+    // `startsWith` do detalhe, e a ordem é o que separa os dois recursos.
+    if (caminho.includes('/contacts')) {
+      if (metodo === 'GET') {
+        const contatos = opcoes.contatos ?? []
+        return json({ rows: contatos, total: contatos.length })
+      }
+      // `POST` responde 201 com o contato criado; `PUT`, 200 com o alterado.
+      return json(
+        {
+          id: 'ct-novo',
+          name: 'CONTATO',
+          role: null,
+          phone: null,
+          mobilePhone: null,
+          fax: null,
+          email: null,
+          active: true,
+        },
+        metodo === 'POST' ? 201 : 200,
       )
     }
     if (caminho === URL_PARCEIROS && metodo === 'GET') {

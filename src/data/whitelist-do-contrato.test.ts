@@ -14,6 +14,7 @@ import {
   ORDENAVEIS as ORDENAVEIS_PRODUTO,
 } from '@/data/produtos-api'
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
+import { ORDENAVEIS_PAPEL as ORDENAVEIS_PAPEL_MOCK } from '@/mocks/api/acesso'
 import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
 import { ORDENAVEIS as ORDENAVEIS_CONTATO_MOCK } from '@/mocks/api/contatos'
 import {
@@ -140,6 +141,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListStockMovements: 'kardex desenha em ordem fixa (`occurredAt` desc), sem coluna ordenável',
   ListEmployees: 'colaborador ainda é provider de mock, com lista própria lá',
   ListPartnerContacts: 'a grade do parceiro é sub-recurso e não tem cabeçalho ordenável',
+  ListRoles:
+    'papéis nasceram no contrato antes da tela — a de checkboxes é trilho próprio, depois da fase 1 do api#84',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -180,6 +183,7 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE_MOCK,
   ListEmployees: ORDENAVEIS_COLABORADOR_MOCK,
   ListWorks: ORDENAVEIS_OBRA,
+  ListRoles: ORDENAVEIS_PAPEL_MOCK,
 }
 
 /**

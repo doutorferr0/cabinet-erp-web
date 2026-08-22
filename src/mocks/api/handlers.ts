@@ -15,6 +15,7 @@ import type {
 } from '@/api/gerado'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
+import { handlersDeAcesso } from './acesso'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
@@ -857,6 +858,12 @@ export const handlers = [
   // o dia em que a biblioteca mudar de ideia chegar.
   ...handlersDeObras,
   ...handlersDeContatos,
+
+  // ---------------- papéis e permissões (web#292 · api#84) ----------------
+  // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas
+  // antigas. Ainda SEM TELA — a de checkboxes é trilho próprio, e o que existe
+  // aqui é para o mock não ficar mudo em caminho publicado.
+  ...handlersDeAcesso,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da

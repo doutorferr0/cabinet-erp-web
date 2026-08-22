@@ -29,6 +29,30 @@ let base: string
 
 const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...handlers)
 
+/**
+ * Operações que o contrato publica e a passagem NÃO liga, com o motivo.
+ *
+ * Ficou vazia da #274 até a #292: o backend `3089106` não respondia 501 em
+ * nenhuma das 78. Papéis e permissões reabrem a lista porque o contrato voltou
+ * a andar na frente — é o estado normal deste repo, que é o DONO do contrato.
+ *
+ * **Medição (2026-08-22, `cabinet-erp-api` `92e61eb`):** não existe rota de
+ * papéis no servidor — a busca por `api/roles` no repo inteiro devolve zero, e
+ * a api#84 está ABERTA, com a fase 1 (catálogo + tabelas + enforcement) por
+ * entregar. Não é nem o 501 da fase: é caminho que o servidor não tem. Ligar
+ * qualquer uma destas tiraria o mock e entregaria 404 a uma tela que ainda nem
+ * existe.
+ *
+ * Entrada nova aqui exige a medição junto, no comentário.
+ */
+const FORA_DE_PROPOSITO: readonly string[] = [
+  'get /api/permissions',
+  'get /api/roles',
+  'post /api/roles',
+  'get /api/roles/{id}',
+  'put /api/roles/{id}',
+]
+
 beforeAll(async () => {
   servidorDeVerdade = createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json', 'x-origem': MARCA })
@@ -110,7 +134,13 @@ describe('passthrough por rota', () => {
     expect(multiverbo.length).toBeGreaterThan(0)
 
     for (const [caminho, ops] of multiverbo) {
-      const noContrato = Object.keys(ops).filter((m) => VERBOS.includes(m))
+      // Operação declarada fora de propósito sai da conta dos DOIS lados: ela
+      // não está na lista de propósito, e cobrá-la aqui obrigaria a ligar rota
+      // que o servidor não tem. A guarda que importa continua de pé — verbo do
+      // mesmo caminho que o backend SERVE e alguém esqueceu segue reprovando.
+      const noContrato = Object.keys(ops)
+        .filter((m) => VERBOS.includes(m))
+        .filter((m) => !FORA_DE_PROPOSITO.includes(`${m} ${caminho}`))
       const naLista = ROTAS_DO_BACKEND.filter((r) => r.caminho === caminho).map((r) => r.metodo)
 
       expect(
@@ -272,13 +302,6 @@ describe('passthrough por rota', () => {
       paths: Record<string, Record<string, unknown>>
     }
     const VERBOS = ['get', 'post', 'put', 'patch', 'delete']
-
-    /**
-     * Operações que o contrato publica e a passagem NÃO liga, com o motivo.
-     * Vazio desde a #274 — o backend `3089106` não responde 501 em nenhuma das
-     * 78. Entrada nova aqui exige a medição junto, no comentário.
-     */
-    const FORA_DE_PROPOSITO: readonly string[] = []
 
     const naLista = new Set(ROTAS_DO_BACKEND.map((r) => `${r.metodo} ${r.caminho}`))
     const faltando: string[] = []

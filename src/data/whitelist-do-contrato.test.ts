@@ -34,6 +34,7 @@ import {
   ORDENAVEIS_PRODUTO as ORDENAVEIS_PRODUTO_MOCK,
 } from '@/mocks/api/handlers'
 import { FILTRAVEIS as FILTRAVEIS_OBRA, ORDENAVEIS as ORDENAVEIS_OBRA } from '@/mocks/api/obras'
+import { ORDENAVEIS_CONDICAO } from '@/mocks/api/pagamento'
 import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
@@ -147,6 +148,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListStockLocations:
     'depósito ainda não tem tela — a lista existe no mock, e é lá que é conferida',
   ListStockBalances: 'saldo por depósito ainda não tem tela — idem, a lista é a do mock',
+  ListPaymentTerms:
+    'condição de pagamento ainda não tem tela — a lista existe no mock, e é lá que é conferida',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -193,6 +196,9 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   // handler — e o site público é 100% mock.
   ListStockLocations: ORDENAVEIS_DEPOSITO,
   ListStockBalances: ORDENAVEIS_SALDO,
+  // Condição de pagamento nasce sem tela e COM mock (S4), como depósito: quem
+  // recusa `sortBy` fora da whitelist, hoje, é o handler.
+  ListPaymentTerms: ORDENAVEIS_CONDICAO,
 }
 
 /**

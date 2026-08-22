@@ -41,6 +41,18 @@ const DETALHE: QuoteDetailDto = {
   discountMode: 'general',
   discountPercent: 50_000,
   environments: [{ code: 'SALA', name: 'SALA', order: 1 }],
+  paymentTermId: 'cond-0002',
+  paymentTermName: '30/60/90',
+  paymentInstallments: [
+    { number: 1, dueDate: '2025-09-04', amountCents: 31_334 },
+    { number: 2, dueDate: '2025-10-04', amountCents: 31_333 },
+    { number: 3, dueDate: '2025-11-03', amountCents: 31_333 },
+  ],
+  installmentPolicy: {
+    minTotalToInstallCents: 10_000,
+    minInstallmentCents: 5_000,
+    maxInstallments: 6,
+  },
   items: [
     {
       lineNumber: 1,
@@ -168,6 +180,60 @@ describe('tradução de ida e volta', () => {
     })
     expect(escrita.environments).toEqual([{ code: 'SALA', name: 'SALA', order: 1 }])
     expect(escrita.items?.[0]).toMatchObject({ quantity: 2, unitPriceCents: 47_000 })
+    // O id da condição é o ÚNICO do bloco Pagamento que volta.
+    expect(escrita.paymentTermId).toBe('cond-0002')
+  })
+
+  /**
+   * O plano e o carimbo da política descem para a tela e NÃO voltam.
+   *
+   * É a mesma regra de `number`/`totalCents`, e ela morde mais forte aqui: as
+   * parcelas são calculadas contra o total, então um cliente que as reenviasse
+   * poderia gravar um documento cujo plano não soma o próprio valor. O contrato
+   * fecha a porta (`QuoteWriteRequest` não tem o campo) e o Fastify apagaria em
+   * silêncio o que passasse — silêncio é o modo de falhar que este teste evita.
+   */
+  it('o plano carimbado desce inteiro e não sobe de volta', () => {
+    const orcamento = paraOrcamento(DETALHE)
+
+    expect(orcamento.condicaoPagamento).toBe('30/60/90')
+    expect(orcamento.parcelas).toHaveLength(3)
+    expect(orcamento.parcelas[0]).toEqual({
+      number: 1,
+      dueDate: '2025-09-04',
+      amountCents: 31_334,
+    })
+    expect(orcamento.politicaDeParcelamento?.maxInstallments).toBe(6)
+
+    const escrita = paraEscrita(orcamento) as unknown as Record<string, unknown>
+    expect(escrita.paymentInstallments).toBeUndefined()
+    expect(escrita.paymentTermName).toBeUndefined()
+    expect(escrita.installmentPolicy).toBeUndefined()
+  })
+
+  /**
+   * Documento anterior ao bloco não tem carimbo, e o campo vem AUSENTE.
+   *
+   * A tradução não pode transformar isso em `null` nem no vigente de hoje: o
+   * carimbo existe justamente para dizer sob qual regra o documento foi feito, e
+   * preencher o que nunca foi carimbado responderia essa pergunta com um chute.
+   */
+  it('sem carimbo, a política não é inventada', () => {
+    const { installmentPolicy: _fora, ...semCarimbo } = DETALHE
+
+    expect(paraOrcamento(semCarimbo).politicaDeParcelamento).toBeUndefined()
+  })
+
+  it('documento sem condição tem plano VAZIO, não ausente', () => {
+    const semCondicao = paraOrcamento({
+      ...DETALHE,
+      paymentTermId: null,
+      paymentTermName: null,
+      paymentInstallments: [],
+    })
+
+    expect(semCondicao.parcelas).toEqual([])
+    expect(paraEscrita(semCondicao).paymentTermId).toBeNull()
   })
 
   /**

@@ -1,9 +1,12 @@
 import type {
   AgendaEventDto,
   CatalogLookupDto,
+  InstallmentPolicyDto,
   PartnerAddress,
   PartnerDto,
   PartnerPayoutBankInfo,
+  PaymentTermDto,
+  PaymentTermInstallmentDto,
   ProductDetailDto,
   ProjectDto,
   ProjectPlanDto,
@@ -149,6 +152,21 @@ export interface StoreDaApi {
    * USA para decidir o que devolver.
    */
   depositos: DepositoDaEmpresa[]
+  /**
+   * As CONDIÇÕES DE PAGAMENTO, por empresa (contrato S4) — mesmo desenho do
+   * depósito: `tenantId` fora do DTO, porque o servidor não devolve a coluna de
+   * RLS, ele a USA para decidir o que devolver.
+   */
+  condicoesDePagamento: CondicaoDaEmpresa[]
+  /**
+   * A política de parcelamento GRAVADA, por empresa (`tenantId` → os três
+   * limites). Empresa SEM entrada aqui não é empresa sem política: ela lê o
+   * PADRÃO (`POLITICA_PADRAO`, em `pagamento.ts`), que é o do legado.
+   *
+   * É um `Record` e não uma lista justamente por isso — a ausência tem
+   * significado próprio, e uma lista convidaria a `find(...) ?? erro`.
+   */
+  politicasDeParcelamento: Record<string, InstallmentPolicyDto>
   /** O saldo por (empresa, depósito, variante) — cache derivado do kardex. */
   saldos: SaldoDoDeposito[]
   movimentos: StockMovementDto[]
@@ -167,6 +185,20 @@ export const TENANT_FILIAL = 'tenant-filial'
 /** O depósito COMO O STORE o guarda: o `StockLocationDto` mais o `tenantId`. */
 export interface DepositoDaEmpresa extends StockLocationDto {
   tenantId: string
+}
+
+/**
+ * A condição como o store a guarda: o `PaymentTermDto` mais o `tenantId`, menos
+ * o `installmentCount`.
+ *
+ * A contagem fica FORA porque é derivada — o handler a calcula de
+ * `installments.length` na saída. Guardá-la deixaria duas verdades sobre o mesmo
+ * número, que é exatamente o que o legado tinha (`Fpg_quantidade` era coluna
+ * gravada à mão) e o que o contrato desfez.
+ */
+export interface CondicaoDaEmpresa extends Omit<PaymentTermDto, 'installmentCount'> {
+  tenantId: string
+  installments: PaymentTermInstallmentDto[]
 }
 
 /** O saldo como o store o guarda: o `StockBalanceDto` mais o `tenantId`. */
@@ -193,6 +225,56 @@ const ABERTURA_DO_SEED = '2026-08-01T12:00:00.000Z'
  * `parentId`, e uma lista toda em raiz não provaria nada disso. `SHOWROOM`
  * nasce INATIVO porque é o caso que o `POST` de movimento recusa com 409.
  */
+/**
+ * As condições do seed — MATRIZ com três, FILIAL com NENHUMA, de propósito.
+ *
+ * A filial vazia é o estado de empresa recém-criada, e é o que faz o combo do
+ * documento nascer vazio lá sem que isso seja defeito.
+ *
+ * As três da matriz são as três FORMAS do legado, e cada uma existe por um
+ * caso: `À VISTA` é a parcela única (`daysAfterIssue: 0`, 100%), que prova que
+ * "à vista" é dado e não ausência de dado; `30/60/90` é o parcelamento
+ * percentual que fecha exatamente 100%; e `ENTRADA + 2x` é a que tem entrada no
+ * dia zero — três parcelas iguais em percentual, mas a primeira vencendo hoje.
+ *
+ * Nenhuma delas é MISTA (percentual com valor fixo): o contrato recusa isso com
+ * 400 enquanto a ordem de aplicação não for decidida, e um seed que fizesse o
+ * que a escrita recusa ensinaria a regra errada.
+ */
+function condicoesDoSeed(): CondicaoDaEmpresa[] {
+  return [
+    {
+      id: 'cond-0001',
+      tenantId: TENANT_MATRIZ,
+      name: 'À VISTA',
+      active: true,
+      installments: [{ number: 1, daysAfterIssue: 0, percent: 1_000_000, amountCents: null }],
+    },
+    {
+      id: 'cond-0002',
+      tenantId: TENANT_MATRIZ,
+      name: '30/60/90',
+      active: true,
+      installments: [
+        { number: 1, daysAfterIssue: 30, percent: 333_334, amountCents: null },
+        { number: 2, daysAfterIssue: 60, percent: 333_333, amountCents: null },
+        { number: 3, daysAfterIssue: 90, percent: 333_333, amountCents: null },
+      ],
+    },
+    {
+      id: 'cond-0003',
+      tenantId: TENANT_MATRIZ,
+      name: 'ENTRADA + 2x',
+      active: true,
+      installments: [
+        { number: 1, daysAfterIssue: 0, percent: 333_334, amountCents: null },
+        { number: 2, daysAfterIssue: 30, percent: 333_333, amountCents: null },
+        { number: 3, daysAfterIssue: 60, percent: 333_333, amountCents: null },
+      ],
+    },
+  ]
+}
+
 function depositosDoSeed(): DepositoDaEmpresa[] {
   return [
     {
@@ -942,6 +1024,11 @@ export function criarStore(): StoreDaApi {
     produtos,
     parceiros: parceirosDoSeed(),
     depositos: depositosDoSeed(),
+    condicoesDePagamento: condicoesDoSeed(),
+    // VAZIO de propósito: as duas empresas leem o PADRÃO, e é assim que se vê
+    // que "não configurado" não é um estado — o parcelamento acontece com ou
+    // sem alguém ter aberto a tela de configuração.
+    politicasDeParcelamento: {},
     saldos: saldosDoSeed(produtos),
     movimentos: [],
     tarefas: tarefasDoSeed(),

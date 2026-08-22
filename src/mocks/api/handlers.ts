@@ -23,6 +23,7 @@ import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './deposi
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
+import { handlersDePagamento } from './pagamento'
 import { verificarEscrita } from './permissao'
 import {
   TIPO,
@@ -874,6 +875,7 @@ export const handlers = [
   // o dia em que a biblioteca mudar de ideia chegar.
   ...handlersDeObras,
   ...handlersDeDepositos,
+  ...handlersDePagamento,
   ...handlersDeContatos,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------

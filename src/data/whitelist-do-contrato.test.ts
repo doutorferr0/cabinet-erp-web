@@ -153,6 +153,33 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'condição de pagamento ainda não tem tela — a lista existe no mock, e é lá que é conferida',
   ListServices:
     'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
+  // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
+  // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
+  // mostra número inventado com cara de apuração, que é pior do que não mostrar
+  // nada. Cada um sai daqui quando ganhar a aba dele, com `ORDENAVEIS` próprio.
+  //
+  // Eles caem nesta guarda por publicarem `pageSize`, e isso é correto e não
+  // acidente: relatório PAGINA, e por paginar precisa dizer por onde ordena —
+  // sem `sortBy` declarado, a coluna que a tela desenhar clicável vira 400.
+  GetAbcCurveReport: 'curva ABC ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetProductsSoldReport:
+    'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetSalesComparisonReport:
+    'comparativo de vendas ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetSalespersonReport:
+    'demonstrativo por atendente ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetProfessionalRankingReport:
+    'ranking de profissional ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetSupplierMovementReport:
+    'movimentação por fornecedor ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetStockValuationReport:
+    'estoque valorizado ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetStockAgingReport:
+    'dias sem venda ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetQuoteVsStockReport:
+    'orçamento × estoque ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetBirthdaysReport:
+    'aniversariantes do mês ainda não tem tela — a seção Relatórios é a Fase C do trilho',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -217,6 +244,27 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
  */
 const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
+  // OS DEZ RELATÓRIOS (#310) — agregação não tem handler no mock, e não é
+  // esquecimento: o mock guarda LINHAS, e somar dez relatórios sobre elas seria
+  // reimplementar em TypeScript as agregações que o Postgres faz do outro lado.
+  // As duas contas divergiriam no primeiro arredondamento, e a divergência
+  // apareceria como "o site público mostra outro faturamento".
+  //
+  // O preço está pago enquanto tela nenhuma os consome. Quando a Fase C chegar,
+  // este é o ponto que decide: ou o site público perde a seção Relatórios, ou
+  // ela ganha handler de mock com dado de demonstração DECLARADO como tal.
+  GetAbcCurveReport: 'curva ABC é agregação — o mock guarda linhas, não somas',
+  GetProductsSoldReport: 'produto vendido é agregação — o mock guarda linhas, não somas',
+  GetSalesComparisonReport: 'comparativo de vendas é agregação — o mock guarda linhas, não somas',
+  GetSalespersonReport: 'demonstrativo por atendente é agregação — o mock guarda linhas, não somas',
+  GetProfessionalRankingReport:
+    'ranking de profissional é agregação — o mock guarda linhas, não somas',
+  GetSupplierMovementReport:
+    'movimentação por fornecedor é agregação — o mock guarda linhas, não somas',
+  GetStockValuationReport: 'estoque valorizado é agregação — o mock guarda linhas, não somas',
+  GetStockAgingReport: 'dias sem venda é agregação — o mock guarda linhas, não somas',
+  GetQuoteVsStockReport: 'orçamento × estoque é agregação — o mock guarda linhas, não somas',
+  GetBirthdaysReport: 'aniversariantes do mês é agregação — o mock guarda linhas, não somas',
 }
 
 /**

@@ -6094,6 +6094,1096 @@
           }
         }
       }
+    },
+    "/api/reports/abc-curve": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetAbcCurveReport",
+        "description": "Proposto. **Curva ABC — quais produtos fazem 80% do faturamento.** A ordem canônica é faturamento decrescente, e é a única em que a curva significa alguma coisa: `cumulativePercent` é acumulado, e acumulado sobre outra ordem é outro número.\n\n**Por isso a classe e o acumulado não saem da ordem PEDIDA, e sim da canônica.** O relatório aceita `sortBy` porque a tela é exportável e quem exporta reordena — mas `abcClass` e `cumulativePercent` de cada linha continuam os mesmos em qualquer ordem, calculados sobre o período inteiro antes de paginar. Se dependessem da ordem pedida, ordenar por descrição produziria um acumulado alfabético — que não significa nada e tem exatamente a mesma aparência.\n\nEntram as linhas de PEDIDO (`orders`) ativo com `issuedAt` no período; orçamento não é venda.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+          },
+          {
+            "name": "productGroup",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `revenueCents`, `quantity`, `description`. Campo fora dela é 400.\n\n**A classe e o acumulado NÃO dependem daqui.** `abcClass` e `cumulativePercent` saem sempre da ordem canônica — faturamento decrescente sobre o período inteiro — e continuam corretos linha a linha qualquer que seja a ordem pedida. Se dependessem de `sortBy`, ordenar por descrição transformaria a curva num acumulado alfabético, que não significa nada e tem exatamente a mesma aparência.\n\nPadrão: `revenueCents`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbcCurveReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/products-sold": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetProductsSoldReport",
+        "description": "Proposto. **Produto vendido por quantidade ou por valor, no período.** É o relatório mais pedido da operação, e os dois eixos discordam de propósito: o parafuso lidera em quantidade e não paga a conta; a cozinha inteira lidera em valor e sai uma vez por mês. Trocar o eixo por `sortBy` é a PERGUNTA mudando, não um detalhe de apresentação — e é por isso que o relatório existe separado da curva ABC, que responde a uma só.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+          },
+          {
+            "name": "productGroup",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
+          },
+          {
+            "name": "pieceType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Só as linhas deste tipo de peça."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `revenueCents`, `quantity`, `orderCount`, `description`. Campo fora dela é 400.\n\nAqui trocar o eixo É a pergunta: o parafuso lidera em quantidade e não paga a conta; a cozinha inteira lidera em valor e sai uma vez por mês.\n\nPadrão: `revenueCents`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductsSoldReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/sales-comparison": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetSalesComparisonReport",
+        "description": "Proposto. **Comparativo de valor de vendas entre períodos.** O servidor devolve a série JÁ COMPARADA (cada linha com o valor do período anterior ao lado) em vez de mandar a série crua e deixar a tela subtrair: com paginação, a linha do topo da página 2 não tem a anterior à mão, e a tela mostraria a primeira variação de cada página em branco. **Períodos sem venda aparecem com zero** — buraco na série é informação, e omitir a linha faz o gráfico ligar julho em setembro como se agosto não existisse.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["month", "quarter", "semester", "year"],
+              "default": "month"
+            },
+            "description": "O tamanho do balde. Fora da lista é 400."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `bucket`, `revenueCents`, `orderCount`. Campo fora dela é 400.\n\n**`previousRevenueCents` é sempre o do período cronologicamente anterior**, não o da linha de cima: ordenar por faturamento e comparar com o vizinho na tela produziria \"variação\" entre agosto e março.\n\nPadrão: `bucket`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesComparisonReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/salesperson-performance": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetSalespersonReport",
+        "description": "Proposto. **Demonstrativo por atendente — mensal, trimestral ou semestral.** Traz orçamento e pedido na MESMA linha porque a pergunta da gerência não é \"quanto vendeu\" e sim \"quanto do que ele atendeu virou venda\": o atendente que emite 4 orçamentos e fecha 3 é outro profissional do que emite 90 e fecha 4, e os dois podem faturar igual.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["month", "quarter", "semester"],
+              "default": "month"
+            },
+            "description": "O tamanho do balde."
+          },
+          {
+            "name": "salespersonId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só este atendente. Ausente = todos."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `revenueCents`, `orderCount`, `quoteCount`, `conversionPercent`, `salespersonName`, `bucket`. Campo fora dela é 400.\n\nPadrão: `revenueCents`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalespersonReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/professional-ranking": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetProfessionalRankingReport",
+        "description": "Proposto. **Ranking de profissional — quem indica quanto.** Ordenado por faturamento decrescente. **Só entram pedidos COM profissional**: a linha \"sem indicação\" seria a maior de todas em toda loja e enterraria o ranking que o relatório existe para mostrar — e é por isso que o `summary` daqui fala de \"faturamento COM profissional\" e não bate com o total de vendas da empresa, o que é correto e precisa estar escrito.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `revenueCents`, `orderCount`, `averageTicketCents`, `professionalName`, `lastSaleAt`. Campo fora dela é 400.\n\nPadrão: `revenueCents`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalRankingReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/supplier-movement": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetSupplierMovementReport",
+        "description": "Proposto. **Movimentação por fornecedor.** É o número que se leva para a mesa de negociação: quanto se vendeu do que ele fornece, no período. Agrega pelo fornecedor CONGELADO na linha do documento e não pelo cadastro atual do produto — trocar o fornecedor de um item hoje reescreveria a história da negociação do ano passado.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+          },
+          {
+            "name": "productGroup",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `revenueCents`, `quantity`, `supplierName`, `orderCount`, `lineCount`, `productCount`. Campo fora dela é 400.\n\nPadrão: `revenueCents`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierMovementReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/stock-valuation": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetStockValuationReport",
+        "description": "Proposto. **Estoque atual valorizado.** Foto do agora, sem período — por isso `from`/`to` não existem aqui e `asOf` existe. Ordenado por valor decrescente. O saldo é o da EMPRESA ativa (`product_tenant`), e o preço também: o mesmo produto vale diferente em duas empresas do grupo, e é isso que o relatório tem de mostrar.",
+        "parameters": [
+          {
+            "name": "productGroup",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+          },
+          {
+            "name": "includeZero",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Incluir itens com saldo zero. Padrão `false`: o inventário de quem tem 4000 SKUs cadastrados e 300 em casa não é uma lista de 4000 linhas com 3700 zeros."
+          },
+          {
+            "name": "belowMinimumOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Só o que está abaixo do mínimo — a lista de compras."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `valueCents`, `quantity`, `minStock`, `description`. Campo fora dela é 400.\n\nItem SEM preço ordena por `valueCents` como ausente, não como zero — e vai para o fim nos dois sentidos: ele não vale zero, vale desconhecido.\n\nPadrão: `valueCents`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockValuationReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/stock-aging": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetStockAgingReport",
+        "description": "Proposto. **Quantidade, dias sem venda e última venda — o dinheiro parado na prateleira.** Ordenado por `daysWithoutSale` decrescente, com os que NUNCA venderam no fim e não no começo: eles não têm dias a contar, e pô-los no topo enterraria os que já venderam e pararam, que é onde mora a decisão de queima de estoque. Só itens com saldo, salvo `includeZero`.",
+        "parameters": [
+          {
+            "name": "minDaysWithoutSale",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0,
+              "minimum": 0
+            },
+            "description": "Só o que está parado há pelo menos tantos dias. **Itens que nunca venderam entram sempre**, qualquer que seja o valor: sem venda alguma não há dias a comparar, e filtrá-los fora por `NULL` faria o pior caso desaparecer do relatório dos piores casos."
+          },
+          {
+            "name": "productGroup",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido."
+          },
+          {
+            "name": "includeZero",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Incluir itens com saldo zero."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `daysWithoutSale`, `valueCents`, `quantity`, `lastSaleAt`, `description`. Campo fora dela é 400.\n\nQuem NUNCA vendeu não tem dias a contar e fica no fim em qualquer sentido — no topo, enterraria os que já venderam e pararam, que é onde mora a decisão de queima.\n\nPadrão: `daysWithoutSale`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockAgingReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/quote-vs-stock": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetQuoteVsStockReport",
+        "description": "Proposto. **Orçamento × estoque — o que já foi prometido contra o que existe em casa.** Só orçamentos ATIVOS (cancelado não promete nada) e só linhas com variante do catálogo: item digitado livre não tem saldo com que comparar. Ordenado por falta decrescente. **A soma dos orçamentos não desconta o que já virou pedido** — e isso é deliberado: o pedido consome estoque por conta própria, e abater aqui esconderia o compromisso duas vezes.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro."
+          },
+          {
+            "name": "shortageOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Só o que falta. É a lista de compras que o relatório existe para gerar."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `shortageQuantity`, `quotedQuantity`, `stockQuantity`, `description`. Campo fora dela é 400.\n\nPadrão: `shortageQuantity`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteVsStockReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/reports/birthdays": {
+      "get": {
+        "tags": ["relatorios"],
+        "operationId": "GetBirthdaysReport",
+        "description": "Proposto. **Aniversariantes do mês.** Lê `birthDate` do parceiro (pessoa física) e só entram os VINCULADOS à empresa ativa e ativos — parceiro do grupo sem vínculo com esta empresa não é cliente desta loja, e a lista de aniversário é a lista de quem se liga. Ordenado por dia do mês. Sem período: a pergunta é sempre um mês inteiro, e é por isso que o parâmetro é `month` e não `from`/`to`.",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "Mês, 1-12. Obrigatório e sem padrão: \"mês atual\" decidido pelo servidor daria uma resposta diferente conforme o fuso de quem pergunta, e o relatório é impresso e conferido."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["customer", "professional", "supplier"]
+            },
+            "description": "Restringe ao papel. Ausente = todos os vinculados com data de nascimento."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `day`, `name`, `age`. Campo fora dela é 400.\n\nA ordem padrão é `day` crescente: a lista serve para ligar na ordem em que os dias chegam.\n\nPadrão: `day`."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "Página, 1-based, como toda listagem do contrato."
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BirthdaysReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10732,6 +11822,1018 @@
             "format": "int32"
           }
         }
+      },
+      "AbcCurveRowDto": {
+        "description": "Uma faixa da curva. `cumulativePercent` é o acumulado ATÉ esta linha na ordem de faturamento decrescente — é ele, e não o `sharePercent` isolado, que responde \"quais produtos fazem 80% da receita\".",
+        "required": [
+          "description",
+          "quantity",
+          "revenueCents",
+          "sharePercent",
+          "cumulativePercent",
+          "abcClass"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Nulo quando a linha do documento perdeu a variante do catálogo (`ON DELETE SET NULL`): o produto sumiu do cadastro, a venda não."
+          },
+          "description": {
+            "type": "string",
+            "description": "Descrição CONGELADA na linha do documento, não a do cadastro de hoje."
+          },
+          "productGroup": {
+            "type": ["string", "null"]
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Somada no período. Texto porque `numeric(18,3)` não cabe em double sem perder a terceira casa.",
+            "type": "string"
+          },
+          "revenueCents": {
+            "description": "Faturamento da linha no período, em CENTAVOS.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "sharePercent": {
+            "type": "string",
+            "description": "Fatia deste item no faturamento do período, com 4 casas como todo percentual do contrato (`10000` seria 1% se fosse inteiro; aqui é texto decimal para o relatório poder ser lido sem conversão)."
+          },
+          "cumulativePercent": {
+            "type": "string",
+            "description": "Acumulado até esta linha, inclusive."
+          },
+          "abcClass": {
+            "type": "string",
+            "enum": ["A", "B", "C"],
+            "description": "Corte clássico e DECLARADO aqui para o front não reimplementá-lo: `A` até 80% acumulados, `B` até 95%, `C` o resto. O item que CRUZA o corte pertence à classe que ele fecha — senão os 80% nunca seriam alcançados por ninguém."
+          }
+        }
+      },
+      "AbcCurveReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AbcCurveSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbcCurveRowDto"
+            }
+          }
+        }
+      },
+      "AbcCurveSummaryDto": {
+        "description": "Totais do PERÍODO, não da página.",
+        "required": ["revenueCents", "classACount", "classBCount", "classCCount"],
+        "type": "object",
+        "properties": {
+          "revenueCents": {
+            "description": "Faturamento do período inteiro — o denominador de todo `sharePercent`.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "classACount": {
+            "description": "Itens na classe A.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "classBCount": {
+            "description": "Itens na classe B.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "classCCount": {
+            "description": "Itens na classe C.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProductSoldRowDto": {
+        "description": "Um produto somado no período.",
+        "required": ["description", "quantity", "revenueCents", "orderCount"],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "productGroup": {
+            "type": ["string", "null"]
+          },
+          "pieceType": {
+            "type": ["string", "null"]
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Quantidade vendida no período.",
+            "type": "string"
+          },
+          "revenueCents": {
+            "description": "Faturamento do item no período.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderCount": {
+            "description": "Em quantos PEDIDOS distintos ele apareceu — o item vendido 100 unidades num pedido só é outro negócio do vendido 1 em 100 pedidos.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProductsSoldReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ProductsSoldSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSoldRowDto"
+            }
+          }
+        }
+      },
+      "ProductsSoldSummaryDto": {
+        "description": "Totais do PERÍODO.",
+        "required": ["quantity", "revenueCents"],
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "description": "Quantidade total vendida no período.",
+            "type": "string"
+          },
+          "revenueCents": {
+            "description": "Faturamento total do período.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SalesComparisonRowDto": {
+        "description": "Um período fechado e o mesmo número no período ANTERIOR ao lado. O comparativo é o produto: valor solto não diz se o mês foi bom.",
+        "required": ["bucket", "label", "orderCount", "revenueCents"],
+        "type": "object",
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "description": "A chave ordenável do período: `2026-08` (mês), `2026-Q3` (trimestre), `2026-S2` (semestre), `2026` (ano)."
+          },
+          "label": {
+            "type": "string",
+            "description": "O mesmo período por extenso, em pt-BR, escolhido pelo SERVIDOR — senão cada tela inventa o seu e o CSV exportado sai diferente do impresso."
+          },
+          "orderCount": {
+            "description": "Pedidos fechados no período.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "revenueCents": {
+            "description": "Faturamento do período.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousRevenueCents": {
+            "description": "O mesmo faturamento no período imediatamente anterior — nulo no primeiro período da série, que não tem anterior DENTRO do recorte pedido.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "deltaCents": {
+            "description": "`revenueCents - previousRevenueCents`. Nulo quando não há anterior.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "deltaPercent": {
+            "description": "Variação percentual, texto decimal. **Nulo quando o período anterior foi ZERO** — divisão por zero não é \"crescimento infinito\", é ausência de base de comparação, e mandar `0` faria a tela desenhar estabilidade onde houve estreia.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "SalesComparisonReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "granularity", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "granularity": {
+            "type": "string",
+            "enum": ["month", "quarter", "semester", "year"],
+            "description": "Ecoada."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SalesComparisonSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalesComparisonRowDto"
+            }
+          }
+        }
+      },
+      "SalesComparisonSummaryDto": {
+        "description": "Totais do PERÍODO inteiro, somando todos os buckets.",
+        "required": ["revenueCents", "orderCount"],
+        "type": "object",
+        "properties": {
+          "revenueCents": {
+            "description": "Faturamento do recorte inteiro.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderCount": {
+            "description": "Pedidos do recorte inteiro.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SalespersonRowDto": {
+        "description": "Um atendente num período.",
+        "required": ["salespersonName", "bucket", "quoteCount", "orderCount", "revenueCents"],
+        "type": "object",
+        "properties": {
+          "salespersonId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Nulo agrega os documentos SEM atendente, e essa linha aparece de propósito: omiti-la faria a soma das linhas não bater com o `summary`, e ninguém explica a diferença olhando a tela."
+          },
+          "salespersonName": {
+            "type": "string",
+            "description": "Referência VIVA ao cadastro, como no documento. Sem atendente, o servidor escolhe o rótulo — deixar nulo faria cada tela inventar o seu."
+          },
+          "bucket": {
+            "type": "string",
+            "description": "O período desta linha, na mesma chave do comparativo."
+          },
+          "quoteCount": {
+            "description": "Orçamentos emitidos no período.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderCount": {
+            "description": "Pedidos no período.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "revenueCents": {
+            "description": "Faturamento dos pedidos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "conversionPercent": {
+            "description": "`orderCount / quoteCount`, texto decimal. **Nulo quando não houve orçamento** — 0% diria \"não converteu nada\" a quem não tentou nada.",
+            "type": ["string", "null"]
+          },
+          "averageTicketCents": {
+            "description": "Faturamento ÷ pedidos. Nulo sem pedido.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          }
+        }
+      },
+      "SalespersonReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "granularity", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "granularity": {
+            "type": "string",
+            "enum": ["month", "quarter", "semester"],
+            "description": "Ecoada. O legado imprime este demonstrativo mensal, trimestral e semestral, e são esses três."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SalespersonSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SalespersonRowDto"
+            }
+          }
+        }
+      },
+      "SalespersonSummaryDto": {
+        "description": "Totais do PERÍODO.",
+        "required": ["revenueCents", "orderCount", "quoteCount"],
+        "type": "object",
+        "properties": {
+          "revenueCents": {
+            "description": "Faturamento de todos os atendentes no recorte.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderCount": {
+            "description": "Pedidos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "quoteCount": {
+            "description": "Orçamentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "conversionPercent": {
+            "description": "Conversão do recorte inteiro. Nulo sem orçamento.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "ProfessionalRankingRowDto": {
+        "description": "Um profissional (arquiteto, projetista, marceneiro indicador) no período.",
+        "required": [
+          "professionalId",
+          "professionalName",
+          "orderCount",
+          "revenueCents",
+          "averageTicketCents"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalName": {
+            "type": "string"
+          },
+          "orderCount": {
+            "description": "Pedidos indicados por ele no período.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "revenueCents": {
+            "description": "Faturamento indicado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "averageTicketCents": {
+            "description": "Faturamento ÷ pedidos.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastSaleAt": {
+            "description": "A última venda indicada por ele DENTRO do período. É o que separa quem indica sempre de quem indicou muito uma vez.",
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "ProfessionalRankingReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ProfessionalRankingSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalRankingRowDto"
+            }
+          }
+        }
+      },
+      "ProfessionalRankingSummaryDto": {
+        "description": "Totais do PERÍODO.",
+        "required": ["revenueCents", "orderCount"],
+        "type": "object",
+        "properties": {
+          "revenueCents": {
+            "description": "Faturamento com profissional indicado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderCount": {
+            "description": "Pedidos com profissional indicado.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SupplierMovementRowDto": {
+        "description": "Um fornecedor no período.",
+        "required": [
+          "supplierName",
+          "quantity",
+          "revenueCents",
+          "lineCount",
+          "orderCount",
+          "productCount"
+        ],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Nulo agrega as linhas sem fornecedor informado — item de produção própria, ou lançamento antigo."
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Quantidade movimentada.",
+            "type": "string"
+          },
+          "revenueCents": {
+            "description": "Valor vendido de produtos deste fornecedor.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineCount": {
+            "description": "Linhas de documento.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderCount": {
+            "description": "Pedidos distintos em que ele apareceu.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "productCount": {
+            "description": "Produtos distintos dele que saíram.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SupplierMovementReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SupplierMovementSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierMovementRowDto"
+            }
+          }
+        }
+      },
+      "SupplierMovementSummaryDto": {
+        "description": "Totais do PERÍODO.",
+        "required": ["quantity", "revenueCents"],
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "description": "Quantidade total movimentada.",
+            "type": "string"
+          },
+          "revenueCents": {
+            "description": "Valor total.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "StockValuationRowDto": {
+        "description": "Um item do estoque, hoje.",
+        "required": ["variantId", "description", "quantity", "minStock", "belowMinimum"],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "productGroup": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Saldo atual.",
+            "type": "string"
+          },
+          "unitPriceCents": {
+            "description": "O preço usado na valoração. Nulo quando o item não tem preço na empresa — e aí `valueCents` também é nulo, em vez de zero: item sem preço não vale zero, vale desconhecido, e somar zero esconderia o buraco de cadastro que este relatório é bom para achar.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "valueCents": {
+            "description": "`quantity × unitPriceCents`, arredondado ao centavo. Nulo sem preço.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "minStock": {
+            "description": "Mínimo cadastrado na empresa.",
+            "type": "string"
+          },
+          "belowMinimum": {
+            "type": "boolean",
+            "description": "`quantity < minStock`. Calculado pelo servidor porque a mesma comparação em duas telas vira duas respostas no dia em que uma esquecer o `<=`."
+          }
+        }
+      },
+      "StockValuationReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["asOf", "valuationBasis", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date-time",
+            "description": "O INSTANTE da foto. Estoque não tem período — tem agora — e sem este carimbo o CSV exportado às 9h é indistinguível do das 18h."
+          },
+          "valuationBasis": {
+            "type": "string",
+            "enum": ["sale_price"],
+            "description": "Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer \"a preço de venda\" com base no que o servidor afirma, não no que ela supõe."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/StockValuationSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockValuationRowDto"
+            }
+          }
+        }
+      },
+      "StockValuationSummaryDto": {
+        "description": "Totais do ESTOQUE inteiro, não da página.",
+        "required": ["valueCents", "itemCount", "belowMinimumCount", "withoutPriceCount"],
+        "type": "object",
+        "properties": {
+          "valueCents": {
+            "description": "Valor total do estoque considerando só os itens COM preço.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "itemCount": {
+            "description": "Itens no recorte.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "belowMinimumCount": {
+            "description": "Quantos estão abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "withoutPriceCount": {
+            "description": "Quantos ficaram de fora do valor por não terem preço. **É a medida da confiança no total** — 3 de 4000 é ruído, 900 de 4000 quer dizer que o número lá em cima não significa nada.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StockAgingRowDto": {
+        "description": "Um item parado.",
+        "required": ["variantId", "description", "quantity"],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Saldo atual — quanto dinheiro está parado nele.",
+            "type": "string"
+          },
+          "valueCents": {
+            "description": "Saldo × preço. Nulo sem preço.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "lastSaleAt": {
+            "description": "Data do último PEDIDO que levou este item. Nulo = nunca vendeu.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "daysWithoutSale": {
+            "description": "Dias desde a última venda. **Nulo quando nunca vendeu** — e não um número gigante: \"nunca\" e \"há 4 anos\" são perguntas diferentes, e o item que nunca vendeu pode ter entrado ontem.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "daysInStock": {
+            "description": "Dias desde o primeiro movimento de entrada — é ele que distingue o item que nunca vendeu porque chegou ontem do que nunca vendeu em três anos.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          }
+        }
+      },
+      "StockAgingReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["asOf", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date-time",
+            "description": "O instante da foto — `daysWithoutSale` é contado a partir dele."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/StockAgingSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockAgingRowDto"
+            }
+          }
+        }
+      },
+      "StockAgingSummaryDto": {
+        "description": "Totais do recorte.",
+        "required": ["itemCount", "neverSoldCount", "valueCents"],
+        "type": "object",
+        "properties": {
+          "itemCount": {
+            "description": "Itens no recorte.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "neverSoldCount": {
+            "description": "Quantos nunca venderam.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "valueCents": {
+            "description": "Dinheiro parado nesses itens (só os com preço).",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "QuoteVsStockRowDto": {
+        "description": "Um item pedido em orçamento aberto, contra o que há em casa.",
+        "required": [
+          "variantId",
+          "description",
+          "quotedQuantity",
+          "stockQuantity",
+          "shortageQuantity",
+          "quoteCount",
+          "sufficient"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "quotedQuantity": {
+            "description": "Somado dos orçamentos ATIVOS no período.",
+            "type": "string"
+          },
+          "stockQuantity": {
+            "description": "Saldo atual na empresa.",
+            "type": "string"
+          },
+          "shortageQuantity": {
+            "description": "`quotedQuantity - stockQuantity`, **zero quando sobra** — número negativo aqui viraria \"falta -5\" na tela e alguém compraria assim mesmo.",
+            "type": "string"
+          },
+          "quoteCount": {
+            "description": "Em quantos orçamentos ele aparece.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "sufficient": {
+            "type": "boolean",
+            "description": "Tem em casa para atender tudo o que foi orçado."
+          }
+        }
+      },
+      "QuoteVsStockReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["from", "to", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou.",
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/QuoteVsStockSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteVsStockRowDto"
+            }
+          }
+        }
+      },
+      "QuoteVsStockSummaryDto": {
+        "description": "Totais do recorte.",
+        "required": ["variantCount", "shortageCount"],
+        "type": "object",
+        "properties": {
+          "variantCount": {
+            "description": "Produtos distintos orçados no período.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "shortageCount": {
+            "description": "Quantos deles não têm saldo suficiente.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BirthdayRowDto": {
+        "description": "Um aniversariante do mês.",
+        "required": [
+          "partnerId",
+          "name",
+          "birthDate",
+          "day",
+          "age",
+          "isCustomer",
+          "isProfessional"
+        ],
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome fantasia quando há, razão social senão — o mesmo critério de exibição das outras telas."
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "description": "A data completa. O ANO importa: é dele que sai a idade, e sem ele o cartão de 50 anos passa batido."
+          },
+          "day": {
+            "description": "Dia do mês, repetido para a tela agrupar sem reparsear a data.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "age": {
+            "description": "Idade que a pessoa COMPLETA neste aniversário — não a de hoje. Quem faz 40 no dia 28 deve aparecer como 40 na lista do dia 1º, senão a mensagem sai com o número errado justamente na data redonda.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "mobilePhone": {
+            "type": ["string", "null"]
+          },
+          "email": {
+            "type": ["string", "null"]
+          },
+          "isCustomer": {
+            "type": "boolean"
+          },
+          "isProfessional": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BirthdaysReportDto": {
+        "description": "Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.",
+        "required": ["month", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "month": {
+            "description": "O mês apurado, ecoado.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BirthdaysSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BirthdayRowDto"
+            }
+          }
+        }
+      },
+      "BirthdaysSummaryDto": {
+        "description": "Totais do mês.",
+        "required": ["partnerCount", "withoutContactCount"],
+        "type": "object",
+        "properties": {
+          "partnerCount": {
+            "description": "Aniversariantes no mês.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "withoutContactCount": {
+            "description": "Quantos não têm telefone nem e-mail — a lista serve para FALAR com eles, e o aniversariante inalcançável é a falha de cadastro que o relatório revela.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -10771,6 +12873,9 @@
     },
     {
       "name": "acesso"
+    },
+    {
+      "name": "relatorios"
     }
   ]
 }

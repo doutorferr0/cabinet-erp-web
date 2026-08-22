@@ -3600,6 +3600,567 @@ export interface InstallmentPolicyWriteRequest {
 }
 
 /**
+ * Corte clássico e DECLARADO aqui para o front não reimplementá-lo: `A` até 80% acumulados, `B` até 95%, `C` o resto. O item que CRUZA o corte pertence à classe que ele fecha — senão os 80% nunca seriam alcançados por ninguém.
+ */
+export type AbcCurveRowDtoAbcClass = typeof AbcCurveRowDtoAbcClass[keyof typeof AbcCurveRowDtoAbcClass];
+
+
+export const AbcCurveRowDtoAbcClass = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+} as const;
+
+/**
+ * Uma faixa da curva. `cumulativePercent` é o acumulado ATÉ esta linha na ordem de faturamento decrescente — é ele, e não o `sharePercent` isolado, que responde "quais produtos fazem 80% da receita".
+ */
+export interface AbcCurveRowDto {
+  /**
+     * Nulo quando a linha do documento perdeu a variante do catálogo (`ON DELETE SET NULL`): o produto sumiu do cadastro, a venda não.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** Descrição CONGELADA na linha do documento, não a do cadastro de hoje. */
+  description: string;
+  /** @nullable */
+  productGroup?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /** Somada no período. Texto porque `numeric(18,3)` não cabe em double sem perder a terceira casa. */
+  quantity: string;
+  /** Faturamento da linha no período, em CENTAVOS. */
+  revenueCents: number;
+  /** Fatia deste item no faturamento do período, com 4 casas como todo percentual do contrato (`10000` seria 1% se fosse inteiro; aqui é texto decimal para o relatório poder ser lido sem conversão). */
+  sharePercent: string;
+  /** Acumulado até esta linha, inclusive. */
+  cumulativePercent: string;
+  /** Corte clássico e DECLARADO aqui para o front não reimplementá-lo: `A` até 80% acumulados, `B` até 95%, `C` o resto. O item que CRUZA o corte pertence à classe que ele fecha — senão os 80% nunca seriam alcançados por ninguém. */
+  abcClass: AbcCurveRowDtoAbcClass;
+}
+
+/**
+ * Totais do PERÍODO, não da página.
+ */
+export interface AbcCurveSummaryDto {
+  /** Faturamento do período inteiro — o denominador de todo `sharePercent`. */
+  revenueCents: number;
+  /** Itens na classe A. */
+  classACount: number;
+  /** Itens na classe B. */
+  classBCount: number;
+  /** Itens na classe C. */
+  classCCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface AbcCurveReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: AbcCurveSummaryDto;
+  rows: AbcCurveRowDto[];
+}
+
+/**
+ * Um produto somado no período.
+ */
+export interface ProductSoldRowDto {
+  /** @nullable */
+  variantId?: string | null;
+  description: string;
+  /** @nullable */
+  productGroup?: string | null;
+  /** @nullable */
+  pieceType?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /** Quantidade vendida no período. */
+  quantity: string;
+  /** Faturamento do item no período. */
+  revenueCents: number;
+  /** Em quantos PEDIDOS distintos ele apareceu — o item vendido 100 unidades num pedido só é outro negócio do vendido 1 em 100 pedidos. */
+  orderCount: number;
+}
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface ProductsSoldSummaryDto {
+  /** Quantidade total vendida no período. */
+  quantity: string;
+  /** Faturamento total do período. */
+  revenueCents: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface ProductsSoldReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: ProductsSoldSummaryDto;
+  rows: ProductSoldRowDto[];
+}
+
+/**
+ * Um período fechado e o mesmo número no período ANTERIOR ao lado. O comparativo é o produto: valor solto não diz se o mês foi bom.
+ */
+export interface SalesComparisonRowDto {
+  /** A chave ordenável do período: `2026-08` (mês), `2026-Q3` (trimestre), `2026-S2` (semestre), `2026` (ano). */
+  bucket: string;
+  /** O mesmo período por extenso, em pt-BR, escolhido pelo SERVIDOR — senão cada tela inventa o seu e o CSV exportado sai diferente do impresso. */
+  label: string;
+  /** Pedidos fechados no período. */
+  orderCount: number;
+  /** Faturamento do período. */
+  revenueCents: number;
+  /**
+     * O mesmo faturamento no período imediatamente anterior — nulo no primeiro período da série, que não tem anterior DENTRO do recorte pedido.
+     * @nullable
+     */
+  previousRevenueCents?: number | null;
+  /**
+     * `revenueCents - previousRevenueCents`. Nulo quando não há anterior.
+     * @nullable
+     */
+  deltaCents?: number | null;
+  /**
+     * Variação percentual, texto decimal. **Nulo quando o período anterior foi ZERO** — divisão por zero não é "crescimento infinito", é ausência de base de comparação, e mandar `0` faria a tela desenhar estabilidade onde houve estreia.
+     * @nullable
+     */
+  deltaPercent?: string | null;
+}
+
+/**
+ * Ecoada.
+ */
+export type SalesComparisonReportDtoGranularity = typeof SalesComparisonReportDtoGranularity[keyof typeof SalesComparisonReportDtoGranularity];
+
+
+export const SalesComparisonReportDtoGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+  year: 'year',
+} as const;
+
+/**
+ * Totais do PERÍODO inteiro, somando todos os buckets.
+ */
+export interface SalesComparisonSummaryDto {
+  /** Faturamento do recorte inteiro. */
+  revenueCents: number;
+  /** Pedidos do recorte inteiro. */
+  orderCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface SalesComparisonReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** Ecoada. */
+  granularity: SalesComparisonReportDtoGranularity;
+  summary: SalesComparisonSummaryDto;
+  rows: SalesComparisonRowDto[];
+}
+
+/**
+ * Um atendente num período.
+ */
+export interface SalespersonRowDto {
+  /**
+     * Nulo agrega os documentos SEM atendente, e essa linha aparece de propósito: omiti-la faria a soma das linhas não bater com o `summary`, e ninguém explica a diferença olhando a tela.
+     * @nullable
+     */
+  salespersonId?: string | null;
+  /** Referência VIVA ao cadastro, como no documento. Sem atendente, o servidor escolhe o rótulo — deixar nulo faria cada tela inventar o seu. */
+  salespersonName: string;
+  /** O período desta linha, na mesma chave do comparativo. */
+  bucket: string;
+  /** Orçamentos emitidos no período. */
+  quoteCount: number;
+  /** Pedidos no período. */
+  orderCount: number;
+  /** Faturamento dos pedidos. */
+  revenueCents: number;
+  /**
+     * `orderCount / quoteCount`, texto decimal. **Nulo quando não houve orçamento** — 0% diria "não converteu nada" a quem não tentou nada.
+     * @nullable
+     */
+  conversionPercent?: string | null;
+  /**
+     * Faturamento ÷ pedidos. Nulo sem pedido.
+     * @nullable
+     */
+  averageTicketCents?: number | null;
+}
+
+/**
+ * Ecoada. O legado imprime este demonstrativo mensal, trimestral e semestral, e são esses três.
+ */
+export type SalespersonReportDtoGranularity = typeof SalespersonReportDtoGranularity[keyof typeof SalespersonReportDtoGranularity];
+
+
+export const SalespersonReportDtoGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+} as const;
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface SalespersonSummaryDto {
+  /** Faturamento de todos os atendentes no recorte. */
+  revenueCents: number;
+  /** Pedidos. */
+  orderCount: number;
+  /** Orçamentos. */
+  quoteCount: number;
+  /**
+     * Conversão do recorte inteiro. Nulo sem orçamento.
+     * @nullable
+     */
+  conversionPercent?: string | null;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface SalespersonReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** Ecoada. O legado imprime este demonstrativo mensal, trimestral e semestral, e são esses três. */
+  granularity: SalespersonReportDtoGranularity;
+  summary: SalespersonSummaryDto;
+  rows: SalespersonRowDto[];
+}
+
+/**
+ * Um profissional (arquiteto, projetista, marceneiro indicador) no período.
+ */
+export interface ProfessionalRankingRowDto {
+  professionalId: string;
+  professionalName: string;
+  /** Pedidos indicados por ele no período. */
+  orderCount: number;
+  /** Faturamento indicado. */
+  revenueCents: number;
+  /** Faturamento ÷ pedidos. */
+  averageTicketCents: number;
+  /**
+     * A última venda indicada por ele DENTRO do período. É o que separa quem indica sempre de quem indicou muito uma vez.
+     * @nullable
+     */
+  lastSaleAt?: string | null;
+}
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface ProfessionalRankingSummaryDto {
+  /** Faturamento com profissional indicado. */
+  revenueCents: number;
+  /** Pedidos com profissional indicado. */
+  orderCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface ProfessionalRankingReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: ProfessionalRankingSummaryDto;
+  rows: ProfessionalRankingRowDto[];
+}
+
+/**
+ * Um fornecedor no período.
+ */
+export interface SupplierMovementRowDto {
+  /**
+     * Nulo agrega as linhas sem fornecedor informado — item de produção própria, ou lançamento antigo.
+     * @nullable
+     */
+  supplierId?: string | null;
+  supplierName: string;
+  /** Quantidade movimentada. */
+  quantity: string;
+  /** Valor vendido de produtos deste fornecedor. */
+  revenueCents: number;
+  /** Linhas de documento. */
+  lineCount: number;
+  /** Pedidos distintos em que ele apareceu. */
+  orderCount: number;
+  /** Produtos distintos dele que saíram. */
+  productCount: number;
+}
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface SupplierMovementSummaryDto {
+  /** Quantidade total movimentada. */
+  quantity: string;
+  /** Valor total. */
+  revenueCents: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface SupplierMovementReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: SupplierMovementSummaryDto;
+  rows: SupplierMovementRowDto[];
+}
+
+/**
+ * Um item do estoque, hoje.
+ */
+export interface StockValuationRowDto {
+  variantId: string;
+  description: string;
+  /** @nullable */
+  productGroup?: string | null;
+  /** Saldo atual. */
+  quantity: string;
+  /**
+     * O preço usado na valoração. Nulo quando o item não tem preço na empresa — e aí `valueCents` também é nulo, em vez de zero: item sem preço não vale zero, vale desconhecido, e somar zero esconderia o buraco de cadastro que este relatório é bom para achar.
+     * @nullable
+     */
+  unitPriceCents?: number | null;
+  /**
+     * `quantity × unitPriceCents`, arredondado ao centavo. Nulo sem preço.
+     * @nullable
+     */
+  valueCents?: number | null;
+  /** Mínimo cadastrado na empresa. */
+  minStock: string;
+  /** `quantity < minStock`. Calculado pelo servidor porque a mesma comparação em duas telas vira duas respostas no dia em que uma esquecer o `<=`. */
+  belowMinimum: boolean;
+}
+
+/**
+ * Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer "a preço de venda" com base no que o servidor afirma, não no que ela supõe.
+ */
+export type StockValuationReportDtoValuationBasis = typeof StockValuationReportDtoValuationBasis[keyof typeof StockValuationReportDtoValuationBasis];
+
+
+export const StockValuationReportDtoValuationBasis = {
+  sale_price: 'sale_price',
+} as const;
+
+/**
+ * Totais do ESTOQUE inteiro, não da página.
+ */
+export interface StockValuationSummaryDto {
+  /** Valor total do estoque considerando só os itens COM preço. */
+  valueCents: number;
+  /** Itens no recorte. */
+  itemCount: number;
+  /** Quantos estão abaixo do mínimo. */
+  belowMinimumCount: number;
+  /** Quantos ficaram de fora do valor por não terem preço. **É a medida da confiança no total** — 3 de 4000 é ruído, 900 de 4000 quer dizer que o número lá em cima não significa nada. */
+  withoutPriceCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface StockValuationReportDto {
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** O INSTANTE da foto. Estoque não tem período — tem agora — e sem este carimbo o CSV exportado às 9h é indistinguível do das 18h. */
+  asOf: string;
+  /** Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer "a preço de venda" com base no que o servidor afirma, não no que ela supõe. */
+  valuationBasis: StockValuationReportDtoValuationBasis;
+  summary: StockValuationSummaryDto;
+  rows: StockValuationRowDto[];
+}
+
+/**
+ * Um item parado.
+ */
+export interface StockAgingRowDto {
+  variantId: string;
+  description: string;
+  /** Saldo atual — quanto dinheiro está parado nele. */
+  quantity: string;
+  /**
+     * Saldo × preço. Nulo sem preço.
+     * @nullable
+     */
+  valueCents?: number | null;
+  /**
+     * Data do último PEDIDO que levou este item. Nulo = nunca vendeu.
+     * @nullable
+     */
+  lastSaleAt?: string | null;
+  /**
+     * Dias desde a última venda. **Nulo quando nunca vendeu** — e não um número gigante: "nunca" e "há 4 anos" são perguntas diferentes, e o item que nunca vendeu pode ter entrado ontem.
+     * @nullable
+     */
+  daysWithoutSale?: number | null;
+  /**
+     * Dias desde o primeiro movimento de entrada — é ele que distingue o item que nunca vendeu porque chegou ontem do que nunca vendeu em três anos.
+     * @nullable
+     */
+  daysInStock?: number | null;
+}
+
+/**
+ * Totais do recorte.
+ */
+export interface StockAgingSummaryDto {
+  /** Itens no recorte. */
+  itemCount: number;
+  /** Quantos nunca venderam. */
+  neverSoldCount: number;
+  /** Dinheiro parado nesses itens (só os com preço). */
+  valueCents: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface StockAgingReportDto {
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** O instante da foto — `daysWithoutSale` é contado a partir dele. */
+  asOf: string;
+  summary: StockAgingSummaryDto;
+  rows: StockAgingRowDto[];
+}
+
+/**
+ * Um item pedido em orçamento aberto, contra o que há em casa.
+ */
+export interface QuoteVsStockRowDto {
+  variantId: string;
+  description: string;
+  /** Somado dos orçamentos ATIVOS no período. */
+  quotedQuantity: string;
+  /** Saldo atual na empresa. */
+  stockQuantity: string;
+  /** `quotedQuantity - stockQuantity`, **zero quando sobra** — número negativo aqui viraria "falta -5" na tela e alguém compraria assim mesmo. */
+  shortageQuantity: string;
+  /** Em quantos orçamentos ele aparece. */
+  quoteCount: number;
+  /** Tem em casa para atender tudo o que foi orçado. */
+  sufficient: boolean;
+}
+
+/**
+ * Totais do recorte.
+ */
+export interface QuoteVsStockSummaryDto {
+  /** Produtos distintos orçados no período. */
+  variantCount: number;
+  /** Quantos deles não têm saldo suficiente. */
+  shortageCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface QuoteVsStockReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: QuoteVsStockSummaryDto;
+  rows: QuoteVsStockRowDto[];
+}
+
+/**
+ * Um aniversariante do mês.
+ */
+export interface BirthdayRowDto {
+  partnerId: string;
+  /** Nome fantasia quando há, razão social senão — o mesmo critério de exibição das outras telas. */
+  name: string;
+  /** A data completa. O ANO importa: é dele que sai a idade, e sem ele o cartão de 50 anos passa batido. */
+  birthDate: string;
+  /** Dia do mês, repetido para a tela agrupar sem reparsear a data. */
+  day: number;
+  /** Idade que a pessoa COMPLETA neste aniversário — não a de hoje. Quem faz 40 no dia 28 deve aparecer como 40 na lista do dia 1º, senão a mensagem sai com o número errado justamente na data redonda. */
+  age: number;
+  /** @nullable */
+  mobilePhone?: string | null;
+  /** @nullable */
+  email?: string | null;
+  isCustomer: boolean;
+  isProfessional: boolean;
+}
+
+/**
+ * Totais do mês.
+ */
+export interface BirthdaysSummaryDto {
+  /** Aniversariantes no mês. */
+  partnerCount: number;
+  /** Quantos não têm telefone nem e-mail — a lista serve para FALAR com eles, e o aniversariante inalcançável é a falha de cadastro que o relatório revela. */
+  withoutContactCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface BirthdaysReportDto {
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** O mês apurado, ecoado. */
+  month: number;
+  summary: BirthdaysSummaryDto;
+  rows: BirthdayRowDto[];
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -4020,4 +4581,427 @@ sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 };
+
+export type GetAbcCurveReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Whitelist: `revenueCents`, `quantity`, `description`. Campo fora dela é 400.
+ *
+ * **A classe e o acumulado NÃO dependem daqui.** `abcClass` e `cumulativePercent` saem sempre da ordem canônica — faturamento decrescente sobre o período inteiro — e continuam corretos linha a linha qualquer que seja a ordem pedida. Se dependessem de `sortBy`, ordenar por descrição transformaria a curva num acumulado alfabético, que não significa nada e tem exatamente a mesma aparência.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetProductsSoldReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Só as linhas deste tipo de peça.
+ */
+pieceType?: string;
+/**
+ * Whitelist: `revenueCents`, `quantity`, `orderCount`, `description`. Campo fora dela é 400.
+ *
+ * Aqui trocar o eixo É a pergunta: o parafuso lidera em quantidade e não paga a conta; a cozinha inteira lidera em valor e sai uma vez por mês.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSalesComparisonReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * O tamanho do balde. Fora da lista é 400.
+ */
+granularity?: GetSalesComparisonReportGranularity;
+/**
+ * Whitelist: `bucket`, `revenueCents`, `orderCount`. Campo fora dela é 400.
+ *
+ * **`previousRevenueCents` é sempre o do período cronologicamente anterior**, não o da linha de cima: ordenar por faturamento e comparar com o vizinho na tela produziria "variação" entre agosto e março.
+ *
+ * Padrão: `bucket`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSalesComparisonReportGranularity = typeof GetSalesComparisonReportGranularity[keyof typeof GetSalesComparisonReportGranularity];
+
+
+export const GetSalesComparisonReportGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+  year: 'year',
+} as const;
+
+export type GetSalespersonReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * O tamanho do balde.
+ */
+granularity?: GetSalespersonReportGranularity;
+/**
+ * Só este atendente. Ausente = todos.
+ */
+salespersonId?: string;
+/**
+ * Whitelist: `revenueCents`, `orderCount`, `quoteCount`, `conversionPercent`, `salespersonName`, `bucket`. Campo fora dela é 400.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSalespersonReportGranularity = typeof GetSalespersonReportGranularity[keyof typeof GetSalespersonReportGranularity];
+
+
+export const GetSalespersonReportGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+} as const;
+
+export type GetProfessionalRankingReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Whitelist: `revenueCents`, `orderCount`, `averageTicketCents`, `professionalName`, `lastSaleAt`. Campo fora dela é 400.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSupplierMovementReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Whitelist: `revenueCents`, `quantity`, `supplierName`, `orderCount`, `lineCount`, `productCount`. Campo fora dela é 400.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetStockValuationReportParams = {
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Incluir itens com saldo zero. Padrão `false`: o inventário de quem tem 4000 SKUs cadastrados e 300 em casa não é uma lista de 4000 linhas com 3700 zeros.
+ */
+includeZero?: boolean;
+/**
+ * Só o que está abaixo do mínimo — a lista de compras.
+ */
+belowMinimumOnly?: boolean;
+/**
+ * Whitelist: `valueCents`, `quantity`, `minStock`, `description`. Campo fora dela é 400.
+ *
+ * Item SEM preço ordena por `valueCents` como ausente, não como zero — e vai para o fim nos dois sentidos: ele não vale zero, vale desconhecido.
+ *
+ * Padrão: `valueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetStockAgingReportParams = {
+/**
+ * Só o que está parado há pelo menos tantos dias. **Itens que nunca venderam entram sempre**, qualquer que seja o valor: sem venda alguma não há dias a comparar, e filtrá-los fora por `NULL` faria o pior caso desaparecer do relatório dos piores casos.
+ * @minimum 0
+ */
+minDaysWithoutSale?: number;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Incluir itens com saldo zero.
+ */
+includeZero?: boolean;
+/**
+ * Whitelist: `daysWithoutSale`, `valueCents`, `quantity`, `lastSaleAt`, `description`. Campo fora dela é 400.
+ *
+ * Quem NUNCA vendeu não tem dias a contar e fica no fim em qualquer sentido — no topo, enterraria os que já venderam e pararam, que é onde mora a decisão de queima.
+ *
+ * Padrão: `daysWithoutSale`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetQuoteVsStockReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só o que falta. É a lista de compras que o relatório existe para gerar.
+ */
+shortageOnly?: boolean;
+/**
+ * Whitelist: `shortageQuantity`, `quotedQuantity`, `stockQuantity`, `description`. Campo fora dela é 400.
+ *
+ * Padrão: `shortageQuantity`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetBirthdaysReportParams = {
+/**
+ * Mês, 1-12. Obrigatório e sem padrão: "mês atual" decidido pelo servidor daria uma resposta diferente conforme o fuso de quem pergunta, e o relatório é impresso e conferido.
+ * @minimum 1
+ * @maximum 12
+ */
+month: number;
+/**
+ * Restringe ao papel. Ausente = todos os vinculados com data de nascimento.
+ */
+role?: GetBirthdaysReportRole;
+/**
+ * Whitelist: `day`, `name`, `age`. Campo fora dela é 400.
+ *
+ * A ordem padrão é `day` crescente: a lista serve para ligar na ordem em que os dias chegam.
+ *
+ * Padrão: `day`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetBirthdaysReportRole = typeof GetBirthdaysReportRole[keyof typeof GetBirthdaysReportRole];
+
+
+export const GetBirthdaysReportRole = {
+  customer: 'customer',
+  professional: 'professional',
+  supplier: 'supplier',
+} as const;
 

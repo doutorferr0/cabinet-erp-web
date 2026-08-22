@@ -678,6 +678,27 @@ export function itemDaRota(pathname: string): NavItem | undefined {
 }
 
 /**
+ * A PRIMEIRA TELA da seção — para onde o ícone dela, no topo, leva.
+ *
+ * `undefined` é resposta legítima, não falha: `Financeiro` só publica tela
+ * futura, e a seção existe na fileira para o operador VER para onde o sistema
+ * cresce. Inventar um `/financeiro` daria 404 no meio da barra; quem recebe
+ * `undefined` abre o menu da seção sem navegar.
+ *
+ * Item `externo` (o mapa de tabelas, que sai da SPA) fica de fora: a fileira é
+ * navegação de seção, e mandar um clique de seção para um `.html` fora do
+ * roteador seria trocar de aplicativo por engano. Ele continua alcançável no
+ * seu grupo, onde está declarado com o que é.
+ *
+ * A ordem manda: a taxonomia já está escrita por importância dentro de cada
+ * seção (`Documentos → Cadastros → Relatórios`), então "a primeira" é a mais
+ * usada, sem tabela paralela de preferidas para envelhecer sozinha.
+ */
+export function destinoDaSecao(secao: NavSecao): string | undefined {
+  return secao.grupos.flatMap(itensNavegaveis).find((item) => !item.externo)?.url
+}
+
+/**
  * Se a empresa ativa alcança este caminho. Caminho fora do menu é liberado —
  * quem decide sobre ele é o roteador (404), não o recurso.
  */

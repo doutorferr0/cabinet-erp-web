@@ -238,35 +238,33 @@ function ItemDaBarra({
  *
  * ## A busca daqui NÃO é a paleta
  *
- * Filtra os itens da navegação — agora do sistema inteiro, abrindo a seção
- * onde o resultado mora (achar e esconder dentro de seção fechada é o mesmo
- * que não achar). A paleta `Ctrl+K` continua global e intocada.
+ * ## Ela mostra UMA seção — a escolhida na fileira do topo
+ *
+ * O acordeão de sete blocos saiu daqui em 22/08, quando a fileira de ícones
+ * voltou ao topo (v7). Não é perda de alcance: a fileira troca de seção num
+ * clique, e manter os dois seria oferecer a MESMA escolha em dois lugares —
+ * dois controles para um estado é o par que um dia diverge.
+ *
+ * ## A busca filtra ESTA seção, e é decisão, não limitação
+ *
+ * Ela já varreu o sistema inteiro, abrindo a seção onde o resultado morava.
+ * Com a barra contextual isso voltaria a montar seção que o operador não
+ * escolheu — a fileira do topo diz onde ele está, e a barra que a contradiz
+ * apaga a resposta dela. Quem procura no sistema inteiro tem a paleta
+ * `Ctrl+K`, que continua **global e intocada** e alcança tela por nome.
  *
  * ## Configurações NÃO mora aqui
  *
  * Ela é página (`/config`), alcançada pela engrenagem da topbar: a barra
  * lista o que se OPERA, e um bloco de visita rara no pé cobrava espaço
- * permanente por isso. Quem chega recebe `secoes` já sem ela.
+ * permanente por isso.
  */
-function AppSidebar({
-  secoes,
-  secaoAtiva,
-}: {
-  secoes: NavSecao[]
-  secaoAtiva: NavSecao | undefined
-}) {
+function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
   const { location } = useRouterState()
   const pathname = location.pathname
 
   const [termo, setTermo] = useState('')
   const [abertos, setAbertos] = useState<string[]>(lerAbertos)
-  /**
-   * Colapso DAS SEÇÕES: o padrão é "a seção da rota aberta, as outras
-   * fechadas", e o clique no cabeçalho abre/fecha SEM navegar — explorar não
-   * pode jogar fora um formulário meio preenchido. A escolha manual sobrepõe
-   * o padrão enquanto o componente viver.
-   */
-  const [manuais, setManuais] = useState<Record<string, boolean>>({})
   const buscaId = useId()
 
   function alternar(titulo: string) {
@@ -283,25 +281,20 @@ function AppSidebar({
 
   /**
    * O filtro casa o item OU alguma filha, nunca esconde a filha que casou, e
-   * a seção sem nenhum resultado sai da lista — sobrar cabeçalho vazio é
-   * ruído na resposta.
+   * o grupo sem nenhum resultado sai da lista — sobrar rótulo vazio é ruído
+   * na resposta.
    */
-  const visiveis = secoes
-    .map((secao) => ({
-      secao,
-      grupos: secao.grupos
-        .map((grupo) => ({
-          ...grupo,
-          items: grupo.items.flatMap((item) => {
-            if (!termo) return [item]
-            if (casa(item.title, termo)) return [item]
-            const filhas = item.filhas?.filter((filha) => casa(filha.title, termo)) ?? []
-            return filhas.length > 0 ? [{ ...item, filhas }] : []
-          }),
-        }))
-        .filter((grupo) => grupo.items.length > 0),
+  const grupos = (secao?.grupos ?? [])
+    .map((grupo) => ({
+      ...grupo,
+      items: grupo.items.flatMap((item) => {
+        if (!termo) return [item]
+        if (casa(item.title, termo)) return [item]
+        const filhas = item.filhas?.filter((filha) => casa(filha.title, termo)) ?? []
+        return filhas.length > 0 ? [{ ...item, filhas }] : []
+      }),
     }))
-    .filter(({ grupos }) => !filtrando || grupos.length > 0)
+    .filter((grupo) => grupo.items.length > 0)
 
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
@@ -322,93 +315,52 @@ function AppSidebar({
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {visiveis.length === 0 ? (
+        {grupos.length === 0 ? (
           // Busca sem resultado DIZ que não achou. Painel em branco faria o
-          // operador achar que o sistema está vazio.
+          // operador achar que o sistema está vazio — e uma seção que só tem
+          // tela futura precisa dizer isso com todas as letras, senão parece
+          // barra quebrada.
           <p className="px-3 py-4 text-muted-foreground text-sm">
-            Nenhuma tela casa com “{termo}”.
+            {filtrando
+              ? `Nenhuma tela de ${secao?.rotulo ?? 'nesta seção'} casa com “${termo}”.`
+              : 'Esta seção ainda não tem tela.'}
           </p>
         ) : (
-          <nav aria-label="Seções" className="flex flex-1 flex-col">
-            {visiveis.map(({ secao, grupos }) => {
-              const aberta = filtrando || (manuais[secao.id] ?? secao.id === secaoAtiva?.id)
-              const ativa = secao.id === secaoAtiva?.id
-              return (
-                <SidebarGroup key={secao.id} {...(secao.modulo && { 'data-modulo': secao.modulo })}>
-                  <button
-                    type="button"
-                    onClick={() => setManuais((m) => ({ ...m, [secao.id]: !aberta }))}
-                    aria-expanded={aberta}
-                    aria-current={ativa ? 'true' : undefined}
-                    className={cn(
-                      'relative flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:focus-ring',
-                      // A SEÇÃO ATIVA se anuncia como o Polaris anuncia o item
-                      // selecionado: pill preenchida + negrito + fio na borda
-                      // esquerda (o acento que o Odoo põe no app corrente).
-                      // Hover sozinho não é indicação.
-                      ativa ? 'bg-sidebar-accent font-bold' : 'font-medium',
-                    )}
-                  >
-                    {ativa ? (
-                      // O fio é TINTA, não a cheia /01 do módulo. Em cor de
-                      // módulo ele media **1,36–2,63:1** contra o fundo da
-                      // barra no tema claro (§tabela:nav-estados), contra o
-                      // piso de 3:1 da WCAG 1.4.11 — um indicador de 3px que
-                      // ninguém enxerga. Em tinta são 17,44:1 no claro e
-                      // 15,33:1 no escuro.
-                      //
-                      // Não é perda de identidade: a marca de "você está aqui"
-                      // já é tinta em toda a barra — o item ativo usa
-                      // `border-l-foreground` desde sempre, e o fio da seção
-                      // era o único em cor de módulo. O módulo continua sendo
-                      // anunciado pelo quadradinho de cada grupo e pelo shape
-                      // de cada ícone.
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-foreground"
-                      />
-                    ) : null}
-                    <secao.icon aria-hidden="true" className="size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{secao.rotulo}</span>
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={cn(
-                        'size-3.5 shrink-0 text-muted-foreground',
-                        aberta && 'rotate-180',
-                      )}
+          <nav
+            aria-label={secao ? `Telas de ${secao.rotulo}` : 'Telas'}
+            // O `data-modulo` da SEÇÃO escopa as utilities `bg-modulo*` de tudo
+            // que a barra montar dentro dele. O quadradinho de cada grupo
+            // redeclara o seu quando o grupo tem dono próprio; grupo sem dono
+            // (Financeiro, Sistema) herda daqui, e é o que se quer.
+            {...(secao?.modulo && { 'data-modulo': secao.modulo })}
+            className="flex flex-1 flex-col"
+          >
+            {grupos.map((grupo) => (
+              <SidebarGroup key={grupo.title} className="py-0">
+                <SidebarGroupLabel>
+                  {/* O quadradinho na cor do módulo DONO do grupo:
+                      a cor diz de quem é o bloco antes do nome. */}
+                  <span
+                    aria-hidden="true"
+                    {...(grupo.modulo && { 'data-modulo': grupo.modulo })}
+                    className="mr-2 size-2 shrink-0 rounded-data bg-modulo-cheia"
+                  />
+                  {grupo.title}
+                </SidebarGroupLabel>
+                <SidebarMenu>
+                  {grupo.items.map((item) => (
+                    <ItemDaBarra
+                      key={item.url}
+                      item={item}
+                      pathname={pathname}
+                      abertos={abertos}
+                      filtrando={filtrando}
+                      aoAlternar={alternar}
                     />
-                  </button>
-                  {aberta
-                    ? grupos.map((grupo) => (
-                        <SidebarGroup key={grupo.title} className="py-0 pl-2">
-                          <SidebarGroupLabel>
-                            {/* O quadradinho na cor do módulo DONO do grupo:
-                                a cor diz de quem é o bloco antes do nome. */}
-                            <span
-                              aria-hidden="true"
-                              {...(grupo.modulo && { 'data-modulo': grupo.modulo })}
-                              className="mr-2 size-2 shrink-0 rounded-data bg-modulo-cheia"
-                            />
-                            {grupo.title}
-                          </SidebarGroupLabel>
-                          <SidebarMenu>
-                            {grupo.items.map((item) => (
-                              <ItemDaBarra
-                                key={item.url}
-                                item={item}
-                                pathname={pathname}
-                                abertos={abertos}
-                                filtrando={filtrando}
-                                aoAlternar={alternar}
-                              />
-                            ))}
-                          </SidebarMenu>
-                        </SidebarGroup>
-                      ))
-                    : null}
-                </SidebarGroup>
-              )
-            })}
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            ))}
           </nav>
         )}
       </SidebarContent>
@@ -422,21 +374,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const modulo = moduloDaRota(location.pathname)
   const { tem } = useRecursosDaEmpresa()
 
-  /**
-   * A SEÇÃO DA ROTA — nasce do caminho, e só dele.
-   *
-   * Havia aqui um estado de "escolha" para a fileira de ícones do topo poder
-   * espiar outra seção sem navegar. A fileira morreu (POLARIS) e a barra
-   * lateral abre e fecha bloco por conta própria; o último consumidor era a
-   * engrenagem, que agora NAVEGA para `/config`. Estado sem quem o mude é
-   * estado que só pode divergir da tela.
-   */
   const secoes = secoesVisiveis(tem)
-  /** A barra desenha o que se OPERA: a seção-página fica de fora. */
+  /** A fileira desenha o que se OPERA: a seção-página fica de fora. */
   const daBarra = secoes.filter((secao) => !secao.oculta)
-  const secaoAtiva = secaoDaRota(secoes, location.pathname) ?? daBarra[0]
+  const daRota = secaoDaRota(secoes, location.pathname) ?? daBarra[0]
+
+  /**
+   * A SEÇÃO ESPIADA — a seção SEM TELA que o operador abriu no topo.
+   *
+   * Só existe para `Financeiro`, hoje a única seção cujos itens são todos
+   * futuros: `destinoDaSecao` devolve `undefined`, o ícone dela é `<button>`
+   * em vez de `<Link>`, e clicar abre o menu sem navegar. Toda seção com tela
+   * navega, e aí quem responde é a rota — sem estado nenhum.
+   *
+   * O caminho em que a escolha foi feita viaja JUNTO com ela, e é a chave que
+   * a expira: mudou de rota, a escolha caducou e quem manda volta a ser
+   * `secaoDaRota`. Sem `useEffect`, sem sincronizar dois estados — o derivado
+   * não tem como sobreviver ao fato que o contradiz.
+   *
+   * Espiar seção que a empresa perdeu (recurso revogado entre um clique e o
+   * outro) resolve para `undefined` no `find` e cai na rota também.
+   */
+  const [espiada, setEspiada] = useState<{ id: string; em: string } | null>(null)
+  const secaoEspiada =
+    espiada?.em === location.pathname ? daBarra.find((secao) => secao.id === espiada.id) : undefined
+  const secaoAtiva = secaoEspiada ?? daRota
+
+  /**
+   * A seção que a BARRA desenha — sempre uma das operáveis.
+   *
+   * `secaoAtiva` pode ser a seção-página (`/config`), porque é ela que o
+   * rastro do header anuncia e a engrenagem acende. A barra não a recebe:
+   * **Configurações é página, não barra** (#204), e a tela de `/config` já
+   * lista os mesmos grupos — repeti-los do lado seria a mesma escolha em dois
+   * lugares. Dentro dela a barra segue mostrando operação, que é o caminho de
+   * volta, e é o que a `main` já fazia antes da fileira voltar.
+   */
+  const secaoDaBarra = secaoAtiva?.oculta ? daBarra[0] : secaoAtiva
   /** A TELA da rota, para o rastro do header — busca nas folhas da seção. */
-  const telaAtiva = secaoAtiva?.grupos
+  const telaAtiva = daRota?.grupos
     .flatMap((grupo) => grupo.items.flatMap((item) => item.filhas ?? [item]))
     .find((item) => location.pathname === item.url || location.pathname.startsWith(`${item.url}/`))
 
@@ -454,13 +430,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar secoes={daBarra} secaoAtiva={secaoAtiva} />
+      <AppSidebar secao={secaoDaBarra} />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
         <Appbar
           naoLidas={naoLidas}
           secaoAtiva={secaoAtiva?.id}
+          aoEscolherSecao={(id) => setEspiada({ id, em: location.pathname })}
           aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAbrirPaleta={() => setPaletaAberta(true)}
         />
@@ -474,9 +451,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* ONDE ESTOU, por extenso — o Polaris põe o contexto no topo da
               página e o Odoo crava o nome do app na barra. Seção em negrito,
               tela depois; some quando a rota não pertence a seção nenhuma. */}
-          {secaoAtiva ? (
+          {/* O rastro conta a ROTA, e só ela — `secaoAtiva` pode ser a seção
+              que o operador abriu no topo sem sair do lugar (`espiada`), e um
+              "Você está em" que anuncia onde ele NÃO está é pior que ausente.
+              Quem diz qual menu está aberto é o ícone aceso lá em cima. */}
+          {daRota ? (
             <nav aria-label="Você está em" className="flex min-w-0 items-center gap-1.5 text-sm">
-              <span className="shrink-0 font-bold">{secaoAtiva.rotulo}</span>
+              <span className="shrink-0 font-bold">{daRota.rotulo}</span>
               {telaAtiva ? (
                 <>
                   <span aria-hidden="true" className="text-muted-foreground">

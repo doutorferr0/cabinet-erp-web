@@ -1,5 +1,6 @@
 import { moduloDaRota } from '@/app/modulo'
 import {
+  destinoDaSecao,
   gruposVisiveis,
   itemDaRota,
   navGroups,
@@ -313,5 +314,56 @@ describe('rotaMaeDe — para onde o `Voltar` universal leva', () => {
 
   it('caminho fora do menu não inventa mãe — quem responde por ele é o 404', () => {
     expect(rotaMaeDe('/nao-existe/aqui')).toBeUndefined()
+  })
+})
+
+/**
+ * O DESTINO DA SEÇÃO — para onde o ícone dela, no topo, leva.
+ *
+ * A guarda é dupla, e as duas metades importam: toda seção com tela tem de
+ * apontar para uma rota REAL (senão a fileira do topo vira 404), e a seção sem
+ * tela tem de devolver `undefined` em voz alta (senão alguém "conserta"
+ * inventando um caminho).
+ */
+describe('destinoDaSecao', () => {
+  const porId = (id: string) => navSecoes.find((secao) => secao.id === id)
+
+  it('leva à PRIMEIRA tela da seção — a ordem da taxonomia é a preferência', () => {
+    const estoque = porId('estoque')
+    expect(estoque).toBeDefined()
+    // `Movimentação` vem antes de Compras no grupo, e é o destino.
+    expect(estoque && destinoDaSecao(estoque)).toBe('/estoque/movimentacao')
+  })
+
+  it('seção só com tela futura não inventa destino', () => {
+    const financeiro = porId('financeiro')
+    expect(financeiro).toBeDefined()
+    expect(financeiro && destinoDaSecao(financeiro)).toBeUndefined()
+  })
+
+  it('todo destino publicado é um item navegável de verdade', () => {
+    const navegaveis = new Set(
+      navGroups
+        .flatMap((grupo) => grupo.items.flatMap((item) => item.filhas ?? [item]))
+        .filter((item) => !item.futuro && !item.externo)
+        .map((item) => item.url),
+    )
+    for (const secao of navSecoes) {
+      const destino = destinoDaSecao(secao)
+      if (destino) expect(navegaveis).toContain(destino)
+    }
+  })
+
+  /**
+   * O mapa de tabelas sai da SPA por âncora. Um clique de SEÇÃO que caísse
+   * nele trocaria de aplicativo por engano — ele continua alcançável no grupo
+   * dele, declarado com o que é.
+   */
+  it('item externo nunca é destino de seção', () => {
+    for (const secao of navSecoes) {
+      // `undefined` passa por omissão — quem não tem destino não tem como
+      // apontar para o `.html`. A asserção só morde quando há destino.
+      expect(destinoDaSecao(secao) ?? '').not.toContain('.html')
+    }
   })
 })

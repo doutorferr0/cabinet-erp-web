@@ -194,12 +194,17 @@ describe('a lacuna entre a espec e o que o repo guarda', () => {
       // publicar o especificador e a categoria do cliente, e nenhum dos dois
       // está na whitelist. O mockup pede coluna e filtro para os dois — é
       // exatamente a distância que este retrato existe para medir.
-      cliente: ['cel', 'bairro', 'cidade', 'uf', 'indicou', 'categoria'],
+      // `nasc` entrou com o bloco 3 (#270), e a lacuna é DELIBERADA do lado do
+      // contrato: a issue diz por escrito "publicar dado ≠ publicar consulta —
+      // nada disto entra em `sortBy`/`filters`". O mockup pede filtro por data
+      // de nascimento; o servidor guarda e não deixa consultar. É a distância
+      // que este retrato mede, e ela some no dia em que a whitelist crescer.
+      cliente: ['cel', 'nasc', 'bairro', 'cidade', 'uf', 'indicou', 'categoria'],
       colaborador: [],
       // `fax` do fornecedor não aparece: publicado, mas não pede coluna nem
       // filtro no mockup — só entra aqui o que promete consulta e não a tem.
       fornecedor: ['tel', 'bairro', 'cidade', 'uf'],
-      profissional: ['cel', 'bairro', 'cidade', 'uf'],
+      profissional: ['cel', 'nasc', 'bairro', 'cidade', 'uf'],
     })
   })
 

@@ -30,16 +30,34 @@ import { type EntidadeCadastro, camposDe } from '@/features/cadastro/modulos'
  *
  * Vale só para registro VINDO DO SERVIDOR. No `Incluir` não há o que corrigir —
  * a ficha nem aparece.
+ *
+ * ## A segunda lista: campo COM `dto` que o servidor não preencheu (#270)
+ *
+ * O `Tipo de pessoa` do exemplo acima passou a existir no contrato, e por isso
+ * saiu da primeira lista — ele TEM `dto` agora. Só que o defeito não sumiu
+ * junto: cadastro anterior ao campo tem `personType: null`, o radio obrigatório
+ * nasce `FISICA` porque controle precisa de valor, e a ficha voltaria a
+ * afirmar o default.
+ *
+ * A diferença entre os dois casos é o que decide quem responde: a primeira
+ * lista é sobre o CONTRATO e sai do schema, igual para todo registro; a segunda
+ * é sobre ESTE registro e só o `PartnerDto` dele sabe. Por isso ela chega de
+ * fora, por `ausentesNoServidor` do papel, em vez de ser deduzida aqui.
  */
-export function registroParaFicha<T extends object>(registro: T, entidade: EntidadeCadastro): T {
+export function registroParaFicha<T extends object>(
+  registro: T,
+  entidade: EntidadeCadastro,
+  ausentesNoServidor: readonly string[] = [],
+): T {
   const semCobertura = camposDe(entidade)
     .filter((campo) => campo.campo && !campo.dto)
     .map((campo) => campo.campo as string)
 
-  if (semCobertura.length === 0) return registro
+  const apagar = [...semCobertura, ...ausentesNoServidor]
+  if (apagar.length === 0) return registro
 
   const copia = structuredClone(registro)
-  for (const caminho of semCobertura) apagarCaminho(copia, caminho)
+  for (const caminho of apagar) apagarCaminho(copia, caminho)
   return copia
 }
 

@@ -76,6 +76,22 @@ export interface CampoCadastro {
   /** Caminho no schema Zod da entidade. Ausente = o repo ainda não guarda. */
   campo?: string
   /**
+   * SUB-RECURSO: o campo existe, com caminho HTTP próprio, e NÃO é campo do
+   * registro nem do corpo de escrita da entidade.
+   *
+   * Nasceu com os contatos do parceiro (#270). Sem esta marca eles teriam de
+   * escolher entre duas mentiras: com `campo`, apontariam para uma chave que o
+   * schema Zod do formulário não tem mais — a ficha diria "não informado" para
+   * um cadastro que tem três contatos gravados; sem `campo` e sem `dto`,
+   * cairiam em `semLastro` e engordariam a conta do que o repo NÃO guarda,
+   * quando é justamente o contrário.
+   *
+   * O valor é o caminho no contrato, para o leitor saber onde o dado mora:
+   * `/api/partners/{partnerId}/contacts`. Quem desenha um sub-recurso é um
+   * bloco próprio, com gravação própria — o `Gravar` do rodapé não o leva.
+   */
+  sub?: string
+  /**
    * Nome no contrato. Ausente = o servidor ainda não publica.
    *
    * **Publicar o dado não é publicar a consulta.** O `dto` é também o nome que
@@ -209,7 +225,9 @@ export function semConsulta(entidade: EntidadeCadastro): readonly CampoCadastro[
 /** O que o user desenhou e o repo ainda não guarda. Existe para ser CONTADO —
  *  é a medida da distância entre o cadastro pedido e o cadastro implementado. */
 export function semLastro(entidade: EntidadeCadastro): readonly CampoCadastro[] {
-  return camposDe(entidade).filter((campo) => !campo.campo && !campo.dto)
+  // `sub` sai da conta: sub-recurso é dado que EXISTE, com caminho próprio.
+  // Contá-lo como lacuna mediria o oposto do que aconteceu.
+  return camposDe(entidade).filter((campo) => !campo.campo && !campo.dto && !campo.sub)
 }
 
 /**

@@ -5597,6 +5597,299 @@
           }
         }
       }
+    },
+    "/api/payment-terms": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "ListPaymentTerms",
+        "description": "Proposto. As CONDIÇÕES DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado (16 linhas, `Emp_codigo` na coluna), com as parcelas embutidas.\n\n**As parcelas viajam DENTRO da condição, e não em sub-recurso.** É o argumento do `QuoteDetailDto`, um nível abaixo: `Forma_Pagamento_Parcela` tem PK `(Fpg_codigo, Fpp_parcela)` — a parcela não tem identidade fora da condição —, e gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meio plano no banco quando a terceira falhasse.\n\n**Por isso também não há detalhe por id nesta família.** A coleção é um punhado de linhas por empresa e a listagem já entrega as parcelas inteiras; um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar. Mesmo desenho de `/api/catalog-lookups` e `/api/stock-locations`.\n\n**E não é lista de apoio.** `catalog_lookups` guarda `kind`/`name`/`active` e nada mais; condição de pagamento carrega parcela, dias e percentual. Enfiá-la lá daria o rótulo sem os dados que decidem o vencimento — a regra do ADR-011 (`kind` novo é linha no servidor, nunca PR de contrato) vale nos dois sentidos: o que carrega dado não vira `kind`.\n\n**Não publica `filters` de propósito**, pela razão de `/api/stock-locations`: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por `name`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `name`, `active`, `installmentCount`. Campo fora dela é 400.\n\nNão se ordena por parcela: ela é linha de dentro da condição, e ordenar a coleção por um campo do filho é ordenar por qual dos N — pergunta que não tem resposta única. `installmentCount` entra porque é COLUNA (ver `PaymentTermDto`), e é a que responde \"quais condições parcelam mais\".",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPaymentTermDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CreatePaymentTerm",
+        "description": "Proposto. Cria uma condição de pagamento na empresa ativa.\n\n**Papel: `admin` ou superior — e é INTERINO.** Mesma linha de corte que pôs `/api/stock-locations` acima de `/api/variants`: parcelar não é operação de atendimento, é a regra que decide o que TODO vendedor pode oferecer, e um plano errado sai em documento assinado antes de alguém notar. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.\n\n400 quando o plano não fecha — os modos estão em `PaymentTermInstallmentWriteRequest`, e nenhum deles é aparado em silêncio.\n\n409 quando a empresa já tem condição com o mesmo `name`: no legado a PK é `(Fpg_codigo, Fpg_descricao)`, e nome repetido num combo é escolha que não dá para fazer certo — as duas linhas parecem a mesma para quem escolhe.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentTermWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentTermDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — DUAS causas, distinguidas pelo `type` e nunca pelo texto: `urn:cabinet:erro:sem-empresa-ativa` quando a sessão não tem empresa escolhida, e o conflito de nome (já existe condição com este `name` na empresa ativa). O mesmo status com discriminador no `type` é o desenho do contrato inteiro — ver `ProblemDetails`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payment-terms/{id}": {
+      "put": {
+        "tags": ["vendas"],
+        "operationId": "UpdatePaymentTerm",
+        "description": "Proposto. `PUT` substitui a condição INTEIRA, **parcelas junto**: a lista que vier no corpo passa a ser a lista, e a que não veio é apagada. Corpo parcial não preserva parcela.\n\n**Alterar a condição NÃO reescreve documento já gravado.** O orçamento e o pedido CARIMBAM o plano deles (`paymentInstallments`) e a política vigente (`installmentPolicy`) no momento da gravação; o que muda aqui vale do próximo documento em diante. É o que o legado faz ao copiar `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela` para a linha da `Venda` em vez de ler os parâmetros na hora de imprimir. A alternativa — derivar o plano na leitura — mudaria a data de vencimento de parcela que o cliente já recebeu, e o sintoma seria um documento reimpresso diferente de si mesmo.\n\n404 quando o `id` não é condição da empresa ativa: do ponto de vista de quem pergunta, ela não está lá. 409 no `name` repetido, como no `POST`.\n\n**Não há `DELETE`** — aqui nem em lugar nenhum do contrato. Condição usada por documento antigo não pode sumir; `active: false` a tira do combo e deixa o passado legível (padrão 8).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentTermWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentTermDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é condição da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — DUAS causas, distinguidas pelo `type` e nunca pelo texto: `urn:cabinet:erro:sem-empresa-ativa` quando a sessão não tem empresa escolhida, e o conflito de nome (já existe condição com este `name` na empresa ativa). O mesmo status com discriminador no `type` é o desenho do contrato inteiro — ver `ProblemDetails`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/installment-policy": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetInstallmentPolicy",
+        "description": "Proposto. Os três limites que governam o parcelamento na empresa ativa: `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela` do legado. Na tela da Vertz eles valem R$ 100, R$ 50 e 6×.\n\n**São CONFIG, e o ponto da operação é esse.** Aqueles três números são os da instalação da Vertz, não a regra do produto — escrevê-los como constante faria toda empresa que entrar depois herdar o limite de uma, e o dia em que uma delas parcelar em 10× viraria mudança de código.\n\n**Singleton por empresa: não há `POST`, não há id.** A política existe sempre. Empresa sem linha gravada lê o PADRÃO do servidor (os três do legado), e não 404: obrigar cada tela a tratar \"ainda não configurado\" como estado próprio inventaria um terceiro caso que não existe na operação.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentPolicyDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão. **Aqui não vale o \"lista vazia\" das listagens:** aquilo é semântica de COLEÇÃO, onde vazio é a verdade para quem ainda não tem empresa. Isto é um singleton, e um objeto vazio não existe — a política tem três números ou não tem sentido.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["vendas"],
+        "operationId": "UpdateInstallmentPolicy",
+        "description": "Proposto. Grava os três limites da empresa ativa. `PUT` num singleton: substitui os três, e os três são obrigatórios.\n\n**Papel: `admin` ou superior**, pelo mesmo motivo de `CreatePaymentTerm` — só que um nível acima em alcance: isto não descreve UMA condição, descreve o que todas elas podem ser.\n\n400 quando `maxInstallments` é menor que 1, ou quando algum valor é negativo. Zero em `minTotalToInstallCents` é legítimo e quer dizer \"parcela qualquer valor\".\n\n**Mudar a política não reescreve documento gravado** — ver `UpdatePaymentTerm`: o carimbo em `QuoteDetailDto.installmentPolicy` é o que preserva a regra sob a qual cada documento foi feito.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallmentPolicyWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentPolicyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). É o 409 que o contrato reserva para \"este recurso exige empresa\", e a política é dela.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7743,7 +8036,8 @@
           "discountMode",
           "discountPercent",
           "environments",
-          "items"
+          "items",
+          "paymentInstallments"
         ],
         "type": "object",
         "properties": {
@@ -7838,6 +8132,26 @@
             "items": {
               "$ref": "#/components/schemas/QuoteItemDto"
             }
+          },
+          "paymentTermId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "A condição escolhida — `PaymentTermDto.id`, `Ven_formaPag` do legado. `null` enquanto o documento não tem plano de pagamento, que é o estado do orçamento recém-aberto."
+          },
+          "paymentTermName": {
+            "type": ["null", "string"],
+            "description": "Nome da condição na emissão, resolvido pelo servidor — mesmo par de `customerName`/`salespersonName`. Sem ele a grade do documento precisaria da listagem inteira de condições só para escrever uma linha."
+          },
+          "paymentInstallments": {
+            "type": "array",
+            "description": "O plano CARIMBADO na gravação: as parcelas da condição resolvidas contra `totalCents` e `issuedAt`.\n\n**Ecoadas, nunca escritas** — não existem em `QuoteWriteRequest`/`OrderWriteRequest`. Quem manda o `paymentTermId` recebe o plano de volta; deixar o cliente propor as parcelas abriria a porta para um documento cujo plano não soma o total dele.\n\n**Carimbado e não derivado na leitura:** alterar a condição depois não pode mudar o vencimento de parcela que o cliente já recebeu (ver `UpdatePaymentTerm`). É o que o legado faz ao copiar os parâmetros para a linha da `Venda`.\n\n**`[]` quando não há condição escolhida** — array vazio, nunca ausente: campo que às vezes não vem é o que faz a tela quebrar num `.map` só no documento sem plano.",
+            "items": {
+              "$ref": "#/components/schemas/DocumentInstallmentDto"
+            }
+          },
+          "installmentPolicy": {
+            "$ref": "#/components/schemas/InstallmentPolicyDto",
+            "description": "Os três limites que valiam quando este documento foi gravado — `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela`, que no legado são COLUNAS da própria `Venda`.\n\n**Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso."
           }
         }
       },
@@ -7909,6 +8223,11 @@
             "items": {
               "$ref": "#/components/schemas/QuoteItemWriteRequest"
             }
+          },
+          "paymentTermId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente (total abaixo de `minTotalToInstallCents` com condição parcelada, parcela abaixo de `minInstallmentCents`, ou mais parcelas que `maxInstallments`)."
           }
         }
       },
@@ -8894,7 +9213,8 @@
           "discountMode",
           "discountPercent",
           "environments",
-          "items"
+          "items",
+          "paymentInstallments"
         ],
         "type": "object",
         "properties": {
@@ -8993,6 +9313,26 @@
           "quoteNumber": {
             "description": "Número do orçamento de origem, resolvido pelo servidor — a tela mostra 'veio do orçamento 1234' sem uma segunda consulta.",
             "type": ["string", "null"]
+          },
+          "paymentTermId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "A condição escolhida — `PaymentTermDto.id`, `Ven_formaPag` do legado. `null` enquanto o documento não tem plano de pagamento, que é o estado do orçamento recém-aberto."
+          },
+          "paymentTermName": {
+            "type": ["null", "string"],
+            "description": "Nome da condição na emissão, resolvido pelo servidor — mesmo par de `customerName`/`salespersonName`. Sem ele a grade do documento precisaria da listagem inteira de condições só para escrever uma linha."
+          },
+          "paymentInstallments": {
+            "type": "array",
+            "description": "O plano CARIMBADO na gravação: as parcelas da condição resolvidas contra `totalCents` e `issuedAt`.\n\n**Ecoadas, nunca escritas** — não existem em `QuoteWriteRequest`/`OrderWriteRequest`. Quem manda o `paymentTermId` recebe o plano de volta; deixar o cliente propor as parcelas abriria a porta para um documento cujo plano não soma o total dele.\n\n**Carimbado e não derivado na leitura:** alterar a condição depois não pode mudar o vencimento de parcela que o cliente já recebeu (ver `UpdatePaymentTerm`). É o que o legado faz ao copiar os parâmetros para a linha da `Venda`.\n\n**`[]` quando não há condição escolhida** — array vazio, nunca ausente: campo que às vezes não vem é o que faz a tela quebrar num `.map` só no documento sem plano.",
+            "items": {
+              "$ref": "#/components/schemas/DocumentInstallmentDto"
+            }
+          },
+          "installmentPolicy": {
+            "$ref": "#/components/schemas/InstallmentPolicyDto",
+            "description": "Os três limites que valiam quando este documento foi gravado — `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela`, que no legado são COLUNAS da própria `Venda`.\n\n**Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso."
           }
         }
       },
@@ -9059,6 +9399,11 @@
             "items": {
               "$ref": "#/components/schemas/OrderItemWriteRequest"
             }
+          },
+          "paymentTermId": {
+            "type": ["null", "string"],
+            "format": "uuid",
+            "description": "A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente (total abaixo de `minTotalToInstallCents` com condição parcelada, parcela abaixo de `minInstallmentCents`, ou mais parcelas que `maxInstallments`)."
           }
         }
       },
@@ -9366,6 +9711,185 @@
           "total": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "PaymentTermInstallmentDto": {
+        "required": ["number", "daysAfterIssue", "percent", "amountCents"],
+        "type": "object",
+        "description": "Proposto. Uma PARCELA da condição — `Forma_Pagamento_Parcela` do legado, PK `(Fpg_codigo, Fpp_parcela)`. Não tem id: a identidade dela é o par condição + `number`, e é por isso que ela viaja embutida (ver `ListPaymentTerms`).",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordinal da parcela dentro da condição, 1-based e único nela — `Fpp_parcela`. É a ordem de exibição e a metade legível da chave."
+          },
+          "daysAfterIssue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Dias corridos entre a EMISSÃO do documento e o vencimento desta parcela — `Fpp_dias`. Absoluto, não incremental: `30/60/90` são três linhas com 30, 60 e 90.\n\n`Fpg_DiasPrimeiraParcela` e `Fpg_DiasEntreParcelas` do cabeçalho do legado ficaram de fora porque são o GERADOR destas linhas, não dado a mais — guardar os dois lados deixaria duas verdades sobre o mesmo vencimento, e a tela que edita uma parcela do meio quebraria a fórmula sem ninguém ver. Entrada à vista é uma parcela com `0`."
+          },
+          "percent": {
+            "type": ["null", "integer"],
+            "format": "int32",
+            "description": "Fatia do total, int com 4 casas implícitas — `1000000` = 100%, `500000` = 50%. Mesma escala de `QuoteDetailDto.discountPercent`. `null` quando a parcela é de valor fixo."
+          },
+          "amountCents": {
+            "type": ["null", "integer"],
+            "format": "int64",
+            "description": "Valor fixo da parcela, em centavos — a entrada de R$ 500 que não é fração do total. `null` quando a parcela é percentual."
+          }
+        }
+      },
+      "PaymentTermDto": {
+        "required": ["id", "name", "active", "installmentCount", "installments"],
+        "type": "object",
+        "description": "Proposto. Uma CONDIÇÃO DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado.\n\n**O que ficou de fora, e por quê.** O legado carrega na condição seis colunas de desconto/acréscimo (`Fpg_desconto`, `Fpg_acrescimo` e os pares `_lu`/`_ma`/`_se`) e mais a tabela `Forma_PagamentoGrupProd`, com desconto e acréscimo por GRUPO DE PRODUTO. **Nada disso entra aqui, e a razão é que não há em que pendurar:** grupo de produto não é entidade neste contrato — ele existe como `QuoteItemDto.productGroup`, TEXTO livre digitado na linha do orçamento. Um ajuste por grupo precisaria de um id, e casar por texto faria \"PENDENTES\" e \"Pendentes\" renderem descontos diferentes no mesmo documento.\n\nFica como dívida DECLARADA, não como esquecimento: quando o grupo de produto virar cadastro com id, o ajuste por grupo entra pendurado nele — e é lá que ele pertence, porque o desconto é do par (condição, grupo) e não da condição.\n\n**E há uma SEGUNDA verdade sobre condição de pagamento neste contrato, hoje:** `PartnerDto.paymentTerms` é `string` livre, sem descrição — a condição habitual do parceiro, digitada. Ela NÃO foi trocada por `paymentTermId` aqui de propósito: o campo é do VÍNCULO do parceiro com a empresa, converter texto em id é migração de dado (e escolha de para qual condição cada texto aponta), e fazer as duas coisas na mesma PR deixaria a segunda sem quem a revisasse. Enquanto isso não acontece, as duas convivem e o documento manda: quem grava orçamento escolhe `paymentTermId`, e o texto do parceiro é sugestão para quem digita.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Como o operador a chama — `Fpg_descricao`. Único na empresa (409 no repetido)."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativação lógica — `Fpg_situacao` (A/I). Condição inativa sai do combo e continua legível nos documentos que a usaram."
+          },
+          "installmentCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Quantas parcelas a condição tem — `Fpg_quantidade`. DERIVADO de `installments`, calculado pelo servidor, e por isso não existe na escrita.\n\nEle é redundante de propósito: existe porque é COLUNA de grade e chave de `sortBy`, e ordenar por tamanho de array não é coisa que a fronteira de listagem saiba fazer. No legado os dois lados podiam divergir (a coluna era gravada à mão); aqui não podem, e é essa a diferença que justifica manter o campo em vez de copiar a coluna."
+          },
+          "installments": {
+            "type": "array",
+            "description": "As parcelas, em ordem de `number`.",
+            "items": {
+              "$ref": "#/components/schemas/PaymentTermInstallmentDto"
+            }
+          }
+        }
+      },
+      "PaymentTermInstallmentWriteRequest": {
+        "required": ["number", "daysAfterIssue"],
+        "type": "object",
+        "description": "Proposto. Uma parcela no corpo de escrita.\n\n**Mesma forma do DTO, e ainda assim schema próprio:** o dia em que a leitura ganhar campo derivado (como `installmentCount` já é na condição), reusar o DTO na escrita deixaria o cliente mandando o que o servidor calcula, e o Fastify o apagaria em silêncio.\n\n**Exatamente UM entre `percent` e `amountCents`.** Os dois preenchidos, ou nenhum, é **400** com `fields[]` apontando a linha — nunca \"vale o percentual e ignora o valor\", que é a aparadura silenciosa que faz o operador conferir a soma e não achar o erro.",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "daysAfterIssue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "percent": {
+            "type": ["null", "integer"],
+            "format": "int32"
+          },
+          "amountCents": {
+            "type": ["null", "integer"],
+            "format": "int64"
+          }
+        }
+      },
+      "PaymentTermWriteRequest": {
+        "required": ["name", "active", "installments"],
+        "type": "object",
+        "description": "Proposto. Corpo de criação e de alteração. **`PUT` substitui a condição INTEIRA**, parcelas junto. Sem `id` e sem `installmentCount` (o servidor deriva).\n\n**Três recusas, e nenhuma delas apara em silêncio** (todas 400, com `fields[]`):\n\n1. `installments` VAZIO. Condição sem parcela não diz quando se paga; \"à vista\" é uma parcela com `daysAfterIssue: 0` e `percent: 1000000`, que é dado, não ausência de dado.\n2. `number` repetido ou com buraco na sequência. A chave do legado é `(condição, número)`, e uma sequência `1,2,4` não tem leitura única na hora de imprimir.\n3. Parcelas todas percentuais cuja soma não fecha **exatamente** `1000000` (100%). Somar 99,99% e deixar o resto para o arredondamento do servidor põe centavo órfão num documento assinado.\n\n**Misturar percentual e valor fixo na mesma condição também é 400**, e essa é a única das quatro que é dívida e não regra: o legado permite (`Fpp_porc_valor` e `Fpp_PorcentagemDoTotal` convivem na linha), mas a ordem de aplicação — se o fixo sai do total antes de os percentuais incidirem, e o que acontece quando o fixo é maior que o total — **não foi decidida por ninguém**. Publicar uma regra de arredondamento aqui a fixaria no servidor para sempre. Recusar deixa a falta visível.",
+        "properties": {
+          "name": {
+            "type": ["null", "string"]
+          },
+          "active": {
+            "type": ["null", "boolean"]
+          },
+          "installments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentTermInstallmentWriteRequest"
+            }
+          }
+        }
+      },
+      "PagedResultOfPaymentTermDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentTermDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "InstallmentPolicyDto": {
+        "required": ["minTotalToInstallCents", "minInstallmentCents", "maxInstallments"],
+        "type": "object",
+        "description": "Proposto. Os três limites de parcelamento — e o mesmo schema serve para o CARIMBO no documento (`QuoteDetailDto.installmentPolicy`), porque é literalmente o valor que valia na gravação.\n\n**Nenhum campo é anulável, e é decisão.** \"Sem teto\" seria um segundo modo de ler o mesmo campo, e o legado não o tem: `Par_QuantMaxParcela` é sempre um número. Quem não quer teto grava um alto.\n\n---\n\n**DECISÃO PENDENTE — org × empresa, e ela está aqui em cima da mesa.**\n\nNo legado os dois níveis DISCORDAM, e não por descuido de leitura: `Forma_Pagamento` tem `Emp_codigo` (condição é por empresa), enquanto `Paramentros` — a tabela onde os três limites moram — tem **uma linha, sem chave primária e sem `Emp_codigo`**, ou seja, vale para a instalação inteira.\n\nPublicado aqui **por empresa ativa**, por dois motivos: o isolamento do Cabinet é por `tenant_id` e uma tabela sem ele seria a segunda global do repo (`catalog_lookups` é a primeira, e cada uma custa uma exceção à RLS); e um limite que governa uma tabela POR EMPRESA não se sustenta acima dela — a empresa que precisasse de 10× não teria como, sem mudar o limite das outras.\n\nSe o user decidir org, o que muda é onde a linha mora: a LEITURA continua sendo \"a política da empresa ativa\", então nenhum caminho deste contrato muda. E em qualquer das duas, o carimbo no documento é o que protege o histórico.",
+        "properties": {
+          "minTotalToInstallCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total mínimo do documento para que ele possa ser parcelado — `par_ParcelarVlAcima` (R$ 100 na Vertz = `10000`). Abaixo dele, só condição de parcela única."
+          },
+          "minInstallmentCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor mínimo de CADA parcela — `Par_VlMinParcela` (R$ 50 = `5000`). É o limite que corta o plano na prática: um total de R$ 240 em 6× dá R$ 40 e não passa."
+          },
+          "maxInstallments": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Teto de parcelas — `Par_QuantMaxParcela` (6 na Vertz)."
+          }
+        }
+      },
+      "InstallmentPolicyWriteRequest": {
+        "required": ["minTotalToInstallCents", "minInstallmentCents", "maxInstallments"],
+        "type": "object",
+        "description": "Proposto. Os três, todos obrigatórios — `PUT` de singleton substitui a política inteira, e política pela metade não tem leitura.",
+        "properties": {
+          "minTotalToInstallCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "minInstallmentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxInstallments": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DocumentInstallmentDto": {
+        "required": ["number", "dueDate", "amountCents"],
+        "type": "object",
+        "description": "Proposto. Uma parcela DO DOCUMENTO — o plano já resolvido em datas e centavos, não mais a regra.\n\n**Um schema só para orçamento e pedido**, ao contrário de `QuoteEnvironmentDto`/`OrderEnvironmentDto`. Aqueles são duas coisas que já divergem; esta é a MESMA conta a partir da MESMA condição, e duas cópias idênticas seriam dois lugares para mudar quando a soma dos centavos mudar de regra.",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordinal, 1-based."
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Vencimento resolvido: `issuedAt` + `daysAfterIssue` da parcela da condição. Data, não instante — parcela vence no DIA."
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor da parcela em centavos, já resolvido. A soma das parcelas é `totalCents` EXATA: a sobra do arredondamento vai para a ÚLTIMA, que é onde o legado a põe e onde ela é conferível a olho contra o total impresso."
           }
         }
       }

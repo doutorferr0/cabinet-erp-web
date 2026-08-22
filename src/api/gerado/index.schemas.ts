@@ -1651,6 +1651,44 @@ export const QuoteDetailDtoDiscountMode = {
 } as const;
 
 /**
+ * Proposto. Uma parcela DO DOCUMENTO — o plano já resolvido em datas e centavos, não mais a regra.
+ *
+ * **Um schema só para orçamento e pedido**, ao contrário de `QuoteEnvironmentDto`/`OrderEnvironmentDto`. Aqueles são duas coisas que já divergem; esta é a MESMA conta a partir da MESMA condição, e duas cópias idênticas seriam dois lugares para mudar quando a soma dos centavos mudar de regra.
+ */
+export interface DocumentInstallmentDto {
+  /** Ordinal, 1-based. */
+  number: number;
+  /** Vencimento resolvido: `issuedAt` + `daysAfterIssue` da parcela da condição. Data, não instante — parcela vence no DIA. */
+  dueDate: string;
+  /** Valor da parcela em centavos, já resolvido. A soma das parcelas é `totalCents` EXATA: a sobra do arredondamento vai para a ÚLTIMA, que é onde o legado a põe e onde ela é conferível a olho contra o total impresso. */
+  amountCents: number;
+}
+
+/**
+ * Proposto. Os três limites de parcelamento — e o mesmo schema serve para o CARIMBO no documento (`QuoteDetailDto.installmentPolicy`), porque é literalmente o valor que valia na gravação.
+ *
+ * **Nenhum campo é anulável, e é decisão.** "Sem teto" seria um segundo modo de ler o mesmo campo, e o legado não o tem: `Par_QuantMaxParcela` é sempre um número. Quem não quer teto grava um alto.
+ *
+ * ---
+ *
+ * **DECISÃO PENDENTE — org × empresa, e ela está aqui em cima da mesa.**
+ *
+ * No legado os dois níveis DISCORDAM, e não por descuido de leitura: `Forma_Pagamento` tem `Emp_codigo` (condição é por empresa), enquanto `Paramentros` — a tabela onde os três limites moram — tem **uma linha, sem chave primária e sem `Emp_codigo`**, ou seja, vale para a instalação inteira.
+ *
+ * Publicado aqui **por empresa ativa**, por dois motivos: o isolamento do Cabinet é por `tenant_id` e uma tabela sem ele seria a segunda global do repo (`catalog_lookups` é a primeira, e cada uma custa uma exceção à RLS); e um limite que governa uma tabela POR EMPRESA não se sustenta acima dela — a empresa que precisasse de 10× não teria como, sem mudar o limite das outras.
+ *
+ * Se o user decidir org, o que muda é onde a linha mora: a LEITURA continua sendo "a política da empresa ativa", então nenhum caminho deste contrato muda. E em qualquer das duas, o carimbo no documento é o que protege o histórico.
+ */
+export interface InstallmentPolicyDto {
+  /** Total mínimo do documento para que ele possa ser parcelado — `par_ParcelarVlAcima` (R$ 100 na Vertz = `10000`). Abaixo dele, só condição de parcela única. */
+  minTotalToInstallCents: number;
+  /** Valor mínimo de CADA parcela — `Par_VlMinParcela` (R$ 50 = `5000`). É o limite que corta o plano na prática: um total de R$ 240 em 6× dá R$ 40 e não passa. */
+  minInstallmentCents: number;
+  /** Teto de parcelas — `Par_QuantMaxParcela` (6 na Vertz). */
+  maxInstallments: number;
+}
+
+/**
  * Proposto. O orçamento inteiro: cabeçalho, ambientes e itens numa resposta só. Itens e ambientes viajam embutidos porque não têm identidade fora do documento, e porque sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas — falha no meio deixaria metade da grade gravada.
  */
 export interface QuoteDetailDto {
@@ -1715,6 +1753,32 @@ export interface QuoteDetailDto {
   /** Ambientes do documento, na ordem de exibição. */
   environments: QuoteEnvironmentDto[];
   items: QuoteItemDto[];
+  /**
+     * A condição escolhida — `PaymentTermDto.id`, `Ven_formaPag` do legado. `null` enquanto o documento não tem plano de pagamento, que é o estado do orçamento recém-aberto.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * Nome da condição na emissão, resolvido pelo servidor — mesmo par de `customerName`/`salespersonName`. Sem ele a grade do documento precisaria da listagem inteira de condições só para escrever uma linha.
+     * @nullable
+     */
+  paymentTermName?: string | null;
+  /**
+     * O plano CARIMBADO na gravação: as parcelas da condição resolvidas contra `totalCents` e `issuedAt`.
+     *
+     * **Ecoadas, nunca escritas** — não existem em `QuoteWriteRequest`/`OrderWriteRequest`. Quem manda o `paymentTermId` recebe o plano de volta; deixar o cliente propor as parcelas abriria a porta para um documento cujo plano não soma o total dele.
+     *
+     * **Carimbado e não derivado na leitura:** alterar a condição depois não pode mudar o vencimento de parcela que o cliente já recebeu (ver `UpdatePaymentTerm`). É o que o legado faz ao copiar os parâmetros para a linha da `Venda`.
+     *
+     * **`[]` quando não há condição escolhida** — array vazio, nunca ausente: campo que às vezes não vem é o que faz a tela quebrar num `.map` só no documento sem plano.
+     */
+  paymentInstallments: DocumentInstallmentDto[];
+  /**
+     * Os três limites que valiam quando este documento foi gravado — `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela`, que no legado são COLUNAS da própria `Venda`.
+     *
+     * **Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso.
+     */
+  installmentPolicy?: InstallmentPolicyDto;
 }
 
 /**
@@ -1780,6 +1844,11 @@ export interface QuoteWriteRequest {
   /** Ambientes do documento, na ordem de exibição. */
   environments: QuoteEnvironmentDto[];
   items: QuoteItemWriteRequest[];
+  /**
+     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente (total abaixo de `minTotalToInstallCents` com condição parcelada, parcela abaixo de `minInstallmentCents`, ou mais parcelas que `maxInstallments`).
+     * @nullable
+     */
+  paymentTermId?: string | null;
 }
 
 export interface PagedResultOfQuoteDto {
@@ -2636,6 +2705,32 @@ export interface OrderDetailDto {
      * @nullable
      */
   quoteNumber?: string | null;
+  /**
+     * A condição escolhida — `PaymentTermDto.id`, `Ven_formaPag` do legado. `null` enquanto o documento não tem plano de pagamento, que é o estado do orçamento recém-aberto.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * Nome da condição na emissão, resolvido pelo servidor — mesmo par de `customerName`/`salespersonName`. Sem ele a grade do documento precisaria da listagem inteira de condições só para escrever uma linha.
+     * @nullable
+     */
+  paymentTermName?: string | null;
+  /**
+     * O plano CARIMBADO na gravação: as parcelas da condição resolvidas contra `totalCents` e `issuedAt`.
+     *
+     * **Ecoadas, nunca escritas** — não existem em `QuoteWriteRequest`/`OrderWriteRequest`. Quem manda o `paymentTermId` recebe o plano de volta; deixar o cliente propor as parcelas abriria a porta para um documento cujo plano não soma o total dele.
+     *
+     * **Carimbado e não derivado na leitura:** alterar a condição depois não pode mudar o vencimento de parcela que o cliente já recebeu (ver `UpdatePaymentTerm`). É o que o legado faz ao copiar os parâmetros para a linha da `Venda`.
+     *
+     * **`[]` quando não há condição escolhida** — array vazio, nunca ausente: campo que às vezes não vem é o que faz a tela quebrar num `.map` só no documento sem plano.
+     */
+  paymentInstallments: DocumentInstallmentDto[];
+  /**
+     * Os três limites que valiam quando este documento foi gravado — `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela`, que no legado são COLUNAS da própria `Venda`.
+     *
+     * **Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso.
+     */
+  installmentPolicy?: InstallmentPolicyDto;
 }
 
 /**
@@ -2696,6 +2791,11 @@ export interface OrderWriteRequest {
   /** Ambientes do documento, na ordem de exibição. */
   environments: OrderEnvironmentDto[];
   items: OrderItemWriteRequest[];
+  /**
+     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente (total abaixo de `minTotalToInstallCents` com condição parcelada, parcela abaixo de `minInstallmentCents`, ou mais parcelas que `maxInstallments`).
+     * @nullable
+     */
+  paymentTermId?: string | null;
 }
 
 export interface PagedResultOfOrderDto {
@@ -2852,6 +2952,104 @@ export interface RoleWriteRequest {
 export interface PagedResultOfRoleDto {
   rows: RoleDto[];
   total: number;
+}
+
+/**
+ * Proposto. Uma PARCELA da condição — `Forma_Pagamento_Parcela` do legado, PK `(Fpg_codigo, Fpp_parcela)`. Não tem id: a identidade dela é o par condição + `number`, e é por isso que ela viaja embutida (ver `ListPaymentTerms`).
+ */
+export interface PaymentTermInstallmentDto {
+  /** Ordinal da parcela dentro da condição, 1-based e único nela — `Fpp_parcela`. É a ordem de exibição e a metade legível da chave. */
+  number: number;
+  /**
+     * Dias corridos entre a EMISSÃO do documento e o vencimento desta parcela — `Fpp_dias`. Absoluto, não incremental: `30/60/90` são três linhas com 30, 60 e 90.
+     *
+     * `Fpg_DiasPrimeiraParcela` e `Fpg_DiasEntreParcelas` do cabeçalho do legado ficaram de fora porque são o GERADOR destas linhas, não dado a mais — guardar os dois lados deixaria duas verdades sobre o mesmo vencimento, e a tela que edita uma parcela do meio quebraria a fórmula sem ninguém ver. Entrada à vista é uma parcela com `0`.
+     */
+  daysAfterIssue: number;
+  /**
+     * Fatia do total, int com 4 casas implícitas — `1000000` = 100%, `500000` = 50%. Mesma escala de `QuoteDetailDto.discountPercent`. `null` quando a parcela é de valor fixo.
+     * @nullable
+     */
+  percent: number | null;
+  /**
+     * Valor fixo da parcela, em centavos — a entrada de R$ 500 que não é fração do total. `null` quando a parcela é percentual.
+     * @nullable
+     */
+  amountCents: number | null;
+}
+
+/**
+ * Proposto. Uma CONDIÇÃO DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado.
+ *
+ * **O que ficou de fora, e por quê.** O legado carrega na condição seis colunas de desconto/acréscimo (`Fpg_desconto`, `Fpg_acrescimo` e os pares `_lu`/`_ma`/`_se`) e mais a tabela `Forma_PagamentoGrupProd`, com desconto e acréscimo por GRUPO DE PRODUTO. **Nada disso entra aqui, e a razão é que não há em que pendurar:** grupo de produto não é entidade neste contrato — ele existe como `QuoteItemDto.productGroup`, TEXTO livre digitado na linha do orçamento. Um ajuste por grupo precisaria de um id, e casar por texto faria "PENDENTES" e "Pendentes" renderem descontos diferentes no mesmo documento.
+ *
+ * Fica como dívida DECLARADA, não como esquecimento: quando o grupo de produto virar cadastro com id, o ajuste por grupo entra pendurado nele — e é lá que ele pertence, porque o desconto é do par (condição, grupo) e não da condição.
+ *
+ * **E há uma SEGUNDA verdade sobre condição de pagamento neste contrato, hoje:** `PartnerDto.paymentTerms` é `string` livre, sem descrição — a condição habitual do parceiro, digitada. Ela NÃO foi trocada por `paymentTermId` aqui de propósito: o campo é do VÍNCULO do parceiro com a empresa, converter texto em id é migração de dado (e escolha de para qual condição cada texto aponta), e fazer as duas coisas na mesma PR deixaria a segunda sem quem a revisasse. Enquanto isso não acontece, as duas convivem e o documento manda: quem grava orçamento escolhe `paymentTermId`, e o texto do parceiro é sugestão para quem digita.
+ */
+export interface PaymentTermDto {
+  id: string;
+  /** Como o operador a chama — `Fpg_descricao`. Único na empresa (409 no repetido). */
+  name: string;
+  /** Desativação lógica — `Fpg_situacao` (A/I). Condição inativa sai do combo e continua legível nos documentos que a usaram. */
+  active: boolean;
+  /**
+     * Quantas parcelas a condição tem — `Fpg_quantidade`. DERIVADO de `installments`, calculado pelo servidor, e por isso não existe na escrita.
+     *
+     * Ele é redundante de propósito: existe porque é COLUNA de grade e chave de `sortBy`, e ordenar por tamanho de array não é coisa que a fronteira de listagem saiba fazer. No legado os dois lados podiam divergir (a coluna era gravada à mão); aqui não podem, e é essa a diferença que justifica manter o campo em vez de copiar a coluna.
+     */
+  installmentCount: number;
+  /** As parcelas, em ordem de `number`. */
+  installments: PaymentTermInstallmentDto[];
+}
+
+/**
+ * Proposto. Uma parcela no corpo de escrita.
+ *
+ * **Mesma forma do DTO, e ainda assim schema próprio:** o dia em que a leitura ganhar campo derivado (como `installmentCount` já é na condição), reusar o DTO na escrita deixaria o cliente mandando o que o servidor calcula, e o Fastify o apagaria em silêncio.
+ *
+ * **Exatamente UM entre `percent` e `amountCents`.** Os dois preenchidos, ou nenhum, é **400** com `fields[]` apontando a linha — nunca "vale o percentual e ignora o valor", que é a aparadura silenciosa que faz o operador conferir a soma e não achar o erro.
+ */
+export interface PaymentTermInstallmentWriteRequest {
+  number: number;
+  daysAfterIssue: number;
+  /** @nullable */
+  percent?: number | null;
+  /** @nullable */
+  amountCents?: number | null;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração. **`PUT` substitui a condição INTEIRA**, parcelas junto. Sem `id` e sem `installmentCount` (o servidor deriva).
+ *
+ * **Três recusas, e nenhuma delas apara em silêncio** (todas 400, com `fields[]`):
+ *
+ * 1. `installments` VAZIO. Condição sem parcela não diz quando se paga; "à vista" é uma parcela com `daysAfterIssue: 0` e `percent: 1000000`, que é dado, não ausência de dado.
+ * 2. `number` repetido ou com buraco na sequência. A chave do legado é `(condição, número)`, e uma sequência `1,2,4` não tem leitura única na hora de imprimir.
+ * 3. Parcelas todas percentuais cuja soma não fecha **exatamente** `1000000` (100%). Somar 99,99% e deixar o resto para o arredondamento do servidor põe centavo órfão num documento assinado.
+ *
+ * **Misturar percentual e valor fixo na mesma condição também é 400**, e essa é a única das quatro que é dívida e não regra: o legado permite (`Fpp_porc_valor` e `Fpp_PorcentagemDoTotal` convivem na linha), mas a ordem de aplicação — se o fixo sai do total antes de os percentuais incidirem, e o que acontece quando o fixo é maior que o total — **não foi decidida por ninguém**. Publicar uma regra de arredondamento aqui a fixaria no servidor para sempre. Recusar deixa a falta visível.
+ */
+export interface PaymentTermWriteRequest {
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  active: boolean | null;
+  installments: PaymentTermInstallmentWriteRequest[];
+}
+
+export interface PagedResultOfPaymentTermDto {
+  rows: PaymentTermDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Os três, todos obrigatórios — `PUT` de singleton substitui a política inteira, e política pela metade não tem leitura.
+ */
+export interface InstallmentPolicyWriteRequest {
+  minTotalToInstallCents: number;
+  minInstallmentCents: number;
+  maxInstallments: number;
 }
 
 /**
@@ -3228,6 +3426,22 @@ export type ListStockBalancesParams = {
  * Whitelist: `qty`. Campo fora dela é 400.
  *
  * É lista curta e a única ordem que responde pergunta de quem lê é "onde tem mais". `locationId` não ordena (uuid), e o nome do depósito não está nesta resposta de propósito — ver `ListStockLocations`. Sem `sortBy` a ordem é a da chave, estável e sem significado: quem recebeu o punhado de linhas ordena por nome com a listagem de depósitos em mãos.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListPaymentTermsParams = {
+/**
+ * Busca por `name`.
+ */
+q?: string;
+/**
+ * Whitelist: `name`, `active`, `installmentCount`. Campo fora dela é 400.
+ *
+ * Não se ordena por parcela: ela é linha de dentro da condição, e ordenar a coleção por um campo do filho é ordenar por qual dos N — pergunta que não tem resposta única. `installmentCount` entra porque é COLUNA (ver `PaymentTermDto`), e é a que responde "quais condições parcelam mais".
  */
 sortBy?: string;
 sortDesc?: boolean;

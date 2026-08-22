@@ -105,6 +105,13 @@ export function paraOrcamento(dto: QuoteDetailDto): Orcamento {
       nome: a.name,
       ordem: a.order,
     })),
+    // O bloco PAGAMENTO desce inteiro para o formulário: o id é o que a escrita
+    // devolve, e o plano é o carimbo — leitura pura, que a tela mostra e não
+    // reenvia (`QuoteWriteRequest` só tem `paymentTermId`).
+    condicaoPagamentoId: dto.paymentTermId ?? null,
+    condicaoPagamento: dto.paymentTermName ?? null,
+    parcelas: dto.paymentInstallments ?? [],
+    ...(dto.installmentPolicy ? { politicaDeParcelamento: dto.installmentPolicy } : {}),
     itens: (dto.items ?? []).map((item) => ({
       item: String(item.lineNumber),
       codigoFornecedor: item.supplierCode ?? '',
@@ -171,6 +178,11 @@ export function paraEscrita(o: Orcamento): QuoteWriteRequest {
     // o percentual guardado faria o servidor aplicar um desconto geral que a
     // tela não está mostrando.
     discountPercent: o.modoDesconto === 'GERAL' ? o.descontoPercentual : 0,
+    // Do bloco Pagamento sobe SÓ o id. O nome e as parcelas são carimbo do
+    // servidor, e reenviá-los deixaria o cliente propor um plano que não soma o
+    // total do documento — o Fastify os apagaria em silêncio, e o operador
+    // veria o plano dele virar outro sem nenhum aviso.
+    paymentTermId: o.condicaoPagamentoId,
     environments: o.ambientes.map((a) => ({ code: a.codigo, name: a.nome, order: a.ordem })),
     items: o.itens.map((item, i) => ({
       lineNumber: i + 1,

@@ -62,6 +62,8 @@ export type FamiliaDeCaminho =
   | 'products'
   | 'variants'
   | 'stock-locations'
+  | 'payment-terms'
+  | 'installment-policy'
   | 'employees'
   | 'catalog-lookups'
   | 'projects'
@@ -96,6 +98,25 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
    */
   'stock-locations': 'admin',
+  /**
+   * Condição de pagamento e a política de parcelamento sobem juntas, e ficam
+   * onde o depósito ficou — pela MESMA linha de corte, não por simetria.
+   *
+   * Parcelar não é operação de atendimento: é a regra que decide o que TODO
+   * vendedor pode oferecer, e o erro sai em documento assinado antes de alguém
+   * notar. `operator-sales` grava o orçamento (é o trabalho dele) e escolhe
+   * entre as condições que existem; criar a condição é outra coisa.
+   *
+   * A política fica no MESMO degrau que a condição, e não um acima, porque quem
+   * pode escrever a condição já decide o plano na prática: um teto de 6× guardado
+   * de `admin` enquanto `operator-full` cadastra a condição de 10 parcelas seria
+   * cadeado na porta com a janela aberta.
+   *
+   * **INTERINO**, como a linha do depósito: vira permissão nomeada quando o
+   * modelo por AÇÃO (api#84) entregar.
+   */
+  'payment-terms': 'admin',
+  'installment-policy': 'admin',
   employees: 'admin',
   /**
    * Decisão, não herança (`cabinet-erp-api#66`).
@@ -147,6 +168,8 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   products: ['/api/products'],
   variants: ['/api/products', '/api/variants'],
   'stock-locations': ['/api/stock-locations'],
+  'payment-terms': ['/api/payment-terms'],
+  'installment-policy': ['/api/installment-policy'],
   employees: ['/api/employees'],
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],

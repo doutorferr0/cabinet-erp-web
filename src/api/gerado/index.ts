@@ -31,6 +31,8 @@ import type {
   EmployeeWriteRequest,
   GetCrmLostReasonsReportParams,
   HealthStatus,
+  InstallmentPolicyDto,
+  InstallmentPolicyWriteRequest,
   ListActivitiesParams,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
@@ -41,6 +43,7 @@ import type {
   ListOrdersParams,
   ListPartnerContactsParams,
   ListPartnersParams,
+  ListPaymentTermsParams,
   ListProductsParams,
   ListProjectsParams,
   ListQuotesParams,
@@ -64,6 +67,7 @@ import type {
   PagedResultOfOrderDto,
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
+  PagedResultOfPaymentTermDto,
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
   PagedResultOfRoleDto,
@@ -76,6 +80,8 @@ import type {
   PartnerDto,
   PartnerLinkRequest,
   PartnerWriteRequest,
+  PaymentTermDto,
+  PaymentTermWriteRequest,
   PermissionCatalogDto,
   ProblemDetails,
   ProductDetailDto,
@@ -5205,6 +5211,329 @@ export const listStockBalances = async (variantId: string,
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type listPaymentTermsResponse200 = {
+  data: PagedResultOfPaymentTermDto
+  status: 200
+}
+
+export type listPaymentTermsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPaymentTermsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPaymentTermsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPaymentTermsResponseSuccess = (listPaymentTermsResponse200) & {
+  headers: Headers;
+};
+export type listPaymentTermsResponseError = (listPaymentTermsResponse400 | listPaymentTermsResponse401 | listPaymentTermsResponse403) & {
+  headers: Headers;
+};
+
+export type listPaymentTermsResponse = (listPaymentTermsResponseSuccess | listPaymentTermsResponseError)
+
+export const getListPaymentTermsUrl = (params?: ListPaymentTermsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/payment-terms?${stringifiedParams}` : `/api/payment-terms`
+}
+
+/**
+ * Proposto. As CONDIÇÕES DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado (16 linhas, `Emp_codigo` na coluna), com as parcelas embutidas.
+ *
+ * **As parcelas viajam DENTRO da condição, e não em sub-recurso.** É o argumento do `QuoteDetailDto`, um nível abaixo: `Forma_Pagamento_Parcela` tem PK `(Fpg_codigo, Fpp_parcela)` — a parcela não tem identidade fora da condição —, e gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meio plano no banco quando a terceira falhasse.
+ *
+ * **Por isso também não há detalhe por id nesta família.** A coleção é um punhado de linhas por empresa e a listagem já entrega as parcelas inteiras; um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar. Mesmo desenho de `/api/catalog-lookups` e `/api/stock-locations`.
+ *
+ * **E não é lista de apoio.** `catalog_lookups` guarda `kind`/`name`/`active` e nada mais; condição de pagamento carrega parcela, dias e percentual. Enfiá-la lá daria o rótulo sem os dados que decidem o vencimento — a regra do ADR-011 (`kind` novo é linha no servidor, nunca PR de contrato) vale nos dois sentidos: o que carrega dado não vira `kind`.
+ *
+ * **Não publica `filters` de propósito**, pela razão de `/api/stock-locations`: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.
+ */
+export const listPaymentTerms = async (params?: ListPaymentTermsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPaymentTermsResponse> => {
+
+  return apiFetch<listPaymentTermsResponse>(getListPaymentTermsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPaymentTermResponse201 = {
+  data: PaymentTermDto
+  status: 201
+}
+
+export type createPaymentTermResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPaymentTermResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPaymentTermResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPaymentTermResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPaymentTermResponseSuccess = (createPaymentTermResponse201) & {
+  headers: Headers;
+};
+export type createPaymentTermResponseError = (createPaymentTermResponse400 | createPaymentTermResponse401 | createPaymentTermResponse403 | createPaymentTermResponse409) & {
+  headers: Headers;
+};
+
+export type createPaymentTermResponse = (createPaymentTermResponseSuccess | createPaymentTermResponseError)
+
+export const getCreatePaymentTermUrl = () => {
+
+
+
+
+  return `/api/payment-terms`
+}
+
+/**
+ * Proposto. Cria uma condição de pagamento na empresa ativa.
+ *
+ * **Papel: `admin` ou superior — e é INTERINO.** Mesma linha de corte que pôs `/api/stock-locations` acima de `/api/variants`: parcelar não é operação de atendimento, é a regra que decide o que TODO vendedor pode oferecer, e um plano errado sai em documento assinado antes de alguém notar. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+ *
+ * 400 quando o plano não fecha — os modos estão em `PaymentTermInstallmentWriteRequest`, e nenhum deles é aparado em silêncio.
+ *
+ * 409 quando a empresa já tem condição com o mesmo `name`: no legado a PK é `(Fpg_codigo, Fpg_descricao)`, e nome repetido num combo é escolha que não dá para fazer certo — as duas linhas parecem a mesma para quem escolhe.
+ */
+export const createPaymentTerm = async (paymentTermWriteRequest: PaymentTermWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPaymentTermResponse> => {
+
+  return apiFetch<createPaymentTermResponse>(getCreatePaymentTermUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentTermWriteRequest)
+  }
+);}
+
+
+
+export type updatePaymentTermResponse200 = {
+  data: PaymentTermDto
+  status: 200
+}
+
+export type updatePaymentTermResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePaymentTermResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePaymentTermResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePaymentTermResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePaymentTermResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePaymentTermResponseSuccess = (updatePaymentTermResponse200) & {
+  headers: Headers;
+};
+export type updatePaymentTermResponseError = (updatePaymentTermResponse400 | updatePaymentTermResponse401 | updatePaymentTermResponse403 | updatePaymentTermResponse404 | updatePaymentTermResponse409) & {
+  headers: Headers;
+};
+
+export type updatePaymentTermResponse = (updatePaymentTermResponseSuccess | updatePaymentTermResponseError)
+
+export const getUpdatePaymentTermUrl = (id: string,) => {
+
+
+
+
+  return `/api/payment-terms/${id}`
+}
+
+/**
+ * Proposto. `PUT` substitui a condição INTEIRA, **parcelas junto**: a lista que vier no corpo passa a ser a lista, e a que não veio é apagada. Corpo parcial não preserva parcela.
+ *
+ * **Alterar a condição NÃO reescreve documento já gravado.** O orçamento e o pedido CARIMBAM o plano deles (`paymentInstallments`) e a política vigente (`installmentPolicy`) no momento da gravação; o que muda aqui vale do próximo documento em diante. É o que o legado faz ao copiar `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela` para a linha da `Venda` em vez de ler os parâmetros na hora de imprimir. A alternativa — derivar o plano na leitura — mudaria a data de vencimento de parcela que o cliente já recebeu, e o sintoma seria um documento reimpresso diferente de si mesmo.
+ *
+ * 404 quando o `id` não é condição da empresa ativa: do ponto de vista de quem pergunta, ela não está lá. 409 no `name` repetido, como no `POST`.
+ *
+ * **Não há `DELETE`** — aqui nem em lugar nenhum do contrato. Condição usada por documento antigo não pode sumir; `active: false` a tira do combo e deixa o passado legível (padrão 8).
+ */
+export const updatePaymentTerm = async (id: string,
+    paymentTermWriteRequest: PaymentTermWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePaymentTermResponse> => {
+
+  return apiFetch<updatePaymentTermResponse>(getUpdatePaymentTermUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentTermWriteRequest)
+  }
+);}
+
+
+
+export type getInstallmentPolicyResponse200 = {
+  data: InstallmentPolicyDto
+  status: 200
+}
+
+export type getInstallmentPolicyResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getInstallmentPolicyResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getInstallmentPolicyResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getInstallmentPolicyResponseSuccess = (getInstallmentPolicyResponse200) & {
+  headers: Headers;
+};
+export type getInstallmentPolicyResponseError = (getInstallmentPolicyResponse401 | getInstallmentPolicyResponse403 | getInstallmentPolicyResponse409) & {
+  headers: Headers;
+};
+
+export type getInstallmentPolicyResponse = (getInstallmentPolicyResponseSuccess | getInstallmentPolicyResponseError)
+
+export const getGetInstallmentPolicyUrl = () => {
+
+
+
+
+  return `/api/installment-policy`
+}
+
+/**
+ * Proposto. Os três limites que governam o parcelamento na empresa ativa: `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela` do legado. Na tela da Vertz eles valem R$ 100, R$ 50 e 6×.
+ *
+ * **São CONFIG, e o ponto da operação é esse.** Aqueles três números são os da instalação da Vertz, não a regra do produto — escrevê-los como constante faria toda empresa que entrar depois herdar o limite de uma, e o dia em que uma delas parcelar em 10× viraria mudança de código.
+ *
+ * **Singleton por empresa: não há `POST`, não há id.** A política existe sempre. Empresa sem linha gravada lê o PADRÃO do servidor (os três do legado), e não 404: obrigar cada tela a tratar "ainda não configurado" como estado próprio inventaria um terceiro caso que não existe na operação.
+ */
+export const getInstallmentPolicy = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getInstallmentPolicyResponse> => {
+
+  return apiFetch<getInstallmentPolicyResponse>(getGetInstallmentPolicyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateInstallmentPolicyResponse200 = {
+  data: InstallmentPolicyDto
+  status: 200
+}
+
+export type updateInstallmentPolicyResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateInstallmentPolicyResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateInstallmentPolicyResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateInstallmentPolicyResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateInstallmentPolicyResponseSuccess = (updateInstallmentPolicyResponse200) & {
+  headers: Headers;
+};
+export type updateInstallmentPolicyResponseError = (updateInstallmentPolicyResponse400 | updateInstallmentPolicyResponse401 | updateInstallmentPolicyResponse403 | updateInstallmentPolicyResponse409) & {
+  headers: Headers;
+};
+
+export type updateInstallmentPolicyResponse = (updateInstallmentPolicyResponseSuccess | updateInstallmentPolicyResponseError)
+
+export const getUpdateInstallmentPolicyUrl = () => {
+
+
+
+
+  return `/api/installment-policy`
+}
+
+/**
+ * Proposto. Grava os três limites da empresa ativa. `PUT` num singleton: substitui os três, e os três são obrigatórios.
+ *
+ * **Papel: `admin` ou superior**, pelo mesmo motivo de `CreatePaymentTerm` — só que um nível acima em alcance: isto não descreve UMA condição, descreve o que todas elas podem ser.
+ *
+ * 400 quando `maxInstallments` é menor que 1, ou quando algum valor é negativo. Zero em `minTotalToInstallCents` é legítimo e quer dizer "parcela qualquer valor".
+ *
+ * **Mudar a política não reescreve documento gravado** — ver `UpdatePaymentTerm`: o carimbo em `QuoteDetailDto.installmentPolicy` é o que preserva a regra sob a qual cada documento foi feito.
+ */
+export const updateInstallmentPolicy = async (installmentPolicyWriteRequest: InstallmentPolicyWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateInstallmentPolicyResponse> => {
+
+  return apiFetch<updateInstallmentPolicyResponse>(getUpdateInstallmentPolicyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(installmentPolicyWriteRequest)
   }
 );}
 

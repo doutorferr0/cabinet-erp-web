@@ -8,6 +8,7 @@ import type {
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { condicaoAtiva, planoDoDocumento, politicaDaEmpresa } from './pagamento'
 import { verificarEscrita } from './permissao'
 import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { store } from './store'
@@ -191,6 +192,54 @@ function detalheDto(o: Orcamento): QuoteDetailDto {
     discountPercent: o.descontoPercentual,
     environments: ambientesDto(o),
     items: o.itens.map(itemDto),
+    // O bloco PAGAMENTO é ECOADO, nunca recebido: quem manda `paymentTermId`
+    // recebe o plano de volta. O carimbo veio da gravação (ver `carimbarPagamento`).
+    paymentTermId: o.condicaoPagamentoId,
+    paymentTermName: o.condicaoPagamento,
+    paymentInstallments: o.parcelas,
+    // Ausente, e não `null`, no documento anterior ao bloco: carimbo que nunca
+    // foi feito não se inventa com a política de hoje — seria reescrever a regra
+    // sob a qual o documento foi assinado.
+    ...(o.politicaDeParcelamento ? { installmentPolicy: o.politicaDeParcelamento } : {}),
+  }
+}
+
+/**
+ * Resolve e CARIMBA o bloco Pagamento no documento já montado.
+ *
+ * Roda depois de `daEscrita` porque precisa do TOTAL, e o total é calculado dos
+ * itens que acabaram de vir. Devolve o documento carimbado ou a resposta de
+ * erro — 400, porque condição que não cabe na política é corpo que o servidor
+ * não pode gravar, e aparar (parcelar menos, arredondar até o mínimo) daria um
+ * documento com plano que ninguém pediu.
+ */
+function carimbarPagamento(
+  o: Orcamento,
+  tenantId: string,
+): { orcamento: Orcamento } | { erro: ReturnType<typeof problemaJson> } {
+  if (!o.condicaoPagamentoId) {
+    return { orcamento: { ...o, condicaoPagamento: null, parcelas: [] } }
+  }
+
+  const condicao = condicaoAtiva(tenantId, o.condicaoPagamentoId)
+  if (!condicao) {
+    // 400 e não 404: o id veio no CORPO, e é o corpo que está errado. 404 aqui
+    // falaria do orçamento, que existe.
+    return {
+      erro: problemaJson(400, 'Condição de pagamento não encontrada ou inativa nesta empresa.'),
+    }
+  }
+
+  const plano = planoDoDocumento(tenantId, condicao, totalDoOrcamento(o), o.dataEmissao)
+  if ('erro' in plano) return { erro: plano.erro }
+
+  return {
+    orcamento: {
+      ...o,
+      condicaoPagamento: condicao.name,
+      parcelas: plano.parcelas,
+      politicaDeParcelamento: politicaDaEmpresa(tenantId),
+    },
   }
 }
 
@@ -219,6 +268,9 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
       corpo.professionalId === base.profissionalId ? base.profissionalExterno : null,
     modoDesconto: corpo.discountMode === 'general' ? 'GERAL' : 'PRODUTO',
     descontoPercentual: corpo.discountPercent,
+    // Só o ID vem do corpo. Nome, parcelas e carimbo da política são do
+    // servidor, e quem os resolve é `carimbarPagamento` — depois do total.
+    condicaoPagamentoId: corpo.paymentTermId ?? null,
     // O corpo é INTEGRAL: o que ele não trouxer, o documento perde. Guardar os
     // ambientes que vieram — em vez de manter os de `base` — é o que faz o mock
     // reproduzir isso.
@@ -334,7 +386,20 @@ export const handlersDeOrcamento = [
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
 
-    return HttpResponse.json(detalheDto(criarOrcamento(corpo)), { status: 201 })
+    const criado = criarOrcamento(corpo)
+    const carimbado = carimbarPagamento(criado, store.activeTenantId)
+    if ('erro' in carimbado) {
+      // O documento não fica gravado pela metade: sai da coleção antes do 400.
+      // O NÚMERO, esse, fica consumido — e é o que uma sequência de verdade faz.
+      // Devolvê-lo daria dois documentos com o mesmo número no dia em que duas
+      // gravações falhassem em paralelo.
+      estado.linhas = estado.linhas.filter((o) => o.id !== criado.id)
+      return carimbado.erro
+    }
+    const indiceNovo = estado.linhas.findIndex((o) => o.id === criado.id)
+    if (indiceNovo >= 0) estado.linhas[indiceNovo] = carimbado.orcamento
+
+    return HttpResponse.json(detalheDto(carimbado.orcamento), { status: 201 })
   }),
 
   http.put('*/api/quotes/:id', async ({ params, request }) => {
@@ -348,8 +413,11 @@ export const handlersDeOrcamento = [
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
 
     const anterior = estado.linhas[indice] as Orcamento
-    estado.linhas[indice] = daEscrita(corpo, anterior)
-    return HttpResponse.json(detalheDto(estado.linhas[indice] as Orcamento))
+    const carimbado = carimbarPagamento(daEscrita(corpo, anterior), store.activeTenantId)
+    // Recusa não grava NADA: o documento anterior fica inteiro na coleção.
+    if ('erro' in carimbado) return carimbado.erro
+    estado.linhas[indice] = carimbado.orcamento
+    return HttpResponse.json(detalheDto(carimbado.orcamento))
   }),
 
   http.post('*/api/quotes/:id/cancel', ({ params }) => {
@@ -388,5 +456,8 @@ function vazio(): Orcamento {
     descontoPercentual: 0,
     ambientes: [],
     itens: [],
+    condicaoPagamentoId: null,
+    condicaoPagamento: null,
+    parcelas: [],
   }
 }

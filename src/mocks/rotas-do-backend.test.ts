@@ -61,6 +61,26 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'post /api/stock-locations',
   'put /api/stock-locations/{id}',
   'get /api/variants/{variantId}/stock-balances',
+  // PAGAMENTO (S4) pela MESMA razão dos depósitos, e não pela do 501: o contrato
+  // especifica agora o que a fase S4b da api vai implementar, e no servidor de
+  // hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `e47827e`):** `git grep` por
+  // `payment-terms`, `installment-policy` e `PaymentTerm` em `src/` e `tests/`
+  // devolve ZERO, e a cópia do contrato de lá tem 87 operações — as 87 de antes
+  // desta PR. Não é o 501 da fase: é caminho que o servidor não tem, e o par
+  // local devolve o 404 do Fastify. Ligar qualquer uma tiraria o mock e
+  // entregaria 404 ao site público, que é 100% mock.
+  //
+  // Saem daqui em FAMÍLIA — as cinco juntas, e só quando as cinco responderem.
+  // A condição sem a política deixaria o mock recusando um plano de 10x que o
+  // servidor aceita (ou o contrário), e a divergência apareceria como 400 numa
+  // gravação que a tela achava válida.
+  'get /api/payment-terms',
+  'post /api/payment-terms',
+  'put /api/payment-terms/{id}',
+  'get /api/installment-policy',
+  'put /api/installment-policy',
 ]
 
 beforeAll(async () => {

@@ -233,13 +233,92 @@ describe('tela Cliente', () => {
     })
   }, 20_000)
 
+  /**
+   * COBRANÇA E COMERCIAL — o contrato publicava, a tela não desenhava (#293).
+   *
+   * Os seis campos entraram no contrato pelo bloco 2 (#255) e nenhuma tela os
+   * mostrava: o legado tinha a aba `Cobrança\Comercial`, o servidor tinha a
+   * coluna, e o operador não tinha onde ver. Este teste mede o corpo do `PUT`,
+   * não o que aparece na tela — campo desenhado é campo que VIAJA.
+   */
+  it('os endereços de cobrança e comercial chegam ao PUT, cada um no seu campo', async () => {
+    const { stub, chamadas } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+
+    await user.click(screen.getByRole('button', { name: 'Endereço de cobrança' }))
+    const cobranca = within(screen.getByRole('group', { name: 'Endereço de cobrança' }))
+    await user.type(cobranca.getByLabelText('Endereço'), 'RUA DO BOLETO')
+
+    await user.click(screen.getByRole('button', { name: 'Endereço comercial e empresa' }))
+    const comercial = within(screen.getByRole('group', { name: 'Endereço comercial e empresa' }))
+    await user.type(comercial.getByLabelText('Endereço'), 'AV DO TRABALHO')
+    await user.type(comercial.getByLabelText('Empresa'), 'CONSTRUTORA X')
+    await user.type(comercial.getByLabelText('Cargo'), 'ARQUITETA')
+
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes')
+      },
+      { timeout: 5000 },
+    )
+
+    const corpo = chamadas.find((c) => c.metodo === 'PUT')?.corpo as Record<string, unknown>
+    // Cada rua no SEU endereço: o que separa os três é o prefixo do formulário,
+    // e trocá-los mandaria o boleto para a casa do cliente sem ninguém ver.
+    expect(corpo.billingAddress).toMatchObject({ street: 'RUA DO BOLETO' })
+    expect(corpo.businessAddress).toMatchObject({ street: 'AV DO TRABALHO' })
+    expect(corpo.businessName).toBe('CONSTRUTORA X')
+    expect(corpo.businessRole).toBe('ARQUITETA')
+    // O endereço do CADASTRO não foi tocado, e continua nulo — endereço com os
+    // sete campos em branco não é endereço.
+    expect(corpo.address).toBeNull()
+  }, 30_000)
+
+  it('o que o servidor mandou nos dois endereços volta para a tela', async () => {
+    const { stub } = servidorDeParceiros([
+      parceiro({
+        legalName: 'ANDRÉ BATALHA',
+        isCustomer: true,
+        billingAddress: {
+          zipCode: null,
+          street: 'RUA DO BOLETO',
+          number: null,
+          complement: null,
+          district: null,
+          city: 'CAMPINAS',
+          state: 'SP',
+        },
+        businessName: 'CONSTRUTORA X',
+      }),
+    ])
+    const { user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+    await user.click(screen.getByRole('button', { name: 'Endereço de cobrança' }))
+
+    const cobranca = within(screen.getByRole('group', { name: 'Endereço de cobrança' }))
+    expect(cobranca.getByLabelText('Endereço')).toHaveValue('RUA DO BOLETO')
+    expect(cobranca.getByLabelText('Cidade')).toHaveValue('CAMPINAS')
+  }, 30_000)
+
   it('busca de cidade (janela auxiliar) preenche cidade e UF', async () => {
     const { user } = renderRoute('/cadastros/clientes/novo')
 
     await screen.findByLabelText('Nome')
     // `Endereço` é módulo opcional: nasce fechado, e o operador o abre. O botão
     // de busca só existe depois disso — é a hierarquia funcionando.
-    await user.click(screen.getByRole('button', { name: /Endereço/ }))
+    // O nome vai ANCORADO: desde o bloco 2 (#293) a tela tem também `Endereço
+    // de cobrança` e `Endereço comercial e empresa`, e `/Endereço/` casaria os
+    // três — abrindo o módulo errado e procurando a busca onde ela não está.
+    await user.click(screen.getByRole('button', { name: /^Endereço$/ }))
     await user.click(await screen.findByRole('button', { name: 'Buscar cidade' }))
 
     // janela de busca com a MESMA DataTable
@@ -254,8 +333,13 @@ describe('tela Cliente', () => {
     await user.click(linha)
     await user.click(screen.getByRole('button', { name: 'Selecionar' }))
 
+    // A asserção vai ESCOPADA ao módulo `Endereço`, pelo mesmo motivo do
+    // seletor do botão: os três endereços têm um campo `Cidade`, e o global
+    // acharia três. Escopar também PROVA o que importa aqui — a busca gravou
+    // no endereço que o operador abriu, não em um dos outros dois.
+    const endereco = within(screen.getByRole('group', { name: /^Endereço$/ }))
     await waitFor(() => {
-      expect(screen.getByLabelText('Cidade')).toHaveValue('CURITIBA')
+      expect(endereco.getByLabelText('Cidade')).toHaveValue('CURITIBA')
     })
     // código da cidade aparece ao lado do campo; UF (PR) no rótulo derivado
     expect(screen.getByText('355')).toBeInTheDocument()

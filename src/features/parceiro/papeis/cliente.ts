@@ -36,6 +36,15 @@ function dtoParaForm(dto: PartnerDto): Cliente {
     foneResidencial: dto.homePhone ?? '',
     fax: dto.fax ?? '',
     endereco: enderecoDoContrato(dto.address),
+    // Bloco 2 (#293): cobrança e comercial. Antes disto o contrato publicava os
+    // seis e NENHUMA tela os desenhava — o cadastro do legado tinha a aba, o
+    // servidor tinha a coluna, e o operador não tinha onde ver.
+    enderecoCobranca: enderecoDoContrato(dto.billingAddress),
+    enderecoComercial: enderecoDoContrato(dto.businessAddress),
+    empresaComercial: dto.businessName ?? '',
+    cargoComercial: dto.businessRole ?? '',
+    cnpjComercial: dto.businessDocument ?? '',
+    dtFundacaoComercial: dto.foundedOn ?? null,
     // Fase 1 (#250/#254). A IE da empresa (`Cli_IE_rg`) entrou com a tela que
     // a desenha: enquanto o campo não existia aqui, o Cliente devolvia a IE
     // como veio, e quem editava era só o Fornecedor.
@@ -80,6 +89,16 @@ function contatoEEndereco(values: Cliente) {
     homePhone: textoOuNulo(values.foneResidencial),
     fax: textoOuNulo(values.fax),
     address: enderecoParaContrato(values.endereco),
+    // Bloco 2 (#293). Viajam SEMPRE: a tela desenha os dois blocos inteiros,
+    // então omitir qualquer um devolveria como veio um campo que o operador
+    // acabou de editar. `foundedOn` é data ISO e não passa por `textoOuNulo`:
+    // o `DateField` já entrega `null` quando ninguém preencheu.
+    billingAddress: enderecoParaContrato(values.enderecoCobranca),
+    businessAddress: enderecoParaContrato(values.enderecoComercial),
+    businessName: textoOuNulo(values.empresaComercial),
+    businessRole: textoOuNulo(values.cargoComercial),
+    businessDocument: textoOuNulo(values.cnpjComercial),
+    foundedOn: values.dtFundacaoComercial,
     // Fase 1 (#250). Os dois de VÍNCULO não passam por `textoOuNulo`: o combo
     // já entrega `null` quando ninguém escolheu, e id não é texto a aparar.
     stateRegistration: textoOuNulo(values.inscEst),
@@ -106,7 +125,7 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
   rota: '/cadastros/clientes',
   queryKeyListagem: ['clientes'],
   camposDeEdicao:
-    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, Tipo de pessoa, RG, Órgão expedidor, UF do RG, Sexo, Data de nascimento, Inscrição Estadual, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
+    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, Endereço de cobrança, Endereço comercial (com Empresa, Cargo, CNPJ e Fundação), Tipo de pessoa, RG, Órgão expedidor, UF do RG, Sexo, Data de nascimento, Inscrição Estadual, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
   vazio: clienteVazio,
   dtoParaForm,
   ausentesNoServidor,

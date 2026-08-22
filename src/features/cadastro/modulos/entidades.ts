@@ -151,6 +151,48 @@ export const cliente: EntidadeCadastro = {
     },
     moduloEndereco(),
     moduloContatos({ comunicadores: false }),
+    // A aba `Cobrança\Comercial` da §5 — não capturada na transcrição, e por
+    // isso os campos vêm do CONTRATO, que os tirou das colunas do legado
+    // (`Cli_*_cob`, `Cli_*_cor`). São dois endereços a mais no mesmo cadastro,
+    // e não um terceiro cadastro: o boleto vai para um lugar e a pessoa
+    // trabalha em outro.
+    moduloEndereco('enderecoCobranca', {
+      dto: 'billingAddress',
+      titulo: 'Endereço de cobrança',
+      resumo: 'Para onde vai o boleto, quando não é o endereço do cadastro',
+    }),
+    {
+      ...moduloEndereco('enderecoComercial', {
+        dto: 'businessAddress',
+        titulo: 'Endereço comercial e empresa',
+        resumo: 'Onde a pessoa trabalha · Empresa · Cargo · CNPJ · Fundação',
+      }),
+      // Os quatro do vínculo de trabalho vêm DEPOIS do endereço, no mesmo
+      // módulo: o contrato os declara juntos ("junto dele vêm `businessName`,
+      // `businessRole`, `businessDocument` e `foundedOn`, que descrevem esse
+      // mesmo vínculo"), e separá-los daria dois blocos que só fazem sentido
+      // lidos como um.
+      campos: [
+        ...moduloEndereco('enderecoComercial', { dto: 'businessAddress' }).campos,
+        { k: 'empresa', r: 'Empresa', campo: 'empresaComercial', dto: 'businessName' },
+        { k: 'cargo', r: 'Cargo', w: 'medio', campo: 'cargoComercial', dto: 'businessRole' },
+        {
+          k: 'cnpjCom',
+          r: 'CNPJ comercial',
+          w: 'medio',
+          campo: 'cnpjComercial',
+          dto: 'businessDocument',
+        },
+        {
+          k: 'fundacao',
+          r: 'Data de fundação',
+          t: 'data',
+          w: 'medio',
+          campo: 'dtFundacaoComercial',
+          dto: 'foundedOn',
+        },
+      ],
+    },
     {
       id: 'fiscal',
       titulo: 'Fiscal',
@@ -344,6 +386,12 @@ export const fornecedor: EntidadeCadastro = {
       titulo: 'Representante e contatos',
       resumo: 'Quem atende a Vertz nesse fornecedor',
       cor: 'boletim',
+      // A GRADE de contatos não é campo deste módulo, e desde #293 isso é
+      // literal: contato é sub-recurso (`/api/partners/{id}/contacts`), com
+      // caminho e gravação próprios, montado como bloco dentro daqui. Enquanto
+      // era `{ k: 'contatos', campo: 'contatos' }`, o schema o declarava como
+      // um campo sem cobertura — e a ficha, que apaga o que tem `campo` e não
+      // tem `dto`, mostrava `Contatos` em branco num cadastro que tem contatos.
       campos: [
         // Sub-recurso, não campo do registro (#270): o contrato publica
         // contato em caminho próprio, com `POST`/`PUT` que o corpo do parceiro

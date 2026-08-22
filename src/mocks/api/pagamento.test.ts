@@ -187,7 +187,7 @@ describe('o corpo da condição recusa em voz alta', () => {
     expect(r.status).toBe(400)
   })
 
-  it('mais parcelas que o teto da empresa é 400', async () => {
+  it('mais parcelas que o teto da empresa é 400 com `type` PRÓPRIO', async () => {
     await entrar()
     const oito = Array.from({ length: 8 }, (_, i) => ({
       number: i + 1,
@@ -198,6 +198,11 @@ describe('o corpo da condição recusa em voz alta', () => {
     const r = await createPaymentTerm({ ...EM_DOIS, installments: oito })
 
     expect(r.status).toBe(400)
+    if (r.status !== 400) return
+    // NÃO é `campos-invalidos`: o corpo está certo, a empresa é que não parcela
+    // tanto — e a tela recorta o formulário pelo número que cabe.
+    expect(r.data.type).toBe('urn:cabinet:erro:parcelas-acima-do-teto')
+    expect(r.data.title).toBe('Parcelas acima do teto')
   })
 })
 
@@ -389,13 +394,46 @@ describe('o bloco Pagamento do documento', () => {
 
   it('parcela abaixo do mínimo da empresa é 400, e o documento não fica gravado', async () => {
     await entrar()
-    // Total de R$ 60,00 em 3x daria R$ 20,00 por parcela — abaixo dos R$ 50.
-    const criado = await createQuote(orcamentoDe('cond-0002', 6_000))
+    // Total de R$ 120,00 em 3x daria R$ 40,00 por parcela — abaixo dos R$ 50.
+    //
+    // O total precisa passar dos R$ 100 do `minTotalToInstallCents`, senão a
+    // recusa que dispara é a OUTRA (`valor-nao-parcelavel`) e este caso mediria
+    // a regra errada. As duas valem ao mesmo tempo num documento pequeno, e a
+    // ordem é que decide qual o operador vê — por isso o caso isola a segunda.
+    const criado = await createQuote(orcamentoDe('cond-0002', 12_000))
 
     expect(criado.status).toBe(400)
+    if (criado.status !== 400) return
+    expect(criado.data.type).toBe('urn:cabinet:erro:parcela-abaixo-do-minimo')
 
     const lista = await listPaymentTerms({ page: 1, pageSize: 100 })
     expect(lista.status).toBe(200)
+  })
+
+  /**
+   * A prova de que as três recusas são DISTINGUÍVEIS sem ler a frase.
+   *
+   * Sem isso, um refactor que trocasse as três por `campos-invalidos` passaria
+   * em todos os outros casos — todos eles só olham o status — e a tela perderia
+   * a única informação que diz qual correção oferecer.
+   */
+  it('as três recusas de parcelamento têm URNs diferentes entre si', async () => {
+    await entrar()
+    await updateInstallmentPolicy({
+      minTotalToInstallCents: 500_000,
+      minInstallmentCents: 5_000,
+      maxInstallments: 2,
+    })
+
+    // teto: a condição de 3 parcelas do seed, contra um teto de 2
+    const teto = await createQuote(orcamentoDe('cond-0002', 1_000_000))
+    // valor: total abaixo do mínimo para parcelar, com condição de 2 parcelas
+    const emDois = await createPaymentTerm(EM_DOIS)
+    if (emDois.status !== 201) throw new Error('não cadastrou')
+    const valor = await createQuote(orcamentoDe(emDois.data.id, 100_000))
+
+    expect(teto.status === 400 && teto.data.type).toBe('urn:cabinet:erro:parcelas-acima-do-teto')
+    expect(valor.status === 400 && valor.data.type).toBe('urn:cabinet:erro:valor-nao-parcelavel')
   })
 
   it('total abaixo do mínimo para parcelar é 400 — mas a parcela única passa', async () => {
@@ -408,7 +446,11 @@ describe('o bloco Pagamento do documento', () => {
 
     const parcelado = await createQuote(orcamentoDe('cond-0002'))
     expect(parcelado.status).toBe(400)
+    if (parcelado.status !== 400) return
+    expect(parcelado.data.type).toBe('urn:cabinet:erro:valor-nao-parcelavel')
 
+    // A parcela ÚNICA passa no mesmo total: o limite é sobre PARCELAR, e é o
+    // que torna as três URNs distinguíveis em vez de "condição inválida".
     const aVista = await createQuote(orcamentoDe('cond-0001'))
     expect(aVista.status).toBe(201)
   })

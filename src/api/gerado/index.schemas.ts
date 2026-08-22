@@ -873,10 +873,15 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |
  * | `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |
  * | `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |
+ * | `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |
+ * | `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |
+ * | `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
  * O 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.
+ *
+ * **Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.
  */
 export type ProblemType = typeof ProblemType[keyof typeof ProblemType];
 
@@ -903,6 +908,9 @@ export const ProblemType = {
   'urn:cabinet:erro:vinculo-ja-existe': 'urn:cabinet:erro:vinculo-ja-existe',
   'urn:cabinet:erro:papel-de-sistema': 'urn:cabinet:erro:papel-de-sistema',
   'urn:cabinet:erro:pedido-ja-convertido': 'urn:cabinet:erro:pedido-ja-convertido',
+  'urn:cabinet:erro:valor-nao-parcelavel': 'urn:cabinet:erro:valor-nao-parcelavel',
+  'urn:cabinet:erro:parcelas-acima-do-teto': 'urn:cabinet:erro:parcelas-acima-do-teto',
+  'urn:cabinet:erro:parcela-abaixo-do-minimo': 'urn:cabinet:erro:parcela-abaixo-do-minimo',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -1845,7 +1853,7 @@ export interface QuoteWriteRequest {
   environments: QuoteEnvironmentDto[];
   items: QuoteItemWriteRequest[];
   /**
-     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente (total abaixo de `minTotalToInstallCents` com condição parcelada, parcela abaixo de `minInstallmentCents`, ou mais parcelas que `maxInstallments`).
+     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente, e aí o `type` diz QUAL das três: `urn:cabinet:erro:valor-nao-parcelavel` (total abaixo de `minTotalToInstallCents` com condição parcelada) · `urn:cabinet:erro:parcelas-acima-do-teto` (mais parcelas que `maxInstallments`) · `urn:cabinet:erro:parcela-abaixo-do-minimo` (alguma parcela abaixo de `minInstallmentCents`). São três correções DIFERENTES para quem está na tela, e conflatá-las em `campos-invalidos` obrigaria a ler a frase — que é o que este vocabulário existe para impedir.
      * @nullable
      */
   paymentTermId?: string | null;
@@ -2792,7 +2800,7 @@ export interface OrderWriteRequest {
   environments: OrderEnvironmentDto[];
   items: OrderItemWriteRequest[];
   /**
-     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente (total abaixo de `minTotalToInstallCents` com condição parcelada, parcela abaixo de `minInstallmentCents`, ou mais parcelas que `maxInstallments`).
+     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente, e aí o `type` diz QUAL das três: `urn:cabinet:erro:valor-nao-parcelavel` (total abaixo de `minTotalToInstallCents` com condição parcelada) · `urn:cabinet:erro:parcelas-acima-do-teto` (mais parcelas que `maxInstallments`) · `urn:cabinet:erro:parcela-abaixo-do-minimo` (alguma parcela abaixo de `minInstallmentCents`). São três correções DIFERENTES para quem está na tela, e conflatá-las em `campos-invalidos` obrigaria a ler a frase — que é o que este vocabulário existe para impedir.
      * @nullable
      */
   paymentTermId?: string | null;

@@ -5331,7 +5331,7 @@ export const getCreatePaymentTermUrl = () => {
  *
  * **Papel: `admin` ou superior — e é INTERINO.** Mesma linha de corte que pôs `/api/stock-locations` acima de `/api/variants`: parcelar não é operação de atendimento, é a regra que decide o que TODO vendedor pode oferecer, e um plano errado sai em documento assinado antes de alguém notar. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
  *
- * 400 quando o plano não fecha — os modos estão em `PaymentTermInstallmentWriteRequest`, e nenhum deles é aparado em silêncio.
+ * 400 quando o plano não fecha — os modos estão em `PaymentTermInstallmentWriteRequest`, e nenhum deles é aparado em silêncio. Mais parcelas que o teto da empresa é 400 com `type` PRÓPRIO (`urn:cabinet:erro:parcelas-acima-do-teto`): a tela recorta o formulário pelo número que cabe, e para isso precisa distinguir esse caso dos erros de campo.
  *
  * 409 quando a empresa já tem condição com o mesmo `name`: no legado a PK é `(Fpg_codigo, Fpg_descricao)`, e nome repetido num combo é escolha que não dá para fazer certo — as duas linhas parecem a mesma para quem escolhe.
  */

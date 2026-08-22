@@ -17,19 +17,25 @@ import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
 import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
 import { ORDENAVEIS as ORDENAVEIS_CONTATO_MOCK } from '@/mocks/api/contatos'
 import {
+  FILTRAVEIS_OPORTUNIDADE as FILTRAVEIS_OPORTUNIDADE_MOCK,
   ORDENAVEIS_COLABORADOR as ORDENAVEIS_COLABORADOR_MOCK,
   ORDENAVEIS_FUNIL as ORDENAVEIS_FUNIL_MOCK,
   ORDENAVEIS_MOTIVO as ORDENAVEIS_MOTIVO_MOCK,
   ORDENAVEIS_OPORTUNIDADE as ORDENAVEIS_OPORTUNIDADE_MOCK,
 } from '@/mocks/api/crm'
 import {
+  FILTRAVEIS_PARCEIRO as FILTRAVEIS_PARCEIRO_MOCK,
+  FILTRAVEIS_PRODUTO as FILTRAVEIS_PRODUTO_MOCK,
   ORDENAVEIS_LOOKUPS as ORDENAVEIS_LOOKUPS_MOCK,
   ORDENAVEIS_MOVIMENTO as ORDENAVEIS_MOVIMENTO_MOCK,
   ORDENAVEIS_PARCEIRO as ORDENAVEIS_PARCEIRO_MOCK,
   ORDENAVEIS_PRODUTO as ORDENAVEIS_PRODUTO_MOCK,
 } from '@/mocks/api/handlers'
 import { FILTRAVEIS as FILTRAVEIS_OBRA, ORDENAVEIS as ORDENAVEIS_OBRA } from '@/mocks/api/obras'
-import { ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK } from '@/mocks/api/quotes'
+import {
+  FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
+  ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
+} from '@/mocks/api/quotes'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -188,6 +194,23 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
 }
 
+/**
+ * O `filters` publicado × o que O MOCK aplica.
+ *
+ * A régua da linha de cima mede a TELA; esta mede quem recorta em modo mock. O
+ * pior caso deste eixo não é recusar demais, é **ignorar**: filtro descartado em
+ * silêncio devolve a lista inteira com a condição desenhada no painel, e quem lê
+ * conclui que ela não estreita nada. Era o caso do orçamento até 2026-08-22 — o
+ * handler nunca olhou para `filters`.
+ */
+const FILTRAVEIS_DO_MOCK: Record<string, readonly string[]> = {
+  ListProducts: Object.keys(FILTRAVEIS_PRODUTO_MOCK),
+  ListPartners: Object.keys(FILTRAVEIS_PARCEIRO_MOCK),
+  ListQuotes: Object.keys(FILTRAVEIS_ORCAMENTO_MOCK),
+  ListCrmOpportunities: Object.keys(FILTRAVEIS_OPORTUNIDADE_MOCK),
+  ListWorks: Object.keys(FILTRAVEIS_OBRA),
+}
+
 /** O `filters` publicado × a lista que o front manda, onde ele publica. */
 const FILTRAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListProducts: FILTRAVEIS_PRODUTO,
@@ -247,6 +270,28 @@ describe('3b. o MOCK aceita o que o contrato publica', () => {
     expect([...(ORDENAVEIS_DO_MOCK[opid] as string[])].sort()).toEqual(
       [...(publicada as string[])].sort(),
     )
+  })
+
+  it.each(Object.keys(FILTRAVEIS_DO_MOCK))('%s filtra pelo que o contrato aceita', (opid) => {
+    const publicada = listagens.find((l) => l.operationId === opid)?.filters
+    expect(publicada, `${opid} não publica filters`).toBeDefined()
+    expect([...(FILTRAVEIS_DO_MOCK[opid] as string[])].sort()).toEqual(
+      [...(publicada as string[])].sort(),
+    )
+  })
+
+  it('quem publica `filters` tem mock que os APLICA — ignorar é pior que recusar', () => {
+    // Filtro descartado em silêncio faz a tela mostrar a lista inteira com a
+    // condição no painel. Se uma listagem publica `filters` e não aparece aqui,
+    // ou ela ganhou um mapa no mock, ou o handler dela não existe (e aí está
+    // nomeado no inventário abaixo).
+    const semMapa = listagens
+      .filter((l) => l.filters !== undefined)
+      .map((l) => l.operationId)
+      .filter((id) => FILTRAVEIS_DO_MOCK[id] === undefined && SEM_HANDLER_NO_MOCK[id] === undefined)
+      .sort()
+
+    expect(semMapa, 'publica `filters` e o mock não os aplica').toEqual([])
   })
 
   it('toda listagem tem handler no mock, ou está nomeada com o motivo', () => {

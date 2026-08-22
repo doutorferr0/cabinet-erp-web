@@ -7,6 +7,7 @@ import type {
 } from '@/api/gerado'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
+import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { verificarEscrita } from './permissao'
 import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
 import { store } from './store'
@@ -44,6 +45,27 @@ import { store } from './store'
 
 /** Whitelist de `sortBy` — a MESMA da descrição do contrato. */
 export const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'projectName']
+
+/**
+ * A whitelist do `filters`, que é a MESMA do `sortBy` neste recurso — e o mock
+ * simplesmente não aplicava o parâmetro.
+ *
+ * Ignorar filtro em silêncio é o defeito que este repo persegue em todo lugar: a
+ * tela desenha a condição no painel, o mock devolve a lista inteira, e quem lê
+ * conclui que o filtro não estreita nada. Contra o `:3000` o mesmo pedido
+ * recorta — então o sintoma só existe onde não há servidor, que é o site
+ * público.
+ *
+ * O TIPO de cada campo é do servidor, não da tela: `issuedAt`/`expiresAt` são
+ * data (comparação por DIA), o resto é texto.
+ */
+export const FILTRAVEIS: CamposFiltraveis = {
+  number: 'text',
+  customerName: 'text',
+  projectName: 'text',
+  issuedAt: 'date',
+  expiresAt: 'date',
+}
 
 /**
  * O orçamento GUARDADO. É o `Orcamento` do seed: o mock guarda o que a
@@ -278,6 +300,10 @@ export const handlersDeOrcamento = [
         [o.number, o.customerName, o.projectName].some((t) => t?.toLowerCase().includes(alvo)),
       )
     }
+    const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS)
+    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
+    linhas = filtradas
+
     if (sortBy) {
       const chave = sortBy as keyof QuoteDto
       linhas.sort((a, b) => {

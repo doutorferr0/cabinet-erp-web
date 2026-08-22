@@ -527,7 +527,10 @@ export interface PagedResultOfProductDto {
 export interface StockMovementDto {
   id: string;
   variantId: string;
+  /** O depósito onde o movimento aconteceu. Sempre presente: a coluna é `NOT NULL` e o movimento sem local é o que o backfill da migração eliminou, pendurando tudo que existia no padrão da empresa. */
+  locationId: string;
   delta: number;
+  /** O saldo do DEPÓSITO depois deste movimento — não o total do produto na empresa. Mudou de sentido junto com `locationId` (api#79, decisão 2): é este número que reconcilia contra `GET /api/variants/{variantId}/stock-balances`. Enquanto houver um depósito só, local e total coincidem; a partir do segundo, não. */
   balanceAfter: number;
   reason: string;
   occurredAt: string;
@@ -1110,6 +1113,11 @@ export interface SessaoAtual {
 }
 
 export interface StockMovementRequest {
+  /**
+     * Ausente ou `null` = o depósito PADRÃO da empresa ativa, criado sob demanda se ela ainda não tem nenhum (ver a descrição da operação). Fica FORA de `required` de propósito, ao contrário de `delta` e `reason`: aqui omitir é uma escolha com significado, e o tipo gerado precisa saber exprimi-la.
+     * @nullable
+     */
+  locationId?: string | null;
   /** @nullable */
   delta: number | null;
   /** @nullable */
@@ -2696,6 +2704,59 @@ export interface PagedResultOfOrderDto {
 }
 
 /**
+ * Proposto. Um DEPÓSITO da empresa ativa — nó da árvore de locais de estoque. Ver `ListStockLocations` para por que ele vem plano e sem o nome do pai.
+ */
+export interface StockLocationDto {
+  id: string;
+  /**
+     * O nó acima, ou `null` na raiz. É o que faz a árvore: profundidade no lugar das cinco colunas do legado.
+     * @nullable
+     */
+  parentId: string | null;
+  /** Código curto do depósito, único na empresa. É por ele que o ETL do legado casa `EstTp_Codigo`. */
+  code: string;
+  name: string;
+  /** O depósito para onde vai movimento sem `locationId`. UM por empresa, garantido por índice parcial. Não se escreve pelo corpo — nasce do servidor. */
+  isDefault: boolean;
+  active: boolean;
+}
+
+/**
+ * Proposto. `PUT` substitui o registro INTEIRO: campo ausente APAGA, não preserva. `isDefault` e `id` não entram — ver `CreateStockLocation`.
+ */
+export interface StockLocationWriteRequest {
+  /** @nullable */
+  parentId: string | null;
+  /** @nullable */
+  code: string | null;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  active: boolean | null;
+}
+
+export interface PagedResultOfStockLocationDto {
+  rows: StockLocationDto[];
+  total: number;
+}
+
+/**
+ * Proposto. O saldo de UMA variante em UM depósito. Cache derivado do kardex (ADR-009) — anda por delta, na mesma transação do movimento.
+ */
+export interface StockBalanceDto {
+  locationId: string;
+  variantId: string;
+  /** Quantidade, até 3 casas. **O tipo admite negativo** — o ADR-009 ficou sem o CHECK de propósito (api#79, decisão 5), porque venda antes de a nota entrar acontece e carga do legado chega como está. Recusar que o saldo FIQUE negativo é decisão da operação que movimenta, não da coluna: `CreateStockMovement` recusa com 409, e uma carga que escreva direto no cache não passa por ela. */
+  qty: number;
+  updatedAt: string;
+}
+
+export interface PagedResultOfStockBalanceDto {
+  rows: StockBalanceDto[];
+  total: number;
+}
+
+/**
  * Proposto. Uma permissão do catálogo — uma AÇÃO, a unidade que vira uma caixa marcável.
  */
 export interface PermissionDto {
@@ -3147,5 +3208,30 @@ filters?: ListFilter[];
  * Proposto. Como as condições de `filters` se somam. Padrão `and`.
  */
 joinOperator?: ListFilterJoin;
+};
+
+export type ListStockLocationsParams = {
+q?: string;
+/**
+ * Whitelist: `code`, `name`, `active`. Campo fora dela é 400.
+ *
+ * `parentId` NÃO entra, pelo mesmo motivo que tirou `customerId` do `sortBy` da obra: ordem de uuid não põe nada em ordem para quem lê a tela. E `isDefault` também não — há UM padrão por empresa, e ordenar por uma coluna que separa 1 linha de todas as outras é agrupar, não ordenar.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListStockBalancesParams = {
+/**
+ * Whitelist: `qty`. Campo fora dela é 400.
+ *
+ * É lista curta e a única ordem que responde pergunta de quem lê é "onde tem mais". `locationId` não ordena (uuid), e o nome do depósito não está nesta resposta de propósito — ver `ListStockLocations`. Sem `sortBy` a ordem é a da chave, estável e sem significado: quem recebeu o punhado de linhas ordena por nome com a listagem de depósitos em mãos.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 

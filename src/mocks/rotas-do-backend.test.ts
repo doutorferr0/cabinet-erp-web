@@ -51,6 +51,16 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'post /api/roles',
   'get /api/roles/{id}',
   'put /api/roles/{id}',
+  // Os DEPÓSITOS (#291) pela MESMA razão dos papéis, e não pela do 501: o
+  // contrato os publica AGORA porque é ele que especifica o que a fase 2 da
+  // api#79 implementa (migração `0030` + módulo Drizzle), e no servidor de hoje
+  // não há handler nenhum — o par local devolve o 404 do Fastify, não 501.
+  // Saem daqui em FAMÍLIA, e só quando a família INTEIRA responder: meia
+  // família põe id do servidor de um lado e id inventado do outro.
+  'get /api/stock-locations',
+  'post /api/stock-locations',
+  'put /api/stock-locations/{id}',
+  'get /api/variants/{variantId}/stock-balances',
 ]
 
 beforeAll(async () => {
@@ -142,6 +152,13 @@ describe('passthrough por rota', () => {
         .filter((m) => VERBOS.includes(m))
         .filter((m) => !FORA_DE_PROPOSITO.includes(`${m} ${caminho}`))
       const naLista = ROTAS_DO_BACKEND.filter((r) => r.caminho === caminho).map((r) => r.metodo)
+
+      // Caminho INTEIRAMENTE fora da passagem é o outro estado legítimo: nasceu
+      // no contrato antes de existir servidor, e o mock responde por ele todo.
+      // O que este caso NÃO pode ser é esquecimento — quem o cobra é o
+      // `FORA_DE_PROPOSITO` do teste abaixo, que exige a declaração operação a
+      // operação. O que continua proibido aqui é a MEIA família.
+      if (naLista.length === 0) continue
 
       expect(
         [...naLista].sort(),

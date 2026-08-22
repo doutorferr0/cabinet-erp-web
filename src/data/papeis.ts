@@ -61,6 +61,7 @@ export type FamiliaDeCaminho =
   | 'todos'
   | 'products'
   | 'variants'
+  | 'stock-locations'
   | 'employees'
   | 'catalog-lookups'
   | 'projects'
@@ -85,6 +86,16 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
   todos: 'operator-sales',
   products: 'operator-full',
   variants: 'operator-full',
+  /**
+   * Decisão do user em 2026-08-22 (api#79, ponto 4), e **INTERINA**.
+   *
+   * Depósito não vai junto de `variants`, apesar de ser estoque: movimentar é
+   * operação de atendimento, criar depósito muda a leitura de saldo de TODO
+   * mundo — a mesma linha de corte que já põe `employees` e não `products` em
+   * `admin`. Vira a permissão nomeada `depositos:gerenciar` quando o modelo por
+   * AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+   */
+  'stock-locations': 'admin',
   employees: 'admin',
   /**
    * Decisão, não herança (`cabinet-erp-api#66`).
@@ -135,6 +146,7 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   todos: ['/api/todos'],
   products: ['/api/products'],
   variants: ['/api/products', '/api/variants'],
+  'stock-locations': ['/api/stock-locations'],
   employees: ['/api/employees'],
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],

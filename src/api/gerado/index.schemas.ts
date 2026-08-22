@@ -1600,6 +1600,87 @@ export interface QuoteItemWriteRequest {
 }
 
 /**
+ * Proposto. Linha da ABA SERVIÇOS do documento — a seção que o comparativo (02-vendas) apontou como faltando, e que no legado é `VendaServico` (4.450 linhas; `Orcamento_servico_det` e `pedido_servico_det` existem no schema e estão ZERADAS, então quem descreve a operação real é `VendaServico`).
+ *
+ * Coleção SEPARADA de `items`, e não um item com flag: as duas linhas não têm as mesmas colunas. Serviço não tem acabamento, tamanho, unidade, fornecedor nem código no fornecedor, e tem percentual de eletricista, que produto nenhum tem. Uma coleção só obrigaria metade dos campos a serem `null` conforme a outra metade — e o total do documento é a soma das DUAS, calculada pelo servidor.
+ *
+ * Como em `QuoteItemDto`, descrição e preço são SNAPSHOT da emissão: corrigir o cadastro não pode reescrever documento fechado.
+ */
+export interface QuoteServiceItemDto {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /** Percentual do eletricista congelado na emissão — o do cadastro, ou o override que a escrita mandou. Nunca `null` na leitura: o servidor já resolveu a herança, e devolver `null` obrigaria quem lê a refazer a conta contra um cadastro que pode ter mudado desde então. */
+  electricianPercent: number;
+  /**
+     * Quanto desta linha é do instalador, em centavos — `VenSer_VlEletricista` do legado. Calculado pelo servidor: a escrita não manda.
+     *
+     * Ele é campo, e não conta que quem lê refaz, porque é o número que vira PAGAMENTO (`acerto_eletrecistas_servicos`). Recalcular no cliente daria um arredondamento por cliente sobre uma linha que alguém recebe.
+     */
+  electricianAmountCents: number;
+  /** Valor da linha. Calculado pelo servidor — a escrita não manda. */
+  totalCents: number;
+}
+
+/**
+ * Proposto. Linha da aba Serviços na escrita. Sem `totalCents` nem `electricianAmountCents`: quem calcula é o servidor.
+ */
+export interface QuoteServiceItemWriteRequest {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /**
+     * Percentual do eletricista NESTA linha. **`null` = herda do cadastro** (`ServiceDto.electricianPercent`) no momento da gravação; qualquer valor é OVERRIDE explícito, inclusive `0`.
+     *
+     * A distinção entre `null` e `0` é a que o campo existe para carregar: zero é "esta linha não paga instalador", e omitir é "use o que o cadastro diz". Um campo não-nulável forçaria o cliente a copiar o percentual do cadastro para dentro do corpo — e aí quem gravasse com o cadastro desatualizado na tela congelaria o número velho sem ninguém pedir.
+     * @nullable
+     */
+  electricianPercent: number | null;
+}
+
+/**
  * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
  */
 export type QuoteDtoStatus = typeof QuoteDtoStatus[keyof typeof QuoteDtoStatus];
@@ -1879,6 +1960,8 @@ export interface QuoteDetailDto {
      * **Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso.
      */
   installmentPolicy?: InstallmentPolicyDto;
+  /** As linhas da aba Serviços, na ordem de exibição. Coleção própria — ver `QuoteServiceItemDto`. Vem sempre, vazia quando o documento não tem serviço nenhum: ausência e lista vazia significariam a mesma coisa, e a de leitura opcional só criaria um ramo `?? []` em cada consumidor. */
+  serviceItems: QuoteServiceItemDto[];
 }
 
 /**
@@ -1996,6 +2079,12 @@ export interface QuoteWriteRequest {
      * @nullable
      */
   paymentTermId?: string | null;
+  /**
+     * As linhas da aba Serviços. **OPCIONAL, e ausente é VAZIO — nunca "preserva o que estava".** O `PUT` é integral, e essa semântica vale para os serviços exatamente como vale para `items` e `environments`: gravar sem o campo APAGA os serviços do documento.
+     *
+     * É opcional, e não obrigatório como `items`, por uma razão de transição e só: a seção nasce no contrato antes da tela, e um campo obrigatório faria toda escrita existente de documento virar 400 no dia do merge — inclusive a conversão do CRM. Vira obrigatório quando a aba existir dos dois lados.
+     */
+  serviceItems?: QuoteServiceItemWriteRequest[];
 }
 
 export interface PagedResultOfQuoteDto {
@@ -2724,6 +2813,87 @@ export interface OrderItemWriteRequest {
 }
 
 /**
+ * Proposto. Linha da ABA SERVIÇOS do documento — a seção que o comparativo (02-vendas) apontou como faltando, e que no legado é `VendaServico` (4.450 linhas; `Orcamento_servico_det` e `pedido_servico_det` existem no schema e estão ZERADAS, então quem descreve a operação real é `VendaServico`).
+ *
+ * Coleção SEPARADA de `items`, e não um item com flag: as duas linhas não têm as mesmas colunas. Serviço não tem acabamento, tamanho, unidade, fornecedor nem código no fornecedor, e tem percentual de eletricista, que produto nenhum tem. Uma coleção só obrigaria metade dos campos a serem `null` conforme a outra metade — e o total do documento é a soma das DUAS, calculada pelo servidor.
+ *
+ * Como em `QuoteItemDto`, descrição e preço são SNAPSHOT da emissão: corrigir o cadastro não pode reescrever documento fechado.
+ */
+export interface OrderServiceItemDto {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /** Percentual do eletricista congelado na emissão — o do cadastro, ou o override que a escrita mandou. Nunca `null` na leitura: o servidor já resolveu a herança, e devolver `null` obrigaria quem lê a refazer a conta contra um cadastro que pode ter mudado desde então. */
+  electricianPercent: number;
+  /**
+     * Quanto desta linha é do instalador, em centavos — `VenSer_VlEletricista` do legado. Calculado pelo servidor: a escrita não manda.
+     *
+     * Ele é campo, e não conta que quem lê refaz, porque é o número que vira PAGAMENTO (`acerto_eletrecistas_servicos`). Recalcular no cliente daria um arredondamento por cliente sobre uma linha que alguém recebe.
+     */
+  electricianAmountCents: number;
+  /** Valor da linha. Calculado pelo servidor — a escrita não manda. */
+  totalCents: number;
+}
+
+/**
+ * Proposto. Linha da aba Serviços na escrita. Sem `totalCents` nem `electricianAmountCents`: quem calcula é o servidor.
+ */
+export interface OrderServiceItemWriteRequest {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /**
+     * Percentual do eletricista NESTA linha. **`null` = herda do cadastro** (`ServiceDto.electricianPercent`) no momento da gravação; qualquer valor é OVERRIDE explícito, inclusive `0`.
+     *
+     * A distinção entre `null` e `0` é a que o campo existe para carregar: zero é "esta linha não paga instalador", e omitir é "use o que o cadastro diz". Um campo não-nulável forçaria o cliente a copiar o percentual do cadastro para dentro do corpo — e aí quem gravasse com o cadastro desatualizado na tela congelaria o número velho sem ninguém pedir.
+     * @nullable
+     */
+  electricianPercent: number | null;
+}
+
+/**
  * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
  */
 export type OrderDtoStatus = typeof OrderDtoStatus[keyof typeof OrderDtoStatus];
@@ -2970,6 +3140,8 @@ export interface OrderDetailDto {
      * **Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso.
      */
   installmentPolicy?: InstallmentPolicyDto;
+  /** As linhas da aba Serviços, na ordem de exibição. Coleção própria — ver `OrderServiceItemDto`. Vem sempre, vazia quando o documento não tem serviço nenhum: ausência e lista vazia significariam a mesma coisa, e a de leitura opcional só criaria um ramo `?? []` em cada consumidor. */
+  serviceItems: OrderServiceItemDto[];
 }
 
 /**
@@ -3082,10 +3254,99 @@ export interface OrderWriteRequest {
      * @nullable
      */
   paymentTermId?: string | null;
+  /**
+     * As linhas da aba Serviços. **OPCIONAL, e ausente é VAZIO — nunca "preserva o que estava".** O `PUT` é integral, e essa semântica vale para os serviços exatamente como vale para `items` e `environments`: gravar sem o campo APAGA os serviços do documento.
+     *
+     * É opcional, e não obrigatório como `items`, por uma razão de transição e só: a seção nasce no contrato antes da tela, e um campo obrigatório faria toda escrita existente de documento virar 400 no dia do merge — inclusive a conversão do CRM. Vira obrigatório quando a aba existir dos dois lados.
+     */
+  serviceItems?: OrderServiceItemWriteRequest[];
 }
 
 export interface PagedResultOfOrderDto {
   rows: OrderDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Um SERVIÇO do cadastro da empresa ativa. Fonte: `Servicos` do legado (16 colunas). As quatro de auditoria (`usr_cod_criacao`/`usr_dt_hr_*`) e `Emp_codigo` não sobem: as primeiras são trilho próprio (auditoria viva), e a empresa é decidida pela sessão, nunca declarada pelo cliente.
+ */
+export interface ServiceDto {
+  id: string;
+  /** Código curto do serviço, único na empresa. É onde o `sev_cod` do legado aterrissa na carga — mesmo papel que `code` faz no depósito. `sev_cod` é `int` lá e `string` aqui porque um dia ele deixa de ser sequência e vira código que o operador escolhe; a chave de verdade é o `id`. */
+  code: string;
+  /** `Serv_Desc` — o nome do serviço, e o texto que a linha do documento CONGELA na emissão. Chama-se `description` e não `name` porque é isso que ele é do outro lado: `QuoteServiceItemDto.description` sai daqui. */
+  description: string;
+  /** `Serv_Preco` em CENTAVOS. `money` do SQL Server tem 4 casas; centavos são 2, e a carga precisa conferir se alguma linha usa as duas casas extras — arredondar em silêncio na migração é perder dinheiro que ninguém procura depois. */
+  priceCents: number;
+  /** `Serv_Pc_Eletricista` — quanto da linha vai para quem instala. Int com 4 casas implícitas: `10000` = 1%, a MESMA convenção de `discountPercent`. É o padrão do cadastro, e a linha do documento pode sobrepô-lo (ver `QuoteServiceItemWriteRequest.electricianPercent`). */
+  electricianPercent: number;
+  /**
+     * `Serv_tipo`. **Texto livre, e é assim de propósito.** O legado o guarda em `varchar(12)` sem FK e sem tabela de domínio, e o dump de schema não traz linhas: publicar `enum` ou kind de `catalog-lookups` aqui seria inventar o vocabulário em vez de lê-lo. Vira lista de apoio quando houver dado na mão para escrever a lista — e essa é mudança de contrato, não de servidor.
+     * @nullable
+     */
+  type?: string | null;
+  /**
+     * `Serv_tempoInstalacao` — quanto tempo a instalação leva, insumo da agenda. **A UNIDADE é decisão desta publicação, não leitura do legado:** lá a coluna é `int` e não diz se conta minuto ou hora. MINUTOS porque é a unidade que não perde informação nas duas leituras possíveis. A carga precisa da conferência com quem opera antes de multiplicar por 60.
+     * @nullable
+     */
+  installationMinutes?: number | null;
+  /**
+     * `Serv_NFSECodigo` — o código do serviço na NFS-e, que é lista MUNICIPAL. Viaja como texto porque tem ponto (`7.02`) e porque cada município publica a sua; validá-lo aqui exigiria a tabela do município da empresa, que este contrato ainda não tem.
+     * @nullable
+     */
+  nfseCode?: string | null;
+  /**
+     * `GrupoProduto_codigo` — o grupo, para relatório e para a NFS-e. Texto, e não par `id`+`name`, pela mesma razão que `QuoteItemDto.productGroup` já é texto: não existe kind `GRUPO_PRODUTO` em `catalog-lookups`. É dívida declarada, e ela aparece nos dois lugares ao mesmo tempo quando for paga.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /** `Serv_NaoAtualizarValor` — a linha nova do documento NÃO puxa o preço do cadastro; quem digita o valor é o operador. Bit nulável no legado, booleano aqui: `null` e `false` significam a mesma coisa, e três estados num campo de dois seria estado que ninguém sabe ler. */
+  priceLocked: boolean;
+  /** `Serv_Entrega` — este serviço É a entrega (frete), não instalação. É o que separa o 1001 = FRETE do legado do resto, e o que a impressão do documento usa para pôr a linha no lugar certo. */
+  delivery: boolean;
+  /** `Serv_situacao` (`char(1)`) virado booleano — padrão 8, desativação lógica. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração. **`PUT` substitui o registro INTEIRO**: campo ausente APAGA, não preserva. Sem `id`.
+ */
+export interface ServiceWriteRequest {
+  /** @nullable */
+  code: string | null;
+  /** @nullable */
+  description: string | null;
+  /**
+     * Em centavos.
+     * @nullable
+     */
+  priceCents: number | null;
+  /**
+     * Int com 4 casas implícitas: `10000` = 1%.
+     * @nullable
+     */
+  electricianPercent: number | null;
+  /** @nullable */
+  type?: string | null;
+  /**
+     * Em minutos — ver `ServiceDto`.
+     * @nullable
+     */
+  installationMinutes?: number | null;
+  /** @nullable */
+  nfseCode?: string | null;
+  /** @nullable */
+  productGroup?: string | null;
+  /** @nullable */
+  priceLocked: boolean | null;
+  /** @nullable */
+  delivery: boolean | null;
+  /** @nullable */
+  active: boolean | null;
+}
+
+export interface PagedResultOfServiceDto {
+  rows: ServiceDto[];
   total: number;
 }
 
@@ -3704,6 +3965,19 @@ filters?: ListFilter[];
  * Proposto. Como as condições de `filters` se somam. Padrão `and`.
  */
 joinOperator?: ListFilterJoin;
+};
+
+export type ListServicesParams = {
+q?: string;
+/**
+ * Whitelist: `code`, `description`, `priceCents`, `active`. Campo fora dela é 400.
+ *
+ * `priceCents` entra porque "do mais caro para o mais barato" é pergunta que o operador faz de verdade num cadastro de preço — e ordenar centavos é ordenar inteiro, sem a armadilha de comparar dinheiro como texto. `electricianPercent`, `type` e `productGroup` ficam fora: os dois últimos são texto livre no legado (`varchar(12)` sem FK), e coluna cujo vocabulário não está normalizado ordena por acaso de digitação.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 
 export type ListStockLocationsParams = {

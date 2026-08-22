@@ -10,6 +10,7 @@ import type {
   ProductDetailDto,
   ProjectDto,
   ProjectPlanDto,
+  ServiceDto,
   StockBalanceDto,
   StockLocationDto,
   StockMovementDto,
@@ -167,6 +168,13 @@ export interface StoreDaApi {
    * significado próprio, e uma lista convidaria a `find(...) ?? erro`.
    */
   politicasDeParcelamento: Record<string, InstallmentPolicyDto>
+  /**
+   * Os SERVIÇOS do cadastro, por empresa — instalação, projeto, frete.
+   *
+   * Mesma forma dos depósitos: o `tenantId` fica FORA do DTO, porque o servidor
+   * não devolve a coluna de RLS, ele a USA para decidir o que devolver.
+   */
+  servicos: ServicoDaEmpresa[]
   /** O saldo por (empresa, depósito, variante) — cache derivado do kardex. */
   saldos: SaldoDoDeposito[]
   movimentos: StockMovementDto[]
@@ -199,6 +207,11 @@ export interface DepositoDaEmpresa extends StockLocationDto {
 export interface CondicaoDaEmpresa extends Omit<PaymentTermDto, 'installmentCount'> {
   tenantId: string
   installments: PaymentTermInstallmentDto[]
+}
+
+/** O serviço como o store o guarda: o `ServiceDto` mais o `tenantId`. */
+export interface ServicoDaEmpresa extends ServiceDto {
+  tenantId: string
 }
 
 /** O saldo como o store o guarda: o `StockBalanceDto` mais o `tenantId`. */
@@ -302,6 +315,90 @@ function depositosDoSeed(): DepositoDaEmpresa[] {
       code: 'SHOWROOM',
       name: 'SHOWROOM CENTRO',
       isDefault: false,
+      active: false,
+    },
+  ]
+}
+
+/**
+ * Os SERVIÇOS do seed — só na MATRIZ, e escolhidos para cobrir os três casos que
+ * o cadastro tem de distinguir.
+ *
+ * `INST-LUM` é o serviço comum: preço, 40% para o eletricista, tempo de
+ * instalação. `FRETE` é o `Serv_Entrega` do legado (o pseudo-produto 1001 =
+ * FRETE de `GrupoProduto`), que não paga instalador e não tem tempo. `PROJ-LUM`
+ * é o caso de `priceLocked`: projeto luminotécnico é orçado caso a caso, então a
+ * linha nova NÃO puxa o preço do cadastro — o operador digita.
+ *
+ * `RETRABALHO` nasce INATIVO porque é o estado que a listagem tem de conseguir
+ * mostrar e a tela, esconder: sem uma linha inativa no seed, `active` é coluna
+ * que ninguém nunca viu `false`.
+ *
+ * A FILIAL fica sem nenhum de propósito, como já ficou sem depósito: o cadastro
+ * é POR EMPRESA, e uma lista vazia é o que uma empresa recém-criada vê.
+ */
+function servicosDoSeed(): ServicoDaEmpresa[] {
+  return [
+    {
+      id: 'serv-0001',
+      tenantId: TENANT_MATRIZ,
+      code: 'INST-LUM',
+      description: 'INSTALAÇÃO DE LUMINÁRIA',
+      priceCents: 12000,
+      // 4 casas implícitas: 400000 = 40%.
+      electricianPercent: 400000,
+      type: 'INSTALACAO',
+      installationMinutes: 45,
+      nfseCode: '7.02',
+      productGroup: 'SERVIÇOS',
+      priceLocked: false,
+      delivery: false,
+      active: true,
+    },
+    {
+      id: 'serv-0002',
+      tenantId: TENANT_MATRIZ,
+      code: 'PROJ-LUM',
+      description: 'PROJETO LUMINOTÉCNICO',
+      priceCents: 95000,
+      electricianPercent: 0,
+      type: 'PROJETO',
+      installationMinutes: null,
+      nfseCode: '7.01',
+      productGroup: 'SERVIÇOS',
+      // Orçado caso a caso: a linha nova não herda este preço.
+      priceLocked: true,
+      delivery: false,
+      active: true,
+    },
+    {
+      id: 'serv-0003',
+      tenantId: TENANT_MATRIZ,
+      code: 'FRETE',
+      description: 'ENTREGA',
+      priceCents: 8000,
+      electricianPercent: 0,
+      type: 'ENTREGA',
+      installationMinutes: null,
+      nfseCode: null,
+      productGroup: 'FRETE',
+      priceLocked: false,
+      delivery: true,
+      active: true,
+    },
+    {
+      id: 'serv-0004',
+      tenantId: TENANT_MATRIZ,
+      code: 'RETRABALHO',
+      description: 'RETRABALHO EM GARANTIA',
+      priceCents: 0,
+      electricianPercent: 0,
+      type: 'INSTALACAO',
+      installationMinutes: 30,
+      nfseCode: null,
+      productGroup: 'SERVIÇOS',
+      priceLocked: false,
+      delivery: false,
       active: false,
     },
   ]
@@ -1029,6 +1126,7 @@ export function criarStore(): StoreDaApi {
     // que "não configurado" não é um estado — o parcelamento acontece com ou
     // sem alguém ter aberto a tela de configuração.
     politicasDeParcelamento: {},
+    servicos: servicosDoSeed(),
     saldos: saldosDoSeed(produtos),
     movimentos: [],
     tarefas: tarefasDoSeed(),

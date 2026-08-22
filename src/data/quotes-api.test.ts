@@ -53,6 +53,11 @@ const DETALHE: QuoteDetailDto = {
     minInstallmentCents: 5_000,
     maxInstallments: 6,
   },
+  // A aba Serviços vem SEMPRE, vazia quando o documento não tem nenhuma linha —
+  // é por isso que ela é obrigatória no DTO e não opcional. Este fixture a
+  // mantém vazia de propósito: a fronteira do orçamento (`paraOrcamento`) ainda
+  // não a lê, e um fixture com serviço faria parecer que lê.
+  serviceItems: [],
   items: [
     {
       lineNumber: 1,

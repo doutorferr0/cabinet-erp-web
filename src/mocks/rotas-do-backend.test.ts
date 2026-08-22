@@ -81,6 +81,21 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'put /api/payment-terms/{id}',
   'get /api/installment-policy',
   'put /api/installment-policy',
+  // Os SERVIÇOS (S2) pela MESMA razão dos depósitos, e não pela do 501: o
+  // contrato os publica AGORA porque é ele que especifica o que o S2b vai
+  // implementar do lado do api, e no servidor de hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `e47827e`):** a busca por
+  // `services` no repo inteiro do api devolve duas ocorrências, e as duas são
+  // `services:` de `docker-compose` — não existe rota, não existe módulo, e a
+  // cópia do contrato de lá ainda tem 78 operações. Não é nem o 501 da fase: é
+  // caminho que o servidor não tem, e ligar qualquer uma tiraria o mock para
+  // entregar 404 a uma tela que ainda nem existe.
+  //
+  // Saem daqui em FAMÍLIA, e só quando a família INTEIRA responder.
+  'get /api/services',
+  'post /api/services',
+  'put /api/services/{id}',
 ]
 
 beforeAll(async () => {

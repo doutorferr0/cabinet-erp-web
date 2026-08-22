@@ -48,6 +48,7 @@ import type {
   ListProjectsParams,
   ListQuotesParams,
   ListRolesParams,
+  ListServicesParams,
   ListStockBalancesParams,
   ListStockLocationsParams,
   ListStockMovementsParams,
@@ -71,6 +72,7 @@ import type {
   PagedResultOfProductDto,
   PagedResultOfQuoteDto,
   PagedResultOfRoleDto,
+  PagedResultOfServiceDto,
   PagedResultOfStockBalanceDto,
   PagedResultOfStockLocationDto,
   PagedResultOfStockMovementDto,
@@ -96,6 +98,8 @@ import type {
   RoleDetailDto,
   RoleWriteRequest,
   SemPermissaoResponse,
+  ServiceDto,
+  ServiceWriteRequest,
   SessaoAtual,
   StockLocationDto,
   StockLocationWriteRequest,
@@ -4931,6 +4935,204 @@ export const createOrderFromQuote = async (id: string, options?: Parameters<type
     method: 'POST'
 
 
+  }
+);}
+
+
+
+export type listServicesResponse200 = {
+  data: PagedResultOfServiceDto
+  status: 200
+}
+
+export type listServicesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listServicesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listServicesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listServicesResponseSuccess = (listServicesResponse200) & {
+  headers: Headers;
+};
+export type listServicesResponseError = (listServicesResponse400 | listServicesResponse401 | listServicesResponse403) & {
+  headers: Headers;
+};
+
+export type listServicesResponse = (listServicesResponseSuccess | listServicesResponseError)
+
+export const getListServicesUrl = (params?: ListServicesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/services?${stringifiedParams}` : `/api/services`
+}
+
+/**
+ * Proposto. O cadastro de SERVIÇOS da empresa ativa — instalação, projeto, entrega: o que a Vertz cobra à parte do material. É o item #7 dos cadastros do comparativo Softlux, e no legado ele é a tabela `Servicos` (16 colunas).
+ *
+ * **Serviço não é produto, e a diferença não é de nomenclatura.** O legado já os separa em tabelas próprias, e a razão aparece nas colunas: serviço não tem variante (acabamento × tamanho), não tem saldo, não entra no kardex, e tem duas coisas que produto nenhum tem — o percentual do eletricista, que é quanto da linha vai para quem instala, e o código do serviço na NFS-e, que é outro documento fiscal. Metê-lo em `/api/products` obrigaria toda variante, todo saldo e todo movimento a carregar um `isService` que nunca é verdadeiro.
+ *
+ * **`GrupoProduto` do legado guarda 1000 = SERVIÇOS e 1001 = FRETE como pseudo-produtos** — a gambiarra que existia para o serviço caber na tela de produto. Aqui ela não se repete: o grupo continua sendo campo do serviço (`productGroup`), e o serviço tem família própria.
+ *
+ * **Não publica `filters` de propósito.** O filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados; o cadastro de serviço de uma empresa é lista curta (198 linhas em `ISSQNServicos`, ordem de grandeza parecida no cadastro), e `q` mais `sortBy` respondem o que a tela pergunta. Ele entra no dia em que uma tela precisar, e aí com whitelist escrita.
+ */
+export const listServices = async (params?: ListServicesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listServicesResponse> => {
+
+  return apiFetch<listServicesResponse>(getListServicesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createServiceResponse201 = {
+  data: ServiceDto
+  status: 201
+}
+
+export type createServiceResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createServiceResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createServiceResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createServiceResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createServiceResponseSuccess = (createServiceResponse201) & {
+  headers: Headers;
+};
+export type createServiceResponseError = (createServiceResponse400 | createServiceResponse401 | createServiceResponse403 | createServiceResponse409) & {
+  headers: Headers;
+};
+
+export type createServiceResponse = (createServiceResponseSuccess | createServiceResponseError)
+
+export const getCreateServiceUrl = () => {
+
+
+
+
+  return `/api/services`
+}
+
+/**
+ * Proposto. Cria um serviço na empresa ativa.
+ *
+ * **Papel: `operator-full` ou superior**, a mesma linha de corte de `products` e `catalog-lookups`. O critério não é o de estoque nem o de atendimento: é o de quem mexe no CATÁLOGO que os documentos de todo mundo vão congelar. Preço de serviço errado entra em orçamento novo até alguém notar, e o percentual do eletricista errado vira pagamento errado a quem instalou.
+ *
+ * 409 quando `code` já existe na empresa, e quando não há empresa ativa na sessão.
+ */
+export const createService = async (serviceWriteRequest: ServiceWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createServiceResponse> => {
+
+  return apiFetch<createServiceResponse>(getCreateServiceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(serviceWriteRequest)
+  }
+);}
+
+
+
+export type updateServiceResponse200 = {
+  data: ServiceDto
+  status: 200
+}
+
+export type updateServiceResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateServiceResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateServiceResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateServiceResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateServiceResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateServiceResponseSuccess = (updateServiceResponse200) & {
+  headers: Headers;
+};
+export type updateServiceResponseError = (updateServiceResponse400 | updateServiceResponse401 | updateServiceResponse403 | updateServiceResponse404 | updateServiceResponse409) & {
+  headers: Headers;
+};
+
+export type updateServiceResponse = (updateServiceResponseSuccess | updateServiceResponseError)
+
+export const getUpdateServiceUrl = (id: string,) => {
+
+
+
+
+  return `/api/services/${id}`
+}
+
+/**
+ * Proposto. Substitui o serviço INTEIRO; desativar é `active: false`.
+ *
+ * **Não há DELETE** — nem aqui nem em lugar nenhum do contrato. Serviço apagado deixaria linha de orçamento e de pedido apontando para cadastro inexistente, e o documento já congelou a descrição e o preço justamente para não depender dele. Desativação lógica é o padrão 8, e aqui ela também é integridade referencial.
+ *
+ * **Não há GET por id**, pela razão que já valeu para o depósito e para o motivo de perda: o `ServiceDto` é PLANO — sem sub-recurso, sem variante, sem coleção embutida — então a LINHA da listagem já é o registro inteiro, e um caminho de detalhe seria uma requisição para buscar o que a tela tem na mão. Quando o cadastro ganhar sub-recurso (tributação por município, que o legado tem em `TributacaoServico`), o detalhe entra junto com ele.
+ *
+ * **Alterar o preço aqui NÃO reescreve documento nenhum.** `QuoteServiceItemDto` congela `description`, `unitPriceCents` e `electricianPercent` na emissão, pelo mesmo motivo que `QuoteItemDto` congela os do produto. `priceLocked` é sobre a próxima linha a ser INSERIDA, não sobre as que já existem.
+ */
+export const updateService = async (id: string,
+    serviceWriteRequest: ServiceWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateServiceResponse> => {
+
+  return apiFetch<updateServiceResponse>(getUpdateServiceUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(serviceWriteRequest)
   }
 );}
 

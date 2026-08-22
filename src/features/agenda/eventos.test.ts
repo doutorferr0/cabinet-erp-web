@@ -1,4 +1,4 @@
-import 'temporal-polyfill/global'
+import './temporal'
 import { describe, expect, it } from 'vitest'
 import { CALENDARIOS, paraEventoScheduleX } from './eventos'
 

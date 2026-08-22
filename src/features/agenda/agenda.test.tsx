@@ -1,4 +1,4 @@
-import 'temporal-polyfill/global'
+import './temporal'
 import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { waitFor } from '@testing-library/react'
 import { HttpResponse } from 'msw'

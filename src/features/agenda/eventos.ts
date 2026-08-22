@@ -1,5 +1,9 @@
 import type { AgendaEventDto, AgendaEventDtoKind } from '@/api/gerado'
-import type { CalendarEventExternal, CalendarType } from '@schedule-x/calendar'
+// Este módulo usa `Temporal` em runtime (`Temporal.Instant.from`, abaixo) e
+// não pode contar com quem o importou tê-lo carregado — o polyfill saiu da
+// entrada da aplicação na #227. Ver `./temporal`.
+import './temporal'
+import type { CalendarEventExternal, CalendarType } from './schedule-x'
 
 /**
  * Paleta de cada tipo de compromisso no Schedule-X — a MESMA do painel "hoje"

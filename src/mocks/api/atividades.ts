@@ -28,7 +28,7 @@ import { novoId, store } from './store'
  *   antiga. É a ordem que o contrato publica, e o painel não reordena nada.
  */
 
-const ORDENAVEIS = ['dueDate', 'doneAt', 'kind', 'title']
+export const ORDENAVEIS = ['dueDate', 'doneAt', 'kind', 'title']
 
 /** Dia relativo ao dia em que o mock roda — prazo fixo envelheceria em uma semana. */
 function dia(deslocamento: number): string {

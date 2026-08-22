@@ -72,6 +72,10 @@ export const TIPO = {
   valorNaoParcelavel: 'urn:cabinet:erro:valor-nao-parcelavel',
   parcelasAcimaDoTeto: 'urn:cabinet:erro:parcelas-acima-do-teto',
   parcelaAbaixoDoMinimo: 'urn:cabinet:erro:parcela-abaixo-do-minimo',
+  faturamentoMinimoNaoAtingido: 'urn:cabinet:erro:faturamento-minimo-nao-atingido',
+  itemJaEmOrdem: 'urn:cabinet:erro:item-ja-em-ordem',
+  ordemJaEnviada: 'urn:cabinet:erro:ordem-ja-enviada',
+  fornecedorDivergente: 'urn:cabinet:erro:fornecedor-divergente',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -105,6 +109,10 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:valor-nao-parcelavel': 'Valor não parcelável',
   'urn:cabinet:erro:parcelas-acima-do-teto': 'Parcelas acima do teto',
   'urn:cabinet:erro:parcela-abaixo-do-minimo': 'Parcela abaixo do mínimo',
+  'urn:cabinet:erro:faturamento-minimo-nao-atingido': 'Faturamento mínimo não atingido',
+  'urn:cabinet:erro:item-ja-em-ordem': 'Item já está em uma ordem',
+  'urn:cabinet:erro:ordem-ja-enviada': 'Ordem já enviada',
+  'urn:cabinet:erro:fornecedor-divergente': 'Fornecedor divergente',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }

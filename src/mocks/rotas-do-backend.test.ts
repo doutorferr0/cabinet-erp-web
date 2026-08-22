@@ -120,6 +120,25 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'get /api/reports/stock-aging',
   'get /api/reports/quote-vs-stock',
   'get /api/reports/birthdays',
+  // COMPRAS (G2) — as 14 operações do módulo. Respondem 501 hoje: o contrato
+  // entrou primeiro, por decisão da fase, e o handler é a FASE B do trilho, no
+  // `cabinet-erp-api`. Declaradas uma a uma, e não por prefixo, porque é assim
+  // que a lista foi desenhada — prefixo esconderia a operação nova que nascesse
+  // no mesmo caminho.
+  'get /api/purchase-requests',
+  'post /api/purchase-requests',
+  'get /api/purchase-requests/{id}',
+  'put /api/purchase-requests/{id}',
+  'post /api/purchase-requests/{id}/cancel',
+  'get /api/purchase-orders',
+  'post /api/purchase-orders',
+  'get /api/purchase-orders/{id}',
+  'put /api/purchase-orders/{id}',
+  'post /api/purchase-orders/{id}/send',
+  'post /api/purchase-orders/{id}/reschedule',
+  'post /api/purchase-orders/{id}/cancel',
+  'get /api/purchases/arrival-forecast',
+  'get /api/purchases/stock-replenishment',
 ]
 
 beforeAll(async () => {

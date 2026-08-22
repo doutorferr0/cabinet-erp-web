@@ -7166,6 +7166,1056 @@
           }
         }
       }
+    },
+    "/api/purchase-requests": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "ListPurchaseRequests",
+        "description": "Proposto. Os PEDIDOS DE COMPRA da empresa ativa — a necessidade de comprar, antes de virar compromisso com fornecedor.\n\nÉ a primeira das duas listagens do módulo `Compras` do comparativo Softlux (vol. 03), e a tela que a consome é a de onde o comprador MONTA ordem: ela precisa das linhas em aberto, com o fornecedor de cada uma, para agrupar por fornecedor e chegar ao faturamento mínimo. Por isso `PurchaseRequestDto.items` vem na listagem, e não só no detalhe.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — semântica do contrato para toda leitura de lista.\n\n**Não publica `filters`.** O recorte que a tela faz é por `status` e por fornecedor, e os dois são parâmetro próprio aqui: o filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados, e uma lista de trabalho com dois recortes conhecidos não precisa do vocabulário inteiro. Ele entra no dia em que uma tela precisar.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `number`, `issuedAt`, `status`, `itemCount`. Campo fora dela é 400.\n\n`orderNumber` fica de fora e é decisão: ele é ECOADO do pedido de venda, e ordenar por coluna de outra tabela num recurso paginado é o que transforma listagem em junção obrigatória. Quem procura pelo pedido de venda usa `q`.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "description": "Recorta por estado do pedido. Omitido, traz todos — inclusive `cancelled`, que a tela esconde por padrão mas o relatório quer.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "description": "Só os pedidos com ao menos uma LINHA deste fornecedor. Recorta por linha e não por cabeçalho, porque o pedido não tem fornecedor — as linhas têm, e podem ser de vários. Este é o parâmetro que a tela de montar ordem usa.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onlyOpenItems",
+            "description": "Só os pedidos com linha ainda não levada por ordem nenhuma. É o recorte de trabalho do comprador: o pedido totalmente atendido não some, mas também não atrapalha a tela em que se monta ordem.",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPurchaseRequestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CreatePurchaseRequest",
+        "description": "Proposto. Cria um pedido de compra na empresa ativa.\n\n**Permissão: `compras:editar`.** Não é `pedidos:editar` (que é o pedido de VENDA) nem `estoque:movimentar`: comprar é comprometer dinheiro da empresa com um terceiro, e é a primeira ação deste contrato que faz isso. O vendedor que fecha a venda não é necessariamente quem compra — no legado o setor COMPRAS tem 92 opções de RBAC próprias.\n\n**400 quando uma linha tem `destination: \"sale\"` sem `orderId` no cabeçalho**, ou com `sourceOrderItemLine` que não existe naquele pedido de venda. Encomenda sem venda que a encomendou é reposição com outro nome.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para \"quantos pedidos tem a empresa que você não tem\".",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseRequestWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseRequestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão, ou `orderId` que não é pedido de venda desta empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-requests/{id}": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseRequest",
+        "description": "Proposto. Um pedido de compra pelo id, com as linhas.\n\nExiste apesar de a listagem já trazer `items`, e a razão é a mesma de `quotes` e `orders`: o documento aberto na tela é recarregado sozinho depois de cada escrita, e buscar a página inteira para achar uma linha é o que faz a tela piscar.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para \"quantos pedidos tem a empresa que você não tem\".",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseRequestDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["compras"],
+        "operationId": "UpdatePurchaseRequest",
+        "description": "Proposto. Substitui o pedido INTEIRO, `items` incluído.\n\n**409 quando alguma linha já foi levada por uma ordem.** O pedido em `partially_ordered` ou `ordered` não se reescreve: a ordem já disse ao fornecedor o que comprou, e mudar a origem por baixo dela deixaria o par `sourceRequestId` + `sourceLineNumber` apontando para uma linha que virou outra coisa — com o par intacto, que é o que torna o defeito invisível. Desistir de uma linha nesse estado é cancelar o pedido e abrir outro, que é o que deixa rastro.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseRequestWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseRequestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — pedido com linha já em ordem (`urn:cabinet:erro:item-ja-em-ordem`), pedido cancelado, ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-requests/{id}/cancel": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CancelPurchaseRequest",
+        "description": "Proposto. Cancela o pedido de compra. Operação própria e não campo no PUT, pelo mesmo desenho de `quotes` e `orders`: cancelar é decisão de gente com rastro próprio, e um `status` aceito no corpo do PUT deixaria uma reedição distraída cancelar o documento.\n\n**409 quando alguma linha já está em ordem.** Cancelar o pedido cuja peça já foi comprada não desfaz a compra — ele só faria a ordem apontar para um documento cancelado. Nesse estado, o que se cancela é a ORDEM.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseRequestDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — pedido já cancelado, com linha em ordem (`urn:cabinet:erro:item-ja-em-ordem`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "ListPurchaseOrders",
+        "description": "Proposto. As ORDENS DE COMPRA da empresa ativa — o compromisso com o fornecedor.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**\n\nA empresa da SESSÃO recorta a listagem; `buyingTenantId` é OUTRA coisa — é qual empresa do grupo aparece como compradora no documento, e ela é dado da ordem, não recorte de acesso. As duas coincidem no caso normal e podem divergir por decisão comercial, que é exatamente o que a multi-empresa de compra do legado faz.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `number`, `orderedAt`, `sentAt`, `expectedAt`, `status`, `totalCents`. Campo fora dela é 400.\n\n`supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. `rescheduledAt` também, e por um motivo próprio: ele é nulo na maioria das linhas, e ordenar por coluna majoritariamente nula agrupa o irrelevante numa ponta e parece defeito. Quem quer as reagendadas usa a previsão de chegada, que já as marca.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "description": "Recorta por estado da ordem.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "description": "Só as ordens deste fornecedor.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CreatePurchaseOrder",
+        "description": "Proposto. Cria uma ordem de compra agrupando linhas de N pedidos de compra do MESMO fornecedor.\n\n**Permissão: `compras:editar`.**\n\n**As três recusas de negócio desta operação, e por que cada uma é 409 e não 400:**\n\n1. `urn:cabinet:erro:fornecedor-divergente` — alguma linha vem de um pedido cujo item é de outro fornecedor. A ordem é de UM fornecedor por definição, e o corpo pode estar perfeitamente bem formado: o que está errado é o estado do documento de origem, que o cliente não tinha como validar sozinho.\n2. `urn:cabinet:erro:item-ja-em-ordem` — a linha de pedido apontada já foi levada por outra ordem. É a corrida entre dois compradores montando ordem ao mesmo tempo, e é exatamente o caso que um 400 descreveria mal.\n3. `urn:cabinet:erro:faturamento-minimo-nao-atingido` — o total não alcança o mínimo do fornecedor. **É a regra que o legado carrega no cadastro e cobra na ordem**, e ela é conferida contra `totalCents` (depois de desconto e acréscimo), mais os mínimos POR GRUPO quando o fornecedor tiver algum: o mínimo do grupo substitui o geral para os itens daquele grupo. `detail` diz quanto falta e para qual grupo — a tela não tem como calcular isso, porque o mínimo é cadastro do fornecedor.\n\n**A validação do mínimo roda na criação e no PUT, não no `send`.** Deixá-la para o envio permitiria montar e guardar uma ordem que nunca poderá sair, e o comprador descobriria no fim do trabalho em vez de no começo.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para \"quantos pedidos tem a empresa que você não tem\".",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — fornecedor divergente entre linhas e pedidos de origem (`urn:cabinet:erro:fornecedor-divergente`), linha de pedido já levada por outra ordem (`urn:cabinet:erro:item-ja-em-ordem`), faturamento mínimo do fornecedor não atingido (`urn:cabinet:erro:faturamento-minimo-nao-atingido`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders/{id}": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseOrder",
+        "description": "Proposto. Uma ordem de compra pelo id, com as linhas e a origem de cada uma.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para \"quantos pedidos tem a empresa que você não tem\".",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["compras"],
+        "operationId": "UpdatePurchaseOrder",
+        "description": "Proposto. Substitui a ordem INTEIRA.\n\n**409 na ordem já ENVIADA** (`urn:cabinet:erro:ordem-ja-enviada`). Depois do `send` o fornecedor tem o documento na mão; o que muda a partir dali é data, e por `POST /{id}/reschedule`. Uma ordem enviada que se reescreve é uma ordem que diverge, em silêncio, daquela que o fornecedor está atendendo.\n\nAs três recusas do POST valem aqui igualmente, e a do faturamento mínimo é a que mais importa no PUT: é editando que o comprador tira a linha que sustentava o mínimo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — ordem já enviada (`urn:cabinet:erro:ordem-ja-enviada`) ou cancelada, fornecedor divergente (`urn:cabinet:erro:fornecedor-divergente`), linha já em outra ordem (`urn:cabinet:erro:item-ja-em-ordem`), faturamento mínimo não atingido (`urn:cabinet:erro:faturamento-minimo-nao-atingido`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders/{id}/send": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "SendPurchaseOrder",
+        "description": "Proposto. ENVIA a ordem ao fornecedor: `status` vai a `sent` e `sentAt` é gravada.\n\nÉ transição e não campo no PUT porque muda o que a ordem PERMITE — depois dela o documento para de ser editável. Um `status: \"sent\"` aceito no corpo do PUT faria essa passagem acontecer no meio de uma edição distraída, e ela não tem volta.\n\n**409 na ordem já enviada** — reenviar não é operação: se o fornecedor não recebeu, o que se reenvia é o e-mail, não o documento. Reenviar aqui reescreveria `sentAt` e apagaria quando a ordem de fato saiu, que é a data contra a qual todo atraso é medido.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderSendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — ordem já enviada (`urn:cabinet:erro:ordem-ja-enviada`), cancelada, ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders/{id}/reschedule": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "ReschedulePurchaseOrder",
+        "description": "Proposto. REAGENDA a entrega: a data nova vai para `rescheduledAt` e `expectedAt` fica onde está.\n\n**As duas datas ficam, e é o ponto inteiro desta operação.** Sobrescrever `expectedAt` faria a ordem sempre parecer no prazo — o fornecedor que atrasou três vezes teria, no fim, uma data cumprida. É a diferença entre as duas que mede o atraso, e o comparativo lista o reagendamento como campo do legado justamente por isso.\n\n**Só ordem ENVIADA se reagenda** (409 na `draft`): antes do envio não há promessa a quebrar — o que se muda é `expectedAt`, pelo PUT.\n\nReagendar de novo sobrescreve `rescheduledAt`, e isso é aceito: o que a ordem guarda é a promessa ORIGINAL e a VIGENTE. O histórico completo de reagendamentos é do log de auditoria, que grava cada chamada desta operação — não de mais uma coluna aqui.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderRescheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — ordem ainda em `draft` ou já cancelada, ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders/{id}/cancel": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CancelPurchaseOrder",
+        "description": "Proposto. Cancela a ordem de compra e DEVOLVE as linhas de pedido que ela levava ao estado `open`.\n\n**A devolução é a razão de esta operação existir em vez de um `status` no PUT.** A ordem cancelada que deixasse as linhas de pedido marcadas como `ordered` criaria necessidade órfã: peça que o cliente espera, que nenhuma ordem vai trazer, e que nenhuma tela mostra como pendente. Cancelar a ordem tem de reabrir o pedido, e é escrita nos dois documentos — por isso ela é uma transação só, do lado do servidor.\n\n**Cancelar ordem ENVIADA é permitido**, e é decisão: o fornecedor cancela pedido, e um sistema que só deixasse cancelar rascunho obrigaria a operação a mentir sobre o que existe. O rastro fica no log de auditoria.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — ordem já cancelada, ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchases/arrival-forecast": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseArrivalForecast",
+        "description": "Proposto. PREVISÃO DE CHEGADA — o que vem, quando, e para quem. É a consulta de mesmo nome no menu `Compras` do legado.\n\nLinha a linha de ITEM, não de ordem: a pergunta que a tela responde é \"quando chega a peça do cliente X\". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `expectedAt`, `sentAt`, `purchaseOrderNumber`, `daysLate`. Campo fora dela é 400.\n\nO padrão é `expectedAt` crescente — a tela de previsão abre no que chega primeiro, e uma previsão ordenada por outra coisa obriga o operador a ordená-la toda vez.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "supplierId",
+            "description": "Só o que vem deste fornecedor.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "customerId",
+            "description": "Só o que está prometido a este cliente. Recorta os itens `sale`; linha de reposição não tem cliente e some deste recorte, que é o comportamento certo.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "destination",
+            "description": "Recorta por destino: `stock` (reposição) ou `sale` (encomenda). É a separação que o legado faz com dois botões.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lateOnly",
+            "description": "Só as linhas cuja data válida já passou. É o recorte de cobrança do comprador.",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "description": "Piso da data válida (inclusive).",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "description": "Teto da data válida (inclusive).",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPurchaseArrivalRowDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/purchases/stock-replenishment": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseStockReplenishment",
+        "description": "Proposto. COMPRAS PARA ESTOQUE / RESERVA — quanto há, quanto está prometido, quanto vem a caminho, e quanto falta comprar. É a `CompraEstoque` do legado.\n\n**Consome `stock_balances.quantity_allocated`** — a coluna de RESERVA que a migração `0035` criou e que, até este contrato, não saía por API nenhuma. Ela é a diferença entre esta consulta e uma listagem de saldo: sem a reserva, \"disponível\" é o saldo bruto, e o comprador repõe peça que já está prometida a um cliente que ainda não a levou.\n\n**As parcelas vêm abertas, não somadas.** O legado define a disponibilidade futura como um número só (ordem aberta − reserva − entrada por nota), e um número só não distingue \"falta comprar\" de \"sobra reserva\" — que pedem decisões opostas. A soma continua disponível: é `qtyAvailable + qtyOnOrder`.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — e aqui a semântica importa mais do que em qualquer outra lista: saldo é POR EMPRESA, e uma consulta de reposição que ignorasse a empresa somaria o galpão de todo mundo.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `description`, `qtyOnHand`, `qtyAllocated`, `qtyAvailable`, `qtyOnOrder`, `qtySuggested`. Campo fora dela é 400.\n\nO padrão é `qtySuggested` decrescente: a tela abre no que mais falta, que é a única ordem em que uma lista de reposição é útil sem ninguém tocá-la.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "supplierId",
+            "description": "Só as variantes cujo fornecedor padrão é este — o recorte de quem vai montar uma ordem.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "locationId",
+            "description": "Recorta o saldo a UM depósito. Omitido, soma os depósitos da empresa ativa: reposição é decisão da empresa, e o galpão de onde a peça sai é decisão da separação.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "belowMinimumOnly",
+            "description": "Só as variantes em que `qtySuggested > 0`. É o recorte de trabalho; omitido, a consulta traz o quadro inteiro, que é o que o relatório quer.",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPurchaseReplenishmentRowDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7869,6 +8919,30 @@
             "type": ["null", "string"],
             "format": "date",
             "description": "Proposto. Data de nascimento da pessoa física (`Dt. de Nasc.`, aba `Principal`). **Não confundir com `foundedOn`**, que é a fundação da EMPRESA onde a pessoa trabalha e entrou no bloco 2: uma descreve a pessoa, a outra o vínculo de trabalho, e o mesmo cadastro pode ter as duas preenchidas. ISO no dado, exibição pt-BR na borda. **Dado pessoal (LGPD).**"
+          },
+          "deliveryDays": {
+            "description": "Proposto. PRAZO DE ENTREGA do fornecedor, em dias corridos — item #2 dos cadastros do comparativo. É o que a ordem de compra usa para SUGERIR `expectedAt` a partir de `orderedAt`; a ordem guarda a data que foi acordada, não este número, porque prazo de cadastro muda e data prometida não.\n\nDias CORRIDOS e não úteis: é assim que o fornecedor promete (\"entrega em 30 dias\"), e converter para úteis exigiria calendário de feriado por UF, que este contrato não tem. `null` no fornecedor sem prazo acordado — e então a ordem não sugere data nenhuma, em vez de sugerir hoje.\n\nSó faz sentido com `isSupplier: true`. O contrato não o recusa no cliente, pela mesma razão que já aceita `paymentTerms` em qualquer parceiro: o cadastro é UM e os papéis são flags, então campo de papel é campo opcional do cadastro inteiro.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "minimumBillingCents": {
+            "description": "Proposto. FATURAMENTO MÍNIMO GERAL do fornecedor, em centavos — quanto a ordem precisa somar para ele aceitar faturar.\n\nÉ regra de NEGÓCIO do fornecedor, e por isso mora no cadastro dele e não na ordem: a ordem só ECOA o valor que valia na emissão (`PurchaseOrderDto.minimumBillingCents`), para que a recusa de ontem continue explicável depois de o fornecedor mudar o mínimo.\n\n`null` = sem mínimo, e é diferente de `0`: zero é mínimo declarado e atendido por qualquer ordem; nulo é \"o fornecedor não impõe mínimo\", e a validação nem roda. Ver `groupMinimums` para a exceção por grupo de produto.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "buyingCompanies": {
+            "description": "Proposto. O histórico de EMPRESA COMPRADORA deste fornecedor, mais recente primeiro. Lista vazia no parceiro que não é fornecedor, ou no fornecedor comprado por qualquer empresa — ausência aqui não bloqueia ordem nenhuma.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierBuyingCompanyDto"
+            }
+          },
+          "groupMinimums": {
+            "description": "Proposto. Os faturamentos mínimos POR GRUPO DE PRODUTO, que substituem o geral para os itens do grupo. Lista vazia = só vale `minimumBillingCents`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierGroupMinimumDto"
+            }
           }
         }
       },
@@ -8073,6 +9147,28 @@
             "type": ["null", "string"],
             "format": "date",
             "description": "Proposto. Data de nascimento da pessoa física (`Dt. de Nasc.`, aba `Principal`). **Não confundir com `foundedOn`**, que é a fundação da EMPRESA onde a pessoa trabalha e entrou no bloco 2: uma descreve a pessoa, a outra o vínculo de trabalho, e o mesmo cadastro pode ter as duas preenchidas. ISO no dado, exibição pt-BR na borda. **Dado pessoal (LGPD).** `PUT` substitui o registro inteiro: omitir apaga."
+          },
+          "deliveryDays": {
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "minimumBillingCents": {
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "buyingCompanies": {
+            "description": "Proposto. SUBSTITUI o histórico inteiro — o PUT deste contrato troca o registro completo, e coleção embutida segue a mesma regra. Omitir o campo mantém o que está gravado; mandar `[]` apaga o histórico.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierBuyingCompanyWriteRequest"
+            }
+          },
+          "groupMinimums": {
+            "description": "Proposto. SUBSTITUI as linhas de mínimo por grupo, mesma regra de `buyingCompanies`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierGroupMinimumWriteRequest"
+            }
           }
         }
       },
@@ -8132,7 +9228,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -8159,6 +9255,10 @@
           "urn:cabinet:erro:valor-nao-parcelavel",
           "urn:cabinet:erro:parcelas-acima-do-teto",
           "urn:cabinet:erro:parcela-abaixo-do-minimo",
+          "urn:cabinet:erro:faturamento-minimo-nao-atingido",
+          "urn:cabinet:erro:item-ja-em-ordem",
+          "urn:cabinet:erro:ordem-ja-enviada",
+          "urn:cabinet:erro:fornecedor-divergente",
           "urn:cabinet:erro:nao-implementado",
           "urn:cabinet:erro:resposta-nao-json"
         ]
@@ -12821,6 +13921,839 @@
             "format": "int32"
           }
         }
+      },
+      "SupplierBuyingCompanyDto": {
+        "description": "Proposto. Uma vigência de EMPRESA COMPRADORA do fornecedor — a aba `Histórico Emp. Compradora` do cadastro de fornecedor no legado.\n\n**Por que é lista com vigência e não um campo.** No legado a Empresa Compradora aparece em fornecedor, produto e ordem de compra, e é ela que decide se a compra sai pela Vertz ou pela Via HF. O legado guarda o HISTÓRICO dela numa aba própria justamente porque a resposta muda no tempo: o fornecedor que era comprado pela Via em 2023 é comprado pela Vertz hoje, e a ordem emitida naquele ano tem de continuar dizendo a verdade sobre quem comprou. Um campo único reescreveria o passado a cada troca.\n\n**A ordem de compra NÃO lê esta lista para congelar a empresa** — ela guarda a sua própria `buyingTenantId`, copiada na emissão. Esta lista é o PADRÃO que a tela sugere, não a fonte do que já foi emitido.\n\nA empresa é um TENANT (`AuthTenantDto.tenantId`), não um cadastro à parte: multi-empresa neste produto é multi-tenant, e o legado confirma o modelo — 99,91% do volume dele está na empresa 1, e a multi-empresa que ele de fato opera é a de COMPRA.",
+        "required": ["tenantId", "tenantName", "validFrom"],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "description": "A empresa compradora — `AuthTenantDto.tenantId`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantName": {
+            "description": "Nome da empresa, ecoado para a tela não ter de resolver o id.",
+            "type": "string"
+          },
+          "validFrom": {
+            "description": "Início da vigência. Data, não instante: a troca de empresa compradora é decisão comercial com data, e hora aqui seria precisão inventada.",
+            "type": "string",
+            "format": "date"
+          },
+          "validTo": {
+            "description": "Fim da vigência, ou `null` na linha VIGENTE. Só uma linha por fornecedor pode ter `validTo` nulo — duas empresas comprando ao mesmo tempo do mesmo fornecedor não é estado, é cadastro por terminar.",
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "SupplierBuyingCompanyWriteRequest": {
+        "description": "Proposto. Uma linha de vigência de empresa compradora, na escrita do parceiro. `tenantName` não entra: ele é ecoado na leitura, e aceitá-lo aqui deixaria o cliente renomear a empresa de outra pessoa pelo cadastro do fornecedor.",
+        "required": ["tenantId", "validFrom"],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "validTo": {
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "SupplierGroupMinimumDto": {
+        "description": "Proposto. O FATURAMENTO MÍNIMO do fornecedor para um GRUPO DE PRODUTO — a exceção à regra geral de `minimumBillingCents`.\n\n**Por que por grupo, e por que só agora.** O fornecedor que exige R$ 3.000 por ordem costuma exigir outra coisa para a linha de perfil ou para a de LED, e o legado carrega isso: `Forma_PagamentoGrupProd` já pendura desconto e acréscimo por grupo de produto. O `PaymentTermDto` deste contrato declarou essa mesma dívida por escrito e disse que ela só entraria quando o grupo de produto tivesse id — \"casar por texto faria PENDENTES e Pendentes renderem descontos diferentes no mesmo documento\". **O id existe desde `QuoteItemDto.productGroupId`** (kind `GRUPO_PRODUTO` de `catalog-lookups`), e é nele que esta linha pendura. A dívida do `PaymentTermDto` continua aberta — ela é sobre desconto na CONDIÇÃO DE PAGAMENTO, não sobre mínimo do fornecedor —, mas o argumento que a bloqueava não vale mais.\n\n**Como as duas se combinam:** o mínimo por grupo SUBSTITUI o geral para os itens daquele grupo, não soma com ele. Uma ordem com itens de dois grupos com mínimo próprio tem de atender os dois; os itens de grupo sem linha aqui somam contra `minimumBillingCents`. Somar tudo num total só deixaria o fornecedor que exige R$ 3.000 de LED aceitar uma ordem de R$ 3.000 de perfil.",
+        "required": ["productGroupId", "productGroupName", "minimumBillingCents"],
+        "type": "object",
+        "properties": {
+          "productGroupId": {
+            "description": "O grupo — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. O mesmo id que a linha do documento carrega em `productGroupId`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "productGroupName": {
+            "description": "Nome do grupo, ecoado. NÃO é chave: ver a descrição de `QuoteItemDto.productGroupId`.",
+            "type": "string"
+          },
+          "minimumBillingCents": {
+            "description": "O mínimo em CENTAVOS para este grupo. Inteiro, como todo dinheiro deste contrato.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SupplierGroupMinimumWriteRequest": {
+        "description": "Proposto. Uma linha de faturamento mínimo por grupo, na escrita do parceiro.",
+        "required": ["productGroupId", "minimumBillingCents"],
+        "type": "object",
+        "properties": {
+          "productGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minimumBillingCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PurchaseRequestItemDto": {
+        "description": "Proposto. Uma linha do PEDIDO DE COMPRA — o que se quer comprar, de quem, e para quê.\n\nA linha carrega o FORNECEDOR porque o pedido tem N deles: no legado a compra nasce da necessidade (o pedido de venda fechado, ou o saldo abaixo do mínimo), e a necessidade não chega separada por fornecedor. Quem separa é a ORDEM, que é por fornecedor — e é por isso que um pedido vira várias ordens, e uma ordem agrupa vários pedidos.",
+        "required": [
+          "lineNumber",
+          "description",
+          "quantity",
+          "destination",
+          "supplierId",
+          "supplierName",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "A ordem da linha DENTRO do pedido, 1-based. É por ela que a ordem de compra rastreia a origem (`PurchaseOrderItemDto.sourceLineNumber`) — o id da linha não sai daqui, e o par (pedido, número) já a identifica.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "description": "A variante do catálogo, quando a linha aponta para uma. `null` no item que o operador digitou à mão — o \"Pré Produto\" do legado, que existe justamente para comprar o que ainda não está cadastrado.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "description": "A descrição CONGELADA na emissão. Não é lida da variante em tempo de leitura, pelo mesmo motivo que a linha do orçamento congela a sua: renomear o produto não pode reescrever o que foi pedido.",
+            "type": "string"
+          },
+          "finish": {
+            "description": "Acabamento. Junto de `size`, é a variante em texto — o legado compra por acabamento e tamanho, e a tela de compras é a mesma do orçamento nesse ponto.",
+            "type": ["string", "null"]
+          },
+          "size": {
+            "description": "Tamanho.",
+            "type": ["string", "null"]
+          },
+          "unit": {
+            "description": "Unidade de COMPRA, que pode não ser a de venda: o legado tem unidade de entrada ≠ unidade de saída com fator de conversão, e este campo é a de entrada.",
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Quantidade pedida. Fracionária — metro de fita de LED é a unidade normal deste negócio.",
+            "type": "number",
+            "format": "double"
+          },
+          "destination": {
+            "description": "O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões \"Produtos Estoque\" e \"Produtos Pedidos\" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.\n\n**`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.",
+            "type": "string",
+            "enum": ["stock", "sale"]
+          },
+          "supplierId": {
+            "description": "De QUEM se quer comprar esta linha — `PartnerDto.id` com `isSupplier`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierName": {
+            "description": "Nome do fornecedor, ecoado.",
+            "type": "string"
+          },
+          "sourceOrderItemLine": {
+            "description": "A linha do PEDIDO DE VENDA que originou esta — `OrderItemDto.lineNumber` dentro do `orderId` do cabeçalho. `null` quando `destination` é `stock`, e obrigatório quando é `sale`: é este par que faz a previsão de chegada dizer para QUAL cliente a peça está vindo.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "purchaseOrderId": {
+            "description": "A ORDEM que já levou esta linha, ou `null` enquanto ela está aberta. Derivado — quem escreve é a criação da ordem, nunca o PUT do pedido.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "purchaseOrderNumber": {
+            "description": "Número da ordem que levou a linha, ecoado.",
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "Estado da LINHA, que não é o do pedido: um pedido com metade das linhas em ordem fica `partially_ordered`, e é a linha que diz qual metade. `cancelled` é linha desistida sem cancelar o pedido inteiro.",
+            "type": "string",
+            "enum": ["open", "ordered", "cancelled"]
+          },
+          "notes": {
+            "description": "Observação da linha — onde vai o recado ao comprador que não cabe em campo nenhum.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PurchaseRequestDto": {
+        "description": "Proposto. Um PEDIDO DE COMPRA — a NECESSIDADE de comprar, antes de ela virar compromisso com fornecedor. É o menu `Compras → Pedido` do legado, e o primeiro elo da cadeia real que o comparativo levantou: **Pedido de Venda → Pedido de Compra → Ordem de Compra por fornecedor → envio → recebimento**.\n\n**Por que pedido e ordem são DOIS documentos e não um com status.** Eles têm cardinalidade diferente em relação ao fornecedor: o pedido tem N (a necessidade vem misturada), a ordem tem 1 (o compromisso é com um fornecedor só). Um documento único obrigaria a escolher — ou quebrar a necessidade em N documentos na hora errada (antes de saber se dá para agrupar com a de outro pedido e atingir o faturamento mínimo), ou deixar a ordem com N fornecedores, que é o que o faturamento mínimo, a transportadora e a condição de pagamento não admitem.\n\n**A relação com a ordem é N↔N, rastreada POR ITEM.** Um pedido vira várias ordens (uma por fornecedor) e uma ordem agrupa vários pedidos (para atingir o mínimo). Guardar o elo no cabeçalho não representaria nem um caso nem o outro; ele mora em `PurchaseOrderItemDto.sourceRequestId` + `sourceLineNumber`.\n\n**`status` é DERIVADO das linhas** e não escrito à mão: `open` enquanto nenhuma linha entrou em ordem, `partially_ordered` com algumas, `ordered` com todas. Só `cancelled` é decisão de gente, e é por isso que ele tem operação própria (`POST /{id}/cancel`) em vez de campo no PUT — o mesmo desenho de `quotes` e `orders`.",
+        "required": ["id", "number", "status", "issuedAt", "itemCount", "items"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "O número do documento na empresa. Texto e não inteiro, pelo mesmo motivo de `OrderDto.number`: o legado traz numeração com prefixo e série.",
+            "type": "string"
+          },
+          "status": {
+            "description": "Derivado das linhas, exceto `cancelled`. Ver a descrição do schema.",
+            "type": "string",
+            "enum": ["open", "partially_ordered", "ordered", "cancelled"]
+          },
+          "issuedAt": {
+            "description": "Data de emissão do pedido.",
+            "type": "string",
+            "format": "date"
+          },
+          "orderId": {
+            "description": "O PEDIDO DE VENDA que originou este pedido de compra, quando ele nasceu de uma venda. `null` no pedido de REPOSIÇÃO, que nasce do saldo e não de cliente nenhum.\n\nO elo é do CABEÇALHO e não da linha porque o legado o descreve assim (\"Pedido de Compra: vinculado a Ped. Venda\"), e porque um pedido de compra que misturasse duas vendas não teria a quem mostrar a previsão de chegada. As LINHAS apontam para as linhas daquela venda, em `sourceOrderItemLine`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "description": "Número do pedido de venda de origem, ecoado.",
+            "type": ["string", "null"]
+          },
+          "customerId": {
+            "description": "Cliente do pedido de venda de origem, ecoado — a previsão de chegada precisa dele e não vai buscar a venda inteira para ter um nome.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "customerName": {
+            "description": "Nome do cliente, ecoado.",
+            "type": ["string", "null"]
+          },
+          "itemCount": {
+            "description": "Quantas linhas o pedido tem. Existe para a LISTAGEM: contar itens na tela exigiria trazer as linhas de todos os pedidos da página.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "description": "As linhas. Vêm na listagem TAMBÉM, e é decisão: o pedido de compra é documento curto (o legado tem 34.863 linhas em `Pedido_compra_det` para o histórico inteiro), e a tela de compras precisa do fornecedor de cada linha para agrupar em ordem sem uma requisição por pedido.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseRequestItemDto"
+            }
+          },
+          "notes": {
+            "description": "Observação do documento.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PurchaseRequestItemWriteRequest": {
+        "description": "Proposto. Uma linha na escrita do pedido de compra. Os campos DERIVADOS não entram — `status`, `purchaseOrderId` e `purchaseOrderNumber` são escritos pela criação da ordem, e aceitá-los aqui deixaria o cliente declarar que a linha já foi comprada.",
+        "required": ["lineNumber", "description", "quantity", "destination", "supplierId"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "finish": {
+            "type": ["string", "null"]
+          },
+          "size": {
+            "type": ["string", "null"]
+          },
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "destination": {
+            "type": "string",
+            "enum": ["stock", "sale"]
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceOrderItemLine": {
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PurchaseRequestWriteRequest": {
+        "description": "Proposto. Cria ou SUBSTITUI um pedido de compra inteiro — PUT troca o registro completo, `items` incluído.\n\n**O PUT recusa (409) o pedido que já tem linha em ordem.** Reescrever a linha que virou compromisso com fornecedor mudaria o que a ordem diz ter comprado, e a ordem já saiu. Nesse estado o caminho é cancelar a linha e abrir outra, que é o que deixa rastro.",
+        "required": ["issuedAt", "items"],
+        "type": "object",
+        "properties": {
+          "issuedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "orderId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseRequestItemWriteRequest"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfPurchaseRequestDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseRequestDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PurchaseOrderItemDto": {
+        "description": "Proposto. Uma linha da ORDEM DE COMPRA, com a ORIGEM rastreada.\n\n**`sourceRequestId` + `sourceLineNumber` são o que faz o agrupamento reversível.** A ordem agrupa itens de N pedidos; sem o par, \"de qual pedido veio esta peça\" só se responderia casando descrição e quantidade — que é adivinhação assim que dois pedidos pedem a mesma peça do mesmo fornecedor, que é o caso NORMAL num negócio de reposição.",
+        "required": [
+          "lineNumber",
+          "sourceRequestId",
+          "sourceRequestNumber",
+          "sourceLineNumber",
+          "description",
+          "quantity",
+          "unitCostCents",
+          "totalCents",
+          "destination"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "A ordem da linha DENTRO da ordem de compra, 1-based.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "sourceRequestId": {
+            "description": "O PEDIDO DE COMPRA de onde esta linha veio.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceRequestNumber": {
+            "description": "Número do pedido de origem, ecoado — a tela mostra \"veio do pedido 1234\" sem resolver o id.",
+            "type": "string"
+          },
+          "sourceLineNumber": {
+            "description": "A linha DAQUELE pedido — `PurchaseRequestItemDto.lineNumber`.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descrição congelada na emissão da ordem.",
+            "type": "string"
+          },
+          "finish": {
+            "type": ["string", "null"]
+          },
+          "size": {
+            "type": ["string", "null"]
+          },
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Quantidade desta linha na ordem. **Pode ser menor que a da linha do pedido**: o fornecedor atende parcialmente, e o resto continua aberto no pedido para entrar noutra ordem.",
+            "type": "number",
+            "format": "double"
+          },
+          "unitCostCents": {
+            "description": "Custo unitário NEGOCIADO, em centavos. É o preço de COMPRA — não tem relação com o de venda, que sai do índice por fornecedor.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCents": {
+            "description": "Total da linha em centavos. Vem calculado do servidor: `quantity × unitCostCents` arredondado uma vez, e não N vezes na tela.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "destination": {
+            "description": "O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões \"Produtos Estoque\" e \"Produtos Pedidos\" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.\n\n**`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.",
+            "type": "string",
+            "enum": ["stock", "sale"]
+          },
+          "productGroupId": {
+            "description": "Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra na conta do faturamento mínimo POR GRUPO do fornecedor.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "productGroupName": {
+            "description": "Nome do grupo, ecoado.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PurchaseOrderDto": {
+        "description": "Proposto. Uma ORDEM DE COMPRA — o compromisso com UM fornecedor. Menu `Compras → Ordem` do legado.\n\n**Um fornecedor, N pedidos.** É a inversão de cardinalidade que justifica o segundo documento: só com um fornecedor só fazem sentido o faturamento mínimo, a transportadora, a condição de pagamento e a data prometida. E é agrupando pedidos de dias diferentes que o comprador chega ao mínimo — o que o legado apoia com os botões \"Produtos Estoque\" e \"Produtos Pedidos\", que enchem a mesma ordem com reposição e encomenda.\n\n**As quatro datas são quatro fatos diferentes, e nenhuma deriva da outra:** `orderedAt` é quando a ordem foi montada, `sentAt` é quando ela foi de fato mandada ao fornecedor (e é o que a transição `send` grava), `expectedAt` é a data PROMETIDA e `rescheduledAt` é a data reprometida depois de o fornecedor furar a primeira. Guardar só a última destruiria a medição que o negócio mais quer — de quanto o fornecedor atrasa —, porque a promessa original teria sido sobrescrita pela desculpa.\n\n**Não há DELETE**, como em todo o contrato: ordem some é ordem que o fornecedor recebeu e o sistema esqueceu. Desistir é `POST /{id}/cancel`.",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "supplierId",
+          "supplierName",
+          "buyingTenantId",
+          "buyingTenantName",
+          "orderedAt",
+          "subtotalCents",
+          "totalCents",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "O número da ordem na empresa.",
+            "type": "string"
+          },
+          "status": {
+            "description": "`draft` enquanto a ordem está sendo montada, `sent` depois de `POST /{id}/send`, `cancelled` na desistência.\n\n**Reagendar NÃO é status.** `POST /{id}/reschedule` move `expectedAt` para `rescheduledAt` e a ordem continua `sent` — uma ordem reagendada é uma ordem enviada cuja data mudou, e um status próprio faria a listagem de \"enviadas\" perder exatamente as que mais interessam ao comprador.",
+            "type": "string",
+            "enum": ["draft", "sent", "cancelled"]
+          },
+          "supplierId": {
+            "description": "O ÚNICO fornecedor da ordem.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "buyingTenantId": {
+            "description": "A EMPRESA COMPRADORA — qual empresa do grupo está comprando. Copiada na emissão a partir da vigência do fornecedor (`SupplierBuyingCompanyDto`), e congelada aqui: trocar a empresa compradora do cadastro amanhã não pode reescrever quem comprou ontem.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "buyingTenantName": {
+            "type": "string"
+          },
+          "orderedAt": {
+            "description": "Data em que a ordem foi montada.",
+            "type": "string",
+            "format": "date"
+          },
+          "sentAt": {
+            "description": "Data em que a ordem foi ENVIADA ao fornecedor. `null` enquanto `draft`.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "expectedAt": {
+            "description": "Data PROMETIDA na emissão. Sugerida a partir de `PartnerDto.deliveryDays`, mas guardada como data acordada — ver a descrição daquele campo.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "rescheduledAt": {
+            "description": "A data REPROMETIDA, quando houve reagendamento. `null` na ordem nunca reagendada. A previsão de chegada usa esta quando existe, e `expectedAt` quando não — mas as duas ficam, e é a diferença entre elas que mede o atraso do fornecedor.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "rescheduleReason": {
+            "description": "O motivo do último reagendamento, como o comprador o registrou.",
+            "type": ["string", "null"]
+          },
+          "minimumBillingCents": {
+            "description": "O faturamento mínimo do fornecedor ECOADO na emissão — cópia de `PartnerDto.minimumBillingCents` no momento em que a ordem foi criada.\n\nEcoado e não lido em tempo de leitura porque a validação de ontem tem de continuar explicável: o fornecedor sobe o mínimo, e a ordem antiga passaria a parecer irregular sem que nada nela tivesse mudado.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "carrierId": {
+            "description": "A TRANSPORTADORA — `PartnerDto.id`. Transportadora é parceiro como qualquer outro no cadastro do legado (item próprio do menu Cadastros), e não ganha entidade nova.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "carrierName": {
+            "type": ["string", "null"]
+          },
+          "paymentTermId": {
+            "description": "A CONDIÇÃO DE PAGAMENTO da ordem — `PaymentTermDto.id`, o cadastro que já existe. A aba Pagamento da ordem de compra REUSA o que a venda usa: parcelamento é parcelamento, e duplicar o cadastro faria a mesma condição existir com dois ids.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "paymentTermName": {
+            "type": ["string", "null"]
+          },
+          "discountPercent": {
+            "description": "Desconto GERAL da ordem, em pontos percentuais inteiros. Inteiro porque é assim que se negocia com fornecedor (\"cinco por cento\") — e porque percentual fracionário faria dois arredondamentos empilhados no total.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "surchargeCents": {
+            "description": "ACRÉSCIMO em centavos — frete cobrado à parte, embalagem, taxa. Valor e não percentual: o que o fornecedor acrescenta chega em reais.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "subtotalCents": {
+            "description": "Soma das linhas, antes de desconto e acréscimo.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCents": {
+            "description": "O total da ordem: `subtotalCents` menos o desconto, mais o acréscimo. É contra ELE que o faturamento mínimo é conferido.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseOrderItemDto"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PurchaseOrderItemWriteRequest": {
+        "description": "Proposto. Uma linha na escrita da ordem. `totalCents` não entra — quem multiplica é o servidor, e aceitar o total do cliente deixaria a soma da tela virar o valor gravado.",
+        "required": [
+          "lineNumber",
+          "sourceRequestId",
+          "sourceLineNumber",
+          "quantity",
+          "unitCostCents"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sourceRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceLineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "unitCostCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "productGroupId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        }
+      },
+      "PurchaseOrderWriteRequest": {
+        "description": "Proposto. Cria ou SUBSTITUI a ordem inteira.\n\n**A linha traz só o par de origem e o que foi negociado.** Descrição, acabamento, tamanho, unidade, variante e destino NÃO vêm do cliente: eles são COPIADOS da linha do pedido que `sourceRequestId` + `sourceLineNumber` apontam. Aceitá-los aqui deixaria a ordem dizer que comprou uma peça e o pedido dizer que pediu outra, com o par intacto entre as duas.\n\n**O PUT recusa (409) a ordem já enviada.** Depois do `send` o fornecedor tem a ordem na mão, e o que muda é data (por `reschedule`) ou nada.",
+        "required": [
+          "supplierId",
+          "buyingTenantId",
+          "orderedAt",
+          "discountPercent",
+          "surchargeCents",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "buyingTenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "expectedAt": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "carrierId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "paymentTermId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "discountPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surchargeCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseOrderItemWriteRequest"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PurchaseOrderSendRequest": {
+        "description": "Proposto. O corpo do envio. `sentAt` é opcional porque o caso normal é \"mandei agora\" — omitido, o servidor grava a data de hoje. Ele existe para o lançamento retroativo, que num ERP de operação real é rotina, não exceção.",
+        "required": [],
+        "type": "object",
+        "properties": {
+          "sentAt": {
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "PurchaseOrderRescheduleRequest": {
+        "description": "Proposto. O corpo do reagendamento — a data nova e por quê.\n\n`reason` é obrigatório e é decisão: reagendamento sem motivo registrado transforma a medição de atraso do fornecedor numa lista de datas que mudaram sozinhas. O legado tem o campo, e a razão de ele existir é a conversa com o fornecedor no mês seguinte.",
+        "required": ["expectedAt", "reason"],
+        "type": "object",
+        "properties": {
+          "expectedAt": {
+            "description": "A data REPROMETIDA. Vai para `rescheduledAt`; a promessa original fica onde está.",
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "description": "Por que a data mudou.",
+            "type": "string"
+          }
+        }
+      },
+      "PagedResultOfPurchaseOrderDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseOrderDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PurchaseArrivalRowDto": {
+        "description": "Proposto. Uma linha da PREVISÃO DE CHEGADA — uma peça em ordem enviada, com a data em que ela é esperada e o cliente que a espera.\n\n**É linha de ITEM e não de ordem**, e é o que a consulta existe para responder: a pergunta do operador é \"quando chega a peça do cliente X\", não \"quando chega a ordem 4711\". Uma ordem agrupa reposição e encomenda de clientes diferentes; agregada por ordem, a consulta devolveria uma data e nenhum cliente.\n\n**`expectedAt` aqui é a data VÁLIDA** — `rescheduledAt` quando existe, `expectedAt` da ordem quando não. As duas cruas continuam disponíveis no `PurchaseOrderDto`; esta consulta é para a tela que pergunta \"quando\", e obrigá-la a escolher entre dois campos é o tipo de regra que se implementa diferente em duas telas.",
+        "required": [
+          "purchaseOrderId",
+          "purchaseOrderNumber",
+          "supplierId",
+          "supplierName",
+          "description",
+          "quantity",
+          "destination"
+        ],
+        "type": "object",
+        "properties": {
+          "purchaseOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purchaseOrderNumber": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "sentAt": {
+            "description": "Quando a ordem foi enviada.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "expectedAt": {
+            "description": "A data válida — reagendada quando houve reagendamento. `null` na ordem enviada sem data prometida, e a tela mostra isso em vez de inventar uma.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "originalExpectedAt": {
+            "description": "A promessa ORIGINAL, quando houve reagendamento. `null` quando `expectedAt` já é a original — a tela só destaca a linha reagendada.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "daysLate": {
+            "description": "Dias de atraso contra a data válida, quando ela já passou. `null` na linha que ainda não venceu. Calculado no servidor porque \"hoje\" na tela é o relógio do navegador, e num ERP multiusuário isso já bastou para duas pessoas verem atrasos diferentes.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "variantId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "finish": {
+            "type": ["string", "null"]
+          },
+          "size": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "destination": {
+            "description": "Para que a peça vem. `sale` traz cliente; `stock` não tem cliente e é isso que a tela mostra.",
+            "type": "string",
+            "enum": ["stock", "sale"]
+          },
+          "orderId": {
+            "description": "O pedido de VENDA que espera a peça, quando `destination` é `sale`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": ["string", "null"]
+          },
+          "customerId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "customerName": {
+            "description": "Quem está esperando. `null` na linha de reposição, e a tela mostra \"estoque\" — não vazio.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfPurchaseArrivalRowDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseArrivalRowDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PurchaseReplenishmentRowDto": {
+        "description": "Proposto. Uma linha da consulta COMPRAS PARA ESTOQUE / RESERVA — quanto de cada variante há, quanto está PROMETIDO a alguém, e quanto já vem a caminho.\n\nÉ a `CompraEstoque` do legado, cuja definição o levantamento decifrou como **disponibilidade futura = ordem aberta − reserva − entrada por nota**. Aqui ela aparece aberta em parcelas, e não como um número só: um saldo futuro negativo não diz se falta comprar ou se sobra reserva, e são decisões opostas.\n\n**`qtyAllocated` é a reserva de verdade** — `stock_balances.quantity_allocated`, a coluna que a migração `0035` criou e que até aqui não saía por API nenhuma. Sem ela, \"disponível\" era o saldo bruto, e o comprador repunha peça que já estava prometida a um cliente.",
+        "required": [
+          "variantId",
+          "description",
+          "qtyOnHand",
+          "qtyAllocated",
+          "qtyAvailable",
+          "qtyOnOrder",
+          "qtySuggested"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "finish": {
+            "type": ["string", "null"]
+          },
+          "size": {
+            "type": ["string", "null"]
+          },
+          "qtyOnHand": {
+            "description": "Saldo FÍSICO somado nos depósitos da empresa ativa. Pode ser negativo, e o contrato não o esconde: a venda sai antes de a nota entrar, e esse é o estado normal desta operação por alguns dias.",
+            "type": "number",
+            "format": "double"
+          },
+          "qtyAllocated": {
+            "description": "Quanto do saldo já está RESERVADO para venda — `stock_balances.quantity_allocated`. Nunca negativo.",
+            "type": "number",
+            "format": "double"
+          },
+          "qtyAvailable": {
+            "description": "`qtyOnHand − qtyAllocated`. É o que dá para prometer a um cliente novo hoje, e pode ser negativo quando se prometeu mais do que há.",
+            "type": "number",
+            "format": "double"
+          },
+          "qtyOnOrder": {
+            "description": "Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou.",
+            "type": "number",
+            "format": "double"
+          },
+          "qtySuggested": {
+            "description": "A sugestão de compra: quanto falta para `qtyAvailable + qtyOnOrder` alcançar o mínimo de estoque da variante. `0` quando não falta nada.\n\nÉ SUGESTÃO e o nome diz isso — quem decide comprar é o comprador. O legado tem `EstoqueMinimo` com trigger, e a alteração da quantidade sugerida é permissão especial no RBAC dele (uma das 287 opções): a sugestão nunca foi tratada como ordem.",
+            "type": "number",
+            "format": "double"
+          },
+          "minimumQty": {
+            "description": "O estoque mínimo cadastrado da variante, quando existe. `null` na variante sem mínimo — e então `qtySuggested` é `0`, porque não há alvo contra o qual faltar.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "supplierId": {
+            "description": "O fornecedor PADRÃO da variante, para a tela já saber a quem pedir. `null` na variante sem fornecedor padrão.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfPurchaseReplenishmentRowDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PurchaseReplenishmentRowDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -12863,6 +14796,9 @@
     },
     {
       "name": "relatorios"
+    },
+    {
+      "name": "compras"
     }
   ]
 }

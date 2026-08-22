@@ -2504,7 +2504,7 @@ export const getListQuotesUrl = (params?: ListQuotesParams,) => {
 }
 
 /**
- * Proposto. Orçamentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName` e `projectName`; fora da lista é 400.
+ * Proposto. Orçamentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName`, `projectName`, `workName`; fora da lista é 400.
  */
 export const listQuotes = async (params?: ListQuotesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listQuotesResponse> => {
 
@@ -4630,7 +4630,7 @@ export const getListOrdersUrl = (params?: ListOrdersParams,) => {
 }
 
 /**
- * Proposto. Pedidos de venda da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `customerName` e `projectName`; fora da lista é 400.
+ * Proposto. Pedidos de venda da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `customerName`, `projectName`, `workName`; fora da lista é 400.
  */
 export const listOrders = async (params?: ListOrdersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listOrdersResponse> => {
 

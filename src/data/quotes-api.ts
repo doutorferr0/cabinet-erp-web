@@ -48,10 +48,10 @@ export const URL_ORCAMENTOS = '/api/quotes'
  * fora: a tela mostra a coluna e ela não ordena, o que é melhor que oferecer
  * uma ordenação que responde 400 ao primeiro clique.
  *
- * O filtro estruturado usa a MESMA lista. Ficam de fora, além da série,
- * `totalCents` e `discountPercent`: trafegam em unidade que o operador não
- * digita (centavos, percentual com 4 casas implícitas) e o filtro não tem
- * variante que converta na borda — a regra escrita em `filtro-de-consulta.ts`.
+ * `workName` ordena pelo nome da OBRA, e não pelo `projectName` digitado.
+ * São dois dados desde que a obra virou entidade: no seed da transcrição o
+ * `projectName` guarda o nome do PROFISSIONAL (§8.1, observação), então ordenar
+ * por ele nunca pôs junto dois documentos da mesma obra.
  */
 export const ORDENAVEIS_ORCAMENTO: readonly string[] = [
   'number',
@@ -59,10 +59,20 @@ export const ORDENAVEIS_ORCAMENTO: readonly string[] = [
   'expiresAt',
   'customerName',
   'projectName',
+  'workName',
 ]
 
-/** A mesma lista serve ao `filters`: o contrato publica as duas iguais. */
-export const FILTRAVEIS_ORCAMENTO = ORDENAVEIS_ORCAMENTO
+/**
+ * A do `filters` é a do `sortBy` MAIS `workId` — e por isso deixou de ser a
+ * mesma constante.
+ *
+ * `workId` é como a tela pergunta "os documentos desta obra", do mesmo jeito que
+ * `customerId` responde "as obras deste cliente" em `/api/works`. Ordenar por
+ * uuid não põe nada em ordem para quem lê, então ele não entra no `sortBy`: as
+ * duas listas divergem porque as duas perguntas divergem, e apontar a mesma
+ * constante para as duas esconderia isso na próxima diferença.
+ */
+export const FILTRAVEIS_ORCAMENTO: readonly string[] = [...ORDENAVEIS_ORCAMENTO, 'workId']
 
 /**
  * Chaves de cache num lugar só: mutação que invalida a chave errada é bug mudo.
@@ -169,6 +179,15 @@ export function paraEscrita(o: Orcamento): QuoteWriteRequest {
     expiresAt: o.dataValidade,
     customerId: o.clienteId,
     projectName: o.descricaoObra || null,
+    // TODO(contract): `workId` NÃO sai daqui, e isso apaga o elo com a obra.
+    // O `PUT` substitui o documento INTEIRO — corpo sem `workId` é documento
+    // sem obra. Hoje não morde porque a tela também não SETA o elo (o form da
+    // §8.2 não tem o campo, e esta zona é contrato+mock, não tela), então
+    // documento nenhum que passe por aqui tem um a perder. Passa a morder no
+    // instante em que alguém ligar a obra em qualquer outro lugar — mock, api
+    // ou importação: um `Gravar` sem edição limparia a coluna, com 200. Quem
+    // puser o campo no formulário liga os dois lados NO MESMO PR: o campo na
+    // tela e o `workId` neste corpo.
     folderNumber: o.numeroPasta || null,
     closedAt: o.dataFechamento,
     salespersonId: o.consultorId,

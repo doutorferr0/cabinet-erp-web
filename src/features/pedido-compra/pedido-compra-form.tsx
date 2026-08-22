@@ -1,10 +1,10 @@
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import {
+  DocumentoBloco,
   fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
 } from '@/components/cabinet/documento'
-import { FormBlock } from '@/components/cabinet/form-block'
 import {
   DateField,
   SelectField,
@@ -19,7 +19,7 @@ import { formatMoneyBRL } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { PedidoCompra } from '@/mocks/pedidos-compra'
 import { useNavigate } from '@tanstack/react-router'
-import { Hash, Package } from 'lucide-react'
+import { Building2, FileText, Hash, List, Package } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { z } from 'zod'
@@ -122,35 +122,55 @@ export function PedidoCompraForm({
       familia="orders"
     >
       <div data-zonas className="flex flex-col gap-4">
-        <Secao
-          numero="01"
-          titulo="Identificação"
-          cor="info"
-          icone={Hash}
-          nota="números e datas do documento"
-        >
-          <div className="grid grid-cols-12 items-end gap-3">
-            <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
-            <TextField name="pedVenda" label="Ped. Venda" className="col-span-6 sm:col-span-2" />
-            <TextField name="serie" label="Série" className="col-span-4 sm:col-span-1" />
-            <DateField name="data" label="Data" className="col-span-8 sm:col-span-2" />
-            <SelectField
-              name="codigoProduto"
-              label="Código do Produto"
-              options={tabelas.codigoProduto}
-              className="col-span-6 sm:col-span-2"
-            />
-          </div>
+        {/* Card agrupador (mockup `.card`): identificação e fornecedores são o
+            cabeçalho do pedido — quem entrega e sob que número. */}
+        <DocumentoBloco className="flex flex-col gap-4">
+          <Secao
+            numero="01"
+            titulo="Identificação"
+            cor="info"
+            icone={Hash}
+            nota="números e datas do documento"
+          >
+            <div className="grid grid-cols-12 items-end gap-3">
+              <TextField name="codigo" label="Código" className="col-span-6 sm:col-span-2" />
+              <TextField name="pedVenda" label="Ped. Venda" className="col-span-6 sm:col-span-2" />
+              <TextField name="serie" label="Série" className="col-span-4 sm:col-span-1" />
+              <DateField name="data" label="Data" className="col-span-8 sm:col-span-2" />
+              <SelectField
+                name="codigoProduto"
+                label="Código do Produto"
+                options={tabelas.codigoProduto}
+                className="col-span-6 sm:col-span-2"
+              />
+            </div>
+          </Secao>
+
+          {/* Um pedido tem N fornecedores (§7.3): grade própria, não combo único. */}
+          <Secao
+            numero="02"
+            titulo="Fornecedores"
+            cor="id"
+            icone={Building2}
+            nota="de quem se compra — um pedido tem vários"
+          >
+            <FornecedoresPedido />
+          </Secao>
+        </DocumentoBloco>
+
+        <Secao numero="03" titulo="Itens" cor="info" icone={List} nota="o que se está comprando">
+          <GradeItens />
         </Secao>
 
-        {/* Um pedido tem N fornecedores (§7.3): grade própria, não combo único. */}
-        <FormBlock legend="Fornecedores">
-          <FornecedoresPedido />
-        </FormBlock>
-
-        <GradeItens />
-
-        <TextareaField name="observacao" label="Observação" rows={3} />
+        <Secao
+          numero="04"
+          titulo="Observação"
+          cor="info"
+          icone={FileText}
+          nota="o que o comprador anotou"
+        >
+          <TextareaField name="observacao" label="Observação" rows={3} />
+        </Secao>
 
         <div>
           <Button

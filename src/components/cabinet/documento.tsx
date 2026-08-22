@@ -3,6 +3,7 @@ import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
+import { useId } from 'react'
 import { useWatch } from 'react-hook-form'
 
 /**
@@ -157,6 +158,85 @@ function TotalItem({
       >
         {formatMoneyBRL(valor)}
       </output>
+    </div>
+  )
+}
+
+export interface DocumentoFrameProps {
+  /** Tipo do documento — vai na etiqueta da moldura ("Orçamento", "Ordem de Compra"…). */
+  tipo: string
+  /** Número do documento — ausente em documento novo (inclusão). */
+  numero?: string | number | undefined
+  children: React.ReactNode
+  className?: string
+}
+
+/**
+ * MOLDURA-MÃE do documento (fusão v5 §3 "subdivisão explícita", mockup
+ * `docs/design/fusao-v5/mockup-orcamentos-v5.html`): retângulo de traço
+ * estrutural, raio 20, fundo semi-transparente e etiqueta sobreposta na borda
+ * dizendo `DOCUMENTO · <tipo> Nº <n>`.
+ *
+ * O que ela resolve: a tela de documento é uma pilha de caixas sem dono
+ * declarado — cabeçalho, abas, seções, grade, totais e, ao lado, painéis que
+ * NÃO pertencem ao documento (Atividades). A moldura desenha a fronteira: o
+ * que está dentro é a entidade; o que está fora, não é. Por isso ela mora em
+ * `TelaDeDocumento`, que é quem tem o cabeçalho e o form juntos — envolver só
+ * as abas deixaria o cabeçalho do próprio documento do lado de fora.
+ *
+ * Etiqueta INVERTIDA, não lima: o mockup pinta preto/lima porque tem um tema
+ * só. Aqui `bg-foreground/text-background` é a mesma peça nos dois temas (o
+ * precedente é o tooltip); `text-modulo` viraria lilás claro sobre fundo claro
+ * no tema escuro, que é o contraste que o mockup nunca precisou medir.
+ *
+ * Degrau de transparência: a moldura é `bg-card/40` e o `DocumentoBloco`
+ * dentro dela é `bg-card/55` — o mesmo pano do mockup (.38 / .45), duas
+ * camadas sobre o papel para as seções brancas saltarem.
+ */
+export function DocumentoFrame({ tipo, numero, children, className }: DocumentoFrameProps) {
+  const etiquetaId = useId()
+  const etiqueta = numero !== undefined ? `DOCUMENTO · ${tipo} Nº ${numero}` : `DOCUMENTO · ${tipo}`
+
+  return (
+    <section
+      data-slot="documento-frame"
+      aria-labelledby={etiquetaId}
+      className={cn(
+        'relative rounded-frame border-2 border-rule-strong bg-card/40 p-5 shadow-macia',
+        className,
+      )}
+    >
+      <span
+        id={etiquetaId}
+        data-slot="documento-etiqueta"
+        className="-top-2.5 absolute left-5 inline-flex items-center rounded-item bg-foreground px-3 py-1 font-mono text-[0.625rem] font-bold uppercase tracking-[0.15em] text-background"
+      >
+        {etiqueta}
+      </span>
+      {children}
+    </section>
+  )
+}
+
+export interface DocumentoBlocoProps {
+  children: React.ReactNode
+  className?: string
+}
+
+/**
+ * CARD AGRUPADOR semi-transparente dentro da moldura-mãe (mockup `.card`,
+ * `rgba(255,255,255,.45)`): o pano único sobre o qual as seções-filhas
+ * brancas saltam. Agrupa as seções de CABEÇALHO do documento (quem, quando,
+ * que regra) e deixa a grade de itens e os totais como blocos próprios —
+ * é essa divisão que o mockup desenha.
+ */
+export function DocumentoBloco({ children, className }: DocumentoBlocoProps) {
+  return (
+    <div
+      data-slot="documento-bloco"
+      className={cn('rounded-card border border-rule-hair bg-card/55 p-4', className)}
+    >
+      {children}
     </div>
   )
 }

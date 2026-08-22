@@ -1,5 +1,6 @@
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import {
+  DocumentoBloco,
   fileirasTotais,
   totalItemCentavos,
   useSubtotalCentavos,
@@ -26,7 +27,7 @@ import type { OrdemCompra } from '@/mocks/ordens-compra'
 import type { Transportadora } from '@/mocks/transportadoras'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Building2, Hash, Package, Percent, Search } from 'lucide-react'
+import { Building2, Hash, List, Package, Percent, Search, Truck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -266,39 +267,48 @@ function GradeItens() {
 function AbaPrincipal() {
   return (
     <div data-zonas className="flex flex-col gap-4">
-      <Cabecalho />
+      {/* Card agrupador (mockup `.card`): o cabeçalho do documento num pano só. */}
+      <DocumentoBloco className="flex flex-col gap-4">
+        <Cabecalho />
+      </DocumentoBloco>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => console.info('[mock] Excluir Produtos Selecionado')}
-        >
-          Excluir Produtos Selecionado
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => console.info('[mock] Produtos Estoque')}
-        >
-          <Package className="size-4" /> Produtos Estoque
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => console.info('[mock] Produtos Pedidos')}
-        >
-          <Package className="size-4" /> Produtos Pedidos
-        </Button>
-      </div>
+      {/* A ordem numérica segue a ordem de LEITURA: a grade era o buraco entre
+          02 e 03 — o bloco maior da tela, o único sem nome nem ordinal. */}
+      <Secao numero="03" titulo="Itens" cor="info" icone={List} nota="o que se está comprando">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => console.info('[mock] Excluir Produtos Selecionado')}
+            >
+              Excluir Produtos Selecionado
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => console.info('[mock] Produtos Estoque')}
+            >
+              <Package className="size-4" /> Produtos Estoque
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => console.info('[mock] Produtos Pedidos')}
+            >
+              <Package className="size-4" /> Produtos Pedidos
+            </Button>
+          </div>
 
-      <GradeItens />
+          <GradeItens />
+        </div>
+      </Secao>
 
       <Secao
-        numero="03"
+        numero="04"
         titulo="Ajustes"
         cor="warn"
         icone={Percent}
@@ -307,9 +317,18 @@ function AbaPrincipal() {
         <Ajustes />
       </Secao>
 
-      <BlocoTransportadora />
-
-      <TextareaField name="observacao" label="Observação" rows={3} />
+      <Secao
+        numero="05"
+        titulo="Entrega"
+        cor="info"
+        icone={Truck}
+        nota="quem leva, e o que o comprador anotou"
+      >
+        <div className="flex flex-col gap-4">
+          <BlocoTransportadora />
+          <TextareaField name="observacao" label="Observação" rows={3} />
+        </div>
+      </Secao>
     </div>
   )
 }

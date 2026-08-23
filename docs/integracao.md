@@ -249,8 +249,15 @@ com id inventado e responderia "não encontrado" para registro que existe.
 
 | Atividades — o que está agendado sobre um registro | `GET`/`POST` `/api/activities` · `PUT` `…/{id}` · **`POST` `…/{id}/done`** | `src/data/atividades-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/atividades.ts` no modo mock |
 
-**Ainda mock, por falta de caminho no contrato:** pedido e ordem de compra ·
-cidades · resumo do Boletim.
+| Compras — pedido, ordem, previsão de chegada, reposição | `GET`/`POST` `/api/purchase-requests` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/cancel`** · `GET`/`POST` `/api/purchase-orders` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/send`** · **`…/{id}/reschedule`** · **`…/{id}/cancel`** · `GET` `/api/purchases/arrival-forecast` · `GET` `/api/purchases/stock-replenishment` | caminhos `Proposto`, servidos por `src/mocks/api/compras.ts` no modo mock — **a TELA ainda não fala nenhum deles** (ver abaixo) |
+
+**Ainda mock, por falta de caminho no contrato:** cidades · resumo do Boletim.
+
+**COMPRAS é o caso do meio, e ele merece o parágrafo:** o contrato publica as 14 operações e o
+MSW as serve com estado de verdade, mas as telas de `/compras` continuam lendo os fixtures de
+`src/mocks/pedidos-compra.ts` e `ordens-compra.ts`, com id NUMÉRICO. São dois mundos que não se
+falam: gravar pela tela não aparece na listagem do contrato, e vice-versa. A migração é do
+`src/data/`, não da tela — e é o trilho seguinte deste módulo.
 
 ### O que sai do mock quando há backend — a lista de passagem (2026-08-19)
 

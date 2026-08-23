@@ -16,6 +16,12 @@ import {
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
 import { ORDENAVEIS_PAPEL as ORDENAVEIS_PAPEL_MOCK } from '@/mocks/api/acesso'
 import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
+import {
+  ORDENAVEIS_ORDEM_DE_COMPRA,
+  ORDENAVEIS_PEDIDO_DE_COMPRA,
+  ORDENAVEIS_PREVISAO,
+  ORDENAVEIS_REPOSICAO,
+} from '@/mocks/api/compras'
 import { ORDENAVEIS as ORDENAVEIS_CONTATO_MOCK } from '@/mocks/api/contatos'
 import {
   FILTRAVEIS_OPORTUNIDADE as FILTRAVEIS_OPORTUNIDADE_MOCK,
@@ -248,6 +254,14 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   // Serviço nasce sem tela e COM mock, pela mesma razão: quem recusa `sortBy`
   // fora da whitelist, hoje, é o handler — e o site público é 100% mock.
   ListServices: ORDENAVEIS_SERVICO,
+  // COMPRAS (G2) nasce sem tela e COM mock, como depósito e serviço: quem
+  // recusa `sortBy` fora da whitelist, hoje, é o handler — e o site público é
+  // 100% mock. As quatro saíram de `SEM_HANDLER_NO_MOCK` no mesmo commit em que
+  // `src/mocks/api/compras.ts` passou a servi-las.
+  ListPurchaseRequests: ORDENAVEIS_PEDIDO_DE_COMPRA,
+  ListPurchaseOrders: ORDENAVEIS_ORDEM_DE_COMPRA,
+  GetPurchaseArrivalForecast: ORDENAVEIS_PREVISAO,
+  GetPurchaseStockReplenishment: ORDENAVEIS_REPOSICAO,
 }
 
 /**
@@ -269,16 +283,12 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // O preço está pago enquanto tela nenhuma os consome. Quando a Fase C chegar,
   // este é o ponto que decide: ou o site público perde a seção Relatórios, ou
   // ela ganha handler de mock com dado de demonstração DECLARADO como tal.
-  // COMPRAS (G2). Diferente dos relatórios, o motivo aqui não é agregação: é
-  // que as duas listagens dependem de ESTADO que o mock não guarda — qual linha
-  // de pedido já foi levada por uma ordem. Um mock que respondesse sem isso
-  // deixaria a tela oferecer, para montar ordem, a linha que já está em outra.
-  // As duas consultas somam sobre esse mesmo estado.
-  ListPurchaseRequests: 'o mock não guarda qual linha já foi levada por uma ordem',
-  ListPurchaseOrders: 'idem — a ordem existe em função do estado das linhas de pedido',
-  GetPurchaseArrivalForecast: 'previsão soma sobre ordem enviada, estado que o mock não tem',
-  GetPurchaseStockReplenishment:
-    'reposição cruza saldo, reserva e ordem aberta — três estados que o mock não guarda',
+  // COMPRAS (G2) SAIU DAQUI. O motivo que estava escrito — "o mock não guarda
+  // qual linha já foi levada por uma ordem" — deixou de valer: `compras.ts`
+  // guarda esse estado em `LinhaDePedido.purchaseOrderId`, e é dele que saem o
+  // `status` derivado do pedido, o recorte `onlyOpenItems`, o 409 de
+  // `item-ja-em-ordem` e as duas consultas. As quatro estão em
+  // `ORDENAVEIS_DO_MOCK`, acima.
   GetAbcCurveReport: 'curva ABC é agregação — o mock guarda linhas, não somas',
   GetProductsSoldReport: 'produto vendido é agregação — o mock guarda linhas, não somas',
   GetSalesComparisonReport: 'comparativo de vendas é agregação — o mock guarda linhas, não somas',

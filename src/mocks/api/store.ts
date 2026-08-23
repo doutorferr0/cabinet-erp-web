@@ -517,9 +517,21 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       parentId: null,
       // IE de empresa: o fornecedor tem, e é o único dos três que a edita.
       stateRegistration: '110042490114',
-      deliveryDays: null,
-      minimumBillingCents: null,
-      buyingCompanies: [],
+      // Fase A0 de COMPRAS: o fornecedor PRINCIPAL do seed tem prazo e mínimo,
+      // e é contra ele que a ordem de compra é recusada por faturamento —
+      // fornecedor sem mínimo nunca exercitaria a regra.
+      deliveryDays: 30,
+      minimumBillingCents: 250_000,
+      // UMA linha vigente (`validTo: null`), como o índice único parcial da
+      // migração `0037` exige. A Matriz é quem compra da EVOLED.
+      buyingCompanies: [{ tenantId: TENANT_MATRIZ, validFrom: '2025-01-01', validTo: null }],
+      // VAZIO, e não por descuido: mínimo por grupo pendura em
+      // `catalog_lookups` com kind `GRUPO_PRODUTO`, e o próprio contrato
+      // declara que esse kind AINDA NÃO EXISTE (`OrderItemDto.productGroup`,
+      // dívida escrita ali). Semear id que a lista de apoio não tem faria o
+      // `productGroupName` sair vazio numa chave obrigatória. A conta por grupo
+      // está implementada em `compras.ts` e é exercitada pelo teste, que escreve
+      // a linha direto no store — que é o único lugar honesto para ela hoje.
       groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
@@ -810,6 +822,86 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       },
       vinculos: {
         [TENANT_MATRIZ]: { code: 'P-003', paymentTerms: null, active: true },
+      },
+    },
+    /**
+     * O SEGUNDO FORNECEDOR, e ele existe por uma razão medida — não para
+     * engordar a lista.
+     *
+     * O pedido de compra guarda o fornecedor na LINHA (migração `0037`) porque
+     * a necessidade chega misturada, e a ordem é de UM fornecedor. Com um
+     * fornecedor só no seed, as duas coisas que o módulo inteiro existe para
+     * fazer ficam inexercitáveis: agrupar linhas por fornecedor, e recusar com
+     * `urn:cabinet:erro:fornecedor-divergente` a ordem que mistura dois. O
+     * site público mostraria uma tela de montar ordem que nunca tem o que
+     * agrupar.
+     *
+     * As diferenças em relação à EVOLED são de propósito e cada uma cobre um
+     * caso: **mínimo NULO** (≠ zero — nulo é "não impõe mínimo" e a validação
+     * nem roda, zero é mínimo atendido por qualquer ordem) e **histórico de
+     * empresa compradora com duas linhas**, uma fechada e uma vigente, que é o
+     * que o índice único parcial da `0037` permite e o que a ficha precisa
+     * saber desenhar.
+     */
+    {
+      id: 'parc-0006',
+      legalName: 'MISTER LED COMERCIO DE ILUMINACAO LTDA',
+      tradeName: 'MISTER LED',
+      document: '44555666000177',
+      email: 'pedidos@misterled.dev',
+      isCustomer: false,
+      isSupplier: true,
+      isProfessional: false,
+      registrationActive: true,
+      registration: null,
+      payoutBankInfo: null,
+      parentId: null,
+      stateRegistration: '287654321119',
+      deliveryDays: 15,
+      // NULO, e a distinção é o dado: este fornecedor não impõe faturamento
+      // mínimo, então a conta nem roda. Zero seria "impõe, e qualquer ordem
+      // atende" — mesma tela, decisão diferente.
+      minimumBillingCents: null,
+      // HISTÓRICO: a Filial comprou até 2025-06-30, a Matriz compra desde
+      // então. Só a segunda é vigente (`validTo: null`).
+      buyingCompanies: [
+        { tenantId: TENANT_FILIAL, validFrom: '2024-01-01', validTo: '2025-06-30' },
+        { tenantId: TENANT_MATRIZ, validFrom: '2025-07-01', validTo: null },
+      ],
+      groupMinimums: [],
+      ruralProducerRegistration: null,
+      categoryId: null,
+      specifierId: null,
+      notes: null,
+      facebook: null,
+      instagram: null,
+      billingAddress: null,
+      businessAddress: null,
+      businessName: null,
+      businessRole: null,
+      businessDocument: null,
+      foundedOn: null,
+      personType: null,
+      identityDocument: null,
+      identityIssuer: null,
+      identityIssuerState: null,
+      gender: null,
+      birthDate: null,
+      mobilePhone: '11987650006',
+      businessPhone: '1133330006',
+      homePhone: null,
+      fax: null,
+      address: {
+        zipCode: '04571010',
+        street: 'RUA JAMES JOULE',
+        number: '92',
+        complement: null,
+        district: 'CIDADE MONCOES',
+        city: 'SAO PAULO',
+        state: 'SP',
+      },
+      vinculos: {
+        [TENANT_MATRIZ]: { code: 'F-002', paymentTerms: '30/60', active: true },
       },
     },
   ]

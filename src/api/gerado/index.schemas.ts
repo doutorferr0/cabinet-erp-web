@@ -4838,13 +4838,23 @@ export interface PurchaseOrderDto {
   paymentTermId?: string | null;
   /** @nullable */
   paymentTermName?: string | null;
-  /** Desconto GERAL da ordem, em pontos percentuais inteiros. Inteiro porque é assim que se negocia com fornecedor ("cinco por cento") — e porque percentual fracionário faria dois arredondamentos empilhados no total. */
+  /**
+     * Desconto GERAL da ordem, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1000000` = 100%.
+     *
+     * **A escala é a da casa, e este campo nasceu fora dela.** `QuoteDetailDto`, `OrderDetailDto` e as quatro de linha e de grupo já dizem `10000` = 1%; só esta dizia "pontos percentuais inteiros". Duas escalas para o mesmo nome não dão erro, dão desconto errado: quem segue a convenção manda `50000` para 5% e leva recusa, e quem manda `5` recebe 5% aqui e 0,0005% em todo outro documento. O `cabinet-erp-api` já corrigiu o lado dele — a migração `0057` trocou o `CHECK` de `BETWEEN 0 AND 100` para `BETWEEN 0 AND 1000000` e converteu o que existisse.
+     *
+     * Inteiro e não `number` pela razão de sempre: float em desconto empilha arredondamento em cima de dinheiro.
+     */
   discountPercent?: number;
   /** ACRÉSCIMO em centavos — frete cobrado à parte, embalagem, taxa. Valor e não percentual: o que o fornecedor acrescenta chega em reais. */
   surchargeCents?: number;
   /** Soma das linhas, antes de desconto e acréscimo. */
   subtotalCents: number;
-  /** O total da ordem: `subtotalCents` menos o desconto, mais o acréscimo. É contra ELE que o faturamento mínimo é conferido. */
+  /**
+     * O total da ordem: `subtotalCents` menos o desconto, mais o acréscimo.
+     *
+     * **Não é contra ele que o faturamento mínimo é conferido**, e a frase que dizia isso contradizia o `POST` desta mesma família. A conferência é contra a soma das LINHAS com o desconto geral aplicado e **sem** o acréscimo: frete e embalagem não são mercadoria, e deixá-los completar o mínimo faria o fornecedor recusar o faturamento que este contrato aprovou.
+     */
   totalCents: number;
   items: PurchaseOrderItemDto[];
   /** @nullable */
@@ -4881,7 +4891,9 @@ export interface PurchaseOrderWriteRequest {
   carrierId?: string | null;
   /** @nullable */
   paymentTermId?: string | null;
+  /** Desconto GERAL da ordem, na escala da casa: inteiro com 4 casas implícitas, `10000` = 1%. Ver `PurchaseOrderDto.discountPercent`. */
   discountPercent: number;
+  /** ACRÉSCIMO em centavos — frete, embalagem, taxa. Não conta para o faturamento mínimo. */
   surchargeCents: number;
   items: PurchaseOrderItemWriteRequest[];
   /** @nullable */

@@ -17,6 +17,7 @@ import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDeAcesso } from './acesso'
 import { handlersDeAtividades } from './atividades'
+import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
 import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
@@ -893,6 +894,13 @@ export const handlers = [
   ...handlersDePagamento,
   ...handlersDeServicos,
   ...handlersDeContatos,
+
+  // ---------------- COMPRAS (G2) ----------------
+  // Arquivo próprio, como CRM, orçamento e pagamento: estado que não é do store
+  // das telas antigas. As 14 operações estavam no contrato desde a #316 sem
+  // handler nenhum — e também FORA da passagem, porque o `cabinet-erp-api`
+  // responde 501 nelas. Compras não tinha resposta em ambiente nenhum.
+  ...handlersDeCompras,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------
   // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas

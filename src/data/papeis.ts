@@ -65,6 +65,7 @@ export type FamiliaDeCaminho =
   | 'stock-locations'
   | 'payment-terms'
   | 'installment-policy'
+  | 'purchases'
   | 'employees'
   | 'catalog-lookups'
   | 'projects'
@@ -134,6 +135,25 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    */
   'payment-terms': 'admin',
   'installment-policy': 'admin',
+  /**
+   * COMPRAS (G2) — acima do atendimento e abaixo de `admin`, e a linha de corte
+   * é a do contrato, não simetria com `orders`.
+   *
+   * `POST /api/purchase-requests` diz por escrito que a permissão NÃO é
+   * `pedidos:editar`: comprar é comprometer dinheiro da empresa com um
+   * terceiro, e quem fecha a venda não é necessariamente quem compra — no
+   * legado o setor Compras tem 92 opções de RBAC próprias. Deixar em
+   * `operator-sales` daria a todo vendedor o poder de emitir ordem.
+   *
+   * Não sobe a `admin` como o depósito: emitir ordem é o TRABALHO do comprador,
+   * não configuração que muda a leitura de todo mundo. O critério desta matriz
+   * para `admin` sempre foi "o erro de um vaza para os documentos dos outros", e
+   * uma ordem errada erra um documento — o dela.
+   *
+   * Vira a permissão nomeada `compras:editar` quando o modelo por AÇÃO (api#84)
+   * entregar; até lá o papel é o piso, porque a matriz é por papel.
+   */
+  purchases: 'operator-full',
   employees: 'admin',
   /**
    * Decisão, não herança (`cabinet-erp-api#66`).
@@ -188,6 +208,7 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   'stock-locations': ['/api/stock-locations'],
   'payment-terms': ['/api/payment-terms'],
   'installment-policy': ['/api/installment-policy'],
+  purchases: ['/api/purchase-requests', '/api/purchase-orders', '/api/purchases'],
   employees: ['/api/employees'],
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],

@@ -24,9 +24,17 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
   respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
   diferença: é isso que mantém `cabinetonline.cc` de pé sem backend nenhum.
-- **Ainda mock:** colaborador, pedido de compra, ordem de compra, cidades, boletim
-  — **por falta de caminho no contrato, não por escolha.** Esses seguem a regra antiga: dados
-  tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **Ainda mock:** colaborador, cidades, boletim — **por falta de caminho no contrato, não por
+  escolha.** Esses seguem a regra antiga: dados tipados em `src/mocks/`, campos LITERAIS de
+  `topicos/transcricaosoftlux.md` da memória.
+- **COMPRAS saiu dessa lista e ficou no MEIO do caminho, que é o estado a não esquecer.** O
+  contrato publica as 14 operações do módulo (#316) e `src/mocks/api/compras.ts` as serve com
+  estado de verdade — reserva da linha de pedido, devolução no cancelamento, faturamento mínimo.
+  **As telas (`features/pedido-compra`, `features/ordem-compra`, `routes/compras/*`) ainda leem os
+  fixtures de `src/mocks/pedidos-compra.ts` e `ordens-compra.ts`, com id NUMÉRICO.** Não é dívida
+  escondida: é o trilho seguinte, e enquanto durar, as telas de compras e o mock do contrato são
+  dois mundos que não se falam — gravar numa não aparece na outra. Migrar mexe em `src/data/`,
+  não na tela, que é a regra de acesso a dado logo abaixo.
 - **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
   escrever à mão tipo que o contrato define. Todo tipo de servidor vem do codegen —
   `pnpm codegen` (Orval + pós-codegen), saída em `src/api/gerado/`, **commitada**, com

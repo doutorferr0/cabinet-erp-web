@@ -542,8 +542,9 @@ banco do legado (`docs/legado/`). Cinco decisões que quem implementar honra:
    composta com tenant; numeração global não é PK sem tenant.
 2. **Orçamento e Pedido são agregados distintos.** No legado são o mesmo registro
    com `Ven_Tipo` O/P — uma tabela de 90 colunas com metade nula conforme o tipo.
-   Aqui Pedido **não** é um campo do orçamento; entra como recurso próprio quando
-   tiver tela, e a conversão será operação explícita.
+   Aqui Pedido **não** é um campo do orçamento; é recurso próprio — **e desde a
+   tela de `/vendas/pedidos` ele tem uma** (ver a seção abaixo). A conversão é
+   operação explícita: `POST /api/quotes/{id}/order`.
 3. **Itens e ambientes viajam embutidos, `PUT` substitui o documento inteiro.**
    Sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre
    elas (a armadilha que produto+variantes já tem, registrada no fim deste
@@ -564,6 +565,36 @@ banco do legado (`docs/legado/`). Cinco decisões que quem implementar honra:
 Descrição, acabamento, tamanho e preço do item são **snapshot da emissão**, não
 leitura do catálogo — senão corrigir o cadastro reescreveria orçamento do ano
 passado (regra do `project-core` @arquitetura).
+
+### Pedido de venda — `/api/orders`
+
+O caminho existe no contrato com **dez** operações; o backend serve **seis**
+(`ListOrders`, `GetOrder`, `CreateOrder`, `UpdateOrder`, `CancelOrder`,
+`CreateOrderFromQuote`). As outras quatro respondem **501** e por isso a tela não
+as oferece: `ConcludeOrder`, `ReturnDemoOrder`, `TransferOrderProfessional` e
+`ListOrderProfessionalHistory`. Oferecer botão que responde 501 faria o operador
+descobrir a ausência errando.
+
+Três coisas que a fronteira (`src/data/pedidos-venda-api.ts`) resolve e que a
+tela não mostra:
+
+1. **O `PUT` é integral e o pedido tem TRÊS passageiros.** `serviceItems`,
+   `groupDiscounts` e `workId` atravessam o formulário sem campo nenhum e são
+   reenviados como vieram. Sem isso, `Gravar` sem editar nada os apaga com 200 —
+   o mesmo defeito que a web#315 mediu no bloco de pagamento do orçamento,
+   multiplicado por três.
+2. **`discountMode` tem TRÊS valores aqui, e a tela edita dois.** `group` é o
+   modo mais usado da operação no legado (`VendaDesconto`: 300.337 linhas para
+   37.707 vendas, ~8 grupos por documento) e ainda não tem grade. O documento que
+   chega nele **mantém** o modo e os percentuais, com `AvisoDeCobertura` dizendo
+   o que está acontecendo — rebaixar para `product` em silêncio mudaria o valor
+   do pedido sem erro em lugar nenhum.
+3. **Documento fechado não se edita.** `concluded` e `cancelled` são terminais e
+   o contrato responde 409 a `PUT` neles; a folha abre em somente-leitura com o
+   motivo, em vez de deixar o operador preencher tudo para o servidor negar.
+
+`demoDueDate` só viaja em `type: demo` — em `sale` o contrato manda `null`, e
+prazo de retorno pendurado num pedido de venda é prazo que nunca vence.
 
 **Falta conhecida:** `kind` `AMBIENTE` ainda não está no vocabulário de
 `src/data/lookups-api.ts` (são 19 kinds hoje). Entra junto com a wiring da tela.
@@ -767,6 +798,7 @@ tela cujo provider sabe responder. Hoje filtram:
 | Profissionais | HTTP (`/api/partners`) | Código · Nome de Apresentação · Nome · CNPJ/CPF · Ativo |
 | Colaboradores | mock | Código · Nome · Setor · Cargo · Ativo |
 | Orçamentos | mock | Número · Cliente · Descrição da Obra · **Data Emissão** · **Data Validade** |
+| Pedidos de Venda | HTTP (`/api/orders`) | Número · Série · Cliente · Descrição da Obra · Data Emissão · **Situação** · **Tipo** · Total |
 | Pedidos de Compra | mock | Código · Pedido de Venda · Data · **Fornecedores** (multivalorado) |
 | Ordens de Compra | mock | Código · Fornecedor · Data Ordem · Data Envio · Data Prevista |
 

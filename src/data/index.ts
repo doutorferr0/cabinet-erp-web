@@ -1,5 +1,6 @@
 import { funis } from '@/data/crm-api'
 import { parceiros } from '@/data/parceiros-api'
+import { pedidosDeVendaApi } from '@/data/pedidos-venda-api'
 import { produtosApi } from '@/data/produtos-api'
 import {
   type ListProvider,
@@ -87,6 +88,18 @@ export const data = {
    * formulário recebe a forma da transcrição. Mesma divisão de `produtos`.
    */
   orcamentos: orcamentosApi,
+
+  /**
+   * Pedido de venda — HTTP (`/api/orders`), a segunda entrada de documento a
+   * sair do mock.
+   *
+   * Mesma divisão de `orcamentos`: a grade recebe o `OrderDto` cru, para o
+   * `sortBy` casar com a whitelist do servidor, e o formulário recebe a forma
+   * da tela. O backend serve SEIS das dez operações do contrato — concluir,
+   * retorno de demonstração e a troca de profissional respondem 501, e por isso
+   * a tela não as oferece.
+   */
+  pedidosVenda: pedidosDeVendaApi,
 
   /**
    * Funil de venda (CRM). Listagem, detalhe e registro em branco são todos do

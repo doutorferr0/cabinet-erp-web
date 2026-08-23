@@ -1128,6 +1128,9 @@
                 }
               }
             }
+          },
+          "501": {
+            "$ref": "#/components/responses/NaoImplementado"
           }
         }
       }
@@ -1256,6 +1259,9 @@
                 }
               }
             }
+          },
+          "501": {
+            "$ref": "#/components/responses/NaoImplementado"
           }
         }
       }
@@ -2691,6 +2697,9 @@
                 }
               }
             }
+          },
+          "501": {
+            "$ref": "#/components/responses/NaoImplementado"
           }
         }
       }
@@ -2811,6 +2820,9 @@
                 }
               }
             }
+          },
+          "501": {
+            "$ref": "#/components/responses/NaoImplementado"
           }
         }
       }
@@ -5137,6 +5149,9 @@
                 }
               }
             }
+          },
+          "501": {
+            "$ref": "#/components/responses/NaoImplementado"
           }
         }
       }
@@ -5257,6 +5272,9 @@
                 }
               }
             }
+          },
+          "501": {
+            "$ref": "#/components/responses/NaoImplementado"
           }
         }
       }
@@ -8601,6 +8619,16 @@
       },
       "SemPermissao": {
         "description": "Autenticado e barrado. Três casos, e os três são 403 por decisão:\n\n1. **`mustChangePassword`** — a credencial vale, falta um passo. 401 aqui derrubaria a sessão recém-criada e o cliente tentaria logar de novo, em laço.\n2. **Empresa ativa sem vínculo** — 403 e não 404, porque o `tenantId` não é segredo (ele viaja em `GET /auth/tenants`). O que é controlado é o acesso, não a existência.\n3. **Papel sem a permissão da operação** (RBAC por empresa).\n\nQuem distingue os três é `type` (URN estável), não o texto de `detail`: código é para código, frase é para gente. O cliente mostra a tela própria de \"sem permissão\", nunca o erro genérico.\n\n**Não cobre \"não encontrado nesta empresa\"**, que é 404: dizer \"existe, mas não é sua\" confirmaria um registro da empresa vizinha.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "NaoImplementado": {
+        "description": "O caminho está NESTE contrato e o servidor ainda não serve ESTA parte dele — `urn:cabinet:erro:nao-implementado`.\n\nÉ a marca de fase que o `Proposto` já anuncia, agora visível em tempo de execução: 501 e nunca 404, para que \"não existe\" continue significando \"não existe\". O cliente não deve reenviar o mesmo corpo — o pedido está bem formado, falta implementação do outro lado.\n\n**Declarada só onde o servidor pode mesmo respondê-la.** Estas operações aceitam campos que o backend ainda não grava — `discountMode: \"group\"` e `groupDiscounts`, `serviceItems` nos documentos, e a configuração de compras do fornecedor (`deliveryDays`, `minimumBillingCents`, `buyingCompanies`, `groupMinimums`) em `/api/partners`. Corpo que os CARREGA recebe 501 em vez de gravar metade; corpo que não os carrega segue o caminho normal. **O critério é o VALOR e não a presença da chave:** `PUT` manda o registro inteiro, então `null` e `[]` viajam sempre e não podem, sozinhos, recusar a gravação do resto.\n\nOperação sem handler NENHUM também responde 501, e é por isso que esta resposta não está em todas: quem inventaria o que ainda não existe é o `Proposto`, não uma resposta declarada em cada operação do documento.",
         "content": {
           "application/problem+json": {
             "schema": {

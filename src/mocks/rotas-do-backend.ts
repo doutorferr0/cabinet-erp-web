@@ -276,18 +276,22 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'post', caminho: '/api/products/{productId}/variants' },
   { metodo: 'put', caminho: '/api/products/{productId}/variants/{id}' },
 
-  // kardex (2 operações) — e estas ainda NÃO TÊM TELA.
+  // kardex (2 operações) — **e agora TÊM tela**, o que muda o que estas linhas
+  // custam.
   //
-  // `/estoque/movimentacao` é `TelaNaoCapturada`: o slot existe no menu e o
-  // print nunca foi capturado. Ligar aqui não muda nada que o operador veja, e
-  // a medição destas duas é só de HTTP (`POST` 201 com `balanceAfter: 5`,
-  // `GET` 200 com a linha).
+  // Entraram sem consumidor: o `GET` era medido só por HTTP e o risco de ligar
+  // era zero. `/estoque/movimentacao` deixou de ser `TelaNaoCapturada` e passou
+  // a ler o kardex de verdade (`src/features/estoque/`), então o `GET` daqui é o
+  // que a grade mostra quando o proxy está de pé.
   //
-  // Entram assim mesmo, e o motivo é a ordem em que as coisas quebram: o
-  // movimento pende da VARIANTE, que acabou de passar. Enquanto o mock os
-  // responder, quem for escrever a tela mede contra a ficção e só descobre o
-  // servidor depois de pronta. Sem consumidor, o risco de ligar é ZERO e o de
-  // adiar é uma tela inteira construída no lugar errado.
+  // **E é aí que a MEIA FAMÍLIA aparece, com o proxy ligado:** o kardex sai do
+  // servidor, mas `stock-locations` e `stock-balances` continuam em
+  // `FORA_DE_PROPOSITO` (escrita de depósito é 403 por papel — a medição está lá).
+  // Resultado: o `locationId` do movimento é uuid do Postgres e a lista de
+  // depósitos é do mock, então a coluna `Depósito` cai no fallback e mostra o
+  // uuid cru em vez do nome. Não é defeito da tela: é o preço, VISÍVEL, de a
+  // família estar partida. Sem proxy — o modo do site público — as três vêm do
+  // mock e a tela fecha certo.
   { metodo: 'post', caminho: '/api/variants/{variantId}/stock-movements' },
   { metodo: 'get', caminho: '/api/variants/{variantId}/stock-movements' },
 

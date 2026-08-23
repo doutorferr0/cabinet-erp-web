@@ -5056,6 +5056,17 @@ export type NaoAutenticadoResponse = ProblemDetails;
  */
 export type SemPermissaoResponse = ProblemDetails;
 
+/**
+ * O caminho está NESTE contrato e o servidor ainda não serve ESTA parte dele — `urn:cabinet:erro:nao-implementado`.
+ *
+ * É a marca de fase que o `Proposto` já anuncia, agora visível em tempo de execução: 501 e nunca 404, para que "não existe" continue significando "não existe". O cliente não deve reenviar o mesmo corpo — o pedido está bem formado, falta implementação do outro lado.
+ *
+ * **Declarada só onde o servidor pode mesmo respondê-la.** Estas operações aceitam campos que o backend ainda não grava — `discountMode: "group"` e `groupDiscounts`, `serviceItems` nos documentos, e a configuração de compras do fornecedor (`deliveryDays`, `minimumBillingCents`, `buyingCompanies`, `groupMinimums`) em `/api/partners`. Corpo que os CARREGA recebe 501 em vez de gravar metade; corpo que não os carrega segue o caminho normal. **O critério é o VALOR e não a presença da chave:** `PUT` manda o registro inteiro, então `null` e `[]` viajam sempre e não podem, sozinhos, recusar a gravação do resto.
+ *
+ * Operação sem handler NENHUM também responde 501, e é por isso que esta resposta não está em todas: quem inventaria o que ainda não existe é o `Proposto`, não uma resposta declarada em cada operação do documento.
+ */
+export type NaoImplementadoResponse = ProblemDetails;
+
 export type ListCatalogLookupsParams = {
 q?: string;
 kind?: string;

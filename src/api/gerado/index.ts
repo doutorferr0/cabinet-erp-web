@@ -75,6 +75,7 @@ import type {
   LoginOk,
   LoginRequest,
   NaoAutenticadoResponse,
+  NaoImplementadoResponse,
   OrderDetailDto,
   OrderWriteRequest,
   PagedResultOfActivityDto,
@@ -1047,10 +1048,15 @@ export type createPartnerResponse409 = {
   status: 409
 }
 
+export type createPartnerResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type createPartnerResponseSuccess = (createPartnerResponse201) & {
   headers: Headers;
 };
-export type createPartnerResponseError = (createPartnerResponse400 | createPartnerResponse401 | createPartnerResponse403 | createPartnerResponse409) & {
+export type createPartnerResponseError = (createPartnerResponse400 | createPartnerResponse401 | createPartnerResponse403 | createPartnerResponse409 | createPartnerResponse501) & {
   headers: Headers;
 };
 
@@ -1162,10 +1168,15 @@ export type updatePartnerResponse409 = {
   status: 409
 }
 
+export type updatePartnerResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type updatePartnerResponseSuccess = (updatePartnerResponse200) & {
   headers: Headers;
 };
-export type updatePartnerResponseError = (updatePartnerResponse400 | updatePartnerResponse401 | updatePartnerResponse403 | updatePartnerResponse404 | updatePartnerResponse409) & {
+export type updatePartnerResponseError = (updatePartnerResponse400 | updatePartnerResponse401 | updatePartnerResponse403 | updatePartnerResponse404 | updatePartnerResponse409 | updatePartnerResponse501) & {
   headers: Headers;
 };
 
@@ -2586,10 +2597,15 @@ export type createQuoteResponse409 = {
   status: 409
 }
 
+export type createQuoteResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type createQuoteResponseSuccess = (createQuoteResponse201) & {
   headers: Headers;
 };
-export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse401 | createQuoteResponse403 | createQuoteResponse409) & {
+export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse401 | createQuoteResponse403 | createQuoteResponse409 | createQuoteResponse501) & {
   headers: Headers;
 };
 
@@ -2702,10 +2718,15 @@ export type updateQuoteResponse409 = {
   status: 409
 }
 
+export type updateQuoteResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type updateQuoteResponseSuccess = (updateQuoteResponse200) & {
   headers: Headers;
 };
-export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse401 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409) & {
+export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse401 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409 | updateQuoteResponse501) & {
   headers: Headers;
 };
 
@@ -4780,10 +4801,15 @@ export type createOrderResponse409 = {
   status: 409
 }
 
+export type createOrderResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type createOrderResponseSuccess = (createOrderResponse201) & {
   headers: Headers;
 };
-export type createOrderResponseError = (createOrderResponse400 | createOrderResponse401 | createOrderResponse403 | createOrderResponse409) & {
+export type createOrderResponseError = (createOrderResponse400 | createOrderResponse401 | createOrderResponse403 | createOrderResponse409 | createOrderResponse501) & {
   headers: Headers;
 };
 
@@ -4896,10 +4922,15 @@ export type updateOrderResponse409 = {
   status: 409
 }
 
+export type updateOrderResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type updateOrderResponseSuccess = (updateOrderResponse200) & {
   headers: Headers;
 };
-export type updateOrderResponseError = (updateOrderResponse400 | updateOrderResponse401 | updateOrderResponse403 | updateOrderResponse404 | updateOrderResponse409) & {
+export type updateOrderResponseError = (updateOrderResponse400 | updateOrderResponse401 | updateOrderResponse403 | updateOrderResponse404 | updateOrderResponse409 | updateOrderResponse501) & {
   headers: Headers;
 };
 

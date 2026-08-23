@@ -51,12 +51,34 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'post /api/roles',
   'get /api/roles/{id}',
   'put /api/roles/{id}',
-  // Os DEPÓSITOS (#291) pela MESMA razão dos papéis, e não pela do 501: o
-  // contrato os publica AGORA porque é ele que especifica o que a fase 2 da
-  // api#79 implementa (migração `0030` + módulo Drizzle), e no servidor de hoje
-  // não há handler nenhum — o par local devolve o 404 do Fastify, não 501.
-  // Saem daqui em FAMÍLIA, e só quando a família INTEIRA responder: meia
-  // família põe id do servidor de um lado e id inventado do outro.
+  // Os DEPÓSITOS (#291). **A razão MUDOU, e a linha ficou:** a nota anterior
+  // dizia "no servidor de hoje não há handler nenhum", e isso venceu.
+  //
+  // **REMEDIDO em 2026-08-23** contra `cabinet-erp-api` main `cc7ccd0`, par
+  // local próprio (Postgres migrado até a `0057`, servidor em `:3020`, sessão
+  // real de `semear-dev`): a fase 2 da api#79 ENTROU — migração `0030` e
+  // `src/modules/estoque/{depositos,saldos}.ts`. As três LEITURAS respondem
+  // 200 com dado do Postgres, e o `locationId` vem preenchido nas duas que o
+  // carregam:
+  //
+  //   GET /api/stock-locations                      200 · 1 depósito (PRINCIPAL)
+  //   GET /api/variants/{variantId}/stock-balances  200 · 1 linha, qty -10
+  //   GET /api/variants/{variantId}/stock-movements 200 · 2 linhas com locationId
+  //
+  // As duas ESCRITAS respondem **403 `papel-insuficiente`**, e ali é DECISÃO,
+  // não herança: `classificacao.ts` do api pede a ação `depositos:gerenciar`,
+  // que só `Proprietário` e `Administrador` têm por `grants_all` — `Operação
+  // completa` movimenta estoque sem redesenhar o galpão. O 403 não vai cair
+  // sozinho como caiu o da lista de apoio.
+  //
+  //   POST /api/stock-locations       403 urn:cabinet:erro:papel-insuficiente
+  //   PUT  /api/stock-locations/{id}  (mesma matriz, mesmo papel)
+  //
+  // Continuam FORA porque a família só sai INTEIRA — meia família põe id do
+  // servidor de um lado e id inventado do outro —, e ligar as cinco com a
+  // escrita em 403 é a mesma escolha que a lista de apoio fez uma vez: foi
+  // DECISÃO do user, não default. Enquanto ela não vier, a tela de estoque
+  // (`src/features/estoque/`) lê do mock, que serve os mesmos shapes.
   'get /api/stock-locations',
   'post /api/stock-locations',
   'put /api/stock-locations/{id}',

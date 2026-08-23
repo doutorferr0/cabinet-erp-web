@@ -55,6 +55,15 @@ const PASTAS_FORA = ['components/ui/', 'test/', 'api/gerado/']
 const DIVIDAS: Record<string, string> = {
   'components/cabinet/ficha/ficha-de-modulos.tsx':
     'órfão desde o #137; a PR #182 liga a ficha nas 4 rotas de detalhe',
+  // Ficou órfão AQUI, e de propósito: `/estoque/movimentacao` era o único
+  // consumidor, e esta PR trocou o placeholder pela tela de estoque por
+  // depósito. Não se apaga porque o padrão ainda tem fila — os slots `futuro`
+  // do menu (`Reserva Técnica`, `Pedidos de Venda`, `Contas a Receber/Pagar`,
+  // `Comissões`, `Relatórios`) são exatamente o caso que ele existe para
+  // ocupar, e o primeiro deles a ganhar rota o religa. Apagá-lo agora obrigaria
+  // a reescrevê-lo igual na próxima tela não capturada.
+  'components/cabinet/tela-nao-capturada.tsx':
+    'órfão desde a tela de estoque por depósito; religa no primeiro slot `futuro` do menu a ganhar rota (Reserva Técnica é o próximo)',
 }
 
 function arquivosDe(dir: string): string[] {

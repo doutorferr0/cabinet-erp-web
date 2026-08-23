@@ -1,7 +1,7 @@
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import type { DocumentoProvider } from '@/data/provider'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -86,5 +86,87 @@ describe('TelaDeDocumento', () => {
 
     await screen.findByText('Teste não encontrado.')
     expect(screen.queryByText('Não foi possível carregar o teste.')).not.toBeInTheDocument()
+  })
+
+  /**
+   * FUSÃO v5 §3 — a moldura-mãe é uma declaração de FRONTEIRA: o que está
+   * dentro pertence ao documento. A espec cita Atividades pelo nome como o
+   * exemplo do que fica de fora, e é por isso que existe `foraDaMoldura`:
+   * passar o painel como `children` o penduraria dentro da moldura e o desenho
+   * mentiria — com a tela parecendo perfeitamente certa.
+   */
+  it('a moldura-mãe envolve cabeçalho e formulário, e leva o número do documento', async () => {
+    renderWithQuery(
+      <TelaDeDocumento
+        provider={{
+          get: () => Promise.resolve({ id: 7 }),
+          empty: () => ({ id: -1 }),
+        }}
+        queryKeyBase="teste"
+        idParam="7"
+        titulo="Orçamento"
+        numero={() => 184}
+        naoEncontrado="não encontrado"
+        erroAoCarregar="erro"
+      >
+        {() => <p>formulário do documento</p>}
+      </TelaDeDocumento>,
+    )
+
+    const moldura = await screen.findByRole('region', { name: 'DOCUMENTO · Orçamento Nº 184' })
+    expect(within(moldura).getByText('formulário do documento')).toBeInTheDocument()
+    // O cabeçalho é do documento e mora DENTRO — envolver só o form o deixaria
+    // do lado de fora da fronteira que ele mesmo nomeia.
+    expect(within(moldura).getByText('Orçamento', { selector: 'h1' })).toBeInTheDocument()
+  })
+
+  it('em inclusão a moldura fala só o tipo — não há número a mostrar', async () => {
+    renderWithQuery(
+      <TelaDeDocumento
+        provider={{
+          get: () => Promise.reject(new Error('não deveria buscar')),
+          empty: () => ({ id: -1 }),
+        }}
+        queryKeyBase="teste"
+        idParam="novo"
+        titulo="Pedido de Compra"
+        modo="Incluir"
+        numero={() => 999}
+        naoEncontrado="não encontrado"
+        erroAoCarregar="erro"
+      >
+        {() => <p>formulário em branco</p>}
+      </TelaDeDocumento>,
+    )
+
+    expect(
+      await screen.findByRole('region', { name: 'DOCUMENTO · Pedido de Compra' }),
+    ).toBeInTheDocument()
+  })
+
+  it('o que NÃO é do documento monta fora da moldura', async () => {
+    renderWithQuery(
+      <TelaDeDocumento
+        provider={{
+          get: () => Promise.resolve({ id: 7 }),
+          empty: () => ({ id: -1 }),
+        }}
+        queryKeyBase="teste"
+        idParam="7"
+        titulo="Orçamento"
+        numero={() => 184}
+        naoEncontrado="não encontrado"
+        erroAoCarregar="erro"
+        foraDaMoldura={() => <p>painel de atividades</p>}
+      >
+        {() => <p>formulário do documento</p>}
+      </TelaDeDocumento>,
+    )
+
+    const moldura = await screen.findByRole('region', { name: 'DOCUMENTO · Orçamento Nº 184' })
+    // Renderizado na tela, mas do LADO DE FORA: é essa diferença que a moldura
+    // existe para desenhar, e `getByText` sozinho não a enxergaria.
+    expect(screen.getByText('painel de atividades')).toBeInTheDocument()
+    expect(within(moldura).queryByText('painel de atividades')).not.toBeInTheDocument()
   })
 })

@@ -1,3 +1,4 @@
+import { respostaPagamento } from '@/test/orcamentos'
 import {
   acaoNaLinha,
   renderRoute,
@@ -106,6 +107,12 @@ function servidor(escritas: Escrita[], respostaDeEscrita?: () => Response, leitu
     if (url.includes('/auth/me')) return respostaSessao()
     if (url.includes('/auth/tenants')) return respostaVinculos()
     if (url.includes('/api/catalog-lookups')) return respostaLookups()
+    // O bloco Pagamento da seção 06 consulta estas duas em toda montagem
+    // do documento. Sem dublê elas não dão erro visível: o `retry` do app é
+    // `tentativa < 3` com backoff, e o teste morre de `Test timed out` sem
+    // nunca falar de pagamento.
+    if (url.includes('/api/installment-policy')) return respostaPagamento('/api/installment-policy')
+    if (url.includes('/api/payment-terms')) return respostaPagamento('/api/payment-terms')
 
     if (url.includes('/api/quotes')) {
       if (metodo !== 'GET') {

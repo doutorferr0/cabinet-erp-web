@@ -4,6 +4,11 @@ import {
   enderecoParaContrato,
   textoOuNulo,
 } from '@/features/parceiro/papeis/contato-e-endereco'
+import {
+  ausentesNoServidor,
+  tipoDePessoaDoContrato,
+  tipoDePessoaParaContrato,
+} from '@/features/parceiro/papeis/pessoa'
 import type { PapelDeCadastro } from '@/features/parceiro/usar-parceiro'
 import { type Profissional, profissionalVazio } from '@/mocks/profissionais'
 
@@ -51,6 +56,13 @@ function dtoParaForm(dto: PartnerDto): Profissional {
       instagram: dto.instagram ?? '',
     },
     observacao: dto.notes ?? '',
+    // Bloco 3 (#270). O Profissional desenha TRÊS dos seis — a §3 não tem
+    // órgão expedidor, UF do RG nem sexo. Os outros três continuam voltando
+    // como vieram pelo `corpoDeEscrita`: tela que não desenha o campo não o
+    // edita, e devolver `null` apagaria o que a tela de Cliente gravou.
+    tipoPessoa: tipoDePessoaDoContrato(dto.personType),
+    rg: dto.identityDocument ?? '',
+    dtNascimento: dto.birthDate ?? null,
   }
 }
 
@@ -73,6 +85,10 @@ function contatoEEndereco(values: Profissional) {
     notes: textoOuNulo(values.observacao),
     facebook: textoOuNulo(values.redesSociais.facebook),
     instagram: textoOuNulo(values.redesSociais.instagram),
+    // Bloco 3 (#270) — só os três que esta tela desenha. Ver `dtoParaForm`.
+    personType: tipoDePessoaParaContrato(values.tipoPessoa),
+    identityDocument: textoOuNulo(values.rg),
+    birthDate: values.dtNascimento,
   }
 }
 
@@ -99,9 +115,10 @@ export const papelProfissional: PapelDeCadastro<Profissional> = {
   rota: '/cadastros/profissionais',
   queryKeyListagem: ['profissionais'],
   camposDeEdicao:
-    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários, Telefones, Endereço, Observação, Redes sociais e Ativo',
+    'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários, Telefones, Endereço, Tipo de pessoa, RG, Data de nascimento, Observação, Redes sociais e Ativo',
   vazio: profissionalVazio,
   dtoParaForm,
+  ausentesNoServidor,
   paraEscrita: (values) => ({
     legalName: values.nome,
     tradeName: values.nomeApresentacao,

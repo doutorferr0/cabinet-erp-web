@@ -45,6 +45,39 @@ import { novoId, store } from './store'
  *   outro funil com 400, como a FK composta do banco recusaria.
  */
 
+/**
+ * As whitelists de `sortBy` deste módulo, cópia da descrição do contrato.
+ *
+ * Exportadas para `src/data/whitelist-do-contrato.test.ts` conferi-las contra o
+ * `contracts/openapi-v1.json` — o site público é 100% mock, e whitelist menor
+ * aqui é 400 no clique do cabeçalho lá, sem sintoma em teste nenhum.
+ */
+export const ORDENAVEIS_FUNIL = ['name', 'sort', 'active'] as const
+export const ORDENAVEIS_MOTIVO = ['name', 'active'] as const
+export const ORDENAVEIS_COLABORADOR = ['name', 'sector', 'jobTitle', 'active'] as const
+/**
+ * A whitelist do FILTRO da oportunidade é a do `sortBy` **menos o dinheiro** —
+ * ver `FILTRAVEIS_OPORTUNIDADE` em `src/data/crm-api.ts`, onde a subtração está
+ * justificada: `1000` em centavos é R$ 10,00 para quem procurava mil reais.
+ * Aqui ela reaparece porque, em modo mock, quem recusa é este mapa.
+ */
+export const FILTRAVEIS_OPORTUNIDADE: CamposFiltraveis = {
+  name: 'text',
+  partnerName: 'text',
+  stageName: 'text',
+  expectedCloseDate: 'date',
+  stageChangedAt: 'date',
+}
+
+export const ORDENAVEIS_OPORTUNIDADE = [
+  'name',
+  'partnerName',
+  'stageName',
+  'expectedValueCents',
+  'expectedCloseDate',
+  'stageChangedAt',
+] as const
+
 function listar<T>(
   itens: readonly T[],
   url: URL,
@@ -378,7 +411,7 @@ export const handlersDoCrm = [
     return listar(
       [...crm.funis].sort((a, b) => a.sort - b.sort),
       new URL(request.url),
-      ['name', 'sort', 'active'],
+      ORDENAVEIS_FUNIL,
       (f) => [f.name],
     )
   }),
@@ -517,25 +550,12 @@ export const handlersDoCrm = [
     return listar(
       linhas.map(oportunidadeDto),
       url,
-      [
-        'name',
-        'partnerName',
-        'stageName',
-        'expectedValueCents',
-        'expectedCloseDate',
-        'stageChangedAt',
-      ],
+      ORDENAVEIS_OPORTUNIDADE,
       (o) => [o.name, o.partnerName, o.contactName, o.stageName],
       // A whitelist do filtro é a do `sortBy` MENOS o dinheiro — ver
       // `FILTRAVEIS_OPORTUNIDADE` em `src/data/crm-api.ts`, onde a subtração
       // está justificada. Aqui ela reaparece porque quem recusa é o servidor.
-      {
-        name: 'text',
-        partnerName: 'text',
-        stageName: 'text',
-        expectedCloseDate: 'date',
-        stageChangedAt: 'date',
-      },
+      FILTRAVEIS_OPORTUNIDADE,
     )
   }),
 
@@ -741,12 +761,11 @@ export const handlersDoCrm = [
   http.get('*/api/employees', ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
-    return listar(
-      crm.colaboradores,
-      new URL(request.url),
-      ['name', 'sector', 'jobTitle', 'active'],
-      (c) => [c.name, c.sector, c.jobTitle],
-    )
+    return listar(crm.colaboradores, new URL(request.url), ORDENAVEIS_COLABORADOR, (c) => [
+      c.name,
+      c.sector,
+      c.jobTitle,
+    ])
   }),
 
   /**
@@ -798,7 +817,7 @@ export const handlersDoCrm = [
   http.get('*/api/crm/lost-reasons', ({ request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
-    return listar(crm.motivos, new URL(request.url), ['name', 'active'], (m) => [m.name])
+    return listar(crm.motivos, new URL(request.url), ORDENAVEIS_MOTIVO, (m) => [m.name])
   }),
 
   http.post('*/api/crm/lost-reasons', async ({ request }) => {

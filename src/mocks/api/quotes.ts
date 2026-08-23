@@ -1,14 +1,29 @@
 import type {
+  CancelDocumentRequest,
   QuoteDetailDto,
   QuoteDto,
   QuoteEnvironmentDto,
   QuoteItemDto,
+  QuoteServiceItemDto,
+  QuoteServiceItemWriteRequest,
   QuoteWriteRequest,
 } from '@/api/gerado'
+import { nomeDeApoio } from '@/mocks/lookups'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { http, HttpResponse } from 'msw'
+import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { obras } from './obras'
+import { condicaoAtiva, planoDoDocumento, politicaDaEmpresa } from './pagamento'
 import { verificarEscrita } from './permissao'
-import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
+import {
+  TIPO,
+  camposInvalidos,
+  naoEncontrado,
+  problemaJson,
+  semEmpresaAtiva,
+  semSessao,
+} from './problema'
+import { servicoDoCadastro } from './servicos'
 import { store } from './store'
 
 /**
@@ -43,24 +58,153 @@ import { store } from './store'
  */
 
 /** Whitelist de `sortBy` — a MESMA da descrição do contrato. */
-const ORDENAVEIS = ['number', 'issuedAt', 'expiresAt', 'customerName', 'projectName']
+export const ORDENAVEIS = [
+  'number',
+  'issuedAt',
+  'expiresAt',
+  'customerName',
+  'projectName',
+  'workName',
+]
+
+/**
+ * A whitelist do `filters`, que é a MESMA do `sortBy` neste recurso — e o mock
+ * simplesmente não aplicava o parâmetro.
+ *
+ * Ignorar filtro em silêncio é o defeito que este repo persegue em todo lugar: a
+ * tela desenha a condição no painel, o mock devolve a lista inteira, e quem lê
+ * conclui que o filtro não estreita nada. Contra o `:3000` o mesmo pedido
+ * recorta — então o sintoma só existe onde não há servidor, que é o site
+ * público.
+ *
+ * O TIPO de cada campo é do servidor, não da tela: `issuedAt`/`expiresAt` são
+ * data (comparação por DIA), o resto é texto.
+ *
+ * `workId` entra aqui e NÃO no `sortBy`: é como a tela pergunta "os documentos
+ * desta obra", e uuid não põe nada em ordem para quem lê. `text` e não um tipo
+ * de id porque o vocabulário de filtro não tem um — o que a tela manda é
+ * igualdade sobre a chave, e é isso que `text` compara.
+ */
+export const FILTRAVEIS: CamposFiltraveis = {
+  number: 'text',
+  customerName: 'text',
+  projectName: 'text',
+  issuedAt: 'date',
+  expiresAt: 'date',
+  workId: 'text',
+  workName: 'text',
+}
 
 /**
  * O orçamento GUARDADO. É o `Orcamento` do seed: o mock guarda o que a
  * transcrição capturou, e a tradução para o vocabulário do contrato acontece na
  * resposta — do mesmo jeito que os `*Name` do CRM são resolvidos na saída.
  */
+/**
+ * O orçamento como o MOCK o guarda — o `Orcamento` da tela mais o que o
+ * contrato passou a pedir e a tela ainda não tem.
+ *
+ * Tipo local de propósito: `Orcamento` é a forma que `orcamento-form.tsx` monta
+ * e valida, e acrescentar campo lá é mexer em tela. Aqui é estado de servidor
+ * falso — o mesmo lugar onde `number` e `totalCents` já são do servidor.
+ */
+interface OrcamentoGuardado extends Orcamento {
+  /** `QuoteDetailDto.workId` — a OBRA (`Venda.Obr_codigo` do legado). */
+  obraId: string | null
+  /**
+   * O CANCELAMENTO por extenso (G13) — quando, por quê e a nota.
+   *
+   * `cancelado` (booleano do seed) continua sendo o que decide o `status`; estes
+   * três só existem quando ele é `true`. Guardar o motivo dentro do booleano
+   * seria trocar dois estados por quatro sem nome.
+   */
+  canceladoEm: string | null
+  motivoCancelamentoId: string | null
+  notaCancelamento: string | null
+  /** A REVISÃO (G13): 1 no original, e o id do anterior em cada revisão. */
+  revisao: number
+  revisaoDeId: string | null
+}
+
 interface Estado {
-  linhas: Orcamento[]
+  linhas: OrcamentoGuardado[]
+  /**
+   * As linhas da ABA SERVIÇOS, por id de orçamento.
+   *
+   * Estado PRÓPRIO, e não um campo do `Orcamento` do seed: aquele array é a
+   * transcrição literal da §8.2 e a aba Serviços não foi capturada (a transcrição
+   * a lista entre as telas que ficaram de fora). Guardá-las aqui mantém o seed
+   * intacto e deixa claro de onde a seção veio — do legado (`VendaServico`), não
+   * da captura.
+   *
+   * Já é o DTO do contrato, e não um modelo de tela, porque não existe tela: o
+   * que precisa ser fiel aqui é a resposta.
+   */
+  servicos: Record<string, QuoteServiceItemDto[]>
   proximoNumero: number
 }
 
 let estado: Estado = estadoInicial()
 
 function estadoInicial(): Estado {
-  const linhas = orcamentos.map((o) => ({ ...o, itens: o.itens.map((i) => ({ ...i })) }))
+  // `obraId: null` nas 17 linhas da §8.1, e é a leitura correta da transcrição:
+  // ela não capturou id de obra nenhum, e o `descricaoObra` de lá guarda o nome
+  // do PROFISSIONAL (§8.1, observação). Casar essas linhas com `obra-0001` seria
+  // inventar o elo justamente onde a fonte diz que ele não existe — e o elo
+  // inventado apareceria na demo pública como dado do servidor.
+  const linhas = orcamentos.map((o) => ({
+    ...o,
+    obraId: null,
+    // As 17 linhas da §8.1 nascem SEM cancelamento e na revisão 1 — o seed é
+    // transcrição, e ele não capturou nem motivo nem cadeia de revisão.
+    canceladoEm: null,
+    motivoCancelamentoId: null,
+    notaCancelamento: null,
+    revisao: 1,
+    revisaoDeId: null,
+    itens: o.itens.map((i) => ({ ...i })),
+  }))
   const maior = linhas.reduce((max, o) => Math.max(max, Number(o.numero) || 0), 0)
-  return { linhas, proximoNumero: maior + 1 }
+  return { linhas, servicos: servicosDoSeed(linhas), proximoNumero: maior + 1 }
+}
+
+/**
+ * A aba Serviços do PRIMEIRO orçamento do seed — e só dele.
+ *
+ * Um documento com serviço e os outros sem é o que torna as duas coisas
+ * observáveis: que `serviceItems` vem SEMPRE (vazio quando não há), e que o
+ * `totalCents` soma as DUAS coleções. Um seed em que todo orçamento tem serviço
+ * esconderia a primeira; um sem nenhum, a segunda.
+ *
+ * `electricianPercent` aqui está CONGELADO, como na emissão: os 400000 (40%) da
+ * instalação vieram do cadastro no dia em que a linha foi gravada, e mudar
+ * `serv-0001` agora não os reescreve. É a mesma regra que já vale para
+ * `description` e `unitPriceCents` do produto.
+ */
+function servicosDoSeed(linhas: Orcamento[]): Record<string, QuoteServiceItemDto[]> {
+  const primeiro = linhas[0]
+  if (!primeiro) return {}
+  return {
+    [primeiro.id]: [
+      {
+        lineNumber: 1,
+        environmentCode: null,
+        serviceId: 'serv-0001',
+        description: 'INSTALAÇÃO DE LUMINÁRIA',
+        quantity: 4,
+        unitPriceCents: 12000,
+        discountPercent: 0,
+        electricianPercent: 400000,
+        electricianAmountCents: 19200,
+        totalCents: 48000,
+      },
+    ],
+  }
+}
+
+/** As linhas de serviço de um orçamento — vazio quando ele não tem nenhuma. */
+function servicosDe(id: string): QuoteServiceItemDto[] {
+  return estado.servicos[id] ?? []
 }
 
 /** Volta ao seed entre testes — o par do `resetCrm`. */
@@ -82,7 +226,7 @@ function comDesconto(centavos: number, percentual: number | null): number {
  * é dele. Desconto por PRODUTO usa o do item; desconto GERAL usa o do cabeçalho.
  */
 function totalDoOrcamento(o: Orcamento): number {
-  const bruto = o.itens.reduce((soma, item) => {
+  const brutoDeProdutos = o.itens.reduce((soma, item) => {
     const quantidade = quantidadeDe(item.quantidade)
     const unitario = item.valorUnitarioCentavos ?? 0
     const linha = Math.round(quantidade * unitario)
@@ -90,10 +234,41 @@ function totalDoOrcamento(o: Orcamento): number {
       soma + (o.modoDesconto === 'PRODUTO' ? comDesconto(linha, item.descontoPercentual) : linha)
     )
   }, 0)
-  return o.modoDesconto === 'GERAL' ? comDesconto(bruto, o.descontoPercentual) : bruto
+  // A ABA SERVIÇOS ENTRA NO TOTAL. É o que o contrato diz ("o total do documento
+  // é a soma das DUAS, calculada pelo servidor"), e é a única forma de o número
+  // do rodapé bater com o que o cliente vai pagar: no legado, a instalação é
+  // linha de `VendaServico` e some da conta se o total olhar só os produtos.
+  const brutoDeServicos = servicosDe(o.id).reduce((soma, servico) => {
+    return soma + (o.modoDesconto === 'PRODUTO' ? servico.totalCents : servicoSemDesconto(servico))
+  }, 0)
+  const brutoDoDocumento = brutoDeProdutos + brutoDeServicos
+  return o.modoDesconto === 'GERAL'
+    ? comDesconto(brutoDoDocumento, o.descontoPercentual)
+    : brutoDoDocumento
 }
 
-function resumoDto(o: Orcamento): QuoteDto {
+/** O valor da linha de serviço ANTES do desconto dela — o que o modo GERAL soma. */
+function servicoSemDesconto(servico: QuoteServiceItemDto): number {
+  return Math.round(servico.quantity * servico.unitPriceCents)
+}
+
+/**
+ * Nome da obra, RESOLVIDO — nunca guardado ao lado do id.
+ *
+ * É a mesma regra de `customerName` e de `parentName`: nome gravado é nome que
+ * diverge do id na primeira alteração. E a busca é dentro da empresa ativa, pelo
+ * mesmo motivo que a listagem de obras recorta: obra de outra empresa não existe
+ * para quem pergunta, então id de fora resolve para `null`, não para o nome.
+ */
+function nomeDaObra(obraId: string | null): string | null {
+  if (!obraId) return null
+  const achada = obras.obras.find(
+    (obra) => obra.id === obraId && obra.tenantId === store.activeTenantId,
+  )
+  return achada?.description ?? null
+}
+
+function resumoDto(o: OrcamentoGuardado): QuoteDto {
   return {
     id: o.id,
     number: o.numero,
@@ -103,10 +278,20 @@ function resumoDto(o: Orcamento): QuoteDto {
     customerId: o.clienteId,
     customerName: o.cliente,
     projectName: o.descricaoObra,
+    // O par `id`+`name` da OBRA. `projectName` continua ao lado e NÃO é o mesmo
+    // dado: um é o texto digitado no documento, o outro é como a obra se chama
+    // hoje. Sobrescrever um com o outro apagaria o que o operador escreveu.
+    workId: o.obraId,
+    workName: nomeDaObra(o.obraId),
     // Documento CANCELA, não desativa — `active`/`cancelled` é o enum do
     // contrato, espelhando `Ven_Situacao` (A/C) do legado. Data de FECHAMENTO
     // não é cancelamento: um orçamento fechado continua ativo.
     status: o.cancelado ? 'cancelled' : 'active',
+    // A REVISÃO viaja na LISTA, e não só no detalhe: é ali que os dois
+    // orçamentos do mesmo dia aparecem lado a lado, e é ali que "v2 do 1042"
+    // deixa de parecer um segundo negócio.
+    revision: o.revisao,
+    revisionOfId: o.revisaoDeId,
     totalCents: totalDoOrcamento(o),
   }
 }
@@ -142,6 +327,11 @@ function itemDto(item: Orcamento['itens'][number], indice: number): QuoteItemDto
     supplierCode: item.codigoFornecedor,
     supplierDescription: item.descricaoFornecedor,
     productGroup: item.grupoProduto,
+    // A CHAVE do grupo, que o seed da transcrição não tem: §8.2 capturou o nome
+    // ("PENDENTES"), e nome não é chave. `null` é o honesto — inventar um id de
+    // `GRUPO_PRODUTO` casaria a linha com um grupo que lista nenhuma serve, e o
+    // desconto por grupo iria para o lugar errado sem ninguém acusar.
+    productGroupId: null,
     pieceType: item.tipoPeca,
     totalCents: Math.round(quantidade * unitario),
   }
@@ -156,26 +346,135 @@ function ambientesDto(o: Orcamento): QuoteEnvironmentDto[] {
   return o.ambientes.map((a) => ({ code: a.codigo, name: a.nome, order: a.ordem }))
 }
 
-function detalheDto(o: Orcamento): QuoteDetailDto {
+function detalheDto(o: OrcamentoGuardado): QuoteDetailDto {
   return {
     ...resumoDto(o),
     folderNumber: o.numeroPasta,
     closedAt: o.dataFechamento,
+    cancelledAt: o.canceladoEm,
+    cancelReasonId: o.motivoCancelamentoId,
+    // Resolvido na LEITURA, como `workName`: o mock guarda o id e devolve o
+    // rótulo de hoje. Guardar o nome junto congelaria o texto do dia do
+    // cancelamento, que é decisão que ninguém tomou.
+    cancelReasonName: nomeDeApoio(o.motivoCancelamentoId),
+    cancelNote: o.notaCancelamento,
+    revisionOfNumber: estado.linhas.find((l) => l.id === o.revisaoDeId)?.numero ?? null,
     salespersonId: o.consultorId,
     salespersonName: o.consultor,
     professionalId: o.profissionalId,
     professionalName: o.profissionalExterno,
     discountMode: o.modoDesconto === 'GERAL' ? 'general' : 'product',
     discountPercent: o.descontoPercentual,
+    // VAZIA, e não ausente: o contrato diz "nunca ausente por preguiça — ausente
+    // e vazia leem igual na tela e diferente na conta". Vazia é a resposta certa
+    // enquanto o mock não serve o modo `group` (ver `modoNaoServido`).
+    groupDiscounts: [],
     environments: ambientesDto(o),
     items: o.itens.map(itemDto),
+    // O bloco PAGAMENTO é ECOADO, nunca recebido: quem manda `paymentTermId`
+    // recebe o plano de volta. O carimbo veio da gravação (ver `carimbarPagamento`).
+    paymentTermId: o.condicaoPagamentoId,
+    paymentTermName: o.condicaoPagamento,
+    paymentInstallments: o.parcelas,
+    // Ausente, e não `null`, no documento anterior ao bloco: carimbo que nunca
+    // foi feito não se inventa com a política de hoje — seria reescrever a regra
+    // sob a qual o documento foi assinado.
+    ...(o.politicaDeParcelamento ? { installmentPolicy: o.politicaDeParcelamento } : {}),
+    // Vem SEMPRE, vazia quando o documento não tem serviço — ausência e lista
+    // vazia significariam a mesma coisa, e a opcional só criaria um `?? []` em
+    // cada consumidor.
+    serviceItems: servicosDe(o.id),
+  }
+}
+
+/**
+ * Resolve e CARIMBA o bloco Pagamento no documento já montado.
+ *
+ * Roda depois de `daEscrita` porque precisa do TOTAL, e o total é calculado dos
+ * itens que acabaram de vir. Devolve o documento carimbado ou a resposta de
+ * erro — 400, porque condição que não cabe na política é corpo que o servidor
+ * não pode gravar, e aparar (parcelar menos, arredondar até o mínimo) daria um
+ * documento com plano que ninguém pediu.
+ */
+function carimbarPagamento<T extends Orcamento>(
+  o: T,
+  tenantId: string,
+): { orcamento: T } | { erro: ReturnType<typeof problemaJson> } {
+  if (!o.condicaoPagamentoId) {
+    return { orcamento: { ...o, condicaoPagamento: null, parcelas: [] } }
+  }
+
+  const condicao = condicaoAtiva(tenantId, o.condicaoPagamentoId)
+  if (!condicao) {
+    // 400 e não 404: o id veio no CORPO, e é o corpo que está errado. 404 aqui
+    // falaria do orçamento, que existe.
+    return {
+      erro: problemaJson(400, 'Condição de pagamento não encontrada ou inativa nesta empresa.'),
+    }
+  }
+
+  const plano = planoDoDocumento(tenantId, condicao, totalDoOrcamento(o), o.dataEmissao)
+  if ('erro' in plano) return { erro: plano.erro }
+
+  return {
+    orcamento: {
+      ...o,
+      condicaoPagamento: condicao.name,
+      parcelas: plano.parcelas,
+      politicaDeParcelamento: politicaDaEmpresa(tenantId),
+    },
+  }
+}
+
+/**
+ * A linha de serviço da escrita → a linha guardada, com o que o SERVIDOR
+ * resolve.
+ *
+ * Duas coisas acontecem aqui e em lugar nenhum do cliente:
+ *
+ * 1. **A herança de `electricianPercent`.** `null` no corpo significa "use o
+ *    que o cadastro diz", e é aqui que o cadastro é lido — uma vez, no momento
+ *    da gravação. Depois disso o número está CONGELADO. `0` não é `null`: zero
+ *    é "esta linha não paga instalador", e distinguir os dois é a razão de o
+ *    campo ser nulável na escrita e não-nulável na leitura.
+ * 2. **`totalCents` e `electricianAmountCents`.** O segundo vira PAGAMENTO
+ *    (`acerto_eletrecistas_servicos` no legado); recalculá-lo no cliente daria
+ *    um arredondamento por cliente sobre uma linha que alguém recebe.
+ *
+ * Serviço que não é da empresa ativa não é encontrado, e a linha cai no `0` —
+ * o mesmo desfecho de `serviceId: null`, que o contrato permite (descrição
+ * avulsa). Recusar seria inventar um 404 que o contrato não declara para esta
+ * operação.
+ */
+function servicoDaEscrita(
+  linha: QuoteServiceItemWriteRequest,
+  indice: number,
+): QuoteServiceItemDto {
+  const doCadastro = servicoDoCadastro(store.activeTenantId ?? '', linha.serviceId)
+  const percentual = linha.electricianPercent ?? doCadastro?.electricianPercent ?? 0
+  const totalCents = comDesconto(
+    Math.round((linha.quantity ?? 0) * (linha.unitPriceCents ?? 0)),
+    linha.discountPercent ?? 0,
+  )
+  return {
+    lineNumber: indice + 1,
+    environmentCode: linha.environmentCode ?? null,
+    serviceId: linha.serviceId ?? null,
+    description: linha.description,
+    quantity: linha.quantity ?? 0,
+    unitPriceCents: linha.unitPriceCents ?? 0,
+    discountPercent: linha.discountPercent ?? 0,
+    electricianPercent: percentual,
+    electricianAmountCents: Math.round((totalCents * percentual) / 1_000_000),
+    totalCents,
   }
 }
 
 /** Corpo de escrita → a linha guardada. `id` e `numero` vêm de fora. */
-function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
+function daEscrita(corpo: QuoteWriteRequest, base: OrcamentoGuardado): OrcamentoGuardado {
   return {
     ...base,
+    obraId: corpo.workId ?? null,
     serie: corpo.series ?? '',
     numeroPasta: corpo.folderNumber ?? '',
     dataEmissao: corpo.issuedAt ?? null,
@@ -197,6 +496,9 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
       corpo.professionalId === base.profissionalId ? base.profissionalExterno : null,
     modoDesconto: corpo.discountMode === 'general' ? 'GERAL' : 'PRODUTO',
     descontoPercentual: corpo.discountPercent,
+    // Só o ID vem do corpo. Nome, parcelas e carimbo da política são do
+    // servidor, e quem os resolve é `carimbarPagamento` — depois do total.
+    condicaoPagamentoId: corpo.paymentTermId ?? null,
     // O corpo é INTEGRAL: o que ele não trouxer, o documento perde. Guardar os
     // ambientes que vieram — em vez de manter os de `base` — é o que faz o mock
     // reproduzir isso.
@@ -224,6 +526,49 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
 }
 
 /**
+ * O que a escrita recusa, além do cliente obrigatório — `null` quando passa.
+ *
+ * Duas recusas, e as duas em VOZ ALTA. Aceitar calado é o defeito que este repo
+ * persegue: no site público não há `:3000` atrás para corrigir a impressão, e
+ * um documento gravado com desconto que não é o pedido tem cara de dado.
+ *
+ * 1. **`workId` que a empresa ativa não alcança, ou que é de outro cliente.** A
+ *    obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve
+ *    esse vínculo — é o 400 que o contrato descreve em `workId`.
+ * 2. **`discountMode: 'group'`, que este mock ainda não serve.** O contrato o
+ *    publica (`VendaDesconto`, 300.337 linhas no legado) e nem o backend nem o
+ *    mock o implementam. A alternativa era o silêncio de hoje — o `?:` do
+ *    `daEscrita` mapeia todo modo que não é `general` para `PRODUTO` —, e aí o
+ *    documento volta com desconto por PRODUTO, número diferente do pedido e
+ *    status 200. Recusar nomeando o campo é menor que gravar errado.
+ */
+function recusasDaEscrita(corpo: QuoteWriteRequest) {
+  if (corpo.discountMode === 'group') {
+    return camposInvalidos([
+      {
+        path: 'discountMode',
+        message: 'Desconto por grupo ainda não é servido no modo mock.',
+      },
+    ])
+  }
+
+  const obraId = corpo.workId
+  if (obraId) {
+    const achada = obras.obras.find(
+      (obra) => obra.id === obraId && obra.tenantId === store.activeTenantId,
+    )
+    if (!achada) {
+      return camposInvalidos([{ path: 'workId', message: 'Obra não encontrada.' }])
+    }
+    if (achada.customerId !== corpo.customerId) {
+      return camposInvalidos([{ path: 'workId', message: 'A obra é de outro cliente.' }])
+    }
+  }
+
+  return null
+}
+
+/**
  * Cria o orçamento no estado do mock e devolve a linha GUARDADA.
  *
  * Exportada porque o CRM também cria orçamento — a conversão da oportunidade
@@ -234,16 +579,36 @@ function daEscrita(corpo: QuoteWriteRequest, base: Orcamento): Orcamento {
  * O NÚMERO é do servidor e a sequência é global do grupo — o contrato tira o
  * campo da escrita justamente para o cliente não o escolher.
  */
-export function criarOrcamento(corpo: QuoteWriteRequest): Orcamento {
+function aplicarServicos(id: string, corpo: QuoteWriteRequest): void {
+  // AUSENTE É VAZIO, nunca "preserva o que estava". O `PUT` é integral, e a
+  // regra vale para os serviços como já vale para `items` e `environments`.
+  // Escrever `?? servicosDe(id)` aqui seria o mock ensinando à tela uma
+  // semântica que o servidor não vai ter — e o defeito apareceria só no dia da
+  // troca, como linha que reaparece depois de excluída.
+  estado.servicos[id] = (corpo.serviceItems ?? []).map(servicoDaEscrita)
+}
+
+export function criarOrcamento(corpo: QuoteWriteRequest): OrcamentoGuardado {
   const numero = String(estado.proximoNumero)
   estado.proximoNumero += 1
-  const novo = daEscrita(corpo, { ...vazio(), id: `orc-${numero}`, numero })
+  const novo = daEscrita(corpo, {
+    ...vazio(),
+    obraId: null,
+    canceladoEm: null,
+    motivoCancelamentoId: null,
+    notaCancelamento: null,
+    revisao: 1,
+    revisaoDeId: null,
+    id: `orc-${numero}`,
+    numero,
+  })
+  aplicarServicos(novo.id, corpo)
   estado.linhas.unshift(novo)
   return novo
 }
 
 /** O DTO de detalhe de uma linha guardada — o CRM devolve o mesmo shape. */
-export function detalheDoOrcamento(o: Orcamento): QuoteDetailDto {
+export function detalheDoOrcamento(o: OrcamentoGuardado): QuoteDetailDto {
   return detalheDto(o)
 }
 
@@ -278,6 +643,10 @@ export const handlersDeOrcamento = [
         [o.number, o.customerName, o.projectName].some((t) => t?.toLowerCase().includes(alvo)),
       )
     }
+    const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS)
+    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
+    linhas = filtradas
+
     if (sortBy) {
       const chave = sortBy as keyof QuoteDto
       linhas.sort((a, b) => {
@@ -307,8 +676,27 @@ export const handlersDeOrcamento = [
     if (semPermissao) return semPermissao
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
+    const recusa = recusasDaEscrita(corpo)
+    if (recusa) return recusa
 
-    return HttpResponse.json(detalheDto(criarOrcamento(corpo)), { status: 201 })
+    const criado = criarOrcamento(corpo)
+    const carimbado = carimbarPagamento(criado, store.activeTenantId)
+    if ('erro' in carimbado) {
+      // O documento não fica gravado pela metade: sai da coleção antes do 400.
+      // O NÚMERO, esse, fica consumido — e é o que uma sequência de verdade faz.
+      // Devolvê-lo daria dois documentos com o mesmo número no dia em que duas
+      // gravações falhassem em paralelo.
+      estado.linhas = estado.linhas.filter((o) => o.id !== criado.id)
+      // A aba Serviços sai junto: `criarOrcamento` já a gravou (o total precisa
+      // dela para calcular as parcelas), e deixá-la aqui daria linha de serviço
+      // pendurada num id que não é mais documento nenhum.
+      delete estado.servicos[criado.id]
+      return carimbado.erro
+    }
+    const indiceNovo = estado.linhas.findIndex((o) => o.id === criado.id)
+    if (indiceNovo >= 0) estado.linhas[indiceNovo] = carimbado.orcamento
+
+    return HttpResponse.json(detalheDto(carimbado.orcamento), { status: 201 })
   }),
 
   http.put('*/api/quotes/:id', async ({ params, request }) => {
@@ -320,26 +708,123 @@ export const handlersDeOrcamento = [
     if (indice < 0) return naoEncontrado('Orçamento não encontrado.')
     const corpo = (await request.json()) as QuoteWriteRequest
     if (!corpo.customerId) return problemaJson(400, 'Cliente é obrigatório.')
+    const recusa = recusasDaEscrita(corpo)
+    if (recusa) return recusa
 
-    const anterior = estado.linhas[indice] as Orcamento
-    estado.linhas[indice] = daEscrita(corpo, anterior)
-    return HttpResponse.json(detalheDto(estado.linhas[indice] as Orcamento))
+    const anterior = estado.linhas[indice] as OrcamentoGuardado
+    // A aba Serviços entra ANTES do carimbo: o total do documento a inclui, e é
+    // do total que saem as parcelas. Como recusa não grava NADA, ela é desfeita
+    // quando o carimbo recusa — senão o documento ficaria com serviço novo e
+    // pagamento velho.
+    const servicosAnteriores = servicosDe(anterior.id)
+    aplicarServicos(anterior.id, corpo)
+    const carimbado = carimbarPagamento(daEscrita(corpo, anterior), store.activeTenantId)
+    if ('erro' in carimbado) {
+      estado.servicos[anterior.id] = servicosAnteriores
+      return carimbado.erro
+    }
+    estado.linhas[indice] = carimbado.orcamento
+    return HttpResponse.json(detalheDto(carimbado.orcamento))
   }),
 
-  http.post('*/api/quotes/:id/cancel', ({ params }) => {
+  http.post('*/api/quotes/:id/cancel', async ({ params, request }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
     const semPermissao = verificarEscrita('quotes')
     if (semPermissao) return semPermissao
     const achado = estado.linhas.find((o) => o.id === String(params.id))
     if (!achado) return naoEncontrado('Orçamento não encontrado.')
+    // **Cancelar duas vezes é 409**, e o mock passou a dizê-lo com o G13: o
+    // contrato sempre exigiu isso e o handler carimbava `cancelado = true` de
+    // novo, em silêncio. Repetição que responde 200 ensina a tela a oferecer
+    // Cancelar num documento cancelado — e agora o motivo do segundo pedido
+    // sobrescreveria o do primeiro, que é o dado que se queria guardar.
+    if (achado.cancelado) return jaCancelado()
+    // O corpo é OPCIONAL (contrato): quem cancela sem motivo continua valendo,
+    // e `request.json()` de corpo vazio ESTOURA — daí o `catch`.
+    const corpo = (await request.json().catch(() => null)) as CancelDocumentRequest | null
+    const erros = recusasDoCancelamento(corpo)
+    if (erros.length > 0) return camposInvalidos(erros)
     // Cancelar é verbo PRÓPRIO, e não um `PUT` com `status` dentro: mudar
     // situação por substituição do documento deixaria o cliente escolher o
     // estado de um fluxo que é do servidor.
     achado.cancelado = true
+    achado.canceladoEm = new Date().toISOString()
+    achado.motivoCancelamentoId = corpo?.reasonId ?? null
+    achado.notaCancelamento = corpo?.note ?? null
     return HttpResponse.json(detalheDto(achado))
   }),
+
+  http.post('*/api/quotes/:id/revise', ({ params }) => {
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
+    const semPermissao = verificarEscrita('quotes')
+    if (semPermissao) return semPermissao
+    const id = String(params.id)
+    const original = estado.linhas.find((o) => o.id === id)
+    if (!original) return naoEncontrado('Orçamento não encontrado.')
+    // Revisar o que foi retirado da mesa é ressuscitar por outro nome.
+    if (original.cancelado) {
+      return problemaJson(409, 'Orçamento cancelado não se revisa.', {}, TIPO.transicaoInvalida)
+    }
+    // **A segunda revisão sai da PRIMEIRA.** Deixar duas revisões nascerem do
+    // mesmo pai faria a cadeia virar árvore, e "qual é a versão vigente" ficaria
+    // sem resposta — que é exatamente o problema dos dois orçamentos do mesmo
+    // dia que a revisão veio resolver.
+    if (estado.linhas.some((o) => o.revisaoDeId === id)) {
+      return problemaJson(
+        409,
+        'Este orçamento já tem revisão. Revise a mais recente.',
+        {},
+        TIPO.orcamentoJaRevisado,
+      )
+    }
+    const numero = String(estado.proximoNumero)
+    estado.proximoNumero += 1
+    const revisao: OrcamentoGuardado = {
+      ...original,
+      id: `orc-${numero}`,
+      numero,
+      revisao: original.revisao + 1,
+      revisaoDeId: original.id,
+      // A cópia é PROFUNDA nas coleções: compartilhar o array faria editar a
+      // revisão mudar o documento que o cliente já viu — o oposto do ponto.
+      ambientes: original.ambientes.map((a) => ({ ...a })),
+      itens: original.itens.map((i) => ({ ...i })),
+      parcelas: original.parcelas.map((p) => ({ ...p })),
+    }
+    estado.servicos[revisao.id] = servicosDe(original.id).map((s) => ({ ...s }))
+    estado.linhas.unshift(revisao)
+    return HttpResponse.json(detalheDto(revisao), { status: 201 })
+  }),
 ]
+
+/** 409 de documento já cancelado — o mesmo texto nos dois documentos. */
+function jaCancelado() {
+  return problemaJson(409, 'Documento já está cancelado.', {}, TIPO.transicaoInvalida)
+}
+
+/**
+ * As recusas do corpo de cancelamento — 400 com o campo NOMEADO.
+ *
+ * **O motivo é conferido pelo KIND, não só pela existência.** `nomeDeApoio`
+ * resolve qualquer id de apoio, então `lk-MARCA-1` voltaria 'EVOLED' e o
+ * cancelamento sairia motivado por uma marca de luminária. É o defeito da
+ * api#72 (escrita aceita lookup do kind errado) visto do lado do mock.
+ */
+function recusasDoCancelamento(corpo: CancelDocumentRequest | null) {
+  const erros: { path: string; message: string }[] = []
+  const motivo = corpo?.reasonId
+  if (motivo && !/^lk-MOTIVO_CANCELAMENTO-\d+$/.test(motivo)) {
+    erros.push({ path: 'reasonId', message: 'Motivo de cancelamento não encontrado.' })
+  } else if (motivo && !nomeDeApoio(motivo)) {
+    erros.push({ path: 'reasonId', message: 'Motivo de cancelamento não encontrado.' })
+  }
+  if ((corpo?.note?.length ?? 0) > 200) {
+    erros.push({ path: 'note', message: 'A observação tem no máximo 200 caracteres.' })
+  }
+  return erros
+}
 
 function vazio(): Orcamento {
   return {
@@ -362,5 +847,8 @@ function vazio(): Orcamento {
     descontoPercentual: 0,
     ambientes: [],
     itens: [],
+    condicaoPagamentoId: null,
+    condicaoPagamento: null,
+    parcelas: [],
   }
 }

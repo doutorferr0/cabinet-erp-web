@@ -35,6 +35,20 @@ export interface PapelDeCadastro<T> {
   vazio: (id: number) => T
   /** Linha do `PartnerDto` → registro do formulário. */
   dtoParaForm: (dto: PartnerDto) => T
+  /**
+   * Campos do formulário que o servidor NÃO preencheu e que só têm valor por
+   * default do registro em branco — a ficha os apaga em vez de afirmá-los.
+   *
+   * Existe por causa do `Tipo de pessoa` (#270): radio obrigatório nasce
+   * `FISICA` porque o controle precisa de valor, e cadastro anterior ao campo
+   * tem `personType: null`. Sem isto a ficha diria "FISICA" para um CNPJ de 14
+   * dígitos — o defeito que `registro-para-ficha` mediu com dado real e que só
+   * agora tem conserto, porque só agora o contrato publica o campo.
+   *
+   * Opcional: papel cujo formulário não tem campo obrigatório sem par no
+   * servidor não precisa declarar nada.
+   */
+  ausentesNoServidor?: (dto: PartnerDto | null) => string[]
   /** Formulário + linha original → campos editáveis do `PUT`. */
   paraEscrita: (values: T, linha: PartnerDto) => CamposEditaveis
   /** Formulário → campos editáveis do `POST`. */
@@ -108,5 +122,11 @@ export function usarParceiro<T>(papel: PapelDeCadastro<T>, idParam: string) {
 
   const registro = isNovo ? papel.vazio(0) : linha ? papel.dtoParaForm(linha) : null
 
-  return { query, isNovo, registro, gravar, incluir, vincular, jaExiste }
+  // O que a FICHA não pode afirmar (#270). Sai daqui, e não das três rotas,
+  // porque depende da linha — e a linha mora nesta query. Em `Incluir` a lista
+  // é vazia por construção: não há ficha, e não há registro do servidor a que
+  // comparar o default.
+  const ausentesNaFicha = isNovo ? [] : (papel.ausentesNoServidor?.(linha) ?? [])
+
+  return { query, isNovo, registro, ausentesNaFicha, gravar, incluir, vincular, jaExiste }
 }

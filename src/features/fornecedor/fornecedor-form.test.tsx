@@ -112,6 +112,17 @@ describe('tela Fornecedor', () => {
       // impede o Gravar de um fornecedor de apagar o que a outra tela gravou no
       // mesmo cadastro. Os editáveis chegam nulos aqui porque o registro veio
       // em branco, e não por não viajarem.
+      // Fase A0 de COMPRAS (G2): prazo de entrega, faturamento mínimo e as duas
+      // coleções ainda não têm campo NESTA tela — a ficha do Fornecedor é a
+      // Fase C do trilho. Voltam como vieram pela mesma regra de tudo acima, e
+      // aqui ela pesa mais do que em qualquer outra linha: é a tela de
+      // Fornecedor que um dia vai EDITÁ-LOS, e até lá o que ela tem de provar é
+      // que não os apaga. As coleções voltam `[]`, que é o que o contrato
+      // declara — `null` num array seria um tipo que o servidor recusa.
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       stateRegistration: null,
       facebook: null,
       instagram: null,
@@ -171,27 +182,79 @@ describe('tela Fornecedor', () => {
     })
   }, 20_000)
 
-  it('formulário inclui contato na grade e grava (volta para a listagem)', async () => {
+  /**
+   * OS CONTATOS SÃO SUB-RECURSO — #255.
+   *
+   * Antes eles eram campo do formulário (`contatos` no schema Zod) e a grade
+   * saía junto no `Gravar` do rodapé. Só que o contrato não tem `contacts[]` no
+   * `PartnerDto`: contato é `/api/partners/{id}/contacts`, com `POST`/`PUT`
+   * próprios. A grade ligada ao registro gravava o cadastro, dizia "Alterações
+   * gravadas" e deixava o contato onde estava — os dois testes abaixo são o que
+   * impede isso de voltar.
+   */
+  it('em Incluir não há contato a pendurar, e a tela diz por quê', async () => {
     const { stub } = servidorDeParceiros()
-    const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)
+    const { user } = renderRoute('/cadastros/fornecedores/novo', stub)
 
-    const razao = await screen.findByLabelText('Razão Social')
-    await user.type(razao, 'FORNECEDOR TESTE LTDA')
-
-    // grade Contatos: o módulo `Representante e contatos` é opcional e nasce
-    // recolhido — a grade só existe depois de abrir. É a hierarquia da
-    // diretriz 3 funcionando, não um passo extra do teste.
+    await screen.findByLabelText('Razão Social')
+    // O módulo `Representante e contatos` é opcional e nasce recolhido — a
+    // hierarquia da diretriz 3 funcionando, não um passo extra do teste.
     await user.click(screen.getByRole('button', { name: 'Representante e contatos' }))
-    await user.click(await screen.findByRole('button', { name: /Incluir/ }))
-    await user.type(screen.getByLabelText('Nome linha 1'), 'MARIA')
-    await user.type(screen.getByLabelText('Vínculo linha 1'), 'COMPRAS')
 
-    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+    expect(await screen.findByText(/depois de gravar o cadastro/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Gravar contatos' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Nome linha 1')).not.toBeInTheDocument()
+  }, 15_000)
+
+  it('a grade dos contatos lê e grava pelo caminho do sub-recurso', async () => {
+    const { stub, chamadas } = servidorDeParceiros([parceiro()], {
+      contatos: [
+        {
+          id: 'ct-1',
+          name: 'JOÃO DO SERVIDOR',
+          role: 'Compras',
+          phone: null,
+          mobilePhone: null,
+          fax: null,
+          email: null,
+          active: true,
+        },
+      ],
+    })
+    const { user } = renderRoute(
+      '/cadastros/fornecedores/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70',
+      stub,
+    )
+
+    await screen.findByLabelText('Razão Social')
+    await user.click(screen.getByRole('button', { name: 'Representante e contatos' }))
+
+    // O que veio do servidor está na grade — e veio do caminho do sub-recurso,
+    // não de campo nenhum do `PartnerDto`.
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome linha 1')).toHaveValue('JOÃO DO SERVIDOR')
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Incluir' }))
+    await user.type(screen.getByLabelText('Nome linha 2'), 'MARIA')
+    await user.type(screen.getByLabelText('Vínculo linha 2'), 'COMPRAS')
+    await user.click(screen.getByRole('button', { name: 'Gravar contatos' }))
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
+      expect(chamadas.some((c) => c.metodo === 'POST' && c.caminho.endsWith('/contacts'))).toBe(
+        true,
+      )
     })
-  })
+    const inclusao = chamadas.find((c) => c.metodo === 'POST' && c.caminho.endsWith('/contacts'))
+    expect(inclusao?.corpo).toMatchObject({ name: 'MARIA', role: 'COMPRAS', active: true })
+
+    // A linha que já existia é `PUT` no id dela — e o `Gravar` do rodapé não
+    // encostou no cadastro: nenhuma escrita saiu para `/api/partners/{id}`.
+    expect(chamadas.some((c) => c.metodo === 'PUT' && c.caminho.endsWith('/contacts/ct-1'))).toBe(
+      true,
+    )
+    expect(chamadas.some((c) => c.metodo !== 'GET' && !c.caminho.includes('/contacts'))).toBe(false)
+  }, 20_000)
 
   // `Cidade` era digitação livre — `EnderecoBlock` já suportava a busca, mas
   // Fornecedor nunca passava `onBuscaCidade` (transcrição §4: "Cidade

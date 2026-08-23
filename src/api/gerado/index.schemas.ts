@@ -182,6 +182,45 @@ export const PartnerDtoPersonType = {
   company: 'company',
 } as const;
 
+/**
+ * Proposto. Uma vigência de EMPRESA COMPRADORA do fornecedor — a aba `Histórico Emp. Compradora` do cadastro de fornecedor no legado.
+ *
+ * **Por que é lista com vigência e não um campo.** No legado a Empresa Compradora aparece em fornecedor, produto e ordem de compra, e é ela que decide se a compra sai pela Vertz ou pela Via HF. O legado guarda o HISTÓRICO dela numa aba própria justamente porque a resposta muda no tempo: o fornecedor que era comprado pela Via em 2023 é comprado pela Vertz hoje, e a ordem emitida naquele ano tem de continuar dizendo a verdade sobre quem comprou. Um campo único reescreveria o passado a cada troca.
+ *
+ * **A ordem de compra NÃO lê esta lista para congelar a empresa** — ela guarda a sua própria `buyingTenantId`, copiada na emissão. Esta lista é o PADRÃO que a tela sugere, não a fonte do que já foi emitido.
+ *
+ * A empresa é um TENANT (`AuthTenantDto.tenantId`), não um cadastro à parte: multi-empresa neste produto é multi-tenant, e o legado confirma o modelo — 99,91% do volume dele está na empresa 1, e a multi-empresa que ele de fato opera é a de COMPRA.
+ */
+export interface SupplierBuyingCompanyDto {
+  /** A empresa compradora — `AuthTenantDto.tenantId`. */
+  tenantId: string;
+  /** Nome da empresa, ecoado para a tela não ter de resolver o id. */
+  tenantName: string;
+  /** Início da vigência. Data, não instante: a troca de empresa compradora é decisão comercial com data, e hora aqui seria precisão inventada. */
+  validFrom: string;
+  /**
+     * Fim da vigência, ou `null` na linha VIGENTE. Só uma linha por fornecedor pode ter `validTo` nulo — duas empresas comprando ao mesmo tempo do mesmo fornecedor não é estado, é cadastro por terminar.
+     * @nullable
+     */
+  validTo?: string | null;
+}
+
+/**
+ * Proposto. O FATURAMENTO MÍNIMO do fornecedor para um GRUPO DE PRODUTO — a exceção à regra geral de `minimumBillingCents`.
+ *
+ * **Por que por grupo, e por que só agora.** O fornecedor que exige R$ 3.000 por ordem costuma exigir outra coisa para a linha de perfil ou para a de LED, e o legado carrega isso: `Forma_PagamentoGrupProd` já pendura desconto e acréscimo por grupo de produto. O `PaymentTermDto` deste contrato declarou essa mesma dívida por escrito e disse que ela só entraria quando o grupo de produto tivesse id — "casar por texto faria PENDENTES e Pendentes renderem descontos diferentes no mesmo documento". **O id existe desde `QuoteItemDto.productGroupId`** (kind `GRUPO_PRODUTO` de `catalog-lookups`), e é nele que esta linha pendura. A dívida do `PaymentTermDto` continua aberta — ela é sobre desconto na CONDIÇÃO DE PAGAMENTO, não sobre mínimo do fornecedor —, mas o argumento que a bloqueava não vale mais.
+ *
+ * **Como as duas se combinam:** o mínimo por grupo SUBSTITUI o geral para os itens daquele grupo, não soma com ele. Uma ordem com itens de dois grupos com mínimo próprio tem de atender os dois; os itens de grupo sem linha aqui somam contra `minimumBillingCents`. Somar tudo num total só deixaria o fornecedor que exige R$ 3.000 de LED aceitar uma ordem de R$ 3.000 de perfil.
+ */
+export interface SupplierGroupMinimumDto {
+  /** O grupo — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. O mesmo id que a linha do documento carrega em `productGroupId`. */
+  productGroupId: string;
+  /** Nome do grupo, ecoado. NÃO é chave: ver a descrição de `QuoteItemDto.productGroupId`. */
+  productGroupName: string;
+  /** O mínimo em CENTAVOS para este grupo. Inteiro, como todo dinheiro deste contrato. */
+  minimumBillingCents: number;
+}
+
 export interface PartnerDto {
   id: string;
   /** @nullable */
@@ -338,6 +377,28 @@ export interface PartnerDto {
      * @nullable
      */
   birthDate?: string | null;
+  /**
+     * Proposto. PRAZO DE ENTREGA do fornecedor, em dias corridos — item #2 dos cadastros do comparativo. É o que a ordem de compra usa para SUGERIR `expectedAt` a partir de `orderedAt`; a ordem guarda a data que foi acordada, não este número, porque prazo de cadastro muda e data prometida não.
+     *
+     * Dias CORRIDOS e não úteis: é assim que o fornecedor promete ("entrega em 30 dias"), e converter para úteis exigiria calendário de feriado por UF, que este contrato não tem. `null` no fornecedor sem prazo acordado — e então a ordem não sugere data nenhuma, em vez de sugerir hoje.
+     *
+     * Só faz sentido com `isSupplier: true`. O contrato não o recusa no cliente, pela mesma razão que já aceita `paymentTerms` em qualquer parceiro: o cadastro é UM e os papéis são flags, então campo de papel é campo opcional do cadastro inteiro.
+     * @nullable
+     */
+  deliveryDays?: number | null;
+  /**
+     * Proposto. FATURAMENTO MÍNIMO GERAL do fornecedor, em centavos — quanto a ordem precisa somar para ele aceitar faturar.
+     *
+     * É regra de NEGÓCIO do fornecedor, e por isso mora no cadastro dele e não na ordem: a ordem só ECOA o valor que valia na emissão (`PurchaseOrderDto.minimumBillingCents`), para que a recusa de ontem continue explicável depois de o fornecedor mudar o mínimo.
+     *
+     * `null` = sem mínimo, e é diferente de `0`: zero é mínimo declarado e atendido por qualquer ordem; nulo é "o fornecedor não impõe mínimo", e a validação nem roda. Ver `groupMinimums` para a exceção por grupo de produto.
+     * @nullable
+     */
+  minimumBillingCents?: number | null;
+  /** Proposto. O histórico de EMPRESA COMPRADORA deste fornecedor, mais recente primeiro. Lista vazia no parceiro que não é fornecedor, ou no fornecedor comprado por qualquer empresa — ausência aqui não bloqueia ordem nenhuma. */
+  buyingCompanies?: SupplierBuyingCompanyDto[];
+  /** Proposto. Os faturamentos mínimos POR GRUPO DE PRODUTO, que substituem o geral para os itens do grupo. Lista vazia = só vale `minimumBillingCents`. */
+  groupMinimums?: SupplierGroupMinimumDto[];
 }
 
 export interface PagedResultOfPartnerDto {
@@ -527,7 +588,10 @@ export interface PagedResultOfProductDto {
 export interface StockMovementDto {
   id: string;
   variantId: string;
+  /** O depósito onde o movimento aconteceu. Sempre presente: a coluna é `NOT NULL` e o movimento sem local é o que o backfill da migração eliminou, pendurando tudo que existia no padrão da empresa. */
+  locationId: string;
   delta: number;
+  /** O saldo do DEPÓSITO depois deste movimento — não o total do produto na empresa. Mudou de sentido junto com `locationId` (api#79, decisão 2): é este número que reconcilia contra `GET /api/variants/{variantId}/stock-balances`. Enquanto houver um depósito só, local e total coincidem; a partir do segundo, não. */
   balanceAfter: number;
   reason: string;
   occurredAt: string;
@@ -692,6 +756,24 @@ export const PartnerWriteRequestPersonType = {
   company: 'company',
 } as const;
 
+/**
+ * Proposto. Uma linha de vigência de empresa compradora, na escrita do parceiro. `tenantName` não entra: ele é ecoado na leitura, e aceitá-lo aqui deixaria o cliente renomear a empresa de outra pessoa pelo cadastro do fornecedor.
+ */
+export interface SupplierBuyingCompanyWriteRequest {
+  tenantId: string;
+  validFrom: string;
+  /** @nullable */
+  validTo?: string | null;
+}
+
+/**
+ * Proposto. Uma linha de faturamento mínimo por grupo, na escrita do parceiro.
+ */
+export interface SupplierGroupMinimumWriteRequest {
+  productGroupId: string;
+  minimumBillingCents: number;
+}
+
 export interface PartnerWriteRequest {
   /** @nullable */
   document: string | null;
@@ -836,6 +918,14 @@ export interface PartnerWriteRequest {
      * @nullable
      */
   birthDate?: string | null;
+  /** @nullable */
+  deliveryDays?: number | null;
+  /** @nullable */
+  minimumBillingCents?: number | null;
+  /** Proposto. SUBSTITUI o histórico inteiro — o PUT deste contrato troca o registro completo, e coleção embutida segue a mesma regra. Omitir o campo mantém o que está gravado; mandar `[]` apaga o histórico. */
+  buyingCompanies?: SupplierBuyingCompanyWriteRequest[];
+  /** Proposto. SUBSTITUI as linhas de mínimo por grupo, mesma regra de `buyingCompanies`. */
+  groupMinimums?: SupplierGroupMinimumWriteRequest[];
 }
 
 /**
@@ -858,7 +948,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |
  * | `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |
  * | `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |
- * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | papel pedido no vínculo não existe na matriz do servidor |
+ * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
@@ -868,11 +958,24 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe "vincular ao existente", duas pessoas não compartilham login |
  * | `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |
  * | `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |
+ * | `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |
  * | `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |
+ * | `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |
+ * | `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |
+ * | `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |
+ * | `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |
+ * | `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria "recarregue" para um caso que se resolve com dois cliques |
+ * | `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |
+ * | `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |
+ * | `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |
+ * | `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |
+ * | `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
  * O 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.
+ *
+ * **Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.
  */
 export type ProblemType = typeof ProblemType[keyof typeof ProblemType];
 
@@ -897,7 +1000,18 @@ export const ProblemType = {
   'urn:cabinet:erro:email-ja-cadastrado': 'urn:cabinet:erro:email-ja-cadastrado',
   'urn:cabinet:erro:codigo-ja-cadastrado': 'urn:cabinet:erro:codigo-ja-cadastrado',
   'urn:cabinet:erro:vinculo-ja-existe': 'urn:cabinet:erro:vinculo-ja-existe',
+  'urn:cabinet:erro:papel-de-sistema': 'urn:cabinet:erro:papel-de-sistema',
   'urn:cabinet:erro:pedido-ja-convertido': 'urn:cabinet:erro:pedido-ja-convertido',
+  'urn:cabinet:erro:valor-nao-parcelavel': 'urn:cabinet:erro:valor-nao-parcelavel',
+  'urn:cabinet:erro:parcelas-acima-do-teto': 'urn:cabinet:erro:parcelas-acima-do-teto',
+  'urn:cabinet:erro:parcela-abaixo-do-minimo': 'urn:cabinet:erro:parcela-abaixo-do-minimo',
+  'urn:cabinet:erro:transicao-invalida': 'urn:cabinet:erro:transicao-invalida',
+  'urn:cabinet:erro:demonstracao-em-aberto': 'urn:cabinet:erro:demonstracao-em-aberto',
+  'urn:cabinet:erro:orcamento-ja-revisado': 'urn:cabinet:erro:orcamento-ja-revisado',
+  'urn:cabinet:erro:faturamento-minimo-nao-atingido': 'urn:cabinet:erro:faturamento-minimo-nao-atingido',
+  'urn:cabinet:erro:item-ja-em-ordem': 'urn:cabinet:erro:item-ja-em-ordem',
+  'urn:cabinet:erro:ordem-ja-enviada': 'urn:cabinet:erro:ordem-ja-enviada',
+  'urn:cabinet:erro:fornecedor-divergente': 'urn:cabinet:erro:fornecedor-divergente',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -1108,6 +1222,11 @@ export interface SessaoAtual {
 }
 
 export interface StockMovementRequest {
+  /**
+     * Ausente ou `null` = o depósito PADRÃO da empresa ativa, criado sob demanda se ela ainda não tem nenhum (ver a descrição da operação). Fica FORA de `required` de propósito, ao contrário de `delta` e `reason`: aqui omitir é uma escolha com significado, e o tipo gerado precisa saber exprimi-la.
+     * @nullable
+     */
+  locationId?: string | null;
   /** @nullable */
   delta: number | null;
   /** @nullable */
@@ -1496,10 +1615,15 @@ export interface QuoteItemDto {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -1560,15 +1684,101 @@ export interface QuoteItemWriteRequest {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
      */
   pieceType?: string | null;
+}
+
+/**
+ * Proposto. Linha da ABA SERVIÇOS do documento — a seção que o comparativo (02-vendas) apontou como faltando, e que no legado é `VendaServico` (4.450 linhas; `Orcamento_servico_det` e `pedido_servico_det` existem no schema e estão ZERADAS, então quem descreve a operação real é `VendaServico`).
+ *
+ * Coleção SEPARADA de `items`, e não um item com flag: as duas linhas não têm as mesmas colunas. Serviço não tem acabamento, tamanho, unidade, fornecedor nem código no fornecedor, e tem percentual de eletricista, que produto nenhum tem. Uma coleção só obrigaria metade dos campos a serem `null` conforme a outra metade — e o total do documento é a soma das DUAS, calculada pelo servidor.
+ *
+ * Como em `QuoteItemDto`, descrição e preço são SNAPSHOT da emissão: corrigir o cadastro não pode reescrever documento fechado.
+ */
+export interface QuoteServiceItemDto {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /** Percentual do eletricista congelado na emissão — o do cadastro, ou o override que a escrita mandou. Nunca `null` na leitura: o servidor já resolveu a herança, e devolver `null` obrigaria quem lê a refazer a conta contra um cadastro que pode ter mudado desde então. */
+  electricianPercent: number;
+  /**
+     * Quanto desta linha é do instalador, em centavos — `VenSer_VlEletricista` do legado. Calculado pelo servidor: a escrita não manda.
+     *
+     * Ele é campo, e não conta que quem lê refaz, porque é o número que vira PAGAMENTO (`acerto_eletrecistas_servicos`). Recalcular no cliente daria um arredondamento por cliente sobre uma linha que alguém recebe.
+     */
+  electricianAmountCents: number;
+  /** Valor da linha. Calculado pelo servidor — a escrita não manda. */
+  totalCents: number;
+}
+
+/**
+ * Proposto. Linha da aba Serviços na escrita. Sem `totalCents` nem `electricianAmountCents`: quem calcula é o servidor.
+ */
+export interface QuoteServiceItemWriteRequest {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /**
+     * Percentual do eletricista NESTA linha. **`null` = herda do cadastro** (`ServiceDto.electricianPercent`) no momento da gravação; qualquer valor é OVERRIDE explícito, inclusive `0`.
+     *
+     * A distinção entre `null` e `0` é a que o campo existe para carregar: zero é "esta linha não paga instalador", e omitir é "use o que o cadastro diz". Um campo não-nulável forçaria o cliente a copiar o percentual do cadastro para dentro do corpo — e aí quem gravasse com o cadastro desatualizado na tela congelaria o número velho sem ninguém pedir.
+     * @nullable
+     */
+  electricianPercent: number | null;
 }
 
 /**
@@ -1608,12 +1818,37 @@ export interface QuoteDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: QuoteDtoStatus;
+  /**
+     * Número da revisão, 1-based. `1` é o orçamento original; `2` é a primeira revisão. Resolve um caso REAL do legado: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro — quem lia a lista contava dois negócios onde havia um.
+     * @minimum 1
+     */
+  revision?: number;
+  /**
+     * O orçamento que esta revisão substitui, ou `null` no original. A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e itens) porque o anterior é o que foi mostrado ao cliente: sobrescrevê-lo apagaria a proposta que já saiu pela porta.
+     * @nullable
+     */
+  revisionOfId?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
 }
@@ -1630,7 +1865,13 @@ export const QuoteDetailDtoStatus = {
 } as const;
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type QuoteDetailDtoDiscountMode = typeof QuoteDetailDtoDiscountMode[keyof typeof QuoteDetailDtoDiscountMode];
 
@@ -1638,7 +1879,71 @@ export type QuoteDetailDtoDiscountMode = typeof QuoteDetailDtoDiscountMode[keyof
 export const QuoteDetailDtoDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo de produto — `VendaDesconto` do legado (300.337 linhas). Vive DENTRO do documento, como ambiente e item: não tem identidade fora dele, e sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas.
+ *
+ * **Ficaram de fora, e a omissão é declarada:** `VenDesc_DescontoValor` (desconto digitado em dinheiro) seria uma segunda forma de dizer a mesma coisa que `discountPercent`, e conviver com as duas exige uma regra de desempate que a extração não fixou; `VenDesc_DescPorcUsuario` (o percentual que o usuário pediu, ao lado do que valeu) só faz sentido junto com a regra que os separa — o teto — e essa regra é do servidor. Entram quando houver decisão escrita, não antes.
+ */
+export interface QuoteGroupDiscountDto {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Nome do grupo CONGELADO na emissão, pelo mesmo motivo de `QuoteEnvironmentDto.name`: renomear o grupo no catálogo não pode reescrever orçamento fechado. */
+  productGroupName: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+  /** Soma das linhas do grupo ANTES do desconto (`VenDesc_ValorGrupo`), em centavos. Calculado pelo servidor. */
+  subtotalCents: number;
+  /** Quanto o desconto tirou, em centavos. Calculado pelo servidor, e não refeito na tela: percentual de 4 casas sobre centavos arredonda, e a conta refeita no cliente erra o último centavo em parte dos casos — o total do documento deixaria de fechar com a soma dos grupos. */
+  discountCents: number;
+  /** Total do grupo depois do desconto (`VenDesc_ValorGrupoDesc`), em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * Quantidade somada das linhas do grupo (`VenDesc_Quantidade`), até 3 casas. Calculada pelo servidor.
+     * @nullable
+     */
+  quantity?: number | null;
+}
+
+/**
+ * Proposto. Uma parcela DO DOCUMENTO — o plano já resolvido em datas e centavos, não mais a regra.
+ *
+ * **Um schema só para orçamento e pedido**, ao contrário de `QuoteEnvironmentDto`/`OrderEnvironmentDto`. Aqueles são duas coisas que já divergem; esta é a MESMA conta a partir da MESMA condição, e duas cópias idênticas seriam dois lugares para mudar quando a soma dos centavos mudar de regra.
+ */
+export interface DocumentInstallmentDto {
+  /** Ordinal, 1-based. */
+  number: number;
+  /** Vencimento resolvido: `issuedAt` + `daysAfterIssue` da parcela da condição. Data, não instante — parcela vence no DIA. */
+  dueDate: string;
+  /** Valor da parcela em centavos, já resolvido. A soma das parcelas é `totalCents` EXATA: a sobra do arredondamento vai para a ÚLTIMA, que é onde o legado a põe e onde ela é conferível a olho contra o total impresso. */
+  amountCents: number;
+}
+
+/**
+ * Proposto. Os três limites de parcelamento — e o mesmo schema serve para o CARIMBO no documento (`QuoteDetailDto.installmentPolicy`), porque é literalmente o valor que valia na gravação.
+ *
+ * **Nenhum campo é anulável, e é decisão.** "Sem teto" seria um segundo modo de ler o mesmo campo, e o legado não o tem: `Par_QuantMaxParcela` é sempre um número. Quem não quer teto grava um alto.
+ *
+ * ---
+ *
+ * **DECISÃO PENDENTE — org × empresa, e ela está aqui em cima da mesa.**
+ *
+ * No legado os dois níveis DISCORDAM, e não por descuido de leitura: `Forma_Pagamento` tem `Emp_codigo` (condição é por empresa), enquanto `Paramentros` — a tabela onde os três limites moram — tem **uma linha, sem chave primária e sem `Emp_codigo`**, ou seja, vale para a instalação inteira.
+ *
+ * Publicado aqui **por empresa ativa**, por dois motivos: o isolamento do Cabinet é por `tenant_id` e uma tabela sem ele seria a segunda global do repo (`catalog_lookups` é a primeira, e cada uma custa uma exceção à RLS); e um limite que governa uma tabela POR EMPRESA não se sustenta acima dela — a empresa que precisasse de 10× não teria como, sem mudar o limite das outras.
+ *
+ * Se o user decidir org, o que muda é onde a linha mora: a LEITURA continua sendo "a política da empresa ativa", então nenhum caminho deste contrato muda. E em qualquer das duas, o carimbo no documento é o que protege o histórico.
+ */
+export interface InstallmentPolicyDto {
+  /** Total mínimo do documento para que ele possa ser parcelado — `par_ParcelarVlAcima` (R$ 100 na Vertz = `10000`). Abaixo dele, só condição de parcela única. */
+  minTotalToInstallCents: number;
+  /** Valor mínimo de CADA parcela — `Par_VlMinParcela` (R$ 50 = `5000`). É o limite que corta o plano na prática: um total de R$ 240 em 6× dá R$ 40 e não passa. */
+  minInstallmentCents: number;
+  /** Teto de parcelas — `Par_QuantMaxParcela` (6 na Vertz). */
+  maxInstallments: number;
+}
 
 /**
  * Proposto. O orçamento inteiro: cabeçalho, ambientes e itens numa resposta só. Itens e ambientes viajam embutidos porque não têm identidade fora do documento, e porque sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas — falha no meio deixaria metade da grade gravada.
@@ -1666,12 +1971,42 @@ export interface QuoteDetailDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
   /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
   status: QuoteDetailDtoStatus;
+  /**
+     * Número da revisão, 1-based. `1` é o orçamento original; `2` é a primeira revisão. Resolve um caso REAL do legado: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro — quem lia a lista contava dois negócios onde havia um.
+     * @minimum 1
+     */
+  revision?: number;
+  /**
+     * O orçamento que esta revisão substitui, ou `null` no original. A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e itens) porque o anterior é o que foi mostrado ao cliente: sobrescrevê-lo apagaria a proposta que já saiu pela porta.
+     * @nullable
+     */
+  revisionOfId?: string | null;
+  /**
+     * Número do orçamento revisado, resolvido na leitura — o que a tela mostra sem uma segunda requisição.
+     * @nullable
+     */
+  revisionOfNumber?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
   /**
@@ -1684,6 +2019,27 @@ export interface QuoteDetailDto {
      * @nullable
      */
   closedAt?: string | null;
+  /**
+     * Quando o documento foi cancelado. `null` enquanto não for.
+     * @nullable
+     */
+  cancelledAt?: string | null;
+  /**
+     * Motivo do cancelamento — id da lista de apoio. É o `Mod_codigo` que o legado gravava junto de `ven_situacao='C'`. O `kind` da lista NÃO passa pelo contrato (ADR-011): entra por linha no catálogo do servidor.
+     * @nullable
+     */
+  cancelReasonId?: string | null;
+  /**
+     * Nome do motivo, resolvido na leitura. `null` quando cancelaram sem motivo.
+     * @nullable
+     */
+  cancelReasonName?: string | null;
+  /**
+     * Observação livre de quem cancelou. O motivo diz a CLASSE; a nota diz o caso.
+     * @maxLength 200
+     * @nullable
+     */
+  cancelNote?: string | null;
   /**
      * Consultor(a) que atende — `EmployeeDto.id`.
      * @nullable
@@ -1698,17 +2054,71 @@ export interface QuoteDetailDto {
   professionalId?: string | null;
   /** @nullable */
   professionalName?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: QuoteDetailDtoDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: QuoteGroupDiscountDto[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: QuoteEnvironmentDto[];
   items: QuoteItemDto[];
+  /**
+     * A condição escolhida — `PaymentTermDto.id`, `Ven_formaPag` do legado. `null` enquanto o documento não tem plano de pagamento, que é o estado do orçamento recém-aberto.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * Nome da condição na emissão, resolvido pelo servidor — mesmo par de `customerName`/`salespersonName`. Sem ele a grade do documento precisaria da listagem inteira de condições só para escrever uma linha.
+     * @nullable
+     */
+  paymentTermName?: string | null;
+  /**
+     * O plano CARIMBADO na gravação: as parcelas da condição resolvidas contra `totalCents` e `issuedAt`.
+     *
+     * **Ecoadas, nunca escritas** — não existem em `QuoteWriteRequest`/`OrderWriteRequest`. Quem manda o `paymentTermId` recebe o plano de volta; deixar o cliente propor as parcelas abriria a porta para um documento cujo plano não soma o total dele.
+     *
+     * **Carimbado e não derivado na leitura:** alterar a condição depois não pode mudar o vencimento de parcela que o cliente já recebeu (ver `UpdatePaymentTerm`). É o que o legado faz ao copiar os parâmetros para a linha da `Venda`.
+     *
+     * **`[]` quando não há condição escolhida** — array vazio, nunca ausente: campo que às vezes não vem é o que faz a tela quebrar num `.map` só no documento sem plano.
+     */
+  paymentInstallments: DocumentInstallmentDto[];
+  /**
+     * Os três limites que valiam quando este documento foi gravado — `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela`, que no legado são COLUNAS da própria `Venda`.
+     *
+     * **Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso.
+     */
+  installmentPolicy?: InstallmentPolicyDto;
+  /** As linhas da aba Serviços, na ordem de exibição. Coleção própria — ver `QuoteServiceItemDto`. Vem sempre, vazia quando o documento não tem serviço nenhum: ausência e lista vazia significariam a mesma coisa, e a de leitura opcional só criaria um ramo `?? []` em cada consumidor. */
+  serviceItems: QuoteServiceItemDto[];
 }
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type QuoteWriteRequestDiscountMode = typeof QuoteWriteRequestDiscountMode[keyof typeof QuoteWriteRequestDiscountMode];
 
@@ -1716,7 +2126,18 @@ export type QuoteWriteRequestDiscountMode = typeof QuoteWriteRequestDiscountMode
 export const QuoteWriteRequestDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo na ESCRITA — só o que o operador decide: o grupo e o percentual. `subtotalCents`, `discountCents`, `totalCents` e `quantity` são do servidor, como `totalCents` do item: a tela que os mandasse estaria propondo o próprio total.
+ */
+export interface QuoteGroupDiscountWriteRequest {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+}
 
 /**
  * Proposto. Corpo de criação e de alteração. **`PUT` substitui o documento INTEIRO**, itens e ambientes junto: corpo parcial apaga o que não veio. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`), sem `totalCents` nem `customerName` (o servidor calcula e resolve).
@@ -1739,10 +2160,20 @@ export interface QuoteWriteRequest {
   expiresAt?: string | null;
   customerId: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
   /**
      * `Nº Pasta`.
      * @nullable
@@ -1763,13 +2194,44 @@ export interface QuoteWriteRequest {
      * @nullable
      */
   professionalId?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: QuoteWriteRequestDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: QuoteGroupDiscountWriteRequest[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: QuoteEnvironmentDto[];
   items: QuoteItemWriteRequest[];
+  /**
+     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente, e aí o `type` diz QUAL das três: `urn:cabinet:erro:valor-nao-parcelavel` (total abaixo de `minTotalToInstallCents` com condição parcelada) · `urn:cabinet:erro:parcelas-acima-do-teto` (mais parcelas que `maxInstallments`) · `urn:cabinet:erro:parcela-abaixo-do-minimo` (alguma parcela abaixo de `minInstallmentCents`). São três correções DIFERENTES para quem está na tela, e conflatá-las em `campos-invalidos` obrigaria a ler a frase — que é o que este vocabulário existe para impedir.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * As linhas da aba Serviços. **OPCIONAL, e ausente é VAZIO — nunca "preserva o que estava".** O `PUT` é integral, e essa semântica vale para os serviços exatamente como vale para `items` e `environments`: gravar sem o campo APAGA os serviços do documento.
+     *
+     * É opcional, e não obrigatório como `items`, por uma razão de transição e só: a seção nasce no contrato antes da tela, e um campo obrigatório faria toda escrita existente de documento virar 400 no dia do merge — inclusive a conversão do CRM. Vira obrigatório quando a aba existir dos dois lados.
+     */
+  serviceItems?: QuoteServiceItemWriteRequest[];
 }
 
 export interface PagedResultOfQuoteDto {
@@ -2237,7 +2699,17 @@ export interface EmployeeDetailDto {
   /** Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo. */
   active: boolean;
   /**
-     * Papel de PERMISSÃO na empresa ativa (`employee_company.role`) — não é cargo. `null` quando não há vínculo.
+     * `RoleDto.id` do papel atribuído na empresa ativa. `null` quando não há vínculo, e também enquanto o vínculo ainda guarda um dos cinco papéis antigos — aí quem responde é `role` (api#84, fase 3).
+     * @nullable
+     */
+  roleId?: string | null;
+  /**
+     * Nome do papel, resolvido pelo servidor — o mesmo serviço que `sector` e `jobTitle` prestam. A tela imprime isto; sem ele imprimiria uuid ou faria uma busca só para achar o nome de uma linha.
+     * @nullable
+     */
+  roleName?: string | null;
+  /**
+     * Papel de PERMISSÃO na empresa ativa pelo identificador ANTIGO (`employee_company.role`) — não é cargo. `null` quando não há vínculo, e também quando o vínculo já aponta `roleId`. Sai na fase 3 do api#84.
      * @nullable
      */
   role?: string | null;
@@ -2305,10 +2777,20 @@ export interface EmployeeWriteRequest {
 
 /**
  * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
+ *
+ * **O papel entra por `roleId` OU por `role`; se ambos vierem, `roleId` vence** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.
  */
 export interface EmployeeLinkRequest {
-  /** Papel de permissão. Conjunto validado pelo servidor; valor fora dele é 400. */
-  role: string;
+  /**
+     * `RoleDto.id` — papel desta organização. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido`.
+     * @nullable
+     */
+  roleId?: string | null;
+  /**
+     * Papel de permissão pelo identificador ANTIGO. Conjunto validado pelo servidor; valor fora dele é 400. Deixa de existir na fase 3 do api#84 — quem já sabe o `roleId` manda `roleId` e omite este.
+     * @nullable
+     */
+  role?: string | null;
   /**
      * `CatalogLookupDto.id`, kind `SETOR`.
      * @nullable
@@ -2392,10 +2874,15 @@ export interface OrderItemDto {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -2456,10 +2943,15 @@ export interface OrderItemWriteRequest {
   /** @nullable */
   supplierDescription?: string | null;
   /**
-     * Grupo de produto.
+     * Nome do grupo, CONGELADO na emissão como o resto da linha. O id é `productGroupId` — este campo é o que se lê, não o que se casa.
      * @nullable
      */
   productGroup?: string | null;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra numa das linhas de `groupDiscounts`. A atribuição não pode sair de `productGroup`, que é NOME congelado: nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam o desconto para o grupo errado sem ninguém acusar. `null` na linha sem grupo — que então não recebe desconto de grupo nenhum.
+     * @nullable
+     */
+  productGroupId?: string | null;
   /**
      * Tipo da peça — kind `TIPO_PECA`.
      * @nullable
@@ -2468,14 +2960,109 @@ export interface OrderItemWriteRequest {
 }
 
 /**
- * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ * Proposto. Linha da ABA SERVIÇOS do documento — a seção que o comparativo (02-vendas) apontou como faltando, e que no legado é `VendaServico` (4.450 linhas; `Orcamento_servico_det` e `pedido_servico_det` existem no schema e estão ZERADAS, então quem descreve a operação real é `VendaServico`).
+ *
+ * Coleção SEPARADA de `items`, e não um item com flag: as duas linhas não têm as mesmas colunas. Serviço não tem acabamento, tamanho, unidade, fornecedor nem código no fornecedor, e tem percentual de eletricista, que produto nenhum tem. Uma coleção só obrigaria metade dos campos a serem `null` conforme a outra metade — e o total do documento é a soma das DUAS, calculada pelo servidor.
+ *
+ * Como em `QuoteItemDto`, descrição e preço são SNAPSHOT da emissão: corrigir o cadastro não pode reescrever documento fechado.
+ */
+export interface OrderServiceItemDto {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /** Percentual do eletricista congelado na emissão — o do cadastro, ou o override que a escrita mandou. Nunca `null` na leitura: o servidor já resolveu a herança, e devolver `null` obrigaria quem lê a refazer a conta contra um cadastro que pode ter mudado desde então. */
+  electricianPercent: number;
+  /**
+     * Quanto desta linha é do instalador, em centavos — `VenSer_VlEletricista` do legado. Calculado pelo servidor: a escrita não manda.
+     *
+     * Ele é campo, e não conta que quem lê refaz, porque é o número que vira PAGAMENTO (`acerto_eletrecistas_servicos`). Recalcular no cliente daria um arredondamento por cliente sobre uma linha que alguém recebe.
+     */
+  electricianAmountCents: number;
+  /** Valor da linha. Calculado pelo servidor — a escrita não manda. */
+  totalCents: number;
+}
+
+/**
+ * Proposto. Linha da aba Serviços na escrita. Sem `totalCents` nem `electricianAmountCents`: quem calcula é o servidor.
+ */
+export interface OrderServiceItemWriteRequest {
+  /** Coluna `Item`. */
+  lineNumber: number;
+  /**
+     * Ambiente a que o serviço pertence. `null` = fora de ambiente, que o legado permite (`VendaServico.CodAmbiente` é nulável, como o do produto).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Serviço do cadastro (`ServiceDto.id`). `null` quando a linha não veio do cadastro — o legado permite descrição avulsa (`Orcamento_servico_det.ose_descricao` existe ao lado do `Sev_cod`).
+     * @nullable
+     */
+  serviceId?: string | null;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /** Até 3 casas. */
+  quantity: number;
+  /** Valor unitário congelado, em centavos. */
+  unitPriceCents: number;
+  /**
+     * Desconto da linha. Int com 4 casas implícitas: `10000` = 1%.
+     *
+     * **O legado guarda DOIS descontos por linha de serviço** (`VenSer_DescVl` em valor e `VenSer_DescPorc` em percentual) e nada garante que concordem. Aqui só o percentual sobe, como já vale em `QuoteItemDto`: dois campos para uma decisão é a fonte dupla que faz o total do documento divergir do total das linhas.
+     */
+  discountPercent: number;
+  /**
+     * Percentual do eletricista NESTA linha. **`null` = herda do cadastro** (`ServiceDto.electricianPercent`) no momento da gravação; qualquer valor é OVERRIDE explícito, inclusive `0`.
+     *
+     * A distinção entre `null` e `0` é a que o campo existe para carregar: zero é "esta linha não paga instalador", e omitir é "use o que o cadastro diz". Um campo não-nulável forçaria o cliente a copiar o percentual do cadastro para dentro do corpo — e aí quem gravasse com o cadastro desatualizado na tela congelaria o número velho sem ninguém pedir.
+     * @nullable
+     */
+  electricianPercent: number | null;
+}
+
+/**
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409.
  */
 export type OrderDtoStatus = typeof OrderDtoStatus[keyof typeof OrderDtoStatus];
 
 
 export const OrderDtoStatus = {
   active: 'active',
+  concluded: 'concluded',
   cancelled: 'cancelled',
+} as const;
+
+/**
+ * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+ *
+ * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+ */
+export type OrderDtoType = typeof OrderDtoType[keyof typeof OrderDtoType];
+
+
+export const OrderDtoType = {
+  sale: 'sale',
+  demo: 'demo',
 } as const;
 
 /**
@@ -2499,12 +3086,43 @@ export interface OrderDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
-  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409. */
   status: OrderDtoStatus;
+  /**
+     * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+     *
+     * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+     */
+  type?: OrderDtoType;
+  /**
+     * Prazo de retorno da demonstração — a data até quando a peça pode ficar fora. Só faz sentido com `type: demo`; em `sale` é `null` e a escrita que mandar valor é 400. É o que torna a demonstração cobrável: sem prazo, "emprestado" e "perdido" são o mesmo registro.
+     * @nullable
+     */
+  demoDueDate?: string | null;
+  /**
+     * Quando a peça voltou (`POST .../demo-return`). `null` = ainda fora. Demonstração com `demoDueDate` vencida e `demoReturnedAt` nulo é o que a consulta de pendências procura.
+     * @nullable
+     */
+  demoReturnedAt?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
   /**
@@ -2515,18 +3133,38 @@ export interface OrderDto {
 }
 
 /**
- * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado.
+ * Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409.
  */
 export type OrderDetailDtoStatus = typeof OrderDetailDtoStatus[keyof typeof OrderDetailDtoStatus];
 
 
 export const OrderDetailDtoStatus = {
   active: 'active',
+  concluded: 'concluded',
   cancelled: 'cancelled',
 } as const;
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+ *
+ * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+ */
+export type OrderDetailDtoType = typeof OrderDetailDtoType[keyof typeof OrderDetailDtoType];
+
+
+export const OrderDetailDtoType = {
+  sale: 'sale',
+  demo: 'demo',
+} as const;
+
+/**
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type OrderDetailDtoDiscountMode = typeof OrderDetailDtoDiscountMode[keyof typeof OrderDetailDtoDiscountMode];
 
@@ -2534,7 +3172,33 @@ export type OrderDetailDtoDiscountMode = typeof OrderDetailDtoDiscountMode[keyof
 export const OrderDetailDtoDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo de produto — `VendaDesconto` do legado (300.337 linhas). Vive DENTRO do documento, como ambiente e item: não tem identidade fora dele, e sub-recurso por linha faria um `Gravar` virar N requisições sem transação entre elas.
+ *
+ * **Ficaram de fora, e a omissão é declarada:** `VenDesc_DescontoValor` (desconto digitado em dinheiro) seria uma segunda forma de dizer a mesma coisa que `discountPercent`, e conviver com as duas exige uma regra de desempate que a extração não fixou; `VenDesc_DescPorcUsuario` (o percentual que o usuário pediu, ao lado do que valeu) só faz sentido junto com a regra que os separa — o teto — e essa regra é do servidor. Entram quando houver decisão escrita, não antes.
+ */
+export interface OrderGroupDiscountDto {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Nome do grupo CONGELADO na emissão, pelo mesmo motivo de `OrderEnvironmentDto.name`: renomear o grupo no catálogo não pode reescrever orçamento fechado. */
+  productGroupName: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+  /** Soma das linhas do grupo ANTES do desconto (`VenDesc_ValorGrupo`), em centavos. Calculado pelo servidor. */
+  subtotalCents: number;
+  /** Quanto o desconto tirou, em centavos. Calculado pelo servidor, e não refeito na tela: percentual de 4 casas sobre centavos arredonda, e a conta refeita no cliente erra o último centavo em parte dos casos — o total do documento deixaria de fechar com a soma dos grupos. */
+  discountCents: number;
+  /** Total do grupo depois do desconto (`VenDesc_ValorGrupoDesc`), em centavos. Calculado pelo servidor. */
+  totalCents: number;
+  /**
+     * Quantidade somada das linhas do grupo (`VenDesc_Quantidade`), até 3 casas. Calculada pelo servidor.
+     * @nullable
+     */
+  quantity?: number | null;
+}
 
 /**
  * Proposto. O pedido inteiro: cabeçalho, ambientes e itens numa resposta só, pela mesma razão do orçamento — item não tem identidade fora do documento e gravar em N requisições deixaria metade da grade salva.
@@ -2557,12 +3221,43 @@ export interface OrderDetailDto {
   /** Nome do cliente na emissão. */
   customerName: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
-  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. Espelha `Ven_Situacao` (A/C) do legado. */
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
+  /**
+     * Descrição da obra (`Obras.Obr_Descricao`), resolvida pelo servidor — o par `id`+`name` de sempre: o id é para escrever, o nome é o que a tela lê, sem uma segunda consulta. `null` quando `workId` é `null`.
+     * @nullable
+     */
+  workName?: string | null;
+  /** Documento CANCELA, não desativa: `active` de cadastro não serve aqui. **Três estados, e o do meio é NOVO em relação ao legado.** Lá `Ven_Situacao` só tem A/C e o fechamento é DATA (`Ven_DataFechaVenda`, gravada pelo `FrmFecha_projeto`) — quem lê o registro não distingue "pedido em andamento" de "pedido encerrado" sem interpretar uma data. Aqui `concluded` é ESTADO porque é ele que fecha o documento para escrita: `PUT` em pedido concluído é 409, como já é em cancelado. `closedAt` continua sendo a data e não muda de papel. Transições: `active → concluded` (`POST .../conclude`) · `active → cancelled` (`POST .../cancel`). **`concluded` e `cancelled` são terminais** — concluir cancelado, cancelar concluído e repetir qualquer uma das duas é 409. */
   status: OrderDetailDtoStatus;
+  /**
+     * O QUE o documento é. Espelha `Ven_Tipo` do legado, onde orçamento, pedido, pré-venda e demonstração são o MESMO registro físico discriminado por uma letra — aqui orçamento e pedido já são agregados separados, e o que sobra de `Ven_Tipo` é a distinção que muda o COMPORTAMENTO do pedido: demonstração sai do estoque como empréstimo e tem de voltar. `sale` é o padrão e o que todo pedido de hoje é.
+     *
+     * **`presale` NÃO existe aqui, e é decisão medida, não esquecimento.** O menu do legado tem "Pré-venda", mas o domínio de `Ven_Tipo` no dado real é `O`=23.033 e `P`=11.103 — soma 34.136, o total de `Ven_Situacao`. Zero pré-vendas em 34 mil documentos: a tela existia, o uso não. Publicar o tipo obrigaria os dois lados a carregar um ramo que nenhum operador percorreu.
+     */
+  type?: OrderDetailDtoType;
+  /**
+     * Prazo de retorno da demonstração — a data até quando a peça pode ficar fora. Só faz sentido com `type: demo`; em `sale` é `null` e a escrita que mandar valor é 400. É o que torna a demonstração cobrável: sem prazo, "emprestado" e "perdido" são o mesmo registro.
+     * @nullable
+     */
+  demoDueDate?: string | null;
+  /**
+     * Quando a peça voltou (`POST .../demo-return`). `null` = ainda fora. Demonstração com `demoDueDate` vencida e `demoReturnedAt` nulo é o que a consulta de pendências procura.
+     * @nullable
+     */
+  demoReturnedAt?: string | null;
   /** Total do orçamento, em centavos. Calculado pelo servidor. */
   totalCents: number;
   /**
@@ -2575,6 +3270,27 @@ export interface OrderDetailDto {
      * @nullable
      */
   closedAt?: string | null;
+  /**
+     * Quando o documento foi cancelado. `null` enquanto não for.
+     * @nullable
+     */
+  cancelledAt?: string | null;
+  /**
+     * Motivo do cancelamento — id da lista de apoio. É o `Mod_codigo` que o legado gravava junto de `ven_situacao='C'`. O `kind` da lista NÃO passa pelo contrato (ADR-011): entra por linha no catálogo do servidor.
+     * @nullable
+     */
+  cancelReasonId?: string | null;
+  /**
+     * Nome do motivo, resolvido na leitura. `null` quando cancelaram sem motivo.
+     * @nullable
+     */
+  cancelReasonName?: string | null;
+  /**
+     * Observação livre de quem cancelou. O motivo diz a CLASSE; a nota diz o caso.
+     * @maxLength 200
+     * @nullable
+     */
+  cancelNote?: string | null;
   /**
      * Consultor(a) que atende — `EmployeeDto.id`.
      * @nullable
@@ -2589,10 +3305,30 @@ export interface OrderDetailDto {
   professionalId?: string | null;
   /** @nullable */
   professionalName?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: OrderDetailDtoDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: OrderGroupDiscountDto[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: OrderEnvironmentDto[];
   items: OrderItemDto[];
@@ -2606,10 +3342,56 @@ export interface OrderDetailDto {
      * @nullable
      */
   quoteNumber?: string | null;
+  /**
+     * A condição escolhida — `PaymentTermDto.id`, `Ven_formaPag` do legado. `null` enquanto o documento não tem plano de pagamento, que é o estado do orçamento recém-aberto.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * Nome da condição na emissão, resolvido pelo servidor — mesmo par de `customerName`/`salespersonName`. Sem ele a grade do documento precisaria da listagem inteira de condições só para escrever uma linha.
+     * @nullable
+     */
+  paymentTermName?: string | null;
+  /**
+     * O plano CARIMBADO na gravação: as parcelas da condição resolvidas contra `totalCents` e `issuedAt`.
+     *
+     * **Ecoadas, nunca escritas** — não existem em `QuoteWriteRequest`/`OrderWriteRequest`. Quem manda o `paymentTermId` recebe o plano de volta; deixar o cliente propor as parcelas abriria a porta para um documento cujo plano não soma o total dele.
+     *
+     * **Carimbado e não derivado na leitura:** alterar a condição depois não pode mudar o vencimento de parcela que o cliente já recebeu (ver `UpdatePaymentTerm`). É o que o legado faz ao copiar os parâmetros para a linha da `Venda`.
+     *
+     * **`[]` quando não há condição escolhida** — array vazio, nunca ausente: campo que às vezes não vem é o que faz a tela quebrar num `.map` só no documento sem plano.
+     */
+  paymentInstallments: DocumentInstallmentDto[];
+  /**
+     * Os três limites que valiam quando este documento foi gravado — `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela`, que no legado são COLUNAS da própria `Venda`.
+     *
+     * **Ausente (e não `null`) no documento anterior à publicação deste bloco.** Carimbo que nunca foi feito não se inventa com o vigente de hoje: seria reescrever a regra sob a qual o documento foi assinado, e o valor todo do carimbo é justamente não fazer isso.
+     */
+  installmentPolicy?: InstallmentPolicyDto;
+  /** As linhas da aba Serviços, na ordem de exibição. Coleção própria — ver `OrderServiceItemDto`. Vem sempre, vazia quando o documento não tem serviço nenhum: ausência e lista vazia significariam a mesma coisa, e a de leitura opcional só criaria um ramo `?? []` em cada consumidor. */
+  serviceItems: OrderServiceItemDto[];
 }
 
 /**
- * Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G).
+ * Só na CRIAÇÃO. `PUT` que troca o tipo é 409: demonstração e venda movimentam estoque de formas diferentes, e trocar a letra depois do movimento deixaria saldo sem documento que o explique. Ausente = `sale`.
+ * @nullable
+ */
+export type OrderWriteRequestType = typeof OrderWriteRequestType[keyof typeof OrderWriteRequestType] | null;
+
+
+export const OrderWriteRequestType = {
+  sale: 'sale',
+  demo: 'demo',
+} as const;
+
+/**
+ * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+ *
+ * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+ * - `general` — um percentual só, no documento; o das linhas é zero.
+ * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+ *
+ * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
  */
 export type OrderWriteRequestDiscountMode = typeof OrderWriteRequestDiscountMode[keyof typeof OrderWriteRequestDiscountMode];
 
@@ -2617,7 +3399,18 @@ export type OrderWriteRequestDiscountMode = typeof OrderWriteRequestDiscountMode
 export const OrderWriteRequestDiscountMode = {
   product: 'product',
   general: 'general',
+  group: 'group',
 } as const;
+
+/**
+ * Proposto. Uma linha de desconto por grupo na ESCRITA — só o que o operador decide: o grupo e o percentual. `subtotalCents`, `discountCents`, `totalCents` e `quantity` são do servidor, como `totalCents` do item: a tela que os mandasse estaria propondo o próprio total.
+ */
+export interface OrderGroupDiscountWriteRequest {
+  /** Grupo de produto — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO` (`GrupoProduto` no legado: 12 linhas, por empresa). É a CHAVE da linha: um grupo aparece uma vez só no documento, como no legado, cuja PK é `(Ven_CodigoPre, GrupoProduto_Codigo)`. Repetido é 400 apontando `groupDiscounts.<n>.productGroupId` — duas linhas do mesmo grupo não dizem qual desconto vale. */
+  productGroupId: string;
+  /** Desconto do grupo (`VenDesc_DescontoPorc`), em percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%. Mesma unidade e mesmo teto do desconto do documento. */
+  discountPercent: number;
+}
 
 /**
  * Proposto. Corpo de criação e de alteração do pedido. `PUT` substitui o documento INTEIRO, itens e ambientes junto. Sem `number` (o servidor atribui), sem `status` (muda por `/cancel`) e sem `quoteId`: a origem se estabelece na conversão e não se reescreve, senão um `PUT` mudaria de qual orçamento o pedido nasceu.
@@ -2635,20 +3428,40 @@ export interface OrderWriteRequest {
   issuedAt?: string | null;
   customerId: string;
   /**
-     * `Descrição da Obra` — como o operador chama a obra.
+     * **Substituído por `workId`/`workName`.** Era a `Descrição da Obra` digitada NO documento — texto livre, sem elo com o cadastro de obra, que não existia quando o campo nasceu.
+     *
+     * Continua publicado, e não removido, porque a listagem ordena e filtra por ele e as telas o leem: tirar agora quebraria as duas pontas no mesmo dia. Enquanto convivem, os dois NÃO são o mesmo dado — `projectName` é o que foi digitado, `workName` é como a obra se chama hoje. Divergir é legítimo em documento antigo, e sobrescrever um com o outro apagaria o que o operador escreveu.
+     * @deprecated
      * @nullable
      */
   projectName?: string | null;
+  /**
+     * A OBRA do documento — `WorkDto.id`; `Venda.Obr_codigo` no legado. **É o elo que faltava.** A obra já é entidade própria (`/api/works`, `Obras` com 9.454 linhas) e o documento só a nomeava por TEXTO LIVRE em `projectName`: dois orçamentos da mesma obra não eram a mesma obra para ninguém — nem para a tela, nem para uma consulta, nem para o histórico do cliente.
+     *
+     * `null` porque o legado permite (`Venda.Obr_codigo` é nulável, e há venda de balcão sem obra). O que NÃO é opcional é a coerência: **obra que não é do cliente do documento é 400**, com `fields[]` apontando `workId`. A obra pertence ao cliente (`Obras.Cli_codigo`) e o documento não reescreve esse vínculo — aceitar calado deixaria o endereço de entrega de um cliente pendurado na venda de outro.
+     * @nullable
+     */
+  workId?: string | null;
   /**
      * `Nº Pasta`.
      * @nullable
      */
   folderNumber?: string | null;
   /**
-     * Data de fechamento.
+     * Data de fechamento digitada pelo operador, como no `FrmFecha_projeto`. Continua escrevível enquanto o pedido está `active`; `POST .../conclude` carimba a data de hoje quando ela está nula. O ESTADO não vem por aqui — `status` só se move pelas operações de ciclo de vida.
      * @nullable
      */
   closedAt?: string | null;
+  /**
+     * Só na CRIAÇÃO. `PUT` que troca o tipo é 409: demonstração e venda movimentam estoque de formas diferentes, e trocar a letra depois do movimento deixaria saldo sem documento que o explique. Ausente = `sale`.
+     * @nullable
+     */
+  type?: OrderWriteRequestType;
+  /**
+     * Prazo de retorno, obrigatório quando `type: demo` e proibido quando `sale` — as duas recusas são 400 apontando o campo.
+     * @nullable
+     */
+  demoDueDate?: string | null;
   /**
      * Consultor(a) que atende — `EmployeeDto.id`.
      * @nullable
@@ -2659,17 +3472,1565 @@ export interface OrderWriteRequest {
      * @nullable
      */
   professionalId?: string | null;
-  /** Desconto por produto ou geral — `Ven_TipoDesc` do legado (P/G). */
+  /**
+     * Como o desconto é aplicado — `Ven_TipoDesc` do legado.
+     *
+     * - `product` — cada linha tem o seu (`discountPercent` do item); o do documento é zero.
+     * - `general` — um percentual só, no documento; o das linhas é zero.
+     * - `group` — **por GRUPO DE PRODUTO**, em `groupDiscounts`; documento e linhas ficam em zero.
+     *
+     * `group` é o que faltava, e não é caso de canto: no legado `VendaDesconto` tem **300.337 linhas** para **37.707** vendas, ~8 grupos por documento. Era o modo mais usado da operação e o único dos três que o contrato não publicava — quem descontasse por grupo tinha de escolher entre espalhar o percentual linha a linha (e perder de qual grupo veio) ou achatar tudo num desconto geral (e mudar o valor).
+     */
   discountMode: OrderWriteRequestDiscountMode;
-  /** Desconto geral. Int com 4 casas implícitas: `10000` = 1%. Zero quando o modo é `product`. */
+  /**
+     * Desconto geral do documento, em percentual com **4 casas decimais**, transportado como inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Zero quando o modo não é `general`.
+     *
+     * Inteiro e não `number` **de propósito**: a fidelidade que o legado pede é de CASAS (`Ven_DescontoPorc` é `float`), não de ponto flutuante, e desconto multiplica dinheiro — `0.1 + 0.2` já não fecha, e a diferença aparece como centavo que não bate no total. As 4 casas são o dado; a escala é só como ele viaja.
+     *
+     * O **teto** por cliente (`Par_LimitDescCli`, 10% na operação de hoje) é regra de negócio do servidor, não deste schema: acima do teto é 400 com `fields[]` apontando o campo. Publicá-lo aqui como `maximum` trocaria esse erro nomeado por uma recusa genérica do validador, e congelaria no contrato um número que é parâmetro da empresa.
+     */
   discountPercent: number;
+  /**
+     * Desconto por grupo de produto — uma linha por grupo, como `VendaDesconto` no legado. Lista **vazia** quando `discountMode` não é `group`, e nunca ausente por preguiça: ausente e vazia leem igual na tela e diferente na conta.
+     *
+     * Fora de `required` de propósito: o servidor ainda não a emite, e campo obrigatório numa resposta que ninguém produz troca "não implementado" por "contrato quebrado" — o cliente gerado passaria a exigir o que o backend não manda. Entra em `required` no mesmo PR em que o backend passar a servi-la.
+     */
+  groupDiscounts?: OrderGroupDiscountWriteRequest[];
   /** Ambientes do documento, na ordem de exibição. */
   environments: OrderEnvironmentDto[];
   items: OrderItemWriteRequest[];
+  /**
+     * A condição de pagamento. O servidor resolve o resto do bloco — nome, parcelas e o carimbo da política — e o devolve no detalhe. 400 quando o id não é condição ATIVA da empresa ativa, e 400 quando o plano dela não cabe na política vigente, e aí o `type` diz QUAL das três: `urn:cabinet:erro:valor-nao-parcelavel` (total abaixo de `minTotalToInstallCents` com condição parcelada) · `urn:cabinet:erro:parcelas-acima-do-teto` (mais parcelas que `maxInstallments`) · `urn:cabinet:erro:parcela-abaixo-do-minimo` (alguma parcela abaixo de `minInstallmentCents`). São três correções DIFERENTES para quem está na tela, e conflatá-las em `campos-invalidos` obrigaria a ler a frase — que é o que este vocabulário existe para impedir.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * As linhas da aba Serviços. **OPCIONAL, e ausente é VAZIO — nunca "preserva o que estava".** O `PUT` é integral, e essa semântica vale para os serviços exatamente como vale para `items` e `environments`: gravar sem o campo APAGA os serviços do documento.
+     *
+     * É opcional, e não obrigatório como `items`, por uma razão de transição e só: a seção nasce no contrato antes da tela, e um campo obrigatório faria toda escrita existente de documento virar 400 no dia do merge — inclusive a conversão do CRM. Vira obrigatório quando a aba existir dos dois lados.
+     */
+  serviceItems?: OrderServiceItemWriteRequest[];
 }
 
 export interface PagedResultOfOrderDto {
   rows: OrderDto[];
+  total: number;
+}
+
+/**
+ * Motivo do cancelamento. O corpo é OPCIONAL — cancelar sem dizer por quê continua valendo, e é o que os 3.354 cancelamentos do legado são: `Mod_codigo` existe lá, e a variante que o grava é uma de duas. Exigi-lo agora reprovaria o gesto que o operador já faz, para ganhar um campo que ele preencheria com o primeiro item da lista.
+ */
+export interface CancelDocumentRequest {
+  /**
+     * Motivo, da lista de apoio. O `kind` NÃO passa pelo contrato (ADR-011) — é linha no catálogo do servidor. Id que não existe **ou que é de outra LISTA** é 400 apontando o campo — quem separa motivo de marca é o `kind`, e não a empresa: `catalog_lookups` é cadastro da organização, digitado uma vez para o grupo inteiro.
+     * @nullable
+     */
+  reasonId?: string | null;
+  /**
+     * Observação livre. O motivo diz a CLASSE do cancelamento; a nota diz o caso — e é ela que sobrevive à pergunta "por que este aqui?".
+     * @maxLength 200
+     * @nullable
+     */
+  note?: string | null;
+}
+
+/**
+ * Troca o Profissional Externo do pedido. **Transferir não é editar o campo**: no legado a indicação vive em `VendaIndicacao`, com vigência, porque é ela que decide comissão — e comissão paga com base em quem estava no documento HOJE, sem saber quem estava ontem, não se audita. Por isso a troca é operação própria, com trilha, e o `PUT` do documento NÃO move `professionalId`.
+ */
+export interface TransferProfessionalRequest {
+  /**
+     * O novo profissional — `PartnerDto.id` com papel `professional`. Parceiro sem esse papel é 400 apontando o campo. `null` REMOVE a indicação, e isso é caso legítimo: venda de balcão que entrou com especificador por engano.
+     * @nullable
+     */
+  professionalId: string | null;
+  /**
+     * Por que transferiu. Fica na linha da trilha, não no documento.
+     * @maxLength 200
+     * @nullable
+     */
+  note?: string | null;
+}
+
+/**
+ * Uma linha da trilha de indicação — quem foi o profissional do pedido, e DE QUANDO ATÉ QUANDO. Modelada em `VendaIndicacao` (vigência), sem o percentual por grupo de produto: participação é assunto do Financeiro e não entra por esta porta.
+ */
+export interface OrderProfessionalAssignmentDto {
+  id: string;
+  /**
+     * O profissional desta vigência. `null` = período sem indicação.
+     * @nullable
+     */
+  professionalId?: string | null;
+  /**
+     * Nome resolvido na leitura.
+     * @nullable
+     */
+  professionalName?: string | null;
+  /** Início da vigência. */
+  startedAt: string;
+  /**
+     * Fim da vigência. `null` na linha CORRENTE — é ela que casa com `OrderDetailDto.professionalId`.
+     * @nullable
+     */
+  endedAt?: string | null;
+  /**
+     * Quem fez a troca que ABRIU esta vigência. `null` na linha que nasceu com o documento.
+     * @nullable
+     */
+  changedByEmployeeId?: string | null;
+  /**
+     * A justificativa dada na troca.
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface PagedResultOfOrderProfessionalAssignmentDto {
+  rows: OrderProfessionalAssignmentDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Um SERVIÇO do cadastro da empresa ativa. Fonte: `Servicos` do legado (16 colunas). As quatro de auditoria (`usr_cod_criacao`/`usr_dt_hr_*`) e `Emp_codigo` não sobem: as primeiras são trilho próprio (auditoria viva), e a empresa é decidida pela sessão, nunca declarada pelo cliente.
+ */
+export interface ServiceDto {
+  id: string;
+  /** Código curto do serviço, único na empresa. É onde o `sev_cod` do legado aterrissa na carga — mesmo papel que `code` faz no depósito. `sev_cod` é `int` lá e `string` aqui porque um dia ele deixa de ser sequência e vira código que o operador escolhe; a chave de verdade é o `id`. */
+  code: string;
+  /** `Serv_Desc` — o nome do serviço, e o texto que a linha do documento CONGELA na emissão. Chama-se `description` e não `name` porque é isso que ele é do outro lado: `QuoteServiceItemDto.description` sai daqui. */
+  description: string;
+  /** `Serv_Preco` em CENTAVOS. `money` do SQL Server tem 4 casas; centavos são 2, e a carga precisa conferir se alguma linha usa as duas casas extras — arredondar em silêncio na migração é perder dinheiro que ninguém procura depois. */
+  priceCents: number;
+  /** `Serv_Pc_Eletricista` — quanto da linha vai para quem instala. Int com 4 casas implícitas: `10000` = 1%, a MESMA convenção de `discountPercent`. É o padrão do cadastro, e a linha do documento pode sobrepô-lo (ver `QuoteServiceItemWriteRequest.electricianPercent`). */
+  electricianPercent: number;
+  /**
+     * `Serv_tipo`. **Texto livre, e é assim de propósito.** O legado o guarda em `varchar(12)` sem FK e sem tabela de domínio, e o dump de schema não traz linhas: publicar `enum` ou kind de `catalog-lookups` aqui seria inventar o vocabulário em vez de lê-lo. Vira lista de apoio quando houver dado na mão para escrever a lista — e essa é mudança de contrato, não de servidor.
+     * @nullable
+     */
+  type?: string | null;
+  /**
+     * `Serv_tempoInstalacao` — quanto tempo a instalação leva, insumo da agenda. **A UNIDADE é decisão desta publicação, não leitura do legado:** lá a coluna é `int` e não diz se conta minuto ou hora. MINUTOS porque é a unidade que não perde informação nas duas leituras possíveis. A carga precisa da conferência com quem opera antes de multiplicar por 60.
+     * @nullable
+     */
+  installationMinutes?: number | null;
+  /**
+     * `Serv_NFSECodigo` — o código do serviço na NFS-e, que é lista MUNICIPAL. Viaja como texto porque tem ponto (`7.02`) e porque cada município publica a sua; validá-lo aqui exigiria a tabela do município da empresa, que este contrato ainda não tem.
+     * @nullable
+     */
+  nfseCode?: string | null;
+  /**
+     * `GrupoProduto_codigo` — o grupo, para relatório e para a NFS-e. Texto, e não par `id`+`name`, pela mesma razão que `QuoteItemDto.productGroup` já é texto: não existe kind `GRUPO_PRODUTO` em `catalog-lookups`. É dívida declarada, e ela aparece nos dois lugares ao mesmo tempo quando for paga.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /** `Serv_NaoAtualizarValor` — a linha nova do documento NÃO puxa o preço do cadastro; quem digita o valor é o operador. Bit nulável no legado, booleano aqui: `null` e `false` significam a mesma coisa, e três estados num campo de dois seria estado que ninguém sabe ler. */
+  priceLocked: boolean;
+  /** `Serv_Entrega` — este serviço É a entrega (frete), não instalação. É o que separa o 1001 = FRETE do legado do resto, e o que a impressão do documento usa para pôr a linha no lugar certo. */
+  delivery: boolean;
+  /** `Serv_situacao` (`char(1)`) virado booleano — padrão 8, desativação lógica. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração. **`PUT` substitui o registro INTEIRO**: campo ausente APAGA, não preserva. Sem `id`.
+ */
+export interface ServiceWriteRequest {
+  /** @nullable */
+  code: string | null;
+  /** @nullable */
+  description: string | null;
+  /**
+     * Em centavos.
+     * @nullable
+     */
+  priceCents: number | null;
+  /**
+     * Int com 4 casas implícitas: `10000` = 1%.
+     * @nullable
+     */
+  electricianPercent: number | null;
+  /** @nullable */
+  type?: string | null;
+  /**
+     * Em minutos — ver `ServiceDto`.
+     * @nullable
+     */
+  installationMinutes?: number | null;
+  /** @nullable */
+  nfseCode?: string | null;
+  /** @nullable */
+  productGroup?: string | null;
+  /** @nullable */
+  priceLocked: boolean | null;
+  /** @nullable */
+  delivery: boolean | null;
+  /** @nullable */
+  active: boolean | null;
+}
+
+export interface PagedResultOfServiceDto {
+  rows: ServiceDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Um DEPÓSITO da empresa ativa — nó da árvore de locais de estoque. Ver `ListStockLocations` para por que ele vem plano e sem o nome do pai.
+ */
+export interface StockLocationDto {
+  id: string;
+  /**
+     * O nó acima, ou `null` na raiz. É o que faz a árvore: profundidade no lugar das cinco colunas do legado.
+     * @nullable
+     */
+  parentId: string | null;
+  /** Código curto do depósito, único na empresa. É por ele que o ETL do legado casa `EstTp_Codigo`. */
+  code: string;
+  name: string;
+  /** O depósito para onde vai movimento sem `locationId`. UM por empresa, garantido por índice parcial. Não se escreve pelo corpo — nasce do servidor. */
+  isDefault: boolean;
+  active: boolean;
+}
+
+/**
+ * Proposto. `PUT` substitui o registro INTEIRO: campo ausente APAGA, não preserva. `isDefault` e `id` não entram — ver `CreateStockLocation`.
+ */
+export interface StockLocationWriteRequest {
+  /** @nullable */
+  parentId: string | null;
+  /** @nullable */
+  code: string | null;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  active: boolean | null;
+}
+
+export interface PagedResultOfStockLocationDto {
+  rows: StockLocationDto[];
+  total: number;
+}
+
+/**
+ * Proposto. O saldo de UMA variante em UM depósito. Cache derivado do kardex (ADR-009) — anda por delta, na mesma transação do movimento.
+ */
+export interface StockBalanceDto {
+  locationId: string;
+  variantId: string;
+  /** Quantidade, até 3 casas. **O tipo admite negativo** — o ADR-009 ficou sem o CHECK de propósito (api#79, decisão 5), porque venda antes de a nota entrar acontece e carga do legado chega como está. Recusar que o saldo FIQUE negativo é decisão da operação que movimenta, não da coluna: `CreateStockMovement` recusa com 409, e uma carga que escreva direto no cache não passa por ela. */
+  qty: number;
+  updatedAt: string;
+}
+
+export interface PagedResultOfStockBalanceDto {
+  rows: StockBalanceDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Uma permissão do catálogo — uma AÇÃO, a unidade que vira uma caixa marcável.
+ */
+export interface PermissionDto {
+  /** A chave que o papel guarda, no formato `modulo:acao` — `produtos:editar`, `depositos:gerenciar`. É o valor que viaja em `RoleDetailDto.permissions`, e o front nunca o escreve à mão: quem enumera é este catálogo. */
+  key: string;
+  /** Rótulo em PT-BR, o texto da caixa. Do servidor, porque a lista é dele. */
+  label: string;
+  /**
+     * O que a permissão libera, em uma frase — a ajuda ao lado da caixa. `null` quando o rótulo já diz tudo; a tela não inventa texto no lugar.
+     * @nullable
+     */
+  description?: string | null;
+}
+
+/**
+ * Proposto. Um módulo do catálogo com as permissões dele — o agrupamento é do servidor porque é ele quem sabe a que módulo a permissão nova pertence.
+ */
+export interface PermissionModuleDto {
+  /** Identificador do módulo — o prefixo das chaves deste grupo (`produtos`, `estoque`). */
+  key: string;
+  /** Rótulo em PT-BR, o título da seção de caixas. */
+  label: string;
+  /** Nunca vazio: módulo sem permissão não é módulo, é ruído na tela. */
+  permissions: PermissionDto[];
+}
+
+/**
+ * Proposto. O catálogo inteiro. Não é `PagedResult`: não há página, não há total a paginar — o que vem é tudo que existe.
+ */
+export interface PermissionCatalogDto {
+  /** Versão do catálogo, OPACA. Muda quando o servidor acrescenta ou aposenta permissão, e serve para o cliente cachear com validade longa e comparar por IGUALDADE. Não tem formato prometido e não se ordena — tratar como texto. */
+  version: string;
+  modules: PermissionModuleDto[];
+}
+
+/**
+ * Proposto. A LINHA da listagem de papéis — o que a tabela desenha, sem o conjunto de permissões.
+ */
+export interface RoleDto {
+  id: string;
+  /** Nome do papel, como o admin o batizou ("Financeiro", "Vendedor externo"). Único na organização. */
+  name: string;
+  /**
+     * Para que serve, em uma frase. `null` é o normal — papel criado às pressas não ganha texto.
+     * @nullable
+     */
+  description?: string | null;
+  /** Papel de SISTEMA (`owner`, `admin`): existe em toda organização, não é editável nem desativável, e alterar é 409 `urn:cabinet:erro:papel-de-sistema`. A tela esconde `Alterar` na linha em vez de deixar o admin descobrir pelo erro. */
+  system: boolean;
+  /** Papel de FÁBRICA, entregue junto (Vendedor, Visualizador, Estoquista) como ponto de partida. Marca de ORIGEM, não de proteção: template é da organização, o admin edita, desativa e clona à vontade — quem recusa edição é `system`. Usar direto, sem clonar, também vale. */
+  template: boolean;
+  /** Desativação lógica: papel aposentado some da escolha do vínculo e continua legível em quem já o tem. É o que substitui o `DELETE` que este recurso não publica. */
+  active: boolean;
+  /** Quantas permissões o papel concede — a coluna da listagem. O conjunto está em `GET /api/roles/{id}`. */
+  permissionCount: number;
+}
+
+/**
+ * Proposto. O papel com o conjunto de permissões — o corpo que marca as caixas da tela e o que se lê para clonar um template.
+ */
+export interface RoleDetailDto {
+  id: string;
+  /** Nome do papel, único na organização. */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** Papel de sistema — alterar é 409 `urn:cabinet:erro:papel-de-sistema`. */
+  system: boolean;
+  /** Papel de fábrica; marca de origem, editável como qualquer outro. */
+  template: boolean;
+  /** Desativação lógica. */
+  active: boolean;
+  /** O tamanho de `permissions`, repetido para a linha e o detalhe terem a mesma forma. */
+  permissionCount: number;
+  /** As chaves de `PermissionDto.key` que este papel concede. Papel de sistema `admin` pode devolver o catálogo inteiro, e `[]` quer dizer papel que não concede nada — não é "não sei". */
+  permissions: string[];
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração do papel. `system` e `template` NÃO entram: são marcas do servidor, e papel que se declarasse de sistema pelo corpo burlaria a recusa de edição.
+ */
+export interface RoleWriteRequest {
+  /** Único na organização; repetido é 409. */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** O conjunto FINAL de chaves do catálogo — substitui o que havia, não acrescenta. Chave fora de `GET /api/permissions` é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` em `permissions`. */
+  permissions: string[];
+  /** Desativação lógica; `false` tira o papel da escolha do vínculo. */
+  active: boolean;
+}
+
+export interface PagedResultOfRoleDto {
+  rows: RoleDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Uma PARCELA da condição — `Forma_Pagamento_Parcela` do legado, PK `(Fpg_codigo, Fpp_parcela)`. Não tem id: a identidade dela é o par condição + `number`, e é por isso que ela viaja embutida (ver `ListPaymentTerms`).
+ */
+export interface PaymentTermInstallmentDto {
+  /** Ordinal da parcela dentro da condição, 1-based e único nela — `Fpp_parcela`. É a ordem de exibição e a metade legível da chave. */
+  number: number;
+  /**
+     * Dias corridos entre a EMISSÃO do documento e o vencimento desta parcela — `Fpp_dias`. Absoluto, não incremental: `30/60/90` são três linhas com 30, 60 e 90.
+     *
+     * `Fpg_DiasPrimeiraParcela` e `Fpg_DiasEntreParcelas` do cabeçalho do legado ficaram de fora porque são o GERADOR destas linhas, não dado a mais — guardar os dois lados deixaria duas verdades sobre o mesmo vencimento, e a tela que edita uma parcela do meio quebraria a fórmula sem ninguém ver. Entrada à vista é uma parcela com `0`.
+     */
+  daysAfterIssue: number;
+  /**
+     * Fatia do total, int com 4 casas implícitas — `1000000` = 100%, `500000` = 50%. Mesma escala de `QuoteDetailDto.discountPercent`. `null` quando a parcela é de valor fixo.
+     * @nullable
+     */
+  percent: number | null;
+  /**
+     * Valor fixo da parcela, em centavos — a entrada de R$ 500 que não é fração do total. `null` quando a parcela é percentual.
+     * @nullable
+     */
+  amountCents: number | null;
+}
+
+/**
+ * Proposto. Uma CONDIÇÃO DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado.
+ *
+ * **O que ficou de fora, e por quê.** O legado carrega na condição seis colunas de desconto/acréscimo (`Fpg_desconto`, `Fpg_acrescimo` e os pares `_lu`/`_ma`/`_se`) e mais a tabela `Forma_PagamentoGrupProd`, com desconto e acréscimo por GRUPO DE PRODUTO. **Nada disso entra aqui, e a razão é que não há em que pendurar:** grupo de produto não é entidade neste contrato — ele existe como `QuoteItemDto.productGroup`, TEXTO livre digitado na linha do orçamento. Um ajuste por grupo precisaria de um id, e casar por texto faria "PENDENTES" e "Pendentes" renderem descontos diferentes no mesmo documento.
+ *
+ * Fica como dívida DECLARADA, não como esquecimento: quando o grupo de produto virar cadastro com id, o ajuste por grupo entra pendurado nele — e é lá que ele pertence, porque o desconto é do par (condição, grupo) e não da condição.
+ *
+ * **E há uma SEGUNDA verdade sobre condição de pagamento neste contrato, hoje:** `PartnerDto.paymentTerms` é `string` livre, sem descrição — a condição habitual do parceiro, digitada. Ela NÃO foi trocada por `paymentTermId` aqui de propósito: o campo é do VÍNCULO do parceiro com a empresa, converter texto em id é migração de dado (e escolha de para qual condição cada texto aponta), e fazer as duas coisas na mesma PR deixaria a segunda sem quem a revisasse. Enquanto isso não acontece, as duas convivem e o documento manda: quem grava orçamento escolhe `paymentTermId`, e o texto do parceiro é sugestão para quem digita.
+ */
+export interface PaymentTermDto {
+  id: string;
+  /** Como o operador a chama — `Fpg_descricao`. Único na empresa (409 no repetido). */
+  name: string;
+  /** Desativação lógica — `Fpg_situacao` (A/I). Condição inativa sai do combo e continua legível nos documentos que a usaram. */
+  active: boolean;
+  /**
+     * Quantas parcelas a condição tem — `Fpg_quantidade`. DERIVADO de `installments`, calculado pelo servidor, e por isso não existe na escrita.
+     *
+     * Ele é redundante de propósito: existe porque é COLUNA de grade e chave de `sortBy`, e ordenar por tamanho de array não é coisa que a fronteira de listagem saiba fazer. No legado os dois lados podiam divergir (a coluna era gravada à mão); aqui não podem, e é essa a diferença que justifica manter o campo em vez de copiar a coluna.
+     */
+  installmentCount: number;
+  /** As parcelas, em ordem de `number`. */
+  installments: PaymentTermInstallmentDto[];
+}
+
+/**
+ * Proposto. Uma parcela no corpo de escrita.
+ *
+ * **Mesma forma do DTO, e ainda assim schema próprio:** o dia em que a leitura ganhar campo derivado (como `installmentCount` já é na condição), reusar o DTO na escrita deixaria o cliente mandando o que o servidor calcula, e o Fastify o apagaria em silêncio.
+ *
+ * **Exatamente UM entre `percent` e `amountCents`.** Os dois preenchidos, ou nenhum, é **400** com `fields[]` apontando a linha — nunca "vale o percentual e ignora o valor", que é a aparadura silenciosa que faz o operador conferir a soma e não achar o erro.
+ */
+export interface PaymentTermInstallmentWriteRequest {
+  number: number;
+  daysAfterIssue: number;
+  /** @nullable */
+  percent?: number | null;
+  /** @nullable */
+  amountCents?: number | null;
+}
+
+/**
+ * Proposto. Corpo de criação e de alteração. **`PUT` substitui a condição INTEIRA**, parcelas junto. Sem `id` e sem `installmentCount` (o servidor deriva).
+ *
+ * **Três recusas, e nenhuma delas apara em silêncio** (todas 400, com `fields[]`):
+ *
+ * 1. `installments` VAZIO. Condição sem parcela não diz quando se paga; "à vista" é uma parcela com `daysAfterIssue: 0` e `percent: 1000000`, que é dado, não ausência de dado.
+ * 2. `number` repetido ou com buraco na sequência. A chave do legado é `(condição, número)`, e uma sequência `1,2,4` não tem leitura única na hora de imprimir.
+ * 3. Parcelas todas percentuais cuja soma não fecha **exatamente** `1000000` (100%). Somar 99,99% e deixar o resto para o arredondamento do servidor põe centavo órfão num documento assinado.
+ *
+ * **Misturar percentual e valor fixo na mesma condição também é 400**, e essa é a única das quatro que é dívida e não regra: o legado permite (`Fpp_porc_valor` e `Fpp_PorcentagemDoTotal` convivem na linha), mas a ordem de aplicação — se o fixo sai do total antes de os percentuais incidirem, e o que acontece quando o fixo é maior que o total — **não foi decidida por ninguém**. Publicar uma regra de arredondamento aqui a fixaria no servidor para sempre. Recusar deixa a falta visível.
+ */
+export interface PaymentTermWriteRequest {
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  active: boolean | null;
+  installments: PaymentTermInstallmentWriteRequest[];
+}
+
+export interface PagedResultOfPaymentTermDto {
+  rows: PaymentTermDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Os três, todos obrigatórios — `PUT` de singleton substitui a política inteira, e política pela metade não tem leitura.
+ */
+export interface InstallmentPolicyWriteRequest {
+  minTotalToInstallCents: number;
+  minInstallmentCents: number;
+  maxInstallments: number;
+}
+
+/**
+ * Corte clássico e DECLARADO aqui para o front não reimplementá-lo: `A` até 80% acumulados, `B` até 95%, `C` o resto. O item que CRUZA o corte pertence à classe que ele fecha — senão os 80% nunca seriam alcançados por ninguém.
+ */
+export type AbcCurveRowDtoAbcClass = typeof AbcCurveRowDtoAbcClass[keyof typeof AbcCurveRowDtoAbcClass];
+
+
+export const AbcCurveRowDtoAbcClass = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+} as const;
+
+/**
+ * Uma faixa da curva. `cumulativePercent` é o acumulado ATÉ esta linha na ordem de faturamento decrescente — é ele, e não o `sharePercent` isolado, que responde "quais produtos fazem 80% da receita".
+ */
+export interface AbcCurveRowDto {
+  /**
+     * Nulo quando a linha do documento perdeu a variante do catálogo (`ON DELETE SET NULL`): o produto sumiu do cadastro, a venda não.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** Descrição CONGELADA na linha do documento, não a do cadastro de hoje. */
+  description: string;
+  /** @nullable */
+  productGroup?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /** Somada no período. Texto porque `numeric(18,3)` não cabe em double sem perder a terceira casa. */
+  quantity: string;
+  /** Faturamento da linha no período, em CENTAVOS. */
+  revenueCents: number;
+  /** Fatia deste item no faturamento do período, com 4 casas como todo percentual do contrato (`10000` seria 1% se fosse inteiro; aqui é texto decimal para o relatório poder ser lido sem conversão). */
+  sharePercent: string;
+  /** Acumulado até esta linha, inclusive. */
+  cumulativePercent: string;
+  /** Corte clássico e DECLARADO aqui para o front não reimplementá-lo: `A` até 80% acumulados, `B` até 95%, `C` o resto. O item que CRUZA o corte pertence à classe que ele fecha — senão os 80% nunca seriam alcançados por ninguém. */
+  abcClass: AbcCurveRowDtoAbcClass;
+}
+
+/**
+ * Totais do PERÍODO, não da página.
+ */
+export interface AbcCurveSummaryDto {
+  /** Faturamento do período inteiro — o denominador de todo `sharePercent`. */
+  revenueCents: number;
+  /** Itens na classe A. */
+  classACount: number;
+  /** Itens na classe B. */
+  classBCount: number;
+  /** Itens na classe C. */
+  classCCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface AbcCurveReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: AbcCurveSummaryDto;
+  rows: AbcCurveRowDto[];
+}
+
+/**
+ * Um produto somado no período.
+ */
+export interface ProductSoldRowDto {
+  /** @nullable */
+  variantId?: string | null;
+  description: string;
+  /** @nullable */
+  productGroup?: string | null;
+  /** @nullable */
+  pieceType?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+  /** Quantidade vendida no período. */
+  quantity: string;
+  /** Faturamento do item no período. */
+  revenueCents: number;
+  /** Em quantos PEDIDOS distintos ele apareceu — o item vendido 100 unidades num pedido só é outro negócio do vendido 1 em 100 pedidos. */
+  orderCount: number;
+}
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface ProductsSoldSummaryDto {
+  /** Quantidade total vendida no período. */
+  quantity: string;
+  /** Faturamento total do período. */
+  revenueCents: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface ProductsSoldReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: ProductsSoldSummaryDto;
+  rows: ProductSoldRowDto[];
+}
+
+/**
+ * Um período fechado e o mesmo número no período ANTERIOR ao lado. O comparativo é o produto: valor solto não diz se o mês foi bom.
+ */
+export interface SalesComparisonRowDto {
+  /** A chave ordenável do período: `2026-08` (mês), `2026-Q3` (trimestre), `2026-S2` (semestre), `2026` (ano). */
+  bucket: string;
+  /** O mesmo período por extenso, em pt-BR, escolhido pelo SERVIDOR — senão cada tela inventa o seu e o CSV exportado sai diferente do impresso. */
+  label: string;
+  /** Pedidos fechados no período. */
+  orderCount: number;
+  /** Faturamento do período. */
+  revenueCents: number;
+  /**
+     * O mesmo faturamento no período imediatamente anterior — nulo no primeiro período da série, que não tem anterior DENTRO do recorte pedido.
+     * @nullable
+     */
+  previousRevenueCents?: number | null;
+  /**
+     * `revenueCents - previousRevenueCents`. Nulo quando não há anterior.
+     * @nullable
+     */
+  deltaCents?: number | null;
+  /**
+     * Variação percentual, texto decimal. **Nulo quando o período anterior foi ZERO** — divisão por zero não é "crescimento infinito", é ausência de base de comparação, e mandar `0` faria a tela desenhar estabilidade onde houve estreia.
+     * @nullable
+     */
+  deltaPercent?: string | null;
+}
+
+/**
+ * Ecoada.
+ */
+export type SalesComparisonReportDtoGranularity = typeof SalesComparisonReportDtoGranularity[keyof typeof SalesComparisonReportDtoGranularity];
+
+
+export const SalesComparisonReportDtoGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+  year: 'year',
+} as const;
+
+/**
+ * Totais do PERÍODO inteiro, somando todos os buckets.
+ */
+export interface SalesComparisonSummaryDto {
+  /** Faturamento do recorte inteiro. */
+  revenueCents: number;
+  /** Pedidos do recorte inteiro. */
+  orderCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface SalesComparisonReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** Ecoada. */
+  granularity: SalesComparisonReportDtoGranularity;
+  summary: SalesComparisonSummaryDto;
+  rows: SalesComparisonRowDto[];
+}
+
+/**
+ * Um atendente num período.
+ */
+export interface SalespersonRowDto {
+  /**
+     * Nulo agrega os documentos SEM atendente, e essa linha aparece de propósito: omiti-la faria a soma das linhas não bater com o `summary`, e ninguém explica a diferença olhando a tela.
+     * @nullable
+     */
+  salespersonId?: string | null;
+  /** Referência VIVA ao cadastro, como no documento. Sem atendente, o servidor escolhe o rótulo — deixar nulo faria cada tela inventar o seu. */
+  salespersonName: string;
+  /** O período desta linha, na mesma chave do comparativo. */
+  bucket: string;
+  /** Orçamentos emitidos no período. */
+  quoteCount: number;
+  /** Pedidos no período. */
+  orderCount: number;
+  /** Faturamento dos pedidos. */
+  revenueCents: number;
+  /**
+     * `orderCount / quoteCount`, texto decimal. **Nulo quando não houve orçamento** — 0% diria "não converteu nada" a quem não tentou nada.
+     * @nullable
+     */
+  conversionPercent?: string | null;
+  /**
+     * Faturamento ÷ pedidos. Nulo sem pedido.
+     * @nullable
+     */
+  averageTicketCents?: number | null;
+}
+
+/**
+ * Ecoada. O legado imprime este demonstrativo mensal, trimestral e semestral, e são esses três.
+ */
+export type SalespersonReportDtoGranularity = typeof SalespersonReportDtoGranularity[keyof typeof SalespersonReportDtoGranularity];
+
+
+export const SalespersonReportDtoGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+} as const;
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface SalespersonSummaryDto {
+  /** Faturamento de todos os atendentes no recorte. */
+  revenueCents: number;
+  /** Pedidos. */
+  orderCount: number;
+  /** Orçamentos. */
+  quoteCount: number;
+  /**
+     * Conversão do recorte inteiro. Nulo sem orçamento.
+     * @nullable
+     */
+  conversionPercent?: string | null;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface SalespersonReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** Ecoada. O legado imprime este demonstrativo mensal, trimestral e semestral, e são esses três. */
+  granularity: SalespersonReportDtoGranularity;
+  summary: SalespersonSummaryDto;
+  rows: SalespersonRowDto[];
+}
+
+/**
+ * Um profissional (arquiteto, projetista, marceneiro indicador) no período.
+ */
+export interface ProfessionalRankingRowDto {
+  professionalId: string;
+  professionalName: string;
+  /** Pedidos indicados por ele no período. */
+  orderCount: number;
+  /** Faturamento indicado. */
+  revenueCents: number;
+  /** Faturamento ÷ pedidos. */
+  averageTicketCents: number;
+  /**
+     * A última venda indicada por ele DENTRO do período. É o que separa quem indica sempre de quem indicou muito uma vez.
+     * @nullable
+     */
+  lastSaleAt?: string | null;
+}
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface ProfessionalRankingSummaryDto {
+  /** Faturamento com profissional indicado. */
+  revenueCents: number;
+  /** Pedidos com profissional indicado. */
+  orderCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface ProfessionalRankingReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: ProfessionalRankingSummaryDto;
+  rows: ProfessionalRankingRowDto[];
+}
+
+/**
+ * Um fornecedor no período.
+ */
+export interface SupplierMovementRowDto {
+  /**
+     * Nulo agrega as linhas sem fornecedor informado — item de produção própria, ou lançamento antigo.
+     * @nullable
+     */
+  supplierId?: string | null;
+  supplierName: string;
+  /** Quantidade movimentada. */
+  quantity: string;
+  /** Valor vendido de produtos deste fornecedor. */
+  revenueCents: number;
+  /** Linhas de documento. */
+  lineCount: number;
+  /** Pedidos distintos em que ele apareceu. */
+  orderCount: number;
+  /** Produtos distintos dele que saíram. */
+  productCount: number;
+}
+
+/**
+ * Totais do PERÍODO.
+ */
+export interface SupplierMovementSummaryDto {
+  /** Quantidade total movimentada. */
+  quantity: string;
+  /** Valor total. */
+  revenueCents: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface SupplierMovementReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: SupplierMovementSummaryDto;
+  rows: SupplierMovementRowDto[];
+}
+
+/**
+ * Um item do estoque, hoje.
+ */
+export interface StockValuationRowDto {
+  variantId: string;
+  description: string;
+  /**
+     * O TIPO DE PRODUTO do cadastro, pelo nome. Nulo quando o produto não tem tipo — que é caso real e não ausência de dado: o cadastro mínimo do legado não exigia tipo.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /** Saldo atual. */
+  quantity: string;
+  /**
+     * O preço usado na valoração. Nulo quando o item não tem preço na empresa — e aí `valueCents` também é nulo, em vez de zero: item sem preço não vale zero, vale desconhecido, e somar zero esconderia o buraco de cadastro que este relatório é bom para achar.
+     * @nullable
+     */
+  unitPriceCents?: number | null;
+  /**
+     * `quantity × unitPriceCents`, arredondado ao centavo. Nulo sem preço.
+     * @nullable
+     */
+  valueCents?: number | null;
+  /** Mínimo cadastrado na empresa. */
+  minStock: string;
+  /** `quantity < minStock`. Calculado pelo servidor porque a mesma comparação em duas telas vira duas respostas no dia em que uma esquecer o `<=`. */
+  belowMinimum: boolean;
+}
+
+/**
+ * Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer "a preço de venda" com base no que o servidor afirma, não no que ela supõe.
+ */
+export type StockValuationReportDtoValuationBasis = typeof StockValuationReportDtoValuationBasis[keyof typeof StockValuationReportDtoValuationBasis];
+
+
+export const StockValuationReportDtoValuationBasis = {
+  sale_price: 'sale_price',
+} as const;
+
+/**
+ * Totais do ESTOQUE inteiro, não da página.
+ */
+export interface StockValuationSummaryDto {
+  /** Valor total do estoque considerando só os itens COM preço. */
+  valueCents: number;
+  /** Itens no recorte. */
+  itemCount: number;
+  /** Quantos estão abaixo do mínimo. */
+  belowMinimumCount: number;
+  /** Quantos ficaram de fora do valor por não terem preço. **É a medida da confiança no total** — 3 de 4000 é ruído, 900 de 4000 quer dizer que o número lá em cima não significa nada. */
+  withoutPriceCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface StockValuationReportDto {
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** O INSTANTE da foto. Estoque não tem período — tem agora — e sem este carimbo o CSV exportado às 9h é indistinguível do das 18h. */
+  asOf: string;
+  /** Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer "a preço de venda" com base no que o servidor afirma, não no que ela supõe. */
+  valuationBasis: StockValuationReportDtoValuationBasis;
+  summary: StockValuationSummaryDto;
+  rows: StockValuationRowDto[];
+}
+
+/**
+ * Um item parado.
+ */
+export interface StockAgingRowDto {
+  variantId: string;
+  description: string;
+  /**
+     * O TIPO DE PRODUTO do cadastro, pelo nome. Nulo quando o produto não tem tipo.
+     * @nullable
+     */
+  productGroup?: string | null;
+  /** Saldo atual — quanto dinheiro está parado nele. */
+  quantity: string;
+  /**
+     * Saldo × preço. Nulo sem preço.
+     * @nullable
+     */
+  valueCents?: number | null;
+  /**
+     * Data do último PEDIDO que levou este item. Nulo = nunca vendeu.
+     * @nullable
+     */
+  lastSaleAt?: string | null;
+  /**
+     * Dias desde a última venda. **Nulo quando nunca vendeu** — e não um número gigante: "nunca" e "há 4 anos" são perguntas diferentes, e o item que nunca vendeu pode ter entrado ontem.
+     * @nullable
+     */
+  daysWithoutSale?: number | null;
+  /**
+     * Dias desde o primeiro movimento de entrada — é ele que distingue o item que nunca vendeu porque chegou ontem do que nunca vendeu em três anos.
+     * @nullable
+     */
+  daysInStock?: number | null;
+}
+
+/**
+ * Totais do recorte.
+ */
+export interface StockAgingSummaryDto {
+  /** Itens no recorte. */
+  itemCount: number;
+  /** Quantos nunca venderam. */
+  neverSoldCount: number;
+  /** Dinheiro parado nesses itens (só os com preço). */
+  valueCents: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface StockAgingReportDto {
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** O instante da foto — `daysWithoutSale` é contado a partir dele. */
+  asOf: string;
+  summary: StockAgingSummaryDto;
+  rows: StockAgingRowDto[];
+}
+
+/**
+ * Um item pedido em orçamento aberto, contra o que há em casa.
+ */
+export interface QuoteVsStockRowDto {
+  variantId: string;
+  description: string;
+  /** Somado dos orçamentos ATIVOS no período. */
+  quotedQuantity: string;
+  /** Saldo atual na empresa. */
+  stockQuantity: string;
+  /** `quotedQuantity - stockQuantity`, **zero quando sobra** — número negativo aqui viraria "falta -5" na tela e alguém compraria assim mesmo. */
+  shortageQuantity: string;
+  /** Em quantos orçamentos ele aparece. */
+  quoteCount: number;
+  /** Tem em casa para atender tudo o que foi orçado. */
+  sufficient: boolean;
+}
+
+/**
+ * Totais do recorte.
+ */
+export interface QuoteVsStockSummaryDto {
+  /** Produtos distintos orçados no período. */
+  variantCount: number;
+  /** Quantos deles não têm saldo suficiente. */
+  shortageCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface QuoteVsStockReportDto {
+  /** O período apurado, ecoado. O cliente pediu, o servidor confirma o que usou. */
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  summary: QuoteVsStockSummaryDto;
+  rows: QuoteVsStockRowDto[];
+}
+
+/**
+ * Um aniversariante do mês.
+ */
+export interface BirthdayRowDto {
+  partnerId: string;
+  /** Nome fantasia quando há, razão social senão — o mesmo critério de exibição das outras telas. */
+  name: string;
+  /** A data completa. O ANO importa: é dele que sai a idade, e sem ele o cartão de 50 anos passa batido. */
+  birthDate: string;
+  /** Dia do mês, repetido para a tela agrupar sem reparsear a data. */
+  day: number;
+  /** Idade que a pessoa COMPLETA neste aniversário — não a de hoje. Quem faz 40 no dia 28 deve aparecer como 40 na lista do dia 1º, senão a mensagem sai com o número errado justamente na data redonda. */
+  age: number;
+  /** @nullable */
+  mobilePhone?: string | null;
+  /** @nullable */
+  email?: string | null;
+  isCustomer: boolean;
+  isProfessional: boolean;
+}
+
+/**
+ * Totais do mês.
+ */
+export interface BirthdaysSummaryDto {
+  /** Aniversariantes no mês. */
+  partnerCount: number;
+  /** Quantos não têm telefone nem e-mail — a lista serve para FALAR com eles, e o aniversariante inalcançável é a falha de cadastro que o relatório revela. */
+  withoutContactCount: number;
+}
+
+/**
+ * Envelope comum da família `/api/reports/*`. **`summary` é do PERÍODO INTEIRO e `rows` é só da PÁGINA** — relatório paginado que soma as linhas visíveis mente exatamente onde dói: quem abre a página 1 de 500 produtos concluiria que o faturamento da empresa é o dos 100 primeiros. `total` conta as linhas AGREGADAS, não os documentos.
+ */
+export interface BirthdaysReportDto {
+  page: number;
+  pageSize: number;
+  /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
+  total: number;
+  /** O mês apurado, ecoado. */
+  month: number;
+  summary: BirthdaysSummaryDto;
+  rows: BirthdayRowDto[];
+}
+
+/**
+ * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+ *
+ * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+ */
+export type PurchaseRequestItemDtoDestination = typeof PurchaseRequestItemDtoDestination[keyof typeof PurchaseRequestItemDtoDestination];
+
+
+export const PurchaseRequestItemDtoDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Estado da LINHA, que não é o do pedido: um pedido com metade das linhas em ordem fica `partially_ordered`, e é a linha que diz qual metade. `cancelled` é linha desistida sem cancelar o pedido inteiro.
+ */
+export type PurchaseRequestItemDtoStatus = typeof PurchaseRequestItemDtoStatus[keyof typeof PurchaseRequestItemDtoStatus];
+
+
+export const PurchaseRequestItemDtoStatus = {
+  open: 'open',
+  ordered: 'ordered',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Uma linha do PEDIDO DE COMPRA — o que se quer comprar, de quem, e para quê.
+ *
+ * A linha carrega o FORNECEDOR porque o pedido tem N deles: no legado a compra nasce da necessidade (o pedido de venda fechado, ou o saldo abaixo do mínimo), e a necessidade não chega separada por fornecedor. Quem separa é a ORDEM, que é por fornecedor — e é por isso que um pedido vira várias ordens, e uma ordem agrupa vários pedidos.
+ */
+export interface PurchaseRequestItemDto {
+  /** A ordem da linha DENTRO do pedido, 1-based. É por ela que a ordem de compra rastreia a origem (`PurchaseOrderItemDto.sourceLineNumber`) — o id da linha não sai daqui, e o par (pedido, número) já a identifica. */
+  lineNumber: number;
+  /**
+     * A variante do catálogo, quando a linha aponta para uma. `null` no item que o operador digitou à mão — o "Pré Produto" do legado, que existe justamente para comprar o que ainda não está cadastrado.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** A descrição CONGELADA na emissão. Não é lida da variante em tempo de leitura, pelo mesmo motivo que a linha do orçamento congela a sua: renomear o produto não pode reescrever o que foi pedido. */
+  description: string;
+  /**
+     * Acabamento. Junto de `size`, é a variante em texto — o legado compra por acabamento e tamanho, e a tela de compras é a mesma do orçamento nesse ponto.
+     * @nullable
+     */
+  finish?: string | null;
+  /**
+     * Tamanho.
+     * @nullable
+     */
+  size?: string | null;
+  /**
+     * Unidade de COMPRA, que pode não ser a de venda: o legado tem unidade de entrada ≠ unidade de saída com fator de conversão, e este campo é a de entrada.
+     * @nullable
+     */
+  unit?: string | null;
+  /** Quantidade pedida. Fracionária — metro de fita de LED é a unidade normal deste negócio. */
+  quantity: number;
+  /**
+     * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+     *
+     * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+     */
+  destination: PurchaseRequestItemDtoDestination;
+  /** De QUEM se quer comprar esta linha — `PartnerDto.id` com `isSupplier`. */
+  supplierId: string;
+  /** Nome do fornecedor, ecoado. */
+  supplierName: string;
+  /**
+     * A linha do PEDIDO DE VENDA que originou esta — `OrderItemDto.lineNumber` dentro do `orderId` do cabeçalho. `null` quando `destination` é `stock`, e obrigatório quando é `sale`: é este par que faz a previsão de chegada dizer para QUAL cliente a peça está vindo.
+     * @nullable
+     */
+  sourceOrderItemLine?: number | null;
+  /**
+     * A ORDEM que já levou esta linha, ou `null` enquanto ela está aberta. Derivado — quem escreve é a criação da ordem, nunca o PUT do pedido.
+     * @nullable
+     */
+  purchaseOrderId?: string | null;
+  /**
+     * Número da ordem que levou a linha, ecoado.
+     * @nullable
+     */
+  purchaseOrderNumber?: string | null;
+  /** Estado da LINHA, que não é o do pedido: um pedido com metade das linhas em ordem fica `partially_ordered`, e é a linha que diz qual metade. `cancelled` é linha desistida sem cancelar o pedido inteiro. */
+  status: PurchaseRequestItemDtoStatus;
+  /**
+     * Observação da linha — onde vai o recado ao comprador que não cabe em campo nenhum.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+/**
+ * Derivado das linhas, exceto `cancelled`. Ver a descrição do schema.
+ */
+export type PurchaseRequestDtoStatus = typeof PurchaseRequestDtoStatus[keyof typeof PurchaseRequestDtoStatus];
+
+
+export const PurchaseRequestDtoStatus = {
+  open: 'open',
+  partially_ordered: 'partially_ordered',
+  ordered: 'ordered',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Um PEDIDO DE COMPRA — a NECESSIDADE de comprar, antes de ela virar compromisso com fornecedor. É o menu `Compras → Pedido` do legado, e o primeiro elo da cadeia real que o comparativo levantou: **Pedido de Venda → Pedido de Compra → Ordem de Compra por fornecedor → envio → recebimento**.
+ *
+ * **Por que pedido e ordem são DOIS documentos e não um com status.** Eles têm cardinalidade diferente em relação ao fornecedor: o pedido tem N (a necessidade vem misturada), a ordem tem 1 (o compromisso é com um fornecedor só). Um documento único obrigaria a escolher — ou quebrar a necessidade em N documentos na hora errada (antes de saber se dá para agrupar com a de outro pedido e atingir o faturamento mínimo), ou deixar a ordem com N fornecedores, que é o que o faturamento mínimo, a transportadora e a condição de pagamento não admitem.
+ *
+ * **A relação com a ordem é N↔N, rastreada POR ITEM.** Um pedido vira várias ordens (uma por fornecedor) e uma ordem agrupa vários pedidos (para atingir o mínimo). Guardar o elo no cabeçalho não representaria nem um caso nem o outro; ele mora em `PurchaseOrderItemDto.sourceRequestId` + `sourceLineNumber`.
+ *
+ * **`status` é DERIVADO das linhas** e não escrito à mão: `open` enquanto nenhuma linha entrou em ordem, `partially_ordered` com algumas, `ordered` com todas. Só `cancelled` é decisão de gente, e é por isso que ele tem operação própria (`POST /{id}/cancel`) em vez de campo no PUT — o mesmo desenho de `quotes` e `orders`.
+ */
+export interface PurchaseRequestDto {
+  id: string;
+  /** O número do documento na empresa. Texto e não inteiro, pelo mesmo motivo de `OrderDto.number`: o legado traz numeração com prefixo e série. */
+  number: string;
+  /** Derivado das linhas, exceto `cancelled`. Ver a descrição do schema. */
+  status: PurchaseRequestDtoStatus;
+  /** Data de emissão do pedido. */
+  issuedAt: string;
+  /**
+     * O PEDIDO DE VENDA que originou este pedido de compra, quando ele nasceu de uma venda. `null` no pedido de REPOSIÇÃO, que nasce do saldo e não de cliente nenhum.
+     *
+     * O elo é do CABEÇALHO e não da linha porque o legado o descreve assim ("Pedido de Compra: vinculado a Ped. Venda"), e porque um pedido de compra que misturasse duas vendas não teria a quem mostrar a previsão de chegada. As LINHAS apontam para as linhas daquela venda, em `sourceOrderItemLine`.
+     * @nullable
+     */
+  orderId?: string | null;
+  /**
+     * Número do pedido de venda de origem, ecoado.
+     * @nullable
+     */
+  orderNumber?: string | null;
+  /**
+     * Cliente do pedido de venda de origem, ecoado — a previsão de chegada precisa dele e não vai buscar a venda inteira para ter um nome.
+     * @nullable
+     */
+  customerId?: string | null;
+  /**
+     * Nome do cliente, ecoado.
+     * @nullable
+     */
+  customerName?: string | null;
+  /** Quantas linhas o pedido tem. Existe para a LISTAGEM: contar itens na tela exigiria trazer as linhas de todos os pedidos da página. */
+  itemCount: number;
+  /** As linhas. Vêm na listagem TAMBÉM, e é decisão: o pedido de compra é documento curto (o legado tem 34.863 linhas em `Pedido_compra_det` para o histórico inteiro), e a tela de compras precisa do fornecedor de cada linha para agrupar em ordem sem uma requisição por pedido. */
+  items: PurchaseRequestItemDto[];
+  /**
+     * Observação do documento.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export type PurchaseRequestItemWriteRequestDestination = typeof PurchaseRequestItemWriteRequestDestination[keyof typeof PurchaseRequestItemWriteRequestDestination];
+
+
+export const PurchaseRequestItemWriteRequestDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Proposto. Uma linha na escrita do pedido de compra. Os campos DERIVADOS não entram — `status`, `purchaseOrderId` e `purchaseOrderNumber` são escritos pela criação da ordem, e aceitá-los aqui deixaria o cliente declarar que a linha já foi comprada.
+ */
+export interface PurchaseRequestItemWriteRequest {
+  lineNumber: number;
+  /** @nullable */
+  variantId?: string | null;
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  quantity: number;
+  destination: PurchaseRequestItemWriteRequestDestination;
+  supplierId: string;
+  /** @nullable */
+  sourceOrderItemLine?: number | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI um pedido de compra inteiro — PUT troca o registro completo, `items` incluído.
+ *
+ * **O PUT recusa (409) o pedido que já tem linha em ordem.** Reescrever a linha que virou compromisso com fornecedor mudaria o que a ordem diz ter comprado, e a ordem já saiu. Nesse estado o caminho é cancelar a linha e abrir outra, que é o que deixa rastro.
+ */
+export interface PurchaseRequestWriteRequest {
+  issuedAt: string;
+  /** @nullable */
+  orderId?: string | null;
+  items: PurchaseRequestItemWriteRequest[];
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PagedResultOfPurchaseRequestDto {
+  rows: PurchaseRequestDto[];
+  total: number;
+}
+
+/**
+ * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+ *
+ * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+ */
+export type PurchaseOrderItemDtoDestination = typeof PurchaseOrderItemDtoDestination[keyof typeof PurchaseOrderItemDtoDestination];
+
+
+export const PurchaseOrderItemDtoDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Proposto. Uma linha da ORDEM DE COMPRA, com a ORIGEM rastreada.
+ *
+ * **`sourceRequestId` + `sourceLineNumber` são o que faz o agrupamento reversível.** A ordem agrupa itens de N pedidos; sem o par, "de qual pedido veio esta peça" só se responderia casando descrição e quantidade — que é adivinhação assim que dois pedidos pedem a mesma peça do mesmo fornecedor, que é o caso NORMAL num negócio de reposição.
+ */
+export interface PurchaseOrderItemDto {
+  /** A ordem da linha DENTRO da ordem de compra, 1-based. */
+  lineNumber: number;
+  /** O PEDIDO DE COMPRA de onde esta linha veio. */
+  sourceRequestId: string;
+  /** Número do pedido de origem, ecoado — a tela mostra "veio do pedido 1234" sem resolver o id. */
+  sourceRequestNumber: string;
+  /** A linha DAQUELE pedido — `PurchaseRequestItemDto.lineNumber`. */
+  sourceLineNumber: number;
+  /** @nullable */
+  variantId?: string | null;
+  /** Descrição congelada na emissão da ordem. */
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  /** Quantidade desta linha na ordem. **Pode ser menor que a da linha do pedido**: o fornecedor atende parcialmente, e o resto continua aberto no pedido para entrar noutra ordem. */
+  quantity: number;
+  /** Custo unitário NEGOCIADO, em centavos. É o preço de COMPRA — não tem relação com o de venda, que sai do índice por fornecedor. */
+  unitCostCents: number;
+  /** Total da linha em centavos. Vem calculado do servidor: `quantity × unitCostCents` arredondado uma vez, e não N vezes na tela. */
+  totalCents: number;
+  /**
+     * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+     *
+     * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+     */
+  destination: PurchaseOrderItemDtoDestination;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra na conta do faturamento mínimo POR GRUPO do fornecedor.
+     * @nullable
+     */
+  productGroupId?: string | null;
+  /**
+     * Nome do grupo, ecoado.
+     * @nullable
+     */
+  productGroupName?: string | null;
+}
+
+/**
+ * `draft` enquanto a ordem está sendo montada, `sent` depois de `POST /{id}/send`, `cancelled` na desistência.
+ *
+ * **Reagendar NÃO é status.** `POST /{id}/reschedule` move `expectedAt` para `rescheduledAt` e a ordem continua `sent` — uma ordem reagendada é uma ordem enviada cuja data mudou, e um status próprio faria a listagem de "enviadas" perder exatamente as que mais interessam ao comprador.
+ */
+export type PurchaseOrderDtoStatus = typeof PurchaseOrderDtoStatus[keyof typeof PurchaseOrderDtoStatus];
+
+
+export const PurchaseOrderDtoStatus = {
+  draft: 'draft',
+  sent: 'sent',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Uma ORDEM DE COMPRA — o compromisso com UM fornecedor. Menu `Compras → Ordem` do legado.
+ *
+ * **Um fornecedor, N pedidos.** É a inversão de cardinalidade que justifica o segundo documento: só com um fornecedor só fazem sentido o faturamento mínimo, a transportadora, a condição de pagamento e a data prometida. E é agrupando pedidos de dias diferentes que o comprador chega ao mínimo — o que o legado apoia com os botões "Produtos Estoque" e "Produtos Pedidos", que enchem a mesma ordem com reposição e encomenda.
+ *
+ * **As quatro datas são quatro fatos diferentes, e nenhuma deriva da outra:** `orderedAt` é quando a ordem foi montada, `sentAt` é quando ela foi de fato mandada ao fornecedor (e é o que a transição `send` grava), `expectedAt` é a data PROMETIDA e `rescheduledAt` é a data reprometida depois de o fornecedor furar a primeira. Guardar só a última destruiria a medição que o negócio mais quer — de quanto o fornecedor atrasa —, porque a promessa original teria sido sobrescrita pela desculpa.
+ *
+ * **Não há DELETE**, como em todo o contrato: ordem some é ordem que o fornecedor recebeu e o sistema esqueceu. Desistir é `POST /{id}/cancel`.
+ */
+export interface PurchaseOrderDto {
+  id: string;
+  /** O número da ordem na empresa. */
+  number: string;
+  /**
+     * `draft` enquanto a ordem está sendo montada, `sent` depois de `POST /{id}/send`, `cancelled` na desistência.
+     *
+     * **Reagendar NÃO é status.** `POST /{id}/reschedule` move `expectedAt` para `rescheduledAt` e a ordem continua `sent` — uma ordem reagendada é uma ordem enviada cuja data mudou, e um status próprio faria a listagem de "enviadas" perder exatamente as que mais interessam ao comprador.
+     */
+  status: PurchaseOrderDtoStatus;
+  /** O ÚNICO fornecedor da ordem. */
+  supplierId: string;
+  supplierName: string;
+  /** A EMPRESA COMPRADORA — qual empresa do grupo está comprando. Copiada na emissão a partir da vigência do fornecedor (`SupplierBuyingCompanyDto`), e congelada aqui: trocar a empresa compradora do cadastro amanhã não pode reescrever quem comprou ontem. */
+  buyingTenantId: string;
+  buyingTenantName: string;
+  /** Data em que a ordem foi montada. */
+  orderedAt: string;
+  /**
+     * Data em que a ordem foi ENVIADA ao fornecedor. `null` enquanto `draft`.
+     * @nullable
+     */
+  sentAt?: string | null;
+  /**
+     * Data PROMETIDA na emissão. Sugerida a partir de `PartnerDto.deliveryDays`, mas guardada como data acordada — ver a descrição daquele campo.
+     * @nullable
+     */
+  expectedAt?: string | null;
+  /**
+     * A data REPROMETIDA, quando houve reagendamento. `null` na ordem nunca reagendada. A previsão de chegada usa esta quando existe, e `expectedAt` quando não — mas as duas ficam, e é a diferença entre elas que mede o atraso do fornecedor.
+     * @nullable
+     */
+  rescheduledAt?: string | null;
+  /**
+     * O motivo do último reagendamento, como o comprador o registrou.
+     * @nullable
+     */
+  rescheduleReason?: string | null;
+  /**
+     * O faturamento mínimo do fornecedor ECOADO na emissão — cópia de `PartnerDto.minimumBillingCents` no momento em que a ordem foi criada.
+     *
+     * Ecoado e não lido em tempo de leitura porque a validação de ontem tem de continuar explicável: o fornecedor sobe o mínimo, e a ordem antiga passaria a parecer irregular sem que nada nela tivesse mudado.
+     * @nullable
+     */
+  minimumBillingCents?: number | null;
+  /**
+     * A TRANSPORTADORA — `PartnerDto.id`. Transportadora é parceiro como qualquer outro no cadastro do legado (item próprio do menu Cadastros), e não ganha entidade nova.
+     * @nullable
+     */
+  carrierId?: string | null;
+  /** @nullable */
+  carrierName?: string | null;
+  /**
+     * A CONDIÇÃO DE PAGAMENTO da ordem — `PaymentTermDto.id`, o cadastro que já existe. A aba Pagamento da ordem de compra REUSA o que a venda usa: parcelamento é parcelamento, e duplicar o cadastro faria a mesma condição existir com dois ids.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /** @nullable */
+  paymentTermName?: string | null;
+  /** Desconto GERAL da ordem, em pontos percentuais inteiros. Inteiro porque é assim que se negocia com fornecedor ("cinco por cento") — e porque percentual fracionário faria dois arredondamentos empilhados no total. */
+  discountPercent?: number;
+  /** ACRÉSCIMO em centavos — frete cobrado à parte, embalagem, taxa. Valor e não percentual: o que o fornecedor acrescenta chega em reais. */
+  surchargeCents?: number;
+  /** Soma das linhas, antes de desconto e acréscimo. */
+  subtotalCents: number;
+  /** O total da ordem: `subtotalCents` menos o desconto, mais o acréscimo. É contra ELE que o faturamento mínimo é conferido. */
+  totalCents: number;
+  items: PurchaseOrderItemDto[];
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma linha na escrita da ordem. `totalCents` não entra — quem multiplica é o servidor, e aceitar o total do cliente deixaria a soma da tela virar o valor gravado.
+ */
+export interface PurchaseOrderItemWriteRequest {
+  lineNumber: number;
+  sourceRequestId: string;
+  sourceLineNumber: number;
+  quantity: number;
+  unitCostCents: number;
+  /** @nullable */
+  productGroupId?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI a ordem inteira.
+ *
+ * **A linha traz só o par de origem e o que foi negociado.** Descrição, acabamento, tamanho, unidade, variante e destino NÃO vêm do cliente: eles são COPIADOS da linha do pedido que `sourceRequestId` + `sourceLineNumber` apontam. Aceitá-los aqui deixaria a ordem dizer que comprou uma peça e o pedido dizer que pediu outra, com o par intacto entre as duas.
+ *
+ * **O PUT recusa (409) a ordem já enviada.** Depois do `send` o fornecedor tem a ordem na mão, e o que muda é data (por `reschedule`) ou nada.
+ */
+export interface PurchaseOrderWriteRequest {
+  supplierId: string;
+  buyingTenantId: string;
+  orderedAt: string;
+  /** @nullable */
+  expectedAt?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  /** @nullable */
+  paymentTermId?: string | null;
+  discountPercent: number;
+  surchargeCents: number;
+  items: PurchaseOrderItemWriteRequest[];
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. O corpo do envio. `sentAt` é opcional porque o caso normal é "mandei agora" — omitido, o servidor grava a data de hoje. Ele existe para o lançamento retroativo, que num ERP de operação real é rotina, não exceção.
+ */
+export interface PurchaseOrderSendRequest {
+  /** @nullable */
+  sentAt?: string | null;
+}
+
+/**
+ * Proposto. O corpo do reagendamento — a data nova e por quê.
+ *
+ * `reason` é obrigatório e é decisão: reagendamento sem motivo registrado transforma a medição de atraso do fornecedor numa lista de datas que mudaram sozinhas. O legado tem o campo, e a razão de ele existir é a conversa com o fornecedor no mês seguinte.
+ */
+export interface PurchaseOrderRescheduleRequest {
+  /** A data REPROMETIDA. Vai para `rescheduledAt`; a promessa original fica onde está. */
+  expectedAt: string;
+  /** Por que a data mudou. */
+  reason: string;
+}
+
+export interface PagedResultOfPurchaseOrderDto {
+  rows: PurchaseOrderDto[];
+  total: number;
+}
+
+/**
+ * Para que a peça vem. `sale` traz cliente; `stock` não tem cliente e é isso que a tela mostra.
+ */
+export type PurchaseArrivalRowDtoDestination = typeof PurchaseArrivalRowDtoDestination[keyof typeof PurchaseArrivalRowDtoDestination];
+
+
+export const PurchaseArrivalRowDtoDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Proposto. Uma linha da PREVISÃO DE CHEGADA — uma peça em ordem enviada, com a data em que ela é esperada e o cliente que a espera.
+ *
+ * **É linha de ITEM e não de ordem**, e é o que a consulta existe para responder: a pergunta do operador é "quando chega a peça do cliente X", não "quando chega a ordem 4711". Uma ordem agrupa reposição e encomenda de clientes diferentes; agregada por ordem, a consulta devolveria uma data e nenhum cliente.
+ *
+ * **`expectedAt` aqui é a data VÁLIDA** — `rescheduledAt` quando existe, `expectedAt` da ordem quando não. As duas cruas continuam disponíveis no `PurchaseOrderDto`; esta consulta é para a tela que pergunta "quando", e obrigá-la a escolher entre dois campos é o tipo de regra que se implementa diferente em duas telas.
+ */
+export interface PurchaseArrivalRowDto {
+  purchaseOrderId: string;
+  purchaseOrderNumber: string;
+  supplierId: string;
+  supplierName: string;
+  /**
+     * Quando a ordem foi enviada.
+     * @nullable
+     */
+  sentAt?: string | null;
+  /**
+     * A data válida — reagendada quando houve reagendamento. `null` na ordem enviada sem data prometida, e a tela mostra isso em vez de inventar uma.
+     * @nullable
+     */
+  expectedAt?: string | null;
+  /**
+     * A promessa ORIGINAL, quando houve reagendamento. `null` quando `expectedAt` já é a original — a tela só destaca a linha reagendada.
+     * @nullable
+     */
+  originalExpectedAt?: string | null;
+  /**
+     * Dias de atraso contra a data válida, quando ela já passou. `null` na linha que ainda não venceu. Calculado no servidor porque "hoje" na tela é o relógio do navegador, e num ERP multiusuário isso já bastou para duas pessoas verem atrasos diferentes.
+     * @nullable
+     */
+  daysLate?: number | null;
+  /** @nullable */
+  variantId?: string | null;
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  quantity: number;
+  /** Para que a peça vem. `sale` traz cliente; `stock` não tem cliente e é isso que a tela mostra. */
+  destination: PurchaseArrivalRowDtoDestination;
+  /**
+     * O pedido de VENDA que espera a peça, quando `destination` é `sale`.
+     * @nullable
+     */
+  orderId?: string | null;
+  /** @nullable */
+  orderNumber?: string | null;
+  /** @nullable */
+  customerId?: string | null;
+  /**
+     * Quem está esperando. `null` na linha de reposição, e a tela mostra "estoque" — não vazio.
+     * @nullable
+     */
+  customerName?: string | null;
+}
+
+export interface PagedResultOfPurchaseArrivalRowDto {
+  rows: PurchaseArrivalRowDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Uma linha da consulta COMPRAS PARA ESTOQUE / RESERVA — quanto de cada variante há, quanto está PROMETIDO a alguém, e quanto já vem a caminho.
+ *
+ * É a `CompraEstoque` do legado, cuja definição o levantamento decifrou como **disponibilidade futura = ordem aberta − reserva − entrada por nota**. Aqui ela aparece aberta em parcelas, e não como um número só: um saldo futuro negativo não diz se falta comprar ou se sobra reserva, e são decisões opostas.
+ *
+ * **`qtyAllocated` é a reserva de verdade** — `stock_balances.quantity_allocated`, a coluna que a migração `0035` criou e que até aqui não saía por API nenhuma. Sem ela, "disponível" era o saldo bruto, e o comprador repunha peça que já estava prometida a um cliente.
+ */
+export interface PurchaseReplenishmentRowDto {
+  variantId: string;
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  /** Saldo FÍSICO somado nos depósitos da empresa ativa. Pode ser negativo, e o contrato não o esconde: a venda sai antes de a nota entrar, e esse é o estado normal desta operação por alguns dias. */
+  qtyOnHand: number;
+  /** Quanto do saldo já está RESERVADO para venda — `stock_balances.quantity_allocated`. Nunca negativo. */
+  qtyAllocated: number;
+  /** `qtyOnHand − qtyAllocated`. É o que dá para prometer a um cliente novo hoje, e pode ser negativo quando se prometeu mais do que há. */
+  qtyAvailable: number;
+  /** Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou. */
+  qtyOnOrder: number;
+  /**
+     * A sugestão de compra: quanto falta para `qtyAvailable + qtyOnOrder` alcançar o mínimo de estoque da variante. `0` quando não falta nada.
+     *
+     * É SUGESTÃO e o nome diz isso — quem decide comprar é o comprador. O legado tem `EstoqueMinimo` com trigger, e a alteração da quantidade sugerida é permissão especial no RBAC dele (uma das 287 opções): a sugestão nunca foi tratada como ordem.
+     */
+  qtySuggested: number;
+  /**
+     * O estoque mínimo cadastrado da variante, quando existe. `null` na variante sem mínimo — e então `qtySuggested` é `0`, porque não há alvo contra o qual faltar.
+     * @nullable
+     */
+  minimumQty?: number | null;
+  /**
+     * O fornecedor PADRÃO da variante, para a tela já saber a quem pedir. `null` na variante sem fornecedor padrão.
+     * @nullable
+     */
+  supplierId?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+}
+
+export interface PagedResultOfPurchaseReplenishmentRowDto {
+  rows: PurchaseReplenishmentRowDto[];
   total: number;
 }
 
@@ -2694,6 +5055,17 @@ export type NaoAutenticadoResponse = ProblemDetails;
  * **Não cobre "não encontrado nesta empresa"**, que é 404: dizer "existe, mas não é sua" confirmaria um registro da empresa vizinha.
  */
 export type SemPermissaoResponse = ProblemDetails;
+
+/**
+ * O caminho está NESTE contrato e o servidor ainda não serve ESTA parte dele — `urn:cabinet:erro:nao-implementado`.
+ *
+ * É a marca de fase que o `Proposto` já anuncia, agora visível em tempo de execução: 501 e nunca 404, para que "não existe" continue significando "não existe". O cliente não deve reenviar o mesmo corpo — o pedido está bem formado, falta implementação do outro lado.
+ *
+ * **Declarada só onde o servidor pode mesmo respondê-la.** Estas operações aceitam campos que o backend ainda não grava — `discountMode: "group"` e `groupDiscounts`, `serviceItems` nos documentos, e a configuração de compras do fornecedor (`deliveryDays`, `minimumBillingCents`, `buyingCompanies`, `groupMinimums`) em `/api/partners`. Corpo que os CARREGA recebe 501 em vez de gravar metade; corpo que não os carrega segue o caminho normal. **O critério é o VALOR e não a presença da chave:** `PUT` manda o registro inteiro, então `null` e `[]` viajam sempre e não podem, sozinhos, recusar a gravação do resto.
+ *
+ * Operação sem handler NENHUM também responde 501, e é por isso que esta resposta não está em todas: quem inventaria o que ainda não existe é o `Proposto`, não uma resposta declarada em cada operação do documento.
+ */
+export type NaoImplementadoResponse = ProblemDetails;
 
 export type ListCatalogLookupsParams = {
 q?: string;
@@ -2861,16 +5233,22 @@ joinOperator?: ListFilterJoin;
 export type ListQuotesParams = {
 q?: string;
 /**
- * Whitelist: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt`. Campo fora dela é 400.
+ * Whitelist: `number`, `issuedAt`, `expiresAt`, `customerName`, `projectName`, `workName`. Campo fora dela é 400 — a lista não volta em outra ordem, ela não volta.
  *
- * É a MESMA de `filters` — inclusive `customerName` e `projectName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ * É a de `filters` MENOS `workId` — inclusive `customerName`, `projectName` e `workName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ *
+ * `workName` ordena pelo nome da OBRA (`workId` resolvido), e não pelo `projectName` digitado: são dois dados, e ordenar pelo texto livre embaralha documentos da mesma obra. `workId` fica fora daqui — ordenar por uuid não põe nada em ordem para quem lê; ele serve em `filters`, para recortar.
  */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 /**
- * Proposto. Filtro estruturado da listagem, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`, `expiresAt` — a do `sortBy`. Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` com 4 casas implícitas não têm variante que converta na borda. Campo fora da whitelist é 400.
+ * Proposto. Filtro estruturado do orçamento, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.
+ *
+ * **Whitelist deste recurso: `number`, `issuedAt`, `expiresAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
+ *
+ * Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.
  */
 filters?: ListFilter[];
 /**
@@ -2994,24 +5372,633 @@ export const ListActivitiesEntityType = {
   purchaseOrder: 'purchaseOrder',
 } as const;
 
+export type ListRolesParams = {
+/**
+ * Busca por nome do papel.
+ */
+q?: string;
+/**
+ * Whitelist: `name`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
 export type ListOrdersParams = {
 q?: string;
 /**
- * Whitelist: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.
+ * Whitelist: `number`, `issuedAt`, `customerName`, `projectName`, `workName`. Campo fora dela é 400 — a lista não volta em outra ordem, ela não volta.
  *
- * A MESMA de `filters`, e a mesma do orçamento menos `expiresAt` — pedido não vence.
+ * É a de `filters` MENOS `workId` — inclusive `customerName`, `projectName` e `workName`, que vêm de junção: aqui o nome é o que a tela lê e por onde ela ordena. `series`, `totalCents` e `discountPercent` ficam de fora, pelos motivos escritos na descrição de `filters`.
+ *
+ * `workName` ordena pelo nome da OBRA (`workId` resolvido), e não pelo `projectName` digitado: são dois dados, e ordenar pelo texto livre embaralha documentos da mesma obra. `workId` fica fora daqui — ordenar por uuid não põe nada em ordem para quem lê; ele serve em `filters`, para recortar.
  */
 sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 /**
- * Proposto. Mesma mecânica do orçamento: array JSON url-encoded, somado ao `q` com AND. Whitelist deste recurso: `number`, `customerName`, `projectName`, `issuedAt`. Campo fora dela é 400.
+ * Proposto. Filtro estruturado do pedido, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.
+ *
+ * **Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`, `status`, `type`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
+ *
+ * Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.
+ *
+ * **`status` e `type` entram com o ciclo de vida (G13), e é o que torna os dois estados úteis:** sem eles a tela não tem como perguntar "o que ainda está em aberto" nem "quais demonstrações estão na rua" — teria de puxar a lista inteira e contar no cliente, que é a conta que mente na página 2. Os dois são de VOCABULÁRIO FECHADO, então `eq`/`ne`/`inArray` bastam; valor fora do enum é 400, e não lista vazia: filtro que não casa nada e filtro que não existe são indistinguíveis para quem lê a tela.
  */
 filters?: ListFilter[];
 /**
  * Proposto. Como as condições de `filters` se somam. Padrão `and`.
  */
 joinOperator?: ListFilterJoin;
+};
+
+export type ListOrderProfessionalHistoryParams = {
+/**
+ * Whitelist: `startedAt`. Uma só, e de propósito: a trilha é cronológica, e ordenar por nome de profissional esconderia a sequência que é o ponto dela.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListServicesParams = {
+q?: string;
+/**
+ * Whitelist: `code`, `description`, `priceCents`, `active`. Campo fora dela é 400.
+ *
+ * `priceCents` entra porque "do mais caro para o mais barato" é pergunta que o operador faz de verdade num cadastro de preço — e ordenar centavos é ordenar inteiro, sem a armadilha de comparar dinheiro como texto. `electricianPercent`, `type` e `productGroup` ficam fora: os dois últimos são texto livre no legado (`varchar(12)` sem FK), e coluna cujo vocabulário não está normalizado ordena por acaso de digitação.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListStockLocationsParams = {
+q?: string;
+/**
+ * Whitelist: `code`, `name`, `active`. Campo fora dela é 400.
+ *
+ * `parentId` NÃO entra, pelo mesmo motivo que tirou `customerId` do `sortBy` da obra: ordem de uuid não põe nada em ordem para quem lê a tela. E `isDefault` também não — há UM padrão por empresa, e ordenar por uma coluna que separa 1 linha de todas as outras é agrupar, não ordenar.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListStockBalancesParams = {
+/**
+ * Whitelist: `qty`. Campo fora dela é 400.
+ *
+ * É lista curta e a única ordem que responde pergunta de quem lê é "onde tem mais". `locationId` não ordena (uuid), e o nome do depósito não está nesta resposta de propósito — ver `ListStockLocations`. Sem `sortBy` a ordem é a da chave, estável e sem significado: quem recebeu o punhado de linhas ordena por nome com a listagem de depósitos em mãos.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListPaymentTermsParams = {
+/**
+ * Busca por `name`.
+ */
+q?: string;
+/**
+ * Whitelist: `name`, `active`, `installmentCount`. Campo fora dela é 400.
+ *
+ * Não se ordena por parcela: ela é linha de dentro da condição, e ordenar a coleção por um campo do filho é ordenar por qual dos N — pergunta que não tem resposta única. `installmentCount` entra porque é COLUNA (ver `PaymentTermDto`), e é a que responde "quais condições parcelam mais".
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type GetAbcCurveReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Whitelist: `revenueCents`, `quantity`, `description`. Campo fora dela é 400.
+ *
+ * **A classe e o acumulado NÃO dependem daqui.** `abcClass` e `cumulativePercent` saem sempre da ordem canônica — faturamento decrescente sobre o período inteiro — e continuam corretos linha a linha qualquer que seja a ordem pedida. Se dependessem de `sortBy`, ordenar por descrição transformaria a curva num acumulado alfabético, que não significa nada e tem exatamente a mesma aparência.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetProductsSoldReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Só as linhas deste tipo de peça.
+ */
+pieceType?: string;
+/**
+ * Whitelist: `revenueCents`, `quantity`, `orderCount`, `description`. Campo fora dela é 400.
+ *
+ * Aqui trocar o eixo É a pergunta: o parafuso lidera em quantidade e não paga a conta; a cozinha inteira lidera em valor e sai uma vez por mês.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSalesComparisonReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * O tamanho do balde. Fora da lista é 400.
+ */
+granularity?: GetSalesComparisonReportGranularity;
+/**
+ * Whitelist: `bucket`, `revenueCents`, `orderCount`. Campo fora dela é 400.
+ *
+ * **`previousRevenueCents` é sempre o do período cronologicamente anterior**, não o da linha de cima: ordenar por faturamento e comparar com o vizinho na tela produziria "variação" entre agosto e março.
+ *
+ * Padrão: `bucket`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSalesComparisonReportGranularity = typeof GetSalesComparisonReportGranularity[keyof typeof GetSalesComparisonReportGranularity];
+
+
+export const GetSalesComparisonReportGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+  year: 'year',
+} as const;
+
+export type GetSalespersonReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * O tamanho do balde.
+ */
+granularity?: GetSalespersonReportGranularity;
+/**
+ * Só este atendente. Ausente = todos.
+ */
+salespersonId?: string;
+/**
+ * Whitelist: `revenueCents`, `orderCount`, `quoteCount`, `conversionPercent`, `salespersonName`, `bucket`. Campo fora dela é 400.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSalespersonReportGranularity = typeof GetSalespersonReportGranularity[keyof typeof GetSalespersonReportGranularity];
+
+
+export const GetSalespersonReportGranularity = {
+  month: 'month',
+  quarter: 'quarter',
+  semester: 'semester',
+} as const;
+
+export type GetProfessionalRankingReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Whitelist: `revenueCents`, `orderCount`, `averageTicketCents`, `professionalName`, `lastSaleAt`. Campo fora dela é 400.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetSupplierMovementReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só as linhas deste fornecedor. O fornecedor da LINHA do documento (congelado na emissão), não o do cadastro de hoje — trocar o fornecedor de um produto não pode reescrever o que já foi vendido.
+ */
+supplierId?: string;
+/**
+ * Só as linhas deste grupo de produto. Comparação exata com o valor congelado na linha.
+ */
+productGroup?: string;
+/**
+ * Whitelist: `revenueCents`, `quantity`, `supplierName`, `orderCount`, `lineCount`, `productCount`. Campo fora dela é 400.
+ *
+ * Padrão: `revenueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetStockValuationReportParams = {
+/**
+ * Só os itens deste grupo. **No estoque o grupo é o TIPO DE PRODUTO do cadastro** (`catalog_lookups`, kind `TIPO_PRODUTO`), comparado pelo NOME — e não o `productGroup` congelado na linha do documento, que é o dos relatórios de venda. São dois campos com o mesmo papel em lados diferentes da mesma pergunta: a linha do documento guarda o que valia na venda, e o cadastro guarda o que vale hoje. O nome é o que os aproxima; o id não, porque a linha congelada nunca guardou id.
+ */
+productGroup?: string;
+/**
+ * Incluir itens com saldo zero. Padrão `false`: o inventário de quem tem 4000 SKUs cadastrados e 300 em casa não é uma lista de 4000 linhas com 3700 zeros.
+ */
+includeZero?: boolean;
+/**
+ * Só o que está abaixo do mínimo — a lista de compras.
+ */
+belowMinimumOnly?: boolean;
+/**
+ * Whitelist: `valueCents`, `quantity`, `minStock`, `description`. Campo fora dela é 400.
+ *
+ * Item SEM preço ordena por `valueCents` como ausente, não como zero — e vai para o fim nos dois sentidos: ele não vale zero, vale desconhecido.
+ *
+ * Padrão: `valueCents`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetStockAgingReportParams = {
+/**
+ * Só o que está parado há pelo menos tantos dias. **Itens que nunca venderam entram sempre**, qualquer que seja o valor: sem venda alguma não há dias a comparar, e filtrá-los fora por `NULL` faria o pior caso desaparecer do relatório dos piores casos.
+ * @minimum 0
+ */
+minDaysWithoutSale?: number;
+/**
+ * Só os itens deste grupo. **No estoque o grupo é o TIPO DE PRODUTO do cadastro** (`catalog_lookups`, kind `TIPO_PRODUTO`), comparado pelo NOME — e não o `productGroup` congelado na linha do documento, que é o dos relatórios de venda. São dois campos com o mesmo papel em lados diferentes da mesma pergunta: a linha do documento guarda o que valia na venda, e o cadastro guarda o que vale hoje. O nome é o que os aproxima; o id não, porque a linha congelada nunca guardou id.
+ */
+productGroup?: string;
+/**
+ * Incluir itens com saldo zero.
+ */
+includeZero?: boolean;
+/**
+ * Whitelist: `daysWithoutSale`, `valueCents`, `quantity`, `lastSaleAt`, `description`. Campo fora dela é 400.
+ *
+ * Quem NUNCA vendeu não tem dias a contar e fica no fim em qualquer sentido — no topo, enterraria os que já venderam e pararam, que é onde mora a decisão de queima.
+ *
+ * Padrão: `daysWithoutSale`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetQuoteVsStockReportParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório onde o relatório soma: agregação sem recorte responde outra pergunta e cresce para sempre — o campeão de vendas de 2019 lideraria o quadro até alguém notar.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * Só o que falta. É a lista de compras que o relatório existe para gerar.
+ */
+shortageOnly?: boolean;
+/**
+ * Whitelist: `shortageQuantity`, `quotedQuantity`, `stockQuantity`, `description`. Campo fora dela é 400.
+ *
+ * Padrão: `shortageQuantity`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetBirthdaysReportParams = {
+/**
+ * Mês, 1-12. Obrigatório e sem padrão: "mês atual" decidido pelo servidor daria uma resposta diferente conforme o fuso de quem pergunta, e o relatório é impresso e conferido.
+ * @minimum 1
+ * @maximum 12
+ */
+month: number;
+/**
+ * Restringe ao papel. Ausente = todos os vinculados com data de nascimento.
+ */
+role?: GetBirthdaysReportRole;
+/**
+ * Whitelist: `day`, `name`, `age`. Campo fora dela é 400.
+ *
+ * A ordem padrão é `day` crescente: a lista serve para ligar na ordem em que os dias chegam.
+ *
+ * Padrão: `day`.
+ */
+sortBy?: string;
+/**
+ * Inverte o sentido. O padrão de cada relatório já é o que responde à pergunta dele — o maior faturamento primeiro, o item parado há mais tempo primeiro.
+ */
+sortDesc?: boolean;
+/**
+ * Página, 1-based, como toda listagem do contrato.
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Linhas por página. Teto 100, e acima dele o servidor responde 400 em vez de aparar em silêncio: quem pediu 500 e recebeu 100 conclui que só existem 100 produtos.
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetBirthdaysReportRole = typeof GetBirthdaysReportRole[keyof typeof GetBirthdaysReportRole];
+
+
+export const GetBirthdaysReportRole = {
+  customer: 'customer',
+  professional: 'professional',
+  supplier: 'supplier',
+} as const;
+
+export type ListPurchaseRequestsParams = {
+q?: string;
+/**
+ * Whitelist: `number`, `issuedAt`, `status`, `itemCount`. Campo fora dela é 400.
+ *
+ * `orderNumber` fica de fora e é decisão: ele é ECOADO do pedido de venda, e ordenar por coluna de outra tabela num recurso paginado é o que transforma listagem em junção obrigatória. Quem procura pelo pedido de venda usa `q`.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por estado do pedido. Omitido, traz todos — inclusive `cancelled`, que a tela esconde por padrão mas o relatório quer.
+ */
+status?: string;
+/**
+ * Só os pedidos com ao menos uma LINHA deste fornecedor. Recorta por linha e não por cabeçalho, porque o pedido não tem fornecedor — as linhas têm, e podem ser de vários. Este é o parâmetro que a tela de montar ordem usa.
+ */
+supplierId?: string;
+/**
+ * Só os pedidos com linha ainda não levada por ordem nenhuma. É o recorte de trabalho do comprador: o pedido totalmente atendido não some, mas também não atrapalha a tela em que se monta ordem.
+ */
+onlyOpenItems?: boolean;
+};
+
+export type ListPurchaseOrdersParams = {
+q?: string;
+/**
+ * Whitelist: `number`, `orderedAt`, `sentAt`, `expectedAt`, `status`, `totalCents`. Campo fora dela é 400.
+ *
+ * `supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. `rescheduledAt` também, e por um motivo próprio: ele é nulo na maioria das linhas, e ordenar por coluna majoritariamente nula agrupa o irrelevante numa ponta e parece defeito. Quem quer as reagendadas usa a previsão de chegada, que já as marca.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por estado da ordem.
+ */
+status?: string;
+/**
+ * Só as ordens deste fornecedor.
+ */
+supplierId?: string;
+};
+
+export type GetPurchaseArrivalForecastParams = {
+q?: string;
+/**
+ * Whitelist: `expectedAt`, `sentAt`, `purchaseOrderNumber`, `daysLate`. Campo fora dela é 400.
+ *
+ * O padrão é `expectedAt` crescente — a tela de previsão abre no que chega primeiro, e uma previsão ordenada por outra coisa obriga o operador a ordená-la toda vez.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Só o que vem deste fornecedor.
+ */
+supplierId?: string;
+/**
+ * Só o que está prometido a este cliente. Recorta os itens `sale`; linha de reposição não tem cliente e some deste recorte, que é o comportamento certo.
+ */
+customerId?: string;
+/**
+ * Recorta por destino: `stock` (reposição) ou `sale` (encomenda). É a separação que o legado faz com dois botões.
+ */
+destination?: string;
+/**
+ * Só as linhas cuja data válida já passou. É o recorte de cobrança do comprador.
+ */
+lateOnly?: boolean;
+/**
+ * Piso da data válida (inclusive).
+ */
+from?: string;
+/**
+ * Teto da data válida (inclusive).
+ */
+to?: string;
+};
+
+export type GetPurchaseStockReplenishmentParams = {
+q?: string;
+/**
+ * Whitelist: `description`, `qtyOnHand`, `qtyAllocated`, `qtyAvailable`, `qtyOnOrder`, `qtySuggested`. Campo fora dela é 400.
+ *
+ * O padrão é `qtySuggested` decrescente: a tela abre no que mais falta, que é a única ordem em que uma lista de reposição é útil sem ninguém tocá-la.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Só as variantes cujo fornecedor padrão é este — o recorte de quem vai montar uma ordem.
+ */
+supplierId?: string;
+/**
+ * Recorta o saldo a UM depósito. Omitido, soma os depósitos da empresa ativa: reposição é decisão da empresa, e o galpão de onde a peça sai é decisão da separação.
+ */
+locationId?: string;
+/**
+ * Só as variantes em que `qtySuggested > 0`. É o recorte de trabalho; omitido, a consulta traz o quadro inteiro, que é o que o relatório quer.
+ */
+belowMinimumOnly?: boolean;
 };
 

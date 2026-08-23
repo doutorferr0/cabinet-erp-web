@@ -283,6 +283,15 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
       notes: 'observacao',
       facebook: 'redesSociais.facebook',
       instagram: 'redesSociais.instagram',
+      // Bloco 3 (#270). `personType` fica de FORA desta lista de propósito: o
+      // valor que sai não é o que entrou — o formulário fala `FISICA` e o
+      // contrato `individual`, e esta verificação compara literais. O
+      // round-trip dele tem teste próprio em `papeis/pessoa.test.ts`.
+      identityDocument: 'rg',
+      identityIssuer: 'orgaoExpedicao',
+      identityIssuerState: 'ufRg',
+      gender: 'sexo',
+      birthDate: 'dtNascimento',
     },
     FORNECEDOR: {
       legalName: 'razaoSocial',
@@ -303,6 +312,9 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
       notes: 'observacao',
       facebook: 'redesSociais.facebook',
       instagram: 'redesSociais.instagram',
+      // Bloco 3 (#270) — a §3 desenha só estes dois dos seis.
+      identityDocument: 'rg',
+      birthDate: 'dtNascimento',
     },
   }
 
@@ -319,6 +331,13 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
           isCustomer: 'papel vem da linha ou da tela, não do formulário',
           isSupplier: 'idem',
           isProfessional: 'idem',
+          // Bloco 3 (#270). O ÚNICO campo do parceiro que muda de vocabulário
+          // e não só de nome: o formulário fala `FISICA`/`JURIDICA` (os
+          // rótulos do radio do legado) e o contrato tem
+          // `enum: [individual, company, null]`. A verificação de igualdade
+          // literal não serve aqui — o round-trip da tabela tem teste próprio
+          // em `features/parceiro/papeis/pessoa.test.ts`.
+          personType: 'FISICA/JURIDICA no formulário, individual/company no contrato',
         })
       }
     })

@@ -9,7 +9,6 @@ import {
   TextField,
   TextareaField,
 } from '@/components/cabinet/form-controls'
-import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
 import { tabelas } from '@/data/tabelas'
 import {
@@ -66,14 +65,11 @@ export const fornecedorSchema = z.object({
   }),
   observacao: z.string(),
   empresaCompradora: z.string().nullable(),
-  contatos: z.array(
-    z.object({
-      nome: z.string(),
-      vinculo: z.string(),
-      fone: z.string(),
-      fax: z.string(),
-    }),
-  ),
+  // `contatos` SAIU do registro (#270). O contrato publica contato como
+  // sub-recurso com `POST`/`PUT` próprios, e o corpo do `PUT` do parceiro não
+  // o carrega — declarar aqui daria um campo que o `Gravar` do rodapé
+  // atravessa e o servidor nunca vê. Quem o edita é `<ContatosDoParceiro>`,
+  // com gravação própria.
 })
 
 function ConsultaCnpjButton() {
@@ -155,7 +151,13 @@ function BlocoDoModulo({
 function FornecedorCorpo({
   onBuscaCidade,
   moduloEmFoco,
-}: { onBuscaCidade: () => void; moduloEmFoco: string | undefined }) {
+  contatos,
+}: {
+  onBuscaCidade: () => void
+  moduloEmFoco: string | undefined
+  /** O bloco de contatos, montado pela ROTA — ver o comentário no módulo. */
+  contatos: React.ReactNode
+}) {
   return (
     <div className="flex flex-col gap-3">
       <ProgressoObrigatorios entidade={entidadeFornecedor} />
@@ -252,17 +254,15 @@ function FornecedorCorpo({
           {/* A grade de contatos era a única aba capturada da §4, e vivia numa
               tira de abas com sete irmãs desabilitadas. O schema a coloca em
               `Representante e contatos`, que é onde ela sempre pertenceu —
-              e as sete abas mortas deixam de ocupar a tela. */}
-          <FormGrid
-            name="contatos"
-            columns={[
-              { key: 'nome', label: 'Nome' },
-              { key: 'vinculo', label: 'Vínculo' },
-              { key: 'fone', label: 'Fone' },
-              { key: 'fax', label: 'FAX' },
-            ]}
-            newRow={{ nome: '', vinculo: '', fone: '', fax: '' }}
-          />
+              e as sete abas mortas deixam de ocupar a tela.
+
+              Ela deixou de ser campo do registro (#270): o contrato publica
+              contato como SUB-RECURSO (`/api/partners/{id}/contacts`), com
+              `POST`/`PUT` próprios, e o corpo do `PUT` do parceiro não o
+              carrega. Ligada ao formulário, a grade parecia gravar com o
+              `Gravar` do rodapé e não gravava. Quem a monta agora é a rota, que
+              é quem tem o id do cadastro. */}
+          {contatos}
         </div>
       </BlocoDoModulo>
 
@@ -287,10 +287,19 @@ export function FornecedorForm({
   contexto,
   aviso,
   moduloEmFoco,
+  contatos,
   onGravar: gravarDeFora,
 }: {
   fornecedor: Fornecedor
   readOnly?: boolean
+  /**
+   * O bloco `Representante e contatos`, montado pela ROTA.
+   *
+   * Vem de fora porque contato é sub-recurso com id próprio, e quem tem o id
+   * do cadastro é a rota — não o formulário, que trabalha sobre o registro. No
+   * `Incluir` a rota manda `null`: sem cadastro gravado não há a que pendurar.
+   */
+  contatos?: React.ReactNode
   /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
   moduloEmFoco?: string | undefined
   /** Modo ou registro aberto, ao lado do título na banda. */
@@ -329,7 +338,11 @@ export function FornecedorForm({
       {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
-      <FornecedorCorpo onBuscaCidade={() => setBuscaCidadeOpen(true)} moduloEmFoco={moduloEmFoco} />
+      <FornecedorCorpo
+        onBuscaCidade={() => setBuscaCidadeOpen(true)}
+        moduloEmFoco={moduloEmFoco}
+        contatos={contatos}
+      />
 
       <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
     </CadastroForm>

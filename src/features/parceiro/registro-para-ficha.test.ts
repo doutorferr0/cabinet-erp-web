@@ -11,14 +11,27 @@ import { registroParaFicha } from './registro-para-ficha'
  * operador lê; este prova a regra sobre a estrutura, que é onde ela é decidida.
  */
 describe('registroParaFicha', () => {
-  it('apaga o campo que o contrato NÃO carrega', () => {
+  it('apaga o campo OBRIGATÓRIO que o servidor não preencheu', () => {
     const registro = { ...clienteVazio(0), nome: 'PROVA', tipoPessoa: 'FISICA' as const }
 
+    // O caso do dado real: cadastro anterior ao bloco 3 tem `personType: null`,
+    // e o radio obrigatório nasce `FISICA` porque controle precisa de valor. A
+    // ficha não pode dizer "Física" só por causa desse default — quem sabe que
+    // o servidor não mandou é o papel, e é ele que passa a lista.
+    const paraFicha = registroParaFicha(registro, cliente, ['tipoPessoa'])
+
+    expect('tipoPessoa' in paraFicha).toBe(false)
+  })
+
+  it('SEM a lista, o campo com `dto` sobrevive — é dado do servidor', () => {
+    const registro = { ...clienteVazio(0), tipoPessoa: 'JURIDICA' as const }
+
+    // A contrapartida do teste acima, e o motivo de a lista vir de fora: desde
+    // o bloco 3 (#270) `tipoPessoa` TEM `dto`, então o schema sozinho não sabe
+    // mais distinguir "o servidor não guarda" de "este registro não tem".
     const paraFicha = registroParaFicha(registro, cliente)
 
-    // `tipoPessoa` não tem `dto` no schema: o servidor não guarda, então a ficha
-    // não pode dizer "Física" só porque o formulário precisa de um default.
-    expect('tipoPessoa' in paraFicha).toBe(false)
+    expect(paraFicha.tipoPessoa).toBe('JURIDICA')
   })
 
   it('preserva o campo que o contrato carrega', () => {

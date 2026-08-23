@@ -14,7 +14,32 @@ import {
   ORDENAVEIS as ORDENAVEIS_PRODUTO,
 } from '@/data/produtos-api'
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
+import { ORDENAVEIS_PAPEL as ORDENAVEIS_PAPEL_MOCK } from '@/mocks/api/acesso'
+import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
+import { ORDENAVEIS as ORDENAVEIS_CONTATO_MOCK } from '@/mocks/api/contatos'
+import {
+  FILTRAVEIS_OPORTUNIDADE as FILTRAVEIS_OPORTUNIDADE_MOCK,
+  ORDENAVEIS_COLABORADOR as ORDENAVEIS_COLABORADOR_MOCK,
+  ORDENAVEIS_FUNIL as ORDENAVEIS_FUNIL_MOCK,
+  ORDENAVEIS_MOTIVO as ORDENAVEIS_MOTIVO_MOCK,
+  ORDENAVEIS_OPORTUNIDADE as ORDENAVEIS_OPORTUNIDADE_MOCK,
+} from '@/mocks/api/crm'
+import { ORDENAVEIS_DEPOSITO, ORDENAVEIS_SALDO } from '@/mocks/api/depositos'
+import {
+  FILTRAVEIS_PARCEIRO as FILTRAVEIS_PARCEIRO_MOCK,
+  FILTRAVEIS_PRODUTO as FILTRAVEIS_PRODUTO_MOCK,
+  ORDENAVEIS_LOOKUPS as ORDENAVEIS_LOOKUPS_MOCK,
+  ORDENAVEIS_MOVIMENTO as ORDENAVEIS_MOVIMENTO_MOCK,
+  ORDENAVEIS_PARCEIRO as ORDENAVEIS_PARCEIRO_MOCK,
+  ORDENAVEIS_PRODUTO as ORDENAVEIS_PRODUTO_MOCK,
+} from '@/mocks/api/handlers'
 import { FILTRAVEIS as FILTRAVEIS_OBRA, ORDENAVEIS as ORDENAVEIS_OBRA } from '@/mocks/api/obras'
+import { ORDENAVEIS_CONDICAO } from '@/mocks/api/pagamento'
+import {
+  FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
+  ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
+} from '@/mocks/api/quotes'
+import { ORDENAVEIS_SERVICO } from '@/mocks/api/servicos'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -115,10 +140,62 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListOrders: 'pedido de venda ainda não tem listagem própria na tela',
+  ListOrderProfessionalHistory:
+    'a trilha de indicação (G13) é sub-recurso do pedido e nasce sem tela — cabeçalho ordenável exigiria a tela do pedido, que não existe',
   ListCatalogLookups: 'o combo pede por `kind` e não ordena — não há cabeçalho para clicar',
   ListStockMovements: 'kardex desenha em ordem fixa (`occurredAt` desc), sem coluna ordenável',
   ListEmployees: 'colaborador ainda é provider de mock, com lista própria lá',
   ListPartnerContacts: 'a grade do parceiro é sub-recurso e não tem cabeçalho ordenável',
+  ListRoles:
+    'papéis nasceram no contrato antes da tela — a de checkboxes é trilho próprio, depois da fase 1 do api#84',
+  ListStockLocations:
+    'depósito ainda não tem tela — a lista existe no mock, e é lá que é conferida',
+  ListStockBalances: 'saldo por depósito ainda não tem tela — idem, a lista é a do mock',
+  ListPaymentTerms:
+    'o bloco Pagamento do documento consome a lista inteira ordenada por `name` e não oferece ordenação ao operador — a whitelist existe no mock, e é lá que é conferida',
+  ListServices:
+    'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
+  // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
+  // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
+  // mostra número inventado com cara de apuração, que é pior do que não mostrar
+  // nada. Cada um sai daqui quando ganhar a aba dele, com `ORDENAVEIS` próprio.
+  //
+  // Eles caem nesta guarda por publicarem `pageSize`, e isso é correto e não
+  // acidente: relatório PAGINA, e por paginar precisa dizer por onde ordena —
+  // sem `sortBy` declarado, a coluna que a tela desenhar clicável vira 400.
+  // AS QUATRO LISTAGENS DE COMPRAS (G2) — as telas são a FASE C deste mesmo
+  // trilho, e nascem depois do servidor pela razão que o módulo inteiro tem: a
+  // tela de montar ordem agrupa linha de pedido por fornecedor e confere
+  // faturamento mínimo, e sobre dado mockado ela mostraria uma ordem que o
+  // servidor recusaria. Cada uma sai daqui quando ganhar a tela, com
+  // `ORDENAVEIS` próprio.
+  ListPurchaseRequests:
+    'pedido de compra ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  ListPurchaseOrders:
+    'ordem de compra ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  GetPurchaseArrivalForecast:
+    'previsão de chegada ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  GetPurchaseStockReplenishment:
+    'compras para estoque/reserva ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  GetAbcCurveReport: 'curva ABC ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetProductsSoldReport:
+    'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetSalesComparisonReport:
+    'comparativo de vendas ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetSalespersonReport:
+    'demonstrativo por atendente ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetProfessionalRankingReport:
+    'ranking de profissional ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetSupplierMovementReport:
+    'movimentação por fornecedor ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetStockValuationReport:
+    'estoque valorizado ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetStockAgingReport:
+    'dias sem venda ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetQuoteVsStockReport:
+    'orçamento × estoque ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  GetBirthdaysReport:
+    'aniversariantes do mês ainda não tem tela — a seção Relatórios é a Fase C do trilho',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -131,6 +208,108 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE,
   ListCrmLostReasons: ORDENAVEIS_MOTIVO_DE_PERDA,
   ListWorks: ORDENAVEIS_OBRA,
+}
+
+/**
+ * O `sortBy` publicado × a lista que O MOCK recusa fora dela.
+ *
+ * Duas cópias diferentes da mesma frase: `src/data/*-api.ts` é o que a TELA
+ * manda, e estas são as que o MOCK aceita. As duas precisam bater com o
+ * contrato, e por motivos diferentes — a primeira porque o servidor recusa, a
+ * segunda porque **o site público é 100% mock** e ali quem recusa é ela.
+ *
+ * Três estavam menores que o contrato quando esta lista nasceu: `catalog-lookups`
+ * sem `active`, o kardex só com `occurredAt`, e o parceiro sem `parentId` — este
+ * com a TELA mandando `parentId`, ou seja, 400 garantido no clique do cabeçalho
+ * em `cabinetonline.cc`.
+ */
+const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
+  ListProducts: ORDENAVEIS_PRODUTO_MOCK,
+  ListPartners: ORDENAVEIS_PARCEIRO_MOCK,
+  ListCatalogLookups: ORDENAVEIS_LOOKUPS_MOCK,
+  ListStockMovements: ORDENAVEIS_MOVIMENTO_MOCK,
+  ListPartnerContacts: ORDENAVEIS_CONTATO_MOCK,
+  ListQuotes: ORDENAVEIS_ORCAMENTO_MOCK,
+  ListActivities: ORDENAVEIS_ATIVIDADE_MOCK,
+  ListCrmPipelines: ORDENAVEIS_FUNIL_MOCK,
+  ListCrmLostReasons: ORDENAVEIS_MOTIVO_MOCK,
+  ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE_MOCK,
+  ListEmployees: ORDENAVEIS_COLABORADOR_MOCK,
+  ListWorks: ORDENAVEIS_OBRA,
+  ListRoles: ORDENAVEIS_PAPEL_MOCK,
+  // Depósito e saldo nascem sem tela e COM mock (#291). É este eixo que os
+  // mede, e não o de cima: quem recusa `sortBy` fora da whitelist, hoje, é o
+  // handler — e o site público é 100% mock.
+  ListStockLocations: ORDENAVEIS_DEPOSITO,
+  ListStockBalances: ORDENAVEIS_SALDO,
+  // Condição de pagamento nasce sem tela e COM mock (S4), como depósito: quem
+  // recusa `sortBy` fora da whitelist, hoje, é o handler.
+  ListPaymentTerms: ORDENAVEIS_CONDICAO,
+  // Serviço nasce sem tela e COM mock, pela mesma razão: quem recusa `sortBy`
+  // fora da whitelist, hoje, é o handler — e o site público é 100% mock.
+  ListServices: ORDENAVEIS_SERVICO,
+}
+
+/**
+ * A listagem que o MOCK não serve, e por quê.
+ *
+ * `/api/orders` está no contrato e na passagem, e handler nenhum o responde: em
+ * modo mock ele cai no fallback da SPA e volta `index.html` com 200, que é o
+ * `urn:cabinet:erro:resposta-nao-json` do cliente. Hoje não morde porque tela
+ * nenhuma o consome — quando alguma consumir, é o site público que quebra.
+ */
+const SEM_HANDLER_NO_MOCK: Record<string, string> = {
+  ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
+  // OS DEZ RELATÓRIOS (#310) — agregação não tem handler no mock, e não é
+  // esquecimento: o mock guarda LINHAS, e somar dez relatórios sobre elas seria
+  // reimplementar em TypeScript as agregações que o Postgres faz do outro lado.
+  // As duas contas divergiriam no primeiro arredondamento, e a divergência
+  // apareceria como "o site público mostra outro faturamento".
+  //
+  // O preço está pago enquanto tela nenhuma os consome. Quando a Fase C chegar,
+  // este é o ponto que decide: ou o site público perde a seção Relatórios, ou
+  // ela ganha handler de mock com dado de demonstração DECLARADO como tal.
+  // COMPRAS (G2). Diferente dos relatórios, o motivo aqui não é agregação: é
+  // que as duas listagens dependem de ESTADO que o mock não guarda — qual linha
+  // de pedido já foi levada por uma ordem. Um mock que respondesse sem isso
+  // deixaria a tela oferecer, para montar ordem, a linha que já está em outra.
+  // As duas consultas somam sobre esse mesmo estado.
+  ListPurchaseRequests: 'o mock não guarda qual linha já foi levada por uma ordem',
+  ListPurchaseOrders: 'idem — a ordem existe em função do estado das linhas de pedido',
+  GetPurchaseArrivalForecast: 'previsão soma sobre ordem enviada, estado que o mock não tem',
+  GetPurchaseStockReplenishment:
+    'reposição cruza saldo, reserva e ordem aberta — três estados que o mock não guarda',
+  GetAbcCurveReport: 'curva ABC é agregação — o mock guarda linhas, não somas',
+  GetProductsSoldReport: 'produto vendido é agregação — o mock guarda linhas, não somas',
+  GetSalesComparisonReport: 'comparativo de vendas é agregação — o mock guarda linhas, não somas',
+  GetSalespersonReport: 'demonstrativo por atendente é agregação — o mock guarda linhas, não somas',
+  GetProfessionalRankingReport:
+    'ranking de profissional é agregação — o mock guarda linhas, não somas',
+  GetSupplierMovementReport:
+    'movimentação por fornecedor é agregação — o mock guarda linhas, não somas',
+  GetStockValuationReport: 'estoque valorizado é agregação — o mock guarda linhas, não somas',
+  GetStockAgingReport: 'dias sem venda é agregação — o mock guarda linhas, não somas',
+  GetQuoteVsStockReport: 'orçamento × estoque é agregação — o mock guarda linhas, não somas',
+  GetBirthdaysReport: 'aniversariantes do mês é agregação — o mock guarda linhas, não somas',
+  ListOrderProfessionalHistory:
+    'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
+}
+
+/**
+ * O `filters` publicado × o que O MOCK aplica.
+ *
+ * A régua da linha de cima mede a TELA; esta mede quem recorta em modo mock. O
+ * pior caso deste eixo não é recusar demais, é **ignorar**: filtro descartado em
+ * silêncio devolve a lista inteira com a condição desenhada no painel, e quem lê
+ * conclui que ela não estreita nada. Era o caso do orçamento até 2026-08-22 — o
+ * handler nunca olhou para `filters`.
+ */
+const FILTRAVEIS_DO_MOCK: Record<string, readonly string[]> = {
+  ListProducts: Object.keys(FILTRAVEIS_PRODUTO_MOCK),
+  ListPartners: Object.keys(FILTRAVEIS_PARCEIRO_MOCK),
+  ListQuotes: Object.keys(FILTRAVEIS_ORCAMENTO_MOCK),
+  ListCrmOpportunities: Object.keys(FILTRAVEIS_OPORTUNIDADE_MOCK),
+  ListWorks: Object.keys(FILTRAVEIS_OBRA),
 }
 
 /** O `filters` publicado × a lista que o front manda, onde ele publica. */
@@ -182,6 +361,51 @@ describe('3. a lista do front é a publicada', () => {
     expect([...(FILTRAVEIS_DO_FRONT[opid] as string[])].sort()).toEqual(
       [...(publicada as string[])].sort(),
     )
+  })
+})
+
+describe('3b. o MOCK aceita o que o contrato publica', () => {
+  it.each(Object.keys(ORDENAVEIS_DO_MOCK))('%s ordena pelo que o contrato aceita', (opid) => {
+    const publicada = listagens.find((l) => l.operationId === opid)?.sortBy
+    expect(publicada, `${opid} sumiu do contrato`).toBeDefined()
+    expect([...(ORDENAVEIS_DO_MOCK[opid] as string[])].sort()).toEqual(
+      [...(publicada as string[])].sort(),
+    )
+  })
+
+  it.each(Object.keys(FILTRAVEIS_DO_MOCK))('%s filtra pelo que o contrato aceita', (opid) => {
+    const publicada = listagens.find((l) => l.operationId === opid)?.filters
+    expect(publicada, `${opid} não publica filters`).toBeDefined()
+    expect([...(FILTRAVEIS_DO_MOCK[opid] as string[])].sort()).toEqual(
+      [...(publicada as string[])].sort(),
+    )
+  })
+
+  it('quem publica `filters` tem mock que os APLICA — ignorar é pior que recusar', () => {
+    // Filtro descartado em silêncio faz a tela mostrar a lista inteira com a
+    // condição no painel. Se uma listagem publica `filters` e não aparece aqui,
+    // ou ela ganhou um mapa no mock, ou o handler dela não existe (e aí está
+    // nomeado no inventário abaixo).
+    const semMapa = listagens
+      .filter((l) => l.filters !== undefined)
+      .map((l) => l.operationId)
+      .filter((id) => FILTRAVEIS_DO_MOCK[id] === undefined && SEM_HANDLER_NO_MOCK[id] === undefined)
+      .sort()
+
+    expect(semMapa, 'publica `filters` e o mock não os aplica').toEqual([])
+  })
+
+  it('toda listagem tem handler no mock, ou está nomeada com o motivo', () => {
+    const orfas = listagens
+      .map((l) => l.operationId)
+      .filter((id) => ORDENAVEIS_DO_MOCK[id] === undefined && SEM_HANDLER_NO_MOCK[id] === undefined)
+      .sort()
+
+    expect(
+      orfas,
+      'Listagem do contrato que o mock não serve e ninguém declarou: em modo mock ' +
+        'ela devolve o `index.html` da SPA com 200, e o site público é 100% mock.',
+    ).toEqual([])
   })
 })
 

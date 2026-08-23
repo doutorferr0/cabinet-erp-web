@@ -1,3 +1,4 @@
+import { respostaPagamento } from '@/test/orcamentos'
 import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -76,6 +77,12 @@ function servidor(escritas: Escrita[], logins: unknown[], statusInicial = 401) {
     if (url.includes('/auth/me')) return respostaSessao()
     if (url.includes('/auth/tenants')) return respostaVinculos()
     if (url.includes('/api/catalog-lookups')) return respostaLookups()
+    // O bloco Pagamento da seção 06 consulta estas duas em toda montagem
+    // do documento. Sem dublê elas não dão erro visível: o `retry` do app é
+    // `tentativa < 3` com backoff, e o teste morre de `Test timed out` sem
+    // nunca falar de pagamento.
+    if (url.includes('/api/installment-policy')) return respostaPagamento('/api/installment-policy')
+    if (url.includes('/api/payment-terms')) return respostaPagamento('/api/payment-terms')
     // O painel de Atividades (#90) passou a montar nesta rota; sem resposta
     // aqui o `fetch` do teste devolve `undefined` e a falha aparece longe.
     if (url.includes('/api/activities')) return json({ rows: [], total: 0 })

@@ -3,6 +3,7 @@
  * Tela central do sistema; só a aba `Principal` foi capturada.
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
  */
+import type { DocumentInstallmentDto, InstallmentPolicyDto } from '@/api/gerado'
 
 /** Item da grade de 13 colunas — §8.2. O item fala na língua do FORNECEDOR. */
 export interface OrcamentoItem {
@@ -90,6 +91,21 @@ export interface Orcamento {
    */
   ambientes: AmbienteDoOrcamento[]
   itens: OrcamentoItem[]
+  /** A condição de pagamento escolhida — `PaymentTermDto.id`, `Ven_formaPag`. */
+  condicaoPagamentoId: string | null
+  /** Nome da condição na emissão, resolvido pelo servidor. */
+  condicaoPagamento: string | null
+  /**
+   * O plano CARIMBADO na gravação — não derivado na leitura.
+   *
+   * É a diferença que o legado registra ao copiar os parâmetros para a linha da
+   * `Venda`: alterar a condição depois não pode mudar o vencimento de parcela
+   * que o cliente já recebeu. Derivar aqui faria o documento reimpresso sair
+   * diferente de si mesmo.
+   */
+  parcelas: DocumentInstallmentDto[]
+  /** Os três limites que valiam na gravação. Ausente no documento do seed. */
+  politicaDeParcelamento?: InstallmentPolicyDto
 }
 
 /** Linhas literais da listagem §8.1. */
@@ -192,6 +208,13 @@ export const orcamentos: Orcamento[] = LINHAS.map((l, i) => ({
             ambiente: 'SALA',
           },
         ],
+  // O seed nasce SEM condição de pagamento, e é a verdade dele: as 17 linhas
+  // são a listagem literal da §8.1, onde a coluna não existe. Carimbar um plano
+  // aqui inventaria vencimento que ninguém escolheu — e o documento sem plano é
+  // justamente o estado que a tela precisa saber desenhar.
+  condicaoPagamentoId: null,
+  condicaoPagamento: null,
+  parcelas: [],
 }))
 
 export function orcamentoVazio(id = ''): Orcamento {
@@ -215,5 +238,10 @@ export function orcamentoVazio(id = ''): Orcamento {
     descontoPercentual: 0,
     ambientes: [],
     itens: [],
+    condicaoPagamentoId: null,
+    condicaoPagamento: null,
+    // `[]` e não `undefined`: documento sem condição tem plano VAZIO, e é o que
+    // impede a tela de quebrar num `.map` só no orçamento recém-aberto.
+    parcelas: [],
   }
 }

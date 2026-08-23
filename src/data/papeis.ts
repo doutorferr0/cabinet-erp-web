@@ -61,10 +61,15 @@ export type FamiliaDeCaminho =
   | 'todos'
   | 'products'
   | 'variants'
+  | 'services'
+  | 'stock-locations'
+  | 'payment-terms'
+  | 'installment-policy'
   | 'employees'
   | 'catalog-lookups'
   | 'projects'
   | 'dashboard'
+  | 'roles'
 
 /**
  * Papel mínimo por família de caminho — cópia da matriz do backend
@@ -84,6 +89,51 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
   todos: 'operator-sales',
   products: 'operator-full',
   variants: 'operator-full',
+  /**
+   * Serviço é CATÁLOGO, e a linha de corte é a de `products`, não a de
+   * `quotes`.
+   *
+   * O critério desta matriz para pôr algo acima do atendimento nunca foi
+   * "é caro" — é *o erro de um vaza para os documentos de todo mundo*. O
+   * preço e o percentual do eletricista de um serviço são congelados por
+   * cada orçamento novo até alguém notar, e o percentual errado vira
+   * pagamento errado a quem instalou. É palavra por palavra o que já pôs
+   * `products` aqui.
+   *
+   * Não sobe a `admin` como `stock-locations`: cadastrar serviço não muda a
+   * leitura de ninguém retroativamente — documento fechado guarda o
+   * snapshot.
+   */
+  services: 'operator-full',
+  /**
+   * Decisão do user em 2026-08-22 (api#79, ponto 4), e **INTERINA**.
+   *
+   * Depósito não vai junto de `variants`, apesar de ser estoque: movimentar é
+   * operação de atendimento, criar depósito muda a leitura de saldo de TODO
+   * mundo — a mesma linha de corte que já põe `employees` e não `products` em
+   * `admin`. Vira a permissão nomeada `depositos:gerenciar` quando o modelo por
+   * AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+   */
+  'stock-locations': 'admin',
+  /**
+   * Condição de pagamento e a política de parcelamento sobem juntas, e ficam
+   * onde o depósito ficou — pela MESMA linha de corte, não por simetria.
+   *
+   * Parcelar não é operação de atendimento: é a regra que decide o que TODO
+   * vendedor pode oferecer, e o erro sai em documento assinado antes de alguém
+   * notar. `operator-sales` grava o orçamento (é o trabalho dele) e escolhe
+   * entre as condições que existem; criar a condição é outra coisa.
+   *
+   * A política fica no MESMO degrau que a condição, e não um acima, porque quem
+   * pode escrever a condição já decide o plano na prática: um teto de 6× guardado
+   * de `admin` enquanto `operator-full` cadastra a condição de 10 parcelas seria
+   * cadeado na porta com a janela aberta.
+   *
+   * **INTERINO**, como a linha do depósito: vira permissão nomeada quando o
+   * modelo por AÇÃO (api#84) entregar.
+   */
+  'payment-terms': 'admin',
+  'installment-policy': 'admin',
   employees: 'admin',
   /**
    * Decisão, não herança (`cabinet-erp-api#66`).
@@ -105,6 +155,17 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
   'catalog-lookups': 'operator-full',
   projects: 'owner',
   dashboard: 'owner',
+  /**
+   * Gerenciar papéis é distribuir permissão para os outros — é a definição de
+   * `admin` na api#84 ("acesso completo, cria usuários e papéis"), e não uma
+   * escolha desta linha.
+   *
+   * A matriz continua sendo a escala ANTIGA de propósito: enquanto a conversão
+   * do api#84 não chega à fase 3, é por ela que o front esconde controle. O dia
+   * em que o vínculo publicar as permissões efetivas, esta matriz inteira morre
+   * junto com `alcanca()` — não só esta linha.
+   */
+  roles: 'admin',
 }
 
 /**
@@ -123,10 +184,15 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   todos: ['/api/todos'],
   products: ['/api/products'],
   variants: ['/api/products', '/api/variants'],
+  services: ['/api/services'],
+  'stock-locations': ['/api/stock-locations'],
+  'payment-terms': ['/api/payment-terms'],
+  'installment-policy': ['/api/installment-policy'],
   employees: ['/api/employees'],
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],
   dashboard: ['/api/dashboard'],
+  roles: ['/api/roles'],
 }
 
 /** Devolve a família de um caminho de API, ou `undefined` quando não se aplica. */

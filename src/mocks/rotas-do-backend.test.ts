@@ -29,6 +29,137 @@ let base: string
 
 const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...handlers)
 
+/**
+ * Operações que o contrato publica e a passagem NÃO liga, com o motivo.
+ *
+ * Ficou vazia da #274 até a #292: o backend `3089106` não respondia 501 em
+ * nenhuma das 78. Papéis e permissões reabrem a lista porque o contrato voltou
+ * a andar na frente — é o estado normal deste repo, que é o DONO do contrato.
+ *
+ * **Medição (2026-08-22, `cabinet-erp-api` `92e61eb`):** não existe rota de
+ * papéis no servidor — a busca por `api/roles` no repo inteiro devolve zero, e
+ * a api#84 está ABERTA, com a fase 1 (catálogo + tabelas + enforcement) por
+ * entregar. Não é nem o 501 da fase: é caminho que o servidor não tem. Ligar
+ * qualquer uma destas tiraria o mock e entregaria 404 a uma tela que ainda nem
+ * existe.
+ *
+ * Entrada nova aqui exige a medição junto, no comentário.
+ */
+const FORA_DE_PROPOSITO: readonly string[] = [
+  'get /api/permissions',
+  'get /api/roles',
+  'post /api/roles',
+  'get /api/roles/{id}',
+  'put /api/roles/{id}',
+  // Os DEPÓSITOS (#291) pela MESMA razão dos papéis, e não pela do 501: o
+  // contrato os publica AGORA porque é ele que especifica o que a fase 2 da
+  // api#79 implementa (migração `0030` + módulo Drizzle), e no servidor de hoje
+  // não há handler nenhum — o par local devolve o 404 do Fastify, não 501.
+  // Saem daqui em FAMÍLIA, e só quando a família INTEIRA responder: meia
+  // família põe id do servidor de um lado e id inventado do outro.
+  'get /api/stock-locations',
+  'post /api/stock-locations',
+  'put /api/stock-locations/{id}',
+  'get /api/variants/{variantId}/stock-balances',
+  // PAGAMENTO (S4) pela MESMA razão dos depósitos, e não pela do 501: o contrato
+  // especifica agora o que a fase S4b da api vai implementar, e no servidor de
+  // hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `e47827e`):** `git grep` por
+  // `payment-terms`, `installment-policy` e `PaymentTerm` em `src/` e `tests/`
+  // devolve ZERO, e a cópia do contrato de lá tem 87 operações — as 87 de antes
+  // desta PR. Não é o 501 da fase: é caminho que o servidor não tem, e o par
+  // local devolve o 404 do Fastify. Ligar qualquer uma tiraria o mock e
+  // entregaria 404 ao site público, que é 100% mock.
+  //
+  // Saem daqui em FAMÍLIA — as cinco juntas, e só quando as cinco responderem.
+  // A condição sem a política deixaria o mock recusando um plano de 10x que o
+  // servidor aceita (ou o contrário), e a divergência apareceria como 400 numa
+  // gravação que a tela achava válida.
+  'get /api/payment-terms',
+  'post /api/payment-terms',
+  'put /api/payment-terms/{id}',
+  'get /api/installment-policy',
+  'put /api/installment-policy',
+  // Os SERVIÇOS (S2) pela MESMA razão dos depósitos, e não pela do 501: o
+  // contrato os publica AGORA porque é ele que especifica o que o S2b vai
+  // implementar do lado do api, e no servidor de hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `e47827e`):** a busca por
+  // `services` no repo inteiro do api devolve duas ocorrências, e as duas são
+  // `services:` de `docker-compose` — não existe rota, não existe módulo, e a
+  // cópia do contrato de lá ainda tem 78 operações. Não é nem o 501 da fase: é
+  // caminho que o servidor não tem, e ligar qualquer uma tiraria o mock para
+  // entregar 404 a uma tela que ainda nem existe.
+  //
+  // Saem daqui em FAMÍLIA, e só quando a família INTEIRA responder.
+  'get /api/services',
+  'post /api/services',
+  'put /api/services/{id}',
+  // Os RELATÓRIOS (#310) pela MESMA razão dos depósitos e do pagamento, e não
+  // pela do 501: o contrato publica a família AGORA porque é ele que especifica
+  // o que a Fase B do api vai implementar (módulo `reports` só-leitura,
+  // api#111), e no servidor de hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `0c8b13b`):** `git grep` por
+  // `api/reports` em `src/` e `tests/` devolve ZERO, e a cópia do contrato de lá
+  // tem 87 operações — as 87 de antes desta PR. Não é o 501 da fase: é caminho
+  // que o servidor não tem, e o par local devolve o 404 do Fastify.
+  //
+  // Saem daqui em FAMÍLIA, e por uma razão própria desta: a tela de Relatórios
+  // (Fase C) é UMA seção com dez abas. Ligar metade poria seis abas lendo o
+  // Postgres e quatro lendo ficção na mesma tela, sem nada na interface
+  // distinguindo as duas — que é a costura mais cara de perceber deste repo.
+  'get /api/reports/abc-curve',
+  'get /api/reports/products-sold',
+  'get /api/reports/sales-comparison',
+  'get /api/reports/salesperson-performance',
+  'get /api/reports/professional-ranking',
+  'get /api/reports/supplier-movement',
+  'get /api/reports/stock-valuation',
+  'get /api/reports/stock-aging',
+  'get /api/reports/quote-vs-stock',
+  'get /api/reports/birthdays',
+  // O CICLO DE VIDA do documento de venda (G13) pela MESMA razão dos depósitos e
+  // dos serviços, e não pela do 501: o contrato especifica agora o que a fase B
+  // do api vai implementar, e no servidor de hoje não há handler nenhum.
+  //
+  // **Medição (2026-08-22, `cabinet-erp-api` `0c8b13b`):** `git grep` por
+  // `conclude`, `demo-return`, `professional-history`, `revise` e `ConcludeOrder`
+  // em `src/` e `tests/` devolve ZERO nas cinco buscas. Não é o 501 da fase: é
+  // caminho que o servidor não tem, e o par local devolve o 404 do Fastify.
+  //
+  // **Estas NÃO saem em família com o resto de `/api/orders` e `/api/quotes`,** e
+  // aqui a regra da família aponta para o outro lado: as famílias já estão na
+  // passagem inteiras, e são as OPERAÇÕES novas que ainda não têm servidor.
+  // Ligá-las junto tiraria o mock de rota nenhuma (não há mock de pedido) para
+  // entregar 404 onde a tela esperaria documento.
+  'post /api/orders/{id}/conclude',
+  'post /api/orders/{id}/demo-return',
+  'post /api/orders/{id}/professional',
+  'get /api/orders/{id}/professional-history',
+  'post /api/quotes/{id}/revise',
+  // COMPRAS (G2) — as 14 operações do módulo. Respondem 501 hoje: o contrato
+  // entrou primeiro, por decisão da fase, e o handler é a FASE B do trilho, no
+  // `cabinet-erp-api`. Declaradas uma a uma, e não por prefixo, porque é assim
+  // que a lista foi desenhada — prefixo esconderia a operação nova que nascesse
+  // no mesmo caminho.
+  'get /api/purchase-requests',
+  'post /api/purchase-requests',
+  'get /api/purchase-requests/{id}',
+  'put /api/purchase-requests/{id}',
+  'post /api/purchase-requests/{id}/cancel',
+  'get /api/purchase-orders',
+  'post /api/purchase-orders',
+  'get /api/purchase-orders/{id}',
+  'put /api/purchase-orders/{id}',
+  'post /api/purchase-orders/{id}/send',
+  'post /api/purchase-orders/{id}/reschedule',
+  'post /api/purchase-orders/{id}/cancel',
+  'get /api/purchases/arrival-forecast',
+  'get /api/purchases/stock-replenishment',
+]
+
 beforeAll(async () => {
   servidorDeVerdade = createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json', 'x-origem': MARCA })
@@ -110,8 +241,21 @@ describe('passthrough por rota', () => {
     expect(multiverbo.length).toBeGreaterThan(0)
 
     for (const [caminho, ops] of multiverbo) {
-      const noContrato = Object.keys(ops).filter((m) => VERBOS.includes(m))
+      // Operação declarada fora de propósito sai da conta dos DOIS lados: ela
+      // não está na lista de propósito, e cobrá-la aqui obrigaria a ligar rota
+      // que o servidor não tem. A guarda que importa continua de pé — verbo do
+      // mesmo caminho que o backend SERVE e alguém esqueceu segue reprovando.
+      const noContrato = Object.keys(ops)
+        .filter((m) => VERBOS.includes(m))
+        .filter((m) => !FORA_DE_PROPOSITO.includes(`${m} ${caminho}`))
       const naLista = ROTAS_DO_BACKEND.filter((r) => r.caminho === caminho).map((r) => r.metodo)
+
+      // Caminho INTEIRAMENTE fora da passagem é o outro estado legítimo: nasceu
+      // no contrato antes de existir servidor, e o mock responde por ele todo.
+      // O que este caso NÃO pode ser é esquecimento — quem o cobra é o
+      // `FORA_DE_PROPOSITO` do teste abaixo, que exige a declaração operação a
+      // operação. O que continua proibido aqui é a MEIA família.
+      if (naLista.length === 0) continue
 
       expect(
         [...naLista].sort(),
@@ -272,13 +416,6 @@ describe('passthrough por rota', () => {
       paths: Record<string, Record<string, unknown>>
     }
     const VERBOS = ['get', 'post', 'put', 'patch', 'delete']
-
-    /**
-     * Operações que o contrato publica e a passagem NÃO liga, com o motivo.
-     * Vazio desde a #274 — o backend `3089106` não responde 501 em nenhuma das
-     * 78. Entrada nova aqui exige a medição junto, no comentário.
-     */
-    const FORA_DE_PROPOSITO: readonly string[] = []
 
     const naLista = new Set(ROTAS_DO_BACKEND.map((r) => `${r.metodo} ${r.caminho}`))
     const faltando: string[] = []

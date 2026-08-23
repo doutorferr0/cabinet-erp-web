@@ -1,12 +1,18 @@
 import type {
   AgendaEventDto,
   CatalogLookupDto,
+  InstallmentPolicyDto,
   PartnerAddress,
   PartnerDto,
   PartnerPayoutBankInfo,
+  PaymentTermDto,
+  PaymentTermInstallmentDto,
   ProductDetailDto,
   ProjectDto,
   ProjectPlanDto,
+  ServiceDto,
+  StockBalanceDto,
+  StockLocationDto,
   StockMovementDto,
   TaskDto,
   TodoDto,
@@ -85,6 +91,17 @@ export interface ParceiroDaOrg {
    * diferentes, e o mock precisa poder ter os dois preenchidos ao mesmo tempo
    * para que a tela prove que não os confunde.
    */
+  /**
+   * Fase A0 do módulo COMPRAS (G2). Moram na linha do PARCEIRO e não no
+   * vínculo com a empresa porque `partners` é da ORGANIZAÇÃO: prazo de entrega
+   * e faturamento mínimo são do FORNECEDOR, não da relação dele com uma das
+   * empresas do grupo. A empresa compradora é a exceção aparente — e não é: a
+   * lista guarda QUAIS empresas compram dele, que é dado do fornecedor.
+   */
+  deliveryDays: number | null
+  minimumBillingCents: number | null
+  buyingCompanies: { tenantId: string; validFrom: string; validTo: string | null }[]
+  groupMinimums: { productGroupId: string; minimumBillingCents: number }[]
   stateRegistration: string | null
   ruralProducerRegistration: string | null
   categoryId: string | null
@@ -141,6 +158,36 @@ export interface StoreDaApi {
   lookups: CatalogLookupDto[]
   produtos: ProductDetailDto[]
   parceiros: ParceiroDaOrg[]
+  /**
+   * Os DEPÓSITOS, por empresa (contrato #291) — o `tenantId` fica FORA do DTO
+   * pelo mesmo motivo da obra: o servidor não devolve a coluna de RLS, ele a
+   * USA para decidir o que devolver.
+   */
+  depositos: DepositoDaEmpresa[]
+  /**
+   * As CONDIÇÕES DE PAGAMENTO, por empresa (contrato S4) — mesmo desenho do
+   * depósito: `tenantId` fora do DTO, porque o servidor não devolve a coluna de
+   * RLS, ele a USA para decidir o que devolver.
+   */
+  condicoesDePagamento: CondicaoDaEmpresa[]
+  /**
+   * A política de parcelamento GRAVADA, por empresa (`tenantId` → os três
+   * limites). Empresa SEM entrada aqui não é empresa sem política: ela lê o
+   * PADRÃO (`POLITICA_PADRAO`, em `pagamento.ts`), que é o do legado.
+   *
+   * É um `Record` e não uma lista justamente por isso — a ausência tem
+   * significado próprio, e uma lista convidaria a `find(...) ?? erro`.
+   */
+  politicasDeParcelamento: Record<string, InstallmentPolicyDto>
+  /**
+   * Os SERVIÇOS do cadastro, por empresa — instalação, projeto, frete.
+   *
+   * Mesma forma dos depósitos: o `tenantId` fica FORA do DTO, porque o servidor
+   * não devolve a coluna de RLS, ele a USA para decidir o que devolver.
+   */
+  servicos: ServicoDaEmpresa[]
+  /** O saldo por (empresa, depósito, variante) — cache derivado do kardex. */
+  saldos: SaldoDoDeposito[]
   movimentos: StockMovementDto[]
   tarefas: TaskDto[]
   todos: TodoDto[]
@@ -153,6 +200,242 @@ export interface StoreDaApi {
 
 export const TENANT_MATRIZ = 'tenant-matriz'
 export const TENANT_FILIAL = 'tenant-filial'
+
+/** O depósito COMO O STORE o guarda: o `StockLocationDto` mais o `tenantId`. */
+export interface DepositoDaEmpresa extends StockLocationDto {
+  tenantId: string
+}
+
+/**
+ * A condição como o store a guarda: o `PaymentTermDto` mais o `tenantId`, menos
+ * o `installmentCount`.
+ *
+ * A contagem fica FORA porque é derivada — o handler a calcula de
+ * `installments.length` na saída. Guardá-la deixaria duas verdades sobre o mesmo
+ * número, que é exatamente o que o legado tinha (`Fpg_quantidade` era coluna
+ * gravada à mão) e o que o contrato desfez.
+ */
+export interface CondicaoDaEmpresa extends Omit<PaymentTermDto, 'installmentCount'> {
+  tenantId: string
+  installments: PaymentTermInstallmentDto[]
+}
+
+/** O serviço como o store o guarda: o `ServiceDto` mais o `tenantId`. */
+export interface ServicoDaEmpresa extends ServiceDto {
+  tenantId: string
+}
+
+/** O saldo como o store o guarda: o `StockBalanceDto` mais o `tenantId`. */
+export interface SaldoDoDeposito extends StockBalanceDto {
+  tenantId: string
+}
+
+/**
+ * Instante fixo do seed — o mock não pode nascer com relógio de execução, senão
+ * dois testes que comparam `updatedAt` divergem sem nada ter mudado.
+ */
+const ABERTURA_DO_SEED = '2026-08-01T12:00:00.000Z'
+
+/**
+ * Os depósitos do seed — MATRIZ com árvore, FILIAL com NENHUM, de propósito.
+ *
+ * A filial vazia é o estado que uma empresa nova tem: NENHUM depósito, porque
+ * o contrato não publica operação que crie o padrão — quem o cria é o primeiro
+ * movimento, e `depositos.test.ts` exercita esse caminho. No navegador ele não
+ * se vê pela filial, cujo vínculo do seed é `viewer` e não movimenta estoque.
+ *
+ * `RUA A` pendurada no `PRINCIPAL` existe para a árvore ter profundidade de
+ * verdade: os cinco níveis do legado (Estoque/Prédio/Rua/Número/Apto) viram
+ * `parentId`, e uma lista toda em raiz não provaria nada disso. `SHOWROOM`
+ * nasce INATIVO porque é o caso que o `POST` de movimento recusa com 409.
+ */
+/**
+ * As condições do seed — MATRIZ com três, FILIAL com NENHUMA, de propósito.
+ *
+ * A filial vazia é o estado de empresa recém-criada, e é o que faz o combo do
+ * documento nascer vazio lá sem que isso seja defeito.
+ *
+ * As três da matriz são as três FORMAS do legado, e cada uma existe por um
+ * caso: `À VISTA` é a parcela única (`daysAfterIssue: 0`, 100%), que prova que
+ * "à vista" é dado e não ausência de dado; `30/60/90` é o parcelamento
+ * percentual que fecha exatamente 100%; e `ENTRADA + 2x` é a que tem entrada no
+ * dia zero — três parcelas iguais em percentual, mas a primeira vencendo hoje.
+ *
+ * Nenhuma delas é MISTA (percentual com valor fixo): o contrato recusa isso com
+ * 400 enquanto a ordem de aplicação não for decidida, e um seed que fizesse o
+ * que a escrita recusa ensinaria a regra errada.
+ */
+function condicoesDoSeed(): CondicaoDaEmpresa[] {
+  return [
+    {
+      id: 'cond-0001',
+      tenantId: TENANT_MATRIZ,
+      name: 'À VISTA',
+      active: true,
+      installments: [{ number: 1, daysAfterIssue: 0, percent: 1_000_000, amountCents: null }],
+    },
+    {
+      id: 'cond-0002',
+      tenantId: TENANT_MATRIZ,
+      name: '30/60/90',
+      active: true,
+      installments: [
+        { number: 1, daysAfterIssue: 30, percent: 333_334, amountCents: null },
+        { number: 2, daysAfterIssue: 60, percent: 333_333, amountCents: null },
+        { number: 3, daysAfterIssue: 90, percent: 333_333, amountCents: null },
+      ],
+    },
+    {
+      id: 'cond-0003',
+      tenantId: TENANT_MATRIZ,
+      name: 'ENTRADA + 2x',
+      active: true,
+      installments: [
+        { number: 1, daysAfterIssue: 0, percent: 333_334, amountCents: null },
+        { number: 2, daysAfterIssue: 30, percent: 333_333, amountCents: null },
+        { number: 3, daysAfterIssue: 60, percent: 333_333, amountCents: null },
+      ],
+    },
+  ]
+}
+
+function depositosDoSeed(): DepositoDaEmpresa[] {
+  return [
+    {
+      id: 'dep-0001',
+      tenantId: TENANT_MATRIZ,
+      parentId: null,
+      code: 'PRINCIPAL',
+      name: 'DEPÓSITO PRINCIPAL',
+      isDefault: true,
+      active: true,
+    },
+    {
+      id: 'dep-0002',
+      tenantId: TENANT_MATRIZ,
+      parentId: 'dep-0001',
+      code: 'PRINC-RUA-A',
+      name: 'RUA A',
+      isDefault: false,
+      active: true,
+    },
+    {
+      id: 'dep-0003',
+      tenantId: TENANT_MATRIZ,
+      parentId: null,
+      code: 'SHOWROOM',
+      name: 'SHOWROOM CENTRO',
+      isDefault: false,
+      active: false,
+    },
+  ]
+}
+
+/**
+ * Os SERVIÇOS do seed — só na MATRIZ, e escolhidos para cobrir os três casos que
+ * o cadastro tem de distinguir.
+ *
+ * `INST-LUM` é o serviço comum: preço, 40% para o eletricista, tempo de
+ * instalação. `FRETE` é o `Serv_Entrega` do legado (o pseudo-produto 1001 =
+ * FRETE de `GrupoProduto`), que não paga instalador e não tem tempo. `PROJ-LUM`
+ * é o caso de `priceLocked`: projeto luminotécnico é orçado caso a caso, então a
+ * linha nova NÃO puxa o preço do cadastro — o operador digita.
+ *
+ * `RETRABALHO` nasce INATIVO porque é o estado que a listagem tem de conseguir
+ * mostrar e a tela, esconder: sem uma linha inativa no seed, `active` é coluna
+ * que ninguém nunca viu `false`.
+ *
+ * A FILIAL fica sem nenhum de propósito, como já ficou sem depósito: o cadastro
+ * é POR EMPRESA, e uma lista vazia é o que uma empresa recém-criada vê.
+ */
+function servicosDoSeed(): ServicoDaEmpresa[] {
+  return [
+    {
+      id: 'serv-0001',
+      tenantId: TENANT_MATRIZ,
+      code: 'INST-LUM',
+      description: 'INSTALAÇÃO DE LUMINÁRIA',
+      priceCents: 12000,
+      // 4 casas implícitas: 400000 = 40%.
+      electricianPercent: 400000,
+      type: 'INSTALACAO',
+      installationMinutes: 45,
+      nfseCode: '7.02',
+      productGroup: 'SERVIÇOS',
+      priceLocked: false,
+      delivery: false,
+      active: true,
+    },
+    {
+      id: 'serv-0002',
+      tenantId: TENANT_MATRIZ,
+      code: 'PROJ-LUM',
+      description: 'PROJETO LUMINOTÉCNICO',
+      priceCents: 95000,
+      electricianPercent: 0,
+      type: 'PROJETO',
+      installationMinutes: null,
+      nfseCode: '7.01',
+      productGroup: 'SERVIÇOS',
+      // Orçado caso a caso: a linha nova não herda este preço.
+      priceLocked: true,
+      delivery: false,
+      active: true,
+    },
+    {
+      id: 'serv-0003',
+      tenantId: TENANT_MATRIZ,
+      code: 'FRETE',
+      description: 'ENTREGA',
+      priceCents: 8000,
+      electricianPercent: 0,
+      type: 'ENTREGA',
+      installationMinutes: null,
+      nfseCode: null,
+      productGroup: 'FRETE',
+      priceLocked: false,
+      delivery: true,
+      active: true,
+    },
+    {
+      id: 'serv-0004',
+      tenantId: TENANT_MATRIZ,
+      code: 'RETRABALHO',
+      description: 'RETRABALHO EM GARANTIA',
+      priceCents: 0,
+      electricianPercent: 0,
+      type: 'INSTALACAO',
+      installationMinutes: 30,
+      nfseCode: null,
+      productGroup: 'SERVIÇOS',
+      priceLocked: false,
+      delivery: false,
+      active: false,
+    },
+  ]
+}
+
+/**
+ * O saldo de ABERTURA, derivado do `stockQty` que as variantes do seed já
+ * traziam — e é isso que mantém a reconciliação de dois níveis VERDADEIRA no
+ * mock: a soma dos depósitos de uma variante bate com o `stockQty` dela.
+ *
+ * Não é o mesmo que "inventar linha zerada por depósito", que o contrato recusa:
+ * variante com `stockQty` zero não ganha linha nenhuma, e o `SHOWROOM` nunca viu
+ * peça — depósito sem linha não aparece com zero, ele não aparece.
+ */
+function saldosDoSeed(produtos: ProductDetailDto[]): SaldoDoDeposito[] {
+  return produtos
+    .flatMap((produto) => produto.variants)
+    .filter((variante) => (variante.stockQty ?? 0) !== 0)
+    .map((variante) => ({
+      tenantId: TENANT_MATRIZ,
+      locationId: 'dep-0001',
+      variantId: variante.id,
+      qty: variante.stockQty as number,
+      updatedAt: ABERTURA_DO_SEED,
+    }))
+}
 
 function lookupsDoSeed(): CatalogLookupDto[] {
   return Object.entries(VOCABULARIO_DE_APOIO).flatMap(([kind, nomes]) =>
@@ -234,6 +517,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       parentId: null,
       // IE de empresa: o fornecedor tem, e é o único dos três que a edita.
       stateRegistration: '110042490114',
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
@@ -290,6 +577,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       // pende de escritório nenhum (`parentId: null`) e mesmo assim tem quem a
       // indicou.
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: idDeApoio('CATEGORIA_CLIENTE', 'ARQUITETO'),
       // O ESPECIFICADOR é um `partners.id` (#265) — aqui, `parc-0004`. Era
@@ -367,6 +658,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       payoutBankInfo: null,
       parentId: null,
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
@@ -423,6 +718,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       payoutBankInfo: null,
       parentId: null,
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       // Quem indica não foi indicado por ninguém: o especificador do
@@ -480,6 +779,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       payoutBankInfo: null,
       parentId: null,
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
@@ -816,6 +1119,10 @@ function planosDoSeed(): Record<string, ProjectPlanDto> {
 }
 
 export function criarStore(): StoreDaApi {
+  // O saldo de abertura SAI dos produtos do seed — montar as duas listas do
+  // mesmo objeto é o que impede a soma dos depósitos de divergir do `stockQty`
+  // já no primeiro segundo, que é a divergência que o contrato chama de bug.
+  const produtos = produtosDoSeed()
   return {
     logado: false,
     expiraProximaEscrita: false,
@@ -842,8 +1149,16 @@ export function criarStore(): StoreDaApi {
       },
     ],
     lookups: lookupsDoSeed(),
-    produtos: produtosDoSeed(),
+    produtos,
     parceiros: parceirosDoSeed(),
+    depositos: depositosDoSeed(),
+    condicoesDePagamento: condicoesDoSeed(),
+    // VAZIO de propósito: as duas empresas leem o PADRÃO, e é assim que se vê
+    // que "não configurado" não é um estado — o parcelamento acontece com ou
+    // sem alguém ter aberto a tela de configuração.
+    politicasDeParcelamento: {},
+    servicos: servicosDoSeed(),
+    saldos: saldosDoSeed(produtos),
     movimentos: [],
     tarefas: tarefasDoSeed(),
     todos: todosDoSeed(),
@@ -954,6 +1269,24 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     fax: p.fax,
     address: p.address,
     // Fase 1 (#250), pela mesma regra das cinco de cima: a chave sai SEMPRE.
+    // Fase A0 de COMPRAS (G2): as quatro chaves saem SEMPRE, mesmo vazias — é
+    // a distinção ausente ≠ nulo que a guarda de `corpoDeEscrita` lê do outro
+    // lado, e as duas COLEÇÕES saem `[]`, nunca `null`.
+    deliveryDays: p.deliveryDays,
+    minimumBillingCents: p.minimumBillingCents,
+    // Os NOMES são DERIVADOS, como `categoryName` e `parentName` logo abaixo: o
+    // store guarda o id, e a escrita não aceita nome de volta. Guardar o nome
+    // da empresa aqui faria a empresa renomeada aparecer com o nome velho no
+    // cadastro do fornecedor — e o histórico de empresa compradora existe
+    // justamente para não mentir sobre o passado.
+    buyingCompanies: p.buyingCompanies.map((v) => ({
+      ...v,
+      tenantName: nomeDeEmpresa(v.tenantId),
+    })),
+    groupMinimums: p.groupMinimums.map((g) => ({
+      ...g,
+      productGroupName: nomeDeApoio(g.productGroupId) ?? '',
+    })),
     stateRegistration: p.stateRegistration,
     ruralProducerRegistration: p.ruralProducerRegistration,
     categoryId: p.categoryId,
@@ -991,6 +1324,18 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
 function nomeDeParceiro(id: string | null): string | null {
   if (!id) return null
   return store.parceiros.find((p) => p.id === id)?.legalName ?? null
+}
+
+/**
+ * Nome de uma EMPRESA do grupo, pelo id.
+ *
+ * Cai no próprio id quando não acha, e não em `null`: `tenantName` é
+ * obrigatório no `SupplierBuyingCompanyDto`, e uma linha de vigência apontando
+ * para empresa que sumiu ainda tem de ser legível — o operador precisa ver que
+ * ela existe para poder corrigi-la.
+ */
+function nomeDeEmpresa(id: string): string {
+  return store.empresas.find((e) => e.tenantId === id)?.name ?? id
 }
 
 /** Nome de um item de lista de apoio, pelo id. `null` quando não há id. */

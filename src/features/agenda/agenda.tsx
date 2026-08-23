@@ -1,10 +1,12 @@
 import { useAgenda } from '@/data/dashboard-api'
 import { useTheme } from '@/hooks/use-theme'
 import { type Mes, diaLocalISO, limitesDoMes } from '@/lib/datas'
-import { createViewMonthAgenda } from '@schedule-x/calendar'
-import { ScheduleXCalendar, useCalendarApp } from '@schedule-x/react'
 import { useEffect, useMemo, useState } from 'react'
 import { CALENDARIOS, paraEventoScheduleX } from './eventos'
+// Schedule-X entra pela porta única (`./schedule-x`), nunca pelo pacote: é lá
+// que o polyfill do Temporal roda antes da lib, e é lá que ele fica fora do
+// chunk de entrada. Ver o cabeçalho daquele módulo.
+import { ScheduleXCalendar, createViewMonthAgenda, useCalendarApp } from './schedule-x'
 
 /**
  * AGENDA — calendário mensal com a lista do dia embaixo, via Schedule-X.

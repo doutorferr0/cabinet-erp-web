@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FILTROS, type FiltroDeProjeto, usePlanoDoProjeto, useProjetos } from '@/data/planner-api'
 import { Gantt } from '@svar-ui/react-gantt'
+// O tema do gantt vem COM o gantt, e não do `src/main.tsx` (#227): folha de
+// lib importada na entrada é paga em toda página por causa de uma tela. O
+// especificador é `style.css` e não `all.css` — este último traz grid, editor,
+// menu e toolbar da suíte SVAR, que o planner não monta.
+import '@svar-ui/react-gantt/style.css'
 import { useMemo, useState } from 'react'
 import {
   TIPOS,

@@ -70,6 +70,25 @@ export function parceiro(over: Record<string, unknown> = {}) {
     // tem". O helper representa a linha COMPLETA do contrato, não a que o
     // backend serve hoje; quem quiser testar a linha incompleta tira a chave à
     // mão, e é assim que o caso da recusa se escreve.
+    // Fase A0 do módulo COMPRAS (G2). Mesma leitura de sempre: chaves
+    // PRESENTES, valores nulos/vazios. O que a ordem de compra precisa do
+    // fornecedor — prazo, faturamento mínimo e empresa compradora — só chega
+    // do servidor quando a Fase B entrar no `cabinet-erp-api`; até lá a
+    // listagem não manda estas chaves e `corpoDeEscrita` RECUSA gravar, que
+    // é o comportamento desejado.
+    deliveryDays: null as number | null,
+    minimumBillingCents: null as number | null,
+    buyingCompanies: [] as {
+      tenantId: string
+      tenantName: string
+      validFrom: string
+      validTo: string | null
+    }[],
+    groupMinimums: [] as {
+      productGroupId: string
+      productGroupName: string
+      minimumBillingCents: number
+    }[],
     stateRegistration: null as string | null,
     ruralProducerRegistration: null as string | null,
     categoryId: null as string | null,
@@ -122,6 +141,16 @@ export interface OpcoesDoServidor {
    * ser cobrada.
    */
   camposRecusados?: readonly { path: string; message: string }[]
+  /**
+   * Os contatos que `GET /api/partners/{id}/contacts` devolve.
+   *
+   * Sub-recurso tem caminho próprio, e sem esta entrada ele cairia no
+   * tratamento de `GET /api/partners/{id}` — que procuraria um parceiro de id
+   * `"<uuid>/contacts"`, não acharia, e responderia 404. O bloco de contatos
+   * mostraria "nenhum contato" para um cadastro que tem contatos, e o teste
+   * passaria sem afirmar nada.
+   */
+  contatos?: readonly unknown[]
 }
 
 export function servidorDeParceiros(
@@ -153,6 +182,28 @@ export function servidorDeParceiros(
           fields: opcoes.camposRecusados,
         }),
         { status: 400, headers: { 'content-type': 'application/problem+json' } },
+      )
+    }
+    // Contatos ANTES do detalhe por id: `/api/partners/{id}/contacts` casa o
+    // `startsWith` do detalhe, e a ordem é o que separa os dois recursos.
+    if (caminho.includes('/contacts')) {
+      if (metodo === 'GET') {
+        const contatos = opcoes.contatos ?? []
+        return json({ rows: contatos, total: contatos.length })
+      }
+      // `POST` responde 201 com o contato criado; `PUT`, 200 com o alterado.
+      return json(
+        {
+          id: 'ct-novo',
+          name: 'CONTATO',
+          role: null,
+          phone: null,
+          mobilePhone: null,
+          fax: null,
+          email: null,
+          active: true,
+        },
+        metodo === 'POST' ? 201 : 200,
       )
     }
     if (caminho === URL_PARCEIROS && metodo === 'GET') {

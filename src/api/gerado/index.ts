@@ -8,9 +8,12 @@
  * OpenAPI spec version: v1
  */
 import type {
+  AbcCurveReportDto,
   ActivityDto,
   ActivityWriteRequest,
   AgendaEventDto,
+  BirthdaysReportDto,
+  CancelDocumentRequest,
   CatalogLookupCreateRequest,
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
@@ -29,8 +32,22 @@ import type {
   EmployeeDetailDto,
   EmployeeLinkRequest,
   EmployeeWriteRequest,
+  GetAbcCurveReportParams,
+  GetBirthdaysReportParams,
   GetCrmLostReasonsReportParams,
+  GetProductsSoldReportParams,
+  GetProfessionalRankingReportParams,
+  GetPurchaseArrivalForecastParams,
+  GetPurchaseStockReplenishmentParams,
+  GetQuoteVsStockReportParams,
+  GetSalesComparisonReportParams,
+  GetSalespersonReportParams,
+  GetStockAgingReportParams,
+  GetStockValuationReportParams,
+  GetSupplierMovementReportParams,
   HealthStatus,
+  InstallmentPolicyDto,
+  InstallmentPolicyWriteRequest,
   ListActivitiesParams,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
@@ -38,18 +55,27 @@ import type {
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
   ListEmployeesParams,
+  ListOrderProfessionalHistoryParams,
   ListOrdersParams,
   ListPartnerContactsParams,
   ListPartnersParams,
+  ListPaymentTermsParams,
   ListProductsParams,
   ListProjectsParams,
+  ListPurchaseOrdersParams,
+  ListPurchaseRequestsParams,
   ListQuotesParams,
+  ListRolesParams,
+  ListServicesParams,
+  ListStockBalancesParams,
+  ListStockLocationsParams,
   ListStockMovementsParams,
   ListTasksParams,
   ListWorksParams,
   LoginOk,
   LoginRequest,
   NaoAutenticadoResponse,
+  NaoImplementadoResponse,
   OrderDetailDto,
   OrderWriteRequest,
   PagedResultOfActivityDto,
@@ -59,10 +85,20 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfOrderDto,
+  PagedResultOfOrderProfessionalAssignmentDto,
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
+  PagedResultOfPaymentTermDto,
   PagedResultOfProductDto,
+  PagedResultOfPurchaseArrivalRowDto,
+  PagedResultOfPurchaseOrderDto,
+  PagedResultOfPurchaseReplenishmentRowDto,
+  PagedResultOfPurchaseRequestDto,
   PagedResultOfQuoteDto,
+  PagedResultOfRoleDto,
+  PagedResultOfServiceDto,
+  PagedResultOfStockBalanceDto,
+  PagedResultOfStockLocationDto,
   PagedResultOfStockMovementDto,
   PagedResultOfWorkDto,
   PartnerContactDto,
@@ -70,25 +106,49 @@ import type {
   PartnerDto,
   PartnerLinkRequest,
   PartnerWriteRequest,
+  PaymentTermDto,
+  PaymentTermWriteRequest,
+  PermissionCatalogDto,
   ProblemDetails,
   ProductDetailDto,
   ProductDto,
   ProductVariantDto,
   ProductWriteRequest,
+  ProductsSoldReportDto,
+  ProfessionalRankingReportDto,
   ProjectDto,
   ProjectPlanDto,
+  PurchaseOrderDto,
+  PurchaseOrderRescheduleRequest,
+  PurchaseOrderSendRequest,
+  PurchaseOrderWriteRequest,
+  PurchaseRequestDto,
+  PurchaseRequestWriteRequest,
   QuoteDetailDto,
+  QuoteVsStockReportDto,
   QuoteWriteRequest,
   ReadinessStatus,
+  RoleDetailDto,
+  RoleWriteRequest,
+  SalesComparisonReportDto,
+  SalespersonReportDto,
   SemPermissaoResponse,
+  ServiceDto,
+  ServiceWriteRequest,
   SessaoAtual,
+  StockAgingReportDto,
+  StockLocationDto,
+  StockLocationWriteRequest,
   StockMovementDto,
   StockMovementRequest,
+  StockValuationReportDto,
+  SupplierMovementReportDto,
   TaskDto,
   TaskPatchRequest,
   TaskWriteRequest,
   TodoDto,
   TodoPatchRequest,
+  TransferProfessionalRequest,
   TrocarEmpresaRequest,
   VariantWriteRequest,
   VinculoDeEmpresa,
@@ -988,10 +1048,15 @@ export type createPartnerResponse409 = {
   status: 409
 }
 
+export type createPartnerResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type createPartnerResponseSuccess = (createPartnerResponse201) & {
   headers: Headers;
 };
-export type createPartnerResponseError = (createPartnerResponse400 | createPartnerResponse401 | createPartnerResponse403 | createPartnerResponse409) & {
+export type createPartnerResponseError = (createPartnerResponse400 | createPartnerResponse401 | createPartnerResponse403 | createPartnerResponse409 | createPartnerResponse501) & {
   headers: Headers;
 };
 
@@ -1103,10 +1168,15 @@ export type updatePartnerResponse409 = {
   status: 409
 }
 
+export type updatePartnerResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type updatePartnerResponseSuccess = (updatePartnerResponse200) & {
   headers: Headers;
 };
-export type updatePartnerResponseError = (updatePartnerResponse400 | updatePartnerResponse401 | updatePartnerResponse403 | updatePartnerResponse404 | updatePartnerResponse409) & {
+export type updatePartnerResponseError = (updatePartnerResponse400 | updatePartnerResponse401 | updatePartnerResponse403 | updatePartnerResponse404 | updatePartnerResponse409 | updatePartnerResponse501) & {
   headers: Headers;
 };
 
@@ -1237,6 +1307,13 @@ export const getCreateStockMovementUrl = (variantId: string,) => {
   return `/api/variants/${variantId}/stock-movements`
 }
 
+/**
+ * Proposto na parte do DEPÓSITO. O movimento passa a ter LOCAL, e `balanceAfter` passa a ser o saldo DELE — não o total do produto na empresa (api#79, decisão 2 do user em 2026-08-22).
+ *
+ * **`locationId` é opcional no corpo e obrigatório no movimento.** Omitir (ou mandar `null`) significa "o depósito padrão da empresa ativa", e o servidor o CRIA sob demanda se ela ainda não tem nenhum — mesmo precedente da linha de `product_tenant`, que já nasce no primeiro movimento de variante nunca precificada. **A criação implícita não é operação deste contrato: é comportamento do servidor**, escrito aqui para quem lê saber de onde saiu o depósito que ele não cadastrou. Não existe caminho para criá-la de outro jeito — o contrato não publica criação de empresa, então empresa nova não teria outro lugar onde ganhar o seu.
+ *
+ * 404 quando `locationId` aponta para depósito que a empresa ativa não tem. 409 quando o depósito está inativo, e quando o movimento deixaria o saldo do DEPÓSITO negativo — a conta que recusa é a do local, não mais a do produto.
+ */
 export const createStockMovement = async (variantId: string,
     stockMovementRequest: StockMovementRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createStockMovementResponse> => {
 
@@ -2480,7 +2557,7 @@ export const getListQuotesUrl = (params?: ListQuotesParams,) => {
 }
 
 /**
- * Proposto. Orçamentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName` e `projectName`; fora da lista é 400.
+ * Proposto. Orçamentos da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `expiresAt`, `customerName`, `projectName`, `workName`; fora da lista é 400.
  */
 export const listQuotes = async (params?: ListQuotesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listQuotesResponse> => {
 
@@ -2520,10 +2597,15 @@ export type createQuoteResponse409 = {
   status: 409
 }
 
+export type createQuoteResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type createQuoteResponseSuccess = (createQuoteResponse201) & {
   headers: Headers;
 };
-export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse401 | createQuoteResponse403 | createQuoteResponse409) & {
+export type createQuoteResponseError = (createQuoteResponse400 | createQuoteResponse401 | createQuoteResponse403 | createQuoteResponse409 | createQuoteResponse501) & {
   headers: Headers;
 };
 
@@ -2636,10 +2718,15 @@ export type updateQuoteResponse409 = {
   status: 409
 }
 
+export type updateQuoteResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type updateQuoteResponseSuccess = (updateQuoteResponse200) & {
   headers: Headers;
 };
-export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse401 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409) & {
+export type updateQuoteResponseError = (updateQuoteResponse400 | updateQuoteResponse401 | updateQuoteResponse403 | updateQuoteResponse404 | updateQuoteResponse409 | updateQuoteResponse501) & {
   headers: Headers;
 };
 
@@ -2675,6 +2762,11 @@ export type cancelQuoteResponse200 = {
   status: 200
 }
 
+export type cancelQuoteResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
 export type cancelQuoteResponse401 = {
   data: NaoAutenticadoResponse
   status: 401
@@ -2698,7 +2790,7 @@ export type cancelQuoteResponse409 = {
 export type cancelQuoteResponseSuccess = (cancelQuoteResponse200) & {
   headers: Headers;
 };
-export type cancelQuoteResponseError = (cancelQuoteResponse401 | cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
+export type cancelQuoteResponseError = (cancelQuoteResponse400 | cancelQuoteResponse401 | cancelQuoteResponse403 | cancelQuoteResponse404 | cancelQuoteResponse409) & {
   headers: Headers;
 };
 
@@ -2713,11 +2805,74 @@ export const getCancelQuoteUrl = (id: string,) => {
 }
 
 /**
- * Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.
+ * Proposto. Cancela o orçamento (`status: cancelled`). Documento não se apaga nem se desativa: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409. **Aceita motivo** (`CancelDocumentRequest`), e o corpo é OPCIONAL: quem já cancela hoje sem corpo continua valendo — exigir corpo agora quebraria o cliente que existe. O motivo fica no orçamento e volta em `cancelReasonId` / `cancelReasonName` / `cancelNote` do detalhe. Motivo é 400 quando o id não existe nesta empresa; cancelar duas vezes continua 409, com ou sem motivo.
  */
-export const cancelQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelQuoteResponse> => {
+export const cancelQuote = async (id: string,
+    cancelDocumentRequest?: CancelDocumentRequest, options?: Parameters<typeof apiFetch>[1]): Promise<cancelQuoteResponse> => {
 
   return apiFetch<cancelQuoteResponse>(getCancelQuoteUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelDocumentRequest)
+  }
+);}
+
+
+
+export type reviseQuoteResponse201 = {
+  data: QuoteDetailDto
+  status: 201
+}
+
+export type reviseQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type reviseQuoteResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type reviseQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type reviseQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type reviseQuoteResponseSuccess = (reviseQuoteResponse201) & {
+  headers: Headers;
+};
+export type reviseQuoteResponseError = (reviseQuoteResponse401 | reviseQuoteResponse403 | reviseQuoteResponse404 | reviseQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type reviseQuoteResponse = (reviseQuoteResponseSuccess | reviseQuoteResponseError)
+
+export const getReviseQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}/revise`
+}
+
+/**
+ * Proposto. **Cria a REVISÃO do orçamento** — documento novo, cópia de cabeçalho, ambientes e itens, com `revisionOfId` apontando o anterior e `revision` incrementado. O original fica intacto: foi ele que o cliente viu.
+ *
+ * Resolve um caso REAL do legado, e não uma hipótese: dois orçamentos do mesmo cliente no mesmo dia, sem nada no dado dizendo que o segundo substitui o primeiro. Quem lia a lista contava dois negócios; quem media conversão dividia por dois.
+ *
+ * **Recusas:** orçamento cancelado é 409 (revisar o que foi retirado da mesa é ressuscitar por outro nome); orçamento que JÁ tem revisão é 409 `urn:cabinet:erro:orcamento-ja-revisado` — a segunda revisão sai da PRIMEIRA, senão a cadeia vira árvore e "qual é a versão vigente" deixa de ter resposta.
+ */
+export const reviseQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<reviseQuoteResponse> => {
+
+  return apiFetch<reviseQuoteResponse>(getReviseQuoteUrl(id),
   {
     ...options,
     method: 'POST'
@@ -4260,6 +4415,307 @@ export const updateEmployeeLink = async (id: string,
 
 
 
+export type listPermissionsResponse200 = {
+  data: PermissionCatalogDto
+  status: 200
+}
+
+export type listPermissionsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPermissionsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPermissionsResponseSuccess = (listPermissionsResponse200) & {
+  headers: Headers;
+};
+export type listPermissionsResponseError = (listPermissionsResponse401 | listPermissionsResponse403) & {
+  headers: Headers;
+};
+
+export type listPermissionsResponse = (listPermissionsResponseSuccess | listPermissionsResponseError)
+
+export const getListPermissionsUrl = () => {
+
+
+
+
+  return `/api/permissions`
+}
+
+/**
+ * Proposto. O CATÁLOGO de permissões — tudo que um papel pode conceder, agrupado por módulo. É a lista de caixas que a tela de papéis desenha, e não é dado da empresa: vem do CÓDIGO do servidor, é igual para todas as organizações e só muda em deploy (api#84).
+ *
+ * **Viaja por HTTP justamente para o front NÃO ter a lista.** Só dev acrescenta permissão, e do lado do servidor — uma cópia aqui envelheceria em silêncio, e a tela desenharia o conjunto de ontem sem ninguém perceber. Pelo mesmo motivo o rótulo vem junto: permissão nova sem rótulo do servidor apareceria como chave crua ao lado da caixa.
+ *
+ * A granularidade é por AÇÃO, no formato `modulo:acao` — `produtos:editar`, `estoque:movimentar`, `depositos:gerenciar`, `orcamento:imprimir`. As chaves NÃO são enum deste contrato de propósito: congelá-las aqui faria cada permissão nova exigir PR de contrato mais codegen, que é exatamente o acoplamento que este caminho existe para desfazer.
+ *
+ * Sem paginação: o catálogo é o conjunto inteiro, sempre. Página aqui entregaria tela de checkbox com metade das caixas, e o admin gravaria papel sem as permissões que não chegou a ver.
+ */
+export const listPermissions = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listPermissionsResponse> => {
+
+  return apiFetch<listPermissionsResponse>(getListPermissionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listRolesResponse200 = {
+  data: PagedResultOfRoleDto
+  status: 200
+}
+
+export type listRolesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listRolesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listRolesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listRolesResponseSuccess = (listRolesResponse200) & {
+  headers: Headers;
+};
+export type listRolesResponseError = (listRolesResponse400 | listRolesResponse401 | listRolesResponse403) & {
+  headers: Headers;
+};
+
+export type listRolesResponse = (listRolesResponseSuccess | listRolesResponseError)
+
+export const getListRolesUrl = (params?: ListRolesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/roles?${stringifiedParams}` : `/api/roles`
+}
+
+/**
+ * Proposto. Papéis da ORGANIZAÇÃO — os de sistema, os templates de fábrica e os que o admin criou, na mesma lista. Papel é da organização e a ATRIBUIÇÃO é por empresa (`employee_company`): a mesma pessoa pode ser "Financeiro" numa empresa do grupo e nada na outra.
+ *
+ * A linha traz `permissionCount`, não o conjunto de permissões: a coluna que a tela desenha é "12 permissões", e mandar o array inteiro em cada linha multiplicaria o corpo pelo catálogo sem ninguém ler. Quem quer as caixas marcadas abre `GET /api/roles/{id}`.
+ *
+ * `sortBy` aceita `name` e `active`.
+ */
+export const listRoles = async (params?: ListRolesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listRolesResponse> => {
+
+  return apiFetch<listRolesResponse>(getListRolesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createRoleResponse201 = {
+  data: RoleDetailDto
+  status: 201
+}
+
+export type createRoleResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createRoleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createRoleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createRoleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createRoleResponseSuccess = (createRoleResponse201) & {
+  headers: Headers;
+};
+export type createRoleResponseError = (createRoleResponse400 | createRoleResponse401 | createRoleResponse403 | createRoleResponse409) & {
+  headers: Headers;
+};
+
+export type createRoleResponse = (createRoleResponseSuccess | createRoleResponseError)
+
+export const getCreateRoleUrl = () => {
+
+
+
+
+  return `/api/roles`
+}
+
+/**
+ * Proposto. Cria papel na organização, com as permissões que vierem no corpo. Nasce sempre `system: false` e `template: false` — as duas marcas são do servidor, e papel que se declara de sistema pelo corpo seria o caminho para burlar a recusa de edição.
+ *
+ * **Clonar um template é ler `GET /api/roles/{id}` e postar as `permissions` que vieram.** Não há operação de clonagem porque ela não diria nada que o corpo já não diga — e o admin quase sempre muda algo antes de gravar, que é o ponto de partir de um template.
+ *
+ * Nome repetido na organização é 409 `about:blank`: a tela não tem saída própria a oferecer, quem criou corrige o nome ali mesmo. Permissão que não está no catálogo é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` apontando `permissions`.
+ */
+export const createRole = async (roleWriteRequest: RoleWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createRoleResponse> => {
+
+  return apiFetch<createRoleResponse>(getCreateRoleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(roleWriteRequest)
+  }
+);}
+
+
+
+export type getRoleResponse200 = {
+  data: RoleDetailDto
+  status: 200
+}
+
+export type getRoleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getRoleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getRoleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getRoleResponseSuccess = (getRoleResponse200) & {
+  headers: Headers;
+};
+export type getRoleResponseError = (getRoleResponse401 | getRoleResponse403 | getRoleResponse404) & {
+  headers: Headers;
+};
+
+export type getRoleResponse = (getRoleResponseSuccess | getRoleResponseError)
+
+export const getGetRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/roles/${id}`
+}
+
+/**
+ * Proposto. O papel com o conjunto de permissões — é este corpo que marca as caixas da tela, e é por ele que se clona um template.
+ */
+export const getRole = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getRoleResponse> => {
+
+  return apiFetch<getRoleResponse>(getGetRoleUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateRoleResponse200 = {
+  data: RoleDetailDto
+  status: 200
+}
+
+export type updateRoleResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateRoleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateRoleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateRoleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateRoleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateRoleResponseSuccess = (updateRoleResponse200) & {
+  headers: Headers;
+};
+export type updateRoleResponseError = (updateRoleResponse400 | updateRoleResponse401 | updateRoleResponse403 | updateRoleResponse404 | updateRoleResponse409) & {
+  headers: Headers;
+};
+
+export type updateRoleResponse = (updateRoleResponseSuccess | updateRoleResponseError)
+
+export const getUpdateRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/roles/${id}`
+}
+
+/**
+ * Proposto. Substitui o papel INTEIRO — `permissions` que vier é o conjunto final, não um acréscimo: desmarcar caixa precisa ter efeito, e corpo que só soma nunca tira permissão.
+ *
+ * **Papel de sistema é 409 `urn:cabinet:erro:papel-de-sistema`,** em alterar e em desativar. `owner` e `admin` são a garantia de que a organização não se tranca para fora: um admin que se desmarcasse da permissão de gerenciar papéis perderia a própria tela que devolveria a permissão. Template de fábrica NÃO é de sistema — ele é da organização e o admin edita à vontade; `template: true` só conta de onde o papel veio.
+ *
+ * **Não há `DELETE`.** Vale o padrão de cadastro do produto: desativação lógica por `active: false`. Papel apagado deixaria vínculo apontando para o nada, e "quem podia o quê em março" ficaria sem resposta. Papel inativo some da escolha do vínculo e continua legível no que já foi atribuído.
+ */
+export const updateRole = async (id: string,
+    roleWriteRequest: RoleWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateRoleResponse> => {
+
+  return apiFetch<updateRoleResponse>(getUpdateRoleUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(roleWriteRequest)
+  }
+);}
+
+
+
 export type listOrdersResponse200 = {
   data: PagedResultOfOrderDto
   status: 200
@@ -4305,7 +4761,7 @@ export const getListOrdersUrl = (params?: ListOrdersParams,) => {
 }
 
 /**
- * Proposto. Pedidos de venda da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `customerName` e `projectName`; fora da lista é 400.
+ * Proposto. Pedidos de venda da empresa ativa. `sortBy` aceita `number`, `issuedAt`, `customerName`, `projectName`, `workName`; fora da lista é 400.
  */
 export const listOrders = async (params?: ListOrdersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listOrdersResponse> => {
 
@@ -4345,10 +4801,15 @@ export type createOrderResponse409 = {
   status: 409
 }
 
+export type createOrderResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type createOrderResponseSuccess = (createOrderResponse201) & {
   headers: Headers;
 };
-export type createOrderResponseError = (createOrderResponse400 | createOrderResponse401 | createOrderResponse403 | createOrderResponse409) & {
+export type createOrderResponseError = (createOrderResponse400 | createOrderResponse401 | createOrderResponse403 | createOrderResponse409 | createOrderResponse501) & {
   headers: Headers;
 };
 
@@ -4461,10 +4922,15 @@ export type updateOrderResponse409 = {
   status: 409
 }
 
+export type updateOrderResponse501 = {
+  data: NaoImplementadoResponse
+  status: 501
+}
+
 export type updateOrderResponseSuccess = (updateOrderResponse200) & {
   headers: Headers;
 };
-export type updateOrderResponseError = (updateOrderResponse400 | updateOrderResponse401 | updateOrderResponse403 | updateOrderResponse404 | updateOrderResponse409) & {
+export type updateOrderResponseError = (updateOrderResponse400 | updateOrderResponse401 | updateOrderResponse403 | updateOrderResponse404 | updateOrderResponse409 | updateOrderResponse501) & {
   headers: Headers;
 };
 
@@ -4480,6 +4946,8 @@ export const getUpdateOrderUrl = (id: string,) => {
 
 /**
  * Proposto. Substitui o documento INTEIRO. Pedido cancelado não aceita alteração — é 409, não 400.
+ *
+ * **Pedido `concluded` é 409, pela mesma razão que `cancelled` é:** o documento encerrado é o que foi combinado, e reescrevê-lo muda o passado de quem já leu. Corrigir pedido concluído é reabrir — e reabertura não existe de propósito: o legado não tem o estado, então não há caso real para copiar.
  */
 export const updateOrder = async (id: string,
     orderWriteRequest: OrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateOrderResponse> => {
@@ -4498,6 +4966,11 @@ export const updateOrder = async (id: string,
 export type cancelOrderResponse200 = {
   data: OrderDetailDto
   status: 200
+}
+
+export type cancelOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
 }
 
 export type cancelOrderResponse401 = {
@@ -4523,7 +4996,7 @@ export type cancelOrderResponse409 = {
 export type cancelOrderResponseSuccess = (cancelOrderResponse200) & {
   headers: Headers;
 };
-export type cancelOrderResponseError = (cancelOrderResponse401 | cancelOrderResponse403 | cancelOrderResponse404 | cancelOrderResponse409) & {
+export type cancelOrderResponseError = (cancelOrderResponse400 | cancelOrderResponse401 | cancelOrderResponse403 | cancelOrderResponse404 | cancelOrderResponse409) & {
   headers: Headers;
 };
 
@@ -4538,14 +5011,271 @@ export const getCancelOrderUrl = (id: string,) => {
 }
 
 /**
- * Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409.
+ * Proposto. Cancela o pedido (`status: cancelled`). Documento não se apaga: a listagem continua mostrando, com a situação. Cancelar duas vezes é 409. **Aceita motivo** (`CancelDocumentRequest`), e o corpo é OPCIONAL: quem já cancela hoje sem corpo continua valendo — exigir corpo agora quebraria o cliente que existe. O motivo fica no pedido e volta em `cancelReasonId` / `cancelReasonName` / `cancelNote` do detalhe. Motivo é 400 quando o id não existe nesta empresa; cancelar duas vezes continua 409, com ou sem motivo.
  */
-export const cancelOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelOrderResponse> => {
+export const cancelOrder = async (id: string,
+    cancelDocumentRequest?: CancelDocumentRequest, options?: Parameters<typeof apiFetch>[1]): Promise<cancelOrderResponse> => {
 
   return apiFetch<cancelOrderResponse>(getCancelOrderUrl(id),
   {
     ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelDocumentRequest)
+  }
+);}
+
+
+
+export type concludeOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type concludeOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type concludeOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type concludeOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type concludeOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type concludeOrderResponseSuccess = (concludeOrderResponse200) & {
+  headers: Headers;
+};
+export type concludeOrderResponseError = (concludeOrderResponse401 | concludeOrderResponse403 | concludeOrderResponse404 | concludeOrderResponse409) & {
+  headers: Headers;
+};
+
+export type concludeOrderResponse = (concludeOrderResponseSuccess | concludeOrderResponseError)
+
+export const getConcludeOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/conclude`
+}
+
+/**
+ * Proposto. **Conclui o pedido** — `active → concluded`. É a "Conclusão do Pedido de Venda" do menu do legado (`FrmFecha_projeto`): o ponto em que o documento para de ser trabalho em curso. Carimba `closedAt` com a data de hoje quando ela está nula; a que o operador digitou fica como está.
+ *
+ * **Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.
+ *
+ * **O que esta operação NÃO faz, e é blocker escrito, não esquecimento:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial. Entrega não existe neste contrato — não há `/api/deliveries`, não há estado físico, não há quadro de cargas. Declarar aqui um `force` que nada libera seria publicar botão sem efeito, e a tela que o mostrasse ensinaria o operador a confiar num controle que não controla. A pré-condição entra junto com o módulo de entrega, e aí o `force` nasce com o que forçar.
+ */
+export const concludeOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<concludeOrderResponse> => {
+
+  return apiFetch<concludeOrderResponse>(getConcludeOrderUrl(id),
+  {
+    ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+
+export type returnDemoOrderResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type returnDemoOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type returnDemoOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type returnDemoOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type returnDemoOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type returnDemoOrderResponseSuccess = (returnDemoOrderResponse200) & {
+  headers: Headers;
+};
+export type returnDemoOrderResponseError = (returnDemoOrderResponse401 | returnDemoOrderResponse403 | returnDemoOrderResponse404 | returnDemoOrderResponse409) & {
+  headers: Headers;
+};
+
+export type returnDemoOrderResponse = (returnDemoOrderResponseSuccess | returnDemoOrderResponseError)
+
+export const getReturnDemoOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/demo-return`
+}
+
+/**
+ * Proposto. **Registra o RETORNO da demonstração** — carimba `demoReturnedAt` e devolve a peça ao saldo. O empréstimo tem duas pontas e esta é a segunda: sem ela, "emprestado" e "vendido" tiram do estoque do mesmo jeito, e o que está na rua vira diferença de balanço.
+ *
+ * **Não mexe no estado do documento.** Demonstração que voltou pode virar venda, e concluir é decisão de quem vendeu, não consequência de a peça ter voltado.
+ *
+ * **Recusas:** pedido `sale` é 409 `urn:cabinet:erro:transicao-invalida` — não há o que devolver. Devolver duas vezes, idem. Pedido cancelado também: o cancelamento já devolveu.
+ */
+export const returnDemoOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<returnDemoOrderResponse> => {
+
+  return apiFetch<returnDemoOrderResponse>(getReturnDemoOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type transferOrderProfessionalResponse200 = {
+  data: OrderDetailDto
+  status: 200
+}
+
+export type transferOrderProfessionalResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type transferOrderProfessionalResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type transferOrderProfessionalResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type transferOrderProfessionalResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type transferOrderProfessionalResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type transferOrderProfessionalResponseSuccess = (transferOrderProfessionalResponse200) & {
+  headers: Headers;
+};
+export type transferOrderProfessionalResponseError = (transferOrderProfessionalResponse400 | transferOrderProfessionalResponse401 | transferOrderProfessionalResponse403 | transferOrderProfessionalResponse404 | transferOrderProfessionalResponse409) & {
+  headers: Headers;
+};
+
+export type transferOrderProfessionalResponse = (transferOrderProfessionalResponseSuccess | transferOrderProfessionalResponseError)
+
+export const getTransferOrderProfessionalUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/professional`
+}
+
+/**
+ * Proposto. **Transfere a venda entre profissionais** — a opção "Transferência de Venda entre Profissionais" do menu do legado. Fecha a vigência corrente em `VendaIndicacao` e abre outra; o documento passa a apontar o novo profissional.
+ *
+ * É operação própria, e não campo do `PUT`, porque a troca **tem data** e a comissão pergunta por ela. O `PUT` do pedido não move `professionalId` — quem o mandasse ali estaria reescrevendo a vigência inteira sem dizer.
+ *
+ * **Recusas:** parceiro sem papel `professional` é 400 apontando o campo; transferir para o MESMO profissional é 409 (vigência de duração zero não é trilha, é ruído); pedido cancelado ou concluído é 409 — documento encerrado não troca de dono.
+ */
+export const transferOrderProfessional = async (id: string,
+    transferProfessionalRequest: TransferProfessionalRequest, options?: Parameters<typeof apiFetch>[1]): Promise<transferOrderProfessionalResponse> => {
+
+  return apiFetch<transferOrderProfessionalResponse>(getTransferOrderProfessionalUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(transferProfessionalRequest)
+  }
+);}
+
+
+
+export type listOrderProfessionalHistoryResponse200 = {
+  data: PagedResultOfOrderProfessionalAssignmentDto
+  status: 200
+}
+
+export type listOrderProfessionalHistoryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listOrderProfessionalHistoryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listOrderProfessionalHistoryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listOrderProfessionalHistoryResponseSuccess = (listOrderProfessionalHistoryResponse200) & {
+  headers: Headers;
+};
+export type listOrderProfessionalHistoryResponseError = (listOrderProfessionalHistoryResponse401 | listOrderProfessionalHistoryResponse403 | listOrderProfessionalHistoryResponse404) & {
+  headers: Headers;
+};
+
+export type listOrderProfessionalHistoryResponse = (listOrderProfessionalHistoryResponseSuccess | listOrderProfessionalHistoryResponseError)
+
+export const getListOrderProfessionalHistoryUrl = (id: string,
+    params?: ListOrderProfessionalHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/${id}/professional-history?${stringifiedParams}` : `/api/orders/${id}/professional-history`
+}
+
+/**
+ * Proposto. **A trilha de indicação do pedido**, da mais recente para a mais antiga. A linha com `endedAt` nulo é a corrente, e é ela que casa com `OrderDetailDto.professionalId` — se as duas divergirem, a trilha mente, e é por isso que ela vem do mesmo lugar e não de um espelho.
+ *
+ * Publica paginação como toda listagem, mas o conjunto é pequeno por natureza: a trilha de um documento tem tantas linhas quantas transferências houve.
+ */
+export const listOrderProfessionalHistory = async (id: string,
+    params?: ListOrderProfessionalHistoryParams, options?: Parameters<typeof apiFetch>[1]): Promise<listOrderProfessionalHistoryResponse> => {
+
+  return apiFetch<listOrderProfessionalHistoryResponse>(getListOrderProfessionalHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
 
 
   }
@@ -4604,6 +5334,2325 @@ export const createOrderFromQuote = async (id: string, options?: Parameters<type
   {
     ...options,
     method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listServicesResponse200 = {
+  data: PagedResultOfServiceDto
+  status: 200
+}
+
+export type listServicesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listServicesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listServicesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listServicesResponseSuccess = (listServicesResponse200) & {
+  headers: Headers;
+};
+export type listServicesResponseError = (listServicesResponse400 | listServicesResponse401 | listServicesResponse403) & {
+  headers: Headers;
+};
+
+export type listServicesResponse = (listServicesResponseSuccess | listServicesResponseError)
+
+export const getListServicesUrl = (params?: ListServicesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/services?${stringifiedParams}` : `/api/services`
+}
+
+/**
+ * Proposto. O cadastro de SERVIÇOS da empresa ativa — instalação, projeto, entrega: o que a Vertz cobra à parte do material. É o item #7 dos cadastros do comparativo Softlux, e no legado ele é a tabela `Servicos` (16 colunas).
+ *
+ * **Serviço não é produto, e a diferença não é de nomenclatura.** O legado já os separa em tabelas próprias, e a razão aparece nas colunas: serviço não tem variante (acabamento × tamanho), não tem saldo, não entra no kardex, e tem duas coisas que produto nenhum tem — o percentual do eletricista, que é quanto da linha vai para quem instala, e o código do serviço na NFS-e, que é outro documento fiscal. Metê-lo em `/api/products` obrigaria toda variante, todo saldo e todo movimento a carregar um `isService` que nunca é verdadeiro.
+ *
+ * **`GrupoProduto` do legado guarda 1000 = SERVIÇOS e 1001 = FRETE como pseudo-produtos** — a gambiarra que existia para o serviço caber na tela de produto. Aqui ela não se repete: o grupo continua sendo campo do serviço (`productGroup`), e o serviço tem família própria.
+ *
+ * **Não publica `filters` de propósito.** O filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados; o cadastro de serviço de uma empresa é lista curta (198 linhas em `ISSQNServicos`, ordem de grandeza parecida no cadastro), e `q` mais `sortBy` respondem o que a tela pergunta. Ele entra no dia em que uma tela precisar, e aí com whitelist escrita.
+ */
+export const listServices = async (params?: ListServicesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listServicesResponse> => {
+
+  return apiFetch<listServicesResponse>(getListServicesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createServiceResponse201 = {
+  data: ServiceDto
+  status: 201
+}
+
+export type createServiceResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createServiceResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createServiceResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createServiceResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createServiceResponseSuccess = (createServiceResponse201) & {
+  headers: Headers;
+};
+export type createServiceResponseError = (createServiceResponse400 | createServiceResponse401 | createServiceResponse403 | createServiceResponse409) & {
+  headers: Headers;
+};
+
+export type createServiceResponse = (createServiceResponseSuccess | createServiceResponseError)
+
+export const getCreateServiceUrl = () => {
+
+
+
+
+  return `/api/services`
+}
+
+/**
+ * Proposto. Cria um serviço na empresa ativa.
+ *
+ * **Papel: `operator-full` ou superior**, a mesma linha de corte de `products` e `catalog-lookups`. O critério não é o de estoque nem o de atendimento: é o de quem mexe no CATÁLOGO que os documentos de todo mundo vão congelar. Preço de serviço errado entra em orçamento novo até alguém notar, e o percentual do eletricista errado vira pagamento errado a quem instalou.
+ *
+ * 409 quando `code` já existe na empresa, e quando não há empresa ativa na sessão.
+ */
+export const createService = async (serviceWriteRequest: ServiceWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createServiceResponse> => {
+
+  return apiFetch<createServiceResponse>(getCreateServiceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(serviceWriteRequest)
+  }
+);}
+
+
+
+export type updateServiceResponse200 = {
+  data: ServiceDto
+  status: 200
+}
+
+export type updateServiceResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateServiceResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateServiceResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateServiceResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateServiceResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateServiceResponseSuccess = (updateServiceResponse200) & {
+  headers: Headers;
+};
+export type updateServiceResponseError = (updateServiceResponse400 | updateServiceResponse401 | updateServiceResponse403 | updateServiceResponse404 | updateServiceResponse409) & {
+  headers: Headers;
+};
+
+export type updateServiceResponse = (updateServiceResponseSuccess | updateServiceResponseError)
+
+export const getUpdateServiceUrl = (id: string,) => {
+
+
+
+
+  return `/api/services/${id}`
+}
+
+/**
+ * Proposto. Substitui o serviço INTEIRO; desativar é `active: false`.
+ *
+ * **Não há DELETE** — nem aqui nem em lugar nenhum do contrato. Serviço apagado deixaria linha de orçamento e de pedido apontando para cadastro inexistente, e o documento já congelou a descrição e o preço justamente para não depender dele. Desativação lógica é o padrão 8, e aqui ela também é integridade referencial.
+ *
+ * **Não há GET por id**, pela razão que já valeu para o depósito e para o motivo de perda: o `ServiceDto` é PLANO — sem sub-recurso, sem variante, sem coleção embutida — então a LINHA da listagem já é o registro inteiro, e um caminho de detalhe seria uma requisição para buscar o que a tela tem na mão. Quando o cadastro ganhar sub-recurso (tributação por município, que o legado tem em `TributacaoServico`), o detalhe entra junto com ele.
+ *
+ * **Alterar o preço aqui NÃO reescreve documento nenhum.** `QuoteServiceItemDto` congela `description`, `unitPriceCents` e `electricianPercent` na emissão, pelo mesmo motivo que `QuoteItemDto` congela os do produto. `priceLocked` é sobre a próxima linha a ser INSERIDA, não sobre as que já existem.
+ */
+export const updateService = async (id: string,
+    serviceWriteRequest: ServiceWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateServiceResponse> => {
+
+  return apiFetch<updateServiceResponse>(getUpdateServiceUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(serviceWriteRequest)
+  }
+);}
+
+
+
+export type listStockLocationsResponse200 = {
+  data: PagedResultOfStockLocationDto
+  status: 200
+}
+
+export type listStockLocationsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listStockLocationsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listStockLocationsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listStockLocationsResponseSuccess = (listStockLocationsResponse200) & {
+  headers: Headers;
+};
+export type listStockLocationsResponseError = (listStockLocationsResponse400 | listStockLocationsResponse401 | listStockLocationsResponse403) & {
+  headers: Headers;
+};
+
+export type listStockLocationsResponse = (listStockLocationsResponseSuccess | listStockLocationsResponseError)
+
+export const getListStockLocationsUrl = (params?: ListStockLocationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stock-locations?${stringifiedParams}` : `/api/stock-locations`
+}
+
+/**
+ * Proposto. Os DEPÓSITOS da empresa ativa — a dimensão que faltava no estoque. Hoje o saldo é por variante × empresa; o legado tem `EstTp_Codigo` na chave de `Estoque_produto`, com quatro locais, e carregar sem a dimensão soma os quatro num número só. A perda é irreversível na carga, não dívida de tela.
+ *
+ * **Árvore, e ela vem PLANA.** Os cinco níveis do legado (Estoque/Prédio/Rua/Número/Apto) são profundidade, não cinco colunas: cada linha traz `parentId`, e quem monta a árvore é quem desenha. A tela pede o conjunto inteiro (`pageSize` no teto) e diz no rodapé quando o teto cortou — é o padrão 9, e é o que torna a montagem no cliente honesta.
+ *
+ * **Não publica `parentName`, e a razão vale para toda esta família.** Depósito é punhado de linhas por empresa: quem recebeu o conjunto já tem o pai na mão, e um nome derivado seria segunda cópia do que a resposta acabou de entregar. O precedente de `parentName` em parceiro não transfere — lá o pai fica FORA da página, entre milhares. Pela mesma razão nem `StockBalanceDto` nem `StockMovementDto` carregam o nome do depósito: quem lê saldo ou kardex pede esta listagem uma vez e resolve os nomes com ela.
+ *
+ * **Não publica `filters` de propósito.** O filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados; sobre um punhado de linhas que já vieram inteiras ele seria parâmetro sem consumidor — e recorte por `parentId` ou por `active` é escolha de quem desenha a árvore, feita sobre o conjunto que já está em mãos.
+ */
+export const listStockLocations = async (params?: ListStockLocationsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listStockLocationsResponse> => {
+
+  return apiFetch<listStockLocationsResponse>(getListStockLocationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createStockLocationResponse201 = {
+  data: StockLocationDto
+  status: 201
+}
+
+export type createStockLocationResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createStockLocationResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createStockLocationResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createStockLocationResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createStockLocationResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createStockLocationResponseSuccess = (createStockLocationResponse201) & {
+  headers: Headers;
+};
+export type createStockLocationResponseError = (createStockLocationResponse400 | createStockLocationResponse401 | createStockLocationResponse403 | createStockLocationResponse404 | createStockLocationResponse409) & {
+  headers: Headers;
+};
+
+export type createStockLocationResponse = (createStockLocationResponseSuccess | createStockLocationResponseError)
+
+export const getCreateStockLocationUrl = () => {
+
+
+
+
+  return `/api/stock-locations`
+}
+
+/**
+ * Proposto. Cria um depósito na empresa ativa.
+ *
+ * **Papel: `admin` ou superior — e é INTERINO.** Criar depósito muda a leitura de saldo de todo mundo e não é operação de atendimento, então a linha nasce junto de `/api/employees` e não de `/api/variants`. Vira a permissão nomeada `depositos:gerenciar` quando o modelo por AÇÃO (api#84) entregar — o papel aqui é o piso enquanto a matriz é por papel.
+ *
+ * `isDefault` não entra no corpo: o padrão da empresa nasce do SERVIDOR (ver `CreateStockMovement`), e trocá-lo é outra operação — teria de apagar o padrão anterior na mesma transação para não haver dois, e essa operação ainda não está publicada.
+ *
+ * 404 quando `parentId` aponta para depósito que a empresa ativa não tem: do ponto de vista de quem pergunta, o pai não está lá. 409 quando `code` já existe na empresa.
+ *
+ * Ciclo não é caso desta operação — nó que acaba de nascer não tem descendente para se pendurar. Ele é caso do `PUT`, e lá a escrita é que confere o ancestral: o banco pega a auto-referência de um nível com CHECK, mas A→B→A não é exprimível em constraint.
+ */
+export const createStockLocation = async (stockLocationWriteRequest: StockLocationWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createStockLocationResponse> => {
+
+  return apiFetch<createStockLocationResponse>(getCreateStockLocationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockLocationWriteRequest)
+  }
+);}
+
+
+
+export type updateStockLocationResponse200 = {
+  data: StockLocationDto
+  status: 200
+}
+
+export type updateStockLocationResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateStockLocationResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateStockLocationResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateStockLocationResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateStockLocationResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateStockLocationResponseSuccess = (updateStockLocationResponse200) & {
+  headers: Headers;
+};
+export type updateStockLocationResponseError = (updateStockLocationResponse400 | updateStockLocationResponse401 | updateStockLocationResponse403 | updateStockLocationResponse404 | updateStockLocationResponse409) & {
+  headers: Headers;
+};
+
+export type updateStockLocationResponse = (updateStockLocationResponseSuccess | updateStockLocationResponseError)
+
+export const getUpdateStockLocationUrl = (id: string,) => {
+
+
+
+
+  return `/api/stock-locations/${id}`
+}
+
+/**
+ * Proposto. Substitui o depósito INTEIRO; desativar é `active: false`.
+ *
+ * **Não há DELETE** — nem aqui nem em lugar nenhum do contrato. Apagar depósito deixaria saldo órfão em `stock_balances` e movimento apontando para local inexistente; desativação lógica é o padrão 8 e aqui ela também é integridade.
+ *
+ * **Não há GET por id**, pela razão que já valeu para o motivo de perda: a LINHA da listagem é o registro inteiro (seis campos, sem sub-recurso), e um caminho de detalhe seria requisição para buscar o que a tela já tem.
+ *
+ * 409 em dois casos que mantêm a coerência do padrão: desativar o depósito PADRÃO da empresa (o servidor voltaria a criá-lo no movimento seguinte, e um padrão inativo é estado que não se sustenta) e pendurar o nó em descendente próprio, fechando ciclo. Desativar depósito COM saldo é permitido e não move nada: o saldo continua na listagem de saldos, e o que o depósito inativo perde é entrar em movimento novo.
+ */
+export const updateStockLocation = async (id: string,
+    stockLocationWriteRequest: StockLocationWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateStockLocationResponse> => {
+
+  return apiFetch<updateStockLocationResponse>(getUpdateStockLocationUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockLocationWriteRequest)
+  }
+);}
+
+
+
+export type listStockBalancesResponse200 = {
+  data: PagedResultOfStockBalanceDto
+  status: 200
+}
+
+export type listStockBalancesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listStockBalancesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listStockBalancesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listStockBalancesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listStockBalancesResponseSuccess = (listStockBalancesResponse200) & {
+  headers: Headers;
+};
+export type listStockBalancesResponseError = (listStockBalancesResponse400 | listStockBalancesResponse401 | listStockBalancesResponse403 | listStockBalancesResponse404) & {
+  headers: Headers;
+};
+
+export type listStockBalancesResponse = (listStockBalancesResponseSuccess | listStockBalancesResponseError)
+
+export const getListStockBalancesUrl = (variantId: string,
+    params?: ListStockBalancesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/variants/${variantId}/stock-balances?${stringifiedParams}` : `/api/variants/${variantId}/stock-balances`
+}
+
+/**
+ * Proposto. O saldo da variante em CADA depósito da empresa ativa.
+ *
+ * `stock_balances` é cache DERIVADO do kardex, como manda o ADR-009 — e agora a reconciliação tem dois níveis: o último `balanceAfter` de cada (depósito, variante) bate com o `qty` daqui, e a SOMA dos depósitos bate com o `stockQty` de `ProductVariantDto`. Divergir é bug ou fraude, nunca rotina.
+ *
+ * **Depósito sem linha de saldo não aparece com zero.** A resposta traz só onde existe linha, e variante que nunca esteve em depósito nenhum responde lista VAZIA. Completar com zero por depósito cadastrado afirmaria contagem que ninguém fez — e um depósito que nunca viu a peça diz outra coisa de um que a zerou.
+ *
+ * **O inverso não está publicado** — o inventário de um depósito (todas as variantes que ele guarda) é outra pergunta, com outra tela e outra paginação, e nenhuma das duas existe ainda. Publicar consulta sem consumidor é dívida dos dois lados.
+ */
+export const listStockBalances = async (variantId: string,
+    params?: ListStockBalancesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listStockBalancesResponse> => {
+
+  return apiFetch<listStockBalancesResponse>(getListStockBalancesUrl(variantId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listPaymentTermsResponse200 = {
+  data: PagedResultOfPaymentTermDto
+  status: 200
+}
+
+export type listPaymentTermsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPaymentTermsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPaymentTermsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPaymentTermsResponseSuccess = (listPaymentTermsResponse200) & {
+  headers: Headers;
+};
+export type listPaymentTermsResponseError = (listPaymentTermsResponse400 | listPaymentTermsResponse401 | listPaymentTermsResponse403) & {
+  headers: Headers;
+};
+
+export type listPaymentTermsResponse = (listPaymentTermsResponseSuccess | listPaymentTermsResponseError)
+
+export const getListPaymentTermsUrl = (params?: ListPaymentTermsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/payment-terms?${stringifiedParams}` : `/api/payment-terms`
+}
+
+/**
+ * Proposto. As CONDIÇÕES DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado (16 linhas, `Emp_codigo` na coluna), com as parcelas embutidas.
+ *
+ * **As parcelas viajam DENTRO da condição, e não em sub-recurso.** É o argumento do `QuoteDetailDto`, um nível abaixo: `Forma_Pagamento_Parcela` tem PK `(Fpg_codigo, Fpp_parcela)` — a parcela não tem identidade fora da condição —, e gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meio plano no banco quando a terceira falhasse.
+ *
+ * **Por isso também não há detalhe por id nesta família.** A coleção é um punhado de linhas por empresa e a listagem já entrega as parcelas inteiras; um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar. Mesmo desenho de `/api/catalog-lookups` e `/api/stock-locations`.
+ *
+ * **E não é lista de apoio.** `catalog_lookups` guarda `kind`/`name`/`active` e nada mais; condição de pagamento carrega parcela, dias e percentual. Enfiá-la lá daria o rótulo sem os dados que decidem o vencimento — a regra do ADR-011 (`kind` novo é linha no servidor, nunca PR de contrato) vale nos dois sentidos: o que carrega dado não vira `kind`.
+ *
+ * **Não publica `filters` de propósito**, pela razão de `/api/stock-locations`: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.
+ */
+export const listPaymentTerms = async (params?: ListPaymentTermsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPaymentTermsResponse> => {
+
+  return apiFetch<listPaymentTermsResponse>(getListPaymentTermsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPaymentTermResponse201 = {
+  data: PaymentTermDto
+  status: 201
+}
+
+export type createPaymentTermResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPaymentTermResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPaymentTermResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPaymentTermResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPaymentTermResponseSuccess = (createPaymentTermResponse201) & {
+  headers: Headers;
+};
+export type createPaymentTermResponseError = (createPaymentTermResponse400 | createPaymentTermResponse401 | createPaymentTermResponse403 | createPaymentTermResponse409) & {
+  headers: Headers;
+};
+
+export type createPaymentTermResponse = (createPaymentTermResponseSuccess | createPaymentTermResponseError)
+
+export const getCreatePaymentTermUrl = () => {
+
+
+
+
+  return `/api/payment-terms`
+}
+
+/**
+ * Proposto. Cria uma condição de pagamento na empresa ativa.
+ *
+ * **Papel: `admin` ou superior — e é INTERINO.** Mesma linha de corte que pôs `/api/stock-locations` acima de `/api/variants`: parcelar não é operação de atendimento, é a regra que decide o que TODO vendedor pode oferecer, e um plano errado sai em documento assinado antes de alguém notar. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+ *
+ * 400 quando o plano não fecha — os modos estão em `PaymentTermInstallmentWriteRequest`, e nenhum deles é aparado em silêncio. Mais parcelas que o teto da empresa é 400 com `type` PRÓPRIO (`urn:cabinet:erro:parcelas-acima-do-teto`): a tela recorta o formulário pelo número que cabe, e para isso precisa distinguir esse caso dos erros de campo.
+ *
+ * 409 quando a empresa já tem condição com o mesmo `name`: no legado a PK é `(Fpg_codigo, Fpg_descricao)`, e nome repetido num combo é escolha que não dá para fazer certo — as duas linhas parecem a mesma para quem escolhe.
+ */
+export const createPaymentTerm = async (paymentTermWriteRequest: PaymentTermWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPaymentTermResponse> => {
+
+  return apiFetch<createPaymentTermResponse>(getCreatePaymentTermUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentTermWriteRequest)
+  }
+);}
+
+
+
+export type updatePaymentTermResponse200 = {
+  data: PaymentTermDto
+  status: 200
+}
+
+export type updatePaymentTermResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePaymentTermResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePaymentTermResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePaymentTermResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePaymentTermResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePaymentTermResponseSuccess = (updatePaymentTermResponse200) & {
+  headers: Headers;
+};
+export type updatePaymentTermResponseError = (updatePaymentTermResponse400 | updatePaymentTermResponse401 | updatePaymentTermResponse403 | updatePaymentTermResponse404 | updatePaymentTermResponse409) & {
+  headers: Headers;
+};
+
+export type updatePaymentTermResponse = (updatePaymentTermResponseSuccess | updatePaymentTermResponseError)
+
+export const getUpdatePaymentTermUrl = (id: string,) => {
+
+
+
+
+  return `/api/payment-terms/${id}`
+}
+
+/**
+ * Proposto. `PUT` substitui a condição INTEIRA, **parcelas junto**: a lista que vier no corpo passa a ser a lista, e a que não veio é apagada. Corpo parcial não preserva parcela.
+ *
+ * **Alterar a condição NÃO reescreve documento já gravado.** O orçamento e o pedido CARIMBAM o plano deles (`paymentInstallments`) e a política vigente (`installmentPolicy`) no momento da gravação; o que muda aqui vale do próximo documento em diante. É o que o legado faz ao copiar `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela` para a linha da `Venda` em vez de ler os parâmetros na hora de imprimir. A alternativa — derivar o plano na leitura — mudaria a data de vencimento de parcela que o cliente já recebeu, e o sintoma seria um documento reimpresso diferente de si mesmo.
+ *
+ * 404 quando o `id` não é condição da empresa ativa: do ponto de vista de quem pergunta, ela não está lá. 409 no `name` repetido, como no `POST`.
+ *
+ * **Não há `DELETE`** — aqui nem em lugar nenhum do contrato. Condição usada por documento antigo não pode sumir; `active: false` a tira do combo e deixa o passado legível (padrão 8).
+ */
+export const updatePaymentTerm = async (id: string,
+    paymentTermWriteRequest: PaymentTermWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePaymentTermResponse> => {
+
+  return apiFetch<updatePaymentTermResponse>(getUpdatePaymentTermUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentTermWriteRequest)
+  }
+);}
+
+
+
+export type getInstallmentPolicyResponse200 = {
+  data: InstallmentPolicyDto
+  status: 200
+}
+
+export type getInstallmentPolicyResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getInstallmentPolicyResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getInstallmentPolicyResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getInstallmentPolicyResponseSuccess = (getInstallmentPolicyResponse200) & {
+  headers: Headers;
+};
+export type getInstallmentPolicyResponseError = (getInstallmentPolicyResponse401 | getInstallmentPolicyResponse403 | getInstallmentPolicyResponse409) & {
+  headers: Headers;
+};
+
+export type getInstallmentPolicyResponse = (getInstallmentPolicyResponseSuccess | getInstallmentPolicyResponseError)
+
+export const getGetInstallmentPolicyUrl = () => {
+
+
+
+
+  return `/api/installment-policy`
+}
+
+/**
+ * Proposto. Os três limites que governam o parcelamento na empresa ativa: `par_ParcelarVlAcima`, `Par_VlMinParcela` e `Par_QuantMaxParcela` do legado. Na tela da Vertz eles valem R$ 100, R$ 50 e 6×.
+ *
+ * **São CONFIG, e o ponto da operação é esse.** Aqueles três números são os da instalação da Vertz, não a regra do produto — escrevê-los como constante faria toda empresa que entrar depois herdar o limite de uma, e o dia em que uma delas parcelar em 10× viraria mudança de código.
+ *
+ * **Singleton por empresa: não há `POST`, não há id.** A política existe sempre. Empresa sem linha gravada lê o PADRÃO do servidor (os três do legado), e não 404: obrigar cada tela a tratar "ainda não configurado" como estado próprio inventaria um terceiro caso que não existe na operação.
+ */
+export const getInstallmentPolicy = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getInstallmentPolicyResponse> => {
+
+  return apiFetch<getInstallmentPolicyResponse>(getGetInstallmentPolicyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateInstallmentPolicyResponse200 = {
+  data: InstallmentPolicyDto
+  status: 200
+}
+
+export type updateInstallmentPolicyResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateInstallmentPolicyResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateInstallmentPolicyResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateInstallmentPolicyResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateInstallmentPolicyResponseSuccess = (updateInstallmentPolicyResponse200) & {
+  headers: Headers;
+};
+export type updateInstallmentPolicyResponseError = (updateInstallmentPolicyResponse400 | updateInstallmentPolicyResponse401 | updateInstallmentPolicyResponse403 | updateInstallmentPolicyResponse409) & {
+  headers: Headers;
+};
+
+export type updateInstallmentPolicyResponse = (updateInstallmentPolicyResponseSuccess | updateInstallmentPolicyResponseError)
+
+export const getUpdateInstallmentPolicyUrl = () => {
+
+
+
+
+  return `/api/installment-policy`
+}
+
+/**
+ * Proposto. Grava os três limites da empresa ativa. `PUT` num singleton: substitui os três, e os três são obrigatórios.
+ *
+ * **Papel: `admin` ou superior**, pelo mesmo motivo de `CreatePaymentTerm` — só que um nível acima em alcance: isto não descreve UMA condição, descreve o que todas elas podem ser.
+ *
+ * 400 quando `maxInstallments` é menor que 1, ou quando algum valor é negativo. Zero em `minTotalToInstallCents` é legítimo e quer dizer "parcela qualquer valor".
+ *
+ * **Mudar a política não reescreve documento gravado** — ver `UpdatePaymentTerm`: o carimbo em `QuoteDetailDto.installmentPolicy` é o que preserva a regra sob a qual cada documento foi feito.
+ */
+export const updateInstallmentPolicy = async (installmentPolicyWriteRequest: InstallmentPolicyWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateInstallmentPolicyResponse> => {
+
+  return apiFetch<updateInstallmentPolicyResponse>(getUpdateInstallmentPolicyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(installmentPolicyWriteRequest)
+  }
+);}
+
+
+
+export type getAbcCurveReportResponse200 = {
+  data: AbcCurveReportDto
+  status: 200
+}
+
+export type getAbcCurveReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getAbcCurveReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getAbcCurveReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getAbcCurveReportResponseSuccess = (getAbcCurveReportResponse200) & {
+  headers: Headers;
+};
+export type getAbcCurveReportResponseError = (getAbcCurveReportResponse400 | getAbcCurveReportResponse401 | getAbcCurveReportResponse403) & {
+  headers: Headers;
+};
+
+export type getAbcCurveReportResponse = (getAbcCurveReportResponseSuccess | getAbcCurveReportResponseError)
+
+export const getGetAbcCurveReportUrl = (params: GetAbcCurveReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/abc-curve?${stringifiedParams}` : `/api/reports/abc-curve`
+}
+
+/**
+ * Proposto. **Curva ABC — quais produtos fazem 80% do faturamento.** A ordem canônica é faturamento decrescente, e é a única em que a curva significa alguma coisa: `cumulativePercent` é acumulado, e acumulado sobre outra ordem é outro número.
+ *
+ * **Por isso a classe e o acumulado não saem da ordem PEDIDA, e sim da canônica.** O relatório aceita `sortBy` porque a tela é exportável e quem exporta reordena — mas `abcClass` e `cumulativePercent` de cada linha continuam os mesmos em qualquer ordem, calculados sobre o período inteiro antes de paginar. Se dependessem da ordem pedida, ordenar por descrição produziria um acumulado alfabético — que não significa nada e tem exatamente a mesma aparência.
+ *
+ * Entram as linhas de PEDIDO (`orders`) ativo com `issuedAt` no período; orçamento não é venda.
+ */
+export const getAbcCurveReport = async (params: GetAbcCurveReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getAbcCurveReportResponse> => {
+
+  return apiFetch<getAbcCurveReportResponse>(getGetAbcCurveReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getProductsSoldReportResponse200 = {
+  data: ProductsSoldReportDto
+  status: 200
+}
+
+export type getProductsSoldReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getProductsSoldReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getProductsSoldReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getProductsSoldReportResponseSuccess = (getProductsSoldReportResponse200) & {
+  headers: Headers;
+};
+export type getProductsSoldReportResponseError = (getProductsSoldReportResponse400 | getProductsSoldReportResponse401 | getProductsSoldReportResponse403) & {
+  headers: Headers;
+};
+
+export type getProductsSoldReportResponse = (getProductsSoldReportResponseSuccess | getProductsSoldReportResponseError)
+
+export const getGetProductsSoldReportUrl = (params: GetProductsSoldReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/products-sold?${stringifiedParams}` : `/api/reports/products-sold`
+}
+
+/**
+ * Proposto. **Produto vendido por quantidade ou por valor, no período.** É o relatório mais pedido da operação, e os dois eixos discordam de propósito: o parafuso lidera em quantidade e não paga a conta; a cozinha inteira lidera em valor e sai uma vez por mês. Trocar o eixo por `sortBy` é a PERGUNTA mudando, não um detalhe de apresentação — e é por isso que o relatório existe separado da curva ABC, que responde a uma só.
+ */
+export const getProductsSoldReport = async (params: GetProductsSoldReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getProductsSoldReportResponse> => {
+
+  return apiFetch<getProductsSoldReportResponse>(getGetProductsSoldReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getSalesComparisonReportResponse200 = {
+  data: SalesComparisonReportDto
+  status: 200
+}
+
+export type getSalesComparisonReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getSalesComparisonReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSalesComparisonReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSalesComparisonReportResponseSuccess = (getSalesComparisonReportResponse200) & {
+  headers: Headers;
+};
+export type getSalesComparisonReportResponseError = (getSalesComparisonReportResponse400 | getSalesComparisonReportResponse401 | getSalesComparisonReportResponse403) & {
+  headers: Headers;
+};
+
+export type getSalesComparisonReportResponse = (getSalesComparisonReportResponseSuccess | getSalesComparisonReportResponseError)
+
+export const getGetSalesComparisonReportUrl = (params: GetSalesComparisonReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/sales-comparison?${stringifiedParams}` : `/api/reports/sales-comparison`
+}
+
+/**
+ * Proposto. **Comparativo de valor de vendas entre períodos.** O servidor devolve a série JÁ COMPARADA (cada linha com o valor do período anterior ao lado) em vez de mandar a série crua e deixar a tela subtrair: com paginação, a linha do topo da página 2 não tem a anterior à mão, e a tela mostraria a primeira variação de cada página em branco. **Períodos sem venda aparecem com zero** — buraco na série é informação, e omitir a linha faz o gráfico ligar julho em setembro como se agosto não existisse.
+ */
+export const getSalesComparisonReport = async (params: GetSalesComparisonReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSalesComparisonReportResponse> => {
+
+  return apiFetch<getSalesComparisonReportResponse>(getGetSalesComparisonReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getSalespersonReportResponse200 = {
+  data: SalespersonReportDto
+  status: 200
+}
+
+export type getSalespersonReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getSalespersonReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSalespersonReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSalespersonReportResponseSuccess = (getSalespersonReportResponse200) & {
+  headers: Headers;
+};
+export type getSalespersonReportResponseError = (getSalespersonReportResponse400 | getSalespersonReportResponse401 | getSalespersonReportResponse403) & {
+  headers: Headers;
+};
+
+export type getSalespersonReportResponse = (getSalespersonReportResponseSuccess | getSalespersonReportResponseError)
+
+export const getGetSalespersonReportUrl = (params: GetSalespersonReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/salesperson-performance?${stringifiedParams}` : `/api/reports/salesperson-performance`
+}
+
+/**
+ * Proposto. **Demonstrativo por atendente — mensal, trimestral ou semestral.** Traz orçamento e pedido na MESMA linha porque a pergunta da gerência não é "quanto vendeu" e sim "quanto do que ele atendeu virou venda": o atendente que emite 4 orçamentos e fecha 3 é outro profissional do que emite 90 e fecha 4, e os dois podem faturar igual.
+ */
+export const getSalespersonReport = async (params: GetSalespersonReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSalespersonReportResponse> => {
+
+  return apiFetch<getSalespersonReportResponse>(getGetSalespersonReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getProfessionalRankingReportResponse200 = {
+  data: ProfessionalRankingReportDto
+  status: 200
+}
+
+export type getProfessionalRankingReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getProfessionalRankingReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getProfessionalRankingReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getProfessionalRankingReportResponseSuccess = (getProfessionalRankingReportResponse200) & {
+  headers: Headers;
+};
+export type getProfessionalRankingReportResponseError = (getProfessionalRankingReportResponse400 | getProfessionalRankingReportResponse401 | getProfessionalRankingReportResponse403) & {
+  headers: Headers;
+};
+
+export type getProfessionalRankingReportResponse = (getProfessionalRankingReportResponseSuccess | getProfessionalRankingReportResponseError)
+
+export const getGetProfessionalRankingReportUrl = (params: GetProfessionalRankingReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/professional-ranking?${stringifiedParams}` : `/api/reports/professional-ranking`
+}
+
+/**
+ * Proposto. **Ranking de profissional — quem indica quanto.** Ordenado por faturamento decrescente. **Só entram pedidos COM profissional**: a linha "sem indicação" seria a maior de todas em toda loja e enterraria o ranking que o relatório existe para mostrar — e é por isso que o `summary` daqui fala de "faturamento COM profissional" e não bate com o total de vendas da empresa, o que é correto e precisa estar escrito.
+ */
+export const getProfessionalRankingReport = async (params: GetProfessionalRankingReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getProfessionalRankingReportResponse> => {
+
+  return apiFetch<getProfessionalRankingReportResponse>(getGetProfessionalRankingReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getSupplierMovementReportResponse200 = {
+  data: SupplierMovementReportDto
+  status: 200
+}
+
+export type getSupplierMovementReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getSupplierMovementReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSupplierMovementReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSupplierMovementReportResponseSuccess = (getSupplierMovementReportResponse200) & {
+  headers: Headers;
+};
+export type getSupplierMovementReportResponseError = (getSupplierMovementReportResponse400 | getSupplierMovementReportResponse401 | getSupplierMovementReportResponse403) & {
+  headers: Headers;
+};
+
+export type getSupplierMovementReportResponse = (getSupplierMovementReportResponseSuccess | getSupplierMovementReportResponseError)
+
+export const getGetSupplierMovementReportUrl = (params: GetSupplierMovementReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/supplier-movement?${stringifiedParams}` : `/api/reports/supplier-movement`
+}
+
+/**
+ * Proposto. **Movimentação por fornecedor.** É o número que se leva para a mesa de negociação: quanto se vendeu do que ele fornece, no período. Agrega pelo fornecedor CONGELADO na linha do documento e não pelo cadastro atual do produto — trocar o fornecedor de um item hoje reescreveria a história da negociação do ano passado.
+ *
+ * **É o ÚNICO relatório que responde por fornecedor, e por falta de fonte e não por escolha:** o cadastro de produto não guarda fornecedor — quem guarda é a LINHA do documento, congelada na emissão. Por isso `supplierId` não existe nos relatórios de estoque: publicá-lo lá devolveria vazio e pareceria "este fornecedor não tem nada em estoque".
+ */
+export const getSupplierMovementReport = async (params: GetSupplierMovementReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getSupplierMovementReportResponse> => {
+
+  return apiFetch<getSupplierMovementReportResponse>(getGetSupplierMovementReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getStockValuationReportResponse200 = {
+  data: StockValuationReportDto
+  status: 200
+}
+
+export type getStockValuationReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getStockValuationReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getStockValuationReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getStockValuationReportResponseSuccess = (getStockValuationReportResponse200) & {
+  headers: Headers;
+};
+export type getStockValuationReportResponseError = (getStockValuationReportResponse400 | getStockValuationReportResponse401 | getStockValuationReportResponse403) & {
+  headers: Headers;
+};
+
+export type getStockValuationReportResponse = (getStockValuationReportResponseSuccess | getStockValuationReportResponseError)
+
+export const getGetStockValuationReportUrl = (params?: GetStockValuationReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/stock-valuation?${stringifiedParams}` : `/api/reports/stock-valuation`
+}
+
+/**
+ * Proposto. **Estoque atual valorizado.** Foto do agora, sem período — por isso `from`/`to` não existem aqui e `asOf` existe. Ordenado por valor decrescente. O saldo é o da EMPRESA ativa (`product_tenant`), e o preço também: o mesmo produto vale diferente em duas empresas do grupo, e é isso que o relatório tem de mostrar.
+ */
+export const getStockValuationReport = async (params?: GetStockValuationReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getStockValuationReportResponse> => {
+
+  return apiFetch<getStockValuationReportResponse>(getGetStockValuationReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getStockAgingReportResponse200 = {
+  data: StockAgingReportDto
+  status: 200
+}
+
+export type getStockAgingReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getStockAgingReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getStockAgingReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getStockAgingReportResponseSuccess = (getStockAgingReportResponse200) & {
+  headers: Headers;
+};
+export type getStockAgingReportResponseError = (getStockAgingReportResponse400 | getStockAgingReportResponse401 | getStockAgingReportResponse403) & {
+  headers: Headers;
+};
+
+export type getStockAgingReportResponse = (getStockAgingReportResponseSuccess | getStockAgingReportResponseError)
+
+export const getGetStockAgingReportUrl = (params?: GetStockAgingReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/stock-aging?${stringifiedParams}` : `/api/reports/stock-aging`
+}
+
+/**
+ * Proposto. **Quantidade, dias sem venda e última venda — o dinheiro parado na prateleira.** Ordenado por `daysWithoutSale` decrescente, com os que NUNCA venderam no fim e não no começo: eles não têm dias a contar, e pô-los no topo enterraria os que já venderam e pararam, que é onde mora a decisão de queima de estoque. Só itens com saldo, salvo `includeZero`.
+ */
+export const getStockAgingReport = async (params?: GetStockAgingReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getStockAgingReportResponse> => {
+
+  return apiFetch<getStockAgingReportResponse>(getGetStockAgingReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getQuoteVsStockReportResponse200 = {
+  data: QuoteVsStockReportDto
+  status: 200
+}
+
+export type getQuoteVsStockReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getQuoteVsStockReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getQuoteVsStockReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getQuoteVsStockReportResponseSuccess = (getQuoteVsStockReportResponse200) & {
+  headers: Headers;
+};
+export type getQuoteVsStockReportResponseError = (getQuoteVsStockReportResponse400 | getQuoteVsStockReportResponse401 | getQuoteVsStockReportResponse403) & {
+  headers: Headers;
+};
+
+export type getQuoteVsStockReportResponse = (getQuoteVsStockReportResponseSuccess | getQuoteVsStockReportResponseError)
+
+export const getGetQuoteVsStockReportUrl = (params: GetQuoteVsStockReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/quote-vs-stock?${stringifiedParams}` : `/api/reports/quote-vs-stock`
+}
+
+/**
+ * Proposto. **Orçamento × estoque — o que já foi prometido contra o que existe em casa.** Só orçamentos ATIVOS (cancelado não promete nada) e só linhas com variante do catálogo: item digitado livre não tem saldo com que comparar. Ordenado por falta decrescente. **A soma dos orçamentos não desconta o que já virou pedido** — e isso é deliberado: o pedido consome estoque por conta própria, e abater aqui esconderia o compromisso duas vezes.
+ */
+export const getQuoteVsStockReport = async (params: GetQuoteVsStockReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getQuoteVsStockReportResponse> => {
+
+  return apiFetch<getQuoteVsStockReportResponse>(getGetQuoteVsStockReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getBirthdaysReportResponse200 = {
+  data: BirthdaysReportDto
+  status: 200
+}
+
+export type getBirthdaysReportResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getBirthdaysReportResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getBirthdaysReportResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getBirthdaysReportResponseSuccess = (getBirthdaysReportResponse200) & {
+  headers: Headers;
+};
+export type getBirthdaysReportResponseError = (getBirthdaysReportResponse400 | getBirthdaysReportResponse401 | getBirthdaysReportResponse403) & {
+  headers: Headers;
+};
+
+export type getBirthdaysReportResponse = (getBirthdaysReportResponseSuccess | getBirthdaysReportResponseError)
+
+export const getGetBirthdaysReportUrl = (params: GetBirthdaysReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/birthdays?${stringifiedParams}` : `/api/reports/birthdays`
+}
+
+/**
+ * Proposto. **Aniversariantes do mês.** Lê `birthDate` do parceiro (pessoa física) e só entram os VINCULADOS à empresa ativa e ativos — parceiro do grupo sem vínculo com esta empresa não é cliente desta loja, e a lista de aniversário é a lista de quem se liga. Ordenado por dia do mês. Sem período: a pergunta é sempre um mês inteiro, e é por isso que o parâmetro é `month` e não `from`/`to`.
+ */
+export const getBirthdaysReport = async (params: GetBirthdaysReportParams, options?: Parameters<typeof apiFetch>[1]): Promise<getBirthdaysReportResponse> => {
+
+  return apiFetch<getBirthdaysReportResponse>(getGetBirthdaysReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listPurchaseRequestsResponse200 = {
+  data: PagedResultOfPurchaseRequestDto
+  status: 200
+}
+
+export type listPurchaseRequestsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPurchaseRequestsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPurchaseRequestsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPurchaseRequestsResponseSuccess = (listPurchaseRequestsResponse200) & {
+  headers: Headers;
+};
+export type listPurchaseRequestsResponseError = (listPurchaseRequestsResponse400 | listPurchaseRequestsResponse401 | listPurchaseRequestsResponse403) & {
+  headers: Headers;
+};
+
+export type listPurchaseRequestsResponse = (listPurchaseRequestsResponseSuccess | listPurchaseRequestsResponseError)
+
+export const getListPurchaseRequestsUrl = (params?: ListPurchaseRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchase-requests?${stringifiedParams}` : `/api/purchase-requests`
+}
+
+/**
+ * Proposto. Os PEDIDOS DE COMPRA da empresa ativa — a necessidade de comprar, antes de virar compromisso com fornecedor.
+ *
+ * É a primeira das duas listagens do módulo `Compras` do comparativo Softlux (vol. 03), e a tela que a consome é a de onde o comprador MONTA ordem: ela precisa das linhas em aberto, com o fornecedor de cada uma, para agrupar por fornecedor e chegar ao faturamento mínimo. Por isso `PurchaseRequestDto.items` vem na listagem, e não só no detalhe.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — semântica do contrato para toda leitura de lista.
+ *
+ * **Não publica `filters`.** O recorte que a tela faz é por `status` e por fornecedor, e os dois são parâmetro próprio aqui: o filtro estruturado é opt-in por recurso e cobra whitelist dos dois lados, e uma lista de trabalho com dois recortes conhecidos não precisa do vocabulário inteiro. Ele entra no dia em que uma tela precisar.
+ */
+export const listPurchaseRequests = async (params?: ListPurchaseRequestsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPurchaseRequestsResponse> => {
+
+  return apiFetch<listPurchaseRequestsResponse>(getListPurchaseRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPurchaseRequestResponse201 = {
+  data: PurchaseRequestDto
+  status: 201
+}
+
+export type createPurchaseRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPurchaseRequestResponseSuccess = (createPurchaseRequestResponse201) & {
+  headers: Headers;
+};
+export type createPurchaseRequestResponseError = (createPurchaseRequestResponse400 | createPurchaseRequestResponse401 | createPurchaseRequestResponse403 | createPurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type createPurchaseRequestResponse = (createPurchaseRequestResponseSuccess | createPurchaseRequestResponseError)
+
+export const getCreatePurchaseRequestUrl = () => {
+
+
+
+
+  return `/api/purchase-requests`
+}
+
+/**
+ * Proposto. Cria um pedido de compra na empresa ativa.
+ *
+ * **Permissão: `compras:editar`.** Não é `pedidos:editar` (que é o pedido de VENDA) nem `estoque:movimentar`: comprar é comprometer dinheiro da empresa com um terceiro, e é a primeira ação deste contrato que faz isso. O vendedor que fecha a venda não é necessariamente quem compra — no legado o setor COMPRAS tem 92 opções de RBAC próprias.
+ *
+ * **400 quando uma linha tem `destination: "sale"` sem `orderId` no cabeçalho**, ou com `sourceOrderItemLine` que não existe naquele pedido de venda. Encomenda sem venda que a encomendou é reposição com outro nome.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const createPurchaseRequest = async (purchaseRequestWriteRequest: PurchaseRequestWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPurchaseRequestResponse> => {
+
+  return apiFetch<createPurchaseRequestResponse>(getCreatePurchaseRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseRequestWriteRequest)
+  }
+);}
+
+
+
+export type getPurchaseRequestResponse200 = {
+  data: PurchaseRequestDto
+  status: 200
+}
+
+export type getPurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getPurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getPurchaseRequestResponseSuccess = (getPurchaseRequestResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseRequestResponseError = (getPurchaseRequestResponse401 | getPurchaseRequestResponse403 | getPurchaseRequestResponse404 | getPurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type getPurchaseRequestResponse = (getPurchaseRequestResponseSuccess | getPurchaseRequestResponseError)
+
+export const getGetPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-requests/${id}`
+}
+
+/**
+ * Proposto. Um pedido de compra pelo id, com as linhas.
+ *
+ * Existe apesar de a listagem já trazer `items`, e a razão é a mesma de `quotes` e `orders`: o documento aberto na tela é recarregado sozinho depois de cada escrita, e buscar a página inteira para achar uma linha é o que faz a tela piscar.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const getPurchaseRequest = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseRequestResponse> => {
+
+  return apiFetch<getPurchaseRequestResponse>(getGetPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updatePurchaseRequestResponse200 = {
+  data: PurchaseRequestDto
+  status: 200
+}
+
+export type updatePurchaseRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePurchaseRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePurchaseRequestResponseSuccess = (updatePurchaseRequestResponse200) & {
+  headers: Headers;
+};
+export type updatePurchaseRequestResponseError = (updatePurchaseRequestResponse400 | updatePurchaseRequestResponse401 | updatePurchaseRequestResponse403 | updatePurchaseRequestResponse404 | updatePurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type updatePurchaseRequestResponse = (updatePurchaseRequestResponseSuccess | updatePurchaseRequestResponseError)
+
+export const getUpdatePurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-requests/${id}`
+}
+
+/**
+ * Proposto. Substitui o pedido INTEIRO, `items` incluído.
+ *
+ * **409 quando alguma linha já foi levada por uma ordem.** O pedido em `partially_ordered` ou `ordered` não se reescreve: a ordem já disse ao fornecedor o que comprou, e mudar a origem por baixo dela deixaria o par `sourceRequestId` + `sourceLineNumber` apontando para uma linha que virou outra coisa — com o par intacto, que é o que torna o defeito invisível. Desistir de uma linha nesse estado é cancelar o pedido e abrir outro, que é o que deixa rastro.
+ */
+export const updatePurchaseRequest = async (id: string,
+    purchaseRequestWriteRequest: PurchaseRequestWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePurchaseRequestResponse> => {
+
+  return apiFetch<updatePurchaseRequestResponse>(getUpdatePurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseRequestWriteRequest)
+  }
+);}
+
+
+
+export type cancelPurchaseRequestResponse200 = {
+  data: PurchaseRequestDto
+  status: 200
+}
+
+export type cancelPurchaseRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelPurchaseRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelPurchaseRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelPurchaseRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelPurchaseRequestResponseSuccess = (cancelPurchaseRequestResponse200) & {
+  headers: Headers;
+};
+export type cancelPurchaseRequestResponseError = (cancelPurchaseRequestResponse401 | cancelPurchaseRequestResponse403 | cancelPurchaseRequestResponse404 | cancelPurchaseRequestResponse409) & {
+  headers: Headers;
+};
+
+export type cancelPurchaseRequestResponse = (cancelPurchaseRequestResponseSuccess | cancelPurchaseRequestResponseError)
+
+export const getCancelPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-requests/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela o pedido de compra. Operação própria e não campo no PUT, pelo mesmo desenho de `quotes` e `orders`: cancelar é decisão de gente com rastro próprio, e um `status` aceito no corpo do PUT deixaria uma reedição distraída cancelar o documento.
+ *
+ * **409 quando alguma linha já está em ordem.** Cancelar o pedido cuja peça já foi comprada não desfaz a compra — ele só faria a ordem apontar para um documento cancelado. Nesse estado, o que se cancela é a ORDEM.
+ */
+export const cancelPurchaseRequest = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelPurchaseRequestResponse> => {
+
+  return apiFetch<cancelPurchaseRequestResponse>(getCancelPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listPurchaseOrdersResponse200 = {
+  data: PagedResultOfPurchaseOrderDto
+  status: 200
+}
+
+export type listPurchaseOrdersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPurchaseOrdersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPurchaseOrdersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPurchaseOrdersResponseSuccess = (listPurchaseOrdersResponse200) & {
+  headers: Headers;
+};
+export type listPurchaseOrdersResponseError = (listPurchaseOrdersResponse400 | listPurchaseOrdersResponse401 | listPurchaseOrdersResponse403) & {
+  headers: Headers;
+};
+
+export type listPurchaseOrdersResponse = (listPurchaseOrdersResponseSuccess | listPurchaseOrdersResponseError)
+
+export const getListPurchaseOrdersUrl = (params?: ListPurchaseOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchase-orders?${stringifiedParams}` : `/api/purchase-orders`
+}
+
+/**
+ * Proposto. As ORDENS DE COMPRA da empresa ativa — o compromisso com o fornecedor.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ *
+ * A empresa da SESSÃO recorta a listagem; `buyingTenantId` é OUTRA coisa — é qual empresa do grupo aparece como compradora no documento, e ela é dado da ordem, não recorte de acesso. As duas coincidem no caso normal e podem divergir por decisão comercial, que é exatamente o que a multi-empresa de compra do legado faz.
+ */
+export const listPurchaseOrders = async (params?: ListPurchaseOrdersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPurchaseOrdersResponse> => {
+
+  return apiFetch<listPurchaseOrdersResponse>(getListPurchaseOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPurchaseOrderResponse201 = {
+  data: PurchaseOrderDto
+  status: 201
+}
+
+export type createPurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPurchaseOrderResponseSuccess = (createPurchaseOrderResponse201) & {
+  headers: Headers;
+};
+export type createPurchaseOrderResponseError = (createPurchaseOrderResponse400 | createPurchaseOrderResponse401 | createPurchaseOrderResponse403 | createPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type createPurchaseOrderResponse = (createPurchaseOrderResponseSuccess | createPurchaseOrderResponseError)
+
+export const getCreatePurchaseOrderUrl = () => {
+
+
+
+
+  return `/api/purchase-orders`
+}
+
+/**
+ * Proposto. Cria uma ordem de compra agrupando linhas de N pedidos de compra do MESMO fornecedor.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * **As três recusas de negócio desta operação, e por que cada uma é 409 e não 400:**
+ *
+ * 1. `urn:cabinet:erro:fornecedor-divergente` — alguma linha vem de um pedido cujo item é de outro fornecedor. A ordem é de UM fornecedor por definição, e o corpo pode estar perfeitamente bem formado: o que está errado é o estado do documento de origem, que o cliente não tinha como validar sozinho.
+ * 2. `urn:cabinet:erro:item-ja-em-ordem` — a linha de pedido apontada já foi levada por outra ordem. É a corrida entre dois compradores montando ordem ao mesmo tempo, e é exatamente o caso que um 400 descreveria mal.
+ * 3. `urn:cabinet:erro:faturamento-minimo-nao-atingido` — o total não alcança o mínimo do fornecedor. **É a regra que o legado carrega no cadastro e cobra na ordem**, e ela é conferida contra a soma das LINHAS com o desconto geral aplicado — e **sem o acréscimo**, que é frete e embalagem, não mercadoria: deixar o frete completar o mínimo faria uma ordem de R$ 2.900 passar por ter R$ 150 de frete, e o fornecedor recusaria o faturamento que este servidor aprovou. O desconto entra porque é percentual e uniforme, então não há rateio a arbitrar, e é contra o que o fornecedor RECEBE que o mínimo dele é medido.
+ *
+ * São N+1 contas independentes, não uma: uma por grupo com mínimo próprio, e uma geral contra todo o resto — as linhas sem grupo e as de grupo sem mínimo próprio. **A resposta diz TODAS as contas que faltaram**, não a primeira: o comprador que corrige uma de cada vez descobre a segunda depois de refazer o trabalho. E a ordem inteiramente composta de grupos com mínimo próprio NÃO cai na conta geral contra zero. `detail` diz quanto falta e para qual grupo — a tela não tem como calcular isso, porque o mínimo é cadastro do fornecedor.
+ *
+ * **A validação do mínimo roda na criação e no PUT, não no `send`.** Deixá-la para o envio permitiria montar e guardar uma ordem que nunca poderá sair, e o comprador descobriria no fim do trabalho em vez de no começo.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const createPurchaseOrder = async (purchaseOrderWriteRequest: PurchaseOrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPurchaseOrderResponse> => {
+
+  return apiFetch<createPurchaseOrderResponse>(getCreatePurchaseOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderWriteRequest)
+  }
+);}
+
+
+
+export type getPurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type getPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getPurchaseOrderResponseSuccess = (getPurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseOrderResponseError = (getPurchaseOrderResponse401 | getPurchaseOrderResponse403 | getPurchaseOrderResponse404 | getPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type getPurchaseOrderResponse = (getPurchaseOrderResponseSuccess | getPurchaseOrderResponseError)
+
+export const getGetPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}`
+}
+
+/**
+ * Proposto. Uma ordem de compra pelo id, com as linhas e a origem de cada uma.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}` — lista vazia é a resposta certa para "quantos pedidos tem a empresa que você não tem".
+ */
+export const getPurchaseOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseOrderResponse> => {
+
+  return apiFetch<getPurchaseOrderResponse>(getGetPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updatePurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type updatePurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePurchaseOrderResponseSuccess = (updatePurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type updatePurchaseOrderResponseError = (updatePurchaseOrderResponse400 | updatePurchaseOrderResponse401 | updatePurchaseOrderResponse403 | updatePurchaseOrderResponse404 | updatePurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type updatePurchaseOrderResponse = (updatePurchaseOrderResponseSuccess | updatePurchaseOrderResponseError)
+
+export const getUpdatePurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}`
+}
+
+/**
+ * Proposto. Substitui a ordem INTEIRA.
+ *
+ * **409 na ordem já ENVIADA** (`urn:cabinet:erro:ordem-ja-enviada`). Depois do `send` o fornecedor tem o documento na mão; o que muda a partir dali é data, e por `POST /{id}/reschedule`. Uma ordem enviada que se reescreve é uma ordem que diverge, em silêncio, daquela que o fornecedor está atendendo.
+ *
+ * As três recusas do POST valem aqui igualmente, e a do faturamento mínimo é a que mais importa no PUT: é editando que o comprador tira a linha que sustentava o mínimo.
+ */
+export const updatePurchaseOrder = async (id: string,
+    purchaseOrderWriteRequest: PurchaseOrderWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePurchaseOrderResponse> => {
+
+  return apiFetch<updatePurchaseOrderResponse>(getUpdatePurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderWriteRequest)
+  }
+);}
+
+
+
+export type sendPurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type sendPurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type sendPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type sendPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type sendPurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type sendPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type sendPurchaseOrderResponseSuccess = (sendPurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type sendPurchaseOrderResponseError = (sendPurchaseOrderResponse400 | sendPurchaseOrderResponse401 | sendPurchaseOrderResponse403 | sendPurchaseOrderResponse404 | sendPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type sendPurchaseOrderResponse = (sendPurchaseOrderResponseSuccess | sendPurchaseOrderResponseError)
+
+export const getSendPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}/send`
+}
+
+/**
+ * Proposto. ENVIA a ordem ao fornecedor: `status` vai a `sent` e `sentAt` é gravada.
+ *
+ * É transição e não campo no PUT porque muda o que a ordem PERMITE — depois dela o documento para de ser editável. Um `status: "sent"` aceito no corpo do PUT faria essa passagem acontecer no meio de uma edição distraída, e ela não tem volta.
+ *
+ * **409 na ordem já enviada** — reenviar não é operação: se o fornecedor não recebeu, o que se reenvia é o e-mail, não o documento. Reenviar aqui reescreveria `sentAt` e apagaria quando a ordem de fato saiu, que é a data contra a qual todo atraso é medido.
+ */
+export const sendPurchaseOrder = async (id: string,
+    purchaseOrderSendRequest: PurchaseOrderSendRequest, options?: Parameters<typeof apiFetch>[1]): Promise<sendPurchaseOrderResponse> => {
+
+  return apiFetch<sendPurchaseOrderResponse>(getSendPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderSendRequest)
+  }
+);}
+
+
+
+export type reschedulePurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type reschedulePurchaseOrderResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type reschedulePurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type reschedulePurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type reschedulePurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type reschedulePurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type reschedulePurchaseOrderResponseSuccess = (reschedulePurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type reschedulePurchaseOrderResponseError = (reschedulePurchaseOrderResponse400 | reschedulePurchaseOrderResponse401 | reschedulePurchaseOrderResponse403 | reschedulePurchaseOrderResponse404 | reschedulePurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type reschedulePurchaseOrderResponse = (reschedulePurchaseOrderResponseSuccess | reschedulePurchaseOrderResponseError)
+
+export const getReschedulePurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}/reschedule`
+}
+
+/**
+ * Proposto. REAGENDA a entrega: a data nova vai para `rescheduledAt` e `expectedAt` fica onde está.
+ *
+ * **As duas datas ficam, e é o ponto inteiro desta operação.** Sobrescrever `expectedAt` faria a ordem sempre parecer no prazo — o fornecedor que atrasou três vezes teria, no fim, uma data cumprida. É a diferença entre as duas que mede o atraso, e o comparativo lista o reagendamento como campo do legado justamente por isso.
+ *
+ * **Só ordem ENVIADA se reagenda** (409 na `draft`): antes do envio não há promessa a quebrar — o que se muda é `expectedAt`, pelo PUT.
+ *
+ * Reagendar de novo sobrescreve `rescheduledAt`, e isso é aceito: o que a ordem guarda é a promessa ORIGINAL e a VIGENTE. O histórico completo de reagendamentos é do log de auditoria, que grava cada chamada desta operação — não de mais uma coluna aqui.
+ */
+export const reschedulePurchaseOrder = async (id: string,
+    purchaseOrderRescheduleRequest: PurchaseOrderRescheduleRequest, options?: Parameters<typeof apiFetch>[1]): Promise<reschedulePurchaseOrderResponse> => {
+
+  return apiFetch<reschedulePurchaseOrderResponse>(getReschedulePurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(purchaseOrderRescheduleRequest)
+  }
+);}
+
+
+
+export type cancelPurchaseOrderResponse200 = {
+  data: PurchaseOrderDto
+  status: 200
+}
+
+export type cancelPurchaseOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelPurchaseOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelPurchaseOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelPurchaseOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelPurchaseOrderResponseSuccess = (cancelPurchaseOrderResponse200) & {
+  headers: Headers;
+};
+export type cancelPurchaseOrderResponseError = (cancelPurchaseOrderResponse401 | cancelPurchaseOrderResponse403 | cancelPurchaseOrderResponse404 | cancelPurchaseOrderResponse409) & {
+  headers: Headers;
+};
+
+export type cancelPurchaseOrderResponse = (cancelPurchaseOrderResponseSuccess | cancelPurchaseOrderResponseError)
+
+export const getCancelPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/purchase-orders/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela a ordem de compra e DEVOLVE as linhas de pedido que ela levava ao estado `open`.
+ *
+ * **A devolução é a razão de esta operação existir em vez de um `status` no PUT.** A ordem cancelada que deixasse as linhas de pedido marcadas como `ordered` criaria necessidade órfã: peça que o cliente espera, que nenhuma ordem vai trazer, e que nenhuma tela mostra como pendente. Cancelar a ordem tem de reabrir o pedido, e é escrita nos dois documentos — por isso ela é uma transação só, do lado do servidor.
+ *
+ * **Cancelar ordem ENVIADA é permitido**, e é decisão: o fornecedor cancela pedido, e um sistema que só deixasse cancelar rascunho obrigaria a operação a mentir sobre o que existe. O rastro fica no log de auditoria.
+ */
+export const cancelPurchaseOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelPurchaseOrderResponse> => {
+
+  return apiFetch<cancelPurchaseOrderResponse>(getCancelPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type getPurchaseArrivalForecastResponse200 = {
+  data: PagedResultOfPurchaseArrivalRowDto
+  status: 200
+}
+
+export type getPurchaseArrivalForecastResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getPurchaseArrivalForecastResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseArrivalForecastResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseArrivalForecastResponseSuccess = (getPurchaseArrivalForecastResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseArrivalForecastResponseError = (getPurchaseArrivalForecastResponse400 | getPurchaseArrivalForecastResponse401 | getPurchaseArrivalForecastResponse403) & {
+  headers: Headers;
+};
+
+export type getPurchaseArrivalForecastResponse = (getPurchaseArrivalForecastResponseSuccess | getPurchaseArrivalForecastResponseError)
+
+export const getGetPurchaseArrivalForecastUrl = (params?: GetPurchaseArrivalForecastParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchases/arrival-forecast?${stringifiedParams}` : `/api/purchases/arrival-forecast`
+}
+
+/**
+ * Proposto. PREVISÃO DE CHEGADA — o que vem, quando, e para quem. É a consulta de mesmo nome no menu `Compras` do legado.
+ *
+ * Linha a linha de ITEM, não de ordem: a pergunta que a tela responde é "quando chega a peça do cliente X". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ */
+export const getPurchaseArrivalForecast = async (params?: GetPurchaseArrivalForecastParams, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseArrivalForecastResponse> => {
+
+  return apiFetch<getPurchaseArrivalForecastResponse>(getGetPurchaseArrivalForecastUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getPurchaseStockReplenishmentResponse200 = {
+  data: PagedResultOfPurchaseReplenishmentRowDto
+  status: 200
+}
+
+export type getPurchaseStockReplenishmentResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getPurchaseStockReplenishmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseStockReplenishmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseStockReplenishmentResponseSuccess = (getPurchaseStockReplenishmentResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseStockReplenishmentResponseError = (getPurchaseStockReplenishmentResponse400 | getPurchaseStockReplenishmentResponse401 | getPurchaseStockReplenishmentResponse403) & {
+  headers: Headers;
+};
+
+export type getPurchaseStockReplenishmentResponse = (getPurchaseStockReplenishmentResponseSuccess | getPurchaseStockReplenishmentResponseError)
+
+export const getGetPurchaseStockReplenishmentUrl = (params?: GetPurchaseStockReplenishmentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/purchases/stock-replenishment?${stringifiedParams}` : `/api/purchases/stock-replenishment`
+}
+
+/**
+ * Proposto. COMPRAS PARA ESTOQUE / RESERVA — quanto há, quanto está prometido, quanto vem a caminho, e quanto falta comprar. É a `CompraEstoque` do legado.
+ *
+ * **Consome `stock_balances.quantity_allocated`** — a coluna de RESERVA que a migração `0035` criou e que, até este contrato, não saía por API nenhuma. Ela é a diferença entre esta consulta e uma listagem de saldo: sem a reserva, "disponível" é o saldo bruto, e o comprador repõe peça que já está prometida a um cliente que ainda não a levou.
+ *
+ * **As parcelas vêm abertas, não somadas.** O legado define a disponibilidade futura como um número só (ordem aberta − reserva − entrada por nota), e um número só não distingue "falta comprar" de "sobra reserva" — que pedem decisões opostas. A soma continua disponível: é `qtyAvailable + qtyOnOrder`.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — e aqui a semântica importa mais do que em qualquer outra lista: saldo é POR EMPRESA, e uma consulta de reposição que ignorasse a empresa somaria o galpão de todo mundo.
+ */
+export const getPurchaseStockReplenishment = async (params?: GetPurchaseStockReplenishmentParams, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseStockReplenishmentResponse> => {
+
+  return apiFetch<getPurchaseStockReplenishmentResponse>(getGetPurchaseStockReplenishmentUrl(params),
+  {
+    ...options,
+    method: 'GET'
 
 
   }

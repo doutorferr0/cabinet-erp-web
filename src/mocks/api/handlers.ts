@@ -15,12 +15,15 @@ import type {
 } from '@/api/gerado'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
+import { handlersDeAcesso } from './acesso'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
+import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
+import { handlersDePagamento } from './pagamento'
 import { verificarEscrita } from './permissao'
 import {
   TIPO,
@@ -32,6 +35,7 @@ import {
   semSessao,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
+import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
 /**
@@ -92,6 +96,55 @@ function lerConsulta(url: URL): ConsultaDeLista {
  * `cabinetonline.cc`, que roda em modo mock, isso não era limitação de mock; era
  * a tela afirmando o que não é.
  */
+/**
+ * AS WHITELISTS DE `sortBy` DO MOCK — e elas são cópia da descrição do contrato.
+ *
+ * Ficam exportadas porque `src/data/whitelist-do-contrato.test.ts` as confere
+ * contra o `contracts/openapi-v1.json`. Não é zelo: **o site público é 100% mock**,
+ * então whitelist menor aqui é coluna que ordena contra o `:3000` e responde 400
+ * na demo — o defeito aparece no clique do cabeçalho, nunca na suíte.
+ *
+ * Três estavam menores que o contrato quando a guarda nasceu (2026-08-22):
+ * `catalog-lookups` sem `active`, o kardex só com `occurredAt` e o parceiro sem
+ * `parentId` — este último com o front MANDANDO `parentId` no `ORDENAVEIS` dele.
+ */
+export const ORDENAVEIS_LOOKUPS = ['kind', 'name', 'active'] as const
+export const ORDENAVEIS_PRODUTO = ['code', 'description', 'active'] as const
+export const ORDENAVEIS_MOVIMENTO = ['occurredAt', 'delta', 'reason'] as const
+/**
+ * As whitelists de `filters` — o TIPO de cada campo é do SERVIDOR, não da tela:
+ * é ele que sabe se `active` é booleano e se `document` é texto sem máscara.
+ */
+export const FILTRAVEIS_PRODUTO: CamposFiltraveis = {
+  code: 'text',
+  description: 'text',
+  active: 'boolean',
+}
+
+/**
+ * `document` é `text` e o dado é guardado SEM máscara — quem tira a pontuação do
+ * que o operador digitou é o `normalizar` do campo, na saída da tela.
+ * `parentId` é a hierarquia saindo por `filters`, a decisão que o contrato tomou
+ * quando recusou `/api/partners/{id}/children`.
+ */
+export const FILTRAVEIS_PARCEIRO: CamposFiltraveis = {
+  code: 'text',
+  legalName: 'text',
+  tradeName: 'text',
+  document: 'text',
+  active: 'boolean',
+  parentId: 'text',
+}
+
+export const ORDENAVEIS_PARCEIRO = [
+  'code',
+  'legalName',
+  'tradeName',
+  'document',
+  'active',
+  'parentId',
+] as const
+
 function listar<T>(
   itens: readonly T[],
   consulta: ConsultaDeLista,
@@ -248,7 +301,7 @@ export const handlers = [
     const url = new URL(request.url)
     const kind = url.searchParams.get('kind')
     const base = kind ? store.lookups.filter((l) => l.kind === kind) : store.lookups
-    return listar(base, lerConsulta(url), ['name', 'kind'], (l) => [l.name, l.kind])
+    return listar(base, lerConsulta(url), ORDENAVEIS_LOOKUPS, (l) => [l.name, l.kind])
   }),
 
   // O `POST` do `+...` NÃO mora aqui: ele é `handlersDeLookups`, em `lookups.ts`
@@ -284,11 +337,9 @@ export const handlers = [
     return listar(
       rows,
       lerConsulta(url),
-      ['code', 'description', 'active'],
+      ORDENAVEIS_PRODUTO,
       (p) => [p.code, p.description],
-      // A whitelist do contrato para `/api/products`, com o TIPO de cada campo —
-      // é o servidor que sabe se `active` é booleano, não a tela.
-      { code: 'text', description: 'text', active: 'boolean' },
+      FILTRAVEIS_PRODUTO,
     )
   }),
 
@@ -390,7 +441,7 @@ export const handlers = [
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
     const url = new URL(request.url)
     const rows = store.movimentos.filter((m) => m.variantId === params.variantId).reverse()
-    return listar(rows, lerConsulta(url), ['occurredAt'], (m) => [m.reason])
+    return listar(rows, lerConsulta(url), ORDENAVEIS_MOVIMENTO, (m) => [m.reason])
   }),
 
   http.post('*/api/variants/:variantId/stock-movements', async ({ params, request }) => {
@@ -406,16 +457,31 @@ export const handlers = [
     if (!corpo.delta || !corpo.reason) {
       return problemaJson(400, 'Movimento exige delta diferente de zero e um motivo.')
     }
-    const saldoNovo = (variante.stockQty ?? 0) + corpo.delta
-    if (saldoNovo < 0) {
-      return problemaJson(409, 'Movimento deixaria o saldo negativo.')
+    // O DEPÓSITO entra aqui (contrato #291): corpo sem `locationId` vai para o
+    // padrão da empresa, que o servidor CRIA se ela ainda não tem nenhum.
+    const alvo = depositoDoMovimento(store.activeTenantId, corpo.locationId)
+    if ('erro' in alvo) return alvo.erro
+
+    // A conta que recusa é a do LOCAL, não mais a do produto — é o que
+    // `balanceAfter` passou a significar (api#79, decisão 2).
+    const saldoDoLocal = aplicarSaldo(
+      store.activeTenantId,
+      alvo.deposito.id,
+      variante.id,
+      corpo.delta,
+    )
+    if (saldoDoLocal === null) {
+      return problemaJson(409, 'Movimento deixaria o saldo do depósito negativo.')
     }
-    variante.stockQty = saldoNovo
+    // O total do produto continua andando junto: é o `stockQty` do
+    // `ProductVariantDto`, o segundo nível da reconciliação do ADR-009.
+    variante.stockQty = (variante.stockQty ?? 0) + corpo.delta
     const movimento = {
       id: novoId('mov'),
       variantId: variante.id,
+      locationId: alvo.deposito.id,
       delta: corpo.delta,
-      balanceAfter: saldoNovo,
+      balanceAfter: saldoDoLocal,
       reason: corpo.reason,
       occurredAt: new Date().toISOString(),
       employeeId: 'emp-admin',
@@ -460,18 +526,9 @@ export const handlers = [
     return listar(
       rows,
       lerConsulta(url),
-      ['code', 'legalName', 'tradeName', 'document', 'active'],
+      ORDENAVEIS_PARCEIRO,
       (p) => [p.code, p.legalName, p.tradeName, p.document],
-      // A whitelist do contrato para `/api/partners`. `document` é `text` e o
-      // dado é guardado SEM máscara — quem tira a pontuação do que o operador
-      // digitou é o `normalizar` do campo, na saída da tela (§Filtro estruturado).
-      {
-        code: 'text',
-        legalName: 'text',
-        tradeName: 'text',
-        document: 'text',
-        active: 'boolean',
-      },
+      FILTRAVEIS_PARCEIRO,
     )
   }),
 
@@ -516,6 +573,13 @@ export const handlers = [
       fax: corpo.fax ?? null,
       address: corpo.address ?? null,
       stateRegistration: corpo.stateRegistration ?? null,
+      deliveryDays: corpo.deliveryDays ?? null,
+      minimumBillingCents: corpo.minimumBillingCents ?? null,
+      buyingCompanies: (corpo.buyingCompanies ?? []).map((v) => ({
+        ...v,
+        validTo: v.validTo ?? null,
+      })),
+      groupMinimums: corpo.groupMinimums ?? [],
       ruralProducerRegistration: corpo.ruralProducerRegistration ?? null,
       categoryId: corpo.categoryId ?? null,
       specifierId: corpo.specifierId ?? null,
@@ -579,6 +643,13 @@ export const handlers = [
     parceiro.fax = corpo.fax ?? null
     parceiro.address = corpo.address ?? null
     parceiro.stateRegistration = corpo.stateRegistration ?? null
+    parceiro.deliveryDays = corpo.deliveryDays ?? null
+    parceiro.minimumBillingCents = corpo.minimumBillingCents ?? null
+    parceiro.buyingCompanies = (corpo.buyingCompanies ?? []).map((v) => ({
+      ...v,
+      validTo: v.validTo ?? null,
+    }))
+    parceiro.groupMinimums = corpo.groupMinimums ?? []
     parceiro.ruralProducerRegistration = corpo.ruralProducerRegistration ?? null
     parceiro.categoryId = corpo.categoryId ?? null
     parceiro.specifierId = corpo.specifierId ?? null
@@ -818,7 +889,16 @@ export const handlers = [
   // rota certa depende para responder merece teste — tem um, e ele falha se
   // o dia em que a biblioteca mudar de ideia chegar.
   ...handlersDeObras,
+  ...handlersDeDepositos,
+  ...handlersDePagamento,
+  ...handlersDeServicos,
   ...handlersDeContatos,
+
+  // ---------------- papéis e permissões (web#292 · api#84) ----------------
+  // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas
+  // antigas. Ainda SEM TELA — a de checkboxes é trilho próprio, e o que existe
+  // aqui é para o mock não ficar mudo em caminho publicado.
+  ...handlersDeAcesso,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da

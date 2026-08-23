@@ -4,6 +4,11 @@ import {
   enderecoParaContrato,
   textoOuNulo,
 } from '@/features/parceiro/papeis/contato-e-endereco'
+import {
+  ausentesNoServidor,
+  tipoDePessoaDoContrato,
+  tipoDePessoaParaContrato,
+} from '@/features/parceiro/papeis/pessoa'
 import type { PapelDeCadastro } from '@/features/parceiro/usar-parceiro'
 import { type Cliente, clienteVazio } from '@/mocks/clientes'
 
@@ -49,6 +54,16 @@ function dtoParaForm(dto: PartnerDto): Cliente {
       facebook: dto.facebook ?? '',
       instagram: dto.instagram ?? '',
     },
+    // Bloco 3 (#270). Os seis campos da aba `Principal` que o operador via na
+    // tela e o contrato não guardava: até aqui ele digitava o RG, gravava, e
+    // o valor voltava em branco — o mesmo defeito que a #244 conserta para o
+    // telefone, com seis campos a mais.
+    tipoPessoa: tipoDePessoaDoContrato(dto.personType),
+    rg: dto.identityDocument ?? '',
+    orgaoExpedicao: dto.identityIssuer ?? '',
+    ufRg: dto.identityIssuerState ?? null,
+    sexo: dto.gender ?? null,
+    dtNascimento: dto.birthDate ?? null,
   }
 }
 
@@ -74,6 +89,15 @@ function contatoEEndereco(values: Cliente) {
     notes: textoOuNulo(values.observacao),
     facebook: textoOuNulo(values.redesSociais.facebook),
     instagram: textoOuNulo(values.redesSociais.instagram),
+    // Bloco 3 (#270). `personType` passa pela TABELA e não por `textoOuNulo`:
+    // o contrato tem `enum: [individual, company, null]`, e mandar o rótulo do
+    // radio dá 400 — medido no par local.
+    personType: tipoDePessoaParaContrato(values.tipoPessoa),
+    identityDocument: textoOuNulo(values.rg),
+    identityIssuer: textoOuNulo(values.orgaoExpedicao),
+    identityIssuerState: values.ufRg,
+    gender: values.sexo,
+    birthDate: values.dtNascimento,
   }
 }
 
@@ -82,9 +106,10 @@ export const papelCliente: PapelDeCadastro<Cliente> = {
   rota: '/cadastros/clientes',
   queryKeyListagem: ['clientes'],
   camposDeEdicao:
-    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, Inscrição Estadual, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
+    'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, Tipo de pessoa, RG, Órgão expedidor, UF do RG, Sexo, Data de nascimento, Inscrição Estadual, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',
   vazio: clienteVazio,
   dtoParaForm,
+  ausentesNoServidor,
   paraEscrita: (values, linha) => ({
     legalName: values.nome,
     // `tradeName` volta como veio: a tela de Clientes não tem Nome Fantasia,

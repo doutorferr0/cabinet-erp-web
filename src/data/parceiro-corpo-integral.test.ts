@@ -45,6 +45,16 @@ const LINHA: PartnerDto = {
   homePhone: null,
   fax: null,
   address: null,
+  // Fase A0 do módulo COMPRAS (G2). Mesma leitura de sempre: chaves
+  // PRESENTES, valores nulos/vazios. O que a ordem de compra precisa do
+  // fornecedor — prazo, faturamento mínimo e empresa compradora — só chega
+  // do servidor quando a Fase B entrar no `cabinet-erp-api`; até lá a
+  // listagem não manda estas chaves e `corpoDeEscrita` RECUSA gravar, que
+  // é o comportamento desejado.
+  deliveryDays: null,
+  minimumBillingCents: null,
+  buyingCompanies: [],
+  groupMinimums: [],
   // Fase 1 (#250) — mesma leitura: chaves presentes e nulas. A janela de
   // recusa é a mesma, e agora com sete campos a mais dentro dela.
   stateRegistration: null,

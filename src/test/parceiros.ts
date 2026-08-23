@@ -70,6 +70,25 @@ export function parceiro(over: Record<string, unknown> = {}) {
     // tem". O helper representa a linha COMPLETA do contrato, não a que o
     // backend serve hoje; quem quiser testar a linha incompleta tira a chave à
     // mão, e é assim que o caso da recusa se escreve.
+    // Fase A0 do módulo COMPRAS (G2). Mesma leitura de sempre: chaves
+    // PRESENTES, valores nulos/vazios. O que a ordem de compra precisa do
+    // fornecedor — prazo, faturamento mínimo e empresa compradora — só chega
+    // do servidor quando a Fase B entrar no `cabinet-erp-api`; até lá a
+    // listagem não manda estas chaves e `corpoDeEscrita` RECUSA gravar, que
+    // é o comportamento desejado.
+    deliveryDays: null as number | null,
+    minimumBillingCents: null as number | null,
+    buyingCompanies: [] as {
+      tenantId: string
+      tenantName: string
+      validFrom: string
+      validTo: string | null
+    }[],
+    groupMinimums: [] as {
+      productGroupId: string
+      productGroupName: string
+      minimumBillingCents: number
+    }[],
     stateRegistration: null as string | null,
     ruralProducerRegistration: null as string | null,
     categoryId: null as string | null,

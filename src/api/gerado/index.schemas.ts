@@ -3427,7 +3427,7 @@ export interface PagedResultOfOrderDto {
  */
 export interface CancelDocumentRequest {
   /**
-     * Motivo, da lista de apoio. O `kind` NÃO passa pelo contrato (ADR-011) — é linha no catálogo do servidor. Id que não existe, ou de outra empresa, é 400 apontando o campo.
+     * Motivo, da lista de apoio. O `kind` NÃO passa pelo contrato (ADR-011) — é linha no catálogo do servidor. Id que não existe **ou que é de outra LISTA** é 400 apontando o campo — quem separa motivo de marca é o `kind`, e não a empresa: `catalog_lookups` é cadastro da organização, digitado uma vez para o grupo inteiro.
      * @nullable
      */
   reasonId?: string | null;
@@ -4753,11 +4753,11 @@ pageSize?: number;
 /**
  * Proposto. Filtro estruturado do pedido, somado ao `q` com AND. Viaja como **array JSON url-encoded**, e não como parâmetro repetido: o valor é texto do operador e qualquer delimitador precisaria de escape inventado, cujo bug apareceria como resultado errado, em silêncio.
  *
- * **Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
+ * **Whitelist deste recurso: `number`, `issuedAt`, `customerName`, `projectName`, `workName`, `workId`, `status`, `type`** — a do `sortBy` mais `workId`, que é COMO a tela pergunta "os documentos desta obra", do mesmo jeito que `customerId` responde "as obras deste cliente" em `/api/works`. Campo fora da whitelist é 400.
  *
  * Ficam de fora `series` (mesmo valor em toda linha; filtro por campo de valor único não estreita nada) e tudo que trafega em unidade que o operador não digita: `totalCents` em centavos e `discountPercent` em percentual escalado por 10.000 não têm variante que converta na borda — quem digitasse `10` pediria 0,001%.
  *
- * **`status` e `type` entram na whitelist com o ciclo de vida (G13), e é o que torna os dois estados úteis:** sem eles a tela não tem como perguntar "o que ainda está em aberto" nem "quais demonstrações estão na rua" — teria de puxar a lista inteira e contar no cliente, que é a conta que mente na página 2. Os dois são de VOCABULÁRIO FECHADO, então `eq`/`ne`/`inArray` bastam; valor fora do enum é 400, e não lista vazia: filtro que não casa nada e filtro que não existe são indistinguíveis para quem lê a tela.
+ * **`status` e `type` entram com o ciclo de vida (G13), e é o que torna os dois estados úteis:** sem eles a tela não tem como perguntar "o que ainda está em aberto" nem "quais demonstrações estão na rua" — teria de puxar a lista inteira e contar no cliente, que é a conta que mente na página 2. Os dois são de VOCABULÁRIO FECHADO, então `eq`/`ne`/`inArray` bastam; valor fora do enum é 400, e não lista vazia: filtro que não casa nada e filtro que não existe são indistinguíveis para quem lê a tela.
  */
 filters?: ListFilter[];
 /**

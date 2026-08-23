@@ -163,6 +163,20 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // Eles caem nesta guarda por publicarem `pageSize`, e isso é correto e não
   // acidente: relatório PAGINA, e por paginar precisa dizer por onde ordena —
   // sem `sortBy` declarado, a coluna que a tela desenhar clicável vira 400.
+  // AS QUATRO LISTAGENS DE COMPRAS (G2) — as telas são a FASE C deste mesmo
+  // trilho, e nascem depois do servidor pela razão que o módulo inteiro tem: a
+  // tela de montar ordem agrupa linha de pedido por fornecedor e confere
+  // faturamento mínimo, e sobre dado mockado ela mostraria uma ordem que o
+  // servidor recusaria. Cada uma sai daqui quando ganhar a tela, com
+  // `ORDENAVEIS` próprio.
+  ListPurchaseRequests:
+    'pedido de compra ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  ListPurchaseOrders:
+    'ordem de compra ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  GetPurchaseArrivalForecast:
+    'previsão de chegada ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  GetPurchaseStockReplenishment:
+    'compras para estoque/reserva ainda não tem tela — as telas de Compras são a Fase C do trilho',
   GetAbcCurveReport: 'curva ABC ainda não tem tela — a seção Relatórios é a Fase C do trilho',
   GetProductsSoldReport:
     'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
@@ -255,6 +269,16 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // O preço está pago enquanto tela nenhuma os consome. Quando a Fase C chegar,
   // este é o ponto que decide: ou o site público perde a seção Relatórios, ou
   // ela ganha handler de mock com dado de demonstração DECLARADO como tal.
+  // COMPRAS (G2). Diferente dos relatórios, o motivo aqui não é agregação: é
+  // que as duas listagens dependem de ESTADO que o mock não guarda — qual linha
+  // de pedido já foi levada por uma ordem. Um mock que respondesse sem isso
+  // deixaria a tela oferecer, para montar ordem, a linha que já está em outra.
+  // As duas consultas somam sobre esse mesmo estado.
+  ListPurchaseRequests: 'o mock não guarda qual linha já foi levada por uma ordem',
+  ListPurchaseOrders: 'idem — a ordem existe em função do estado das linhas de pedido',
+  GetPurchaseArrivalForecast: 'previsão soma sobre ordem enviada, estado que o mock não tem',
+  GetPurchaseStockReplenishment:
+    'reposição cruza saldo, reserva e ordem aberta — três estados que o mock não guarda',
   GetAbcCurveReport: 'curva ABC é agregação — o mock guarda linhas, não somas',
   GetProductsSoldReport: 'produto vendido é agregação — o mock guarda linhas, não somas',
   GetSalesComparisonReport: 'comparativo de vendas é agregação — o mock guarda linhas, não somas',

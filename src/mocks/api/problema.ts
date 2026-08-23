@@ -75,6 +75,10 @@ export const TIPO = {
   transicaoInvalida: 'urn:cabinet:erro:transicao-invalida',
   demonstracaoEmAberto: 'urn:cabinet:erro:demonstracao-em-aberto',
   orcamentoJaRevisado: 'urn:cabinet:erro:orcamento-ja-revisado',
+  faturamentoMinimoNaoAtingido: 'urn:cabinet:erro:faturamento-minimo-nao-atingido',
+  itemJaEmOrdem: 'urn:cabinet:erro:item-ja-em-ordem',
+  ordemJaEnviada: 'urn:cabinet:erro:ordem-ja-enviada',
+  fornecedorDivergente: 'urn:cabinet:erro:fornecedor-divergente',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -111,6 +115,10 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:transicao-invalida': 'Transição inválida',
   'urn:cabinet:erro:demonstracao-em-aberto': 'Demonstração em aberto',
   'urn:cabinet:erro:orcamento-ja-revisado': 'Orçamento já revisado',
+  'urn:cabinet:erro:faturamento-minimo-nao-atingido': 'Faturamento mínimo não atingido',
+  'urn:cabinet:erro:item-ja-em-ordem': 'Item já está em uma ordem',
+  'urn:cabinet:erro:ordem-ja-enviada': 'Ordem já enviada',
+  'urn:cabinet:erro:fornecedor-divergente': 'Fornecedor divergente',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }

@@ -91,6 +91,17 @@ export interface ParceiroDaOrg {
    * diferentes, e o mock precisa poder ter os dois preenchidos ao mesmo tempo
    * para que a tela prove que não os confunde.
    */
+  /**
+   * Fase A0 do módulo COMPRAS (G2). Moram na linha do PARCEIRO e não no
+   * vínculo com a empresa porque `partners` é da ORGANIZAÇÃO: prazo de entrega
+   * e faturamento mínimo são do FORNECEDOR, não da relação dele com uma das
+   * empresas do grupo. A empresa compradora é a exceção aparente — e não é: a
+   * lista guarda QUAIS empresas compram dele, que é dado do fornecedor.
+   */
+  deliveryDays: number | null
+  minimumBillingCents: number | null
+  buyingCompanies: { tenantId: string; validFrom: string; validTo: string | null }[]
+  groupMinimums: { productGroupId: string; minimumBillingCents: number }[]
   stateRegistration: string | null
   ruralProducerRegistration: string | null
   categoryId: string | null
@@ -506,6 +517,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       parentId: null,
       // IE de empresa: o fornecedor tem, e é o único dos três que a edita.
       stateRegistration: '110042490114',
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
@@ -562,6 +577,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       // pende de escritório nenhum (`parentId: null`) e mesmo assim tem quem a
       // indicou.
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: idDeApoio('CATEGORIA_CLIENTE', 'ARQUITETO'),
       // O ESPECIFICADOR é um `partners.id` (#265) — aqui, `parc-0004`. Era
@@ -639,6 +658,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       payoutBankInfo: null,
       parentId: null,
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
@@ -695,6 +718,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       payoutBankInfo: null,
       parentId: null,
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       // Quem indica não foi indicado por ninguém: o especificador do
@@ -752,6 +779,10 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
       payoutBankInfo: null,
       parentId: null,
       stateRegistration: null,
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,
@@ -1238,6 +1269,24 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
     fax: p.fax,
     address: p.address,
     // Fase 1 (#250), pela mesma regra das cinco de cima: a chave sai SEMPRE.
+    // Fase A0 de COMPRAS (G2): as quatro chaves saem SEMPRE, mesmo vazias — é
+    // a distinção ausente ≠ nulo que a guarda de `corpoDeEscrita` lê do outro
+    // lado, e as duas COLEÇÕES saem `[]`, nunca `null`.
+    deliveryDays: p.deliveryDays,
+    minimumBillingCents: p.minimumBillingCents,
+    // Os NOMES são DERIVADOS, como `categoryName` e `parentName` logo abaixo: o
+    // store guarda o id, e a escrita não aceita nome de volta. Guardar o nome
+    // da empresa aqui faria a empresa renomeada aparecer com o nome velho no
+    // cadastro do fornecedor — e o histórico de empresa compradora existe
+    // justamente para não mentir sobre o passado.
+    buyingCompanies: p.buyingCompanies.map((v) => ({
+      ...v,
+      tenantName: nomeDeEmpresa(v.tenantId),
+    })),
+    groupMinimums: p.groupMinimums.map((g) => ({
+      ...g,
+      productGroupName: nomeDeApoio(g.productGroupId) ?? '',
+    })),
     stateRegistration: p.stateRegistration,
     ruralProducerRegistration: p.ruralProducerRegistration,
     categoryId: p.categoryId,
@@ -1275,6 +1324,18 @@ export function partnerDto(p: ParceiroDaOrg, tenantId: string): PartnerDto {
 function nomeDeParceiro(id: string | null): string | null {
   if (!id) return null
   return store.parceiros.find((p) => p.id === id)?.legalName ?? null
+}
+
+/**
+ * Nome de uma EMPRESA do grupo, pelo id.
+ *
+ * Cai no próprio id quando não acha, e não em `null`: `tenantName` é
+ * obrigatório no `SupplierBuyingCompanyDto`, e uma linha de vigência apontando
+ * para empresa que sumiu ainda tem de ser legível — o operador precisa ver que
+ * ela existe para poder corrigi-la.
+ */
+function nomeDeEmpresa(id: string): string {
+  return store.empresas.find((e) => e.tenantId === id)?.name ?? id
 }
 
 /** Nome de um item de lista de apoio, pelo id. `null` quando não há id. */

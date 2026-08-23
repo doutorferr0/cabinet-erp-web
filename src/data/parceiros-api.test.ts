@@ -155,6 +155,14 @@ describe('escrita', () => {
       notes: null,
       facebook: null,
       instagram: null,
+      // Fase A0 de COMPRAS (G2), pela MESMA razão: nenhuma tela edita prazo de
+      // entrega nem faturamento mínimo, e é justamente por isso que eles têm de
+      // estar no corpo. As duas COLEÇÕES voltam `[]` e não `null` — o contrato
+      // as declara array, e um `null` ali seria um tipo que o servidor recusa.
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       // Bloco 2 (#255): nenhuma tela os edita ainda, e é por isso que estar no
       // corpo importa — `PUT` integral apaga a chave que não vier.
       billingAddress: null,
@@ -397,6 +405,14 @@ describe('desativação (o Excluir da listagem)', () => {
       notes: linha.notes ?? null,
       facebook: linha.facebook ?? null,
       instagram: linha.instagram ?? null,
+      // E a fase A0 de COMPRAS (G2): desativar um fornecedor não pode levar
+      // junto o faturamento mínimo que o comprador negociou nem o histórico de
+      // empresa compradora — quem reativar depois encontraria a ficha esvaziada,
+      // e a próxima ordem passaria sem validação nenhuma.
+      deliveryDays: linha.deliveryDays ?? null,
+      minimumBillingCents: linha.minimumBillingCents ?? null,
+      buyingCompanies: linha.buyingCompanies ?? [],
+      groupMinimums: linha.groupMinimums ?? [],
       // E o bloco 2 (#255): desativar um cliente não pode apagar o endereço de
       // cobrança dele — quem reativar depois encontraria a ficha esvaziada.
       billingAddress: linha.billingAddress ?? null,

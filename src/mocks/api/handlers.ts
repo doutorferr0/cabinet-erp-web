@@ -573,6 +573,13 @@ export const handlers = [
       fax: corpo.fax ?? null,
       address: corpo.address ?? null,
       stateRegistration: corpo.stateRegistration ?? null,
+      deliveryDays: corpo.deliveryDays ?? null,
+      minimumBillingCents: corpo.minimumBillingCents ?? null,
+      buyingCompanies: (corpo.buyingCompanies ?? []).map((v) => ({
+        ...v,
+        validTo: v.validTo ?? null,
+      })),
+      groupMinimums: corpo.groupMinimums ?? [],
       ruralProducerRegistration: corpo.ruralProducerRegistration ?? null,
       categoryId: corpo.categoryId ?? null,
       specifierId: corpo.specifierId ?? null,
@@ -636,6 +643,13 @@ export const handlers = [
     parceiro.fax = corpo.fax ?? null
     parceiro.address = corpo.address ?? null
     parceiro.stateRegistration = corpo.stateRegistration ?? null
+    parceiro.deliveryDays = corpo.deliveryDays ?? null
+    parceiro.minimumBillingCents = corpo.minimumBillingCents ?? null
+    parceiro.buyingCompanies = (corpo.buyingCompanies ?? []).map((v) => ({
+      ...v,
+      validTo: v.validTo ?? null,
+    }))
+    parceiro.groupMinimums = corpo.groupMinimums ?? []
     parceiro.ruralProducerRegistration = corpo.ruralProducerRegistration ?? null
     parceiro.categoryId = corpo.categoryId ?? null
     parceiro.specifierId = corpo.specifierId ?? null

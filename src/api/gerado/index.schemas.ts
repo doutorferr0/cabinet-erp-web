@@ -182,6 +182,45 @@ export const PartnerDtoPersonType = {
   company: 'company',
 } as const;
 
+/**
+ * Proposto. Uma vigência de EMPRESA COMPRADORA do fornecedor — a aba `Histórico Emp. Compradora` do cadastro de fornecedor no legado.
+ *
+ * **Por que é lista com vigência e não um campo.** No legado a Empresa Compradora aparece em fornecedor, produto e ordem de compra, e é ela que decide se a compra sai pela Vertz ou pela Via HF. O legado guarda o HISTÓRICO dela numa aba própria justamente porque a resposta muda no tempo: o fornecedor que era comprado pela Via em 2023 é comprado pela Vertz hoje, e a ordem emitida naquele ano tem de continuar dizendo a verdade sobre quem comprou. Um campo único reescreveria o passado a cada troca.
+ *
+ * **A ordem de compra NÃO lê esta lista para congelar a empresa** — ela guarda a sua própria `buyingTenantId`, copiada na emissão. Esta lista é o PADRÃO que a tela sugere, não a fonte do que já foi emitido.
+ *
+ * A empresa é um TENANT (`AuthTenantDto.tenantId`), não um cadastro à parte: multi-empresa neste produto é multi-tenant, e o legado confirma o modelo — 99,91% do volume dele está na empresa 1, e a multi-empresa que ele de fato opera é a de COMPRA.
+ */
+export interface SupplierBuyingCompanyDto {
+  /** A empresa compradora — `AuthTenantDto.tenantId`. */
+  tenantId: string;
+  /** Nome da empresa, ecoado para a tela não ter de resolver o id. */
+  tenantName: string;
+  /** Início da vigência. Data, não instante: a troca de empresa compradora é decisão comercial com data, e hora aqui seria precisão inventada. */
+  validFrom: string;
+  /**
+     * Fim da vigência, ou `null` na linha VIGENTE. Só uma linha por fornecedor pode ter `validTo` nulo — duas empresas comprando ao mesmo tempo do mesmo fornecedor não é estado, é cadastro por terminar.
+     * @nullable
+     */
+  validTo?: string | null;
+}
+
+/**
+ * Proposto. O FATURAMENTO MÍNIMO do fornecedor para um GRUPO DE PRODUTO — a exceção à regra geral de `minimumBillingCents`.
+ *
+ * **Por que por grupo, e por que só agora.** O fornecedor que exige R$ 3.000 por ordem costuma exigir outra coisa para a linha de perfil ou para a de LED, e o legado carrega isso: `Forma_PagamentoGrupProd` já pendura desconto e acréscimo por grupo de produto. O `PaymentTermDto` deste contrato declarou essa mesma dívida por escrito e disse que ela só entraria quando o grupo de produto tivesse id — "casar por texto faria PENDENTES e Pendentes renderem descontos diferentes no mesmo documento". **O id existe desde `QuoteItemDto.productGroupId`** (kind `GRUPO_PRODUTO` de `catalog-lookups`), e é nele que esta linha pendura. A dívida do `PaymentTermDto` continua aberta — ela é sobre desconto na CONDIÇÃO DE PAGAMENTO, não sobre mínimo do fornecedor —, mas o argumento que a bloqueava não vale mais.
+ *
+ * **Como as duas se combinam:** o mínimo por grupo SUBSTITUI o geral para os itens daquele grupo, não soma com ele. Uma ordem com itens de dois grupos com mínimo próprio tem de atender os dois; os itens de grupo sem linha aqui somam contra `minimumBillingCents`. Somar tudo num total só deixaria o fornecedor que exige R$ 3.000 de LED aceitar uma ordem de R$ 3.000 de perfil.
+ */
+export interface SupplierGroupMinimumDto {
+  /** O grupo — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. O mesmo id que a linha do documento carrega em `productGroupId`. */
+  productGroupId: string;
+  /** Nome do grupo, ecoado. NÃO é chave: ver a descrição de `QuoteItemDto.productGroupId`. */
+  productGroupName: string;
+  /** O mínimo em CENTAVOS para este grupo. Inteiro, como todo dinheiro deste contrato. */
+  minimumBillingCents: number;
+}
+
 export interface PartnerDto {
   id: string;
   /** @nullable */
@@ -338,6 +377,28 @@ export interface PartnerDto {
      * @nullable
      */
   birthDate?: string | null;
+  /**
+     * Proposto. PRAZO DE ENTREGA do fornecedor, em dias corridos — item #2 dos cadastros do comparativo. É o que a ordem de compra usa para SUGERIR `expectedAt` a partir de `orderedAt`; a ordem guarda a data que foi acordada, não este número, porque prazo de cadastro muda e data prometida não.
+     *
+     * Dias CORRIDOS e não úteis: é assim que o fornecedor promete ("entrega em 30 dias"), e converter para úteis exigiria calendário de feriado por UF, que este contrato não tem. `null` no fornecedor sem prazo acordado — e então a ordem não sugere data nenhuma, em vez de sugerir hoje.
+     *
+     * Só faz sentido com `isSupplier: true`. O contrato não o recusa no cliente, pela mesma razão que já aceita `paymentTerms` em qualquer parceiro: o cadastro é UM e os papéis são flags, então campo de papel é campo opcional do cadastro inteiro.
+     * @nullable
+     */
+  deliveryDays?: number | null;
+  /**
+     * Proposto. FATURAMENTO MÍNIMO GERAL do fornecedor, em centavos — quanto a ordem precisa somar para ele aceitar faturar.
+     *
+     * É regra de NEGÓCIO do fornecedor, e por isso mora no cadastro dele e não na ordem: a ordem só ECOA o valor que valia na emissão (`PurchaseOrderDto.minimumBillingCents`), para que a recusa de ontem continue explicável depois de o fornecedor mudar o mínimo.
+     *
+     * `null` = sem mínimo, e é diferente de `0`: zero é mínimo declarado e atendido por qualquer ordem; nulo é "o fornecedor não impõe mínimo", e a validação nem roda. Ver `groupMinimums` para a exceção por grupo de produto.
+     * @nullable
+     */
+  minimumBillingCents?: number | null;
+  /** Proposto. O histórico de EMPRESA COMPRADORA deste fornecedor, mais recente primeiro. Lista vazia no parceiro que não é fornecedor, ou no fornecedor comprado por qualquer empresa — ausência aqui não bloqueia ordem nenhuma. */
+  buyingCompanies?: SupplierBuyingCompanyDto[];
+  /** Proposto. Os faturamentos mínimos POR GRUPO DE PRODUTO, que substituem o geral para os itens do grupo. Lista vazia = só vale `minimumBillingCents`. */
+  groupMinimums?: SupplierGroupMinimumDto[];
 }
 
 export interface PagedResultOfPartnerDto {
@@ -695,6 +756,24 @@ export const PartnerWriteRequestPersonType = {
   company: 'company',
 } as const;
 
+/**
+ * Proposto. Uma linha de vigência de empresa compradora, na escrita do parceiro. `tenantName` não entra: ele é ecoado na leitura, e aceitá-lo aqui deixaria o cliente renomear a empresa de outra pessoa pelo cadastro do fornecedor.
+ */
+export interface SupplierBuyingCompanyWriteRequest {
+  tenantId: string;
+  validFrom: string;
+  /** @nullable */
+  validTo?: string | null;
+}
+
+/**
+ * Proposto. Uma linha de faturamento mínimo por grupo, na escrita do parceiro.
+ */
+export interface SupplierGroupMinimumWriteRequest {
+  productGroupId: string;
+  minimumBillingCents: number;
+}
+
 export interface PartnerWriteRequest {
   /** @nullable */
   document: string | null;
@@ -839,6 +918,14 @@ export interface PartnerWriteRequest {
      * @nullable
      */
   birthDate?: string | null;
+  /** @nullable */
+  deliveryDays?: number | null;
+  /** @nullable */
+  minimumBillingCents?: number | null;
+  /** Proposto. SUBSTITUI o histórico inteiro — o PUT deste contrato troca o registro completo, e coleção embutida segue a mesma regra. Omitir o campo mantém o que está gravado; mandar `[]` apaga o histórico. */
+  buyingCompanies?: SupplierBuyingCompanyWriteRequest[];
+  /** Proposto. SUBSTITUI as linhas de mínimo por grupo, mesma regra de `buyingCompanies`. */
+  groupMinimums?: SupplierGroupMinimumWriteRequest[];
 }
 
 /**
@@ -879,6 +966,10 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |
  * | `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria "recarregue" para um caso que se resolve com dois cliques |
  * | `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |
+ * | `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |
+ * | `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |
+ * | `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |
+ * | `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
@@ -917,6 +1008,10 @@ export const ProblemType = {
   'urn:cabinet:erro:transicao-invalida': 'urn:cabinet:erro:transicao-invalida',
   'urn:cabinet:erro:demonstracao-em-aberto': 'urn:cabinet:erro:demonstracao-em-aberto',
   'urn:cabinet:erro:orcamento-ja-revisado': 'urn:cabinet:erro:orcamento-ja-revisado',
+  'urn:cabinet:erro:faturamento-minimo-nao-atingido': 'urn:cabinet:erro:faturamento-minimo-nao-atingido',
+  'urn:cabinet:erro:item-ja-em-ordem': 'urn:cabinet:erro:item-ja-em-ordem',
+  'urn:cabinet:erro:ordem-ja-enviada': 'urn:cabinet:erro:ordem-ja-enviada',
+  'urn:cabinet:erro:fornecedor-divergente': 'urn:cabinet:erro:fornecedor-divergente',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -4397,6 +4492,549 @@ export interface BirthdaysReportDto {
 }
 
 /**
+ * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+ *
+ * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+ */
+export type PurchaseRequestItemDtoDestination = typeof PurchaseRequestItemDtoDestination[keyof typeof PurchaseRequestItemDtoDestination];
+
+
+export const PurchaseRequestItemDtoDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Estado da LINHA, que não é o do pedido: um pedido com metade das linhas em ordem fica `partially_ordered`, e é a linha que diz qual metade. `cancelled` é linha desistida sem cancelar o pedido inteiro.
+ */
+export type PurchaseRequestItemDtoStatus = typeof PurchaseRequestItemDtoStatus[keyof typeof PurchaseRequestItemDtoStatus];
+
+
+export const PurchaseRequestItemDtoStatus = {
+  open: 'open',
+  ordered: 'ordered',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Uma linha do PEDIDO DE COMPRA — o que se quer comprar, de quem, e para quê.
+ *
+ * A linha carrega o FORNECEDOR porque o pedido tem N deles: no legado a compra nasce da necessidade (o pedido de venda fechado, ou o saldo abaixo do mínimo), e a necessidade não chega separada por fornecedor. Quem separa é a ORDEM, que é por fornecedor — e é por isso que um pedido vira várias ordens, e uma ordem agrupa vários pedidos.
+ */
+export interface PurchaseRequestItemDto {
+  /** A ordem da linha DENTRO do pedido, 1-based. É por ela que a ordem de compra rastreia a origem (`PurchaseOrderItemDto.sourceLineNumber`) — o id da linha não sai daqui, e o par (pedido, número) já a identifica. */
+  lineNumber: number;
+  /**
+     * A variante do catálogo, quando a linha aponta para uma. `null` no item que o operador digitou à mão — o "Pré Produto" do legado, que existe justamente para comprar o que ainda não está cadastrado.
+     * @nullable
+     */
+  variantId?: string | null;
+  /** A descrição CONGELADA na emissão. Não é lida da variante em tempo de leitura, pelo mesmo motivo que a linha do orçamento congela a sua: renomear o produto não pode reescrever o que foi pedido. */
+  description: string;
+  /**
+     * Acabamento. Junto de `size`, é a variante em texto — o legado compra por acabamento e tamanho, e a tela de compras é a mesma do orçamento nesse ponto.
+     * @nullable
+     */
+  finish?: string | null;
+  /**
+     * Tamanho.
+     * @nullable
+     */
+  size?: string | null;
+  /**
+     * Unidade de COMPRA, que pode não ser a de venda: o legado tem unidade de entrada ≠ unidade de saída com fator de conversão, e este campo é a de entrada.
+     * @nullable
+     */
+  unit?: string | null;
+  /** Quantidade pedida. Fracionária — metro de fita de LED é a unidade normal deste negócio. */
+  quantity: number;
+  /**
+     * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+     *
+     * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+     */
+  destination: PurchaseRequestItemDtoDestination;
+  /** De QUEM se quer comprar esta linha — `PartnerDto.id` com `isSupplier`. */
+  supplierId: string;
+  /** Nome do fornecedor, ecoado. */
+  supplierName: string;
+  /**
+     * A linha do PEDIDO DE VENDA que originou esta — `OrderItemDto.lineNumber` dentro do `orderId` do cabeçalho. `null` quando `destination` é `stock`, e obrigatório quando é `sale`: é este par que faz a previsão de chegada dizer para QUAL cliente a peça está vindo.
+     * @nullable
+     */
+  sourceOrderItemLine?: number | null;
+  /**
+     * A ORDEM que já levou esta linha, ou `null` enquanto ela está aberta. Derivado — quem escreve é a criação da ordem, nunca o PUT do pedido.
+     * @nullable
+     */
+  purchaseOrderId?: string | null;
+  /**
+     * Número da ordem que levou a linha, ecoado.
+     * @nullable
+     */
+  purchaseOrderNumber?: string | null;
+  /** Estado da LINHA, que não é o do pedido: um pedido com metade das linhas em ordem fica `partially_ordered`, e é a linha que diz qual metade. `cancelled` é linha desistida sem cancelar o pedido inteiro. */
+  status: PurchaseRequestItemDtoStatus;
+  /**
+     * Observação da linha — onde vai o recado ao comprador que não cabe em campo nenhum.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+/**
+ * Derivado das linhas, exceto `cancelled`. Ver a descrição do schema.
+ */
+export type PurchaseRequestDtoStatus = typeof PurchaseRequestDtoStatus[keyof typeof PurchaseRequestDtoStatus];
+
+
+export const PurchaseRequestDtoStatus = {
+  open: 'open',
+  partially_ordered: 'partially_ordered',
+  ordered: 'ordered',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Um PEDIDO DE COMPRA — a NECESSIDADE de comprar, antes de ela virar compromisso com fornecedor. É o menu `Compras → Pedido` do legado, e o primeiro elo da cadeia real que o comparativo levantou: **Pedido de Venda → Pedido de Compra → Ordem de Compra por fornecedor → envio → recebimento**.
+ *
+ * **Por que pedido e ordem são DOIS documentos e não um com status.** Eles têm cardinalidade diferente em relação ao fornecedor: o pedido tem N (a necessidade vem misturada), a ordem tem 1 (o compromisso é com um fornecedor só). Um documento único obrigaria a escolher — ou quebrar a necessidade em N documentos na hora errada (antes de saber se dá para agrupar com a de outro pedido e atingir o faturamento mínimo), ou deixar a ordem com N fornecedores, que é o que o faturamento mínimo, a transportadora e a condição de pagamento não admitem.
+ *
+ * **A relação com a ordem é N↔N, rastreada POR ITEM.** Um pedido vira várias ordens (uma por fornecedor) e uma ordem agrupa vários pedidos (para atingir o mínimo). Guardar o elo no cabeçalho não representaria nem um caso nem o outro; ele mora em `PurchaseOrderItemDto.sourceRequestId` + `sourceLineNumber`.
+ *
+ * **`status` é DERIVADO das linhas** e não escrito à mão: `open` enquanto nenhuma linha entrou em ordem, `partially_ordered` com algumas, `ordered` com todas. Só `cancelled` é decisão de gente, e é por isso que ele tem operação própria (`POST /{id}/cancel`) em vez de campo no PUT — o mesmo desenho de `quotes` e `orders`.
+ */
+export interface PurchaseRequestDto {
+  id: string;
+  /** O número do documento na empresa. Texto e não inteiro, pelo mesmo motivo de `OrderDto.number`: o legado traz numeração com prefixo e série. */
+  number: string;
+  /** Derivado das linhas, exceto `cancelled`. Ver a descrição do schema. */
+  status: PurchaseRequestDtoStatus;
+  /** Data de emissão do pedido. */
+  issuedAt: string;
+  /**
+     * O PEDIDO DE VENDA que originou este pedido de compra, quando ele nasceu de uma venda. `null` no pedido de REPOSIÇÃO, que nasce do saldo e não de cliente nenhum.
+     *
+     * O elo é do CABEÇALHO e não da linha porque o legado o descreve assim ("Pedido de Compra: vinculado a Ped. Venda"), e porque um pedido de compra que misturasse duas vendas não teria a quem mostrar a previsão de chegada. As LINHAS apontam para as linhas daquela venda, em `sourceOrderItemLine`.
+     * @nullable
+     */
+  orderId?: string | null;
+  /**
+     * Número do pedido de venda de origem, ecoado.
+     * @nullable
+     */
+  orderNumber?: string | null;
+  /**
+     * Cliente do pedido de venda de origem, ecoado — a previsão de chegada precisa dele e não vai buscar a venda inteira para ter um nome.
+     * @nullable
+     */
+  customerId?: string | null;
+  /**
+     * Nome do cliente, ecoado.
+     * @nullable
+     */
+  customerName?: string | null;
+  /** Quantas linhas o pedido tem. Existe para a LISTAGEM: contar itens na tela exigiria trazer as linhas de todos os pedidos da página. */
+  itemCount: number;
+  /** As linhas. Vêm na listagem TAMBÉM, e é decisão: o pedido de compra é documento curto (o legado tem 34.863 linhas em `Pedido_compra_det` para o histórico inteiro), e a tela de compras precisa do fornecedor de cada linha para agrupar em ordem sem uma requisição por pedido. */
+  items: PurchaseRequestItemDto[];
+  /**
+     * Observação do documento.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export type PurchaseRequestItemWriteRequestDestination = typeof PurchaseRequestItemWriteRequestDestination[keyof typeof PurchaseRequestItemWriteRequestDestination];
+
+
+export const PurchaseRequestItemWriteRequestDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Proposto. Uma linha na escrita do pedido de compra. Os campos DERIVADOS não entram — `status`, `purchaseOrderId` e `purchaseOrderNumber` são escritos pela criação da ordem, e aceitá-los aqui deixaria o cliente declarar que a linha já foi comprada.
+ */
+export interface PurchaseRequestItemWriteRequest {
+  lineNumber: number;
+  /** @nullable */
+  variantId?: string | null;
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  quantity: number;
+  destination: PurchaseRequestItemWriteRequestDestination;
+  supplierId: string;
+  /** @nullable */
+  sourceOrderItemLine?: number | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI um pedido de compra inteiro — PUT troca o registro completo, `items` incluído.
+ *
+ * **O PUT recusa (409) o pedido que já tem linha em ordem.** Reescrever a linha que virou compromisso com fornecedor mudaria o que a ordem diz ter comprado, e a ordem já saiu. Nesse estado o caminho é cancelar a linha e abrir outra, que é o que deixa rastro.
+ */
+export interface PurchaseRequestWriteRequest {
+  issuedAt: string;
+  /** @nullable */
+  orderId?: string | null;
+  items: PurchaseRequestItemWriteRequest[];
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PagedResultOfPurchaseRequestDto {
+  rows: PurchaseRequestDto[];
+  total: number;
+}
+
+/**
+ * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+ *
+ * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+ */
+export type PurchaseOrderItemDtoDestination = typeof PurchaseOrderItemDtoDestination[keyof typeof PurchaseOrderItemDtoDestination];
+
+
+export const PurchaseOrderItemDtoDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Proposto. Uma linha da ORDEM DE COMPRA, com a ORIGEM rastreada.
+ *
+ * **`sourceRequestId` + `sourceLineNumber` são o que faz o agrupamento reversível.** A ordem agrupa itens de N pedidos; sem o par, "de qual pedido veio esta peça" só se responderia casando descrição e quantidade — que é adivinhação assim que dois pedidos pedem a mesma peça do mesmo fornecedor, que é o caso NORMAL num negócio de reposição.
+ */
+export interface PurchaseOrderItemDto {
+  /** A ordem da linha DENTRO da ordem de compra, 1-based. */
+  lineNumber: number;
+  /** O PEDIDO DE COMPRA de onde esta linha veio. */
+  sourceRequestId: string;
+  /** Número do pedido de origem, ecoado — a tela mostra "veio do pedido 1234" sem resolver o id. */
+  sourceRequestNumber: string;
+  /** A linha DAQUELE pedido — `PurchaseRequestItemDto.lineNumber`. */
+  sourceLineNumber: number;
+  /** @nullable */
+  variantId?: string | null;
+  /** Descrição congelada na emissão da ordem. */
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  /** Quantidade desta linha na ordem. **Pode ser menor que a da linha do pedido**: o fornecedor atende parcialmente, e o resto continua aberto no pedido para entrar noutra ordem. */
+  quantity: number;
+  /** Custo unitário NEGOCIADO, em centavos. É o preço de COMPRA — não tem relação com o de venda, que sai do índice por fornecedor. */
+  unitCostCents: number;
+  /** Total da linha em centavos. Vem calculado do servidor: `quantity × unitCostCents` arredondado uma vez, e não N vezes na tela. */
+  totalCents: number;
+  /**
+     * O DESTINO da peça: `stock` repõe o galpão, `sale` é encomenda de um cliente. É o eixo que separa as duas metades do módulo de compras do legado — os botões "Produtos Estoque" e "Produtos Pedidos" da ordem de compra —, e por isso é campo da LINHA e não do documento: a mesma ordem mistura reposição e encomenda, e é exatamente essa mistura que faz o fornecedor atingir o faturamento mínimo.
+     *
+     * **`sale` sem `orderId` no pedido é recusado** (400): encomenda sem venda que a encomendou é reposição com outro nome, e é ela que faria a previsão de chegada mostrar cliente vazio.
+     */
+  destination: PurchaseOrderItemDtoDestination;
+  /**
+     * Grupo de produto da linha — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. É por ele que a linha entra na conta do faturamento mínimo POR GRUPO do fornecedor.
+     * @nullable
+     */
+  productGroupId?: string | null;
+  /**
+     * Nome do grupo, ecoado.
+     * @nullable
+     */
+  productGroupName?: string | null;
+}
+
+/**
+ * `draft` enquanto a ordem está sendo montada, `sent` depois de `POST /{id}/send`, `cancelled` na desistência.
+ *
+ * **Reagendar NÃO é status.** `POST /{id}/reschedule` move `expectedAt` para `rescheduledAt` e a ordem continua `sent` — uma ordem reagendada é uma ordem enviada cuja data mudou, e um status próprio faria a listagem de "enviadas" perder exatamente as que mais interessam ao comprador.
+ */
+export type PurchaseOrderDtoStatus = typeof PurchaseOrderDtoStatus[keyof typeof PurchaseOrderDtoStatus];
+
+
+export const PurchaseOrderDtoStatus = {
+  draft: 'draft',
+  sent: 'sent',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Uma ORDEM DE COMPRA — o compromisso com UM fornecedor. Menu `Compras → Ordem` do legado.
+ *
+ * **Um fornecedor, N pedidos.** É a inversão de cardinalidade que justifica o segundo documento: só com um fornecedor só fazem sentido o faturamento mínimo, a transportadora, a condição de pagamento e a data prometida. E é agrupando pedidos de dias diferentes que o comprador chega ao mínimo — o que o legado apoia com os botões "Produtos Estoque" e "Produtos Pedidos", que enchem a mesma ordem com reposição e encomenda.
+ *
+ * **As quatro datas são quatro fatos diferentes, e nenhuma deriva da outra:** `orderedAt` é quando a ordem foi montada, `sentAt` é quando ela foi de fato mandada ao fornecedor (e é o que a transição `send` grava), `expectedAt` é a data PROMETIDA e `rescheduledAt` é a data reprometida depois de o fornecedor furar a primeira. Guardar só a última destruiria a medição que o negócio mais quer — de quanto o fornecedor atrasa —, porque a promessa original teria sido sobrescrita pela desculpa.
+ *
+ * **Não há DELETE**, como em todo o contrato: ordem some é ordem que o fornecedor recebeu e o sistema esqueceu. Desistir é `POST /{id}/cancel`.
+ */
+export interface PurchaseOrderDto {
+  id: string;
+  /** O número da ordem na empresa. */
+  number: string;
+  /**
+     * `draft` enquanto a ordem está sendo montada, `sent` depois de `POST /{id}/send`, `cancelled` na desistência.
+     *
+     * **Reagendar NÃO é status.** `POST /{id}/reschedule` move `expectedAt` para `rescheduledAt` e a ordem continua `sent` — uma ordem reagendada é uma ordem enviada cuja data mudou, e um status próprio faria a listagem de "enviadas" perder exatamente as que mais interessam ao comprador.
+     */
+  status: PurchaseOrderDtoStatus;
+  /** O ÚNICO fornecedor da ordem. */
+  supplierId: string;
+  supplierName: string;
+  /** A EMPRESA COMPRADORA — qual empresa do grupo está comprando. Copiada na emissão a partir da vigência do fornecedor (`SupplierBuyingCompanyDto`), e congelada aqui: trocar a empresa compradora do cadastro amanhã não pode reescrever quem comprou ontem. */
+  buyingTenantId: string;
+  buyingTenantName: string;
+  /** Data em que a ordem foi montada. */
+  orderedAt: string;
+  /**
+     * Data em que a ordem foi ENVIADA ao fornecedor. `null` enquanto `draft`.
+     * @nullable
+     */
+  sentAt?: string | null;
+  /**
+     * Data PROMETIDA na emissão. Sugerida a partir de `PartnerDto.deliveryDays`, mas guardada como data acordada — ver a descrição daquele campo.
+     * @nullable
+     */
+  expectedAt?: string | null;
+  /**
+     * A data REPROMETIDA, quando houve reagendamento. `null` na ordem nunca reagendada. A previsão de chegada usa esta quando existe, e `expectedAt` quando não — mas as duas ficam, e é a diferença entre elas que mede o atraso do fornecedor.
+     * @nullable
+     */
+  rescheduledAt?: string | null;
+  /**
+     * O motivo do último reagendamento, como o comprador o registrou.
+     * @nullable
+     */
+  rescheduleReason?: string | null;
+  /**
+     * O faturamento mínimo do fornecedor ECOADO na emissão — cópia de `PartnerDto.minimumBillingCents` no momento em que a ordem foi criada.
+     *
+     * Ecoado e não lido em tempo de leitura porque a validação de ontem tem de continuar explicável: o fornecedor sobe o mínimo, e a ordem antiga passaria a parecer irregular sem que nada nela tivesse mudado.
+     * @nullable
+     */
+  minimumBillingCents?: number | null;
+  /**
+     * A TRANSPORTADORA — `PartnerDto.id`. Transportadora é parceiro como qualquer outro no cadastro do legado (item próprio do menu Cadastros), e não ganha entidade nova.
+     * @nullable
+     */
+  carrierId?: string | null;
+  /** @nullable */
+  carrierName?: string | null;
+  /**
+     * A CONDIÇÃO DE PAGAMENTO da ordem — `PaymentTermDto.id`, o cadastro que já existe. A aba Pagamento da ordem de compra REUSA o que a venda usa: parcelamento é parcelamento, e duplicar o cadastro faria a mesma condição existir com dois ids.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /** @nullable */
+  paymentTermName?: string | null;
+  /** Desconto GERAL da ordem, em pontos percentuais inteiros. Inteiro porque é assim que se negocia com fornecedor ("cinco por cento") — e porque percentual fracionário faria dois arredondamentos empilhados no total. */
+  discountPercent?: number;
+  /** ACRÉSCIMO em centavos — frete cobrado à parte, embalagem, taxa. Valor e não percentual: o que o fornecedor acrescenta chega em reais. */
+  surchargeCents?: number;
+  /** Soma das linhas, antes de desconto e acréscimo. */
+  subtotalCents: number;
+  /** O total da ordem: `subtotalCents` menos o desconto, mais o acréscimo. É contra ELE que o faturamento mínimo é conferido. */
+  totalCents: number;
+  items: PurchaseOrderItemDto[];
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma linha na escrita da ordem. `totalCents` não entra — quem multiplica é o servidor, e aceitar o total do cliente deixaria a soma da tela virar o valor gravado.
+ */
+export interface PurchaseOrderItemWriteRequest {
+  lineNumber: number;
+  sourceRequestId: string;
+  sourceLineNumber: number;
+  quantity: number;
+  unitCostCents: number;
+  /** @nullable */
+  productGroupId?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI a ordem inteira.
+ *
+ * **A linha traz só o par de origem e o que foi negociado.** Descrição, acabamento, tamanho, unidade, variante e destino NÃO vêm do cliente: eles são COPIADOS da linha do pedido que `sourceRequestId` + `sourceLineNumber` apontam. Aceitá-los aqui deixaria a ordem dizer que comprou uma peça e o pedido dizer que pediu outra, com o par intacto entre as duas.
+ *
+ * **O PUT recusa (409) a ordem já enviada.** Depois do `send` o fornecedor tem a ordem na mão, e o que muda é data (por `reschedule`) ou nada.
+ */
+export interface PurchaseOrderWriteRequest {
+  supplierId: string;
+  buyingTenantId: string;
+  orderedAt: string;
+  /** @nullable */
+  expectedAt?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  /** @nullable */
+  paymentTermId?: string | null;
+  discountPercent: number;
+  surchargeCents: number;
+  items: PurchaseOrderItemWriteRequest[];
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. O corpo do envio. `sentAt` é opcional porque o caso normal é "mandei agora" — omitido, o servidor grava a data de hoje. Ele existe para o lançamento retroativo, que num ERP de operação real é rotina, não exceção.
+ */
+export interface PurchaseOrderSendRequest {
+  /** @nullable */
+  sentAt?: string | null;
+}
+
+/**
+ * Proposto. O corpo do reagendamento — a data nova e por quê.
+ *
+ * `reason` é obrigatório e é decisão: reagendamento sem motivo registrado transforma a medição de atraso do fornecedor numa lista de datas que mudaram sozinhas. O legado tem o campo, e a razão de ele existir é a conversa com o fornecedor no mês seguinte.
+ */
+export interface PurchaseOrderRescheduleRequest {
+  /** A data REPROMETIDA. Vai para `rescheduledAt`; a promessa original fica onde está. */
+  expectedAt: string;
+  /** Por que a data mudou. */
+  reason: string;
+}
+
+export interface PagedResultOfPurchaseOrderDto {
+  rows: PurchaseOrderDto[];
+  total: number;
+}
+
+/**
+ * Para que a peça vem. `sale` traz cliente; `stock` não tem cliente e é isso que a tela mostra.
+ */
+export type PurchaseArrivalRowDtoDestination = typeof PurchaseArrivalRowDtoDestination[keyof typeof PurchaseArrivalRowDtoDestination];
+
+
+export const PurchaseArrivalRowDtoDestination = {
+  stock: 'stock',
+  sale: 'sale',
+} as const;
+
+/**
+ * Proposto. Uma linha da PREVISÃO DE CHEGADA — uma peça em ordem enviada, com a data em que ela é esperada e o cliente que a espera.
+ *
+ * **É linha de ITEM e não de ordem**, e é o que a consulta existe para responder: a pergunta do operador é "quando chega a peça do cliente X", não "quando chega a ordem 4711". Uma ordem agrupa reposição e encomenda de clientes diferentes; agregada por ordem, a consulta devolveria uma data e nenhum cliente.
+ *
+ * **`expectedAt` aqui é a data VÁLIDA** — `rescheduledAt` quando existe, `expectedAt` da ordem quando não. As duas cruas continuam disponíveis no `PurchaseOrderDto`; esta consulta é para a tela que pergunta "quando", e obrigá-la a escolher entre dois campos é o tipo de regra que se implementa diferente em duas telas.
+ */
+export interface PurchaseArrivalRowDto {
+  purchaseOrderId: string;
+  purchaseOrderNumber: string;
+  supplierId: string;
+  supplierName: string;
+  /**
+     * Quando a ordem foi enviada.
+     * @nullable
+     */
+  sentAt?: string | null;
+  /**
+     * A data válida — reagendada quando houve reagendamento. `null` na ordem enviada sem data prometida, e a tela mostra isso em vez de inventar uma.
+     * @nullable
+     */
+  expectedAt?: string | null;
+  /**
+     * A promessa ORIGINAL, quando houve reagendamento. `null` quando `expectedAt` já é a original — a tela só destaca a linha reagendada.
+     * @nullable
+     */
+  originalExpectedAt?: string | null;
+  /**
+     * Dias de atraso contra a data válida, quando ela já passou. `null` na linha que ainda não venceu. Calculado no servidor porque "hoje" na tela é o relógio do navegador, e num ERP multiusuário isso já bastou para duas pessoas verem atrasos diferentes.
+     * @nullable
+     */
+  daysLate?: number | null;
+  /** @nullable */
+  variantId?: string | null;
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  quantity: number;
+  /** Para que a peça vem. `sale` traz cliente; `stock` não tem cliente e é isso que a tela mostra. */
+  destination: PurchaseArrivalRowDtoDestination;
+  /**
+     * O pedido de VENDA que espera a peça, quando `destination` é `sale`.
+     * @nullable
+     */
+  orderId?: string | null;
+  /** @nullable */
+  orderNumber?: string | null;
+  /** @nullable */
+  customerId?: string | null;
+  /**
+     * Quem está esperando. `null` na linha de reposição, e a tela mostra "estoque" — não vazio.
+     * @nullable
+     */
+  customerName?: string | null;
+}
+
+export interface PagedResultOfPurchaseArrivalRowDto {
+  rows: PurchaseArrivalRowDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Uma linha da consulta COMPRAS PARA ESTOQUE / RESERVA — quanto de cada variante há, quanto está PROMETIDO a alguém, e quanto já vem a caminho.
+ *
+ * É a `CompraEstoque` do legado, cuja definição o levantamento decifrou como **disponibilidade futura = ordem aberta − reserva − entrada por nota**. Aqui ela aparece aberta em parcelas, e não como um número só: um saldo futuro negativo não diz se falta comprar ou se sobra reserva, e são decisões opostas.
+ *
+ * **`qtyAllocated` é a reserva de verdade** — `stock_balances.quantity_allocated`, a coluna que a migração `0035` criou e que até aqui não saía por API nenhuma. Sem ela, "disponível" era o saldo bruto, e o comprador repunha peça que já estava prometida a um cliente.
+ */
+export interface PurchaseReplenishmentRowDto {
+  variantId: string;
+  description: string;
+  /** @nullable */
+  finish?: string | null;
+  /** @nullable */
+  size?: string | null;
+  /** Saldo FÍSICO somado nos depósitos da empresa ativa. Pode ser negativo, e o contrato não o esconde: a venda sai antes de a nota entrar, e esse é o estado normal desta operação por alguns dias. */
+  qtyOnHand: number;
+  /** Quanto do saldo já está RESERVADO para venda — `stock_balances.quantity_allocated`. Nunca negativo. */
+  qtyAllocated: number;
+  /** `qtyOnHand − qtyAllocated`. É o que dá para prometer a um cliente novo hoje, e pode ser negativo quando se prometeu mais do que há. */
+  qtyAvailable: number;
+  /** Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou. */
+  qtyOnOrder: number;
+  /**
+     * A sugestão de compra: quanto falta para `qtyAvailable + qtyOnOrder` alcançar o mínimo de estoque da variante. `0` quando não falta nada.
+     *
+     * É SUGESTÃO e o nome diz isso — quem decide comprar é o comprador. O legado tem `EstoqueMinimo` com trigger, e a alteração da quantidade sugerida é permissão especial no RBAC dele (uma das 287 opções): a sugestão nunca foi tratada como ordem.
+     */
+  qtySuggested: number;
+  /**
+     * O estoque mínimo cadastrado da variante, quando existe. `null` na variante sem mínimo — e então `qtySuggested` é `0`, porque não há alvo contra o qual faltar.
+     * @nullable
+     */
+  minimumQty?: number | null;
+  /**
+     * O fornecedor PADRÃO da variante, para a tela já saber a quem pedir. `null` na variante sem fornecedor padrão.
+     * @nullable
+     */
+  supplierId?: string | null;
+  /** @nullable */
+  supplierName?: string | null;
+}
+
+export interface PagedResultOfPurchaseReplenishmentRowDto {
+  rows: PurchaseReplenishmentRowDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -5244,4 +5882,112 @@ export const GetBirthdaysReportRole = {
   professional: 'professional',
   supplier: 'supplier',
 } as const;
+
+export type ListPurchaseRequestsParams = {
+q?: string;
+/**
+ * Whitelist: `number`, `issuedAt`, `status`, `itemCount`. Campo fora dela é 400.
+ *
+ * `orderNumber` fica de fora e é decisão: ele é ECOADO do pedido de venda, e ordenar por coluna de outra tabela num recurso paginado é o que transforma listagem em junção obrigatória. Quem procura pelo pedido de venda usa `q`.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por estado do pedido. Omitido, traz todos — inclusive `cancelled`, que a tela esconde por padrão mas o relatório quer.
+ */
+status?: string;
+/**
+ * Só os pedidos com ao menos uma LINHA deste fornecedor. Recorta por linha e não por cabeçalho, porque o pedido não tem fornecedor — as linhas têm, e podem ser de vários. Este é o parâmetro que a tela de montar ordem usa.
+ */
+supplierId?: string;
+/**
+ * Só os pedidos com linha ainda não levada por ordem nenhuma. É o recorte de trabalho do comprador: o pedido totalmente atendido não some, mas também não atrapalha a tela em que se monta ordem.
+ */
+onlyOpenItems?: boolean;
+};
+
+export type ListPurchaseOrdersParams = {
+q?: string;
+/**
+ * Whitelist: `number`, `orderedAt`, `sentAt`, `expectedAt`, `status`, `totalCents`. Campo fora dela é 400.
+ *
+ * `supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. `rescheduledAt` também, e por um motivo próprio: ele é nulo na maioria das linhas, e ordenar por coluna majoritariamente nula agrupa o irrelevante numa ponta e parece defeito. Quem quer as reagendadas usa a previsão de chegada, que já as marca.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por estado da ordem.
+ */
+status?: string;
+/**
+ * Só as ordens deste fornecedor.
+ */
+supplierId?: string;
+};
+
+export type GetPurchaseArrivalForecastParams = {
+q?: string;
+/**
+ * Whitelist: `expectedAt`, `sentAt`, `purchaseOrderNumber`, `daysLate`. Campo fora dela é 400.
+ *
+ * O padrão é `expectedAt` crescente — a tela de previsão abre no que chega primeiro, e uma previsão ordenada por outra coisa obriga o operador a ordená-la toda vez.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Só o que vem deste fornecedor.
+ */
+supplierId?: string;
+/**
+ * Só o que está prometido a este cliente. Recorta os itens `sale`; linha de reposição não tem cliente e some deste recorte, que é o comportamento certo.
+ */
+customerId?: string;
+/**
+ * Recorta por destino: `stock` (reposição) ou `sale` (encomenda). É a separação que o legado faz com dois botões.
+ */
+destination?: string;
+/**
+ * Só as linhas cuja data válida já passou. É o recorte de cobrança do comprador.
+ */
+lateOnly?: boolean;
+/**
+ * Piso da data válida (inclusive).
+ */
+from?: string;
+/**
+ * Teto da data válida (inclusive).
+ */
+to?: string;
+};
+
+export type GetPurchaseStockReplenishmentParams = {
+q?: string;
+/**
+ * Whitelist: `description`, `qtyOnHand`, `qtyAllocated`, `qtyAvailable`, `qtyOnOrder`, `qtySuggested`. Campo fora dela é 400.
+ *
+ * O padrão é `qtySuggested` decrescente: a tela abre no que mais falta, que é a única ordem em que uma lista de reposição é útil sem ninguém tocá-la.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Só as variantes cujo fornecedor padrão é este — o recorte de quem vai montar uma ordem.
+ */
+supplierId?: string;
+/**
+ * Recorta o saldo a UM depósito. Omitido, soma os depósitos da empresa ativa: reposição é decisão da empresa, e o galpão de onde a peça sai é decisão da separação.
+ */
+locationId?: string;
+/**
+ * Só as variantes em que `qtySuggested > 0`. É o recorte de trabalho; omitido, a consulta traz o quadro inteiro, que é o que o relatório quer.
+ */
+belowMinimumOnly?: boolean;
+};
 

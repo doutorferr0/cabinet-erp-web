@@ -112,6 +112,17 @@ describe('tela Fornecedor', () => {
       // impede o Gravar de um fornecedor de apagar o que a outra tela gravou no
       // mesmo cadastro. Os editáveis chegam nulos aqui porque o registro veio
       // em branco, e não por não viajarem.
+      // Fase A0 de COMPRAS (G2): prazo de entrega, faturamento mínimo e as duas
+      // coleções ainda não têm campo NESTA tela — a ficha do Fornecedor é a
+      // Fase C do trilho. Voltam como vieram pela mesma regra de tudo acima, e
+      // aqui ela pesa mais do que em qualquer outra linha: é a tela de
+      // Fornecedor que um dia vai EDITÁ-LOS, e até lá o que ela tem de provar é
+      // que não os apaga. As coleções voltam `[]`, que é o que o contrato
+      // declara — `null` num array seria um tipo que o servidor recusa.
+      deliveryDays: null,
+      minimumBillingCents: null,
+      buyingCompanies: [],
+      groupMinimums: [],
       stateRegistration: null,
       facebook: null,
       instagram: null,

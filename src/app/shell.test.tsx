@@ -57,6 +57,13 @@ function setup(initialUrl = '/') {
   return renderRoute(initialUrl, fetchStub)
 }
 
+/** A fileira de seções da topbar — escopo pelo `aria-label`, que é o contrato. */
+function fileira() {
+  return within(
+    document.querySelector('[data-slot="appbar"] nav[aria-label="Seções"]') as HTMLElement,
+  )
+}
+
 describe('AppShell', () => {
   /**
    * POLARIS (sidebar-first, 2026-08-17): as seções moram na BARRA LATERAL,
@@ -73,18 +80,14 @@ describe('AppShell', () => {
     })
 
     const secoes = within(screen.getByRole('navigation', { name: 'Seções' }))
-    for (const rotulo of [
-      'Início',
-      'Comercial',
-      'CRM',
-      'Estoque',
-      'Financeiro',
-      'Pessoas',
-      'Catálogo',
-    ]) {
-      expect(secoes.getByRole('button', { name: rotulo })).toBeInTheDocument()
+    // Seção com tela é `<Link>` — o destino é rota de verdade e abre em outra
+    // aba pelo navegador. `Financeiro`, que só tem tela futura, é `<button>`:
+    // não há para onde apontar, e um href inventado daria 404.
+    for (const rotulo of ['Início', 'Comercial', 'CRM', 'Estoque', 'Pessoas', 'Catálogo']) {
+      expect(secoes.getByRole('link', { name: rotulo })).toHaveAttribute('href')
     }
-    expect(secoes.queryByRole('button', { name: 'Configurações' })).not.toBeInTheDocument()
+    expect(secoes.getByRole('button', { name: 'Financeiro' })).not.toHaveAttribute('href')
+    expect(secoes.queryByRole('link', { name: 'Configurações' })).not.toBeInTheDocument()
     // O único caminho até ela: a engrenagem da topbar, que NAVEGA.
     const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
     expect(topo.getByRole('link', { name: 'Configurações' })).toHaveAttribute('href', '/config')
@@ -127,12 +130,12 @@ describe('AppShell', () => {
   })
 
   /**
-   * A barra é o MAPA INTEIRO (Polaris), mas só a seção da rota vem ABERTA:
-   * na raiz, Início expõe o Dashboard e Estoque está listado porém fechado —
-   * o conteúdo dele (Compras, Orçamentos de Comercial) não aparece até o
-   * operador abrir. Abrir NÃO navega.
+   * A divisão do trabalho no shell v7: a FILEIRA do topo é o mapa das seções e
+   * a BARRA é o detalhe de UMA delas. Na raiz, Início expõe o Dashboard e o
+   * conteúdo das outras seções (Compras, Orçamentos) não está no documento —
+   * não é "fechado", é outro lugar.
    */
-  it('todas as seções listadas, só a da rota aberta', async () => {
+  it('a fileira lista as seções e a barra mostra só a escolhida', async () => {
     setup()
     const user = userEvent.setup()
     const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
@@ -140,17 +143,93 @@ describe('AppShell', () => {
     await waitFor(() => {
       expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     })
+    expect(fileira().getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(fileira().getByRole('link', { name: 'Estoque' })).not.toHaveAttribute('aria-current')
+    // Configurações não está na fileira — é página, atrás da engrenagem.
+    expect(fileira().queryByRole('link', { name: 'Configurações' })).not.toBeInTheDocument()
+
     expect(barra().getByText('Hoje')).toBeInTheDocument()
-    expect(barra().getByRole('button', { name: 'Estoque' })).toBeInTheDocument()
     expect(barra().queryByText('Compras')).not.toBeInTheDocument()
     expect(barra().queryByRole('link', { name: 'Orçamentos' })).not.toBeInTheDocument()
 
-    // Abrir Estoque expõe o conteúdo sem sair da rota.
-    await user.click(barra().getByRole('button', { name: 'Estoque' }))
+    // Escolher Estoque LEVA à primeira tela dela, e a barra troca junto.
+    await user.click(fileira().getByRole('link', { name: 'Estoque' }))
     // 'Compras' existe duas vezes de propósito — rótulo do grupo e item pai
     // colapsável; a asserção mira o item, que é o que o operador clica.
     expect(await barra().findByRole('button', { name: 'Compras' })).toBeInTheDocument()
-    expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(barra().queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(fileira().getByRole('link', { name: 'Estoque' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+    })
+  })
+
+  /**
+   * Ícone é mudo — e o preço se paga em três lugares. Este teste cobra os três
+   * que vivem no DOM: nome acessível em TODOS os ícones (é o que o leitor de
+   * tela anuncia), o `data-rotulo` de onde a dica em CSS tira o texto, e
+   * alcance por teclado.
+   */
+  it('todo ícone da fileira tem nome acessível, dica e alcance por teclado', async () => {
+    setup()
+    const user = userEvent.setup()
+    await waitFor(() => {
+      expect(fileira().getByRole('link', { name: 'Início' })).toBeInTheDocument()
+    })
+
+    // Direto no `nav`, e não pelos filhos: o `TooltipTrigger` do react-aria
+    // não põe wrapper no DOM (a dica sai em portal), então o filho JÁ é o
+    // gatilho — um `querySelector` dentro dele devolvia `null`.
+    const icones = [
+      ...(
+        document.querySelector('[data-slot="appbar"] nav[aria-label="Seções"]') as HTMLElement
+      ).querySelectorAll<HTMLElement>('a,button'),
+    ]
+    // As sete seções operáveis — o teto subiu de seis para sete quando CRM
+    // virou seção (#204), e é o mesmo número que `navigation.test.ts` trava.
+    expect(icones).toHaveLength(7)
+    for (const icone of icones) {
+      const rotulo = icone.getAttribute('aria-label')?.trim()
+      expect(rotulo).toBeTruthy()
+      // Nome no rótulo, nunca no texto: o ícone é `aria-hidden`, e sobra `''`.
+      expect(icone.textContent).toBe('')
+      // A dica em CSS lê `data-rotulo`; sem ele o `content: attr(...)` sai
+      // vazio e o ícone fica mudo para quem usa mouse — falha SILENCIOSA, que
+      // é a razão de a guarda ser aqui e não no olho.
+      expect(icone.getAttribute('data-rotulo')).toBe(rotulo)
+      expect(icone.className).toContain('after:content-[attr(data-rotulo)]')
+      // Hover NÃO basta: quem chega de Tab lê o mesmo rótulo.
+      expect(icone.className).toContain('focus-visible:after:opacity-100')
+    }
+
+    const primeiro = icones[0] as HTMLElement
+    primeiro.focus()
+    expect(primeiro).toHaveFocus()
+    await user.tab()
+    expect(icones[1]).toHaveFocus()
+  })
+
+  /**
+   * `Financeiro` só publica tela futura: `destinoDaSecao` devolve `undefined`,
+   * o ícone é `<button>` e clicar ABRE o menu sem navegar. É a metade da
+   * fileira que não pode virar 404.
+   */
+  it('seção só com tela futura abre o menu sem navegar', async () => {
+    setup()
+    const user = userEvent.setup()
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+    await waitFor(() => {
+      expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+    })
+
+    await user.click(fileira().getByRole('button', { name: 'Financeiro' }))
+
+    expect(await barra().findByText('Contas a Receber')).toBeInTheDocument()
+    expect(barra().queryByRole('link', { name: 'Contas a Receber' })).not.toBeInTheDocument()
+    // O rastro conta a ROTA, que não mudou — o menu abriu, o operador não saiu.
+    expect(screen.getByRole('navigation', { name: 'Você está em' })).toHaveTextContent('Início')
   })
 
   it('a busca da barra filtra a seção, e diz quando não acha', async () => {
@@ -172,7 +251,9 @@ describe('AppShell', () => {
 
     await user.clear(barra().getByRole('textbox'))
     await user.type(barra().getByRole('textbox'), 'zzz')
-    expect(await barra().findByText(/Nenhuma tela casa/)).toBeInTheDocument()
+    // A recusa NOMEIA a seção: a busca é contextual, e "não achei" sem dizer
+    // onde procurou faria o operador concluir que a tela não existe.
+    expect(await barra().findByText(/Nenhuma tela de Estoque casa/)).toBeInTheDocument()
   })
 
   /** Tela futura: visível, apagada NO FUNDO (regra Visual-1), com selo, e não navega. */
@@ -657,27 +738,38 @@ describe('AppShell', () => {
       expect(inativo).toHaveAttribute('data-shape', 'dashboard')
     })
 
+    /**
+     * O fio de 3px mudou de lugar em 22/08 — saiu da borda esquerda do bloco
+     * da barra e foi para baixo do ícone, na fileira do topo (v7). O que NÃO
+     * mudou é de que cor ele é: o mockup o pinta na cheia /01 do módulo, que
+     * mede 1,36–2,63:1 contra o fundo da barra no tema claro, contra o piso de
+     * 3:1 da WCAG 1.4.11. Esta guarda é invertida — ela não confere que a
+     * fileira está bonita, confere que a /01 não voltou a carregar o sinal.
+     */
     it('o fio da seção ativa é tinta, e seção inativa não desenha fio', async () => {
       setup()
       await itemDaBarra('/')
 
-      const acesa = document.querySelectorAll('[data-slot="sidebar"] [aria-current="true"]')
+      const acesa = document.querySelectorAll(
+        '[data-slot="appbar"] nav[aria-label="Seções"] [aria-current="page"]',
+      )
       // Uma seção acesa, e uma só: duas fariam o operador ler dois lugares.
       expect(acesa).toHaveLength(1)
-      const cabecalho = acesa[0] as HTMLElement
-      expect(cabecalho.textContent).toContain('Início')
+      const icone = acesa[0] as HTMLElement
+      expect(icone).toHaveAttribute('aria-label', 'Início')
 
-      const fio = cabecalho.querySelector('span[aria-hidden="true"]')
+      const fio = icone.querySelector('span[aria-hidden="true"]')
       expect(fio).toHaveClass('bg-foreground')
       expect(fio).not.toHaveClass('bg-modulo-cheia')
+      // A cor do módulo entra pela SUPERFÍCIE, na pastel /02 — sobre ela a
+      // tinta mede 16,88:1 no claro e 9,32:1 no escuro.
+      expect(icone.className).toContain('bg-modulo')
+      expect(icone.className).not.toContain('bg-modulo-cheia')
 
-      // Seção inativa não desenha fio nenhum — o estado é do cabeçalho aceso.
-      const inativa = [...document.querySelectorAll('[data-slot="sidebar"] button[aria-expanded]')]
-        .filter((b) => b.textContent?.includes('Financeiro'))
-        .at(0)
-      expect(inativa).toBeDefined()
+      // Seção inativa não desenha fio nenhum — o estado é do ícone aceso.
+      const inativa = fileira().getByRole('button', { name: 'Financeiro' })
       expect(inativa).not.toHaveAttribute('aria-current')
-      expect(inativa?.querySelector('span[aria-hidden="true"]')).toBeNull()
+      expect(inativa.querySelector('span[aria-hidden="true"]')).toBeNull()
     })
   })
 })

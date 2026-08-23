@@ -308,9 +308,9 @@ export const navSecoes: NavSecao[] = [
           {
             title: 'Pedidos de Venda',
             url: '/vendas/pedidos',
+            incluir: '/vendas/pedidos/novo',
             icon: Store,
-            descricao: 'Ainda não existe. O orçamento fechado vira pedido aqui.',
-            futuro: true,
+            descricao: 'O orçamento fechado vira pedido aqui. Se cancela, nunca se apaga.',
           },
         ],
       },

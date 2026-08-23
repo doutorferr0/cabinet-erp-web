@@ -49,6 +49,8 @@ import { Route as CrmFunisFunilIdRouteImport } from './routes/crm/funis/$funilId
 import { Route as CrmOportunidadesOportunidadeIdRouteImport } from './routes/crm/oportunidades/$oportunidadeId'
 import { Route as VendasOrcamentosIndexRouteImport } from './routes/vendas/orcamentos/index'
 import { Route as VendasOrcamentosOrcamentoIdRouteImport } from './routes/vendas/orcamentos/$orcamentoId'
+import { Route as VendasPedidosIndexRouteImport } from './routes/vendas/pedidos/index'
+import { Route as VendasPedidosPedidoIdRouteImport } from './routes/vendas/pedidos/$pedidoId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -260,6 +262,16 @@ const VendasOrcamentosOrcamentoIdRoute =
     path: '/orcamentos/$orcamentoId',
     getParentRoute: () => VendasRoute,
   } as any)
+const VendasPedidosIndexRoute = VendasPedidosIndexRouteImport.update({
+  id: '/pedidos/',
+  path: '/pedidos/',
+  getParentRoute: () => VendasRoute,
+} as any)
+const VendasPedidosPedidoIdRoute = VendasPedidosPedidoIdRouteImport.update({
+  id: '/pedidos/$pedidoId',
+  path: '/pedidos/$pedidoId',
+  getParentRoute: () => VendasRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -292,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/crm/oportunidades/$oportunidadeId': typeof CrmOportunidadesOportunidadeIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
+  '/vendas/pedidos/$pedidoId': typeof VendasPedidosPedidoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
@@ -302,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/crm/funil/': typeof CrmFunilIndexRoute
   '/crm/funis/': typeof CrmFunisIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
+  '/vendas/pedidos/': typeof VendasPedidosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -330,6 +344,7 @@ export interface FileRoutesByTo {
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/crm/oportunidades/$oportunidadeId': typeof CrmOportunidadesOportunidadeIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
+  '/vendas/pedidos/$pedidoId': typeof VendasPedidosPedidoIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores': typeof CadastrosFornecedoresIndexRoute
@@ -340,6 +355,7 @@ export interface FileRoutesByTo {
   '/crm/funil': typeof CrmFunilIndexRoute
   '/crm/funis': typeof CrmFunisIndexRoute
   '/vendas/orcamentos': typeof VendasOrcamentosIndexRoute
+  '/vendas/pedidos': typeof VendasPedidosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -373,6 +389,7 @@ export interface FileRoutesById {
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/crm/oportunidades/$oportunidadeId': typeof CrmOportunidadesOportunidadeIdRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
+  '/vendas/pedidos/$pedidoId': typeof VendasPedidosPedidoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
   '/cadastros/colaboradores/': typeof CadastrosColaboradoresIndexRoute
   '/cadastros/fornecedores/': typeof CadastrosFornecedoresIndexRoute
@@ -383,6 +400,7 @@ export interface FileRoutesById {
   '/crm/funil/': typeof CrmFunilIndexRoute
   '/crm/funis/': typeof CrmFunisIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
+  '/vendas/pedidos/': typeof VendasPedidosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -417,6 +435,7 @@ export interface FileRouteTypes {
     | '/crm/funis/$funilId'
     | '/crm/oportunidades/$oportunidadeId'
     | '/vendas/orcamentos/$orcamentoId'
+    | '/vendas/pedidos/$pedidoId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
     | '/cadastros/fornecedores/'
@@ -427,6 +446,7 @@ export interface FileRouteTypes {
     | '/crm/funil/'
     | '/crm/funis/'
     | '/vendas/orcamentos/'
+    | '/vendas/pedidos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -455,6 +475,7 @@ export interface FileRouteTypes {
     | '/crm/funis/$funilId'
     | '/crm/oportunidades/$oportunidadeId'
     | '/vendas/orcamentos/$orcamentoId'
+    | '/vendas/pedidos/$pedidoId'
     | '/cadastros/clientes'
     | '/cadastros/colaboradores'
     | '/cadastros/fornecedores'
@@ -465,6 +486,7 @@ export interface FileRouteTypes {
     | '/crm/funil'
     | '/crm/funis'
     | '/vendas/orcamentos'
+    | '/vendas/pedidos'
   id:
     | '__root__'
     | '/'
@@ -497,6 +519,7 @@ export interface FileRouteTypes {
     | '/crm/funis/$funilId'
     | '/crm/oportunidades/$oportunidadeId'
     | '/vendas/orcamentos/$orcamentoId'
+    | '/vendas/pedidos/$pedidoId'
     | '/cadastros/clientes/'
     | '/cadastros/colaboradores/'
     | '/cadastros/fornecedores/'
@@ -507,6 +530,7 @@ export interface FileRouteTypes {
     | '/crm/funil/'
     | '/crm/funis/'
     | '/vendas/orcamentos/'
+    | '/vendas/pedidos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -807,6 +831,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendasOrcamentosOrcamentoIdRouteImport
       parentRoute: typeof VendasRoute
     }
+    '/vendas/pedidos/': {
+      id: '/vendas/pedidos/'
+      path: '/pedidos'
+      fullPath: '/vendas/pedidos/'
+      preLoaderRoute: typeof VendasPedidosIndexRouteImport
+      parentRoute: typeof VendasRoute
+    }
+    '/vendas/pedidos/$pedidoId': {
+      id: '/vendas/pedidos/$pedidoId'
+      path: '/pedidos/$pedidoId'
+      fullPath: '/vendas/pedidos/$pedidoId'
+      preLoaderRoute: typeof VendasPedidosPedidoIdRouteImport
+      parentRoute: typeof VendasRoute
+    }
   }
 }
 
@@ -900,13 +938,17 @@ const EstoqueRouteWithChildren =
 interface VendasRouteChildren {
   VendasIndexRoute: typeof VendasIndexRoute
   VendasOrcamentosOrcamentoIdRoute: typeof VendasOrcamentosOrcamentoIdRoute
+  VendasPedidosPedidoIdRoute: typeof VendasPedidosPedidoIdRoute
   VendasOrcamentosIndexRoute: typeof VendasOrcamentosIndexRoute
+  VendasPedidosIndexRoute: typeof VendasPedidosIndexRoute
 }
 
 const VendasRouteChildren: VendasRouteChildren = {
   VendasIndexRoute: VendasIndexRoute,
   VendasOrcamentosOrcamentoIdRoute: VendasOrcamentosOrcamentoIdRoute,
+  VendasPedidosPedidoIdRoute: VendasPedidosPedidoIdRoute,
   VendasOrcamentosIndexRoute: VendasOrcamentosIndexRoute,
+  VendasPedidosIndexRoute: VendasPedidosIndexRoute,
 }
 
 const VendasRouteWithChildren =

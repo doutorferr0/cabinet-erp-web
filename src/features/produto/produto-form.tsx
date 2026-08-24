@@ -136,6 +136,22 @@ export const produtoSchema = z.object({
       padrao: z.boolean(),
     }),
   ),
+  /**
+   * `relatedProducts` do contrato — produto×produto, com `quantidade`
+   * discriminando kit de sugestão. Mora ao lado de `itensGrupo` e não no lugar
+   * dele: são modelos diferentes do §6.4, e qual sobrevive é decisão em aberto
+   * (api#117). O `id` e o `produtoId` viajam para não se perderem na volta.
+   */
+  produtosRelacionados: z.array(
+    z.object({
+      id: z.string(),
+      produtoId: z.string(),
+      codigo: z.string(),
+      descricao: z.string(),
+      quantidade: z.string(),
+      ordem: z.number(),
+    }),
+  ),
   origemProduto: z.string().nullable(),
   ncm: z.string(),
   cest: z.string(),
@@ -498,6 +514,19 @@ function AbaProdutosRelacionados() {
           padrao: false,
         }}
       />
+
+      <FormBlock legend="Relacionados do servidor (kit e sugestão)">
+        <FormGrid
+          name="produtosRelacionados"
+          columns={[
+            { key: 'codigo', label: 'Código' },
+            { key: 'descricao', label: 'Descrição', voz: 'produto' },
+            { key: 'quantidade', label: 'Quantidade (vazio = sugestão)' },
+            { key: 'ordem', label: 'Ordem' },
+          ]}
+          newRow={{ id: '', produtoId: '', codigo: '', descricao: '', quantidade: '', ordem: 0 }}
+        />
+      </FormBlock>
     </div>
   )
 }

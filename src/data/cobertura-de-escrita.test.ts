@@ -174,7 +174,17 @@ function editando(registro: Json, caminho: string, valor: unknown): Json {
 
 describe('cobertura de escrita — o formulário não perde campo do contrato', () => {
   it('PRODUTO leva ao servidor tudo que o ProductWriteRequest tem', () => {
-    const dto = dtoCompleto('ProductDetailDto', { variants: [] })
+    // As três coleções vêm como `extras`: `valorDeTeste` deriva o valor do
+    // `type` e não sabe montar `array`, então o genérico delas sairia string —
+    // e `produtoDoContrato` agora LÊ `suppliers`/`relatedProducts` para
+    // desenhar as grades do §6.1/§6.4, onde antes só `variants` era lida.
+    // Vazias basta: nenhuma das três está em `ProductWriteRequest`, e é o
+    // `WriteRequest` que esta guarda percorre.
+    const dto = dtoCompleto('ProductDetailDto', {
+      variants: [],
+      suppliers: [],
+      relatedProducts: [],
+    })
     // O caminho REAL: detalhe → registro do form → `parse` do Zod → corpo.
     const doForm = produtoSchema.parse(produtoDoContrato(dto as never))
     const corpo = produtoParaContrato(doForm as never) as unknown as Json

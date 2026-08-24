@@ -148,8 +148,19 @@ export function moduloContatos({
     id: 'contatos',
     titulo: 'Outros contatos',
     cor: 'boletim',
-    resumo: 'Telefone comercial · Residencial · Fax · Comunicadores',
+    resumo: 'Contatos do cadastro · Telefone comercial · Residencial · Fax · Comunicadores',
     campos: [
+      // A GRADE de contatos, declarada como SUB-RECURSO (#293). Ela já é
+      // desenhada aqui dentro — `<ContatosDoParceiro>`, montado ao lado de
+      // `CamposDoModulo` no Cliente e no Profissional — e a espec era a única
+      // parte do repo que ainda não sabia disso. Mesma marca que o módulo
+      // `representante` do Fornecedor usa desde #270.
+      //
+      // Sem `campo` e sem `dto` de propósito: não é campo do registro e não
+      // viaja no corpo do `PUT` do parceiro. É `sub` que o tira das DUAS
+      // contagens de lacuna — `semLastro` (que já o excluía) e `Pendencias`
+      // (que passou a excluir nesta mesma leva).
+      { k: 'contatos', r: 'Contatos', sub: '/api/partners/{partnerId}/contacts' },
       // Os três ganharam `dto` em #244. O prefixo continua importando: o mesmo
       // telefone comercial mora em `foneComercial` no Cliente e em
       // `telefones.foneComercial` no Profissional, e o contrato tem um nome só.

@@ -1,6 +1,12 @@
 import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
 import { moduloVazio, textoDoCampo, valorNoCaminho } from '@/components/cabinet/ficha/valores'
-import { ENTIDADES, cliente, colaborador } from '@/features/cadastro/modulos'
+import {
+  ENTIDADES,
+  cliente,
+  colaborador,
+  fornecedor,
+  profissional,
+} from '@/features/cadastro/modulos'
 import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -163,6 +169,71 @@ describe('FichaDeModulos', () => {
  * módulo que alguém acrescentar só numa das telas não passa por aqui, porque
  * não existe "só numa das telas" — existe um schema.
  */
+describe('sub-recurso não é lacuna, e a ficha não pode dizer que é', () => {
+  /**
+   * Campo marcado com `sub` é dado que EXISTE, em caminho HTTP próprio, e quem
+   * o desenha é um bloco vizinho — `<ContatosDoParceiro readOnly>`, montado nas
+   * três fichas de parceiro. `textoDoCampo` devolve `null` para todo campo sem
+   * `campo`, o que é certo para LACUNA e errado aqui: sem filtro, a ficha
+   * imprimia *"Contatos — não informado"* ao lado da grade que lista os
+   * contatos daquele cadastro.
+   *
+   * Valia para o Fornecedor desde a #270 e passaria a valer para Cliente e
+   * Profissional ao declarar a grade em `moduloContatos()` — medido na web#293,
+   * que é onde as duas metades entraram juntas.
+   */
+  /**
+   * O registro TEM de encher o módulo que carrega o `sub`. Módulo sem nenhum
+   * campo com valor vira `ModuloVazio`, que não desenha par nenhum — e um caso
+   * montado sobre `REGISTRO_CHEIO` passava por isso, não pelo filtro. Medido
+   * por sabotagem: removendo o filtro, o caso continuava verde.
+   *
+   * Os telefones cobrem as três grafias que os módulos usam: `fone2` (módulo
+   * `representante` do Fornecedor), `foneComercial` (Cliente) e
+   * `telefones.foneComercial` (Profissional, que leva prefixo).
+   */
+  const REGISTRO_COM_CONTATOS = {
+    ...REGISTRO_CHEIO,
+    fax: '1932221111',
+    fone2: '1932221122',
+    site: 'vertz.dev',
+    foneComercial: '1932223333',
+    telefones: { foneComercial: '1932224444' },
+  }
+
+  it.each(Object.entries(ENTIDADES))(
+    '%s: nenhum campo `sub` vira par de leitura',
+    (_, entidade) => {
+      const comSub = entidade.modulos.flatMap((modulo) =>
+        modulo.campos.filter((campo) => campo.sub),
+      )
+      if (comSub.length === 0) return
+
+      renderWithQuery(<FichaDeModulos entidade={entidade} registro={REGISTRO_COM_CONTATOS} />)
+
+      // O módulo que carrega o `sub` está CHEIO — senão a ficha o recolheria e o
+      // caso mediria o recolhimento, não o filtro.
+      for (const modulo of entidade.modulos) {
+        if (!modulo.campos.some((campo) => campo.sub)) continue
+        expect(moduloVazio(REGISTRO_COM_CONTATOS, modulo)).toBe(false)
+      }
+
+      for (const campo of comSub) {
+        expect(screen.queryByText(campo.r)).not.toBeInTheDocument()
+      }
+    },
+  )
+
+  it('as três entidades de parceiro declaram a grade de contatos como `sub`', () => {
+    // A metade oposta: o filtro acima passaria numa espec que simplesmente não
+    // declara a grade — que era o estado da `main` para Cliente e Profissional.
+    for (const entidade of [cliente, fornecedor, profissional]) {
+      const subs = entidade.modulos.flatMap((modulo) => modulo.campos.filter((campo) => campo.sub))
+      expect(subs.map((campo) => campo.sub)).toContain('/api/partners/{partnerId}/contacts')
+    }
+  })
+})
+
 describe('paridade entre formulário e ficha', () => {
   it.each(Object.entries(ENTIDADES))(
     '%s: a ficha tem uma seção por módulo do schema, com o mesmo id',

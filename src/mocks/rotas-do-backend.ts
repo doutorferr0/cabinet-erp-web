@@ -42,6 +42,25 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * As 14 que ficam são o módulo de COMPRAS, e o motivo delas viaja em
  * `ROTAS_NO_MOCK` — é ele que o console imprime.
  *
+ * **O contrato andou DE NOVO durante esta sessão, e as cinco novas NÃO são
+ * minhas:** a `#335` publicou e ligou `cost-profiles` (5 operações) enquanto
+ * esta PR estava aberta, e o rebase as trouxe para dentro da lista — daí 115 e
+ * não 110, sobre 129 e não 124.
+ *
+ * **Medi as cinco de graça, porque o par local estava de pé, e o resultado
+ * merece nota:** contra a main do api de agora (`02721f0`, que ainda tem 124
+ * operações e **não conhece `cost-profiles`**), as cinco respondem **404 `Este
+ * caminho não existe no contrato`** — nem 501. A cópia do contrato do api ainda
+ * não sincronizou com este repo, o que é o estado normal e temporário depois de
+ * um merge aqui.
+ *
+ * **Não as mexi, e o motivo importa mais que a decisão:** hoje o dano é ZERO
+ * porque **nenhuma tela as consome e não existe handler de mock para elas** —
+ * movê-las para `ROTAS_NO_MOCK` faria `/api/cost-profiles` cair no fallback da
+ * SPA e devolver `index.html` com **200**, que é pior que o 404 honesto. Quem
+ * escrever a primeira tela de custo tem de remedir: se o api já servir, está no
+ * lugar certo; se não, o lugar passa a ser o mock, COM handler.
+ *
  * **Duas armadilhas mordidas na medição, as duas já catalogadas e as duas
  * reincidentes:**
  *

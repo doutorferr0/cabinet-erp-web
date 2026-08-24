@@ -5114,6 +5114,180 @@ export interface PurchaseOrderRescheduleRequest {
   reason: string;
 }
 
+/**
+ * `draft` enquanto se confere, `checked` depois de `POST /{id}/check`, `posted` depois de `POST /{id}/post`.
+ *
+ * Vocabulário FECHADO: o preço de abrir é uma migração de uma linha, e o de não fechar é a tela que filtra por estado devolvendo lista curta demais, meses depois, por causa de um valor digitado errado.
+ */
+export type GoodsReceiptDtoStatus = typeof GoodsReceiptDtoStatus[keyof typeof GoodsReceiptDtoStatus];
+
+
+export const GoodsReceiptDtoStatus = {
+  draft: 'draft',
+  checked: 'checked',
+  posted: 'posted',
+} as const;
+
+/**
+ * Proposto. Uma linha CONFERIDA: o que a ordem pedia, o que o caminhão trouxe, e a diferença entre os dois.
+ *
+ * **A conferência é o par `quantityOrdered` × `quantityReceived`, e é só isso.** No legado ela mora em `nota_entrada_det`, no par `Ned_quantidade_solicit` × `Ned_quantidade_recebida`. A divergência de VALOR é outra coisa, mora em outra tabela (`Nota_Entrada_Dif`, por nota, com trilha de desbloqueio) e é assunto do trilho financeiro — misturar as duas faria a conferência do galpão travar por diferença de preço, que quem descarrega o caminhão não tem como resolver.
+ */
+export interface GoodsReceiptItemDto {
+  /** A ordem da linha DENTRO do recebimento, 1-based. */
+  lineNumber: number;
+  /** A variante recebida. **Obrigatória, ao contrário da linha do orçamento:** recebimento move ESTOQUE, e estoque é de variante. Item digitado à mão — que o orçamento permite — não tem saldo a mexer, e uma linha dessas aqui seria uma entrada que o kardex não sabe onde lançar. */
+  variantId: string;
+  /** Descrição congelada na gravação. Quem lê a conferência de ontem lê o que estava escrito ontem, não o cadastro de hoje. */
+  description: string;
+  /**
+     * O que a ordem de compra pedia, em SNAPSHOT.
+     *
+     * **`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação. Nulo quer dizer "não havia o que comparar", e é diferente de zero, que diria "pediram nada".
+     *
+     * É por esta quantidade que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem — e não a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra nunca desfaz. Ver `POST /{id}/post`.
+     * @nullable
+     */
+  quantityOrdered?: number | null;
+  /** O que de fato chegou. Nunca negativo: devolução ao fornecedor é documento próprio, e um recebimento com sinal trocado sairia como baixa de estoque rotulada de compra. */
+  quantityReceived: number;
+  /**
+     * Recebido menos pedido, calculado pelo servidor. Negativo quando veio a menos, positivo quando veio a mais — e a mais acontece, com o fornecedor que arredonda a caixa.
+     *
+     * **`null` no avulso, e isso não é o mesmo que zero.** Zero diz "bateu certinho"; nulo diz que não há com o que comparar. Devolver zero para o avulso seria afirmação sobre uma ordem que não existe. Vem calculado daqui pela mesma razão que os totais das outras famílias: a conta é uma só, e não uma por tela.
+     * @nullable
+     */
+  divergence?: number | null;
+  /**
+     * Por que veio diferente, em texto livre. **Exigido por `POST /{id}/check` em toda linha que divergiu**, e ignorado nas que bateram.
+     *
+     * **É ADIÇÃO, não porte:** o legado registra que veio diferente e não registra por quê — quem precisava saber perguntava por telefone. O campo entra porque a informação se perde em horas, e é o único da família que não tem coluna correspondente no legado.
+     *
+     * Texto e não vocabulário fechado justamente porque não há enumerado a portar: fechar aqui seria inventá-lo. Ele vira lista quando a operação disser quais são os motivos de verdade.
+     * @nullable
+     */
+  divergenceReason?: string | null;
+}
+
+/**
+ * Proposto. Um RECEBIMENTO — a nota do fornecedor virando entrada no estoque. É a maior tela do legado (`Nota_entrada`) decomposta em fluxo.
+ *
+ * **O que entra aqui é a metade FÍSICA:** quem entregou, o que veio, o que veio a MENOS do que se pediu, e o efeito disso no estoque. A metade FISCAL — chave de 44 dígitos, XML da NF-e, manifestação do destinatário, ICMS e IPI linha a linha — fica de fora de propósito: ela é trilho próprio, e misturar as duas faria a entrada de mercadoria depender de a SEFAZ estar no ar.
+ *
+ * **Os três estados, e o do meio não é decoração.** `draft` é conferindo, e nada disso tocou o estoque; `checked` é a conferência fechada, com as divergências justificadas; `posted` é lançado, cada linha virou movimento de entrada. O estado do meio existe porque conferir e lançar são decisões de pessoas diferentes em horas diferentes — e é por isso que `POST /{id}/post` pede outra permissão que o resto da família.
+ *
+ * **Não guarda dinheiro, e isso é decisão.** Custo de compra, ICMS e IPI da linha ficam fora: quase tudo o que o legado guarda ali é FISCAL, e o que não é (custo de reposição) depende da regra de formação de custo, que ainda não está decidida. Coluna errada sai por migração de correção; coluna que falta entra por acréscimo.
+ *
+ * **Também não existe "não gera estoque".** O legado tem a flag (`Nen_NaoGeraEstoque`): nota que entra no sistema e não mexe no saldo. Aqui lançar é, por definição, mexer no saldo — um `posted` que não movesse estoque seria um estado que a palavra não descreve. Quando o caso real aparecer (remessa em consignação, retorno de conserto), ele entra como TIPO de recebimento, não como flag negativa no cabeçalho.
+ *
+ * **A porta de DESCARTAR o rascunho ficou de fora, e é dívida declarada.** A tabela reserva o privilégio para isso — rascunho se apaga: nota trocada, fornecedor errado, caminhão que era de outra empresa —, e o contrato não a abre porque não tem DELETE em lugar nenhum (§9 padrão 8, guardado por `src/data/contrato-bloco2.test.ts`): cadastro se desativa, documento se cancela com estado próprio. As duas saídas custam decisão que não cabe nesta publicação — abrir a exceção à regra, ou acrescentar `cancelled` ao vocabulário de estados, que é migração. Enquanto nenhuma delas acontece, o rascunho errado se corrige pelo PUT, que substitui o documento inteiro; o que não dá é fazê-lo sumir da fila.
+ */
+export interface GoodsReceiptDto {
+  id: string;
+  /**
+     * `draft` enquanto se confere, `checked` depois de `POST /{id}/check`, `posted` depois de `POST /{id}/post`.
+     *
+     * Vocabulário FECHADO: o preço de abrir é uma migração de uma linha, e o de não fechar é a tela que filtra por estado devolvendo lista curta demais, meses depois, por causa de um valor digitado errado.
+     */
+  status: GoodsReceiptDtoStatus;
+  /** Quem entregou. É um `PartnerDto` no papel de fornecedor. */
+  supplierId: string;
+  supplierName: string;
+  /**
+     * A TRANSPORTADORA, quando houve uma. Também é um `PartnerDto` — o papel é a coluna em que o id aparece, e não uma flag no cadastro: é o mesmo motivo pelo qual o mesmo CNPJ é cliente e fornecedor ao mesmo tempo.
+     * @nullable
+     */
+  carrierId?: string | null;
+  /** @nullable */
+  carrierName?: string | null;
+  /** ONDE a mercadoria descarregou — o depósito que recebe as entradas do lançamento. Resolvido para o padrão da empresa quando a escrita o omite. */
+  locationId: string;
+  locationName: string;
+  /**
+     * O número da nota como o operador o lê no papel. **Texto, e não inteiro:** número de nota tem série, tem zero à esquerda e tem letra em regime especial — o `int` do legado é a forma que já perdeu informação. Nulo é caso real: remessa que chega antes da nota.
+     * @nullable
+     */
+  invoiceNumber?: string | null;
+  /**
+     * Emissão da NOTA. Diferente de `receivedAt`, e a diferença entre as duas é o que a operação chama de trânsito.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  /** Chegada da MERCADORIA. */
+  receivedAt: string;
+  /**
+     * Quando o recebimento foi lançado. `null` até lá, e nunca preenchido fora de `posted`: estado e carimbo andam juntos nos dois sentidos, e o par incoerente não é representável no banco.
+     * @nullable
+     */
+  postedAt?: string | null;
+  /**
+     * Quem respondeu pelo recebimento. Nulo na carga do legado.
+     * @nullable
+     */
+  employeeId?: string | null;
+  /** @nullable */
+  employeeName?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  items: GoodsReceiptItemDto[];
+}
+
+/**
+ * Proposto. Uma linha na escrita da conferência. `description` e `divergence` não entram: a primeira é copiada do cadastro da variante, a segunda é a subtração que o servidor faz uma vez.
+ */
+export interface GoodsReceiptItemWriteRequest {
+  lineNumber: number;
+  variantId: string;
+  /**
+     * O que a ordem pedia. `null` no recebimento avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria "a ordem pedia nada", que não é linha de ordem nenhuma.
+     * @nullable
+     */
+  quantityOrdered?: number | null;
+  quantityReceived: number;
+  /**
+     * Preenchível a qualquer momento do rascunho, e cobrado só na transição: durante a contagem, divergir sem motivo é o estado normal.
+     * @nullable
+     */
+  divergenceReason?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI o recebimento inteiro.
+ *
+ * **A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.
+ *
+ * **O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.
+ */
+export interface GoodsReceiptWriteRequest {
+  supplierId: string;
+  /** @nullable */
+  carrierId?: string | null;
+  /**
+     * Depósito que recebe. Omitido, o servidor resolve o padrão da empresa — ver `POST /api/goods-receipts`.
+     * @nullable
+     */
+  locationId?: string | null;
+  /** @nullable */
+  invoiceNumber?: string | null;
+  /** @nullable */
+  issuedAt?: string | null;
+  /**
+     * Chegada da mercadoria. Omitida, o servidor grava agora — o caso normal é "chegou agora", e o campo existe para o lançamento retroativo, que num ERP de operação real é rotina.
+     * @nullable
+     */
+  receivedAt?: string | null;
+  /** @nullable */
+  employeeId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  items: GoodsReceiptItemWriteRequest[];
+}
+
+export interface PagedResultOfGoodsReceiptDto {
+  rows: GoodsReceiptDto[];
+  total: number;
+}
+
 export interface PagedResultOfPurchaseOrderDto {
   rows: PurchaseOrderDto[];
   total: number;
@@ -7628,6 +7802,27 @@ locationId?: string;
  * Só as variantes em que `qtySuggested > 0`. É o recorte de trabalho; omitido, a consulta traz o quadro inteiro, que é o que o relatório quer.
  */
 belowMinimumOnly?: boolean;
+};
+
+export type ListGoodsReceiptsParams = {
+q?: string;
+/**
+ * Whitelist: `receivedAt`, `issuedAt`, `invoiceNumber`, `status`, `postedAt`. Campo fora dela é 400.
+ *
+ * `supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. A ordenação PADRÃO é `receivedAt` decrescente: "o que chegou por último" é a pergunta que abre a tela, e o índice `ix_goods_receipts_fornecedor` da tabela foi desenhado nessa ordem.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por estado do recebimento — `draft`, `checked` ou `posted`.
+ */
+status?: string;
+/**
+ * Só os recebimentos deste fornecedor.
+ */
+supplierId?: string;
 };
 
 export type ListCostProfilesParams = {

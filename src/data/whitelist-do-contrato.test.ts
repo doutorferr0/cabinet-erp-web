@@ -208,6 +208,12 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   GetPurchaseStockReplenishment:
     'compras para estoque/reserva ainda não tem tela — as telas de Compras são a Fase C do trilho',
   GetAbcCurveReport: 'curva ABC ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  // O RECEBIMENTO (G3) — a tela é a Fase C deste trilho e nasce depois do
+  // servidor pela razão que o módulo inteiro tem: a conferência confronta o que
+  // a ORDEM DE COMPRA pediu com o que chegou, e sobre dado mockado ela
+  // confrontaria uma ordem inventada. O `sortBy` publicado é conferido do lado
+  // do api, contra o `MapaDeCampos` do módulo, na fase B.
+  ListGoodsReceipts: 'recebimento ainda não tem tela — as telas de Compras são a Fase C do trilho',
   GetProductsSoldReport:
     'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
   GetSalesComparisonReport:
@@ -358,6 +364,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
   ListOrderProfessionalHistory:
     'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
+  ListGoodsReceipts:
+    'recebimento não tem handler no mock — a grade confronta o que a ordem de compra pediu com o que chegou, e o mock não guarda ordem; mockar a conferência sem a ordem dona daria divergência calculada contra número inventado',
   // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
   // do 501: a apuração soma sobre o PEDIDO DE VENDA, que o mock não guarda.
   // Reimplementá-la aqui inventaria dinheiro — um número com cara de conta

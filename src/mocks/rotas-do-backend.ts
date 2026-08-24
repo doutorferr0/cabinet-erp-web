@@ -800,6 +800,38 @@ const COMPRAS_501 =
 const COMISSOES_SEM_PORTA =
   'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
 
+const RECEBIMENTO_SEM_PORTA =
+  'sem handler no api — modulo existe (0047 + src/modules/recebimento/), rotas nao; G3 fase B'
+
+/**
+ * AS SEIS DO RECEBIMENTO (G3) — publicadas por ESTA PR, e a razão delas é a
+ * MESMA das comissões logo abaixo: **o módulo do api existe e não tem porta.**
+ *
+ * `migrations/0047_recebimento_de_compra.sql` está aplicada,
+ * `src/modules/recebimento/` tem 355 linhas — o documento e as duas transições,
+ * com a regra da divergência e a ordem de trava por `variant_id` — e
+ * `tests/recebimento.test.ts` tem 394. O que falta é o caminho HTTP: `git grep
+ * goods-receipts` em `src/core/http/servidor.ts` devolve ZERO na main
+ * `f810a39`. Não é o 501 da fase, é caminho que o servidor não tem — o par
+ * local devolve o 404 do Fastify.
+ *
+ * **É esse buraco que a fase B fecha, e ele tem um efeito que não é óbvio:** o
+ * rastro em `audit_log` é escrito pela borda a partir do CAMINHO, então sem
+ * rota não há linha em `ENTIDADES` — e o lançamento moveria estoque sem deixar
+ * rastro. A rota não é só a porta da tela; é a condição da auditoria.
+ *
+ * Sai INTEIRA quando a fase B ligar os handlers: meia família poria o documento
+ * no servidor e a conferência no mock, e é a grade que faz o recebimento.
+ */
+const RECEBIMENTO: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/goods-receipts', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/goods-receipts', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/goods-receipts/{id}', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'put', caminho: '/api/goods-receipts/{id}', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/goods-receipts/{id}/check', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/goods-receipts/{id}/post', motivo: RECEBIMENTO_SEM_PORTA },
+]
+
 /**
  * AS TREZE DE COMISSÕES (G8, `api#118`) — vieram da `#337`, que as declarou
  * enquanto esta PR estava aberta, e o rebase as trouxe para cá.
@@ -904,6 +936,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   { metodo: 'get', caminho: '/api/purchases/stock-replenishment', motivo: COMPRAS_501 },
   ...COMISSOES,
   ...ENTREGA,
+  ...RECEBIMENTO,
 ]
 
 /** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */

@@ -26,6 +26,7 @@ import {
   getCancelPurchaseRequestResponseMock,
   getCancelQuoteResponseMock,
   getCancelTechnicalReserveResponseMock,
+  getCheckGoodsReceiptResponseMock,
   getCloseDeliveryResponseMock,
   getCompleteActivityResponseMock,
   getConcludeOrderResponseMock,
@@ -39,6 +40,7 @@ import {
   getCreateCrmStageResponseMock,
   getCreateDeliveryResponseMock,
   getCreateEmployeeResponseMock,
+  getCreateGoodsReceiptResponseMock,
   getCreateOrderFromQuoteResponseMock,
   getCreateOrderResponseMock,
   getCreatePartnerContactResponseMock,
@@ -68,6 +70,7 @@ import {
   getGetDashboardSummaryResponseMock,
   getGetDeliveryResponseMock,
   getGetEmployeeResponseMock,
+  getGetGoodsReceiptResponseMock,
   getGetInstallmentPolicyResponseMock,
   getGetOrderFulfillmentResponseMock,
   getGetOrderResponseMock,
@@ -106,6 +109,7 @@ import {
   getListDeliveriesResponseMock,
   getListEmployeeCommissionTiersResponseMock,
   getListEmployeesResponseMock,
+  getListGoodsReceiptsResponseMock,
   getListOrderParticipantsResponseMock,
   getListOrderProfessionalHistoryResponseMock,
   getListOrdersResponseMock,
@@ -135,6 +139,7 @@ import {
   getPatchTaskResponseMock,
   getPatchTodoResponseMock,
   getPickOrderItemResponseMock,
+  getPostGoodsReceiptResponseMock,
   getReleaseOrderItemResponseMock,
   getReplaceEmployeeCommissionTiersResponseMock,
   getReplaceOrderParticipantsResponseMock,
@@ -155,6 +160,7 @@ import {
   getUpdateCrmStageResponseMock,
   getUpdateEmployeeLinkResponseMock,
   getUpdateEmployeeResponseMock,
+  getUpdateGoodsReceiptResponseMock,
   getUpdateInstallmentPolicyResponseMock,
   getUpdateOrderResponseMock,
   getUpdatePartnerContactResponseMock,
@@ -191,6 +197,7 @@ import type {
   DeliveryDetailDto,
   EmployeeDetailDto,
   FulfillmentFactDto,
+  GoodsReceiptDto,
   HealthStatus,
   InstallmentPolicyDto,
   LoginOk,
@@ -207,6 +214,7 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
+  PagedResultOfGoodsReceiptDto,
   PagedResultOfOrderDto,
   PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
@@ -263,7 +271,7 @@ import type {
   WorkDto
 } from './index.schemas';
 
-export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getCreateCatalogLookupResponseMock, getUpdateCatalogLookupResponseMock, getListPartnerContactsResponseMock, getCreatePartnerContactResponseMock, getUpdatePartnerContactResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getCreateEmployeeResponseMock, getListWorksResponseMock, getCreateWorkResponseMock, getGetWorkResponseMock, getUpdateWorkResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getReviseQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getCreateQuoteFromOpportunityResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock, getGetEmployeeResponseMock, getUpdateEmployeeResponseMock, getLinkEmployeeResponseMock, getUpdateEmployeeLinkResponseMock, getListPermissionsResponseMock, getListRolesResponseMock, getCreateRoleResponseMock, getGetRoleResponseMock, getUpdateRoleResponseMock, getListOrdersResponseMock, getCreateOrderResponseMock, getGetOrderResponseMock, getUpdateOrderResponseMock, getCancelOrderResponseMock, getConcludeOrderResponseMock, getReturnDemoOrderResponseMock, getTransferOrderProfessionalResponseMock, getListOrderProfessionalHistoryResponseMock, getCreateOrderFromQuoteResponseMock, getListServicesResponseMock, getCreateServiceResponseMock, getUpdateServiceResponseMock, getListStockLocationsResponseMock, getCreateStockLocationResponseMock, getUpdateStockLocationResponseMock, getListStockBalancesResponseMock, getListPaymentTermsResponseMock, getCreatePaymentTermResponseMock, getUpdatePaymentTermResponseMock, getGetInstallmentPolicyResponseMock, getUpdateInstallmentPolicyResponseMock, getGetAbcCurveReportResponseMock, getGetProductsSoldReportResponseMock, getGetSalesComparisonReportResponseMock, getGetSalespersonReportResponseMock, getGetProfessionalRankingReportResponseMock, getGetSupplierMovementReportResponseMock, getGetStockValuationReportResponseMock, getGetStockAgingReportResponseMock, getGetQuoteVsStockReportResponseMock, getGetBirthdaysReportResponseMock, getListPurchaseRequestsResponseMock, getCreatePurchaseRequestResponseMock, getGetPurchaseRequestResponseMock, getUpdatePurchaseRequestResponseMock, getCancelPurchaseRequestResponseMock, getListPurchaseOrdersResponseMock, getCreatePurchaseOrderResponseMock, getGetPurchaseOrderResponseMock, getUpdatePurchaseOrderResponseMock, getSendPurchaseOrderResponseMock, getReschedulePurchaseOrderResponseMock, getCancelPurchaseOrderResponseMock, getGetPurchaseArrivalForecastResponseMock, getGetPurchaseStockReplenishmentResponseMock, getListCostProfilesResponseMock, getCreateCostProfileResponseMock, getGetCostProfileResponseMock, getUpdateCostProfileResponseMock, getSimulateCostProfileResponseMock, getListOrderParticipantsResponseMock, getReplaceOrderParticipantsResponseMock, getListEmployeeCommissionTiersResponseMock, getReplaceEmployeeCommissionTiersResponseMock, getListPartnerCommissionTiersResponseMock, getReplacePartnerCommissionTiersResponseMock, getListTechnicalReservesResponseMock, getCreateTechnicalReserveResponseMock, getCancelTechnicalReserveResponseMock, getGetCommissionEarningsResponseMock, getListCommissionClosingsResponseMock, getCreateCommissionClosingResponseMock, getListCommissionClosingEntriesResponseMock, getGetOrderFulfillmentResponseMock, getReleaseOrderItemResponseMock, getPickOrderItemResponseMock, getListPickingQueueResponseMock, getListDeliveriesResponseMock, getCreateDeliveryResponseMock, getGetDeliveryResponseMock, getAddDeliveryItemResponseMock, getCloseDeliveryResponseMock, getCancelDeliveryResponseMock, getListPriceIndexesResponseMock, getCreatePriceIndexResponseMock, getUpdatePriceIndexResponseMock, getListVariantTablePricesResponseMock, getReplaceVariantTablePricesResponseMock } from './index.faker';
+export { getHealthResponseMock, getHealthDbResponseMock, getListCatalogLookupsResponseMock, getCreateCatalogLookupResponseMock, getUpdateCatalogLookupResponseMock, getListPartnerContactsResponseMock, getCreatePartnerContactResponseMock, getUpdatePartnerContactResponseMock, getListProductsResponseMock, getCreateProductResponseMock, getGetProductResponseMock, getUpdateProductResponseMock, getCreateVariantResponseMock, getUpdateVariantResponseMock, getListPartnersResponseMock, getCreatePartnerResponseMock, getGetPartnerResponseMock, getUpdatePartnerResponseMock, getLinkPartnerResponseMock, getCreateStockMovementResponseMock, getListStockMovementsResponseMock, getAuthLoginResponseMock, getAuthMeResponseMock, getAuthTenantsResponseMock, getGetDashboardSummaryResponseMock, getListAgendaEventsResponseMock, getListTasksResponseMock, getCreateTaskResponseMock, getPatchTaskResponseMock, getListTodosResponseMock, getPatchTodoResponseMock, getListProjectsResponseMock, getGetProjectPlanResponseMock, getListEmployeesResponseMock, getCreateEmployeeResponseMock, getListWorksResponseMock, getCreateWorkResponseMock, getGetWorkResponseMock, getUpdateWorkResponseMock, getListQuotesResponseMock, getCreateQuoteResponseMock, getGetQuoteResponseMock, getUpdateQuoteResponseMock, getCancelQuoteResponseMock, getReviseQuoteResponseMock, getListCrmPipelinesResponseMock, getCreateCrmPipelineResponseMock, getGetCrmPipelineResponseMock, getUpdateCrmPipelineResponseMock, getListCrmStagesResponseMock, getCreateCrmStageResponseMock, getUpdateCrmStageResponseMock, getListCrmOpportunitiesResponseMock, getCreateCrmOpportunityResponseMock, getGetCrmOpportunityResponseMock, getUpdateCrmOpportunityResponseMock, getMoveCrmOpportunityStageResponseMock, getGetCrmLostReasonsReportResponseMock, getListCrmLostReasonsResponseMock, getCreateCrmLostReasonResponseMock, getUpdateCrmLostReasonResponseMock, getCreateQuoteFromOpportunityResponseMock, getListActivitiesResponseMock, getCreateActivityResponseMock, getUpdateActivityResponseMock, getCompleteActivityResponseMock, getGetEmployeeResponseMock, getUpdateEmployeeResponseMock, getLinkEmployeeResponseMock, getUpdateEmployeeLinkResponseMock, getListPermissionsResponseMock, getListRolesResponseMock, getCreateRoleResponseMock, getGetRoleResponseMock, getUpdateRoleResponseMock, getListOrdersResponseMock, getCreateOrderResponseMock, getGetOrderResponseMock, getUpdateOrderResponseMock, getCancelOrderResponseMock, getConcludeOrderResponseMock, getReturnDemoOrderResponseMock, getTransferOrderProfessionalResponseMock, getListOrderProfessionalHistoryResponseMock, getCreateOrderFromQuoteResponseMock, getListServicesResponseMock, getCreateServiceResponseMock, getUpdateServiceResponseMock, getListStockLocationsResponseMock, getCreateStockLocationResponseMock, getUpdateStockLocationResponseMock, getListStockBalancesResponseMock, getListPaymentTermsResponseMock, getCreatePaymentTermResponseMock, getUpdatePaymentTermResponseMock, getGetInstallmentPolicyResponseMock, getUpdateInstallmentPolicyResponseMock, getGetAbcCurveReportResponseMock, getGetProductsSoldReportResponseMock, getGetSalesComparisonReportResponseMock, getGetSalespersonReportResponseMock, getGetProfessionalRankingReportResponseMock, getGetSupplierMovementReportResponseMock, getGetStockValuationReportResponseMock, getGetStockAgingReportResponseMock, getGetQuoteVsStockReportResponseMock, getGetBirthdaysReportResponseMock, getListPurchaseRequestsResponseMock, getCreatePurchaseRequestResponseMock, getGetPurchaseRequestResponseMock, getUpdatePurchaseRequestResponseMock, getCancelPurchaseRequestResponseMock, getListPurchaseOrdersResponseMock, getCreatePurchaseOrderResponseMock, getGetPurchaseOrderResponseMock, getUpdatePurchaseOrderResponseMock, getSendPurchaseOrderResponseMock, getReschedulePurchaseOrderResponseMock, getCancelPurchaseOrderResponseMock, getGetPurchaseArrivalForecastResponseMock, getGetPurchaseStockReplenishmentResponseMock, getListGoodsReceiptsResponseMock, getCreateGoodsReceiptResponseMock, getGetGoodsReceiptResponseMock, getUpdateGoodsReceiptResponseMock, getCheckGoodsReceiptResponseMock, getPostGoodsReceiptResponseMock, getListCostProfilesResponseMock, getCreateCostProfileResponseMock, getGetCostProfileResponseMock, getUpdateCostProfileResponseMock, getSimulateCostProfileResponseMock, getListOrderParticipantsResponseMock, getReplaceOrderParticipantsResponseMock, getListEmployeeCommissionTiersResponseMock, getReplaceEmployeeCommissionTiersResponseMock, getListPartnerCommissionTiersResponseMock, getReplacePartnerCommissionTiersResponseMock, getListTechnicalReservesResponseMock, getCreateTechnicalReserveResponseMock, getCancelTechnicalReserveResponseMock, getGetCommissionEarningsResponseMock, getListCommissionClosingsResponseMock, getCreateCommissionClosingResponseMock, getListCommissionClosingEntriesResponseMock, getGetOrderFulfillmentResponseMock, getReleaseOrderItemResponseMock, getPickOrderItemResponseMock, getListPickingQueueResponseMock, getListDeliveriesResponseMock, getCreateDeliveryResponseMock, getGetDeliveryResponseMock, getAddDeliveryItemResponseMock, getCloseDeliveryResponseMock, getCancelDeliveryResponseMock, getListPriceIndexesResponseMock, getCreatePriceIndexResponseMock, getUpdatePriceIndexResponseMock, getListVariantTablePricesResponseMock, getReplaceVariantTablePricesResponseMock } from './index.faker';
 
 
 export const getHealthMockHandler = (overrideResponse?: HealthStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HealthStatus> | HealthStatus), options?: RequestHandlerOptions) => {
@@ -1748,6 +1756,78 @@ export const getGetPurchaseStockReplenishmentMockHandler = (overrideResponse?: P
   }, options)
 }
 
+export const getListGoodsReceiptsMockHandler = (overrideResponse?: PagedResultOfGoodsReceiptDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfGoodsReceiptDto> | PagedResultOfGoodsReceiptDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/goods-receipts', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListGoodsReceiptsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateGoodsReceiptMockHandler = (overrideResponse?: GoodsReceiptDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<GoodsReceiptDto> | GoodsReceiptDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/goods-receipts', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateGoodsReceiptResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getGetGoodsReceiptMockHandler = (overrideResponse?: GoodsReceiptDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<GoodsReceiptDto> | GoodsReceiptDto), options?: RequestHandlerOptions) => {
+  return http.get('*/api/goods-receipts/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetGoodsReceiptResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateGoodsReceiptMockHandler = (overrideResponse?: GoodsReceiptDto | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<GoodsReceiptDto> | GoodsReceiptDto), options?: RequestHandlerOptions) => {
+  return http.put('*/api/goods-receipts/:id', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateGoodsReceiptResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCheckGoodsReceiptMockHandler = (overrideResponse?: GoodsReceiptDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<GoodsReceiptDto> | GoodsReceiptDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/goods-receipts/:id/check', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCheckGoodsReceiptResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPostGoodsReceiptMockHandler = (overrideResponse?: GoodsReceiptDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<GoodsReceiptDto> | GoodsReceiptDto), options?: RequestHandlerOptions) => {
+  return http.post('*/api/goods-receipts/:id/post', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPostGoodsReceiptResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getListCostProfilesMockHandler = (overrideResponse?: PagedResultOfCostProfileDto | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PagedResultOfCostProfileDto> | PagedResultOfCostProfileDto), options?: RequestHandlerOptions) => {
   return http.get('*/api/cost-profiles', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -2268,6 +2348,12 @@ export const getVitraERPMock = () => [
   getCancelPurchaseOrderMockHandler(),
   getGetPurchaseArrivalForecastMockHandler(),
   getGetPurchaseStockReplenishmentMockHandler(),
+  getListGoodsReceiptsMockHandler(),
+  getCreateGoodsReceiptMockHandler(),
+  getGetGoodsReceiptMockHandler(),
+  getUpdateGoodsReceiptMockHandler(),
+  getCheckGoodsReceiptMockHandler(),
+  getPostGoodsReceiptMockHandler(),
   getListCostProfilesMockHandler(),
   getCreateCostProfileMockHandler(),
   getGetCostProfileMockHandler(),

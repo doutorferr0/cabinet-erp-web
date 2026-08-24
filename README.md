@@ -52,3 +52,15 @@ viaja sem `SameSite=None` nem CORS, dispensando `.env` e `VITE_API_URL`.
 Sem a variável o desvio não é montado. As telas já ligadas (login, seletor de
 empresa, produtos, parceiros) mostram o estado de falha — que é o comportamento
 correto, não um bug.
+
+## Onde isto vai parar — a `main` publica DOIS sites
+
+| destino | projeto Cloudflare Pages | env do build |
+|---|---|---|
+| **https://cabinetonline.cc** — vitrine em mock, credencial única de demonstração | `cabinet-erp-web` | `VITE_API_MODE=mock` + `VITE_DEMO_USER`/`VITE_DEMO_PASS` |
+| **https://app.cabinetonline.cc** — o produto, contra `api.cabinetonline.cc` | `cabinet-erp-app` | `VITE_API_URL=https://api.cabinetonline.cc`, sem env de demo |
+
+Os dois saem do MESMO push: merge na `main` builda os dois projetos em paralelo e vai ao ar em
+~2 min, sem passo manual. Por isso **merge é publicação em produção real**, não atualização de
+demo — e a Cloudflare não espera pelo CI. Regra completa, armadilhas e o que o `app.` mostra de
+dado ainda mockado: **CLAUDE.md § PUBLICAÇÃO**.

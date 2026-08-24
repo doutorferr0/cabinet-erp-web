@@ -75,10 +75,13 @@ diferentes: o `tsc` não resolve import de asset, não avalia `import.meta.env`,
 plugins (Tailwind v4, `@tanstack/router-plugin`) e não faz o code-splitting. Build quebrado com
 tipos verdes é rotina em Vite.
 
-Agrava o CLAUDE.md: **cabinetonline.cc publica automaticamente da `main`**. A Cloudflare Pages
-builda por conta própria, em paralelo ao CI, sem esperar por ele. Hoje, se o `vite build` quebrar,
-quem descobre é o painel da Cloudflare depois do merge — e o site fica no ar com a versão
-anterior, sem que nada no GitHub fique vermelho por isso.
+Agrava o CLAUDE.md: **a `main` publica automaticamente em DOIS projetos Pages** — o demo
+`cabinetonline.cc` (`cabinet-erp-web`) e, desde 2026-08-23, o site real `app.cabinetonline.cc`
+(`cabinet-erp-app`, contra `api.cabinetonline.cc`). A Cloudflare builda por conta própria, em
+paralelo ao CI, sem esperar por ele. Hoje, se o `vite build` quebrar, quem descobre é o painel da
+Cloudflare depois do merge — e os sites ficam no ar com a versão anterior, sem que nada no GitHub
+fique vermelho por isso. O que mudou com o segundo destino é o preço do erro: não é mais uma
+vitrine desatualizada, é o sistema em uso sobre dado de produção.
 
 O passo é barato: medido agora, `pnpm build` leva **757 ms** de `vite build` sobre o `tsc -b` que
 o CI já paga.
@@ -98,8 +101,9 @@ antes.
 > **Reconferido em 2026-08-13 pela API, e continua aberto:**
 > `GET /repos/{owner}/{repo}/branches/main/protection` responde **404 "Branch not protected"** e
 > `GET /rulesets` devolve lista **vazia**. Não é suposição de quem escreveu em 08/08 — é o estado
-> de hoje. Vale mais aqui do que na maioria dos repos: a `main` publica sozinha em
-> `cabinetonline.cc`, então merge é publicação, e nada exige o check verde antes dela.
+> de hoje. Vale mais aqui do que na maioria dos repos: a `main` publica sozinha nos dois
+> destinos — `cabinetonline.cc` (demo) e `app.cabinetonline.cc` (produção real, desde
+> 2026-08-23) —, então merge é publicação, e nada exige o check verde antes dela.
 
 O CLAUDE.md diz "CI vermelho = sessão não terminou", mas isso é disciplina, não trava. Sem
 proteção de branch, um merge entra com o check falhando (ou ainda rodando) e a Cloudflare publica.
@@ -142,8 +146,8 @@ permissions:
 **Severidade: baixa.**
 
 O gatilho é `push: [main]` + `pull_request: [main]`. Branch empurrada sem PR aberto não é
-validada — mas a Cloudflare **builda o preview dela mesmo assim**, e o CLAUDE.md manda usar
-preview para mostrar trabalho em andamento. Então existe URL publicada de código que nenhum check
+validada — mas a Cloudflare **builda o preview dela mesmo assim** (nos dois projetos), e o
+CLAUDE.md manda usar preview para mostrar trabalho em andamento. Então existe URL publicada de código que nenhum check
 tocou.
 
 Duas saídas, e a segunda é a recomendada:

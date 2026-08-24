@@ -271,7 +271,32 @@ pé, nenhum caminho de `/api` chega ao MSW; sem a variável, todos chegam.
 
 A lista deixou de medir dívida do backend e virou **o interruptor entre dois ambientes**. Por isso
 ela e o `browser.ts` não foram apagados quando fechou, e `VITE_API_MODE=http` continua fora de
-questão: o **site público é 100% mock**, e o modo http o apagaria.
+questão **no projeto do demo**: `cabinetonline.cc` é 100% mock, e o modo http o apagaria.
+
+O que deixou de valer é a frase "o site público é mock" no singular — ver a seção abaixo.
+
+#### A `main` publica DOIS ambientes, e só um deles é mock (2026-08-23)
+
+O mesmo commit vira dois sites, por dois projetos Cloudflare Pages ligados a este repositório:
+
+| destino | projeto Pages | modo | quem responde `/api` |
+|---|---|---|---|
+| `cabinetonline.cc` | `cabinet-erp-web` | `VITE_API_MODE=mock` no painel | o MSW, dentro do navegador |
+| `app.cabinetonline.cc` | `cabinet-erp-app` | padrão do build (`http`) + `VITE_API_URL=https://api.cabinetonline.cc` | o `cabinet-erp-api` em produção |
+
+Três consequências para quem lê este documento:
+
+1. **`VITE_API_MODE` não é decisão do repositório** — é env de painel, por projeto. O build em http
+   deixou de ser hipótese: ele está no ar desde 2026-08-23 e é o produto.
+2. **`VITE_API_PROXY` não participa do `app.`** O par local usa proxy para ficar em mesma origem;
+   o site real usa **base absoluta** e é cross-origin, então o cookie de sessão depende do CORS
+   credenciado do backend (medido: `allow-origin: https://app.cabinetonline.cc` +
+   `allow-credentials: true`). Origem nova precisa entrar na lista do `cabinet-erp-api`.
+3. **Tela em provider de mock continua mockada NO SITE REAL.** `createMockProvider` sobre
+   `src/mocks/` (colaborador, compras, cidades, boletim) não olha `VITE_API_MODE` e não fala com a
+   rede: em `app.cabinetonline.cc` ele serve a mesma fixture, agora ao lado de dado do Postgres.
+   A migração dessas telas virou trabalho de produção — o custo de adiar deixou de ser "demo com
+   dado fake" e passou a ser "sistema em uso com duas verdades na mesma sessão".
 
 *(Histórico da conta, porque ela envelhece calada: em `744bd75` (2026-08-19) eram 69 operações, 51
 servidas e 18 em 501; em `33db0df` a passagem foi a 58; em `3af4f01` o 501 zerou e sobraram 20 por
@@ -324,8 +349,9 @@ tela não tem como distinguir as duas depois do fato: as duas chegam como lista 
 
 `src/features/crm/cobertura-do-funil.tsx` diz isso ao operador, e **só quando há backend real** —
 sem `VITE_API_PROXY` o MSW responde as duas metades, os ids casam e o quadro funciona (é o caso do
-site público). Avisar ali inventaria um defeito que aquele ambiente não tem, e aviso que aparece
-quando não devia é o que ensina o operador a ignorar avisos. `rotas-do-backend.test.ts` amarra as
+demo público, `cabinetonline.cc`; em `app.cabinetonline.cc` não há MSW e o aviso vale). Avisar
+ali inventaria um defeito que aquele ambiente não tem, e aviso que aparece quando não devia é o
+que ensina o operador a ignorar avisos. `rotas-do-backend.test.ts` amarra as
 duas pontas: enquanto as oportunidades faltarem, tirar o aviso reprova.
 
 #### A segunda costura: o cadastro de colaborador
@@ -343,7 +369,7 @@ mesma mecânica do funil (só com `VITE_API_PROXY`).
 **Por que a tela não migrou junto** — e o motivo é o MOCK, não o servidor:
 
 - não existe handler mock para `GET /api/employees/{id}`. Trocar o provider deixaria o cadastro
-  sem detalhe **no site público**, que é 100% mock: quebra de produção para ganhar coerência em dev;
+  sem detalhe **no demo público** (`cabinetonline.cc`), que é 100% mock: quebra de produção para ganhar coerência em dev;
 - as duas sementes de colaborador são conjuntos diferentes — `src/mocks/colaboradores.ts` (a tela)
   e `crm.colaboradores` (que serve `GET /api/employees` no mock);
 - `Colaborador.id` é `number` e o contrato declara `format: uuid`, o que arrasta o schema de
@@ -752,8 +778,9 @@ descartado. O contrato tipa `operator` como enum — aceitar qualquer texto era 
 mesmo buraco uma camada abaixo.
 
 **Por que isto era grave e não "coisa de mock":** `cabinetonline.cc` roda em modo
-mock. O operador montava "Ativo é não", lia a condição aplicada no painel e via a
-lista inteira, com os ativos dentro. Não é limitação de mock — é a tela afirmando
+mock, e o defeito era da TELA — `app.cabinetonline.cc`, que fala com o backend, o
+herdaria igual. O operador montava "Ativo é não", lia a condição aplicada no
+painel e via a lista inteira, com os ativos dentro. Não é limitação de mock — é a tela afirmando
 o que não é.
 
 ### Armadilha do cliente gerado

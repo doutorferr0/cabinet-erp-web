@@ -273,8 +273,9 @@ vez por repo"**. Paralelismo intra-repo está liberado, e as condições são TO
    sempre. A divisão é por arquivo, não por assunto.
 3. **Dono único de `package.json`/lockfile.** Dependência nova fora do dono → parar e registrar
    blocker, não instalar "só pra testar".
-4. **Merge SERIAL na `main`** — e aqui a `main` deploya sozinha (`cabinetonline.cc`), então merge
-   é publicação.
+4. **Merge SERIAL na `main`** — e aqui a `main` deploya sozinha em DOIS destinos (o demo
+   `cabinetonline.cc` **e** o site real `app.cabinetonline.cc`), então merge é publicação em
+   produção (ver §PUBLICAÇÃO).
 5. **Cada trilho escreve só no SEU arquivo de memória:** backend → `next-task.md` · visual →
    `topicos/frente-visual.md`. Handoff é a MEMÓRIA, nunca conversa colada.
 6. **Enquanto um executor roda, o chat NÃO escreve na memória** (evita head divergente). Exceção:
@@ -359,9 +360,38 @@ fim de um arquivo que está certo.
 - Commits AQUI: git normal. Memória: gh api. NÃO confundir.
 - Empacou → registrar erro literal em frente-visual.md `## Blockers` e parar. Nunca fingir sucesso.
 
-## Site demo público — COMO PUBLICAR (regra simples)
-- **https://cabinetonline.cc** publica AUTOMATICAMENTE da **`main`**: todo merge/push na `main` com CI verde está no ar em ~2 min. Não existe passo manual de deploy.
-- Mecânica: Cloudflare Pages (projeto `cabinet-erp-web`) conectado ao GitHub; build `pnpm build` roda nos servidores da Cloudflare com env fixadas no painel (modo mock + credencial demo). O que é servido = `dist/` buildado, nunca o fonte.
-- Push em QUALQUER outra branch → preview isolado com URL própria (aba Deployments no painel, ou status do commit no GitHub). Use pra mostrar trabalho em andamento.
+## PUBLICAÇÃO — a `main` publica DOIS sites (medido 2026-08-23)
+**Merge na `main` não atualiza mais só uma demonstração: publica o sistema que roda sobre dado de
+verdade.** São DOIS projetos Cloudflare Pages ligados a ESTE repositório, os dois na branch `main`;
+um push dispara os dois builds em paralelo, e o que os separa é só a env fixada em cada painel.
+
+| destino | projeto Pages | env do build | o que é |
+|---|---|---|---|
+| **https://cabinetonline.cc** | `cabinet-erp-web` | `VITE_API_MODE=mock` + `VITE_DEMO_USER`/`VITE_DEMO_PASS` | vitrine: dado fake do MSW, credencial única, título `Cabinet — demo` |
+| **https://app.cabinetonline.cc** | `cabinet-erp-app` | `VITE_API_URL=https://api.cabinetonline.cc`, **sem** env de demo | o **produto**: fala com o backend real (VPS + Cloudflare Tunnel), login do banco de produção, título `Cabinet` |
+
+- **O peso da mudança:** antes, merge quebrado estragava uma vitrine; agora derruba (ou corrompe a
+  vista de) um sistema em uso. `CI vermelho = sessão não terminou` deixou de ser higiene e virou a
+  única trava que existe — a `main` **não** tem proteção de branch, e a Cloudflare builda em
+  paralelo ao CI, sem esperar por ele (`docs/ci-qualidade.md` §2 e §3).
+- **Mecânica:** `pnpm build` roda nos servidores da Cloudflare; o que é servido é o `dist/`, nunca
+  o fonte. Sem `VITE_API_MODE` no painel o build nasce em **`http`** (`src/main.tsx`), e o MSW só
+  sobe onde alguém fixou `mock` — hoje só o projeto do demo. Não existe "modo do repo": o modo é
+  env de painel, por projeto.
+- **O `app.` é cross-origin de propósito.** Base absoluta (`api.cabinetonline.cc`) em vez de proxy,
+  então o cookie de sessão depende do CORS credenciado do backend — medido no ar:
+  `access-control-allow-origin: https://app.cabinetonline.cc` + `access-control-allow-credentials:
+  true`. Origem nova (preview, domínio novo) precisa entrar na lista do `cabinet-erp-api` antes de
+  conseguir logar.
+- **O `app.` mostra dado fake onde a tela ainda é mock, e isso NÃO é modo mock.** Provider de
+  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, cidades, boletim) não fala
+  com a rede em modo nenhum — em `app.cabinetonline.cc` ele serve a mesma fixture, agora ao lado de
+  dado do Postgres. Migrar tela para HTTP virou trabalho de produção, não de demo.
+- Push em QUALQUER outra branch → preview isolado em **cada** um dos dois projetos, com URL própria
+  (aba Deployments no painel, ou status do commit no GitHub). Use pra mostrar trabalho em andamento
+  — e, no preview do `cabinet-erp-app`, confira no painel a env de preview antes de supor contra
+  qual API ele está falando.
 - Branch `demo-site` é LEGADO (foi a branch de publicação até 2026-08-06). Não publicar por ela.
-- Login do demo: `demo@vertziluminacao.com.br` / `senha1234` (gate só existe no build com as env; dev/testes não mudam).
+- Login do demo: `demo@vertziluminacao.com.br` / `senha1234` — **vale só em `cabinetonline.cc`**
+  (gate de build; dev/testes não mudam). No `app.` quem autentica é o backend, com credencial do
+  banco de produção.

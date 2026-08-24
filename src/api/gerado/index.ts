@@ -18,6 +18,10 @@ import type {
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
   ChangePasswordRequest,
+  CommissionClosingResultDto,
+  CommissionClosingWriteRequest,
+  CommissionEarningsReportDto,
+  CommissionTiersWriteRequest,
   CostProfileDto,
   CostProfileWriteRequest,
   CostSimulationDto,
@@ -38,6 +42,7 @@ import type {
   EmployeeWriteRequest,
   GetAbcCurveReportParams,
   GetBirthdaysReportParams,
+  GetCommissionEarningsParams,
   GetCrmLostReasonsReportParams,
   GetProductsSoldReportParams,
   GetProfessionalRankingReportParams,
@@ -55,13 +60,18 @@ import type {
   ListActivitiesParams,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
+  ListCommissionClosingEntriesParams,
+  ListCommissionClosingsParams,
   ListCostProfilesParams,
   ListCrmLostReasonsParams,
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
+  ListEmployeeCommissionTiersParams,
   ListEmployeesParams,
+  ListOrderParticipantsParams,
   ListOrderProfessionalHistoryParams,
   ListOrdersParams,
+  ListPartnerCommissionTiersParams,
   ListPartnerContactsParams,
   ListPartnersParams,
   ListPaymentTermsParams,
@@ -76,21 +86,27 @@ import type {
   ListStockLocationsParams,
   ListStockMovementsParams,
   ListTasksParams,
+  ListTechnicalReservesParams,
   ListWorksParams,
   LoginOk,
   LoginRequest,
   NaoAutenticadoResponse,
   NaoImplementadoResponse,
   OrderDetailDto,
+  OrderParticipantsWriteRequest,
   OrderWriteRequest,
   PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
+  PagedResultOfCommissionClosingDto,
+  PagedResultOfCommissionClosingEntryDto,
+  PagedResultOfCommissionTierDto,
   PagedResultOfCostProfileDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
   PagedResultOfCrmPipelineDto,
   PagedResultOfEmployeeDto,
   PagedResultOfOrderDto,
+  PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
@@ -106,6 +122,7 @@ import type {
   PagedResultOfStockBalanceDto,
   PagedResultOfStockLocationDto,
   PagedResultOfStockMovementDto,
+  PagedResultOfTechnicalReserveDto,
   PagedResultOfWorkDto,
   PartnerContactDto,
   PartnerContactWriteRequest,
@@ -152,6 +169,8 @@ import type {
   TaskDto,
   TaskPatchRequest,
   TaskWriteRequest,
+  TechnicalReserveDto,
+  TechnicalReserveWriteRequest,
   TodoDto,
   TodoPatchRequest,
   TransferProfessionalRequest,
@@ -8003,6 +8022,950 @@ export const simulateCostProfile = async (id: string,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(costSimulationRequest)
+  }
+);}
+
+
+
+export type listOrderParticipantsResponse200 = {
+  data: PagedResultOfOrderParticipantDto
+  status: 200
+}
+
+export type listOrderParticipantsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listOrderParticipantsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listOrderParticipantsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listOrderParticipantsResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listOrderParticipantsResponseSuccess = (listOrderParticipantsResponse200) & {
+  headers: Headers;
+};
+export type listOrderParticipantsResponseError = (listOrderParticipantsResponse400 | listOrderParticipantsResponse401 | listOrderParticipantsResponse403 | listOrderParticipantsResponse404) & {
+  headers: Headers;
+};
+
+export type listOrderParticipantsResponse = (listOrderParticipantsResponseSuccess | listOrderParticipantsResponseError)
+
+export const getListOrderParticipantsUrl = (id: string,
+    params?: ListOrderParticipantsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/orders/${id}/participants?${stringifiedParams}` : `/api/orders/${id}/participants`
+}
+
+/**
+ * Proposto. **Quem participa deste pedido** — atendentes e profissionais, com o percentual e as faixas CONGELADOS nele.
+ *
+ * É sub-recurso e não campo do documento porque a participação tem vida própria depois da emissão: ela é transferida (`POST .../professional`), congela cadastro que muda depois, e é a origem do que a apuração paga. Ler tudo junto no `GET` do pedido faria a tela de venda carregar dinheiro de comissão em toda abertura.
+ *
+ * **A grade da aba Participação chega em uma requisição**, com as faixas embutidas em cada linha — ver `OrderParticipantDto.tiers`.
+ */
+export const listOrderParticipants = async (id: string,
+    params?: ListOrderParticipantsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listOrderParticipantsResponse> => {
+
+  return apiFetch<listOrderParticipantsResponse>(getListOrderParticipantsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type replaceOrderParticipantsResponse200 = {
+  data: PagedResultOfOrderParticipantDto
+  status: 200
+}
+
+export type replaceOrderParticipantsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type replaceOrderParticipantsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type replaceOrderParticipantsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type replaceOrderParticipantsResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type replaceOrderParticipantsResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type replaceOrderParticipantsResponseSuccess = (replaceOrderParticipantsResponse200) & {
+  headers: Headers;
+};
+export type replaceOrderParticipantsResponseError = (replaceOrderParticipantsResponse400 | replaceOrderParticipantsResponse401 | replaceOrderParticipantsResponse403 | replaceOrderParticipantsResponse404 | replaceOrderParticipantsResponse409) & {
+  headers: Headers;
+};
+
+export type replaceOrderParticipantsResponse = (replaceOrderParticipantsResponseSuccess | replaceOrderParticipantsResponseError)
+
+export const getReplaceOrderParticipantsUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/participants`
+}
+
+/**
+ * Proposto. Substitui a grade de participação INTEIRA. Linha que não vier no corpo é linha removida.
+ *
+ * **Papel: `admin` ou superior, e é INTERINO** — mesma linha de corte de `/api/payment-terms`. Quem edita participação decide quanto sai do caixa da empresa para quem indicou a venda, e o erro só aparece no fechamento, quando o título já nasceu. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+ *
+ * **O que o servidor faz com cada linha, e é a regra do congelamento:**
+ *
+ * - linha COM `id` conhecido — mesma participação: as faixas já congeladas nela FICAM, e muda só o que este corpo traz;
+ * - linha SEM `id` — nova: o servidor copia para dentro dela as faixas do PERFIL da pessoa (`/api/employees/{id}/commission-tiers` ou `/api/partners/{id}/commission-tiers`) como elas estão HOJE, e daí em diante elas são deste documento;
+ * - linha ausente — removida, com as faixas dela.
+ *
+ * A cópia é atômica com a criação da linha: perfil que mude no meio da gravação não deixa o documento com metade de cada versão.
+ *
+ * ---
+ *
+ * **As recusas, e nenhuma apara em silêncio** (400 com `fields[]` apontando `participants.<n>.<campo>`):
+ *
+ * 1. `role` sem a pessoa dele, ou com as duas (`employeeId` **e** `partnerId`). Participação que a apuração não sabe pagar.
+ * 2. `partnerId` de parceiro **sem o papel `professional`** — mesma recusa de `TransferProfessionalRequest`.
+ * 3. Duas linhas do MESMO papel com `isPrincipal: true`. Dois principais não significam nada; a recusa é mais restrita que o legado nos dois papéis, de propósito, e o risco que ela cria é de ETL — documento antigo com dois `Principal = 1` bate aqui.
+ * 4. A mesma pessoa duas vezes no mesmo papel.
+ * 5. `percent` fora de `0`–`1000000`.
+ * 6. `id` que não é participação DESTE pedido.
+ *
+ * **Não há recusa por SOMA dos percentuais, e a ausência é medida e não esquecimento:** o legado não tem essa restrição em `VendaAtendente` nem em `VendaIndicacao` — `Porcentagem` é coluna por linha, sem `CHECK` de conjunto —, e três atendentes com 100% cada é dado que existe lá. Fixar um teto aqui recusaria dado real na importação. Fica declarado como PONTO ABERTO: o caso real conferido do trilho responde se a soma tem significado, e se tiver, a regra entra por PR neste contrato.
+ *
+ * **409 quando a grade tenta trocar o profissional PRINCIPAL** (`urn:cabinet:erro:profissional-exige-transferencia`): essa troca tem data e justificativa, e quem a faz é `POST /api/orders/{id}/professional`. Acrescentar, remover ou mudar o percentual de profissional NÃO principal passa por aqui normalmente.
+ *
+ * **409 quando a linha já virou dinheiro** (`urn:cabinet:erro:participante-ja-apurado`): participação com linha de fechamento não se remove nem muda de percentual pelo documento. O que já foi pago se corrige com fechamento novo.
+ *
+ * **409 no pedido cancelado** (`urn:cabinet:erro:transicao-invalida`): documento encerrado não muda de participação.
+ */
+export const replaceOrderParticipants = async (id: string,
+    orderParticipantsWriteRequest: OrderParticipantsWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<replaceOrderParticipantsResponse> => {
+
+  return apiFetch<replaceOrderParticipantsResponse>(getReplaceOrderParticipantsUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(orderParticipantsWriteRequest)
+  }
+);}
+
+
+
+export type listEmployeeCommissionTiersResponse200 = {
+  data: PagedResultOfCommissionTierDto
+  status: 200
+}
+
+export type listEmployeeCommissionTiersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listEmployeeCommissionTiersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listEmployeeCommissionTiersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listEmployeeCommissionTiersResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listEmployeeCommissionTiersResponseSuccess = (listEmployeeCommissionTiersResponse200) & {
+  headers: Headers;
+};
+export type listEmployeeCommissionTiersResponseError = (listEmployeeCommissionTiersResponse400 | listEmployeeCommissionTiersResponse401 | listEmployeeCommissionTiersResponse403 | listEmployeeCommissionTiersResponse404) & {
+  headers: Headers;
+};
+
+export type listEmployeeCommissionTiersResponse = (listEmployeeCommissionTiersResponseSuccess | listEmployeeCommissionTiersResponseError)
+
+export const getListEmployeeCommissionTiersUrl = (id: string,
+    params?: ListEmployeeCommissionTiersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/employees/${id}/commission-tiers?${stringifiedParams}` : `/api/employees/${id}/commission-tiers`
+}
+
+/**
+ * Proposto. O PERFIL de faixas de um COLABORADOR — a comissão.
+ *
+ * É o cadastro que diz quanto a pessoa COSTUMA ganhar. O que ela ganhou num documento está congelado lá, e não aqui — ver `OrderParticipantTierDto`.
+ *
+ * **A faixa GERAL é a linha de `productGroupId` nulo**, e é ela que vira o percentual do participante quando a pessoa entra num documento. Perfil sem nenhuma faixa é lista vazia, e significa "ainda não configurado": a pessoa participa e a apuração não acha percentual.
+ */
+export const listEmployeeCommissionTiers = async (id: string,
+    params?: ListEmployeeCommissionTiersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listEmployeeCommissionTiersResponse> => {
+
+  return apiFetch<listEmployeeCommissionTiersResponse>(getListEmployeeCommissionTiersUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type replaceEmployeeCommissionTiersResponse200 = {
+  data: PagedResultOfCommissionTierDto
+  status: 200
+}
+
+export type replaceEmployeeCommissionTiersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type replaceEmployeeCommissionTiersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type replaceEmployeeCommissionTiersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type replaceEmployeeCommissionTiersResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type replaceEmployeeCommissionTiersResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type replaceEmployeeCommissionTiersResponseSuccess = (replaceEmployeeCommissionTiersResponse200) & {
+  headers: Headers;
+};
+export type replaceEmployeeCommissionTiersResponseError = (replaceEmployeeCommissionTiersResponse400 | replaceEmployeeCommissionTiersResponse401 | replaceEmployeeCommissionTiersResponse403 | replaceEmployeeCommissionTiersResponse404 | replaceEmployeeCommissionTiersResponse409) & {
+  headers: Headers;
+};
+
+export type replaceEmployeeCommissionTiersResponse = (replaceEmployeeCommissionTiersResponseSuccess | replaceEmployeeCommissionTiersResponseError)
+
+export const getReplaceEmployeeCommissionTiersUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/commission-tiers`
+}
+
+/**
+ * Proposto. Substitui o perfil de faixas de um colaborador INTEIRO. Faixa que não vier é faixa removida.
+ *
+ * **Papel: `admin` ou superior, e é INTERINO** — pelo motivo de `ReplaceOrderParticipants`: é o número que decide quanto sai do caixa.
+ *
+ * **Mudar o perfil NÃO reescreve documento já gravado.** Cada participação carrega a cópia das faixas que valiam quando ela nasceu; o que muda aqui vale da PRÓXIMA participação em diante. É o que o legado faz ao copiar `IndicacaoGrupProd` para `VendaIndicacaoGrupProd` — e a razão de a segunda ter 30× as linhas da primeira. A alternativa (ler o perfil na hora de apurar) faria o relatório do mês passado mudar de valor sozinho.
+ *
+ * **O desconto que reduz o ganho do colaborador é o mesmo mecanismo, e o legado o escreve por extenso:** `Venda.Ven_DescGanhoVenda` é preenchida a partir de `Ven_DescontoPorc` (`update venda set Ven_DescGanhoVenda = Ven_DescontoPorc …`). É o análogo interno da faixa do profissional — quanto mais desconto, menor o ganho.
+ *
+ * ---
+ *
+ * **As recusas** (400 com `fields[]` apontando `tiers.<n>.<campo>`):
+ *
+ * 1. Duas faixas com a MESMA condição — mesmo `productGroupId` (nulo inclusive), mesmo `operator` e mesmo `discountPercent`. Condição repetida com percentuais diferentes faz o cálculo depender da ordem de leitura, que é o defeito que ninguém reproduz.
+ * 2. `productGroupId` que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO`. Id de outro `kind` é 400 e não 404: o que está errado é o campo do corpo.
+ * 3. `percent` ou `discountPercent` fora de `0`–`1000000`.
+ * 4. `id` que não é faixa DESTA pessoa.
+ *
+ * `operator` fora do vocabulário é barrado pelo schema, antes do handler — é o que o vocabulário fechado existe para fazer.
+ */
+export const replaceEmployeeCommissionTiers = async (id: string,
+    commissionTiersWriteRequest: CommissionTiersWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<replaceEmployeeCommissionTiersResponse> => {
+
+  return apiFetch<replaceEmployeeCommissionTiersResponse>(getReplaceEmployeeCommissionTiersUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(commissionTiersWriteRequest)
+  }
+);}
+
+
+
+export type listPartnerCommissionTiersResponse200 = {
+  data: PagedResultOfCommissionTierDto
+  status: 200
+}
+
+export type listPartnerCommissionTiersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPartnerCommissionTiersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPartnerCommissionTiersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPartnerCommissionTiersResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listPartnerCommissionTiersResponseSuccess = (listPartnerCommissionTiersResponse200) & {
+  headers: Headers;
+};
+export type listPartnerCommissionTiersResponseError = (listPartnerCommissionTiersResponse400 | listPartnerCommissionTiersResponse401 | listPartnerCommissionTiersResponse403 | listPartnerCommissionTiersResponse404) & {
+  headers: Headers;
+};
+
+export type listPartnerCommissionTiersResponse = (listPartnerCommissionTiersResponseSuccess | listPartnerCommissionTiersResponseError)
+
+export const getListPartnerCommissionTiersUrl = (id: string,
+    params?: ListPartnerCommissionTiersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/partners/${id}/commission-tiers?${stringifiedParams}` : `/api/partners/${id}/commission-tiers`
+}
+
+/**
+ * Proposto. O PERFIL de faixas de um PROFISSIONAL EXTERNO — a participação/Reserva Técnica.
+ *
+ * É o cadastro que diz quanto a pessoa COSTUMA ganhar. O que ela ganhou num documento está congelado lá, e não aqui — ver `OrderParticipantTierDto`.
+ *
+ * **A faixa GERAL é a linha de `productGroupId` nulo**, e é ela que vira o percentual do participante quando a pessoa entra num documento. Perfil sem nenhuma faixa é lista vazia, e significa "ainda não configurado": a pessoa participa e a apuração não acha percentual.
+ */
+export const listPartnerCommissionTiers = async (id: string,
+    params?: ListPartnerCommissionTiersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPartnerCommissionTiersResponse> => {
+
+  return apiFetch<listPartnerCommissionTiersResponse>(getListPartnerCommissionTiersUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type replacePartnerCommissionTiersResponse200 = {
+  data: PagedResultOfCommissionTierDto
+  status: 200
+}
+
+export type replacePartnerCommissionTiersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type replacePartnerCommissionTiersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type replacePartnerCommissionTiersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type replacePartnerCommissionTiersResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type replacePartnerCommissionTiersResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type replacePartnerCommissionTiersResponseSuccess = (replacePartnerCommissionTiersResponse200) & {
+  headers: Headers;
+};
+export type replacePartnerCommissionTiersResponseError = (replacePartnerCommissionTiersResponse400 | replacePartnerCommissionTiersResponse401 | replacePartnerCommissionTiersResponse403 | replacePartnerCommissionTiersResponse404 | replacePartnerCommissionTiersResponse409) & {
+  headers: Headers;
+};
+
+export type replacePartnerCommissionTiersResponse = (replacePartnerCommissionTiersResponseSuccess | replacePartnerCommissionTiersResponseError)
+
+export const getReplacePartnerCommissionTiersUrl = (id: string,) => {
+
+
+
+
+  return `/api/partners/${id}/commission-tiers`
+}
+
+/**
+ * Proposto. Substitui o perfil de faixas de um profissional externo INTEIRO. Faixa que não vier é faixa removida.
+ *
+ * **Papel: `admin` ou superior, e é INTERINO** — pelo motivo de `ReplaceOrderParticipants`: é o número que decide quanto sai do caixa.
+ *
+ * **Mudar o perfil NÃO reescreve documento já gravado.** Cada participação carrega a cópia das faixas que valiam quando ela nasceu; o que muda aqui vale da PRÓXIMA participação em diante. É o que o legado faz ao copiar `IndicacaoGrupProd` para `VendaIndicacaoGrupProd` — e a razão de a segunda ter 30× as linhas da primeira. A alternativa (ler o perfil na hora de apurar) faria o relatório do mês passado mudar de valor sozinho.
+ *
+ * **Parceiro sem o papel `professional` é 400**: perfil de participação só existe para quem indica venda.
+ *
+ * ---
+ *
+ * **As recusas** (400 com `fields[]` apontando `tiers.<n>.<campo>`):
+ *
+ * 1. Duas faixas com a MESMA condição — mesmo `productGroupId` (nulo inclusive), mesmo `operator` e mesmo `discountPercent`. Condição repetida com percentuais diferentes faz o cálculo depender da ordem de leitura, que é o defeito que ninguém reproduz.
+ * 2. `productGroupId` que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO`. Id de outro `kind` é 400 e não 404: o que está errado é o campo do corpo.
+ * 3. `percent` ou `discountPercent` fora de `0`–`1000000`.
+ * 4. `id` que não é faixa DESTA pessoa.
+ *
+ * `operator` fora do vocabulário é barrado pelo schema, antes do handler — é o que o vocabulário fechado existe para fazer.
+ */
+export const replacePartnerCommissionTiers = async (id: string,
+    commissionTiersWriteRequest: CommissionTiersWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<replacePartnerCommissionTiersResponse> => {
+
+  return apiFetch<replacePartnerCommissionTiersResponse>(getReplacePartnerCommissionTiersUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(commissionTiersWriteRequest)
+  }
+);}
+
+
+
+export type listTechnicalReservesResponse200 = {
+  data: PagedResultOfTechnicalReserveDto
+  status: 200
+}
+
+export type listTechnicalReservesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listTechnicalReservesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listTechnicalReservesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listTechnicalReservesResponseSuccess = (listTechnicalReservesResponse200) & {
+  headers: Headers;
+};
+export type listTechnicalReservesResponseError = (listTechnicalReservesResponse400 | listTechnicalReservesResponse401 | listTechnicalReservesResponse403) & {
+  headers: Headers;
+};
+
+export type listTechnicalReservesResponse = (listTechnicalReservesResponseSuccess | listTechnicalReservesResponseError)
+
+export const getListTechnicalReservesUrl = (params?: ListTechnicalReservesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/technical-reserves?${stringifiedParams}` : `/api/technical-reserves`
+}
+
+/**
+ * Proposto. Os lançamentos de Reserva Técnica da empresa ativa — `Reserva_tecnica` do legado.
+ *
+ * **Não publica `filters` de propósito**, pela razão de `/api/stock-locations`: os recortes que a tela precisa (pedido, profissional, situação) já são parâmetros nomeados, e o filtro estruturado aqui seria parâmetro sem consumidor, cobrando whitelist dos dois lados.
+ */
+export const listTechnicalReserves = async (params?: ListTechnicalReservesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listTechnicalReservesResponse> => {
+
+  return apiFetch<listTechnicalReservesResponse>(getListTechnicalReservesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createTechnicalReserveResponse201 = {
+  data: TechnicalReserveDto
+  status: 201
+}
+
+export type createTechnicalReserveResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createTechnicalReserveResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createTechnicalReserveResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createTechnicalReserveResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createTechnicalReserveResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createTechnicalReserveResponseSuccess = (createTechnicalReserveResponse201) & {
+  headers: Headers;
+};
+export type createTechnicalReserveResponseError = (createTechnicalReserveResponse400 | createTechnicalReserveResponse401 | createTechnicalReserveResponse403 | createTechnicalReserveResponse404 | createTechnicalReserveResponse409) & {
+  headers: Headers;
+};
+
+export type createTechnicalReserveResponse = (createTechnicalReserveResponseSuccess | createTechnicalReserveResponseError)
+
+export const getCreateTechnicalReserveUrl = () => {
+
+
+
+
+  return `/api/technical-reserves`
+}
+
+/**
+ * Proposto. Lança a Reserva Técnica de um profissional sobre um pedido — e o VALOR é do servidor.
+ *
+ * **Papel: `admin` ou superior, e é INTERINO** — pelo motivo de `ReplaceOrderParticipants`.
+ *
+ * O servidor apura sobre a participação CONGELADA no documento: a faixa cujo `operator` casa com o desconto do pedido decide o percentual por grupo, o percentual geral vale para o resto e para serviço, e a devolução é abatida da base antes da conta (`FrmRT.Qrydevolucao` desconta `DevolucaoProduto` por grupo — fechamento que a ignorasse pagaria a mais). O resultado sai quebrado em `productCents` e `serviceCents`, como o legado quebra em `Ret_tec_luminaria`/`_materiais`/`_servico`.
+ *
+ * **Recusas:**
+ *
+ * - pedido cancelado é 409 (`urn:cabinet:erro:transicao-invalida`) — venda desfeita não paga indicação;
+ * - pedido SEM participação deste profissional é 409 (`urn:cabinet:erro:transicao-invalida`): não há sobre o que apurar, e inventar uma participação aqui seria pagar quem o documento não diz que indicou;
+ * - parceiro sem o papel `professional` é 400 apontando o campo;
+ * - o par (pedido, profissional) já com reserva ATIVA é 409 (`urn:cabinet:erro:reserva-ja-lancada`) — lançar de novo duplicaria o que o fechamento vai pagar.
+ */
+export const createTechnicalReserve = async (technicalReserveWriteRequest: TechnicalReserveWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createTechnicalReserveResponse> => {
+
+  return apiFetch<createTechnicalReserveResponse>(getCreateTechnicalReserveUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(technicalReserveWriteRequest)
+  }
+);}
+
+
+
+export type cancelTechnicalReserveResponse200 = {
+  data: TechnicalReserveDto
+  status: 200
+}
+
+export type cancelTechnicalReserveResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type cancelTechnicalReserveResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelTechnicalReserveResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelTechnicalReserveResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelTechnicalReserveResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelTechnicalReserveResponseSuccess = (cancelTechnicalReserveResponse200) & {
+  headers: Headers;
+};
+export type cancelTechnicalReserveResponseError = (cancelTechnicalReserveResponse400 | cancelTechnicalReserveResponse401 | cancelTechnicalReserveResponse403 | cancelTechnicalReserveResponse404 | cancelTechnicalReserveResponse409) & {
+  headers: Headers;
+};
+
+export type cancelTechnicalReserveResponse = (cancelTechnicalReserveResponseSuccess | cancelTechnicalReserveResponseError)
+
+export const getCancelTechnicalReserveUrl = (id: string,) => {
+
+
+
+
+  return `/api/technical-reserves/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela um lançamento de Reserva Técnica.
+ *
+ * **Cancela, não apaga** — `Ret_situacao` do legado, e a mesma regra do documento de venda: o que existiu continua legível.
+ *
+ * **409 quando a reserva já virou linha de fechamento** (`urn:cabinet:erro:participante-ja-apurado`): cancelar o que já foi pago deixaria um título no contas a pagar sem origem. A correção é fechamento novo.
+ *
+ * Reserva já cancelada é 409 (`urn:cabinet:erro:transicao-invalida`) — cancelar duas vezes não é idempotência, é sinal de que quem pediu está vendo outra tela.
+ */
+export const cancelTechnicalReserve = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelTechnicalReserveResponse> => {
+
+  return apiFetch<cancelTechnicalReserveResponse>(getCancelTechnicalReserveUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type getCommissionEarningsResponse200 = {
+  data: CommissionEarningsReportDto
+  status: 200
+}
+
+export type getCommissionEarningsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getCommissionEarningsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getCommissionEarningsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getCommissionEarningsResponseSuccess = (getCommissionEarningsResponse200) & {
+  headers: Headers;
+};
+export type getCommissionEarningsResponseError = (getCommissionEarningsResponse400 | getCommissionEarningsResponse401 | getCommissionEarningsResponse403) & {
+  headers: Headers;
+};
+
+export type getCommissionEarningsResponse = (getCommissionEarningsResponseSuccess | getCommissionEarningsResponseError)
+
+export const getGetCommissionEarningsUrl = (params: GetCommissionEarningsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/commissions/earnings?${stringifiedParams}` : `/api/commissions/earnings`
+}
+
+/**
+ * Proposto. **A APURAÇÃO** — o que cada pessoa ganhou no período, calculado no servidor sobre documento fechado. É consulta: nada aqui grava.
+ *
+ * **O eixo do período é a CONCLUSÃO do projeto, e não a data de fechamento da venda.** A função do legado que responde esta pergunta (`VendaAnoAtendente`, `rotinas.sql:2253`) recorta por `Ven_DataConclusao`; `Ven_DataFechaVenda` é outra coisa. Trocar os dois mudaria de mês o ganho de todo projeto longo.
+ *
+ * **A devolução entra pela competência de CAIXA**, também medido no legado: ela abate a base no mês em que o dinheiro voltou, não no da venda.
+ *
+ * **A fórmula do legado NÃO foi portada, e a decisão está documentada:** `Emp_Codigo = 1` está FIXO no código de lá (defeito, não regra — aqui a empresa é a da sessão), o eixo `@Desconto='N'` nunca chegou a ser implementado, e o guard `IF @VLProjeto = NULL` está quebrado em SEIS funções (`= NULL` nunca é verdadeiro com `ANSI_NULLS ON`), devolvendo `NULL` onde deveria devolver zero. O que foi portado é o EIXO e a base, não a aritmética.
+ *
+ * **Publica paginação porque a lista é por PARTICIPAÇÃO** — um mês com 300 pedidos e dois participantes cada dá 600 linhas —, e `summary` traz os totais do período INTEIRO, não os da página: somar a página daria o total de 20 registros com cara de total do mês.
+ */
+export const getCommissionEarnings = async (params: GetCommissionEarningsParams, options?: Parameters<typeof apiFetch>[1]): Promise<getCommissionEarningsResponse> => {
+
+  return apiFetch<getCommissionEarningsResponse>(getGetCommissionEarningsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listCommissionClosingsResponse200 = {
+  data: PagedResultOfCommissionClosingDto
+  status: 200
+}
+
+export type listCommissionClosingsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCommissionClosingsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCommissionClosingsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listCommissionClosingsResponseSuccess = (listCommissionClosingsResponse200) & {
+  headers: Headers;
+};
+export type listCommissionClosingsResponseError = (listCommissionClosingsResponse400 | listCommissionClosingsResponse401 | listCommissionClosingsResponse403) & {
+  headers: Headers;
+};
+
+export type listCommissionClosingsResponse = (listCommissionClosingsResponseSuccess | listCommissionClosingsResponseError)
+
+export const getListCommissionClosingsUrl = (params?: ListCommissionClosingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/commissions/closings?${stringifiedParams}` : `/api/commissions/closings`
+}
+
+/**
+ * Proposto. Os fechamentos de comissão da empresa ativa — `FechamentoComissao` do legado.
+ *
+ * **Um fechamento por período**, e a listagem é o que a tela consulta antes de fechar outro: período que já tem fechamento recusa em 409, e ver a lista evita o gesto.
+ */
+export const listCommissionClosings = async (params?: ListCommissionClosingsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCommissionClosingsResponse> => {
+
+  return apiFetch<listCommissionClosingsResponse>(getListCommissionClosingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCommissionClosingResponse200 = {
+  data: CommissionClosingResultDto
+  status: 200
+}
+
+export type createCommissionClosingResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCommissionClosingResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createCommissionClosingResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createCommissionClosingResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCommissionClosingResponseSuccess = (createCommissionClosingResponse200) & {
+  headers: Headers;
+};
+export type createCommissionClosingResponseError = (createCommissionClosingResponse400 | createCommissionClosingResponse401 | createCommissionClosingResponse403 | createCommissionClosingResponse409) & {
+  headers: Headers;
+};
+
+export type createCommissionClosingResponse = (createCommissionClosingResponseSuccess | createCommissionClosingResponseError)
+
+export const getCreateCommissionClosingUrl = () => {
+
+
+
+
+  return `/api/commissions/closings`
+}
+
+/**
+ * Proposto. **FECHA o período** — o passo em que participação apurada vira dinheiro.
+ *
+ * **Papel: `admin` ou superior, e é INTERINO** — este é o gesto que gera título no contas a pagar. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar.
+ *
+ * **A idempotência é do BANCO, e a chave é a do legado.** Cada linha gravada carrega o par (`sourceType`, `sourceId`) — o mesmo papel do par (tipo de documento RESERVADO, id do lançamento) que o Softlux usa em `contas_apagar` com `Tpd_codigo = 1004` e `Ctp_cod_documento = Reserva_tecnica.Ret_codigo`. A unicidade **não inclui o fechamento**, de propósito: fosse por fechamento, refechar o mesmo mês com datas um dia diferentes pagaria tudo de novo e cada duplicata seria legítima. Conferir antes de inserir não resolveria — entre a consulta e a gravação cabe outro pedido; quem responde é a chave.
+ *
+ * **Dois desfechos bem-sucedidos, e nenhum é erro** — ver `CommissionClosingResultDto`. Período sem ganho responde `nothing-to-close` e **não grava**: fechamento vazio travaria o período para quando o lançamento atrasado entrasse.
+ *
+ * **Recusas:**
+ *
+ * - período que já tem fechamento é 409 (`urn:cabinet:erro:periodo-ja-fechado`), com o `detail` dizendo quando fechou;
+ * - alguma origem do período JÁ paga em outro fechamento é 409 (`urn:cabinet:erro:origem-ja-paga`), e **nada é gravado** — a transação inteira volta. `detail` diz qual origem, porque a saída é ajustar o período, não insistir;
+ * - `periodEnd` anterior a `periodStart` é 400 apontando o campo.
+ */
+export const createCommissionClosing = async (commissionClosingWriteRequest: CommissionClosingWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCommissionClosingResponse> => {
+
+  return apiFetch<createCommissionClosingResponse>(getCreateCommissionClosingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(commissionClosingWriteRequest)
+  }
+);}
+
+
+
+export type listCommissionClosingEntriesResponse200 = {
+  data: PagedResultOfCommissionClosingEntryDto
+  status: 200
+}
+
+export type listCommissionClosingEntriesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCommissionClosingEntriesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCommissionClosingEntriesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listCommissionClosingEntriesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listCommissionClosingEntriesResponseSuccess = (listCommissionClosingEntriesResponse200) & {
+  headers: Headers;
+};
+export type listCommissionClosingEntriesResponseError = (listCommissionClosingEntriesResponse400 | listCommissionClosingEntriesResponse401 | listCommissionClosingEntriesResponse403 | listCommissionClosingEntriesResponse404) & {
+  headers: Headers;
+};
+
+export type listCommissionClosingEntriesResponse = (listCommissionClosingEntriesResponseSuccess | listCommissionClosingEntriesResponseError)
+
+export const getListCommissionClosingEntriesUrl = (id: string,
+    params?: ListCommissionClosingEntriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/commissions/closings/${id}/entries?${stringifiedParams}` : `/api/commissions/closings/${id}/entries`
+}
+
+/**
+ * Proposto. As LINHAS de um fechamento — quem recebeu, por qual fato, sobre qual base.
+ *
+ * **Append-only e imutáveis**: não há escrita nesta coleção, aqui nem em lugar nenhum. Linha de fechamento é o registro de que alguém foi pago, e correção se faz com fechamento novo — mesmo regime do `audit_log`.
+ *
+ * É sub-recurso e não campo do fechamento porque a coleção é grande: um mês de operação real tem centenas de linhas, e a listagem de fechamentos carregaria todas elas a cada abertura da tela.
+ */
+export const listCommissionClosingEntries = async (id: string,
+    params?: ListCommissionClosingEntriesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCommissionClosingEntriesResponse> => {
+
+  return apiFetch<listCommissionClosingEntriesResponse>(getListCommissionClosingEntriesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

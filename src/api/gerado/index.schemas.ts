@@ -511,6 +511,59 @@ export interface ProductSpecs {
   packageDimensions?: null | ProductDimensions;
 }
 
+/**
+ * Proposto. Uma linha da grade de fornecedores do produto (§6.1). O par código/descrição é o do FORNECEDOR — o que ele imprime no catálogo dele —, e é o que a linha do documento de compra carimba.
+ *
+ * O carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.
+ *
+ * **A ESCRITA não está publicada, e a ausência é deliberada.** O `PUT` do produto substitui o registro inteiro; publicar `suppliers` em `ProductWriteRequest` antes de a aba existir faria a primeira gravação da tela de produto APAGAR uma grade que o operador nunca viu. Ela entra junto com a aba.
+ */
+export interface ProductSupplierDto {
+  /** Id da LINHA da grade — não do fornecedor. É ele que distingue duas linhas do mesmo fornecedor enquanto a tela edita. */
+  id: string;
+  /** O PARCEIRO de papel fornecedor (`PartnerDto.id`, o mesmo id que `GET /api/partners?role=supplier` devolve) — não um id de `catalog-lookups`. Uuid não diz o alvo sozinho, e apontar para a lista errada só apareceria na tela, em branco. */
+  supplierId: string;
+  /** Razão social do fornecedor, para exibição — o mesmo par id×nome de `productTypeId`/`productTypeName`. Não é escrita: a grade grava o id. */
+  supplierName: string;
+  /**
+     * `Cód. Prod. Fornecedor` (§6.1) — o código desta peça no catálogo de quem vende. `null` quando o fornecedor não tem código próprio.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /**
+     * `Descrição Fornecedor` (§6.1) — como a peça se chama no catálogo dele, que raramente é como ela se chama aqui.
+     * @nullable
+     */
+  supplierDescription?: string | null;
+  /** `Padrão` (§6.1): o fornecedor que o documento carimba sem perguntar. No máximo UM por produto, e só o ATIVO conta — padrão desativado carimbaria quem não se compra mais, e desativar é justamente o gesto de parar de comprar dele. */
+  isDefault: boolean;
+  /** `Ativo` — desativação lógica da linha (§9). Fornecedor que saiu não some da grade: perde o `Ativo`, e os documentos antigos continuam explicáveis. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Uma linha da grade de produtos relacionados (§6.4) — o kit que sai junto ou a sugestão que a tela oferece.
+ */
+export interface ProductRelatedDto {
+  /** Id da LINHA da grade. */
+  id: string;
+  /** O OUTRO produto (`ProductDto.id`), nunca o próprio: kit de si mesmo é recursão infinita, e a escrita recusa com 400 dizendo qual linha. */
+  relatedProductId: string;
+  /** Código do produto relacionado, para exibição — a grade mostra código e descrição, e sem eles a tela teria de buscar cada item para desenhar uma linha. */
+  relatedProductCode: string;
+  /** Descrição do produto relacionado, para exibição. */
+  relatedProductDescription: string;
+  /**
+     * Decimal em string, até 3 casas — a mesma regra de `unitInQty`, pelo mesmo motivo (float perde centésimo).
+     *
+     * **É o DISCRIMINADOR:** preenchida = kit, `null` = sugestão. Zero e negativo o servidor recusa, e o `0` é o que engana — um kit "de zero unidades" passa na tela e leva nada para o documento.
+     * @nullable
+     */
+  quantity?: string | null;
+  /** A ordem em que a grade mostra. É do DADO e não da tela: o operador arruma a lista uma vez e ela abre igual para o próximo. */
+  sortOrder: number;
+}
+
 export interface ProductDto {
   id: string;
   code: string;
@@ -578,6 +631,26 @@ export interface ProductDto {
   factoryName?: string | null;
   /** Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada. */
   specs?: null | ProductSpecs;
+  /**
+     * Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1), a MESMA de `ProductDetailDto.suppliers` e com o mesmo item (`ProductSupplierDto`).
+     *
+     * **Ela existe aqui pelo OUTRO uso de `ProductDto`, não pela listagem.** `ProductDto` é a resposta de `POST /api/products` e de `PUT /api/products/{id}` além de ser a linha de `PagedResultOfProductDto`, e é a primeira que faltava: a tela que grava o produto recebia de volta um corpo SEM a grade e ficava sem saber o que o servidor guardou — precisaria de um `GET` do detalhe logo depois para reconciliar, e entre os dois a tela mostra um produto sem fornecedor que tem fornecedor.
+     *
+     * **A LISTAGEM continua NÃO emitindo, e a razão da #326 continua de pé:** é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra. Ser opcional é o que deixa os dois usos conviverem no mesmo schema — a listagem omite, a resposta da escrita emite.
+     *
+     * **FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca "não implementado" por "contrato quebrado" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade AQUI; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.
+     */
+  suppliers?: ProductSupplierDto[];
+  /**
+     * Proposto. Os produtos relacionados (§6.4) — kit e sugestão na MESMA coleção, porque `quantity` é o que os separa: preenchida = KIT (o item entra no documento junto, nesta quantidade por unidade do pai), nula = SUGESTÃO (a tela oferece, o vendedor decide). Ver `ProductRelatedDto`.
+     *
+     * Aqui pelo mesmo motivo de `suppliers`: é a resposta de `POST`/`PUT` que precisava dela, não a linha da listagem — que segue sem emitir.
+     *
+     * Não há campo de tipo ao lado: enum de dois valores duplicaria o que a quantidade já diz, e duas verdades sobre a mesma coisa divergem na primeira gravação que atualize uma e esqueça a outra.
+     *
+     * Fora de `required` pelo mesmo motivo de `suppliers`.
+     */
+  relatedProducts?: ProductRelatedDto[];
 }
 
 export interface PagedResultOfProductDto {
@@ -1095,59 +1168,6 @@ export interface ProductVariantDto {
   minStock: number | null;
 }
 
-/**
- * Proposto. Uma linha da grade de fornecedores do produto (§6.1). O par código/descrição é o do FORNECEDOR — o que ele imprime no catálogo dele —, e é o que a linha do documento de compra carimba.
- *
- * O carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.
- *
- * **A ESCRITA não está publicada, e a ausência é deliberada.** O `PUT` do produto substitui o registro inteiro; publicar `suppliers` em `ProductWriteRequest` antes de a aba existir faria a primeira gravação da tela de produto APAGAR uma grade que o operador nunca viu. Ela entra junto com a aba.
- */
-export interface ProductSupplierDto {
-  /** Id da LINHA da grade — não do fornecedor. É ele que distingue duas linhas do mesmo fornecedor enquanto a tela edita. */
-  id: string;
-  /** O PARCEIRO de papel fornecedor (`PartnerDto.id`, o mesmo id que `GET /api/partners?role=supplier` devolve) — não um id de `catalog-lookups`. Uuid não diz o alvo sozinho, e apontar para a lista errada só apareceria na tela, em branco. */
-  supplierId: string;
-  /** Razão social do fornecedor, para exibição — o mesmo par id×nome de `productTypeId`/`productTypeName`. Não é escrita: a grade grava o id. */
-  supplierName: string;
-  /**
-     * `Cód. Prod. Fornecedor` (§6.1) — o código desta peça no catálogo de quem vende. `null` quando o fornecedor não tem código próprio.
-     * @nullable
-     */
-  supplierCode?: string | null;
-  /**
-     * `Descrição Fornecedor` (§6.1) — como a peça se chama no catálogo dele, que raramente é como ela se chama aqui.
-     * @nullable
-     */
-  supplierDescription?: string | null;
-  /** `Padrão` (§6.1): o fornecedor que o documento carimba sem perguntar. No máximo UM por produto, e só o ATIVO conta — padrão desativado carimbaria quem não se compra mais, e desativar é justamente o gesto de parar de comprar dele. */
-  isDefault: boolean;
-  /** `Ativo` — desativação lógica da linha (§9). Fornecedor que saiu não some da grade: perde o `Ativo`, e os documentos antigos continuam explicáveis. */
-  active: boolean;
-}
-
-/**
- * Proposto. Uma linha da grade de produtos relacionados (§6.4) — o kit que sai junto ou a sugestão que a tela oferece.
- */
-export interface ProductRelatedDto {
-  /** Id da LINHA da grade. */
-  id: string;
-  /** O OUTRO produto (`ProductDto.id`), nunca o próprio: kit de si mesmo é recursão infinita, e a escrita recusa com 400 dizendo qual linha. */
-  relatedProductId: string;
-  /** Código do produto relacionado, para exibição — a grade mostra código e descrição, e sem eles a tela teria de buscar cada item para desenhar uma linha. */
-  relatedProductCode: string;
-  /** Descrição do produto relacionado, para exibição. */
-  relatedProductDescription: string;
-  /**
-     * Decimal em string, até 3 casas — a mesma regra de `unitInQty`, pelo mesmo motivo (float perde centésimo).
-     *
-     * **É o DISCRIMINADOR:** preenchida = kit, `null` = sugestão. Zero e negativo o servidor recusa, e o `0` é o que engana — um kit "de zero unidades" passa na tela e leva nada para o documento.
-     * @nullable
-     */
-  quantity?: string | null;
-  /** A ordem em que a grade mostra. É do DADO e não da tela: o operador arruma a lista uma vez e ela abre igual para o próximo. */
-  sortOrder: number;
-}
-
 export interface ProductDetailDto {
   id: string;
   code: string;
@@ -1219,7 +1239,7 @@ export interface ProductDetailDto {
   /**
      * Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1) — de QUEM se compra esta peça, com o código e a descrição que o fornecedor usa. Ver `ProductSupplierDto`.
      *
-     * Vem no DETALHE e não em `ProductDto`: é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.
+     * Vem no detalhe e TAMBÉM em `ProductDto`, que é a resposta de `POST`/`PUT` — sem ela a tela grava e não recebe de volta o que guardou. O que continua valendo é o recorte por USO, não por schema: a LISTAGEM não emite nenhuma das duas, porque grade de FORMULÁRIO em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.
      *
      * **FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca "não implementado" por "contrato quebrado" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.
      */

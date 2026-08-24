@@ -348,9 +348,15 @@ describe('grades do produto — fornecedores (§6.1) e relacionados (§6.4)', ()
     })
     expect(criado.status).toBe(201)
     if (criado.status !== 201) return
-    // A ESCRITA devolve `ProductDto` — sem grade nenhuma, que é o que o
-    // contrato declara para o `POST`.
-    expect(criado.data).not.toHaveProperty('suppliers')
+    // A ESCRITA devolve `ProductDto`, e desde que o contrato publicou as duas
+    // grades nele o `POST` as devolve JUNTO: é o que poupa à tela um `GET` do
+    // detalhe só para descobrir o que o servidor guardou. Vazias aqui porque o
+    // produto acabou de nascer — e vazias, não ausentes, pelo mesmo motivo do
+    // detalhe.
+    expect(criado.data.suppliers, 'o POST devolve a grade que gravou').toEqual([])
+    expect(criado.data.relatedProducts).toEqual([])
+    // `variants` continua fora, e a assimetria é do SCHEMA: ela só existe em
+    // `ProductDetailDto`. Variante tem endpoint próprio para escrever.
     expect(criado.data).not.toHaveProperty('variants')
 
     const novo = await getProduct(criado.data.id)
@@ -358,5 +364,26 @@ describe('grades do produto — fornecedores (§6.1) e relacionados (§6.4)', ()
       expect(novo.data.suppliers, 'o detalhe do recém-criado serve as grades vazias').toEqual([])
       expect(novo.data.relatedProducts).toEqual([])
     }
+  })
+
+  it('a LISTAGEM não emite nenhuma das duas, mesmo com `ProductDto` declarando-as', async () => {
+    await entrarComEmpresa()
+
+    // O recorte do contrato é por USO, não por schema: `ProductDto` serve a
+    // linha da listagem E a resposta da escrita, e só a segunda precisa das
+    // grades. Servi-las em cada linha de uma página custaria dois JOINs por
+    // linha para uma coluna que a listagem não mostra — a razão que a #326
+    // registrou e que continua de pé.
+    //
+    // Sem este caso, a declaração do schema seria lida como promessa e alguém
+    // ligaria a tela de listagem nela; o vazio só apareceria contra o backend.
+    const lista = await listProducts({})
+    expect(lista.status).toBe(200)
+    if (lista.status !== 200) return
+    const comGrade = lista.data.rows.find((r) => 'suppliers' in r || 'relatedProducts' in r)
+    expect(comGrade, 'nenhuma linha da listagem carrega grade').toBeUndefined()
+    // E o produto que TEM grade continua tendo — no detalhe, onde ela mora.
+    const detalhe = await getProduct('prod-0001')
+    if (detalhe.status === 200) expect(detalhe.data.suppliers).toHaveLength(2)
   })
 })

@@ -207,6 +207,49 @@ function servicosDe(id: string): QuoteServiceItemDto[] {
   return estado.servicos[id] ?? []
 }
 
+/**
+ * O orçamento como os RELATÓRIOS precisam lê-lo — foto só-leitura.
+ *
+ * Tipo PRÓPRIO e estreito, e não o `OrcamentoGuardado` inteiro: `relatorios.ts`
+ * precisa de cinco campos e das quantidades por variante, e exportar o estado
+ * interno faria o mock de relatório enxergar (e um dia depender de) a forma que
+ * a tela de orçamento monta. O que atravessa a fronteira é o que a pergunta
+ * exige, com a quantidade JÁ convertida — a grade a captura como texto, e o
+ * relatório que somasse `'1,5'` acharia que o cliente pediu quinze.
+ */
+export interface OrcamentoParaRelatorio {
+  id: string
+  /** `null` = documento sem emissão; relatório com período o descarta. */
+  issuedAt: string | null
+  cancelled: boolean
+  salespersonId: string | null
+  salespersonName: string | null
+  professionalId: string | null
+  professionalName: string | null
+  items: { variantId: string | null; quantity: number }[]
+}
+
+/** A foto de AGORA, e não a do seed: relatório sobre o que foi gravado. */
+export function orcamentosParaRelatorio(): readonly OrcamentoParaRelatorio[] {
+  return estado.linhas.map((o) => ({
+    id: o.id,
+    issuedAt: o.dataEmissao,
+    cancelled: o.cancelado,
+    salespersonId: o.consultorId,
+    salespersonName: o.consultor,
+    professionalId: o.profissionalId,
+    professionalName: o.profissionalExterno,
+    items: o.itens.map((item) => ({
+      // O seed da transcrição não capturou a ligação com o catálogo (§8.1), e é
+      // por isso que orçamento × estoque sai vazio nele. O campo existe porque a
+      // ESCRITA pode trazê-lo, e o relatório tem de saber lê-lo no dia em que
+      // vier — hoje `itemDto` também o publica como `null`, do mesmo lugar.
+      variantId: null,
+      quantity: quantidadeDe(item.quantidade),
+    })),
+  }))
+}
+
 /** Volta ao seed entre testes — o par do `resetCrm`. */
 export function resetQuotes(): void {
   estado = estadoInicial()

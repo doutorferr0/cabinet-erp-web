@@ -808,6 +808,54 @@ const COMISSOES: readonly RotaNoMock[] = [
   { metodo: 'get', caminho: '/api/commissions/closings/{id}/entries', motivo: COMISSOES_SEM_PORTA },
 ]
 
+/**
+ * O bloco FÍSICO da venda (G4) — liberar, separar, o romaneio e a situação.
+ *
+ * **A ordem se inverteu neste trilho, e de propósito.** O módulo de domínio do
+ * `cabinet-erp-api` JÁ EXISTE — `src/modules/entrega/` e a migração `0062` —
+ * porque migração, invariante e bateria não dependem do contrato, e é ali que
+ * mora o risco: baixar estoque duas vezes, entregar peça que ninguém separou,
+ * deixar reserva presa num depósito. O que faltava era a FORMA HTTP, e é ela
+ * que esta PR publica.
+ *
+ * **Medição (2026-08-24, `cabinet-erp-api` main `9c5b91f`):** `git grep` por
+ * `api/deliveries|picking-queue|/fulfillment` em `src/` e `tests/` devolve UMA
+ * ocorrência, e ela é a nota de `ConcludeOrder` no contrato GERADO dizendo que
+ * a entrega não existe — nenhuma rota, nenhum handler. `src/modules/entrega/`
+ * tem `fluxo.ts`, `estados.ts` e `situacao.ts`, e nada os chama por HTTP. A
+ * cópia do contrato de lá tem 90 caminhos / 124 operações. Não é o 501 da fase:
+ * é caminho que o servidor não tem, e o par local devolve o 404 do Fastify.
+ *
+ * Sai INTEIRA quando a Fase B do api ligar os handlers, e a razão é própria
+ * desta família: as três telas da Fase C — fila de separação, romaneio, situação
+ * do pedido — leem o MESMO progresso. Ligar metade poria a fila lendo Postgres e
+ * a situação lendo ficção sobre as mesmas peças, e as duas discordariam sobre o
+ * que já saiu do galpão.
+ */
+const ENTREGA_SEM_PORTA =
+  'o módulo `src/modules/entrega/` existe no api desde a `0062` e não tem rota — medido em 9c5b91f: zero handler, e o par local devolve 404'
+
+const ENTREGA: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/orders/{id}/fulfillment', motivo: ENTREGA_SEM_PORTA },
+  {
+    metodo: 'post',
+    caminho: '/api/orders/{id}/items/{lineNumber}/release',
+    motivo: ENTREGA_SEM_PORTA,
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/orders/{id}/items/{lineNumber}/pick',
+    motivo: ENTREGA_SEM_PORTA,
+  },
+  { metodo: 'get', caminho: '/api/picking-queue', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/deliveries', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/deliveries/{id}', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/items', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/close', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/cancel', motivo: ENTREGA_SEM_PORTA },
+]
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   { metodo: 'get', caminho: '/api/purchase-requests', motivo: COMPRAS_501 },
   { metodo: 'post', caminho: '/api/purchase-requests', motivo: COMPRAS_501 },
@@ -824,6 +872,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   { metodo: 'get', caminho: '/api/purchases/arrival-forecast', motivo: COMPRAS_501 },
   { metodo: 'get', caminho: '/api/purchases/stock-replenishment', motivo: COMPRAS_501 },
   ...COMISSOES,
+  ...ENTREGA,
 ]
 
 /** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */

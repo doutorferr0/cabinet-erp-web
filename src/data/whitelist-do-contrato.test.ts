@@ -157,6 +157,14 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  * reprova e cobra a entrada aqui — que é o mesmo que cobrar a conferência.
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
+  // SEPARAÇÃO E ENTREGA (G4) — a fila do galpão e o romaneio são a FASE C deste
+  // trilho, e nascem depois do servidor pela razão do módulo inteiro: a fila
+  // mostra o que já pode sair da prateleira, e sobre dado mockado ela mandaria
+  // alguém procurar peça que ninguém liberou. Saem daqui quando ganharem tela,
+  // com `ORDENAVEIS` próprio.
+  ListPickingQueue:
+    'a fila de separação ainda não tem tela — as telas de entrega são a Fase C do trilho',
+  ListDeliveries: 'o romaneio ainda não tem tela — as telas de entrega são a Fase C do trilho',
   ListOrders: 'pedido de venda ainda não tem listagem própria na tela',
   ListOrderProfessionalHistory:
     'a trilha de indicação (G13) é sub-recurso do pedido e nasce sem tela — cabeçalho ordenável exigiria a tela do pedido, que não existe',
@@ -319,6 +327,16 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
  * nenhuma o consome — quando alguma consumir, é o site público que quebra.
  */
 const SEM_HANDLER_NO_MOCK: Record<string, string> = {
+  // SEPARAÇÃO E ENTREGA (G4) caem aqui pelo MESMO motivo da trilha de indicação,
+  // e não pelo dos relatórios: as duas são progresso FÍSICO de linha de pedido, e
+  // o pedido de venda não tem handler no mock. Servi-las sem o documento dono
+  // faria a fila do galpão listar peça de um pedido que só existe no navegador,
+  // com uuid que nenhuma outra tela reconhece. Saem daqui junto com o mock do
+  // pedido, não antes — e é por isso que não é dívida separada.
+  ListPickingQueue:
+    'a fila de separação é derivada do pedido de venda, que não tem handler no mock — a fila sem o documento dono listaria peça de pedido inexistente',
+  ListDeliveries:
+    'o romaneio pende do pedido de venda, que não tem handler no mock — mockar a entrega sem o documento dono casaria id inventado com id de servidor',
   ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
   ListCostProfiles:
     'o perfil de custo (G9) passa direto para o servidor — ver `rotas-do-backend.ts`: a simulação exige a cascata inteira, e um mock dela devolveria margem inventada',

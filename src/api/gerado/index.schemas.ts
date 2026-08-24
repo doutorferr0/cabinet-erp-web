@@ -952,6 +952,12 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
+ * | `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |
+ * | `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |
+ * | `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |
+ * | `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |
+ * | `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o "conflito" no botão Fechar sugere tentar de novo |
+ * | `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |
  * | `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |
  * | `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |
  * | `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |
@@ -999,6 +1005,12 @@ export const ProblemType = {
   'urn:cabinet:erro:hierarquia-em-laco': 'urn:cabinet:erro:hierarquia-em-laco',
   'urn:cabinet:erro:senha-atual-invalida': 'urn:cabinet:erro:senha-atual-invalida',
   'urn:cabinet:erro:senha-fraca': 'urn:cabinet:erro:senha-fraca',
+  'urn:cabinet:erro:liberacao-acima-do-vendido': 'urn:cabinet:erro:liberacao-acima-do-vendido',
+  'urn:cabinet:erro:separacao-sem-liberacao': 'urn:cabinet:erro:separacao-sem-liberacao',
+  'urn:cabinet:erro:entrega-sem-separacao': 'urn:cabinet:erro:entrega-sem-separacao',
+  'urn:cabinet:erro:entrega-fechada': 'urn:cabinet:erro:entrega-fechada',
+  'urn:cabinet:erro:entrega-vazia': 'urn:cabinet:erro:entrega-vazia',
+  'urn:cabinet:erro:entrega-de-outro-pedido': 'urn:cabinet:erro:entrega-de-outro-pedido',
   'urn:cabinet:erro:nao-encontrado': 'urn:cabinet:erro:nao-encontrado',
   'urn:cabinet:erro:sem-empresa-ativa': 'urn:cabinet:erro:sem-empresa-ativa',
   'urn:cabinet:erro:documento-ja-cadastrado': 'urn:cabinet:erro:documento-ja-cadastrado',
@@ -2900,6 +2912,11 @@ export interface OrderEnvironmentDto {
   name: string;
   /** Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem. */
   order: number;
+  /**
+     * Data prometida do AMBIENTE inteiro. É a data que os itens sem data própria herdam na leitura — a cozinha combina um dia, e não cada peça dela.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
 }
 
 /**
@@ -2969,6 +2986,17 @@ export interface OrderItemDto {
   pieceType?: string | null;
   /** Valor do item. Calculado pelo servidor — a escrita não manda. */
   totalCents: number;
+  /** Quanto da linha já foi LIBERADO para separação. Sai de `order_fulfillments`, não de coluna que alguém digita. `0` na linha que ninguém liberou ainda. */
+  quantityReleased?: number;
+  /** Quanto já saiu da prateleira. É o ato que baixa estoque. */
+  quantityPicked?: number;
+  /** Quanto já saiu com romaneio. */
+  quantityDelivered?: number;
+  /**
+     * Data prometida da linha, JÁ com a herança do ambiente aplicada. O detalhe completo — com `scheduledDateInherited` dizendo de onde ela veio — está em `GET /api/orders/{id}/fulfillment`.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
 }
 
 /**
@@ -6141,6 +6169,373 @@ export interface PagedResultOfCommissionClosingEntryDto {
 }
 
 /**
+ * O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade.
+ */
+export type OrderItemFulfillmentDtoPhysicalState = typeof OrderItemFulfillmentDtoPhysicalState[keyof typeof OrderItemFulfillmentDtoPhysicalState];
+
+
+export const OrderItemFulfillmentDtoPhysicalState = {
+  pending: 'pending',
+  released: 'released',
+  picked: 'picked',
+  delivered: 'delivered',
+} as const;
+
+/**
+ * Proposto. O progresso físico de UMA linha do pedido. As três quantidades convivem — a linha de 10 peças com 10 liberadas, 6 separadas e 2 entregues é o caso normal de uma cozinha que sai em três viagens —, e por isso o estado é derivação e não coluna. O legado guarda os mesmos parciais em `controle_entrega_prod` (`cep_quantidade_separada`, `cep_quantidade_entregue`).
+ */
+export interface OrderItemFulfillmentDto {
+  /** Coluna `Item` do pedido. */
+  lineNumber: number;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /**
+     * Ambiente da linha (`CatalogLookupDto.id`, kind `AMBIENTE`).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Nome congelado do ambiente.
+     * @nullable
+     */
+  environmentName?: string | null;
+  /** Quantidade vendida. Até 3 casas. */
+  quantity: number;
+  /** Quanto já foi LIBERADO para separação — e, com isso, reservado no depósito. */
+  quantityReleased: number;
+  /** Quanto já saiu da prateleira. É o ato que BAIXA estoque. */
+  quantityPicked: number;
+  /** Quanto já saiu com romaneio. NÃO baixa estoque de novo: a peça já saiu do galpão na separação, e baixar aqui é o defeito clássico da expedição — o saldo cai duas vezes e a conferência do mês não fecha. */
+  quantityDelivered: number;
+  /** O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade. */
+  physicalState: OrderItemFulfillmentDtoPhysicalState;
+  /** Há progresso ACIMA do degrau exibido em `physicalState`. É o que permite a tela pintar "6 de 10" sem mentir sobre o degrau. */
+  partial: boolean;
+  /** Quanto ainda falta liberar. */
+  pendingRelease: number;
+  /** Quanto está liberado e ainda não foi separado. */
+  pendingPick: number;
+  /** Quanto está separado e ainda não foi entregue. */
+  pendingDelivery: number;
+  /** Percentual ENTREGUE, não separado. Quem pergunta "quanto falta" quer saber o que chegou na casa dele; o separado é informação do galpão. Inteiro de 0 a 100. */
+  percentDelivered: number;
+  /**
+     * Data prometida do item. HERDA a do ambiente quando o item não tem uma própria — e a herança é de LEITURA, não coluna: gravá-la nos dois lugares faria mudar a data do ambiente deixar os itens antigos apontando para o dia velho. `scheduledDateInherited` diz qual dos dois respondeu.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
+  /** A data acima veio do AMBIENTE, não do item. */
+  scheduledDateInherited?: boolean;
+}
+
+/**
+ * O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade.
+ */
+export type OrderFulfillmentDtoPhysicalState = typeof OrderFulfillmentDtoPhysicalState[keyof typeof OrderFulfillmentDtoPhysicalState];
+
+
+export const OrderFulfillmentDtoPhysicalState = {
+  pending: 'pending',
+  released: 'released',
+  picked: 'picked',
+  delivered: 'delivered',
+} as const;
+
+/**
+ * Proposto. A "Situação do Pedido de Venda" — a consulta nº 17 do volume 02 do legado (`FrmConsultaSeparacaoPedidoVenda`). É a tela que a loja abre quando o cliente liga perguntando onde está a cozinha: item a item, quanto foi liberado, separado e entregue, com a data prometida e o percentual.
+ */
+export interface OrderFulfillmentDto {
+  orderId: string;
+  /** Número do pedido (`OrderDto.number`). */
+  orderNumber: string;
+  /** Situação do DOCUMENTO (`OrderDto.status`) — outra coisa que o degrau físico. */
+  status: string;
+  /** O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade. */
+  physicalState: OrderFulfillmentDtoPhysicalState;
+  /** Percentual entregue do pedido inteiro, ponderado pela QUANTIDADE de cada linha: a linha de 100 peças e a de 1 não pesam igual no que o cliente ainda espera. */
+  percentDelivered: number;
+  items: OrderItemFulfillmentDto[];
+}
+
+/**
+ * Qual ato aconteceu.
+ */
+export type FulfillmentFactDtoKind = typeof FulfillmentFactDtoKind[keyof typeof FulfillmentFactDtoKind];
+
+
+export const FulfillmentFactDtoKind = {
+  release: 'release',
+  pick: 'pick',
+  deliver: 'deliver',
+} as const;
+
+/**
+ * Proposto. O ato gravado — uma linha do log append-only de `order_fulfillments` — junto do progresso RESULTANTE da linha. Devolver os dois numa resposta só evita a segunda consulta que toda tela faria em seguida, e garante que o número exibido é o que ficou gravado, não o que o cliente calculou.
+ */
+export interface FulfillmentFactDto {
+  id: string;
+  /** Qual ato aconteceu. */
+  kind: FulfillmentFactDtoKind;
+  /** Quanto foi lançado NESTE ato. */
+  quantity: number;
+  /**
+     * Depósito envolvido. Sai da LIBERAÇÃO e a separação o herda: reservar num galpão e baixar de outro deixaria a reserva presa no primeiro para sempre. `null` na linha de serviço, que não tem peça.
+     * @nullable
+     */
+  locationId?: string | null;
+  /**
+     * Romaneio do ato de entrega. Sempre presente em `kind: deliver`.
+     * @nullable
+     */
+  deliveryId?: string | null;
+  /**
+     * Movimento do kardex que a separação causou (`StockMovementDto.id`). `null` fora de `kind: pick` e na linha de serviço.
+     * @nullable
+     */
+  stockMovementId?: string | null;
+  /** Quando o ato foi lançado. */
+  occurredAt: string;
+  item: OrderItemFulfillmentDto;
+}
+
+/**
+ * Proposto. Liberar é o gesto que autoriza a peça a sair — e o único da escada que exige a permissão `venda:liberar-entrega`. No legado é a flag de cabeçalho `Ven_LiberaSeparacao` do `FrmLiberarProdutos`; aqui é quantidade por linha, porque a liberação parcial existe na operação e a flag não a representa.
+ */
+export interface ReleaseOrderItemRequest {
+  /** Quanto liberar NESTE ato, somando ao já liberado. Acima do vendido é 409 `urn:cabinet:erro:liberacao-acima-do-vendido`. */
+  quantity: number;
+  /**
+     * Depósito de onde a peça vai sair. Omitido, o servidor resolve o padrão da empresa. É AQUI que ele se decide, e não na separação.
+     * @nullable
+     */
+  locationId?: string | null;
+  /**
+     * Observação do ato, guardada no log.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Separar tira a peça da prateleira e BAIXA o estoque, na mesma transação do fato. A baixa não recusa saldo negativo, ao contrário do lançamento de tela: peça vendida sai antes de a nota de entrada do fornecedor ser lançada, e recusar aqui pararia a expedição pela papelada de terceiro.
+ */
+export interface PickOrderItemRequest {
+  /** Quanto separar NESTE ato. Acima do LIBERADO é 409 `urn:cabinet:erro:separacao-sem-liberacao` — quem pula a liberação não separa, e o gate é CHECK no banco, não regra de handler. */
+  quantity: number;
+  /**
+     * Exceção declarada: o depósito da liberação é o que vale, e este campo só deve ser usado pelo operador que SABE que a peça mudou de galpão — é ele quem paga o acerto da reserva.
+     * @nullable
+     */
+  locationId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Lança um item entregue DENTRO de um romaneio aberto. A entrega sempre tem romaneio — não existe entregar avulso, porque seis meses depois, quando o cliente diz que não recebeu, é o romaneio que responde.
+ */
+export interface AddDeliveryItemRequest {
+  /** A linha do pedido a que o romaneio pertence. */
+  lineNumber: number;
+  /** Acima do SEPARADO é 409 `urn:cabinet:erro:entrega-sem-separacao`. Não se entrega o que ninguém tirou da prateleira. */
+  quantity: number;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma linha da FILA DE SEPARAÇÃO: o que já pode sair da prateleira e ainda não saiu. É a "Situação do Pedido" virada do avesso, e o recorte (`liberado > separado`, pedido ativo) mora no servidor — a fila de uma loja com dois anos de pedidos é uma varredura de tudo que já se vendeu se a conta subir para a tela.
+ */
+export interface PickingQueueItemDto {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  lineNumber: number;
+  description: string;
+  /** @nullable */
+  environmentName?: string | null;
+  /** Quanto está liberado e esperando separação. */
+  pendingPick: number;
+  /**
+     * Data prometida, já com a herança do ambiente aplicada. É a primeira chave da ordenação, `NULLS LAST`: item sem data combinada não fura a fila de quem tem uma.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
+}
+
+/**
+ * `open` recebe itens; `closed` e `cancelled` são terminais. **Cancelar NÃO desfaz os fatos já lançados** — o log é append-only por GRANT, e corrigir é estornar, não editar o passado.
+ */
+export type DeliveryDtoStatus = typeof DeliveryDtoStatus[keyof typeof DeliveryDtoStatus];
+
+
+export const DeliveryDtoStatus = {
+  open: 'open',
+  closed: 'closed',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. O ROMANEIO — o `Controle_entrega` do legado. Cabeçalho do que saiu numa viagem, com transportadora, data prometida e, depois de fechado, quando saiu e quem recebeu.
+ */
+export interface DeliveryDto {
+  id: string;
+  /** Número do romaneio, sequência global do grupo atribuída pelo servidor. String pelo mesmo motivo de `OrderDto.number`: número de documento se lê e se digita, não se soma. */
+  number: string;
+  /** Pedido de venda a que o romaneio pertence. */
+  orderId: string;
+  /** @nullable */
+  orderNumber?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  /** `open` recebe itens; `closed` e `cancelled` são terminais. **Cancelar NÃO desfaz os fatos já lançados** — o log é append-only por GRANT, e corrigir é estornar, não editar o passado. */
+  status: DeliveryDtoStatus;
+  /**
+     * Data prometida da viagem.
+     * @nullable
+     */
+  scheduledFor?: string | null;
+  /**
+     * Quando a entrega aconteceu. Obrigatória para fechar.
+     * @nullable
+     */
+  deliveredAt?: string | null;
+  /**
+     * Transportadora (`PartnerDto.id`).
+     * @nullable
+     */
+  carrierId?: string | null;
+  /**
+     * Nome da transportadora CONGELADO ao lado do id, como o do cliente no pedido: renomear a empresa de frete não pode reescrever romaneio assinado.
+     * @nullable
+     */
+  carrierName?: string | null;
+  /**
+     * Quem recebeu. Obrigatório para fechar.
+     * @nullable
+     */
+  receivedBy?: string | null;
+  /**
+     * Documento de quem recebeu.
+     * @nullable
+     */
+  receivedDocument?: string | null;
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma linha do romaneio. **Não existe tabela própria para ela** (diverge do `ShipmentItem` do OFBiz): o conteúdo do romaneio SÃO os fatos `deliver` que apontam para ele, e uma segunda lista teria de ser mantida igual à primeira.
+ */
+export interface DeliveryItemDto {
+  lineNumber: number;
+  description: string;
+  /** @nullable */
+  environmentName?: string | null;
+  /** Quanto saiu NESTE romaneio. */
+  quantity: number;
+  occurredAt: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type DeliveryDetailDtoStatus = typeof DeliveryDetailDtoStatus[keyof typeof DeliveryDetailDtoStatus];
+
+
+export const DeliveryDetailDtoStatus = {
+  open: 'open',
+  closed: 'closed',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. O romaneio com o que foi lançado nele.
+ */
+export interface DeliveryDetailDto {
+  id: string;
+  number: string;
+  orderId: string;
+  /** @nullable */
+  orderNumber?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  status: DeliveryDetailDtoStatus;
+  /** @nullable */
+  scheduledFor?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  /** @nullable */
+  carrierName?: string | null;
+  /** @nullable */
+  receivedBy?: string | null;
+  /** @nullable */
+  receivedDocument?: string | null;
+  /**
+     * Referência da assinatura do recebedor — o `Controle_entrega_Assinaturas` do legado. **Texto, e o upload está ADIADO:** binário numa tabela sob RLS mistura documento e arquivo e faz o `pg_dump` crescer sem teto. A coluna existe para que o dia do upload seja migração de zero linhas.
+     * @nullable
+     */
+  signatureRef?: string | null;
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  items: DeliveryItemDto[];
+}
+
+/**
+ * Proposto. Abre o romaneio. Nasce `open` e VAZIO — os itens entram um a um.
+ */
+export interface CreateDeliveryRequest {
+  /** Pedido de venda. Pedido cancelado não recebe entrega (409). */
+  orderId: string;
+  /** @nullable */
+  scheduledFor?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  /**
+     * Congelado. Omitido, o servidor copia o nome atual do parceiro.
+     * @nullable
+     */
+  carrierName?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Fechar é o que faz o romaneio valer alguma coisa, e por isso exige QUANDO e para QUEM — a exigência é CHECK no banco, não regra de handler. **Romaneio vazio não fecha** (409 `urn:cabinet:erro:entrega-vazia`): fechar entrega sem item é assinar papel em branco, some da fila de abertos e ninguém percebe até alguém procurar a peça. Quem não saiu se CANCELA.
+ */
+export interface CloseDeliveryRequest {
+  /** Quando a entrega aconteceu. */
+  deliveredAt: string;
+  /** Quem recebeu, por extenso. */
+  receivedBy: string;
+  /**
+     * Documento de quem recebeu.
+     * @nullable
+     */
+  receivedDocument?: string | null;
+  /**
+     * Referência da assinatura, quando houver.
+     * @nullable
+     */
+  signatureRef?: string | null;
+}
+
+export interface PagedResultOfPickingQueueItemDto {
+  rows: PickingQueueItemDto[];
+  total: number;
+}
+
+export interface PagedResultOfDeliveryDto {
+  rows: DeliveryDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -7254,5 +7649,49 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+};
+
+export type ListPickingQueueParams = {
+/**
+ * Busca por número do pedido, cliente ou descrição do item.
+ */
+q?: string;
+/**
+ * Whitelist: `scheduledDeliveryAt`, `orderNumber`, `customerName`, `pendingPick`. Campo fora dela é 400 `urn:cabinet:erro:ordenacao-invalida`.
+ *
+ * `description` fica de fora: ordenar a fila do galpão por nome de peça embaralha as linhas do mesmo pedido, que é justamente o agrupamento que quem separa usa para não fazer duas viagens.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Só a fila deste pedido.
+ */
+orderId?: string;
+};
+
+export type ListDeliveriesParams = {
+/**
+ * Busca por número do romaneio, pedido, cliente ou transportadora.
+ */
+q?: string;
+/**
+ * Whitelist: `number`, `scheduledFor`, `deliveredAt`, `status`. Campo fora dela é 400.
+ *
+ * `customerName` e `carrierName` ficam de fora pelo motivo de sempre — são eco de outra tabela, congelado num caso e por junção no outro.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por situação do romaneio (`open`, `closed`, `cancelled`).
+ */
+status?: string;
+/**
+ * Só os romaneios deste pedido.
+ */
+orderId?: string;
 };
 

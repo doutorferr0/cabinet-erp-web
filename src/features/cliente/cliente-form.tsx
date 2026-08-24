@@ -63,6 +63,17 @@ import { ProgressoObrigatorios } from './progresso-obrigatorios'
  * que a transcrição não cobre continua sem existir — nenhum campo foi inventado.
  */
 
+const enderecoSchema = z.object({
+  cep: z.string(),
+  logradouro: z.string(),
+  numero: z.string(),
+  complemento: z.string(),
+  bairro: z.string(),
+  cidadeCodigo: z.string().nullable(),
+  cidadeNome: z.string(),
+  uf: z.string().nullable(),
+})
+
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const clienteSchema = z.object({
   id: z.number(),
@@ -73,16 +84,16 @@ export const clienteSchema = z.object({
   rg: z.string(),
   orgaoExpedicao: z.string(),
   ufRg: z.string().nullable(),
-  endereco: z.object({
-    cep: z.string(),
-    logradouro: z.string(),
-    numero: z.string(),
-    complemento: z.string(),
-    bairro: z.string(),
-    cidadeCodigo: z.string().nullable(),
-    cidadeNome: z.string(),
-    uf: z.string().nullable(),
-  }),
+  endereco: enderecoSchema,
+  // Bloco 2 (#293), a aba `Cobrança\Comercial` da §5. Mesmo schema nos três:
+  // é o mesmo `PartnerAddress` do outro lado, e três formas locais dariam três
+  // chances de gravar bairro onde vai rua.
+  enderecoCobranca: enderecoSchema,
+  enderecoComercial: enderecoSchema,
+  empresaComercial: z.string(),
+  cargoComercial: z.string(),
+  cnpjComercial: z.string(),
+  dtFundacaoComercial: z.string().nullable(),
   foneComercial: z.string(),
   fax: z.string(),
   foneResidencial: z.string(),
@@ -136,20 +147,30 @@ function BlocoDoModulo({
   )
 }
 
+/**
+ * Qual dos três endereços do cliente a janela de busca está preenchendo.
+ *
+ * Virou parâmetro em #293: com cobrança e comercial na tela, um alvo fixo em
+ * `endereco.*` faria a busca aberta no bloco de cobrança gravar a cidade no
+ * endereço do cadastro — e o operador só descobriria relendo a ficha.
+ */
+type PrefixoCidade = 'endereco' | 'enderecoCobranca' | 'enderecoComercial'
+
 function BuscaCidade({
-  open,
+  prefixo,
   onOpenChange,
-}: { open: boolean; onOpenChange: (open: boolean) => void }) {
+}: { prefixo: PrefixoCidade | null; onOpenChange: (aberto: PrefixoCidade | null) => void }) {
   const { setValue } = useFormContext<Cliente>()
   return (
     <BuscaDeCidade
-      open={open}
-      onOpenChange={onOpenChange}
+      open={prefixo !== null}
+      onOpenChange={(aberto) => onOpenChange(aberto ? prefixo : null)}
       titulo="Busca de Cidade"
       onSelect={(cidade) => {
-        setValue('endereco.cidadeCodigo', cidade.codigo, { shouldDirty: true })
-        setValue('endereco.cidadeNome', cidade.nome, { shouldDirty: true })
-        setValue('endereco.uf', cidade.uf, { shouldDirty: true })
+        if (!prefixo) return
+        setValue(`${prefixo}.cidadeCodigo`, cidade.codigo, { shouldDirty: true })
+        setValue(`${prefixo}.cidadeNome`, cidade.nome, { shouldDirty: true })
+        setValue(`${prefixo}.uf`, cidade.uf, { shouldDirty: true })
       }}
     />
   )
@@ -160,7 +181,7 @@ function ClienteCorpo({
   moduloEmFoco,
   idDoRegistro,
 }: {
-  onBuscaCidade: () => void
+  onBuscaCidade: (prefixo: PrefixoCidade) => void
   moduloEmFoco: string | undefined
   /** O uuid deste cliente — ausente na inclusão, e aí não há quem excluir. */
   idDoRegistro: string | undefined
@@ -221,7 +242,52 @@ function ClienteCorpo({
       </BlocoDoModulo>
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="endereco">
-        <EnderecoBlock prefix="endereco" onBuscaCidade={onBuscaCidade} />
+        <EnderecoBlock prefix="endereco" onBuscaCidade={() => onBuscaCidade('endereco')} />
+      </BlocoDoModulo>
+
+      {/* A aba `Cobrança\Comercial` da §5, que o contrato publicou no bloco 2 e
+          tela nenhuma desenhava (#293). São dois blocos e não um: o boleto vai
+          para um endereço e a pessoa trabalha em outro, e o legado guarda os
+          dois em colunas separadas (`Cli_*_cob`, `Cli_*_cor`). */}
+      <BlocoDoModulo emFoco={moduloEmFoco} id="enderecoCobranca">
+        <EnderecoBlock
+          prefix="enderecoCobranca"
+          onBuscaCidade={() => onBuscaCidade('enderecoCobranca')}
+        />
+        <p className="text-[0.75rem] text-muted-foreground">
+          Em branco, a cobrança usa o endereço do cadastro. Preencha só quando o boleto for para
+          outro lugar.
+        </p>
+      </BlocoDoModulo>
+
+      <BlocoDoModulo emFoco={moduloEmFoco} id="enderecoComercial">
+        <EnderecoBlock
+          prefix="enderecoComercial"
+          onBuscaCidade={() => onBuscaCidade('enderecoComercial')}
+        />
+        {/* Empresa, cargo, CNPJ e fundação descrevem o MESMO vínculo de
+            trabalho do endereço acima — o contrato os declara juntos. O CNPJ é
+            o da empregadora e tem campo próprio: gravá-lo em `document`
+            trocaria a identidade do cliente pela dela. */}
+        <div className="grid grid-cols-12 items-end gap-3">
+          <TextField
+            name="empresaComercial"
+            label="Empresa"
+            voz="nome"
+            className="col-span-12 sm:col-span-6"
+          />
+          <TextField name="cargoComercial" label="Cargo" className="col-span-6 sm:col-span-3" />
+          <TextField
+            name="cnpjComercial"
+            label="CNPJ comercial"
+            className="col-span-6 sm:col-span-3"
+          />
+          <DateField
+            name="dtFundacaoComercial"
+            label="Data de fundação"
+            className="col-span-6 sm:col-span-3"
+          />
+        </div>
       </BlocoDoModulo>
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="contatos">
@@ -326,10 +392,12 @@ export function ClienteForm({
   onGravar?: (values: Cliente) => void
 }) {
   const navigate = useNavigate()
-  const [buscaCidadeOpen, setBuscaCidadeOpen] = useState(false)
+  const [buscaCidadePrefixo, setBuscaCidadePrefixo] = useState<PrefixoCidade | null>(null)
 
   // Ctrl+K abre a janela de busca (registry único — src/lib/shortcuts.ts).
-  useEffect(() => bindShortcut(SHORTCUTS.busca, () => setBuscaCidadeOpen(true)), [])
+  // O atalho abre a busca do endereço do CADASTRO — o do bloco que o operador
+  // tem à vista. Os outros dois se abrem pelo botão do próprio bloco.
+  useEffect(() => bindShortcut(SHORTCUTS.busca, () => setBuscaCidadePrefixo('endereco')), [])
 
   function onGravar(values: Cliente) {
     if (gravarDeFora) {
@@ -353,12 +421,12 @@ export function ClienteForm({
       {...(aviso ? { aviso } : {})}
     >
       <ClienteCorpo
-        onBuscaCidade={() => setBuscaCidadeOpen(true)}
+        onBuscaCidade={setBuscaCidadePrefixo}
         moduloEmFoco={moduloEmFoco}
         idDoRegistro={idDoRegistro}
       />
 
-      <BuscaCidade open={buscaCidadeOpen} onOpenChange={setBuscaCidadeOpen} />
+      <BuscaCidade prefixo={buscaCidadePrefixo} onOpenChange={setBuscaCidadePrefixo} />
     </CadastroForm>
   )
 }

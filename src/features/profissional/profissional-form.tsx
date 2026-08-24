@@ -8,6 +8,7 @@ import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Input } from '@/components/ui/input'
 import { data } from '@/data'
 import { camposDe, profissional as esquema, propsDoIcone } from '@/features/cadastro/modulos'
+import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import {
   CamposDoModulo,
   Pendencias,
@@ -172,11 +173,13 @@ function BlocosDoCadastro({
   onBuscaBanco,
   readOnly,
   moduloEmFoco,
+  partnerId,
 }: {
   onBuscaCidade: (p: PrefixoCidade) => void
   onBuscaBanco: () => void
   readOnly: boolean
   moduloEmFoco: string | undefined
+  partnerId: string | null
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -210,6 +213,15 @@ function BlocosDoCadastro({
             ) : (
               <CamposDoModulo modulo={modulo} />
             )}
+            {/* A GRADE de contatos (#293) entra no módulo que já é o lugar do
+                assunto — `Outros contatos` reúne os telefones do cadastro, e a
+                lista de quem ATENDE nele é o resto da mesma pergunta. Ela não
+                sai de `CamposDoModulo` porque não é campo do registro: é o
+                sub-recurso `/api/partners/{id}/contacts`, com gravação
+                própria. */}
+            {modulo.id === 'contatos' ? (
+              <ContatosDoParceiro partnerId={partnerId} readOnly={readOnly} />
+            ) : null}
             <Pendencias modulo={modulo} />
           </FormBlock>
         )
@@ -224,10 +236,16 @@ export function ProfissionalForm({
   contexto,
   aviso,
   moduloEmFoco,
+  partnerId = null,
   onGravar: gravarDeFora,
 }: {
   profissional: Profissional
   readOnly?: boolean
+  /**
+   * O uuid do cadastro, para o sub-recurso de contatos. `null` no `Incluir`:
+   * sem registro gravado não há a que pendurar contato.
+   */
+  partnerId?: string | null
   /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
   moduloEmFoco?: string | undefined
   /** Modo ou registro aberto, ao lado do título na banda. */
@@ -274,6 +292,7 @@ export function ProfissionalForm({
         onBuscaBanco={() => setBuscaBancoOpen(true)}
         readOnly={readOnly}
         moduloEmFoco={moduloEmFoco}
+        partnerId={partnerId}
       />
 
       <BuscaCidade prefix={buscaCidadePrefix} onOpenChange={setBuscaCidadePrefix} />

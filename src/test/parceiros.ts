@@ -125,6 +125,45 @@ export interface ChamadaDeParceiro {
   corpo: unknown
 }
 
+/** Linha no shape EXATO do `PartnerContactDto` (#293). */
+export function contatoDoParceiro(over: Record<string, unknown> = {}) {
+  return {
+    id: 'c0000000-0000-4000-8000-000000000001',
+    name: 'MARIA SOUZA',
+    role: 'COMPRAS',
+    phone: '1130001000',
+    mobilePhone: null as string | null,
+    fax: null as string | null,
+    email: null as string | null,
+    active: true,
+    ...over,
+  }
+}
+
+/**
+ * O sub-recurso de contatos, dentro dos dois stubs de parceiro.
+ *
+ * Mora aqui e não em cada teste porque `/api/partners/{id}/contacts` casa o
+ * MESMO prefixo do detalhe por id: sem tratá-lo antes, o stub responderia o
+ * `PartnerDto` a quem pediu a página de contatos, e a tela receberia um objeto
+ * sem `rows` — falha longe da causa, ou pior, grade vazia que parece cadastro
+ * sem contato.
+ */
+function respostaDeContatos(
+  caminho: string,
+  metodo: string,
+  corpo: unknown,
+  contatos: readonly unknown[],
+): Response | null {
+  if (!caminho.includes('/contacts')) return null
+  if (metodo === 'GET') return json({ rows: contatos, total: contatos.length })
+  if (metodo === 'POST') {
+    return json({ ...contatoDoParceiro({ id: 'c-novo' }), ...(corpo as object) }, 201)
+  }
+  if (metodo === 'PUT') return json({ ...contatoDoParceiro(), ...(corpo as object) })
+  return null
+}
+
 /**
  * Como `stubDeParceiros`, mas guardando as chamadas — para o teste conferir o
  * CORPO do `PUT`, que é onde mora a promessa de não apagar campo que a tela não
@@ -171,6 +210,17 @@ export function servidorDeParceiros(
 
     const texto = requisicao ? await requisicao.clone().text() : ''
     chamadas.push({ metodo, caminho, corpo: texto ? JSON.parse(texto) : null })
+
+    // ANTES do detalhe por id: `/api/partners/{id}/contacts` casa o mesmo
+    // prefixo, e responder o parceiro ali daria grade vazia com cara de
+    // cadastro sem contato.
+    const contatos = respostaDeContatos(
+      caminho,
+      metodo,
+      chamadas[chamadas.length - 1]?.corpo,
+      opcoes.contatos ?? [],
+    )
+    if (contatos) return contatos
 
     if ((metodo === 'POST' || metodo === 'PUT') && opcoes.camposRecusados) {
       return new Response(
@@ -259,10 +309,14 @@ function problemaDeParceiro(status: number, detail: string): Response {
 }
 
 /** Sessão válida + listagem e detalhe de parceiros; outro caminho rejeita alto. */
-export function stubDeParceiros(linhas: readonly unknown[] = [parceiro()]): FetchStub {
+export function stubDeParceiros(
+  linhas: readonly unknown[] = [parceiro()],
+  contatos: readonly unknown[] = [],
+): FetchStub {
   return (entrada) => {
     const url = String(entrada instanceof Request ? entrada.url : entrada)
     const caminho = new URL(url, 'http://localhost').pathname
+    const metodo = (entrada instanceof Request ? entrada.method : 'GET').toUpperCase()
 
     if (caminho === '/auth/me') return Promise.resolve(respostaSessao())
     if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
@@ -270,6 +324,8 @@ export function stubDeParceiros(linhas: readonly unknown[] = [parceiro()]): Fetc
     if (caminho === URL_PARCEIROS) {
       return Promise.resolve(json({ rows: linhas, total: linhas.length }))
     }
+    const doSubRecurso = respostaDeContatos(caminho, metodo, null, contatos)
+    if (doSubRecurso) return Promise.resolve(doSubRecurso)
     if (caminho.startsWith(`${URL_PARCEIROS}/`)) {
       const id = caminho.slice(URL_PARCEIROS.length + 1)
       const achado = linhas.find((l) => (l as { id?: string }).id === id)

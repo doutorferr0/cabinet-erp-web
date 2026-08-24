@@ -2,6 +2,8 @@ import type {
   LoginRequest,
   PartnerLinkRequest,
   PartnerWriteRequest,
+  ProductDetailDto,
+  ProductDto,
   ProductVariantDto,
   ProductWriteRequest,
   SessaoAtual,
@@ -200,6 +202,19 @@ function sessaoAtual(): SessaoAtual {
   }
 }
 
+/**
+ * O produto como a ESCRITA o devolve: `ProductDto`, que não tem grade nenhuma.
+ *
+ * Variantes, fornecedores (§6.1) e relacionados (§6.4) são coleções do DETALHE
+ * — `GET /api/products/{id}` é quem as promete. Devolvê-las no `POST`/`PUT`
+ * treinaria a tela a contar com um dado que a listagem e a escrita do backend
+ * real não mandam, e o buraco só apareceria depois da troca mock → HTTP.
+ */
+function semGrades(produto: ProductDetailDto): ProductDto {
+  const { variants: _v, suppliers: _s, relatedProducts: _r, ...dto } = produto
+  return dto
+}
+
 /** Métodos que ESCREVEM — os que o ensaio de expiração intercepta. */
 const ESCRITA = ['POST', 'PUT', 'PATCH', 'DELETE']
 
@@ -372,10 +387,14 @@ export const handlers = [
       description: corpo.description,
       active: corpo.active ?? true,
       variants: [],
+      // Vazias, e não ausentes: o mock SERVE as duas grades do §6.1/§6.4, e
+      // ausência no contrato quer dizer "o servidor não serve" — produto novo
+      // nasceria parecendo servido por um backend mais velho que este.
+      suppliers: [],
+      relatedProducts: [],
     }
     store.produtos.push(produto)
-    const { variants: _, ...dto } = produto
-    return HttpResponse.json(dto, { status: 201 })
+    return HttpResponse.json(semGrades(produto), { status: 201 })
   }),
 
   http.put('*/api/products/:id', async ({ params, request }) => {
@@ -393,8 +412,10 @@ export const handlers = [
     produto.code = corpo.code
     produto.description = corpo.description
     produto.active = corpo.active ?? false
-    const { variants: _, ...dto } = produto
-    return HttpResponse.json(dto)
+    // As grades de fornecedores e relacionados NÃO entram nessa conta: o
+    // contrato não publica escrita para elas, e apagá-las aqui ensinaria à tela
+    // uma perda que o servidor não faz.
+    return HttpResponse.json(semGrades(produto))
   }),
 
   // ---------------- variants ----------------

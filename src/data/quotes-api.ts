@@ -1,5 +1,12 @@
-import type { QuoteDetailDto, QuoteDto, QuoteWriteRequest } from '@/api/gerado'
-import { cancelQuote, createQuote, getQuote, reviseQuote, updateQuote } from '@/api/gerado'
+import type { OrderDetailDto, QuoteDetailDto, QuoteDto, QuoteWriteRequest } from '@/api/gerado'
+import {
+  cancelQuote,
+  createOrderFromQuote,
+  createQuote,
+  getQuote,
+  reviseQuote,
+  updateQuote,
+} from '@/api/gerado'
 import {
   PAGE_SIZE_MAX,
   type RespostaDaApi,
@@ -8,6 +15,7 @@ import {
   itemOuNulo,
 } from '@/data/api-provider'
 import { type MotivoDoCancelamento, corpoDoCancelamento } from '@/data/cancelamento-de-documento'
+import { CHAVES_PEDIDO_VENDA } from '@/data/pedidos-venda-api'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
 import { type Orcamento, orcamentoVazio } from '@/mocks/orcamentos'
@@ -381,6 +389,49 @@ export function useRevisarOrcamento() {
       avisar(
         `Revisão ${revisao.revision} criada — orçamento ${revisao.number}.`,
         'O orçamento anterior continua na listagem, como está.',
+      )
+    },
+  })
+}
+
+/**
+ * CONVERTER em pedido — `POST /api/quotes/{id}/order`, e é o gesto que faltava.
+ *
+ * **99,8% dos pedidos do legado nascem de um orçamento**, então esta não é uma
+ * conveniência ao lado da tela de pedido: é o caminho pelo qual quase todo
+ * pedido passa a existir. O documento em branco de `Incluir` é a exceção.
+ *
+ * ## Converter é COPIAR, e é o contrato que decide isso
+ *
+ * No legado a conversão trocava `Ven_Tipo` no MESMO registro — o orçamento
+ * deixava de existir como orçamento. Aqui são dois agregados: o servidor copia
+ * cabeçalho, ambientes e itens com o preço CONGELADO no momento da conversão, e
+ * o orçamento fica intacto, rastreável pelo `quoteId` do pedido. A tela não
+ * recalcula nada e não manda corpo: propor os valores daqui seria uma segunda
+ * autoridade sobre o preço que o cliente aprovou.
+ *
+ * ## O que é invalidado, e o que NÃO é
+ *
+ * Só o tronco do PEDIDO. O orçamento não muda na conversão — nem de situação,
+ * nem de campo: `QuoteDto` não tem para onde apontar o pedido gerado. Invalidar
+ * o tronco dele custaria duas consultas para redesenhar a mesma linha e
+ * ensinaria a quem lesse depois que a conversão mexe no orçamento.
+ */
+export function useConverterEmPedido() {
+  const cliente = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resposta: RespostaDaApi = await createOrderFromQuote(id)
+      return dadosOuErro<OrderDetailDto>(resposta, 'Falha ao gerar o pedido de venda.')
+    },
+    onSuccess: async (pedido) => {
+      await cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.raiz, exact: false })
+      await cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.detalhe, exact: false })
+      // O aviso mora em estado de módulo porque a tela que o dispara está sendo
+      // desmontada pela navegação no mesmo tique (#208).
+      avisar(
+        `Pedido ${pedido.number} gerado.`,
+        'O orçamento continua na listagem, do jeito que estava.',
       )
     },
   })

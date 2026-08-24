@@ -3,7 +3,7 @@ import { setupServer } from 'msw/node'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { semearSessaoAutenticada } from './api/store'
-import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
+import { ROTAS_DO_BACKEND, ROTAS_NO_MOCK, handlersDePassagem } from './rotas-do-backend'
 
 /**
  * A PROVA AO VIVO — desligada por padrão, e é o único jeito honesto.
@@ -694,5 +694,95 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     // com `VITE_API_PROXY` de pé, nenhum caminho de `/api` chega ao mock.
     const dominio = ROTAS_DO_BACKEND.filter((r) => r.caminho.startsWith('/api/'))
     expect(dominio.length).toBeGreaterThan(60)
+  })
+
+  /**
+   * A REMEDIÇÃO — o único lugar onde uma declaração de ausência tem quem a invalide.
+   *
+   * `rotas-do-backend.test.ts` cobra o sentido fácil: operação publicada no
+   * contrato que ninguém declarou. O sentido difícil ficou aberto desde que
+   * `FORA_DE_PROPOSITO` nasceu — **operação declarada como não-servida que
+   * PASSOU a ser servida fica verde para sempre**, porque nada no CI fala com o
+   * api. A `#341` nomeou o buraco e mediu o estrago: das 46 declaradas em
+   * 22/08, **27 eram falsas em 24/08 e nada avisou**.
+   *
+   * O que este caso confere é a `natureza`, e não só o "está servida?", porque
+   * as duas naturezas mandam quem lê para repositórios diferentes: `sem-handler`
+   * pede handler no api; `sem-contrato` pede `pnpm sync:contract` LÁ, antes do
+   * handler. Errar o par manda alguém implementar rota que o glue de lá ainda
+   * não registra — foi o que a `#337` quase provocou.
+   *
+   * ## As três armadilhas, e por que a sonda só afirma o que pode afirmar
+   *
+   * 1. **400 é inconclusivo** — a validação de schema responde ANTES do handler
+   *    que devolveria 501. Corpo vazio dá 400 em quase toda escrita.
+   * 2. **403 é inconclusivo pelo mesmo motivo** — a borda confere papel antes do
+   *    handler, e com `operator-full` dez operações responderam 403 escondendo
+   *    o 501 atrás.
+   * 3. **404 tem DOIS significados**, e é a armadilha nova: o do roteador
+   *    ("este caminho não existe no contrato") e o do handler ("não achei este
+   *    id"). O status é o mesmo; o que separa é o `detail`. Sondar `/{id}` com
+   *    uuid inexistente produz o segundo o tempo todo.
+   *
+   * Então a sonda afirma DUAS coisas e cala nas outras: que o caminho existe no
+   * roteador de lá (qualquer resposta que não seja o 404 do roteador prova
+   * isso), e que ele não está servido (501). Onde a resposta não decide, o caso
+   * REGISTRA em vez de reprovar — vermelho por ambiguidade é como uma suíte
+   * aprende a ser ignorada.
+   *
+   * O uuid é zerado de propósito: nenhuma linha do banco tem esse id, então
+   * `POST /{id}/cancel` — que não tem corpo obrigatório e passaria a validação —
+   * não muta nada. A sonda lê; não escreve.
+   */
+  it('a NATUREZA declarada bate com o servidor — 501 e 404 não são a mesma dívida', async () => {
+    const UUID_QUE_NAO_EXISTE = '00000000-0000-0000-0000-000000000000'
+    const doRoteador = 'não existe no contrato'
+
+    const inconclusivas: string[] = []
+    const erradas: string[] = []
+
+    for (const rota of ROTAS_NO_MOCK) {
+      const caminho = rota.caminho.replace(/\{\w+\}/g, UUID_QUE_NAO_EXISTE)
+      msw.use(http[rota.metodo](`${BACKEND}${caminho}`, () => passthrough()))
+      const r = await fetch(`${BACKEND}${caminho}`, {
+        method: rota.metodo.toUpperCase(),
+        headers: { cookie },
+      })
+
+      // O corpo só é lido no 404, que é o único status ambíguo. Nos outros o
+      // status já decide, e ler o corpo custaria uma armadilha a mais (nem toda
+      // resposta do api é problem+json).
+      let doContratoDeLa = false
+      if (r.status === 404) {
+        const corpo = (await r.text()).toLowerCase()
+        doContratoDeLa = corpo.includes(doRoteador)
+      }
+
+      const onde = `${rota.metodo.toUpperCase()} ${rota.caminho}`
+      const observada = doContratoDeLa ? 'sem-contrato' : r.status === 501 ? 'sem-handler' : null
+
+      if (doContratoDeLa && rota.natureza !== 'sem-contrato') {
+        erradas.push(`${onde}: declarada ${rota.natureza}, e o api responde 404 do ROTEADOR`)
+      } else if (!doContratoDeLa && rota.natureza === 'sem-contrato') {
+        erradas.push(
+          `${onde}: declarada sem-contrato, e o api CONHECE o caminho (${r.status}) — sincronizou`,
+        )
+      } else if (r.status === 200 || r.status === 201 || r.status === 204) {
+        erradas.push(`${onde}: SERVIDA (${r.status}) — promova para ROTAS_DO_BACKEND`)
+      } else if (!observada) {
+        inconclusivas.push(`${onde}: ${r.status}`)
+      }
+    }
+
+    // O inconclusivo é DITO, sempre. Silêncio aqui faria "0 erradas" parecer
+    // "43 conferidas", e a diferença entre as duas é o tamanho do que a sonda
+    // não conseguiu medir com o papel do seed.
+    if (inconclusivas.length) {
+      console.info(
+        `[sonda] ${inconclusivas.length} de ${ROTAS_NO_MOCK.length} inconclusivas (400/401/403 respondem antes do handler):\n  ${inconclusivas.join('\n  ')}`,
+      )
+    }
+
+    expect(erradas, `natureza vencida:\n  ${erradas.join('\n  ')}`).toEqual([])
   })
 })

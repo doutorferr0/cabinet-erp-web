@@ -1,0 +1,33 @@
+# A BRANCH DO SITE REAL SEGUE A MAIN SOZINHA.
+#
+# `app-real` = main + um `.env.production` que aponta pro backend de produção.
+# Sem isto, o site real congela no dia em que a branch nasceu e envelhece em
+# silêncio. Todo push na main faz merge main→app-real; conflito = job vermelho
+# em voz alta (a branch só carrega o .env, conflito é anomalia).
+name: Sincroniza app-real
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-app-real
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: app-real
+          fetch-depth: 0
+      - run: |
+          git config user.name "cabinet-sync"
+          git config user.email "sync@cabinetonline.cc"
+          git merge --no-edit origin/main
+          git push origin app-real

@@ -46,6 +46,39 @@ const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...h
  * Entrada nova aqui exige a medição junto, no comentário.
  */
 const FORA_DE_PROPOSITO: readonly string[] = [
+  // TESOURARIA — as quinze operações da FASE A do G7 (api#112), nascidas neste
+  // PR. O contrato voltou a andar na frente, que é o estado normal deste repo.
+  //
+  // **Medição (2026-08-24, `cabinet-erp-api` main `f810a39`):** nenhuma delas
+  // tem handler, e a prova não precisou de round-trip porque é ESTRUTURAL. O
+  // mapa de `src/core/http/servidor.ts` é onde toda operação servida se
+  // registra, e ele não contém um único dos quinze `operationId`
+  // (`ListFinancialTitles`, `SettleBatch`, `CreateCashTransfer`…). O próprio
+  // arquivo diz o que acontece com o resto: "Operação sem handler vira 501".
+  // Não é 404 — o caminho existe no contrato e este servidor ainda não o
+  // serve, que é a marca da fase.
+  //
+  // Ligar qualquer uma tiraria o mock e entregaria 501; e aqui nem tela há
+  // para tomá-lo — a FASE C (Contas a Pagar/Receber, Caixa, Movimentos
+  // Bancários) é trilho seguinte. Saem daqui INTEIRAS quando a FASE B
+  // entregar os handlers, e a medição de então é o round-trip contra o par
+  // local, não este grep: handler que existe pode responder 403 por papel, e
+  // o grep não vê isso.
+  'get /api/financial-titles',
+  'post /api/financial-titles',
+  'get /api/financial-titles/{id}',
+  'put /api/financial-titles/{id}',
+  'post /api/financial-titles/{id}/cancel',
+  'get /api/financial-installments',
+  'post /api/financial-installments/{id}/settlements',
+  'post /api/financial-settlements/batch',
+  'get /api/cash-movements',
+  'post /api/cash-movements',
+  'post /api/cash-movements/{id}/reconcile',
+  'post /api/cash-transfers',
+  'get /api/bank-accounts',
+  'get /api/cash-registers',
+  'get /api/payment-modes',
   // AS TREZE DE COMISSÕES (G8, api#118) — e aqui NÃO é a razão dos depósitos nem
   // a do 501 puro: é a terceira, e vale escrita porque é a primeira vez que ela
   // aparece. **O módulo do api EXISTE e não tem porta.**

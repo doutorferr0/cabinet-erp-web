@@ -6,7 +6,7 @@ import {
   expirarSessaoAgora,
   semearSessaoAutenticada,
 } from './api/store'
-import { handlersDePassagem } from './rotas-do-backend'
+import { declararPassagem, handlersDePassagem } from './rotas-do-backend'
 
 /**
  * Worker do modo mock (`VITE_API_MODE=mock`): intercepta o fetch NO NAVEGADOR,
@@ -69,6 +69,27 @@ const backendReal = import.meta.env.VITE_API_PROXY
 const passagem = handlersDePassagem(backendReal)
 
 export const worker = setupWorker(...passagem, atraso, ...handlers)
+
+/**
+ * O CONSOLE DIZ QUAL ROTA ESTÁ EM QUÊ — e isto é requisito, não conveniência.
+ *
+ * Com o par local de pé o app roda METADE real, metade mock, e nada na tela
+ * distingue as duas. Uma listagem vazia é "o banco de dev não tem esse
+ * registro" ou "o mock não semeou aquilo"? Sem esta linha, a resposta custa uma
+ * ida ao DevTools e o conhecimento de qual arquivo consultar; com ela, está no
+ * console no instante em que a página abre.
+ *
+ * O relatório é por FAMÍLIA e marca a **família PARTIDA** — parte real, parte
+ * mock —, que é o estado que produz o defeito mais caro deste repo: id do
+ * Postgres de um lado, id inventado do outro, e o resultado com cara de dado em
+ * vez de cara de erro.
+ *
+ * A conta mora em `relatorioDaPassagem`, que TEM teste. Aqui só se imprime:
+ * este arquivo importa `msw/browser` e nenhuma bateria o carrega, então lógica
+ * escrita aqui dentro é lógica não medida — foi o que já aconteceu com a
+ * garantia do site público, que só virou argumento quando virou caso de teste.
+ */
+declararPassagem(backendReal, console.info)
 
 /**
  * Autologin de dev — LIGADO por padrão, e só aqui dentro.

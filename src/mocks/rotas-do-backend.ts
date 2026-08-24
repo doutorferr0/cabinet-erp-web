@@ -18,6 +18,64 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * é o backend que falta, é o site público que precisa do mock. Ver a seção "O
  * dia em que as duas metades se encontraram", abaixo.
  *
+ * ## 2026-08-24: o contrato andou 46 operações e a lista NÃO andou junto
+ *
+ * **A frase acima envelheceu em três dias, e o modo como ela envelheceu é o
+ * assunto deste bloco.** O contrato foi de 78 para **124** operações, e a lista
+ * ficou em 78 — as 46 novas nasceram declaradas em `FORA_DE_PROPOSITO`, cada
+ * uma com uma medição datada dizendo, em substância, *"no servidor de hoje não
+ * há handler nenhum"*.
+ *
+ * Todas aquelas frases eram VERDADE no dia em que foram escritas (22/08). Vinte
+ * e sete delas eram falsas em 24/08, e **nada avisou** — porque **declaração de
+ * ausência não tem quem a invalide**. A guarda deste arquivo cobra o sentido
+ * contrário (operação publicada que ninguém declarou); operação declarada como
+ * não-servida que PASSOU a ser servida fica verde para sempre. O que a tirou do
+ * silêncio foi remedir, não reler.
+ *
+ * **REMEDIDO em 2026-08-24** contra `cabinet-erp-api` main `f810a39`, par local
+ * próprio (Postgres migrado até a `0075` em `:5455`, servidor em `:3055`, front
+ * em `:5199`, sessão real de `semear-dev`): das **124** operações do contrato,
+ * **110 respondem e 14 são 501**. A lista foi de **83 para 110** — entraram
+ * cinco famílias inteiras: **papéis e permissões** (5), **depósitos** (4),
+ * **serviços** (3), **ciclo de vida do documento** (5) e **relatórios** (10).
+ * As 14 que ficam são o módulo de COMPRAS, e o motivo delas viaja em
+ * `ROTAS_NO_MOCK` — é ele que o console imprime.
+ *
+ * **O contrato andou DE NOVO durante esta sessão, e as cinco novas NÃO são
+ * minhas:** a `#335` publicou e ligou `cost-profiles` (5 operações) enquanto
+ * esta PR estava aberta, e o rebase as trouxe para dentro da lista — daí 115 e
+ * não 110, sobre 129 e não 124.
+ *
+ * **Medi as cinco de graça, porque o par local estava de pé, e o resultado
+ * merece nota:** contra a main do api de agora (`02721f0`, que ainda tem 124
+ * operações e **não conhece `cost-profiles`**), as cinco respondem **404 `Este
+ * caminho não existe no contrato`** — nem 501. A cópia do contrato do api ainda
+ * não sincronizou com este repo, o que é o estado normal e temporário depois de
+ * um merge aqui.
+ *
+ * **Não as mexi, e o motivo importa mais que a decisão:** hoje o dano é ZERO
+ * porque **nenhuma tela as consome e não existe handler de mock para elas** —
+ * movê-las para `ROTAS_NO_MOCK` faria `/api/cost-profiles` cair no fallback da
+ * SPA e devolver `index.html` com **200**, que é pior que o 404 honesto. Quem
+ * escrever a primeira tela de custo tem de remedir: se o api já servir, está no
+ * lugar certo; se não, o lugar passa a ser o mock, COM handler.
+ *
+ * **Duas armadilhas mordidas na medição, as duas já catalogadas e as duas
+ * reincidentes:**
+ *
+ * 1. **400 numa sonda é INCONCLUSIVO.** Cinco operações responderam 400 por
+ *    `body/X must be null,string`: o contrato as declara `type: ['null','…']` e
+ *    o gerador de corpo da sonda não sabia disso. A validação respondeu antes
+ *    do handler, e ler aquilo como "não servida" teria mantido serviços e
+ *    depósitos no mock por mais uma rodada.
+ * 2. **403 é inconclusivo pelo MESMO motivo, e essa é nova.** Com o papel do
+ *    seed (`operator-full`), dez operações responderam 403 `papel-insuficiente`
+ *    — a borda do api confere papel ANTES de chegar ao handler que responde
+ *    501. Oito delas eram compras (501 de verdade, escondido atrás do 403) e
+ *    duas eram papéis (servidas). Só promovendo o vínculo a `owner` os dois
+ *    grupos se separaram. **Sonda com papel fraco mede a borda, não o servidor.**
+ *
  * **Esta lista é DÍVIDA DELIBERADA, não configuração permanente.** Ela existe
  * enquanto o contrato for maior que o backend, e o que ela mede — o quanto o
  * mock ainda finge — encolhe a cada módulo entregue do outro lado.
@@ -558,7 +616,371 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'put', caminho: '/api/payment-terms/{id}' },
   { metodo: 'get', caminho: '/api/installment-policy' },
   { metodo: 'put', caminho: '/api/installment-policy' },
+
+  // PAPÉIS E PERMISSÕES (5 operações) — a família que reabriu a lista na #292 e
+  // fecha aqui. **A nota que as segurava está VENCIDA:** ela media `92e61eb` em
+  // 22/08 e dizia "a busca por `api/roles` no repo inteiro devolve zero". A
+  // api#84 entregou desde então.
+  //
+  // **MEDIDO em 2026-08-24** contra `cabinet-erp-api` main `f810a39`, par local
+  // próprio (Postgres migrado até a `0075` em `:5455`, servidor em `:3055`,
+  // sessão real de `semear-dev`):
+  //
+  //   GET  /api/permissions   200
+  //   GET  /api/roles         200 · total=6, os cinco de fábrica pelo nome
+  //   GET  /api/roles/{id}    200 · `Administrador` (404 no id inexistente)
+  //   POST /api/roles         201 · com papel `owner`
+  //   PUT  /api/roles/{id}    404 no id inexistente — chega ao handler
+  //
+  // As duas ESCRITAS respondem **403 `papel-insuficiente`** para o papel do
+  // seed de dev (`operator-full`): quem redesenha papel é `owner`/`admin`. É o
+  // mesmo custo dos depósitos, abaixo, e pelo mesmo motivo — e o 403 aqui é a
+  // VERDADE do servidor, que o mock escondia respondendo 200 a quem não pode.
+  { metodo: 'get', caminho: '/api/permissions' },
+  { metodo: 'get', caminho: '/api/roles' },
+  { metodo: 'post', caminho: '/api/roles' },
+  { metodo: 'get', caminho: '/api/roles/{id}' },
+  { metodo: 'put', caminho: '/api/roles/{id}' },
+
+  // DEPÓSITOS (4 operações) — e esta família entra para FECHAR uma que já
+  // estava partida, não para abrir uma nova.
+  //
+  // `POST`/`GET /api/variants/{variantId}/stock-movements` passam desde a #274,
+  // e o bloco do kardex acima já descrevia o preço disso por escrito: com o
+  // proxy de pé, o `locationId` do movimento é uuid do Postgres e a lista de
+  // depósitos vinha do mock, então a coluna `Depósito` caía no fallback e
+  // mostrava o uuid cru. Ligar estas quatro é o que resolve aquilo.
+  //
+  // **MEDIDO em 2026-08-24** contra `f810a39`, round-trip e não status:
+  //
+  //   POST /api/stock-locations       201 (papel `owner`)
+  //   PUT  /api/stock-locations/{id}  200 · nome alterado volta alterado
+  //   GET  /api/stock-locations       200 · total=2, `Depósito Principal` + o criado
+  //   GET  /api/variants/{id}/stock-balances  404 na variante inexistente — chega ao handler
+  //
+  // **O custo, posto na mesa como a nota antiga exigia:** as duas escritas
+  // respondem **403 `papel-insuficiente`** para `operator-full`, que é o papel
+  // do seed de dev — `classificacao.ts` pede `depositos:gerenciar`, que só
+  // `Proprietário` e `Administrador` têm. A tela de estoque vai mostrar a
+  // recusa em vez de gravar. É o critério desta lista sendo aplicado como está
+  // escrito: o par é 501, não 403 — e 403 não é o servidor faltando, é o
+  // servidor dizendo que aquele operador não pode. O mock respondia 200 e
+  // ensinava o contrário.
+  { metodo: 'get', caminho: '/api/stock-locations' },
+  { metodo: 'post', caminho: '/api/stock-locations' },
+  { metodo: 'put', caminho: '/api/stock-locations/{id}' },
+  { metodo: 'get', caminho: '/api/variants/{variantId}/stock-balances' },
+
+  // SERVIÇOS (3 operações) — módulo inteiro. **A nota que as segurava está
+  // VENCIDA:** ela media `e47827e` em 22/08 e dizia que "a busca por `services`
+  // no repo do api devolve duas ocorrências, e as duas são `services:` de
+  // `docker-compose`". A `0075_servico_da_empresa.sql` e o módulo entraram
+  // desde então.
+  //
+  // **MEDIDO em 2026-08-24** contra `f810a39`, round-trip:
+  //
+  //   POST /api/services       201 · id do Postgres
+  //   PUT  /api/services/{id}  200 · `Instalação sonda ALTERADA`, priceCents 55555
+  //   GET  /api/services       200 · total=2, e o criado volta com a alteração
+  //
+  // Escrita liberada para `operator-full` (medido: 201), ao contrário de
+  // depósito e papel — serviço é operação de venda, não desenho do galpão.
+  { metodo: 'get', caminho: '/api/services' },
+  { metodo: 'post', caminho: '/api/services' },
+  { metodo: 'put', caminho: '/api/services/{id}' },
+
+  // CICLO DE VIDA do documento de venda (5 operações) — G13. **A nota que as
+  // segurava está VENCIDA:** ela media `0c8b13b` em 22/08 e dizia que `git grep`
+  // por `conclude`, `demo-return`, `professional-history`, `revise` e
+  // `ConcludeOrder` devolvia ZERO nas cinco buscas.
+  //
+  // **MEDIDO em 2026-08-24** contra `f810a39`, e a prova é a MUDANÇA DE ESTADO,
+  // não o status: `POST /api/orders/{id}/conclude` num pedido REAL do seed
+  // respondeu 200 com `status: 'concluded'` no corpo — o documento mudou de
+  // estado no Postgres. As outras quatro chegam ao handler:
+  //
+  //   GET  /api/orders/{id}/professional-history  200 · total=0 no pedido do seed
+  //   POST /api/orders/{id}/demo-return           404 no id inexistente
+  //   POST /api/orders/{id}/professional          404 no id inexistente
+  //   POST /api/quotes/{id}/revise                404 no id inexistente
+  //
+  // Entram agora pela razão que a própria nota antiga antecipou ao contrário:
+  // as famílias de `/api/orders` e `/api/quotes` já estão inteiras na passagem,
+  // e eram estas operações que faltavam servidor. Deixá-las fora agora é que
+  // partiria a família — o botão `Concluir` mandaria para o mock um pedido que
+  // vive no Postgres.
+  { metodo: 'post', caminho: '/api/orders/{id}/conclude' },
+  { metodo: 'post', caminho: '/api/orders/{id}/demo-return' },
+  { metodo: 'post', caminho: '/api/orders/{id}/professional' },
+  { metodo: 'get', caminho: '/api/orders/{id}/professional-history' },
+  { metodo: 'post', caminho: '/api/quotes/{id}/revise' },
+
+  // RELATÓRIOS (10 operações) — a seção inteira, e inteira é o único jeito: a
+  // tela da Fase C é UMA seção com dez abas, e ligar metade poria seis abas
+  // lendo o Postgres e quatro lendo ficção sem nada na interface distinguindo
+  // as duas. **A nota que as segurava está VENCIDA:** ela media `0c8b13b` em
+  // 22/08 e dizia que `git grep` por `api/reports` devolvia ZERO.
+  //
+  // **MEDIDO em 2026-08-24** contra `f810a39`, as dez uma a uma, com os query
+  // params obrigatórios do contrato: **as dez respondem 200**, no shape que o
+  // contrato publica (`{page,pageSize,total,summary,rows}`).
+  //
+  // `birthdays` é a única com query própria — `month` obrigatório, sem
+  // `from`/`to`. Sondada sem ele responde **400**, e 400 numa sonda é
+  // INCONCLUSIVO, nunca "servida": é a validação respondendo antes do handler.
+  // Com `month=8`: 200, `total=0` no banco de dev.
+  { metodo: 'get', caminho: '/api/reports/abc-curve' },
+  { metodo: 'get', caminho: '/api/reports/products-sold' },
+  { metodo: 'get', caminho: '/api/reports/sales-comparison' },
+  { metodo: 'get', caminho: '/api/reports/salesperson-performance' },
+  { metodo: 'get', caminho: '/api/reports/professional-ranking' },
+  { metodo: 'get', caminho: '/api/reports/supplier-movement' },
+  { metodo: 'get', caminho: '/api/reports/stock-valuation' },
+  { metodo: 'get', caminho: '/api/reports/stock-aging' },
+  { metodo: 'get', caminho: '/api/reports/quote-vs-stock' },
+  { metodo: 'get', caminho: '/api/reports/birthdays' },
 ]
+
+/**
+ * O QUE CONTINUA NO MOCK — a outra metade, nomeada, e a FONTE ÚNICA dela.
+ *
+ * Esta constante existe por dois motivos, e o segundo é o que a tira de dentro
+ * do teste:
+ *
+ * 1. **O console tem de dizer qual rota está em quê** quando o par local sobe.
+ *    "Metade real, metade mock" sem nomear as metades é a costura que este
+ *    arquivo inteiro existe para evitar — quem vê uma lista vazia na tela
+ *    precisa saber, sem abrir o DevTools, se está olhando um banco vazio ou uma
+ *    ficção.
+ * 2. **A declaração vivia só em `rotas-do-backend.test.ts`** (`FORA_DE_PROPOSITO`),
+ *    e o console não pode importar um arquivo de teste. Duplicar a lista daria
+ *    duas verdades sobre a mesma coisa — o defeito que este repo já pagou com o
+ *    mapa de módulos do api, que tem duas cópias de propósito e reprovou por
+ *    isso. Aqui a cópia é o teste que importa DAQUI, e não o contrário.
+ *
+ * O motivo viaja junto com a rota, e não num comentário, porque é ele que o
+ * console imprime. Nome sozinho envelhece mudo.
+ */
+export type RotaNoMock = RotaDoBackend & { readonly motivo: string }
+
+const COMPRAS_501 =
+  '501 no api — a fase B do módulo (api#176) ainda não mergeou; medido em 24/08 contra `f810a39`'
+
+const COMISSOES_SEM_PORTA =
+  'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
+
+/**
+ * AS TREZE DE COMISSÕES (G8, `api#118`) — vieram da `#337`, que as declarou
+ * enquanto esta PR estava aberta, e o rebase as trouxe para cá.
+ *
+ * **A razão delas é uma TERCEIRA, e a `#337` a nomeou bem: o módulo do api
+ * EXISTE e não tem porta.** A migração `0044_participacao_e_comissao.sql` está
+ * aplicada (seis tabelas com RLS forçada) e `src/modules/comissoes/` tem os
+ * quatro arquivos do cálculo — o que falta é `rotas.ts`, e nenhum `operationId`
+ * desta família está no mapa de `servidor.ts`.
+ *
+ * **REMEDIDO em 2026-08-24 contra a main ATUAL do api (`02721f0`), e o status é
+ * outro: as treze respondem 404 `Este caminho não existe no contrato`, não
+ * 501.** A `#337` mediu contra `844b360` — o checkout compartilhado, que estava
+ * ATRÁS da main — e concluiu 501. **A diferença não é cosmética:** 501 diz "o
+ * contrato do api conhece a rota e falta handler"; 404 diz "a cópia do contrato
+ * de lá ainda não sincronizou com este repo", que é o estado normal e temporário
+ * depois de um merge aqui. As duas leituras levam ao mesmo lugar hoje — ficam
+ * fora da passagem — mas só a segunda explica por que o `sync:contract` do api é
+ * o próximo passo, e não o handler.
+ *
+ * Sai INTEIRA quando a Fase B ligar os handlers: a apuração é justamente onde os
+ * dois lados têm de ser o mesmo id.
+ */
+const COMISSOES: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/orders/{id}/participants', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'put', caminho: '/api/orders/{id}/participants', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/employees/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'put', caminho: '/api/employees/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/partners/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'put', caminho: '/api/partners/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/technical-reserves', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/technical-reserves', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/technical-reserves/{id}/cancel', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/commissions/earnings', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/commissions/closings', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/commissions/closings', motivo: COMISSOES_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/commissions/closings/{id}/entries', motivo: COMISSOES_SEM_PORTA },
+]
+
+const TESOURARIA_SEM_CONTRATO_LA =
+  'contrato novo — a copia do api ainda nao sincronizou; depois do sync vira 501 ate a fase B (api#112)'
+
+/**
+ * AS QUINZE DE TESOURARIA (G7 fase A, `api#112`) — nascem NESTE PR, que é o que
+ * publica a família. O contrato voltou a andar na frente, que é o estado normal
+ * do repo que o possui.
+ *
+ * **A razão é a mesma das treze de comissões, um degrau antes: o módulo do api
+ * EXISTE e não tem porta — e agora nem o contrato de lá conhece o caminho.** As
+ * seis tabelas estão aplicadas na `main` do api (`0065_tesouraria.sql` +
+ * `0070_financeiro_apoio.sql` + `0071_financeiro_titulos.sql`: título, parcela,
+ * baixa com `batch_id`, movimento, transferência e fechamento, todas com RLS
+ * forçada), e nenhum dos quinze `operationId` está no mapa de
+ * `src/core/http/servidor.ts` — medido contra a `main` `f810a39`.
+ *
+ * **Duas respostas em sequência, e a distinção é a que a #341 pagou para
+ * aprender:** hoje é **404** (`Este caminho não existe no contrato`), porque a
+ * cópia de `contracts/openapi-v1.json` do api é anterior a este merge; depois do
+ * `sync:contract` de lá vira **501**, que é o "conheço a rota, falta handler".
+ * As duas mantêm a família fora da passagem, mas só a segunda diz que o próximo
+ * passo é o handler, e não o sync.
+ *
+ * Sai INTEIRA quando a FASE B ligar os handlers — meia família põe id do
+ * servidor de um lado e id inventado do outro, e aqui os dois lados são dinheiro.
+ */
+const TESOURARIA: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/financial-titles', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'post', caminho: '/api/financial-titles', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'get', caminho: '/api/financial-titles/{id}', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'put', caminho: '/api/financial-titles/{id}', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-titles/{id}/cancel',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+  },
+  { metodo: 'get', caminho: '/api/financial-installments', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-installments/{id}/settlements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-settlements/batch',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+  },
+  { metodo: 'get', caminho: '/api/cash-movements', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'post', caminho: '/api/cash-movements', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-movements/{id}/reconcile',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+  },
+  { metodo: 'post', caminho: '/api/cash-transfers', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'get', caminho: '/api/bank-accounts', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'get', caminho: '/api/cash-registers', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  { metodo: 'get', caminho: '/api/payment-modes', motivo: TESOURARIA_SEM_CONTRATO_LA },
+]
+
+export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/purchase-requests', motivo: COMPRAS_501 },
+  { metodo: 'post', caminho: '/api/purchase-requests', motivo: COMPRAS_501 },
+  { metodo: 'get', caminho: '/api/purchase-requests/{id}', motivo: COMPRAS_501 },
+  { metodo: 'put', caminho: '/api/purchase-requests/{id}', motivo: COMPRAS_501 },
+  { metodo: 'post', caminho: '/api/purchase-requests/{id}/cancel', motivo: COMPRAS_501 },
+  { metodo: 'get', caminho: '/api/purchase-orders', motivo: COMPRAS_501 },
+  { metodo: 'post', caminho: '/api/purchase-orders', motivo: COMPRAS_501 },
+  { metodo: 'get', caminho: '/api/purchase-orders/{id}', motivo: COMPRAS_501 },
+  { metodo: 'put', caminho: '/api/purchase-orders/{id}', motivo: COMPRAS_501 },
+  { metodo: 'post', caminho: '/api/purchase-orders/{id}/send', motivo: COMPRAS_501 },
+  { metodo: 'post', caminho: '/api/purchase-orders/{id}/reschedule', motivo: COMPRAS_501 },
+  { metodo: 'post', caminho: '/api/purchase-orders/{id}/cancel', motivo: COMPRAS_501 },
+  { metodo: 'get', caminho: '/api/purchases/arrival-forecast', motivo: COMPRAS_501 },
+  { metodo: 'get', caminho: '/api/purchases/stock-replenishment', motivo: COMPRAS_501 },
+  ...COMISSOES,
+  ...TESOURARIA,
+]
+
+/** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */
+function familia(caminho: string): string {
+  const partes = caminho.split('/').filter(Boolean)
+  const primeiro = partes[0] ?? caminho
+  return primeiro === 'api' ? (partes[1] ?? 'api') : primeiro
+}
+
+/** Uma linha do relatório: a família, quantas rotas, e de onde ela responde. */
+export type LinhaDoRelatorio = {
+  readonly familia: string
+  readonly reais: number
+  readonly mockadas: number
+  readonly motivo?: string
+}
+
+/**
+ * O RELATÓRIO — por FAMÍLIA, porque é a família que o operador vê como tela.
+ *
+ * Listar 110 caminhos no console seria ruído que ninguém lê; o que decide se a
+ * tela mente é a família, e uma família PARTIDA (parte real, parte mock) é o
+ * estado perigoso — id do servidor de um lado, id inventado do outro. Por isso
+ * a linha traz as duas contagens em vez de um rótulo só: partida aparece com os
+ * dois números preenchidos, e salta aos olhos.
+ *
+ * Sem `backendReal` o relatório é uma linha só dizendo que TUDO é mock — que é
+ * o estado do site público, e afirmá-lo é melhor que imprimir nada e deixar
+ * quem lê supor.
+ */
+export function relatorioDaPassagem(backendReal: string | undefined): LinhaDoRelatorio[] {
+  if (!backendReal) return []
+  return montarRelatorio(ROTAS_DO_BACKEND, ROTAS_NO_MOCK)
+}
+
+/**
+ * A conta, sobre listas RECEBIDAS — e é a assinatura que a torna exercível.
+ *
+ * `relatorioDaPassagem` lê as duas constantes do módulo, e hoje nenhuma família
+ * tem os dois lados: as 14 mockadas são três famílias de compras inteiras. Ou
+ * seja, o estado que o relatório existe para denunciar — a **família partida** —
+ * não teria como ser provocado por teste nenhum enquanto a conta só soubesse
+ * ler as constantes. Guarda que não pode ficar vermelha não mede nada, e o dia
+ * em que uma família PARTIR é justamente o dia em que ninguém está olhando.
+ */
+export function montarRelatorio(
+  reais: readonly RotaDoBackend[],
+  mockadas: readonly RotaNoMock[],
+): LinhaDoRelatorio[] {
+  const linhas = new Map<string, { reais: number; mockadas: number; motivo?: string }>()
+  const pegar = (f: string) => {
+    const atual = linhas.get(f) ?? { reais: 0, mockadas: 0 }
+    linhas.set(f, atual)
+    return atual
+  }
+  for (const r of reais) pegar(familia(r.caminho)).reais += 1
+  for (const r of mockadas) {
+    const l = pegar(familia(r.caminho))
+    l.mockadas += 1
+    l.motivo = r.motivo
+  }
+  return [...linhas.entries()]
+    .map(([familia, l]) => ({ familia, ...l }))
+    .sort((a, b) => a.familia.localeCompare(b.familia))
+}
+
+/**
+ * Imprime o relatório. `imprimir` é PARÂMETRO para que o teste o leia sem
+ * espionar o `console` global — e para que este módulo continue sem efeito
+ * colateral no import, que é o que permite o site público importá-lo.
+ */
+export function declararPassagem(
+  backendReal: string | undefined,
+  imprimir: (...args: unknown[]) => void,
+): void {
+  const linhas = relatorioDaPassagem(backendReal)
+  if (!linhas.length) {
+    imprimir('[mock] TUDO mockado — sem VITE_API_PROXY, nenhuma rota sai para a rede.')
+    return
+  }
+
+  const reais = linhas.reduce((n, l) => n + l.reais, 0)
+  const mockadas = linhas.reduce((n, l) => n + l.mockadas, 0)
+  imprimir(
+    `[passagem] backend real em ${backendReal} — ${reais} rota(s) SAEM para a rede, ${mockadas} continuam no MSW.`,
+  )
+  for (const l of linhas) {
+    const partida = l.reais > 0 && l.mockadas > 0
+    const onde = l.mockadas === 0 ? 'REAL' : l.reais === 0 ? 'MOCK' : 'PARTIDA'
+    const motivo = l.motivo ? `  — ${l.motivo}` : ''
+    const aviso = partida ? '  ⚠ família partida: id do servidor convive com id do mock' : ''
+    imprimir(
+      `[passagem] ${onde.padEnd(8)} ${l.familia.padEnd(22)} real=${l.reais} mock=${l.mockadas}${motivo}${aviso}`,
+    )
+  }
+}
 
 /**
  * Caminho do contrato → padrão do MSW.

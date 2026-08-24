@@ -13,10 +13,34 @@ import { mockDelay, normalize, pagedMock } from '@/mocks/query'
  * Ver `docs/integracao.md` para o passo a passo da troca.
  */
 
+/**
+ * DE ONDE VEIO A LINHA que a tela está mostrando.
+ *
+ * Não é detalhe de implementação: é o que separa "13 pedidos de compra" de
+ * "13 pedidos de compra INVENTADOS". Na sessão 60 um usuário real, logado no
+ * site real, leu a fixture do Softlux como se fosse o movimento da empresa dele
+ * — e a tela não tinha como desmentir, porque ninguém guardava essa informação
+ * em lugar nenhum. Agora guarda aqui, no único ponto que sabe a resposta: o
+ * provider.
+ *
+ * `exemplo` é a origem dos recursos que ainda leem `src/mocks/` — dado de
+ * demonstração, e o `Gravar` dessas telas é `console.info`. `servidor` é o
+ * default de quem fala HTTP, e é por isso que ele é o valor AUSENTE: provider
+ * novo que esquecer de se declarar não ganha aviso, o que é o certo — o erro
+ * caro é o contrário, avisar de menos numa tela de ficção.
+ *
+ * Some entrada por entrada, junto com o mock: no dia em que `pedidosCompra`
+ * virar HTTP, a marca sai do registry e o aviso some das quatro telas sem
+ * ninguém lembrar de apagá-lo.
+ */
+export type OrigemDosDados = 'servidor' | 'exemplo'
+
 /** Recurso só de consulta: tabelas de apoio e as consultas read-only (§9 padrão 8). */
 export interface ListProvider<T> {
   /** Listagem paginada — quem aplica q/sort/paginação é o servidor. */
   list(state: TableQueryState, delayMs?: number): Promise<PagedResult<T>>
+  /** `'exemplo'` quando as linhas são fixture; ausente quer dizer servidor. */
+  readonly origem?: OrigemDosDados
 }
 
 /**
@@ -30,6 +54,8 @@ export interface ListProvider<T> {
  * com tela de documento.
  */
 export interface DocumentoProvider<T> {
+  /** Mesma marca do `ListProvider` — a tela de documento a lê sozinha. */
+  readonly origem?: OrigemDosDados
   /**
    * Um registro por id; `null` quando não existe.
    *
@@ -77,6 +103,7 @@ export function createMockListProvider<T>({
   delayMs = 300,
 }: MockListConfig<T>): ListProvider<T> {
   return {
+    origem: 'exemplo',
     list: (state, override = delayMs) => pagedMock(rows, state, matches, override),
   }
 }
@@ -118,6 +145,9 @@ export function createMockProvider<T extends { id: number }>({
   getDelayMs = 200,
 }: MockResourceConfig<T>): ResourceProvider<T> {
   return {
+    // A marca de origem vem no espalhamento do provider de lista, e serve às
+    // duas telas: a listagem lê `data.<recurso>.origem`, e a de documento a lê
+    // do próprio `provider` que já recebe.
     ...createMockListProvider({ rows, matches, delayMs }),
     get: (id, override = getDelayMs) => mockDelay(findById(rows, id) ?? null, override),
     // O id do registro em branco é do PROVIDER: quem abre o "Incluir" não tem

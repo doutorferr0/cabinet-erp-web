@@ -1,3 +1,4 @@
+import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import { DocumentoFrame, DocumentoHeader } from '@/components/cabinet/documento'
 import {
   ErroDeCarregamento,
@@ -91,6 +92,11 @@ export function TelaDeDocumento<T>({
     // sai por `foraDaMoldura` e fica DEPOIS do fecho, que é o ponto inteiro do
     // desenho: a fronteira separa a entidade do que só está por perto.
     <div className="flex flex-col gap-6">
+      {/* Antes da moldura, e não dentro: o aviso não é do documento, é sobre
+          ele. Ninguém o liga por rota — quem sabe se o registro é fixture é o
+          `provider` que esta tela já recebe, e recurso que migrar para HTTP
+          apaga o aviso sozinho. */}
+      <AvisoDadosDeExemplo origem={provider.origem} />
       <DocumentoFrame tipo={titulo} numero={numeroDoDocumento} className="flex flex-col gap-4">
         <DocumentoHeader titulo={titulo} {...(modo ? { modo } : {})} numero={numeroDoDocumento} />
         {children(query.data)}

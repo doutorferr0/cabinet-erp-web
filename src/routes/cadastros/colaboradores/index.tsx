@@ -112,6 +112,7 @@ function ColaboradoresPage() {
         queryKey={['colaboradores']}
         fetcher={data.colaboradores.list}
         actions={actions}
+        origem={data.colaboradores.origem}
         filtros={camposFiltraveis}
         // Filtro POR MÓDULO (#104): o mesmo schema que desenha o formulário e a
         // ficha agrupa os campos aqui. Colaborador é MOCK, então o id do filtro é

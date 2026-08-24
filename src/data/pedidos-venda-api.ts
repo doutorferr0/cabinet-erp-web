@@ -6,8 +6,18 @@ import type {
   OrderGroupDiscountDto,
   OrderServiceItemDto,
   OrderWriteRequest,
+  PagedResultOfOrderProfessionalAssignmentDto,
 } from '@/api/gerado'
-import { cancelOrder, createOrder, getOrder, updateOrder } from '@/api/gerado'
+import {
+  cancelOrder,
+  concludeOrder,
+  createOrder,
+  getOrder,
+  listOrderProfessionalHistory,
+  returnDemoOrder,
+  transferOrderProfessional,
+  updateOrder,
+} from '@/api/gerado'
 import {
   PAGE_SIZE_MAX,
   type RespostaDaApi,
@@ -15,19 +25,22 @@ import {
   dadosOuErro,
   itemOuNulo,
 } from '@/data/api-provider'
+import { type MotivoDoCancelamento, corpoDoCancelamento } from '@/data/cancelamento-de-documento'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DO PEDIDO DE VENDA — `/api/orders`.
  *
- * O caminho está no contrato e o backend serve SEIS das dez operações
- * (`ListOrders`, `GetOrder`, `CreateOrder`, `UpdateOrder`, `CancelOrder`,
- * `CreateOrderFromQuote`); as outras quatro respondem **501**. O menu já
- * declarava a tela como `futuro: true` — "Ainda não existe. O orçamento fechado
- * vira pedido aqui" — e nenhum arquivo fora de `src/api/gerado/` mencionava
- * `/api/orders`. Esta é a primeira fronteira a consumi-lo.
+ * O caminho está no contrato e o backend serve as DEZ operações. Seis já eram
+ * consumidas aqui (`ListOrders`, `GetOrder`, `CreateOrder`, `UpdateOrder`,
+ * `CancelOrder`, `CreateOrderFromQuote`); as quatro do CICLO — `ConcludeOrder`,
+ * `ReturnDemoOrder`, `TransferOrderProfessional`, `ListOrderProfessionalHistory`
+ * — respondiam 501 quando esta fronteira nasceu e passaram a responder de
+ * verdade na api#145. O comentário que dizia "quatro respondem 501" sobreviveu
+ * ao fato por uma leva inteira: dívida escrita no código só cai quando alguém
+ * volta, e quem lê no meio acredita.
  *
  * ## Por que ele não é o orçamento com outro nome
  *
@@ -91,6 +104,16 @@ export const CHAVES_PEDIDO_VENDA = {
   raiz: ['pedidos-venda'] as const,
   detalhe: ['pedido-venda'] as const,
   um: (id: string) => ['pedido-venda', id] as const,
+  /**
+   * A trilha da indicação tem raiz PRÓPRIA, e não é filha de `detalhe`.
+   *
+   * Ela não vem no `GET` do documento e cresce por outro caminho: pendurá-la em
+   * `['pedido-venda', id, …]` faria toda gravação do formulário derrubar um
+   * histórico que a gravação não muda — e o contrário, transferir sem invalidar
+   * a folha, deixaria o nome do profissional velho na tela.
+   */
+  historico: ['pedido-venda-profissionais'] as const,
+  historicoDe: (id: string) => ['pedido-venda-profissionais', id] as const,
 }
 
 /** Modo de desconto na língua da tela — TRÊS, não dois. */
@@ -149,7 +172,7 @@ export interface PedidoDeVenda {
   /** `sale` ou `demo`. Demonstração sai do estoque como empréstimo e tem de voltar. */
   tipo: 'sale' | 'demo'
   prazoDemonstracao: string | null
-  /** Quando a peça voltou — carimbo de `POST .../demo-return`, que o backend ainda não serve. */
+  /** Quando a peça voltou — carimbo de `POST .../demo-return`. Nulo = está na rua. */
   retornoDemonstracao: string | null
   orcamentoOrigemId: string | null
   orcamentoOrigemNumero: string | null
@@ -432,12 +455,23 @@ export function useGravarPedidoDeVenda() {
  * o contrato diz que cancelar de novo, ou cancelar concluído, é 409. É por isso
  * que a listagem confirma antes: a desativação de cadastro se desfaz pelo
  * `Alterar`, esta não se desfaz.
+ *
+ * ## O motivo é OPCIONAL, e isso é do contrato, não desleixo da tela
+ *
+ * `CancelDocumentRequest` inteiro é opcional: os 3.354 cancelamentos do legado
+ * são, na maioria, sem motivo. Exigi-lo aqui reprovaria o gesto que o operador
+ * já faz para ganhar um campo preenchido com o primeiro item da lista. Quando
+ * ele escolhe, `reasonId` diz a CLASSE e `note` diz o caso.
+ *
+ * **Corpo vazio não é `{}` — é ausência.** Mandar `{reasonId: null, note: null}`
+ * passaria igual hoje, mas é uma afirmação ("não teve motivo") onde a verdade é
+ * silêncio, e o dia em que o servidor distinguir as duas o front estará mentindo.
  */
 export function useCancelarPedidoDeVenda() {
   const invalidar = useInvalidarPedidosDeVenda()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const resposta: RespostaDaApi = await cancelOrder(id)
+    mutationFn: async ({ id, motivo }: { id: string; motivo?: MotivoDoCancelamento }) => {
+      const resposta: RespostaDaApi = await cancelOrder(id, corpoDoCancelamento(motivo))
       return dadosOuErro<OrderDetailDto>(resposta, 'Falha ao cancelar o pedido de venda.')
     },
     onSuccess: (cancelado) => {
@@ -445,6 +479,130 @@ export function useCancelarPedidoDeVenda() {
       avisar(
         `Pedido de venda ${cancelado.number} cancelado.`,
         'O documento continua na listagem, marcado como cancelado.',
+      )
+    },
+  })
+}
+
+/**
+ * CONCLUIR — `POST /api/orders/{id}/conclude`, a "Conclusão do Pedido de Venda"
+ * do legado (`FrmFecha_projeto`, item 273 do menu Vendas).
+ *
+ * Sem corpo: a transição não tem parâmetro. Quem decide se ela pode acontecer é
+ * o servidor, e ele recusa por dois motivos DIFERENTES, que a tela precisa
+ * separar porque a saída de cada um é outra:
+ *
+ *   `transicao-invalida`     → já concluído ou cancelado; não há o que fazer.
+ *   `demonstracao-em-aberto` → a peça ainda está na rua; registre o retorno
+ *                              PRIMEIRO, e aí conclua.
+ *
+ * A segunda é acionável e a primeira não. Mostrar as duas como "não foi
+ * possível concluir" faria o operador tentar de novo no caso em que tentar de
+ * novo nunca vai funcionar — e desistir no caso em que faltava um clique.
+ */
+export function useConcluirPedidoDeVenda() {
+  const invalidar = useInvalidarPedidosDeVenda()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resposta: RespostaDaApi = await concludeOrder(id)
+      return dadosOuErro<OrderDetailDto>(resposta, 'Falha ao concluir o pedido de venda.')
+    },
+    onSuccess: (concluido) => {
+      invalidar()
+      avisar(
+        `Pedido de venda ${concluido.number} concluído.`,
+        'A venda está fechada. A situação não volta para "Em andamento".',
+      )
+    },
+  })
+}
+
+/**
+ * RETORNO DA DEMONSTRAÇÃO — `POST /api/orders/{id}/demo-return`.
+ *
+ * A demonstração sai do estoque como EMPRÉSTIMO, com prazo (`demoDueDate`), e
+ * tem de voltar. Este é o carimbo da volta, e é ele que destrava o `Concluir`:
+ * o mesmo `demonstracao-em-aberto` que recusa a conclusão some quando
+ * `demoReturnedAt` deixa de ser nulo.
+ *
+ * Recusa em pedido `sale` (não há o que devolver), em retorno repetido e em
+ * pedido cancelado — os três como `transicao-invalida`.
+ */
+export function useRegistrarRetornoDaDemonstracao() {
+  const invalidar = useInvalidarPedidosDeVenda()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resposta: RespostaDaApi = await returnDemoOrder(id)
+      return dadosOuErro<OrderDetailDto>(resposta, 'Falha ao registrar o retorno da demonstração.')
+    },
+    onSuccess: (pedido) => {
+      invalidar()
+      avisar(
+        `Retorno registrado no pedido ${pedido.number}.`,
+        'A peça voltou ao estoque. O pedido já pode ser concluído.',
+      )
+    },
+  })
+}
+
+/**
+ * TRANSFERÊNCIA DE VENDA ENTRE PROFISSIONAIS — `POST /api/orders/{id}/professional`.
+ *
+ * "Transferência de Venda entre Profissionais" é item PRÓPRIO do menu Vendas do
+ * legado (179), e não uma edição do campo: trocar quem indicou muda a quem a
+ * comissão pertence. Por isso a troca deixa TRILHA (`professional-history`) e
+ * não passa pelo `PUT` — o `PUT` substituiria o campo sem deixar de onde veio.
+ *
+ * A `note` diz por quê. É o único lugar onde a razão da troca cabe, e é o que
+ * responde "por que esta venda mudou de dono?" seis meses depois.
+ */
+export function useTransferirProfissional() {
+  const invalidar = useInvalidarPedidosDeVenda()
+  const cliente = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      profissionalId,
+      observacao,
+    }: { id: string; profissionalId: string; observacao?: string }) => {
+      const resposta: RespostaDaApi = await transferOrderProfessional(id, {
+        professionalId: profissionalId,
+        note: observacao?.trim() ? observacao.trim() : null,
+      })
+      return dadosOuErro<OrderDetailDto>(resposta, 'Falha ao transferir a venda.')
+    },
+    onSuccess: (pedido) => {
+      invalidar()
+      // A trilha tem chave PRÓPRIA: ela cresce a cada troca e a folha do
+      // documento não a carrega. Invalidar só o pedido deixaria o histórico
+      // aberto na tela mostrando o estado de antes da troca que acabou de sair.
+      void cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.historico, exact: false })
+      avisar(
+        `Venda ${pedido.number} transferida.`,
+        pedido.professionalName
+          ? `A indicação agora é de ${pedido.professionalName}.`
+          : 'A indicação foi trocada.',
+      )
+    },
+  })
+}
+
+/**
+ * A TRILHA da indicação — `GET /api/orders/{id}/professional-history`.
+ *
+ * Lista paginada de atribuições, cada uma com início, fim e a nota da troca. É
+ * leitura de auditoria: só é buscada quando alguém abre o histórico, por isso
+ * `enabled`.
+ */
+export function useHistoricoDeProfissional(id: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: CHAVES_PEDIDO_VENDA.historicoDe(id),
+    enabled: habilitado && Boolean(id),
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listOrderProfessionalHistory(id)
+      return dadosOuErro<PagedResultOfOrderProfessionalAssignmentDto>(
+        resposta,
+        'Falha ao carregar o histórico de profissionais.',
       )
     },
   })

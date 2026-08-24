@@ -22,6 +22,7 @@ import { useLookupOptions } from '@/data/lookups-api'
 import { type PedidoDeVenda, useGravarPedidoDeVenda } from '@/data/pedidos-venda-api'
 import { tabelas } from '@/data/tabelas'
 import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
+import { AcoesDoCiclo } from '@/features/vendas/acoes-do-ciclo'
 import { formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import { useNavigate } from '@tanstack/react-router'
@@ -639,6 +640,12 @@ export function PedidoDeVendaForm({
         erro={gravar.error}
         mensagem="Não foi possível gravar o pedido de venda."
       />
+      {/* As ações do CICLO ficam fora das abas, e acima delas: concluir,
+          registrar o retorno da demonstração e transferir a indicação valem
+          para o documento inteiro, não para a aba aberta. Elas também não
+          passam pelo `Gravar` — são caminhos próprios do contrato, e o
+          documento fechado, que não se edita, continua tendo histórico. */}
+      <AcoesDoCiclo pedido={pedido} somenteLeitura={readOnly} />
       <Tabs defaultValue="principal">
         <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
           <AbaPrincipal />

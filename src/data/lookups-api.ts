@@ -59,6 +59,12 @@ const KINDS = {
   marca: { label: 'Marca', backend: 'MARCA' },
   materiais: { label: 'Materiais', backend: 'MATERIAIS' },
   impostosPadrao: { label: 'Impostos Padrão', backend: 'IMPOSTO_PADRAO' },
+  // O motivo do CANCELAMENTO de documento de venda — o `Mod_codigo` que o legado
+  // gravava junto de `ven_situacao='C'`. É para onde `CancelDocumentRequest.reasonId`
+  // aponta, e o servidor responde **400 apontando o campo** quando o id é de
+  // OUTRA lista: quem separa motivo de marca é o `kind`, que não viaja pelo
+  // contrato (ADR-011) — é linha aqui e linha no `KINDS` do servidor.
+  motivoCancelamento: { label: 'Motivo do Cancelamento', backend: 'MOTIVO_CANCELAMENTO' },
 } as const satisfies Record<string, { label: string; backend: string }>
 
 export type LookupKind = keyof typeof KINDS

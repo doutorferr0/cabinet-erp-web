@@ -168,12 +168,16 @@ function OrcamentosPage() {
           setParaCancelar(null)
           cancelar.reset()
         },
-        onConfirmar: () => {
+        comMotivo: true,
+        onConfirmar: (motivo) => {
           if (!paraCancelar) return
           // Fecha no SUCESSO. Fechar antes esconderia a recusa do servidor
           // junto com o diálogo, e a listagem voltaria igual — indistinguível
           // de um cancelamento que deu certo.
-          cancelar.mutate(paraCancelar.id, { onSuccess: () => setParaCancelar(null) })
+          cancelar.mutate(
+            { id: paraCancelar.id, motivo },
+            { onSuccess: () => setParaCancelar(null) },
+          )
         },
       }}
     />

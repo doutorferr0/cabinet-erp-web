@@ -69,6 +69,30 @@ export interface ProdutoItemGrupo {
   padrao: boolean
 }
 
+/**
+ * Linha de `relatedProducts` do contrato (§6.4) — produto×produto.
+ *
+ * NÃO é `ProdutoItemGrupo`, e a diferença é de MODELO, não de nome: o legado
+ * agrupa por `nomeGrupo` e descreve o item pelo par código/descrição do
+ * FORNECEDOR mais um acabamento; o contrato liga um produto a OUTRO produto e
+ * deixa `quantity` discriminar kit (preenchida) de sugestão (nula).
+ *
+ * As duas convivem na aba porque a reconciliação — o que acontece com o
+ * "grupo" — é decisão em aberto (api#117, §4 da medição de 24/08). Traduzir uma
+ * na outra aqui escolheria essa decisão em silêncio, num arquivo de tipos.
+ */
+export interface ProdutoRelacionado {
+  /** Id da LINHA da grade, como o servidor a devolve. */
+  id: string
+  /** O OUTRO produto. É ele que a escrita mandará, quando houver escrita. */
+  produtoId: string
+  codigo: string
+  descricao: string
+  /** Decimal em string. Vazio = SUGESTÃO; preenchido = KIT. */
+  quantidade: string
+  ordem: number
+}
+
 /** Regra fiscal por NCM × Operação × CFOP × Consumidor Final × UF — §6.5. */
 export interface ProdutoImpostoNfe {
   codigo: string
@@ -160,6 +184,8 @@ export interface Produto {
   gruposRelacionados: ProdutoGrupoRelacionado[]
   codigoProduto: string | null
   itensGrupo: ProdutoItemGrupo[]
+  /** `relatedProducts` do contrato — ver `ProdutoRelacionado`. */
+  produtosRelacionados: ProdutoRelacionado[]
   // --- Aba 5: Tributação (§6.5) ---
   origemProduto: string | null
   ncm: string
@@ -337,6 +363,7 @@ export const produtos: Produto[] = Array.from({ length: 45 }, (_, i) => {
     gruposRelacionados: [],
     codigoProduto: null,
     itensGrupo: [],
+    produtosRelacionados: [],
     origemProduto: ORIGENS_PRODUTO[0] ?? null,
     ncm: '94051200',
     cest: '',
@@ -402,6 +429,7 @@ export function produtoVazio(id = ''): Produto {
     gruposRelacionados: [],
     codigoProduto: null,
     itensGrupo: [],
+    produtosRelacionados: [],
     origemProduto: null,
     ncm: '',
     cest: '',

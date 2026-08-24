@@ -204,15 +204,22 @@ function sessaoAtual(): SessaoAtual {
 }
 
 /**
- * O produto como a ESCRITA o devolve: `ProductDto`, que não tem grade nenhuma.
+ * O produto como a ESCRITA o devolve: `ProductDto`.
  *
- * Variantes, fornecedores (§6.1) e relacionados (§6.4) são coleções do DETALHE
- * — `GET /api/products/{id}` é quem as promete. Devolvê-las no `POST`/`PUT`
- * treinaria a tela a contar com um dado que a listagem e a escrita do backend
- * real não mandam, e o buraco só apareceria depois da troca mock → HTTP.
+ * **Só `variants` sai.** As outras duas grades ficam desde que o contrato as
+ * publicou em `ProductDto` (§6.1/§6.4): `ProductDto` é a resposta de `POST` e
+ * `PUT`, e devolver a gravação SEM elas era o que obrigava a tela a um `GET` do
+ * detalhe logo depois para saber o que o servidor guardou — entre as duas
+ * requisições ela mostrava um produto sem fornecedor que tem fornecedor.
+ *
+ * `variants` continua fora porque continua fora do schema: ela é só do
+ * `ProductDetailDto`, e a variante tem endpoint próprio para escrever.
+ *
+ * A LISTAGEM segue sem emitir qualquer uma das três — ver o handler de
+ * `GET /api/products`. O recorte do contrato é por USO, não por schema.
  */
-function semGrades(produto: ProductDetailDto): ProductDto {
-  const { variants: _v, suppliers: _s, relatedProducts: _r, ...dto } = produto
+function comoProductDto(produto: ProductDetailDto): ProductDto {
+  const { variants: _v, ...dto } = produto
   return dto
 }
 
@@ -395,7 +402,7 @@ export const handlers = [
       relatedProducts: [],
     }
     store.produtos.push(produto)
-    return HttpResponse.json(semGrades(produto), { status: 201 })
+    return HttpResponse.json(comoProductDto(produto), { status: 201 })
   }),
 
   http.put('*/api/products/:id', async ({ params, request }) => {
@@ -416,7 +423,7 @@ export const handlers = [
     // As grades de fornecedores e relacionados NÃO entram nessa conta: o
     // contrato não publica escrita para elas, e apagá-las aqui ensinaria à tela
     // uma perda que o servidor não faz.
-    return HttpResponse.json(semGrades(produto))
+    return HttpResponse.json(comoProductDto(produto))
   }),
 
   // ---------------- variants ----------------

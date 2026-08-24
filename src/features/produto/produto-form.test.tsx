@@ -54,6 +54,49 @@ const DETALHE = {
       minStock: 2,
     },
   ],
+  // As duas grades do §6.1/§6.4, como o contrato as devolve. `supplierCode`
+  // nulo e `quantity` nula estão aqui de propósito: são os dois casos em que
+  // ausência É dado (fornecedor que não batiza a peça; relacionado que é
+  // SUGESTÃO e não kit), e a tela tem de mostrar branco sem confundi-lo com
+  // "não carregou".
+  suppliers: [
+    {
+      id: 'ps-0001',
+      supplierId: '44444444-4444-4444-8444-444444444444',
+      supplierName: 'STELLA ILUMINAÇÃO',
+      supplierCode: 'EV-PEND-30F',
+      supplierDescription: 'PENDENTE EVOLUTION 30 FOSCO',
+      isDefault: true,
+      active: true,
+    },
+    {
+      id: 'ps-0002',
+      supplierId: '55555555-5555-4555-8555-555555555555',
+      supplierName: 'LUMINI',
+      supplierCode: null,
+      supplierDescription: null,
+      isDefault: false,
+      active: true,
+    },
+  ],
+  relatedProducts: [
+    {
+      id: 'pr-0001',
+      relatedProductId: '66666666-6666-4666-8666-666666666666',
+      relatedProductCode: 'AR-2001',
+      relatedProductDescription: 'ARANDELA TUBULAR',
+      quantity: '2.000',
+      sortOrder: 1,
+    },
+    {
+      id: 'pr-0002',
+      relatedProductId: '77777777-7777-4777-8777-777777777777',
+      relatedProductCode: 'LM-3001',
+      relatedProductDescription: 'LÂMPADA LED E27',
+      quantity: null,
+      sortOrder: 2,
+    },
+  ],
 }
 
 /** Sessão válida + produtos; qualquer outro caminho rejeita alto (como o padrão). */
@@ -366,6 +409,36 @@ describe('formulário de produto', () => {
     expect(screen.getByText('Nenhuma empresa ativa na sessão.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
     expect(screen.queryByText('Produto não encontrado.')).not.toBeInTheDocument()
+  })
+
+  it('exibe as duas grades que o contrato serve: fornecedores (§6.1) e relacionados (§6.4)', async () => {
+    const { user } = renderRoute(`/cadastros/produtos/${ID}`, servidorDeProdutos())
+
+    // A aba Dados Principais abre primeiro, e a grade de Fornecedor é dela.
+    expect(await screen.findByLabelText('Fornecedor linha 1')).toHaveValue('STELLA ILUMINAÇÃO')
+    expect(screen.getByLabelText('Cód. Prod. Fornecedor linha 1')).toHaveValue('EV-PEND-30F')
+    expect(
+      screen.getByLabelText('Padrão linha 1'),
+      'o padrão é o que o documento carimba',
+    ).toBeChecked()
+    // A segunda linha exercita a ausência-que-é-dado: `supplierCode` nulo vira
+    // branco no controle, não `undefined` — controlado do primeiro render.
+    expect(screen.getByLabelText('Fornecedor linha 2')).toHaveValue('LUMINI')
+    expect(screen.getByLabelText('Cód. Prod. Fornecedor linha 2')).toHaveValue('')
+    expect(screen.getByLabelText('Padrão linha 2')).not.toBeChecked()
+
+    await user.click(screen.getByRole('tab', { name: 'Produtos Relacionados' }))
+
+    // Kit e sugestão na MESMA grade, e a QUANTIDADE é o discriminador — não há
+    // campo de tipo ao lado, e um teste que só olhasse o código não veria isso.
+    const quantidadeKit = await screen.findByLabelText('Quantidade (vazio = sugestão) linha 1')
+    expect(screen.getByLabelText('Código linha 1')).toHaveValue('AR-2001')
+    expect(quantidadeKit, 'preenchida = KIT').toHaveValue('2.000')
+    expect(screen.getByLabelText('Código linha 2')).toHaveValue('LM-3001')
+    expect(
+      screen.getByLabelText('Quantidade (vazio = sugestão) linha 2'),
+      'vazia = SUGESTÃO',
+    ).toHaveValue('')
   })
 
   it('grade de fornecedores inclui e exclui linha', async () => {

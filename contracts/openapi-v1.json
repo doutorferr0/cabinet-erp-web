@@ -12624,7 +12624,7 @@
             }
           },
           "suppliers": {
-            "description": "Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1) — de QUEM se compra esta peça, com o código e a descrição que o fornecedor usa. Ver `ProductSupplierDto`.\n\nVem no DETALHE e não em `ProductDto`: é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.\n\n**FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca \"não implementado\" por \"contrato quebrado\" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.",
+            "description": "Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1) — de QUEM se compra esta peça, com o código e a descrição que o fornecedor usa. Ver `ProductSupplierDto`.\n\nVem no detalhe e TAMBÉM em `ProductDto`, que é a resposta de `POST`/`PUT` — sem ela a tela grava e não recebe de volta o que guardou. O que continua valendo é o recorte por USO, não por schema: a LISTAGEM não emite nenhuma das duas, porque grade de FORMULÁRIO em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.\n\n**FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca \"não implementado\" por \"contrato quebrado\" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProductSupplierDto"
@@ -12896,6 +12896,20 @@
               }
             ],
             "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
+          },
+          "suppliers": {
+            "description": "Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1), a MESMA de `ProductDetailDto.suppliers` e com o mesmo item (`ProductSupplierDto`).\n\n**Ela existe aqui pelo OUTRO uso de `ProductDto`, não pela listagem.** `ProductDto` é a resposta de `POST /api/products` e de `PUT /api/products/{id}` além de ser a linha de `PagedResultOfProductDto`, e é a primeira que faltava: a tela que grava o produto recebia de volta um corpo SEM a grade e ficava sem saber o que o servidor guardou — precisaria de um `GET` do detalhe logo depois para reconciliar, e entre os dois a tela mostra um produto sem fornecedor que tem fornecedor.\n\n**A LISTAGEM continua NÃO emitindo, e a razão da #326 continua de pé:** é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra. Ser opcional é o que deixa os dois usos conviverem no mesmo schema — a listagem omite, a resposta da escrita emite.\n\n**FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca \"não implementado\" por \"contrato quebrado\" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade AQUI; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSupplierDto"
+            }
+          },
+          "relatedProducts": {
+            "description": "Proposto. Os produtos relacionados (§6.4) — kit e sugestão na MESMA coleção, porque `quantity` é o que os separa: preenchida = KIT (o item entra no documento junto, nesta quantidade por unidade do pai), nula = SUGESTÃO (a tela oferece, o vendedor decide). Ver `ProductRelatedDto`.\n\nAqui pelo mesmo motivo de `suppliers`: é a resposta de `POST`/`PUT` que precisava dela, não a linha da listagem — que segue sem emitir.\n\nNão há campo de tipo ao lado: enum de dois valores duplicaria o que a quantidade já diz, e duas verdades sobre a mesma coisa divergem na primeira gravação que atualize uma e esqueça a outra.\n\nFora de `required` pelo mesmo motivo de `suppliers`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductRelatedDto"
+            }
           }
         }
       },

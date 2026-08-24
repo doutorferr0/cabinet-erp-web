@@ -2,7 +2,9 @@ import type {
   ProductDetailDto,
   ProductDimensions,
   ProductDto,
+  ProductRelatedDto,
   ProductSpecs,
+  ProductSupplierDto,
   ProductVariantDto,
   ProductWriteRequest,
   VariantWriteRequest,
@@ -26,7 +28,13 @@ import type { ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
 import { formatQuantidade, parseQuantidade } from '@/lib/formatters'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { type Produto, type ProdutoVariante, produtoVazio } from '@/mocks/produtos'
+import {
+  type Produto,
+  type ProdutoFornecedor,
+  type ProdutoRelacionado,
+  type ProdutoVariante,
+  produtoVazio,
+} from '@/mocks/produtos'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -130,6 +138,49 @@ export function varianteDoContrato(dto: ProductVariantDto): ProdutoVariante {
  * na VARIANTE e o schema do backend confirma (`product_tenant.price_cents` ligado
  * à variante). Derivar "o preço da primeira variante" seria regra inventada aqui.
  */
+/**
+ * `ProductSupplierDto` → a linha da grade `Fornecedor` (§6.1) que a aba já
+ * desenha. Os quatro campos casam UM A UM, e é por isso que a leitura não
+ * precisou de grade nova: `padrao`/`fornecedor`/`codProdFornecedor`/
+ * `descricaoFornecedor` são `isDefault`/`supplierName`/`supplierCode`/
+ * `supplierDescription`.
+ *
+ * O que se PERDE na tradução é o `supplierId`, e a perda é consciente: a coluna
+ * do legado é TEXTO LIVRE digitado, e o id só volta a importar quando a tela
+ * trocar o campo por um LookupCombo de parceiro — a reconciliação que a api#117
+ * §4 reserva para a FASE C. Enquanto a escrita da grade não existe em
+ * `ProductWriteRequest`, guardar o id aqui seria carregar um dado que nada lê.
+ */
+export function fornecedorDoContrato(dto: ProductSupplierDto): ProdutoFornecedor {
+  return {
+    padrao: dto.isDefault,
+    fornecedor: dto.supplierName,
+    codProdFornecedor: dto.supplierCode ?? '',
+    descricaoFornecedor: dto.supplierDescription ?? '',
+  }
+}
+
+/**
+ * `ProductRelatedDto` → `ProdutoRelacionado`, campo a campo e sem achatar em
+ * `itensGrupo`: as duas formas do §6.4 são modelos DIFERENTES, e a decisão de
+ * qual sobrevive está em aberto (api#117).
+ *
+ * `quantity` vira string vazia quando é `null` — o discriminador continua
+ * legível (vazio = sugestão, preenchido = kit) e o controle do formulário
+ * recebe um valor, nunca `undefined`, que é o que faz um input alternar entre
+ * controlado e não controlado no meio da digitação.
+ */
+export function relacionadoDoContrato(dto: ProductRelatedDto): ProdutoRelacionado {
+  return {
+    id: dto.id,
+    produtoId: dto.relatedProductId,
+    codigo: dto.relatedProductCode,
+    descricao: dto.relatedProductDescription,
+    quantidade: dto.quantity ?? '',
+    ordem: dto.sortOrder,
+  }
+}
+
 export function produtoDoContrato(dto: ProductDetailDto): Produto {
   return {
     ...produtoVazio(dto.id),
@@ -158,6 +209,14 @@ export function produtoDoContrato(dto: ProductDetailDto): Produto {
     fabricaId: dto.factoryId ?? null,
     ...fichaDoContrato(dto.specs),
     variantes: dto.variants.map(varianteDoContrato),
+    // As duas grades do §6.1/§6.4 são OPCIONAIS no contrato, e ausente não é
+    // vazio: ausente quer dizer que o servidor não serve a grade (backend mais
+    // velho que este contrato), `[]` quer dizer que o produto não tem linha
+    // nenhuma. As duas caem em lista vazia na TELA — ela desenha a grade em
+    // branco dos dois jeitos —, e a distinção fica onde ela decide algo, que é
+    // na escrita, quando houver escrita.
+    fornecedores: (dto.suppliers ?? []).map(fornecedorDoContrato),
+    produtosRelacionados: (dto.relatedProducts ?? []).map(relacionadoDoContrato),
   }
 }
 

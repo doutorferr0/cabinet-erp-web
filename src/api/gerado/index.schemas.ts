@@ -3918,11 +3918,51 @@ export interface PaymentTermInstallmentDto {
 }
 
 /**
+ * Proposto. O AJUSTE que esta condição de pagamento dá a um GRUPO DE PRODUTO — `Forma_PagamentoGrupProd` do legado, PK `(Fpg_codigo, GrupoProduto_Codigo)`, **169 linhas** com `Emp_codigo` na coluna. É a dívida que `PaymentTermDto` declarou por escrito e que `SupplierGroupMinimumDto` registrou como ainda aberta: *"ela é sobre desconto na CONDIÇÃO DE PAGAMENTO, não sobre mínimo do fornecedor"*.
+ *
+ * **O argumento que a adiava está vencido, e é por isso que ela entra agora.** Ele era que grupo de produto não tinha id — *"casar por texto faria PENDENTES e Pendentes renderem descontos diferentes no mesmo documento"*. Há id desde `QuoteItemDto.productGroupId` (kind `GRUPO_PRODUTO` de `catalog-lookups`), e é nele que esta linha pendura, como já penduram `QuoteGroupDiscountDto` e `SupplierGroupMinimumDto`.
+ *
+ * **Não tem id próprio**, pela razão de `PaymentTermInstallmentDto`: a identidade é o par (condição, grupo), e é assim no legado. Por isso ela viaja EMBUTIDA na condição, e o `PUT` substitui a coleção inteira.
+ *
+ * ---
+ *
+ * **O QUE ESTA LINHA É, e o que ela NÃO é.** Ela é o PADRÃO que a condição sugere — não o que ficou gravado no documento. Quem grava é `QuoteDetailDto.groupDiscounts` (`VendaDesconto` do legado), e as duas coisas convivem no legado exatamente assim: `frmPreview_orcamento` abre as DUAS queries lado a lado, `QryFormaPagGrupProd` sobre esta tabela e `QryVendaGrupo` sobre `VendaDesconto`.
+ *
+ * **Trocar o ajuste NÃO reescreve documento gravado** — mesma garantia de `UpdatePaymentTerm` e do carimbo em `installmentPolicy`. O legado não tem essa garantia: ele lê esta tabela na hora de IMPRIMIR, então o orçamento impresso hoje sai diferente do impresso ontem sem ninguém ter tocado no documento. Aqui o que vale no documento é o que `groupDiscounts` carimbou.
+ *
+ * **Os seis campos de desconto/acréscimo do CABEÇALHO da condição continuam de fora, e agora com motivo medido:** `Fpg_desconto_lu`/`_ma`/`_se` e os pares de acréscimo são o **GERADOR** destas linhas, não dado a mais. `docs/legado/exe/sql-do-codigo.sql:379-381` são três `UPDATE ... FROM` em massa que copiam `_lu` para o grupo 1, `_ma` para os grupos 2..999 e `_se` para o grupo 1000. Mesmo argumento que manteve `Fpg_DiasPrimeiraParcela`/`Fpg_DiasEntreParcelas` fora: guardar os dois lados deixaria duas verdades sobre o mesmo número, e a tela que editasse uma linha do meio quebraria a fórmula sem ninguém ver.
+ */
+export interface PaymentTermGroupAdjustmentDto {
+  /** O grupo — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`. O mesmo id que a linha do documento carrega em `productGroupId`. É a CHAVE da linha: um grupo aparece uma vez só na condição, como no legado, cuja PK é `(Fpg_codigo, GrupoProduto_Codigo)`. */
+  productGroupId: string;
+  /**
+     * Nome do grupo, ecoado pelo servidor. NÃO é chave — ver `QuoteItemDto.productGroupId`.
+     *
+     * **E aqui ele NÃO é congelado**, ao contrário de `QuoteGroupDiscountDto.productGroupName`: isto é CADASTRO, não documento emitido. Renomear o grupo no catálogo tem de mudar o que esta tela mostra, senão a condição fica exibindo um nome que não existe mais no combo ao lado.
+     */
+  productGroupName: string;
+  /**
+     * Desconto que a condição dá a este grupo — `Fpgprod_desconto`. Percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%, `1000000` = 100%. Mesma unidade de `QuoteGroupDiscountDto.discountPercent` e de `QuoteDetailDto.discountPercent` — os três se encontram no mesmo rodapé, e uma segunda escala ali seria dois jeitos de calcular no mesmo documento.
+     *
+     * `0` quer dizer "sem desconto", e é valor legítimo — não ausência de dado.
+     */
+  discountPercent: number;
+  /**
+     * Acréscimo que a condição cobra neste grupo — `Fpgprod_acrescimo`. Percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%, `1000000` = 100%. Mesma unidade de `QuoteGroupDiscountDto.discountPercent` e de `QuoteDetailDto.discountPercent` — os três se encontram no mesmo rodapé, e uma segunda escala ali seria dois jeitos de calcular no mesmo documento.
+     *
+     * **É o par do desconto, e é por isso que ele entra junto:** condição à vista desconta, condição em 6× acresce — o juro embutido, por grupo. Publicar só metade das 169 linhas perderia o lado que dá sentido à tabela e faria a próxima PR reabrir o mesmo schema.
+     *
+     * **DÍVIDA DECLARADA: o acréscimo ainda não tem onde pousar no DOCUMENTO.** `QuoteDetailDto.groupDiscounts` carimba desconto e mais nada — e não é omissão deste contrato: `VendaDesconto` do legado também só tem `VenDesc_DescontoPorc`/`_DescontoValor`, sem acréscimo. Ou seja, no legado o acréscimo por grupo nunca foi carimbado em documento nenhum. Onde ele entra na conta do documento é decisão que ninguém tomou; inventar um `surchargePercent` em `QuoteGroupDiscountDto` sem fonte a fixaria no servidor para sempre. Enquanto isso ele é dado do CADASTRO, e a tela o lê ao montar o plano.
+     *
+     * `0` quer dizer "sem acréscimo".
+     */
+  surchargePercent: number;
+}
+
+/**
  * Proposto. Uma CONDIÇÃO DE PAGAMENTO da empresa ativa — `Forma_Pagamento` do legado.
  *
- * **O que ficou de fora, e por quê.** O legado carrega na condição seis colunas de desconto/acréscimo (`Fpg_desconto`, `Fpg_acrescimo` e os pares `_lu`/`_ma`/`_se`) e mais a tabela `Forma_PagamentoGrupProd`, com desconto e acréscimo por GRUPO DE PRODUTO. **Nada disso entra aqui, e a razão é que não há em que pendurar:** grupo de produto não é entidade neste contrato — ele existe como `QuoteItemDto.productGroup`, TEXTO livre digitado na linha do orçamento. Um ajuste por grupo precisaria de um id, e casar por texto faria "PENDENTES" e "Pendentes" renderem descontos diferentes no mesmo documento.
- *
- * Fica como dívida DECLARADA, não como esquecimento: quando o grupo de produto virar cadastro com id, o ajuste por grupo entra pendurado nele — e é lá que ele pertence, porque o desconto é do par (condição, grupo) e não da condição.
+ * **O ajuste por GRUPO DE PRODUTO entra aqui, em `groupAdjustments`** — `Forma_PagamentoGrupProd` do legado. Esta descrição declarava a dívida e o motivo de ela esperar (grupo de produto sem id, e casar por texto faria "PENDENTES" e "Pendentes" renderem descontos diferentes no mesmo documento); o id chegou com `QuoteItemDto.productGroupId`, e a dívida foi paga. Ver `PaymentTermGroupAdjustmentDto` para o que entrou e o que continua fora — as SEIS colunas de desconto/acréscimo do cabeçalho (`Fpg_desconto`, `Fpg_acrescimo` e os pares `_lu`/`_ma`/`_se`) não entram porque são o GERADOR destas linhas, medido no SQL do executável.
  *
  * **E há uma SEGUNDA verdade sobre condição de pagamento neste contrato, hoje:** `PartnerDto.paymentTerms` é `string` livre, sem descrição — a condição habitual do parceiro, digitada. Ela NÃO foi trocada por `paymentTermId` aqui de propósito: o campo é do VÍNCULO do parceiro com a empresa, converter texto em id é migração de dado (e escolha de para qual condição cada texto aponta), e fazer as duas coisas na mesma PR deixaria a segunda sem quem a revisasse. Enquanto isso não acontece, as duas convivem e o documento manda: quem grava orçamento escolhe `paymentTermId`, e o texto do parceiro é sugestão para quem digita.
  */
@@ -3940,6 +3980,12 @@ export interface PaymentTermDto {
   installmentCount: number;
   /** As parcelas, em ordem de `number`. */
   installments: PaymentTermInstallmentDto[];
+  /**
+     * Os ajustes por grupo de produto desta condição, em ordem de `productGroupName`. Lista **vazia** quando a condição não ajusta grupo nenhum — que é o caso comum, e não ausência de dado.
+     *
+     * Viajam embutidos pela razão de `installments`: a linha não tem identidade fora da condição, e gravá-las uma a uma faria um `Gravar` virar N requisições sem transação entre elas.
+     */
+  groupAdjustments?: PaymentTermGroupAdjustmentDto[];
 }
 
 /**
@@ -3959,6 +4005,19 @@ export interface PaymentTermInstallmentWriteRequest {
 }
 
 /**
+ * Proposto. Uma linha de ajuste por grupo no corpo de escrita da condição.
+ *
+ * **Sem `productGroupName`** — ele é ecoado, e a tela que o mandasse estaria propondo o nome do catálogo. Mesmo motivo de `QuoteGroupDiscountWriteRequest` não mandar `subtotalCents`.
+ *
+ * **Os dois percentuais são obrigatórios**, e nenhum é anulável — mesma decisão de `InstallmentPolicyWriteRequest`: "sem ajuste" é `0`, que é dado. Um `null` seria um segundo modo de ler o mesmo campo, e o legado não o tem — os três `UPDATE` em massa gravam `0` explicitamente (`case when ... > 0 then ... else 0 end`).
+ */
+export interface PaymentTermGroupAdjustmentWriteRequest {
+  productGroupId: string;
+  discountPercent: number;
+  surchargePercent: number;
+}
+
+/**
  * Proposto. Corpo de criação e de alteração. **`PUT` substitui a condição INTEIRA**, parcelas junto. Sem `id` e sem `installmentCount` (o servidor deriva).
  *
  * **Três recusas, e nenhuma delas apara em silêncio** (todas 400, com `fields[]`):
@@ -3975,6 +4034,12 @@ export interface PaymentTermWriteRequest {
   /** @nullable */
   active: boolean | null;
   installments: PaymentTermInstallmentWriteRequest[];
+  /**
+     * SUBSTITUI as linhas de ajuste por grupo, como `installments` substitui as parcelas — `PUT` troca a condição INTEIRA.
+     *
+     * **Omitir o campo é diferente de mandá-lo vazio, e essa é a única assimetria deste corpo:** ausente quer dizer "não mexi nos ajustes" e conserva os que estão gravados; `[]` quer dizer "apague todos". A distinção existe porque este campo nasce DEPOIS das telas que já gravam condição — sem ela, a primeira tela antiga a salvar um nome apagaria em silêncio os ajustes que alguém configurou na tela nova. `installments` não precisa disso: é obrigatório desde o primeiro dia.
+     */
+  groupAdjustments?: PaymentTermGroupAdjustmentWriteRequest[];
 }
 
 export interface PagedResultOfPaymentTermDto {

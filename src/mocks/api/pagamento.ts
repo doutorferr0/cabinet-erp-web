@@ -3,6 +3,7 @@ import type {
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
   PaymentTermDto,
+  PaymentTermGroupAdjustmentDto,
   PaymentTermWriteRequest,
 } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
@@ -41,10 +42,23 @@ import { type CondicaoDaEmpresa, novoId, store } from './store'
  * ## O que ele NÃO faz
  *
  * Não há `DELETE` — condição usada por documento antigo não some, ela desativa
- * (padrão 8). E não há ajuste por GRUPO DE PRODUTO (`Forma_PagamentoGrupProd`
- * do legado): grupo aqui é `QuoteItemDto.productGroup`, texto livre digitado na
- * linha, e desconto casado por texto renderia números diferentes para
- * "PENDENTES" e "Pendentes" no mesmo documento.
+ * (padrão 8).
+ *
+ * ## O ajuste por GRUPO DE PRODUTO entra, e uma das recusas NÃO é exercitável
+ *
+ * `groupAdjustments` (`Forma_PagamentoGrupProd` do legado) é servido e gravado.
+ * O argumento que o adiava — grupo é texto livre, e casar por texto faria
+ * "PENDENTES" e "Pendentes" renderem descontos diferentes — caiu quando
+ * `QuoteItemDto.productGroupId` publicou o id.
+ *
+ * **O que este mock NÃO consegue medir é a recusa por grupo INEXISTENTE:** o
+ * kind `GRUPO_PRODUTO` ainda não existe em `catalog-lookups`, dívida já
+ * declarada — `compras.test.ts` escreve o par (fornecedor, grupo) direto no
+ * store pelo mesmo motivo. Validar contra `store.lookups` aqui recusaria TODO
+ * `productGroupId`, o certo inclusive, e a tela aprenderia que o campo não
+ * funciona. As outras quatro recusas não dependem de catálogo e estão todas
+ * aqui: repetido, negativo, desconto acima de 100% e os dois lados > 0. Quem
+ * servir o kind fecha a quinta sem mexer no resto.
  */
 
 /**
@@ -74,7 +88,15 @@ export const POLITICA_PADRAO: InstallmentPolicyDto = {
 /** A `PaymentTermDto` do contrato: a condição do store sem a coluna de RLS. */
 function condicaoDto(condicao: CondicaoDaEmpresa): PaymentTermDto {
   const { tenantId: _tenantId, ...doContrato } = condicao
-  return { ...doContrato, installmentCount: condicao.installments.length }
+  return {
+    ...doContrato,
+    installmentCount: condicao.installments.length,
+    // Sempre ARRAY na leitura, nunca ausente: "esta condição não ajusta grupo
+    // nenhum" é o caso comum, e é `[]`. A tela que tivesse de tratar
+    // `undefined` inventaria um terceiro estado — mesmo argumento do 404 que a
+    // política não dá.
+    groupAdjustments: condicao.groupAdjustments ?? [],
+  }
 }
 
 /** As condições da empresa ativa. Fora dela, a condição não existe para quem pergunta. */
@@ -260,7 +282,70 @@ function corpoInvalido(corpo: PaymentTermWriteRequest, maxInstallments: number) 
     }
   }
 
+  ajustesInvalidos(corpo, fields)
+
   return fields.length > 0 ? camposInvalidos(fields) : undefined
+}
+
+/**
+ * As recusas de `groupAdjustments`, e nenhuma delas apara em silêncio.
+ *
+ * A quinta do contrato — `productGroupId` que não é um `GRUPO_PRODUTO` ativo —
+ * fica de fora por falta de catálogo, não por decisão; ver o cabeçalho.
+ *
+ * A dos DOIS lados maiores que zero é a que parece rigor demais e não é: não
+ * está decidido se o acréscimo incide antes ou depois do desconto, nem sobre
+ * qual base. É a mesma família da condição mista logo acima — e, como lá, dado
+ * real do legado não é recusado, porque os três `UPDATE` em massa que preenchem
+ * a tabela gravam sempre um dos dois zerado.
+ */
+function ajustesInvalidos(
+  corpo: PaymentTermWriteRequest,
+  fields: { path: string; message: string }[],
+) {
+  const ajustes = corpo.groupAdjustments
+  if (ajustes === undefined) return
+
+  const vistos = new Set<string>()
+  ajustes.forEach((ajuste, i) => {
+    if (vistos.has(ajuste.productGroupId)) {
+      fields.push({
+        path: `groupAdjustments[${i}].productGroupId`,
+        message: 'Cada grupo de produto aparece uma vez só na condição.',
+      })
+    }
+    vistos.add(ajuste.productGroupId)
+
+    if (ajuste.discountPercent < 0) {
+      fields.push({
+        path: `groupAdjustments[${i}].discountPercent`,
+        message: 'Desconto não pode ser negativo — o acréscimo tem coluna própria.',
+      })
+    }
+    if (ajuste.surchargePercent < 0) {
+      fields.push({
+        path: `groupAdjustments[${i}].surchargePercent`,
+        message: 'Acréscimo não pode ser negativo — o desconto tem coluna própria.',
+      })
+    }
+    // Teto só no DESCONTO: acima de 100% ele faria a linha do grupo valer
+    // negativo. O acréscimo não tem teto de propósito — dobrar o preço de um
+    // grupo é estranho e é legítimo, e um teto inventado recusaria dado real na
+    // importação.
+    if (ajuste.discountPercent > 1_000_000) {
+      fields.push({
+        path: `groupAdjustments[${i}].discountPercent`,
+        message: 'Desconto não passa de 100%.',
+      })
+    }
+    if (ajuste.discountPercent > 0 && ajuste.surchargePercent > 0) {
+      fields.push({
+        path: `groupAdjustments[${i}]`,
+        message:
+          'Desconto e acréscimo no mesmo grupo ainda não é suportado — a ordem de aplicação não foi decidida.',
+      })
+    }
+  })
 }
 
 /** O corpo de escrita → as parcelas como o store as guarda. */
@@ -273,6 +358,42 @@ function parcelasDaEscrita(corpo: PaymentTermWriteRequest): CondicaoDaEmpresa['i
       amountCents: p.amountCents ?? null,
     }))
     .sort((a, b) => a.number - b.number)
+}
+
+/**
+ * O corpo de escrita → os ajustes como o store os guarda.
+ *
+ * **`undefined` conserva o que está gravado; `[]` apaga.** É a única assimetria
+ * do corpo, e ela existe porque este campo nasceu DEPOIS das telas que já gravam
+ * condição: sem a distinção, a primeira tela antiga a salvar um nome apagaria em
+ * silêncio os ajustes configurados na tela nova, com 200.
+ */
+function ajustesDaEscrita(
+  corpo: PaymentTermWriteRequest,
+  atuais: PaymentTermGroupAdjustmentDto[],
+): PaymentTermGroupAdjustmentDto[] {
+  if (corpo.groupAdjustments === undefined) return atuais
+  return corpo.groupAdjustments
+    .map((a) => ({
+      productGroupId: a.productGroupId,
+      // O nome é ECOADO pelo servidor, e aqui ele não tem de onde vir enquanto o
+      // kind não existir. String vazia seria mentira de dado; o id é o que a
+      // tela tem, e é por ele que ela casa.
+      productGroupName: nomeDoGrupo(a.productGroupId),
+      discountPercent: a.discountPercent,
+      surchargePercent: a.surchargePercent,
+    }))
+    .sort((a, b) => a.productGroupName.localeCompare(b.productGroupName))
+}
+
+/**
+ * O nome do grupo, ecoado. Cai no próprio id quando o catálogo não tem a linha —
+ * que hoje é SEMPRE, porque o kind `GRUPO_PRODUTO` ainda não existe. Devolver o
+ * id é o que `nomeDeEmpresa` do store já faz no mesmo aperto: a tela mostra algo
+ * estável e ninguém confunde com nome de verdade.
+ */
+function nomeDoGrupo(id: string): string {
+  return store.lookups.find((l) => l.id === id && l.kind === 'GRUPO_PRODUTO')?.name ?? id
 }
 
 function paginar<T>(linhas: T[], url: URL) {
@@ -347,6 +468,7 @@ export const handlersDePagamento = [
       name: corpo.name as string,
       active: corpo.active ?? true,
       installments: parcelasDaEscrita(corpo),
+      groupAdjustments: ajustesDaEscrita(corpo, []),
     }
     store.condicoesDePagamento.push(condicao)
     return HttpResponse.json(condicaoDto(condicao), { status: 201 })
@@ -376,6 +498,7 @@ export const handlersDePagamento = [
     condicao.name = corpo.name as string
     condicao.active = corpo.active ?? true
     condicao.installments = parcelasDaEscrita(corpo)
+    condicao.groupAdjustments = ajustesDaEscrita(corpo, condicao.groupAdjustments ?? [])
     return HttpResponse.json(condicaoDto(condicao))
   }),
 

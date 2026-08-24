@@ -5873,6 +5873,8 @@ export const getListPaymentTermsUrl = (params?: ListPaymentTermsParams,) => {
  * **E não é lista de apoio.** `catalog_lookups` guarda `kind`/`name`/`active` e nada mais; condição de pagamento carrega parcela, dias e percentual. Enfiá-la lá daria o rótulo sem os dados que decidem o vencimento — a regra do ADR-011 (`kind` novo é linha no servidor, nunca PR de contrato) vale nos dois sentidos: o que carrega dado não vira `kind`.
  *
  * **Não publica `filters` de propósito**, pela razão de `/api/stock-locations`: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.
+ *
+ * **Os ajustes por grupo viajam junto**, em `groupAdjustments`, pela mesma razão das parcelas: a linha não tem identidade fora da condição. Não se ordena por eles, e o argumento é o de `installments` — ordenar a coleção por um campo do filho é ordenar por qual dos N.
  */
 export const listPaymentTerms = async (params?: ListPaymentTermsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPaymentTermsResponse> => {
 
@@ -5937,6 +5939,16 @@ export const getCreatePaymentTermUrl = () => {
  * 400 quando o plano não fecha — os modos estão em `PaymentTermInstallmentWriteRequest`, e nenhum deles é aparado em silêncio. Mais parcelas que o teto da empresa é 400 com `type` PRÓPRIO (`urn:cabinet:erro:parcelas-acima-do-teto`): a tela recorta o formulário pelo número que cabe, e para isso precisa distinguir esse caso dos erros de campo.
  *
  * 409 quando a empresa já tem condição com o mesmo `name`: no legado a PK é `(Fpg_codigo, Fpg_descricao)`, e nome repetido num combo é escolha que não dá para fazer certo — as duas linhas parecem a mesma para quem escolhe.
+ *
+ * ---
+ *
+ * **As recusas de `groupAdjustments`, e nenhuma apara em silêncio** (400 com `fields[]` apontando `groupAdjustments.<n>.<campo>`):
+ *
+ * 1. `productGroupId` REPETIDO na mesma condição. A chave da linha é o grupo — duas linhas do mesmo grupo não dizem qual ajuste vale. Mesma recusa de `groupDiscounts` no documento.
+ * 2. `productGroupId` que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO`. Id de outro `kind` é 400 e não 404: o que está errado é o campo do corpo, não o recurso pedido.
+ * 3. Percentual NEGATIVO em qualquer um dos dois. Desconto negativo é acréscimo escrito ao contrário, e a coluna do acréscimo existe ao lado.
+ * 4. `discountPercent` acima de `1000000` (100%). Desconto que passa do total faz a linha do grupo valer negativo. **`surchargePercent` não tem teto de propósito** — dobrar o preço de um grupo é estranho e é legítimo, e um teto inventado aqui recusaria dado real do legado na importação.
+ * 5. Os DOIS maiores que zero na mesma linha. Não é aparadura, é falta de leitura única: não está decidido se o acréscimo incide antes ou depois do desconto, nem sobre qual base. É a mesma recusa que este contrato já faz a percentual misturado com valor fixo na parcela — e, como lá, ela é DÍVIDA e não regra: o legado permite os dois na linha, mas os três `UPDATE` em massa que a preenchem gravam sempre um deles zerado, então dado real não é recusado. Publicar uma ordem de aplicação aqui a fixaria no servidor para sempre; recusar deixa a falta visível.
  */
 export const createPaymentTerm = async (paymentTermWriteRequest: PaymentTermWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPaymentTermResponse> => {
 
@@ -6006,6 +6018,16 @@ export const getUpdatePaymentTermUrl = (id: string,) => {
  * 404 quando o `id` não é condição da empresa ativa: do ponto de vista de quem pergunta, ela não está lá. 409 no `name` repetido, como no `POST`.
  *
  * **Não há `DELETE`** — aqui nem em lugar nenhum do contrato. Condição usada por documento antigo não pode sumir; `active: false` a tira do combo e deixa o passado legível (padrão 8).
+ *
+ * ---
+ *
+ * **As recusas de `groupAdjustments`, e nenhuma apara em silêncio** (400 com `fields[]` apontando `groupAdjustments.<n>.<campo>`):
+ *
+ * 1. `productGroupId` REPETIDO na mesma condição. A chave da linha é o grupo — duas linhas do mesmo grupo não dizem qual ajuste vale. Mesma recusa de `groupDiscounts` no documento.
+ * 2. `productGroupId` que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO`. Id de outro `kind` é 400 e não 404: o que está errado é o campo do corpo, não o recurso pedido.
+ * 3. Percentual NEGATIVO em qualquer um dos dois. Desconto negativo é acréscimo escrito ao contrário, e a coluna do acréscimo existe ao lado.
+ * 4. `discountPercent` acima de `1000000` (100%). Desconto que passa do total faz a linha do grupo valer negativo. **`surchargePercent` não tem teto de propósito** — dobrar o preço de um grupo é estranho e é legítimo, e um teto inventado aqui recusaria dado real do legado na importação.
+ * 5. Os DOIS maiores que zero na mesma linha. Não é aparadura, é falta de leitura única: não está decidido se o acréscimo incide antes ou depois do desconto, nem sobre qual base. É a mesma recusa que este contrato já faz a percentual misturado com valor fixo na parcela — e, como lá, ela é DÍVIDA e não regra: o legado permite os dois na linha, mas os três `UPDATE` em massa que a preenchem gravam sempre um deles zerado, então dado real não é recusado. Publicar uma ordem de aplicação aqui a fixaria no servidor para sempre; recusar deixa a falta visível.
  */
 export const updatePaymentTerm = async (id: string,
     paymentTermWriteRequest: PaymentTermWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePaymentTermResponse> => {

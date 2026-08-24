@@ -83,26 +83,9 @@ const FORA_DE_PROPOSITO: readonly string[] = [
   'post /api/stock-locations',
   'put /api/stock-locations/{id}',
   'get /api/variants/{variantId}/stock-balances',
-  // PAGAMENTO (S4) pela MESMA razão dos depósitos, e não pela do 501: o contrato
-  // especifica agora o que a fase S4b da api vai implementar, e no servidor de
-  // hoje não há handler nenhum.
-  //
-  // **Medição (2026-08-22, `cabinet-erp-api` `e47827e`):** `git grep` por
-  // `payment-terms`, `installment-policy` e `PaymentTerm` em `src/` e `tests/`
-  // devolve ZERO, e a cópia do contrato de lá tem 87 operações — as 87 de antes
-  // desta PR. Não é o 501 da fase: é caminho que o servidor não tem, e o par
-  // local devolve o 404 do Fastify. Ligar qualquer uma tiraria o mock e
-  // entregaria 404 ao site público, que é 100% mock.
-  //
-  // Saem daqui em FAMÍLIA — as cinco juntas, e só quando as cinco responderem.
-  // A condição sem a política deixaria o mock recusando um plano de 10x que o
-  // servidor aceita (ou o contrário), e a divergência apareceria como 400 numa
-  // gravação que a tela achava válida.
-  'get /api/payment-terms',
-  'post /api/payment-terms',
-  'put /api/payment-terms/{id}',
-  'get /api/installment-policy',
-  'put /api/installment-policy',
+  // (A família PAGAMENTO morava aqui e SAIU em 2026-08-23, com as cinco juntas
+  // como a nota antiga exigia — a medição contra o api `024aed8` está em
+  // `rotas-do-backend.ts`, junto das linhas ligadas.)
   // Os SERVIÇOS (S2) pela MESMA razão dos depósitos, e não pela do 501: o
   // contrato os publica AGORA porque é ele que especifica o que o S2b vai
   // implementar do lado do api, e no servidor de hoje não há handler nenhum.
@@ -525,6 +508,17 @@ describe('passthrough por rota', () => {
     },
     { familia: 'dashboard', caminhos: ['/api/dashboard/summary', '/api/dashboard/agenda'] },
     {
+      // Inteira INCLUSIVE as três escritas, que respondem 403 por papel para o
+      // usuário demo. Diferente das listas de apoio, aqui o 403 não custa nada
+      // visível: a fronteira do front é só-leitura (`src/data/pagamento-api.ts`)
+      // e nenhuma tela chama `POST`/`PUT` de condição. O que obriga a família a
+      // sair junta é a POLÍTICA governar a CONDIÇÃO no servidor — medido: subir
+      // `maxInstallments` para 8 pelo `PUT` fez o `POST` de 9 parcelas recusar
+      // com `urn:cabinet:erro:parcelas-acima-do-teto`.
+      familia: 'pagamento do documento',
+      caminhos: ['/api/payment-terms', '/api/payment-terms/{id}', '/api/installment-policy'],
+    },
+    {
       // Inteira INCLUSIVE a escrita. Ela entrou respondendo 403 por papel, e
       // ligamos assim mesmo porque mockar a gravação enquanto o servidor recusa
       // ensinaria que o `+...` funciona. O 403 caiu logo depois (`api#70`
@@ -604,6 +598,12 @@ describe('passthrough por rota', () => {
     // e continua valendo agora que ele aceita (`api#70`) — o que este teste
     // prova é a SAÍDA, e ela não depende da resposta.
     { familia: 'escrita de lista de apoio', metodo: 'POST', url: '/api/catalog-lookups' },
+    // As duas LEITURAS do pagamento, que são as únicas que a tela consome: o
+    // combo de condições do bloco e os três limites que ele usa para recortar
+    // o plano. Se uma delas voltasse ao mock, o documento leria condição do
+    // Postgres com teto inventado.
+    { familia: 'condições de pagamento', metodo: 'GET', url: '/api/payment-terms' },
+    { familia: 'política de parcelamento', metodo: 'GET', url: '/api/installment-policy' },
   ])('$familia ($metodo) SAI para a rede', async ({ metodo, url }) => {
     const init: RequestInit = { method: metodo }
     if (metodo === 'POST') {

@@ -1,9 +1,11 @@
+import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import { ConfirmarCancelamento } from '@/components/cabinet/confirmar-cancelamento'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import type { DataTableAction } from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
 import { PageHeader } from '@/components/cabinet/page-header'
+import type { OrigemDosDados } from '@/data/provider'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
@@ -64,6 +66,17 @@ export interface TelaDeListagemProps<T> {
   modoDeFiltro?: 'pilulas' | 'lista' | 'modulo'
   /** A entidade do schema de módulos — obrigatória em `modoDeFiltro: 'modulo'`. */
   entidadeDoSchema?: EntidadeCadastro
+  /**
+   * De onde vêm as linhas — `data.<recurso>.origem`, passado CRU pela rota.
+   *
+   * A tela de documento não precisa desta prop porque já recebe o `provider`
+   * inteiro; a listagem recebe só o `fetcher` (uma função solta, que não sabe
+   * de quem é). Enquanto for assim, quem liga as duas pontas é a rota — e
+   * `dados-de-exemplo-avisado.test.tsx` reprova a rota que ler um recurso de
+   * fixture sem declarar a origem, para "esqueci de passar" não virar tela
+   * mentindo de novo.
+   */
+  origem?: OrigemDosDados | undefined
 }
 
 /** Id da ação que ABRE o filtro — fica na tabela, com colunas e consultas salvas. */
@@ -127,6 +140,7 @@ export function TelaDeListagem<T>({
   filtros,
   modoDeFiltro,
   entidadeDoSchema,
+  origem,
 }: TelaDeListagemProps<T>) {
   const acoesDaTabela = actions.filter((a) => a.id === ACAO_FILTRO)
   const primaria = actions.find((a) => a.id === ACAO_PRIMARIA)
@@ -152,6 +166,9 @@ export function TelaDeListagem<T>({
         {...(primaria ? { primaria: paraCabecalho(primaria) } : {})}
         secundarias={secundarias.map(paraCabecalho)}
       />
+      {/* Entre o cabeçalho e a tabela: depois do título, que diz de que tela se
+          trata, e antes da primeira linha de dado, que é o que ele desmente. */}
+      <AvisoDadosDeExemplo origem={origem} />
       <VitraDataTable
         columns={columns}
         queryKey={queryKey}

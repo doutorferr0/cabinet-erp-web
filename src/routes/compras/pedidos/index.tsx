@@ -96,6 +96,9 @@ function PedidosCompraPage() {
       fetcher={data.pedidosCompra.list}
       actions={actions}
       filtros={camposFiltraveis}
+      // Os treze pedidos desta tela são fixture (sessão 60). Enquanto o
+      // registry disser `exemplo`, a listagem diz junto.
+      origem={data.pedidosCompra.origem}
     />
   )
 }

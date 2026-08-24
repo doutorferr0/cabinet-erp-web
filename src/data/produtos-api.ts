@@ -509,6 +509,8 @@ export async function gravarVariantes(
         `Falha ao gravar a variante ${onde}. O produto já foi gravado — reabra o produto antes de tentar de novo.`,
         resposta.status,
         detalheDoProblema(resposta.data),
+        resposta.data,
+        resposta.url,
       )
     }
   }
@@ -539,6 +541,8 @@ export async function escreverProduto(id: string, body: ProductWriteRequest): Pr
       'Falha ao gravar o produto.',
       resposta.status,
       detalheDoProblema(resposta.data),
+      resposta.data,
+      resposta.url,
     )
   }
   return resposta.data as ProductDto

@@ -1,5 +1,7 @@
+import { GravacaoEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Button } from '@/components/ui/button'
 import { ErroDaApi } from '@/data/api-provider'
+import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { type MutacaoObservavel, ehSessaoExpirada } from '@/data/sessao-expirada'
 import { ReentrarNaSessao } from '@/features/login/reentrar'
 import { cn } from '@/lib/utils'
@@ -88,6 +90,15 @@ export function ErroDoServidor({
   className?: string
 }) {
   if (!erro) return null
+
+  // 501 na ESCRITA: o servidor entendeu, não gravou nada e o que falta é
+  // implementação do outro lado. A caixa vermelha existe para erro que tem
+  // conserto — ela mostra `fields[]`, que num 501 não vem, e o vermelho manda o
+  // operador procurar o campo errado. O desvio fica aqui, e não em cada tela,
+  // porque toda gravação do repo passa por este bloco.
+  if (ehModuloEmConstrucao(erro)) {
+    return <GravacaoEmConstrucao erro={erro} {...(className ? { className } : {})} />
+  }
 
   const daApi = erro instanceof ErroDaApi ? erro : null
   const campos = daApi?.campos ?? []

@@ -8595,6 +8595,397 @@
           }
         }
       }
+    },
+    "/api/cost-profiles": {
+      "get": {
+        "tags": ["precos"],
+        "operationId": "ListCostProfiles",
+        "description": "Proposto. Os perfis de custo da empresa ativa — a metade de COMPRA da formação de preço (`Custo` do legado).\n\nEmpresa ativa vazia devolve `{rows: [], total: 0}`, como toda listagem deste contrato: aqui a empresa vem da sessão, e \"sem empresa\" é o operador recém-criado, não erro do cliente.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por `name`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "description": "Filtra pelos perfis de UM fornecedor. É a pergunta que a tela do fornecedor faz, e ela não cabe em `q` — `q` casa texto, e aqui a chave é identidade.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `name`, `supplierName`, `active`, `createdAt`. Campo fora dela é 400 `ordenacao-invalida`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCostProfileDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["precos"],
+        "operationId": "CreateCostProfile",
+        "description": "Proposto. Cria um perfil de custo para um fornecedor da empresa ativa.\n\n**Permissão: `custo:gerenciar`.** Não é `parceiros:editar` nem `produtos:editar`, e a separação tem consequência: a cascata de descontos é o que decide a margem de TODA venda daquele fornecedor, e errar um dígito aqui não aparece em nenhuma tela de venda — aparece no fim do mês. Mesma linha de corte que separou `pagamento:gerenciar` de `orcamento:editar`.\n\n409 `codigo-ja-cadastrado` quando o fornecedor já tem perfil com este nome na empresa.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostProfileWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostProfileDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cost-profiles/{id}": {
+      "get": {
+        "tags": ["precos"],
+        "operationId": "GetCostProfile",
+        "description": "Proposto. Um perfil de custo. Sem empresa ativa é **409** `sem-empresa-ativa` — detalhe por id exige empresa, ao contrário da listagem.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["precos"],
+        "operationId": "UpdateCostProfile",
+        "description": "Proposto. Substitui o perfil INTEIRO. Campo omitido volta ao padrão — não conserva o que estava lá.\n\n**O fornecedor pode ser trocado**, e isso é escrita normal: o perfil é a condição comercial, e ela migra quando o cadastro do fornecedor é consolidado. O que não muda é a empresa.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostProfileWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostProfileDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["precos"],
+        "operationId": "DeleteCostProfile",
+        "description": "Proposto. Apaga o perfil. Preferir `active: false` quando ele já precificou alguma coisa: desativar preserva a leitura de como o preço foi formado; apagar não.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cost-profiles/{id}/simulate": {
+      "post": {
+        "tags": ["precos"],
+        "operationId": "SimulateCostProfile",
+        "description": "Proposto. Roda a cascata de custo de UM item sob este perfil e devolve a decomposição — e o lucro, quando a venda líquida vem junto.\n\n**É `POST` e não `GET` com query.** São dezoito parcelas de entrada e saída, e a decomposição não é cacheável nem endereçável: o mesmo perfil com outro preço de tabela é outra resposta. `POST` também deixa a operação fora da whitelist de ordenação e paginação, que não significam nada aqui.\n\n**Não grava nada.** É cálculo puro sobre o perfil — nenhuma linha de `audit_log` nasce daqui, porque não há mutação a rastrear. A permissão é a de LEITURA da família: quem tem vínculo na empresa simula.\n\nO custo sai **sem ICMS** (`excludesIcms: true`); ver `CostSimulationDto`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostSimulationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostSimulationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15488,6 +15879,460 @@
             "format": "int32"
           }
         }
+      },
+      "CostProfileDto": {
+        "type": "object",
+        "description": "Proposto. O PERFIL DE CUSTO de um fornecedor — `Custo` do legado (40 colunas, 385 linhas na operação real), a metade de COMPRA da formação de preço.\n\n**É por FORNECEDOR e por EMPRESA.** Por fornecedor porque é a negociação com ele que define a cascata de descontos; por empresa porque a mesma rede negocia diferente em cada loja. O mesmo fornecedor pode ter mais de um perfil (`name`) — o legado tem \"ILUMINAR\", \"ILUMINAR ESPECIAL\" e \"ILUMINAR PREÇO 2\" no mesmo cadastro, e são condições comerciais distintas, não duplicatas.\n\n**O que este schema NÃO publica, e não é esquecimento:** `Cus_TributacaoICMS` e os seis campos que dependem dele (`Cus_Icms`, `Cus_IcmsDestino`, `Cus_MargValAgreg`, `Cus_ICMSDifAlqIPI`, `Cus_STEmbalagem`, `Cus_ICMSValorCompra`). Eles ramificam o custo em **sete caminhos** — Substituição Tributária domina 317 dos 385 perfis reais —, e qual deles reproduzir é decisão de CONTADOR, ainda pendente. Publicá-los agora congelaria no contrato uma conta que ninguém decidiu; a simulação deste trilho devolve o custo **sem imposto de ICMS** e diz isso no campo.\n\nTambém fora: `Cus_Importacao`/`Cus_Cambio` (mudam a base da VENDA, e venda é o outro trilho) e os nove campos de valor na nota do fornecedor (`Cus_TpVlNFo` + os oito `Cus_NFo*`), que dependem do ICMS para significar alguma coisa.",
+        "required": [
+          "id",
+          "supplierId",
+          "supplierName",
+          "name",
+          "active",
+          "discount1Percent",
+          "discount2Percent",
+          "discount3Percent",
+          "discount4Percent",
+          "ipiPercent",
+          "packagingPercent",
+          "financialPercent",
+          "freightPercent",
+          "otherPercent",
+          "simplesPercent",
+          "cardPercent",
+          "fixedCostPercent",
+          "costDiscountPercent",
+          "icmsCreditPercent",
+          "pisCreditPercent",
+          "cofinsCreditPercent",
+          "freightInPurchase",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor (`partners` com `isSupplier`), dono da negociação."
+          },
+          "supplierName": {
+            "type": "string",
+            "description": "Nome do fornecedor, para a grade não precisar de uma segunda consulta."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 70,
+            "description": "O nome da condição comercial (`Cus_Nome`). Único dentro do fornecedor na empresa — nome repetido é 409 `codigo-ja-cadastrado`."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "`Cus_situacao` do legado. Os 385 perfis reais estão ativos."
+          },
+          "discount1Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Primeiro desconto da cascata do fornecedor (`Cus_desconto1`), aplicado sobre o preço de TABELA.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "discount2Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Segundo desconto, aplicado sobre o que **sobrou** do primeiro — a cascata é sequencial, nunca somada. 20% + 10% em cascata é 28%, não 30%.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "discount3Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Terceiro desconto da cascata, sobre o resto dos dois anteriores.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "discount4Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Quarto desconto da cascata, sobre o resto dos três anteriores.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "ipiPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "IPI do fornecedor (`Cus_IPI`), sobre o líquido da cascata.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "packagingPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Embalagem (`Cus_Embalagens`), sobre o líquido da cascata.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "financialPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Encargo financeiro (`Cus_Financeira`) — incide sobre **líquido + embalagem + IPI**, não sobre o líquido puro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "freightPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Frete (`Cus_Frete`). A BASE depende de `freightInPurchase`: dentro da compra incide sobre o líquido; fora, sobre líquido + embalagem + IPI + financeiro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "otherPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Outras despesas (`Cus_outros`), sobre líquido + embalagem + IPI + financeiro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "simplesPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Simples Nacional (`Cus_Simples`). Incide sobre a **venda líquida**, não sobre a compra — é tributo de saída entrando no custo para apurar lucro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "cardPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Taxa de cartão (`Cus_PorcCartao`), sobre a venda líquida — mesma base do Simples.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "fixedCostPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Custo fixo rateado (`Cus_CustoFixo`), sobre a venda líquida. É o overhead da casa cobrado por venda, não despesa da compra.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "costDiscountPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Desconto embutido no custo (`Cus_Desconto`), sobre a venda líquida — a provisão de desconto que o vendedor pode dar sem furar a margem.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "icmsCreditPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Crédito de ICMS da entrada (`Cus_CreditoICMS`), abatido do líquido da cascata.\n\n**Crédito é DADO, e a subtração é única.** A `CalcularProduto` do legado tem dois blocos que subtraem os três créditos, e eles são os ramos alternativos de `Cus_FreteemCompra` — não execução em sequência. A suspeita de subtração dupla, registrada por onze dias, está refutada contra a fonte.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "pisCreditPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Crédito de PIS da entrada (`Cus_CreditoPIS`), abatido do líquido.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "cofinsCreditPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Crédito de COFINS da entrada (`Cus_CreditoCOFINS`), abatido do líquido.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "freightInPurchase": {
+            "type": "boolean",
+            "description": "Se o frete entra no VALOR DE COMPRA (`Cus_FreteemCompra`).\n\nMuda duas coisas de uma vez, e é por isso que é flag e não convenção: quando ligado, o frete incide sobre o líquido puro e soma no valor de compra; quando desligado, incide sobre líquido + embalagem + IPI + financeiro e fica fora da compra — entrando só no custo. O valor final do frete difere nos dois modos."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CostProfileWriteRequest": {
+        "type": "object",
+        "description": "Proposto. Cria ou substitui um perfil de custo. `PUT` substitui o registro INTEIRO, como toda escrita deste contrato — campo omitido volta a zero, não conserva o valor anterior.",
+        "required": ["supplierId", "name"],
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 70
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Ausente = `true`. Perfil nasce valendo; desativar é gesto explícito."
+          },
+          "discount1Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Primeiro desconto da cascata do fornecedor (`Cus_desconto1`), aplicado sobre o preço de TABELA.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "discount2Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Segundo desconto, aplicado sobre o que **sobrou** do primeiro — a cascata é sequencial, nunca somada. 20% + 10% em cascata é 28%, não 30%.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "discount3Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Terceiro desconto da cascata, sobre o resto dos dois anteriores.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "discount4Percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Quarto desconto da cascata, sobre o resto dos três anteriores.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "ipiPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "IPI do fornecedor (`Cus_IPI`), sobre o líquido da cascata.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "packagingPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Embalagem (`Cus_Embalagens`), sobre o líquido da cascata.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "financialPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Encargo financeiro (`Cus_Financeira`) — incide sobre **líquido + embalagem + IPI**, não sobre o líquido puro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "freightPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Frete (`Cus_Frete`). A BASE depende de `freightInPurchase`: dentro da compra incide sobre o líquido; fora, sobre líquido + embalagem + IPI + financeiro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "otherPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Outras despesas (`Cus_outros`), sobre líquido + embalagem + IPI + financeiro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "simplesPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Simples Nacional (`Cus_Simples`). Incide sobre a **venda líquida**, não sobre a compra — é tributo de saída entrando no custo para apurar lucro.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "cardPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Taxa de cartão (`Cus_PorcCartao`), sobre a venda líquida — mesma base do Simples.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "fixedCostPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Custo fixo rateado (`Cus_CustoFixo`), sobre a venda líquida. É o overhead da casa cobrado por venda, não despesa da compra.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "costDiscountPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Desconto embutido no custo (`Cus_Desconto`), sobre a venda líquida — a provisão de desconto que o vendedor pode dar sem furar a margem.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "icmsCreditPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Crédito de ICMS da entrada (`Cus_CreditoICMS`), abatido do líquido da cascata.\n\n**Crédito é DADO, e a subtração é única.** A `CalcularProduto` do legado tem dois blocos que subtraem os três créditos, e eles são os ramos alternativos de `Cus_FreteemCompra` — não execução em sequência. A suspeita de subtração dupla, registrada por onze dias, está refutada contra a fonte.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "pisCreditPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Crédito de PIS da entrada (`Cus_CreditoPIS`), abatido do líquido.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "cofinsCreditPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Crédito de COFINS da entrada (`Cus_CreditoCOFINS`), abatido do líquido.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.\n\nAusente = zero."
+          },
+          "freightInPurchase": {
+            "type": "boolean",
+            "description": "Se o frete entra no VALOR DE COMPRA (`Cus_FreteemCompra`).\n\nMuda duas coisas de uma vez, e é por isso que é flag e não convenção: quando ligado, o frete incide sobre o líquido puro e soma no valor de compra; quando desligado, incide sobre líquido + embalagem + IPI + financeiro e fica fora da compra — entrando só no custo. O valor final do frete difere nos dois modos.\n\nAusente = `false`."
+          }
+        }
+      },
+      "PagedResultOfCostProfileDto": {
+        "type": "object",
+        "required": ["rows", "total"],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CostProfileDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CostSimulationRequest": {
+        "type": "object",
+        "description": "Proposto. O que a simulação precisa saber sobre **um item**: quanto ele custa na tabela do fornecedor e, se já houver preço de venda, por quanto ele sai.",
+        "required": ["tablePriceCents"],
+        "properties": {
+          "tablePriceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Preço de TABELA do item no fornecedor (`Preco_Produto.Pre_Tabela`), em centavos. É a entrada da cascata.\n\nViaja no corpo e não sai de um cadastro porque **ainda não existe onde guardá-lo**: `product_suppliers` publica o código e a descrição da peça no fornecedor, e o `divergido:` daquela migração declara, por escrito, que preço de compra ali não tem quem o escreva. Enquanto não tiver, quem simula informa.",
+            "minimum": 1
+          },
+          "netSaleCents": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "A venda LÍQUIDA do item (já descontada), em centavos — de onde sai o lucro.\n\n**É entrada, não resultado, e a separação é deliberada.** O preço de venda nasce do índice do fornecedor (`Ipr_Indice`), que é o outro trilho do módulo Preço; recalculá-lo aqui daria duas autoridades sobre o mesmo número. Ausente ou `null`: a resposta traz a decomposição da COMPRA e deixa `profitCents` nulo, porque quatro parcelas do custo (Simples, cartão, custo fixo e desconto de custo) incidem sobre a venda e sem ela valem zero — o custo sairia menor do que é."
+          },
+          "internalCommissionPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Comissão INTERNA sobre a venda líquida (`Ipr_vl_com_inter`). Ausente = zero.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "externalCommissionPercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Comissão EXTERNA sobre a venda líquida (`Ipr_vl_com_exter`). Ausente = zero.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          }
+        }
+      },
+      "CostSimulationDto": {
+        "type": "object",
+        "description": "Proposto. A decomposição do custo de um item sob um perfil, e o lucro quando a venda foi informada.\n\n**Toda parcela vem em centavos, arredondada a duas casas — e a ordem do arredondamento é dado do legado, não escolha estética.** Medido contra os 376 índices reais: o lucro gravado bate em 357 deles quando o custo é arredondado ANTES da subtração, e em 179 quando não é. A conta é em centavos porque o legado a fazia em centavos.\n\n**`costCents` NÃO inclui ICMS.** Os sete caminhos de `Cus_TributacaoICMS` estão fora deste trilho (ver `CostProfileDto`), e o campo `icmsCents` não existe de propósito: publicá-lo zerado faria a tela mostrar \"ICMS: R$ 0,00\" para 317 perfis em que ele é o maior componente do custo.",
+        "required": [
+          "tablePriceCents",
+          "discount1Cents",
+          "discount2Cents",
+          "discount3Cents",
+          "discount4Cents",
+          "grossNetCents",
+          "icmsCreditCents",
+          "pisCreditCents",
+          "cofinsCreditCents",
+          "netPurchaseCents",
+          "ipiCents",
+          "packagingCents",
+          "financialCents",
+          "freightCents",
+          "otherCents",
+          "simplesCents",
+          "cardCents",
+          "fixedCostCents",
+          "costDiscountCents",
+          "purchaseCents",
+          "costCents",
+          "internalCommissionCents",
+          "externalCommissionCents",
+          "excludesIcms"
+        ],
+        "properties": {
+          "tablePriceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O que entrou: preço de tabela do item."
+          },
+          "discount1Cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor do 1º desconto, sobre a tabela."
+          },
+          "discount2Cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor do 2º desconto, sobre a tabela já sem o 1º."
+          },
+          "discount3Cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor do 3º desconto, sobre o resto dos dois anteriores."
+          },
+          "discount4Cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor do 4º desconto, sobre o resto dos três anteriores."
+          },
+          "grossNetCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Líquido da cascata, **antes** de abater os créditos. É a base do IPI, da embalagem e dos créditos."
+          },
+          "icmsCreditCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Crédito de ICMS abatido."
+          },
+          "pisCreditCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Crédito de PIS abatido."
+          },
+          "cofinsCreditCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Crédito de COFINS abatido."
+          },
+          "netPurchaseCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Líquido depois dos créditos — `grossNetCents` menos os três. É a primeira parcela do custo."
+          },
+          "ipiCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "IPI, sobre `grossNetCents`."
+          },
+          "packagingCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Embalagem, sobre `grossNetCents`."
+          },
+          "financialCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Encargo financeiro, sobre líquido + embalagem + IPI."
+          },
+          "freightCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Frete, na base que `freightInPurchase` decide."
+          },
+          "otherCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Outras despesas."
+          },
+          "simplesCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Simples, sobre a venda líquida. Zero quando a venda não foi informada."
+          },
+          "cardCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taxa de cartão, sobre a venda líquida. Zero sem venda."
+          },
+          "fixedCostCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Custo fixo rateado, sobre a venda líquida. Zero sem venda."
+          },
+          "costDiscountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Desconto de custo, sobre a venda líquida. Zero sem venda."
+          },
+          "purchaseCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "VALOR DE COMPRA (`Pre_compra`) — o que se paga ao fornecedor: líquido + embalagem + IPI + financeiro, mais o frete quando `freightInPurchase`. Não é o custo: não carrega o que incide sobre a venda."
+          },
+          "costCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "CUSTO do item (`Pre_Custo`), sem ICMS: líquido + embalagem + IPI + financeiro + frete + outras + Simples + cartão + custo fixo + desconto de custo."
+          },
+          "internalCommissionCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Comissão interna sobre a venda líquida."
+          },
+          "externalCommissionCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Comissão externa sobre a venda líquida."
+          },
+          "profitCents": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "LUCRO (`Pre_Lucro`) = venda líquida − custo − comissão interna − comissão externa. `null` quando `netSaleCents` não foi informado."
+          },
+          "profitPercent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "MARGEM (`Pre_PorLucro`): lucro sobre a venda líquida. `null` quando não há venda informada.\n\nPercentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo."
+          },
+          "excludesIcms": {
+            "type": "boolean",
+            "description": "Sempre `true` neste trilho, e o campo existe para a tela poder DIZER isso ao operador em vez de deixá-lo somar um custo incompleto sem saber. Vira `false` quando a decisão do contador entrar e os sete caminhos de ICMS forem implementados."
+          }
+        }
       }
     }
   },
@@ -15533,6 +16378,9 @@
     },
     {
       "name": "compras"
+    },
+    {
+      "name": "precos"
     }
   ]
 }

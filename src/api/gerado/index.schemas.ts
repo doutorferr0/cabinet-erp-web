@@ -5181,6 +5181,392 @@ export interface PagedResultOfPurchaseReplenishmentRowDto {
 }
 
 /**
+ * Proposto. O PERFIL DE CUSTO de um fornecedor — `Custo` do legado (40 colunas, 385 linhas na operação real), a metade de COMPRA da formação de preço.
+ *
+ * **É por FORNECEDOR e por EMPRESA.** Por fornecedor porque é a negociação com ele que define a cascata de descontos; por empresa porque a mesma rede negocia diferente em cada loja. O mesmo fornecedor pode ter mais de um perfil (`name`) — o legado tem "ILUMINAR", "ILUMINAR ESPECIAL" e "ILUMINAR PREÇO 2" no mesmo cadastro, e são condições comerciais distintas, não duplicatas.
+ *
+ * **O que este schema NÃO publica, e não é esquecimento:** `Cus_TributacaoICMS` e os seis campos que dependem dele (`Cus_Icms`, `Cus_IcmsDestino`, `Cus_MargValAgreg`, `Cus_ICMSDifAlqIPI`, `Cus_STEmbalagem`, `Cus_ICMSValorCompra`). Eles ramificam o custo em **sete caminhos** — Substituição Tributária domina 317 dos 385 perfis reais —, e qual deles reproduzir é decisão de CONTADOR, ainda pendente. Publicá-los agora congelaria no contrato uma conta que ninguém decidiu; a simulação deste trilho devolve o custo **sem imposto de ICMS** e diz isso no campo.
+ *
+ * Também fora: `Cus_Importacao`/`Cus_Cambio` (mudam a base da VENDA, e venda é o outro trilho) e os nove campos de valor na nota do fornecedor (`Cus_TpVlNFo` + os oito `Cus_NFo*`), que dependem do ICMS para significar alguma coisa.
+ */
+export interface CostProfileDto {
+  id: string;
+  /** O fornecedor (`partners` com `isSupplier`), dono da negociação. */
+  supplierId: string;
+  /** Nome do fornecedor, para a grade não precisar de uma segunda consulta. */
+  supplierName: string;
+  /**
+     * O nome da condição comercial (`Cus_Nome`). Único dentro do fornecedor na empresa — nome repetido é 409 `codigo-ja-cadastrado`.
+     * @maxLength 70
+     */
+  name: string;
+  /** `Cus_situacao` do legado. Os 385 perfis reais estão ativos. */
+  active: boolean;
+  /**
+     * Primeiro desconto da cascata do fornecedor (`Cus_desconto1`), aplicado sobre o preço de TABELA.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  discount1Percent: number;
+  /**
+     * Segundo desconto, aplicado sobre o que **sobrou** do primeiro — a cascata é sequencial, nunca somada. 20% + 10% em cascata é 28%, não 30%.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  discount2Percent: number;
+  /**
+     * Terceiro desconto da cascata, sobre o resto dos dois anteriores.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  discount3Percent: number;
+  /**
+     * Quarto desconto da cascata, sobre o resto dos três anteriores.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  discount4Percent: number;
+  /**
+     * IPI do fornecedor (`Cus_IPI`), sobre o líquido da cascata.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  ipiPercent: number;
+  /**
+     * Embalagem (`Cus_Embalagens`), sobre o líquido da cascata.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  packagingPercent: number;
+  /**
+     * Encargo financeiro (`Cus_Financeira`) — incide sobre **líquido + embalagem + IPI**, não sobre o líquido puro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  financialPercent: number;
+  /**
+     * Frete (`Cus_Frete`). A BASE depende de `freightInPurchase`: dentro da compra incide sobre o líquido; fora, sobre líquido + embalagem + IPI + financeiro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  freightPercent: number;
+  /**
+     * Outras despesas (`Cus_outros`), sobre líquido + embalagem + IPI + financeiro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  otherPercent: number;
+  /**
+     * Simples Nacional (`Cus_Simples`). Incide sobre a **venda líquida**, não sobre a compra — é tributo de saída entrando no custo para apurar lucro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  simplesPercent: number;
+  /**
+     * Taxa de cartão (`Cus_PorcCartao`), sobre a venda líquida — mesma base do Simples.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  cardPercent: number;
+  /**
+     * Custo fixo rateado (`Cus_CustoFixo`), sobre a venda líquida. É o overhead da casa cobrado por venda, não despesa da compra.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  fixedCostPercent: number;
+  /**
+     * Desconto embutido no custo (`Cus_Desconto`), sobre a venda líquida — a provisão de desconto que o vendedor pode dar sem furar a margem.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  costDiscountPercent: number;
+  /**
+     * Crédito de ICMS da entrada (`Cus_CreditoICMS`), abatido do líquido da cascata.
+     *
+     * **Crédito é DADO, e a subtração é única.** A `CalcularProduto` do legado tem dois blocos que subtraem os três créditos, e eles são os ramos alternativos de `Cus_FreteemCompra` — não execução em sequência. A suspeita de subtração dupla, registrada por onze dias, está refutada contra a fonte.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  icmsCreditPercent: number;
+  /**
+     * Crédito de PIS da entrada (`Cus_CreditoPIS`), abatido do líquido.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  pisCreditPercent: number;
+  /**
+     * Crédito de COFINS da entrada (`Cus_CreditoCOFINS`), abatido do líquido.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  cofinsCreditPercent: number;
+  /**
+     * Se o frete entra no VALOR DE COMPRA (`Cus_FreteemCompra`).
+     *
+     * Muda duas coisas de uma vez, e é por isso que é flag e não convenção: quando ligado, o frete incide sobre o líquido puro e soma no valor de compra; quando desligado, incide sobre líquido + embalagem + IPI + financeiro e fica fora da compra — entrando só no custo. O valor final do frete difere nos dois modos.
+     */
+  freightInPurchase: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Proposto. Cria ou substitui um perfil de custo. `PUT` substitui o registro INTEIRO, como toda escrita deste contrato — campo omitido volta a zero, não conserva o valor anterior.
+ */
+export interface CostProfileWriteRequest {
+  supplierId: string;
+  /** @maxLength 70 */
+  name: string;
+  /** Ausente = `true`. Perfil nasce valendo; desativar é gesto explícito. */
+  active?: boolean;
+  /**
+     * Primeiro desconto da cascata do fornecedor (`Cus_desconto1`), aplicado sobre o preço de TABELA.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  discount1Percent?: number;
+  /**
+     * Segundo desconto, aplicado sobre o que **sobrou** do primeiro — a cascata é sequencial, nunca somada. 20% + 10% em cascata é 28%, não 30%.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  discount2Percent?: number;
+  /**
+     * Terceiro desconto da cascata, sobre o resto dos dois anteriores.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  discount3Percent?: number;
+  /**
+     * Quarto desconto da cascata, sobre o resto dos três anteriores.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  discount4Percent?: number;
+  /**
+     * IPI do fornecedor (`Cus_IPI`), sobre o líquido da cascata.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  ipiPercent?: number;
+  /**
+     * Embalagem (`Cus_Embalagens`), sobre o líquido da cascata.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  packagingPercent?: number;
+  /**
+     * Encargo financeiro (`Cus_Financeira`) — incide sobre **líquido + embalagem + IPI**, não sobre o líquido puro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  financialPercent?: number;
+  /**
+     * Frete (`Cus_Frete`). A BASE depende de `freightInPurchase`: dentro da compra incide sobre o líquido; fora, sobre líquido + embalagem + IPI + financeiro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  freightPercent?: number;
+  /**
+     * Outras despesas (`Cus_outros`), sobre líquido + embalagem + IPI + financeiro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  otherPercent?: number;
+  /**
+     * Simples Nacional (`Cus_Simples`). Incide sobre a **venda líquida**, não sobre a compra — é tributo de saída entrando no custo para apurar lucro.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  simplesPercent?: number;
+  /**
+     * Taxa de cartão (`Cus_PorcCartao`), sobre a venda líquida — mesma base do Simples.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  cardPercent?: number;
+  /**
+     * Custo fixo rateado (`Cus_CustoFixo`), sobre a venda líquida. É o overhead da casa cobrado por venda, não despesa da compra.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  fixedCostPercent?: number;
+  /**
+     * Desconto embutido no custo (`Cus_Desconto`), sobre a venda líquida — a provisão de desconto que o vendedor pode dar sem furar a margem.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  costDiscountPercent?: number;
+  /**
+     * Crédito de ICMS da entrada (`Cus_CreditoICMS`), abatido do líquido da cascata.
+     *
+     * **Crédito é DADO, e a subtração é única.** A `CalcularProduto` do legado tem dois blocos que subtraem os três créditos, e eles são os ramos alternativos de `Cus_FreteemCompra` — não execução em sequência. A suspeita de subtração dupla, registrada por onze dias, está refutada contra a fonte.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  icmsCreditPercent?: number;
+  /**
+     * Crédito de PIS da entrada (`Cus_CreditoPIS`), abatido do líquido.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  pisCreditPercent?: number;
+  /**
+     * Crédito de COFINS da entrada (`Cus_CreditoCOFINS`), abatido do líquido.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     *
+     * Ausente = zero.
+     */
+  cofinsCreditPercent?: number;
+  /**
+     * Se o frete entra no VALOR DE COMPRA (`Cus_FreteemCompra`).
+     *
+     * Muda duas coisas de uma vez, e é por isso que é flag e não convenção: quando ligado, o frete incide sobre o líquido puro e soma no valor de compra; quando desligado, incide sobre líquido + embalagem + IPI + financeiro e fica fora da compra — entrando só no custo. O valor final do frete difere nos dois modos.
+     *
+     * Ausente = `false`.
+     */
+  freightInPurchase?: boolean;
+}
+
+export interface PagedResultOfCostProfileDto {
+  rows: CostProfileDto[];
+  total: number;
+}
+
+/**
+ * Proposto. O que a simulação precisa saber sobre **um item**: quanto ele custa na tabela do fornecedor e, se já houver preço de venda, por quanto ele sai.
+ */
+export interface CostSimulationRequest {
+  /**
+     * Preço de TABELA do item no fornecedor (`Preco_Produto.Pre_Tabela`), em centavos. É a entrada da cascata.
+     *
+     * Viaja no corpo e não sai de um cadastro porque **ainda não existe onde guardá-lo**: `product_suppliers` publica o código e a descrição da peça no fornecedor, e o `divergido:` daquela migração declara, por escrito, que preço de compra ali não tem quem o escreva. Enquanto não tiver, quem simula informa.
+     * @minimum 1
+     */
+  tablePriceCents: number;
+  /**
+     * A venda LÍQUIDA do item (já descontada), em centavos — de onde sai o lucro.
+     *
+     * **É entrada, não resultado, e a separação é deliberada.** O preço de venda nasce do índice do fornecedor (`Ipr_Indice`), que é o outro trilho do módulo Preço; recalculá-lo aqui daria duas autoridades sobre o mesmo número. Ausente ou `null`: a resposta traz a decomposição da COMPRA e deixa `profitCents` nulo, porque quatro parcelas do custo (Simples, cartão, custo fixo e desconto de custo) incidem sobre a venda e sem ela valem zero — o custo sairia menor do que é.
+     * @nullable
+     */
+  netSaleCents?: number | null;
+  /**
+     * Comissão INTERNA sobre a venda líquida (`Ipr_vl_com_inter`). Ausente = zero.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  internalCommissionPercent?: number;
+  /**
+     * Comissão EXTERNA sobre a venda líquida (`Ipr_vl_com_exter`). Ausente = zero.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     */
+  externalCommissionPercent?: number;
+}
+
+/**
+ * Proposto. A decomposição do custo de um item sob um perfil, e o lucro quando a venda foi informada.
+ *
+ * **Toda parcela vem em centavos, arredondada a duas casas — e a ordem do arredondamento é dado do legado, não escolha estética.** Medido contra os 376 índices reais: o lucro gravado bate em 357 deles quando o custo é arredondado ANTES da subtração, e em 179 quando não é. A conta é em centavos porque o legado a fazia em centavos.
+ *
+ * **`costCents` NÃO inclui ICMS.** Os sete caminhos de `Cus_TributacaoICMS` estão fora deste trilho (ver `CostProfileDto`), e o campo `icmsCents` não existe de propósito: publicá-lo zerado faria a tela mostrar "ICMS: R$ 0,00" para 317 perfis em que ele é o maior componente do custo.
+ */
+export interface CostSimulationDto {
+  /** O que entrou: preço de tabela do item. */
+  tablePriceCents: number;
+  /** Valor do 1º desconto, sobre a tabela. */
+  discount1Cents: number;
+  /** Valor do 2º desconto, sobre a tabela já sem o 1º. */
+  discount2Cents: number;
+  /** Valor do 3º desconto, sobre o resto dos dois anteriores. */
+  discount3Cents: number;
+  /** Valor do 4º desconto, sobre o resto dos três anteriores. */
+  discount4Cents: number;
+  /** Líquido da cascata, **antes** de abater os créditos. É a base do IPI, da embalagem e dos créditos. */
+  grossNetCents: number;
+  /** Crédito de ICMS abatido. */
+  icmsCreditCents: number;
+  /** Crédito de PIS abatido. */
+  pisCreditCents: number;
+  /** Crédito de COFINS abatido. */
+  cofinsCreditCents: number;
+  /** Líquido depois dos créditos — `grossNetCents` menos os três. É a primeira parcela do custo. */
+  netPurchaseCents: number;
+  /** IPI, sobre `grossNetCents`. */
+  ipiCents: number;
+  /** Embalagem, sobre `grossNetCents`. */
+  packagingCents: number;
+  /** Encargo financeiro, sobre líquido + embalagem + IPI. */
+  financialCents: number;
+  /** Frete, na base que `freightInPurchase` decide. */
+  freightCents: number;
+  /** Outras despesas. */
+  otherCents: number;
+  /** Simples, sobre a venda líquida. Zero quando a venda não foi informada. */
+  simplesCents: number;
+  /** Taxa de cartão, sobre a venda líquida. Zero sem venda. */
+  cardCents: number;
+  /** Custo fixo rateado, sobre a venda líquida. Zero sem venda. */
+  fixedCostCents: number;
+  /** Desconto de custo, sobre a venda líquida. Zero sem venda. */
+  costDiscountCents: number;
+  /** VALOR DE COMPRA (`Pre_compra`) — o que se paga ao fornecedor: líquido + embalagem + IPI + financeiro, mais o frete quando `freightInPurchase`. Não é o custo: não carrega o que incide sobre a venda. */
+  purchaseCents: number;
+  /** CUSTO do item (`Pre_Custo`), sem ICMS: líquido + embalagem + IPI + financeiro + frete + outras + Simples + cartão + custo fixo + desconto de custo. */
+  costCents: number;
+  /** Comissão interna sobre a venda líquida. */
+  internalCommissionCents: number;
+  /** Comissão externa sobre a venda líquida. */
+  externalCommissionCents: number;
+  /**
+     * LUCRO (`Pre_Lucro`) = venda líquida − custo − comissão interna − comissão externa. `null` quando `netSaleCents` não foi informado.
+     * @nullable
+     */
+  profitCents?: number | null;
+  /**
+     * MARGEM (`Pre_PorLucro`): lucro sobre a venda líquida. `null` quando não há venda informada.
+     *
+     * Percentual com **4 casas decimais**, inteiro escalado por 10.000: `10000` = 1%, `1` = 0,0001%, `1000000` = 100%. Mesma escala de `QuoteDetailDto.discountPercent` — inteiro e não `number` porque percentual aqui multiplica dinheiro, e float empilha arredondamento em cima de centavo.
+     * @nullable
+     */
+  profitPercent?: number | null;
+  /** Sempre `true` neste trilho, e o campo existe para a tela poder DIZER isso ao operador em vez de deixá-lo somar um custo incompleto sem saber. Vira `false` quando a decisão do contador entrar e os sete caminhos de ICMS forem implementados. */
+  excludesIcms: boolean;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -6146,5 +6532,23 @@ locationId?: string;
  * Só as variantes em que `qtySuggested > 0`. É o recorte de trabalho; omitido, a consulta traz o quadro inteiro, que é o que o relatório quer.
  */
 belowMinimumOnly?: boolean;
+};
+
+export type ListCostProfilesParams = {
+/**
+ * Busca por `name`.
+ */
+q?: string;
+/**
+ * Filtra pelos perfis de UM fornecedor. É a pergunta que a tela do fornecedor faz, e ela não cabe em `q` — `q` casa texto, e aqui a chave é identidade.
+ */
+supplierId?: string;
+/**
+ * Whitelist: `name`, `supplierName`, `active`, `createdAt`. Campo fora dela é 400 `ordenacao-invalida`.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 

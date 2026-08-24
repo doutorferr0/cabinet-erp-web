@@ -18,6 +18,10 @@ import type {
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
   ChangePasswordRequest,
+  CostProfileDto,
+  CostProfileWriteRequest,
+  CostSimulationDto,
+  CostSimulationRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
   CrmLostReasonsReportDto,
@@ -51,6 +55,7 @@ import type {
   ListActivitiesParams,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
+  ListCostProfilesParams,
   ListCrmLostReasonsParams,
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
@@ -80,6 +85,7 @@ import type {
   OrderWriteRequest,
   PagedResultOfActivityDto,
   PagedResultOfCatalogLookupDto,
+  PagedResultOfCostProfileDto,
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
   PagedResultOfCrmPipelineDto,
@@ -7677,6 +7683,382 @@ export const getPurchaseStockReplenishment = async (params?: GetPurchaseStockRep
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type listCostProfilesResponse200 = {
+  data: PagedResultOfCostProfileDto
+  status: 200
+}
+
+export type listCostProfilesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCostProfilesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCostProfilesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listCostProfilesResponseSuccess = (listCostProfilesResponse200) & {
+  headers: Headers;
+};
+export type listCostProfilesResponseError = (listCostProfilesResponse400 | listCostProfilesResponse401 | listCostProfilesResponse403) & {
+  headers: Headers;
+};
+
+export type listCostProfilesResponse = (listCostProfilesResponseSuccess | listCostProfilesResponseError)
+
+export const getListCostProfilesUrl = (params?: ListCostProfilesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cost-profiles?${stringifiedParams}` : `/api/cost-profiles`
+}
+
+/**
+ * Proposto. Os perfis de custo da empresa ativa — a metade de COMPRA da formação de preço (`Custo` do legado).
+ *
+ * Empresa ativa vazia devolve `{rows: [], total: 0}`, como toda listagem deste contrato: aqui a empresa vem da sessão, e "sem empresa" é o operador recém-criado, não erro do cliente.
+ */
+export const listCostProfiles = async (params?: ListCostProfilesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCostProfilesResponse> => {
+
+  return apiFetch<listCostProfilesResponse>(getListCostProfilesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCostProfileResponse201 = {
+  data: CostProfileDto
+  status: 201
+}
+
+export type createCostProfileResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCostProfileResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createCostProfileResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createCostProfileResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCostProfileResponseSuccess = (createCostProfileResponse201) & {
+  headers: Headers;
+};
+export type createCostProfileResponseError = (createCostProfileResponse400 | createCostProfileResponse401 | createCostProfileResponse403 | createCostProfileResponse409) & {
+  headers: Headers;
+};
+
+export type createCostProfileResponse = (createCostProfileResponseSuccess | createCostProfileResponseError)
+
+export const getCreateCostProfileUrl = () => {
+
+
+
+
+  return `/api/cost-profiles`
+}
+
+/**
+ * Proposto. Cria um perfil de custo para um fornecedor da empresa ativa.
+ *
+ * **Permissão: `custo:gerenciar`.** Não é `parceiros:editar` nem `produtos:editar`, e a separação tem consequência: a cascata de descontos é o que decide a margem de TODA venda daquele fornecedor, e errar um dígito aqui não aparece em nenhuma tela de venda — aparece no fim do mês. Mesma linha de corte que separou `pagamento:gerenciar` de `orcamento:editar`.
+ *
+ * 409 `codigo-ja-cadastrado` quando o fornecedor já tem perfil com este nome na empresa.
+ */
+export const createCostProfile = async (costProfileWriteRequest: CostProfileWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCostProfileResponse> => {
+
+  return apiFetch<createCostProfileResponse>(getCreateCostProfileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(costProfileWriteRequest)
+  }
+);}
+
+
+
+export type getCostProfileResponse200 = {
+  data: CostProfileDto
+  status: 200
+}
+
+export type getCostProfileResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getCostProfileResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getCostProfileResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getCostProfileResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getCostProfileResponseSuccess = (getCostProfileResponse200) & {
+  headers: Headers;
+};
+export type getCostProfileResponseError = (getCostProfileResponse401 | getCostProfileResponse403 | getCostProfileResponse404 | getCostProfileResponse409) & {
+  headers: Headers;
+};
+
+export type getCostProfileResponse = (getCostProfileResponseSuccess | getCostProfileResponseError)
+
+export const getGetCostProfileUrl = (id: string,) => {
+
+
+
+
+  return `/api/cost-profiles/${id}`
+}
+
+/**
+ * Proposto. Um perfil de custo. Sem empresa ativa é **409** `sem-empresa-ativa` — detalhe por id exige empresa, ao contrário da listagem.
+ */
+export const getCostProfile = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getCostProfileResponse> => {
+
+  return apiFetch<getCostProfileResponse>(getGetCostProfileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateCostProfileResponse200 = {
+  data: CostProfileDto
+  status: 200
+}
+
+export type updateCostProfileResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCostProfileResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateCostProfileResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateCostProfileResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateCostProfileResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateCostProfileResponseSuccess = (updateCostProfileResponse200) & {
+  headers: Headers;
+};
+export type updateCostProfileResponseError = (updateCostProfileResponse400 | updateCostProfileResponse401 | updateCostProfileResponse403 | updateCostProfileResponse404 | updateCostProfileResponse409) & {
+  headers: Headers;
+};
+
+export type updateCostProfileResponse = (updateCostProfileResponseSuccess | updateCostProfileResponseError)
+
+export const getUpdateCostProfileUrl = (id: string,) => {
+
+
+
+
+  return `/api/cost-profiles/${id}`
+}
+
+/**
+ * Proposto. Substitui o perfil INTEIRO. Campo omitido volta ao padrão — não conserva o que estava lá.
+ *
+ * **O fornecedor pode ser trocado**, e isso é escrita normal: o perfil é a condição comercial, e ela migra quando o cadastro do fornecedor é consolidado. O que não muda é a empresa.
+ */
+export const updateCostProfile = async (id: string,
+    costProfileWriteRequest: CostProfileWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCostProfileResponse> => {
+
+  return apiFetch<updateCostProfileResponse>(getUpdateCostProfileUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(costProfileWriteRequest)
+  }
+);}
+
+
+
+export type deleteCostProfileResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteCostProfileResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type deleteCostProfileResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type deleteCostProfileResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type deleteCostProfileResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type deleteCostProfileResponseSuccess = (deleteCostProfileResponse204) & {
+  headers: Headers;
+};
+export type deleteCostProfileResponseError = (deleteCostProfileResponse401 | deleteCostProfileResponse403 | deleteCostProfileResponse404 | deleteCostProfileResponse409) & {
+  headers: Headers;
+};
+
+export type deleteCostProfileResponse = (deleteCostProfileResponseSuccess | deleteCostProfileResponseError)
+
+export const getDeleteCostProfileUrl = (id: string,) => {
+
+
+
+
+  return `/api/cost-profiles/${id}`
+}
+
+/**
+ * Proposto. Apaga o perfil. Preferir `active: false` quando ele já precificou alguma coisa: desativar preserva a leitura de como o preço foi formado; apagar não.
+ */
+export const deleteCostProfile = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteCostProfileResponse> => {
+
+  return apiFetch<deleteCostProfileResponse>(getDeleteCostProfileUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type simulateCostProfileResponse200 = {
+  data: CostSimulationDto
+  status: 200
+}
+
+export type simulateCostProfileResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type simulateCostProfileResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type simulateCostProfileResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type simulateCostProfileResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type simulateCostProfileResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type simulateCostProfileResponseSuccess = (simulateCostProfileResponse200) & {
+  headers: Headers;
+};
+export type simulateCostProfileResponseError = (simulateCostProfileResponse400 | simulateCostProfileResponse401 | simulateCostProfileResponse403 | simulateCostProfileResponse404 | simulateCostProfileResponse409) & {
+  headers: Headers;
+};
+
+export type simulateCostProfileResponse = (simulateCostProfileResponseSuccess | simulateCostProfileResponseError)
+
+export const getSimulateCostProfileUrl = (id: string,) => {
+
+
+
+
+  return `/api/cost-profiles/${id}/simulate`
+}
+
+/**
+ * Proposto. Roda a cascata de custo de UM item sob este perfil e devolve a decomposição — e o lucro, quando a venda líquida vem junto.
+ *
+ * **É `POST` e não `GET` com query.** São dezoito parcelas de entrada e saída, e a decomposição não é cacheável nem endereçável: o mesmo perfil com outro preço de tabela é outra resposta. `POST` também deixa a operação fora da whitelist de ordenação e paginação, que não significam nada aqui.
+ *
+ * **Não grava nada.** É cálculo puro sobre o perfil — nenhuma linha de `audit_log` nasce daqui, porque não há mutação a rastrear. A permissão é a de LEITURA da família: quem tem vínculo na empresa simula.
+ *
+ * O custo sai **sem ICMS** (`excludesIcms: true`); ver `CostSimulationDto`.
+ */
+export const simulateCostProfile = async (id: string,
+    costSimulationRequest: CostSimulationRequest, options?: Parameters<typeof apiFetch>[1]): Promise<simulateCostProfileResponse> => {
+
+  return apiFetch<simulateCostProfileResponse>(getSimulateCostProfileUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(costSimulationRequest)
   }
 );}
 

@@ -173,12 +173,19 @@ function PedidosDeVendaPage() {
           setParaCancelar(null)
           cancelar.reset()
         },
-        onConfirmar: () => {
+        // O motivo é do vocabulário do servidor (`MOTIVO_CANCELAMENTO`), e é
+        // OPCIONAL: o contrato aceita o cancelamento sem corpo nenhum, que é o
+        // que a maioria dos 3.354 cancelamentos do legado é.
+        comMotivo: true,
+        onConfirmar: (motivo) => {
           if (!paraCancelar) return
           // Fecha no SUCESSO. Fechar antes esconderia a recusa do servidor
           // junto com o diálogo, e a listagem voltaria igual — indistinguível
           // de um cancelamento que deu certo.
-          cancelar.mutate(paraCancelar.id, { onSuccess: () => setParaCancelar(null) })
+          cancelar.mutate(
+            { id: paraCancelar.id, motivo },
+            { onSuccess: () => setParaCancelar(null) },
+          )
         },
       }}
     />

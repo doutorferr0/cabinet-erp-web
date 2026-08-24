@@ -1,5 +1,5 @@
 import type { QuoteDetailDto, QuoteDto, QuoteWriteRequest } from '@/api/gerado'
-import { cancelQuote, createQuote, getQuote, updateQuote } from '@/api/gerado'
+import { cancelQuote, createQuote, getQuote, reviseQuote, updateQuote } from '@/api/gerado'
 import {
   PAGE_SIZE_MAX,
   type RespostaDaApi,
@@ -7,6 +7,7 @@ import {
   dadosOuErro,
   itemOuNulo,
 } from '@/data/api-provider'
+import { type MotivoDoCancelamento, corpoDoCancelamento } from '@/data/cancelamento-de-documento'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
 import { type Orcamento, orcamentoVazio } from '@/mocks/orcamentos'
@@ -338,8 +339,8 @@ export function useGravarOrcamento() {
 export function useCancelarOrcamento() {
   const invalidar = useInvalidarOrcamentos()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const resposta: RespostaDaApi = await cancelQuote(id)
+    mutationFn: async ({ id, motivo }: { id: string; motivo?: MotivoDoCancelamento }) => {
+      const resposta: RespostaDaApi = await cancelQuote(id, corpoDoCancelamento(motivo))
       return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao cancelar o orçamento.')
     },
     onSuccess: (cancelado) => {
@@ -347,6 +348,39 @@ export function useCancelarOrcamento() {
       avisar(
         `Orçamento ${cancelado.number} cancelado.`,
         'O documento continua na listagem, marcado como cancelado.',
+      )
+    },
+  })
+}
+
+/**
+ * REVISAR — `POST /api/quotes/{id}/revise`, e o caso real que ele resolve é
+ * banal: o cliente mudou de ideia e o vendedor emitiu DOIS orçamentos no mesmo
+ * dia, sem nada dizendo qual vale.
+ *
+ * A revisão é orçamento NOVO apontando para o anterior (`revisionOfId`), com
+ * `revision` incrementada — não uma edição do que foi apresentado. Editar o
+ * documento que o cliente já viu apagaria a proposta que ele tem na mão, e a
+ * pergunta "o que mudou entre uma e outra?" deixaria de ter as duas pontas.
+ *
+ * **Recusas, as duas 409:** orçamento CANCELADO (revisar o que foi retirado da
+ * mesa é ressuscitar por outro nome) e orçamento que JÁ tem revisão
+ * (`urn:cabinet:erro:orcamento-ja-revisado`) — a segunda revisão sai da
+ * PRIMEIRA, senão a cadeia vira árvore e "qual é a versão vigente" fica sem
+ * resposta.
+ */
+export function useRevisarOrcamento() {
+  const invalidar = useInvalidarOrcamentos()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resposta: RespostaDaApi = await reviseQuote(id)
+      return dadosOuErro<QuoteDetailDto>(resposta, 'Falha ao revisar o orçamento.')
+    },
+    onSuccess: (revisao) => {
+      invalidar()
+      avisar(
+        `Revisão ${revisao.revision} criada — orçamento ${revisao.number}.`,
+        'O orçamento anterior continua na listagem, como está.',
       )
     },
   })

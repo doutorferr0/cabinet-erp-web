@@ -5,6 +5,7 @@ import type { DataTableAction } from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
 import { PageHeader } from '@/components/cabinet/page-header'
+import type { MotivoDoCancelamento } from '@/data/cancelamento-de-documento'
 import type { OrigemDosDados } from '@/data/provider'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
@@ -41,7 +42,9 @@ export interface CancelamentoProps<T> {
   pendente: boolean
   erro: unknown
   onFechar: () => void
-  onConfirmar: () => void
+  onConfirmar: (motivo: MotivoDoCancelamento) => void
+  /** Pede motivo e observação no diálogo — ver `ConfirmarCancelamento`. */
+  comMotivo?: boolean
 }
 
 export interface TelaDeListagemProps<T> {
@@ -215,6 +218,7 @@ export function TelaDeListagem<T>({
           erro={mensagemDoErro(cancelamento.erro, 'Não foi possível cancelar. Tente de novo.')}
           onFechar={cancelamento.onFechar}
           onConfirmar={cancelamento.onConfirmar}
+          comMotivo={cancelamento.comMotivo ?? false}
         />
       ) : null}
       {desativacao?.registro ? (

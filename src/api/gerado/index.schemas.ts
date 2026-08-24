@@ -952,6 +952,12 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
+ * | `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |
+ * | `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |
+ * | `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |
+ * | `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |
+ * | `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o "conflito" no botão Fechar sugere tentar de novo |
+ * | `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |
  * | `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |
  * | `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |
  * | `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |
@@ -1004,6 +1010,12 @@ export const ProblemType = {
   'urn:cabinet:erro:hierarquia-em-laco': 'urn:cabinet:erro:hierarquia-em-laco',
   'urn:cabinet:erro:senha-atual-invalida': 'urn:cabinet:erro:senha-atual-invalida',
   'urn:cabinet:erro:senha-fraca': 'urn:cabinet:erro:senha-fraca',
+  'urn:cabinet:erro:liberacao-acima-do-vendido': 'urn:cabinet:erro:liberacao-acima-do-vendido',
+  'urn:cabinet:erro:separacao-sem-liberacao': 'urn:cabinet:erro:separacao-sem-liberacao',
+  'urn:cabinet:erro:entrega-sem-separacao': 'urn:cabinet:erro:entrega-sem-separacao',
+  'urn:cabinet:erro:entrega-fechada': 'urn:cabinet:erro:entrega-fechada',
+  'urn:cabinet:erro:entrega-vazia': 'urn:cabinet:erro:entrega-vazia',
+  'urn:cabinet:erro:entrega-de-outro-pedido': 'urn:cabinet:erro:entrega-de-outro-pedido',
   'urn:cabinet:erro:nao-encontrado': 'urn:cabinet:erro:nao-encontrado',
   'urn:cabinet:erro:sem-empresa-ativa': 'urn:cabinet:erro:sem-empresa-ativa',
   'urn:cabinet:erro:documento-ja-cadastrado': 'urn:cabinet:erro:documento-ja-cadastrado',
@@ -1720,6 +1732,19 @@ export interface QuoteItemDto {
   pieceType?: string | null;
   /** Valor do item. Calculado pelo servidor — a escrita não manda. */
   totalCents: number;
+  /**
+     * Proposto. O preço que a FÓRMULA produziu para esta variante, em centavos — `round(líquido de compra × indexValue)`, com o líquido saindo de `VariantTablePriceDto.tablePriceCents` menos a cascata e os créditos do `CostProfileDto` daquele fornecedor.
+     *
+     * **É eco, não escrita.** O `PUT` ignora o que vier aqui. Quem manda no total da linha é `unitPriceCents`.
+     *
+     * **CONGELADO na emissão, como o resto da linha.** Recalcular na leitura faria todo orçamento antigo parecer descontado no dia seguinte a um ajuste de índice — o operador veria "praticado R$ 100, calculado R$ 130" numa venda que saiu no preço cheio de ontem. A linha já congela descrição, acabamento, tamanho e fornecedor pela mesma razão.
+     *
+     * **Por que os dois viajam juntos.** Sem o calculado ao lado do praticado, a tela não tem como mostrar que aquela linha saiu abaixo do preço — o operador vê um número e não sabe se ele é o da fórmula ou o que alguém digitou. Com os dois, a diferença é visível sem que o item precise carregar custo ou margem, que são de `CostSimulationDto` e de outro papel.
+     *
+     * **`null` quando a fórmula não tem o que multiplicar:** item sem `variantId` (linha livre), variante sem tabela do fornecedor, fornecedor sem índice, ou índice inativo. `null` é a resposta honesta — devolver zero faria a tela desenhar "preço sugerido: R$ 0,00" e sugerir que a peça é de graça.
+     * @nullable
+     */
+  calculatedUnitPriceCents?: number | null;
 }
 
 /**
@@ -1754,8 +1779,17 @@ export interface QuoteItemWriteRequest {
   quantity: number;
   /** @nullable */
   unit?: string | null;
-  /** Valor unitário congelado, em centavos. */
-  unitPriceCents: number;
+  /**
+     * Valor unitário da linha, em centavos.
+     *
+     * **Passou a ser OPCIONAL para que o item possa NASCER PRECIFICADO.** Ausente ou `null` com `variantId` preenchido, o servidor calcula pela fórmula e grava o resultado — é o gesto de "incluir a peça e ela já vem com preço", que no legado é o comportamento normal e aqui exigia que a tela soubesse o preço antes de pedir.
+     *
+     * **Valor presente continua mandando**, e é assim que o preço negociado sobrevive: quem digita um valor está dizendo que aquela linha sai por ele, e o servidor não o substitui. O que a fórmula produziu segue visível em `QuoteItemDto.calculatedUnitPriceCents`, ao lado.
+     *
+     * **Ausente e sem `variantId` é zero**, não erro: a linha livre não tem de onde tirar preço, e recusá-la impediria o item de texto que o orçamento usa para descrever serviço ou observação.
+     * @nullable
+     */
+  unitPriceCents?: number | null;
   /** Desconto do item. Int com 4 casas implícitas: `10000` = 1%. */
   discountPercent: number;
   /**
@@ -2910,6 +2944,11 @@ export interface OrderEnvironmentDto {
   name: string;
   /** Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem. */
   order: number;
+  /**
+     * Data prometida do AMBIENTE inteiro. É a data que os itens sem data própria herdam na leitura — a cozinha combina um dia, e não cada peça dela.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
 }
 
 /**
@@ -2979,6 +3018,17 @@ export interface OrderItemDto {
   pieceType?: string | null;
   /** Valor do item. Calculado pelo servidor — a escrita não manda. */
   totalCents: number;
+  /** Quanto da linha já foi LIBERADO para separação. Sai de `order_fulfillments`, não de coluna que alguém digita. `0` na linha que ninguém liberou ainda. */
+  quantityReleased?: number;
+  /** Quanto já saiu da prateleira. É o ato que baixa estoque. */
+  quantityPicked?: number;
+  /** Quanto já saiu com romaneio. */
+  quantityDelivered?: number;
+  /**
+     * Data prometida da linha, JÁ com a herança do ambiente aplicada. O detalhe completo — com `scheduledDateInherited` dizendo de onde ela veio — está em `GET /api/orders/{id}/fulfillment`.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
 }
 
 /**
@@ -5074,6 +5124,180 @@ export interface PurchaseOrderRescheduleRequest {
   reason: string;
 }
 
+/**
+ * `draft` enquanto se confere, `checked` depois de `POST /{id}/check`, `posted` depois de `POST /{id}/post`.
+ *
+ * Vocabulário FECHADO: o preço de abrir é uma migração de uma linha, e o de não fechar é a tela que filtra por estado devolvendo lista curta demais, meses depois, por causa de um valor digitado errado.
+ */
+export type GoodsReceiptDtoStatus = typeof GoodsReceiptDtoStatus[keyof typeof GoodsReceiptDtoStatus];
+
+
+export const GoodsReceiptDtoStatus = {
+  draft: 'draft',
+  checked: 'checked',
+  posted: 'posted',
+} as const;
+
+/**
+ * Proposto. Uma linha CONFERIDA: o que a ordem pedia, o que o caminhão trouxe, e a diferença entre os dois.
+ *
+ * **A conferência é o par `quantityOrdered` × `quantityReceived`, e é só isso.** No legado ela mora em `nota_entrada_det`, no par `Ned_quantidade_solicit` × `Ned_quantidade_recebida`. A divergência de VALOR é outra coisa, mora em outra tabela (`Nota_Entrada_Dif`, por nota, com trilha de desbloqueio) e é assunto do trilho financeiro — misturar as duas faria a conferência do galpão travar por diferença de preço, que quem descarrega o caminhão não tem como resolver.
+ */
+export interface GoodsReceiptItemDto {
+  /** A ordem da linha DENTRO do recebimento, 1-based. */
+  lineNumber: number;
+  /** A variante recebida. **Obrigatória, ao contrário da linha do orçamento:** recebimento move ESTOQUE, e estoque é de variante. Item digitado à mão — que o orçamento permite — não tem saldo a mexer, e uma linha dessas aqui seria uma entrada que o kardex não sabe onde lançar. */
+  variantId: string;
+  /** Descrição congelada na gravação. Quem lê a conferência de ontem lê o que estava escrito ontem, não o cadastro de hoje. */
+  description: string;
+  /**
+     * O que a ordem de compra pedia, em SNAPSHOT.
+     *
+     * **`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação. Nulo quer dizer "não havia o que comparar", e é diferente de zero, que diria "pediram nada".
+     *
+     * É por esta quantidade que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem — e não a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra nunca desfaz. Ver `POST /{id}/post`.
+     * @nullable
+     */
+  quantityOrdered?: number | null;
+  /** O que de fato chegou. Nunca negativo: devolução ao fornecedor é documento próprio, e um recebimento com sinal trocado sairia como baixa de estoque rotulada de compra. */
+  quantityReceived: number;
+  /**
+     * Recebido menos pedido, calculado pelo servidor. Negativo quando veio a menos, positivo quando veio a mais — e a mais acontece, com o fornecedor que arredonda a caixa.
+     *
+     * **`null` no avulso, e isso não é o mesmo que zero.** Zero diz "bateu certinho"; nulo diz que não há com o que comparar. Devolver zero para o avulso seria afirmação sobre uma ordem que não existe. Vem calculado daqui pela mesma razão que os totais das outras famílias: a conta é uma só, e não uma por tela.
+     * @nullable
+     */
+  divergence?: number | null;
+  /**
+     * Por que veio diferente, em texto livre. **Exigido por `POST /{id}/check` em toda linha que divergiu**, e ignorado nas que bateram.
+     *
+     * **É ADIÇÃO, não porte:** o legado registra que veio diferente e não registra por quê — quem precisava saber perguntava por telefone. O campo entra porque a informação se perde em horas, e é o único da família que não tem coluna correspondente no legado.
+     *
+     * Texto e não vocabulário fechado justamente porque não há enumerado a portar: fechar aqui seria inventá-lo. Ele vira lista quando a operação disser quais são os motivos de verdade.
+     * @nullable
+     */
+  divergenceReason?: string | null;
+}
+
+/**
+ * Proposto. Um RECEBIMENTO — a nota do fornecedor virando entrada no estoque. É a maior tela do legado (`Nota_entrada`) decomposta em fluxo.
+ *
+ * **O que entra aqui é a metade FÍSICA:** quem entregou, o que veio, o que veio a MENOS do que se pediu, e o efeito disso no estoque. A metade FISCAL — chave de 44 dígitos, XML da NF-e, manifestação do destinatário, ICMS e IPI linha a linha — fica de fora de propósito: ela é trilho próprio, e misturar as duas faria a entrada de mercadoria depender de a SEFAZ estar no ar.
+ *
+ * **Os três estados, e o do meio não é decoração.** `draft` é conferindo, e nada disso tocou o estoque; `checked` é a conferência fechada, com as divergências justificadas; `posted` é lançado, cada linha virou movimento de entrada. O estado do meio existe porque conferir e lançar são decisões de pessoas diferentes em horas diferentes — e é por isso que `POST /{id}/post` pede outra permissão que o resto da família.
+ *
+ * **Não guarda dinheiro, e isso é decisão.** Custo de compra, ICMS e IPI da linha ficam fora: quase tudo o que o legado guarda ali é FISCAL, e o que não é (custo de reposição) depende da regra de formação de custo, que ainda não está decidida. Coluna errada sai por migração de correção; coluna que falta entra por acréscimo.
+ *
+ * **Também não existe "não gera estoque".** O legado tem a flag (`Nen_NaoGeraEstoque`): nota que entra no sistema e não mexe no saldo. Aqui lançar é, por definição, mexer no saldo — um `posted` que não movesse estoque seria um estado que a palavra não descreve. Quando o caso real aparecer (remessa em consignação, retorno de conserto), ele entra como TIPO de recebimento, não como flag negativa no cabeçalho.
+ *
+ * **A porta de DESCARTAR o rascunho ficou de fora, e é dívida declarada.** A tabela reserva o privilégio para isso — rascunho se apaga: nota trocada, fornecedor errado, caminhão que era de outra empresa —, e o contrato não a abre porque não tem DELETE em lugar nenhum (§9 padrão 8, guardado por `src/data/contrato-bloco2.test.ts`): cadastro se desativa, documento se cancela com estado próprio. As duas saídas custam decisão que não cabe nesta publicação — abrir a exceção à regra, ou acrescentar `cancelled` ao vocabulário de estados, que é migração. Enquanto nenhuma delas acontece, o rascunho errado se corrige pelo PUT, que substitui o documento inteiro; o que não dá é fazê-lo sumir da fila.
+ */
+export interface GoodsReceiptDto {
+  id: string;
+  /**
+     * `draft` enquanto se confere, `checked` depois de `POST /{id}/check`, `posted` depois de `POST /{id}/post`.
+     *
+     * Vocabulário FECHADO: o preço de abrir é uma migração de uma linha, e o de não fechar é a tela que filtra por estado devolvendo lista curta demais, meses depois, por causa de um valor digitado errado.
+     */
+  status: GoodsReceiptDtoStatus;
+  /** Quem entregou. É um `PartnerDto` no papel de fornecedor. */
+  supplierId: string;
+  supplierName: string;
+  /**
+     * A TRANSPORTADORA, quando houve uma. Também é um `PartnerDto` — o papel é a coluna em que o id aparece, e não uma flag no cadastro: é o mesmo motivo pelo qual o mesmo CNPJ é cliente e fornecedor ao mesmo tempo.
+     * @nullable
+     */
+  carrierId?: string | null;
+  /** @nullable */
+  carrierName?: string | null;
+  /** ONDE a mercadoria descarregou — o depósito que recebe as entradas do lançamento. Resolvido para o padrão da empresa quando a escrita o omite. */
+  locationId: string;
+  locationName: string;
+  /**
+     * O número da nota como o operador o lê no papel. **Texto, e não inteiro:** número de nota tem série, tem zero à esquerda e tem letra em regime especial — o `int` do legado é a forma que já perdeu informação. Nulo é caso real: remessa que chega antes da nota.
+     * @nullable
+     */
+  invoiceNumber?: string | null;
+  /**
+     * Emissão da NOTA. Diferente de `receivedAt`, e a diferença entre as duas é o que a operação chama de trânsito.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  /** Chegada da MERCADORIA. */
+  receivedAt: string;
+  /**
+     * Quando o recebimento foi lançado. `null` até lá, e nunca preenchido fora de `posted`: estado e carimbo andam juntos nos dois sentidos, e o par incoerente não é representável no banco.
+     * @nullable
+     */
+  postedAt?: string | null;
+  /**
+     * Quem respondeu pelo recebimento. Nulo na carga do legado.
+     * @nullable
+     */
+  employeeId?: string | null;
+  /** @nullable */
+  employeeName?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  items: GoodsReceiptItemDto[];
+}
+
+/**
+ * Proposto. Uma linha na escrita da conferência. `description` e `divergence` não entram: a primeira é copiada do cadastro da variante, a segunda é a subtração que o servidor faz uma vez.
+ */
+export interface GoodsReceiptItemWriteRequest {
+  lineNumber: number;
+  variantId: string;
+  /**
+     * O que a ordem pedia. `null` no recebimento avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria "a ordem pedia nada", que não é linha de ordem nenhuma.
+     * @nullable
+     */
+  quantityOrdered?: number | null;
+  quantityReceived: number;
+  /**
+     * Preenchível a qualquer momento do rascunho, e cobrado só na transição: durante a contagem, divergir sem motivo é o estado normal.
+     * @nullable
+     */
+  divergenceReason?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI o recebimento inteiro.
+ *
+ * **A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.
+ *
+ * **O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.
+ */
+export interface GoodsReceiptWriteRequest {
+  supplierId: string;
+  /** @nullable */
+  carrierId?: string | null;
+  /**
+     * Depósito que recebe. Omitido, o servidor resolve o padrão da empresa — ver `POST /api/goods-receipts`.
+     * @nullable
+     */
+  locationId?: string | null;
+  /** @nullable */
+  invoiceNumber?: string | null;
+  /** @nullable */
+  issuedAt?: string | null;
+  /**
+     * Chegada da mercadoria. Omitida, o servidor grava agora — o caso normal é "chegou agora", e o campo existe para o lançamento retroativo, que num ERP de operação real é rotina.
+     * @nullable
+     */
+  receivedAt?: string | null;
+  /** @nullable */
+  employeeId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  items: GoodsReceiptItemWriteRequest[];
+}
+
+export interface PagedResultOfGoodsReceiptDto {
+  rows: GoodsReceiptDto[];
+  total: number;
+}
+
 export interface PagedResultOfPurchaseOrderDto {
   rows: PurchaseOrderDto[];
   total: number;
@@ -6148,6 +6372,478 @@ export interface CommissionClosingEntryDto {
 export interface PagedResultOfCommissionClosingEntryDto {
   rows: CommissionClosingEntryDto[];
   total: number;
+}
+
+/**
+ * O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade.
+ */
+export type OrderItemFulfillmentDtoPhysicalState = typeof OrderItemFulfillmentDtoPhysicalState[keyof typeof OrderItemFulfillmentDtoPhysicalState];
+
+
+export const OrderItemFulfillmentDtoPhysicalState = {
+  pending: 'pending',
+  released: 'released',
+  picked: 'picked',
+  delivered: 'delivered',
+} as const;
+
+/**
+ * Proposto. O progresso físico de UMA linha do pedido. As três quantidades convivem — a linha de 10 peças com 10 liberadas, 6 separadas e 2 entregues é o caso normal de uma cozinha que sai em três viagens —, e por isso o estado é derivação e não coluna. O legado guarda os mesmos parciais em `controle_entrega_prod` (`cep_quantidade_separada`, `cep_quantidade_entregue`).
+ */
+export interface OrderItemFulfillmentDto {
+  /** Coluna `Item` do pedido. */
+  lineNumber: number;
+  /** Descrição congelada na emissão. */
+  description: string;
+  /**
+     * Ambiente da linha (`CatalogLookupDto.id`, kind `AMBIENTE`).
+     * @nullable
+     */
+  environmentCode?: string | null;
+  /**
+     * Nome congelado do ambiente.
+     * @nullable
+     */
+  environmentName?: string | null;
+  /** Quantidade vendida. Até 3 casas. */
+  quantity: number;
+  /** Quanto já foi LIBERADO para separação — e, com isso, reservado no depósito. */
+  quantityReleased: number;
+  /** Quanto já saiu da prateleira. É o ato que BAIXA estoque. */
+  quantityPicked: number;
+  /** Quanto já saiu com romaneio. NÃO baixa estoque de novo: a peça já saiu do galpão na separação, e baixar aqui é o defeito clássico da expedição — o saldo cai duas vezes e a conferência do mês não fecha. */
+  quantityDelivered: number;
+  /** O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade. */
+  physicalState: OrderItemFulfillmentDtoPhysicalState;
+  /** Há progresso ACIMA do degrau exibido em `physicalState`. É o que permite a tela pintar "6 de 10" sem mentir sobre o degrau. */
+  partial: boolean;
+  /** Quanto ainda falta liberar. */
+  pendingRelease: number;
+  /** Quanto está liberado e ainda não foi separado. */
+  pendingPick: number;
+  /** Quanto está separado e ainda não foi entregue. */
+  pendingDelivery: number;
+  /** Percentual ENTREGUE, não separado. Quem pergunta "quanto falta" quer saber o que chegou na casa dele; o separado é informação do galpão. Inteiro de 0 a 100. */
+  percentDelivered: number;
+  /**
+     * Data prometida do item. HERDA a do ambiente quando o item não tem uma própria — e a herança é de LEITURA, não coluna: gravá-la nos dois lugares faria mudar a data do ambiente deixar os itens antigos apontando para o dia velho. `scheduledDateInherited` diz qual dos dois respondeu.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
+  /** A data acima veio do AMBIENTE, não do item. */
+  scheduledDateInherited?: boolean;
+}
+
+/**
+ * O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade.
+ */
+export type OrderFulfillmentDtoPhysicalState = typeof OrderFulfillmentDtoPhysicalState[keyof typeof OrderFulfillmentDtoPhysicalState];
+
+
+export const OrderFulfillmentDtoPhysicalState = {
+  pending: 'pending',
+  released: 'released',
+  picked: 'picked',
+  delivered: 'delivered',
+} as const;
+
+/**
+ * Proposto. A "Situação do Pedido de Venda" — a consulta nº 17 do volume 02 do legado (`FrmConsultaSeparacaoPedidoVenda`). É a tela que a loja abre quando o cliente liga perguntando onde está a cozinha: item a item, quanto foi liberado, separado e entregue, com a data prometida e o percentual.
+ */
+export interface OrderFulfillmentDto {
+  orderId: string;
+  /** Número do pedido (`OrderDto.number`). */
+  orderNumber: string;
+  /** Situação do DOCUMENTO (`OrderDto.status`) — outra coisa que o degrau físico. */
+  status: string;
+  /** O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade. */
+  physicalState: OrderFulfillmentDtoPhysicalState;
+  /** Percentual entregue do pedido inteiro, ponderado pela QUANTIDADE de cada linha: a linha de 100 peças e a de 1 não pesam igual no que o cliente ainda espera. */
+  percentDelivered: number;
+  items: OrderItemFulfillmentDto[];
+}
+
+/**
+ * Qual ato aconteceu.
+ */
+export type FulfillmentFactDtoKind = typeof FulfillmentFactDtoKind[keyof typeof FulfillmentFactDtoKind];
+
+
+export const FulfillmentFactDtoKind = {
+  release: 'release',
+  pick: 'pick',
+  deliver: 'deliver',
+} as const;
+
+/**
+ * Proposto. O ato gravado — uma linha do log append-only de `order_fulfillments` — junto do progresso RESULTANTE da linha. Devolver os dois numa resposta só evita a segunda consulta que toda tela faria em seguida, e garante que o número exibido é o que ficou gravado, não o que o cliente calculou.
+ */
+export interface FulfillmentFactDto {
+  id: string;
+  /** Qual ato aconteceu. */
+  kind: FulfillmentFactDtoKind;
+  /** Quanto foi lançado NESTE ato. */
+  quantity: number;
+  /**
+     * Depósito envolvido. Sai da LIBERAÇÃO e a separação o herda: reservar num galpão e baixar de outro deixaria a reserva presa no primeiro para sempre. `null` na linha de serviço, que não tem peça.
+     * @nullable
+     */
+  locationId?: string | null;
+  /**
+     * Romaneio do ato de entrega. Sempre presente em `kind: deliver`.
+     * @nullable
+     */
+  deliveryId?: string | null;
+  /**
+     * Movimento do kardex que a separação causou (`StockMovementDto.id`). `null` fora de `kind: pick` e na linha de serviço.
+     * @nullable
+     */
+  stockMovementId?: string | null;
+  /** Quando o ato foi lançado. */
+  occurredAt: string;
+  item: OrderItemFulfillmentDto;
+}
+
+/**
+ * Proposto. Liberar é o gesto que autoriza a peça a sair — e o único da escada que exige a permissão `venda:liberar-entrega`. No legado é a flag de cabeçalho `Ven_LiberaSeparacao` do `FrmLiberarProdutos`; aqui é quantidade por linha, porque a liberação parcial existe na operação e a flag não a representa.
+ */
+export interface ReleaseOrderItemRequest {
+  /** Quanto liberar NESTE ato, somando ao já liberado. Acima do vendido é 409 `urn:cabinet:erro:liberacao-acima-do-vendido`. */
+  quantity: number;
+  /**
+     * Depósito de onde a peça vai sair. Omitido, o servidor resolve o padrão da empresa. É AQUI que ele se decide, e não na separação.
+     * @nullable
+     */
+  locationId?: string | null;
+  /**
+     * Observação do ato, guardada no log.
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Separar tira a peça da prateleira e BAIXA o estoque, na mesma transação do fato. A baixa não recusa saldo negativo, ao contrário do lançamento de tela: peça vendida sai antes de a nota de entrada do fornecedor ser lançada, e recusar aqui pararia a expedição pela papelada de terceiro.
+ */
+export interface PickOrderItemRequest {
+  /** Quanto separar NESTE ato. Acima do LIBERADO é 409 `urn:cabinet:erro:separacao-sem-liberacao` — quem pula a liberação não separa, e o gate é CHECK no banco, não regra de handler. */
+  quantity: number;
+  /**
+     * Exceção declarada: o depósito da liberação é o que vale, e este campo só deve ser usado pelo operador que SABE que a peça mudou de galpão — é ele quem paga o acerto da reserva.
+     * @nullable
+     */
+  locationId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Lança um item entregue DENTRO de um romaneio aberto. A entrega sempre tem romaneio — não existe entregar avulso, porque seis meses depois, quando o cliente diz que não recebeu, é o romaneio que responde.
+ */
+export interface AddDeliveryItemRequest {
+  /** A linha do pedido a que o romaneio pertence. */
+  lineNumber: number;
+  /** Acima do SEPARADO é 409 `urn:cabinet:erro:entrega-sem-separacao`. Não se entrega o que ninguém tirou da prateleira. */
+  quantity: number;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma linha da FILA DE SEPARAÇÃO: o que já pode sair da prateleira e ainda não saiu. É a "Situação do Pedido" virada do avesso, e o recorte (`liberado > separado`, pedido ativo) mora no servidor — a fila de uma loja com dois anos de pedidos é uma varredura de tudo que já se vendeu se a conta subir para a tela.
+ */
+export interface PickingQueueItemDto {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  lineNumber: number;
+  description: string;
+  /** @nullable */
+  environmentName?: string | null;
+  /** Quanto está liberado e esperando separação. */
+  pendingPick: number;
+  /**
+     * Data prometida, já com a herança do ambiente aplicada. É a primeira chave da ordenação, `NULLS LAST`: item sem data combinada não fura a fila de quem tem uma.
+     * @nullable
+     */
+  scheduledDeliveryAt?: string | null;
+}
+
+/**
+ * `open` recebe itens; `closed` e `cancelled` são terminais. **Cancelar NÃO desfaz os fatos já lançados** — o log é append-only por GRANT, e corrigir é estornar, não editar o passado.
+ */
+export type DeliveryDtoStatus = typeof DeliveryDtoStatus[keyof typeof DeliveryDtoStatus];
+
+
+export const DeliveryDtoStatus = {
+  open: 'open',
+  closed: 'closed',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. O ROMANEIO — o `Controle_entrega` do legado. Cabeçalho do que saiu numa viagem, com transportadora, data prometida e, depois de fechado, quando saiu e quem recebeu.
+ */
+export interface DeliveryDto {
+  id: string;
+  /** Número do romaneio, sequência global do grupo atribuída pelo servidor. String pelo mesmo motivo de `OrderDto.number`: número de documento se lê e se digita, não se soma. */
+  number: string;
+  /** Pedido de venda a que o romaneio pertence. */
+  orderId: string;
+  /** @nullable */
+  orderNumber?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  /** `open` recebe itens; `closed` e `cancelled` são terminais. **Cancelar NÃO desfaz os fatos já lançados** — o log é append-only por GRANT, e corrigir é estornar, não editar o passado. */
+  status: DeliveryDtoStatus;
+  /**
+     * Data prometida da viagem.
+     * @nullable
+     */
+  scheduledFor?: string | null;
+  /**
+     * Quando a entrega aconteceu. Obrigatória para fechar.
+     * @nullable
+     */
+  deliveredAt?: string | null;
+  /**
+     * Transportadora (`PartnerDto.id`).
+     * @nullable
+     */
+  carrierId?: string | null;
+  /**
+     * Nome da transportadora CONGELADO ao lado do id, como o do cliente no pedido: renomear a empresa de frete não pode reescrever romaneio assinado.
+     * @nullable
+     */
+  carrierName?: string | null;
+  /**
+     * Quem recebeu. Obrigatório para fechar.
+     * @nullable
+     */
+  receivedBy?: string | null;
+  /**
+     * Documento de quem recebeu.
+     * @nullable
+     */
+  receivedDocument?: string | null;
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma linha do romaneio. **Não existe tabela própria para ela** (diverge do `ShipmentItem` do OFBiz): o conteúdo do romaneio SÃO os fatos `deliver` que apontam para ele, e uma segunda lista teria de ser mantida igual à primeira.
+ */
+export interface DeliveryItemDto {
+  lineNumber: number;
+  description: string;
+  /** @nullable */
+  environmentName?: string | null;
+  /** Quanto saiu NESTE romaneio. */
+  quantity: number;
+  occurredAt: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type DeliveryDetailDtoStatus = typeof DeliveryDetailDtoStatus[keyof typeof DeliveryDetailDtoStatus];
+
+
+export const DeliveryDetailDtoStatus = {
+  open: 'open',
+  closed: 'closed',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. O romaneio com o que foi lançado nele.
+ */
+export interface DeliveryDetailDto {
+  id: string;
+  number: string;
+  orderId: string;
+  /** @nullable */
+  orderNumber?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  status: DeliveryDetailDtoStatus;
+  /** @nullable */
+  scheduledFor?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  /** @nullable */
+  carrierName?: string | null;
+  /** @nullable */
+  receivedBy?: string | null;
+  /** @nullable */
+  receivedDocument?: string | null;
+  /**
+     * Referência da assinatura do recebedor — o `Controle_entrega_Assinaturas` do legado. **Texto, e o upload está ADIADO:** binário numa tabela sob RLS mistura documento e arquivo e faz o `pg_dump` crescer sem teto. A coluna existe para que o dia do upload seja migração de zero linhas.
+     * @nullable
+     */
+  signatureRef?: string | null;
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  items: DeliveryItemDto[];
+}
+
+/**
+ * Proposto. Abre o romaneio. Nasce `open` e VAZIO — os itens entram um a um.
+ */
+export interface CreateDeliveryRequest {
+  /** Pedido de venda. Pedido cancelado não recebe entrega (409). */
+  orderId: string;
+  /** @nullable */
+  scheduledFor?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  /**
+     * Congelado. Omitido, o servidor copia o nome atual do parceiro.
+     * @nullable
+     */
+  carrierName?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Fechar é o que faz o romaneio valer alguma coisa, e por isso exige QUANDO e para QUEM — a exigência é CHECK no banco, não regra de handler. **Romaneio vazio não fecha** (409 `urn:cabinet:erro:entrega-vazia`): fechar entrega sem item é assinar papel em branco, some da fila de abertos e ninguém percebe até alguém procurar a peça. Quem não saiu se CANCELA.
+ */
+export interface CloseDeliveryRequest {
+  /** Quando a entrega aconteceu. */
+  deliveredAt: string;
+  /** Quem recebeu, por extenso. */
+  receivedBy: string;
+  /**
+     * Documento de quem recebeu.
+     * @nullable
+     */
+  receivedDocument?: string | null;
+  /**
+     * Referência da assinatura, quando houver.
+     * @nullable
+     */
+  signatureRef?: string | null;
+}
+
+export interface PagedResultOfPickingQueueItemDto {
+  rows: PickingQueueItemDto[];
+  total: number;
+}
+
+export interface PagedResultOfDeliveryDto {
+  rows: DeliveryDto[];
+  total: number;
+}
+
+/**
+ * Proposto. O **ÍNDICE DE VALOR DE VENDA** por fornecedor — `Indice_preco` do legado (376 linhas, mediana 2,5600). É a METADE VENDA da formação de preço; `CostProfileDto` é a de compra e custo.
+ *
+ * **A fórmula que esta linha fecha:**
+ *
+ * ```
+ * liquido = tablePriceCents − discount1..4 em cascata − créditos ICMS/PIS/COFINS   <- do PERFIL DE CUSTO
+ * VENDA   = round(liquido × indexValue)                                            <- daqui
+ * ```
+ *
+ * O preço de venda é o líquido de COMPRA multiplicado pelo índice, **aplicado ANTES de qualquer imposto de saída**. Imposto e taxa entram só na apuração de CUSTO e LUCRO — eles não empurram preço. É a mesma decomposição que `CostSimulationDto` publica: o que este índice multiplica é exatamente o `netPurchaseCents` de lá.
+ *
+ * **As deduções NÃO se repetem aqui, e é o ponto do desenho.** Os quatro descontos em cascata e os três créditos moram em `CostProfileDto`, e esta linha aponta para ele por `costProfileId` — como no legado, onde `Indice_preco` é "ligado a um `Custo` e a um fornecedor". Copiar os sete campos para cá daria duas autoridades sobre os mesmos números, e elas divergiriam na primeira edição: o custo apurado por um caminho e o preço pelo outro, com o operador sem saber qual dos dois acreditar.
+ *
+ * **O índice é do FORNECEDOR, não do produto nem da categoria.** Quem o pendurar no produto reproduz outra coisa: no legado a mesma peça comprada de dois fornecedores rende dois preços, porque cada fornecedor tem seu índice e sua tabela. É o desenho que dá sentido ao multi-fornecedor de `ProductDto.suppliers` — sem ele, o segundo fornecedor é rótulo.
+ *
+ * **Escala: inteiro com 4 casas implícitas sobre 1** — `25600` = 2,5600. Repare que ela NÃO é a de `discountPercent` nem a dos campos de `CostProfileDto`, que são 4 casas sobre 100%: o índice é MULTIPLICADOR, e escrever 2,56 como 256% seria a mesma informação com um fator 100 de armadilha entre as duas leituras. Ponto flutuante é vetado para dinheiro, e `numeric` chegaria como string ao cliente, que a converteria para multiplicar — voltando ao float na única conta que importa.
+ *
+ * **`indexValue` = `10000` (1,0000) é VÁLIDO e não é erro de cadastro.** São 16 assim no legado, 11 de fornecedores reais, e pela fórmula significam vender pelo líquido de compra. Parte é legítima — há fornecedor cuja tabela já sai com a margem embutida. Recusar 1,0000 faria o servidor rejeitar o cadastro real desses 11; "corrigir" o índice na migração inventaria margem que ninguém decidiu. O limite é `> 0`.
+ */
+export interface PriceIndexDto {
+  id: string;
+  /** O fornecedor a que o índice pertence — `PartnerDto.id` com o papel `supplier`. **Um índice por fornecedor por empresa:** o segundo cadastro para o mesmo fornecedor é 409, porque dois índices ativos deixariam a precificação depender de qual linha a consulta encontrasse primeiro, e o sintoma seria preço mudando sozinho entre dois orçamentos. */
+  supplierId: string;
+  /**
+     * Nome do fornecedor, para exibição. Não é escrita — o `PUT` ignora o que vier aqui, como todo campo de junção deste contrato.
+     * @nullable
+     */
+  supplierName?: string | null;
+  /**
+     * O perfil de custo de onde saem as deduções da compra — `CostProfileDto.id`. **`null` é caso real e não pendência:** fornecedor sem cascata e sem crédito existe às dezenas no legado, e ali o líquido É o preço de tabela. Um perfil vazio obrigatório seria linha de zeros que alguém teria de criar para cada fornecedor simples.
+     *
+     * O perfil tem de ser do MESMO fornecedor: apontar para o de outro faria a peça ser precificada com o desconto que ninguém negociou para ela. É 400.
+     * @nullable
+     */
+  costProfileId?: string | null;
+  /**
+     * Nome do perfil, para exibição. Não é escrita.
+     * @nullable
+     */
+  costProfileName?: string | null;
+  /** O multiplicador. **Int com 4 casas implícitas sobre 1: `25600` = 2,5600.** É `Ipr_Indice`. Tem de ser `> 0`; `10000` (1,0000) é válido e quer dizer vender pelo líquido de compra. */
+  indexValue: number;
+  /** Desativação lógica. Índice inativo **não precifica** — a variante daquele fornecedor volta a devolver `calculatedUnitPriceCents` nulo, em vez de sair com índice velho. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Cria ou substitui o índice de um fornecedor. **`PUT` substitui a linha INTEIRA** — campo ausente NÃO preserva o valor anterior, como todo `PUT` deste contrato: omitir `costProfileId` DESLIGA o perfil, não o mantém.
+ */
+export interface PriceIndexWriteRequest {
+  supplierId: string;
+  /** 4 casas implícitas, `> 0`. */
+  indexValue: number;
+  /**
+     * Ausente ou nulo = sem deduções, e o líquido é o preço de tabela.
+     * @nullable
+     */
+  costProfileId?: string | null;
+  /**
+     * Ausente = `true`.
+     * @nullable
+     */
+  active?: boolean | null;
+}
+
+export interface PagedResultOfPriceIndexDto {
+  rows: PriceIndexDto[];
+  total: number;
+}
+
+/**
+ * Proposto. O preço de tabela de UM fornecedor para UMA variante.
+ *
+ * **Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.
+ *
+ * **Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado.
+ */
+export interface VariantTablePriceDto {
+  /** O fornecedor de quem é esta tabela — `PartnerDto.id`. */
+  supplierId: string;
+  /**
+     * Para exibição. Não é escrita.
+     * @nullable
+     */
+  supplierName?: string | null;
+  /**
+     * Código da peça NO fornecedor, vindo de `ProductSupplierDto`. É a língua em que o comprador confere a tabela recebida — o código do Cabinet não aparece na lista de preços que o fornecedor manda.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /** O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe. */
+  tablePriceCents: number;
+}
+
+/**
+ * Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.
+ *
+ * É uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio.
+ */
+export interface VariantTablePricesWriteRequest {
+  /** A lista INTEIRA. Fornecedor que não vier é apagado. */
+  prices: VariantTablePriceDto[];
 }
 
 /**
@@ -7864,6 +8560,27 @@ locationId?: string;
 belowMinimumOnly?: boolean;
 };
 
+export type ListGoodsReceiptsParams = {
+q?: string;
+/**
+ * Whitelist: `receivedAt`, `issuedAt`, `invoiceNumber`, `status`, `postedAt`. Campo fora dela é 400.
+ *
+ * `supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. A ordenação PADRÃO é `receivedAt` decrescente: "o que chegou por último" é a pergunta que abre a tela, e o índice `ix_goods_receipts_fornecedor` da tabela foi desenhado nessa ordem.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por estado do recebimento — `draft`, `checked` ou `posted`.
+ */
+status?: string;
+/**
+ * Só os recebimentos deste fornecedor.
+ */
+supplierId?: string;
+};
+
 export type ListCostProfilesParams = {
 /**
  * Busca por `name`.
@@ -8005,6 +8722,64 @@ pageSize?: number;
 export type ListCommissionClosingEntriesParams = {
 /**
  * Whitelist: `personName`, `amountCents`, `baseCents`, `sourceNumber`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListPickingQueueParams = {
+/**
+ * Busca por número do pedido, cliente ou descrição do item.
+ */
+q?: string;
+/**
+ * Whitelist: `scheduledDeliveryAt`, `orderNumber`, `customerName`, `pendingPick`. Campo fora dela é 400 `urn:cabinet:erro:ordenacao-invalida`.
+ *
+ * `description` fica de fora: ordenar a fila do galpão por nome de peça embaralha as linhas do mesmo pedido, que é justamente o agrupamento que quem separa usa para não fazer duas viagens.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Só a fila deste pedido.
+ */
+orderId?: string;
+};
+
+export type ListDeliveriesParams = {
+/**
+ * Busca por número do romaneio, pedido, cliente ou transportadora.
+ */
+q?: string;
+/**
+ * Whitelist: `number`, `scheduledFor`, `deliveredAt`, `status`. Campo fora dela é 400.
+ *
+ * `customerName` e `carrierName` ficam de fora pelo motivo de sempre — são eco de outra tabela, congelado num caso e por junção no outro.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por situação do romaneio (`open`, `closed`, `cancelled`).
+ */
+status?: string;
+/**
+ * Só os romaneios deste pedido.
+ */
+orderId?: string;
+};
+
+export type ListPriceIndexesParams = {
+/**
+ * Busca por nome do fornecedor.
+ */
+q?: string;
+/**
+ * Whitelist: `supplierName`, `indexValue`, `active`. Campo fora dela é 400.
  */
 sortBy?: string;
 sortDesc?: boolean;

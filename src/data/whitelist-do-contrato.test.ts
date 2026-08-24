@@ -157,6 +157,14 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  * reprova e cobra a entrada aqui — que é o mesmo que cobrar a conferência.
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
+  // SEPARAÇÃO E ENTREGA (G4) — a fila do galpão e o romaneio são a FASE C deste
+  // trilho, e nascem depois do servidor pela razão do módulo inteiro: a fila
+  // mostra o que já pode sair da prateleira, e sobre dado mockado ela mandaria
+  // alguém procurar peça que ninguém liberou. Saem daqui quando ganharem tela,
+  // com `ORDENAVEIS` próprio.
+  ListPickingQueue:
+    'a fila de separação ainda não tem tela — as telas de entrega são a Fase C do trilho',
+  ListDeliveries: 'o romaneio ainda não tem tela — as telas de entrega são a Fase C do trilho',
   ListOrders: 'pedido de venda ainda não tem listagem própria na tela',
   ListOrderProfessionalHistory:
     'a trilha de indicação (G13) é sub-recurso do pedido e nasce sem tela — cabeçalho ordenável exigiria a tela do pedido, que não existe',
@@ -175,6 +183,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
   ListCostProfiles:
     'o perfil de custo (G9) nasce no servidor sem tela e sem mock — a cascata não se reimplementa em fixture, e margem inventada é pior que tela vazia',
+  ListPriceIndexes:
+    'o índice de venda (G9) é a METADE VENDA do mesmo trilho do perfil de custo acima, e fica de fora pela mesma razão: o mock teria de inventar índice E tabela de fornecedor para ecoar um preço calculado, e o terceiro dado de mentira sai com cara de preço apurado pelo servidor',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
   // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
   // mostra número inventado com cara de apuração, que é pior do que não mostrar
@@ -198,6 +208,12 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   GetPurchaseStockReplenishment:
     'compras para estoque/reserva ainda não tem tela — as telas de Compras são a Fase C do trilho',
   GetAbcCurveReport: 'curva ABC ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  // O RECEBIMENTO (G3) — a tela é a Fase C deste trilho e nasce depois do
+  // servidor pela razão que o módulo inteiro tem: a conferência confronta o que
+  // a ORDEM DE COMPRA pediu com o que chegou, e sobre dado mockado ela
+  // confrontaria uma ordem inventada. O `sortBy` publicado é conferido do lado
+  // do api, contra o `MapaDeCampos` do módulo, na fase B.
+  ListGoodsReceipts: 'recebimento ainda não tem tela — as telas de Compras são a Fase C do trilho',
   GetProductsSoldReport:
     'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
   GetSalesComparisonReport:
@@ -331,6 +347,16 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
  * nenhuma o consome — quando alguma consumir, é o site público que quebra.
  */
 const SEM_HANDLER_NO_MOCK: Record<string, string> = {
+  // SEPARAÇÃO E ENTREGA (G4) caem aqui pelo MESMO motivo da trilha de indicação,
+  // e não pelo dos relatórios: as duas são progresso FÍSICO de linha de pedido, e
+  // o pedido de venda não tem handler no mock. Servi-las sem o documento dono
+  // faria a fila do galpão listar peça de um pedido que só existe no navegador,
+  // com uuid que nenhuma outra tela reconhece. Saem daqui junto com o mock do
+  // pedido, não antes — e é por isso que não é dívida separada.
+  ListPickingQueue:
+    'a fila de separação é derivada do pedido de venda, que não tem handler no mock — a fila sem o documento dono listaria peça de pedido inexistente',
+  ListDeliveries:
+    'o romaneio pende do pedido de venda, que não tem handler no mock — mockar a entrega sem o documento dono casaria id inventado com id de servidor',
   ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
   ListCostProfiles:
     'o perfil de custo (G9) passa direto para o servidor — ver `rotas-do-backend.ts`: a simulação exige a cascata inteira, e um mock dela devolveria margem inventada',
@@ -350,6 +376,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
   ListOrderProfessionalHistory:
     'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
+  ListGoodsReceipts:
+    'recebimento não tem handler no mock — a grade confronta o que a ordem de compra pediu com o que chegou, e o mock não guarda ordem; mockar a conferência sem a ordem dona daria divergência calculada contra número inventado',
   // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
   // do 501: a apuração soma sobre o PEDIDO DE VENDA, que o mock não guarda.
   // Reimplementá-la aqui inventaria dinheiro — um número com cara de conta
@@ -368,6 +396,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListCommissionClosings: 'fechamento é consequência da apuração, que o mock não tem como calcular',
   ListCommissionClosingEntries:
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
+  ListPriceIndexes:
+    'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
   // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
   // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
   // de ensinar, e aqui ele ensinaria sozinho:

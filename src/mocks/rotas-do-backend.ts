@@ -366,6 +366,37 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'put', caminho: '/api/cost-profiles/{id}' },
   { metodo: 'post', caminho: '/api/cost-profiles/{id}/simulate' },
 
+  // índice de venda e tabela do fornecedor (5 operações) — a metade de VENDA da
+  // mesma formação de preço, e ela vai pelo mesmo caminho e pela mesma razão: o
+  // mock teria de guardar índice E tabela por fornecedor para ecoar
+  // `calculatedUnitPriceCents` no item do orçamento, e o preço sugerido saído
+  // dessa invenção chega à tela com cara de preço apurado pelo servidor.
+  //
+  // **Medição (2026-08-24, `cabinet-erp-api` branch `worktree-g9-precos-fase-b`):**
+  // as cinco foram exercitadas pela BORDA HTTP do api — `tests/precos.test.ts`,
+  // 26 casos, `app.inject` contra Postgres de verdade migrado até a `0082` —, e
+  // não por par local com servidor em porta: o que se queria saber é se o
+  // destino RESPONDE, e a borda é a mesma nos dois caminhos. A listagem devolve
+  // `{rows,total}`, o `PUT` de tabelas substitui a lista inteira, e o item do
+  // orçamento nasce com `unitPriceCents` calculado (tabela R$ 100,00 × índice
+  // 2,5600 = R$ 256,00) e `calculatedUnitPriceCents` igual ao lado.
+  //
+  // Enquanto a PR do api não mergear, as cinco respondem 501 na `main` dele — e
+  // é por isso que a linha entra na PASSAGEM e não em `FORA_DE_PROPOSITO`: o
+  // destino existe e está escrito, só não foi publicado ainda. Se a PR do api
+  // parar no caminho, esta linha vira mentira e o lugar dela passa a ser a outra
+  // lista, com o motivo trocado.
+  //
+  // As duas escritas exigem `precos:gerenciar`, ação NOVA que nenhum template de
+  // fábrica concede — `Proprietário` e `Administrador` alcançam por `grants_all`.
+  // Quem entrar com `Operação completa` vai ver 403 `papel-insuficiente`, e ali é
+  // decisão: quem vende usa o preço, quem o define responde pela margem.
+  { metodo: 'get', caminho: '/api/price-indexes' },
+  { metodo: 'post', caminho: '/api/price-indexes' },
+  { metodo: 'put', caminho: '/api/price-indexes/{id}' },
+  { metodo: 'get', caminho: '/api/table-prices/{variantId}' },
+  { metodo: 'put', caminho: '/api/table-prices/{variantId}' },
+
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
   // atende as três telas de uma vez.
@@ -769,6 +800,38 @@ const COMPRAS_501 =
 const COMISSOES_SEM_PORTA =
   'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
 
+const RECEBIMENTO_SEM_PORTA =
+  'sem handler no api — modulo existe (0047 + src/modules/recebimento/), rotas nao; G3 fase B'
+
+/**
+ * AS SEIS DO RECEBIMENTO (G3) — publicadas por ESTA PR, e a razão delas é a
+ * MESMA das comissões logo abaixo: **o módulo do api existe e não tem porta.**
+ *
+ * `migrations/0047_recebimento_de_compra.sql` está aplicada,
+ * `src/modules/recebimento/` tem 355 linhas — o documento e as duas transições,
+ * com a regra da divergência e a ordem de trava por `variant_id` — e
+ * `tests/recebimento.test.ts` tem 394. O que falta é o caminho HTTP: `git grep
+ * goods-receipts` em `src/core/http/servidor.ts` devolve ZERO na main
+ * `f810a39`. Não é o 501 da fase, é caminho que o servidor não tem — o par
+ * local devolve o 404 do Fastify.
+ *
+ * **É esse buraco que a fase B fecha, e ele tem um efeito que não é óbvio:** o
+ * rastro em `audit_log` é escrito pela borda a partir do CAMINHO, então sem
+ * rota não há linha em `ENTIDADES` — e o lançamento moveria estoque sem deixar
+ * rastro. A rota não é só a porta da tela; é a condição da auditoria.
+ *
+ * Sai INTEIRA quando a fase B ligar os handlers: meia família poria o documento
+ * no servidor e a conferência no mock, e é a grade que faz o recebimento.
+ */
+const RECEBIMENTO: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/goods-receipts', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/goods-receipts', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/goods-receipts/{id}', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'put', caminho: '/api/goods-receipts/{id}', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/goods-receipts/{id}/check', motivo: RECEBIMENTO_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/goods-receipts/{id}/post', motivo: RECEBIMENTO_SEM_PORTA },
+]
+
 /**
  * AS TREZE DE COMISSÕES (G8, `api#118`) — vieram da `#337`, que as declarou
  * enquanto esta PR estava aberta, e o rebase as trouxe para cá.
@@ -806,6 +869,54 @@ const COMISSOES: readonly RotaNoMock[] = [
   { metodo: 'get', caminho: '/api/commissions/closings', motivo: COMISSOES_SEM_PORTA },
   { metodo: 'post', caminho: '/api/commissions/closings', motivo: COMISSOES_SEM_PORTA },
   { metodo: 'get', caminho: '/api/commissions/closings/{id}/entries', motivo: COMISSOES_SEM_PORTA },
+]
+
+/**
+ * O bloco FÍSICO da venda (G4) — liberar, separar, o romaneio e a situação.
+ *
+ * **A ordem se inverteu neste trilho, e de propósito.** O módulo de domínio do
+ * `cabinet-erp-api` JÁ EXISTE — `src/modules/entrega/` e a migração `0062` —
+ * porque migração, invariante e bateria não dependem do contrato, e é ali que
+ * mora o risco: baixar estoque duas vezes, entregar peça que ninguém separou,
+ * deixar reserva presa num depósito. O que faltava era a FORMA HTTP, e é ela
+ * que esta PR publica.
+ *
+ * **Medição (2026-08-24, `cabinet-erp-api` main `9c5b91f`):** `git grep` por
+ * `api/deliveries|picking-queue|/fulfillment` em `src/` e `tests/` devolve UMA
+ * ocorrência, e ela é a nota de `ConcludeOrder` no contrato GERADO dizendo que
+ * a entrega não existe — nenhuma rota, nenhum handler. `src/modules/entrega/`
+ * tem `fluxo.ts`, `estados.ts` e `situacao.ts`, e nada os chama por HTTP. A
+ * cópia do contrato de lá tem 90 caminhos / 124 operações. Não é o 501 da fase:
+ * é caminho que o servidor não tem, e o par local devolve o 404 do Fastify.
+ *
+ * Sai INTEIRA quando a Fase B do api ligar os handlers, e a razão é própria
+ * desta família: as três telas da Fase C — fila de separação, romaneio, situação
+ * do pedido — leem o MESMO progresso. Ligar metade poria a fila lendo Postgres e
+ * a situação lendo ficção sobre as mesmas peças, e as duas discordariam sobre o
+ * que já saiu do galpão.
+ */
+const ENTREGA_SEM_PORTA =
+  'o módulo `src/modules/entrega/` existe no api desde a `0062` e não tem rota — medido em 9c5b91f: zero handler, e o par local devolve 404'
+
+const ENTREGA: readonly RotaNoMock[] = [
+  { metodo: 'get', caminho: '/api/orders/{id}/fulfillment', motivo: ENTREGA_SEM_PORTA },
+  {
+    metodo: 'post',
+    caminho: '/api/orders/{id}/items/{lineNumber}/release',
+    motivo: ENTREGA_SEM_PORTA,
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/orders/{id}/items/{lineNumber}/pick',
+    motivo: ENTREGA_SEM_PORTA,
+  },
+  { metodo: 'get', caminho: '/api/picking-queue', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/deliveries', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'get', caminho: '/api/deliveries/{id}', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/items', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/close', motivo: ENTREGA_SEM_PORTA },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/cancel', motivo: ENTREGA_SEM_PORTA },
 ]
 
 const TESOURARIA_SEM_CONTRATO_LA =
@@ -884,6 +995,8 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   { metodo: 'get', caminho: '/api/purchases/arrival-forecast', motivo: COMPRAS_501 },
   { metodo: 'get', caminho: '/api/purchases/stock-replenishment', motivo: COMPRAS_501 },
   ...COMISSOES,
+  ...ENTREGA,
+  ...RECEBIMENTO,
   ...TESOURARIA,
 ]
 

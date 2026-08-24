@@ -11,6 +11,7 @@ import type {
   AbcCurveReportDto,
   ActivityDto,
   ActivityWriteRequest,
+  AddDeliveryItemRequest,
   AgendaEventDto,
   BirthdaysReportDto,
   CancelDocumentRequest,
@@ -22,6 +23,7 @@ import type {
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
   ChangePasswordRequest,
+  CloseDeliveryRequest,
   CommissionClosingResultDto,
   CommissionClosingWriteRequest,
   CommissionEarningsReportDto,
@@ -30,6 +32,7 @@ import type {
   CostProfileWriteRequest,
   CostSimulationDto,
   CostSimulationRequest,
+  CreateDeliveryRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
   CrmLostReasonsReportDto,
@@ -41,12 +44,14 @@ import type {
   CrmStageDto,
   CrmStageWriteRequest,
   DashboardSummaryDto,
+  DeliveryDetailDto,
   EmployeeDetailDto,
   EmployeeLinkRequest,
   EmployeeWriteRequest,
   FinancialSettlementDto,
   FinancialTitleDto,
   FinancialTitleWriteRequest,
+  FulfillmentFactDto,
   GetAbcCurveReportParams,
   GetBirthdaysReportParams,
   GetCommissionEarningsParams,
@@ -61,6 +66,8 @@ import type {
   GetStockAgingReportParams,
   GetStockValuationReportParams,
   GetSupplierMovementReportParams,
+  GoodsReceiptDto,
+  GoodsReceiptWriteRequest,
   HealthStatus,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
@@ -76,10 +83,12 @@ import type {
   ListCrmLostReasonsParams,
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
+  ListDeliveriesParams,
   ListEmployeeCommissionTiersParams,
   ListEmployeesParams,
   ListFinancialInstallmentsParams,
   ListFinancialTitlesParams,
+  ListGoodsReceiptsParams,
   ListOrderParticipantsParams,
   ListOrderProfessionalHistoryParams,
   ListOrdersParams,
@@ -88,6 +97,8 @@ import type {
   ListPartnersParams,
   ListPaymentModesParams,
   ListPaymentTermsParams,
+  ListPickingQueueParams,
+  ListPriceIndexesParams,
   ListProductsParams,
   ListProjectsParams,
   ListPurchaseOrdersParams,
@@ -106,6 +117,7 @@ import type {
   NaoAutenticadoResponse,
   NaoImplementadoResponse,
   OrderDetailDto,
+  OrderFulfillmentDto,
   OrderParticipantsWriteRequest,
   OrderWriteRequest,
   PagedResultOfActivityDto,
@@ -120,9 +132,11 @@ import type {
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
   PagedResultOfCrmPipelineDto,
+  PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
   PagedResultOfFinancialInstallmentDto,
   PagedResultOfFinancialTitleDto,
+  PagedResultOfGoodsReceiptDto,
   PagedResultOfOrderDto,
   PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
@@ -130,6 +144,8 @@ import type {
   PagedResultOfPartnerDto,
   PagedResultOfPaymentModeDto,
   PagedResultOfPaymentTermDto,
+  PagedResultOfPickingQueueItemDto,
+  PagedResultOfPriceIndexDto,
   PagedResultOfProductDto,
   PagedResultOfPurchaseArrivalRowDto,
   PagedResultOfPurchaseOrderDto,
@@ -151,6 +167,9 @@ import type {
   PaymentTermDto,
   PaymentTermWriteRequest,
   PermissionCatalogDto,
+  PickOrderItemRequest,
+  PriceIndexDto,
+  PriceIndexWriteRequest,
   ProblemDetails,
   ProductDetailDto,
   ProductDto,
@@ -170,6 +189,7 @@ import type {
   QuoteVsStockReportDto,
   QuoteWriteRequest,
   ReadinessStatus,
+  ReleaseOrderItemRequest,
   RoleDetailDto,
   RoleWriteRequest,
   SalesComparisonReportDto,
@@ -197,6 +217,8 @@ import type {
   TodoPatchRequest,
   TransferProfessionalRequest,
   TrocarEmpresaRequest,
+  VariantTablePriceDto,
+  VariantTablePricesWriteRequest,
   VariantWriteRequest,
   VinculoDeEmpresa,
   WorkDto,
@@ -5121,7 +5143,7 @@ export const getConcludeOrderUrl = (id: string,) => {
  *
  * **Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.
  *
- * **O que esta operação NÃO faz, e é blocker escrito, não esquecimento:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial. Entrega não existe neste contrato — não há `/api/deliveries`, não há estado físico, não há quadro de cargas. Declarar aqui um `force` que nada libera seria publicar botão sem efeito, e a tela que o mostrasse ensinaria o operador a confiar num controle que não controla. A pré-condição entra junto com o módulo de entrega, e aí o `force` nasce com o que forçar.
+ * **O que esta operação NÃO faz, e continua sendo blocker escrito:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial (`QryConclusaoPedido` do `frmControleEntrega` só carimba a data quando nenhuma linha tem entregue abaixo do vendido). **A metade que faltava chegou:** `/api/deliveries` existe, o estado físico existe (`GET /api/orders/{id}/fulfillment`), e a pergunta "este pedido saiu inteiro?" tem resposta — é `physicalState: delivered`. O que ainda NÃO existe é a PRÉ-CONDIÇÃO aqui: concluir segue sem olhar o físico, e um `force` sem recusa para forçar continuaria sendo botão sem efeito. Ligar as duas é decisão do trilho do ciclo do documento, não efeito colateral de publicar a entrega — e quando ela vier, o `force` nasce com o que forçar.
  */
 export const concludeOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<concludeOrderResponse> => {
 
@@ -7729,6 +7751,418 @@ export const getPurchaseStockReplenishment = async (params?: GetPurchaseStockRep
 
 
 
+export type listGoodsReceiptsResponse200 = {
+  data: PagedResultOfGoodsReceiptDto
+  status: 200
+}
+
+export type listGoodsReceiptsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listGoodsReceiptsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listGoodsReceiptsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listGoodsReceiptsResponseSuccess = (listGoodsReceiptsResponse200) & {
+  headers: Headers;
+};
+export type listGoodsReceiptsResponseError = (listGoodsReceiptsResponse400 | listGoodsReceiptsResponse401 | listGoodsReceiptsResponse403) & {
+  headers: Headers;
+};
+
+export type listGoodsReceiptsResponse = (listGoodsReceiptsResponseSuccess | listGoodsReceiptsResponseError)
+
+export const getListGoodsReceiptsUrl = (params?: ListGoodsReceiptsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/goods-receipts?${stringifiedParams}` : `/api/goods-receipts`
+}
+
+/**
+ * Proposto. Os RECEBIMENTOS da empresa ativa — a nota do fornecedor virando entrada no estoque.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ *
+ * A fila de trabalho de quem responde pelo galpão é esta listagem recortada por `status`: o que ainda não foi conferido, e o que foi conferido e ainda não foi lançado. É a razão de `status` ser parâmetro próprio e não filtro estruturado — a tela abre nele, não o escolhe.
+ */
+export const listGoodsReceipts = async (params?: ListGoodsReceiptsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listGoodsReceiptsResponse> => {
+
+  return apiFetch<listGoodsReceiptsResponse>(getListGoodsReceiptsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createGoodsReceiptResponse201 = {
+  data: GoodsReceiptDto
+  status: 201
+}
+
+export type createGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createGoodsReceiptResponseSuccess = (createGoodsReceiptResponse201) & {
+  headers: Headers;
+};
+export type createGoodsReceiptResponseError = (createGoodsReceiptResponse400 | createGoodsReceiptResponse401 | createGoodsReceiptResponse403 | createGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type createGoodsReceiptResponse = (createGoodsReceiptResponseSuccess | createGoodsReceiptResponseError)
+
+export const getCreateGoodsReceiptUrl = () => {
+
+
+
+
+  return `/api/goods-receipts`
+}
+
+/**
+ * Proposto. Abre um recebimento em RASCUNHO e digita a grade da conferência.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * Nasce sempre em `draft`: criar já conferido pularia a decisão que o estado do meio existe para representar. Quem descarrega o caminhão conta; quem responde pelo estoque lança — e por isso `POST /{id}/post` pede OUTRA permissão.
+ *
+ * **`locationId` é opcional aqui e obrigatório na tabela.** Omitido, o servidor resolve o depósito padrão da empresa. Entrada sem depósito é entrada que o kardex não sabe explicar, mas exigir a escolha na tela toda faria o operador escolher sempre o mesmo — e escolher errado uma vez.
+ *
+ * **Descrição da linha NÃO vem do cliente:** é copiada do cadastro da variante na gravação, e congelada ali. Aceitá-la aqui deixaria a conferência dizer que recebeu uma peça e o catálogo dizer que ela é outra, com o `variantId` intacto entre as duas.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const createGoodsReceipt = async (goodsReceiptWriteRequest: GoodsReceiptWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createGoodsReceiptResponse> => {
+
+  return apiFetch<createGoodsReceiptResponse>(getCreateGoodsReceiptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(goodsReceiptWriteRequest)
+  }
+);}
+
+
+
+export type getGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type getGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getGoodsReceiptResponseSuccess = (getGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type getGoodsReceiptResponseError = (getGoodsReceiptResponse401 | getGoodsReceiptResponse403 | getGoodsReceiptResponse404 | getGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type getGoodsReceiptResponse = (getGoodsReceiptResponseSuccess | getGoodsReceiptResponseError)
+
+export const getGetGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}`
+}
+
+/**
+ * Proposto. Um recebimento pelo id, com a grade da conferência.
+ *
+ * A grade vem ordenada por `lineNumber`, que é a ordem em que o operador digitou. Ela **não** é a ordem em que o lançamento acontece — ver `POST /{id}/post`.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const getGoodsReceipt = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getGoodsReceiptResponse> => {
+
+  return apiFetch<getGoodsReceiptResponse>(getGetGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type updateGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateGoodsReceiptResponseSuccess = (updateGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type updateGoodsReceiptResponseError = (updateGoodsReceiptResponse400 | updateGoodsReceiptResponse401 | updateGoodsReceiptResponse403 | updateGoodsReceiptResponse404 | updateGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type updateGoodsReceiptResponse = (updateGoodsReceiptResponseSuccess | updateGoodsReceiptResponseError)
+
+export const getUpdateGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}`
+}
+
+/**
+ * Proposto. Substitui o recebimento INTEIRO — cabeçalho e grade.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * **409 fora do rascunho** (`urn:cabinet:erro:transicao-invalida`). Conferido é uma decisão já tomada sobre a grade, e lançado já virou movimento no kardex: reescrever qualquer um dos dois faria o documento divergir, em silêncio, do estoque que ele gerou. Voltar atrás numa conferência é reescrever a grade inteira, que é o que este PUT faz — não existe DELETE (ver `GoodsReceiptDto`).
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const updateGoodsReceipt = async (id: string,
+    goodsReceiptWriteRequest: GoodsReceiptWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateGoodsReceiptResponse> => {
+
+  return apiFetch<updateGoodsReceiptResponse>(getUpdateGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(goodsReceiptWriteRequest)
+  }
+);}
+
+
+
+export type checkGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type checkGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type checkGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type checkGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type checkGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type checkGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type checkGoodsReceiptResponseSuccess = (checkGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type checkGoodsReceiptResponseError = (checkGoodsReceiptResponse400 | checkGoodsReceiptResponse401 | checkGoodsReceiptResponse403 | checkGoodsReceiptResponse404 | checkGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type checkGoodsReceiptResponse = (checkGoodsReceiptResponseSuccess | checkGoodsReceiptResponseError)
+
+export const getCheckGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}/check`
+}
+
+/**
+ * Proposto. FECHA a conferência: `draft` → `checked`.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * É transição e não campo do PUT porque muda o que o documento PERMITE: depois dela a grade para de ser editável e o lançamento passa a ser possível. Um `status: "checked"` aceito no corpo faria essa passagem acontecer no meio de uma digitação distraída.
+ *
+ * **A regra que esta transição cobra, e que o banco de propósito NÃO cobra: linha que divergiu precisa de `divergenceReason` escrito.** Durante a conferência a grade passa por todos os estados intermediários — a linha nasce com recebido zero e vai subindo enquanto alguém conta a caixa —, e nesse intervalo divergir sem motivo é o estado normal, não defeito. Por isso a regra é da transição, e não um CHECK que recusaria a digitação.
+ *
+ * A recusa é **400 com `fields[]`**, apontando `items[N].divergenceReason` linha a linha: é isso que permite à tela pôr o cursor no lugar certo. Um 409 diria só "não dá". Recebimento sem linha nenhuma é 409 — conferência vazia declarada conferida é a nota dizendo que o caminhão veio vazio, e isso se resolve apagando o rascunho.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const checkGoodsReceipt = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<checkGoodsReceiptResponse> => {
+
+  return apiFetch<checkGoodsReceiptResponse>(getCheckGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type postGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type postGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type postGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type postGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type postGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type postGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type postGoodsReceiptResponseSuccess = (postGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type postGoodsReceiptResponseError = (postGoodsReceiptResponse400 | postGoodsReceiptResponse401 | postGoodsReceiptResponse403 | postGoodsReceiptResponse404 | postGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type postGoodsReceiptResponse = (postGoodsReceiptResponseSuccess | postGoodsReceiptResponseError)
+
+export const getPostGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}/post`
+}
+
+/**
+ * Proposto. LANÇA o recebimento: `checked` → `posted`. Cada linha com quantidade vira entrada no kardex (`ListStockMovements`), marcada como compra e apontando para este documento.
+ *
+ * **Permissão: `estoque:movimentar` — e ela é DIFERENTE da das outras seis de propósito.** Conferir é contar caixa; lançar é mexer no saldo de que alguém responde. O estado do meio existe justamente porque as duas decisões são de pessoas diferentes em horas diferentes, e uma permissão só faria quem conta ter de também lançar — que é como divergência vira "depois eu ajusto".
+ *
+ * **Divergência NÃO bloqueia o lançamento.** Chegaram 8 das 10 pedidas, com motivo declarado: lança 8. Recusar faria a mercadoria que ESTÁ no galpão não existir no sistema, que é exatamente o defeito que o kardex existe para não ter. A divergência fica na linha: ela é a pergunta do comprador ao fornecedor, não uma trava do almoxarifado.
+ *
+ * **O efeito é atômico e não repetível.** Ou o documento fica `posted` com todos os seus movimentos, ou nada acontece; e lançar de novo é 409 (`urn:cabinet:erro:transicao-invalida`), nunca repetição em silêncio — sem isso um duplo clique dobraria o estoque.
+ *
+ * **O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.
+ *
+ * **A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, "o que vem em ordem enviada e ainda não recebida". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const postGoodsReceipt = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<postGoodsReceiptResponse> => {
+
+  return apiFetch<postGoodsReceiptResponse>(getPostGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export type listCostProfilesResponse200 = {
   data: PagedResultOfCostProfileDto
   status: 200
@@ -8988,6 +9422,975 @@ export const listCommissionClosingEntries = async (id: string,
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type getOrderFulfillmentResponse200 = {
+  data: OrderFulfillmentDto
+  status: 200
+}
+
+export type getOrderFulfillmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getOrderFulfillmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getOrderFulfillmentResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getOrderFulfillmentResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getOrderFulfillmentResponseSuccess = (getOrderFulfillmentResponse200) & {
+  headers: Headers;
+};
+export type getOrderFulfillmentResponseError = (getOrderFulfillmentResponse401 | getOrderFulfillmentResponse403 | getOrderFulfillmentResponse404 | getOrderFulfillmentResponse409) & {
+  headers: Headers;
+};
+
+export type getOrderFulfillmentResponse = (getOrderFulfillmentResponseSuccess | getOrderFulfillmentResponseError)
+
+export const getGetOrderFulfillmentUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/fulfillment`
+}
+
+/**
+ * Proposto. A SITUAÇÃO FÍSICA do pedido, item a item — a consulta nº 17 do volume 02 do legado.
+ *
+ * Leitura, e por isso NÃO é filtrada por papel: quem tem vínculo com a empresa lê tudo o que ela tem, e é para isso que `viewer` existe. **Sem empresa ativa é 409**, como todo detalhe por id.
+ */
+export const getOrderFulfillment = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getOrderFulfillmentResponse> => {
+
+  return apiFetch<getOrderFulfillmentResponse>(getGetOrderFulfillmentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type releaseOrderItemResponse200 = {
+  data: FulfillmentFactDto
+  status: 200
+}
+
+export type releaseOrderItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type releaseOrderItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type releaseOrderItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type releaseOrderItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type releaseOrderItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type releaseOrderItemResponseSuccess = (releaseOrderItemResponse200) & {
+  headers: Headers;
+};
+export type releaseOrderItemResponseError = (releaseOrderItemResponse400 | releaseOrderItemResponse401 | releaseOrderItemResponse403 | releaseOrderItemResponse404 | releaseOrderItemResponse409) & {
+  headers: Headers;
+};
+
+export type releaseOrderItemResponse = (releaseOrderItemResponseSuccess | releaseOrderItemResponseError)
+
+export const getReleaseOrderItemUrl = (id: string,
+    lineNumber: number,) => {
+
+
+
+
+  return `/api/orders/${id}/items/${lineNumber}/release`
+}
+
+/**
+ * Proposto. LIBERA a linha para separação e RESERVA o saldo no depósito.
+ *
+ * **É a única operação da escada que exige a permissão `venda:liberar-entrega`** — separar e entregar são execução do que já foi autorizado, e no legado o gesto é o mesmo `FrmLiberarProdutos` ("Liberar separação e entrega de produtos"). Quem não tem a permissão recebe 403 `urn:cabinet:erro:papel-insuficiente`.
+ *
+ * Liberar não baixa estoque: a peça continua no galpão, só deixa de estar disponível para a próxima venda. Acima do vendido é 409 `urn:cabinet:erro:liberacao-acima-do-vendido`.
+ *
+ * O depósito se decide AQUI e a separação o herda. Passar um depósito diferente na separação é a exceção, não a regra.
+ */
+export const releaseOrderItem = async (id: string,
+    lineNumber: number,
+    releaseOrderItemRequest: ReleaseOrderItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<releaseOrderItemResponse> => {
+
+  return apiFetch<releaseOrderItemResponse>(getReleaseOrderItemUrl(id,lineNumber),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(releaseOrderItemRequest)
+  }
+);}
+
+
+
+export type pickOrderItemResponse200 = {
+  data: FulfillmentFactDto
+  status: 200
+}
+
+export type pickOrderItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type pickOrderItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type pickOrderItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type pickOrderItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type pickOrderItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type pickOrderItemResponseSuccess = (pickOrderItemResponse200) & {
+  headers: Headers;
+};
+export type pickOrderItemResponseError = (pickOrderItemResponse400 | pickOrderItemResponse401 | pickOrderItemResponse403 | pickOrderItemResponse404 | pickOrderItemResponse409) & {
+  headers: Headers;
+};
+
+export type pickOrderItemResponse = (pickOrderItemResponseSuccess | pickOrderItemResponseError)
+
+export const getPickOrderItemUrl = (id: string,
+    lineNumber: number,) => {
+
+
+
+
+  return `/api/orders/${id}/items/${lineNumber}/pick`
+}
+
+/**
+ * Proposto. SEPARA a linha: a peça sai da prateleira e o estoque BAIXA, na mesma transação do fato. O movimento do kardex nasce com origem tipada (`sale` + o pedido), então o estorno não precisa casar texto livre para achar a linha.
+ *
+ * A reserva morre junto com a baixa — separar e continuar reservado contaria a mesma peça duas vezes para a próxima venda.
+ *
+ * **Acima do liberado é 409 `urn:cabinet:erro:separacao-sem-liberacao`.** O gate é o CHECK monótono do banco e não depende de papel nenhum: quem pula a liberação não separa.
+ *
+ * Linha de SERVIÇO separa sem mover peça — ela não tem variante, e resolver depósito para ela apontaria a instalação de uma cozinha para uma prateleira.
+ */
+export const pickOrderItem = async (id: string,
+    lineNumber: number,
+    pickOrderItemRequest: PickOrderItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<pickOrderItemResponse> => {
+
+  return apiFetch<pickOrderItemResponse>(getPickOrderItemUrl(id,lineNumber),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pickOrderItemRequest)
+  }
+);}
+
+
+
+export type listPickingQueueResponse200 = {
+  data: PagedResultOfPickingQueueItemDto
+  status: 200
+}
+
+export type listPickingQueueResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPickingQueueResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPickingQueueResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPickingQueueResponseSuccess = (listPickingQueueResponse200) & {
+  headers: Headers;
+};
+export type listPickingQueueResponseError = (listPickingQueueResponse400 | listPickingQueueResponse401 | listPickingQueueResponse403) & {
+  headers: Headers;
+};
+
+export type listPickingQueueResponse = (listPickingQueueResponseSuccess | listPickingQueueResponseError)
+
+export const getListPickingQueueUrl = (params?: ListPickingQueueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/picking-queue?${stringifiedParams}` : `/api/picking-queue`
+}
+
+/**
+ * Proposto. A FILA DE SEPARAÇÃO: as linhas liberadas que ainda não saíram da prateleira, de todos os pedidos ativos da empresa.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — o operador recém-criado, ainda sem vínculo, não tem fila; não é erro dele.
+ *
+ * A ordem padrão é a data prometida (`NULLS LAST`) e o número do pedido como desempate: o que atrasa aparece em cima, e item sem data combinada não fura a fila de quem tem uma.
+ */
+export const listPickingQueue = async (params?: ListPickingQueueParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPickingQueueResponse> => {
+
+  return apiFetch<listPickingQueueResponse>(getListPickingQueueUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listDeliveriesResponse200 = {
+  data: PagedResultOfDeliveryDto
+  status: 200
+}
+
+export type listDeliveriesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listDeliveriesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listDeliveriesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listDeliveriesResponseSuccess = (listDeliveriesResponse200) & {
+  headers: Headers;
+};
+export type listDeliveriesResponseError = (listDeliveriesResponse400 | listDeliveriesResponse401 | listDeliveriesResponse403) & {
+  headers: Headers;
+};
+
+export type listDeliveriesResponse = (listDeliveriesResponseSuccess | listDeliveriesResponseError)
+
+export const getListDeliveriesUrl = (params?: ListDeliveriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/deliveries?${stringifiedParams}` : `/api/deliveries`
+}
+
+/**
+ * Proposto. Os ROMANEIOS da empresa ativa — o "Controle de Entrega" do legado.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ */
+export const listDeliveries = async (params?: ListDeliveriesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listDeliveriesResponse> => {
+
+  return apiFetch<listDeliveriesResponse>(getListDeliveriesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createDeliveryResponse201 = {
+  data: DeliveryDetailDto
+  status: 201
+}
+
+export type createDeliveryResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createDeliveryResponseSuccess = (createDeliveryResponse201) & {
+  headers: Headers;
+};
+export type createDeliveryResponseError = (createDeliveryResponse400 | createDeliveryResponse401 | createDeliveryResponse403 | createDeliveryResponse404 | createDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type createDeliveryResponse = (createDeliveryResponseSuccess | createDeliveryResponseError)
+
+export const getCreateDeliveryUrl = () => {
+
+
+
+
+  return `/api/deliveries`
+}
+
+/**
+ * Proposto. Abre um romaneio para o pedido. Nasce `open` e vazio; os itens entram por `POST /api/deliveries/{id}/items`.
+ */
+export const createDelivery = async (createDeliveryRequest: CreateDeliveryRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createDeliveryResponse> => {
+
+  return apiFetch<createDeliveryResponse>(getCreateDeliveryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createDeliveryRequest)
+  }
+);}
+
+
+
+export type getDeliveryResponse200 = {
+  data: DeliveryDetailDto
+  status: 200
+}
+
+export type getDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getDeliveryResponseSuccess = (getDeliveryResponse200) & {
+  headers: Headers;
+};
+export type getDeliveryResponseError = (getDeliveryResponse401 | getDeliveryResponse403 | getDeliveryResponse404 | getDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type getDeliveryResponse = (getDeliveryResponseSuccess | getDeliveryResponseError)
+
+export const getGetDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}`
+}
+
+/**
+ * Proposto. O romaneio com os itens lançados nele.
+ */
+export const getDelivery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getDeliveryResponse> => {
+
+  return apiFetch<getDeliveryResponse>(getGetDeliveryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type addDeliveryItemResponse200 = {
+  data: FulfillmentFactDto
+  status: 200
+}
+
+export type addDeliveryItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type addDeliveryItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type addDeliveryItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type addDeliveryItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type addDeliveryItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type addDeliveryItemResponseSuccess = (addDeliveryItemResponse200) & {
+  headers: Headers;
+};
+export type addDeliveryItemResponseError = (addDeliveryItemResponse400 | addDeliveryItemResponse401 | addDeliveryItemResponse403 | addDeliveryItemResponse404 | addDeliveryItemResponse409) & {
+  headers: Headers;
+};
+
+export type addDeliveryItemResponse = (addDeliveryItemResponseSuccess | addDeliveryItemResponseError)
+
+export const getAddDeliveryItemUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}/items`
+}
+
+/**
+ * Proposto. Lança um item ENTREGUE dentro do romaneio. Não mexe em estoque — a peça já saiu do galpão na separação.
+ *
+ * **Só entra em romaneio ABERTO** (409 `urn:cabinet:erro:entrega-fechada`): fechado é documento assinado, e acrescentar item a ele reescreveria o que o cliente conferiu; cancelado, idem, pelo motivo oposto.
+ *
+ * O romaneio tem de ser do MESMO pedido da linha (409 `urn:cabinet:erro:entrega-de-outro-pedido`), e a quantidade não passa do separado (409 `urn:cabinet:erro:entrega-sem-separacao`).
+ */
+export const addDeliveryItem = async (id: string,
+    addDeliveryItemRequest: AddDeliveryItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<addDeliveryItemResponse> => {
+
+  return apiFetch<addDeliveryItemResponse>(getAddDeliveryItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addDeliveryItemRequest)
+  }
+);}
+
+
+
+export type closeDeliveryResponse200 = {
+  data: DeliveryDetailDto
+  status: 200
+}
+
+export type closeDeliveryResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type closeDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type closeDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type closeDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type closeDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type closeDeliveryResponseSuccess = (closeDeliveryResponse200) & {
+  headers: Headers;
+};
+export type closeDeliveryResponseError = (closeDeliveryResponse400 | closeDeliveryResponse401 | closeDeliveryResponse403 | closeDeliveryResponse404 | closeDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type closeDeliveryResponse = (closeDeliveryResponseSuccess | closeDeliveryResponseError)
+
+export const getCloseDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}/close`
+}
+
+/**
+ * Proposto. FECHA o romaneio, exigindo quando saiu e quem recebeu — seis meses depois, quando o cliente diz que não recebeu, é essa linha que responde.
+ *
+ * **Romaneio vazio não fecha** (409 `urn:cabinet:erro:entrega-vazia`). Fechar de novo, ou fechar o cancelado, é 409 `urn:cabinet:erro:entrega-fechada`.
+ */
+export const closeDelivery = async (id: string,
+    closeDeliveryRequest: CloseDeliveryRequest, options?: Parameters<typeof apiFetch>[1]): Promise<closeDeliveryResponse> => {
+
+  return apiFetch<closeDeliveryResponse>(getCloseDeliveryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(closeDeliveryRequest)
+  }
+);}
+
+
+
+export type cancelDeliveryResponse200 = {
+  data: DeliveryDetailDto
+  status: 200
+}
+
+export type cancelDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelDeliveryResponseSuccess = (cancelDeliveryResponse200) & {
+  headers: Headers;
+};
+export type cancelDeliveryResponseError = (cancelDeliveryResponse401 | cancelDeliveryResponse403 | cancelDeliveryResponse404 | cancelDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type cancelDeliveryResponse = (cancelDeliveryResponseSuccess | cancelDeliveryResponseError)
+
+export const getCancelDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela o romaneio. **NÃO desfaz os fatos já lançados nele** — o log de entregas é append-only por GRANT, e corrigir o passado é estornar, não editar. O ato de estorno (o `cep_quantidade_entregueRET` do legado) é a fase seguinte e ainda não tem caminho.
+ *
+ * Cancelar duas vezes, ou cancelar o fechado, é 409 `urn:cabinet:erro:entrega-fechada`.
+ */
+export const cancelDelivery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelDeliveryResponse> => {
+
+  return apiFetch<cancelDeliveryResponse>(getCancelDeliveryUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listPriceIndexesResponse200 = {
+  data: PagedResultOfPriceIndexDto
+  status: 200
+}
+
+export type listPriceIndexesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPriceIndexesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPriceIndexesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPriceIndexesResponseSuccess = (listPriceIndexesResponse200) & {
+  headers: Headers;
+};
+export type listPriceIndexesResponseError = (listPriceIndexesResponse400 | listPriceIndexesResponse401 | listPriceIndexesResponse403) & {
+  headers: Headers;
+};
+
+export type listPriceIndexesResponse = (listPriceIndexesResponseSuccess | listPriceIndexesResponseError)
+
+export const getListPriceIndexesUrl = (params?: ListPriceIndexesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/price-indexes?${stringifiedParams}` : `/api/price-indexes`
+}
+
+/**
+ * Proposto. Os índices de venda da empresa ativa, um por fornecedor.
+ *
+ * **Não há detalhe por id nesta família**, pelo mesmo desenho de `/api/payment-terms` e `/api/stock-locations`: é um punhado de linhas por empresa e a listagem já entrega cada uma inteira — um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar.
+ *
+ * **Não publica `filters`** pela razão de sempre: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.
+ */
+export const listPriceIndexes = async (params?: ListPriceIndexesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPriceIndexesResponse> => {
+
+  return apiFetch<listPriceIndexesResponse>(getListPriceIndexesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPriceIndexResponse201 = {
+  data: PriceIndexDto
+  status: 201
+}
+
+export type createPriceIndexResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPriceIndexResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPriceIndexResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPriceIndexResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPriceIndexResponseSuccess = (createPriceIndexResponse201) & {
+  headers: Headers;
+};
+export type createPriceIndexResponseError = (createPriceIndexResponse400 | createPriceIndexResponse401 | createPriceIndexResponse403 | createPriceIndexResponse409) & {
+  headers: Headers;
+};
+
+export type createPriceIndexResponse = (createPriceIndexResponseSuccess | createPriceIndexResponseError)
+
+export const getCreatePriceIndexUrl = () => {
+
+
+
+
+  return `/api/price-indexes`
+}
+
+/**
+ * Proposto. Cadastra o índice de um fornecedor na empresa ativa.
+ *
+ * **Papel: `admin` ou superior**, a mesma linha de corte de `/api/cost-profiles` e pela mesma razão: índice e perfil de custo são os dois fatores do mesmo preço, e proteger um deixando o outro aberto não protege nada. Isto não é operação de atendimento — o índice decide o preço de TODA peça daquele fornecedor, em todo orçamento que vier depois.
+ *
+ * Fornecedor que já tem índice é **409** — ver `PriceIndexDto.supplierId`.
+ */
+export const createPriceIndex = async (priceIndexWriteRequest: PriceIndexWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPriceIndexResponse> => {
+
+  return apiFetch<createPriceIndexResponse>(getCreatePriceIndexUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceIndexWriteRequest)
+  }
+);}
+
+
+
+export type updatePriceIndexResponse200 = {
+  data: PriceIndexDto
+  status: 200
+}
+
+export type updatePriceIndexResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePriceIndexResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePriceIndexResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePriceIndexResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePriceIndexResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePriceIndexResponseSuccess = (updatePriceIndexResponse200) & {
+  headers: Headers;
+};
+export type updatePriceIndexResponseError = (updatePriceIndexResponse400 | updatePriceIndexResponse401 | updatePriceIndexResponse403 | updatePriceIndexResponse404 | updatePriceIndexResponse409) & {
+  headers: Headers;
+};
+
+export type updatePriceIndexResponse = (updatePriceIndexResponseSuccess | updatePriceIndexResponseError)
+
+export const getUpdatePriceIndexUrl = (id: string,) => {
+
+
+
+
+  return `/api/price-indexes/${id}`
+}
+
+/**
+ * Proposto. Substitui o índice INTEIRO.
+ *
+ * **Alterar o índice NÃO reescreve documento já gravado.** O orçamento CARIMBA `unitPriceCents` na emissão, e é esse valor congelado que vale — repreçar documento existente é ação própria e explícita ("Atualizar Valores" do legado), não efeito colateral de mexer no cadastro. Sem isso, corrigir um índice mudaria em silêncio o total de todo orçamento em aberto, e ninguém saberia dizer por quê.
+ */
+export const updatePriceIndex = async (id: string,
+    priceIndexWriteRequest: PriceIndexWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePriceIndexResponse> => {
+
+  return apiFetch<updatePriceIndexResponse>(getUpdatePriceIndexUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceIndexWriteRequest)
+  }
+);}
+
+
+
+export type listVariantTablePricesResponse200 = {
+  data: VariantTablePriceDto[]
+  status: 200
+}
+
+export type listVariantTablePricesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listVariantTablePricesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listVariantTablePricesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listVariantTablePricesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listVariantTablePricesResponseSuccess = (listVariantTablePricesResponse200) & {
+  headers: Headers;
+};
+export type listVariantTablePricesResponseError = (listVariantTablePricesResponse400 | listVariantTablePricesResponse401 | listVariantTablePricesResponse403 | listVariantTablePricesResponse404) & {
+  headers: Headers;
+};
+
+export type listVariantTablePricesResponse = (listVariantTablePricesResponseSuccess | listVariantTablePricesResponseError)
+
+export const getListVariantTablePricesUrl = (variantId: string,) => {
+
+
+
+
+  return `/api/table-prices/${variantId}`
+}
+
+/**
+ * Proposto. As tabelas de preço desta variante, uma por fornecedor.
+ *
+ * Lista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.
+ *
+ * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
+ */
+export const listVariantTablePrices = async (variantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listVariantTablePricesResponse> => {
+
+  return apiFetch<listVariantTablePricesResponse>(getListVariantTablePricesUrl(variantId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type replaceVariantTablePricesResponse200 = {
+  data: VariantTablePriceDto[]
+  status: 200
+}
+
+export type replaceVariantTablePricesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type replaceVariantTablePricesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type replaceVariantTablePricesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type replaceVariantTablePricesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type replaceVariantTablePricesResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type replaceVariantTablePricesResponseSuccess = (replaceVariantTablePricesResponse200) & {
+  headers: Headers;
+};
+export type replaceVariantTablePricesResponseError = (replaceVariantTablePricesResponse400 | replaceVariantTablePricesResponse401 | replaceVariantTablePricesResponse403 | replaceVariantTablePricesResponse404 | replaceVariantTablePricesResponse409) & {
+  headers: Headers;
+};
+
+export type replaceVariantTablePricesResponse = (replaceVariantTablePricesResponseSuccess | replaceVariantTablePricesResponseError)
+
+export const getReplaceVariantTablePricesUrl = (variantId: string,) => {
+
+
+
+
+  return `/api/table-prices/${variantId}`
+}
+
+/**
+ * Proposto. Substitui a lista inteira de tabelas desta variante.
+ *
+ * **Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.
+ *
+ * Fornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.
+ *
+ * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
+ */
+export const replaceVariantTablePrices = async (variantId: string,
+    variantTablePricesWriteRequest: VariantTablePricesWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<replaceVariantTablePricesResponse> => {
+
+  return apiFetch<replaceVariantTablePricesResponse>(getReplaceVariantTablePricesUrl(variantId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(variantTablePricesWriteRequest)
   }
 );}
 

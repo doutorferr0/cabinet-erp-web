@@ -5359,7 +5359,7 @@
       "post": {
         "tags": ["vendas"],
         "operationId": "ConcludeOrder",
-        "description": "Proposto. **Conclui o pedido** — `active → concluded`. É a \"Conclusão do Pedido de Venda\" do menu do legado (`FrmFecha_projeto`): o ponto em que o documento para de ser trabalho em curso. Carimba `closedAt` com a data de hoje quando ela está nula; a que o operador digitou fica como está.\n\n**Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.\n\n**O que esta operação NÃO faz, e é blocker escrito, não esquecimento:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial. Entrega não existe neste contrato — não há `/api/deliveries`, não há estado físico, não há quadro de cargas. Declarar aqui um `force` que nada libera seria publicar botão sem efeito, e a tela que o mostrasse ensinaria o operador a confiar num controle que não controla. A pré-condição entra junto com o módulo de entrega, e aí o `force` nasce com o que forçar.",
+        "description": "Proposto. **Conclui o pedido** — `active → concluded`. É a \"Conclusão do Pedido de Venda\" do menu do legado (`FrmFecha_projeto`): o ponto em que o documento para de ser trabalho em curso. Carimba `closedAt` com a data de hoje quando ela está nula; a que o operador digitou fica como está.\n\n**Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.\n\n**O que esta operação NÃO faz, e continua sendo blocker escrito:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial (`QryConclusaoPedido` do `frmControleEntrega` só carimba a data quando nenhuma linha tem entregue abaixo do vendido). **A metade que faltava chegou:** `/api/deliveries` existe, o estado físico existe (`GET /api/orders/{id}/fulfillment`), e a pergunta \"este pedido saiu inteiro?\" tem resposta — é `physicalState: delivered`. O que ainda NÃO existe é a PRÉ-CONDIÇÃO aqui: concluir segue sem olhar o físico, e um `force` sem recusa para forçar continuaria sendo botão sem efeito. Ligar as duas é decisão do trilho do ciclo do documento, não efeito colateral de publicar a entrega — e quando ela vier, o `force` nasce com o que forçar.",
         "parameters": [
           {
             "name": "id",
@@ -8596,6 +8596,413 @@
         }
       }
     },
+    "/api/goods-receipts": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "ListGoodsReceipts",
+        "description": "Proposto. Os RECEBIMENTOS da empresa ativa — a nota do fornecedor virando entrada no estoque.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**\n\nA fila de trabalho de quem responde pelo galpão é esta listagem recortada por `status`: o que ainda não foi conferido, e o que foi conferido e ainda não foi lançado. É a razão de `status` ser parâmetro próprio e não filtro estruturado — a tela abre nele, não o escolhe.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `receivedAt`, `issuedAt`, `invoiceNumber`, `status`, `postedAt`. Campo fora dela é 400.\n\n`supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. A ordenação PADRÃO é `receivedAt` decrescente: \"o que chegou por último\" é a pergunta que abre a tela, e o índice `ix_goods_receipts_fornecedor` da tabela foi desenhado nessa ordem.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "description": "Recorta por estado do recebimento — `draft`, `checked` ou `posted`.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "description": "Só os recebimentos deste fornecedor.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfGoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CreateGoodsReceipt",
+        "description": "Proposto. Abre um recebimento em RASCUNHO e digita a grade da conferência.\n\n**Permissão: `compras:editar`.**\n\nNasce sempre em `draft`: criar já conferido pularia a decisão que o estado do meio existe para representar. Quem descarrega o caminhão conta; quem responde pelo estoque lança — e por isso `POST /{id}/post` pede OUTRA permissão.\n\n**`locationId` é opcional aqui e obrigatório na tabela.** Omitido, o servidor resolve o depósito padrão da empresa. Entrada sem depósito é entrada que o kardex não sabe explicar, mas exigir a escolha na tela toda faria o operador escolher sempre o mesmo — e escolher errado uma vez.\n\n**Descrição da linha NÃO vem do cliente:** é copiada do cadastro da variante na gravação, e congelada ali. Aceitá-la aqui deixaria a conferência dizer que recebeu uma peça e o catálogo dizer que ela é outra, com o `variantId` intacto entre as duas.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoodsReceiptWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods-receipts/{id}": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetGoodsReceipt",
+        "description": "Proposto. Um recebimento pelo id, com a grade da conferência.\n\nA grade vem ordenada por `lineNumber`, que é a ordem em que o operador digitou. Ela **não** é a ordem em que o lançamento acontece — ver `POST /{id}/post`.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["compras"],
+        "operationId": "UpdateGoodsReceipt",
+        "description": "Proposto. Substitui o recebimento INTEIRO — cabeçalho e grade.\n\n**Permissão: `compras:editar`.**\n\n**409 fora do rascunho** (`urn:cabinet:erro:transicao-invalida`). Conferido é uma decisão já tomada sobre a grade, e lançado já virou movimento no kardex: reescrever qualquer um dos dois faria o documento divergir, em silêncio, do estoque que ele gerou. Voltar atrás numa conferência é reescrever a grade inteira, que é o que este PUT faz — não existe DELETE (ver `GoodsReceiptDto`).\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoodsReceiptWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — recebimento fora do rascunho (`urn:cabinet:erro:transicao-invalida`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods-receipts/{id}/check": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CheckGoodsReceipt",
+        "description": "Proposto. FECHA a conferência: `draft` → `checked`.\n\n**Permissão: `compras:editar`.**\n\nÉ transição e não campo do PUT porque muda o que o documento PERMITE: depois dela a grade para de ser editável e o lançamento passa a ser possível. Um `status: \"checked\"` aceito no corpo faria essa passagem acontecer no meio de uma digitação distraída.\n\n**A regra que esta transição cobra, e que o banco de propósito NÃO cobra: linha que divergiu precisa de `divergenceReason` escrito.** Durante a conferência a grade passa por todos os estados intermediários — a linha nasce com recebido zero e vai subindo enquanto alguém conta a caixa —, e nesse intervalo divergir sem motivo é o estado normal, não defeito. Por isso a regra é da transição, e não um CHECK que recusaria a digitação.\n\nA recusa é **400 com `fields[]`**, apontando `items[N].divergenceReason` linha a linha: é isso que permite à tela pôr o cursor no lugar certo. Um 409 diria só \"não dá\". Recebimento sem linha nenhuma é 409 — conferência vazia declarada conferida é a nota dizendo que o caminhão veio vazio, e isso se resolve apagando o rascunho.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — linha divergente sem motivo declarado, em `fields[]`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — recebimento fora do rascunho ou sem itens (`urn:cabinet:erro:transicao-invalida`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods-receipts/{id}/post": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "PostGoodsReceipt",
+        "description": "Proposto. LANÇA o recebimento: `checked` → `posted`. Cada linha com quantidade vira entrada no kardex (`ListStockMovements`), marcada como compra e apontando para este documento.\n\n**Permissão: `estoque:movimentar` — e ela é DIFERENTE da das outras seis de propósito.** Conferir é contar caixa; lançar é mexer no saldo de que alguém responde. O estado do meio existe justamente porque as duas decisões são de pessoas diferentes em horas diferentes, e uma permissão só faria quem conta ter de também lançar — que é como divergência vira \"depois eu ajusto\".\n\n**Divergência NÃO bloqueia o lançamento.** Chegaram 8 das 10 pedidas, com motivo declarado: lança 8. Recusar faria a mercadoria que ESTÁ no galpão não existir no sistema, que é exatamente o defeito que o kardex existe para não ter. A divergência fica na linha: ela é a pergunta do comprador ao fornecedor, não uma trava do almoxarifado.\n\n**O efeito é atômico e não repetível.** Ou o documento fica `posted` com todos os seus movimentos, ou nada acontece; e lançar de novo é 409 (`urn:cabinet:erro:transicao-invalida`), nunca repetição em silêncio — sem isso um duplo clique dobraria o estoque.\n\n**O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.\n\n**A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, \"o que vem em ordem enviada e ainda não recebida\". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — recebimento ainda não conferido ou já lançado (`urn:cabinet:erro:transicao-invalida`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cost-profiles": {
       "get": {
         "tags": ["precos"],
@@ -9977,6 +10384,1079 @@
           },
           "404": {
             "description": "Not Found — o `id` não é fechamento da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/fulfillment": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetOrderFulfillment",
+        "description": "Proposto. A SITUAÇÃO FÍSICA do pedido, item a item — a consulta nº 17 do volume 02 do legado.\n\nLeitura, e por isso NÃO é filtrada por papel: quem tem vínculo com a empresa lê tudo o que ela tem, e é para isso que `viewer` existe. **Sem empresa ativa é 409**, como todo detalhe por id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderFulfillmentDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/items/{lineNumber}/release": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "ReleaseOrderItem",
+        "description": "Proposto. LIBERA a linha para separação e RESERVA o saldo no depósito.\n\n**É a única operação da escada que exige a permissão `venda:liberar-entrega`** — separar e entregar são execução do que já foi autorizado, e no legado o gesto é o mesmo `FrmLiberarProdutos` (\"Liberar separação e entrega de produtos\"). Quem não tem a permissão recebe 403 `urn:cabinet:erro:papel-insuficiente`.\n\nLiberar não baixa estoque: a peça continua no galpão, só deixa de estar disponível para a próxima venda. Acima do vendido é 409 `urn:cabinet:erro:liberacao-acima-do-vendido`.\n\nO depósito se decide AQUI e a separação o herda. Passar um depósito diferente na separação é a exceção, não a regra.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lineNumber",
+            "in": "path",
+            "required": true,
+            "description": "Coluna `Item` da linha do pedido.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseOrderItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FulfillmentFactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — pedido, linha ou depósito inexistente nesta empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa, pedido cancelado, ou quantidade acima do vendido (`urn:cabinet:erro:liberacao-acima-do-vendido`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/items/{lineNumber}/pick": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "PickOrderItem",
+        "description": "Proposto. SEPARA a linha: a peça sai da prateleira e o estoque BAIXA, na mesma transação do fato. O movimento do kardex nasce com origem tipada (`sale` + o pedido), então o estorno não precisa casar texto livre para achar a linha.\n\nA reserva morre junto com a baixa — separar e continuar reservado contaria a mesma peça duas vezes para a próxima venda.\n\n**Acima do liberado é 409 `urn:cabinet:erro:separacao-sem-liberacao`.** O gate é o CHECK monótono do banco e não depende de papel nenhum: quem pula a liberação não separa.\n\nLinha de SERVIÇO separa sem mover peça — ela não tem variante, e resolver depósito para ela apontaria a instalação de uma cozinha para uma prateleira.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lineNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PickOrderItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FulfillmentFactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa, pedido cancelado, ou quantidade acima do liberado (`urn:cabinet:erro:separacao-sem-liberacao`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/picking-queue": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "ListPickingQueue",
+        "description": "Proposto. A FILA DE SEPARAÇÃO: as linhas liberadas que ainda não saíram da prateleira, de todos os pedidos ativos da empresa.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — o operador recém-criado, ainda sem vínculo, não tem fila; não é erro dele.\n\nA ordem padrão é a data prometida (`NULLS LAST`) e o número do pedido como desempate: o que atrasa aparece em cima, e item sem data combinada não fura a fila de quem tem uma.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por número do pedido, cliente ou descrição do item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `scheduledDeliveryAt`, `orderNumber`, `customerName`, `pendingPick`. Campo fora dela é 400 `urn:cabinet:erro:ordenacao-invalida`.\n\n`description` fica de fora: ordenar a fila do galpão por nome de peça embaralha as linhas do mesmo pedido, que é justamente o agrupamento que quem separa usa para não fazer duas viagens.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "description": "Só a fila deste pedido.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPickingQueueItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/deliveries": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "ListDeliveries",
+        "description": "Proposto. Os ROMANEIOS da empresa ativa — o \"Controle de Entrega\" do legado.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por número do romaneio, pedido, cliente ou transportadora.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `number`, `scheduledFor`, `deliveredAt`, `status`. Campo fora dela é 400.\n\n`customerName` e `carrierName` ficam de fora pelo motivo de sempre — são eco de outra tabela, congelado num caso e por junção no outro.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Recorta por situação do romaneio (`open`, `closed`, `cancelled`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "description": "Só os romaneios deste pedido.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfDeliveryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CreateDelivery",
+        "description": "Proposto. Abre um romaneio para o pedido. Nasce `open` e vazio; os itens entram por `POST /api/deliveries/{id}/items`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeliveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — pedido inexistente nesta empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa, ou pedido cancelado.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetDelivery",
+        "description": "Proposto. O romaneio com os itens lançados nele.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/items": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "AddDeliveryItem",
+        "description": "Proposto. Lança um item ENTREGUE dentro do romaneio. Não mexe em estoque — a peça já saiu do galpão na separação.\n\n**Só entra em romaneio ABERTO** (409 `urn:cabinet:erro:entrega-fechada`): fechado é documento assinado, e acrescentar item a ele reescreveria o que o cliente conferiu; cancelado, idem, pelo motivo oposto.\n\nO romaneio tem de ser do MESMO pedido da linha (409 `urn:cabinet:erro:entrega-de-outro-pedido`), e a quantidade não passa do separado (409 `urn:cabinet:erro:entrega-sem-separacao`).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddDeliveryItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FulfillmentFactDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — romaneio ou linha inexistente nesta empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa, romaneio não aberto (`urn:cabinet:erro:entrega-fechada`), romaneio de outro pedido (`urn:cabinet:erro:entrega-de-outro-pedido`) ou quantidade acima do separado (`urn:cabinet:erro:entrega-sem-separacao`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/close": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CloseDelivery",
+        "description": "Proposto. FECHA o romaneio, exigindo quando saiu e quem recebeu — seis meses depois, quando o cliente diz que não recebeu, é essa linha que responde.\n\n**Romaneio vazio não fecha** (409 `urn:cabinet:erro:entrega-vazia`). Fechar de novo, ou fechar o cancelado, é 409 `urn:cabinet:erro:entrega-fechada`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseDeliveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa, romaneio já fechado ou cancelado (`urn:cabinet:erro:entrega-fechada`), ou romaneio sem itens (`urn:cabinet:erro:entrega-vazia`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/cancel": {
+      "post": {
+        "tags": ["vendas"],
+        "operationId": "CancelDelivery",
+        "description": "Proposto. Cancela o romaneio. **NÃO desfaz os fatos já lançados nele** — o log de entregas é append-only por GRANT, e corrigir o passado é estornar, não editar. O ato de estorno (o `cep_quantidade_entregueRET` do legado) é a fase seguinte e ainda não tem caminho.\n\nCancelar duas vezes, ou cancelar o fechado, é 409 `urn:cabinet:erro:entrega-fechada`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa, ou romaneio já fechado/cancelado (`urn:cabinet:erro:entrega-fechada`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/price-indexes": {
+      "get": {
+        "tags": ["produtos"],
+        "operationId": "ListPriceIndexes",
+        "description": "Proposto. Os índices de venda da empresa ativa, um por fornecedor.\n\n**Não há detalhe por id nesta família**, pelo mesmo desenho de `/api/payment-terms` e `/api/stock-locations`: é um punhado de linhas por empresa e a listagem já entrega cada uma inteira — um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar.\n\n**Não publica `filters`** pela razão de sempre: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por nome do fornecedor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `supplierName`, `indexValue`, `active`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPriceIndexDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["produtos"],
+        "operationId": "CreatePriceIndex",
+        "description": "Proposto. Cadastra o índice de um fornecedor na empresa ativa.\n\n**Papel: `admin` ou superior**, a mesma linha de corte de `/api/cost-profiles` e pela mesma razão: índice e perfil de custo são os dois fatores do mesmo preço, e proteger um deixando o outro aberto não protege nada. Isto não é operação de atendimento — o índice decide o preço de TODA peça daquele fornecedor, em todo orçamento que vier depois.\n\nFornecedor que já tem índice é **409** — ver `PriceIndexDto.supplierId`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceIndexWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceIndexDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/price-indexes/{id}": {
+      "put": {
+        "tags": ["produtos"],
+        "operationId": "UpdatePriceIndex",
+        "description": "Proposto. Substitui o índice INTEIRO.\n\n**Alterar o índice NÃO reescreve documento já gravado.** O orçamento CARIMBA `unitPriceCents` na emissão, e é esse valor congelado que vale — repreçar documento existente é ação própria e explícita (\"Atualizar Valores\" do legado), não efeito colateral de mexer no cadastro. Sem isso, corrigir um índice mudaria em silêncio o total de todo orçamento em aberto, e ninguém saberia dizer por quê.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceIndexWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceIndexDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table-prices/{variantId}": {
+      "get": {
+        "tags": ["produtos"],
+        "operationId": "ListVariantTablePrices",
+        "description": "Proposto. As tabelas de preço desta variante, uma por fornecedor.\n\nLista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VariantTablePriceDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["produtos"],
+        "operationId": "ReplaceVariantTablePrices",
+        "description": "Proposto. Substitui a lista inteira de tabelas desta variante.\n\n**Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.\n\nFornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariantTablePricesWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VariantTablePriceDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12188,7 +13668,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -12204,6 +13684,12 @@
           "urn:cabinet:erro:hierarquia-em-laco",
           "urn:cabinet:erro:senha-atual-invalida",
           "urn:cabinet:erro:senha-fraca",
+          "urn:cabinet:erro:liberacao-acima-do-vendido",
+          "urn:cabinet:erro:separacao-sem-liberacao",
+          "urn:cabinet:erro:entrega-sem-separacao",
+          "urn:cabinet:erro:entrega-fechada",
+          "urn:cabinet:erro:entrega-vazia",
+          "urn:cabinet:erro:entrega-de-outro-pedido",
           "urn:cabinet:erro:nao-encontrado",
           "urn:cabinet:erro:sem-empresa-ativa",
           "urn:cabinet:erro:documento-ja-cadastrado",
@@ -13343,12 +14829,17 @@
             "description": "Valor do item. Calculado pelo servidor — a escrita não manda.",
             "type": "integer",
             "format": "int64"
+          },
+          "calculatedUnitPriceCents": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Proposto. O preço que a FÓRMULA produziu para esta variante, em centavos — `round(líquido de compra × indexValue)`, com o líquido saindo de `VariantTablePriceDto.tablePriceCents` menos a cascata e os créditos do `CostProfileDto` daquele fornecedor.\n\n**É eco, não escrita.** O `PUT` ignora o que vier aqui. Quem manda no total da linha é `unitPriceCents`.\n\n**CONGELADO na emissão, como o resto da linha.** Recalcular na leitura faria todo orçamento antigo parecer descontado no dia seguinte a um ajuste de índice — o operador veria \"praticado R$ 100, calculado R$ 130\" numa venda que saiu no preço cheio de ontem. A linha já congela descrição, acabamento, tamanho e fornecedor pela mesma razão.\n\n**Por que os dois viajam juntos.** Sem o calculado ao lado do praticado, a tela não tem como mostrar que aquela linha saiu abaixo do preço — o operador vê um número e não sabe se ele é o da fórmula ou o que alguém digitou. Com os dois, a diferença é visível sem que o item precise carregar custo ou margem, que são de `CostSimulationDto` e de outro papel.\n\n**`null` quando a fórmula não tem o que multiplicar:** item sem `variantId` (linha livre), variante sem tabela do fornecedor, fornecedor sem índice, ou índice inativo. `null` é a resposta honesta — devolver zero faria a tela desenhar \"preço sugerido: R$ 0,00\" e sugerir que a peça é de graça."
           }
         }
       },
       "QuoteItemWriteRequest": {
         "description": "Proposto. Linha da grade na escrita. Sem `totalCents`: quem soma é o servidor.",
-        "required": ["lineNumber", "description", "quantity", "unitPriceCents", "discountPercent"],
+        "required": ["lineNumber", "description", "quantity", "discountPercent"],
         "type": "object",
         "properties": {
           "lineNumber": {
@@ -13387,9 +14878,9 @@
             "type": ["string", "null"]
           },
           "unitPriceCents": {
-            "description": "Valor unitário congelado, em centavos.",
-            "type": "integer",
-            "format": "int64"
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Valor unitário da linha, em centavos.\n\n**Passou a ser OPCIONAL para que o item possa NASCER PRECIFICADO.** Ausente ou `null` com `variantId` preenchido, o servidor calcula pela fórmula e grava o resultado — é o gesto de \"incluir a peça e ela já vem com preço\", que no legado é o comportamento normal e aqui exigia que a tela soubesse o preço antes de pedir.\n\n**Valor presente continua mandando**, e é assim que o preço negociado sobrevive: quem digita um valor está dizendo que aquela linha sai por ele, e o servidor não o substitui. O que a fórmula produziu segue visível em `QuoteItemDto.calculatedUnitPriceCents`, ao lado.\n\n**Ausente e sem `variantId` é zero**, não erro: a linha livre não tem de onde tirar preço, e recusá-la impediria o item de texto que o orçamento usa para descrever serviço ou observação."
           },
           "discountPercent": {
             "description": "Desconto do item. Int com 4 casas implícitas: `10000` = 1%.",
@@ -14654,6 +16145,11 @@
             "description": "Ordem de exibição. O PDF do orçamento agrupa por ambiente e vai para o cliente, então a ordem é dado, não apresentação. NÃO vem do legado — `VendaAmbiente` não tem coluna de ordem.",
             "type": "integer",
             "format": "int32"
+          },
+          "scheduledDeliveryAt": {
+            "description": "Data prometida do AMBIENTE inteiro. É a data que os itens sem data própria herdam na leitura — a cozinha combina um dia, e não cada peça dela.",
+            "type": ["string", "null"],
+            "format": "date"
           }
         }
       },
@@ -14746,6 +16242,26 @@
             "description": "Valor do item. Calculado pelo servidor — a escrita não manda.",
             "type": "integer",
             "format": "int64"
+          },
+          "quantityReleased": {
+            "description": "Quanto da linha já foi LIBERADO para separação. Sai de `order_fulfillments`, não de coluna que alguém digita. `0` na linha que ninguém liberou ainda.",
+            "type": "number",
+            "format": "double"
+          },
+          "quantityPicked": {
+            "description": "Quanto já saiu da prateleira. É o ato que baixa estoque.",
+            "type": "number",
+            "format": "double"
+          },
+          "quantityDelivered": {
+            "description": "Quanto já saiu com romaneio.",
+            "type": "number",
+            "format": "double"
+          },
+          "scheduledDeliveryAt": {
+            "description": "Data prometida da linha, JÁ com a herança do ambiente aplicada. O detalhe completo — com `scheduledDateInherited` dizendo de onde ela veio — está em `GET /api/orders/{id}/fulfillment`.",
+            "type": ["string", "null"],
+            "format": "date"
           }
         }
       },
@@ -17824,6 +19340,220 @@
           }
         }
       },
+      "GoodsReceiptDto": {
+        "description": "Proposto. Um RECEBIMENTO — a nota do fornecedor virando entrada no estoque. É a maior tela do legado (`Nota_entrada`) decomposta em fluxo.\n\n**O que entra aqui é a metade FÍSICA:** quem entregou, o que veio, o que veio a MENOS do que se pediu, e o efeito disso no estoque. A metade FISCAL — chave de 44 dígitos, XML da NF-e, manifestação do destinatário, ICMS e IPI linha a linha — fica de fora de propósito: ela é trilho próprio, e misturar as duas faria a entrada de mercadoria depender de a SEFAZ estar no ar.\n\n**Os três estados, e o do meio não é decoração.** `draft` é conferindo, e nada disso tocou o estoque; `checked` é a conferência fechada, com as divergências justificadas; `posted` é lançado, cada linha virou movimento de entrada. O estado do meio existe porque conferir e lançar são decisões de pessoas diferentes em horas diferentes — e é por isso que `POST /{id}/post` pede outra permissão que o resto da família.\n\n**Não guarda dinheiro, e isso é decisão.** Custo de compra, ICMS e IPI da linha ficam fora: quase tudo o que o legado guarda ali é FISCAL, e o que não é (custo de reposição) depende da regra de formação de custo, que ainda não está decidida. Coluna errada sai por migração de correção; coluna que falta entra por acréscimo.\n\n**Também não existe \"não gera estoque\".** O legado tem a flag (`Nen_NaoGeraEstoque`): nota que entra no sistema e não mexe no saldo. Aqui lançar é, por definição, mexer no saldo — um `posted` que não movesse estoque seria um estado que a palavra não descreve. Quando o caso real aparecer (remessa em consignação, retorno de conserto), ele entra como TIPO de recebimento, não como flag negativa no cabeçalho.\n\n**A porta de DESCARTAR o rascunho ficou de fora, e é dívida declarada.** A tabela reserva o privilégio para isso — rascunho se apaga: nota trocada, fornecedor errado, caminhão que era de outra empresa —, e o contrato não a abre porque não tem DELETE em lugar nenhum (§9 padrão 8, guardado por `src/data/contrato-bloco2.test.ts`): cadastro se desativa, documento se cancela com estado próprio. As duas saídas custam decisão que não cabe nesta publicação — abrir a exceção à regra, ou acrescentar `cancelled` ao vocabulário de estados, que é migração. Enquanto nenhuma delas acontece, o rascunho errado se corrige pelo PUT, que substitui o documento inteiro; o que não dá é fazê-lo sumir da fila.",
+        "required": [
+          "id",
+          "status",
+          "supplierId",
+          "supplierName",
+          "locationId",
+          "locationName",
+          "receivedAt",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "description": "`draft` enquanto se confere, `checked` depois de `POST /{id}/check`, `posted` depois de `POST /{id}/post`.\n\nVocabulário FECHADO: o preço de abrir é uma migração de uma linha, e o de não fechar é a tela que filtra por estado devolvendo lista curta demais, meses depois, por causa de um valor digitado errado.",
+            "type": "string",
+            "enum": ["draft", "checked", "posted"]
+          },
+          "supplierId": {
+            "description": "Quem entregou. É um `PartnerDto` no papel de fornecedor.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "carrierId": {
+            "description": "A TRANSPORTADORA, quando houve uma. Também é um `PartnerDto` — o papel é a coluna em que o id aparece, e não uma flag no cadastro: é o mesmo motivo pelo qual o mesmo CNPJ é cliente e fornecedor ao mesmo tempo.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "carrierName": {
+            "type": ["string", "null"]
+          },
+          "locationId": {
+            "description": "ONDE a mercadoria descarregou — o depósito que recebe as entradas do lançamento. Resolvido para o padrão da empresa quando a escrita o omite.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "invoiceNumber": {
+            "description": "O número da nota como o operador o lê no papel. **Texto, e não inteiro:** número de nota tem série, tem zero à esquerda e tem letra em regime especial — o `int` do legado é a forma que já perdeu informação. Nulo é caso real: remessa que chega antes da nota.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Emissão da NOTA. Diferente de `receivedAt`, e a diferença entre as duas é o que a operação chama de trânsito.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "description": "Chegada da MERCADORIA.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "postedAt": {
+            "description": "Quando o recebimento foi lançado. `null` até lá, e nunca preenchido fora de `posted`: estado e carimbo andam juntos nos dois sentidos, e o par incoerente não é representável no banco.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "employeeId": {
+            "description": "Quem respondeu pelo recebimento. Nulo na carga do legado.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "employeeName": {
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptItemDto"
+            }
+          }
+        }
+      },
+      "GoodsReceiptItemDto": {
+        "description": "Proposto. Uma linha CONFERIDA: o que a ordem pedia, o que o caminhão trouxe, e a diferença entre os dois.\n\n**A conferência é o par `quantityOrdered` × `quantityReceived`, e é só isso.** No legado ela mora em `nota_entrada_det`, no par `Ned_quantidade_solicit` × `Ned_quantidade_recebida`. A divergência de VALOR é outra coisa, mora em outra tabela (`Nota_Entrada_Dif`, por nota, com trilha de desbloqueio) e é assunto do trilho financeiro — misturar as duas faria a conferência do galpão travar por diferença de preço, que quem descarrega o caminhão não tem como resolver.",
+        "required": ["lineNumber", "variantId", "description", "quantityReceived"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "A ordem da linha DENTRO do recebimento, 1-based.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "description": "A variante recebida. **Obrigatória, ao contrário da linha do orçamento:** recebimento move ESTOQUE, e estoque é de variante. Item digitado à mão — que o orçamento permite — não tem saldo a mexer, e uma linha dessas aqui seria uma entrada que o kardex não sabe onde lançar.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descrição congelada na gravação. Quem lê a conferência de ontem lê o que estava escrito ontem, não o cadastro de hoje.",
+            "type": "string"
+          },
+          "quantityOrdered": {
+            "description": "O que a ordem de compra pedia, em SNAPSHOT.\n\n**`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação. Nulo quer dizer \"não havia o que comparar\", e é diferente de zero, que diria \"pediram nada\".\n\nÉ por esta quantidade que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem — e não a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra nunca desfaz. Ver `POST /{id}/post`.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "quantityReceived": {
+            "description": "O que de fato chegou. Nunca negativo: devolução ao fornecedor é documento próprio, e um recebimento com sinal trocado sairia como baixa de estoque rotulada de compra.",
+            "type": "number",
+            "format": "double"
+          },
+          "divergence": {
+            "description": "Recebido menos pedido, calculado pelo servidor. Negativo quando veio a menos, positivo quando veio a mais — e a mais acontece, com o fornecedor que arredonda a caixa.\n\n**`null` no avulso, e isso não é o mesmo que zero.** Zero diz \"bateu certinho\"; nulo diz que não há com o que comparar. Devolver zero para o avulso seria afirmação sobre uma ordem que não existe. Vem calculado daqui pela mesma razão que os totais das outras famílias: a conta é uma só, e não uma por tela.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "divergenceReason": {
+            "description": "Por que veio diferente, em texto livre. **Exigido por `POST /{id}/check` em toda linha que divergiu**, e ignorado nas que bateram.\n\n**É ADIÇÃO, não porte:** o legado registra que veio diferente e não registra por quê — quem precisava saber perguntava por telefone. O campo entra porque a informação se perde em horas, e é o único da família que não tem coluna correspondente no legado.\n\nTexto e não vocabulário fechado justamente porque não há enumerado a portar: fechar aqui seria inventá-lo. Ele vira lista quando a operação disser quais são os motivos de verdade.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "GoodsReceiptWriteRequest": {
+        "description": "Proposto. Cria ou SUBSTITUI o recebimento inteiro.\n\n**A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.\n\n**O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.",
+        "required": ["supplierId", "items"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carrierId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "locationId": {
+            "description": "Depósito que recebe. Omitido, o servidor resolve o padrão da empresa — ver `POST /api/goods-receipts`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "invoiceNumber": {
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "description": "Chegada da mercadoria. Omitida, o servidor grava agora — o caso normal é \"chegou agora\", e o campo existe para o lançamento retroativo, que num ERP de operação real é rotina.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "employeeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptItemWriteRequest"
+            }
+          }
+        }
+      },
+      "GoodsReceiptItemWriteRequest": {
+        "description": "Proposto. Uma linha na escrita da conferência. `description` e `divergence` não entram: a primeira é copiada do cadastro da variante, a segunda é a subtração que o servidor faz uma vez.",
+        "required": ["lineNumber", "variantId", "quantityReceived"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantityOrdered": {
+            "description": "O que a ordem pedia. `null` no recebimento avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria \"a ordem pedia nada\", que não é linha de ordem nenhuma.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "quantityReceived": {
+            "type": "number",
+            "format": "double"
+          },
+          "divergenceReason": {
+            "description": "Preenchível a qualquer momento do rascunho, e cobrado só na transição: durante a contagem, divergir sem motivo é o estado normal.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfGoodsReceiptDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfPurchaseOrderDto": {
         "required": ["rows", "total"],
         "type": "object",
@@ -19208,6 +20938,654 @@
             "format": "int32"
           }
         }
+      },
+      "OrderItemFulfillmentDto": {
+        "description": "Proposto. O progresso físico de UMA linha do pedido. As três quantidades convivem — a linha de 10 peças com 10 liberadas, 6 separadas e 2 entregues é o caso normal de uma cozinha que sai em três viagens —, e por isso o estado é derivação e não coluna. O legado guarda os mesmos parciais em `controle_entrega_prod` (`cep_quantidade_separada`, `cep_quantidade_entregue`).",
+        "required": [
+          "lineNumber",
+          "description",
+          "quantity",
+          "quantityReleased",
+          "quantityPicked",
+          "quantityDelivered",
+          "physicalState",
+          "partial",
+          "pendingRelease",
+          "pendingPick",
+          "pendingDelivery",
+          "percentDelivered"
+        ],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "Coluna `Item` do pedido.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "description": "Descrição congelada na emissão.",
+            "type": "string"
+          },
+          "environmentCode": {
+            "description": "Ambiente da linha (`CatalogLookupDto.id`, kind `AMBIENTE`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "environmentName": {
+            "description": "Nome congelado do ambiente.",
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Quantidade vendida. Até 3 casas.",
+            "type": "number",
+            "format": "double"
+          },
+          "quantityReleased": {
+            "description": "Quanto já foi LIBERADO para separação — e, com isso, reservado no depósito.",
+            "type": "number",
+            "format": "double"
+          },
+          "quantityPicked": {
+            "description": "Quanto já saiu da prateleira. É o ato que BAIXA estoque.",
+            "type": "number",
+            "format": "double"
+          },
+          "quantityDelivered": {
+            "description": "Quanto já saiu com romaneio. NÃO baixa estoque de novo: a peça já saiu do galpão na separação, e baixar aqui é o defeito clássico da expedição — o saldo cai duas vezes e a conferência do mês não fecha.",
+            "type": "number",
+            "format": "double"
+          },
+          "physicalState": {
+            "description": "O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade.",
+            "type": "string",
+            "enum": ["pending", "released", "picked", "delivered"]
+          },
+          "partial": {
+            "description": "Há progresso ACIMA do degrau exibido em `physicalState`. É o que permite a tela pintar \"6 de 10\" sem mentir sobre o degrau.",
+            "type": "boolean"
+          },
+          "pendingRelease": {
+            "description": "Quanto ainda falta liberar.",
+            "type": "number",
+            "format": "double"
+          },
+          "pendingPick": {
+            "description": "Quanto está liberado e ainda não foi separado.",
+            "type": "number",
+            "format": "double"
+          },
+          "pendingDelivery": {
+            "description": "Quanto está separado e ainda não foi entregue.",
+            "type": "number",
+            "format": "double"
+          },
+          "percentDelivered": {
+            "description": "Percentual ENTREGUE, não separado. Quem pergunta \"quanto falta\" quer saber o que chegou na casa dele; o separado é informação do galpão. Inteiro de 0 a 100.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "scheduledDeliveryAt": {
+            "description": "Data prometida do item. HERDA a do ambiente quando o item não tem uma própria — e a herança é de LEITURA, não coluna: gravá-la nos dois lugares faria mudar a data do ambiente deixar os itens antigos apontando para o dia velho. `scheduledDateInherited` diz qual dos dois respondeu.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "scheduledDateInherited": {
+            "description": "A data acima veio do AMBIENTE, não do item.",
+            "type": "boolean"
+          }
+        }
+      },
+      "OrderFulfillmentDto": {
+        "description": "Proposto. A \"Situação do Pedido de Venda\" — a consulta nº 17 do volume 02 do legado (`FrmConsultaSeparacaoPedidoVenda`). É a tela que a loja abre quando o cliente liga perguntando onde está a cozinha: item a item, quanto foi liberado, separado e entregue, com a data prometida e o percentual.",
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status",
+          "physicalState",
+          "percentDelivered",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "description": "Número do pedido (`OrderDto.number`).",
+            "type": "string"
+          },
+          "status": {
+            "description": "Situação do DOCUMENTO (`OrderDto.status`) — outra coisa que o degrau físico.",
+            "type": "string"
+          },
+          "physicalState": {
+            "description": "O degrau da escada física, DERIVADO das três quantidades e nunca guardado. É o mais avançado que cobre a linha INTEIRA: `delivered` só quando entregue == quantidade, `picked` só quando separado == quantidade, e assim por diante. A alternativa — o degrau mais avançado com QUALQUER progresso — marcaria como entregue a linha de 10 com 1 entregue, e é assim que peça fica no galpão com o pedido dizendo que saiu. Errar para baixo mostra item a mais na fila de separação; errar para cima faz o cliente ligar. O `partial` ao lado carrega o resto da verdade.",
+            "type": "string",
+            "enum": ["pending", "released", "picked", "delivered"]
+          },
+          "percentDelivered": {
+            "description": "Percentual entregue do pedido inteiro, ponderado pela QUANTIDADE de cada linha: a linha de 100 peças e a de 1 não pesam igual no que o cliente ainda espera.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemFulfillmentDto"
+            }
+          }
+        }
+      },
+      "FulfillmentFactDto": {
+        "description": "Proposto. O ato gravado — uma linha do log append-only de `order_fulfillments` — junto do progresso RESULTANTE da linha. Devolver os dois numa resposta só evita a segunda consulta que toda tela faria em seguida, e garante que o número exibido é o que ficou gravado, não o que o cliente calculou.",
+        "required": ["id", "kind", "quantity", "occurredAt", "item"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "description": "Qual ato aconteceu.",
+            "type": "string",
+            "enum": ["release", "pick", "deliver"]
+          },
+          "quantity": {
+            "description": "Quanto foi lançado NESTE ato.",
+            "type": "number",
+            "format": "double"
+          },
+          "locationId": {
+            "description": "Depósito envolvido. Sai da LIBERAÇÃO e a separação o herda: reservar num galpão e baixar de outro deixaria a reserva presa no primeiro para sempre. `null` na linha de serviço, que não tem peça.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "deliveryId": {
+            "description": "Romaneio do ato de entrega. Sempre presente em `kind: deliver`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "stockMovementId": {
+            "description": "Movimento do kardex que a separação causou (`StockMovementDto.id`). `null` fora de `kind: pick` e na linha de serviço.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "description": "Quando o ato foi lançado.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "item": {
+            "$ref": "#/components/schemas/OrderItemFulfillmentDto"
+          }
+        }
+      },
+      "ReleaseOrderItemRequest": {
+        "description": "Proposto. Liberar é o gesto que autoriza a peça a sair — e o único da escada que exige a permissão `venda:liberar-entrega`. No legado é a flag de cabeçalho `Ven_LiberaSeparacao` do `FrmLiberarProdutos`; aqui é quantidade por linha, porque a liberação parcial existe na operação e a flag não a representa.",
+        "required": ["quantity"],
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "description": "Quanto liberar NESTE ato, somando ao já liberado. Acima do vendido é 409 `urn:cabinet:erro:liberacao-acima-do-vendido`.",
+            "type": "number",
+            "format": "double"
+          },
+          "locationId": {
+            "description": "Depósito de onde a peça vai sair. Omitido, o servidor resolve o padrão da empresa. É AQUI que ele se decide, e não na separação.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "description": "Observação do ato, guardada no log.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PickOrderItemRequest": {
+        "description": "Proposto. Separar tira a peça da prateleira e BAIXA o estoque, na mesma transação do fato. A baixa não recusa saldo negativo, ao contrário do lançamento de tela: peça vendida sai antes de a nota de entrada do fornecedor ser lançada, e recusar aqui pararia a expedição pela papelada de terceiro.",
+        "required": ["quantity"],
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "description": "Quanto separar NESTE ato. Acima do LIBERADO é 409 `urn:cabinet:erro:separacao-sem-liberacao` — quem pula a liberação não separa, e o gate é CHECK no banco, não regra de handler.",
+            "type": "number",
+            "format": "double"
+          },
+          "locationId": {
+            "description": "Exceção declarada: o depósito da liberação é o que vale, e este campo só deve ser usado pelo operador que SABE que a peça mudou de galpão — é ele quem paga o acerto da reserva.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "AddDeliveryItemRequest": {
+        "description": "Proposto. Lança um item entregue DENTRO de um romaneio aberto. A entrega sempre tem romaneio — não existe entregar avulso, porque seis meses depois, quando o cliente diz que não recebeu, é o romaneio que responde.",
+        "required": ["lineNumber", "quantity"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "A linha do pedido a que o romaneio pertence.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "quantity": {
+            "description": "Acima do SEPARADO é 409 `urn:cabinet:erro:entrega-sem-separacao`. Não se entrega o que ninguém tirou da prateleira.",
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PickingQueueItemDto": {
+        "description": "Proposto. Uma linha da FILA DE SEPARAÇÃO: o que já pode sair da prateleira e ainda não saiu. É a \"Situação do Pedido\" virada do avesso, e o recorte (`liberado > separado`, pedido ativo) mora no servidor — a fila de uma loja com dois anos de pedidos é uma varredura de tudo que já se vendeu se a conta subir para a tela.",
+        "required": [
+          "orderId",
+          "orderNumber",
+          "customerName",
+          "lineNumber",
+          "description",
+          "pendingPick"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "environmentName": {
+            "type": ["string", "null"]
+          },
+          "pendingPick": {
+            "description": "Quanto está liberado e esperando separação.",
+            "type": "number",
+            "format": "double"
+          },
+          "scheduledDeliveryAt": {
+            "description": "Data prometida, já com a herança do ambiente aplicada. É a primeira chave da ordenação, `NULLS LAST`: item sem data combinada não fura a fila de quem tem uma.",
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      },
+      "DeliveryDto": {
+        "description": "Proposto. O ROMANEIO — o `Controle_entrega` do legado. Cabeçalho do que saiu numa viagem, com transportadora, data prometida e, depois de fechado, quando saiu e quem recebeu.",
+        "required": ["id", "number", "orderId", "status"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "description": "Número do romaneio, sequência global do grupo atribuída pelo servidor. String pelo mesmo motivo de `OrderDto.number`: número de documento se lê e se digita, não se soma.",
+            "type": "string"
+          },
+          "orderId": {
+            "description": "Pedido de venda a que o romaneio pertence.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": ["string", "null"]
+          },
+          "customerName": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "description": "`open` recebe itens; `closed` e `cancelled` são terminais. **Cancelar NÃO desfaz os fatos já lançados** — o log é append-only por GRANT, e corrigir é estornar, não editar o passado.",
+            "type": "string",
+            "enum": ["open", "closed", "cancelled"]
+          },
+          "scheduledFor": {
+            "description": "Data prometida da viagem.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "deliveredAt": {
+            "description": "Quando a entrega aconteceu. Obrigatória para fechar.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "carrierId": {
+            "description": "Transportadora (`PartnerDto.id`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "carrierName": {
+            "description": "Nome da transportadora CONGELADO ao lado do id, como o do cliente no pedido: renomear a empresa de frete não pode reescrever romaneio assinado.",
+            "type": ["string", "null"]
+          },
+          "receivedBy": {
+            "description": "Quem recebeu. Obrigatório para fechar.",
+            "type": ["string", "null"]
+          },
+          "receivedDocument": {
+            "description": "Documento de quem recebeu.",
+            "type": ["string", "null"]
+          },
+          "closedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "DeliveryItemDto": {
+        "description": "Proposto. Uma linha do romaneio. **Não existe tabela própria para ela** (diverge do `ShipmentItem` do OFBiz): o conteúdo do romaneio SÃO os fatos `deliver` que apontam para ele, e uma segunda lista teria de ser mantida igual à primeira.",
+        "required": ["lineNumber", "description", "quantity", "occurredAt"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "environmentName": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "description": "Quanto saiu NESTE romaneio.",
+            "type": "number",
+            "format": "double"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "DeliveryDetailDto": {
+        "description": "Proposto. O romaneio com o que foi lançado nele.",
+        "required": ["id", "number", "orderId", "status", "items"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": ["string", "null"]
+          },
+          "customerName": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "closed", "cancelled"]
+          },
+          "scheduledFor": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "deliveredAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "carrierId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "carrierName": {
+            "type": ["string", "null"]
+          },
+          "receivedBy": {
+            "type": ["string", "null"]
+          },
+          "receivedDocument": {
+            "type": ["string", "null"]
+          },
+          "signatureRef": {
+            "description": "Referência da assinatura do recebedor — o `Controle_entrega_Assinaturas` do legado. **Texto, e o upload está ADIADO:** binário numa tabela sob RLS mistura documento e arquivo e faz o `pg_dump` crescer sem teto. A coluna existe para que o dia do upload seja migração de zero linhas.",
+            "type": ["string", "null"]
+          },
+          "closedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryItemDto"
+            }
+          }
+        }
+      },
+      "CreateDeliveryRequest": {
+        "description": "Proposto. Abre o romaneio. Nasce `open` e VAZIO — os itens entram um a um.",
+        "required": ["orderId"],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "description": "Pedido de venda. Pedido cancelado não recebe entrega (409).",
+            "type": "string",
+            "format": "uuid"
+          },
+          "scheduledFor": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "carrierId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "carrierName": {
+            "description": "Congelado. Omitido, o servidor copia o nome atual do parceiro.",
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "CloseDeliveryRequest": {
+        "description": "Proposto. Fechar é o que faz o romaneio valer alguma coisa, e por isso exige QUANDO e para QUEM — a exigência é CHECK no banco, não regra de handler. **Romaneio vazio não fecha** (409 `urn:cabinet:erro:entrega-vazia`): fechar entrega sem item é assinar papel em branco, some da fila de abertos e ninguém percebe até alguém procurar a peça. Quem não saiu se CANCELA.",
+        "required": ["deliveredAt", "receivedBy"],
+        "type": "object",
+        "properties": {
+          "deliveredAt": {
+            "description": "Quando a entrega aconteceu.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "receivedBy": {
+            "description": "Quem recebeu, por extenso.",
+            "type": "string"
+          },
+          "receivedDocument": {
+            "description": "Documento de quem recebeu.",
+            "type": ["string", "null"]
+          },
+          "signatureRef": {
+            "description": "Referência da assinatura, quando houver.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfPickingQueueItemDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PickingQueueItemDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfDeliveryDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PriceIndexDto": {
+        "required": ["id", "supplierId", "indexValue", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor a que o índice pertence — `PartnerDto.id` com o papel `supplier`. **Um índice por fornecedor por empresa:** o segundo cadastro para o mesmo fornecedor é 409, porque dois índices ativos deixariam a precificação depender de qual linha a consulta encontrasse primeiro, e o sintoma seria preço mudando sozinho entre dois orçamentos."
+          },
+          "supplierName": {
+            "type": ["string", "null"],
+            "description": "Nome do fornecedor, para exibição. Não é escrita — o `PUT` ignora o que vier aqui, como todo campo de junção deste contrato."
+          },
+          "costProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O perfil de custo de onde saem as deduções da compra — `CostProfileDto.id`. **`null` é caso real e não pendência:** fornecedor sem cascata e sem crédito existe às dezenas no legado, e ali o líquido É o preço de tabela. Um perfil vazio obrigatório seria linha de zeros que alguém teria de criar para cada fornecedor simples.\n\nO perfil tem de ser do MESMO fornecedor: apontar para o de outro faria a peça ser precificada com o desconto que ninguém negociou para ela. É 400."
+          },
+          "costProfileName": {
+            "type": ["string", "null"],
+            "description": "Nome do perfil, para exibição. Não é escrita."
+          },
+          "indexValue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "O multiplicador. **Int com 4 casas implícitas sobre 1: `25600` = 2,5600.** É `Ipr_Indice`. Tem de ser `> 0`; `10000` (1,0000) é válido e quer dizer vender pelo líquido de compra."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativação lógica. Índice inativo **não precifica** — a variante daquele fornecedor volta a devolver `calculatedUnitPriceCents` nulo, em vez de sair com índice velho."
+          }
+        },
+        "description": "Proposto. O **ÍNDICE DE VALOR DE VENDA** por fornecedor — `Indice_preco` do legado (376 linhas, mediana 2,5600). É a METADE VENDA da formação de preço; `CostProfileDto` é a de compra e custo.\n\n**A fórmula que esta linha fecha:**\n\n```\nliquido = tablePriceCents − discount1..4 em cascata − créditos ICMS/PIS/COFINS   <- do PERFIL DE CUSTO\nVENDA   = round(liquido × indexValue)                                            <- daqui\n```\n\nO preço de venda é o líquido de COMPRA multiplicado pelo índice, **aplicado ANTES de qualquer imposto de saída**. Imposto e taxa entram só na apuração de CUSTO e LUCRO — eles não empurram preço. É a mesma decomposição que `CostSimulationDto` publica: o que este índice multiplica é exatamente o `netPurchaseCents` de lá.\n\n**As deduções NÃO se repetem aqui, e é o ponto do desenho.** Os quatro descontos em cascata e os três créditos moram em `CostProfileDto`, e esta linha aponta para ele por `costProfileId` — como no legado, onde `Indice_preco` é \"ligado a um `Custo` e a um fornecedor\". Copiar os sete campos para cá daria duas autoridades sobre os mesmos números, e elas divergiriam na primeira edição: o custo apurado por um caminho e o preço pelo outro, com o operador sem saber qual dos dois acreditar.\n\n**O índice é do FORNECEDOR, não do produto nem da categoria.** Quem o pendurar no produto reproduz outra coisa: no legado a mesma peça comprada de dois fornecedores rende dois preços, porque cada fornecedor tem seu índice e sua tabela. É o desenho que dá sentido ao multi-fornecedor de `ProductDto.suppliers` — sem ele, o segundo fornecedor é rótulo.\n\n**Escala: inteiro com 4 casas implícitas sobre 1** — `25600` = 2,5600. Repare que ela NÃO é a de `discountPercent` nem a dos campos de `CostProfileDto`, que são 4 casas sobre 100%: o índice é MULTIPLICADOR, e escrever 2,56 como 256% seria a mesma informação com um fator 100 de armadilha entre as duas leituras. Ponto flutuante é vetado para dinheiro, e `numeric` chegaria como string ao cliente, que a converteria para multiplicar — voltando ao float na única conta que importa.\n\n**`indexValue` = `10000` (1,0000) é VÁLIDO e não é erro de cadastro.** São 16 assim no legado, 11 de fornecedores reais, e pela fórmula significam vender pelo líquido de compra. Parte é legítima — há fornecedor cuja tabela já sai com a margem embutida. Recusar 1,0000 faria o servidor rejeitar o cadastro real desses 11; \"corrigir\" o índice na migração inventaria margem que ninguém decidiu. O limite é `> 0`."
+      },
+      "PriceIndexWriteRequest": {
+        "required": ["supplierId", "indexValue"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "indexValue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "4 casas implícitas, `> 0`."
+          },
+          "costProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Ausente ou nulo = sem deduções, e o líquido é o preço de tabela."
+          },
+          "active": {
+            "type": ["boolean", "null"],
+            "description": "Ausente = `true`."
+          }
+        },
+        "description": "Proposto. Cria ou substitui o índice de um fornecedor. **`PUT` substitui a linha INTEIRA** — campo ausente NÃO preserva o valor anterior, como todo `PUT` deste contrato: omitir `costProfileId` DESLIGA o perfil, não o mantém."
+      },
+      "PagedResultOfPriceIndexDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceIndexDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "VariantTablePriceDto": {
+        "required": ["supplierId", "tablePriceCents"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor de quem é esta tabela — `PartnerDto.id`."
+          },
+          "supplierName": {
+            "type": ["string", "null"],
+            "description": "Para exibição. Não é escrita."
+          },
+          "supplierCode": {
+            "type": ["string", "null"],
+            "description": "Código da peça NO fornecedor, vindo de `ProductSupplierDto`. É a língua em que o comprador confere a tabela recebida — o código do Cabinet não aparece na lista de preços que o fornecedor manda."
+          },
+          "tablePriceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe."
+          }
+        },
+        "description": "Proposto. O preço de tabela de UM fornecedor para UMA variante.\n\n**Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.\n\n**Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado."
+      },
+      "VariantTablePricesWriteRequest": {
+        "required": ["prices"],
+        "type": "object",
+        "properties": {
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantTablePriceDto"
+            },
+            "description": "A lista INTEIRA. Fornecedor que não vier é apagado."
+          }
+        },
+        "description": "Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.\n\nÉ uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio."
       },
       "FinancialTitleDto": {
         "description": "Proposto. Um TÍTULO financeiro — a conta a pagar ou a receber. Menus `Financeiro → Contas a Pagar → Lançamento` e `Financeiro → Contas a Receber → Lançamentos` do legado (`contas_apagar`, 30.043 linhas; `contas_receber`, 9.076).\n\n**Um recurso para as duas telas, discriminado por `direction`** — e não `/api/payables` + `/api/receivables`. O precedente é `/api/partners` com filtro `role`: no legado as duas tabelas são a MESMA tabela com o prefixo trocado (`Ctp_`/`Ctr_`), coluna a coluna, e é assim que elas envelheceram — a correção feita num lado só chegava ao outro por cópia manual. Dois caminhos aqui duplicariam parcela, baixa, quitação em lote e conciliação, que não têm uma diferença sequer entre pagar e receber. O que MUDA é o sinal do dinheiro e a parte (fornecedor de um lado, cliente do outro), e as duas coisas cabem numa coluna.\n\n**O título não guarda valor pago.** `totalCents` é o que foi lançado; o que sobrou sai da soma das parcelas (`openCents`), porque quem quita é a PARCELA. Materializar o pago no cabeçalho criaria um segundo lugar onde a mesma verdade mora, e o legado paga essa conta: `Ctp_valor_total_original` diverge da soma de `contas_apagar_det` em base de produção.\n\n**Não há DELETE.** Título que some é dinheiro que o sistema esqueceu de dever. Desistir é `POST /{id}/cancel`, e ele recusa (409) o título que já tem baixa.\n\n**Não há `TipoContaFinanceira` aqui, e a ausência é DECISÃO PENDENTE, não esquecimento.** O legado classifica o título em seis categorias — OFICIAL, SIMULAÇÃO, APROVISIONAMENTO, CONTA CLONE, HISTÓRICO, AGRUPADA — com FK declarada, e guardar ensaio na mesma tabela do que vale obriga TODO relatório a filtrar. `docs/harvest/financeiro.md` §11.3 põe as três saídas na mesa (replicar · virar rascunho de status · não migrar as não-oficiais) e nenhuma foi escolhida. O campo entra quando a escolha existir; inventá-lo agora fixaria a mais cara das três.",

@@ -133,6 +133,16 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:participante-ja-apurado': 'Participação já apurada',
   'urn:cabinet:erro:profissional-exige-transferencia': 'Troca de profissional exige transferência',
   'urn:cabinet:erro:reserva-ja-lancada': 'Reserva técnica já lançada',
+  // A escada FÍSICA da venda (G4). Seis, e não uma: cada uma tem uma ação
+  // diferente na tela — corrigir o campo, liberar, separar, abrir outro romaneio,
+  // cancelar em vez de fechar, trocar o romaneio. Um 409 genérico em cima delas
+  // devolveria à tela a informação que o status já deu.
+  'urn:cabinet:erro:liberacao-acima-do-vendido': 'Liberação acima do vendido',
+  'urn:cabinet:erro:separacao-sem-liberacao': 'Separação sem liberação',
+  'urn:cabinet:erro:entrega-sem-separacao': 'Entrega sem separação',
+  'urn:cabinet:erro:entrega-fechada': 'Entrega fechada',
+  'urn:cabinet:erro:entrega-vazia': 'Entrega vazia',
+  'urn:cabinet:erro:entrega-de-outro-pedido': 'Entrega de outro pedido',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }

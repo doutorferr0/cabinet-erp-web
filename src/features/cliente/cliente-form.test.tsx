@@ -345,6 +345,81 @@ describe('tela Cliente', () => {
     expect(screen.getByText('355')).toBeInTheDocument()
   })
 
+  /**
+   * OS CONTATOS DO CLIENTE — #293.
+   *
+   * O `FrmCliente` do Softlux tem `TabSheet4`, `Caption = Con&tato`, com uma
+   * grade EDITÁVEL de seis colunas sobre `select * from contatos where
+   * Con_codigo = :codigo and Con_tpcadastro = 'CLI'` — e a tabela `Contatos` do
+   * dump tem 52 linhas, então não é aba morta. O contrato publica o
+   * sub-recurso e o servidor o serve desde a #255; Fornecedor e Profissional
+   * passaram a consumi-lo na #299/#302 e o Cliente ficou de fora. Estes dois
+   * casos são o que impede o buraco de voltar.
+   */
+  it('em Incluir não há contato a pendurar, e a tela diz por quê', async () => {
+    const { stub } = servidorDeParceiros()
+    const { user } = renderRoute('/cadastros/clientes/novo', stub)
+
+    await screen.findByLabelText('Nome')
+    // `Outros contatos` é opcional e nasce recolhido — hierarquia da diretriz 3
+    // funcionando, não passo extra do teste.
+    await user.click(screen.getByRole('button', { name: 'Outros contatos' }))
+
+    expect(await screen.findByText(/depois de gravar o cadastro/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Gravar contatos' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Nome linha 1')).not.toBeInTheDocument()
+  }, 15_000)
+
+  it('a grade dos contatos lê e grava pelo caminho do sub-recurso', async () => {
+    const { stub, chamadas } = servidorDeParceiros(
+      [parceiro({ isCustomer: true, legalName: 'ANDRÉ BATALHA' })],
+      {
+        contatos: [
+          {
+            id: 'ct-1',
+            name: 'SÍLVIA DO SERVIDOR',
+            role: 'Compras',
+            phone: null,
+            mobilePhone: null,
+            fax: null,
+            email: null,
+            active: true,
+          },
+        ],
+      },
+    )
+    const { user } = renderRoute('/cadastros/clientes/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70', stub)
+
+    await screen.findByLabelText('Nome')
+    await user.click(screen.getByRole('button', { name: 'Outros contatos' }))
+
+    // Veio do caminho do sub-recurso, não de campo nenhum do `PartnerDto` — o
+    // `PartnerDto` não tem `contacts[]`.
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome linha 1')).toHaveValue('SÍLVIA DO SERVIDOR')
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Incluir' }))
+    await user.type(screen.getByLabelText('Nome linha 2'), 'RENATA')
+    await user.type(screen.getByLabelText('Vínculo linha 2'), 'OBRA')
+    await user.click(screen.getByRole('button', { name: 'Gravar contatos' }))
+
+    await waitFor(() => {
+      expect(chamadas.some((c) => c.metodo === 'POST' && c.caminho.endsWith('/contacts'))).toBe(
+        true,
+      )
+    })
+    const inclusao = chamadas.find((c) => c.metodo === 'POST' && c.caminho.endsWith('/contacts'))
+    expect(inclusao?.corpo).toMatchObject({ name: 'RENATA', role: 'OBRA', active: true })
+
+    // A linha que já existia é `PUT` no id dela — e o botão dos contatos não
+    // encostou no cadastro: nenhuma escrita saiu para `/api/partners/{id}`.
+    expect(chamadas.some((c) => c.metodo === 'PUT' && c.caminho.endsWith('/contacts/ct-1'))).toBe(
+      true,
+    )
+    expect(chamadas.some((c) => c.metodo !== 'GET' && !c.caminho.includes('/contacts'))).toBe(false)
+  }, 30_000)
+
   // O buraco mais antigo desta fronteira: link direto e recarga não têm a linha
   // da listagem em cache. Com GET /api/partners/{id} (#35 do backend), a tela
   // busca por id em vez de mandar voltar à listagem. Fornecedor e Profissional

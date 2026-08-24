@@ -30,6 +30,17 @@ import type { PagedResult, TableQueryState } from '@/lib/table-query'
 export const PAGE_SIZE_MAX = 100
 
 /**
+ * O status do módulo que o servidor ainda não serve.
+ *
+ * Mora aqui, ao lado de quem decide o que é falha, porque duas decisões o leem
+ * e nenhuma delas é da tela: a política de repetição (`repetirSeValeAPena`) e o
+ * reconhecimento do erro (`ehModuloEmConstrucao`, em `src/lib/erros.ts`).
+ * Constante e não `501` solto nos dois lugares — número mágico repetido é o que
+ * faz um dos dois ficar para trás quando o contrato muda.
+ */
+export const NAO_IMPLEMENTADO = 501
+
+/**
  * Erro vindo do servidor, já com o que o operador precisa ver.
  *
  * O contrato manda `application/problem+json` (RFC 9457) em toda falha: o
@@ -49,12 +60,34 @@ export class ErroDaApi extends Error {
    */
   readonly corpo: unknown
 
-  constructor(mensagem: string, status: number, detail?: string, corpo?: unknown) {
+  /**
+   * O caminho que foi pedido (`/api/quotes`), como o transporte o montou.
+   *
+   * Existe por causa do **501**: `urn:cabinet:erro:nao-implementado` diz que a
+   * operação está no contrato e o servidor ainda não a serve, e quem desenha
+   * esse estado é um componente compartilhado — a listagem, a tela de detalhe,
+   * o painel e o rodapé de gravação chamam o MESMO bloco. Sem o caminho, esse
+   * bloco só teria como dizer "esta parte do sistema"; com ele, resolve o nome
+   * do módulo e o que ali já funciona (`src/data/modulos-em-construcao.ts`).
+   *
+   * `undefined` quando o erro foi montado sem a resposta em mãos — aí o aviso
+   * cai na frase genérica, que é honesta, em vez de nomear o módulo errado.
+   */
+  readonly caminho: string | undefined
+
+  constructor(
+    mensagem: string,
+    status: number,
+    detail?: string,
+    corpo?: unknown,
+    caminho?: string,
+  ) {
     super(mensagem)
     this.name = 'ErroDaApi'
     this.status = status
     this.detail = detail
     this.corpo = corpo
+    this.caminho = caminho
   }
 
   /**
@@ -101,6 +134,8 @@ export interface RespostaDaApi {
   data?: unknown
   status: number
   headers?: Headers
+  /** Caminho pedido, posto pelo transporte (`src/api/http.ts`). */
+  url?: string
 }
 
 /** 2xx. `status: 0` (rede fora) e qualquer 4xx/5xx ficam de fora. */
@@ -115,7 +150,13 @@ export function respostaOk(resposta: RespostaDaApi): boolean {
  */
 export function dadosOuErro<T>(resposta: RespostaDaApi, mensagem: string): T {
   if (!respostaOk(resposta) || resposta.data === undefined) {
-    throw new ErroDaApi(mensagem, resposta.status, detalheDoProblema(resposta.data), resposta.data)
+    throw new ErroDaApi(
+      mensagem,
+      resposta.status,
+      detalheDoProblema(resposta.data),
+      resposta.data,
+      resposta.url,
+    )
   }
   return resposta.data as T
 }
@@ -242,9 +283,17 @@ export function createApiListProvider<T>({
  * esqueleto antes de dizer o que já se sabia na primeira resposta.
  *
  * 5xx e falha de rede continuam repetindo — aí repetir resolve mesmo.
+ *
+ * **501 é a exceção dentro do 5xx, e é exceção por definição.**
+ * `urn:cabinet:erro:nao-implementado` diz que o pedido está bem formado e falta
+ * implementação do outro lado — o contrato manda em letra que o cliente NÃO
+ * deve reenviar o mesmo corpo. Repetindo, a tela fica ~7s em esqueleto para
+ * chegar à mesma resposta que a primeira já deu, e o operador vê o carregamento
+ * mais longo do sistema justamente onde não há nada a carregar.
  */
 export function repetirSeValeAPena(tentativa: number, erro: unknown): boolean {
   if (erro instanceof ErroDaApi && erro.status >= 400 && erro.status < 500) return false
+  if (erro instanceof ErroDaApi && erro.status === NAO_IMPLEMENTADO) return false
   return tentativa < 3
 }
 

@@ -1,3 +1,4 @@
+import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
@@ -56,33 +57,43 @@ function ColaboradorEditPage() {
   // por módulo. `Incluir` nunca cai aqui — não há o que ler num registro que
   // ainda não existe.
 
+  // Este detalhe NÃO passa por `TelaDeDocumento` (a ficha e o formulário são
+  // duas telas, escolhidas pelo modo), então o aviso é montado à mão nos dois
+  // braços — é a exceção que `dados-de-exemplo-avisado.test.tsx` conhece pelo
+  // nome.
   if (readOnly && !isNovo) {
     return (
-      <FichaDeCadastro
-        entidade={esquema}
-        {...(rotulos ? { rotulos } : {})}
-        registro={query.data}
-        titulo="Cadastro de Colaboradores"
-        contexto={query.data.nome}
-        aoEditar={(moduloId) =>
-          void navigate({
-            to: '/cadastros/colaboradores/$colaboradorId',
-            params: { colaboradorId },
-            search: moduloId ? { modulo: moduloId } : {},
-          })
-        }
-      />
+      <div className="flex flex-col gap-4">
+        <AvisoDadosDeExemplo origem={data.colaboradores.origem} />
+        <FichaDeCadastro
+          entidade={esquema}
+          {...(rotulos ? { rotulos } : {})}
+          registro={query.data}
+          titulo="Cadastro de Colaboradores"
+          contexto={query.data.nome}
+          aoEditar={(moduloId) =>
+            void navigate({
+              to: '/cadastros/colaboradores/$colaboradorId',
+              params: { colaboradorId },
+              search: moduloId ? { modulo: moduloId } : {},
+            })
+          }
+        />
+      </div>
     )
   }
 
   return (
     // O título deixou de ser montado aqui: quem o diz é a banda do CadastroForm.
     // A rota só informa o CONTEXTO, que é o que ela sabe (modo e registro).
-    <ColaboradorForm
-      colaborador={query.data}
-      readOnly={readOnly}
-      contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nome}
-      {...(moduloEmFoco ? { moduloEmFoco } : {})}
-    />
+    <div className="flex flex-col gap-4">
+      <AvisoDadosDeExemplo origem={data.colaboradores.origem} />
+      <ColaboradorForm
+        colaborador={query.data}
+        readOnly={readOnly}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nome}
+        {...(moduloEmFoco ? { moduloEmFoco } : {})}
+      />
+    </div>
   )
 }

@@ -30,10 +30,34 @@ Regras de negócio que só existiam aqui:
 | `Par_TituloImpOrcamento` | `EQUIPAMENTOS PARA A PROPOSTA DE PROJETO Nº` | título do impresso |
 | `Par_RTautomatico` | True | **reserva técnica automática LIGADA** |
 
-⚠️ **Contradição a resolver:** `Par_RTautomatico = True` no parâmetro global, mas a análise de
-2026-08-10 mediu `Ven_RtAutomatico` **vazio em toda a tabela `Venda`**. Ou a coluna da venda não é
-alimentada pelo parâmetro, ou a RT automática é aplicada sem registrar na venda. Confiança baixa
-sobre qual — precisa de leitura do código da tela de orçamento antes de modelar RT no Cabinet.
+✅ **Contradição RESOLVIDA** (`Par_RTautomatico = True` × `Ven_RtAutomatico` vazio em toda a
+`Venda`) — FASE 0 do trilho G8, entregue em `cabinet-erp-api#118`. Nenhuma das duas hipóteses
+originais: **`Ven_RtAutomatico` nunca foi o carimbo do parâmetro.**
+
+O Softlux TEM um mecanismo de parâmetro que vale por documento, e a RT ficou de fora dele. Quando
+um parâmetro precisa valer por documento, a coluna nasce no documento **com o próprio nome
+`Par_*`** e ganha backfill no deploy — é o caso de `Par_ComissaoVincParc`, que existe em `Venda`
+(col. 58), `Pedido`, `avulso` e `Factura`, com `update … set Par_ComissaoVincParc='N'` para cada
+um (`exe/sql-do-codigo.sql:95,116,117,118,374`); e das colunas 45-47 da `Venda`
+(`par_ParcelarVlAcima`, `par_VlMinParcela`, `par_QuantMaxParcela`). `Ven_RtAutomatico` tem prefixo
+`Ven_`, não tem backfill e não aparece em SQL nenhum: é campo de decisão por documento que foi
+declarado e nunca exposto.
+
+O parâmetro global liga o **cálculo**, não um carimbo — o rótulo do checkbox é `Calcular
+Automaticamente a Part.` (`exe/formularios/FrmParamentro.txt:3124`), "Part." = Participação.
+
+Prova de que a coluna nunca teve escritor, pelas três vias: **UI** — o único uso no produto é um
+`TBooleanField` de `select *` em `FrmCons_Orcamento`, sem coluna de grade e sem editor; **banco** —
+o schema inteiro tem **um** gatilho (`GatilhoEstoqueMinimo`, em `Estoque_produto`) e todas as
+rotinas de `bdprincipal` são `FUNCTION` escalar, que no SQL Server não escreve em tabela;
+**dado** — 34.136 linhas com a coluna vazia. (A contagem de SQL literal do exe, por si, não serve
+de prova: em Delphi/ADO o `UPDATE` de dataset editável é montado em runtime e nunca vira string no
+binário.) `Ven_RtCalcular` segue por simetria de forma — só `Ven_RtAutomatico` foi medida no banco.
+
+**Consequência para o Cabinet: não existe flag de "RT automática" para portar.** O estado real da
+participação mora em `VendaIndicacao`/`VendaIndicacaoGrupProd` (congelado por documento) e o
+pagamento em `Reserva_tecnica` → `contas_apagar`. Só 1.212 lançamentos de RT contra 11.103
+pedidos: mesmo com o parâmetro ligado, o que virou dinheiro foi decisão humana, uma a uma.
 
 ⚠️ **Risco de credencial:** `Par_CEPChaveAcesso` guarda uma chave de API de serviço de CEP em texto
 plano na tabela de parâmetros. Junto com o `SA`/senha do `softlux.ini`, é o segundo segredo em claro.

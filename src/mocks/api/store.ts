@@ -470,6 +470,56 @@ function produtosDoSeed(): ProductDetailDto[] {
           minStock: 2,
         },
       ],
+      // A grade multi-fornecedor (§6.1): dois fornecedores e UM padrão. O padrão
+      // é o que o documento de compra carimba sem perguntar, e por isso o seed
+      // tem os dois casos — com um só, a tela nasceria sem saber desenhar a
+      // diferença.
+      suppliers: [
+        {
+          id: 'psup-0001',
+          supplierId: 'parc-0001',
+          supplierName: 'EVOLED ILUMINACAO LTDA',
+          supplierCode: 'EV-PEND-30F',
+          supplierDescription: 'PENDENTE FUME 30CM LINHA EVOLED',
+          isDefault: true,
+          active: true,
+        },
+        {
+          // Sem código próprio: `null` é o dado, e a coluna sai em branco. Nem
+          // todo fornecedor batiza a peça.
+          id: 'psup-0002',
+          supplierId: 'parc-0006',
+          supplierName: 'MISTER LED COMERCIO DE ILUMINACAO LTDA',
+          supplierCode: 'ML-3001',
+          supplierDescription: null,
+          isDefault: false,
+          active: true,
+        },
+      ],
+      // §6.4 — a QUANTIDADE é o discriminador: preenchida = kit (sai junto,
+      // nesta quantidade por unidade do pai), nula = sugestão (a tela oferece,
+      // o vendedor decide). As duas linhas existem para que o ramo do kit e o da
+      // sugestão tenham dado antes de a aba existir.
+      relatedProducts: [
+        {
+          id: 'prel-0001',
+          relatedProductId: 'prod-0002',
+          relatedProductCode: 'AR-2001',
+          relatedProductDescription: 'ARANDELA ALUMÍNIO IP65',
+          quantity: '2.000',
+          sortOrder: 1,
+        },
+        {
+          // Sugestão apontando para o produto DESATIVADO do seed, de propósito:
+          // a grade guarda o vínculo, e quem decide se ainda oferece é a tela.
+          id: 'prel-0002',
+          relatedProductId: 'prod-0003',
+          relatedProductCode: 'FT-3001',
+          relatedProductDescription: 'FITA LED 2700K 5M',
+          quantity: null,
+          sortOrder: 2,
+        },
+      ],
     },
     {
       id: 'prod-0002',
@@ -487,6 +537,20 @@ function produtosDoSeed(): ProductDetailDto[] {
           minStock: 5,
         },
       ],
+      suppliers: [
+        {
+          id: 'psup-0003',
+          supplierId: 'parc-0006',
+          supplierName: 'MISTER LED COMERCIO DE ILUMINACAO LTDA',
+          supplierCode: 'ML-ARA-IP65',
+          supplierDescription: 'ARANDELA IP65 ALUMINIO',
+          isDefault: true,
+          active: true,
+        },
+      ],
+      // Lista VAZIA, e não ausente: o produto não tem relacionado nenhum. O
+      // contrato distingue as duas — ausente é "o servidor não serve a grade".
+      relatedProducts: [],
     },
     {
       id: 'prod-0003',
@@ -494,6 +558,8 @@ function produtosDoSeed(): ProductDetailDto[] {
       description: 'FITA LED 2700K 5M',
       active: false,
       variants: [],
+      suppliers: [],
+      relatedProducts: [],
     },
   ]
 }

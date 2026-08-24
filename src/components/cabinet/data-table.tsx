@@ -11,6 +11,7 @@ import {
 } from '@/components/cabinet/listagem/colunas-da-grade'
 import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -37,6 +38,7 @@ import {
 // desenha colunas pede o conjunto inteiro, e "inteiro" é um número que o
 // servidor define.
 import { PAGE_SIZE_MAX } from '@/data/api-provider'
+import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import {
@@ -315,6 +317,13 @@ function assinaturaDoFiltro(
  * seria a mesma tela contando duas histórias sobre a mesma requisição.
  */
 function FalhaDaConsulta({ erro, aoTentar }: { erro: unknown; aoTentar: () => void }) {
+  // O 501 não é falha de consulta: o módulo está no contrato e o servidor ainda
+  // não o serve. Mostrar o triângulo partido e `Tentar de novo` diria que a
+  // requisição não chegou — ela chegou, foi entendida, e a resposta é que o
+  // pedaço ainda não existe. O desvio mora AQUI porque as visões respondem à
+  // mesma consulta: quadro e tabela têm de contar a mesma história.
+  if (ehModuloEmConstrucao(erro)) return <ModuloEmConstrucao erro={erro} />
+
   return (
     // Mesma anatomia dos vazios, com o ornamento de FALHA — o triângulo partido
     // em Tomato, que não é o vermelho de erro: a consulta não chegou, ninguém

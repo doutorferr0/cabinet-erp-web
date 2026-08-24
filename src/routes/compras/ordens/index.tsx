@@ -79,6 +79,7 @@ function OrdensCompraPage() {
       fetcher={data.ordensCompra.list}
       actions={actions}
       filtros={camposFiltraveis}
+      origem={data.ordensCompra.origem}
     />
   )
 }

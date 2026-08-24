@@ -1,6 +1,8 @@
+import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { SemPermissao } from '@/components/cabinet/sem-permissao'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { detalheDoErro, ehSemPermissao } from '@/lib/erros'
 
 /**
@@ -91,6 +93,13 @@ export function ErroDeCarregamento({
   // mora AQUI, e não em cada rota, porque as seis telas de detalhe chamam este
   // mesmo componente: espalhar o `if` daria seis chances de esquecer uma.
   if (ehSemPermissao(erro)) return <SemPermissao erro={erro} />
+
+  // 501 tampouco é falha de carregamento, e é o desvio que faltava: o módulo
+  // está no contrato e o servidor ainda não o serve. O bloco genérico diria "o
+  // registro não carregou" com um `Tentar de novo` que devolve o mesmo 501 —
+  // fica pelo mesmo motivo do 403, e no mesmo lugar, porque são as mesmas seis
+  // telas de detalhe chamando este componente.
+  if (ehModuloEmConstrucao(erro)) return <ModuloEmConstrucao erro={erro} />
 
   return (
     <div className="flex flex-col items-start gap-2 text-muted-foreground">

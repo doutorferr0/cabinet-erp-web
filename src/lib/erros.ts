@@ -1,5 +1,6 @@
 import { ProblemType } from '@/api/gerado'
 import { ErroDaApi } from '@/data/api-provider'
+import { ehModuloEmConstrucao, mensagemDeConstrucao } from '@/data/modulos-em-construcao'
 
 /** `detail` do problem+json, quando o erro veio da API — `undefined` fora disso. */
 export function detalheDoErro(erro: unknown): string | undefined {
@@ -83,8 +84,19 @@ export function ehErroDeSemVinculoComEmpresa(erro: unknown): boolean {
   return tipoDoErro(erro) === 'semVinculoComEmpresa'
 }
 
-/** Mensagem para exibir ao operador: `detail` do servidor, ou o fallback da tela. */
+/**
+ * Mensagem para exibir ao operador: `detail` do servidor, ou o fallback da tela.
+ *
+ * **O 501 não usa o fallback de quem chamou**, e essa é a exceção que faz este
+ * caminho valer a pena. Os fallbacks do repo terminam todos em "tente de novo"
+ * — é a frase certa para rede fora e a errada para módulo que o servidor ainda
+ * não serve, onde tentar de novo dá exatamente o mesmo 501. Quem chega aqui com
+ * um 501 recebe a frase de construção, com o `detail` do servidor por cima
+ * quando ele veio.
+ */
 export function mensagemDoErro(erro: unknown, fallback: string): string | null {
+  if (ehModuloEmConstrucao(erro)) return mensagemDeConstrucao(erro)
+
   // `detail` truthy, não só não-`null` — problem+json com `"detail": ""` (backend
   // que sempre emite o membro) tem que cair no fallback, senão a tela mostra
   // título de erro com descrição em branco.

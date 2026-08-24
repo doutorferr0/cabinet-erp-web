@@ -582,6 +582,8 @@ export async function gravarEstagios(
         `Falha ao gravar o estágio ${estagio.nome || '(sem nome)'}. O funil já foi gravado — reabra o funil antes de tentar de novo.`,
         resposta.status,
         detalheDoProblema(resposta.data),
+        resposta.data,
+        resposta.url,
       )
     }
   }
@@ -609,6 +611,8 @@ async function escreverFunil(id: string, corpo: CrmPipelineWriteRequest): Promis
       'Falha ao gravar o funil.',
       resposta.status,
       detalheDoProblema(resposta.data),
+      resposta.data,
+      resposta.url,
     )
   }
   return resposta.data as CrmPipelineDto
@@ -781,6 +785,8 @@ async function gravarOportunidade(valores: Oportunidade): Promise<CrmOpportunity
       'Falha ao gravar a oportunidade.',
       resposta.status,
       detalheDoProblema(resposta.data),
+      resposta.data,
+      resposta.url,
     )
   }
   return resposta.data as CrmOpportunityDto

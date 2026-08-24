@@ -94,6 +94,7 @@ function respostaQueNaoEDaApi(url: string, response: Response): RespostaBruta {
     },
     status: 0,
     headers: response.headers,
+    url,
   }
 }
 
@@ -101,6 +102,20 @@ interface RespostaBruta {
   data: unknown
   status: number
   headers: Headers
+  /**
+   * O caminho pedido, como a operação gerada o montou (`/api/quotes/{id}` já
+   * resolvido, com a query).
+   *
+   * Viaja porque a FALHA precisa dele e nenhuma camada acima o tem: quando o
+   * servidor responde 501 (`urn:cabinet:erro:nao-implementado`), quem monta o
+   * aviso é um componente compartilhado, longe da tela — sem o caminho ele não
+   * tem como saber de QUAL módulo está falando, e "esta parte do sistema" é o
+   * tipo de frase que faz o operador reler duas vezes sem entender.
+   *
+   * Sai daqui, e não de quem chama, porque este é o único ponto por onde todo
+   * request passa; qualquer outro lugar seria uma segunda cópia da URL.
+   */
+  url: string
 }
 
 export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T> => {
@@ -122,8 +137,9 @@ export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T>
       data,
       status: response.status,
       headers: response.headers,
+      url,
     } as T
   } catch {
-    return { data: undefined, status: 0, headers: new Headers() } as T
+    return { data: undefined, status: 0, headers: new Headers(), url } as T
   }
 }

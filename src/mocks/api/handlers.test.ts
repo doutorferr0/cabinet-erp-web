@@ -5,7 +5,9 @@ import {
   authMe,
   authSetActiveTenant,
   createPartner,
+  createProduct,
   createStockMovement,
+  getProduct,
   listProducts,
   listStockMovements,
 } from '@/api/gerado'
@@ -292,5 +294,69 @@ describe('kardex — o saldo é derivado do movimento (ADR-009)', () => {
     const extrato = await listStockMovements('var-0001', { page: 1, pageSize: 10 })
     expect(extrato.status).toBe(200)
     if (extrato.status === 200) expect(extrato.data.total).toBe(2)
+  })
+})
+
+describe('grades do produto — fornecedores (§6.1) e relacionados (§6.4)', () => {
+  it('o DETALHE emite as duas, com o padrão único e a quantidade que separa kit de sugestão', async () => {
+    await entrarComEmpresa()
+
+    const detalhe = await getProduct('prod-0001')
+    expect(detalhe.status).toBe(200)
+    if (detalhe.status !== 200) return
+
+    const fornecedores = detalhe.data.suppliers ?? []
+    expect(fornecedores).toHaveLength(2)
+    // O padrão é UM: é ele que o documento de compra carimba sem perguntar, e
+    // dois padrões fariam o carimbo depender da ordem da lista.
+    expect(fornecedores.filter((f) => f.isDefault)).toHaveLength(1)
+    const padrao = fornecedores.find((f) => f.isDefault)
+    expect(padrao?.supplierId, 'a grade aponta para o PARCEIRO fornecedor').toBe('parc-0001')
+    expect(padrao?.supplierCode).toBe('EV-PEND-30F')
+    // `null` é dado, não ausência: fornecedor que não batiza a peça deixa a
+    // coluna em branco, e a tela não pode confundir isso com "não carregou".
+    expect(fornecedores.find((f) => !f.isDefault)?.supplierDescription).toBeNull()
+
+    const relacionados = detalhe.data.relatedProducts ?? []
+    expect(relacionados).toHaveLength(2)
+    // A QUANTIDADE é o discriminador — não há campo de tipo ao lado.
+    const kits = relacionados.filter((r) => r.quantity !== null)
+    const sugestoes = relacionados.filter((r) => r.quantity === null)
+    expect(kits).toHaveLength(1)
+    expect(kits[0]?.quantity, 'decimal em string, 3 casas').toBe('2.000')
+    expect(kits[0]?.relatedProductCode, 'código e descrição vêm juntos').toBe('AR-2001')
+    expect(sugestoes).toHaveLength(1)
+    // Ordem do DADO, não da tela.
+    expect(relacionados.map((r) => r.sortOrder)).toEqual([1, 2])
+  })
+
+  it('vazio ≠ ausente: produto sem grade devolve `[]`, e produto novo também', async () => {
+    await entrarComEmpresa()
+
+    // O contrato distingue os dois: ausente é "o servidor não serve a grade",
+    // `[]` é "não há linha". O mock SERVE, então nunca omite.
+    const semGrade = await getProduct('prod-0003')
+    if (semGrade.status === 200) {
+      expect(semGrade.data.suppliers).toEqual([])
+      expect(semGrade.data.relatedProducts).toEqual([])
+    }
+
+    const criado = await createProduct({
+      code: 'PD-9001',
+      description: 'PRODUTO NOVO DO ENSAIO',
+      active: true,
+    })
+    expect(criado.status).toBe(201)
+    if (criado.status !== 201) return
+    // A ESCRITA devolve `ProductDto` — sem grade nenhuma, que é o que o
+    // contrato declara para o `POST`.
+    expect(criado.data).not.toHaveProperty('suppliers')
+    expect(criado.data).not.toHaveProperty('variants')
+
+    const novo = await getProduct(criado.data.id)
+    if (novo.status === 200) {
+      expect(novo.data.suppliers, 'o detalhe do recém-criado serve as grades vazias').toEqual([])
+      expect(novo.data.relatedProducts).toEqual([])
+    }
   })
 })

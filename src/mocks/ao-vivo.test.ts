@@ -437,6 +437,70 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect(alterado.status).toBe(200)
   })
 
+  it('o PAGAMENTO passa — a política do servidor governa a condição, pela tela', async () => {
+    // As DUAS leituras que o bloco Pagamento consome, pela mesma origem da
+    // página. A política é a que o documento usa para recortar o plano, e a
+    // condição é o que o combo oferece — separá-las é o defeito que a família
+    // existe para impedir.
+    const politica = await fetch(`${APP}/api/installment-policy`, { headers: { cookie } })
+    expect(politica.status).toBe(200)
+    const limites = (await politica.json()) as {
+      minTotalToInstallCents: number
+      minInstallmentCents: number
+      maxInstallments: number
+    }
+    // Empresa sem linha gravada lê o PADRÃO do servidor, não 404 — é o que
+    // `POLITICA_DE_RESERVA` cobre no front só enquanto a consulta não respondeu.
+    expect(limites.maxInstallments).toBeGreaterThan(0)
+
+    const condicoes = await fetch(`${APP}/api/payment-terms?pageSize=100&sortBy=name`, {
+      headers: { cookie },
+    })
+    expect(condicoes.status).toBe(200)
+    const { rows } = (await condicoes.json()) as { rows: { id: string; name: string }[] }
+
+    // PROVA NEGATIVA de quem respondeu: a semente do mock tem condição, a de
+    // dev do api NÃO cria nenhuma. Comparar as duas listas pelo id é o que
+    // distingue "o servidor respondeu vazio" de "o mock respondeu cheio", que é
+    // exatamente a leitura errada que o `*` dos padrões produz.
+    const direto = (await (
+      await noBackend('get', '/api/payment-terms', undefined, '?pageSize=100&sortBy=name')
+    ).json()) as { rows: { id: string }[] }
+    expect(rows.map((l) => l.id).sort()).toEqual(direto.rows.map((l) => l.id).sort())
+
+    // E o que amarra a família: a política GOVERNA a condição no servidor. Um
+    // plano com mais parcelas que o teto é recusado com `type` PRÓPRIO — não é
+    // erro de campo, é a regra da empresa, e é por ele que a tela sabe recortar
+    // o formulário em vez de destacar um campo.
+    const acimaDoTeto = limites.maxInstallments + 1
+    const fatia = Math.floor(1000000 / acimaDoTeto)
+    const excesso = await fetch(`${APP}/api/payment-terms`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        name: `ACIMA DO TETO ${Date.now()}`,
+        active: true,
+        installments: Array.from({ length: acimaDoTeto }, (_, i) => ({
+          number: i + 1,
+          daysAfterIssue: 30 * (i + 1),
+          percent: i === acimaDoTeto - 1 ? 1000000 - fatia * (acimaDoTeto - 1) : fatia,
+          amountCents: null,
+        })),
+      }),
+    })
+
+    // 403 é resposta LEGÍTIMA aqui e não falha o caso: a escrita de condição
+    // pede `admin` e o usuário demo é `operator-full`. O que se prova é que
+    // quem recusa é o SERVIDOR — o mock aceitaria as duas.
+    expect([400, 403]).toContain(excesso.status)
+    const problema = (await excesso.json()) as { type: string }
+    expect(problema.type).toBe(
+      excesso.status === 403
+        ? 'urn:cabinet:erro:papel-insuficiente'
+        : 'urn:cabinet:erro:parcelas-acima-do-teto',
+    )
+  })
+
   it('nenhuma rota de /api sobrou no mock — a passagem cobre o contrato', () => {
     // A afirmação central da #274, conferida onde o leitor deste arquivo está.
     //

@@ -45,6 +45,18 @@ import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
 } from '@/mocks/api/quotes'
+import {
+  ORDENAVEIS_ANIVERSARIANTES,
+  ORDENAVEIS_ATENDENTE,
+  ORDENAVEIS_COMPARATIVO,
+  ORDENAVEIS_CURVA_ABC,
+  ORDENAVEIS_DIAS_SEM_VENDA,
+  ORDENAVEIS_ESTOQUE_VALORIZADO,
+  ORDENAVEIS_FORNECEDOR,
+  ORDENAVEIS_ORCAMENTO_X_ESTOQUE,
+  ORDENAVEIS_PRODUTO_VENDIDO,
+  ORDENAVEIS_PROFISSIONAL,
+} from '@/mocks/api/relatorios'
 import { ORDENAVEIS_SERVICO } from '@/mocks/api/servicos'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
@@ -262,6 +274,21 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListPurchaseOrders: ORDENAVEIS_ORDEM_DE_COMPRA,
   GetPurchaseArrivalForecast: ORDENAVEIS_PREVISAO,
   GetPurchaseStockReplenishment: ORDENAVEIS_REPOSICAO,
+  // OS DEZ RELATÓRIOS (#310) entram por este eixo e NÃO pelo de cima: eles
+  // nascem sem tela, e quem recusa `sortBy` fora da whitelist, hoje, é o
+  // handler do mock — o site público é 100% mock. Relatório PAGINA, e por
+  // paginar precisa dizer por onde ordena; a coluna que a Fase C desenhar
+  // clicável fora desta lista vira 400 no clique do cabeçalho.
+  GetAbcCurveReport: ORDENAVEIS_CURVA_ABC,
+  GetProductsSoldReport: ORDENAVEIS_PRODUTO_VENDIDO,
+  GetSalesComparisonReport: ORDENAVEIS_COMPARATIVO,
+  GetSalespersonReport: ORDENAVEIS_ATENDENTE,
+  GetProfessionalRankingReport: ORDENAVEIS_PROFISSIONAL,
+  GetSupplierMovementReport: ORDENAVEIS_FORNECEDOR,
+  GetStockValuationReport: ORDENAVEIS_ESTOQUE_VALORIZADO,
+  GetStockAgingReport: ORDENAVEIS_DIAS_SEM_VENDA,
+  GetQuoteVsStockReport: ORDENAVEIS_ORCAMENTO_X_ESTOQUE,
+  GetBirthdaysReport: ORDENAVEIS_ANIVERSARIANTES,
 }
 
 /**
@@ -274,33 +301,20 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
  */
 const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
-  // OS DEZ RELATÓRIOS (#310) — agregação não tem handler no mock, e não é
-  // esquecimento: o mock guarda LINHAS, e somar dez relatórios sobre elas seria
-  // reimplementar em TypeScript as agregações que o Postgres faz do outro lado.
-  // As duas contas divergiriam no primeiro arredondamento, e a divergência
-  // apareceria como "o site público mostra outro faturamento".
-  //
-  // O preço está pago enquanto tela nenhuma os consome. Quando a Fase C chegar,
-  // este é o ponto que decide: ou o site público perde a seção Relatórios, ou
-  // ela ganha handler de mock com dado de demonstração DECLARADO como tal.
   // COMPRAS (G2) SAIU DAQUI. O motivo que estava escrito — "o mock não guarda
   // qual linha já foi levada por uma ordem" — deixou de valer: `compras.ts`
   // guarda esse estado em `LinhaDePedido.purchaseOrderId`, e é dele que saem o
   // `status` derivado do pedido, o recorte `onlyOpenItems`, o 409 de
   // `item-ja-em-ordem` e as duas consultas. As quatro estão em
   // `ORDENAVEIS_DO_MOCK`, acima.
-  GetAbcCurveReport: 'curva ABC é agregação — o mock guarda linhas, não somas',
-  GetProductsSoldReport: 'produto vendido é agregação — o mock guarda linhas, não somas',
-  GetSalesComparisonReport: 'comparativo de vendas é agregação — o mock guarda linhas, não somas',
-  GetSalespersonReport: 'demonstrativo por atendente é agregação — o mock guarda linhas, não somas',
-  GetProfessionalRankingReport:
-    'ranking de profissional é agregação — o mock guarda linhas, não somas',
-  GetSupplierMovementReport:
-    'movimentação por fornecedor é agregação — o mock guarda linhas, não somas',
-  GetStockValuationReport: 'estoque valorizado é agregação — o mock guarda linhas, não somas',
-  GetStockAgingReport: 'dias sem venda é agregação — o mock guarda linhas, não somas',
-  GetQuoteVsStockReport: 'orçamento × estoque é agregação — o mock guarda linhas, não somas',
-  GetBirthdaysReport: 'aniversariantes do mês é agregação — o mock guarda linhas, não somas',
+  //
+  // OS DEZ RELATÓRIOS (#310) TAMBÉM SAÍRAM, e o motivo que estava escrito —
+  // "somar dez relatórios seria reimplementar em TypeScript as agregações que o
+  // Postgres faz do outro lado" — continua VALENDO, e é por isso que
+  // `relatorios.ts` não as reimplementa. Ele agrega só o que o mock TEM
+  // (estoque, orçamento, aniversário) e devolve envelope VAZIO onde a fonte é o
+  // pedido de venda, que o mock não guarda. Nenhuma soma disputa com o
+  // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
   ListOrderProfessionalHistory:
     'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
 }

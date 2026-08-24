@@ -38,6 +38,7 @@ import {
   semSessao,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
+import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 
@@ -922,6 +923,16 @@ export const handlers = [
   // handler nenhum — e também FORA da passagem, porque o `cabinet-erp-api`
   // responde 501 nelas. Compras não tinha resposta em ambiente nenhum.
   ...handlersDeCompras,
+
+  // ---------------- RELATÓRIOS DE GESTÃO (#310) ----------------
+  // Arquivo próprio, como compras. As dez operações estavam no contrato desde a
+  // #314 sem handler nenhum, e também FORA da passagem (o `cabinet-erp-api`
+  // responde 501): caíam no fallback da SPA e voltavam o `index.html` com 200,
+  // que o cliente lê como `resposta-nao-json`. O que ele agrega é o que o mock
+  // TEM — estoque, orçamento e aniversário; onde a fonte é o pedido de venda,
+  // que o mock não guarda, o envelope vem vazio em vez de somar número
+  // inventado. O cabeçalho de `relatorios.ts` é onde essa linha está desenhada.
+  ...handlersDeRelatorios,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------
   // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas

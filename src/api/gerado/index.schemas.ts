@@ -5200,7 +5200,11 @@ export interface CostProfileDto {
      * @maxLength 70
      */
   name: string;
-  /** `Cus_situacao` do legado. Os 385 perfis reais estão ativos. */
+  /**
+     * `Cus_situacao` do legado (`char(1)`, `A` nos 385 perfis). Os 385 estão ativos.
+     *
+     * **Perfil não se apaga — este contrato não tem `DELETE` em lugar nenhum** (§9 padrão 8), e aqui a razão é forte: enquanto o perfil existir, dá para reler COMO o preço de um item foi formado. Apagado, a decomposição de todo orçamento que ele precificou vira número sem procedência.
+     */
   active: boolean;
   /**
      * Primeiro desconto da cascata do fornecedor (`Cus_desconto1`), aplicado sobre o preço de TABELA.

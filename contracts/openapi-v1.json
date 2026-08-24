@@ -8792,7 +8792,7 @@
       "put": {
         "tags": ["precos"],
         "operationId": "UpdateCostProfile",
-        "description": "Proposto. Substitui o perfil INTEIRO. Campo omitido volta ao padrão — não conserva o que estava lá.\n\n**O fornecedor pode ser trocado**, e isso é escrita normal: o perfil é a condição comercial, e ela migra quando o cadastro do fornecedor é consolidado. O que não muda é a empresa.",
+        "description": "Proposto. Substitui o perfil INTEIRO. Campo omitido volta ao padrão — não conserva o que estava lá.\n\n**É também o caminho da desativação** (`active: false`): não há `DELETE` neste contrato, e perfil de custo é o caso em que a regra mais se paga — ver `CostProfileDto.active`.\n\n**O fornecedor pode ser trocado**, e isso é escrita normal: o perfil é a condição comercial, e ela migra quando o cadastro do fornecedor é consolidado. O que não muda é a empresa.",
         "parameters": [
           {
             "name": "id",
@@ -8834,53 +8834,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "403": {
-            "$ref": "#/components/responses/SemPermissao"
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["precos"],
-        "operationId": "DeleteCostProfile",
-        "description": "Proposto. Apaga o perfil. Preferir `active: false` quando ele já precificou alguma coisa: desativar preserva a leitura de como o preço foi formado; apagar não.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
           },
           "401": {
             "$ref": "#/components/responses/NaoAutenticado"
@@ -15930,7 +15883,7 @@
           },
           "active": {
             "type": "boolean",
-            "description": "`Cus_situacao` do legado. Os 385 perfis reais estão ativos."
+            "description": "`Cus_situacao` do legado (`char(1)`, `A` nos 385 perfis). Os 385 estão ativos.\n\n**Perfil não se apaga — este contrato não tem `DELETE` em lugar nenhum** (§9 padrão 8), e aqui a razão é forte: enquanto o perfil existir, dá para reler COMO o preço de um item foi formado. Apagado, a decomposição de todo orçamento que ele precificou vira número sem procedência."
           },
           "discount1Percent": {
             "type": "integer",

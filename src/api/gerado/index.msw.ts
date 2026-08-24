@@ -1752,16 +1752,6 @@ export const getUpdateCostProfileMockHandler = (overrideResponse?: CostProfileDt
   }, options)
 }
 
-export const getDeleteCostProfileMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/api/cost-profiles/:id', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
-  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
-
-    return new HttpResponse(null,
-      { status: 204
-      })
-  }, options)
-}
-
 export const getSimulateCostProfileMockHandler = (overrideResponse?: CostSimulationDto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CostSimulationDto> | CostSimulationDto), options?: RequestHandlerOptions) => {
   return http.post('*/api/cost-profiles/:id/simulate', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -1902,6 +1892,5 @@ export const getVitraERPMock = () => [
   getCreateCostProfileMockHandler(),
   getGetCostProfileMockHandler(),
   getUpdateCostProfileMockHandler(),
-  getDeleteCostProfileMockHandler(),
   getSimulateCostProfileMockHandler()
 ]

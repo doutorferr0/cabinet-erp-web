@@ -295,6 +295,19 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'post', caminho: '/api/variants/{variantId}/stock-movements' },
   { metodo: 'get', caminho: '/api/variants/{variantId}/stock-movements' },
 
+  // perfil de custo (5 operações) — a metade de COMPRA da formação de preço, e
+  // ela nasce no servidor sem passar pelo mock. É decisão, não pendência: o
+  // mock teria de reimplementar a cascata inteira (quatro descontos
+  // encadeados, IPI, encargo sobre base composta, frete com duas bases) para a
+  // simulação devolver número, e número de margem inventado com cara de
+  // apuração é pior do que tela vazia — é o mesmo argumento dos dez
+  // relatórios. Sem proxy, a tela cai no `AvisoDeCobertura`.
+  { metodo: 'get', caminho: '/api/cost-profiles' },
+  { metodo: 'post', caminho: '/api/cost-profiles' },
+  { metodo: 'get', caminho: '/api/cost-profiles/{id}' },
+  { metodo: 'put', caminho: '/api/cost-profiles/{id}' },
+  { metodo: 'post', caminho: '/api/cost-profiles/{id}/simulate' },
+
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
   // atende as três telas de uma vez.

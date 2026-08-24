@@ -7920,6 +7920,8 @@ export const getUpdateCostProfileUrl = (id: string,) => {
 /**
  * Proposto. Substitui o perfil INTEIRO. Campo omitido volta ao padrão — não conserva o que estava lá.
  *
+ * **É também o caminho da desativação** (`active: false`): não há `DELETE` neste contrato, e perfil de custo é o caso em que a regra mais se paga — ver `CostProfileDto.active`.
+ *
  * **O fornecedor pode ser trocado**, e isso é escrita normal: o perfil é a condição comercial, e ela migra quando o cadastro do fornecedor é consolidado. O que não muda é a empresa.
  */
 export const updateCostProfile = async (id: string,
@@ -7931,64 +7933,6 @@ export const updateCostProfile = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(costProfileWriteRequest)
-  }
-);}
-
-
-
-export type deleteCostProfileResponse204 = {
-  data: void
-  status: 204
-}
-
-export type deleteCostProfileResponse401 = {
-  data: NaoAutenticadoResponse
-  status: 401
-}
-
-export type deleteCostProfileResponse403 = {
-  data: SemPermissaoResponse
-  status: 403
-}
-
-export type deleteCostProfileResponse404 = {
-  data: ProblemDetails
-  status: 404
-}
-
-export type deleteCostProfileResponse409 = {
-  data: ProblemDetails
-  status: 409
-}
-
-export type deleteCostProfileResponseSuccess = (deleteCostProfileResponse204) & {
-  headers: Headers;
-};
-export type deleteCostProfileResponseError = (deleteCostProfileResponse401 | deleteCostProfileResponse403 | deleteCostProfileResponse404 | deleteCostProfileResponse409) & {
-  headers: Headers;
-};
-
-export type deleteCostProfileResponse = (deleteCostProfileResponseSuccess | deleteCostProfileResponseError)
-
-export const getDeleteCostProfileUrl = (id: string,) => {
-
-
-
-
-  return `/api/cost-profiles/${id}`
-}
-
-/**
- * Proposto. Apaga o perfil. Preferir `active: false` quando ele já precificou alguma coisa: desativar preserva a leitura de como o preço foi formado; apagar não.
- */
-export const deleteCostProfile = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteCostProfileResponse> => {
-
-  return apiFetch<deleteCostProfileResponse>(getDeleteCostProfileUrl(id),
-  {
-    ...options,
-    method: 'DELETE'
-
-
   }
 );}
 

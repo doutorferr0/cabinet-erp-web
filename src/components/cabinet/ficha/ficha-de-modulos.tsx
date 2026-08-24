@@ -123,13 +123,24 @@ function ModuloCheio({
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {modulo.campos.map((campo) => (
-            <ParDeLeitura
-              key={campo.k}
-              rotulo={campo.r}
-              texto={textoDoCampo(registro, campo, rotulos)}
-            />
-          ))}
+          {/* SUB-RECURSO fica de fora dos pares de leitura. `textoDoCampo`
+              devolve `null` para todo campo sem `campo` — a regra certa para
+              lacuna, errada para `sub`: o dado EXISTE, em caminho próprio, e é
+              um bloco vizinho quem o desenha (`<ContatosDoParceiro readOnly>`,
+              nas três fichas de parceiro). Sem este filtro a ficha imprime
+              *"Contatos — não informado"* logo ao lado da grade que lista os
+              contatos, que é a mesma mentira que `semLastro` e `Pendencias` já
+              evitam nas contagens deles. Vale para o Fornecedor desde a #270;
+              medido e corrigido na web#293. */}
+          {modulo.campos
+            .filter((campo) => !campo.sub)
+            .map((campo) => (
+              <ParDeLeitura
+                key={campo.k}
+                rotulo={campo.r}
+                texto={textoDoCampo(registro, campo, rotulos)}
+              />
+            ))}
         </div>
       </div>
     </FormBlock>

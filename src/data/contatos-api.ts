@@ -118,14 +118,46 @@ export async function listarContatos(partnerId: string): Promise<ContatoDaGrade[
 }
 
 /**
+ * O corpo que SAIRIA para esta linha, em texto — a régua de "mudou".
+ *
+ * Compara o corpo de escrita, e não a linha da grade, porque é o corpo que o
+ * servidor recebe: `contatoParaContrato` faz `trim` e traduz vazio em `null`,
+ * então digitar um espaço no fim de um campo e apagá-lo produz linha DIFERENTE
+ * e corpo IGUAL. Pela linha crua isso viraria um `PUT` que não muda nada.
+ *
+ * `JSON.stringify` basta porque as chaves saem do literal de
+ * `contatoParaContrato` — mesma ordem, sempre, para as duas pontas.
+ */
+function corpoEmTexto(linha: ContatoDaGrade): string {
+  return JSON.stringify(contatoParaContrato(linha, true))
+}
+
+/**
  * O QUE MUDOU entre a lista que o servidor tem e a que o operador deixou na
  * tela — em três montes, e nenhum deles é "apagar".
  *
  * Sai como função pura, separada de quem chama a rede, porque é aqui que mora a
- * decisão errável: linha nova é `POST`, linha conhecida é `PUT`, e linha que
- * SUMIU da grade é `PUT` com `active: false`. Trocar os dois últimos gravaria o
- * contato removido por cima de outro, e o teste de rede não veria diferença —
- * as duas chamadas são `PUT` no mesmo caminho.
+ * decisão errável: linha nova é `POST`, linha conhecida e MEXIDA é `PUT`, e
+ * linha que SUMIU da grade é `PUT` com `active: false`. Trocar os dois últimos
+ * gravaria o contato removido por cima de outro, e o teste de rede não veria
+ * diferença — as duas chamadas são `PUT` no mesmo caminho.
+ *
+ * ## Linha intocada NÃO vira `PUT` — e isto é a razão de `original` existir
+ *
+ * Até a #331 `alterar` era `atual.filter((linha) => linha.id !== null)`: toda
+ * linha conhecida virava `PUT`, mexida ou não. A #302 já tinha escrito a regra
+ * certa no lugar errado (prometeu no comentário da issue e não implementou),
+ * e a #331 mediu o defeito na tela — gravar só a linha nova disparava `PUT` na
+ * linha que ninguém encostou.
+ *
+ * O dano não é tráfego: cada `PUT` é escrita DATADA no cadastro de outra
+ * pessoa. Quem abre a ficha para conferir um telefone não pode sair carimbando
+ * os oito contatos de quem editou antes — e, com auditoria do lado do servidor,
+ * é rastro de alteração que nunca aconteceu.
+ *
+ * Linha com `id` que não está no `original` (a tela não produz isso hoje) vira
+ * `PUT` por precaução: não sabendo o que o servidor tem, escrever é o lado
+ * errável mais barato.
  */
 export function planoDeSincronizacao(
   original: readonly ContatoDaGrade[],
@@ -136,12 +168,17 @@ export function planoDeSincronizacao(
   desativar: ContatoDaGrade[]
 } {
   const naTela = new Set(atual.map((linha) => linha.id).filter((id): id is string => id !== null))
+  const comoEstava = new Map(
+    original.filter((linha) => linha.id !== null).map((linha) => [linha.id, corpoEmTexto(linha)]),
+  )
 
   return {
     // Linha sem nome não vira contato: a grade nasce com uma linha em branco e
     // gravar isso criaria um contato anônimo a cada `Gravar`.
     incluir: atual.filter((linha) => linha.id === null && linha.nome.trim() !== ''),
-    alterar: atual.filter((linha) => linha.id !== null),
+    alterar: atual.filter(
+      (linha) => linha.id !== null && comoEstava.get(linha.id) !== corpoEmTexto(linha),
+    ),
     desativar: original.filter((linha) => linha.id !== null && !naTela.has(linha.id)),
   }
 }

@@ -151,7 +151,13 @@ export function CamposDoModulo({
  * esperava", e ela só faz sentido ao lado do bloco.
  */
 export function Pendencias({ modulo }: { modulo: ModuloCadastro }) {
-  const faltam = modulo.campos.filter((campo) => !campo.campo)
+  // `sub` sai da conta pelo mesmo motivo que sai de `semLastro` (`modulos/
+  // tipos.ts`): sub-recurso é dado que EXISTE, com caminho próprio, desenhado
+  // por um bloco próprio ao lado deste. Sem esta linha, declarar a grade de
+  // contatos na espec faria a tela imprimir *"Ainda não guardamos: Contatos"*
+  // logo abaixo da grade de contatos que ela acabou de montar — foi por isso
+  // que a declaração ficou de fora da #331 (web#293).
+  const faltam = modulo.campos.filter((campo) => !campo.campo && !campo.sub)
   if (faltam.length === 0) return null
   return (
     <p className="mt-2 text-muted-foreground text-xs">

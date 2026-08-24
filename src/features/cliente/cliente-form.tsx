@@ -17,6 +17,7 @@ import {
   cliente as entidadeCliente,
   propsDoIcone,
 } from '@/features/cadastro/modulos'
+import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
 import type { Cliente } from '@/mocks/clientes'
 import { useNavigate } from '@tanstack/react-router'
@@ -180,11 +181,17 @@ function ClienteCorpo({
   onBuscaCidade,
   moduloEmFoco,
   idDoRegistro,
+  readOnly,
 }: {
   onBuscaCidade: (prefixo: PrefixoCidade) => void
   moduloEmFoco: string | undefined
-  /** O uuid deste cliente — ausente na inclusão, e aí não há quem excluir. */
+  /**
+   * O uuid deste cliente — ausente na inclusão. Serve a dois blocos: o
+   * especificador, que não pode oferecer o próprio registro, e a grade de
+   * contatos, que pende do id porque é sub-recurso.
+   */
   idDoRegistro: string | undefined
+  readOnly: boolean
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -304,6 +311,13 @@ function ClienteCorpo({
             className="col-span-6 sm:col-span-3"
           />
         </div>
+        {/* A GRADE de contatos (#293) — a aba `Con&tato` do `FrmCliente`, que
+            era a única das três fichas de parceiro sem ela. Entra no módulo que
+            já é o lugar do assunto: `Outros contatos` reúne os telefones do
+            cadastro, e a lista de quem ATENDE nele é o resto da mesma pergunta.
+            Fica FORA da `<div>` dos campos porque não é campo do registro — é o
+            sub-recurso `/api/partners/{id}/contacts`, com gravação própria. */}
+        <ContatosDoParceiro partnerId={idDoRegistro ?? null} readOnly={readOnly} />
       </BlocoDoModulo>
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="fiscal">
@@ -369,10 +383,14 @@ export function ClienteForm({
   cliente: Cliente
   readOnly?: boolean
   /**
-   * O uuid deste cliente, quando ele já existe. Serve a um campo só: o
-   * especificador não pode oferecer o próprio registro — `conferirApoios`
-   * responde 400 e a `0023` tem o `CHECK` embaixo. Ausente na inclusão, onde
-   * ainda não há id que possa apontar para si mesmo.
+   * O uuid deste cliente, quando ele já existe. Serve a dois blocos:
+   *
+   * - o especificador, que não pode oferecer o próprio registro —
+   *   `conferirApoios` responde 400 e a `0023` tem o `CHECK` embaixo;
+   * - a grade de contatos (#293), que é sub-recurso e pende do id.
+   *
+   * Ausente na inclusão: ali não há id que possa apontar para si mesmo, nem
+   * cadastro gravado a que pendurar contato.
    */
   idDoRegistro?: string | undefined
   /**
@@ -424,6 +442,7 @@ export function ClienteForm({
         onBuscaCidade={setBuscaCidadePrefixo}
         moduloEmFoco={moduloEmFoco}
         idDoRegistro={idDoRegistro}
+        readOnly={readOnly}
       />
 
       <BuscaCidade prefixo={buscaCidadePrefixo} onOpenChange={setBuscaCidadePrefixo} />

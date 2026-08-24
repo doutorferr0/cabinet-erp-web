@@ -7,6 +7,7 @@ import { useRotulosDeApoio } from '@/data/lookups-api'
 import { camposDoContrato, cliente as esquema } from '@/features/cadastro/modulos'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
+import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -86,6 +87,11 @@ function ClienteEditPage() {
     <PainelDeAtividades alvo={{ tipo: 'partner', id: clienteId }} />
   )
 
+  // A ficha também mostra os contatos, em leitura. Sem isto o `Consul.` seria a
+  // única tela do cadastro em que eles somem — e sumir é o que a ficha faz com
+  // dado que o servidor NÃO tem, não com sub-recurso que ela não sabe montar.
+  const contatosDaFicha = isNovo ? null : <ContatosDoParceiro partnerId={clienteId} readOnly />
+
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103).
 
   if (readOnly && !isNovo) {
@@ -97,7 +103,12 @@ function ClienteEditPage() {
         titulo="Cadastro de Clientes"
         contexto={registro.nome}
         aviso={aviso}
-        abaixo={atividades}
+        abaixo={
+          <>
+            {contatosDaFicha}
+            {atividades}
+          </>
+        }
         aoEditar={(moduloId) =>
           void navigate({
             to: '/cadastros/clientes/$clienteId',

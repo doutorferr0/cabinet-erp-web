@@ -106,10 +106,51 @@ describe('plano de sincronização — o verbo certo para cada linha', () => {
     expect(plano.incluir).toHaveLength(0)
   })
 
-  it('linha com id é alteração', () => {
+  it('linha com id MEXIDA é alteração', () => {
     const plano = planoDeSincronizacao([existente], [{ ...existente, vinculo: 'Gerente' }])
     expect(plano.alterar).toEqual([{ ...existente, vinculo: 'Gerente' }])
     expect(plano.desativar).toHaveLength(0)
+  })
+
+  it('linha INTOCADA não vira PUT', () => {
+    // A regra que a #302 prometeu no comentário da issue e não implementou, e
+    // que a #331 mediu quebrada na tela: gravar só a linha nova disparava `PUT`
+    // na linha que ninguém encostou. Cada `PUT` é escrita DATADA no cadastro de
+    // outra pessoa — quem abre a ficha para conferir um telefone não pode sair
+    // carimbando os contatos de quem editou antes.
+    const plano = planoDeSincronizacao([existente], [existente])
+    expect(plano.alterar).toHaveLength(0)
+    expect(plano.incluir).toHaveLength(0)
+    expect(plano.desativar).toHaveLength(0)
+  })
+
+  it('das duas conhecidas, só a mexida sai — a outra fica quieta', () => {
+    // O caso que um teste de uma linha só não pega: a régua tem de ser POR
+    // LINHA. Comparar "a grade mudou?" mandaria as duas.
+    const outra: ContatoDaGrade = { ...existente, id: 'ct-2', nome: 'JOSÉ PARADO' }
+    const plano = planoDeSincronizacao(
+      [existente, outra],
+      [{ ...existente, fone: '19 3333-9999' }, outra],
+    )
+    expect(plano.alterar.map((l) => l.id)).toEqual(['ct-1'])
+  })
+
+  it('mudança que o corpo não carrega não vira PUT', () => {
+    // `contatoParaContrato` faz `trim` e traduz vazio em `null`: espaço no fim
+    // de um campo produz linha diferente e corpo IGUAL. Pela linha crua seria
+    // um `PUT` que não muda nada — por isso a régua é o corpo de escrita.
+    const plano = planoDeSincronizacao(
+      [existente],
+      [{ ...existente, vinculo: `${existente.vinculo}  ` }],
+    )
+    expect(plano.alterar).toHaveLength(0)
+  })
+
+  it('linha com id DESCONHECIDO vira PUT, por precaução', () => {
+    // A tela não produz isto hoje. Não sabendo o que o servidor tem, escrever é
+    // o lado errável mais barato — o outro perderia a edição em silêncio.
+    const plano = planoDeSincronizacao([], [existente])
+    expect(plano.alterar).toEqual([existente])
   })
 
   it('linha que sumiu da grade é desativação, não alteração', () => {
@@ -153,23 +194,36 @@ describe('contra o servidor', () => {
 
   it('inclui com POST, altera com PUT e remove com PUT active:false', async () => {
     const existente = contatoDoContrato(DTO)
+    // Uma quarta linha, conhecida e INTOCADA, viaja no cenário inteiro: é ela
+    // que prova pela REDE que a régua nova vale — nenhuma chamada sai no
+    // caminho dela.
+    const parado: ContatoDaGrade = { ...existente, id: 'ct-7', nome: 'JOSÉ PARADO' }
     const servidor = instalarServidor({
       [CONTATOS]: () => json(DTO, 201),
       [`${CONTATOS}/ct-1`]: () => json(DTO),
+      [`${CONTATOS}/ct-7`]: () => json({ ...DTO, id: 'ct-7' }),
       [`${CONTATOS}/ct-9`]: () => json({ ...DTO, id: 'ct-9', active: false }),
     })
 
     await sincronizarContatos(
       PARCEIRO,
-      [existente, { ...existente, id: 'ct-9', nome: 'QUEM SAIU' }],
-      [existente, linha({ nome: 'QUEM CHEGOU' })],
+      [existente, parado, { ...existente, id: 'ct-9', nome: 'QUEM SAIU' }],
+      [{ ...existente, fone: '19 3333-7777' }, parado, linha({ nome: 'QUEM CHEGOU' })],
     )
 
     const inclusao = servidor.em(CONTATOS).find((c) => c.metodo === 'POST')
     expect(inclusao?.corpo).toMatchObject({ name: 'QUEM CHEGOU', active: true })
 
     expect(servidor.em(`${CONTATOS}/ct-1`)[0]?.metodo).toBe('PUT')
-    expect(servidor.em(`${CONTATOS}/ct-1`)[0]?.corpo).toMatchObject({ active: true })
+    expect(servidor.em(`${CONTATOS}/ct-1`)[0]?.corpo).toMatchObject({
+      phone: '19 3333-7777',
+      active: true,
+    })
+
+    // A linha que ninguém encostou não recebe escrita nenhuma. Sem isto, abrir
+    // a ficha e gravar um contato novo carimbava data de alteração em todos os
+    // outros — rastro de edição que não houve.
+    expect(servidor.em(`${CONTATOS}/ct-7`)).toHaveLength(0)
 
     // O que saiu da grade não é apagado — o contrato não publica DELETE, e
     // cadastro deste produto se desativa (CLAUDE.md, padrão 8).

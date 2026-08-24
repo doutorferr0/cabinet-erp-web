@@ -1,5 +1,7 @@
+import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import { Button } from '@/components/ui/button'
+import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
 
 /**
@@ -27,6 +29,12 @@ export function FalhaDoPainel({
   aoTentar: () => void
 }) {
   const detalhe = detalheDoErro(erro)
+
+  // 501 não é painel que falhou: o módulo está no contrato e o servidor ainda
+  // não o serve. O triângulo de indisponibilidade mais o `Tentar de novo`
+  // fariam o operador esperar a rede voltar para um painel que ainda não existe
+  // do outro lado. O bloco compartilhado explica, e não oferece repetição.
+  if (ehModuloEmConstrucao(erro)) return <ModuloEmConstrucao erro={erro} />
 
   return (
     <div

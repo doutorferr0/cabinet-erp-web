@@ -494,6 +494,57 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/partners/{partnerId}/contacts' },
   { metodo: 'post', caminho: '/api/partners/{partnerId}/contacts' },
   { metodo: 'put', caminho: '/api/partners/{partnerId}/contacts/{contactId}' },
+
+  // PAGAMENTO (5 operações) — G1 do `prompts-leva-softlux-fase2.md`, api#161.
+  //
+  // **A razão de estar fora VENCEU.** A nota que segurava a família na lista de
+  // exceção do teste foi escrita em 2026-08-22 contra o api `e47827e` e dizia
+  // "no servidor de hoje não há handler nenhum … `git grep` por `payment-terms`
+  // devolve ZERO". A fase B do trilho entrou depois: `src/modules/pagamento/`
+  // existe na `main` do api com os cinco handlers.
+  //
+  // **MEDIDO em 2026-08-23** contra `cabinet-erp-api` main `024aed8`, em par
+  // ISOLADO — Postgres próprio migrado até a `0075`, servidor em `:3011`,
+  // sessão real de `semear-dev` —, e o isolamento não é zelo: o processo que
+  // ocupava `:3000` nesta máquina servia o commit `2b4c72f` de uma worktree
+  // `obra-sortby`, **sem `src/modules/pagamento/`**. Medir contra ele daria o
+  // 404 do Fastify e "provaria" de novo a nota vencida.
+  //
+  //   GET /api/payment-terms       200 · {rows: [], total: 0} (banco de dev não semeia condição)
+  //   GET /api/installment-policy  200 · {10000, 5000, 6} — o padrão do servidor, sem linha gravada
+  //   POST /api/payment-terms      201 · 30/60/90 com uuid do Postgres
+  //   PUT  /api/payment-terms/{id} 200 · a mesma condição relida com 2 parcelas
+  //   PUT  /api/installment-policy 200 · teto 6 → 8, e o POST seguinte de 9× recusou
+  //                                      com `urn:cabinet:erro:parcelas-acima-do-teto`
+  //
+  // Essa última linha é a que fecha a família: a política GOVERNA a condição no
+  // servidor, e é por isso que as duas não podem se separar. Condição do
+  // Postgres com política do mock recusaria um plano de 8× que o servidor
+  // aceita — e a divergência apareceria como 400 numa gravação que a tela tinha
+  // por válida.
+  //
+  // **As três ESCRITAS entram, e aqui elas não repetem a decisão pendente dos
+  // depósitos.** `POST`/`PUT` respondem 403 `papel-insuficiente` para o
+  // `operator-full` do usuário demo (com `admin` são 201 e 200, medido acima) —
+  // mesma leitura do 403 dos depósitos, custo DIFERENTE: lá a tela de estoque
+  // existe e é ela que aperta o botão recusado; aqui a fronteira do front é
+  // só-leitura por decisão declarada (`src/data/pagamento-api.ts`: "quem
+  // cadastra condição é a tela de configuração, que ainda não existe"). Nenhuma
+  // tela chama as três, então ligá-las não tira gravação de ninguém — e
+  // deixá-las no mock é que criaria a meia família.
+  //
+  // **O que MUDA no par local, e é dado de ambiente e não costura:** o
+  // `semear-dev.ts` do api não cria condição de pagamento, então o combo do
+  // bloco Pagamento abre VAZIO com o proxy de pé, contra as condições semeadas
+  // que o mock oferece. O bloco já sabe dizer isso ("Sem condição", "Documento
+  // sem condição de pagamento") — é o estado legítimo de empresa que ainda não
+  // cadastrou, não uma falta escondida. O site público não vê nada disso: sem
+  // `VITE_API_PROXY` a lista nasce vazia e o mock serve tudo.
+  { metodo: 'get', caminho: '/api/payment-terms' },
+  { metodo: 'post', caminho: '/api/payment-terms' },
+  { metodo: 'put', caminho: '/api/payment-terms/{id}' },
+  { metodo: 'get', caminho: '/api/installment-policy' },
+  { metodo: 'put', caminho: '/api/installment-policy' },
 ]
 
 /**

@@ -970,6 +970,11 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |
  * | `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |
  * | `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |
+ * | `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |
+ * | `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |
+ * | `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |
+ * | `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |
+ * | `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
@@ -1012,6 +1017,11 @@ export const ProblemType = {
   'urn:cabinet:erro:item-ja-em-ordem': 'urn:cabinet:erro:item-ja-em-ordem',
   'urn:cabinet:erro:ordem-ja-enviada': 'urn:cabinet:erro:ordem-ja-enviada',
   'urn:cabinet:erro:fornecedor-divergente': 'urn:cabinet:erro:fornecedor-divergente',
+  'urn:cabinet:erro:periodo-ja-fechado': 'urn:cabinet:erro:periodo-ja-fechado',
+  'urn:cabinet:erro:origem-ja-paga': 'urn:cabinet:erro:origem-ja-paga',
+  'urn:cabinet:erro:participante-ja-apurado': 'urn:cabinet:erro:participante-ja-apurado',
+  'urn:cabinet:erro:profissional-exige-transferencia': 'urn:cabinet:erro:profissional-exige-transferencia',
+  'urn:cabinet:erro:reserva-ja-lancada': 'urn:cabinet:erro:reserva-ja-lancada',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -5571,6 +5581,566 @@ export interface CostSimulationDto {
 }
 
 /**
+ * O OPERADOR da faixa — `ComPreCond_SimbDesc char(2)` do legado, com o vocabulário fechado.
+ *
+ * Ele compara a faixa contra o **desconto do DOCUMENTO** (`discountPercent` do cabeçalho), não contra o da linha: é o que `sql-por-tela.sql:169` do legado mede, onde a consulta que casa `VendaIndicacaoGrupProd` com a venda puxa `Venda.Ven_DescontoPorc` na mesma instrução. Usar o desconto da linha faria a mesma venda pagar percentuais diferentes por item por dois motivos ao mesmo tempo — grupo e desconto —, e nenhuma apuração conseguiria explicar o número.
+ *
+ * Leitura da regra: **quanto mais desconto o vendedor dá, menor a participação**. É por isso que `VendaIndicacaoGrupProd` tem 232.415 linhas para 34.136 vendas — 6,7 por (documento × pessoa). Não são "12 grupos": são VÁRIAS FAIXAS por grupo, uma por condição de desconto.
+ *
+ * **Confiança MÉDIA nesta leitura, e está dito de propósito:** ela vem da FORMA — a PK das três tabelas do legado inclui o próprio percentual, o join puxa o desconto da venda, e a coluna irmã se chama "símbolo". Não vem do dado. O operador é DADO e não regra em código exatamente por isso: se o caso real conferido disser outra coisa, muda linha de tabela, não muda contrato.
+ *
+ * Texto livre aqui produziria `=>` num cadastro e faixa que nunca casa em produção, sem erro nenhum na hora de gravar.
+ */
+export type CommissionTierOperator = typeof CommissionTierOperator[keyof typeof CommissionTierOperator];
+
+
+export const CommissionTierOperator = {
+  '>=': '>=',
+  '<=': '<=',
+  '>': '>',
+  '<': '<',
+  '=': '=',
+} as const;
+
+/**
+ * Proposto. Uma FAIXA de participação CONGELADA no documento — `VendaIndicacaoGrupProd` do legado (232.415 linhas, a tabela mais usada do Financeiro de lá).
+ *
+ * **Congelada, e é a razão de ela existir separada do cadastro.** O perfil diz quanto uma pessoa COSTUMA ganhar; esta linha diz quanto ela ganhou NESTE documento. O legado faz o mesmo, e a distância entre os dois números é medida: `IndicacaoGrupProd` (o perfil) tem 7.569 linhas contra as 232.415 daqui — a cópia por documento é 30× o cadastro. Quem guardasse só o cadastro teria uma tabela pequena e um relatório que muda de valor sozinho quando alguém edita o perfil.
+ *
+ * **Não se edita.** Ela nasce na cópia do perfil, quando a pessoa entra no documento, e daí em diante é passado — ver `OrderParticipantWriteRequest.id`.
+ */
+export interface OrderParticipantTierDto {
+  /**
+     * O grupo desta faixa — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`; o mesmo id que a linha do documento carrega em `QuoteItemDto.productGroupId`.
+     *
+     * **É o id e não o nome, pelo motivo já escrito em `QuoteItemDto`:** nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam a participação para o grupo errado sem ninguém acusar. No legado a chave é `GrupoProduto_Codigo`, código — não a descrição.
+     */
+  productGroupId: string;
+  /** Nome do grupo CONGELADO na emissão, pelo mesmo motivo de `QuoteGroupDiscountDto.productGroupName`: renomear o grupo no catálogo não pode reescrever apuração fechada. É o que se lê; o que se casa é o id. */
+  productGroupName: string;
+  operator: CommissionTierOperator;
+  /** O desconto CONTRA o qual o operador compara — a metade que dá sentido ao `percent`. Percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%, `1000000` = 100%. Mesma unidade e mesma escala de `QuoteDetailDto.discountPercent`, e é de propósito: os dois lados da comparação precisam ser inteiros da MESMA escala, ou a comparação passa a depender de conversão. */
+  discountPercent: number;
+  /** O percentual que esta faixa paga quando ela é a que casa. Mesma escala de `discountPercent` — `10000` = 1%. */
+  percent: number;
+}
+
+/**
+ * O papel na venda. Vocabulário FECHADO de dois valores, e fechado de propósito: o legado tem duas tabelas (`VendaAtendente`, `VendaIndicacao`) e não um catálogo de papéis, e cada uma paga por um caminho diferente — comissão de colaborador de um lado, Reserva Técnica do outro.
+ *
+ * - `attendant` — colaborador (`EmployeeDto.id`), o consultor que atende.
+ * - `professional` — profissional externo (`PartnerDto.id` com papel `professional`), o arquiteto/especificador que indicou.
+ */
+export type OrderParticipantDtoRole = typeof OrderParticipantDtoRole[keyof typeof OrderParticipantDtoRole];
+
+
+export const OrderParticipantDtoRole = {
+  attendant: 'attendant',
+  professional: 'professional',
+} as const;
+
+/**
+ * Proposto. Uma pessoa que PARTICIPA do documento, com o percentual e as faixas congelados — `VendaAtendente` e `VendaIndicacao` do legado, que têm o MESMO formato: `(TpDoc, NDocPre, <pessoa>, Emp_Codigo)` + `Porcentagem` + `Principal` + `DtVigencia`.
+ *
+ * **N por documento, e isso é o caso COMUM e não a exceção:** `VendaAtendente` tem 37.707 linhas para 34.136 vendas. O `salespersonId` singular do documento continua existindo e passa a ser uma LEITURA — o atendente `isPrincipal` desta lista —, não um segundo lugar onde se grava.
+ *
+ * **Os dois papéis são simétricos.** A auditoria de 24/08 leu que "atendente principal é N e profissional é 1", e a fonte não diz isso: `bdprincipal-rotinas.sql:1088` e `:1116` são o mesmo cursor com o mesmo corpo, `Principal = 1` aparece duas vezes e as duas dentro de cursores, e `sql-por-tela.sql:3670`/`:3673` são `SELECT top 1 *` para os DOIS papéis — `TOP 1` é o que se escreve quando a consulta pode voltar mais de uma linha.
+ */
+export interface OrderParticipantDto {
+  /** Identidade da PARTICIPAÇÃO, não da pessoa. É ela que o `PUT` ecoa para dizer "esta linha é a mesma" e preservar as faixas congeladas. */
+  id: string;
+  /**
+     * O papel na venda. Vocabulário FECHADO de dois valores, e fechado de propósito: o legado tem duas tabelas (`VendaAtendente`, `VendaIndicacao`) e não um catálogo de papéis, e cada uma paga por um caminho diferente — comissão de colaborador de um lado, Reserva Técnica do outro.
+     *
+     * - `attendant` — colaborador (`EmployeeDto.id`), o consultor que atende.
+     * - `professional` — profissional externo (`PartnerDto.id` com papel `professional`), o arquiteto/especificador que indicou.
+     */
+  role: OrderParticipantDtoRole;
+  /**
+     * O colaborador, quando `role` é `attendant`. `null` no outro papel.
+     * @nullable
+     */
+  employeeId?: string | null;
+  /** @nullable */
+  employeeName?: string | null;
+  /**
+     * O profissional externo, quando `role` é `professional`. `null` no outro papel.
+     * @nullable
+     */
+  partnerId?: string | null;
+  /** @nullable */
+  partnerName?: string | null;
+  /** O nome que a grade mostra — colaborador ou parceiro, o que houver. Existe para a tela não ter de escolher entre dois campos a cada linha; o par id+nome específico continua publicado ao lado, e é ele que se casa. */
+  personName: string;
+  /**
+     * O percentual GERAL desta participação, CONGELADO — `Porcentagem` do legado. Escala de 4 casas: `10000` = 1%.
+     *
+     * É o que vale para item cujo grupo não tem faixa, e para SERVIÇO, que não tem grupo de produto nenhum: as faixas do legado vivem em tabelas `…GrupProd`, que só o produto alcança. Não é omissão — é onde o percentual geral mora.
+     */
+  percent: number;
+  /**
+     * O `Principal` do legado. **Um por papel, no máximo** — dois principais não significam nada, e o documento com dois é 400 apontando as linhas.
+     *
+     * É o `isPrincipal` do papel `attendant` que responde por `salespersonId`, e o do `professional` que responde por `professionalId`.
+     */
+  isPrincipal: boolean;
+  /**
+     * Início da vigência desta participação — `DtVigencia` do legado. `null` na linha que nasceu com o documento.
+     *
+     * Existe porque a participação MUDA depois do fato: o legado transfere venda de um profissional para outro (`TransfIndicacao`/`TransfIndicacaoDet`, a opção "Transferência de Venda entre Profissionais" do menu), e a comissão pergunta a partir de quando. Quem faz essa troca aqui é `POST /api/orders/{id}/professional`, que tem data e justificativa — ver a recusa em `PUT /api/orders/{id}/participants`.
+     * @nullable
+     */
+  validFrom?: string | null;
+  /**
+     * As faixas por grupo de produto CONGELADAS nesta participação, em ordem de `productGroupName`. Lista **vazia** quando a pessoa não tem faixa por grupo — que é situação legítima e comum, e significa "vale o `percent` geral em tudo", não ausência de dado.
+     *
+     * Vêm embutidas e não em sub-recurso pelo argumento de `QuoteGroupDiscountDto`: a faixa não tem identidade fora da participação, e ler linha a linha faria a aba Participação virar N requisições.
+     */
+  tiers: OrderParticipantTierDto[];
+}
+
+export interface PagedResultOfOrderParticipantDto {
+  rows: OrderParticipantDto[];
+  total: number;
+}
+
+/**
+ * `attendant` ou `professional` — ver `OrderParticipantDto.role`.
+ */
+export type OrderParticipantWriteRequestRole = typeof OrderParticipantWriteRequestRole[keyof typeof OrderParticipantWriteRequestRole];
+
+
+export const OrderParticipantWriteRequestRole = {
+  attendant: 'attendant',
+  professional: 'professional',
+} as const;
+
+/**
+ * Proposto. Uma linha da grade de participação, na escrita.
+ *
+ * **O que este corpo NÃO traz, e a ausência é a regra:** as FAIXAS. Elas saem do perfil da pessoa (`GET /api/partners/{id}/commission-tiers`), que é cadastro da empresa, e são copiadas pelo servidor na hora em que a linha nasce. Faixa vinda do corpo seria o cliente escolhendo quanto ganha por grupo — a mesma família do percentual vindo do cliente, que este contrato já recusa em toda parte.
+ */
+export interface OrderParticipantWriteRequest {
+  /**
+     * **O ECO que preserva o congelamento.** Linha que volta com o `id` que veio da leitura é a MESMA linha: o servidor mantém as faixas já congeladas nela e mexe só no que este corpo traz. Linha SEM `id` é nova, e é nela que o servidor copia o perfil de hoje.
+     *
+     * Sem esse eco, o `PUT` integral (que apaga e regrava) recopiaria o perfil a cada gravação — e um documento de março passaria a pagar pelo perfil de agosto na primeira vez que alguém corrigisse um nome na tela. É o defeito que o congelamento existe para impedir, entrando pela porta da escrita.
+     *
+     * `id` que não é participação DESTE documento é 400 apontando o campo.
+     * @nullable
+     */
+  id?: string | null;
+  /** `attendant` ou `professional` — ver `OrderParticipantDto.role`. */
+  role: OrderParticipantWriteRequestRole;
+  /**
+     * Obrigatório quando `role` é `attendant`, e proibido no outro papel — 400 apontando o campo nos dois casos. Papel sem pessoa, ou com as duas, é linha que a apuração não sabe pagar.
+     * @nullable
+     */
+  employeeId?: string | null;
+  /**
+     * Obrigatório quando `role` é `professional`, e proibido no outro papel. Parceiro sem o papel `professional` é 400 apontando o campo — mesma recusa de `TransferProfessionalRequest.professionalId`.
+     * @nullable
+     */
+  partnerId?: string | null;
+  /**
+     * O percentual geral DESTA venda, quando o operador quer dizer "aqui é 3%". Escala de 4 casas: `10000` = 1%.
+     *
+     * **`null` não é zero: é "use o perfil".** Ausente ou nulo, o servidor lê a faixa GERAL do cadastro da pessoa (a de `productGroupId` nulo) e congela o valor dela na linha. Zero explícito é participação sem comissão — o atendente que responde pela venda e não ganha por ela —, e é caso real: o legado tem 1.212 lançamentos de Reserva Técnica para 11.103 pedidos justamente porque nem toda participação vira pagamento.
+     *
+     * Fora de `0`–`1000000` é 400.
+     * @nullable
+     */
+  percent?: number | null;
+  /** Um por papel, no máximo. Duas linhas do mesmo papel com `true` é 400 apontando as duas — e a recusa é mais restrita que o legado nos DOIS papéis, de propósito: lá o `Principal` não tem unicidade e o risco é de ETL, com documento antigo trazendo dois. */
+  isPrincipal: boolean;
+  /**
+     * Início da vigência. `null` = vale desde a emissão do documento.
+     * @nullable
+     */
+  validFrom?: string | null;
+}
+
+/**
+ * Proposto. A grade de participação INTEIRA — `PUT` substitui o conjunto, como todo `PUT` deste contrato. Linha que não vier no corpo é linha REMOVIDA.
+ *
+ * **É uma requisição só, e não N, porque as linhas se conferem entre si:** "um principal por papel" e a soma dos percentuais são regras do CONJUNTO, e conjunto que chega em pedaços tem um instante em que ele é inválido. Mesmo argumento de `installments` na condição de pagamento e de `environments` no documento.
+ */
+export interface OrderParticipantsWriteRequest {
+  /** As linhas, em qualquer ordem. Lista **vazia** apaga a participação do documento — e é gesto legítimo: venda sem indicação existe. */
+  participants: OrderParticipantWriteRequest[];
+}
+
+/**
+ * Proposto. Uma faixa do PERFIL de participação de uma pessoa — o cadastro, não o documento. `IndicacaoGrupProd` (perfil do profissional, 7.569 linhas) e `ComissaoPremiacaoGrup` (perfil do colaborador, 16 linhas) do legado, que carregam o MESMO trio percentual · desconto · operador.
+ *
+ * **Um schema só para os dois papéis, e a economia não é de digitação:** separar duplicaria o motor de cálculo, que é a única parte onde errar custa dinheiro de verdade. O que muda entre colaborador e profissional é a porta (`/api/employees/{id}/…` × `/api/partners/{id}/…`) e o que o ganho vira depois — comissão de um lado, Reserva Técnica do outro.
+ *
+ * **O cadastro NÃO tem vigência**, e o legado também não a tem em `IndicacaoGrupProd`. Quem protege a apuração de ontem de um perfil editado hoje é o CONGELAMENTO no documento (`OrderParticipantTierDto`), não uma data aqui. Sem esse congelamento, a ausência de vigência seria defeito; com ele, é simplificação correta — e fica escrito para quem for tentado a acrescentá-la.
+ */
+export interface CommissionTierDto {
+  id: string;
+  /**
+     * O grupo — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`.
+     *
+     * **`null` é a faixa GERAL**, a que vale para grupo sem linha própria, e é ela que vira o `percent` do participante quando a pessoa entra num documento. Não é ausência de dado: é a linha que responde por todo o resto, e por isso `null` aqui é significado e não buraco.
+     * @nullable
+     */
+  productGroupId?: string | null;
+  /**
+     * Nome do grupo, ecoado pelo servidor; `null` na faixa geral. **Aqui ele NÃO é congelado**, ao contrário do homônimo em `OrderParticipantTierDto`: isto é cadastro, e cadastro mostra o nome de hoje.
+     * @nullable
+     */
+  productGroupName?: string | null;
+  operator: CommissionTierOperator;
+  /** O desconto contra o qual o operador compara. Escala de 4 casas: `10000` = 1%. Fora de `0`–`1000000` é 400. */
+  discountPercent: number;
+  /** O percentual que esta faixa paga. Mesma escala — `10000` = 1%. */
+  percent: number;
+  /** Desativação lógica (padrão 8). Faixa inativa não entra no cálculo e continua legível nos documentos que a congelaram — que é o ponto: apagar a faixa não pode mudar o que já foi apurado, e nem conseguiria, porque o documento tem a cópia dela. */
+  active: boolean;
+}
+
+export interface PagedResultOfCommissionTierDto {
+  rows: CommissionTierDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Uma faixa do perfil, na escrita.
+ */
+export interface CommissionTierWriteRequest {
+  /**
+     * Ecoa a linha existente. Ausente = linha nova. `id` que não é faixa DESTA pessoa é 400 apontando o campo.
+     * @nullable
+     */
+  id?: string | null;
+  /**
+     * O grupo, ou `null` para a faixa GERAL. Id que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO` é 400 e não 404: o que está errado é o campo do corpo, não o recurso pedido.
+     * @nullable
+     */
+  productGroupId?: string | null;
+  operator: CommissionTierOperator;
+  discountPercent: number;
+  percent: number;
+  active: boolean;
+}
+
+/**
+ * Proposto. O perfil INTEIRO de uma pessoa — `PUT` substitui o conjunto. Faixa que não vier é faixa removida.
+ *
+ * Conjunto e não linha a linha porque a validação é do conjunto: a condição de uma faixa (grupo + operador + desconto) tem de ser única, e duas linhas com a MESMA condição e percentuais diferentes fazem o cálculo depender da ordem de leitura — o defeito que ninguém reproduz.
+ */
+export interface CommissionTiersWriteRequest {
+  /** As faixas, em qualquer ordem. Lista **vazia** apaga o perfil — a pessoa passa a participar sem percentual próprio, e é o estado de quem ainda não foi configurado. */
+  tiers: CommissionTierWriteRequest[];
+}
+
+/**
+ * `Ret_tipo` do legado, e o vocabulário sai de uma medição e não de um palpite: o legado faz `update … ParSV_serie='1' where Ret_tipo='PROJETO'` e `'2' where <> 'PROJETO'`, então são dois valores e a série do documento depende de qual.
+ *
+ * - `project` — a reserva de um projeto (`PROJETO`).
+ * - `standalone` — a avulsa, o resto.
+ */
+export type TechnicalReserveDtoKind = typeof TechnicalReserveDtoKind[keyof typeof TechnicalReserveDtoKind];
+
+
+export const TechnicalReserveDtoKind = {
+  project: 'project',
+  standalone: 'standalone',
+} as const;
+
+/**
+ * `Ret_situacao` do legado. Lançamento CANCELA, não desativa — `active` de cadastro não serve aqui, pela mesma razão de `QuoteDetailDto.status`.
+ */
+export type TechnicalReserveDtoStatus = typeof TechnicalReserveDtoStatus[keyof typeof TechnicalReserveDtoStatus];
+
+
+export const TechnicalReserveDtoStatus = {
+  active: 'active',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Proposto. Um LANÇAMENTO de Reserva Técnica — `Reserva_tecnica` do legado (1.212 linhas para 11.103 pedidos: nem toda participação vira pagamento).
+ *
+ * **RT é o que o profissional externo recebe pela indicação.** O documento guarda a participação; este lançamento é o momento em que ela vira valor apurado, com situação e tipo próprios — e é a partir dele que o fechamento gera título no contas a pagar.
+ *
+ * **O valor vem quebrado por NATUREZA e não num total só**, porque é assim que o legado apura (`Ret_tec_luminaria` / `_materiais` / `_servico` / `_total`): produto e serviço pagam por regras diferentes — as faixas por grupo só alcançam produto, e serviço cai no percentual geral. Um total único apagaria a distinção que decide o número.
+ */
+export interface TechnicalReserveDto {
+  id: string;
+  /** O pedido de venda que originou a reserva. */
+  orderId: string;
+  /** Número do pedido, resolvido pelo servidor — a tela mostra a origem sem uma segunda requisição. */
+  orderNumber: string;
+  /** O profissional externo — `PartnerDto.id` com papel `professional`. */
+  partnerId: string;
+  partnerName: string;
+  /**
+     * `Ret_tipo` do legado, e o vocabulário sai de uma medição e não de um palpite: o legado faz `update … ParSV_serie='1' where Ret_tipo='PROJETO'` e `'2' where <> 'PROJETO'`, então são dois valores e a série do documento depende de qual.
+     *
+     * - `project` — a reserva de um projeto (`PROJETO`).
+     * - `standalone` — a avulsa, o resto.
+     */
+  kind: TechnicalReserveDtoKind;
+  /** `Ret_situacao` do legado. Lançamento CANCELA, não desativa — `active` de cadastro não serve aqui, pela mesma razão de `QuoteDetailDto.status`. */
+  status: TechnicalReserveDtoStatus;
+  /** A parte da reserva que veio de PRODUTO, em centavos. **Calculada pelo servidor** — ver `TechnicalReserveWriteRequest`. */
+  productCents: number;
+  /** A parte que veio de SERVIÇO, em centavos. Calculada pelo servidor. */
+  serviceCents: number;
+  /** A soma das duas, em centavos. Vem calculada e NÃO é refeita na tela: percentual de 4 casas sobre centavos arredonda, e a conta refeita no cliente erra o último centavo em parte dos casos — mesmo argumento de `QuoteGroupDiscountDto.discountCents`. */
+  totalCents: number;
+  /** Data do lançamento. */
+  issuedAt: string;
+  /** @nullable */
+  note?: string | null;
+  /**
+     * Quando foi cancelado. `null` enquanto não for.
+     * @nullable
+     */
+  cancelledAt?: string | null;
+}
+
+export interface PagedResultOfTechnicalReserveDto {
+  rows: TechnicalReserveDto[];
+  total: number;
+}
+
+export type TechnicalReserveWriteRequestKind = typeof TechnicalReserveWriteRequestKind[keyof typeof TechnicalReserveWriteRequestKind];
+
+
+export const TechnicalReserveWriteRequestKind = {
+  project: 'project',
+  standalone: 'standalone',
+} as const;
+
+/**
+ * Proposto. Lança a Reserva Técnica de um profissional sobre um pedido.
+ *
+ * **O corpo NÃO tem valor, e a ausência é a decisão central deste trilho.** Quem calcula `productCents` e `serviceCents` é o SERVIDOR, sobre a participação congelada no documento, as linhas dele e a devolução já abatida. Valor vindo do corpo seria o cliente afirmando quanto o profissional ganha — a mesma família do percentual, e a mesma recusa.
+ *
+ * **É aqui que mora o "automático" do legado.** `Par_RTautomatico` liga o CÁLCULO da participação (o rótulo do checkbox é `Calcular Automaticamente a Part.`), não um carimbo no documento: `Ven_RtAutomatico` e `Ven_RtCalcular` são colunas órfãs, vazias em 34.136 linhas, sem editor em tela nenhuma e escritas por ninguém no corpus inteiro de SQL do executável. Não existe flag de "RT automática" para portar — o automático é propriedade do cálculo, e o cálculo é do servidor.
+ */
+export interface TechnicalReserveWriteRequest {
+  /** O pedido. Documento cancelado é 409 — venda desfeita não paga indicação. Pedido sem participação deste profissional é 409: não há o que reservar. */
+  orderId: string;
+  /** O profissional externo. Parceiro sem o papel `professional` é 400 apontando o campo. */
+  partnerId: string;
+  kind: TechnicalReserveWriteRequestKind;
+  /**
+     * Data do lançamento. Ausente = hoje.
+     * @nullable
+     */
+  issuedAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export type CommissionEarningRowDtoRole = typeof CommissionEarningRowDtoRole[keyof typeof CommissionEarningRowDtoRole];
+
+
+export const CommissionEarningRowDtoRole = {
+  attendant: 'attendant',
+  professional: 'professional',
+} as const;
+
+/**
+ * Proposto. O que UMA participação rendeu no período — a linha da apuração.
+ *
+ * **Os três números vêm juntos de propósito: base, percentual e valor.** Guardar os três é o que permite conferir a conta um ano depois sem reprocessar nada, e é exatamente o que o relatório do legado não tinha — lá se via o valor, e para saber de onde ele saiu era preciso refazer a consulta com os cadastros de hoje.
+ */
+export interface CommissionEarningRowDto {
+  orderId: string;
+  orderNumber: string;
+  /** A participação que rendeu — `OrderParticipantDto.id`. */
+  participantId: string;
+  role: CommissionEarningRowDtoRole;
+  /** @nullable */
+  employeeId?: string | null;
+  /** @nullable */
+  partnerId?: string | null;
+  /** Colaborador ou parceiro, o que houver. */
+  personName: string;
+  /** O desconto do DOCUMENTO que decidiu qual faixa casou. Vem na linha porque sem ele a apuração é um número sem explicação: é este valor que o `operator` da faixa comparou. */
+  orderDiscountPercent: number;
+  /** A base sobre a qual o percentual incidiu, em centavos — produto e serviço do MESMO documento, com devolução já abatida. **Devolução reduz a base**: o legado desconta `DevolucaoProduto` por grupo antes de apurar (`FrmRT.Qrydevolucao`), e fechamento que a ignorasse pagaria a mais. */
+  baseCents: number;
+  /** O percentual aplicado, escala de 4 casas. É o da FAIXA que casou, quando casou alguma; o geral da participação, quando não. */
+  percent: number;
+  /** O ganho, em centavos. */
+  amountCents: number;
+}
+
+/**
+ * Os totais do período inteiro — não da página. Somar as linhas da página daria o total de 20 registros com cara de total do mês.
+ */
+export interface CommissionEarningsSummaryDto {
+  amountCents: number;
+  participationCount: number;
+  /** Quantos DOCUMENTOS distintos entraram na conta — não é a soma das participações, porque um documento paga várias pessoas. */
+  orderCount: number;
+}
+
+/**
+ * Proposto. A apuração de um período: o que cada pessoa ganhou, calculado NO SERVIDOR sobre documento fechado.
+ *
+ * **É consulta e não fechamento: nada aqui grava.** Ver a apuração antes de fechar é o gesto normal, e ele não pode ter efeito — no legado, quem só queria conferir acabava criando lançamento.
+ *
+ * **Tudo o que entra na conta sai de linha gravada** — base, percentual, faixa e desconto. Quem chama escolhe o PERÍODO, e só.
+ */
+export interface CommissionEarningsReportDto {
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  summary: CommissionEarningsSummaryDto;
+  rows: CommissionEarningRowDto[];
+}
+
+/**
+ * `Situacao` do legado.
+ *
+ * - `open` — criado e ainda em conferência.
+ * - `closed` — fechado; `closedAt` preenchido. **Fechado sem data de fechamento é estado que não existe no mundo**, e o servidor não o produz.
+ */
+export type CommissionClosingDtoStatus = typeof CommissionClosingDtoStatus[keyof typeof CommissionClosingDtoStatus];
+
+
+export const CommissionClosingDtoStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+/**
+ * Proposto. O FECHAMENTO de um período — `FechamentoComissao(MesAno, dataInicial, dataFinal, Situacao, ContaUnica)` do legado.
+ *
+ * Fechar é o passo em que participação apurada vira dinheiro: cada linha do fechamento é um título a pagar. Por isso o período fechado é PASSADO — não se reabre, não se reescreve, e correção se faz com fechamento novo.
+ */
+export interface CommissionClosingDto {
+  id: string;
+  /** Primeiro dia, inclusive. */
+  periodStart: string;
+  /** Último dia, inclusive. */
+  periodEnd: string;
+  /**
+     * `Situacao` do legado.
+     *
+     * - `open` — criado e ainda em conferência.
+     * - `closed` — fechado; `closedAt` preenchido. **Fechado sem data de fechamento é estado que não existe no mundo**, e o servidor não o produz.
+     */
+  status: CommissionClosingDtoStatus;
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  closedByEmployeeId?: string | null;
+  /** @nullable */
+  closedByEmployeeName?: string | null;
+  /** Quantas linhas o fechamento gerou. Zero não acontece — período sem ganho não vira fechamento (ver `CommissionClosingResultDto`). */
+  entryCount: number;
+  /** A soma das linhas, em centavos. */
+  totalCents: number;
+}
+
+export interface PagedResultOfCommissionClosingDto {
+  rows: CommissionClosingDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Fecha um período.
+ *
+ * **Não há corpo além das datas — nem lista de quem pagar, nem valores.** O que se paga é o que a apuração devolve, e a apuração sai de linha gravada. Um corpo com pessoas e valores seria o cliente escolhendo quem recebe quanto.
+ */
+export interface CommissionClosingWriteRequest {
+  /** Primeiro dia, inclusive. Recorte por DIA e não por instante: quem pede agosto quer o dia 31 inteiro. */
+  periodStart: string;
+  /** Último dia, inclusive. Anterior a `periodStart` é 400 apontando o campo. */
+  periodEnd: string;
+}
+
+/**
+ * - `closed` — o período fechou; `closing` traz o fechamento gravado.
+ * - `nothing-to-close` — não havia ganho no período. Nada foi gravado e `closing` é `null`.
+ */
+export type CommissionClosingResultDtoOutcome = typeof CommissionClosingResultDtoOutcome[keyof typeof CommissionClosingResultDtoOutcome];
+
+
+export const CommissionClosingResultDtoOutcome = {
+  closed: 'closed',
+  'nothing-to-close': 'nothing-to-close',
+} as const;
+
+/**
+ * Proposto. O que o fechamento fez — e ele tem DOIS desfechos bem-sucedidos, não um.
+ *
+ * **`nothing-to-close` não é erro, e essa é a decisão que o desenho carrega.** Período sem ganho é o mês parado, não pedido inválido: responder 4xx faria a tela mostrar erro para uma operação que funcionou. E criar um fechamento VAZIO seria pior — travaria o período para quando o lançamento atrasado entrasse, e o lançamento atrasado é o caso comum de quem fecha comissão.
+ *
+ * O desfecho viaja em `outcome`, campo próprio, porque aqui não é erro: o discriminador em `type` é a regra do `ProblemDetails`, e resposta de sucesso não tem `ProblemDetails`.
+ */
+export interface CommissionClosingResultDto {
+  /**
+     * - `closed` — o período fechou; `closing` traz o fechamento gravado.
+     * - `nothing-to-close` — não havia ganho no período. Nada foi gravado e `closing` é `null`.
+     */
+  outcome: CommissionClosingResultDtoOutcome;
+  /** O fechamento gravado, ou `null` em `nothing-to-close`. */
+  closing?: CommissionClosingDto | null;
+}
+
+/**
+ * QUAL fato gerou este pagamento. Com `sourceId`, forma a chave que o refechamento reconhece — a chave natural do legado transportada: lá o par era (tipo de documento RESERVADO do sistema, id do lançamento), o título de RT sendo `contas_apagar` com `Tpd_codigo = 1004` e `Ctp_cod_documento = Reserva_tecnica.Ret_codigo`. Os tipos 1001–1007 são reservados e a lista escolhível pelo usuário os exclui.
+ *
+ * - `order` — a participação num pedido de venda.
+ * - `technical-reserve` — um lançamento de Reserva Técnica.
+ */
+export type CommissionClosingEntryDtoSourceType = typeof CommissionClosingEntryDtoSourceType[keyof typeof CommissionClosingEntryDtoSourceType];
+
+
+export const CommissionClosingEntryDtoSourceType = {
+  order: 'order',
+  'technical-reserve': 'technical-reserve',
+} as const;
+
+/**
+ * Proposto. Uma LINHA do fechamento — o que uma pessoa recebeu por um fato.
+ *
+ * **Append-only.** Linha de fechamento é o registro de que alguém foi pago; ela não se edita nem se apaga, e correção se faz com fechamento novo. Mesmo regime do `audit_log`.
+ *
+ * **Ganho zero não vira linha** — o participante sem comissão (o atendente que responde pela venda e não ganha por ela) apareceria como título de R$ 0,00 no contas a pagar.
+ */
+export interface CommissionClosingEntryDto {
+  id: string;
+  /** @nullable */
+  employeeId?: string | null;
+  /** @nullable */
+  partnerId?: string | null;
+  personName: string;
+  /**
+     * QUAL fato gerou este pagamento. Com `sourceId`, forma a chave que o refechamento reconhece — a chave natural do legado transportada: lá o par era (tipo de documento RESERVADO do sistema, id do lançamento), o título de RT sendo `contas_apagar` com `Tpd_codigo = 1004` e `Ctp_cod_documento = Reserva_tecnica.Ret_codigo`. Os tipos 1001–1007 são reservados e a lista escolhível pelo usuário os exclui.
+     *
+     * - `order` — a participação num pedido de venda.
+     * - `technical-reserve` — um lançamento de Reserva Técnica.
+     */
+  sourceType: CommissionClosingEntryDtoSourceType;
+  sourceId: string;
+  /**
+     * O número do documento de origem, resolvido pelo servidor — o que a tela mostra.
+     * @nullable
+     */
+  sourceNumber?: string | null;
+  baseCents: number;
+  percent: number;
+  amountCents: number;
+}
+
+export interface PagedResultOfCommissionClosingEntryDto {
+  rows: CommissionClosingEntryDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -6549,6 +7119,136 @@ q?: string;
 supplierId?: string;
 /**
  * Whitelist: `name`, `supplierName`, `active`, `createdAt`. Campo fora dela é 400 `ordenacao-invalida`.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListOrderParticipantsParams = {
+/**
+ * Whitelist: `personName`, `role`, `percent`, `isPrincipal`. Campo fora dela é 400.
+ *
+ * Não se ordena por faixa: ela é linha de dentro da participação, e ordenar o conjunto por um campo do filho é ordenar por qual dos N.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListEmployeeCommissionTiersParams = {
+/**
+ * Whitelist: `productGroupName`, `discountPercent`, `percent`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListPartnerCommissionTiersParams = {
+/**
+ * Whitelist: `productGroupName`, `discountPercent`, `percent`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListTechnicalReservesParams = {
+/**
+ * Só as reservas deste pedido.
+ */
+orderId?: string;
+/**
+ * Só as deste profissional.
+ */
+partnerId?: string;
+/**
+ * `active` ou `cancelled`. Ausente = as duas — cancelada continua legível, como todo documento encerrado deste contrato.
+ */
+status?: ListTechnicalReservesStatus;
+/**
+ * Primeiro dia de `issuedAt`, inclusive.
+ */
+from?: string;
+/**
+ * Último dia de `issuedAt`, inclusive.
+ */
+to?: string;
+/**
+ * Whitelist: `issuedAt`, `partnerName`, `orderNumber`, `totalCents`, `status`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListTechnicalReservesStatus = typeof ListTechnicalReservesStatus[keyof typeof ListTechnicalReservesStatus];
+
+
+export const ListTechnicalReservesStatus = {
+  active: 'active',
+  cancelled: 'cancelled',
+} as const;
+
+export type GetCommissionEarningsParams = {
+/**
+ * Primeiro DIA do período, inclusive. Obrigatório: apuração sem recorte responde outra pergunta e cresce para sempre.
+ */
+from: string;
+/**
+ * Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.
+ */
+to: string;
+/**
+ * `attendant` ou `professional`. Ausente = os dois.
+ */
+role?: GetCommissionEarningsRole;
+/**
+ * Só o ganho deste colaborador.
+ */
+employeeId?: string;
+/**
+ * Só o ganho deste profissional externo.
+ */
+partnerId?: string;
+/**
+ * Whitelist: `amountCents`, `personName`, `orderNumber`, `baseCents`, `percent`. Campo fora dela é 400.
+ *
+ * Padrão: `amountCents`, decrescente — a pergunta que a tela faz primeiro é quem ganhou mais.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type GetCommissionEarningsRole = typeof GetCommissionEarningsRole[keyof typeof GetCommissionEarningsRole];
+
+
+export const GetCommissionEarningsRole = {
+  attendant: 'attendant',
+  professional: 'professional',
+} as const;
+
+export type ListCommissionClosingsParams = {
+/**
+ * Whitelist: `periodStart`, `periodEnd`, `status`, `closedAt`, `totalCents`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListCommissionClosingEntriesParams = {
+/**
+ * Whitelist: `personName`, `amountCents`, `baseCents`, `sourceNumber`. Campo fora dela é 400.
  */
 sortBy?: string;
 sortDesc?: boolean;

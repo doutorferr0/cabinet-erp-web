@@ -46,6 +46,37 @@ const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...h
  * Entrada nova aqui exige a medição junto, no comentário.
  */
 const FORA_DE_PROPOSITO: readonly string[] = [
+  // AS TREZE DE COMISSÕES (G8, api#118) — e aqui NÃO é a razão dos depósitos nem
+  // a do 501 puro: é a terceira, e vale escrita porque é a primeira vez que ela
+  // aparece. **O módulo do api EXISTE e não tem porta.**
+  //
+  // Medido em 2026-08-24 contra `cabinet-erp-api` main `844b360`: a migração
+  // `0044_participacao_e_comissao.sql` está aplicada (seis tabelas —
+  // `commission_tiers`, `order_participants`, `order_participant_tiers`,
+  // `technical_reserves`, `commission_closings`, `commission_closing_entries`,
+  // todas com RLS forçada) e `src/modules/comissoes/` tem os quatro arquivos do
+  // cálculo (`participacao`, `faixas`, `apuracao`, `fechamento`). O que não
+  // existe é `rotas.ts`: nenhum `operationId` desta família está no mapa de
+  // `servidor.ts`, então TODAS respondem 501 — o próprio `fechamento.ts` diz por
+  // escrito que "quem traduz para Problem Details é o handler, no dia em que o
+  // contrato publicar a rota".
+  //
+  // Este PR é esse dia. A família sai daqui INTEIRA, quando a Fase B ligar os
+  // handlers — meia família põe id do servidor de um lado e id inventado do
+  // outro, e a apuração é justamente onde os dois lados têm de ser o mesmo.
+  'get /api/orders/{id}/participants',
+  'put /api/orders/{id}/participants',
+  'get /api/employees/{id}/commission-tiers',
+  'put /api/employees/{id}/commission-tiers',
+  'get /api/partners/{id}/commission-tiers',
+  'put /api/partners/{id}/commission-tiers',
+  'get /api/technical-reserves',
+  'post /api/technical-reserves',
+  'post /api/technical-reserves/{id}/cancel',
+  'get /api/commissions/earnings',
+  'get /api/commissions/closings',
+  'post /api/commissions/closings',
+  'get /api/commissions/closings/{id}/entries',
   'get /api/permissions',
   'get /api/roles',
   'post /api/roles',

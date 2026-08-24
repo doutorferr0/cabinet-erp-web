@@ -216,6 +216,23 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'orçamento × estoque ainda não tem tela — a seção Relatórios é a Fase C do trilho',
   GetBirthdaysReport:
     'aniversariantes do mês ainda não tem tela — a seção Relatórios é a Fase C do trilho',
+  // AS SETE LISTAGENS DE COMISSÕES (G8) — a aba Participação da venda, a consulta de
+  // ganhos e a tela de fechamento são a Fase C deste trilho, e nascem depois do
+  // servidor pela razão que o módulo inteiro tem: apuração sobre dado mockado mostra
+  // dinheiro inventado com cara de conta fechada, que é pior do que não mostrar nada.
+  // Cada uma sai daqui quando ganhar a tela, com `ORDENAVEIS` próprio.
+  ListOrderParticipants:
+    'a aba Participação do pedido ainda não existe — a grade é Fase C do trilho de comissões',
+  ListEmployeeCommissionTiers:
+    'o perfil de comissão do colaborador ainda não tem aba — o cadastro de colaborador é provider de mock',
+  ListPartnerCommissionTiers:
+    'o perfil de participação do profissional ainda não tem aba — a tela do parceiro é Fase C do trilho',
+  ListTechnicalReserves: 'a Reserva Técnica ainda não tem tela — Fase C do trilho de comissões',
+  GetCommissionEarnings: 'a consulta de ganhos ainda não tem tela — Fase C do trilho de comissões',
+  ListCommissionClosings:
+    'o fechamento de comissão ainda não tem tela — Fase C do trilho de comissões',
+  ListCommissionClosingEntries:
+    'as linhas do fechamento são sub-recurso e nascem sem tela, junto com o fechamento',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -321,6 +338,24 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
   ListOrderProfessionalHistory:
     'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
+  // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
+  // do 501: a apuração soma sobre o PEDIDO DE VENDA, que o mock não guarda.
+  // Reimplementá-la aqui inventaria dinheiro — um número com cara de conta
+  // fechada, calculado sobre documento que não existe. As três primeiras são
+  // sub-recurso de pedido/pessoa e casariam id inventado com id de servidor;
+  // as quatro últimas não têm sobre o que somar.
+  ListOrderParticipants:
+    'sub-recurso do pedido de venda, que não tem handler no mock — participação sem o documento dono casaria id inventado com id de servidor',
+  ListEmployeeCommissionTiers:
+    'perfil de comissão é sub-recurso do colaborador, e a lista de pessoas do mock diverge da do servidor (a costura já declarada em `cobertura-do-colaborador`)',
+  ListPartnerCommissionTiers:
+    'perfil de participação é sub-recurso do parceiro, cuja família JÁ passa pelo backend — mockar só o filho partiria a família',
+  ListTechnicalReserves: 'a Reserva Técnica nasce de um pedido de venda, que o mock não guarda',
+  GetCommissionEarnings:
+    'a apuração AGREGA sobre pedido de venda — mesma razão que manteve os dez relatórios de venda fora: somar aqui reimplementaria em TypeScript o que o Postgres faz do outro lado, e sobre dado que não existe',
+  ListCommissionClosings: 'fechamento é consequência da apuração, que o mock não tem como calcular',
+  ListCommissionClosingEntries:
+    'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
 }
 
 /**

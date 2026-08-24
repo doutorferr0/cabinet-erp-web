@@ -119,6 +119,11 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:item-ja-em-ordem': 'Item já está em uma ordem',
   'urn:cabinet:erro:ordem-ja-enviada': 'Ordem já enviada',
   'urn:cabinet:erro:fornecedor-divergente': 'Fornecedor divergente',
+  'urn:cabinet:erro:periodo-ja-fechado': 'Período já fechado',
+  'urn:cabinet:erro:origem-ja-paga': 'Origem já paga',
+  'urn:cabinet:erro:participante-ja-apurado': 'Participação já apurada',
+  'urn:cabinet:erro:profissional-exige-transferencia': 'Troca de profissional exige transferência',
+  'urn:cabinet:erro:reserva-ja-lancada': 'Reserva técnica já lançada',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }

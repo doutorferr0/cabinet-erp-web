@@ -8939,6 +8939,1054 @@
           }
         }
       }
+    },
+    "/api/orders/{id}/participants": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "ListOrderParticipants",
+        "description": "Proposto. **Quem participa deste pedido** — atendentes e profissionais, com o percentual e as faixas CONGELADOS nele.\n\nÉ sub-recurso e não campo do documento porque a participação tem vida própria depois da emissão: ela é transferida (`POST .../professional`), congela cadastro que muda depois, e é a origem do que a apuração paga. Ler tudo junto no `GET` do pedido faria a tela de venda carregar dinheiro de comissão em toda abertura.\n\n**A grade da aba Participação chega em uma requisição**, com as faixas embutidas em cada linha — ver `OrderParticipantDto.tiers`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `personName`, `role`, `percent`, `isPrincipal`. Campo fora dela é 400.\n\nNão se ordena por faixa: ela é linha de dentro da participação, e ordenar o conjunto por um campo do filho é ordenar por qual dos N.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderParticipantDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é pedido da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["comissoes"],
+        "operationId": "ReplaceOrderParticipants",
+        "description": "Proposto. Substitui a grade de participação INTEIRA. Linha que não vier no corpo é linha removida.\n\n**Papel: `admin` ou superior, e é INTERINO** — mesma linha de corte de `/api/payment-terms`. Quem edita participação decide quanto sai do caixa da empresa para quem indicou a venda, e o erro só aparece no fechamento, quando o título já nasceu. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.\n\n**O que o servidor faz com cada linha, e é a regra do congelamento:**\n\n- linha COM `id` conhecido — mesma participação: as faixas já congeladas nela FICAM, e muda só o que este corpo traz;\n- linha SEM `id` — nova: o servidor copia para dentro dela as faixas do PERFIL da pessoa (`/api/employees/{id}/commission-tiers` ou `/api/partners/{id}/commission-tiers`) como elas estão HOJE, e daí em diante elas são deste documento;\n- linha ausente — removida, com as faixas dela.\n\nA cópia é atômica com a criação da linha: perfil que mude no meio da gravação não deixa o documento com metade de cada versão.\n\n---\n\n**As recusas, e nenhuma apara em silêncio** (400 com `fields[]` apontando `participants.<n>.<campo>`):\n\n1. `role` sem a pessoa dele, ou com as duas (`employeeId` **e** `partnerId`). Participação que a apuração não sabe pagar.\n2. `partnerId` de parceiro **sem o papel `professional`** — mesma recusa de `TransferProfessionalRequest`.\n3. Duas linhas do MESMO papel com `isPrincipal: true`. Dois principais não significam nada; a recusa é mais restrita que o legado nos dois papéis, de propósito, e o risco que ela cria é de ETL — documento antigo com dois `Principal = 1` bate aqui.\n4. A mesma pessoa duas vezes no mesmo papel.\n5. `percent` fora de `0`–`1000000`.\n6. `id` que não é participação DESTE pedido.\n\n**Não há recusa por SOMA dos percentuais, e a ausência é medida e não esquecimento:** o legado não tem essa restrição em `VendaAtendente` nem em `VendaIndicacao` — `Porcentagem` é coluna por linha, sem `CHECK` de conjunto —, e três atendentes com 100% cada é dado que existe lá. Fixar um teto aqui recusaria dado real na importação. Fica declarado como PONTO ABERTO: o caso real conferido do trilho responde se a soma tem significado, e se tiver, a regra entra por PR neste contrato.\n\n**409 quando a grade tenta trocar o profissional PRINCIPAL** (`urn:cabinet:erro:profissional-exige-transferencia`): essa troca tem data e justificativa, e quem a faz é `POST /api/orders/{id}/professional`. Acrescentar, remover ou mudar o percentual de profissional NÃO principal passa por aqui normalmente.\n\n**409 quando a linha já virou dinheiro** (`urn:cabinet:erro:participante-ja-apurado`): participação com linha de fechamento não se remove nem muda de percentual pelo documento. O que já foi pago se corrige com fechamento novo.\n\n**409 no pedido cancelado** (`urn:cabinet:erro:transicao-invalida`): documento encerrado não muda de participação.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderParticipantsWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderParticipantDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é pedido da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — QUATRO causas, distinguidas pelo `type` e nunca pelo texto: `urn:cabinet:erro:sem-empresa-ativa`, `urn:cabinet:erro:profissional-exige-transferencia`, `urn:cabinet:erro:participante-ja-apurado` e `urn:cabinet:erro:transicao-invalida`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/employees/{id}/commission-tiers": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "ListEmployeeCommissionTiers",
+        "description": "Proposto. O PERFIL de faixas de um COLABORADOR — a comissão.\n\nÉ o cadastro que diz quanto a pessoa COSTUMA ganhar. O que ela ganhou num documento está congelado lá, e não aqui — ver `OrderParticipantTierDto`.\n\n**A faixa GERAL é a linha de `productGroupId` nulo**, e é ela que vira o percentual do participante quando a pessoa entra num documento. Perfil sem nenhuma faixa é lista vazia, e significa \"ainda não configurado\": a pessoa participa e a apuração não acha percentual.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `productGroupName`, `discountPercent`, `percent`, `active`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCommissionTierDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é colaborador da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["comissoes"],
+        "operationId": "ReplaceEmployeeCommissionTiers",
+        "description": "Proposto. Substitui o perfil de faixas de um colaborador INTEIRO. Faixa que não vier é faixa removida.\n\n**Papel: `admin` ou superior, e é INTERINO** — pelo motivo de `ReplaceOrderParticipants`: é o número que decide quanto sai do caixa.\n\n**Mudar o perfil NÃO reescreve documento já gravado.** Cada participação carrega a cópia das faixas que valiam quando ela nasceu; o que muda aqui vale da PRÓXIMA participação em diante. É o que o legado faz ao copiar `IndicacaoGrupProd` para `VendaIndicacaoGrupProd` — e a razão de a segunda ter 30× as linhas da primeira. A alternativa (ler o perfil na hora de apurar) faria o relatório do mês passado mudar de valor sozinho.\n\n**O desconto que reduz o ganho do colaborador é o mesmo mecanismo, e o legado o escreve por extenso:** `Venda.Ven_DescGanhoVenda` é preenchida a partir de `Ven_DescontoPorc` (`update venda set Ven_DescGanhoVenda = Ven_DescontoPorc …`). É o análogo interno da faixa do profissional — quanto mais desconto, menor o ganho.\n\n---\n\n**As recusas** (400 com `fields[]` apontando `tiers.<n>.<campo>`):\n\n1. Duas faixas com a MESMA condição — mesmo `productGroupId` (nulo inclusive), mesmo `operator` e mesmo `discountPercent`. Condição repetida com percentuais diferentes faz o cálculo depender da ordem de leitura, que é o defeito que ninguém reproduz.\n2. `productGroupId` que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO`. Id de outro `kind` é 400 e não 404: o que está errado é o campo do corpo.\n3. `percent` ou `discountPercent` fora de `0`–`1000000`.\n4. `id` que não é faixa DESTA pessoa.\n\n`operator` fora do vocabulário é barrado pelo schema, antes do handler — é o que o vocabulário fechado existe para fazer.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommissionTiersWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCommissionTierDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é colaborador da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `urn:cabinet:erro:sem-empresa-ativa` quando a sessão não tem empresa escolhida. Toda escrita de `/api/` responde isso antes de olhar o corpo.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/partners/{id}/commission-tiers": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "ListPartnerCommissionTiers",
+        "description": "Proposto. O PERFIL de faixas de um PROFISSIONAL EXTERNO — a participação/Reserva Técnica.\n\nÉ o cadastro que diz quanto a pessoa COSTUMA ganhar. O que ela ganhou num documento está congelado lá, e não aqui — ver `OrderParticipantTierDto`.\n\n**A faixa GERAL é a linha de `productGroupId` nulo**, e é ela que vira o percentual do participante quando a pessoa entra num documento. Perfil sem nenhuma faixa é lista vazia, e significa \"ainda não configurado\": a pessoa participa e a apuração não acha percentual.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `productGroupName`, `discountPercent`, `percent`, `active`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCommissionTierDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é parceiro da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["comissoes"],
+        "operationId": "ReplacePartnerCommissionTiers",
+        "description": "Proposto. Substitui o perfil de faixas de um profissional externo INTEIRO. Faixa que não vier é faixa removida.\n\n**Papel: `admin` ou superior, e é INTERINO** — pelo motivo de `ReplaceOrderParticipants`: é o número que decide quanto sai do caixa.\n\n**Mudar o perfil NÃO reescreve documento já gravado.** Cada participação carrega a cópia das faixas que valiam quando ela nasceu; o que muda aqui vale da PRÓXIMA participação em diante. É o que o legado faz ao copiar `IndicacaoGrupProd` para `VendaIndicacaoGrupProd` — e a razão de a segunda ter 30× as linhas da primeira. A alternativa (ler o perfil na hora de apurar) faria o relatório do mês passado mudar de valor sozinho.\n\n**Parceiro sem o papel `professional` é 400**: perfil de participação só existe para quem indica venda.\n\n---\n\n**As recusas** (400 com `fields[]` apontando `tiers.<n>.<campo>`):\n\n1. Duas faixas com a MESMA condição — mesmo `productGroupId` (nulo inclusive), mesmo `operator` e mesmo `discountPercent`. Condição repetida com percentuais diferentes faz o cálculo depender da ordem de leitura, que é o defeito que ninguém reproduz.\n2. `productGroupId` que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO`. Id de outro `kind` é 400 e não 404: o que está errado é o campo do corpo.\n3. `percent` ou `discountPercent` fora de `0`–`1000000`.\n4. `id` que não é faixa DESTA pessoa.\n\n`operator` fora do vocabulário é barrado pelo schema, antes do handler — é o que o vocabulário fechado existe para fazer.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommissionTiersWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCommissionTierDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é parceiro da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `urn:cabinet:erro:sem-empresa-ativa` quando a sessão não tem empresa escolhida. Toda escrita de `/api/` responde isso antes de olhar o corpo.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technical-reserves": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "ListTechnicalReserves",
+        "description": "Proposto. Os lançamentos de Reserva Técnica da empresa ativa — `Reserva_tecnica` do legado.\n\n**Não publica `filters` de propósito**, pela razão de `/api/stock-locations`: os recortes que a tela precisa (pedido, profissional, situação) já são parâmetros nomeados, e o filtro estruturado aqui seria parâmetro sem consumidor, cobrando whitelist dos dois lados.",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "query",
+            "description": "Só as reservas deste pedido.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "partnerId",
+            "in": "query",
+            "description": "Só as deste profissional.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`active` ou `cancelled`. Ausente = as duas — cancelada continua legível, como todo documento encerrado deste contrato.",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "cancelled"]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Primeiro dia de `issuedAt`, inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Último dia de `issuedAt`, inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `issuedAt`, `partnerName`, `orderNumber`, `totalCents`, `status`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfTechnicalReserveDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["comissoes"],
+        "operationId": "CreateTechnicalReserve",
+        "description": "Proposto. Lança a Reserva Técnica de um profissional sobre um pedido — e o VALOR é do servidor.\n\n**Papel: `admin` ou superior, e é INTERINO** — pelo motivo de `ReplaceOrderParticipants`.\n\nO servidor apura sobre a participação CONGELADA no documento: a faixa cujo `operator` casa com o desconto do pedido decide o percentual por grupo, o percentual geral vale para o resto e para serviço, e a devolução é abatida da base antes da conta (`FrmRT.Qrydevolucao` desconta `DevolucaoProduto` por grupo — fechamento que a ignorasse pagaria a mais). O resultado sai quebrado em `productCents` e `serviceCents`, como o legado quebra em `Ret_tec_luminaria`/`_materiais`/`_servico`.\n\n**Recusas:**\n\n- pedido cancelado é 409 (`urn:cabinet:erro:transicao-invalida`) — venda desfeita não paga indicação;\n- pedido SEM participação deste profissional é 409 (`urn:cabinet:erro:transicao-invalida`): não há sobre o que apurar, e inventar uma participação aqui seria pagar quem o documento não diz que indicou;\n- parceiro sem o papel `professional` é 400 apontando o campo;\n- o par (pedido, profissional) já com reserva ATIVA é 409 (`urn:cabinet:erro:reserva-ja-lancada`) — lançar de novo duplicaria o que o fechamento vai pagar.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicalReserveWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalReserveDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — `orderId` ou `partnerId` não é da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — TRÊS causas, distinguidas pelo `type`: `urn:cabinet:erro:sem-empresa-ativa`, `urn:cabinet:erro:transicao-invalida` e `urn:cabinet:erro:reserva-ja-lancada`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technical-reserves/{id}/cancel": {
+      "post": {
+        "tags": ["comissoes"],
+        "operationId": "CancelTechnicalReserve",
+        "description": "Proposto. Cancela um lançamento de Reserva Técnica.\n\n**Cancela, não apaga** — `Ret_situacao` do legado, e a mesma regra do documento de venda: o que existiu continua legível.\n\n**409 quando a reserva já virou linha de fechamento** (`urn:cabinet:erro:participante-ja-apurado`): cancelar o que já foi pago deixaria um título no contas a pagar sem origem. A correção é fechamento novo.\n\nReserva já cancelada é 409 (`urn:cabinet:erro:transicao-invalida`) — cancelar duas vezes não é idempotência, é sinal de que quem pediu está vendo outra tela.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalReserveDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é reserva da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — TRÊS causas, distinguidas pelo `type`: `urn:cabinet:erro:sem-empresa-ativa`, `urn:cabinet:erro:participante-ja-apurado` e `urn:cabinet:erro:transicao-invalida`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commissions/earnings": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "GetCommissionEarnings",
+        "description": "Proposto. **A APURAÇÃO** — o que cada pessoa ganhou no período, calculado no servidor sobre documento fechado. É consulta: nada aqui grava.\n\n**O eixo do período é a CONCLUSÃO do projeto, e não a data de fechamento da venda.** A função do legado que responde esta pergunta (`VendaAnoAtendente`, `rotinas.sql:2253`) recorta por `Ven_DataConclusao`; `Ven_DataFechaVenda` é outra coisa. Trocar os dois mudaria de mês o ganho de todo projeto longo.\n\n**A devolução entra pela competência de CAIXA**, também medido no legado: ela abate a base no mês em que o dinheiro voltou, não no da venda.\n\n**A fórmula do legado NÃO foi portada, e a decisão está documentada:** `Emp_Codigo = 1` está FIXO no código de lá (defeito, não regra — aqui a empresa é a da sessão), o eixo `@Desconto='N'` nunca chegou a ser implementado, e o guard `IF @VLProjeto = NULL` está quebrado em SEIS funções (`= NULL` nunca é verdadeiro com `ANSI_NULLS ON`), devolvendo `NULL` onde deveria devolver zero. O que foi portado é o EIXO e a base, não a aritmética.\n\n**Publica paginação porque a lista é por PARTICIPAÇÃO** — um mês com 300 pedidos e dois participantes cada dá 600 linhas —, e `summary` traz os totais do período INTEIRO, não os da página: somar a página daria o total de 20 registros com cara de total do mês.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "Primeiro DIA do período, inclusive. Obrigatório: apuração sem recorte responde outra pergunta e cresce para sempre.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "description": "Último DIA do período, inclusive. O recorte é por DIA e não por instante: quem pergunta por agosto quer o dia 31 inteiro.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "description": "`attendant` ou `professional`. Ausente = os dois.",
+            "schema": {
+              "type": "string",
+              "enum": ["attendant", "professional"]
+            }
+          },
+          {
+            "name": "employeeId",
+            "in": "query",
+            "description": "Só o ganho deste colaborador.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "partnerId",
+            "in": "query",
+            "description": "Só o ganho deste profissional externo.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `amountCents`, `personName`, `orderNumber`, `baseCents`, `percent`. Campo fora dela é 400.\n\nPadrão: `amountCents`, decrescente — a pergunta que a tela faz primeiro é quem ganhou mais.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommissionEarningsReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/commissions/closings": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "ListCommissionClosings",
+        "description": "Proposto. Os fechamentos de comissão da empresa ativa — `FechamentoComissao` do legado.\n\n**Um fechamento por período**, e a listagem é o que a tela consulta antes de fechar outro: período que já tem fechamento recusa em 409, e ver a lista evita o gesto.",
+        "parameters": [
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `periodStart`, `periodEnd`, `status`, `closedAt`, `totalCents`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCommissionClosingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["comissoes"],
+        "operationId": "CreateCommissionClosing",
+        "description": "Proposto. **FECHA o período** — o passo em que participação apurada vira dinheiro.\n\n**Papel: `admin` ou superior, e é INTERINO** — este é o gesto que gera título no contas a pagar. Vira permissão nomeada quando o modelo por AÇÃO (api#84) entregar.\n\n**A idempotência é do BANCO, e a chave é a do legado.** Cada linha gravada carrega o par (`sourceType`, `sourceId`) — o mesmo papel do par (tipo de documento RESERVADO, id do lançamento) que o Softlux usa em `contas_apagar` com `Tpd_codigo = 1004` e `Ctp_cod_documento = Reserva_tecnica.Ret_codigo`. A unicidade **não inclui o fechamento**, de propósito: fosse por fechamento, refechar o mesmo mês com datas um dia diferentes pagaria tudo de novo e cada duplicata seria legítima. Conferir antes de inserir não resolveria — entre a consulta e a gravação cabe outro pedido; quem responde é a chave.\n\n**Dois desfechos bem-sucedidos, e nenhum é erro** — ver `CommissionClosingResultDto`. Período sem ganho responde `nothing-to-close` e **não grava**: fechamento vazio travaria o período para quando o lançamento atrasado entrasse.\n\n**Recusas:**\n\n- período que já tem fechamento é 409 (`urn:cabinet:erro:periodo-ja-fechado`), com o `detail` dizendo quando fechou;\n- alguma origem do período JÁ paga em outro fechamento é 409 (`urn:cabinet:erro:origem-ja-paga`), e **nada é gravado** — a transação inteira volta. `detail` diz qual origem, porque a saída é ajustar o período, não insistir;\n- `periodEnd` anterior a `periodStart` é 400 apontando o campo.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommissionClosingWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommissionClosingResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — TRÊS causas, distinguidas pelo `type` e nunca pelo texto: `urn:cabinet:erro:sem-empresa-ativa`, `urn:cabinet:erro:periodo-ja-fechado` e `urn:cabinet:erro:origem-ja-paga`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/commissions/closings/{id}/entries": {
+      "get": {
+        "tags": ["comissoes"],
+        "operationId": "ListCommissionClosingEntries",
+        "description": "Proposto. As LINHAS de um fechamento — quem recebeu, por qual fato, sobre qual base.\n\n**Append-only e imutáveis**: não há escrita nesta coleção, aqui nem em lugar nenhum. Linha de fechamento é o registro de que alguém foi pago, e correção se faz com fechamento novo — mesmo regime do `audit_log`.\n\nÉ sub-recurso e não campo do fechamento porque a coleção é grande: um mês de operação real tem centenas de linhas, e a listagem de fechamentos carregaria todas elas a cada abertura da tela.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `personName`, `amountCents`, `baseCents`, `sourceNumber`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCommissionClosingEntryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o `id` não é fechamento da empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9961,7 +11009,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -9995,6 +11043,11 @@
           "urn:cabinet:erro:item-ja-em-ordem",
           "urn:cabinet:erro:ordem-ja-enviada",
           "urn:cabinet:erro:fornecedor-divergente",
+          "urn:cabinet:erro:periodo-ja-fechado",
+          "urn:cabinet:erro:origem-ja-paga",
+          "urn:cabinet:erro:participante-ja-apurado",
+          "urn:cabinet:erro:profissional-exige-transferencia",
+          "urn:cabinet:erro:reserva-ja-lancada",
           "urn:cabinet:erro:nao-implementado",
           "urn:cabinet:erro:resposta-nao-json"
         ]
@@ -16286,6 +17339,691 @@
             "description": "Sempre `true` neste trilho, e o campo existe para a tela poder DIZER isso ao operador em vez de deixá-lo somar um custo incompleto sem saber. Vira `false` quando a decisão do contador entrar e os sete caminhos de ICMS forem implementados."
           }
         }
+      },
+      "CommissionTierOperator": {
+        "description": "O OPERADOR da faixa — `ComPreCond_SimbDesc char(2)` do legado, com o vocabulário fechado.\n\nEle compara a faixa contra o **desconto do DOCUMENTO** (`discountPercent` do cabeçalho), não contra o da linha: é o que `sql-por-tela.sql:169` do legado mede, onde a consulta que casa `VendaIndicacaoGrupProd` com a venda puxa `Venda.Ven_DescontoPorc` na mesma instrução. Usar o desconto da linha faria a mesma venda pagar percentuais diferentes por item por dois motivos ao mesmo tempo — grupo e desconto —, e nenhuma apuração conseguiria explicar o número.\n\nLeitura da regra: **quanto mais desconto o vendedor dá, menor a participação**. É por isso que `VendaIndicacaoGrupProd` tem 232.415 linhas para 34.136 vendas — 6,7 por (documento × pessoa). Não são \"12 grupos\": são VÁRIAS FAIXAS por grupo, uma por condição de desconto.\n\n**Confiança MÉDIA nesta leitura, e está dito de propósito:** ela vem da FORMA — a PK das três tabelas do legado inclui o próprio percentual, o join puxa o desconto da venda, e a coluna irmã se chama \"símbolo\". Não vem do dado. O operador é DADO e não regra em código exatamente por isso: se o caso real conferido disser outra coisa, muda linha de tabela, não muda contrato.\n\nTexto livre aqui produziria `=>` num cadastro e faixa que nunca casa em produção, sem erro nenhum na hora de gravar.",
+        "type": "string",
+        "enum": [">=", "<=", ">", "<", "="]
+      },
+      "OrderParticipantTierDto": {
+        "description": "Proposto. Uma FAIXA de participação CONGELADA no documento — `VendaIndicacaoGrupProd` do legado (232.415 linhas, a tabela mais usada do Financeiro de lá).\n\n**Congelada, e é a razão de ela existir separada do cadastro.** O perfil diz quanto uma pessoa COSTUMA ganhar; esta linha diz quanto ela ganhou NESTE documento. O legado faz o mesmo, e a distância entre os dois números é medida: `IndicacaoGrupProd` (o perfil) tem 7.569 linhas contra as 232.415 daqui — a cópia por documento é 30× o cadastro. Quem guardasse só o cadastro teria uma tabela pequena e um relatório que muda de valor sozinho quando alguém edita o perfil.\n\n**Não se edita.** Ela nasce na cópia do perfil, quando a pessoa entra no documento, e daí em diante é passado — ver `OrderParticipantWriteRequest.id`.",
+        "required": [
+          "productGroupId",
+          "productGroupName",
+          "operator",
+          "discountPercent",
+          "percent"
+        ],
+        "type": "object",
+        "properties": {
+          "productGroupId": {
+            "description": "O grupo desta faixa — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`; o mesmo id que a linha do documento carrega em `QuoteItemDto.productGroupId`.\n\n**É o id e não o nome, pelo motivo já escrito em `QuoteItemDto`:** nome nunca foi chave, e dois grupos homônimos (ou um renomeado depois da emissão) mandariam a participação para o grupo errado sem ninguém acusar. No legado a chave é `GrupoProduto_Codigo`, código — não a descrição.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "productGroupName": {
+            "description": "Nome do grupo CONGELADO na emissão, pelo mesmo motivo de `QuoteGroupDiscountDto.productGroupName`: renomear o grupo no catálogo não pode reescrever apuração fechada. É o que se lê; o que se casa é o id.",
+            "type": "string"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/CommissionTierOperator"
+          },
+          "discountPercent": {
+            "description": "O desconto CONTRA o qual o operador compara — a metade que dá sentido ao `percent`. Percentual com 4 casas decimais escaladas por 10.000: `10000` = 1%, `1000000` = 100%. Mesma unidade e mesma escala de `QuoteDetailDto.discountPercent`, e é de propósito: os dois lados da comparação precisam ser inteiros da MESMA escala, ou a comparação passa a depender de conversão.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "percent": {
+            "description": "O percentual que esta faixa paga quando ela é a que casa. Mesma escala de `discountPercent` — `10000` = 1%.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OrderParticipantDto": {
+        "description": "Proposto. Uma pessoa que PARTICIPA do documento, com o percentual e as faixas congelados — `VendaAtendente` e `VendaIndicacao` do legado, que têm o MESMO formato: `(TpDoc, NDocPre, <pessoa>, Emp_Codigo)` + `Porcentagem` + `Principal` + `DtVigencia`.\n\n**N por documento, e isso é o caso COMUM e não a exceção:** `VendaAtendente` tem 37.707 linhas para 34.136 vendas. O `salespersonId` singular do documento continua existindo e passa a ser uma LEITURA — o atendente `isPrincipal` desta lista —, não um segundo lugar onde se grava.\n\n**Os dois papéis são simétricos.** A auditoria de 24/08 leu que \"atendente principal é N e profissional é 1\", e a fonte não diz isso: `bdprincipal-rotinas.sql:1088` e `:1116` são o mesmo cursor com o mesmo corpo, `Principal = 1` aparece duas vezes e as duas dentro de cursores, e `sql-por-tela.sql:3670`/`:3673` são `SELECT top 1 *` para os DOIS papéis — `TOP 1` é o que se escreve quando a consulta pode voltar mais de uma linha.",
+        "required": ["id", "role", "personName", "percent", "isPrincipal", "tiers"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Identidade da PARTICIPAÇÃO, não da pessoa. É ela que o `PUT` ecoa para dizer \"esta linha é a mesma\" e preservar as faixas congeladas.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "description": "O papel na venda. Vocabulário FECHADO de dois valores, e fechado de propósito: o legado tem duas tabelas (`VendaAtendente`, `VendaIndicacao`) e não um catálogo de papéis, e cada uma paga por um caminho diferente — comissão de colaborador de um lado, Reserva Técnica do outro.\n\n- `attendant` — colaborador (`EmployeeDto.id`), o consultor que atende.\n- `professional` — profissional externo (`PartnerDto.id` com papel `professional`), o arquiteto/especificador que indicou.",
+            "type": "string",
+            "enum": ["attendant", "professional"]
+          },
+          "employeeId": {
+            "description": "O colaborador, quando `role` é `attendant`. `null` no outro papel.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "employeeName": {
+            "type": ["null", "string"]
+          },
+          "partnerId": {
+            "description": "O profissional externo, quando `role` é `professional`. `null` no outro papel.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "partnerName": {
+            "type": ["null", "string"]
+          },
+          "personName": {
+            "description": "O nome que a grade mostra — colaborador ou parceiro, o que houver. Existe para a tela não ter de escolher entre dois campos a cada linha; o par id+nome específico continua publicado ao lado, e é ele que se casa.",
+            "type": "string"
+          },
+          "percent": {
+            "description": "O percentual GERAL desta participação, CONGELADO — `Porcentagem` do legado. Escala de 4 casas: `10000` = 1%.\n\nÉ o que vale para item cujo grupo não tem faixa, e para SERVIÇO, que não tem grupo de produto nenhum: as faixas do legado vivem em tabelas `…GrupProd`, que só o produto alcança. Não é omissão — é onde o percentual geral mora.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "isPrincipal": {
+            "description": "O `Principal` do legado. **Um por papel, no máximo** — dois principais não significam nada, e o documento com dois é 400 apontando as linhas.\n\nÉ o `isPrincipal` do papel `attendant` que responde por `salespersonId`, e o do `professional` que responde por `professionalId`.",
+            "type": "boolean"
+          },
+          "validFrom": {
+            "description": "Início da vigência desta participação — `DtVigencia` do legado. `null` na linha que nasceu com o documento.\n\nExiste porque a participação MUDA depois do fato: o legado transfere venda de um profissional para outro (`TransfIndicacao`/`TransfIndicacaoDet`, a opção \"Transferência de Venda entre Profissionais\" do menu), e a comissão pergunta a partir de quando. Quem faz essa troca aqui é `POST /api/orders/{id}/professional`, que tem data e justificativa — ver a recusa em `PUT /api/orders/{id}/participants`.",
+            "type": ["null", "string"],
+            "format": "date"
+          },
+          "tiers": {
+            "description": "As faixas por grupo de produto CONGELADAS nesta participação, em ordem de `productGroupName`. Lista **vazia** quando a pessoa não tem faixa por grupo — que é situação legítima e comum, e significa \"vale o `percent` geral em tudo\", não ausência de dado.\n\nVêm embutidas e não em sub-recurso pelo argumento de `QuoteGroupDiscountDto`: a faixa não tem identidade fora da participação, e ler linha a linha faria a aba Participação virar N requisições.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderParticipantTierDto"
+            }
+          }
+        }
+      },
+      "PagedResultOfOrderParticipantDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderParticipantDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OrderParticipantWriteRequest": {
+        "description": "Proposto. Uma linha da grade de participação, na escrita.\n\n**O que este corpo NÃO traz, e a ausência é a regra:** as FAIXAS. Elas saem do perfil da pessoa (`GET /api/partners/{id}/commission-tiers`), que é cadastro da empresa, e são copiadas pelo servidor na hora em que a linha nasce. Faixa vinda do corpo seria o cliente escolhendo quanto ganha por grupo — a mesma família do percentual vindo do cliente, que este contrato já recusa em toda parte.",
+        "required": ["role", "isPrincipal"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "**O ECO que preserva o congelamento.** Linha que volta com o `id` que veio da leitura é a MESMA linha: o servidor mantém as faixas já congeladas nela e mexe só no que este corpo traz. Linha SEM `id` é nova, e é nela que o servidor copia o perfil de hoje.\n\nSem esse eco, o `PUT` integral (que apaga e regrava) recopiaria o perfil a cada gravação — e um documento de março passaria a pagar pelo perfil de agosto na primeira vez que alguém corrigisse um nome na tela. É o defeito que o congelamento existe para impedir, entrando pela porta da escrita.\n\n`id` que não é participação DESTE documento é 400 apontando o campo.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "role": {
+            "description": "`attendant` ou `professional` — ver `OrderParticipantDto.role`.",
+            "type": "string",
+            "enum": ["attendant", "professional"]
+          },
+          "employeeId": {
+            "description": "Obrigatório quando `role` é `attendant`, e proibido no outro papel — 400 apontando o campo nos dois casos. Papel sem pessoa, ou com as duas, é linha que a apuração não sabe pagar.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "partnerId": {
+            "description": "Obrigatório quando `role` é `professional`, e proibido no outro papel. Parceiro sem o papel `professional` é 400 apontando o campo — mesma recusa de `TransferProfessionalRequest.professionalId`.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "percent": {
+            "description": "O percentual geral DESTA venda, quando o operador quer dizer \"aqui é 3%\". Escala de 4 casas: `10000` = 1%.\n\n**`null` não é zero: é \"use o perfil\".** Ausente ou nulo, o servidor lê a faixa GERAL do cadastro da pessoa (a de `productGroupId` nulo) e congela o valor dela na linha. Zero explícito é participação sem comissão — o atendente que responde pela venda e não ganha por ela —, e é caso real: o legado tem 1.212 lançamentos de Reserva Técnica para 11.103 pedidos justamente porque nem toda participação vira pagamento.\n\nFora de `0`–`1000000` é 400.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
+          "isPrincipal": {
+            "description": "Um por papel, no máximo. Duas linhas do mesmo papel com `true` é 400 apontando as duas — e a recusa é mais restrita que o legado nos DOIS papéis, de propósito: lá o `Principal` não tem unicidade e o risco é de ETL, com documento antigo trazendo dois.",
+            "type": "boolean"
+          },
+          "validFrom": {
+            "description": "Início da vigência. `null` = vale desde a emissão do documento.",
+            "type": ["null", "string"],
+            "format": "date"
+          }
+        }
+      },
+      "OrderParticipantsWriteRequest": {
+        "description": "Proposto. A grade de participação INTEIRA — `PUT` substitui o conjunto, como todo `PUT` deste contrato. Linha que não vier no corpo é linha REMOVIDA.\n\n**É uma requisição só, e não N, porque as linhas se conferem entre si:** \"um principal por papel\" e a soma dos percentuais são regras do CONJUNTO, e conjunto que chega em pedaços tem um instante em que ele é inválido. Mesmo argumento de `installments` na condição de pagamento e de `environments` no documento.",
+        "required": ["participants"],
+        "type": "object",
+        "properties": {
+          "participants": {
+            "description": "As linhas, em qualquer ordem. Lista **vazia** apaga a participação do documento — e é gesto legítimo: venda sem indicação existe.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderParticipantWriteRequest"
+            }
+          }
+        }
+      },
+      "CommissionTierDto": {
+        "description": "Proposto. Uma faixa do PERFIL de participação de uma pessoa — o cadastro, não o documento. `IndicacaoGrupProd` (perfil do profissional, 7.569 linhas) e `ComissaoPremiacaoGrup` (perfil do colaborador, 16 linhas) do legado, que carregam o MESMO trio percentual · desconto · operador.\n\n**Um schema só para os dois papéis, e a economia não é de digitação:** separar duplicaria o motor de cálculo, que é a única parte onde errar custa dinheiro de verdade. O que muda entre colaborador e profissional é a porta (`/api/employees/{id}/…` × `/api/partners/{id}/…`) e o que o ganho vira depois — comissão de um lado, Reserva Técnica do outro.\n\n**O cadastro NÃO tem vigência**, e o legado também não a tem em `IndicacaoGrupProd`. Quem protege a apuração de ontem de um perfil editado hoje é o CONGELAMENTO no documento (`OrderParticipantTierDto`), não uma data aqui. Sem esse congelamento, a ausência de vigência seria defeito; com ele, é simplificação correta — e fica escrito para quem for tentado a acrescentá-la.",
+        "required": ["id", "operator", "discountPercent", "percent", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productGroupId": {
+            "description": "O grupo — `CatalogLookupDto.id`, kind `GRUPO_PRODUTO`.\n\n**`null` é a faixa GERAL**, a que vale para grupo sem linha própria, e é ela que vira o `percent` do participante quando a pessoa entra num documento. Não é ausência de dado: é a linha que responde por todo o resto, e por isso `null` aqui é significado e não buraco.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "productGroupName": {
+            "description": "Nome do grupo, ecoado pelo servidor; `null` na faixa geral. **Aqui ele NÃO é congelado**, ao contrário do homônimo em `OrderParticipantTierDto`: isto é cadastro, e cadastro mostra o nome de hoje.",
+            "type": ["null", "string"]
+          },
+          "operator": {
+            "$ref": "#/components/schemas/CommissionTierOperator"
+          },
+          "discountPercent": {
+            "description": "O desconto contra o qual o operador compara. Escala de 4 casas: `10000` = 1%. Fora de `0`–`1000000` é 400.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "percent": {
+            "description": "O percentual que esta faixa paga. Mesma escala — `10000` = 1%.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "active": {
+            "description": "Desativação lógica (padrão 8). Faixa inativa não entra no cálculo e continua legível nos documentos que a congelaram — que é o ponto: apagar a faixa não pode mudar o que já foi apurado, e nem conseguiria, porque o documento tem a cópia dela.",
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfCommissionTierDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommissionTierDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CommissionTierWriteRequest": {
+        "description": "Proposto. Uma faixa do perfil, na escrita.",
+        "required": ["operator", "discountPercent", "percent", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Ecoa a linha existente. Ausente = linha nova. `id` que não é faixa DESTA pessoa é 400 apontando o campo.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "productGroupId": {
+            "description": "O grupo, ou `null` para a faixa GERAL. Id que não é um `catalog-lookups` **ativo** de kind `GRUPO_PRODUTO` é 400 e não 404: o que está errado é o campo do corpo, não o recurso pedido.",
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/CommissionTierOperator"
+          },
+          "discountPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CommissionTiersWriteRequest": {
+        "description": "Proposto. O perfil INTEIRO de uma pessoa — `PUT` substitui o conjunto. Faixa que não vier é faixa removida.\n\nConjunto e não linha a linha porque a validação é do conjunto: a condição de uma faixa (grupo + operador + desconto) tem de ser única, e duas linhas com a MESMA condição e percentuais diferentes fazem o cálculo depender da ordem de leitura — o defeito que ninguém reproduz.",
+        "required": ["tiers"],
+        "type": "object",
+        "properties": {
+          "tiers": {
+            "description": "As faixas, em qualquer ordem. Lista **vazia** apaga o perfil — a pessoa passa a participar sem percentual próprio, e é o estado de quem ainda não foi configurado.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommissionTierWriteRequest"
+            }
+          }
+        }
+      },
+      "TechnicalReserveDto": {
+        "description": "Proposto. Um LANÇAMENTO de Reserva Técnica — `Reserva_tecnica` do legado (1.212 linhas para 11.103 pedidos: nem toda participação vira pagamento).\n\n**RT é o que o profissional externo recebe pela indicação.** O documento guarda a participação; este lançamento é o momento em que ela vira valor apurado, com situação e tipo próprios — e é a partir dele que o fechamento gera título no contas a pagar.\n\n**O valor vem quebrado por NATUREZA e não num total só**, porque é assim que o legado apura (`Ret_tec_luminaria` / `_materiais` / `_servico` / `_total`): produto e serviço pagam por regras diferentes — as faixas por grupo só alcançam produto, e serviço cai no percentual geral. Um total único apagaria a distinção que decide o número.",
+        "required": [
+          "id",
+          "orderId",
+          "orderNumber",
+          "partnerId",
+          "partnerName",
+          "kind",
+          "status",
+          "productCents",
+          "serviceCents",
+          "totalCents",
+          "issuedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "description": "O pedido de venda que originou a reserva.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "description": "Número do pedido, resolvido pelo servidor — a tela mostra a origem sem uma segunda requisição.",
+            "type": "string"
+          },
+          "partnerId": {
+            "description": "O profissional externo — `PartnerDto.id` com papel `professional`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "partnerName": {
+            "type": "string"
+          },
+          "kind": {
+            "description": "`Ret_tipo` do legado, e o vocabulário sai de uma medição e não de um palpite: o legado faz `update … ParSV_serie='1' where Ret_tipo='PROJETO'` e `'2' where <> 'PROJETO'`, então são dois valores e a série do documento depende de qual.\n\n- `project` — a reserva de um projeto (`PROJETO`).\n- `standalone` — a avulsa, o resto.",
+            "type": "string",
+            "enum": ["project", "standalone"]
+          },
+          "status": {
+            "description": "`Ret_situacao` do legado. Lançamento CANCELA, não desativa — `active` de cadastro não serve aqui, pela mesma razão de `QuoteDetailDto.status`.",
+            "type": "string",
+            "enum": ["active", "cancelled"]
+          },
+          "productCents": {
+            "description": "A parte da reserva que veio de PRODUTO, em centavos. **Calculada pelo servidor** — ver `TechnicalReserveWriteRequest`.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "serviceCents": {
+            "description": "A parte que veio de SERVIÇO, em centavos. Calculada pelo servidor.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCents": {
+            "description": "A soma das duas, em centavos. Vem calculada e NÃO é refeita na tela: percentual de 4 casas sobre centavos arredonda, e a conta refeita no cliente erra o último centavo em parte dos casos — mesmo argumento de `QuoteGroupDiscountDto.discountCents`.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "issuedAt": {
+            "description": "Data do lançamento.",
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": ["null", "string"]
+          },
+          "cancelledAt": {
+            "description": "Quando foi cancelado. `null` enquanto não for.",
+            "type": ["null", "string"],
+            "format": "date-time"
+          }
+        }
+      },
+      "PagedResultOfTechnicalReserveDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicalReserveDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TechnicalReserveWriteRequest": {
+        "description": "Proposto. Lança a Reserva Técnica de um profissional sobre um pedido.\n\n**O corpo NÃO tem valor, e a ausência é a decisão central deste trilho.** Quem calcula `productCents` e `serviceCents` é o SERVIDOR, sobre a participação congelada no documento, as linhas dele e a devolução já abatida. Valor vindo do corpo seria o cliente afirmando quanto o profissional ganha — a mesma família do percentual, e a mesma recusa.\n\n**É aqui que mora o \"automático\" do legado.** `Par_RTautomatico` liga o CÁLCULO da participação (o rótulo do checkbox é `Calcular Automaticamente a Part.`), não um carimbo no documento: `Ven_RtAutomatico` e `Ven_RtCalcular` são colunas órfãs, vazias em 34.136 linhas, sem editor em tela nenhuma e escritas por ninguém no corpus inteiro de SQL do executável. Não existe flag de \"RT automática\" para portar — o automático é propriedade do cálculo, e o cálculo é do servidor.",
+        "required": ["orderId", "partnerId", "kind"],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "description": "O pedido. Documento cancelado é 409 — venda desfeita não paga indicação. Pedido sem participação deste profissional é 409: não há o que reservar.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "partnerId": {
+            "description": "O profissional externo. Parceiro sem o papel `professional` é 400 apontando o campo.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["project", "standalone"]
+          },
+          "issuedAt": {
+            "description": "Data do lançamento. Ausente = hoje.",
+            "type": ["null", "string"],
+            "format": "date"
+          },
+          "note": {
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "CommissionEarningRowDto": {
+        "description": "Proposto. O que UMA participação rendeu no período — a linha da apuração.\n\n**Os três números vêm juntos de propósito: base, percentual e valor.** Guardar os três é o que permite conferir a conta um ano depois sem reprocessar nada, e é exatamente o que o relatório do legado não tinha — lá se via o valor, e para saber de onde ele saiu era preciso refazer a consulta com os cadastros de hoje.",
+        "required": [
+          "orderId",
+          "orderNumber",
+          "participantId",
+          "role",
+          "personName",
+          "orderDiscountPercent",
+          "baseCents",
+          "percent",
+          "amountCents"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "participantId": {
+            "description": "A participação que rendeu — `OrderParticipantDto.id`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["attendant", "professional"]
+          },
+          "employeeId": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "partnerId": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "personName": {
+            "description": "Colaborador ou parceiro, o que houver.",
+            "type": "string"
+          },
+          "orderDiscountPercent": {
+            "description": "O desconto do DOCUMENTO que decidiu qual faixa casou. Vem na linha porque sem ele a apuração é um número sem explicação: é este valor que o `operator` da faixa comparou.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "baseCents": {
+            "description": "A base sobre a qual o percentual incidiu, em centavos — produto e serviço do MESMO documento, com devolução já abatida. **Devolução reduz a base**: o legado desconta `DevolucaoProduto` por grupo antes de apurar (`FrmRT.Qrydevolucao`), e fechamento que a ignorasse pagaria a mais.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "percent": {
+            "description": "O percentual aplicado, escala de 4 casas. É o da FAIXA que casou, quando casou alguma; o geral da participação, quando não.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "amountCents": {
+            "description": "O ganho, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CommissionEarningsSummaryDto": {
+        "description": "Os totais do período inteiro — não da página. Somar as linhas da página daria o total de 20 registros com cara de total do mês.",
+        "required": ["amountCents", "participationCount", "orderCount"],
+        "type": "object",
+        "properties": {
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "participationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderCount": {
+            "description": "Quantos DOCUMENTOS distintos entraram na conta — não é a soma das participações, porque um documento paga várias pessoas.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CommissionEarningsReportDto": {
+        "description": "Proposto. A apuração de um período: o que cada pessoa ganhou, calculado NO SERVIDOR sobre documento fechado.\n\n**É consulta e não fechamento: nada aqui grava.** Ver a apuração antes de fechar é o gesto normal, e ele não pode ter efeito — no legado, quem só queria conferir acabava criando lançamento.\n\n**Tudo o que entra na conta sai de linha gravada** — base, percentual, faixa e desconto. Quem chama escolhe o PERÍODO, e só.",
+        "required": ["from", "to", "page", "pageSize", "total", "summary", "rows"],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CommissionEarningsSummaryDto"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommissionEarningRowDto"
+            }
+          }
+        }
+      },
+      "CommissionClosingDto": {
+        "description": "Proposto. O FECHAMENTO de um período — `FechamentoComissao(MesAno, dataInicial, dataFinal, Situacao, ContaUnica)` do legado.\n\nFechar é o passo em que participação apurada vira dinheiro: cada linha do fechamento é um título a pagar. Por isso o período fechado é PASSADO — não se reabre, não se reescreve, e correção se faz com fechamento novo.",
+        "required": ["id", "periodStart", "periodEnd", "status", "entryCount", "totalCents"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodStart": {
+            "description": "Primeiro dia, inclusive.",
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "description": "Último dia, inclusive.",
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "description": "`Situacao` do legado.\n\n- `open` — criado e ainda em conferência.\n- `closed` — fechado; `closedAt` preenchido. **Fechado sem data de fechamento é estado que não existe no mundo**, e o servidor não o produz.",
+            "type": "string",
+            "enum": ["open", "closed"]
+          },
+          "closedAt": {
+            "type": ["null", "string"],
+            "format": "date-time"
+          },
+          "closedByEmployeeId": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "closedByEmployeeName": {
+            "type": ["null", "string"]
+          },
+          "entryCount": {
+            "description": "Quantas linhas o fechamento gerou. Zero não acontece — período sem ganho não vira fechamento (ver `CommissionClosingResultDto`).",
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCents": {
+            "description": "A soma das linhas, em centavos.",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PagedResultOfCommissionClosingDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommissionClosingDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CommissionClosingWriteRequest": {
+        "description": "Proposto. Fecha um período.\n\n**Não há corpo além das datas — nem lista de quem pagar, nem valores.** O que se paga é o que a apuração devolve, e a apuração sai de linha gravada. Um corpo com pessoas e valores seria o cliente escolhendo quem recebe quanto.",
+        "required": ["periodStart", "periodEnd"],
+        "type": "object",
+        "properties": {
+          "periodStart": {
+            "description": "Primeiro dia, inclusive. Recorte por DIA e não por instante: quem pede agosto quer o dia 31 inteiro.",
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "description": "Último dia, inclusive. Anterior a `periodStart` é 400 apontando o campo.",
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "CommissionClosingResultDto": {
+        "description": "Proposto. O que o fechamento fez — e ele tem DOIS desfechos bem-sucedidos, não um.\n\n**`nothing-to-close` não é erro, e essa é a decisão que o desenho carrega.** Período sem ganho é o mês parado, não pedido inválido: responder 4xx faria a tela mostrar erro para uma operação que funcionou. E criar um fechamento VAZIO seria pior — travaria o período para quando o lançamento atrasado entrasse, e o lançamento atrasado é o caso comum de quem fecha comissão.\n\nO desfecho viaja em `outcome`, campo próprio, porque aqui não é erro: o discriminador em `type` é a regra do `ProblemDetails`, e resposta de sucesso não tem `ProblemDetails`.",
+        "required": ["outcome"],
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "description": "- `closed` — o período fechou; `closing` traz o fechamento gravado.\n- `nothing-to-close` — não havia ganho no período. Nada foi gravado e `closing` é `null`.",
+            "type": "string",
+            "enum": ["closed", "nothing-to-close"]
+          },
+          "closing": {
+            "description": "O fechamento gravado, ou `null` em `nothing-to-close`.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CommissionClosingDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "CommissionClosingEntryDto": {
+        "description": "Proposto. Uma LINHA do fechamento — o que uma pessoa recebeu por um fato.\n\n**Append-only.** Linha de fechamento é o registro de que alguém foi pago; ela não se edita nem se apaga, e correção se faz com fechamento novo. Mesmo regime do `audit_log`.\n\n**Ganho zero não vira linha** — o participante sem comissão (o atendente que responde pela venda e não ganha por ela) apareceria como título de R$ 0,00 no contas a pagar.",
+        "required": [
+          "id",
+          "personName",
+          "sourceType",
+          "sourceId",
+          "baseCents",
+          "percent",
+          "amountCents"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "employeeId": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "partnerId": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "sourceType": {
+            "description": "QUAL fato gerou este pagamento. Com `sourceId`, forma a chave que o refechamento reconhece — a chave natural do legado transportada: lá o par era (tipo de documento RESERVADO do sistema, id do lançamento), o título de RT sendo `contas_apagar` com `Tpd_codigo = 1004` e `Ctp_cod_documento = Reserva_tecnica.Ret_codigo`. Os tipos 1001–1007 são reservados e a lista escolhível pelo usuário os exclui.\n\n- `order` — a participação num pedido de venda.\n- `technical-reserve` — um lançamento de Reserva Técnica.",
+            "type": "string",
+            "enum": ["order", "technical-reserve"]
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceNumber": {
+            "description": "O número do documento de origem, resolvido pelo servidor — o que a tela mostra.",
+            "type": ["null", "string"]
+          },
+          "baseCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PagedResultOfCommissionClosingEntryDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommissionClosingEntryDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -16334,6 +18072,7 @@
     },
     {
       "name": "precos"
-    }
+    },
+    { "name": "comissoes" }
   ]
 }

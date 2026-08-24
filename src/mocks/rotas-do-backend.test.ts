@@ -5,7 +5,14 @@ import { setupServer } from 'msw/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
-import { ROTAS_DO_BACKEND, handlersDePassagem } from './rotas-do-backend'
+import {
+  ROTAS_DO_BACKEND,
+  ROTAS_NO_MOCK,
+  declararPassagem,
+  handlersDePassagem,
+  montarRelatorio,
+  relatorioDaPassagem,
+} from './rotas-do-backend'
 
 /**
  * PROVA A DIVISÃO, não a lista.
@@ -45,125 +52,21 @@ const msw = setupServer(...handlersDePassagem('http://backend-de-mentira'), ...h
  *
  * Entrada nova aqui exige a medição junto, no comentário.
  */
-const FORA_DE_PROPOSITO: readonly string[] = [
-  'get /api/permissions',
-  'get /api/roles',
-  'post /api/roles',
-  'get /api/roles/{id}',
-  'put /api/roles/{id}',
-  // Os DEPÓSITOS (#291). **A razão MUDOU, e a linha ficou:** a nota anterior
-  // dizia "no servidor de hoje não há handler nenhum", e isso venceu.
-  //
-  // **REMEDIDO em 2026-08-23** contra `cabinet-erp-api` main `cc7ccd0`, par
-  // local próprio (Postgres migrado até a `0057`, servidor em `:3020`, sessão
-  // real de `semear-dev`): a fase 2 da api#79 ENTROU — migração `0030` e
-  // `src/modules/estoque/{depositos,saldos}.ts`. As três LEITURAS respondem
-  // 200 com dado do Postgres, e o `locationId` vem preenchido nas duas que o
-  // carregam:
-  //
-  //   GET /api/stock-locations                      200 · 1 depósito (PRINCIPAL)
-  //   GET /api/variants/{variantId}/stock-balances  200 · 1 linha, qty -10
-  //   GET /api/variants/{variantId}/stock-movements 200 · 2 linhas com locationId
-  //
-  // As duas ESCRITAS respondem **403 `papel-insuficiente`**, e ali é DECISÃO,
-  // não herança: `classificacao.ts` do api pede a ação `depositos:gerenciar`,
-  // que só `Proprietário` e `Administrador` têm por `grants_all` — `Operação
-  // completa` movimenta estoque sem redesenhar o galpão. O 403 não vai cair
-  // sozinho como caiu o da lista de apoio.
-  //
-  //   POST /api/stock-locations       403 urn:cabinet:erro:papel-insuficiente
-  //   PUT  /api/stock-locations/{id}  (mesma matriz, mesmo papel)
-  //
-  // Continuam FORA porque a família só sai INTEIRA — meia família põe id do
-  // servidor de um lado e id inventado do outro —, e ligar as cinco com a
-  // escrita em 403 é a mesma escolha que a lista de apoio fez uma vez: foi
-  // DECISÃO do user, não default. Enquanto ela não vier, a tela de estoque
-  // (`src/features/estoque/`) lê do mock, que serve os mesmos shapes.
-  'get /api/stock-locations',
-  'post /api/stock-locations',
-  'put /api/stock-locations/{id}',
-  'get /api/variants/{variantId}/stock-balances',
-  // (A família PAGAMENTO morava aqui e SAIU em 2026-08-23, com as cinco juntas
-  // como a nota antiga exigia — a medição contra o api `024aed8` está em
-  // `rotas-do-backend.ts`, junto das linhas ligadas.)
-  // Os SERVIÇOS (S2) pela MESMA razão dos depósitos, e não pela do 501: o
-  // contrato os publica AGORA porque é ele que especifica o que o S2b vai
-  // implementar do lado do api, e no servidor de hoje não há handler nenhum.
-  //
-  // **Medição (2026-08-22, `cabinet-erp-api` `e47827e`):** a busca por
-  // `services` no repo inteiro do api devolve duas ocorrências, e as duas são
-  // `services:` de `docker-compose` — não existe rota, não existe módulo, e a
-  // cópia do contrato de lá ainda tem 78 operações. Não é nem o 501 da fase: é
-  // caminho que o servidor não tem, e ligar qualquer uma tiraria o mock para
-  // entregar 404 a uma tela que ainda nem existe.
-  //
-  // Saem daqui em FAMÍLIA, e só quando a família INTEIRA responder.
-  'get /api/services',
-  'post /api/services',
-  'put /api/services/{id}',
-  // Os RELATÓRIOS (#310) pela MESMA razão dos depósitos e do pagamento, e não
-  // pela do 501: o contrato publica a família AGORA porque é ele que especifica
-  // o que a Fase B do api vai implementar (módulo `reports` só-leitura,
-  // api#111), e no servidor de hoje não há handler nenhum.
-  //
-  // **Medição (2026-08-22, `cabinet-erp-api` `0c8b13b`):** `git grep` por
-  // `api/reports` em `src/` e `tests/` devolve ZERO, e a cópia do contrato de lá
-  // tem 87 operações — as 87 de antes desta PR. Não é o 501 da fase: é caminho
-  // que o servidor não tem, e o par local devolve o 404 do Fastify.
-  //
-  // Saem daqui em FAMÍLIA, e por uma razão própria desta: a tela de Relatórios
-  // (Fase C) é UMA seção com dez abas. Ligar metade poria seis abas lendo o
-  // Postgres e quatro lendo ficção na mesma tela, sem nada na interface
-  // distinguindo as duas — que é a costura mais cara de perceber deste repo.
-  'get /api/reports/abc-curve',
-  'get /api/reports/products-sold',
-  'get /api/reports/sales-comparison',
-  'get /api/reports/salesperson-performance',
-  'get /api/reports/professional-ranking',
-  'get /api/reports/supplier-movement',
-  'get /api/reports/stock-valuation',
-  'get /api/reports/stock-aging',
-  'get /api/reports/quote-vs-stock',
-  'get /api/reports/birthdays',
-  // O CICLO DE VIDA do documento de venda (G13) pela MESMA razão dos depósitos e
-  // dos serviços, e não pela do 501: o contrato especifica agora o que a fase B
-  // do api vai implementar, e no servidor de hoje não há handler nenhum.
-  //
-  // **Medição (2026-08-22, `cabinet-erp-api` `0c8b13b`):** `git grep` por
-  // `conclude`, `demo-return`, `professional-history`, `revise` e `ConcludeOrder`
-  // em `src/` e `tests/` devolve ZERO nas cinco buscas. Não é o 501 da fase: é
-  // caminho que o servidor não tem, e o par local devolve o 404 do Fastify.
-  //
-  // **Estas NÃO saem em família com o resto de `/api/orders` e `/api/quotes`,** e
-  // aqui a regra da família aponta para o outro lado: as famílias já estão na
-  // passagem inteiras, e são as OPERAÇÕES novas que ainda não têm servidor.
-  // Ligá-las junto tiraria o mock de rota nenhuma (não há mock de pedido) para
-  // entregar 404 onde a tela esperaria documento.
-  'post /api/orders/{id}/conclude',
-  'post /api/orders/{id}/demo-return',
-  'post /api/orders/{id}/professional',
-  'get /api/orders/{id}/professional-history',
-  'post /api/quotes/{id}/revise',
-  // COMPRAS (G2) — as 14 operações do módulo. Respondem 501 hoje: o contrato
-  // entrou primeiro, por decisão da fase, e o handler é a FASE B do trilho, no
-  // `cabinet-erp-api`. Declaradas uma a uma, e não por prefixo, porque é assim
-  // que a lista foi desenhada — prefixo esconderia a operação nova que nascesse
-  // no mesmo caminho.
-  'get /api/purchase-requests',
-  'post /api/purchase-requests',
-  'get /api/purchase-requests/{id}',
-  'put /api/purchase-requests/{id}',
-  'post /api/purchase-requests/{id}/cancel',
-  'get /api/purchase-orders',
-  'post /api/purchase-orders',
-  'get /api/purchase-orders/{id}',
-  'put /api/purchase-orders/{id}',
-  'post /api/purchase-orders/{id}/send',
-  'post /api/purchase-orders/{id}/reschedule',
-  'post /api/purchase-orders/{id}/cancel',
-  'get /api/purchases/arrival-forecast',
-  'get /api/purchases/stock-replenishment',
-]
+/**
+ * As operações que o contrato publica e a passagem NÃO liga.
+ *
+ * **DERIVADA de `ROTAS_NO_MOCK`, e não escrita aqui.** A lista morava neste
+ * arquivo com o motivo em comentário, até o console precisar dela: nenhum
+ * módulo de produção pode importar um `.test.ts`, e copiá-la para o outro lado
+ * daria duas verdades sobre a mesma coisa — a segunda envelhecendo calada. A
+ * declaração vive no módulo, junto do motivo que o console imprime; o que fica
+ * aqui é a COBRANÇA, que é o papel deste arquivo.
+ *
+ * Hoje são as 14 de compras. A medição está no bloco delas, em
+ * `rotas-do-backend.ts`: contra `cabinet-erp-api` main `f810a39`, em
+ * 2026-08-24, as 14 respondem 501 e nenhuma outra operação do contrato responde.
+ */
+const FORA_DE_PROPOSITO: readonly string[] = ROTAS_NO_MOCK.map((r) => `${r.metodo} ${r.caminho}`)
 
 beforeAll(async () => {
   servidorDeVerdade = createServer((req, res) => {
@@ -437,6 +340,115 @@ describe('passthrough por rota', () => {
       faltando,
       `operação no contrato e fora da passagem: ${faltando.join(', ')} — meça contra o par local antes de acrescentar, e se for 501 declare em FORA_DE_PROPOSITO com o motivo`,
     ).toEqual([])
+  })
+
+  it('nenhuma rota LIGADA está declarada fora de propósito — os dois lados discordando', () => {
+    // O OUTRO SENTIDO, e ele ficou aberto desde que `FORA_DE_PROPOSITO` nasceu.
+    //
+    // O caso acima confere contrato → lista: operação publicada que ninguém
+    // ligou nem declarou. Ninguém conferia lista → declaração, e o buraco foi
+    // MEDIDO em 2026-08-24 com três mutações:
+    //
+    //   1. tirar `get /api/services` da lista        → vermelho (o caso acima)
+    //   2. ligar `get /api/purchase-orders`          → vermelho, mas por ACIDENTE:
+    //      quem pegou foi a guarda de VERBO, porque aquele caminho publica dois
+    //      e o outro está declarado fora.
+    //   3. ligar `get /api/purchases/arrival-forecast` → **VERDE, 34/34.**
+    //
+    // A terceira é o defeito: caminho de verbo ÚNICO que responde 501, ligado
+    // por engano num rebase deste arquivo (que já teve três mãos no mesmo dia),
+    // tira o mock e entrega 501 à tela sem uma única asserção reclamando. É
+    // literalmente o que o cabeçalho de `rotas-do-backend.ts` chama de "rota
+    // adiantada é pior que rota ausente", e não havia guarda para ele.
+    //
+    // Falhar aqui significa que alguém ligou uma rota E a deixou declarada como
+    // não-servida: as duas afirmações não podem valer juntas. O conserto é
+    // medir contra o par local e apagar uma das duas — nunca as duas.
+    const ligadas = ROTAS_DO_BACKEND.map((r) => `${r.metodo} ${r.caminho}`)
+    const nosDoisLados = ligadas.filter((op) => FORA_DE_PROPOSITO.includes(op))
+
+    expect(
+      nosDoisLados,
+      `rota ligada na passagem E declarada fora de propósito: ${nosDoisLados.join(', ')} — meça contra o par local e apague o lado errado`,
+    ).toEqual([])
+  })
+
+  it('o console DECLARA as duas metades — sem proxy, diz que tudo é mock', () => {
+    // O DoD pede "declarado no console qual rota está em quê", e o caso mais
+    // fácil de escrever errado é este: sem `VITE_API_PROXY` não há passagem
+    // nenhuma, e imprimir nada deixaria quem lê SUPOR o estado. O site público
+    // roda exatamente assim.
+    const ditas: string[] = []
+    declararPassagem(undefined, (...a) => ditas.push(a.join(' ')))
+
+    expect(relatorioDaPassagem(undefined)).toEqual([])
+    expect(ditas).toHaveLength(1)
+    expect(ditas[0]).toContain('TUDO mockado')
+  })
+
+  it('o console soma as duas metades e bate com as listas', () => {
+    const ditas: string[] = []
+    declararPassagem('http://localhost:3000', (...a) => ditas.push(a.join(' ')))
+
+    // O cabeçalho traz os dois números, e eles saem das listas — não de
+    // constante escrita à mão, que envelheceria na primeira rota ligada.
+    expect(ditas[0]).toContain(`${ROTAS_DO_BACKEND.length} rota(s) SAEM para a rede`)
+    expect(ditas[0]).toContain(`${ROTAS_NO_MOCK.length} continuam no MSW`)
+
+    // Toda família mockada sai NOMEADA, com o motivo junto: "metade mock" sem
+    // dizer qual metade é a costura que este arquivo existe para evitar.
+    const familiasMockadas = new Set(
+      ROTAS_NO_MOCK.map((r) => r.caminho.split('/').filter(Boolean)[1] ?? ''),
+    )
+    for (const f of familiasMockadas) {
+      expect(ditas.some((l) => l.includes(f) && l.includes('MOCK'))).toBe(true)
+    }
+  })
+
+  it('família PARTIDA é denunciada — o estado que produz id do servidor com id do mock', () => {
+    // Hoje nenhuma família está partida (as 14 mockadas são três famílias de
+    // compras INTEIRAS), então este caso não teria como existir sobre as
+    // constantes reais. Ele mede a CONTA, com listas próprias — que é o motivo
+    // de `montarRelatorio` receber as duas em vez de lê-las do módulo.
+    const linhas = montarRelatorio(
+      [
+        { metodo: 'get', caminho: '/api/quotes' },
+        { metodo: 'post', caminho: '/api/quotes' },
+        { metodo: 'get', caminho: '/api/orders' },
+      ],
+      [{ metodo: 'put', caminho: '/api/quotes/{id}', motivo: '501 de mentira, para o teste' }],
+    )
+
+    const quotes = linhas.find((l) => l.familia === 'quotes')
+    expect(quotes).toEqual({
+      familia: 'quotes',
+      reais: 2,
+      mockadas: 1,
+      motivo: '501 de mentira, para o teste',
+    })
+
+    const orders = linhas.find((l) => l.familia === 'orders')
+    expect(orders?.mockadas).toBe(0)
+
+    // E a palavra tem de aparecer na SAÍDA, não só na estrutura: quem lê o
+    // console não lê o objeto.
+    const ditas: string[] = []
+    declararPassagem('http://localhost:3000', (...a) => ditas.push(a.join(' ')))
+    expect(ditas.some((l) => l.includes('PARTIDA'))).toBe(false) // hoje, nenhuma
+  })
+
+  it('toda rota mockada carrega MOTIVO — nome sozinho envelhece mudo', () => {
+    // Mesma regra do `PENDENTES` do api, e pelo mesmo motivo: seis meses depois
+    // ninguém sabe se aquilo é dívida viva, espera de decisão, ou sobra de
+    // renomeação. Aqui o motivo tem uso a mais — o console o imprime.
+    const ENFEITE = ['todo', 'wip', 'tbd', 'fixme', 'pendente', '-', 'x', '?']
+    for (const r of ROTAS_NO_MOCK) {
+      const motivo = r.motivo.trim()
+      expect(motivo.length, `${r.metodo} ${r.caminho} sem motivo`).toBeGreaterThan(20)
+      expect(ENFEITE, `${r.metodo} ${r.caminho} com motivo de enfeite`).not.toContain(
+        motivo.toLowerCase(),
+      )
+    }
   })
 
   it('toda rota da lista existe no contrato — typo aqui seria silencioso', () => {

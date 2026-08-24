@@ -501,6 +501,186 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     )
   })
 
+  /**
+   * AS CINCO FAMÍLIAS LIGADAS EM 2026-08-24 — papéis, depósitos, serviços,
+   * ciclo do documento e relatórios.
+   *
+   * Elas viviam em `FORA_DE_PROPOSITO` com a mesma frase: "no servidor de hoje
+   * não há handler nenhum". A frase era verdade em 22/08 e caducou sem que nada
+   * avisasse — declaração de ausência não tem quem a invalide. Os casos abaixo
+   * são o que impede a próxima medição de ser de novo uma leitura de comentário.
+   */
+  it('os SERVIÇOS passam inteiros — cria pela tela, relê no Postgres, alterado', async () => {
+    const codigo = `SV${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+    const criado = await fetch(`${APP}/api/services`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        code: codigo,
+        description: 'Instalação medida ao vivo',
+        priceCents: 12345,
+        electricianPercent: 100000,
+        priceLocked: false,
+        delivery: false,
+        active: true,
+      }),
+    })
+    expect(criado.status, await criado.clone().text()).toBe(201)
+    const { id } = (await criado.json()) as { id: string }
+
+    // A prova é a RELEITURA DIRETA no backend: se o mock tivesse respondido a
+    // escrita, este id não existiria do outro lado.
+    const alterado = await fetch(`${APP}/api/services/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        code: codigo,
+        description: 'Instalação ALTERADA ao vivo',
+        priceCents: 55555,
+        electricianPercent: 100000,
+        priceLocked: false,
+        delivery: false,
+        active: true,
+      }),
+    })
+    expect(alterado.status).toBe(200)
+
+    const relido = await noBackend('get', '/api/services', undefined, '?page=1&pageSize=100')
+    const linha = (
+      (await relido.json()) as { rows: { id: string; description: string }[] }
+    ).rows.find((x) => x.id === id)
+    expect(linha?.description).toBe('Instalação ALTERADA ao vivo')
+  })
+
+  it('os DEPÓSITOS passam, e a ESCRITA é recusada pelo SERVIDOR — não aceita como o mock', async () => {
+    const lista = await fetch(`${APP}/api/stock-locations`, { headers: { cookie } })
+    expect(lista.status).toBe(200)
+    const { rows } = (await lista.json()) as { rows: { id: string; name: string }[] }
+    expect(rows.length, 'o seed de dev cria o Depósito Principal').toBeGreaterThan(0)
+
+    // O KARDEX fecha com esta lista, e é o motivo de a família ter entrado: o
+    // movimento traz `locationId` do Postgres, e antes desta ligação a lista de
+    // depósitos vinha do mock — a coluna caía no fallback e mostrava uuid cru.
+    const variantes = await fetch(`${APP}/api/products`, { headers: { cookie } })
+    const produto = ((await variantes.json()) as { rows: { id: string }[] }).rows[0]
+    if (produto) {
+      const detalhe = await fetch(`${APP}/api/products/${produto.id}`, { headers: { cookie } })
+      const v = ((await detalhe.json()) as { variants?: { id: string }[] }).variants?.[0]
+      if (v) {
+        const saldos = await fetch(`${APP}/api/variants/${v.id}/stock-balances`, {
+          headers: { cookie },
+        })
+        expect(saldos.status).toBe(200)
+        const linhas = (await saldos.json()) as { rows: { locationId: string }[] }
+        for (const l of linhas.rows) {
+          expect(
+            rows.some((d) => d.id === l.locationId),
+            'saldo aponta para depósito que a lista não conhece — famílias de lados diferentes',
+          ).toBe(true)
+        }
+      }
+    }
+
+    // 403 é resposta LEGÍTIMA e prova o ponto: `depositos:gerenciar` é de
+    // `owner`/`admin`, e o usuário demo é `operator-full`. O mock respondia 200
+    // e ensinava que aquele operador redesenha o galpão.
+    const escrita = await fetch(`${APP}/api/stock-locations`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        parentId: null,
+        code: 'AOVIVO',
+        name: 'Depósito ao vivo',
+        active: true,
+      }),
+    })
+    expect([201, 403]).toContain(escrita.status)
+    if (escrita.status === 403) {
+      expect(((await escrita.json()) as { type: string }).type).toBe(
+        'urn:cabinet:erro:papel-insuficiente',
+      )
+    }
+  })
+
+  it('o CICLO do documento passa — `Concluir` muda o estado no Postgres', async () => {
+    const lista = await fetch(`${APP}/api/orders?page=1&pageSize=20`, { headers: { cookie } })
+    expect(lista.status).toBe(200)
+    const { rows } = (await lista.json()) as { rows: { id: string; status: string }[] }
+    const aberto = rows.find((p) => p.status !== 'concluded' && p.status !== 'cancelled')
+    if (!aberto) return // todos já concluídos numa rodada anterior deste mesmo caso
+
+    const concluido = await fetch(`${APP}/api/orders/${aberto.id}/conclude`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({}),
+    })
+    expect([200, 403, 409]).toContain(concluido.status)
+    if (concluido.status !== 200) return // recusa de papel ou de estado é do SERVIDOR, e basta
+
+    // A prova não é o status da chamada: é o documento relido DIRETO no
+    // backend vindo diferente do que era.
+    const relido = await noBackend('get', `/api/orders/${aberto.id}`)
+    expect(((await relido.json()) as { status: string }).status).toBe('concluded')
+
+    const historico = await fetch(`${APP}/api/orders/${aberto.id}/professional-history`, {
+      headers: { cookie },
+    })
+    expect(historico.status).toBe(200)
+  })
+
+  it('os PAPÉIS vêm do servidor — e o catálogo de permissões com eles', async () => {
+    const papeis = await fetch(`${APP}/api/roles`, { headers: { cookie } })
+    expect(papeis.status).toBe(200)
+    const { rows } = (await papeis.json()) as { rows: { id: string; name: string }[] }
+    expect(rows.length, 'a 0031 semeia os cinco papéis de fábrica').toBeGreaterThan(0)
+    const primeiro = rows[0]
+    if (!primeiro) return
+
+    const detalhe = await fetch(`${APP}/api/roles/${primeiro.id}`, { headers: { cookie } })
+    expect(detalhe.status).toBe(200)
+    expect(((await detalhe.json()) as { id: string }).id).toBe(primeiro.id)
+
+    // Catálogo e registro do mesmo lado: papel do servidor com permissão do
+    // mock apontaria para chave que o Postgres não conhece, e a tela de
+    // permissões marcaria caixa nenhuma.
+    const permissoes = await fetch(`${APP}/api/permissions`, { headers: { cookie } })
+    expect(permissoes.status).toBe(200)
+  })
+
+  it('os RELATÓRIOS vêm do servidor — os dez, no shape do contrato', async () => {
+    // A tela da Fase C é UMA seção com dez abas: ligar metade poria seis abas
+    // lendo o Postgres e quatro lendo ficção, sem nada distinguindo as duas.
+    // Por isso o caso percorre as dez e não uma amostra.
+    const periodo = '?from=2026-01-01&to=2026-12-31'
+    const comPeriodo = [
+      'abc-curve',
+      'products-sold',
+      'sales-comparison',
+      'salesperson-performance',
+      'professional-ranking',
+      'supplier-movement',
+      'quote-vs-stock',
+    ]
+    for (const nome of comPeriodo) {
+      const r = await fetch(`${APP}/api/reports/${nome}${periodo}`, { headers: { cookie } })
+      expect(r.status, `relatório ${nome}`).toBe(200)
+      expect(await r.json()).toHaveProperty('rows')
+    }
+
+    // Estes três têm query PRÓPRIA, e é o detalhe que faz uma sonda ingênua
+    // mentir: sem o parâmetro obrigatório eles respondem 400, e 400 nunca
+    // significa "servida" — significa que a validação respondeu antes do handler.
+    for (const busca of ['stock-valuation', 'stock-aging']) {
+      const r = await fetch(`${APP}/api/reports/${busca}`, { headers: { cookie } })
+      expect(r.status, `relatório ${busca}`).toBe(200)
+    }
+    const aniversarios = await fetch(`${APP}/api/reports/birthdays?month=8`, {
+      headers: { cookie },
+    })
+    expect(aniversarios.status).toBe(200)
+    expect(await aniversarios.json()).toHaveProperty('month', 8)
+  })
+
   it('nenhuma rota de /api sobrou no mock — a passagem cobre o contrato', () => {
     // A afirmação central da #274, conferida onde o leitor deste arquivo está.
     //

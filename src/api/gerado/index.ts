@@ -59,6 +59,8 @@ import type {
   GetStockAgingReportParams,
   GetStockValuationReportParams,
   GetSupplierMovementReportParams,
+  GoodsReceiptDto,
+  GoodsReceiptWriteRequest,
   HealthStatus,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
@@ -74,6 +76,7 @@ import type {
   ListDeliveriesParams,
   ListEmployeeCommissionTiersParams,
   ListEmployeesParams,
+  ListGoodsReceiptsParams,
   ListOrderParticipantsParams,
   ListOrderProfessionalHistoryParams,
   ListOrdersParams,
@@ -115,6 +118,7 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
+  PagedResultOfGoodsReceiptDto,
   PagedResultOfOrderDto,
   PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
@@ -7718,6 +7722,418 @@ export const getPurchaseStockReplenishment = async (params?: GetPurchaseStockRep
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listGoodsReceiptsResponse200 = {
+  data: PagedResultOfGoodsReceiptDto
+  status: 200
+}
+
+export type listGoodsReceiptsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listGoodsReceiptsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listGoodsReceiptsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listGoodsReceiptsResponseSuccess = (listGoodsReceiptsResponse200) & {
+  headers: Headers;
+};
+export type listGoodsReceiptsResponseError = (listGoodsReceiptsResponse400 | listGoodsReceiptsResponse401 | listGoodsReceiptsResponse403) & {
+  headers: Headers;
+};
+
+export type listGoodsReceiptsResponse = (listGoodsReceiptsResponseSuccess | listGoodsReceiptsResponseError)
+
+export const getListGoodsReceiptsUrl = (params?: ListGoodsReceiptsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/goods-receipts?${stringifiedParams}` : `/api/goods-receipts`
+}
+
+/**
+ * Proposto. Os RECEBIMENTOS da empresa ativa — a nota do fornecedor virando entrada no estoque.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ *
+ * A fila de trabalho de quem responde pelo galpão é esta listagem recortada por `status`: o que ainda não foi conferido, e o que foi conferido e ainda não foi lançado. É a razão de `status` ser parâmetro próprio e não filtro estruturado — a tela abre nele, não o escolhe.
+ */
+export const listGoodsReceipts = async (params?: ListGoodsReceiptsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listGoodsReceiptsResponse> => {
+
+  return apiFetch<listGoodsReceiptsResponse>(getListGoodsReceiptsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createGoodsReceiptResponse201 = {
+  data: GoodsReceiptDto
+  status: 201
+}
+
+export type createGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createGoodsReceiptResponseSuccess = (createGoodsReceiptResponse201) & {
+  headers: Headers;
+};
+export type createGoodsReceiptResponseError = (createGoodsReceiptResponse400 | createGoodsReceiptResponse401 | createGoodsReceiptResponse403 | createGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type createGoodsReceiptResponse = (createGoodsReceiptResponseSuccess | createGoodsReceiptResponseError)
+
+export const getCreateGoodsReceiptUrl = () => {
+
+
+
+
+  return `/api/goods-receipts`
+}
+
+/**
+ * Proposto. Abre um recebimento em RASCUNHO e digita a grade da conferência.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * Nasce sempre em `draft`: criar já conferido pularia a decisão que o estado do meio existe para representar. Quem descarrega o caminhão conta; quem responde pelo estoque lança — e por isso `POST /{id}/post` pede OUTRA permissão.
+ *
+ * **`locationId` é opcional aqui e obrigatório na tabela.** Omitido, o servidor resolve o depósito padrão da empresa. Entrada sem depósito é entrada que o kardex não sabe explicar, mas exigir a escolha na tela toda faria o operador escolher sempre o mesmo — e escolher errado uma vez.
+ *
+ * **Descrição da linha NÃO vem do cliente:** é copiada do cadastro da variante na gravação, e congelada ali. Aceitá-la aqui deixaria a conferência dizer que recebeu uma peça e o catálogo dizer que ela é outra, com o `variantId` intacto entre as duas.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const createGoodsReceipt = async (goodsReceiptWriteRequest: GoodsReceiptWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createGoodsReceiptResponse> => {
+
+  return apiFetch<createGoodsReceiptResponse>(getCreateGoodsReceiptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(goodsReceiptWriteRequest)
+  }
+);}
+
+
+
+export type getGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type getGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getGoodsReceiptResponseSuccess = (getGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type getGoodsReceiptResponseError = (getGoodsReceiptResponse401 | getGoodsReceiptResponse403 | getGoodsReceiptResponse404 | getGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type getGoodsReceiptResponse = (getGoodsReceiptResponseSuccess | getGoodsReceiptResponseError)
+
+export const getGetGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}`
+}
+
+/**
+ * Proposto. Um recebimento pelo id, com a grade da conferência.
+ *
+ * A grade vem ordenada por `lineNumber`, que é a ordem em que o operador digitou. Ela **não** é a ordem em que o lançamento acontece — ver `POST /{id}/post`.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const getGoodsReceipt = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getGoodsReceiptResponse> => {
+
+  return apiFetch<getGoodsReceiptResponse>(getGetGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type updateGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateGoodsReceiptResponseSuccess = (updateGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type updateGoodsReceiptResponseError = (updateGoodsReceiptResponse400 | updateGoodsReceiptResponse401 | updateGoodsReceiptResponse403 | updateGoodsReceiptResponse404 | updateGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type updateGoodsReceiptResponse = (updateGoodsReceiptResponseSuccess | updateGoodsReceiptResponseError)
+
+export const getUpdateGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}`
+}
+
+/**
+ * Proposto. Substitui o recebimento INTEIRO — cabeçalho e grade.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * **409 fora do rascunho** (`urn:cabinet:erro:transicao-invalida`). Conferido é uma decisão já tomada sobre a grade, e lançado já virou movimento no kardex: reescrever qualquer um dos dois faria o documento divergir, em silêncio, do estoque que ele gerou. Voltar atrás numa conferência é reescrever a grade inteira, que é o que este PUT faz — não existe DELETE (ver `GoodsReceiptDto`).
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const updateGoodsReceipt = async (id: string,
+    goodsReceiptWriteRequest: GoodsReceiptWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateGoodsReceiptResponse> => {
+
+  return apiFetch<updateGoodsReceiptResponse>(getUpdateGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(goodsReceiptWriteRequest)
+  }
+);}
+
+
+
+export type checkGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type checkGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type checkGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type checkGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type checkGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type checkGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type checkGoodsReceiptResponseSuccess = (checkGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type checkGoodsReceiptResponseError = (checkGoodsReceiptResponse400 | checkGoodsReceiptResponse401 | checkGoodsReceiptResponse403 | checkGoodsReceiptResponse404 | checkGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type checkGoodsReceiptResponse = (checkGoodsReceiptResponseSuccess | checkGoodsReceiptResponseError)
+
+export const getCheckGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}/check`
+}
+
+/**
+ * Proposto. FECHA a conferência: `draft` → `checked`.
+ *
+ * **Permissão: `compras:editar`.**
+ *
+ * É transição e não campo do PUT porque muda o que o documento PERMITE: depois dela a grade para de ser editável e o lançamento passa a ser possível. Um `status: "checked"` aceito no corpo faria essa passagem acontecer no meio de uma digitação distraída.
+ *
+ * **A regra que esta transição cobra, e que o banco de propósito NÃO cobra: linha que divergiu precisa de `divergenceReason` escrito.** Durante a conferência a grade passa por todos os estados intermediários — a linha nasce com recebido zero e vai subindo enquanto alguém conta a caixa —, e nesse intervalo divergir sem motivo é o estado normal, não defeito. Por isso a regra é da transição, e não um CHECK que recusaria a digitação.
+ *
+ * A recusa é **400 com `fields[]`**, apontando `items[N].divergenceReason` linha a linha: é isso que permite à tela pôr o cursor no lugar certo. Um 409 diria só "não dá". Recebimento sem linha nenhuma é 409 — conferência vazia declarada conferida é a nota dizendo que o caminhão veio vazio, e isso se resolve apagando o rascunho.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const checkGoodsReceipt = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<checkGoodsReceiptResponse> => {
+
+  return apiFetch<checkGoodsReceiptResponse>(getCheckGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type postGoodsReceiptResponse200 = {
+  data: GoodsReceiptDto
+  status: 200
+}
+
+export type postGoodsReceiptResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type postGoodsReceiptResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type postGoodsReceiptResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type postGoodsReceiptResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type postGoodsReceiptResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type postGoodsReceiptResponseSuccess = (postGoodsReceiptResponse200) & {
+  headers: Headers;
+};
+export type postGoodsReceiptResponseError = (postGoodsReceiptResponse400 | postGoodsReceiptResponse401 | postGoodsReceiptResponse403 | postGoodsReceiptResponse404 | postGoodsReceiptResponse409) & {
+  headers: Headers;
+};
+
+export type postGoodsReceiptResponse = (postGoodsReceiptResponseSuccess | postGoodsReceiptResponseError)
+
+export const getPostGoodsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/goods-receipts/${id}/post`
+}
+
+/**
+ * Proposto. LANÇA o recebimento: `checked` → `posted`. Cada linha com quantidade vira entrada no kardex (`ListStockMovements`), marcada como compra e apontando para este documento.
+ *
+ * **Permissão: `estoque:movimentar` — e ela é DIFERENTE da das outras seis de propósito.** Conferir é contar caixa; lançar é mexer no saldo de que alguém responde. O estado do meio existe justamente porque as duas decisões são de pessoas diferentes em horas diferentes, e uma permissão só faria quem conta ter de também lançar — que é como divergência vira "depois eu ajusto".
+ *
+ * **Divergência NÃO bloqueia o lançamento.** Chegaram 8 das 10 pedidas, com motivo declarado: lança 8. Recusar faria a mercadoria que ESTÁ no galpão não existir no sistema, que é exatamente o defeito que o kardex existe para não ter. A divergência fica na linha: ela é a pergunta do comprador ao fornecedor, não uma trava do almoxarifado.
+ *
+ * **O efeito é atômico e não repetível.** Ou o documento fica `posted` com todos os seus movimentos, ou nada acontece; e lançar de novo é 409 (`urn:cabinet:erro:transicao-invalida`), nunca repetição em silêncio — sem isso um duplo clique dobraria o estoque.
+ *
+ * **O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.
+ *
+ * **A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, "o que vem em ordem enviada e ainda não recebida". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.
+ *
+ * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
+ */
+export const postGoodsReceipt = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<postGoodsReceiptResponse> => {
+
+  return apiFetch<postGoodsReceiptResponse>(getPostGoodsReceiptUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
 
   }

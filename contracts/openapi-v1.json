@@ -8596,6 +8596,413 @@
         }
       }
     },
+    "/api/goods-receipts": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "ListGoodsReceipts",
+        "description": "Proposto. Os RECEBIMENTOS da empresa ativa — a nota do fornecedor virando entrada no estoque.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**\n\nA fila de trabalho de quem responde pelo galpão é esta listagem recortada por `status`: o que ainda não foi conferido, e o que foi conferido e ainda não foi lançado. É a razão de `status` ser parâmetro próprio e não filtro estruturado — a tela abre nele, não o escolhe.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `receivedAt`, `issuedAt`, `invoiceNumber`, `status`, `postedAt`. Campo fora dela é 400.\n\n`supplierName` fica de fora pelo motivo de sempre — é eco de outra tabela. A ordenação PADRÃO é `receivedAt` decrescente: \"o que chegou por último\" é a pergunta que abre a tela, e o índice `ix_goods_receipts_fornecedor` da tabela foi desenhado nessa ordem.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "description": "Recorta por estado do recebimento — `draft`, `checked` ou `posted`.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "description": "Só os recebimentos deste fornecedor.",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfGoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CreateGoodsReceipt",
+        "description": "Proposto. Abre um recebimento em RASCUNHO e digita a grade da conferência.\n\n**Permissão: `compras:editar`.**\n\nNasce sempre em `draft`: criar já conferido pularia a decisão que o estado do meio existe para representar. Quem descarrega o caminhão conta; quem responde pelo estoque lança — e por isso `POST /{id}/post` pede OUTRA permissão.\n\n**`locationId` é opcional aqui e obrigatório na tabela.** Omitido, o servidor resolve o depósito padrão da empresa. Entrada sem depósito é entrada que o kardex não sabe explicar, mas exigir a escolha na tela toda faria o operador escolher sempre o mesmo — e escolher errado uma vez.\n\n**Descrição da linha NÃO vem do cliente:** é copiada do cadastro da variante na gravação, e congelada ali. Aceitá-la aqui deixaria a conferência dizer que recebeu uma peça e o catálogo dizer que ela é outra, com o `variantId` intacto entre as duas.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoodsReceiptWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods-receipts/{id}": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetGoodsReceipt",
+        "description": "Proposto. Um recebimento pelo id, com a grade da conferência.\n\nA grade vem ordenada por `lineNumber`, que é a ordem em que o operador digitou. Ela **não** é a ordem em que o lançamento acontece — ver `POST /{id}/post`.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["compras"],
+        "operationId": "UpdateGoodsReceipt",
+        "description": "Proposto. Substitui o recebimento INTEIRO — cabeçalho e grade.\n\n**Permissão: `compras:editar`.**\n\n**409 fora do rascunho** (`urn:cabinet:erro:transicao-invalida`). Conferido é uma decisão já tomada sobre a grade, e lançado já virou movimento no kardex: reescrever qualquer um dos dois faria o documento divergir, em silêncio, do estoque que ele gerou. Voltar atrás numa conferência é reescrever a grade inteira, que é o que este PUT faz — não existe DELETE (ver `GoodsReceiptDto`).\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoodsReceiptWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — recebimento fora do rascunho (`urn:cabinet:erro:transicao-invalida`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods-receipts/{id}/check": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "CheckGoodsReceipt",
+        "description": "Proposto. FECHA a conferência: `draft` → `checked`.\n\n**Permissão: `compras:editar`.**\n\nÉ transição e não campo do PUT porque muda o que o documento PERMITE: depois dela a grade para de ser editável e o lançamento passa a ser possível. Um `status: \"checked\"` aceito no corpo faria essa passagem acontecer no meio de uma digitação distraída.\n\n**A regra que esta transição cobra, e que o banco de propósito NÃO cobra: linha que divergiu precisa de `divergenceReason` escrito.** Durante a conferência a grade passa por todos os estados intermediários — a linha nasce com recebido zero e vai subindo enquanto alguém conta a caixa —, e nesse intervalo divergir sem motivo é o estado normal, não defeito. Por isso a regra é da transição, e não um CHECK que recusaria a digitação.\n\nA recusa é **400 com `fields[]`**, apontando `items[N].divergenceReason` linha a linha: é isso que permite à tela pôr o cursor no lugar certo. Um 409 diria só \"não dá\". Recebimento sem linha nenhuma é 409 — conferência vazia declarada conferida é a nota dizendo que o caminhão veio vazio, e isso se resolve apagando o rascunho.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — linha divergente sem motivo declarado, em `fields[]`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — recebimento fora do rascunho ou sem itens (`urn:cabinet:erro:transicao-invalida`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goods-receipts/{id}/post": {
+      "post": {
+        "tags": ["compras"],
+        "operationId": "PostGoodsReceipt",
+        "description": "Proposto. LANÇA o recebimento: `checked` → `posted`. Cada linha com quantidade vira entrada no kardex (`ListStockMovements`), marcada como compra e apontando para este documento.\n\n**Permissão: `estoque:movimentar` — e ela é DIFERENTE da das outras seis de propósito.** Conferir é contar caixa; lançar é mexer no saldo de que alguém responde. O estado do meio existe justamente porque as duas decisões são de pessoas diferentes em horas diferentes, e uma permissão só faria quem conta ter de também lançar — que é como divergência vira \"depois eu ajusto\".\n\n**Divergência NÃO bloqueia o lançamento.** Chegaram 8 das 10 pedidas, com motivo declarado: lança 8. Recusar faria a mercadoria que ESTÁ no galpão não existir no sistema, que é exatamente o defeito que o kardex existe para não ter. A divergência fica na linha: ela é a pergunta do comprador ao fornecedor, não uma trava do almoxarifado.\n\n**O efeito é atômico e não repetível.** Ou o documento fica `posted` com todos os seus movimentos, ou nada acontece; e lançar de novo é 409 (`urn:cabinet:erro:transicao-invalida`), nunca repetição em silêncio — sem isso um duplo clique dobraria o estoque.\n\n**O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.\n\n**A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, \"o que vem em ordem enviada e ainda não recebida\". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — recebimento ainda não conferido ou já lançado (`urn:cabinet:erro:transicao-invalida`), ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cost-profiles": {
       "get": {
         "tags": ["precos"],
@@ -17746,6 +18153,220 @@
           "reason": {
             "description": "Por que a data mudou.",
             "type": "string"
+          }
+        }
+      },
+      "GoodsReceiptDto": {
+        "description": "Proposto. Um RECEBIMENTO — a nota do fornecedor virando entrada no estoque. É a maior tela do legado (`Nota_entrada`) decomposta em fluxo.\n\n**O que entra aqui é a metade FÍSICA:** quem entregou, o que veio, o que veio a MENOS do que se pediu, e o efeito disso no estoque. A metade FISCAL — chave de 44 dígitos, XML da NF-e, manifestação do destinatário, ICMS e IPI linha a linha — fica de fora de propósito: ela é trilho próprio, e misturar as duas faria a entrada de mercadoria depender de a SEFAZ estar no ar.\n\n**Os três estados, e o do meio não é decoração.** `draft` é conferindo, e nada disso tocou o estoque; `checked` é a conferência fechada, com as divergências justificadas; `posted` é lançado, cada linha virou movimento de entrada. O estado do meio existe porque conferir e lançar são decisões de pessoas diferentes em horas diferentes — e é por isso que `POST /{id}/post` pede outra permissão que o resto da família.\n\n**Não guarda dinheiro, e isso é decisão.** Custo de compra, ICMS e IPI da linha ficam fora: quase tudo o que o legado guarda ali é FISCAL, e o que não é (custo de reposição) depende da regra de formação de custo, que ainda não está decidida. Coluna errada sai por migração de correção; coluna que falta entra por acréscimo.\n\n**Também não existe \"não gera estoque\".** O legado tem a flag (`Nen_NaoGeraEstoque`): nota que entra no sistema e não mexe no saldo. Aqui lançar é, por definição, mexer no saldo — um `posted` que não movesse estoque seria um estado que a palavra não descreve. Quando o caso real aparecer (remessa em consignação, retorno de conserto), ele entra como TIPO de recebimento, não como flag negativa no cabeçalho.\n\n**A porta de DESCARTAR o rascunho ficou de fora, e é dívida declarada.** A tabela reserva o privilégio para isso — rascunho se apaga: nota trocada, fornecedor errado, caminhão que era de outra empresa —, e o contrato não a abre porque não tem DELETE em lugar nenhum (§9 padrão 8, guardado por `src/data/contrato-bloco2.test.ts`): cadastro se desativa, documento se cancela com estado próprio. As duas saídas custam decisão que não cabe nesta publicação — abrir a exceção à regra, ou acrescentar `cancelled` ao vocabulário de estados, que é migração. Enquanto nenhuma delas acontece, o rascunho errado se corrige pelo PUT, que substitui o documento inteiro; o que não dá é fazê-lo sumir da fila.",
+        "required": [
+          "id",
+          "status",
+          "supplierId",
+          "supplierName",
+          "locationId",
+          "locationName",
+          "receivedAt",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "description": "`draft` enquanto se confere, `checked` depois de `POST /{id}/check`, `posted` depois de `POST /{id}/post`.\n\nVocabulário FECHADO: o preço de abrir é uma migração de uma linha, e o de não fechar é a tela que filtra por estado devolvendo lista curta demais, meses depois, por causa de um valor digitado errado.",
+            "type": "string",
+            "enum": ["draft", "checked", "posted"]
+          },
+          "supplierId": {
+            "description": "Quem entregou. É um `PartnerDto` no papel de fornecedor.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "carrierId": {
+            "description": "A TRANSPORTADORA, quando houve uma. Também é um `PartnerDto` — o papel é a coluna em que o id aparece, e não uma flag no cadastro: é o mesmo motivo pelo qual o mesmo CNPJ é cliente e fornecedor ao mesmo tempo.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "carrierName": {
+            "type": ["string", "null"]
+          },
+          "locationId": {
+            "description": "ONDE a mercadoria descarregou — o depósito que recebe as entradas do lançamento. Resolvido para o padrão da empresa quando a escrita o omite.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "invoiceNumber": {
+            "description": "O número da nota como o operador o lê no papel. **Texto, e não inteiro:** número de nota tem série, tem zero à esquerda e tem letra em regime especial — o `int` do legado é a forma que já perdeu informação. Nulo é caso real: remessa que chega antes da nota.",
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "description": "Emissão da NOTA. Diferente de `receivedAt`, e a diferença entre as duas é o que a operação chama de trânsito.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "description": "Chegada da MERCADORIA.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "postedAt": {
+            "description": "Quando o recebimento foi lançado. `null` até lá, e nunca preenchido fora de `posted`: estado e carimbo andam juntos nos dois sentidos, e o par incoerente não é representável no banco.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "employeeId": {
+            "description": "Quem respondeu pelo recebimento. Nulo na carga do legado.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "employeeName": {
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptItemDto"
+            }
+          }
+        }
+      },
+      "GoodsReceiptItemDto": {
+        "description": "Proposto. Uma linha CONFERIDA: o que a ordem pedia, o que o caminhão trouxe, e a diferença entre os dois.\n\n**A conferência é o par `quantityOrdered` × `quantityReceived`, e é só isso.** No legado ela mora em `nota_entrada_det`, no par `Ned_quantidade_solicit` × `Ned_quantidade_recebida`. A divergência de VALOR é outra coisa, mora em outra tabela (`Nota_Entrada_Dif`, por nota, com trilha de desbloqueio) e é assunto do trilho financeiro — misturar as duas faria a conferência do galpão travar por diferença de preço, que quem descarrega o caminhão não tem como resolver.",
+        "required": ["lineNumber", "variantId", "description", "quantityReceived"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "description": "A ordem da linha DENTRO do recebimento, 1-based.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "description": "A variante recebida. **Obrigatória, ao contrário da linha do orçamento:** recebimento move ESTOQUE, e estoque é de variante. Item digitado à mão — que o orçamento permite — não tem saldo a mexer, e uma linha dessas aqui seria uma entrada que o kardex não sabe onde lançar.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "description": "Descrição congelada na gravação. Quem lê a conferência de ontem lê o que estava escrito ontem, não o cadastro de hoje.",
+            "type": "string"
+          },
+          "quantityOrdered": {
+            "description": "O que a ordem de compra pedia, em SNAPSHOT.\n\n**`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação. Nulo quer dizer \"não havia o que comparar\", e é diferente de zero, que diria \"pediram nada\".\n\nÉ por esta quantidade que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem — e não a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra nunca desfaz. Ver `POST /{id}/post`.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "quantityReceived": {
+            "description": "O que de fato chegou. Nunca negativo: devolução ao fornecedor é documento próprio, e um recebimento com sinal trocado sairia como baixa de estoque rotulada de compra.",
+            "type": "number",
+            "format": "double"
+          },
+          "divergence": {
+            "description": "Recebido menos pedido, calculado pelo servidor. Negativo quando veio a menos, positivo quando veio a mais — e a mais acontece, com o fornecedor que arredonda a caixa.\n\n**`null` no avulso, e isso não é o mesmo que zero.** Zero diz \"bateu certinho\"; nulo diz que não há com o que comparar. Devolver zero para o avulso seria afirmação sobre uma ordem que não existe. Vem calculado daqui pela mesma razão que os totais das outras famílias: a conta é uma só, e não uma por tela.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "divergenceReason": {
+            "description": "Por que veio diferente, em texto livre. **Exigido por `POST /{id}/check` em toda linha que divergiu**, e ignorado nas que bateram.\n\n**É ADIÇÃO, não porte:** o legado registra que veio diferente e não registra por quê — quem precisava saber perguntava por telefone. O campo entra porque a informação se perde em horas, e é o único da família que não tem coluna correspondente no legado.\n\nTexto e não vocabulário fechado justamente porque não há enumerado a portar: fechar aqui seria inventá-lo. Ele vira lista quando a operação disser quais são os motivos de verdade.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "GoodsReceiptWriteRequest": {
+        "description": "Proposto. Cria ou SUBSTITUI o recebimento inteiro.\n\n**A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.\n\n**O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.",
+        "required": ["supplierId", "items"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carrierId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "locationId": {
+            "description": "Depósito que recebe. Omitido, o servidor resolve o padrão da empresa — ver `POST /api/goods-receipts`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "invoiceNumber": {
+            "type": ["string", "null"]
+          },
+          "issuedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "description": "Chegada da mercadoria. Omitida, o servidor grava agora — o caso normal é \"chegou agora\", e o campo existe para o lançamento retroativo, que num ERP de operação real é rotina.",
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "employeeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptItemWriteRequest"
+            }
+          }
+        }
+      },
+      "GoodsReceiptItemWriteRequest": {
+        "description": "Proposto. Uma linha na escrita da conferência. `description` e `divergence` não entram: a primeira é copiada do cadastro da variante, a segunda é a subtração que o servidor faz uma vez.",
+        "required": ["lineNumber", "variantId", "quantityReceived"],
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantityOrdered": {
+            "description": "O que a ordem pedia. `null` no recebimento avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria \"a ordem pedia nada\", que não é linha de ordem nenhuma.",
+            "type": ["number", "null"],
+            "format": "double"
+          },
+          "quantityReceived": {
+            "type": "number",
+            "format": "double"
+          },
+          "divergenceReason": {
+            "description": "Preenchível a qualquer momento do rascunho, e cobrado só na transição: durante a contagem, divergir sem motivo é o estado normal.",
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PagedResultOfGoodsReceiptDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoodsReceiptDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

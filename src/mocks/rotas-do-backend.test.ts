@@ -6,8 +6,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
 import {
+  PROXIMO_PASSO,
   ROTAS_DO_BACKEND,
   ROTAS_NO_MOCK,
+  avisoDeSemContrato,
   declararPassagem,
   handlersDePassagem,
   montarRelatorio,
@@ -431,7 +433,14 @@ describe('passthrough por rota', () => {
         { metodo: 'post', caminho: '/api/quotes' },
         { metodo: 'get', caminho: '/api/orders' },
       ],
-      [{ metodo: 'put', caminho: '/api/quotes/{id}', motivo: '501 de mentira, para o teste' }],
+      [
+        {
+          metodo: 'put',
+          caminho: '/api/quotes/{id}',
+          motivo: '501 de mentira, para o teste',
+          natureza: 'sem-handler',
+        },
+      ],
     )
 
     const quotes = linhas.find((l) => l.familia === 'quotes')
@@ -440,6 +449,7 @@ describe('passthrough por rota', () => {
       reais: 2,
       mockadas: 1,
       motivo: '501 de mentira, para o teste',
+      naturezas: ['sem-handler'],
     })
 
     const orders = linhas.find((l) => l.familia === 'orders')
@@ -473,6 +483,86 @@ describe('passthrough por rota', () => {
       expect(ENFEITE, `${r.metodo} ${r.caminho} com motivo de enfeite`).not.toContain(
         motivo.toLowerCase(),
       )
+    }
+  })
+
+  it('o console GRITA a rota SEM CONTRATO — e nomeia o comando que a resolve', () => {
+    // O caso do enunciado: rota que este repo publicou no contrato e o api
+    // ainda não sincronizou responde 404 lá. Aqui ela é mockada, devolve 200
+    // com dado bonito, e quem olha a tela não tem como distinguir isso de
+    // integração. O passthrough não pode mascarar o 404 como mock — então o
+    // console tem de dizer o número, o caminho e o comando.
+    //
+    // Com lista de MENTIRA, e não com `ROTAS_NO_MOCK`: hoje nenhuma rota é
+    // `sem-contrato` (os dois contratos batem byte a byte), então sobre as
+    // constantes reais este caso ficaria verde sem exercitar nada.
+    const linhas = avisoDeSemContrato([
+      {
+        metodo: 'get',
+        caminho: '/api/cost-profiles',
+        motivo: 'publicada aqui, e o api ainda não rodou o sync — 404 lá',
+        natureza: 'sem-contrato',
+      },
+      {
+        metodo: 'get',
+        caminho: '/api/purchase-orders',
+        motivo: '501 de mentira, para o teste',
+        natureza: 'sem-handler',
+      },
+    ])
+
+    expect(linhas[0]).toContain('1 rota(s) SEM CONTRATO')
+    expect(linhas[0]).toContain('NÃO é integração')
+    // O comando, literal: "o api responde 404" sem dizer o que fazer manda quem
+    // lê abrir um handler no repo cujo glue ainda não registra a rota.
+    expect(linhas[0]).toContain('sync:contract')
+    // Só a `sem-contrato` sai nomeada — a de 501 não é mascaramento de 404.
+    expect(linhas.join('\n')).toContain('/api/cost-profiles')
+    expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
+  })
+
+  it('sem rota SEM CONTRATO o console NÃO inventa aviso — e é o estado de hoje', () => {
+    // A outra metade, e ela mede as constantes REAIS de propósito: o dia em que
+    // alguém declarar uma `sem-contrato` sem querer, este caso fica vermelho e
+    // aponta qual. Medido em 2026-08-24 contra `cabinet-erp-api` `5b2d560`, com
+    // os dois `contracts/openapi-v1.json` iguais byte a byte.
+    const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
+    expect(
+      semContrato.map((r) => `${r.metodo} ${r.caminho}`),
+      'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
+    ).toEqual([])
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toEqual([])
+  })
+
+  it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {
+    // `natureza` decide o PRÓXIMO PASSO, e os dois passos são incompatíveis:
+    // 501 pede handler, 404 pede `sync:contract` ANTES do handler. A `#337`
+    // errou esse par escrevendo 501 sobre uma medição contra checkout atrasado
+    // — daí o campo, que tem como ser conferido, no lugar da frase, que não.
+    for (const r of ROTAS_NO_MOCK) {
+      expect(
+        ['sem-handler', 'sem-contrato'],
+        `${r.metodo} ${r.caminho} com natureza fora do vocabulário`,
+      ).toContain(r.natureza)
+    }
+
+    // O passo sai em linha PRÓPRIA, logo abaixo da família — emendado no fim da
+    // linha da família ele passava de 250 caracteres e o nome do arquivo a
+    // editar caía fora da primeira tela. Por isso a busca é pelo ÍNDICE: a
+    // linha do passo tem de vir depois da família a que pertence, e antes da
+    // próxima família, senão ela informa o passo de outro módulo.
+    const ditas: string[] = []
+    declararPassagem('http://localhost:3000', (...a) => ditas.push(a.join(' ')))
+    for (const l of relatorioDaPassagem('http://localhost:3000')) {
+      if (!l.mockadas) continue
+      const i = ditas.findIndex((d) => d.includes(l.familia) && d.includes(`mock=${l.mockadas}`))
+      expect(i, `${l.familia} mockada e ausente do console`).toBeGreaterThan(-1)
+      const abaixo = ditas.slice(i + 1, i + 1 + l.naturezas.length).join('\n')
+      for (const n of l.naturezas) {
+        expect(abaixo, `${l.familia} mockada e sem o próximo passo de ${n}`).toContain(
+          PROXIMO_PASSO[n],
+        )
+      }
     }
   })
 

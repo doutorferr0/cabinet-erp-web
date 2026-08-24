@@ -135,20 +135,61 @@ pnpm codegen        # regera src/api/gerado/ a partir de contracts/openapi-v1.js
 
 ```
 pnpm dev                                          # mock puro — o padrão
-VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real em TODAS as rotas de /api
+VITE_API_PROXY=http://localhost:3000 pnpm dev     # backend real nas rotas de ROTAS_DO_BACKEND
 ```
+
+`VITE_API_PROXY` é **a única flag da passagem** — não há chave por família, por rota nem por
+módulo, e não deve haver: quem escolhe o que sai é a lista em `src/mocks/rotas-do-backend.ts`,
+que é conferida contra o contrato pelo CI. Uma flag a mais seria uma segunda autoridade sobre a
+mesma decisão, e a que ninguém testa é a que ganha.
 
 Sem a variável, o MSW responde tudo e nada sai da origem — é o modo de quem não subiu o backend
 e o do site público. **Com ela, e só com ela**, as operações listadas em
-`src/mocks/rotas-do-backend.ts` saem do mock e atravessam o proxy.
+`rotas-do-backend.ts` saem do mock e atravessam o proxy.
 
-**Desde a #274 (2026-08-21) a lista tem as 78 operações do contrato — a passagem está COMPLETA.**
-Com o proxy de pé, o MSW não responde a nenhuma rota de `/api`; sem ele, responde a todas.
-`rotas-do-backend.ts` deixou de ser "a lista do que já dá para ligar" e virou **o interruptor
-entre dois ambientes**. Medido contra `cabinet-erp-api` `3089106`, por round-trip e com sessão
-real: das 20 que faltavam, **18 respondem 200/201 e 2 respondiam 403 por PAPEL** — nenhuma é 501.
-Remedido em `30a098e`: as duas do 403 (escrita de lista de apoio) **passaram a responder 201/200**,
-porque o `api#70` afrouxou a matriz no mesmo dia.
+A #274 (2026-08-21) fechou a passagem sobre as 78 operações de então, e **aquilo venceu duas
+vezes desde**: o contrato foi a 124 (#341) e a **163** agora. **Remedido em 2026-08-24 contra
+`cabinet-erp-api` `5b2d560`, com par local próprio: 130 operações saem para a rede e 33 continuam
+no MSW** — compras (14), comissões (13) e recebimento (6). Ou seja, `rotas-do-backend.ts` não é
+"a lista do que já dá para ligar" NEM "o interruptor entre dois ambientes" — é as duas coisas, e
+qual delas vale depende de o contrato estar ou não à frente do backend naquele dia. Ele esteve
+nos três estados em três dias.
+
+**A entrega (G4, 10 operações) saiu do mock nesta remedição, e quem a apontou foi a sonda**: a
+nota dizia "o módulo existe no api e não tem rota", medida em `9c5b91f`, e a Fase B mergeou desde.
+Ela era o pior caso da lista — **sem tela e sem handler de mock, uma rota declarada mockada não é
+respondida por ninguém: cai no fallback da SPA e devolve `index.html` com 200.**
+
+**Não copiar esses números para lugar nenhum sem remedir** — este arquivo não roda. A fonte viva
+é o console, que os imprime a cada `pnpm dev` com proxy.
+
+### 501 e 404 não são a mesma dívida — `natureza`
+
+Toda rota de `ROTAS_NO_MOCK` é respondida pelo mock, e por isso a tela mostra dado bonito em
+todas. O que muda é **o que falta do outro lado**, e o campo `natureza` diz qual:
+
+| natureza | o api responde | próximo passo |
+|---|---|---|
+| `sem-handler` | **501** — o contrato de lá conhece o caminho | handler no mapa de `src/core/http/servidor.ts` |
+| `sem-contrato` | **404 `Este caminho não existe no contrato`** | `pnpm sync:contract` + `pnpm codegen` **no api**, ANTES do handler |
+
+**`sem-contrato` é uma janela, não uma prateleira.** Ela abre no merge de contrato AQUI (este repo
+é o dono) e fecha no `sync:contract` de LÁ. Enquanto está aberta, o mock responde 200 onde o
+servidor responderia 404 — e é isso que o passthrough não pode mascarar. O console grita o número
+e os caminhos numa linha própria, antes do relatório por família. **Hoje a classe está vazia**: os
+dois `contracts/openapi-v1.json` batem byte a byte (`c8118093…`, 117 caminhos / 163 operações).
+
+**Errar a natureza manda alguém para o repositório errado**, e já aconteceu duas vezes com as
+mesmas 13 rotas de comissões: a `#337` as declarou 501 medindo contra o checkout compartilhado do
+api, que estava ATRÁS da main; a `#341` remediu contra a main e achou 404; agora são 501 de novo,
+porque o sync aconteceu. **Prosa dentro de uma string não tem como ser conferida contra o
+servidor.** Por isso é campo, e por isso `ao-vivo.test.ts` tem a sonda `a NATUREZA declarada bate
+com o servidor` — o único lugar onde uma declaração de ausência tem quem a invalide (o CI não fala
+com o api, então ela fica verde para sempre lá).
+
+A sonda só afirma o que pode: **404 tem dois significados** — o do roteador ("caminho não existe
+no contrato") e o do handler ("não achei este id") —, e o que os separa é o `detail`, nunca o
+status. Onde 400/401/403 respondem antes do handler, o caso REGISTRA em vez de reprovar.
 
 **Trocar `VITE_API_MODE` para `http` continua NÃO sendo a forma de falar com o backend**, e a
 razão mudou: já não é o 501, é que o **site público é 100% mock** e o modo http o apagaria. Por

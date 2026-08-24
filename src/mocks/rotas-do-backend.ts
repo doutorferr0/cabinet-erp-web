@@ -770,6 +770,45 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/reports/stock-aging' },
   { metodo: 'get', caminho: '/api/reports/quote-vs-stock' },
   { metodo: 'get', caminho: '/api/reports/birthdays' },
+
+  // O bloco FÍSICO da venda (G4, 10 operações) — liberar, separar, o romaneio e
+  // a situação. **Entra por REMEDIÇÃO, e foi a sonda de `natureza` que a pediu.**
+  //
+  // Estas dez viveram em `ROTAS_NO_MOCK` com a nota "o módulo existe no api e
+  // não tem rota — zero handler". Aquilo era verdade em `9c5b91f`. Contra
+  // `5b2d560`, `a NATUREZA declarada bate com o servidor` reprovou apontando
+  // `GET /api/picking-queue` e `GET /api/deliveries` respondendo **200**, e a
+  // conferência da família inteira mostrou que a Fase B do api mergeou: as dez
+  // atravessam o handler, e **nenhuma responde 501 nem o 404 do roteador**.
+  //
+  // **Os quatro 404 que aparecem na sonda são do HANDLER, não do roteador** —
+  // `detail: "Entrega não encontrada."` e `"Pedido de venda não encontrado."`
+  // contra um uuid zerado. É exatamente a armadilha que a sonda separa pelo
+  // corpo: status igual, significados opostos. `POST /api/deliveries` responde
+  // 500 com corpo vazio (o Fastify não valida body ausente) e
+  // `.../items/{lineNumber}/release` responde 403 para `operator-full` — as
+  // duas leituras são INCONCLUSIVAS sobre haver handler, e nenhuma delas é 404.
+  //
+  // **Ligar era obrigatório, não opcional, e a razão não é "já dá":** sem tela e
+  // sem handler de mock, uma rota declarada mockada não é respondida por
+  // ninguém — cai no fallback da SPA e devolve `index.html` com **200**. Era o
+  // pior mascaramento da lista, e o mesmo motivo pelo qual a `#341` recusou-se a
+  // mover `cost-profiles` para o mock.
+  //
+  // Entra INTEIRA, como pedido de venda entrou: o par que esta lista exige é
+  // sobre o SERVIDOR, não sobre o consumidor. As três telas da Fase C — fila de
+  // separação, romaneio, situação do pedido — leem o MESMO progresso, e nascem
+  // falando com o Postgres em vez de nascerem mockadas e precisarem migrar.
+  { metodo: 'get', caminho: '/api/orders/{id}/fulfillment' },
+  { metodo: 'post', caminho: '/api/orders/{id}/items/{lineNumber}/release' },
+  { metodo: 'post', caminho: '/api/orders/{id}/items/{lineNumber}/pick' },
+  { metodo: 'get', caminho: '/api/picking-queue' },
+  { metodo: 'get', caminho: '/api/deliveries' },
+  { metodo: 'post', caminho: '/api/deliveries' },
+  { metodo: 'get', caminho: '/api/deliveries/{id}' },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/items' },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/close' },
+  { metodo: 'post', caminho: '/api/deliveries/{id}/cancel' },
 ]
 
 /**
@@ -792,7 +831,64 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
  * O motivo viaja junto com a rota, e não num comentário, porque é ele que o
  * console imprime. Nome sozinho envelhece mudo.
  */
-export type RotaNoMock = RotaDoBackend & { readonly motivo: string }
+export type RotaNoMock = RotaDoBackend & {
+  readonly motivo: string
+  readonly natureza: NaturezaDaAusencia
+}
+
+/**
+ * 501 E 404 NÃO SÃO A MESMA DÍVIDA — e o `motivo` em prosa não sabia separá-las.
+ *
+ * Toda rota desta lista é mockada, e por isso a tela mostra dado bonito nas
+ * duas. O que muda é o QUE FALTA do outro lado, e as duas faltas têm donos e
+ * próximos passos diferentes:
+ *
+ * - **`sem-handler` → o api responde 501.** A cópia do contrato de lá já
+ *   conhece o caminho; o glue registra a operação e nenhum handler a atende.
+ *   O próximo passo é UM: escrever o handler no mapa de `servidor.ts`.
+ * - **`sem-contrato` → o api responde 404 `Este caminho não existe no
+ *   contrato`.** O caminho foi publicado NESTE repo, que é o dono do contrato,
+ *   e a cópia de lá ainda não sincronizou. O próximo passo são DOIS, nesta
+ *   ordem: `pnpm sync:contract` + `pnpm codegen` no api, e só depois o handler.
+ *   Pedir o handler primeiro é pedir para implementar rota que o glue de lá
+ *   ainda não registra.
+ *
+ * **Por que isso não podia continuar em prosa:** a `#337` declarou as treze de
+ * comissões como 501 medindo contra o checkout compartilhado do api, que estava
+ * ATRÁS da main; contra a main de verdade elas respondiam 404. Mesmo destino
+ * (ficam fora da passagem), próximo passo TROCADO — e quem lesse o console iria
+ * escrever handler num repo cujo contrato não tem a rota. Um campo tem como ser
+ * conferido contra o servidor; uma frase dentro de uma string, não.
+ *
+ * **E é isto que impede o passthrough de mascarar o 404 como mock.** A rota
+ * nova nasce aqui no dia em que o contrato a publica, e o mock a responde com
+ * 200 — indistinguível de integração para quem olha a tela. A natureza é o que
+ * o console grita e o que a sonda ao vivo confere: `sem-contrato` declarada que
+ * DEIXOU de responder 404 reprova em `ao-vivo.test.ts`, que é o único lugar
+ * onde uma declaração de ausência tem quem a invalide.
+ *
+ * **`sem-contrato` é sobre CAMINHO ausente, não sobre contrato divergente**, e a
+ * diferença apareceu no rebase desta PR: a `#345` mexeu no `openapi-v1.json`
+ * daqui sem acrescentar caminho nenhum — 117/163 dos dois lados, conteúdo
+ * diferente. Cópia atrasada em SCHEMA não produz 404; produz 400 na validação
+ * ou 500 no serializador, quando um campo vira obrigatório de um lado só. Só a
+ * cópia atrasada em CAMINHO cai no `setNotFoundHandler` do api, e é só ela que
+ * esta natureza mede.
+ */
+export type NaturezaDaAusencia = 'sem-handler' | 'sem-contrato'
+
+/**
+ * O que fazer a seguir, por natureza — a frase que o console imprime.
+ *
+ * Mora aqui, e não no `motivo` de cada rota, porque é propriedade da CLASSE e
+ * não da rota: repetida quarenta e três vezes ela divergiria na primeira vez
+ * que alguém corrigisse uma cópia só.
+ */
+export const PROXIMO_PASSO: Record<NaturezaDaAusencia, string> = {
+  'sem-handler': 'o api conhece o caminho e responde 501 — falta o handler no mapa de servidor.ts',
+  'sem-contrato':
+    'o api responde 404, nem 501 — falta `pnpm sync:contract` + `pnpm codegen` LÁ, antes do handler',
+}
 
 const COMPRAS_501 =
   '501 no api — a fase B do módulo (api#176) ainda não mergeou; medido em 24/08 contra `f810a39`'
@@ -812,8 +908,15 @@ const RECEBIMENTO_SEM_PORTA =
  * com a regra da divergência e a ordem de trava por `variant_id` — e
  * `tests/recebimento.test.ts` tem 394. O que falta é o caminho HTTP: `git grep
  * goods-receipts` em `src/core/http/servidor.ts` devolve ZERO na main
- * `f810a39`. Não é o 501 da fase, é caminho que o servidor não tem — o par
- * local devolve o 404 do Fastify.
+ * `f810a39`.
+ *
+ * **A frase que vivia aqui — "não é o 501 da fase, é caminho que o servidor não
+ * tem, e o par local devolve o 404 do Fastify" — venceu em HORAS, e é o caso
+ * que fez `natureza` existir.** A `api#186` rodou o `sync:contract` logo depois
+ * desta PR, e desde então os dois `contracts/openapi-v1.json` batem byte a byte
+ * (`c8118093…`, 117 caminhos / 163 operações). O glue registra tudo o que o
+ * contrato declara, então **as seis respondem 501, não 404** — quem sondar
+ * esperando 404 lê o 501 como rota errada. Natureza: `sem-handler`.
  *
  * **É esse buraco que a fase B fecha, e ele tem um efeito que não é óbvio:** o
  * rastro em `audit_log` é escrito pela borda a partir do CAMINHO, então sem
@@ -824,12 +927,42 @@ const RECEBIMENTO_SEM_PORTA =
  * no servidor e a conferência no mock, e é a grade que faz o recebimento.
  */
 const RECEBIMENTO: readonly RotaNoMock[] = [
-  { metodo: 'get', caminho: '/api/goods-receipts', motivo: RECEBIMENTO_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/goods-receipts', motivo: RECEBIMENTO_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/goods-receipts/{id}', motivo: RECEBIMENTO_SEM_PORTA },
-  { metodo: 'put', caminho: '/api/goods-receipts/{id}', motivo: RECEBIMENTO_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/goods-receipts/{id}/check', motivo: RECEBIMENTO_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/goods-receipts/{id}/post', motivo: RECEBIMENTO_SEM_PORTA },
+  {
+    metodo: 'get',
+    caminho: '/api/goods-receipts',
+    motivo: RECEBIMENTO_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/goods-receipts',
+    motivo: RECEBIMENTO_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/goods-receipts/{id}',
+    motivo: RECEBIMENTO_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/goods-receipts/{id}',
+    motivo: RECEBIMENTO_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/goods-receipts/{id}/check',
+    motivo: RECEBIMENTO_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/goods-receipts/{id}/post',
+    motivo: RECEBIMENTO_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
 ]
 
 /**
@@ -842,100 +975,180 @@ const RECEBIMENTO: readonly RotaNoMock[] = [
  * quatro arquivos do cálculo — o que falta é `rotas.ts`, e nenhum `operationId`
  * desta família está no mapa de `servidor.ts`.
  *
- * **REMEDIDO em 2026-08-24 contra a main ATUAL do api (`02721f0`), e o status é
- * outro: as treze respondem 404 `Este caminho não existe no contrato`, não
- * 501.** A `#337` mediu contra `844b360` — o checkout compartilhado, que estava
- * ATRÁS da main — e concluiu 501. **A diferença não é cosmética:** 501 diz "o
- * contrato do api conhece a rota e falta handler"; 404 diz "a cópia do contrato
- * de lá ainda não sincronizou com este repo", que é o estado normal e temporário
- * depois de um merge aqui. As duas leituras levam ao mesmo lugar hoje — ficam
- * fora da passagem — mas só a segunda explica por que o `sync:contract` do api é
- * o próximo passo, e não o handler.
+ * **Estas treze mudaram de natureza DUAS vezes em três dias, e é por isso que a
+ * distinção virou campo.** A `#337` as declarou 501 medindo contra `844b360` —
+ * o checkout compartilhado do api, que estava ATRÁS da main. A `#341` remediu
+ * contra `02721f0` e achou **404 `Este caminho não existe no contrato`**: a
+ * cópia do contrato de lá ainda não tinha sincronizado. **REMEDIDO agora contra
+ * `5b2d560`: 501 de novo**, porque o `sync:contract` do api aconteceu e os dois
+ * `contracts/openapi-v1.json` batem byte a byte (`c8118093…`).
+ *
+ * O destino nunca mudou — ficam fora da passagem nas três leituras. O que mudou
+ * foi o PRÓXIMO PASSO, e ele é a única coisa que o console tinha para oferecer:
+ * com 404 o passo é `pnpm sync:contract` no api; com 501 é o handler. Uma frase
+ * dentro de uma string não tem como ser conferida contra o servidor. O campo
+ * `natureza` tem — ver a sonda em `ao-vivo.test.ts`.
  *
  * Sai INTEIRA quando a Fase B ligar os handlers: a apuração é justamente onde os
  * dois lados têm de ser o mesmo id.
  */
 const COMISSOES: readonly RotaNoMock[] = [
-  { metodo: 'get', caminho: '/api/orders/{id}/participants', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'put', caminho: '/api/orders/{id}/participants', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/employees/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'put', caminho: '/api/employees/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/partners/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'put', caminho: '/api/partners/{id}/commission-tiers', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/technical-reserves', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/technical-reserves', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/technical-reserves/{id}/cancel', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/commissions/earnings', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/commissions/closings', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/commissions/closings', motivo: COMISSOES_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/commissions/closings/{id}/entries', motivo: COMISSOES_SEM_PORTA },
-]
-
-/**
- * O bloco FÍSICO da venda (G4) — liberar, separar, o romaneio e a situação.
- *
- * **A ordem se inverteu neste trilho, e de propósito.** O módulo de domínio do
- * `cabinet-erp-api` JÁ EXISTE — `src/modules/entrega/` e a migração `0062` —
- * porque migração, invariante e bateria não dependem do contrato, e é ali que
- * mora o risco: baixar estoque duas vezes, entregar peça que ninguém separou,
- * deixar reserva presa num depósito. O que faltava era a FORMA HTTP, e é ela
- * que esta PR publica.
- *
- * **Medição (2026-08-24, `cabinet-erp-api` main `9c5b91f`):** `git grep` por
- * `api/deliveries|picking-queue|/fulfillment` em `src/` e `tests/` devolve UMA
- * ocorrência, e ela é a nota de `ConcludeOrder` no contrato GERADO dizendo que
- * a entrega não existe — nenhuma rota, nenhum handler. `src/modules/entrega/`
- * tem `fluxo.ts`, `estados.ts` e `situacao.ts`, e nada os chama por HTTP. A
- * cópia do contrato de lá tem 90 caminhos / 124 operações. Não é o 501 da fase:
- * é caminho que o servidor não tem, e o par local devolve o 404 do Fastify.
- *
- * Sai INTEIRA quando a Fase B do api ligar os handlers, e a razão é própria
- * desta família: as três telas da Fase C — fila de separação, romaneio, situação
- * do pedido — leem o MESMO progresso. Ligar metade poria a fila lendo Postgres e
- * a situação lendo ficção sobre as mesmas peças, e as duas discordariam sobre o
- * que já saiu do galpão.
- */
-const ENTREGA_SEM_PORTA =
-  'o módulo `src/modules/entrega/` existe no api desde a `0062` e não tem rota — medido em 9c5b91f: zero handler, e o par local devolve 404'
-
-const ENTREGA: readonly RotaNoMock[] = [
-  { metodo: 'get', caminho: '/api/orders/{id}/fulfillment', motivo: ENTREGA_SEM_PORTA },
   {
-    metodo: 'post',
-    caminho: '/api/orders/{id}/items/{lineNumber}/release',
-    motivo: ENTREGA_SEM_PORTA,
+    metodo: 'get',
+    caminho: '/api/orders/{id}/participants',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/orders/{id}/participants',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/employees/{id}/commission-tiers',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/employees/{id}/commission-tiers',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/partners/{id}/commission-tiers',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/partners/{id}/commission-tiers',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/technical-reserves',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
-    caminho: '/api/orders/{id}/items/{lineNumber}/pick',
-    motivo: ENTREGA_SEM_PORTA,
+    caminho: '/api/technical-reserves',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
   },
-  { metodo: 'get', caminho: '/api/picking-queue', motivo: ENTREGA_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/deliveries', motivo: ENTREGA_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/deliveries', motivo: ENTREGA_SEM_PORTA },
-  { metodo: 'get', caminho: '/api/deliveries/{id}', motivo: ENTREGA_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/deliveries/{id}/items', motivo: ENTREGA_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/deliveries/{id}/close', motivo: ENTREGA_SEM_PORTA },
-  { metodo: 'post', caminho: '/api/deliveries/{id}/cancel', motivo: ENTREGA_SEM_PORTA },
+  {
+    metodo: 'post',
+    caminho: '/api/technical-reserves/{id}/cancel',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/commissions/earnings',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/commissions/closings',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/commissions/closings',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/commissions/closings/{id}/entries',
+    motivo: COMISSOES_SEM_PORTA,
+    natureza: 'sem-handler',
+  },
 ]
 
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
-  { metodo: 'get', caminho: '/api/purchase-requests', motivo: COMPRAS_501 },
-  { metodo: 'post', caminho: '/api/purchase-requests', motivo: COMPRAS_501 },
-  { metodo: 'get', caminho: '/api/purchase-requests/{id}', motivo: COMPRAS_501 },
-  { metodo: 'put', caminho: '/api/purchase-requests/{id}', motivo: COMPRAS_501 },
-  { metodo: 'post', caminho: '/api/purchase-requests/{id}/cancel', motivo: COMPRAS_501 },
-  { metodo: 'get', caminho: '/api/purchase-orders', motivo: COMPRAS_501 },
-  { metodo: 'post', caminho: '/api/purchase-orders', motivo: COMPRAS_501 },
-  { metodo: 'get', caminho: '/api/purchase-orders/{id}', motivo: COMPRAS_501 },
-  { metodo: 'put', caminho: '/api/purchase-orders/{id}', motivo: COMPRAS_501 },
-  { metodo: 'post', caminho: '/api/purchase-orders/{id}/send', motivo: COMPRAS_501 },
-  { metodo: 'post', caminho: '/api/purchase-orders/{id}/reschedule', motivo: COMPRAS_501 },
-  { metodo: 'post', caminho: '/api/purchase-orders/{id}/cancel', motivo: COMPRAS_501 },
-  { metodo: 'get', caminho: '/api/purchases/arrival-forecast', motivo: COMPRAS_501 },
-  { metodo: 'get', caminho: '/api/purchases/stock-replenishment', motivo: COMPRAS_501 },
+  {
+    metodo: 'get',
+    caminho: '/api/purchase-requests',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/purchase-requests',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/purchase-requests/{id}',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/purchase-requests/{id}',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/purchase-requests/{id}/cancel',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  { metodo: 'get', caminho: '/api/purchase-orders', motivo: COMPRAS_501, natureza: 'sem-handler' },
+  { metodo: 'post', caminho: '/api/purchase-orders', motivo: COMPRAS_501, natureza: 'sem-handler' },
+  {
+    metodo: 'get',
+    caminho: '/api/purchase-orders/{id}',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/purchase-orders/{id}',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/purchase-orders/{id}/send',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/purchase-orders/{id}/reschedule',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/purchase-orders/{id}/cancel',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/purchases/arrival-forecast',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/purchases/stock-replenishment',
+    motivo: COMPRAS_501,
+    natureza: 'sem-handler',
+  },
   ...COMISSOES,
-  ...ENTREGA,
   ...RECEBIMENTO,
 ]
 
@@ -946,12 +1159,21 @@ function familia(caminho: string): string {
   return primeiro === 'api' ? (partes[1] ?? 'api') : primeiro
 }
 
-/** Uma linha do relatório: a família, quantas rotas, e de onde ela responde. */
+/**
+ * Uma linha do relatório: a família, quantas rotas, e de onde ela responde.
+ *
+ * `naturezas` é um conjunto, e não um valor, porque uma família pode carregar
+ * as duas — parte do módulo já sincronizada e parte publicada agora. Guardar só
+ * a última lida faria o console prometer um próximo passo para rotas que
+ * precisam do outro, que é o defeito que `natureza` existe para tirar do
+ * caminho.
+ */
 export type LinhaDoRelatorio = {
   readonly familia: string
   readonly reais: number
   readonly mockadas: number
   readonly motivo?: string
+  readonly naturezas: readonly NaturezaDaAusencia[]
 }
 
 /**
@@ -986,9 +1208,12 @@ export function montarRelatorio(
   reais: readonly RotaDoBackend[],
   mockadas: readonly RotaNoMock[],
 ): LinhaDoRelatorio[] {
-  const linhas = new Map<string, { reais: number; mockadas: number; motivo?: string }>()
+  const linhas = new Map<
+    string,
+    { reais: number; mockadas: number; motivo?: string; naturezas: Set<NaturezaDaAusencia> }
+  >()
   const pegar = (f: string) => {
-    const atual = linhas.get(f) ?? { reais: 0, mockadas: 0 }
+    const atual = linhas.get(f) ?? { reais: 0, mockadas: 0, naturezas: new Set() }
     linhas.set(f, atual)
     return atual
   }
@@ -997,16 +1222,48 @@ export function montarRelatorio(
     const l = pegar(familia(r.caminho))
     l.mockadas += 1
     l.motivo = r.motivo
+    l.naturezas.add(r.natureza)
   }
   return [...linhas.entries()]
-    .map(([familia, l]) => ({ familia, ...l }))
+    .map(([familia, l]) => ({ ...l, familia, naturezas: [...l.naturezas].sort() }))
     .sort((a, b) => a.familia.localeCompare(b.familia))
+}
+
+/**
+ * O AVISO DO 404 — e ele RECEBE a lista, pela mesma razão que `montarRelatorio`.
+ *
+ * Hoje `ROTAS_NO_MOCK` não tem nenhuma rota `sem-contrato`: os dois
+ * `contracts/openapi-v1.json` batem byte a byte (`c8118093…`, 117 caminhos /
+ * 163 operações), medido em 2026-08-24 contra `cabinet-erp-api` `5b2d560`. **Ou
+ * seja, o estado que este aviso existe para denunciar não pode ser provocado
+ * pelas constantes do módulo** — e guarda que não tem como ficar vermelha não
+ * mede nada. Com a lista como parâmetro, o teste a fabrica.
+ *
+ * E o estado nasce vazio porque é assim que ele deve ficar: `sem-contrato` é
+ * uma janela, não uma prateleira. Ela abre no merge de contrato aqui e fecha no
+ * `sync:contract` de lá, e enquanto está aberta o mock responde 200 onde o
+ * servidor responderia 404 — dado bonito na tela, indistinguível de integração.
+ */
+export function avisoDeSemContrato(mockadas: readonly RotaNoMock[]): string[] {
+  const semContrato = mockadas.filter((r) => r.natureza === 'sem-contrato')
+  if (!semContrato.length) return []
+  return [
+    `[passagem] ! ${semContrato.length} rota(s) SEM CONTRATO no api — o mock responde onde o servidor responderia 404. Isto NÃO é integração: ${PROXIMO_PASSO['sem-contrato']}.`,
+    ...semContrato.map((r) => `[passagem]   404 ${r.metodo.toUpperCase().padEnd(6)} ${r.caminho}`),
+  ]
 }
 
 /**
  * Imprime o relatório. `imprimir` é PARÂMETRO para que o teste o leia sem
  * espionar o `console` global — e para que este módulo continue sem efeito
  * colateral no import, que é o que permite o site público importá-lo.
+ *
+ * **A linha de `sem-contrato` é a razão de este bloco existir.** Uma rota nova
+ * do contrato é mockada aqui e devolve 200 com dado bonito, enquanto o api
+ * responderia 404 nela — quem olha a tela não tem como distinguir isso de
+ * integração, e é assim que "o par local está funcionando" vira uma frase
+ * falsa. Enquanto a lista tiver uma dessas, o console diz o número na PRIMEIRA
+ * linha e nomeia o comando que a resolve.
  */
 export function declararPassagem(
   backendReal: string | undefined,
@@ -1023,14 +1280,26 @@ export function declararPassagem(
   imprimir(
     `[passagem] backend real em ${backendReal} — ${reais} rota(s) SAEM para a rede, ${mockadas} continuam no MSW.`,
   )
+
+  // O aviso do 404 vem ANTES das famílias, e sozinho. Espremido entre vinte
+  // linhas de relatório ele seria lido como mais uma delas — e o que ele diz
+  // não é "esta família está mockada", é "o mock está respondendo no lugar de
+  // um 404, e isto NÃO é integração".
+  for (const linha of avisoDeSemContrato(ROTAS_NO_MOCK)) imprimir(linha)
+
   for (const l of linhas) {
     const partida = l.reais > 0 && l.mockadas > 0
     const onde = l.mockadas === 0 ? 'REAL' : l.reais === 0 ? 'MOCK' : 'PARTIDA'
     const motivo = l.motivo ? `  — ${l.motivo}` : ''
-    const aviso = partida ? '  ⚠ família partida: id do servidor convive com id do mock' : ''
+    const aviso = partida ? '  ! família partida: id do servidor convive com id do mock' : ''
     imprimir(
       `[passagem] ${onde.padEnd(8)} ${l.familia.padEnd(22)} real=${l.reais} mock=${l.mockadas}${motivo}${aviso}`,
     )
+    // O próximo passo vai em linha PRÓPRIA, e não emendado na da família: com
+    // ele no fim, a linha passava de 250 caracteres e o que importa — o nome do
+    // arquivo a editar, ou o comando a rodar — ficava fora da primeira tela do
+    // console. Uma linha por natureza, indentada sob a família a que pertence.
+    for (const n of l.naturezas) imprimir(`[passagem]          → ${PROXIMO_PASSO[n]}`)
   }
 }
 

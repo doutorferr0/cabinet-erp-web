@@ -11,6 +11,7 @@ import type {
   AbcCurveReportDto,
   ActivityDto,
   ActivityWriteRequest,
+  AddDeliveryItemRequest,
   AgendaEventDto,
   BirthdaysReportDto,
   CancelDocumentRequest,
@@ -18,6 +19,7 @@ import type {
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
   ChangePasswordRequest,
+  CloseDeliveryRequest,
   CommissionClosingResultDto,
   CommissionClosingWriteRequest,
   CommissionEarningsReportDto,
@@ -26,6 +28,7 @@ import type {
   CostProfileWriteRequest,
   CostSimulationDto,
   CostSimulationRequest,
+  CreateDeliveryRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
   CrmLostReasonsReportDto,
@@ -37,9 +40,11 @@ import type {
   CrmStageDto,
   CrmStageWriteRequest,
   DashboardSummaryDto,
+  DeliveryDetailDto,
   EmployeeDetailDto,
   EmployeeLinkRequest,
   EmployeeWriteRequest,
+  FulfillmentFactDto,
   GetAbcCurveReportParams,
   GetBirthdaysReportParams,
   GetCommissionEarningsParams,
@@ -66,6 +71,7 @@ import type {
   ListCrmLostReasonsParams,
   ListCrmOpportunitiesParams,
   ListCrmPipelinesParams,
+  ListDeliveriesParams,
   ListEmployeeCommissionTiersParams,
   ListEmployeesParams,
   ListOrderParticipantsParams,
@@ -75,6 +81,7 @@ import type {
   ListPartnerContactsParams,
   ListPartnersParams,
   ListPaymentTermsParams,
+  ListPickingQueueParams,
   ListProductsParams,
   ListProjectsParams,
   ListPurchaseOrdersParams,
@@ -93,6 +100,7 @@ import type {
   NaoAutenticadoResponse,
   NaoImplementadoResponse,
   OrderDetailDto,
+  OrderFulfillmentDto,
   OrderParticipantsWriteRequest,
   OrderWriteRequest,
   PagedResultOfActivityDto,
@@ -104,6 +112,7 @@ import type {
   PagedResultOfCrmLostReasonDto,
   PagedResultOfCrmOpportunityDto,
   PagedResultOfCrmPipelineDto,
+  PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
   PagedResultOfOrderDto,
   PagedResultOfOrderParticipantDto,
@@ -111,6 +120,7 @@ import type {
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
   PagedResultOfPaymentTermDto,
+  PagedResultOfPickingQueueItemDto,
   PagedResultOfProductDto,
   PagedResultOfPurchaseArrivalRowDto,
   PagedResultOfPurchaseOrderDto,
@@ -132,6 +142,7 @@ import type {
   PaymentTermDto,
   PaymentTermWriteRequest,
   PermissionCatalogDto,
+  PickOrderItemRequest,
   ProblemDetails,
   ProductDetailDto,
   ProductDto,
@@ -151,6 +162,7 @@ import type {
   QuoteVsStockReportDto,
   QuoteWriteRequest,
   ReadinessStatus,
+  ReleaseOrderItemRequest,
   RoleDetailDto,
   RoleWriteRequest,
   SalesComparisonReportDto,
@@ -5099,7 +5111,7 @@ export const getConcludeOrderUrl = (id: string,) => {
  *
  * **Recusas:** pedido cancelado, ou já concluído, é 409 `urn:cabinet:erro:transicao-invalida` — os dois estados são terminais. Demonstração com peça fora (`demoReturnedAt` nulo) é 409 `urn:cabinet:erro:demonstracao-em-aberto`: concluir empréstimo sem o retorno perderia o rastro do que está na rua.
  *
- * **O que esta operação NÃO faz, e é blocker escrito, não esquecimento:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial. Entrega não existe neste contrato — não há `/api/deliveries`, não há estado físico, não há quadro de cargas. Declarar aqui um `force` que nada libera seria publicar botão sem efeito, e a tela que o mostrasse ensinaria o operador a confiar num controle que não controla. A pré-condição entra junto com o módulo de entrega, e aí o `force` nasce com o que forçar.
+ * **O que esta operação NÃO faz, e continua sendo blocker escrito:** no legado a conclusão exige as ENTREGAS fechadas, ou força com permissão especial (`QryConclusaoPedido` do `frmControleEntrega` só carimba a data quando nenhuma linha tem entregue abaixo do vendido). **A metade que faltava chegou:** `/api/deliveries` existe, o estado físico existe (`GET /api/orders/{id}/fulfillment`), e a pergunta "este pedido saiu inteiro?" tem resposta — é `physicalState: delivered`. O que ainda NÃO existe é a PRÉ-CONDIÇÃO aqui: concluir segue sem olhar o físico, e um `force` sem recusa para forçar continuaria sendo botão sem efeito. Ligar as duas é decisão do trilho do ciclo do documento, não efeito colateral de publicar a entrega — e quando ela vier, o `force` nasce com o que forçar.
  */
 export const concludeOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<concludeOrderResponse> => {
 
@@ -8964,6 +8976,651 @@ export const listCommissionClosingEntries = async (id: string,
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getOrderFulfillmentResponse200 = {
+  data: OrderFulfillmentDto
+  status: 200
+}
+
+export type getOrderFulfillmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getOrderFulfillmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getOrderFulfillmentResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getOrderFulfillmentResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getOrderFulfillmentResponseSuccess = (getOrderFulfillmentResponse200) & {
+  headers: Headers;
+};
+export type getOrderFulfillmentResponseError = (getOrderFulfillmentResponse401 | getOrderFulfillmentResponse403 | getOrderFulfillmentResponse404 | getOrderFulfillmentResponse409) & {
+  headers: Headers;
+};
+
+export type getOrderFulfillmentResponse = (getOrderFulfillmentResponseSuccess | getOrderFulfillmentResponseError)
+
+export const getGetOrderFulfillmentUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/fulfillment`
+}
+
+/**
+ * Proposto. A SITUAÇÃO FÍSICA do pedido, item a item — a consulta nº 17 do volume 02 do legado.
+ *
+ * Leitura, e por isso NÃO é filtrada por papel: quem tem vínculo com a empresa lê tudo o que ela tem, e é para isso que `viewer` existe. **Sem empresa ativa é 409**, como todo detalhe por id.
+ */
+export const getOrderFulfillment = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getOrderFulfillmentResponse> => {
+
+  return apiFetch<getOrderFulfillmentResponse>(getGetOrderFulfillmentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type releaseOrderItemResponse200 = {
+  data: FulfillmentFactDto
+  status: 200
+}
+
+export type releaseOrderItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type releaseOrderItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type releaseOrderItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type releaseOrderItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type releaseOrderItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type releaseOrderItemResponseSuccess = (releaseOrderItemResponse200) & {
+  headers: Headers;
+};
+export type releaseOrderItemResponseError = (releaseOrderItemResponse400 | releaseOrderItemResponse401 | releaseOrderItemResponse403 | releaseOrderItemResponse404 | releaseOrderItemResponse409) & {
+  headers: Headers;
+};
+
+export type releaseOrderItemResponse = (releaseOrderItemResponseSuccess | releaseOrderItemResponseError)
+
+export const getReleaseOrderItemUrl = (id: string,
+    lineNumber: number,) => {
+
+
+
+
+  return `/api/orders/${id}/items/${lineNumber}/release`
+}
+
+/**
+ * Proposto. LIBERA a linha para separação e RESERVA o saldo no depósito.
+ *
+ * **É a única operação da escada que exige a permissão `venda:liberar-entrega`** — separar e entregar são execução do que já foi autorizado, e no legado o gesto é o mesmo `FrmLiberarProdutos` ("Liberar separação e entrega de produtos"). Quem não tem a permissão recebe 403 `urn:cabinet:erro:papel-insuficiente`.
+ *
+ * Liberar não baixa estoque: a peça continua no galpão, só deixa de estar disponível para a próxima venda. Acima do vendido é 409 `urn:cabinet:erro:liberacao-acima-do-vendido`.
+ *
+ * O depósito se decide AQUI e a separação o herda. Passar um depósito diferente na separação é a exceção, não a regra.
+ */
+export const releaseOrderItem = async (id: string,
+    lineNumber: number,
+    releaseOrderItemRequest: ReleaseOrderItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<releaseOrderItemResponse> => {
+
+  return apiFetch<releaseOrderItemResponse>(getReleaseOrderItemUrl(id,lineNumber),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(releaseOrderItemRequest)
+  }
+);}
+
+
+
+export type pickOrderItemResponse200 = {
+  data: FulfillmentFactDto
+  status: 200
+}
+
+export type pickOrderItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type pickOrderItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type pickOrderItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type pickOrderItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type pickOrderItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type pickOrderItemResponseSuccess = (pickOrderItemResponse200) & {
+  headers: Headers;
+};
+export type pickOrderItemResponseError = (pickOrderItemResponse400 | pickOrderItemResponse401 | pickOrderItemResponse403 | pickOrderItemResponse404 | pickOrderItemResponse409) & {
+  headers: Headers;
+};
+
+export type pickOrderItemResponse = (pickOrderItemResponseSuccess | pickOrderItemResponseError)
+
+export const getPickOrderItemUrl = (id: string,
+    lineNumber: number,) => {
+
+
+
+
+  return `/api/orders/${id}/items/${lineNumber}/pick`
+}
+
+/**
+ * Proposto. SEPARA a linha: a peça sai da prateleira e o estoque BAIXA, na mesma transação do fato. O movimento do kardex nasce com origem tipada (`sale` + o pedido), então o estorno não precisa casar texto livre para achar a linha.
+ *
+ * A reserva morre junto com a baixa — separar e continuar reservado contaria a mesma peça duas vezes para a próxima venda.
+ *
+ * **Acima do liberado é 409 `urn:cabinet:erro:separacao-sem-liberacao`.** O gate é o CHECK monótono do banco e não depende de papel nenhum: quem pula a liberação não separa.
+ *
+ * Linha de SERVIÇO separa sem mover peça — ela não tem variante, e resolver depósito para ela apontaria a instalação de uma cozinha para uma prateleira.
+ */
+export const pickOrderItem = async (id: string,
+    lineNumber: number,
+    pickOrderItemRequest: PickOrderItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<pickOrderItemResponse> => {
+
+  return apiFetch<pickOrderItemResponse>(getPickOrderItemUrl(id,lineNumber),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pickOrderItemRequest)
+  }
+);}
+
+
+
+export type listPickingQueueResponse200 = {
+  data: PagedResultOfPickingQueueItemDto
+  status: 200
+}
+
+export type listPickingQueueResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPickingQueueResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPickingQueueResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPickingQueueResponseSuccess = (listPickingQueueResponse200) & {
+  headers: Headers;
+};
+export type listPickingQueueResponseError = (listPickingQueueResponse400 | listPickingQueueResponse401 | listPickingQueueResponse403) & {
+  headers: Headers;
+};
+
+export type listPickingQueueResponse = (listPickingQueueResponseSuccess | listPickingQueueResponseError)
+
+export const getListPickingQueueUrl = (params?: ListPickingQueueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/picking-queue?${stringifiedParams}` : `/api/picking-queue`
+}
+
+/**
+ * Proposto. A FILA DE SEPARAÇÃO: as linhas liberadas que ainda não saíram da prateleira, de todos os pedidos ativos da empresa.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — o operador recém-criado, ainda sem vínculo, não tem fila; não é erro dele.
+ *
+ * A ordem padrão é a data prometida (`NULLS LAST`) e o número do pedido como desempate: o que atrasa aparece em cima, e item sem data combinada não fura a fila de quem tem uma.
+ */
+export const listPickingQueue = async (params?: ListPickingQueueParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPickingQueueResponse> => {
+
+  return apiFetch<listPickingQueueResponse>(getListPickingQueueUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listDeliveriesResponse200 = {
+  data: PagedResultOfDeliveryDto
+  status: 200
+}
+
+export type listDeliveriesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listDeliveriesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listDeliveriesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listDeliveriesResponseSuccess = (listDeliveriesResponse200) & {
+  headers: Headers;
+};
+export type listDeliveriesResponseError = (listDeliveriesResponse400 | listDeliveriesResponse401 | listDeliveriesResponse403) & {
+  headers: Headers;
+};
+
+export type listDeliveriesResponse = (listDeliveriesResponseSuccess | listDeliveriesResponseError)
+
+export const getListDeliveriesUrl = (params?: ListDeliveriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/deliveries?${stringifiedParams}` : `/api/deliveries`
+}
+
+/**
+ * Proposto. Os ROMANEIOS da empresa ativa — o "Controle de Entrega" do legado.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ */
+export const listDeliveries = async (params?: ListDeliveriesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listDeliveriesResponse> => {
+
+  return apiFetch<listDeliveriesResponse>(getListDeliveriesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createDeliveryResponse201 = {
+  data: DeliveryDetailDto
+  status: 201
+}
+
+export type createDeliveryResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type createDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createDeliveryResponseSuccess = (createDeliveryResponse201) & {
+  headers: Headers;
+};
+export type createDeliveryResponseError = (createDeliveryResponse400 | createDeliveryResponse401 | createDeliveryResponse403 | createDeliveryResponse404 | createDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type createDeliveryResponse = (createDeliveryResponseSuccess | createDeliveryResponseError)
+
+export const getCreateDeliveryUrl = () => {
+
+
+
+
+  return `/api/deliveries`
+}
+
+/**
+ * Proposto. Abre um romaneio para o pedido. Nasce `open` e vazio; os itens entram por `POST /api/deliveries/{id}/items`.
+ */
+export const createDelivery = async (createDeliveryRequest: CreateDeliveryRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createDeliveryResponse> => {
+
+  return apiFetch<createDeliveryResponse>(getCreateDeliveryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createDeliveryRequest)
+  }
+);}
+
+
+
+export type getDeliveryResponse200 = {
+  data: DeliveryDetailDto
+  status: 200
+}
+
+export type getDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getDeliveryResponseSuccess = (getDeliveryResponse200) & {
+  headers: Headers;
+};
+export type getDeliveryResponseError = (getDeliveryResponse401 | getDeliveryResponse403 | getDeliveryResponse404 | getDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type getDeliveryResponse = (getDeliveryResponseSuccess | getDeliveryResponseError)
+
+export const getGetDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}`
+}
+
+/**
+ * Proposto. O romaneio com os itens lançados nele.
+ */
+export const getDelivery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getDeliveryResponse> => {
+
+  return apiFetch<getDeliveryResponse>(getGetDeliveryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type addDeliveryItemResponse200 = {
+  data: FulfillmentFactDto
+  status: 200
+}
+
+export type addDeliveryItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type addDeliveryItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type addDeliveryItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type addDeliveryItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type addDeliveryItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type addDeliveryItemResponseSuccess = (addDeliveryItemResponse200) & {
+  headers: Headers;
+};
+export type addDeliveryItemResponseError = (addDeliveryItemResponse400 | addDeliveryItemResponse401 | addDeliveryItemResponse403 | addDeliveryItemResponse404 | addDeliveryItemResponse409) & {
+  headers: Headers;
+};
+
+export type addDeliveryItemResponse = (addDeliveryItemResponseSuccess | addDeliveryItemResponseError)
+
+export const getAddDeliveryItemUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}/items`
+}
+
+/**
+ * Proposto. Lança um item ENTREGUE dentro do romaneio. Não mexe em estoque — a peça já saiu do galpão na separação.
+ *
+ * **Só entra em romaneio ABERTO** (409 `urn:cabinet:erro:entrega-fechada`): fechado é documento assinado, e acrescentar item a ele reescreveria o que o cliente conferiu; cancelado, idem, pelo motivo oposto.
+ *
+ * O romaneio tem de ser do MESMO pedido da linha (409 `urn:cabinet:erro:entrega-de-outro-pedido`), e a quantidade não passa do separado (409 `urn:cabinet:erro:entrega-sem-separacao`).
+ */
+export const addDeliveryItem = async (id: string,
+    addDeliveryItemRequest: AddDeliveryItemRequest, options?: Parameters<typeof apiFetch>[1]): Promise<addDeliveryItemResponse> => {
+
+  return apiFetch<addDeliveryItemResponse>(getAddDeliveryItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addDeliveryItemRequest)
+  }
+);}
+
+
+
+export type closeDeliveryResponse200 = {
+  data: DeliveryDetailDto
+  status: 200
+}
+
+export type closeDeliveryResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type closeDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type closeDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type closeDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type closeDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type closeDeliveryResponseSuccess = (closeDeliveryResponse200) & {
+  headers: Headers;
+};
+export type closeDeliveryResponseError = (closeDeliveryResponse400 | closeDeliveryResponse401 | closeDeliveryResponse403 | closeDeliveryResponse404 | closeDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type closeDeliveryResponse = (closeDeliveryResponseSuccess | closeDeliveryResponseError)
+
+export const getCloseDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}/close`
+}
+
+/**
+ * Proposto. FECHA o romaneio, exigindo quando saiu e quem recebeu — seis meses depois, quando o cliente diz que não recebeu, é essa linha que responde.
+ *
+ * **Romaneio vazio não fecha** (409 `urn:cabinet:erro:entrega-vazia`). Fechar de novo, ou fechar o cancelado, é 409 `urn:cabinet:erro:entrega-fechada`.
+ */
+export const closeDelivery = async (id: string,
+    closeDeliveryRequest: CloseDeliveryRequest, options?: Parameters<typeof apiFetch>[1]): Promise<closeDeliveryResponse> => {
+
+  return apiFetch<closeDeliveryResponse>(getCloseDeliveryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(closeDeliveryRequest)
+  }
+);}
+
+
+
+export type cancelDeliveryResponse200 = {
+  data: DeliveryDetailDto
+  status: 200
+}
+
+export type cancelDeliveryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelDeliveryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelDeliveryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelDeliveryResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelDeliveryResponseSuccess = (cancelDeliveryResponse200) & {
+  headers: Headers;
+};
+export type cancelDeliveryResponseError = (cancelDeliveryResponse401 | cancelDeliveryResponse403 | cancelDeliveryResponse404 | cancelDeliveryResponse409) & {
+  headers: Headers;
+};
+
+export type cancelDeliveryResponse = (cancelDeliveryResponseSuccess | cancelDeliveryResponseError)
+
+export const getCancelDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/deliveries/${id}/cancel`
+}
+
+/**
+ * Proposto. Cancela o romaneio. **NÃO desfaz os fatos já lançados nele** — o log de entregas é append-only por GRANT, e corrigir o passado é estornar, não editar. O ato de estorno (o `cep_quantidade_entregueRET` do legado) é a fase seguinte e ainda não tem caminho.
+ *
+ * Cancelar duas vezes, ou cancelar o fechado, é 409 `urn:cabinet:erro:entrega-fechada`.
+ */
+export const cancelDelivery = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelDeliveryResponse> => {
+
+  return apiFetch<cancelDeliveryResponse>(getCancelDeliveryUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
 
   }

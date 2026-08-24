@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarOrcamento } from '@/data/quotes-api'
+import { GerarPedido } from '@/features/vendas/gerar-pedido'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarDays, HardHat, Hash, User } from 'lucide-react'
+import { CalendarDays, FileOutput, HardHat, Hash, User } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/vendas/orcamentos/')({
@@ -113,6 +114,7 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
 function OrcamentosPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<QuoteDto | null>(null)
+  const [paraConverter, setParaConverter] = useState<QuoteDto | null>(null)
   const cancelar = useCancelarOrcamento()
   const { readOnly } = useReadOnlyPorPapel('quotes')
 
@@ -148,38 +150,74 @@ function OrcamentosPage() {
       : a,
   )
 
+  /**
+   * `Gerar Pedido` é a SÉTIMA ação, e não substitui nenhuma das seis.
+   *
+   * A barra do padrão 4 (`Filtro · Incluir · Alterar · Consul. · Excluir ·
+   * Imprimir`) é a mesma em toda tela, e continua sendo: esta entra depois, com
+   * `needsSelection`, então ela desce para a barra de SELEÇÃO — a que só existe
+   * quando há uma linha marcada. É onde a ação pertence, porque converter é
+   * sobre ESTE orçamento, e é o único lugar em que ela não disputa espaço com a
+   * fileira que o operador já conhece de cor.
+   *
+   * O papel que ela exige é o do ORÇAMENTO, não o do pedido: a borda do backend
+   * classifica `POST /api/quotes/{id}/order` por prefixo de caminho, e o prefixo
+   * é `/api/quotes`. Pedir o papel de pedido aqui recusaria na tela quem o
+   * servidor aceitaria — e passaria a acusar o papel errado.
+   */
+  const acoesDaTela = [
+    ...actionsOrcamento,
+    {
+      id: 'gerar-pedido',
+      label: 'Gerar Pedido',
+      icon: FileOutput,
+      needsSelection: true,
+      ...(readOnly
+        ? { disabled: true, title: 'O papel deste vínculo não permite alterações.' }
+        : {}),
+      onClick: (o: QuoteDto | null) => setParaConverter(o),
+    },
+  ]
+
   return (
-    <TelaDeListagem
-      titulo="Orçamento"
-      columns={columns}
-      queryKey={['orcamentos']}
-      fetcher={data.orcamentos.list}
-      actions={actionsOrcamento}
-      filtros={camposFiltraveis}
-      rodape={<RodapeDeOrcamento />}
-      cancelamento={{
-        documento: 'orçamento',
-        registro: paraCancelar,
-        numero: (o) => o.number,
-        cancelado: (o) => o.status === 'cancelled',
-        pendente: cancelar.isPending,
-        erro: cancelar.error,
-        onFechar: () => {
-          setParaCancelar(null)
-          cancelar.reset()
-        },
-        comMotivo: true,
-        onConfirmar: (motivo) => {
-          if (!paraCancelar) return
-          // Fecha no SUCESSO. Fechar antes esconderia a recusa do servidor
-          // junto com o diálogo, e a listagem voltaria igual — indistinguível
-          // de um cancelamento que deu certo.
-          cancelar.mutate(
-            { id: paraCancelar.id, motivo },
-            { onSuccess: () => setParaCancelar(null) },
-          )
-        },
-      }}
-    />
+    <>
+      <TelaDeListagem
+        titulo="Orçamento"
+        columns={columns}
+        queryKey={['orcamentos']}
+        fetcher={data.orcamentos.list}
+        actions={acoesDaTela}
+        filtros={camposFiltraveis}
+        rodape={<RodapeDeOrcamento />}
+        cancelamento={{
+          documento: 'orçamento',
+          registro: paraCancelar,
+          numero: (o) => o.number,
+          cancelado: (o) => o.status === 'cancelled',
+          pendente: cancelar.isPending,
+          erro: cancelar.error,
+          onFechar: () => {
+            setParaCancelar(null)
+            cancelar.reset()
+          },
+          comMotivo: true,
+          onConfirmar: (motivo) => {
+            if (!paraCancelar) return
+            // Fecha no SUCESSO. Fechar antes esconderia a recusa do servidor
+            // junto com o diálogo, e a listagem voltaria igual — indistinguível
+            // de um cancelamento que deu certo.
+            cancelar.mutate(
+              { id: paraCancelar.id, motivo },
+              { onSuccess: () => setParaCancelar(null) },
+            )
+          },
+        }}
+      />
+      {/* IRMÃ da listagem, e não dentro dela: a caixa precisa do orçamento
+          SELECIONADO, e quem guarda a seleção é esta página. O `rodape` da
+          `TelaDeListagem` é o lugar dos botões que valem para a tela inteira,
+          não para uma linha. */}
+      <GerarPedido orcamento={paraConverter} onFechar={() => setParaConverter(null)} />
+    </>
   )
 }

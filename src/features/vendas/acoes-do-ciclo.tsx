@@ -18,7 +18,6 @@ import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { data } from '@/data'
-import { ErroDaApi } from '@/data/api-provider'
 import { OBSERVACAO_MAX } from '@/data/cancelamento-de-documento'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import {
@@ -28,6 +27,7 @@ import {
   useRegistrarRetornoDaDemonstracao,
   useTransferirProfissional,
 } from '@/data/pedidos-venda-api'
+import { mensagemDaRecusa } from '@/features/vendas/recusa'
 import { formatDateBR } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CheckCircle2, History, PackageCheck, UserCog } from 'lucide-react'
@@ -62,19 +62,11 @@ const RECUSAS: Record<string, string> = {
 }
 
 /**
- * A frase da recusa, do `type` do problem+json.
- *
- * O `type` é o discriminador — `detail` é texto para humano e `status` sozinho
- * não separa os dois 409 que pedem coisas OPOSTAS ao operador ("desista" e
- * "faça isto antes"). Erro que não é problem+json cai no `detail`, e depois na
- * frase genérica.
+ * A tradução mora em `recusa.ts` desde que a conversão do orçamento virou o
+ * segundo chamador. O mapa continua aqui: as frases são desta tela.
  */
-function mensagemDaRecusa(erro: unknown, generica: string): string | null {
-  if (!erro) return null
-  if (!(erro instanceof ErroDaApi)) return generica
-  const tipo = (erro.corpo as { type?: unknown } | null | undefined)?.type
-  if (typeof tipo === 'string' && RECUSAS[tipo]) return RECUSAS[tipo]
-  return erro.detail ?? generica
+function recusaDoCiclo(erro: unknown, generica: string): string | null {
+  return mensagemDaRecusa(erro, generica, RECUSAS)
 }
 
 const colunasProfissional: ColumnDef<PartnerDto>[] = [
@@ -113,8 +105,8 @@ export function AcoesDoCiclo({ pedido, somenteLeitura = false }: AcoesDoCicloPro
 
   const ativo = pedido.situacao === 'active'
   const demoNaRua = pedido.tipo === 'demo' && !pedido.retornoDemonstracao
-  const erroConclusao = mensagemDaRecusa(concluir.error, 'Não foi possível concluir o pedido.')
-  const erroRetorno = mensagemDaRecusa(retornar.error, 'Não foi possível registrar o retorno.')
+  const erroConclusao = recusaDoCiclo(concluir.error, 'Não foi possível concluir o pedido.')
+  const erroRetorno = recusaDoCiclo(retornar.error, 'Não foi possível registrar o retorno.')
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -278,7 +270,7 @@ function TransferenciaDeProfissional({
     onFechar()
   }
 
-  const erro = mensagemDaRecusa(transferir.error, 'Não foi possível transferir a venda.')
+  const erro = recusaDoCiclo(transferir.error, 'Não foi possível transferir a venda.')
 
   return (
     <>

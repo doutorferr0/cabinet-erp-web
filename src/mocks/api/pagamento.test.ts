@@ -32,6 +32,12 @@ import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
  *    400, nunca um plano aparado — aparar entrega um documento com vencimento
  *    que ninguém pediu, e o operador confere a soma e não acha o erro.
  *
+ * 4. **O ajuste por GRUPO conserva o que não veio no corpo.** `PUT` é integral
+ *    em tudo o mais, e neste campo só: ausente conserva, `[]` apaga. Sem o
+ *    caso, a primeira tela antiga a salvar um nome apagaria os ajustes com 200 —
+ *    o mesmo defeito que a web#315 pegou no `orcamentoSchema`, e que só aparece
+ *    gravando duas vezes.
+ *
  * Exercita pelo CLIENTE GERADO, e não por `fetch` cru: é o caminho inteiro que
  * a tela vai usar quando houver tela.
  */
@@ -203,6 +209,157 @@ describe('o corpo da condição recusa em voz alta', () => {
     // tanto — e a tela recorta o formulário pelo número que cabe.
     expect(r.data.type).toBe('urn:cabinet:erro:parcelas-acima-do-teto')
     expect(r.data.title).toBe('Parcelas acima do teto')
+  })
+})
+
+/**
+ * O AJUSTE POR GRUPO DE PRODUTO — `Forma_PagamentoGrupProd` do legado.
+ *
+ * Os ids de grupo são escritos CRUS aqui, e não colhidos de `catalog-lookups`,
+ * porque o kind `GRUPO_PRODUTO` ainda não existe lá — mesma saída que
+ * `compras.test.ts` tomou para o mínimo por grupo do fornecedor. É por isso que
+ * a quinta recusa do contrato (grupo inexistente) não tem caso: ela não é
+ * exercitável enquanto não houver catálogo, e caso que passa por falta de dado é
+ * pior que caso nenhum.
+ */
+describe('o ajuste por GRUPO DE PRODUTO', () => {
+  const PENDENTES = '11111111-1111-4111-8111-111111111111'
+  const ARANDELAS = '22222222-2222-4222-8222-222222222222'
+
+  /** A condição de `EM_DOIS` com ajustes por grupo pendurados. */
+  function comAjustes(
+    ajustes: NonNullable<PaymentTermWriteRequest['groupAdjustments']>,
+  ): PaymentTermWriteRequest {
+    return { ...EM_DOIS, groupAdjustments: ajustes }
+  }
+
+  it('a condição grava os ajustes e a listagem os traz embutidos', async () => {
+    await entrar()
+    const criada = await createPaymentTerm(
+      comAjustes([
+        { productGroupId: PENDENTES, discountPercent: 50_000, surchargePercent: 0 },
+        { productGroupId: ARANDELAS, discountPercent: 0, surchargePercent: 120_000 },
+      ]),
+    )
+    expect(criada.status).toBe(201)
+
+    const lista = await listPaymentTerms({ page: 1, pageSize: 100 })
+    expect(lista.status).toBe(200)
+    if (lista.status !== 200) return
+
+    const condicao = lista.data.rows.find((c) => c.name === 'ENTRADA + 30')
+    expect(condicao?.groupAdjustments).toHaveLength(2)
+    // Desconto E acréscimo sobrevivem à ida e volta: publicar só o desconto
+    // perderia o lado que dá sentido à tabela (à vista desconta, 6x acresce).
+    expect(
+      condicao?.groupAdjustments?.find((a) => a.productGroupId === PENDENTES)?.discountPercent,
+      '5% de desconto no grupo',
+    ).toBe(50_000)
+    expect(
+      condicao?.groupAdjustments?.find((a) => a.productGroupId === ARANDELAS)?.surchargePercent,
+      '12% de acréscimo no grupo',
+    ).toBe(120_000)
+  })
+
+  it('condição sem ajuste nenhum lê ARRAY VAZIO, não ausente', async () => {
+    await entrar()
+    await createPaymentTerm(EM_DOIS)
+
+    const lista = await listPaymentTerms({ page: 1, pageSize: 100 })
+    expect(lista.status).toBe(200)
+    if (lista.status !== 200) return
+
+    // "Esta condição não ajusta grupo nenhum" é o caso COMUM, e é `[]`. Deixar
+    // `undefined` obrigaria cada tela a inventar o próprio padrão — o mesmo
+    // terceiro estado que um 404 na política criaria.
+    expect(lista.data.rows.find((c) => c.name === 'ENTRADA + 30')?.groupAdjustments).toEqual([])
+  })
+
+  it('o mesmo grupo duas vezes é 400 — a chave da linha é o grupo', async () => {
+    await entrar()
+    const r = await createPaymentTerm(
+      comAjustes([
+        { productGroupId: PENDENTES, discountPercent: 50_000, surchargePercent: 0 },
+        { productGroupId: PENDENTES, discountPercent: 100_000, surchargePercent: 0 },
+      ]),
+    )
+
+    expect(r.status).toBe(400)
+    if (r.status !== 400) return
+    // Aponta a SEGUNDA linha: é a que sobra, e é nela que a tela põe o foco.
+    expect(r.data.fields?.some((f) => f.path === 'groupAdjustments[1].productGroupId')).toBe(true)
+  })
+
+  it('desconto acima de 100% é 400 — a linha do grupo valeria negativo', async () => {
+    await entrar()
+    const r = await createPaymentTerm(
+      comAjustes([{ productGroupId: PENDENTES, discountPercent: 1_000_001, surchargePercent: 0 }]),
+    )
+
+    expect(r.status).toBe(400)
+  })
+
+  it('acréscimo acima de 100% PASSA — dobrar o preço é estranho e é legítimo', async () => {
+    await entrar()
+    // O teto é só do desconto, e a assimetria é decisão: teto no acréscimo
+    // recusaria dado real do legado na importação.
+    const r = await createPaymentTerm(
+      comAjustes([{ productGroupId: PENDENTES, discountPercent: 0, surchargePercent: 2_000_000 }]),
+    )
+
+    expect(r.status).toBe(201)
+    if (r.status !== 201) return
+    expect(r.data.groupAdjustments?.[0]?.surchargePercent).toBe(2_000_000)
+  })
+
+  it('percentual negativo é 400 — o outro lado tem coluna própria', async () => {
+    await entrar()
+    const r = await createPaymentTerm(
+      comAjustes([{ productGroupId: PENDENTES, discountPercent: -1, surchargePercent: 0 }]),
+    )
+
+    expect(r.status).toBe(400)
+  })
+
+  it('desconto E acréscimo no mesmo grupo é 400 — não há ordem de aplicação decidida', async () => {
+    await entrar()
+    const r = await createPaymentTerm(
+      comAjustes([
+        { productGroupId: PENDENTES, discountPercent: 50_000, surchargePercent: 50_000 },
+      ]),
+    )
+
+    expect(r.status).toBe(400)
+    if (r.status !== 400) return
+    expect(r.data.fields?.some((f) => f.path === 'groupAdjustments[0]')).toBe(true)
+  })
+
+  it('PUT SEM o campo CONSERVA os ajustes; com [] apaga', async () => {
+    await entrar()
+    const criada = await createPaymentTerm(
+      comAjustes([{ productGroupId: PENDENTES, discountPercent: 50_000, surchargePercent: 0 }]),
+    )
+    expect(criada.status).toBe(201)
+    if (criada.status !== 201) return
+
+    // Uma tela ANTIGA — que não conhece o campo — salvando só o nome. Se o
+    // corpo integral apagasse aqui, o operador perderia a configuração com 200 e
+    // nenhum erro apareceria em lugar nenhum. É o defeito que a web#315 pegou no
+    // `orcamentoSchema`, e ele só se vê gravando duas vezes.
+    const conservada = await updatePaymentTerm(criada.data.id, { ...EM_DOIS, name: 'OUTRO NOME' })
+    expect(conservada.status).toBe(200)
+    if (conservada.status !== 200) return
+    expect(conservada.data.groupAdjustments).toHaveLength(1)
+
+    // E `[]` é o pedido EXPLÍCITO de apagar, que é outra coisa que não mandar.
+    const apagada = await updatePaymentTerm(criada.data.id, {
+      ...EM_DOIS,
+      name: 'OUTRO NOME',
+      groupAdjustments: [],
+    })
+    expect(apagada.status).toBe(200)
+    if (apagada.status !== 200) return
+    expect(apagada.data.groupAdjustments).toEqual([])
   })
 })
 

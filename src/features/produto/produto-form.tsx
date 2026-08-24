@@ -72,6 +72,46 @@ export const produtoSchema = z.object({
   tipoProdutoId: z.string().nullable(),
   fabricaId: z.string().nullable(),
   marcaId: z.string().nullable(),
+  /**
+   * As duas grades DO CONTRATO, pelo mesmo motivo dos três ids acima — e com uma
+   * agravante.
+   *
+   * A tela desenha `fornecedores` e `gruposRelacionados`, que são as grades da
+   * TRANSCRIÇÃO: fornecedor digitado como texto, relacionados agrupados por nome
+   * de grupo. O contrato modela outra coisa — fornecedor é `PartnerDto.id`,
+   * relacionado é um par produto×produto com quantidade. As duas formas ainda não
+   * foram reconciliadas (FASE C do G11, `api#117`), então o que o servidor manda
+   * atravessa esta tela sem passar pelas grades visíveis.
+   *
+   * `.optional()` é o que preserva a distinção do contrato: ausente = "não mexi",
+   * `[]` = "apague". Declarar sem o `optional` faria o Zod exigir um valor e a
+   * desativação pela listagem — que não tem grade — mandar `[]`.
+   */
+  fornecedoresDoServidor: z
+    .array(
+      z.object({
+        id: z.string(),
+        supplierId: z.string(),
+        supplierName: z.string(),
+        supplierCode: z.string().nullable().optional(),
+        supplierDescription: z.string().nullable().optional(),
+        isDefault: z.boolean(),
+        active: z.boolean(),
+      }),
+    )
+    .optional(),
+  relacionadosDoServidor: z
+    .array(
+      z.object({
+        id: z.string(),
+        relatedProductId: z.string(),
+        relatedProductCode: z.string(),
+        relatedProductDescription: z.string(),
+        quantity: z.string().nullable().optional(),
+        sortOrder: z.number(),
+      }),
+    )
+    .optional(),
   descricaoComplementar: z.string(),
   foraDeLinha: z.boolean(),
   consultarValor: z.boolean(),

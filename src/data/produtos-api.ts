@@ -3,8 +3,10 @@ import type {
   ProductDimensions,
   ProductDto,
   ProductRelatedDto,
+  ProductRelatedWriteRequest,
   ProductSpecs,
   ProductSupplierDto,
+  ProductSupplierWriteRequest,
   ProductVariantDto,
   ProductWriteRequest,
   VariantWriteRequest,
@@ -217,6 +219,12 @@ export function produtoDoContrato(dto: ProductDetailDto): Produto {
     // na escrita, quando houver escrita.
     fornecedores: (dto.suppliers ?? []).map(fornecedorDoContrato),
     produtosRelacionados: (dto.relatedProducts ?? []).map(relacionadoDoContrato),
+    // As duas grades do contrato, carregadas-não-editadas — ver o tipo `Produto`.
+    // `??` e não `?? []`: ausente e vazio são coisas diferentes na volta, e
+    // trocar um pelo outro aqui faria o corpo mandar `[]` (apaga) onde devia
+    // omitir (não mexe).
+    ...(dto.suppliers ? { fornecedoresDoServidor: dto.suppliers } : {}),
+    ...(dto.relatedProducts ? { relacionadosDoServidor: dto.relatedProducts } : {}),
   }
 }
 
@@ -358,6 +366,16 @@ export interface CamposGravaveis {
   nossoCodigo: string
   nossaDescricao: string
   ativo: boolean
+  /**
+   * As duas grades do contrato, como vieram do DETALHE — ver o tipo `Produto`.
+   *
+   * Opcionais porque a desativação pela listagem não as tem: a linha do
+   * `ProductDto` não traz grade nenhuma, e é justamente aí que a omissão salva.
+   * Marcá-las obrigatórias forçaria `corpoDeDesativacao` a inventar `[]`, que é
+   * a instrução de APAGAR.
+   */
+  fornecedoresDoServidor?: ProductSupplierDto[]
+  relacionadosDoServidor?: ProductRelatedDto[]
   /** Os outros dois códigos do legado — ver `produtoDoContrato`. */
   codigoEspecial: string
   codigoReduzido: string
@@ -436,7 +454,44 @@ export function produtoParaContrato(values: CamposGravaveis): ProductWriteReques
     productTypeId: values.tipoProdutoId,
     brandId: values.marcaId,
     factoryId: values.fabricaId,
+    // As duas grades voltam como VIERAM, e a chave só aparece quando há grade
+    // carregada: `ProductWriteRequest` lê ausente como "não mexi" e `[]` como
+    // "apague". Emitir `[]` por reflexo — que é o que um `?? []` faria — faria a
+    // desativação pela listagem apagar a grade de fornecedores do produto.
+    //
+    // O shape muda no caminho: a leitura traz `id` e os nomes resolvidos, a
+    // escrita não os aceita. Reemitir o DTO cru deixaria o servidor decidir o que
+    // fazer com campo que ele não declara, e a resposta certa para isso é não
+    // mandar.
+    ...(values.fornecedoresDoServidor
+      ? { suppliers: values.fornecedoresDoServidor.map(fornecedorParaContrato) }
+      : {}),
+    ...(values.relacionadosDoServidor
+      ? { relatedProducts: values.relacionadosDoServidor.map(relacionadoParaContrato) }
+      : {}),
     specs: fichaParaContrato(values),
+  }
+}
+
+/** Uma linha da grade de fornecedores, da leitura para a escrita. */
+function fornecedorParaContrato(linha: ProductSupplierDto): ProductSupplierWriteRequest {
+  return {
+    supplierId: linha.supplierId,
+    supplierCode: linha.supplierCode ?? null,
+    supplierDescription: linha.supplierDescription ?? null,
+    isDefault: linha.isDefault,
+    active: linha.active,
+  }
+}
+
+/** Uma linha da grade de relacionados, da leitura para a escrita. */
+function relacionadoParaContrato(linha: ProductRelatedDto): ProductRelatedWriteRequest {
+  return {
+    relatedProductId: linha.relatedProductId,
+    // `quantity` É o discriminador kit×sugestão: nula é sugestão. Trocar por `0`
+    // ou `''` aqui viraria um kit de zero unidades, que o servidor recusa.
+    quantity: linha.quantity ?? null,
+    sortOrder: linha.sortOrder,
   }
 }
 

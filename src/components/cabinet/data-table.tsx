@@ -165,6 +165,17 @@ export interface VitraDataTableProps<T> {
   queryKey: readonly unknown[]
   fetcher: TableFetcher<T>
   searchPlaceholder?: string
+  /**
+   * A caixa de busca livre. Ligada por padrão — é o `q` do `TableQueryState`, e
+   * quase todo recurso do contrato o publica.
+   *
+   * `false` para o recurso que NÃO publica `q`, e aí não é preferência de
+   * layout: a caixa aceitaria digitação e o servidor devolveria a mesma página,
+   * ensinando ao operador que a peça não está lá quando ela está. O kardex
+   * (`ListStockMovements`) é o primeiro caso — o `buscaEm` dele é vazio no
+   * backend, e o parâmetro não existe no contrato.
+   */
+  busca?: boolean
   /** Barra de ações padrão: Filtro · Incluir · Alterar · Consul. · Excluir/Cancelar · Imprimir. */
   actions?: DataTableAction<T>[]
   pageSizeOptions?: number[]
@@ -475,6 +486,7 @@ export function VitraDataTable<T>({
   queryKey,
   fetcher,
   searchPlaceholder = 'Busca pelo código:',
+  busca = true,
   actions = [],
   pageSizeOptions = [10, 20, 50],
   rowNumbers = false,
@@ -803,16 +815,18 @@ export function VitraDataTable<T>({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-72">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            aria-label="Busca"
-            className="pl-8"
-            placeholder={searchPlaceholder}
-            value={qInput}
-            onChange={(e) => setQInput(e.target.value)}
-          />
-        </div>
+        {busca ? (
+          <div className="relative w-72">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              aria-label="Busca"
+              className="pl-8"
+              placeholder={searchPlaceholder}
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+            />
+          </div>
+        ) : null}
         {actions.map((action) => {
           // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra padrão
           // (§9, padrão 4) em vez de somar um botão ao lado: a barra tem a mesma

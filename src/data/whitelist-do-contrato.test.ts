@@ -173,6 +173,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o bloco Pagamento do documento consome a lista inteira ordenada por `name` e não oferece ordenação ao operador — a whitelist existe no mock, e é lá que é conferida',
   ListServices:
     'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
+  ListCostProfiles:
+    'o perfil de custo (G9) nasce no servidor sem tela e sem mock — a cascata não se reimplementa em fixture, e margem inventada é pior que tela vazia',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
   // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
   // mostra número inventado com cara de apuração, que é pior do que não mostrar
@@ -301,6 +303,8 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
  */
 const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
+  ListCostProfiles:
+    'o perfil de custo (G9) passa direto para o servidor — ver `rotas-do-backend.ts`: a simulação exige a cascata inteira, e um mock dela devolveria margem inventada',
   // COMPRAS (G2) SAIU DAQUI. O motivo que estava escrito — "o mock não guarda
   // qual linha já foi levada por uma ordem" — deixou de valer: `compras.ts`
   // guarda esse estado em `LinhaDePedido.purchaseOrderId`, e é dele que saem o

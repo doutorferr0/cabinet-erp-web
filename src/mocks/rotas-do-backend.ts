@@ -366,6 +366,37 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'put', caminho: '/api/cost-profiles/{id}' },
   { metodo: 'post', caminho: '/api/cost-profiles/{id}/simulate' },
 
+  // índice de venda e tabela do fornecedor (5 operações) — a metade de VENDA da
+  // mesma formação de preço, e ela vai pelo mesmo caminho e pela mesma razão: o
+  // mock teria de guardar índice E tabela por fornecedor para ecoar
+  // `calculatedUnitPriceCents` no item do orçamento, e o preço sugerido saído
+  // dessa invenção chega à tela com cara de preço apurado pelo servidor.
+  //
+  // **Medição (2026-08-24, `cabinet-erp-api` branch `worktree-g9-precos-fase-b`):**
+  // as cinco foram exercitadas pela BORDA HTTP do api — `tests/precos.test.ts`,
+  // 26 casos, `app.inject` contra Postgres de verdade migrado até a `0082` —, e
+  // não por par local com servidor em porta: o que se queria saber é se o
+  // destino RESPONDE, e a borda é a mesma nos dois caminhos. A listagem devolve
+  // `{rows,total}`, o `PUT` de tabelas substitui a lista inteira, e o item do
+  // orçamento nasce com `unitPriceCents` calculado (tabela R$ 100,00 × índice
+  // 2,5600 = R$ 256,00) e `calculatedUnitPriceCents` igual ao lado.
+  //
+  // Enquanto a PR do api não mergear, as cinco respondem 501 na `main` dele — e
+  // é por isso que a linha entra na PASSAGEM e não em `FORA_DE_PROPOSITO`: o
+  // destino existe e está escrito, só não foi publicado ainda. Se a PR do api
+  // parar no caminho, esta linha vira mentira e o lugar dela passa a ser a outra
+  // lista, com o motivo trocado.
+  //
+  // As duas escritas exigem `precos:gerenciar`, ação NOVA que nenhum template de
+  // fábrica concede — `Proprietário` e `Administrador` alcançam por `grants_all`.
+  // Quem entrar com `Operação completa` vai ver 403 `papel-insuficiente`, e ali é
+  // decisão: quem vende usa o preço, quem o define responde pela margem.
+  { metodo: 'get', caminho: '/api/price-indexes' },
+  { metodo: 'post', caminho: '/api/price-indexes' },
+  { metodo: 'put', caminho: '/api/price-indexes/{id}' },
+  { metodo: 'get', caminho: '/api/table-prices/{variantId}' },
+  { metodo: 'put', caminho: '/api/table-prices/{variantId}' },
+
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
   // atende as três telas de uma vez.

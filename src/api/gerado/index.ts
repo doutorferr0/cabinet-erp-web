@@ -82,6 +82,7 @@ import type {
   ListPartnersParams,
   ListPaymentTermsParams,
   ListPickingQueueParams,
+  ListPriceIndexesParams,
   ListProductsParams,
   ListProjectsParams,
   ListPurchaseOrdersParams,
@@ -121,6 +122,7 @@ import type {
   PagedResultOfPartnerDto,
   PagedResultOfPaymentTermDto,
   PagedResultOfPickingQueueItemDto,
+  PagedResultOfPriceIndexDto,
   PagedResultOfProductDto,
   PagedResultOfPurchaseArrivalRowDto,
   PagedResultOfPurchaseOrderDto,
@@ -143,6 +145,8 @@ import type {
   PaymentTermWriteRequest,
   PermissionCatalogDto,
   PickOrderItemRequest,
+  PriceIndexDto,
+  PriceIndexWriteRequest,
   ProblemDetails,
   ProductDetailDto,
   ProductDto,
@@ -187,6 +191,8 @@ import type {
   TodoPatchRequest,
   TransferProfessionalRequest,
   TrocarEmpresaRequest,
+  VariantTablePriceDto,
+  VariantTablePricesWriteRequest,
   VariantWriteRequest,
   VinculoDeEmpresa,
   WorkDto,
@@ -9623,6 +9629,330 @@ export const cancelDelivery = async (id: string, options?: Parameters<typeof api
     method: 'POST'
 
 
+  }
+);}
+
+
+
+export type listPriceIndexesResponse200 = {
+  data: PagedResultOfPriceIndexDto
+  status: 200
+}
+
+export type listPriceIndexesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPriceIndexesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPriceIndexesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPriceIndexesResponseSuccess = (listPriceIndexesResponse200) & {
+  headers: Headers;
+};
+export type listPriceIndexesResponseError = (listPriceIndexesResponse400 | listPriceIndexesResponse401 | listPriceIndexesResponse403) & {
+  headers: Headers;
+};
+
+export type listPriceIndexesResponse = (listPriceIndexesResponseSuccess | listPriceIndexesResponseError)
+
+export const getListPriceIndexesUrl = (params?: ListPriceIndexesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/price-indexes?${stringifiedParams}` : `/api/price-indexes`
+}
+
+/**
+ * Proposto. Os índices de venda da empresa ativa, um por fornecedor.
+ *
+ * **Não há detalhe por id nesta família**, pelo mesmo desenho de `/api/payment-terms` e `/api/stock-locations`: é um punhado de linhas por empresa e a listagem já entrega cada uma inteira — um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar.
+ *
+ * **Não publica `filters`** pela razão de sempre: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.
+ */
+export const listPriceIndexes = async (params?: ListPriceIndexesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPriceIndexesResponse> => {
+
+  return apiFetch<listPriceIndexesResponse>(getListPriceIndexesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPriceIndexResponse201 = {
+  data: PriceIndexDto
+  status: 201
+}
+
+export type createPriceIndexResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPriceIndexResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPriceIndexResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPriceIndexResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPriceIndexResponseSuccess = (createPriceIndexResponse201) & {
+  headers: Headers;
+};
+export type createPriceIndexResponseError = (createPriceIndexResponse400 | createPriceIndexResponse401 | createPriceIndexResponse403 | createPriceIndexResponse409) & {
+  headers: Headers;
+};
+
+export type createPriceIndexResponse = (createPriceIndexResponseSuccess | createPriceIndexResponseError)
+
+export const getCreatePriceIndexUrl = () => {
+
+
+
+
+  return `/api/price-indexes`
+}
+
+/**
+ * Proposto. Cadastra o índice de um fornecedor na empresa ativa.
+ *
+ * **Papel: `admin` ou superior**, a mesma linha de corte de `/api/cost-profiles` e pela mesma razão: índice e perfil de custo são os dois fatores do mesmo preço, e proteger um deixando o outro aberto não protege nada. Isto não é operação de atendimento — o índice decide o preço de TODA peça daquele fornecedor, em todo orçamento que vier depois.
+ *
+ * Fornecedor que já tem índice é **409** — ver `PriceIndexDto.supplierId`.
+ */
+export const createPriceIndex = async (priceIndexWriteRequest: PriceIndexWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPriceIndexResponse> => {
+
+  return apiFetch<createPriceIndexResponse>(getCreatePriceIndexUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceIndexWriteRequest)
+  }
+);}
+
+
+
+export type updatePriceIndexResponse200 = {
+  data: PriceIndexDto
+  status: 200
+}
+
+export type updatePriceIndexResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePriceIndexResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePriceIndexResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePriceIndexResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updatePriceIndexResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePriceIndexResponseSuccess = (updatePriceIndexResponse200) & {
+  headers: Headers;
+};
+export type updatePriceIndexResponseError = (updatePriceIndexResponse400 | updatePriceIndexResponse401 | updatePriceIndexResponse403 | updatePriceIndexResponse404 | updatePriceIndexResponse409) & {
+  headers: Headers;
+};
+
+export type updatePriceIndexResponse = (updatePriceIndexResponseSuccess | updatePriceIndexResponseError)
+
+export const getUpdatePriceIndexUrl = (id: string,) => {
+
+
+
+
+  return `/api/price-indexes/${id}`
+}
+
+/**
+ * Proposto. Substitui o índice INTEIRO.
+ *
+ * **Alterar o índice NÃO reescreve documento já gravado.** O orçamento CARIMBA `unitPriceCents` na emissão, e é esse valor congelado que vale — repreçar documento existente é ação própria e explícita ("Atualizar Valores" do legado), não efeito colateral de mexer no cadastro. Sem isso, corrigir um índice mudaria em silêncio o total de todo orçamento em aberto, e ninguém saberia dizer por quê.
+ */
+export const updatePriceIndex = async (id: string,
+    priceIndexWriteRequest: PriceIndexWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePriceIndexResponse> => {
+
+  return apiFetch<updatePriceIndexResponse>(getUpdatePriceIndexUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceIndexWriteRequest)
+  }
+);}
+
+
+
+export type listVariantTablePricesResponse200 = {
+  data: VariantTablePriceDto[]
+  status: 200
+}
+
+export type listVariantTablePricesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listVariantTablePricesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listVariantTablePricesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listVariantTablePricesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listVariantTablePricesResponseSuccess = (listVariantTablePricesResponse200) & {
+  headers: Headers;
+};
+export type listVariantTablePricesResponseError = (listVariantTablePricesResponse400 | listVariantTablePricesResponse401 | listVariantTablePricesResponse403 | listVariantTablePricesResponse404) & {
+  headers: Headers;
+};
+
+export type listVariantTablePricesResponse = (listVariantTablePricesResponseSuccess | listVariantTablePricesResponseError)
+
+export const getListVariantTablePricesUrl = (variantId: string,) => {
+
+
+
+
+  return `/api/table-prices/${variantId}`
+}
+
+/**
+ * Proposto. As tabelas de preço desta variante, uma por fornecedor.
+ *
+ * Lista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.
+ *
+ * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
+ */
+export const listVariantTablePrices = async (variantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listVariantTablePricesResponse> => {
+
+  return apiFetch<listVariantTablePricesResponse>(getListVariantTablePricesUrl(variantId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type replaceVariantTablePricesResponse200 = {
+  data: VariantTablePriceDto[]
+  status: 200
+}
+
+export type replaceVariantTablePricesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type replaceVariantTablePricesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type replaceVariantTablePricesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type replaceVariantTablePricesResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type replaceVariantTablePricesResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type replaceVariantTablePricesResponseSuccess = (replaceVariantTablePricesResponse200) & {
+  headers: Headers;
+};
+export type replaceVariantTablePricesResponseError = (replaceVariantTablePricesResponse400 | replaceVariantTablePricesResponse401 | replaceVariantTablePricesResponse403 | replaceVariantTablePricesResponse404 | replaceVariantTablePricesResponse409) & {
+  headers: Headers;
+};
+
+export type replaceVariantTablePricesResponse = (replaceVariantTablePricesResponseSuccess | replaceVariantTablePricesResponseError)
+
+export const getReplaceVariantTablePricesUrl = (variantId: string,) => {
+
+
+
+
+  return `/api/table-prices/${variantId}`
+}
+
+/**
+ * Proposto. Substitui a lista inteira de tabelas desta variante.
+ *
+ * **Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.
+ *
+ * Fornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.
+ *
+ * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
+ */
+export const replaceVariantTablePrices = async (variantId: string,
+    variantTablePricesWriteRequest: VariantTablePricesWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<replaceVariantTablePricesResponse> => {
+
+  return apiFetch<replaceVariantTablePricesResponse>(getReplaceVariantTablePricesUrl(variantId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(variantTablePricesWriteRequest)
   }
 );}
 

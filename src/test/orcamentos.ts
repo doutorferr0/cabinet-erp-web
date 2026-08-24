@@ -120,9 +120,17 @@ function detalhe(o: Linha) {
     discountMode: escrita.discountMode,
     discountPercent: escrita.discountPercent,
     environments: escrita.environments,
+    // `unitPriceCents` passou a ser OPCIONAL na escrita (G9): ausente com
+    // `variantId`, quem precifica é o SERVIDOR. Este dublê não tem índice nem
+    // tabela de fornecedor para calcular nada, então trata a ausência como zero
+    // e devolve `calculatedUnitPriceCents: null` — que é o que o contrato manda
+    // responder quando a fórmula não tem o que multiplicar. Inventar um preço
+    // aqui daria dado de mentira com cara de preço apurado pelo servidor.
     items: (escrita.items ?? []).map((item) => ({
       ...item,
-      totalCents: Math.round(item.quantity * item.unitPriceCents),
+      unitPriceCents: item.unitPriceCents ?? 0,
+      calculatedUnitPriceCents: null,
+      totalCents: Math.round(item.quantity * (item.unitPriceCents ?? 0)),
     })),
   }
 }

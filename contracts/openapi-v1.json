@@ -10719,6 +10719,347 @@
           }
         }
       }
+    },
+    "/api/price-indexes": {
+      "get": {
+        "tags": ["produtos"],
+        "operationId": "ListPriceIndexes",
+        "description": "Proposto. Os índices de venda da empresa ativa, um por fornecedor.\n\n**Não há detalhe por id nesta família**, pelo mesmo desenho de `/api/payment-terms` e `/api/stock-locations`: é um punhado de linhas por empresa e a listagem já entrega cada uma inteira — um `GET /{id}` devolveria a segunda cópia do que a listagem acabou de dar.\n\n**Não publica `filters`** pela razão de sempre: sobre um punhado de linhas que já vieram inteiras, o filtro estruturado seria parâmetro sem consumidor, cobrando whitelist dos dois lados.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por nome do fornecedor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `supplierName`, `indexValue`, `active`. Campo fora dela é 400.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPriceIndexDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["produtos"],
+        "operationId": "CreatePriceIndex",
+        "description": "Proposto. Cadastra o índice de um fornecedor na empresa ativa.\n\n**Papel: `admin` ou superior**, a mesma linha de corte de `/api/cost-profiles` e pela mesma razão: índice e perfil de custo são os dois fatores do mesmo preço, e proteger um deixando o outro aberto não protege nada. Isto não é operação de atendimento — o índice decide o preço de TODA peça daquele fornecedor, em todo orçamento que vier depois.\n\nFornecedor que já tem índice é **409** — ver `PriceIndexDto.supplierId`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceIndexWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceIndexDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/price-indexes/{id}": {
+      "put": {
+        "tags": ["produtos"],
+        "operationId": "UpdatePriceIndex",
+        "description": "Proposto. Substitui o índice INTEIRO.\n\n**Alterar o índice NÃO reescreve documento já gravado.** O orçamento CARIMBA `unitPriceCents` na emissão, e é esse valor congelado que vale — repreçar documento existente é ação própria e explícita (\"Atualizar Valores\" do legado), não efeito colateral de mexer no cadastro. Sem isso, corrigir um índice mudaria em silêncio o total de todo orçamento em aberto, e ninguém saberia dizer por quê.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceIndexWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceIndexDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table-prices/{variantId}": {
+      "get": {
+        "tags": ["produtos"],
+        "operationId": "ListVariantTablePrices",
+        "description": "Proposto. As tabelas de preço desta variante, uma por fornecedor.\n\nLista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VariantTablePriceDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["produtos"],
+        "operationId": "ReplaceVariantTablePrices",
+        "description": "Proposto. Substitui a lista inteira de tabelas desta variante.\n\n**Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.\n\nFornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariantTablePricesWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VariantTablePriceDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12897,12 +13238,17 @@
             "description": "Valor do item. Calculado pelo servidor — a escrita não manda.",
             "type": "integer",
             "format": "int64"
+          },
+          "calculatedUnitPriceCents": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Proposto. O preço que a FÓRMULA produziu para esta variante, em centavos — `round(líquido de compra × indexValue)`, com o líquido saindo de `VariantTablePriceDto.tablePriceCents` menos a cascata e os créditos do `CostProfileDto` daquele fornecedor.\n\n**É eco, não escrita.** O `PUT` ignora o que vier aqui. Quem manda no total da linha é `unitPriceCents`.\n\n**CONGELADO na emissão, como o resto da linha.** Recalcular na leitura faria todo orçamento antigo parecer descontado no dia seguinte a um ajuste de índice — o operador veria \"praticado R$ 100, calculado R$ 130\" numa venda que saiu no preço cheio de ontem. A linha já congela descrição, acabamento, tamanho e fornecedor pela mesma razão.\n\n**Por que os dois viajam juntos.** Sem o calculado ao lado do praticado, a tela não tem como mostrar que aquela linha saiu abaixo do preço — o operador vê um número e não sabe se ele é o da fórmula ou o que alguém digitou. Com os dois, a diferença é visível sem que o item precise carregar custo ou margem, que são de `CostSimulationDto` e de outro papel.\n\n**`null` quando a fórmula não tem o que multiplicar:** item sem `variantId` (linha livre), variante sem tabela do fornecedor, fornecedor sem índice, ou índice inativo. `null` é a resposta honesta — devolver zero faria a tela desenhar \"preço sugerido: R$ 0,00\" e sugerir que a peça é de graça."
           }
         }
       },
       "QuoteItemWriteRequest": {
         "description": "Proposto. Linha da grade na escrita. Sem `totalCents`: quem soma é o servidor.",
-        "required": ["lineNumber", "description", "quantity", "unitPriceCents", "discountPercent"],
+        "required": ["lineNumber", "description", "quantity", "discountPercent"],
         "type": "object",
         "properties": {
           "lineNumber": {
@@ -12941,9 +13287,9 @@
             "type": ["string", "null"]
           },
           "unitPriceCents": {
-            "description": "Valor unitário congelado, em centavos.",
-            "type": "integer",
-            "format": "int64"
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Valor unitário da linha, em centavos.\n\n**Passou a ser OPCIONAL para que o item possa NASCER PRECIFICADO.** Ausente ou `null` com `variantId` preenchido, o servidor calcula pela fórmula e grava o resultado — é o gesto de \"incluir a peça e ela já vem com preço\", que no legado é o comportamento normal e aqui exigia que a tela soubesse o preço antes de pedir.\n\n**Valor presente continua mandando**, e é assim que o preço negociado sobrevive: quem digita um valor está dizendo que aquela linha sai por ele, e o servidor não o substitui. O que a fórmula produziu segue visível em `QuoteItemDto.calculatedUnitPriceCents`, ao lado.\n\n**Ausente e sem `variantId` é zero**, não erro: a linha livre não tem de onde tirar preço, e recusá-la impediria o item de texto que o orçamento usa para descrever serviço ou observação."
           },
           "discountPercent": {
             "description": "Desconto do item. Int com 4 casas implícitas: `10000` = 1%.",
@@ -19317,6 +19663,124 @@
             "format": "int32"
           }
         }
+      },
+      "PriceIndexDto": {
+        "required": ["id", "supplierId", "indexValue", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor a que o índice pertence — `PartnerDto.id` com o papel `supplier`. **Um índice por fornecedor por empresa:** o segundo cadastro para o mesmo fornecedor é 409, porque dois índices ativos deixariam a precificação depender de qual linha a consulta encontrasse primeiro, e o sintoma seria preço mudando sozinho entre dois orçamentos."
+          },
+          "supplierName": {
+            "type": ["string", "null"],
+            "description": "Nome do fornecedor, para exibição. Não é escrita — o `PUT` ignora o que vier aqui, como todo campo de junção deste contrato."
+          },
+          "costProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O perfil de custo de onde saem as deduções da compra — `CostProfileDto.id`. **`null` é caso real e não pendência:** fornecedor sem cascata e sem crédito existe às dezenas no legado, e ali o líquido É o preço de tabela. Um perfil vazio obrigatório seria linha de zeros que alguém teria de criar para cada fornecedor simples.\n\nO perfil tem de ser do MESMO fornecedor: apontar para o de outro faria a peça ser precificada com o desconto que ninguém negociou para ela. É 400."
+          },
+          "costProfileName": {
+            "type": ["string", "null"],
+            "description": "Nome do perfil, para exibição. Não é escrita."
+          },
+          "indexValue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "O multiplicador. **Int com 4 casas implícitas sobre 1: `25600` = 2,5600.** É `Ipr_Indice`. Tem de ser `> 0`; `10000` (1,0000) é válido e quer dizer vender pelo líquido de compra."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Desativação lógica. Índice inativo **não precifica** — a variante daquele fornecedor volta a devolver `calculatedUnitPriceCents` nulo, em vez de sair com índice velho."
+          }
+        },
+        "description": "Proposto. O **ÍNDICE DE VALOR DE VENDA** por fornecedor — `Indice_preco` do legado (376 linhas, mediana 2,5600). É a METADE VENDA da formação de preço; `CostProfileDto` é a de compra e custo.\n\n**A fórmula que esta linha fecha:**\n\n```\nliquido = tablePriceCents − discount1..4 em cascata − créditos ICMS/PIS/COFINS   <- do PERFIL DE CUSTO\nVENDA   = round(liquido × indexValue)                                            <- daqui\n```\n\nO preço de venda é o líquido de COMPRA multiplicado pelo índice, **aplicado ANTES de qualquer imposto de saída**. Imposto e taxa entram só na apuração de CUSTO e LUCRO — eles não empurram preço. É a mesma decomposição que `CostSimulationDto` publica: o que este índice multiplica é exatamente o `netPurchaseCents` de lá.\n\n**As deduções NÃO se repetem aqui, e é o ponto do desenho.** Os quatro descontos em cascata e os três créditos moram em `CostProfileDto`, e esta linha aponta para ele por `costProfileId` — como no legado, onde `Indice_preco` é \"ligado a um `Custo` e a um fornecedor\". Copiar os sete campos para cá daria duas autoridades sobre os mesmos números, e elas divergiriam na primeira edição: o custo apurado por um caminho e o preço pelo outro, com o operador sem saber qual dos dois acreditar.\n\n**O índice é do FORNECEDOR, não do produto nem da categoria.** Quem o pendurar no produto reproduz outra coisa: no legado a mesma peça comprada de dois fornecedores rende dois preços, porque cada fornecedor tem seu índice e sua tabela. É o desenho que dá sentido ao multi-fornecedor de `ProductDto.suppliers` — sem ele, o segundo fornecedor é rótulo.\n\n**Escala: inteiro com 4 casas implícitas sobre 1** — `25600` = 2,5600. Repare que ela NÃO é a de `discountPercent` nem a dos campos de `CostProfileDto`, que são 4 casas sobre 100%: o índice é MULTIPLICADOR, e escrever 2,56 como 256% seria a mesma informação com um fator 100 de armadilha entre as duas leituras. Ponto flutuante é vetado para dinheiro, e `numeric` chegaria como string ao cliente, que a converteria para multiplicar — voltando ao float na única conta que importa.\n\n**`indexValue` = `10000` (1,0000) é VÁLIDO e não é erro de cadastro.** São 16 assim no legado, 11 de fornecedores reais, e pela fórmula significam vender pelo líquido de compra. Parte é legítima — há fornecedor cuja tabela já sai com a margem embutida. Recusar 1,0000 faria o servidor rejeitar o cadastro real desses 11; \"corrigir\" o índice na migração inventaria margem que ninguém decidiu. O limite é `> 0`."
+      },
+      "PriceIndexWriteRequest": {
+        "required": ["supplierId", "indexValue"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "indexValue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "4 casas implícitas, `> 0`."
+          },
+          "costProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Ausente ou nulo = sem deduções, e o líquido é o preço de tabela."
+          },
+          "active": {
+            "type": ["boolean", "null"],
+            "description": "Ausente = `true`."
+          }
+        },
+        "description": "Proposto. Cria ou substitui o índice de um fornecedor. **`PUT` substitui a linha INTEIRA** — campo ausente NÃO preserva o valor anterior, como todo `PUT` deste contrato: omitir `costProfileId` DESLIGA o perfil, não o mantém."
+      },
+      "PagedResultOfPriceIndexDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceIndexDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "VariantTablePriceDto": {
+        "required": ["supplierId", "tablePriceCents"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor de quem é esta tabela — `PartnerDto.id`."
+          },
+          "supplierName": {
+            "type": ["string", "null"],
+            "description": "Para exibição. Não é escrita."
+          },
+          "supplierCode": {
+            "type": ["string", "null"],
+            "description": "Código da peça NO fornecedor, vindo de `ProductSupplierDto`. É a língua em que o comprador confere a tabela recebida — o código do Cabinet não aparece na lista de preços que o fornecedor manda."
+          },
+          "tablePriceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe."
+          }
+        },
+        "description": "Proposto. O preço de tabela de UM fornecedor para UMA variante.\n\n**Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.\n\n**Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado."
+      },
+      "VariantTablePricesWriteRequest": {
+        "required": ["prices"],
+        "type": "object",
+        "properties": {
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantTablePriceDto"
+            },
+            "description": "A lista INTEIRA. Fornecedor que não vier é apagado."
+          }
+        },
+        "description": "Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.\n\nÉ uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio."
       }
     }
   },

@@ -1722,6 +1722,19 @@ export interface QuoteItemDto {
   pieceType?: string | null;
   /** Valor do item. Calculado pelo servidor — a escrita não manda. */
   totalCents: number;
+  /**
+     * Proposto. O preço que a FÓRMULA produziu para esta variante, em centavos — `round(líquido de compra × indexValue)`, com o líquido saindo de `VariantTablePriceDto.tablePriceCents` menos a cascata e os créditos do `CostProfileDto` daquele fornecedor.
+     *
+     * **É eco, não escrita.** O `PUT` ignora o que vier aqui. Quem manda no total da linha é `unitPriceCents`.
+     *
+     * **CONGELADO na emissão, como o resto da linha.** Recalcular na leitura faria todo orçamento antigo parecer descontado no dia seguinte a um ajuste de índice — o operador veria "praticado R$ 100, calculado R$ 130" numa venda que saiu no preço cheio de ontem. A linha já congela descrição, acabamento, tamanho e fornecedor pela mesma razão.
+     *
+     * **Por que os dois viajam juntos.** Sem o calculado ao lado do praticado, a tela não tem como mostrar que aquela linha saiu abaixo do preço — o operador vê um número e não sabe se ele é o da fórmula ou o que alguém digitou. Com os dois, a diferença é visível sem que o item precise carregar custo ou margem, que são de `CostSimulationDto` e de outro papel.
+     *
+     * **`null` quando a fórmula não tem o que multiplicar:** item sem `variantId` (linha livre), variante sem tabela do fornecedor, fornecedor sem índice, ou índice inativo. `null` é a resposta honesta — devolver zero faria a tela desenhar "preço sugerido: R$ 0,00" e sugerir que a peça é de graça.
+     * @nullable
+     */
+  calculatedUnitPriceCents?: number | null;
 }
 
 /**
@@ -1756,8 +1769,17 @@ export interface QuoteItemWriteRequest {
   quantity: number;
   /** @nullable */
   unit?: string | null;
-  /** Valor unitário congelado, em centavos. */
-  unitPriceCents: number;
+  /**
+     * Valor unitário da linha, em centavos.
+     *
+     * **Passou a ser OPCIONAL para que o item possa NASCER PRECIFICADO.** Ausente ou `null` com `variantId` preenchido, o servidor calcula pela fórmula e grava o resultado — é o gesto de "incluir a peça e ela já vem com preço", que no legado é o comportamento normal e aqui exigia que a tela soubesse o preço antes de pedir.
+     *
+     * **Valor presente continua mandando**, e é assim que o preço negociado sobrevive: quem digita um valor está dizendo que aquela linha sai por ele, e o servidor não o substitui. O que a fórmula produziu segue visível em `QuoteItemDto.calculatedUnitPriceCents`, ao lado.
+     *
+     * **Ausente e sem `variantId` é zero**, não erro: a linha livre não tem de onde tirar preço, e recusá-la impediria o item de texto que o orçamento usa para descrever serviço ou observação.
+     * @nullable
+     */
+  unitPriceCents?: number | null;
   /** Desconto do item. Int com 4 casas implícitas: `10000` = 1%. */
   discountPercent: number;
   /**
@@ -6536,6 +6558,111 @@ export interface PagedResultOfDeliveryDto {
 }
 
 /**
+ * Proposto. O **ÍNDICE DE VALOR DE VENDA** por fornecedor — `Indice_preco` do legado (376 linhas, mediana 2,5600). É a METADE VENDA da formação de preço; `CostProfileDto` é a de compra e custo.
+ *
+ * **A fórmula que esta linha fecha:**
+ *
+ * ```
+ * liquido = tablePriceCents − discount1..4 em cascata − créditos ICMS/PIS/COFINS   <- do PERFIL DE CUSTO
+ * VENDA   = round(liquido × indexValue)                                            <- daqui
+ * ```
+ *
+ * O preço de venda é o líquido de COMPRA multiplicado pelo índice, **aplicado ANTES de qualquer imposto de saída**. Imposto e taxa entram só na apuração de CUSTO e LUCRO — eles não empurram preço. É a mesma decomposição que `CostSimulationDto` publica: o que este índice multiplica é exatamente o `netPurchaseCents` de lá.
+ *
+ * **As deduções NÃO se repetem aqui, e é o ponto do desenho.** Os quatro descontos em cascata e os três créditos moram em `CostProfileDto`, e esta linha aponta para ele por `costProfileId` — como no legado, onde `Indice_preco` é "ligado a um `Custo` e a um fornecedor". Copiar os sete campos para cá daria duas autoridades sobre os mesmos números, e elas divergiriam na primeira edição: o custo apurado por um caminho e o preço pelo outro, com o operador sem saber qual dos dois acreditar.
+ *
+ * **O índice é do FORNECEDOR, não do produto nem da categoria.** Quem o pendurar no produto reproduz outra coisa: no legado a mesma peça comprada de dois fornecedores rende dois preços, porque cada fornecedor tem seu índice e sua tabela. É o desenho que dá sentido ao multi-fornecedor de `ProductDto.suppliers` — sem ele, o segundo fornecedor é rótulo.
+ *
+ * **Escala: inteiro com 4 casas implícitas sobre 1** — `25600` = 2,5600. Repare que ela NÃO é a de `discountPercent` nem a dos campos de `CostProfileDto`, que são 4 casas sobre 100%: o índice é MULTIPLICADOR, e escrever 2,56 como 256% seria a mesma informação com um fator 100 de armadilha entre as duas leituras. Ponto flutuante é vetado para dinheiro, e `numeric` chegaria como string ao cliente, que a converteria para multiplicar — voltando ao float na única conta que importa.
+ *
+ * **`indexValue` = `10000` (1,0000) é VÁLIDO e não é erro de cadastro.** São 16 assim no legado, 11 de fornecedores reais, e pela fórmula significam vender pelo líquido de compra. Parte é legítima — há fornecedor cuja tabela já sai com a margem embutida. Recusar 1,0000 faria o servidor rejeitar o cadastro real desses 11; "corrigir" o índice na migração inventaria margem que ninguém decidiu. O limite é `> 0`.
+ */
+export interface PriceIndexDto {
+  id: string;
+  /** O fornecedor a que o índice pertence — `PartnerDto.id` com o papel `supplier`. **Um índice por fornecedor por empresa:** o segundo cadastro para o mesmo fornecedor é 409, porque dois índices ativos deixariam a precificação depender de qual linha a consulta encontrasse primeiro, e o sintoma seria preço mudando sozinho entre dois orçamentos. */
+  supplierId: string;
+  /**
+     * Nome do fornecedor, para exibição. Não é escrita — o `PUT` ignora o que vier aqui, como todo campo de junção deste contrato.
+     * @nullable
+     */
+  supplierName?: string | null;
+  /**
+     * O perfil de custo de onde saem as deduções da compra — `CostProfileDto.id`. **`null` é caso real e não pendência:** fornecedor sem cascata e sem crédito existe às dezenas no legado, e ali o líquido É o preço de tabela. Um perfil vazio obrigatório seria linha de zeros que alguém teria de criar para cada fornecedor simples.
+     *
+     * O perfil tem de ser do MESMO fornecedor: apontar para o de outro faria a peça ser precificada com o desconto que ninguém negociou para ela. É 400.
+     * @nullable
+     */
+  costProfileId?: string | null;
+  /**
+     * Nome do perfil, para exibição. Não é escrita.
+     * @nullable
+     */
+  costProfileName?: string | null;
+  /** O multiplicador. **Int com 4 casas implícitas sobre 1: `25600` = 2,5600.** É `Ipr_Indice`. Tem de ser `> 0`; `10000` (1,0000) é válido e quer dizer vender pelo líquido de compra. */
+  indexValue: number;
+  /** Desativação lógica. Índice inativo **não precifica** — a variante daquele fornecedor volta a devolver `calculatedUnitPriceCents` nulo, em vez de sair com índice velho. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Cria ou substitui o índice de um fornecedor. **`PUT` substitui a linha INTEIRA** — campo ausente NÃO preserva o valor anterior, como todo `PUT` deste contrato: omitir `costProfileId` DESLIGA o perfil, não o mantém.
+ */
+export interface PriceIndexWriteRequest {
+  supplierId: string;
+  /** 4 casas implícitas, `> 0`. */
+  indexValue: number;
+  /**
+     * Ausente ou nulo = sem deduções, e o líquido é o preço de tabela.
+     * @nullable
+     */
+  costProfileId?: string | null;
+  /**
+     * Ausente = `true`.
+     * @nullable
+     */
+  active?: boolean | null;
+}
+
+export interface PagedResultOfPriceIndexDto {
+  rows: PriceIndexDto[];
+  total: number;
+}
+
+/**
+ * Proposto. O preço de tabela de UM fornecedor para UMA variante.
+ *
+ * **Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.
+ *
+ * **Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado.
+ */
+export interface VariantTablePriceDto {
+  /** O fornecedor de quem é esta tabela — `PartnerDto.id`. */
+  supplierId: string;
+  /**
+     * Para exibição. Não é escrita.
+     * @nullable
+     */
+  supplierName?: string | null;
+  /**
+     * Código da peça NO fornecedor, vindo de `ProductSupplierDto`. É a língua em que o comprador confere a tabela recebida — o código do Cabinet não aparece na lista de preços que o fornecedor manda.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /** O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe. */
+  tablePriceCents: number;
+}
+
+/**
+ * Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.
+ *
+ * É uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio.
+ */
+export interface VariantTablePricesWriteRequest {
+  /** A lista INTEIRA. Fornecedor que não vier é apagado. */
+  prices: VariantTablePriceDto[];
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -7693,5 +7820,19 @@ status?: string;
  * Só os romaneios deste pedido.
  */
 orderId?: string;
+};
+
+export type ListPriceIndexesParams = {
+/**
+ * Busca por nome do fornecedor.
+ */
+q?: string;
+/**
+ * Whitelist: `supplierName`, `indexValue`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 

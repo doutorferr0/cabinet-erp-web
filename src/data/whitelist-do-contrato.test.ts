@@ -183,6 +183,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
   ListCostProfiles:
     'o perfil de custo (G9) nasce no servidor sem tela e sem mock — a cascata não se reimplementa em fixture, e margem inventada é pior que tela vazia',
+  ListPriceIndexes:
+    'o índice de venda (G9) é a METADE VENDA do mesmo trilho do perfil de custo acima, e fica de fora pela mesma razão: o mock teria de inventar índice E tabela de fornecedor para ecoar um preço calculado, e o terceiro dado de mentira sai com cara de preço apurado pelo servidor',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
   // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
   // mostra número inventado com cara de apuração, que é pior do que não mostrar
@@ -374,6 +376,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListCommissionClosings: 'fechamento é consequência da apuração, que o mock não tem como calcular',
   ListCommissionClosingEntries:
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
+  ListPriceIndexes:
+    'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
 }
 
 /**

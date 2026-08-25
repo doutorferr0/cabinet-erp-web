@@ -1,76 +1,72 @@
+import type { PurchaseRequestDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { SITUACAO_DO_PEDIDO } from '@/data/compras-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
-import type { PedidoCompra } from '@/mocks/pedidos-compra'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarDays, Hash, ShoppingCart, Truck } from 'lucide-react'
+import { CalendarDays, CircleDot, Hash, List } from 'lucide-react'
 
 export const Route = createFileRoute('/compras/pedidos/')({
   component: PedidosCompraPage,
 })
 
-/** Colunas LITERAIS da transcrição §7.3. */
-const columns: ColumnDef<PedidoCompra>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
+/**
+ * As colunas são as do CONTRATO, e a mudança de nome não é cosmética.
+ *
+ * `codigo`/`pedVenda`/`serie`/`fornecedores` eram os nomes do relatório do
+ * legado, e nenhum deles existe em `PurchaseRequestDto`. O `accessorKey` É o
+ * `sortBy` que viaja: coluna com nome inventado responde 400 ao primeiro clique
+ * no cabeçalho, e a whitelist do servidor tem `number`, `issuedAt`, `status` e
+ * `itemCount` — nada mais.
+ *
+ * **A coluna de FORNECEDORES saiu**, e é o que o contrato manda: o fornecedor
+ * mora na LINHA, o pedido tem N, e `orderNumber` está fora da whitelist de
+ * ordenação de propósito ("ele é ECOADO do pedido de venda, e ordenar por
+ * coluna de outra tabela num recurso paginado é o que transforma listagem em
+ * junção obrigatória"). Quem procura pelo fornecedor filtra por `supplierId`.
+ */
+const columns: ColumnDef<PurchaseRequestDto>[] = [
+  { accessorKey: 'number', header: 'Número' },
   {
-    accessorKey: 'pedVenda',
-    header: 'Pedido de Venda',
-    cell: ({ getValue }) => getValue<string>() || '—',
-  },
-  { accessorKey: 'serie', header: 'Série', cell: ({ getValue }) => getValue<string>() || '—' },
-  {
-    accessorKey: 'data',
-    header: 'Data',
+    accessorKey: 'issuedAt',
+    header: 'Emissão',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
   },
   {
-    id: 'fornecedores',
-    header: 'Fornecedores',
-    // N fornecedores por pedido, concatenados por " - " (§7.3, observação).
-    accessorFn: (row) => row.fornecedores.join(' - '),
+    accessorKey: 'status',
+    header: 'Situação',
+    cell: ({ getValue }) => SITUACAO_DO_PEDIDO[getValue<PurchaseRequestDto['status']>()] ?? '—',
+  },
+  { accessorKey: 'itemCount', header: 'Itens' },
+  {
+    id: 'orderNumber',
+    header: 'Pedido de Venda',
+    // Vazio significa compra para ESTOQUE (§7.3, observação) — a frase é o dado.
+    accessorFn: (row) => row.orderNumber ?? '— estoque',
+    enableSorting: false,
+  },
+  {
+    id: 'customerName',
+    header: 'Cliente',
+    accessorFn: (row) => row.customerName ?? '—',
+    enableSorting: false,
   },
 ]
 
-/**
- * Campos filtráveis da §7.3.
- *
- * **`fornecedores` é MULTIVALORADO** — um pedido tem N fornecedores, e a coluna
- * os concatena. O filtro casa quando ALGUM deles casa, e negar quer dizer
- * "nenhum": "não contém Stella" exclui o pedido que tem Stella e mais alguém.
- * A alternativa seria comparar contra a lista concatenada, que é o que o
- * `String(array)` faria por acidente — com vírgula, que nem é o separador que a
- * tela mostra.
- *
- * `Pedido de Venda` vazio significa compra para ESTOQUE (§7.3, observação), e é
- * por isso que "está vazio" nele é uma consulta de verdade: "o que comprei sem
- * venda casada".
- */
 const camposFiltraveis: readonly CampoFiltravel[] = [
-  { id: 'codigo', rotulo: 'Código', variante: 'text', icon: Hash, placeholder: 'Ex.: 4210' },
-  {
-    id: 'pedVenda',
-    rotulo: 'Pedido de Venda',
-    variante: 'text',
-    icon: ShoppingCart,
-    placeholder: 'Vazio = compra para estoque',
-  },
-  { id: 'data', rotulo: 'Data', variante: 'date', icon: CalendarDays },
-  {
-    id: 'fornecedores',
-    rotulo: 'Fornecedores',
-    variante: 'text',
-    icon: Truck,
-    placeholder: 'Parte do nome…',
-  },
+  { id: 'number', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: PC-0007' },
+  { id: 'issuedAt', rotulo: 'Emissão', variante: 'date', icon: CalendarDays },
+  { id: 'status', rotulo: 'Situação', variante: 'text', icon: CircleDot, placeholder: 'open…' },
+  { id: 'itemCount', rotulo: 'Itens', variante: 'text', icon: List, placeholder: 'Ex.: 3' },
 ]
 
 function PedidosCompraPage() {
   const navigate = useNavigate()
-  const { readOnly } = useReadOnlyPorPapel('orders')
+  const { readOnly } = useReadOnlyPorPapel('purchases')
 
   function abrir(pedidoId: string, modo?: 'consulta') {
     void navigate({
@@ -80,12 +76,12 @@ function PedidosCompraPage() {
     })
   }
 
-  const actions = cadastroActions<PedidoCompra>({
+  const actions = cadastroActions<PurchaseRequestDto>({
     entidade: 'pedido de compra',
     readOnly,
     onIncluir: () => abrir('novo'),
-    onAbrir: (p) => abrir(String(p.id)),
-    onConsultar: (p) => abrir(String(p.id), 'consulta'),
+    onAbrir: (p) => abrir(p.id),
+    onConsultar: (p) => abrir(p.id, 'consulta'),
   })
 
   return (
@@ -96,8 +92,6 @@ function PedidosCompraPage() {
       fetcher={data.pedidosCompra.list}
       actions={actions}
       filtros={camposFiltraveis}
-      // Os treze pedidos desta tela são fixture (sessão 60). Enquanto o
-      // registry disser `exemplo`, a listagem diz junto.
       origem={data.pedidosCompra.origem}
     />
   )

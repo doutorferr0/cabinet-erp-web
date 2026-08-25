@@ -918,8 +918,24 @@ export const PROXIMO_PASSO: Record<NaturezaDaAusencia, string> = {
     'o api responde 404, nem 501 — falta `pnpm sync:contract` + `pnpm codegen` LÁ, antes do handler',
 }
 
+/**
+ * **AS 14 FORAM MEDIDAS CONTRA A PR, EM 25/08, E RESPONDEM.** A fase C (as
+ * telas) foi construída contra o servidor de verdade, subido do commit
+ * `e8a30f6` da `worktree-g2-compras-rotas` — a `api#176` — com Postgres
+ * próprio: pedido de venda → pedido de compra → ordem agrupando a linha →
+ * `send` → previsão de chegada, com as duas datas do reagendamento e o cliente
+ * ecoado até a última linha.
+ *
+ * **Ficam aqui assim mesmo**, e o motivo é o par que esta lista exige: a
+ * `api#176` está ABERTA — parada por cobrança do GitHub Actions, não por
+ * revisão —, então par local contra a `main` do api ainda recebe 501. Ligá-las
+ * agora tiraria o mock, que serve as 14 inteiras, para entregar 501 à tela: a
+ * "rota adiantada" que o cabeçalho deste arquivo chama de pior que rota
+ * ausente. **Quem mergear a `api#176` move as 14 no mesmo PR** — não há mais
+ * nada a medir antes disso.
+ */
 const COMPRAS_501 =
-  '501 no api — a fase B do módulo (api#176) ainda não mergeou; medido em 24/08 contra `f810a39`'
+  '501 na main do api — a fase B (api#176) está aberta, parada por billing; medido em 25/08 contra a PR: as 14 respondem'
 
 const COMISSOES_SEM_PORTA =
   'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'

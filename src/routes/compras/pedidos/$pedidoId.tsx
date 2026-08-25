@@ -21,7 +21,7 @@ function PedidoCompraEditPage() {
       idParam={pedidoId}
       titulo="Pedido de Compra"
       modo={readOnly ? 'Consulta' : isNovo ? 'Incluir' : undefined}
-      numero={(p) => p.codigo}
+      numero={(p) => p.numero}
       naoEncontrado="Pedido de compra não encontrado."
       erroAoCarregar="Não foi possível carregar o pedido de compra."
     >

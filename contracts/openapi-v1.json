@@ -19520,10 +19520,7 @@
           },
           "lateCharges": {
             "description": "O encargo de ATRASO desta condição — juros de mora e multa, em percentual. `null` quando a condição não define encargo nenhum, e isso NÃO é o mesmo que definir zero: `null` é \"ninguém configurou o atraso desta condição\" e a tela mostra um traço; `{interestPercentMonthly: 0, finePercent: 0}` é \"conferido, e esta condição não cobra\". A diferença importa porque a primeira é pergunta em aberto para quem cadastra e a segunda é resposta.\n\n**O par é indivisível de propósito** — objeto anulável em vez de dois campos anuláveis soltos. Dois campos deixariam existir a condição com mora e sem multa por OMISSÃO, que se lê igual a \"multa zero\" e não é; num objeto só, o que falta é a regra inteira, e ela falta de uma vez.",
-            "oneOf": [
-              { "type": "null" },
-              { "$ref": "#/components/schemas/LateChargePolicyDto" }
-            ]
+            "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/LateChargePolicyDto" }]
           },
           "installmentCount": {
             "type": "integer",

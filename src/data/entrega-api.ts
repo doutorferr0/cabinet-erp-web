@@ -165,10 +165,18 @@ export interface AtoNaLinha {
  * LIBERAR — autoriza a peça a sair e RESERVA o saldo no depósito.
  *
  * É a única da escada que exige a permissão `venda:liberar-entrega`, e o front
- * **não a esconde**: `SessaoAtual` publica id, empresa e nome — não publica as
- * permissões do vínculo. Esconder o botão exigiria adivinhar, e adivinhar para
- * baixo tira a ação de quem a tem. O 403 `papel-insuficiente` chega em voz
- * alta, com o que fazer a respeito.
+ * **não a esconde**. A frase precisa do qualificador, senão diz outra coisa: o
+ * PAPEL chega — `VinculoDeEmpresa.role`, de `GET /auth/tenants`, é de onde
+ * `useReadOnlyPorPapel` e `PAPEL_MINIMO_POR_FAMILIA` vivem, e é assim que toda
+ * tela esconde controle. O que não chega é a permissão NOMEADA (`modulo:acao`):
+ * `SessaoAtual` não a publica e `GET /api/permissions` só cataloga as chaves.
+ *
+ * Por isso mostrar o controle e tratar o 403 é o que o repo já PRESCREVE para
+ * este caso, não uma exceção desta tela — `papeis.ts` escreve a mesma espera
+ * para `depositos:gerenciar` e `compras:editar` ("até lá o papel é o piso,
+ * porque a matriz é por papel"), com a troca marcada para a fase 3 da `api#84`.
+ * Esconder por adivinhação tiraria a ação de quem a tem; o 403
+ * `papel-insuficiente` chega em voz alta, com o que fazer a respeito.
  *
  * Liberar NÃO baixa estoque: a peça continua no galpão, só deixa de estar
  * disponível para a próxima venda.

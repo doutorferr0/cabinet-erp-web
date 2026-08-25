@@ -778,7 +778,7 @@ export const handlersDoCrm = [
    *
    * Sai da MESMA semente da listagem, então o que o combo oferece e o que o
    * detalhe abre são a mesma pessoa. Campo que a transcrição não tem sai
-   * `null` — `document`, `email`, `phone`, `photoUrl`, `role`, `linkActive` —,
+   * `null` — `document`, `email`, `phone`, `photoUrl`, `linkActive` —,
    * e não preenchido com invenção: dado de mentira com cara de dado do
    * servidor é exatamente o que o `AvisoDeCobertura` existe para evitar.
    *
@@ -799,7 +799,6 @@ export const handlersDoCrm = [
       phone: null,
       photoUrl: null,
       active: achada.ativo,
-      role: null,
       sectorId: achada.setor,
       sector: nomeDeApoio(achada.setor),
       jobTitleId: achada.cargo,

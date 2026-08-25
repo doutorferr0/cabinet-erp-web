@@ -125,7 +125,6 @@ describe('o detalhe do colaborador', () => {
     expect(detalhe.data.email).toBeNull()
     expect(detalhe.data.phone).toBeNull()
     expect(detalhe.data.photoUrl).toBeNull()
-    expect(detalhe.data.role).toBeNull()
     expect(detalhe.data.linkActive).toBeNull()
   })
 

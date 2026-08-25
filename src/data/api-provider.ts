@@ -345,6 +345,20 @@ function urlComQuery(url: string, query: Record<string, string | number | boolea
   return texto.length > 0 ? `${url}?${texto}` : url
 }
 
+/**
+ * `type` do problem+json — o DISCRIMINADOR de máquina.
+ *
+ * Existe ao lado de `detalheDoProblema` e não dentro dele porque os dois têm
+ * públicos diferentes: `detail` é a frase que a tela MOSTRA, `type` é a URN
+ * pela qual ela DECIDE. Ler o tipo pelo texto foi o que o vocabulário fechado
+ * de `ProblemType` passou a impedir.
+ */
+export function tipoDoProblema(corpo: unknown): string | undefined {
+  if (!corpo || typeof corpo !== 'object') return undefined
+  const tipo = (corpo as ProblemDetails).type
+  return typeof tipo === 'string' ? tipo : undefined
+}
+
 /** `detail` do problem+json, quando o corpo do erro seguiu a RFC 9457. */
 export function detalheDoProblema(corpo: unknown): string | undefined {
   if (!corpo || typeof corpo !== 'object') return undefined

@@ -82,7 +82,11 @@ function servidor() {
         corpo: texto ? JSON.parse(texto) : null,
       })
       if (caminho === '/api/employees') return json(detalheDeUsuario(), 201)
-      if (caminho === `/api/employees/${USUARIO_ID}/link`) return json(detalheDeUsuario(), 201)
+      if (caminho === `/api/employees/${USUARIO_ID}/link`) {
+        // O PUT devolve 200: o vínculo já existe desde o CreateEmployee (papel
+        // inicial `viewer`), e a tela SUBSTITUI.
+        return json(detalheDeUsuario(), requisicao?.method.toUpperCase() === 'PUT' ? 200 : 201)
+      }
       if (caminho === `/api/employees/${USUARIO_ID}/reset-password`) {
         return json({ temporaryPassword: 'xK7mPq2wRt9v' })
       }
@@ -130,7 +134,9 @@ describe('tela de acesso', () => {
     await waitFor(() => expect(escritas).toHaveLength(3))
     expect(escritas.map((e) => `${e.metodo} ${e.caminho}`)).toEqual([
       'POST /api/employees',
-      `POST /api/employees/${USUARIO_ID}/link`,
+      // PUT e não POST: o servidor cria o vínculo junto com a pessoa (papel
+      // inicial `viewer`) — o que a tela faz é substituí-lo pelo escolhido.
+      `PUT /api/employees/${USUARIO_ID}/link`,
       `POST /api/employees/${USUARIO_ID}/reset-password`,
     ])
     // O vínculo vai por roleId — o ÚNICO caminho de atribuição do contrato.

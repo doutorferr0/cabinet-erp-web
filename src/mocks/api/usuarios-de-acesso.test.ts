@@ -74,12 +74,21 @@ async function papelAtivo(): Promise<string> {
 }
 
 describe('usuários de acesso (mock)', () => {
-  it('cria, vincula por roleId e a senha provisória sai UMA vez, digitável', async () => {
+  it('nasce VINCULADO ao papel de menor poder — como o servidor faz', async () => {
+    const usuario = await criarUsuario()
+    // O CreateEmployee do api vincula ao `viewer` no mesmo request; o mock
+    // espelha com o template `Consulta`. Usuário sem vínculo nenhum é estado
+    // que a tela não sabe mostrar — e é por isso que a atribuição é PUT.
+    expect(usuario.roleId).not.toBeNull()
+    expect(usuario.roleName).toBe('Consulta')
+  })
+
+  it('o papel escolhido entra por PUT (substituição) e a senha sai UMA vez, digitável', async () => {
     const usuario = await criarUsuario()
     const roleId = await papelAtivo()
 
-    const vinculo = await linkEmployee(usuario.id, { roleId, active: true })
-    const detalhe = corpoDe<EmployeeDetailDto>(vinculo, 201)
+    const vinculo = await updateEmployeeLink(usuario.id, { roleId, active: true })
+    const detalhe = corpoDe<EmployeeDetailDto>(vinculo, 200)
     expect(detalhe.roleId).toBe(roleId)
     expect(detalhe.roleName).not.toBeNull()
 
@@ -98,9 +107,25 @@ describe('usuários de acesso (mock)', () => {
   })
 
   it('sem e-mail não há credencial: o reset é 409 de ESTADO', async () => {
-    const usuario = await criarUsuario(null)
-    const reset = await resetEmployeePassword(usuario.id)
+    // Quem não tem e-mail é o colaborador da SEMENTE (a transcrição não traz) —
+    // pelo contrato não dá para criar um assim: o cadastro exige e-mail.
+    const lista = await listEmployees({ page: 1, pageSize: 100 })
+    const corpo = corpoDe<PagedResultOfEmployeeDto>(lista, 200)
+    const daSemente = corpo.rows.find((linha) => !linha.id.startsWith('usuario'))
+    if (!daSemente) throw new Error('semente sem colaborador')
+    const reset = await resetEmployeePassword(daSemente.id)
     expect(reset.status).toBe(409)
+  })
+
+  it('cadastro sem e-mail é 400 — o servidor exige a credencial', async () => {
+    const r = await createEmployee({
+      name: 'Sem Porta',
+      document: null,
+      email: null,
+      phone: null,
+      active: true,
+    })
+    expect(r.status).toBe(400)
   })
 
   it('papel inexistente no vínculo é a URN papel-invalido, não campo em branco', async () => {
@@ -119,12 +144,13 @@ describe('usuários de acesso (mock)', () => {
     expect((papelFalso.data as { type: string }).type).toBe('urn:cabinet:erro:papel-invalido')
   })
 
-  it('vínculo repetido no POST é 409 — o PUT é quem substitui', async () => {
+  it('POST no vínculo que já existe é 409 — o PUT é quem substitui', async () => {
     const usuario = await criarUsuario()
     const roleId = await papelAtivo()
     const corpo = { roleId, active: true }
 
-    expect((await linkEmployee(usuario.id, corpo)).status).toBe(201)
+    // O vínculo existe desde o cadastro (papel inicial), então o POST é 409
+    // direto — o mesmo que o servidor responderia.
     expect((await linkEmployee(usuario.id, corpo)).status).toBe(409)
     expect((await updateEmployeeLink(usuario.id, corpo)).status).toBe(200)
   })

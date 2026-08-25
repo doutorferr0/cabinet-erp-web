@@ -552,18 +552,30 @@ export const handlersDeAcesso = [
     if (!corpo.name?.trim()) {
       return camposInvalidos([{ path: 'name', message: 'Nome é obrigatório.' }])
     }
-    const email = corpo.email?.trim().toLowerCase() || null
+    // O schema declara `email` anulável, mas o SERVIDOR o exige no cadastro:
+    // `employees.email` é NOT NULL e é por ele que a pessoa entra. O mock
+    // espelha a recusa — sem isto a tela passaria aqui e quebraria lá.
+    if (!corpo.email?.trim()) {
+      return camposInvalidos([
+        { path: 'email', message: 'Informe o e-mail — é por ele que a pessoa entra.' },
+      ])
+    }
+    const email = corpo.email.trim().toLowerCase()
     // 409 e não 400: o pedido está bem formado — o e-mail é a credencial e ela
     // é única no produto inteiro, sem diferença de caixa (regra do contrato).
     if (email && usuarios.some((u) => u.email === email)) {
       return conflito('Já existe um colaborador com este e-mail.')
     }
+    // O vínculo NASCE JUNTO, no papel de menor poder — igual ao servidor, que
+    // vincula ao `viewer` no próprio CreateEmployee. É por isso que a tela usa
+    // PUT para atribuir o papel escolhido: substituição, não criação.
+    const papelInicial = papeis.find((p) => p.name === 'Consulta' && p.active) ?? null
     const novo: UsuarioDeAcesso = {
       id: novoId('usuario'),
       name: corpo.name.trim(),
       email,
       active: corpo.active ?? true,
-      roleId: null,
+      roleId: papelInicial?.id ?? null,
     }
     usuarios.push(novo)
     crm.colaboradores.push({

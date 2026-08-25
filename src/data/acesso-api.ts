@@ -146,8 +146,12 @@ export function useCriarUsuario() {
       const criada: RespostaDaApi = await createEmployee(pessoa)
       const detalhe = dadosOuErro<EmployeeDetailDto>(criada, 'Falha ao criar o colaborador.')
 
+      // PUT, não POST: o servidor cria o vínculo JUNTO com a pessoa, no papel
+      // inicial `viewer` (decisão do CreateEmployee — cadastrar alguém sem
+      // empresa é estado que a tela não sabe mostrar). O que a tela escolheu é
+      // a SUBSTITUIÇÃO desse papel inicial; um POST aqui tomaria 409 sempre.
       const vinculo: EmployeeLinkRequest = { roleId, active: true }
-      const vinculada: RespostaDaApi = await linkEmployee(detalhe.id, vinculo)
+      const vinculada: RespostaDaApi = await updateEmployeeLink(detalhe.id, vinculo)
       dadosOuErro<EmployeeDetailDto>(vinculada, 'Colaborador criado, mas o vínculo falhou.')
 
       const senha: RespostaDaApi = await resetEmployeePassword(detalhe.id)

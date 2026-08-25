@@ -480,6 +480,41 @@ export const navSecoes: NavSecao[] = [
           },
         ],
       },
+      {
+        /**
+         * RELATÓRIOS de estoque — o terceiro degrau do esqueleto (Documentos →
+         * Cadastros → Relatórios), e o primeiro que existe de verdade em
+         * qualquer seção: o item `Relatórios` de Início ainda é `futuro`.
+         *
+         * Os três saem do contrato (#310) e ganharam o recorte por depósito na
+         * #352. Vêm por último na seção porque é onde o esqueleto os põe:
+         * primeiro o que se opera, depois o que consolida o que foi operado.
+         */
+        title: 'Relatórios',
+        url: '/estoque/relatorios/valorizado',
+        icon: Table2,
+        modulo: 'estoque',
+        items: [
+          {
+            title: 'Estoque Valorizado',
+            url: '/estoque/relatorios/valorizado',
+            icon: Table2,
+            descricao: 'Quanto vale o que está em casa, agora — por depósito ou na empresa.',
+          },
+          {
+            title: 'Estoque Parado',
+            url: '/estoque/relatorios/parado',
+            icon: Table2,
+            descricao: 'O dinheiro parado na prateleira: dias sem venda e última saída.',
+          },
+          {
+            title: 'Orçado × Estoque',
+            url: '/estoque/relatorios/orcado-x-estoque',
+            icon: Table2,
+            descricao: 'O que os orçamentos abertos prometem, contra o que existe em casa.',
+          },
+        ],
+      },
     ],
   },
   {

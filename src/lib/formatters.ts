@@ -33,6 +33,26 @@ export function parseQuantidade(texto: string): number | null | undefined {
   return Number.isFinite(numero) ? numero : undefined
 }
 
+/**
+ * `timestamptz` do contrato → data e hora legíveis.
+ *
+ * Separada da `formatDateBR` porque aquela espera `YYYY-MM-DD` e PARTE a
+ * string: dar-lhe um instante ISO devolveria o dia grudado na hora. Nasceu local
+ * na tela de movimentação de estoque, com a nota "quem precisar disto numa
+ * segunda tela promove" — os três relatórios de estoque (#352) são essa segunda
+ * tela, e o `asOf` do envelope é o instante da foto.
+ *
+ * ISO inválido volta INTEIRO em vez de virar "Invalid Date": um carimbo que a
+ * tela não entendeu ainda diz mais ao operador do que a palavra do JavaScript
+ * para "não entendi".
+ */
+export function formatInstanteBR(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const quando = new Date(iso)
+  if (Number.isNaN(quando.getTime())) return iso
+  return quando.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
 /** Datas: ISO (yyyy-mm-dd) no dado, pt-BR na exibição (CLAUDE.md). */
 export function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return ''

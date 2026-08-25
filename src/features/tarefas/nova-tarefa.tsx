@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
 import { COLUNAS, useCriarTarefa } from '@/data/dashboard-api'
+import { mensagemDoErro } from '@/lib/erros'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -138,8 +139,11 @@ export function NovaTarefa({
           </div>
 
           {criar.isError ? (
-            <p className="text-sm text-destructive">
-              {criar.error instanceof Error ? criar.error.message : 'Falha ao criar a tarefa.'}
+            <p role="alert" className="text-sm text-destructive">
+              {/* `error.message` do `ErroDaApi` é a frase do adaptador, não o
+                  `detail`: o servidor dizia por que recusou e a caixa mostrava
+                  "Falha ao criar a tarefa." por cima. */}
+              {mensagemDoErro(criar.error, 'Falha ao criar a tarefa.')}
             </p>
           ) : null}
 

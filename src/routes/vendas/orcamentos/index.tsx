@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarOrcamento } from '@/data/quotes-api'
+import { RevisarOrcamento } from '@/features/orcamento/revisar-orcamento'
 import { GerarPedido } from '@/features/vendas/gerar-pedido'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarDays, FileOutput, HardHat, Hash, User } from 'lucide-react'
+import { CalendarDays, CopyPlus, FileOutput, HardHat, Hash, User } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/vendas/orcamentos/')({
@@ -25,7 +26,34 @@ export const Route = createFileRoute('/vendas/orcamentos/')({
  * quebraria a ordenação com 400 ao primeiro clique no cabeçalho (padrão 1).
  */
 const columns: ColumnDef<QuoteDto>[] = [
-  { accessorKey: 'number', header: 'Número' },
+  {
+    accessorKey: 'number',
+    header: 'Número',
+    /**
+     * A REVISÃO viaja no número, e não numa coluna própria.
+     *
+     * As colunas desta grade são as LITERAIS da transcrição §8.1, e uma coluna
+     * a mais mostraria "—" em quase toda linha: a revisão é a exceção, não o
+     * caso. Mas ela precisa aparecer AQUI, porque o problema que ela resolve é
+     * de LISTAGEM — dois orçamentos do mesmo cliente no mesmo dia, e nada
+     * dizendo que o segundo substitui o primeiro. Quem lê a lista contava dois
+     * negócios onde havia um; a marca no número é o que faz o par ser lido
+     * como um só.
+     *
+     * Ausente ou `1` não imprime nada: o original é o documento comum.
+     */
+    cell: ({ row }) => {
+      const revisao = row.original.revision ?? 1
+      return (
+        <span>
+          {row.original.number}
+          {revisao > 1 ? (
+            <span className="ml-1.5 text-muted-foreground text-xs">rev. {revisao}</span>
+          ) : null}
+        </span>
+      )
+    },
+  },
   // `series` não está na whitelist do contrato: a coluna aparece e não ordena,
   // o que é melhor que um cabeçalho clicável que responde 400.
   { accessorKey: 'series', header: 'Série', enableSorting: false },
@@ -115,6 +143,7 @@ function OrcamentosPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<QuoteDto | null>(null)
   const [paraConverter, setParaConverter] = useState<QuoteDto | null>(null)
+  const [paraRevisar, setParaRevisar] = useState<QuoteDto | null>(null)
   const cancelar = useCancelarOrcamento()
   const { readOnly } = useReadOnlyPorPapel('quotes')
 
@@ -177,6 +206,29 @@ function OrcamentosPage() {
         : {}),
       onClick: (o: QuoteDto | null) => setParaConverter(o),
     },
+    /**
+     * `Revisar` é a OITAVA, e desce para a barra de seleção pelo mesmo motivo
+     * que `Gerar Pedido`: é sobre ESTE orçamento, não sobre a tela.
+     *
+     * Ela fica ao lado da conversão de propósito — as duas são o que se faz
+     * com um orçamento depois de ele existir, e são as duas saídas do mesmo
+     * momento: o cliente aprovou (gera pedido) ou mudou de ideia (revisa).
+     * Separá-las esconderia que a escolha é entre elas.
+     *
+     * O papel exigido é o do ORÇAMENTO: a borda do backend classifica
+     * `POST /api/quotes/{id}/revise` por prefixo de caminho, e o prefixo é
+     * `/api/quotes`.
+     */
+    {
+      id: 'revisar',
+      label: 'Revisar',
+      icon: CopyPlus,
+      needsSelection: true,
+      ...(readOnly
+        ? { disabled: true, title: 'O papel deste vínculo não permite alterações.' }
+        : {}),
+      onClick: (o: QuoteDto | null) => setParaRevisar(o),
+    },
   ]
 
   return (
@@ -218,6 +270,7 @@ function OrcamentosPage() {
           `TelaDeListagem` é o lugar dos botões que valem para a tela inteira,
           não para uma linha. */}
       <GerarPedido orcamento={paraConverter} onFechar={() => setParaConverter(null)} />
+      <RevisarOrcamento orcamento={paraRevisar} onFechar={() => setParaRevisar(null)} />
     </>
   )
 }

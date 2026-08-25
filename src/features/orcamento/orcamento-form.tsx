@@ -24,7 +24,7 @@ import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   Calculator,
@@ -72,6 +72,23 @@ export const orcamentoSchema = z.object({
   // registro se não for declarada — e a ficha passaria a mostrar "aberto" para
   // um orçamento cancelado.
   cancelado: z.boolean(),
+  // A CADEIA DE VERSÕES — declarada pela MESMA regra que `cancelado` logo
+  // acima: todo campo do documento atravessa o formulário, inclusive o que ele
+  // não deixa editar. Nenhum dos três sobe no corpo — `revision` e
+  // `revisionOfId` não existem em `QuoteWriteRequest`, e quem move a cadeia é
+  // `POST .../revise`.
+  //
+  // **MEDIDO: remover estas três linhas hoje não quebra nenhum caso.** A folha
+  // exibe a revisão a partir da hidratação (`defaultValues`), e o parse do Zod
+  // só roda no `submit` — depois do qual o `Gravar` navega de volta para a
+  // listagem, então o registro podado nunca chega a ser desenhado. A declaração
+  // fica porque é ela que segura o dia em que a folha PARAR de navegar no
+  // sucesso: aí o registro pós-parse vira o que a tela mostra, e a revisão 2
+  // reapareceria como original, com 200 e sem aviso. Escrever aqui que o
+  // sintoma existe hoje seria afirmar o que a medição nega.
+  revisao: z.number(),
+  revisaoDeId: z.string().nullable(),
+  revisaoDeNumero: z.string().nullable(),
   modoDesconto: z.enum(['PRODUTO', 'GERAL']),
   descontoPercentual: z.number(),
   // Os ambientes do documento — não se editam aqui, e ainda assim precisam ser
@@ -140,6 +157,40 @@ const ITEM_VAZIO = {
  * Botões de inserção de item (§8.2). No legado são F5/F6; o CLAUDE.md veta
  * F3-F6 (conflito com browser), então valem Alt+A / Alt+P pelo registry.
  */
+/**
+ * A CADEIA DE VERSÕES do orçamento — de qual documento esta folha é revisão.
+ *
+ * O contrato resolve o NÚMERO do anterior no servidor (`revisionOfNumber`)
+ * justamente para a tela dizer "revisão do orçamento 21653" sem uma segunda
+ * consulta. Some no original: linha dizendo "Revisão 1, sem anterior" seria
+ * ruído em todo orçamento comum, que é a esmagadora maioria deles.
+ *
+ * O elo é um LINK, e não texto: a pergunta que segue "esta é a revisão 2" é
+ * sempre "e o que mudou da 1 para cá?", e a única resposta possível é abrir a
+ * anterior. Escrever o número sem levar até lá obrigaria o operador a voltar
+ * para a listagem e procurar um documento cujo número ele acabou de ler.
+ */
+function RevisaoDoOrcamento() {
+  const revisao = useWatch({ name: 'revisao' }) as number
+  const anteriorId = useWatch({ name: 'revisaoDeId' }) as string | null
+  const anteriorNumero = useWatch({ name: 'revisaoDeNumero' }) as string | null
+  if (!anteriorId) return null
+
+  return (
+    <p className="col-span-12 text-sm text-muted-foreground">
+      <strong className="text-foreground">Revisão {revisao}</strong> — substitui o orçamento{' '}
+      <Link
+        to="/vendas/orcamentos/$orcamentoId"
+        params={{ orcamentoId: anteriorId }}
+        className="font-semibold underline underline-offset-2"
+      >
+        {anteriorNumero ?? anteriorId}
+      </Link>
+      , que continua na listagem como foi apresentado ao cliente.
+    </p>
+  )
+}
+
 function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
   const itens = (useWatch({ name: 'itens' }) ?? []) as unknown[]
 
@@ -299,6 +350,7 @@ function Cabecalho() {
             label="Data Fechamento"
             className="col-span-6 sm:col-span-2"
           />
+          <RevisaoDoOrcamento />
         </div>
       </Secao>
 

@@ -2935,6 +2935,13 @@ export interface EmployeeLinkRequest {
 }
 
 /**
+ * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
+ */
+export interface TemporaryPasswordDto {
+  temporaryPassword: string;
+}
+
+/**
  * Proposto. Ambiente da obra dentro do PEDIDO. Mesma forma do ambiente do orçamento e schema próprio de propósito: os dois documentos são agregados distintos (decisão de 2026-08-10), e compartilhar o tipo faria uma mudança no orçamento chegar ao pedido sem ninguém pedir. O nome continua CONGELADO na emissão.
  */
 export interface OrderEnvironmentDto {

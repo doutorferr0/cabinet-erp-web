@@ -1,5 +1,14 @@
-import type { PermissionCatalogDto, RoleDetailDto, RoleDto, RoleWriteRequest } from '@/api/gerado'
+import type {
+  EmployeeDetailDto,
+  EmployeeLinkRequest,
+  EmployeeWriteRequest,
+  PermissionCatalogDto,
+  RoleDetailDto,
+  RoleDto,
+  RoleWriteRequest,
+} from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
+import { crm } from './crm'
 import { verificarEscrita } from './permissao'
 import { TIPO, camposInvalidos, conflito, naoEncontrado, problemaJson, semSessao } from './problema'
 import { novoId, store } from './store'
@@ -275,9 +284,48 @@ function semear(): PapelGuardado[] {
 
 let papeis: PapelGuardado[] = semear()
 
-/** Devolve os papéis à semente — irmão de `resetQuotes`, para o teste isolar. */
+/**
+ * USUÁRIOS DE ACESSO — o estado que a tela `/config/usuarios` escreve.
+ *
+ * Separado da semente de colaboradores do CRM de propósito: aquela vem da
+ * transcrição (RH, sem e-mail) e é SÓ LEITURA; este arquivo guarda o que a
+ * tela cria — a pessoa, a credencial (e-mail) e o vínculo (papel). A linha
+ * criada aqui também entra em `crm.colaboradores` para que `GET /api/employees`
+ * a liste — a listagem é uma só, e usuário criado que não aparecesse nela
+ * pareceria não ter sido gravado.
+ *
+ * O que este mock reproduz de propósito, porque é o comportamento que o
+ * contrato promete e o servidor implementa:
+ *
+ * - **colaborador nasce SEM credencial utilizável** (o api grava sentinela) —
+ *   a senha só existe depois de `reset-password`;
+ * - **a senha provisória aparece UMA vez** na resposta e em nenhuma leitura;
+ * - **colaborador sem e-mail é 409 no reset** — e-mail É a credencial;
+ * - **`roleId` é o único caminho do papel** (400 `papel-invalido` para papel
+ *   inexistente ou inativo) e o vínculo repetido no `POST` é 409.
+ */
+type UsuarioDeAcesso = {
+  id: string
+  name: string
+  email: string | null
+  active: boolean
+  /** Vínculo com a empresa ativa do mock; `null` = sem vínculo. */
+  roleId: string | null
+}
+
+let usuarios: UsuarioDeAcesso[] = []
+
+/** Devolve papéis E usuários à semente — irmão de `resetQuotes`, para o teste isolar. */
 export function resetAcesso(): void {
   papeis = semear()
+  // As linhas que a tela empurrou para a listagem compartilhada saem junto —
+  // senão o segundo teste herda o usuário do primeiro.
+  const criados = new Set(usuarios.map((u) => u.id))
+  usuarios = []
+  for (let i = crm.colaboradores.length - 1; i >= 0; i--) {
+    const linha = crm.colaboradores[i]
+    if (linha && criados.has(linha.id)) crm.colaboradores.splice(i, 1)
+  }
 }
 
 function linha(papel: PapelGuardado): RoleDto {
@@ -320,6 +368,81 @@ function recusarCorpo(corpo: RoleWriteRequest, id: string | null) {
     (p) => p.id !== id && p.name.toLowerCase() === corpo.name.trim().toLowerCase(),
   )
   if (repetido) return conflito('Já existe um papel com este nome.')
+  return undefined
+}
+
+/**
+ * O detalhe que as escritas devolvem — `EmployeeDetailDto` com o papel
+ * resolvido. Campo que a tela de acesso não gerencia sai `null`, e não
+ * inventado: cargo, setor e datas são do cadastro de RH, outro trilho.
+ */
+function detalheDeUsuario(u: UsuarioDeAcesso): EmployeeDetailDto {
+  const papel = u.roleId ? (papeis.find((p) => p.id === u.roleId) ?? null) : null
+  return {
+    id: u.id,
+    name: u.name,
+    document: null,
+    email: u.email,
+    phone: null,
+    photoUrl: null,
+    active: u.active,
+    roleId: papel?.id ?? null,
+    roleName: papel?.name ?? null,
+    sectorId: null,
+    sector: null,
+    jobTitleId: null,
+    jobTitle: null,
+    hiredAt: null,
+    dismissedAt: null,
+    customerFacing: null,
+    linkActive: u.roleId ? true : null,
+  }
+}
+
+/**
+ * Acha o usuário pelo id — inclusive um colaborador da SEMENTE do CRM, que
+ * ganha registro de acesso na primeira vez que a tela mexe nele. A semente não
+ * tem e-mail (a transcrição não traz), então o reset nela responde o 409 de
+ * credencial ausente — que é verdade, e é o mesmo que o servidor diria.
+ */
+function acharUsuario(id: string): UsuarioDeAcesso | undefined {
+  const meu = usuarios.find((u) => u.id === id)
+  if (meu) return meu
+  const daSemente = crm.colaboradores.find((c) => c.id === id)
+  if (!daSemente) return undefined
+  const novo: UsuarioDeAcesso = {
+    id: daSemente.id,
+    name: daSemente.name,
+    email: null,
+    active: daSemente.active,
+    roleId: null,
+  }
+  usuarios.push(novo)
+  return novo
+}
+
+/**
+ * A senha provisória do mock — aleatória DE VERDADE, para a tela não poder
+ * decorar um valor. Alfabeto sem ambíguos (0/O, 1/l/I): quem vai digitá-la é
+ * um humano lendo por cima do ombro do admin.
+ */
+function gerarSenhaProvisoria(): string {
+  const alfabeto = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  let senha = ''
+  for (let i = 0; i < 12; i++) {
+    senha += alfabeto[Math.floor(Math.random() * alfabeto.length)]
+  }
+  return senha
+}
+
+function validarPapelDoVinculo(corpo: EmployeeLinkRequest) {
+  if (!corpo.roleId) {
+    return camposInvalidos([{ path: 'roleId', message: 'O vínculo não existe sem papel.' }])
+  }
+  const papel = papeis.find((p) => p.id === corpo.roleId)
+  if (!papel || !papel.active) {
+    return problemaJson(400, 'Papel inexistente ou inativo.', {}, TIPO.papelInvalido)
+  }
   return undefined
 }
 
@@ -417,5 +540,96 @@ export const handlersDeAcesso = [
     // Conjunto FINAL, não acréscimo — desmarcar caixa precisa ter efeito.
     achado.permissions = [...(corpo.permissions ?? [])]
     return HttpResponse.json(detalhe(achado))
+  }),
+
+  // ---------------- usuários de acesso (tela /config/usuarios) ----------------
+
+  http.post('*/api/employees', async ({ request }) => {
+    if (!store.logado) return semSessao()
+    const semPermissao = verificarEscrita('employees')
+    if (semPermissao) return semPermissao
+    const corpo = (await request.json()) as EmployeeWriteRequest
+    if (!corpo.name?.trim()) {
+      return camposInvalidos([{ path: 'name', message: 'Nome é obrigatório.' }])
+    }
+    // O schema declara `email` anulável, mas o SERVIDOR o exige no cadastro:
+    // `employees.email` é NOT NULL e é por ele que a pessoa entra. O mock
+    // espelha a recusa — sem isto a tela passaria aqui e quebraria lá.
+    if (!corpo.email?.trim()) {
+      return camposInvalidos([
+        { path: 'email', message: 'Informe o e-mail — é por ele que a pessoa entra.' },
+      ])
+    }
+    const email = corpo.email.trim().toLowerCase()
+    // 409 e não 400: o pedido está bem formado — o e-mail é a credencial e ela
+    // é única no produto inteiro, sem diferença de caixa (regra do contrato).
+    if (email && usuarios.some((u) => u.email === email)) {
+      return conflito('Já existe um colaborador com este e-mail.')
+    }
+    // O vínculo NASCE JUNTO, no papel de menor poder — igual ao servidor, que
+    // vincula ao `viewer` no próprio CreateEmployee. É por isso que a tela usa
+    // PUT para atribuir o papel escolhido: substituição, não criação.
+    const papelInicial = papeis.find((p) => p.name === 'Consulta' && p.active) ?? null
+    const novo: UsuarioDeAcesso = {
+      id: novoId('usuario'),
+      name: corpo.name.trim(),
+      email,
+      active: corpo.active ?? true,
+      roleId: papelInicial?.id ?? null,
+    }
+    usuarios.push(novo)
+    crm.colaboradores.push({
+      id: novo.id,
+      name: novo.name,
+      sector: null,
+      jobTitle: null,
+      active: novo.active,
+    })
+    return HttpResponse.json(detalheDeUsuario(novo), { status: 201 })
+  }),
+
+  http.post('*/api/employees/:id/link', async ({ params, request }) => {
+    if (!store.logado) return semSessao()
+    const semPermissao = verificarEscrita('employees')
+    if (semPermissao) return semPermissao
+    const usuario = acharUsuario(String(params.id))
+    if (!usuario) return naoEncontrado('Colaborador não encontrado.')
+    const corpo = (await request.json()) as EmployeeLinkRequest
+    const recusa = validarPapelDoVinculo(corpo)
+    if (recusa) return recusa
+    // POST cria; repetir é 409 (o contrato manda o PUT para substituir).
+    if (usuario.roleId) return conflito('Vínculo já existe — use o Alterar.')
+    usuario.roleId = corpo.roleId ?? null
+    return HttpResponse.json(detalheDeUsuario(usuario), { status: 201 })
+  }),
+
+  http.put('*/api/employees/:id/link', async ({ params, request }) => {
+    if (!store.logado) return semSessao()
+    const semPermissao = verificarEscrita('employees')
+    if (semPermissao) return semPermissao
+    const usuario = acharUsuario(String(params.id))
+    if (!usuario) return naoEncontrado('Colaborador não encontrado.')
+    // PUT substitui o que existe; sem vínculo é 404, não criação disfarçada.
+    if (!usuario.roleId) return naoEncontrado('Este colaborador não tem vínculo aqui.')
+    const corpo = (await request.json()) as EmployeeLinkRequest
+    const recusa = validarPapelDoVinculo(corpo)
+    if (recusa) return recusa
+    usuario.roleId = corpo.roleId ?? null
+    return HttpResponse.json(detalheDeUsuario(usuario))
+  }),
+
+  http.post('*/api/employees/:id/reset-password', ({ params }) => {
+    if (!store.logado) return semSessao()
+    const semPermissao = verificarEscrita('employees')
+    if (semPermissao) return semPermissao
+    const usuario = acharUsuario(String(params.id))
+    if (!usuario) return naoEncontrado('Colaborador não encontrado.')
+    // E-mail É a credencial: sem ele não há o que resetar. 409 e não 400 — o
+    // pedido está bem formado, é o ESTADO do recurso que recusa.
+    if (!usuario.email) {
+      return conflito('Colaborador sem e-mail não tem credencial para resetar.')
+    }
+    // A senha sai daqui e de NENHUMA leitura — igual ao servidor.
+    return HttpResponse.json({ temporaryPassword: gerarSenhaProvisoria() })
   }),
 ]

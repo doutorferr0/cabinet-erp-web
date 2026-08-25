@@ -4728,6 +4728,62 @@
         }
       }
     },
+    "/api/employees/{id}/reset-password": {
+      "post": {
+        "tags": ["cadastros"],
+        "operationId": "ResetEmployeePassword",
+        "description": "Proposto. O único caminho que dá credencial a um colaborador: `CreateEmployee` grava senha inutilizável de propósito, então sem esta operação a conta nunca entra. O SERVIDOR gera a senha provisória — o admin não escolhe — e ela aparece UMA única vez, nesta resposta; não há leitura que a devolva depois, nem para quem a gerou. `mustChangePassword` liga junto: o primeiro login exige `/auth/change-password` antes de qualquer outra coisa. Repetir a chamada é o reset de quem esqueceu — invalida a credencial atual e gera outra provisória.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporaryPasswordDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — colaborador sem e-mail não tem credencial para resetar.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/permissions": {
       "get": {
         "tags": ["acesso"],
@@ -15453,6 +15509,16 @@
           },
           "active": {
             "type": ["null", "boolean"]
+          }
+        }
+      },
+      "TemporaryPasswordDto": {
+        "description": "Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.",
+        "required": ["temporaryPassword"],
+        "type": "object",
+        "properties": {
+          "temporaryPassword": {
+            "type": "string"
           }
         }
       },

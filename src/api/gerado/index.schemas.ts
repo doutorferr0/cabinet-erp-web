@@ -1021,7 +1021,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |
  * | `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |
  * | `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |
- * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |
+ * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
@@ -2832,7 +2832,7 @@ export interface EmployeeDetailDto {
   /** Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo. */
   active: boolean;
   /**
-     * `RoleDto.id` do papel atribuído na empresa ativa. `null` quando não há vínculo, e também enquanto o vínculo ainda guarda um dos cinco papéis antigos — aí quem responde é `role` (api#84, fase 3).
+     * `RoleDto.id` do papel atribuído na empresa ativa — `null` SÓ quando não há vínculo. Era acompanhado de `role`, o identificador antigo da escala fechada, que saiu na fase 3 do api#84: a coluna `employee_company.role` não existe desde a migração `0054` do servidor, e todo vínculo aponta um papel de `GET /api/roles`.
      * @nullable
      */
   roleId?: string | null;
@@ -2841,11 +2841,6 @@ export interface EmployeeDetailDto {
      * @nullable
      */
   roleName?: string | null;
-  /**
-     * Papel de PERMISSÃO na empresa ativa pelo identificador ANTIGO (`employee_company.role`) — não é cargo. `null` quando não há vínculo, e também quando o vínculo já aponta `roleId`. Sai na fase 3 do api#84.
-     * @nullable
-     */
-  role?: string | null;
   /**
      * Setor na empresa ativa — `CatalogLookupDto.id`, kind `SETOR`.
      * @nullable
@@ -2911,19 +2906,14 @@ export interface EmployeeWriteRequest {
 /**
  * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
  *
- * **O papel entra por `roleId` OU por `role`; se ambos vierem, `roleId` vence** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.
+ * **O papel entra por `roleId`, e só por ele.** Até a fase 3 do api#84 havia um segundo caminho — `role`, o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) —, e ele saiu junto com a escala: os cinco viraram linhas de `org_roles` como qualquer papel que o admin monta, e a coluna que guardava o texto não existe mais no servidor. **`roleId` e não o `slug` porque o nome do papel é editável pelo CRUD** — `PUT /api/roles/{id}` renomeia `Vendedor` para `Consultor` sem mover vínculo nenhum, e uma chave que a tela pode reescrever não serve de referência.
  */
 export interface EmployeeLinkRequest {
   /**
-     * `RoleDto.id` — papel desta organização. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido`.
+     * `RoleDto.id` — papel desta organização, e o ÚNICO caminho de atribuição. **Obrigatório na prática:** omitir ou mandar `null` é 400 `urn:cabinet:erro:campos-invalidos` com `fields[].path` = `roleId`, porque o vínculo não existe sem papel. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido` — a distinção importa para a tela: o primeiro é campo em branco, o segundo é combo desatualizado.
      * @nullable
      */
   roleId?: string | null;
-  /**
-     * Papel de permissão pelo identificador ANTIGO. Conjunto validado pelo servidor; valor fora dele é 400. Deixa de existir na fase 3 do api#84 — quem já sabe o `roleId` manda `roleId` e omite este.
-     * @nullable
-     */
-  role?: string | null;
   /**
      * `CatalogLookupDto.id`, kind `SETOR`.
      * @nullable

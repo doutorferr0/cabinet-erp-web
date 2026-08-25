@@ -65,6 +65,18 @@ const KINDS = {
   // OUTRA lista: quem separa motivo de marca é o `kind`, que não viaja pelo
   // contrato (ADR-011) — é linha aqui e linha no `KINDS` do servidor.
   motivoCancelamento: { label: 'Motivo do Cancelamento', backend: 'MOTIVO_CANCELAMENTO' },
+  // O GRUPO DE PRODUTO (`GrupoProduto` do legado: 12 linhas, por empresa).
+  //
+  // Ele já era CHAVE em cinco schemas do contrato — `QuoteItemDto.productGroupId`,
+  // `QuoteGroupDiscountDto`, `SupplierGroupMinimumDto`, `CommissionTierDto` e a
+  // faixa congelada do documento —, e nenhuma tela tinha de onde escolher um: o
+  // kind não estava aqui. A faixa POR GRUPO do perfil de comissão é a primeira
+  // tela que precisa ESCOLHER o grupo, e é por isso que ele entra agora.
+  //
+  // **O mock não semeia este kind** (está escrito em `store.ts`, no
+  // `groupMinimums` vazio do fornecedor): em modo mock a lista volta VAZIA, e a
+  // tela que a consome diz isso em voz alta em vez de mostrar um combo mudo.
+  grupoProduto: { label: 'Grupo de Produto', backend: 'GRUPO_PRODUTO' },
 } as const satisfies Record<string, { label: string; backend: string }>
 
 export type LookupKind = keyof typeof KINDS

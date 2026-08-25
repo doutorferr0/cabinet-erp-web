@@ -157,6 +157,13 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  * reprova e cobra a entrada aqui — que é o mesmo que cobrar a conferência.
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
+  // IMPRESSÃO (web#333 / api#163). A tela de layouts de etiqueta é o editor de
+  // medidas, e ela nasce depois do motor de render pela mesma razão das telas de
+  // entrega: sem PDF para conferir, o editor deixaria alguém acertar milímetro
+  // contra uma prévia que não existe. Sai daqui quando ganhar tela, com
+  // `ORDENAVEIS` próprio.
+  ListLabelLayouts:
+    'o editor de etiqueta ainda não tem tela — ela nasce com o motor de render (api#163 fase B)',
   // SEPARAÇÃO E ENTREGA (G4) — a fila do galpão e o romaneio são a FASE C deste
   // trilho, e nascem depois do servidor pela razão do módulo inteiro: a fila
   // mostra o que já pode sair da prateleira, e sobre dado mockado ela mandaria
@@ -335,6 +342,12 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
  * nenhuma o consome — quando alguma consumir, é o site público que quebra.
  */
 const SEM_HANDLER_NO_MOCK: Record<string, string> = {
+  // IMPRESSÃO (web#333 / api#163). Sem handler de mock de propósito: layout de
+  // etiqueta é medida de papel, e um mock inventaria 210×297 com quatro colunas
+  // para uma loja que compra rolo de outro tamanho. Quem abrir a tela sem proxy
+  // tem de ver que não há dado, não um rolo plausível.
+  ListLabelLayouts:
+    'medida de papel não se inventa — o mock devolveria uma etiqueta que não existe na loja',
   // SEPARAÇÃO E ENTREGA (G4) caem aqui pelo MESMO motivo da trilha de indicação,
   // e não pelo dos relatórios: as duas são progresso FÍSICO de linha de pedido, e
   // o pedido de venda não tem handler no mock. Servi-las sem o documento dono

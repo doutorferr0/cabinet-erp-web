@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   BookUser,
   Boxes,
+  CalendarClock,
   CalendarDays,
   CircleDollarSign,
   Filter,
@@ -460,6 +461,20 @@ export const navSecoes: NavSecao[] = [
                 incluir: '/compras/pedidos/novo',
                 icon: ShoppingCart,
                 descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
+              },
+              {
+                /**
+                 * CONSULTA, não cadastro: não tem `incluir` porque não há o que
+                 * incluir — ela lê ordens ENVIADAS de vários documentos. É a
+                 * terceira filha do grupo e não uma aba da ordem de compra: a
+                 * pergunta que ela responde ("o que chega esta semana, e o que
+                 * está atrasado") não é sobre UM documento.
+                 */
+                title: 'Previsão de Chegada',
+                url: '/compras/previsao',
+                icon: CalendarClock,
+                descricao:
+                  'O que já foi enviado e ainda não chegou, com o atraso contra a promessa.',
               },
             ],
           },

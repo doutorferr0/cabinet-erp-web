@@ -28,6 +28,7 @@ import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
+import { Route as VendasCargasRouteImport } from './routes/vendas/cargas'
 import { Route as CadastrosClientesIndexRouteImport } from './routes/cadastros/clientes/index'
 import { Route as CadastrosClientesClienteIdRouteImport } from './routes/cadastros/clientes/$clienteId'
 import { Route as CadastrosColaboradoresIndexRouteImport } from './routes/cadastros/colaboradores/index'
@@ -145,6 +146,11 @@ const EstoqueMovimentacaoRoute = EstoqueMovimentacaoRouteImport.update({
 const VendasIndexRoute = VendasIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => VendasRoute,
+} as any)
+const VendasCargasRoute = VendasCargasRouteImport.update({
+  id: '/cargas',
+  path: '/cargas',
   getParentRoute: () => VendasRoute,
 } as any)
 const CadastrosClientesIndexRoute = CadastrosClientesIndexRouteImport.update({
@@ -288,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/vendas': typeof VendasRouteWithChildren
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/cargas': typeof VendasCargasRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/trocar-senha': typeof TrocarSenhaRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/cargas': typeof VendasCargasRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/config': typeof ConfigIndexRoute
@@ -373,6 +381,7 @@ export interface FileRoutesById {
   '/vendas': typeof VendasRouteWithChildren
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/cargas': typeof VendasCargasRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/cargas'
     | '/cadastros/'
     | '/compras/'
     | '/config/'
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/trocar-senha'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/cargas'
     | '/cadastros'
     | '/compras'
     | '/config'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/cargas'
     | '/cadastros/'
     | '/compras/'
     | '/config/'
@@ -682,6 +694,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/vendas/'
       preLoaderRoute: typeof VendasIndexRouteImport
+      parentRoute: typeof VendasRoute
+    }
+    '/vendas/cargas': {
+      id: '/vendas/cargas'
+      path: '/cargas'
+      fullPath: '/vendas/cargas'
+      preLoaderRoute: typeof VendasCargasRouteImport
       parentRoute: typeof VendasRoute
     }
     '/cadastros/clientes/': {
@@ -936,6 +955,7 @@ const EstoqueRouteWithChildren =
   EstoqueRoute._addFileChildren(EstoqueRouteChildren)
 
 interface VendasRouteChildren {
+  VendasCargasRoute: typeof VendasCargasRoute
   VendasIndexRoute: typeof VendasIndexRoute
   VendasOrcamentosOrcamentoIdRoute: typeof VendasOrcamentosOrcamentoIdRoute
   VendasPedidosPedidoIdRoute: typeof VendasPedidosPedidoIdRoute
@@ -944,6 +964,7 @@ interface VendasRouteChildren {
 }
 
 const VendasRouteChildren: VendasRouteChildren = {
+  VendasCargasRoute: VendasCargasRoute,
   VendasIndexRoute: VendasIndexRoute,
   VendasOrcamentosOrcamentoIdRoute: VendasOrcamentosOrcamentoIdRoute,
   VendasPedidosPedidoIdRoute: VendasPedidosPedidoIdRoute,

@@ -18,6 +18,7 @@ import {
   SquareKanban,
   Store,
   Table2,
+  Truck,
   Users,
 } from 'lucide-react'
 
@@ -311,6 +312,26 @@ export const navSecoes: NavSecao[] = [
             incluir: '/vendas/pedidos/novo',
             icon: Store,
             descricao: 'O orçamento fechado vira pedido aqui. Se cancela, nunca se apaga.',
+          },
+          {
+            /**
+             * O "Quadro de Cargas" DE ENTREGA — não o elétrico.
+             *
+             * No legado o nome é de dois lugares: `RltQuadroCargas` (item 230)
+             * é dimensionamento ELÉTRICO por ambiente, e depende de consumo e
+             * tensão que o contrato não publica. Este item é o outro: o
+             * agrupamento de pedidos para entrega, leitura sobre os dados do G4
+             * (`api#164`). O dia em que a elétrica for construída, ela entra com
+             * nome próprio — herdar este slot faria uma sumir dentro da outra.
+             *
+             * Fica DEPOIS do pedido porque a carga é o que vem depois dele: a
+             * ordem da barra é a do fluxo, e nada entra na fila antes de existir
+             * documento.
+             */
+            title: 'Quadro de Cargas',
+            url: '/vendas/cargas',
+            icon: Truck,
+            descricao: 'O que está liberado e ainda não saiu do galpão, por pedido.',
           },
         ],
       },

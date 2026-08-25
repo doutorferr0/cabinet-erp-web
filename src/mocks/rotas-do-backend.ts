@@ -288,6 +288,26 @@ export type RotaDoBackend = {
   readonly caminho: string
 }
 
+/**
+ * IMPRESSÃO (web#333 / api#163). As oito nascem na PASSAGEM e não no mock, e a
+ * escolha é a mesma que `cost-profiles` documenta logo acima: **nenhuma tela as
+ * consome ainda**, e sem handler de mock elas cairiam no fallback da SPA e
+ * devolveriam `index.html` com 200 — pior que o 501 honesto do servidor.
+ *
+ * Duas delas devolvem `application/pdf`, e é a primeira vez que o contrato tem
+ * resposta binária: mock de PDF seria um arquivo inventado com cara de
+ * documento assinável.
+ *
+ * **Medido em 2026-08-24**, contra a main do api que ainda não sincronizou este
+ * contrato: as oito respondem 404 `Este caminho não existe no contrato` — nem
+ * 501. É o estado normal e temporário depois de um merge daqui, e vira 501
+ * quando o api rodar `sync:contract` (api#163 fase A), depois 200 quando o motor
+ * de render entrar (fase B).
+ *
+ * Quem escrever a primeira tela de impressão REMEDE: declaração de ausência não
+ * tem quem a invalide, e esta envelhece calada como as 27 do bloco do topo.
+ */
+
 export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   // saúde — não exige sessão, e é por onde se confere que o par local está de pé
   { metodo: 'get', caminho: '/health' },
@@ -809,6 +829,14 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'post', caminho: '/api/deliveries/{id}/items' },
   { metodo: 'post', caminho: '/api/deliveries/{id}/close' },
   { metodo: 'post', caminho: '/api/deliveries/{id}/cancel' },
+  { metodo: 'get', caminho: '/api/quotes/{id}/print' },
+  { metodo: 'get', caminho: '/api/print-settings' },
+  { metodo: 'put', caminho: '/api/print-settings' },
+  { metodo: 'get', caminho: '/api/label-layouts' },
+  { metodo: 'post', caminho: '/api/label-layouts' },
+  { metodo: 'get', caminho: '/api/label-layouts/{id}' },
+  { metodo: 'put', caminho: '/api/label-layouts/{id}' },
+  { metodo: 'get', caminho: '/api/labels/products/print' },
 ]
 
 /**

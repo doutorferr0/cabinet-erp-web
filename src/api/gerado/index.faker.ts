@@ -37,6 +37,7 @@ import type {
   GoodsReceiptDto,
   HealthStatus,
   InstallmentPolicyDto,
+  LabelLayoutDto,
   LoginOk,
   OrderDetailDto,
   OrderFulfillmentDto,
@@ -52,6 +53,7 @@ import type {
   PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
   PagedResultOfGoodsReceiptDto,
+  PagedResultOfLabelLayoutDto,
   PagedResultOfOrderDto,
   PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
@@ -80,6 +82,7 @@ import type {
   PaymentTermDto,
   PermissionCatalogDto,
   PriceIndexDto,
+  PrintSettingsDto,
   ProductDetailDto,
   ProductDimensions,
   ProductDto,
@@ -478,4 +481,20 @@ export const getUpdatePriceIndexResponseMock = (overrideResponse: Partial<Extrac
 export const getListVariantTablePricesResponseMock = (): VariantTablePriceDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({supplierId: faker.string.uuid(), supplierName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), supplierCode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), tablePriceCents: faker.number.int()})))
 
 export const getReplaceVariantTablePricesResponseMock = (): VariantTablePriceDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({supplierId: faker.string.uuid(), supplierName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), supplierCode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), tablePriceCents: faker.number.int()})))
+
+export const getPrintQuoteResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
+
+export const getGetPrintSettingsResponseMock = (overrideResponse: Partial<Extract<PrintSettingsDto, object>> = {}): PrintSettingsDto => ({quoteTitle: faker.string.alpha({length: {min: 10, max: 20}}), clauses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({order: faker.number.int(), text: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getUpdatePrintSettingsResponseMock = (overrideResponse: Partial<Extract<PrintSettingsDto, object>> = {}): PrintSettingsDto => ({quoteTitle: faker.string.alpha({length: {min: 10, max: 20}}), clauses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({order: faker.number.int(), text: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getListLabelLayoutsResponseMock = (overrideResponse: Partial<Extract<PagedResultOfLabelLayoutDto, object>> = {}): PagedResultOfLabelLayoutDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), pageWidthMm: faker.number.float({fractionDigits: 2}), pageHeightMm: faker.number.float({fractionDigits: 2}), marginTopMm: faker.number.float({fractionDigits: 2}), marginBottomMm: faker.number.float({fractionDigits: 2}), marginLeftMm: faker.number.float({fractionDigits: 2}), marginRightMm: faker.number.float({fractionDigits: 2}), columns: faker.number.int(), columnGapMm: faker.number.float({fractionDigits: 2}), labelHeightMm: faker.number.float({fractionDigits: 2}), barcodeField: faker.helpers.arrayElement([faker.helpers.arrayElement(['code','barcode'] as const), null]), isDefault: faker.datatype.boolean(), active: faker.datatype.boolean()})), total: faker.number.int(), ...overrideResponse})
+
+export const getCreateLabelLayoutResponseMock = (overrideResponse: Partial<Extract<LabelLayoutDto, object>> = {}): LabelLayoutDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), pageWidthMm: faker.number.float({fractionDigits: 2}), pageHeightMm: faker.number.float({fractionDigits: 2}), marginTopMm: faker.number.float({fractionDigits: 2}), marginBottomMm: faker.number.float({fractionDigits: 2}), marginLeftMm: faker.number.float({fractionDigits: 2}), marginRightMm: faker.number.float({fractionDigits: 2}), columns: faker.number.int(), columnGapMm: faker.number.float({fractionDigits: 2}), labelHeightMm: faker.number.float({fractionDigits: 2}), barcodeField: faker.helpers.arrayElement([faker.helpers.arrayElement(['code','barcode'] as const), null]), isDefault: faker.datatype.boolean(), active: faker.datatype.boolean(), ...overrideResponse})
+
+export const getGetLabelLayoutResponseMock = (overrideResponse: Partial<Extract<LabelLayoutDto, object>> = {}): LabelLayoutDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), pageWidthMm: faker.number.float({fractionDigits: 2}), pageHeightMm: faker.number.float({fractionDigits: 2}), marginTopMm: faker.number.float({fractionDigits: 2}), marginBottomMm: faker.number.float({fractionDigits: 2}), marginLeftMm: faker.number.float({fractionDigits: 2}), marginRightMm: faker.number.float({fractionDigits: 2}), columns: faker.number.int(), columnGapMm: faker.number.float({fractionDigits: 2}), labelHeightMm: faker.number.float({fractionDigits: 2}), barcodeField: faker.helpers.arrayElement([faker.helpers.arrayElement(['code','barcode'] as const), null]), isDefault: faker.datatype.boolean(), active: faker.datatype.boolean(), ...overrideResponse})
+
+export const getUpdateLabelLayoutResponseMock = (overrideResponse: Partial<Extract<LabelLayoutDto, object>> = {}): LabelLayoutDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), pageWidthMm: faker.number.float({fractionDigits: 2}), pageHeightMm: faker.number.float({fractionDigits: 2}), marginTopMm: faker.number.float({fractionDigits: 2}), marginBottomMm: faker.number.float({fractionDigits: 2}), marginLeftMm: faker.number.float({fractionDigits: 2}), marginRightMm: faker.number.float({fractionDigits: 2}), columns: faker.number.int(), columnGapMm: faker.number.float({fractionDigits: 2}), labelHeightMm: faker.number.float({fractionDigits: 2}), barcodeField: faker.helpers.arrayElement([faker.helpers.arrayElement(['code','barcode'] as const), null]), isDefault: faker.datatype.boolean(), active: faker.datatype.boolean(), ...overrideResponse})
+
+export const getPrintProductLabelsResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 

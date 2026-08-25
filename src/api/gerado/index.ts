@@ -64,6 +64,8 @@ import type {
   HealthStatus,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
+  LabelLayoutDto,
+  LabelLayoutWriteRequest,
   ListActivitiesParams,
   ListAgendaEventsParams,
   ListCatalogLookupsParams,
@@ -77,6 +79,7 @@ import type {
   ListEmployeeCommissionTiersParams,
   ListEmployeesParams,
   ListGoodsReceiptsParams,
+  ListLabelLayoutsParams,
   ListOrderParticipantsParams,
   ListOrderProfessionalHistoryParams,
   ListOrdersParams,
@@ -119,6 +122,7 @@ import type {
   PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
   PagedResultOfGoodsReceiptDto,
+  PagedResultOfLabelLayoutDto,
   PagedResultOfOrderDto,
   PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
@@ -151,6 +155,9 @@ import type {
   PickOrderItemRequest,
   PriceIndexDto,
   PriceIndexWriteRequest,
+  PrintProductLabelsParams,
+  PrintSettingsDto,
+  PrintSettingsWriteRequest,
   ProblemDetails,
   ProductDetailDto,
   ProductDto,
@@ -10369,6 +10376,517 @@ export const replaceVariantTablePrices = async (variantId: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(variantTablePricesWriteRequest)
+  }
+);}
+
+
+
+export type printQuoteResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type printQuoteResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type printQuoteResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type printQuoteResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type printQuoteResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type printQuoteResponseSuccess = (printQuoteResponse200) & {
+  headers: Headers;
+};
+export type printQuoteResponseError = (printQuoteResponse401 | printQuoteResponse403 | printQuoteResponse404 | printQuoteResponse409) & {
+  headers: Headers;
+};
+
+export type printQuoteResponse = (printQuoteResponseSuccess | printQuoteResponseError)
+
+export const getPrintQuoteUrl = (id: string,) => {
+
+
+
+
+  return `/api/quotes/${id}/print`
+}
+
+/**
+ * Proposto. O orçamento como **PDF pronto**, renderizado no servidor.
+ *
+ * **Por que o servidor renderiza, quando as 11 rotas de `/api/reports/*` fazem o contrário.** Aquelas devolvem `application/json` porque relatório é dado, e a tela decide como mostrar. O orçamento impresso não é dado: é o ENTREGÁVEL que o cliente assina, e três coisas o tiram do padrão delas. O layout do legado repete o cabeçalho em toda página e numera `Página :N` — conteúdo em margem de página, que o CSS de impressão do browser não sabe pôr. O documento precisa existir como ARQUIVO, para anexar e arquivar, e `window.print()` não produz arquivo sem alguém salvar um. E `Imprimir` é ação de primeira classe no RBAC do legado (5 ações, e esta é uma delas): permissão só existe atrás de um caminho que a exija — sem esta operação, `orcamento:imprimir` seria um checkbox que não protege nada.
+ *
+ * **O que o servidor junta aqui e o cliente não teria.** O timbre da empresa (razão social, IE, endereço, logo) mora em `tenants` e não trafega em `VinculoDeEmpresa`; o bloco do cliente (endereço, bairro, cidade, UF, CEP, CNPJ\CPF, Insc.Est.\RG) não está em `QuoteDetailDto`, que carrega só `customerId` e `customerName`. Renderizar aqui evita publicar as duas coisas no contrato só para o browser remontá-las.
+ *
+ * **Sem storage: o PDF é gerado a cada chamada e não fica guardado.** Não existe 'via emitida' arquivada — o documento sai sempre como o orçamento está AGORA. Guardar a via é decisão própria, e traz junto onde mora o blob.
+ */
+export const printQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<printQuoteResponse> => {
+
+  return apiFetch<printQuoteResponse>(getPrintQuoteUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getPrintSettingsResponse200 = {
+  data: PrintSettingsDto
+  status: 200
+}
+
+export type getPrintSettingsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPrintSettingsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPrintSettingsResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getPrintSettingsResponseSuccess = (getPrintSettingsResponse200) & {
+  headers: Headers;
+};
+export type getPrintSettingsResponseError = (getPrintSettingsResponse401 | getPrintSettingsResponse403 | getPrintSettingsResponse409) & {
+  headers: Headers;
+};
+
+export type getPrintSettingsResponse = (getPrintSettingsResponseSuccess | getPrintSettingsResponseError)
+
+export const getGetPrintSettingsUrl = () => {
+
+
+
+
+  return `/api/print-settings`
+}
+
+/**
+ * Proposto. Os textos configuráveis que entram no impresso da empresa ativa: o título do orçamento e as cláusulas comerciais da página final.
+ *
+ * **São DADO, e o legado prova.** `Par_TituloImpOrcamento` é coluna de `Paramentros` (`EQUIPAMENTOS PARA A PROPOSTA DE PROJETO Nº` na instalação da Vertz), e o `QRMemo` das cláusulas está VAZIO no formulário do QuickReport — o texto vem do banco em tempo de impressão. Escrevê-los no template faria cada empresa que entrar herdar as condições comerciais de outra, e mudar 'prazo de troca de 10 dias' viraria deploy.
+ *
+ * **Singleton por empresa, como `GetInstallmentPolicy`:** não há `POST`, não há id. Empresa sem linha lê o padrão do servidor — as cláusulas nascem como marcadores explícitos de pendência, nunca como texto plausível: cláusula comercial inventada por um servidor é a única espécie de dado faltando que sai assinada pelo cliente.
+ */
+export const getPrintSettings = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getPrintSettingsResponse> => {
+
+  return apiFetch<getPrintSettingsResponse>(getGetPrintSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updatePrintSettingsResponse200 = {
+  data: PrintSettingsDto
+  status: 200
+}
+
+export type updatePrintSettingsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updatePrintSettingsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updatePrintSettingsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updatePrintSettingsResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updatePrintSettingsResponseSuccess = (updatePrintSettingsResponse200) & {
+  headers: Headers;
+};
+export type updatePrintSettingsResponseError = (updatePrintSettingsResponse400 | updatePrintSettingsResponse401 | updatePrintSettingsResponse403 | updatePrintSettingsResponse409) & {
+  headers: Headers;
+};
+
+export type updatePrintSettingsResponse = (updatePrintSettingsResponseSuccess | updatePrintSettingsResponseError)
+
+export const getUpdatePrintSettingsUrl = () => {
+
+
+
+
+  return `/api/print-settings`
+}
+
+/**
+ * Proposto. Substitui o conjunto INTEIRO — título e a lista de cláusulas. `PUT` de singleton, e cláusula ausente do corpo deixa de existir.
+ *
+ * A ordem sai de `order`, não da posição no array: é o que numera as cláusulas na página final sem depender de o cliente mandar a lista ordenada.
+ *
+ * 400 quando `order` repete, quando `text` é vazio, ou quando `quoteTitle` passa de 200 caracteres — o título é uma linha do cabeçalho, e o que não cabe nela não é aparado em silêncio.
+ */
+export const updatePrintSettings = async (printSettingsWriteRequest: PrintSettingsWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updatePrintSettingsResponse> => {
+
+  return apiFetch<updatePrintSettingsResponse>(getUpdatePrintSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(printSettingsWriteRequest)
+  }
+);}
+
+
+
+export type listLabelLayoutsResponse200 = {
+  data: PagedResultOfLabelLayoutDto
+  status: 200
+}
+
+export type listLabelLayoutsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listLabelLayoutsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listLabelLayoutsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listLabelLayoutsResponseSuccess = (listLabelLayoutsResponse200) & {
+  headers: Headers;
+};
+export type listLabelLayoutsResponseError = (listLabelLayoutsResponse400 | listLabelLayoutsResponse401 | listLabelLayoutsResponse403) & {
+  headers: Headers;
+};
+
+export type listLabelLayoutsResponse = (listLabelLayoutsResponseSuccess | listLabelLayoutsResponseError)
+
+export const getListLabelLayoutsUrl = (params?: ListLabelLayoutsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/label-layouts?${stringifiedParams}` : `/api/label-layouts`
+}
+
+/**
+ * Proposto. Os layouts de etiqueta da empresa ativa.
+ *
+ * **Por que o layout é dado e não código.** O legado tem uma tela só para isto — `FrmEtiqueta`, *Configuração de Etiquetas* — e 21 layouts gravados em `EtiquetaPronta`. Etiqueta muda com o rolo de papel que a loja comprou, não com a versão do sistema: medida em código faria toda troca de insumo virar release.
+ */
+export const listLabelLayouts = async (params?: ListLabelLayoutsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listLabelLayoutsResponse> => {
+
+  return apiFetch<listLabelLayoutsResponse>(getListLabelLayoutsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createLabelLayoutResponse201 = {
+  data: LabelLayoutDto
+  status: 201
+}
+
+export type createLabelLayoutResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createLabelLayoutResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createLabelLayoutResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createLabelLayoutResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createLabelLayoutResponseSuccess = (createLabelLayoutResponse201) & {
+  headers: Headers;
+};
+export type createLabelLayoutResponseError = (createLabelLayoutResponse400 | createLabelLayoutResponse401 | createLabelLayoutResponse403 | createLabelLayoutResponse409) & {
+  headers: Headers;
+};
+
+export type createLabelLayoutResponse = (createLabelLayoutResponseSuccess | createLabelLayoutResponseError)
+
+export const getCreateLabelLayoutUrl = () => {
+
+
+
+
+  return `/api/label-layouts`
+}
+
+/**
+ * Proposto. Cria um layout. As medidas são em MILÍMETROS porque etiqueta é objeto físico: o `PaperSize = Custom` e o `Page.Columns = 4` do QuickReport são milímetros de papel, e pixel não sobrevive à troca de impressora.
+ *
+ * 400 quando a grade não cabe na folha — `marginLeftMm + marginRightMm + (columns − 1) × columnGapMm` maior ou igual a `pageWidthMm`, ou `marginTopMm + marginBottomMm + labelHeightMm` maior que `pageHeightMm`. Etiqueta que não cabe imprime cortada, e isso só se descobre no papel, depois do rolo gasto.
+ */
+export const createLabelLayout = async (labelLayoutWriteRequest: LabelLayoutWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createLabelLayoutResponse> => {
+
+  return apiFetch<createLabelLayoutResponse>(getCreateLabelLayoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(labelLayoutWriteRequest)
+  }
+);}
+
+
+
+export type getLabelLayoutResponse200 = {
+  data: LabelLayoutDto
+  status: 200
+}
+
+export type getLabelLayoutResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getLabelLayoutResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getLabelLayoutResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getLabelLayoutResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getLabelLayoutResponseSuccess = (getLabelLayoutResponse200) & {
+  headers: Headers;
+};
+export type getLabelLayoutResponseError = (getLabelLayoutResponse401 | getLabelLayoutResponse403 | getLabelLayoutResponse404 | getLabelLayoutResponse409) & {
+  headers: Headers;
+};
+
+export type getLabelLayoutResponse = (getLabelLayoutResponseSuccess | getLabelLayoutResponseError)
+
+export const getGetLabelLayoutUrl = (id: string,) => {
+
+
+
+
+  return `/api/label-layouts/${id}`
+}
+
+/**
+ * Proposto. Um layout com seus elementos.
+ */
+export const getLabelLayout = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getLabelLayoutResponse> => {
+
+  return apiFetch<getLabelLayoutResponse>(getGetLabelLayoutUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateLabelLayoutResponse200 = {
+  data: LabelLayoutDto
+  status: 200
+}
+
+export type updateLabelLayoutResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateLabelLayoutResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateLabelLayoutResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateLabelLayoutResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateLabelLayoutResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateLabelLayoutResponseSuccess = (updateLabelLayoutResponse200) & {
+  headers: Headers;
+};
+export type updateLabelLayoutResponseError = (updateLabelLayoutResponse400 | updateLabelLayoutResponse401 | updateLabelLayoutResponse403 | updateLabelLayoutResponse404 | updateLabelLayoutResponse409) & {
+  headers: Headers;
+};
+
+export type updateLabelLayoutResponse = (updateLabelLayoutResponseSuccess | updateLabelLayoutResponseError)
+
+export const getUpdateLabelLayoutUrl = (id: string,) => {
+
+
+
+
+  return `/api/label-layouts/${id}`
+}
+
+/**
+ * Proposto. Substitui o layout INTEIRO.
+ *
+ * **Desativar é `active: false`, não apagar.** Layout usado numa impressão já feita é o que explica a etiqueta que está colada na peça.
+ */
+export const updateLabelLayout = async (id: string,
+    labelLayoutWriteRequest: LabelLayoutWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateLabelLayoutResponse> => {
+
+  return apiFetch<updateLabelLayoutResponse>(getUpdateLabelLayoutUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(labelLayoutWriteRequest)
+  }
+);}
+
+
+
+export type printProductLabelsResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type printProductLabelsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type printProductLabelsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type printProductLabelsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type printProductLabelsResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type printProductLabelsResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type printProductLabelsResponseSuccess = (printProductLabelsResponse200) & {
+  headers: Headers;
+};
+export type printProductLabelsResponseError = (printProductLabelsResponse400 | printProductLabelsResponse401 | printProductLabelsResponse403 | printProductLabelsResponse404 | printProductLabelsResponse409) & {
+  headers: Headers;
+};
+
+export type printProductLabelsResponse = (printProductLabelsResponseSuccess | printProductLabelsResponseError)
+
+export const getPrintProductLabelsUrl = (params: PrintProductLabelsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["productIds"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/labels/products/print?${stringifiedParams}` : `/api/labels/products/print`
+}
+
+/**
+ * Proposto. Folha de etiquetas dos produtos do catálogo, como PDF — o `FrmSelEtiqFornecedor` / *Etiquetas de Produtos Cadastrados* do legado.
+ *
+ * As etiquetas preenchem a grade do layout na ordem em que os produtos saem, coluna a coluna, e `copies` repete cada uma. Sem filtro nenhum, imprime o catálogo inteiro da empresa ativa — o que é um rolo de papel, e por isso `pageSize` do layout é o teto real.
+ *
+ * `productIds` e `supplierId` são combináveis com `q`: são um AND, não alternativas.
+ */
+export const printProductLabels = async (params: PrintProductLabelsParams, options?: Parameters<typeof apiFetch>[1]): Promise<printProductLabelsResponse> => {
+
+  return apiFetch<printProductLabelsResponse>(getPrintProductLabelsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

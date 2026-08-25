@@ -11467,6 +11467,513 @@
           }
         }
       }
+    },
+    "/api/quotes/{id}/print": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "PrintQuote",
+        "description": "Proposto. O orçamento como **PDF pronto**, renderizado no servidor.\n\n**Por que o servidor renderiza, quando as 11 rotas de `/api/reports/*` fazem o contrário.** Aquelas devolvem `application/json` porque relatório é dado, e a tela decide como mostrar. O orçamento impresso não é dado: é o ENTREGÁVEL que o cliente assina, e três coisas o tiram do padrão delas. O layout do legado repete o cabeçalho em toda página e numera `Página :N` — conteúdo em margem de página, que o CSS de impressão do browser não sabe pôr. O documento precisa existir como ARQUIVO, para anexar e arquivar, e `window.print()` não produz arquivo sem alguém salvar um. E `Imprimir` é ação de primeira classe no RBAC do legado (5 ações, e esta é uma delas): permissão só existe atrás de um caminho que a exija — sem esta operação, `orcamento:imprimir` seria um checkbox que não protege nada.\n\n**O que o servidor junta aqui e o cliente não teria.** O timbre da empresa (razão social, IE, endereço, logo) mora em `tenants` e não trafega em `VinculoDeEmpresa`; o bloco do cliente (endereço, bairro, cidade, UF, CEP, CNPJ\\CPF, Insc.Est.\\RG) não está em `QuoteDetailDto`, que carrega só `customerId` e `customerName`. Renderizar aqui evita publicar as duas coisas no contrato só para o browser remontá-las.\n\n**Sem storage: o PDF é gerado a cada chamada e não fica guardado.** Não existe 'via emitida' arquivada — o documento sai sempre como o orçamento está AGORA. Guardar a via é decisão própria, e traz junto onde mora o blob.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK — `application/pdf`. Uma página por bloco quando couber; 3 páginas é o típico do legado.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o orçamento não existe na empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/print-settings": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "GetPrintSettings",
+        "description": "Proposto. Os textos configuráveis que entram no impresso da empresa ativa: o título do orçamento e as cláusulas comerciais da página final.\n\n**São DADO, e o legado prova.** `Par_TituloImpOrcamento` é coluna de `Paramentros` (`EQUIPAMENTOS PARA A PROPOSTA DE PROJETO Nº` na instalação da Vertz), e o `QRMemo` das cláusulas está VAZIO no formulário do QuickReport — o texto vem do banco em tempo de impressão. Escrevê-los no template faria cada empresa que entrar herdar as condições comerciais de outra, e mudar 'prazo de troca de 10 dias' viraria deploy.\n\n**Singleton por empresa, como `GetInstallmentPolicy`:** não há `POST`, não há id. Empresa sem linha lê o padrão do servidor — as cláusulas nascem como marcadores explícitos de pendência, nunca como texto plausível: cláusula comercial inventada por um servidor é a única espécie de dado faltando que sai assinada pelo cliente.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintSettingsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["impressao"],
+        "operationId": "UpdatePrintSettings",
+        "description": "Proposto. Substitui o conjunto INTEIRO — título e a lista de cláusulas. `PUT` de singleton, e cláusula ausente do corpo deixa de existir.\n\nA ordem sai de `order`, não da posição no array: é o que numera as cláusulas na página final sem depender de o cliente mandar a lista ordenada.\n\n400 quando `order` repete, quando `text` é vazio, ou quando `quoteTitle` passa de 200 caracteres — o título é uma linha do cabeçalho, e o que não cabe nela não é aparado em silêncio.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrintSettingsWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-layouts": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "ListLabelLayouts",
+        "description": "Proposto. Os layouts de etiqueta da empresa ativa.\n\n**Por que o layout é dado e não código.** O legado tem uma tela só para isto — `FrmEtiqueta`, *Configuração de Etiquetas* — e 21 layouts gravados em `EtiquetaPronta`. Etiqueta muda com o rolo de papel que a loja comprou, não com a versão do sistema: medida em código faria toda troca de insumo virar release.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `name`, `active`, `isDefault`. Campo fora dela é 400."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfLabelLayoutDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `sortBy` fora da whitelist ou `pageSize` acima de 100.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["impressao"],
+        "operationId": "CreateLabelLayout",
+        "description": "Proposto. Cria um layout. As medidas são em MILÍMETROS porque etiqueta é objeto físico: o `PaperSize = Custom` e o `Page.Columns = 4` do QuickReport são milímetros de papel, e pixel não sobrevive à troca de impressora.\n\n400 quando a grade não cabe na folha — `marginLeftMm + marginRightMm + (columns − 1) × columnGapMm` maior ou igual a `pageWidthMm`, ou `marginTopMm + marginBottomMm + labelHeightMm` maior que `pageHeightMm`. Etiqueta que não cabe imprime cortada, e isso só se descobre no papel, depois do rolo gasto.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelLayoutWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelLayoutDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-layouts/{id}": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "GetLabelLayout",
+        "description": "Proposto. Um layout com seus elementos.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelLayoutDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["impressao"],
+        "operationId": "UpdateLabelLayout",
+        "description": "Proposto. Substitui o layout INTEIRO.\n\n**Desativar é `active: false`, não apagar.** Layout usado numa impressão já feita é o que explica a etiqueta que está colada na peça.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelLayoutWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelLayoutDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/labels/products/print": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "PrintProductLabels",
+        "description": "Proposto. Folha de etiquetas dos produtos do catálogo, como PDF — o `FrmSelEtiqFornecedor` / *Etiquetas de Produtos Cadastrados* do legado.\n\nAs etiquetas preenchem a grade do layout na ordem em que os produtos saem, coluna a coluna, e `copies` repete cada uma. Sem filtro nenhum, imprime o catálogo inteiro da empresa ativa — o que é um rolo de papel, e por isso `pageSize` do layout é o teto real.\n\n`productIds` e `supplierId` são combináveis com `q`: são um AND, não alternativas.",
+        "parameters": [
+          {
+            "name": "layoutId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "O layout a usar. Obrigatório: não há layout implícito, porque imprimir com o desenho errado gasta o rolo e só se descobre no papel."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "productIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "description": "Seleção explícita. Vazio quer dizer 'todos os que os outros filtros deixarem'."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "copies",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK — `application/pdf`.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `copies` fora de 1..100, ou `layoutId` que não é layout da empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o layout não existe na empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -20416,6 +20923,232 @@
           }
         },
         "description": "Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.\n\nÉ uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio."
+      },
+      "PrintClauseDto": {
+        "required": ["order", "text"],
+        "type": "object",
+        "description": "Proposto. Uma cláusula das condições comerciais da última página do orçamento. O legado imprime 12.",
+        "properties": {
+          "order": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Posição na página final. É o que numera; a ordem do array não conta."
+          },
+          "text": {
+            "type": "string",
+            "description": "O texto como sai no papel. Empresa que ainda não configurou lê um marcador de pendência, e não uma cláusula plausível."
+          }
+        }
+      },
+      "PrintSettingsDto": {
+        "required": ["quoteTitle", "clauses"],
+        "type": "object",
+        "description": "Proposto. Os textos configuráveis do impresso, por empresa.",
+        "properties": {
+          "quoteTitle": {
+            "type": "string",
+            "description": "`Par_TituloImpOrcamento` do legado — a linha de título do orçamento impresso."
+          },
+          "clauses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrintClauseDto"
+            }
+          }
+        }
+      },
+      "PrintSettingsWriteRequest": {
+        "required": ["quoteTitle", "clauses"],
+        "type": "object",
+        "description": "Proposto. Corpo de `UpdatePrintSettings`. Substitui os dois campos.",
+        "properties": {
+          "quoteTitle": {
+            "type": "string"
+          },
+          "clauses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrintClauseDto"
+            }
+          }
+        }
+      },
+      "LabelLayoutDto": {
+        "required": [
+          "id",
+          "name",
+          "pageWidthMm",
+          "pageHeightMm",
+          "marginTopMm",
+          "marginBottomMm",
+          "marginLeftMm",
+          "marginRightMm",
+          "columns",
+          "columnGapMm",
+          "labelHeightMm",
+          "barcodeField",
+          "isDefault",
+          "active"
+        ],
+        "type": "object",
+        "description": "Proposto. Um layout de etiqueta da empresa ativa — as MEDIDAS da folha e da etiqueta.\n\n**O que o layout NÃO guarda é o desenho.** O legado tem as duas coisas: `EtiquetaPronta` (medidas) e o trio `Etiquetas` / `Etiquetas_Campos` / `Etiquetas_Textos` (posicionamento livre de cada campo, com x, y, fonte e cor). Medido no dump do legado: `EtiquetaPronta` tem **21 linhas**, e as outras três têm **zero** — o editor de posicionamento existe há seis anos e nunca gravou nada. O que muda na prática é o rolo de papel, não onde o código fica dentro da etiqueta.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "`etq_NomeModelo` do legado. Único na empresa."
+          },
+          "pageWidthMm": {
+            "type": "number",
+            "format": "double",
+            "description": "A folha. Default do legado: 210."
+          },
+          "pageHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "Default do legado: 297."
+          },
+          "marginTopMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginBottomMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginLeftMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginRightMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "columns": {
+            "type": "integer",
+            "format": "int32",
+            "description": "`Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra."
+          },
+          "columnGapMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_EspacoColunas`."
+          },
+          "labelHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração."
+          },
+          "barcodeField": {
+            "type": ["null", "string"],
+            "enum": [null, "code", "barcode"],
+            "description": "`EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LabelLayoutWriteRequest": {
+        "required": [
+          "name",
+          "pageWidthMm",
+          "pageHeightMm",
+          "marginTopMm",
+          "marginBottomMm",
+          "marginLeftMm",
+          "marginRightMm",
+          "columns",
+          "columnGapMm",
+          "labelHeightMm",
+          "barcodeField",
+          "isDefault",
+          "active"
+        ],
+        "type": "object",
+        "description": "Proposto. Corpo de `CreateLabelLayout` e `UpdateLabelLayout`. Substitui o layout inteiro.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "`etq_NomeModelo` do legado. Único na empresa."
+          },
+          "pageWidthMm": {
+            "type": "number",
+            "format": "double",
+            "description": "A folha. Default do legado: 210."
+          },
+          "pageHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "Default do legado: 297."
+          },
+          "marginTopMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginBottomMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginLeftMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginRightMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "columns": {
+            "type": "integer",
+            "format": "int32",
+            "description": "`Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra."
+          },
+          "columnGapMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_EspacoColunas`."
+          },
+          "labelHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração."
+          },
+          "barcodeField": {
+            "type": ["null", "string"],
+            "enum": [null, "code", "barcode"],
+            "description": "`EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfLabelLayoutDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelLayoutDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -20467,6 +21200,9 @@
     },
     {
       "name": "comissoes"
+    },
+    {
+      "name": "impressao"
     }
   ]
 }

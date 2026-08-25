@@ -6857,6 +6857,125 @@ export interface VariantTablePricesWriteRequest {
 }
 
 /**
+ * Proposto. Uma cláusula das condições comerciais da última página do orçamento. O legado imprime 12.
+ */
+export interface PrintClauseDto {
+  /** Posição na página final. É o que numera; a ordem do array não conta. */
+  order: number;
+  /** O texto como sai no papel. Empresa que ainda não configurou lê um marcador de pendência, e não uma cláusula plausível. */
+  text: string;
+}
+
+/**
+ * Proposto. Os textos configuráveis do impresso, por empresa.
+ */
+export interface PrintSettingsDto {
+  /** `Par_TituloImpOrcamento` do legado — a linha de título do orçamento impresso. */
+  quoteTitle: string;
+  clauses: PrintClauseDto[];
+}
+
+/**
+ * Proposto. Corpo de `UpdatePrintSettings`. Substitui os dois campos.
+ */
+export interface PrintSettingsWriteRequest {
+  quoteTitle: string;
+  clauses: PrintClauseDto[];
+}
+
+/**
+ * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+ * @nullable
+ */
+export type LabelLayoutDtoBarcodeField = typeof LabelLayoutDtoBarcodeField[keyof typeof LabelLayoutDtoBarcodeField] | null;
+
+
+export const LabelLayoutDtoBarcodeField = {
+  code: 'code',
+  barcode: 'barcode',
+} as const;
+
+/**
+ * Proposto. Um layout de etiqueta da empresa ativa — as MEDIDAS da folha e da etiqueta.
+ *
+ * **O que o layout NÃO guarda é o desenho.** O legado tem as duas coisas: `EtiquetaPronta` (medidas) e o trio `Etiquetas` / `Etiquetas_Campos` / `Etiquetas_Textos` (posicionamento livre de cada campo, com x, y, fonte e cor). Medido no dump do legado: `EtiquetaPronta` tem **21 linhas**, e as outras três têm **zero** — o editor de posicionamento existe há seis anos e nunca gravou nada. O que muda na prática é o rolo de papel, não onde o código fica dentro da etiqueta.
+ */
+export interface LabelLayoutDto {
+  id: string;
+  /** `etq_NomeModelo` do legado. Único na empresa. */
+  name: string;
+  /** A folha. Default do legado: 210. */
+  pageWidthMm: number;
+  /** Default do legado: 297. */
+  pageHeightMm: number;
+  marginTopMm: number;
+  marginBottomMm: number;
+  marginLeftMm: number;
+  marginRightMm: number;
+  /** `Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra. */
+  columns: number;
+  /** `etq_EspacoColunas`. */
+  columnGapMm: number;
+  /** `etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração. */
+  labelHeightMm: number;
+  /**
+     * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+     * @nullable
+     */
+  barcodeField: LabelLayoutDtoBarcodeField;
+  /** Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo. */
+  isDefault: boolean;
+  active: boolean;
+}
+
+/**
+ * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+ * @nullable
+ */
+export type LabelLayoutWriteRequestBarcodeField = typeof LabelLayoutWriteRequestBarcodeField[keyof typeof LabelLayoutWriteRequestBarcodeField] | null;
+
+
+export const LabelLayoutWriteRequestBarcodeField = {
+  code: 'code',
+  barcode: 'barcode',
+} as const;
+
+/**
+ * Proposto. Corpo de `CreateLabelLayout` e `UpdateLabelLayout`. Substitui o layout inteiro.
+ */
+export interface LabelLayoutWriteRequest {
+  /** `etq_NomeModelo` do legado. Único na empresa. */
+  name: string;
+  /** A folha. Default do legado: 210. */
+  pageWidthMm: number;
+  /** Default do legado: 297. */
+  pageHeightMm: number;
+  marginTopMm: number;
+  marginBottomMm: number;
+  marginLeftMm: number;
+  marginRightMm: number;
+  /** `Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra. */
+  columns: number;
+  /** `etq_EspacoColunas`. */
+  columnGapMm: number;
+  /** `etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração. */
+  labelHeightMm: number;
+  /**
+     * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+     * @nullable
+     */
+  barcodeField: LabelLayoutWriteRequestBarcodeField;
+  /** Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo. */
+  isDefault: boolean;
+  active: boolean;
+}
+
+export interface PagedResultOfLabelLayoutDto {
+  rows: LabelLayoutDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -8049,5 +8168,33 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+};
+
+export type ListLabelLayoutsParams = {
+q?: string;
+/**
+ * Whitelist: `name`, `active`, `isDefault`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type PrintProductLabelsParams = {
+/**
+ * O layout a usar. Obrigatório: não há layout implícito, porque imprimir com o desenho errado gasta o rolo e só se descobre no papel.
+ */
+layoutId: string;
+supplierId?: string;
+/**
+ * Seleção explícita. Vazio quer dizer 'todos os que os outros filtros deixarem'.
+ */
+productIds?: string[];
+q?: string;
+/**
+ * Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro.
+ */
+copies?: number;
 };
 

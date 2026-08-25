@@ -85,6 +85,21 @@ interface Escrita {
   corpo: Record<string, unknown> | null
 }
 
+/**
+ * O MESMO documento, agora como REVISÃO 2 de outro.
+ *
+ * Existe para o caso do `PUT` logo abaixo, e o que ele mede é o LADO QUE SOBE:
+ * `revision`/`revisionOfId` são leitura pura — não estão em
+ * `QuoteWriteRequest` —, e mandá-los deixaria o cliente propor a própria
+ * versão. Quem move a cadeia é `POST .../revise`.
+ */
+const DETALHE_REVISAO = {
+  ...DETALHE,
+  revision: 2,
+  revisionOfId: 'c9a4e207-51b8-4f36-90d1-7e2b6a83c045',
+  revisionOfNumber: '10230',
+}
+
 function json(corpo: unknown, status = 200) {
   return new Response(JSON.stringify(corpo), {
     status,
@@ -151,6 +166,41 @@ describe('o orçamento grava de verdade', () => {
     expect(corpo.number).toBeUndefined()
     expect(corpo.status).toBeUndefined()
     expect(corpo.totalCents).toBeUndefined()
+  })
+
+  it('gravar a REVISÃO não manda a cadeia de versões no corpo', async () => {
+    const escritas: Escrita[] = []
+    const stub = async (entrada: RequestInfo | URL) => {
+      const req = entrada instanceof Request ? entrada : null
+      const url = String(req ? req.url : entrada)
+      if (url.includes('/api/quotes') && (req?.method ?? 'GET') !== 'GET') {
+        const cru = await req?.text()
+        escritas.push({ url, metodo: req?.method ?? '', corpo: cru ? JSON.parse(cru) : null })
+        return json(DETALHE_REVISAO)
+      }
+      if (url.includes('/api/quotes') && url.includes(ID)) return json(DETALHE_REVISAO)
+      return servidor(escritas)(entrada)
+    }
+
+    const { user } = renderRoute(`/vendas/orcamentos/${ID}`, stub as never)
+
+    await waitFor(() => expect(screen.getByLabelText(/Nº Pasta/i)).toHaveValue('P-88'))
+    // A folha declara de onde veio ANTES da gravação — é o estado a preservar.
+    expect(await screen.findByRole('link', { name: '10230' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^Gravar$/i }))
+
+    await waitFor(() => expect(escritas.length).toBe(1))
+    const corpo = escritas[0]?.corpo as Record<string, unknown>
+    // A cadeia é do SERVIDOR: quem a move é `POST .../revise`. Propô-la aqui
+    // deixaria o cliente escolher a própria versão.
+    expect(corpo.revision).toBeUndefined()
+    expect(corpo.revisionOfId).toBeUndefined()
+    // Não há asserção sobre a folha DEPOIS da gravação, e a ausência é medida:
+    // o `Gravar` navega de volta para a listagem no mesmo tique (ver
+    // `useGravarOrcamento`), então procurar o elo aqui mediria a navegação, não
+    // a preservação do campo. Uma asserção que só pode falhar por outro motivo
+    // é verde que não protege nada.
   })
 
   it('recusa do servidor fica na tela, e a tela NÃO navega', async () => {

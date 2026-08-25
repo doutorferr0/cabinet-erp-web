@@ -114,6 +114,17 @@ export function paraOrcamento(dto: QuoteDetailDto): Orcamento {
     profissionalId: dto.professionalId ?? null,
     profissionalExterno: dto.professionalName ?? null,
     cancelado: dto.status === 'cancelled',
+    // A CADEIA DE VERSÕES, e ela é leitura pura: `revision`/`revisionOfId` não
+    // existem em `QuoteWriteRequest`, então `paraEscrita` não os devolve. Quem
+    // move a cadeia é `POST .../revise`, pela mesma razão de `cancelado` — o
+    // documento não escolhe a própria versão.
+    //
+    // `?? 1` porque o contrato publica `revision` como OPCIONAL: documento
+    // gravado antes de a revisão existir não tem o campo, e ele é o original.
+    // Deixar `undefined` faria a folha exibir "Revisão —" no documento comum.
+    revisao: dto.revision ?? 1,
+    revisaoDeId: dto.revisionOfId ?? null,
+    revisaoDeNumero: dto.revisionOfNumber ?? null,
     modoDesconto: dto.discountMode === 'general' ? 'GERAL' : 'PRODUTO',
     descontoPercentual: dto.discountPercent,
     // Coleção própria, e não derivada dos itens: é ela que guarda o nome

@@ -90,8 +90,13 @@ describe('registry de providers', () => {
    * `clientes`, `fornecedores` e `profissionais` não voltam a esta lista tal como
    * estavam: sem `GET /api/partners/{id}` eles não têm `get`, e é essa a forma
    * que o contrato oferece hoje.
+   *
+   * `ordensCompra` e `pedidosCompra` saíram na fase C do G2: as duas passaram a
+   * ser HTTP (`compras-api.ts`), e este caso chama `list()` de verdade — contra
+   * provider de rede, sem servidor, ele mediria a ausência de servidor. Quem os
+   * cobre agora são as baterias de tela, contra servidor falso.
    */
-  const recursosComCadastro = ['colaboradores', 'ordensCompra', 'pedidosCompra'] as const
+  const recursosComCadastro = ['colaboradores'] as const
 
   it.each(recursosComCadastro)('%s expõe list/get/empty', async (nome) => {
     const p = data[nome]

@@ -1,3 +1,4 @@
+import { ordensDeCompraApi, pedidosDeCompraApi } from '@/data/compras-api'
 import { funis } from '@/data/crm-api'
 import { parceiros } from '@/data/parceiros-api'
 import { pedidosDeVendaApi } from '@/data/pedidos-venda-api'
@@ -15,8 +16,6 @@ import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
 import { type Colaborador, colaboradorVazio, colaboradores } from '@/mocks/colaboradores'
 import { fornecedorVazio } from '@/mocks/fornecedores'
-import { type OrdemCompra, ordemCompraVazia, ordensCompra } from '@/mocks/ordens-compra'
-import { type PedidoCompra, pedidoCompraVazio, pedidosCompra } from '@/mocks/pedidos-compra'
 import { profissionalVazio } from '@/mocks/profissionais'
 import { transportadoras } from '@/mocks/transportadoras'
 
@@ -65,20 +64,30 @@ export const data = {
    */
   produtos: produtosApi,
 
-  ordensCompra: createMockProvider<OrdemCompra>({
-    rows: ordensCompra,
-    matches: (o, q) => o.codigo.includes(q) || normalize(o.fornecedor).includes(q),
-    empty: ordemCompraVazia,
-  }),
+  /**
+   * Ordem de compra — HTTP (`/api/purchase-orders`), com a fase C do G2.
+   *
+   * As 14 operações de compra estavam no contrato desde a web#316 e o MSW as
+   * servia inteiras; o que faltava era a tela CONSUMI-LAS. Enquanto estas duas
+   * entradas foram `createMockProvider` sobre `src/mocks/ordens-compra.ts`, o
+   * documento que a tela abria não tinha campo do contrato nenhum — nem
+   * fornecedor por id, nem rastro do pedido de origem, nem faturamento mínimo.
+   *
+   * Mesma divisão de `orcamentos` e `pedidosVenda`: a grade recebe o
+   * `PurchaseOrderDto` cru, para o `sortBy` casar com a whitelist do servidor, e
+   * o formulário recebe a forma da tela.
+   */
+  ordensCompra: ordensDeCompraApi,
 
-  pedidosCompra: createMockProvider<PedidoCompra>({
-    rows: pedidosCompra,
-    matches: (p, q) =>
-      p.codigo.includes(q) ||
-      p.pedVenda.includes(q) ||
-      normalize(p.fornecedores.join(' - ')).includes(q),
-    empty: pedidoCompraVazio,
-  }),
+  /**
+   * Pedido de compra — HTTP (`/api/purchase-requests`).
+   *
+   * O fornecedor está na LINHA, não no cabeçalho: a busca por fornecedor viaja
+   * como `filters` (`supplierId`) e recorta por linha, que é o que o contrato
+   * publica. O `matches` local que existia aqui concatenava os nomes com " - "
+   * e casava no texto — servia ao fixture e não teria como servir ao servidor.
+   */
+  pedidosCompra: pedidosDeCompraApi,
 
   /**
    * Orçamento — HTTP desde a #134 (`/api/quotes`).

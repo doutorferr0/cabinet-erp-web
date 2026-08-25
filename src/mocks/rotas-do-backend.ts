@@ -940,6 +940,9 @@ const COMPRAS_501 =
 const COMISSOES_SEM_PORTA =
   'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
 
+const SENHA_INICIAL_SEM_CONTRATO_LA =
+  'publicada por ESTA PR — a copia do contrato no api ainda nao a conhece; sync + handler na PR da api'
+
 const RECEBIMENTO_SEM_PORTA =
   'sem handler no api — modulo existe (0047 + src/modules/recebimento/), rotas nao; G3 fase B'
 
@@ -1194,6 +1197,12 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   },
   ...COMISSOES,
   ...RECEBIMENTO,
+  {
+    metodo: 'post',
+    caminho: '/api/employees/{id}/reset-password',
+    motivo: SENHA_INICIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
 ]
 
 /** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */

@@ -8372,7 +8372,7 @@
       "get": {
         "tags": ["compras"],
         "operationId": "GetPurchaseArrivalForecast",
-        "description": "Proposto. PREVISÃO DE CHEGADA — o que vem, quando, e para quem. É a consulta de mesmo nome no menu `Compras` do legado.\n\nLinha a linha de ITEM, não de ordem: a pergunta que a tela responde é \"quando chega a peça do cliente X\". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**",
+        "description": "Proposto. PREVISÃO DE CHEGADA — o que vem, quando, e para quem. É a consulta de mesmo nome no menu `Compras` do legado.\n\nLinha a linha de ITEM, não de ordem: a pergunta que a tela responde é \"quando chega a peça do cliente X\". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.\n\n**E só o que AINDA NÃO CHEGOU.** Linha inteiramente recebida sai da previsão; a parcialmente recebida fica pelo que falta — `quantity` aqui é o SALDO A CHEGAR (ver o campo), e não a quantidade original da ordem. Previsão que mostrasse o que já desceu do caminhão faria o vendedor prometer duas vezes a mesma peça, que é o defeito que esta tela existe para não ter.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**",
         "parameters": [
           {
             "name": "q",
@@ -8941,7 +8941,7 @@
       "post": {
         "tags": ["compras"],
         "operationId": "PostGoodsReceipt",
-        "description": "Proposto. LANÇA o recebimento: `checked` → `posted`. Cada linha com quantidade vira entrada no kardex (`ListStockMovements`), marcada como compra e apontando para este documento.\n\n**Permissão: `estoque:movimentar` — e ela é DIFERENTE da das outras seis de propósito.** Conferir é contar caixa; lançar é mexer no saldo de que alguém responde. O estado do meio existe justamente porque as duas decisões são de pessoas diferentes em horas diferentes, e uma permissão só faria quem conta ter de também lançar — que é como divergência vira \"depois eu ajusto\".\n\n**Divergência NÃO bloqueia o lançamento.** Chegaram 8 das 10 pedidas, com motivo declarado: lança 8. Recusar faria a mercadoria que ESTÁ no galpão não existir no sistema, que é exatamente o defeito que o kardex existe para não ter. A divergência fica na linha: ela é a pergunta do comprador ao fornecedor, não uma trava do almoxarifado.\n\n**O efeito é atômico e não repetível.** Ou o documento fica `posted` com todos os seus movimentos, ou nada acontece; e lançar de novo é 409 (`urn:cabinet:erro:transicao-invalida`), nunca repetição em silêncio — sem isso um duplo clique dobraria o estoque.\n\n**O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.\n\n**A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, \"o que vem em ordem enviada e ainda não recebida\". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
+        "description": "Proposto. LANÇA o recebimento: `checked` → `posted`. Cada linha com quantidade vira entrada no kardex (`ListStockMovements`), marcada como compra e apontando para este documento.\n\n**Permissão: `estoque:movimentar` — e ela é DIFERENTE da das outras seis de propósito.** Conferir é contar caixa; lançar é mexer no saldo de que alguém responde. O estado do meio existe justamente porque as duas decisões são de pessoas diferentes em horas diferentes, e uma permissão só faria quem conta ter de também lançar — que é como divergência vira \"depois eu ajusto\".\n\n**Divergência NÃO bloqueia o lançamento.** Chegaram 8 das 10 pedidas, com motivo declarado: lança 8. Recusar faria a mercadoria que ESTÁ no galpão não existir no sistema, que é exatamente o defeito que o kardex existe para não ter. A divergência fica na linha: ela é a pergunta do comprador ao fornecedor, não uma trava do almoxarifado.\n\n**O efeito é atômico e não repetível.** Ou o documento fica `posted` com todos os seus movimentos, ou nada acontece; e lançar de novo é 409 (`urn:cabinet:erro:transicao-invalida`), nunca repetição em silêncio — sem isso um duplo clique dobraria o estoque.\n\n**O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.\n\n**A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, \"o que vem em ordem enviada e ainda não recebida\". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.\n\n**E essa baixa não é coluna que este lançamento escreve: é a LINHA que ele deixa apontada.** `qtyOnOrder` e `PurchaseOrderItemDto.quantityReceived` são DERIVADOS do vínculo `purchaseOrderId` + `purchaseOrderLine` das linhas de recebimentos LANÇADOS. Um contador decrementado aqui divergiria do documento no primeiro estorno, e ninguém reconcilia isso depois; o derivado não tem como divergir do que os documentos dizem. Recebimento em `draft` ou `checked` não conta — enquanto não lançou, a peça não entrou no galpão —, e linha SEM vínculo não baixa reserva nenhuma, porque ordem nenhuma a esperava.\n\n**Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então \"sem empresa\" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.",
         "parameters": [
           {
             "name": "id",
@@ -18353,6 +18353,7 @@
           "sourceLineNumber",
           "description",
           "quantity",
+          "quantityReceived",
           "unitCostCents",
           "totalCents",
           "destination"
@@ -18397,6 +18398,11 @@
           },
           "quantity": {
             "description": "Quantidade desta linha na ordem. **Pode ser menor que a da linha do pedido**: o fornecedor atende parcialmente, e o resto continua aberto no pedido para entrar noutra ordem.",
+            "type": "number",
+            "format": "double"
+          },
+          "quantityReceived": {
+            "description": "Quanto desta linha JÁ CHEGOU: a soma dos recebimentos LANÇADOS que a apontam (`GoodsReceiptItemDto.purchaseOrderId` + `purchaseOrderLine`). Calculado pelo servidor — não entra na escrita, e não existe como coluna da ordem.\n\nÉ o que faz a ordem dizer o que ainda falta sem a tela abrir recebimento por recebimento: `quantity − quantityReceived` é o mesmo saldo que `PurchaseReplenishmentRowDto.qtyOnOrder` soma por variante e que `GetPurchaseArrivalForecast` mostra como peça a caminho. Zero na ordem que ainda não recebeu nada; **pode passar de `quantity`**, com o fornecedor que manda a mais — e aí o saldo a chegar é zero, nunca negativo.",
             "type": "number",
             "format": "double"
           },
@@ -18773,8 +18779,21 @@
             "description": "Descrição congelada na gravação. Quem lê a conferência de ontem lê o que estava escrito ontem, não o cadastro de hoje.",
             "type": "string"
           },
+          "purchaseOrderId": {
+            "description": "A ORDEM DE COMPRA que esta linha fecha, junto com `purchaseOrderLine`.\n\n**O vínculo é por LINHA e não por cabeçalho, e é isso que permite uma nota fechar DUAS ordens.** O caminhão traz o que ficou pronto, não o que uma ordem inteira pediu — e a mesma ordem chega em dois caminhões com a mesma frequência. É a forma que `PurchaseOrderItemDto` já usa um degrau atrás (`sourceRequestId` + `sourceLineNumber`, para lembrar de qual pedido veio a peça), e o legado confirma o par em `nota_entrada_det.Ned_cod_ordem` + `Ned_item_ordem`.\n\n**`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação: compra por telefone, brinde de fornecedor, retorno de conserto. Ele entra igual e lança igual; o que ele não faz é baixar reserva de chegada, porque não havia chegada prometida.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "purchaseOrderNumber": {
+            "type": ["string", "null"]
+          },
+          "purchaseOrderLine": {
+            "description": "O `lineNumber` da linha da ordem que esta linha fecha. Anda SEMPRE junto com `purchaseOrderId`: a ordem sozinha não diz qual peça dela chegou, e duas linhas da mesma ordem pedindo a mesma variante é caso normal — acabamento diferente, entrega parcelada.",
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
           "quantityOrdered": {
-            "description": "O que a ordem de compra pedia, em SNAPSHOT.\n\n**`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação. Nulo quer dizer \"não havia o que comparar\", e é diferente de zero, que diria \"pediram nada\".\n\nÉ por esta quantidade que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem — e não a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra nunca desfaz. Ver `POST /{id}/post`.",
+            "description": "O que a ordem de compra pedia, em SNAPSHOT congelado na gravação.\n\n**Com vínculo, quem preenche é o SERVIDOR**, lendo a linha apontada por `purchaseOrderId` + `purchaseOrderLine` — pela mesma razão de `description`: aceitá-la do cliente faria a divergência ser medida contra um número digitado, e a conferência passaria a dizer o que o operador lembrou, não o que a ordem pede. **Sem vínculo é o que a tela digitou** — a ordem feita por telefone, a carga do legado —, e aí ela é declaração do operador, não fato do sistema.\n\n**`null` é o recebimento AVULSO sem nada com que comparar.** Nulo quer dizer \"não havia o que comparar\", e é diferente de zero, que diria \"pediram nada\".\n\nÉ pelo VÍNCULO — e não por esta quantidade solta — que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem; e nunca a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra não desfaz. Ver `POST /{id}/post`.",
             "type": ["number", "null"],
             "format": "double"
           },
@@ -18795,7 +18814,7 @@
         }
       },
       "GoodsReceiptWriteRequest": {
-        "description": "Proposto. Cria ou SUBSTITUI o recebimento inteiro.\n\n**A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.\n\n**O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.",
+        "description": "Proposto. Cria ou SUBSTITUI o recebimento inteiro.\n\n**A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.\n\n**O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.\n\n**O vínculo com a ordem é por LINHA, e o par é obrigatório junto:** `purchaseOrderId` sem `purchaseOrderLine` — ou o contrário — é 400 com `fields[]`, apontando `items[N].purchaseOrderLine`. Meio vínculo é pior que nenhum: ele parece ligação e não fecha linha nenhuma.\n\nA linha apontada precisa existir, estar em ordem `sent` e ser do MESMO fornecedor do cabeçalho — 400 nos três casos. Ordem `draft` não se fecha porque ninguém a mandou, e fechar ordem de outro fornecedor é a nota dizendo que quem entregou não foi quem entregou. **Duas linhas do mesmo recebimento apontando a MESMA linha de ordem também é 400:** a grade estaria dizendo duas coisas sobre a mesma peça pedida — parcela que chega em caminhão separado é recebimento separado, que é justamente o que o vínculo por linha permite.\n\n**Receber a MAIS que o pedido não é erro**, aqui nem em lugar nenhum da família: o fornecedor arredonda a caixa, e a sobra fica na divergência com motivo, que é pergunta para o comprador — nunca uma trava do galpão.",
         "required": ["supplierId", "items"],
         "type": "object",
         "properties": {
@@ -18852,8 +18871,17 @@
             "type": "string",
             "format": "uuid"
           },
+          "purchaseOrderId": {
+            "description": "A linha da ordem que esta linha fecha — junto com `purchaseOrderLine`, e os dois viajam sempre juntos. `null` nos dois é o recebimento avulso. Ver `GoodsReceiptItemDto.purchaseOrderId`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "purchaseOrderLine": {
+            "type": ["integer", "null"],
+            "format": "int32"
+          },
           "quantityOrdered": {
-            "description": "O que a ordem pedia. `null` no recebimento avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria \"a ordem pedia nada\", que não é linha de ordem nenhuma.",
+            "description": "O que a ordem pedia, e **só na linha SEM vínculo**: ordem feita por telefone, carga do legado. Com `purchaseOrderId` preenchido o servidor resolve a quantidade da própria ordem e IGNORA o que vier aqui, pela mesma razão de `description`.\n\n`null` no avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria \"a ordem pedia nada\", que não é linha de ordem nenhuma.",
             "type": ["number", "null"],
             "format": "double"
           },
@@ -18960,6 +18988,7 @@
             "type": ["string", "null"]
           },
           "quantity": {
+            "description": "O SALDO A CHEGAR desta linha: `PurchaseOrderItemDto.quantity` menos o que recebimentos lançados já apontaram para ela. Nunca zero — a linha zerada sai da previsão —, e nunca negativo: recebido a mais fecha em zero e a sobra fica na divergência do recebimento.",
             "type": "number",
             "format": "double"
           },
@@ -19044,7 +19073,7 @@
             "format": "double"
           },
           "qtyOnOrder": {
-            "description": "Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou.",
+            "description": "Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou.\n\n**\"Ainda não recebida\" é o vínculo, não uma data:** soma-se `quantity − quantityReceived` das linhas de ordem enviada, e `quantityReceived` são os recebimentos LANÇADOS que apontam a linha (`GoodsReceiptItemDto.purchaseOrderLine`). Chegou a MENOS, o resto continua aberto e continua contando — a peça ainda vem. Chegou a MAIS, a linha fecha em ZERO e não vira saldo negativo: a sobra é divergência do recebimento, pergunta para o fornecedor, e não peça a caminho que reduza a sugestão de outra variante.",
             "type": "number",
             "format": "double"
           },

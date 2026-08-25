@@ -4938,6 +4938,12 @@ export interface PurchaseOrderItemDto {
   unit?: string | null;
   /** Quantidade desta linha na ordem. **Pode ser menor que a da linha do pedido**: o fornecedor atende parcialmente, e o resto continua aberto no pedido para entrar noutra ordem. */
   quantity: number;
+  /**
+     * Quanto desta linha JÁ CHEGOU: a soma dos recebimentos LANÇADOS que a apontam (`GoodsReceiptItemDto.purchaseOrderId` + `purchaseOrderLine`). Calculado pelo servidor — não entra na escrita, e não existe como coluna da ordem.
+     *
+     * É o que faz a ordem dizer o que ainda falta sem a tela abrir recebimento por recebimento: `quantity − quantityReceived` é o mesmo saldo que `PurchaseReplenishmentRowDto.qtyOnOrder` soma por variante e que `GetPurchaseArrivalForecast` mostra como peça a caminho. Zero na ordem que ainda não recebeu nada; **pode passar de `quantity`**, com o fornecedor que manda a mais — e aí o saldo a chegar é zero, nunca negativo.
+     */
+  quantityReceived: number;
   /** Custo unitário NEGOCIADO, em centavos. É o preço de COMPRA — não tem relação com o de venda, que sai do índice por fornecedor. */
   unitCostCents: number;
   /** Total da linha em centavos. Vem calculado do servidor: `quantity × unitCostCents` arredondado uma vez, e não N vezes na tela. */
@@ -5151,11 +5157,29 @@ export interface GoodsReceiptItemDto {
   /** Descrição congelada na gravação. Quem lê a conferência de ontem lê o que estava escrito ontem, não o cadastro de hoje. */
   description: string;
   /**
-     * O que a ordem de compra pedia, em SNAPSHOT.
+     * A ORDEM DE COMPRA que esta linha fecha, junto com `purchaseOrderLine`.
      *
-     * **`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação. Nulo quer dizer "não havia o que comparar", e é diferente de zero, que diria "pediram nada".
+     * **O vínculo é por LINHA e não por cabeçalho, e é isso que permite uma nota fechar DUAS ordens.** O caminhão traz o que ficou pronto, não o que uma ordem inteira pediu — e a mesma ordem chega em dois caminhões com a mesma frequência. É a forma que `PurchaseOrderItemDto` já usa um degrau atrás (`sourceRequestId` + `sourceLineNumber`, para lembrar de qual pedido veio a peça), e o legado confirma o par em `nota_entrada_det.Ned_cod_ordem` + `Ned_item_ordem`.
      *
-     * É por esta quantidade que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem — e não a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra nunca desfaz. Ver `POST /{id}/post`.
+     * **`null` é o recebimento AVULSO** — mercadoria que chegou sem ordem, que existe na operação: compra por telefone, brinde de fornecedor, retorno de conserto. Ele entra igual e lança igual; o que ele não faz é baixar reserva de chegada, porque não havia chegada prometida.
+     * @nullable
+     */
+  purchaseOrderId?: string | null;
+  /** @nullable */
+  purchaseOrderNumber?: string | null;
+  /**
+     * O `lineNumber` da linha da ordem que esta linha fecha. Anda SEMPRE junto com `purchaseOrderId`: a ordem sozinha não diz qual peça dela chegou, e duas linhas da mesma ordem pedindo a mesma variante é caso normal — acabamento diferente, entrega parcelada.
+     * @nullable
+     */
+  purchaseOrderLine?: number | null;
+  /**
+     * O que a ordem de compra pedia, em SNAPSHOT congelado na gravação.
+     *
+     * **Com vínculo, quem preenche é o SERVIDOR**, lendo a linha apontada por `purchaseOrderId` + `purchaseOrderLine` — pela mesma razão de `description`: aceitá-la do cliente faria a divergência ser medida contra um número digitado, e a conferência passaria a dizer o que o operador lembrou, não o que a ordem pede. **Sem vínculo é o que a tela digitou** — a ordem feita por telefone, a carga do legado —, e aí ela é declaração do operador, não fato do sistema.
+     *
+     * **`null` é o recebimento AVULSO sem nada com que comparar.** Nulo quer dizer "não havia o que comparar", e é diferente de zero, que diria "pediram nada".
+     *
+     * É pelo VÍNCULO — e não por esta quantidade solta — que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem; e nunca a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra não desfaz. Ver `POST /{id}/post`.
      * @nullable
      */
   quantityOrdered?: number | null;
@@ -5249,7 +5273,16 @@ export interface GoodsReceiptItemWriteRequest {
   lineNumber: number;
   variantId: string;
   /**
-     * O que a ordem pedia. `null` no recebimento avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria "a ordem pedia nada", que não é linha de ordem nenhuma.
+     * A linha da ordem que esta linha fecha — junto com `purchaseOrderLine`, e os dois viajam sempre juntos. `null` nos dois é o recebimento avulso. Ver `GoodsReceiptItemDto.purchaseOrderId`.
+     * @nullable
+     */
+  purchaseOrderId?: string | null;
+  /** @nullable */
+  purchaseOrderLine?: number | null;
+  /**
+     * O que a ordem pedia, e **só na linha SEM vínculo**: ordem feita por telefone, carga do legado. Com `purchaseOrderId` preenchido o servidor resolve a quantidade da própria ordem e IGNORA o que vier aqui, pela mesma razão de `description`.
+     *
+     * `null` no avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria "a ordem pedia nada", que não é linha de ordem nenhuma.
      * @nullable
      */
   quantityOrdered?: number | null;
@@ -5267,6 +5300,12 @@ export interface GoodsReceiptItemWriteRequest {
  * **A linha traz o que foi CONTADO, e nada além disso.** Descrição vem do cadastro da variante e `divergence` é calculada — aceitar qualquer uma das duas do cliente deixaria a grade dizer uma coisa e o catálogo (ou a subtração) outra.
  *
  * **O PUT recusa (409) fora do rascunho.** Depois de `check` a grade é uma decisão tomada; depois de `post` ela já virou saldo.
+ *
+ * **O vínculo com a ordem é por LINHA, e o par é obrigatório junto:** `purchaseOrderId` sem `purchaseOrderLine` — ou o contrário — é 400 com `fields[]`, apontando `items[N].purchaseOrderLine`. Meio vínculo é pior que nenhum: ele parece ligação e não fecha linha nenhuma.
+ *
+ * A linha apontada precisa existir, estar em ordem `sent` e ser do MESMO fornecedor do cabeçalho — 400 nos três casos. Ordem `draft` não se fecha porque ninguém a mandou, e fechar ordem de outro fornecedor é a nota dizendo que quem entregou não foi quem entregou. **Duas linhas do mesmo recebimento apontando a MESMA linha de ordem também é 400:** a grade estaria dizendo duas coisas sobre a mesma peça pedida — parcela que chega em caminhão separado é recebimento separado, que é justamente o que o vínculo por linha permite.
+ *
+ * **Receber a MAIS que o pedido não é erro**, aqui nem em lugar nenhum da família: o fornecedor arredonda a caixa, e a sobra fica na divergência com motivo, que é pergunta para o comprador — nunca uma trava do galpão.
  */
 export interface GoodsReceiptWriteRequest {
   supplierId: string;
@@ -5353,6 +5392,7 @@ export interface PurchaseArrivalRowDto {
   finish?: string | null;
   /** @nullable */
   size?: string | null;
+  /** O SALDO A CHEGAR desta linha: `PurchaseOrderItemDto.quantity` menos o que recebimentos lançados já apontaram para ela. Nunca zero — a linha zerada sai da previsão —, e nunca negativo: recebido a mais fecha em zero e a sobra fica na divergência do recebimento. */
   quantity: number;
   /** Para que a peça vem. `sale` traz cliente; `stock` não tem cliente e é isso que a tela mostra. */
   destination: PurchaseArrivalRowDtoDestination;
@@ -5397,7 +5437,11 @@ export interface PurchaseReplenishmentRowDto {
   qtyAllocated: number;
   /** `qtyOnHand − qtyAllocated`. É o que dá para prometer a um cliente novo hoje, e pode ser negativo quando se prometeu mais do que há. */
   qtyAvailable: number;
-  /** Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou. */
+  /**
+     * Quanto já vem em ORDEM ENVIADA e ainda não recebida. Ordem `draft` não entra: intenção do comprador não é peça a caminho, e contá-la faria a sugestão zerar por causa de uma ordem que ninguém mandou.
+     *
+     * **"Ainda não recebida" é o vínculo, não uma data:** soma-se `quantity − quantityReceived` das linhas de ordem enviada, e `quantityReceived` são os recebimentos LANÇADOS que apontam a linha (`GoodsReceiptItemDto.purchaseOrderLine`). Chegou a MENOS, o resto continua aberto e continua contando — a peça ainda vem. Chegou a MAIS, a linha fecha em ZERO e não vira saldo negativo: a sobra é divergência do recebimento, pergunta para o fornecedor, e não peça a caminho que reduza a sugestão de outra variante.
+     */
   qtyOnOrder: number;
   /**
      * A sugestão de compra: quanto falta para `qtyAvailable + qtyOnOrder` alcançar o mínimo de estoque da variante. `0` quando não falta nada.

@@ -11,6 +11,7 @@ import {
   ROTAS_NO_MOCK,
   avisoDeSemContrato,
   declararPassagem,
+  familia,
   handlersDePassagem,
   montarRelatorio,
   relatorioDaPassagem,
@@ -405,9 +406,10 @@ describe('passthrough por rota', () => {
     // aqui foi o que este caso fez primeiro, e ele quebrou no mesmo dia, no
     // rebase que trouxe comissões: `orders`, `employees` e `partners` passaram a
     // ter rota real E rota mockada.
-    const familiasMockadas = new Set(
-      ROTAS_NO_MOCK.map((r) => r.caminho.split('/').filter(Boolean)[1] ?? ''),
-    )
+    // A família sai da MESMA função que o console usa. Repetir a regra aqui
+    // funcionou enquanto toda rota mockada era `/api/*`; a primeira em
+    // `/auth/*` fez as duas divergirem e este caso acusou o código certo.
+    const familiasMockadas = new Set(ROTAS_NO_MOCK.map((r) => familia(r.caminho)))
     for (const f of familiasMockadas) {
       expect(
         ditas.some((l) => l.includes(f) && (l.includes('MOCK') || l.includes('PARTIDA'))),
@@ -521,22 +523,33 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('a ÚNICA rota SEM CONTRATO é a da senha inicial — publicada por esta PR', () => {
+  it('as SEM CONTRATO são as cinco do ciclo da credencial — publicadas por esta PR e a anterior', () => {
     // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
-    // byte a byte). A PR da senha inicial publica `reset-password` AQUI, então
-    // a cópia do api fica atrás por definição até o `sync:contract` de lá — o
-    // estado `sem-contrato` é o correto e o console DEVE avisar. A lista é
-    // FECHADA de propósito: a segunda rota que aparecer aqui sem querer
-    // continua reprovando e sendo nomeada. Quando a PR do api sincronizar e
-    // ligar o handler, a linha sai de `ROTAS_NO_MOCK` e este caso volta a
-    // cobrar o vazio.
+    // byte a byte). Depois passou a cobrar UMA — o `reset-password` da PR da
+    // senha inicial —, e agora cobra CINCO: as quatro do ciclo da credencial
+    // entram pelo mesmo mecanismo, e não por um afrouxamento. Todas publicadas
+    // AQUI, então a cópia do api fica atrás por definição até o
+    // `sync:contract` de lá; `sem-contrato` é o estado correto e o console DEVE
+    // avisar.
+    //
+    // **A lista continua FECHADA, e é isso que a mantém útil:** a sexta rota
+    // que aparecer aqui sem querer reprova e sai nomeada. Quando a PR do api
+    // sincronizar e ligar os handlers, as cinco saem de `ROTAS_NO_MOCK` —
+    // JUNTAS, porque o token emitido pelo convite do servidor não existe no
+    // mock que gastaria — e este caso volta a cobrar o vazio.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
       'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
-    ).toEqual(['post /api/employees/{id}/reset-password'])
-    // Cabeçalho com o próximo passo + uma linha por rota = 2.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(2)
+    ).toEqual([
+      'post /api/employees/{id}/reset-password',
+      'post /api/employees/{id}/invite',
+      'post /auth/forgot-password',
+      'post /auth/credential-token',
+      'post /auth/set-password',
+    ])
+    // Cabeçalho com o próximo passo + uma linha por rota = 6.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(6)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

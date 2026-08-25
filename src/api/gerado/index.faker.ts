@@ -25,6 +25,7 @@ import type {
   CommissionEarningsReportDto,
   CostProfileDto,
   CostSimulationDto,
+  CredentialTokenDto,
   CrmLostReasonDto,
   CrmLostReasonsReportDto,
   CrmOpportunityDto,
@@ -37,6 +38,7 @@ import type {
   GoodsReceiptDto,
   HealthStatus,
   InstallmentPolicyDto,
+  InvitationDto,
   LabelLayoutDto,
   LoginOk,
   OrderDetailDto,
@@ -196,6 +198,8 @@ export const getCreateStockMovementResponseMock = (overrideResponse: Partial<Ext
 export const getListStockMovementsResponseMock = (overrideResponse: Partial<Extract<PagedResultOfStockMovementDto, object>> = {}): PagedResultOfStockMovementDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), variantId: faker.string.uuid(), locationId: faker.string.uuid(), delta: faker.number.float({fractionDigits: 2}), balanceAfter: faker.number.float({fractionDigits: 2}), reason: faker.string.alpha({length: {min: 10, max: 20}}), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', employeeId: faker.helpers.arrayElement([faker.string.uuid(), null])})), total: faker.number.int(), ...overrideResponse})
 
 export const getAuthLoginResponseMock = (overrideResponse: Partial<Extract<LoginOk, object>> = {}): LoginOk => ({mustChangePassword: faker.datatype.boolean(), ...overrideResponse})
+
+export const getAuthCredentialTokenResponseMock = (overrideResponse: Partial<Extract<CredentialTokenDto, object>> = {}): CredentialTokenDto => ({purpose: faker.helpers.arrayElement(['invite','reset'] as const), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getAuthMeResponseMock = (overrideResponse: Partial<Extract<SessaoAtual, object>> = {}): SessaoAtual => ({organizationId: faker.string.uuid(), employeeId: faker.string.uuid(), activeTenantId: faker.helpers.arrayElement([faker.string.uuid(), null]), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', mustChangePassword: faker.datatype.boolean(), displayName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), ...overrideResponse})
 
@@ -430,6 +434,8 @@ export const getSimulateCostProfileResponseMock = (overrideResponse: Partial<Ext
 export const getListOrderParticipantsResponseMock = (overrideResponse: Partial<Extract<PagedResultOfOrderParticipantDto, object>> = {}): PagedResultOfOrderParticipantDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), role: faker.helpers.arrayElement(['attendant','professional'] as const), employeeId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), employeeName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), partnerId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), partnerName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), personName: faker.string.alpha({length: {min: 10, max: 20}}), percent: faker.number.int(), isPrincipal: faker.datatype.boolean(), validFrom: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), tiers: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({productGroupId: faker.string.uuid(), productGroupName: faker.string.alpha({length: {min: 10, max: 20}}), operator: faker.helpers.arrayElement(Object.values(CommissionTierOperator)), discountPercent: faker.number.int(), percent: faker.number.int()}))})), total: faker.number.int(), ...overrideResponse})
 
 export const getReplaceOrderParticipantsResponseMock = (overrideResponse: Partial<Extract<PagedResultOfOrderParticipantDto, object>> = {}): PagedResultOfOrderParticipantDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), role: faker.helpers.arrayElement(['attendant','professional'] as const), employeeId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), employeeName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), partnerId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), partnerName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), personName: faker.string.alpha({length: {min: 10, max: 20}}), percent: faker.number.int(), isPrincipal: faker.datatype.boolean(), validFrom: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), tiers: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({productGroupId: faker.string.uuid(), productGroupName: faker.string.alpha({length: {min: 10, max: 20}}), operator: faker.helpers.arrayElement(Object.values(CommissionTierOperator)), discountPercent: faker.number.int(), percent: faker.number.int()}))})), total: faker.number.int(), ...overrideResponse})
+
+export const getInviteEmployeeResponseMock = (overrideResponse: Partial<Extract<InvitationDto, object>> = {}): InvitationDto => ({sentTo: faker.internet.email(), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getListEmployeeCommissionTiersResponseMock = (overrideResponse: Partial<Extract<PagedResultOfCommissionTierDto, object>> = {}): PagedResultOfCommissionTierDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), productGroupId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), productGroupName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), operator: faker.helpers.arrayElement(Object.values(CommissionTierOperator)), discountPercent: faker.number.int(), percent: faker.number.int(), active: faker.datatype.boolean()})), total: faker.number.int(), ...overrideResponse})
 

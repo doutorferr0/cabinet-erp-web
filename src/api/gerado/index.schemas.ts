@@ -63,8 +63,15 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+/**
+ * Prova de VIDA. Diz que o processo responde — não que ele está pronto (isso é `/health/db`). Carrega também a identidade do binário que respondeu: em produção, a pergunta que precede todas as outras é *qual código está no ar*, e ela não pode depender de alguém abrir SSH na VM para conferir.
+ */
 export interface HealthStatus {
   status: string;
+  /** `Proposto`. Versão legível do que está rodando — o `describe` do commit publicado (ex.: `v0.3.1-12-g844b360`), ou `desconhecido` quando a imagem foi construída sem carimbo. Obrigatório de propósito: campo opcional faria o cliente tratar "não sei" e "não me disseram" como o mesmo caso, e são casos diferentes — o primeiro é uma imagem mal construída, o segundo é um servidor velho. */
+  version: string;
+  /** `Proposto`. O SHA do commit publicado, curto (7+ posições). É o que casa o que está no ar com o que está no GitHub, e o que fecha a dúvida de "o deploy pegou?" sem abrir SSH. `desconhecido` quando a imagem não foi carimbada — nunca vazio, nunca ausente. */
+  commit: string;
 }
 
 export interface LoginOk {

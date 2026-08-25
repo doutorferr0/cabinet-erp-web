@@ -23,6 +23,7 @@ import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
 import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
+import { handlersDeEntrega } from './entrega'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
@@ -930,6 +931,14 @@ export const handlers = [
   // handler nenhum — e também FORA da passagem, porque o `cabinet-erp-api`
   // responde 501 nelas. Compras não tinha resposta em ambiente nenhum.
   ...handlersDeCompras,
+
+  // ---------------- O BLOCO FÍSICO DA VENDA (G4) ----------------
+  // Liberar, separar, o romaneio e a situação do pedido. As dez operações
+  // entraram no contrato pela web#342 e `rotas-do-backend.ts` as mantém do lado
+  // do MOCK: o `cabinet-erp-api` já as publica (`src/modules/entrega/rotas.ts`),
+  // mas ligar a passagem é medição de par local, que é outra decisão. Sem este
+  // arquivo o quadro de cargas não tinha resposta em ambiente nenhum.
+  ...handlersDeEntrega,
 
   // ---------------- RELATÓRIOS DE GESTÃO (#310) ----------------
   // Arquivo próprio, como compras. As dez operações estavam no contrato desde a

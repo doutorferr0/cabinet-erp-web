@@ -12646,6 +12646,569 @@
           }
         }
       }
+    },
+    "/api/employees/{id}/reset-password": {
+      "post": {
+        "tags": ["cadastros"],
+        "operationId": "ResetEmployeePassword",
+        "description": "Proposto. O único caminho que dá credencial a um colaborador: `CreateEmployee` grava senha inutilizável de propósito, então sem esta operação a conta nunca entra. O SERVIDOR gera a senha provisória — o admin não escolhe — e ela aparece UMA única vez, nesta resposta; não há leitura que a devolva depois, nem para quem a gerou. `mustChangePassword` liga junto: o primeiro login exige `/auth/change-password` antes de qualquer outra coisa. Repetir a chamada é o reset de quem esqueceu — invalida a credencial atual e gera outra provisória.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporaryPasswordDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — colaborador sem e-mail não tem credencial para resetar.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}/print": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "PrintQuote",
+        "description": "Proposto. O orçamento como **PDF pronto**, renderizado no servidor.\n\n**Por que o servidor renderiza, quando as 11 rotas de `/api/reports/*` fazem o contrário.** Aquelas devolvem `application/json` porque relatório é dado, e a tela decide como mostrar. O orçamento impresso não é dado: é o ENTREGÁVEL que o cliente assina, e três coisas o tiram do padrão delas. O layout do legado repete o cabeçalho em toda página e numera `Página :N` — conteúdo em margem de página, que o CSS de impressão do browser não sabe pôr. O documento precisa existir como ARQUIVO, para anexar e arquivar, e `window.print()` não produz arquivo sem alguém salvar um. E `Imprimir` é ação de primeira classe no RBAC do legado (5 ações, e esta é uma delas): permissão só existe atrás de um caminho que a exija — sem esta operação, `orcamento:imprimir` seria um checkbox que não protege nada.\n\n**O que o servidor junta aqui e o cliente não teria.** O timbre da empresa (razão social, IE, endereço, logo) mora em `tenants` e não trafega em `VinculoDeEmpresa`; o bloco do cliente (endereço, bairro, cidade, UF, CEP, CNPJ\\CPF, Insc.Est.\\RG) não está em `QuoteDetailDto`, que carrega só `customerId` e `customerName`. Renderizar aqui evita publicar as duas coisas no contrato só para o browser remontá-las.\n\n**Sem storage: o PDF é gerado a cada chamada e não fica guardado.** Não existe 'via emitida' arquivada — o documento sai sempre como o orçamento está AGORA. Guardar a via é decisão própria, e traz junto onde mora o blob.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK — `application/pdf`. Uma página por bloco quando couber; 3 páginas é o típico do legado.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o orçamento não existe na empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/print-settings": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "GetPrintSettings",
+        "description": "Proposto. Os textos configuráveis que entram no impresso da empresa ativa: o título do orçamento e as cláusulas comerciais da página final.\n\n**São DADO, e o legado prova.** `Par_TituloImpOrcamento` é coluna de `Paramentros` (`EQUIPAMENTOS PARA A PROPOSTA DE PROJETO Nº` na instalação da Vertz), e o `QRMemo` das cláusulas está VAZIO no formulário do QuickReport — o texto vem do banco em tempo de impressão. Escrevê-los no template faria cada empresa que entrar herdar as condições comerciais de outra, e mudar 'prazo de troca de 10 dias' viraria deploy.\n\n**Singleton por empresa, como `GetInstallmentPolicy`:** não há `POST`, não há id. Empresa sem linha lê o padrão do servidor — as cláusulas nascem como marcadores explícitos de pendência, nunca como texto plausível: cláusula comercial inventada por um servidor é a única espécie de dado faltando que sai assinada pelo cliente.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintSettingsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["impressao"],
+        "operationId": "UpdatePrintSettings",
+        "description": "Proposto. Substitui o conjunto INTEIRO — título e a lista de cláusulas. `PUT` de singleton, e cláusula ausente do corpo deixa de existir.\n\nA ordem sai de `order`, não da posição no array: é o que numera as cláusulas na página final sem depender de o cliente mandar a lista ordenada.\n\n400 quando `order` repete, quando `text` é vazio, ou quando `quoteTitle` passa de 200 caracteres — o título é uma linha do cabeçalho, e o que não cabe nela não é aparado em silêncio.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrintSettingsWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-layouts": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "ListLabelLayouts",
+        "description": "Proposto. Os layouts de etiqueta da empresa ativa.\n\n**Por que o layout é dado e não código.** O legado tem uma tela só para isto — `FrmEtiqueta`, *Configuração de Etiquetas* — e 21 layouts gravados em `EtiquetaPronta`. Etiqueta muda com o rolo de papel que a loja comprou, não com a versão do sistema: medida em código faria toda troca de insumo virar release.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `name`, `active`, `isDefault`. Campo fora dela é 400."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfLabelLayoutDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `sortBy` fora da whitelist ou `pageSize` acima de 100.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["impressao"],
+        "operationId": "CreateLabelLayout",
+        "description": "Proposto. Cria um layout. As medidas são em MILÍMETROS porque etiqueta é objeto físico: o `PaperSize = Custom` e o `Page.Columns = 4` do QuickReport são milímetros de papel, e pixel não sobrevive à troca de impressora.\n\n400 quando a grade não cabe na folha — `marginLeftMm + marginRightMm + (columns − 1) × columnGapMm` maior ou igual a `pageWidthMm`, ou `marginTopMm + marginBottomMm + labelHeightMm` maior que `pageHeightMm`. Etiqueta que não cabe imprime cortada, e isso só se descobre no papel, depois do rolo gasto.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelLayoutWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelLayoutDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/label-layouts/{id}": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "GetLabelLayout",
+        "description": "Proposto. Um layout com seus elementos.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelLayoutDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["impressao"],
+        "operationId": "UpdateLabelLayout",
+        "description": "Proposto. Substitui o layout INTEIRO.\n\n**Desativar é `active: false`, não apagar.** Layout usado numa impressão já feita é o que explica a etiqueta que está colada na peça.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelLayoutWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelLayoutDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/labels/products/print": {
+      "get": {
+        "tags": ["impressao"],
+        "operationId": "PrintProductLabels",
+        "description": "Proposto. Folha de etiquetas dos produtos do catálogo, como PDF — o `FrmSelEtiqFornecedor` / *Etiquetas de Produtos Cadastrados* do legado.\n\nAs etiquetas preenchem a grade do layout na ordem em que os produtos saem, coluna a coluna, e `copies` repete cada uma. Sem filtro nenhum, imprime o catálogo inteiro da empresa ativa — o que é um rolo de papel, e por isso `pageSize` do layout é o teto real.\n\n`productIds` e `supplierId` são combináveis com `q`: são um AND, não alternativas.",
+        "parameters": [
+          {
+            "name": "layoutId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "O layout a usar. Obrigatório: não há layout implícito, porque imprimir com o desenho errado gasta o rolo e só se descobre no papel."
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "productIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "description": "Seleção explícita. Vazio quer dizer 'todos os que os outros filtros deixarem'."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "copies",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK — `application/pdf`.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `copies` fora de 1..100, ou `layoutId` que não é layout da empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — o layout não existe na empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13668,7 +14231,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -13808,7 +14371,7 @@
             }
           },
           "suppliers": {
-            "description": "Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1) — de QUEM se compra esta peça, com o código e a descrição que o fornecedor usa. Ver `ProductSupplierDto`.\n\nVem no DETALHE e não em `ProductDto`: é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.\n\n**FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca \"não implementado\" por \"contrato quebrado\" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.",
+            "description": "Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1) — de QUEM se compra esta peça, com o código e a descrição que o fornecedor usa. Ver `ProductSupplierDto`.\n\nVem no detalhe e TAMBÉM em `ProductDto`, que é a resposta de `POST`/`PUT` — sem ela a tela grava e não recebe de volta o que guardou. O que continua valendo é o recorte por USO, não por schema: a LISTAGEM não emite nenhuma das duas, porque grade de FORMULÁRIO em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.\n\n**FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca \"não implementado\" por \"contrato quebrado\" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProductSupplierDto"
@@ -14080,6 +14643,20 @@
               }
             ],
             "description": "Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada."
+          },
+          "suppliers": {
+            "description": "Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1), a MESMA de `ProductDetailDto.suppliers` e com o mesmo item (`ProductSupplierDto`).\n\n**Ela existe aqui pelo OUTRO uso de `ProductDto`, não pela listagem.** `ProductDto` é a resposta de `POST /api/products` e de `PUT /api/products/{id}` além de ser a linha de `PagedResultOfProductDto`, e é a primeira que faltava: a tela que grava o produto recebia de volta um corpo SEM a grade e ficava sem saber o que o servidor guardou — precisaria de um `GET` do detalhe logo depois para reconciliar, e entre os dois a tela mostra um produto sem fornecedor que tem fornecedor.\n\n**A LISTAGEM continua NÃO emitindo, e a razão da #326 continua de pé:** é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra. Ser opcional é o que deixa os dois usos conviverem no mesmo schema — a listagem omite, a resposta da escrita emite.\n\n**FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca \"não implementado\" por \"contrato quebrado\" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade AQUI; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSupplierDto"
+            }
+          },
+          "relatedProducts": {
+            "description": "Proposto. Os produtos relacionados (§6.4) — kit e sugestão na MESMA coleção, porque `quantity` é o que os separa: preenchida = KIT (o item entra no documento junto, nesta quantidade por unidade do pai), nula = SUGESTÃO (a tela oferece, o vendedor decide). Ver `ProductRelatedDto`.\n\nAqui pelo mesmo motivo de `suppliers`: é a resposta de `POST`/`PUT` que precisava dela, não a linha da listagem — que segue sem emitir.\n\nNão há campo de tipo ao lado: enum de dois valores duplicaria o que a quantidade já diz, e duas verdades sobre a mesma coisa divergem na primeira gravação que atualize uma e esqueça a outra.\n\nFora de `required` pelo mesmo motivo de `suppliers`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductRelatedDto"
+            }
           }
         }
       },
@@ -16011,16 +16588,12 @@
             "type": "boolean"
           },
           "roleId": {
-            "description": "`RoleDto.id` do papel atribuído na empresa ativa. `null` quando não há vínculo, e também enquanto o vínculo ainda guarda um dos cinco papéis antigos — aí quem responde é `role` (api#84, fase 3).",
+            "description": "`RoleDto.id` do papel atribuído na empresa ativa — `null` SÓ quando não há vínculo. Era acompanhado de `role`, o identificador antigo da escala fechada, que saiu na fase 3 do api#84: a coluna `employee_company.role` não existe desde a migração `0054` do servidor, e todo vínculo aponta um papel de `GET /api/roles`.",
             "type": ["string", "null"],
             "format": "uuid"
           },
           "roleName": {
             "description": "Nome do papel, resolvido pelo servidor — o mesmo serviço que `sector` e `jobTitle` prestam. A tela imprime isto; sem ele imprimiria uuid ou faria uma busca só para achar o nome de uma linha.",
-            "type": ["string", "null"]
-          },
-          "role": {
-            "description": "Papel de PERMISSÃO na empresa ativa pelo identificador ANTIGO (`employee_company.role`) — não é cargo. `null` quando não há vínculo, e também quando o vínculo já aponta `roleId`. Sai na fase 3 do api#84.",
             "type": ["string", "null"]
           },
           "sectorId": {
@@ -16088,18 +16661,14 @@
         }
       },
       "EmployeeLinkRequest": {
-        "description": "Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).\n\n**O papel entra por `roleId` OU por `role`; se ambos vierem, `roleId` vence** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.",
+        "description": "Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).\n\n**O papel entra por `roleId`, e só por ele.** Até a fase 3 do api#84 havia um segundo caminho — `role`, o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) —, e ele saiu junto com a escala: os cinco viraram linhas de `org_roles` como qualquer papel que o admin monta, e a coluna que guardava o texto não existe mais no servidor. **`roleId` e não o `slug` porque o nome do papel é editável pelo CRUD** — `PUT /api/roles/{id}` renomeia `Vendedor` para `Consultor` sem mover vínculo nenhum, e uma chave que a tela pode reescrever não serve de referência.",
         "required": ["active"],
         "type": "object",
         "properties": {
           "roleId": {
-            "description": "`RoleDto.id` — papel desta organização. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido`.",
+            "description": "`RoleDto.id` — papel desta organização, e o ÚNICO caminho de atribuição. **Obrigatório na prática:** omitir ou mandar `null` é 400 `urn:cabinet:erro:campos-invalidos` com `fields[].path` = `roleId`, porque o vínculo não existe sem papel. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido` — a distinção importa para a tela: o primeiro é campo em branco, o segundo é combo desatualizado.",
             "type": ["string", "null"],
             "format": "uuid"
-          },
-          "role": {
-            "description": "Papel de permissão pelo identificador ANTIGO. Conjunto validado pelo servidor; valor fora dele é 400. Deixa de existir na fase 3 do api#84 — quem já sabe o `roleId` manda `roleId` e omite este.",
-            "type": ["string", "null"]
           },
           "sectorId": {
             "description": "`CatalogLookupDto.id`, kind `SETOR`.",
@@ -22513,6 +23082,242 @@
             "format": "int32"
           }
         }
+      },
+      "TemporaryPasswordDto": {
+        "description": "Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.",
+        "required": ["temporaryPassword"],
+        "type": "object",
+        "properties": {
+          "temporaryPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "PrintClauseDto": {
+        "required": ["order", "text"],
+        "type": "object",
+        "description": "Proposto. Uma cláusula das condições comerciais da última página do orçamento. O legado imprime 12.",
+        "properties": {
+          "order": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Posição na página final. É o que numera; a ordem do array não conta."
+          },
+          "text": {
+            "type": "string",
+            "description": "O texto como sai no papel. Empresa que ainda não configurou lê um marcador de pendência, e não uma cláusula plausível."
+          }
+        }
+      },
+      "PrintSettingsDto": {
+        "required": ["quoteTitle", "clauses"],
+        "type": "object",
+        "description": "Proposto. Os textos configuráveis do impresso, por empresa.",
+        "properties": {
+          "quoteTitle": {
+            "type": "string",
+            "description": "`Par_TituloImpOrcamento` do legado — a linha de título do orçamento impresso."
+          },
+          "clauses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrintClauseDto"
+            }
+          }
+        }
+      },
+      "PrintSettingsWriteRequest": {
+        "required": ["quoteTitle", "clauses"],
+        "type": "object",
+        "description": "Proposto. Corpo de `UpdatePrintSettings`. Substitui os dois campos.",
+        "properties": {
+          "quoteTitle": {
+            "type": "string"
+          },
+          "clauses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrintClauseDto"
+            }
+          }
+        }
+      },
+      "LabelLayoutDto": {
+        "required": [
+          "id",
+          "name",
+          "pageWidthMm",
+          "pageHeightMm",
+          "marginTopMm",
+          "marginBottomMm",
+          "marginLeftMm",
+          "marginRightMm",
+          "columns",
+          "columnGapMm",
+          "labelHeightMm",
+          "barcodeField",
+          "isDefault",
+          "active"
+        ],
+        "type": "object",
+        "description": "Proposto. Um layout de etiqueta da empresa ativa — as MEDIDAS da folha e da etiqueta.\n\n**O que o layout NÃO guarda é o desenho.** O legado tem as duas coisas: `EtiquetaPronta` (medidas) e o trio `Etiquetas` / `Etiquetas_Campos` / `Etiquetas_Textos` (posicionamento livre de cada campo, com x, y, fonte e cor). Medido no dump do legado: `EtiquetaPronta` tem **21 linhas**, e as outras três têm **zero** — o editor de posicionamento existe há seis anos e nunca gravou nada. O que muda na prática é o rolo de papel, não onde o código fica dentro da etiqueta.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "`etq_NomeModelo` do legado. Único na empresa."
+          },
+          "pageWidthMm": {
+            "type": "number",
+            "format": "double",
+            "description": "A folha. Default do legado: 210."
+          },
+          "pageHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "Default do legado: 297."
+          },
+          "marginTopMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginBottomMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginLeftMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginRightMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "columns": {
+            "type": "integer",
+            "format": "int32",
+            "description": "`Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra."
+          },
+          "columnGapMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_EspacoColunas`."
+          },
+          "labelHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração."
+          },
+          "barcodeField": {
+            "type": ["null", "string"],
+            "enum": [null, "code", "barcode"],
+            "description": "`EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LabelLayoutWriteRequest": {
+        "required": [
+          "name",
+          "pageWidthMm",
+          "pageHeightMm",
+          "marginTopMm",
+          "marginBottomMm",
+          "marginLeftMm",
+          "marginRightMm",
+          "columns",
+          "columnGapMm",
+          "labelHeightMm",
+          "barcodeField",
+          "isDefault",
+          "active"
+        ],
+        "type": "object",
+        "description": "Proposto. Corpo de `CreateLabelLayout` e `UpdateLabelLayout`. Substitui o layout inteiro.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "`etq_NomeModelo` do legado. Único na empresa."
+          },
+          "pageWidthMm": {
+            "type": "number",
+            "format": "double",
+            "description": "A folha. Default do legado: 210."
+          },
+          "pageHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "Default do legado: 297."
+          },
+          "marginTopMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginBottomMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginLeftMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "marginRightMm": {
+            "type": "number",
+            "format": "double"
+          },
+          "columns": {
+            "type": "integer",
+            "format": "int32",
+            "description": "`Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra."
+          },
+          "columnGapMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_EspacoColunas`."
+          },
+          "labelHeightMm": {
+            "type": "number",
+            "format": "double",
+            "description": "`etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração."
+          },
+          "barcodeField": {
+            "type": ["null", "string"],
+            "enum": [null, "code", "barcode"],
+            "description": "`EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfLabelLayoutDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelLayoutDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -22564,6 +23369,9 @@
     },
     {
       "name": "comissoes"
+    },
+    {
+      "name": "impressao"
     },
     {
       "name": "financeiro"

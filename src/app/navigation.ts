@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   BookUser,
   Boxes,
+  CalendarClock,
   CalendarDays,
   CircleDollarSign,
   Filter,
@@ -18,6 +19,7 @@ import {
   SquareKanban,
   Store,
   Table2,
+  Truck,
   Users,
 } from 'lucide-react'
 
@@ -312,6 +314,26 @@ export const navSecoes: NavSecao[] = [
             icon: Store,
             descricao: 'O orçamento fechado vira pedido aqui. Se cancela, nunca se apaga.',
           },
+          {
+            /**
+             * O "Quadro de Cargas" DE ENTREGA — não o elétrico.
+             *
+             * No legado o nome é de dois lugares: `RltQuadroCargas` (item 230)
+             * é dimensionamento ELÉTRICO por ambiente, e depende de consumo e
+             * tensão que o contrato não publica. Este item é o outro: o
+             * agrupamento de pedidos para entrega, leitura sobre os dados do G4
+             * (`api#164`). O dia em que a elétrica for construída, ela entra com
+             * nome próprio — herdar este slot faria uma sumir dentro da outra.
+             *
+             * Fica DEPOIS do pedido porque a carga é o que vem depois dele: a
+             * ordem da barra é a do fluxo, e nada entra na fila antes de existir
+             * documento.
+             */
+            title: 'Quadro de Cargas',
+            url: '/vendas/cargas',
+            icon: Truck,
+            descricao: 'O que está liberado e ainda não saiu do galpão, por pedido.',
+          },
         ],
       },
     ],
@@ -439,6 +461,20 @@ export const navSecoes: NavSecao[] = [
                 incluir: '/compras/pedidos/novo',
                 icon: ShoppingCart,
                 descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
+              },
+              {
+                /**
+                 * CONSULTA, não cadastro: não tem `incluir` porque não há o que
+                 * incluir — ela lê ordens ENVIADAS de vários documentos. É a
+                 * terceira filha do grupo e não uma aba da ordem de compra: a
+                 * pergunta que ela responde ("o que chega esta semana, e o que
+                 * está atrasado") não é sobre UM documento.
+                 */
+                title: 'Previsão de Chegada',
+                url: '/compras/previsao',
+                icon: CalendarClock,
+                descricao:
+                  'O que já foi enviado e ainda não chegou, com o atraso contra a promessa.',
               },
             ],
           },
@@ -640,8 +676,7 @@ export const navSecoes: NavSecao[] = [
             title: 'Usuários e Empresas',
             url: '/config/usuarios',
             icon: Settings,
-            descricao: 'Ainda não existe. Quem entra, em qual empresa, com qual acesso.',
-            futuro: true,
+            descricao: 'Quem entra, com qual papel — e a senha provisória do primeiro acesso.',
           },
         ],
       },

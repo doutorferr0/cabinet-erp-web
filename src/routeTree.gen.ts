@@ -23,11 +23,14 @@ import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
 import { Route as ComprasIndexRouteImport } from './routes/compras/index'
+import { Route as ComprasPrevisaoRouteImport } from './routes/compras/previsao'
 import { Route as ConfigIndexRouteImport } from './routes/config/index'
+import { Route as ConfigUsuariosRouteImport } from './routes/config/usuarios'
 import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
+import { Route as VendasCargasRouteImport } from './routes/vendas/cargas'
 import { Route as CadastrosClientesIndexRouteImport } from './routes/cadastros/clientes/index'
 import { Route as CadastrosClientesClienteIdRouteImport } from './routes/cadastros/clientes/$clienteId'
 import { Route as CadastrosColaboradoresIndexRouteImport } from './routes/cadastros/colaboradores/index'
@@ -122,9 +125,19 @@ const ComprasIndexRoute = ComprasIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ComprasRoute,
 } as any)
+const ComprasPrevisaoRoute = ComprasPrevisaoRouteImport.update({
+  id: '/previsao',
+  path: '/previsao',
+  getParentRoute: () => ComprasRoute,
+} as any)
 const ConfigIndexRoute = ConfigIndexRouteImport.update({
   id: '/config/',
   path: '/config/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfigUsuariosRoute = ConfigUsuariosRouteImport.update({
+  id: '/config/usuarios',
+  path: '/config/usuarios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmMotivosRoute = CrmMotivosRouteImport.update({
@@ -145,6 +158,11 @@ const EstoqueMovimentacaoRoute = EstoqueMovimentacaoRouteImport.update({
 const VendasIndexRoute = VendasIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => VendasRoute,
+} as any)
+const VendasCargasRoute = VendasCargasRouteImport.update({
+  id: '/cargas',
+  path: '/cargas',
   getParentRoute: () => VendasRoute,
 } as any)
 const CadastrosClientesIndexRoute = CadastrosClientesIndexRouteImport.update({
@@ -286,8 +304,11 @@ export interface FileRoutesByFullPath {
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
+  '/compras/previsao': typeof ComprasPrevisaoRoute
+  '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/cargas': typeof VendasCargasRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
@@ -326,8 +347,11 @@ export interface FileRoutesByTo {
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
+  '/compras/previsao': typeof ComprasPrevisaoRoute
+  '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/cargas': typeof VendasCargasRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/config': typeof ConfigIndexRoute
@@ -371,8 +395,11 @@ export interface FileRoutesById {
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
+  '/compras/previsao': typeof ComprasPrevisaoRoute
+  '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/cargas': typeof VendasCargasRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
@@ -417,8 +444,11 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
+    | '/compras/previsao'
+    | '/config/usuarios'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/cargas'
     | '/cadastros/'
     | '/compras/'
     | '/config/'
@@ -457,8 +487,11 @@ export interface FileRouteTypes {
     | '/planner'
     | '/tarefas'
     | '/trocar-senha'
+    | '/compras/previsao'
+    | '/config/usuarios'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/cargas'
     | '/cadastros'
     | '/compras'
     | '/config'
@@ -501,8 +534,11 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
+    | '/compras/previsao'
+    | '/config/usuarios'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/cargas'
     | '/cadastros/'
     | '/compras/'
     | '/config/'
@@ -546,6 +582,7 @@ export interface RootRouteChildren {
   TarefasRoute: typeof TarefasRoute
   TrocarSenhaRoute: typeof TrocarSenhaRoute
   VendasRoute: typeof VendasRouteWithChildren
+  ConfigUsuariosRoute: typeof ConfigUsuariosRoute
   ConfigIndexRoute: typeof ConfigIndexRoute
 }
 
@@ -649,11 +686,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComprasIndexRouteImport
       parentRoute: typeof ComprasRoute
     }
+    '/compras/previsao': {
+      id: '/compras/previsao'
+      path: '/previsao'
+      fullPath: '/compras/previsao'
+      preLoaderRoute: typeof ComprasPrevisaoRouteImport
+      parentRoute: typeof ComprasRoute
+    }
     '/config/': {
       id: '/config/'
       path: '/config'
       fullPath: '/config/'
       preLoaderRoute: typeof ConfigIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/config/usuarios': {
+      id: '/config/usuarios'
+      path: '/config/usuarios'
+      fullPath: '/config/usuarios'
+      preLoaderRoute: typeof ConfigUsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm/motivos': {
@@ -682,6 +733,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/vendas/'
       preLoaderRoute: typeof VendasIndexRouteImport
+      parentRoute: typeof VendasRoute
+    }
+    '/vendas/cargas': {
+      id: '/vendas/cargas'
+      path: '/cargas'
+      fullPath: '/vendas/cargas'
+      preLoaderRoute: typeof VendasCargasRouteImport
       parentRoute: typeof VendasRoute
     }
     '/cadastros/clientes/': {
@@ -884,6 +942,7 @@ const CadastrosRouteWithChildren = CadastrosRoute._addFileChildren(
 )
 
 interface ComprasRouteChildren {
+  ComprasPrevisaoRoute: typeof ComprasPrevisaoRoute
   ComprasIndexRoute: typeof ComprasIndexRoute
   ComprasOrdensOrdemIdRoute: typeof ComprasOrdensOrdemIdRoute
   ComprasPedidosPedidoIdRoute: typeof ComprasPedidosPedidoIdRoute
@@ -892,6 +951,7 @@ interface ComprasRouteChildren {
 }
 
 const ComprasRouteChildren: ComprasRouteChildren = {
+  ComprasPrevisaoRoute: ComprasPrevisaoRoute,
   ComprasIndexRoute: ComprasIndexRoute,
   ComprasOrdensOrdemIdRoute: ComprasOrdensOrdemIdRoute,
   ComprasPedidosPedidoIdRoute: ComprasPedidosPedidoIdRoute,
@@ -936,6 +996,7 @@ const EstoqueRouteWithChildren =
   EstoqueRoute._addFileChildren(EstoqueRouteChildren)
 
 interface VendasRouteChildren {
+  VendasCargasRoute: typeof VendasCargasRoute
   VendasIndexRoute: typeof VendasIndexRoute
   VendasOrcamentosOrcamentoIdRoute: typeof VendasOrcamentosOrcamentoIdRoute
   VendasPedidosPedidoIdRoute: typeof VendasPedidosPedidoIdRoute
@@ -944,6 +1005,7 @@ interface VendasRouteChildren {
 }
 
 const VendasRouteChildren: VendasRouteChildren = {
+  VendasCargasRoute: VendasCargasRoute,
   VendasIndexRoute: VendasIndexRoute,
   VendasOrcamentosOrcamentoIdRoute: VendasOrcamentosOrcamentoIdRoute,
   VendasPedidosPedidoIdRoute: VendasPedidosPedidoIdRoute,
@@ -967,6 +1029,7 @@ const rootRouteChildren: RootRouteChildren = {
   TarefasRoute: TarefasRoute,
   TrocarSenhaRoute: TrocarSenhaRoute,
   VendasRoute: VendasRouteWithChildren,
+  ConfigUsuariosRoute: ConfigUsuariosRoute,
   ConfigIndexRoute: ConfigIndexRoute,
 }
 export const routeTree = rootRouteImport

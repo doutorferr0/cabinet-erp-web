@@ -79,6 +79,16 @@ export const TIPO = {
   itemJaEmOrdem: 'urn:cabinet:erro:item-ja-em-ordem',
   ordemJaEnviada: 'urn:cabinet:erro:ordem-ja-enviada',
   fornecedorDivergente: 'urn:cabinet:erro:fornecedor-divergente',
+  // A escada FÍSICA da venda (G4). SEIS, e não uma: cada uma tem uma saída
+  // diferente na tela — corrigir a quantidade, liberar antes, separar antes,
+  // abrir outro romaneio, cancelar em vez de fechar, trocar o romaneio. Um 409
+  // genérico em cima delas devolveria à tela o que o status já disse.
+  liberacaoAcimaDoVendido: 'urn:cabinet:erro:liberacao-acima-do-vendido',
+  separacaoSemLiberacao: 'urn:cabinet:erro:separacao-sem-liberacao',
+  entregaSemSeparacao: 'urn:cabinet:erro:entrega-sem-separacao',
+  entregaFechada: 'urn:cabinet:erro:entrega-fechada',
+  entregaVazia: 'urn:cabinet:erro:entrega-vazia',
+  entregaDeOutroPedido: 'urn:cabinet:erro:entrega-de-outro-pedido',
 } as const satisfies Record<string, ProblemType>
 
 /**

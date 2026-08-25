@@ -511,6 +511,59 @@ export interface ProductSpecs {
   packageDimensions?: null | ProductDimensions;
 }
 
+/**
+ * Proposto. Uma linha da grade de fornecedores do produto (§6.1). O par código/descrição é o do FORNECEDOR — o que ele imprime no catálogo dele —, e é o que a linha do documento de compra carimba.
+ *
+ * O carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.
+ *
+ * **A ESCRITA não está publicada, e a ausência é deliberada.** O `PUT` do produto substitui o registro inteiro; publicar `suppliers` em `ProductWriteRequest` antes de a aba existir faria a primeira gravação da tela de produto APAGAR uma grade que o operador nunca viu. Ela entra junto com a aba.
+ */
+export interface ProductSupplierDto {
+  /** Id da LINHA da grade — não do fornecedor. É ele que distingue duas linhas do mesmo fornecedor enquanto a tela edita. */
+  id: string;
+  /** O PARCEIRO de papel fornecedor (`PartnerDto.id`, o mesmo id que `GET /api/partners?role=supplier` devolve) — não um id de `catalog-lookups`. Uuid não diz o alvo sozinho, e apontar para a lista errada só apareceria na tela, em branco. */
+  supplierId: string;
+  /** Razão social do fornecedor, para exibição — o mesmo par id×nome de `productTypeId`/`productTypeName`. Não é escrita: a grade grava o id. */
+  supplierName: string;
+  /**
+     * `Cód. Prod. Fornecedor` (§6.1) — o código desta peça no catálogo de quem vende. `null` quando o fornecedor não tem código próprio.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /**
+     * `Descrição Fornecedor` (§6.1) — como a peça se chama no catálogo dele, que raramente é como ela se chama aqui.
+     * @nullable
+     */
+  supplierDescription?: string | null;
+  /** `Padrão` (§6.1): o fornecedor que o documento carimba sem perguntar. No máximo UM por produto, e só o ATIVO conta — padrão desativado carimbaria quem não se compra mais, e desativar é justamente o gesto de parar de comprar dele. */
+  isDefault: boolean;
+  /** `Ativo` — desativação lógica da linha (§9). Fornecedor que saiu não some da grade: perde o `Ativo`, e os documentos antigos continuam explicáveis. */
+  active: boolean;
+}
+
+/**
+ * Proposto. Uma linha da grade de produtos relacionados (§6.4) — o kit que sai junto ou a sugestão que a tela oferece.
+ */
+export interface ProductRelatedDto {
+  /** Id da LINHA da grade. */
+  id: string;
+  /** O OUTRO produto (`ProductDto.id`), nunca o próprio: kit de si mesmo é recursão infinita, e a escrita recusa com 400 dizendo qual linha. */
+  relatedProductId: string;
+  /** Código do produto relacionado, para exibição — a grade mostra código e descrição, e sem eles a tela teria de buscar cada item para desenhar uma linha. */
+  relatedProductCode: string;
+  /** Descrição do produto relacionado, para exibição. */
+  relatedProductDescription: string;
+  /**
+     * Decimal em string, até 3 casas — a mesma regra de `unitInQty`, pelo mesmo motivo (float perde centésimo).
+     *
+     * **É o DISCRIMINADOR:** preenchida = kit, `null` = sugestão. Zero e negativo o servidor recusa, e o `0` é o que engana — um kit "de zero unidades" passa na tela e leva nada para o documento.
+     * @nullable
+     */
+  quantity?: string | null;
+  /** A ordem em que a grade mostra. É do DADO e não da tela: o operador arruma a lista uma vez e ela abre igual para o próximo. */
+  sortOrder: number;
+}
+
 export interface ProductDto {
   id: string;
   code: string;
@@ -578,6 +631,26 @@ export interface ProductDto {
   factoryName?: string | null;
   /** Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada. */
   specs?: null | ProductSpecs;
+  /**
+     * Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1), a MESMA de `ProductDetailDto.suppliers` e com o mesmo item (`ProductSupplierDto`).
+     *
+     * **Ela existe aqui pelo OUTRO uso de `ProductDto`, não pela listagem.** `ProductDto` é a resposta de `POST /api/products` e de `PUT /api/products/{id}` além de ser a linha de `PagedResultOfProductDto`, e é a primeira que faltava: a tela que grava o produto recebia de volta um corpo SEM a grade e ficava sem saber o que o servidor guardou — precisaria de um `GET` do detalhe logo depois para reconciliar, e entre os dois a tela mostra um produto sem fornecedor que tem fornecedor.
+     *
+     * **A LISTAGEM continua NÃO emitindo, e a razão da #326 continua de pé:** é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra. Ser opcional é o que deixa os dois usos conviverem no mesmo schema — a listagem omite, a resposta da escrita emite.
+     *
+     * **FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca "não implementado" por "contrato quebrado" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade AQUI; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.
+     */
+  suppliers?: ProductSupplierDto[];
+  /**
+     * Proposto. Os produtos relacionados (§6.4) — kit e sugestão na MESMA coleção, porque `quantity` é o que os separa: preenchida = KIT (o item entra no documento junto, nesta quantidade por unidade do pai), nula = SUGESTÃO (a tela oferece, o vendedor decide). Ver `ProductRelatedDto`.
+     *
+     * Aqui pelo mesmo motivo de `suppliers`: é a resposta de `POST`/`PUT` que precisava dela, não a linha da listagem — que segue sem emitir.
+     *
+     * Não há campo de tipo ao lado: enum de dois valores duplicaria o que a quantidade já diz, e duas verdades sobre a mesma coisa divergem na primeira gravação que atualize uma e esqueça a outra.
+     *
+     * Fora de `required` pelo mesmo motivo de `suppliers`.
+     */
+  relatedProducts?: ProductRelatedDto[];
 }
 
 export interface PagedResultOfProductDto {
@@ -948,7 +1021,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |
  * | `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |
  * | `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |
- * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o papel pedido no vínculo não existe: `roleId` que não é papel desta organização, papel inativo, ou `role` fora dos cinco antigos. Enquanto a conversão do api#84 não termina, os dois caminhos de atribuição respondem por esta URN |
+ * | `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
@@ -1105,59 +1178,6 @@ export interface ProductVariantDto {
   minStock: number | null;
 }
 
-/**
- * Proposto. Uma linha da grade de fornecedores do produto (§6.1). O par código/descrição é o do FORNECEDOR — o que ele imprime no catálogo dele —, e é o que a linha do documento de compra carimba.
- *
- * O carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.
- *
- * **A ESCRITA não está publicada, e a ausência é deliberada.** O `PUT` do produto substitui o registro inteiro; publicar `suppliers` em `ProductWriteRequest` antes de a aba existir faria a primeira gravação da tela de produto APAGAR uma grade que o operador nunca viu. Ela entra junto com a aba.
- */
-export interface ProductSupplierDto {
-  /** Id da LINHA da grade — não do fornecedor. É ele que distingue duas linhas do mesmo fornecedor enquanto a tela edita. */
-  id: string;
-  /** O PARCEIRO de papel fornecedor (`PartnerDto.id`, o mesmo id que `GET /api/partners?role=supplier` devolve) — não um id de `catalog-lookups`. Uuid não diz o alvo sozinho, e apontar para a lista errada só apareceria na tela, em branco. */
-  supplierId: string;
-  /** Razão social do fornecedor, para exibição — o mesmo par id×nome de `productTypeId`/`productTypeName`. Não é escrita: a grade grava o id. */
-  supplierName: string;
-  /**
-     * `Cód. Prod. Fornecedor` (§6.1) — o código desta peça no catálogo de quem vende. `null` quando o fornecedor não tem código próprio.
-     * @nullable
-     */
-  supplierCode?: string | null;
-  /**
-     * `Descrição Fornecedor` (§6.1) — como a peça se chama no catálogo dele, que raramente é como ela se chama aqui.
-     * @nullable
-     */
-  supplierDescription?: string | null;
-  /** `Padrão` (§6.1): o fornecedor que o documento carimba sem perguntar. No máximo UM por produto, e só o ATIVO conta — padrão desativado carimbaria quem não se compra mais, e desativar é justamente o gesto de parar de comprar dele. */
-  isDefault: boolean;
-  /** `Ativo` — desativação lógica da linha (§9). Fornecedor que saiu não some da grade: perde o `Ativo`, e os documentos antigos continuam explicáveis. */
-  active: boolean;
-}
-
-/**
- * Proposto. Uma linha da grade de produtos relacionados (§6.4) — o kit que sai junto ou a sugestão que a tela oferece.
- */
-export interface ProductRelatedDto {
-  /** Id da LINHA da grade. */
-  id: string;
-  /** O OUTRO produto (`ProductDto.id`), nunca o próprio: kit de si mesmo é recursão infinita, e a escrita recusa com 400 dizendo qual linha. */
-  relatedProductId: string;
-  /** Código do produto relacionado, para exibição — a grade mostra código e descrição, e sem eles a tela teria de buscar cada item para desenhar uma linha. */
-  relatedProductCode: string;
-  /** Descrição do produto relacionado, para exibição. */
-  relatedProductDescription: string;
-  /**
-     * Decimal em string, até 3 casas — a mesma regra de `unitInQty`, pelo mesmo motivo (float perde centésimo).
-     *
-     * **É o DISCRIMINADOR:** preenchida = kit, `null` = sugestão. Zero e negativo o servidor recusa, e o `0` é o que engana — um kit "de zero unidades" passa na tela e leva nada para o documento.
-     * @nullable
-     */
-  quantity?: string | null;
-  /** A ordem em que a grade mostra. É do DADO e não da tela: o operador arruma a lista uma vez e ela abre igual para o próximo. */
-  sortOrder: number;
-}
-
 export interface ProductDetailDto {
   id: string;
   code: string;
@@ -1229,7 +1249,7 @@ export interface ProductDetailDto {
   /**
      * Proposto. A grade multi-fornecedor da aba `Dados Principais` (§6.1) — de QUEM se compra esta peça, com o código e a descrição que o fornecedor usa. Ver `ProductSupplierDto`.
      *
-     * Vem no DETALHE e não em `ProductDto`: é grade de FORMULÁRIO, e servi-la em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.
+     * Vem no detalhe e TAMBÉM em `ProductDto`, que é a resposta de `POST`/`PUT` — sem ela a tela grava e não recebe de volta o que guardou. O que continua valendo é o recorte por USO, não por schema: a LISTAGEM não emite nenhuma das duas, porque grade de FORMULÁRIO em cada linha de uma página de 50 produtos custaria dois JOINs por linha para uma coluna que a listagem não mostra.
      *
      * **FORA de `required`, e isso é regra desta fila e não descuido:** campo obrigatório em resposta que servidor nenhum emite ainda troca "não implementado" por "contrato quebrado" — 500 em rota que ninguém tocou, o preço já pago duas vezes (`paymentInstallments`, `serviceItems`). Ausente = o servidor não serve a grade; `[]` = o produto não tem fornecedor cadastrado. São coisas diferentes, e a tela precisa distinguir as duas.
      */
@@ -2822,7 +2842,7 @@ export interface EmployeeDetailDto {
   /** Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo. */
   active: boolean;
   /**
-     * `RoleDto.id` do papel atribuído na empresa ativa. `null` quando não há vínculo, e também enquanto o vínculo ainda guarda um dos cinco papéis antigos — aí quem responde é `role` (api#84, fase 3).
+     * `RoleDto.id` do papel atribuído na empresa ativa — `null` SÓ quando não há vínculo. Era acompanhado de `role`, o identificador antigo da escala fechada, que saiu na fase 3 do api#84: a coluna `employee_company.role` não existe desde a migração `0054` do servidor, e todo vínculo aponta um papel de `GET /api/roles`.
      * @nullable
      */
   roleId?: string | null;
@@ -2831,11 +2851,6 @@ export interface EmployeeDetailDto {
      * @nullable
      */
   roleName?: string | null;
-  /**
-     * Papel de PERMISSÃO na empresa ativa pelo identificador ANTIGO (`employee_company.role`) — não é cargo. `null` quando não há vínculo, e também quando o vínculo já aponta `roleId`. Sai na fase 3 do api#84.
-     * @nullable
-     */
-  role?: string | null;
   /**
      * Setor na empresa ativa — `CatalogLookupDto.id`, kind `SETOR`.
      * @nullable
@@ -2901,19 +2916,14 @@ export interface EmployeeWriteRequest {
 /**
  * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
  *
- * **O papel entra por `roleId` OU por `role`; se ambos vierem, `roleId` vence** — nenhum dos dois é 400 `urn:cabinet:erro:campos-invalidos`. São os dois lados da conversão do api#84: `role` é o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) e `roleId` aponta um papel de `GET /api/roles`. Enquanto a fase 3 não converte os cinco em papéis de fábrica, o servidor aceita os dois caminhos; quando converter, `role` sai daqui por PR neste repositório e some sozinho do cliente gerado.
+ * **O papel entra por `roleId`, e só por ele.** Até a fase 3 do api#84 havia um segundo caminho — `role`, o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) —, e ele saiu junto com a escala: os cinco viraram linhas de `org_roles` como qualquer papel que o admin monta, e a coluna que guardava o texto não existe mais no servidor. **`roleId` e não o `slug` porque o nome do papel é editável pelo CRUD** — `PUT /api/roles/{id}` renomeia `Vendedor` para `Consultor` sem mover vínculo nenhum, e uma chave que a tela pode reescrever não serve de referência.
  */
 export interface EmployeeLinkRequest {
   /**
-     * `RoleDto.id` — papel desta organização. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido`.
+     * `RoleDto.id` — papel desta organização, e o ÚNICO caminho de atribuição. **Obrigatório na prática:** omitir ou mandar `null` é 400 `urn:cabinet:erro:campos-invalidos` com `fields[].path` = `roleId`, porque o vínculo não existe sem papel. Papel inexistente, de outra organização ou inativo é 400 `urn:cabinet:erro:papel-invalido` — a distinção importa para a tela: o primeiro é campo em branco, o segundo é combo desatualizado.
      * @nullable
      */
   roleId?: string | null;
-  /**
-     * Papel de permissão pelo identificador ANTIGO. Conjunto validado pelo servidor; valor fora dele é 400. Deixa de existir na fase 3 do api#84 — quem já sabe o `roleId` manda `roleId` e omite este.
-     * @nullable
-     */
-  role?: string | null;
   /**
      * `CatalogLookupDto.id`, kind `SETOR`.
      * @nullable
@@ -7593,6 +7603,132 @@ export interface PagedResultOfPaymentModeDto {
 }
 
 /**
+ * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
+ */
+export interface TemporaryPasswordDto {
+  temporaryPassword: string;
+}
+
+/**
+ * Proposto. Uma cláusula das condições comerciais da última página do orçamento. O legado imprime 12.
+ */
+export interface PrintClauseDto {
+  /** Posição na página final. É o que numera; a ordem do array não conta. */
+  order: number;
+  /** O texto como sai no papel. Empresa que ainda não configurou lê um marcador de pendência, e não uma cláusula plausível. */
+  text: string;
+}
+
+/**
+ * Proposto. Os textos configuráveis do impresso, por empresa.
+ */
+export interface PrintSettingsDto {
+  /** `Par_TituloImpOrcamento` do legado — a linha de título do orçamento impresso. */
+  quoteTitle: string;
+  clauses: PrintClauseDto[];
+}
+
+/**
+ * Proposto. Corpo de `UpdatePrintSettings`. Substitui os dois campos.
+ */
+export interface PrintSettingsWriteRequest {
+  quoteTitle: string;
+  clauses: PrintClauseDto[];
+}
+
+/**
+ * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+ * @nullable
+ */
+export type LabelLayoutDtoBarcodeField = typeof LabelLayoutDtoBarcodeField[keyof typeof LabelLayoutDtoBarcodeField] | null;
+
+
+export const LabelLayoutDtoBarcodeField = {
+  code: 'code',
+  barcode: 'barcode',
+} as const;
+
+/**
+ * Proposto. Um layout de etiqueta da empresa ativa — as MEDIDAS da folha e da etiqueta.
+ *
+ * **O que o layout NÃO guarda é o desenho.** O legado tem as duas coisas: `EtiquetaPronta` (medidas) e o trio `Etiquetas` / `Etiquetas_Campos` / `Etiquetas_Textos` (posicionamento livre de cada campo, com x, y, fonte e cor). Medido no dump do legado: `EtiquetaPronta` tem **21 linhas**, e as outras três têm **zero** — o editor de posicionamento existe há seis anos e nunca gravou nada. O que muda na prática é o rolo de papel, não onde o código fica dentro da etiqueta.
+ */
+export interface LabelLayoutDto {
+  id: string;
+  /** `etq_NomeModelo` do legado. Único na empresa. */
+  name: string;
+  /** A folha. Default do legado: 210. */
+  pageWidthMm: number;
+  /** Default do legado: 297. */
+  pageHeightMm: number;
+  marginTopMm: number;
+  marginBottomMm: number;
+  marginLeftMm: number;
+  marginRightMm: number;
+  /** `Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra. */
+  columns: number;
+  /** `etq_EspacoColunas`. */
+  columnGapMm: number;
+  /** `etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração. */
+  labelHeightMm: number;
+  /**
+     * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+     * @nullable
+     */
+  barcodeField: LabelLayoutDtoBarcodeField;
+  /** Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo. */
+  isDefault: boolean;
+  active: boolean;
+}
+
+/**
+ * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+ * @nullable
+ */
+export type LabelLayoutWriteRequestBarcodeField = typeof LabelLayoutWriteRequestBarcodeField[keyof typeof LabelLayoutWriteRequestBarcodeField] | null;
+
+
+export const LabelLayoutWriteRequestBarcodeField = {
+  code: 'code',
+  barcode: 'barcode',
+} as const;
+
+/**
+ * Proposto. Corpo de `CreateLabelLayout` e `UpdateLabelLayout`. Substitui o layout inteiro.
+ */
+export interface LabelLayoutWriteRequest {
+  /** `etq_NomeModelo` do legado. Único na empresa. */
+  name: string;
+  /** A folha. Default do legado: 210. */
+  pageWidthMm: number;
+  /** Default do legado: 297. */
+  pageHeightMm: number;
+  marginTopMm: number;
+  marginBottomMm: number;
+  marginLeftMm: number;
+  marginRightMm: number;
+  /** `Page.Columns` do QuickReport — 4 na etiqueta de produto da Vertz. A LARGURA de cada etiqueta é DERIVADA, não guardada: `(pageWidthMm − marginLeftMm − marginRightMm − (columns − 1) × columnGapMm) / columns`. É como o legado faz, e guardar as duas coisas deixaria a folha inconsistente com a etiqueta no dia em que uma mudasse sem a outra. */
+  columns: number;
+  /** `etq_EspacoColunas`. */
+  columnGapMm: number;
+  /** `etq_AlturaColunas` — a altura de UMA etiqueta. Quantas cabem na folha é divisão, não configuração. */
+  labelHeightMm: number;
+  /**
+     * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
+     * @nullable
+     */
+  barcodeField: LabelLayoutWriteRequestBarcodeField;
+  /** Um por empresa. Marcar outro desmarca o anterior — é troca, não acúmulo. */
+  isDefault: boolean;
+  active: boolean;
+}
+
+export interface PagedResultOfLabelLayoutDto {
+  rows: LabelLayoutDto[];
+  total: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -8959,5 +9095,33 @@ active?: boolean;
  * `true` traz só os que servem para QUITAR — é o recorte que o combo da baixa usa.
  */
 usableInSettlement?: boolean;
+};
+
+export type ListLabelLayoutsParams = {
+q?: string;
+/**
+ * Whitelist: `name`, `active`, `isDefault`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type PrintProductLabelsParams = {
+/**
+ * O layout a usar. Obrigatório: não há layout implícito, porque imprimir com o desenho errado gasta o rolo e só se descobre no papel.
+ */
+layoutId: string;
+supplierId?: string;
+/**
+ * Seleção explícita. Vazio quer dizer 'todos os que os outros filtros deixarem'.
+ */
+productIds?: string[];
+q?: string;
+/**
+ * Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro.
+ */
+copies?: number;
 };
 

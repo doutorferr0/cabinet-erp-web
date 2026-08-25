@@ -12,10 +12,11 @@ import {
   updateQuote,
 } from '@/api/gerado'
 import type { PaymentTermWriteRequest, QuoteWriteRequest } from '@/api/gerado'
+import { idDeApoio } from '@/mocks/lookups'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
+import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
 
 /**
  * O MOCK DO PAGAMENTO — condição, política e o bloco do documento (contrato S4).
@@ -215,16 +216,17 @@ describe('o corpo da condição recusa em voz alta', () => {
 /**
  * O AJUSTE POR GRUPO DE PRODUTO — `Forma_PagamentoGrupProd` do legado.
  *
- * Os ids de grupo são escritos CRUS aqui, e não colhidos de `catalog-lookups`,
- * porque o kind `GRUPO_PRODUTO` ainda não existe lá — mesma saída que
- * `compras.test.ts` tomou para o mínimo por grupo do fornecedor. É por isso que
- * a quinta recusa do contrato (grupo inexistente) não tem caso: ela não é
- * exercitável enquanto não houver catálogo, e caso que passa por falta de dado é
- * pior que caso nenhum.
+ * **Os ids saem do CATÁLOGO, e é o que mudou.** Eles eram uuids escritos crus
+ * aqui porque o kind `GRUPO_PRODUTO` não existia em `catalog-lookups` — mesma
+ * saída que `compras.test.ts` tinha tomado para o mínimo por grupo do
+ * fornecedor. Com o kind servido, `idDeApoio` devolve o id de verdade e a quinta
+ * recusa do contrato (grupo inexistente ou inativo) ganhou caso: ela não era
+ * exercitável sem catálogo, e caso que passa por falta de dado é pior que caso
+ * nenhum.
  */
 describe('o ajuste por GRUPO DE PRODUTO', () => {
-  const PENDENTES = '11111111-1111-4111-8111-111111111111'
-  const ARANDELAS = '22222222-2222-4222-8222-222222222222'
+  const PENDENTES = idDeApoio('GRUPO_PRODUTO', 'PENDENTES') as string
+  const ARANDELAS = idDeApoio('GRUPO_PRODUTO', 'ARANDELAS') as string
 
   /** A condição de `EM_DOIS` com ajustes por grupo pendurados. */
   function comAjustes(
@@ -360,6 +362,58 @@ describe('o ajuste por GRUPO DE PRODUTO', () => {
     expect(apagada.status).toBe(200)
     if (apagada.status !== 200) return
     expect(apagada.data.groupAdjustments).toEqual([])
+  })
+
+  // A QUINTA RECUSA, e a razão de ela nascer com dois casos: "não existe" e
+  // "existe e está inativo" chegam ao mesmo 400, mas por caminhos diferentes —
+  // um erra o id, o outro aponta para uma lista aposentada. Cobrir só o primeiro
+  // deixaria a segunda metade viva sem ninguém medir, e é justamente ela que
+  // acontece na operação de verdade.
+  it('grupo que não existe é 400 no campo, e não uma condição apontando para nada', async () => {
+    await entrar()
+    const r = await createPaymentTerm(
+      comAjustes([
+        {
+          productGroupId: '99999999-9999-4999-8999-999999999999',
+          discountPercent: 50_000,
+          surchargePercent: 0,
+        },
+      ]),
+    )
+
+    expect(r.status).toBe(400)
+    if (r.status !== 400) return
+    expect(r.data.fields?.some((f) => f.path === 'groupAdjustments[0].productGroupId')).toBe(true)
+  })
+
+  it('lookup de OUTRO kind é 400 — grupo de produto não é qualquer lista de apoio', async () => {
+    await entrar()
+    // O id EXISTE em `catalog-lookups`, então uma conferência que só perguntasse
+    // "está no catálogo?" aceitaria: o desconto do grupo iria para uma marca, e
+    // nenhuma linha de documento casaria com ele.
+    const marca = idDeApoio('MARCA', 'EVOLED') as string
+    const r = await createPaymentTerm(
+      comAjustes([{ productGroupId: marca, discountPercent: 50_000, surchargePercent: 0 }]),
+    )
+
+    expect(r.status).toBe(400)
+    if (r.status !== 400) return
+    expect(r.data.fields?.some((f) => f.path === 'groupAdjustments[0].productGroupId')).toBe(true)
+  })
+
+  it('grupo DESATIVADO é 400 — o ajuste aponta para lista que o combo não oferece', async () => {
+    await entrar()
+    const grupo = store.lookups.find((l) => l.id === PENDENTES)
+    if (!grupo) throw new Error('o catálogo perdeu o grupo de produto')
+    grupo.active = false
+
+    const r = await createPaymentTerm(
+      comAjustes([{ productGroupId: PENDENTES, discountPercent: 50_000, surchargePercent: 0 }]),
+    )
+
+    expect(r.status).toBe(400)
+    if (r.status !== 400) return
+    expect(r.data.fields?.some((f) => f.path === 'groupAdjustments[0].productGroupId')).toBe(true)
   })
 })
 

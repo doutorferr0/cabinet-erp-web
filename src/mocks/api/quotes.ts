@@ -121,9 +121,6 @@ interface OrcamentoGuardado extends Orcamento {
   canceladoEm: string | null
   motivoCancelamentoId: string | null
   notaCancelamento: string | null
-  /** A REVISÃO (G13): 1 no original, e o id do anterior em cada revisão. */
-  revisao: number
-  revisaoDeId: string | null
 }
 
 interface Estado {
@@ -401,6 +398,12 @@ function detalheDto(o: OrcamentoGuardado): QuoteDetailDto {
     // cancelamento, que é decisão que ninguém tomou.
     cancelReasonName: nomeDeApoio(o.motivoCancelamentoId),
     cancelNote: o.notaCancelamento,
+    // RESOLVIDO na leitura, como `workName` e `cancelReasonName` — e por isso
+    // o `revisaoDeNumero` que `Orcamento` declara NÃO é lido daqui: o estado
+    // guarda o elo (`revisaoDeId`), e o número é o do documento como ele está
+    // agora. Guardar o número junto o congelaria no dia da revisão, e uma
+    // renumeração deixaria a folha apontando para um documento que mudou de
+    // nome.
     revisionOfNumber: estado.linhas.find((l) => l.id === o.revisaoDeId)?.numero ?? null,
     salespersonId: o.consultorId,
     salespersonName: o.consultor,
@@ -886,6 +889,11 @@ function vazio(): Orcamento {
     profissionalId: null,
     profissionalExterno: null,
     cancelado: false,
+    // O documento em branco é o original de si mesmo — a revisão só nasce
+    // por `POST .../revise`, nunca de um `vazio()`.
+    revisao: 1,
+    revisaoDeId: null,
+    revisaoDeNumero: null,
     modoDesconto: 'PRODUTO',
     descontoPercentual: 0,
     ambientes: [],

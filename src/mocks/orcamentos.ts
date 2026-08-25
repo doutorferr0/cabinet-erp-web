@@ -81,6 +81,29 @@ export interface Orcamento {
    * coisa: orçamento fechado continua ativo.
    */
   cancelado: boolean
+  /**
+   * Número da revisão, 1-based — `1` é o original, `2` é a primeira revisão.
+   *
+   * O caso real que ela resolve é banal e caro: o cliente mudou de ideia e o
+   * vendedor emitiu DOIS orçamentos no mesmo dia, sem nada no dado dizendo que
+   * o segundo substitui o primeiro. Quem lia a listagem contava dois negócios
+   * onde havia um.
+   */
+  revisao: number
+  /**
+   * O orçamento que ESTA revisão substitui, ou `null` no original.
+   *
+   * A revisão é documento NOVO (`POST .../revise` copia cabeçalho, ambientes e
+   * itens), e não uma edição: o anterior é o que foi mostrado ao cliente, e
+   * sobrescrevê-lo apagaria a proposta que já saiu pela porta.
+   */
+  revisaoDeId: string | null
+  /**
+   * Número do orçamento revisado, resolvido pelo SERVIDOR na leitura — é o que
+   * a folha mostra sem uma segunda requisição. Só o detalhe o traz; a listagem
+   * tem o id, não o número.
+   */
+  revisaoDeNumero: string | null
   modoDesconto: ModoDesconto
   /** Desconto geral em % (4 casas implícitas) — §8.2. */
   descontoPercentual: number
@@ -182,6 +205,11 @@ export const orcamentos: Orcamento[] = LINHAS.map((l, i) => ({
       : `prof-seed-${String(i + 1).padStart(4, '0')}`,
   profissionalExterno: l.obra === 'OBRA INDEFINIDA' || l.obra === '' ? null : l.obra,
   cancelado: false,
+  // Documento do seed é o ORIGINAL: a revisão nasce por `POST .../revise`, e
+  // nenhuma linha da §8.1 é revisão de outra.
+  revisao: 1,
+  revisaoDeId: null,
+  revisaoDeNumero: null,
   modoDesconto: 'PRODUTO',
   descontoPercentual: 0,
   // No mock o CÓDIGO do ambiente é legível, como o id do próprio orçamento
@@ -234,6 +262,11 @@ export function orcamentoVazio(id = ''): Orcamento {
     profissionalId: null,
     profissionalExterno: null,
     cancelado: false,
+    // Documento que ainda não existe é o original de si mesmo. `0` seria
+    // "revisão nenhuma", que o contrato não publica: o mínimo dele é 1.
+    revisao: 1,
+    revisaoDeId: null,
+    revisaoDeNumero: null,
     modoDesconto: 'PRODUTO',
     descontoPercentual: 0,
     ambientes: [],

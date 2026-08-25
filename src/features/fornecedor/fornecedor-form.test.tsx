@@ -248,12 +248,71 @@ describe('tela Fornecedor', () => {
     const inclusao = chamadas.find((c) => c.metodo === 'POST' && c.caminho.endsWith('/contacts'))
     expect(inclusao?.corpo).toMatchObject({ name: 'MARIA', role: 'COMPRAS', active: true })
 
-    // A linha que já existia é `PUT` no id dela — e o `Gravar` do rodapé não
-    // encostou no cadastro: nenhuma escrita saiu para `/api/partners/{id}`.
+    // A linha que já existia NÃO recebe escrita: ninguém encostou nela. Até a
+    // #331 esta asserção era `toBe(true)` e congelava o defeito — o `Gravar`
+    // dos contatos carimbava data de alteração em cadastro alheio que não
+    // mudou. Quem prova o `PUT` da linha MEXIDA é o caso seguinte.
     expect(chamadas.some((c) => c.metodo === 'PUT' && c.caminho.endsWith('/contacts/ct-1'))).toBe(
-      true,
+      false,
     )
     expect(chamadas.some((c) => c.metodo !== 'GET' && !c.caminho.includes('/contacts'))).toBe(false)
+  }, 20_000)
+
+  it('editar a linha existente manda PUT — e só nela', async () => {
+    // A outra metade da regra. A asserção `false` do caso acima, sozinha,
+    // passaria numa fronteira que NUNCA grava alteração; é este caso que
+    // prende o outro lado — e a segunda linha, intocada, mostra que a régua é
+    // por linha, não "a grade mudou".
+    const { stub, chamadas } = servidorDeParceiros([parceiro()], {
+      contatos: [
+        {
+          id: 'ct-1',
+          name: 'JOÃO DO SERVIDOR',
+          role: 'Compras',
+          phone: null,
+          mobilePhone: null,
+          fax: null,
+          email: null,
+          active: true,
+        },
+        {
+          id: 'ct-2',
+          name: 'JOSÉ PARADO',
+          role: 'Obra',
+          phone: null,
+          mobilePhone: null,
+          fax: null,
+          email: null,
+          active: true,
+        },
+      ],
+    })
+    const { user } = renderRoute(
+      '/cadastros/fornecedores/7a1d6f30-1f2b-4c8a-9e55-2b3c4d5e6f70',
+      stub,
+    )
+
+    await screen.findByLabelText('Razão Social')
+    await user.click(screen.getByRole('button', { name: 'Representante e contatos' }))
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome linha 1')).toHaveValue('JOÃO DO SERVIDOR')
+    })
+
+    await user.type(screen.getByLabelText('Vínculo linha 1'), ' E OBRA')
+    await user.click(screen.getByRole('button', { name: 'Gravar contatos' }))
+
+    await waitFor(() => {
+      expect(chamadas.some((c) => c.metodo === 'PUT' && c.caminho.endsWith('/contacts/ct-1'))).toBe(
+        true,
+      )
+    })
+    const alteracao = chamadas.find(
+      (c) => c.metodo === 'PUT' && c.caminho.endsWith('/contacts/ct-1'),
+    )
+    expect(alteracao?.corpo).toMatchObject({ role: 'Compras E OBRA', active: true })
+
+    // A vizinha não foi junto.
+    expect(chamadas.some((c) => c.caminho.endsWith('/contacts/ct-2'))).toBe(false)
   }, 20_000)
 
   // `Cidade` era digitação livre — `EnderecoBlock` já suportava a busca, mas

@@ -1147,37 +1147,96 @@ const TESOURARIA_SEM_CONTRATO_LA =
  * servidor de um lado e id inventado do outro, e aqui os dois lados são dinheiro.
  */
 const TESOURARIA: readonly RotaNoMock[] = [
-  { metodo: 'get', caminho: '/api/financial-titles', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'post', caminho: '/api/financial-titles', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'get', caminho: '/api/financial-titles/{id}', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'put', caminho: '/api/financial-titles/{id}', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-titles',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-titles',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-titles/{id}',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/financial-titles/{id}',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
   {
     metodo: 'post',
     caminho: '/api/financial-titles/{id}/cancel',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
   },
-  { metodo: 'get', caminho: '/api/financial-installments', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-installments',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
   {
     metodo: 'post',
     caminho: '/api/financial-installments/{id}/settlements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-settlements/batch',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
   },
-  { metodo: 'get', caminho: '/api/cash-movements', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'post', caminho: '/api/cash-movements', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'get',
+    caminho: '/api/cash-movements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-movements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
   {
     metodo: 'post',
     caminho: '/api/cash-movements/{id}/reconcile',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
   },
-  { metodo: 'post', caminho: '/api/cash-transfers', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'get', caminho: '/api/bank-accounts', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'get', caminho: '/api/cash-registers', motivo: TESOURARIA_SEM_CONTRATO_LA },
-  { metodo: 'get', caminho: '/api/payment-modes', motivo: TESOURARIA_SEM_CONTRATO_LA },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-transfers',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/bank-accounts',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/cash-registers',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/payment-modes',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
 ]
 
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [

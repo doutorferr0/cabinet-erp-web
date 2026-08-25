@@ -2,6 +2,7 @@ import type {
   DocumentInstallmentDto,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
+  LateChargePolicyDto,
   PaymentTermDto,
   PaymentTermGroupAdjustmentDto,
   PaymentTermWriteRequest,
@@ -95,6 +96,10 @@ function condicaoDto(condicao: CondicaoDaEmpresa): PaymentTermDto {
     // `undefined` inventaria um terceiro estado — mesmo argumento do 404 que a
     // política não dá.
     groupAdjustments: condicao.groupAdjustments ?? [],
+    // `null` EXPLÍCITO e não ausente: o contrato dá significado ao nulo ("esta
+    // condição não tem regra de atraso"), e campo omitido faria a tela ler
+    // `undefined` — um terceiro estado que ninguém declarou.
+    lateCharges: condicao.lateCharges ?? null,
   }
 }
 
@@ -282,6 +287,7 @@ function corpoInvalido(corpo: PaymentTermWriteRequest, maxInstallments: number) 
   }
 
   ajustesInvalidos(corpo, fields)
+  encargoInvalido(corpo, fields)
 
   return fields.length > 0 ? camposInvalidos(fields) : undefined
 }
@@ -415,6 +421,67 @@ function nomeDoGrupo(id: string): string {
   return store.lookups.find((l) => l.id === id && l.kind === 'GRUPO_PRODUTO')?.name ?? id
 }
 
+/**
+ * As recusas do ENCARGO DE ATRASO — e a que importa é a do PAR PELA METADE.
+ *
+ * Mandar `lateCharges` com juros e sem multa é 400 e não "multa zero": as duas
+ * são frases distintas no documento (mora corre com o tempo, multa é uma vez
+ * só), e aparar a que faltou gravaria uma cobrança que ninguém escreveu. Quem
+ * não cobra manda os dois em `0`; quem não configurou manda o objeto inteiro em
+ * `null`.
+ *
+ * Percentual NEGATIVO também sai: encargo negativo é desconto, e desconto por
+ * antecipação é a peça que o contrato declarou de fora por falta da janela de
+ * dias — aceitá-lo aqui pela porta dos fundos seria implementá-la sem decidi-la.
+ */
+function encargoInvalido(
+  corpo: PaymentTermWriteRequest,
+  fields: { path: string; message: string }[],
+): void {
+  const encargo = corpo.lateCharges
+  if (encargo === undefined || encargo === null) return
+
+  const mora = encargo.interestPercentMonthly
+  const multa = encargo.finePercent
+  for (const [campo, valor] of [
+    ['interestPercentMonthly', mora],
+    ['finePercent', multa],
+  ] as const) {
+    if (typeof valor !== 'number' || !Number.isFinite(valor)) {
+      fields.push({
+        path: `lateCharges.${campo}`,
+        message: 'Informe os DOIS percentuais do encargo de atraso — juros e multa.',
+      })
+    } else if (valor < 0) {
+      fields.push({
+        path: `lateCharges.${campo}`,
+        message: 'Percentual de encargo não pode ser negativo.',
+      })
+    }
+  }
+}
+
+/**
+ * O encargo que a escrita grava — e o `undefined` aqui CONSERVA, como em
+ * `ajustesDaEscrita`.
+ *
+ * Ausente é "não mexi no atraso"; `null` explícito apaga a regra. A assimetria
+ * está no contrato pela mesma razão: o campo nasce depois das telas que já
+ * gravam condição, e sem ela a primeira tela antiga a salvar um nome zeraria a
+ * mora que alguém configurou na tela nova.
+ */
+function encargoDaEscrita(
+  corpo: PaymentTermWriteRequest,
+  atual: LateChargePolicyDto | null,
+): LateChargePolicyDto | null {
+  if (corpo.lateCharges === undefined) return atual
+  if (corpo.lateCharges === null) return null
+  return {
+    interestPercentMonthly: corpo.lateCharges.interestPercentMonthly,
+    finePercent: corpo.lateCharges.finePercent,
+  }
+}
+
 function paginar<T>(linhas: T[], url: URL) {
   const page = Number(url.searchParams.get('page') ?? '1')
   const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
@@ -486,6 +553,7 @@ export const handlersDePagamento = [
       tenantId: store.activeTenantId,
       name: corpo.name as string,
       active: corpo.active ?? true,
+      lateCharges: encargoDaEscrita(corpo, null),
       installments: parcelasDaEscrita(corpo),
       groupAdjustments: ajustesDaEscrita(corpo, []),
     }
@@ -516,6 +584,7 @@ export const handlersDePagamento = [
     // documento já gravado não sente — ele carimbou o plano dele.
     condicao.name = corpo.name as string
     condicao.active = corpo.active ?? true
+    condicao.lateCharges = encargoDaEscrita(corpo, condicao.lateCharges ?? null)
     condicao.installments = parcelasDaEscrita(corpo)
     condicao.groupAdjustments = ajustesDaEscrita(corpo, condicao.groupAdjustments ?? [])
     return HttpResponse.json(condicaoDto(condicao))

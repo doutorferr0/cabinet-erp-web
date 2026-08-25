@@ -4346,6 +4346,46 @@ export interface PaymentTermInstallmentDto {
 }
 
 /**
+ * Proposto. O ENCARGO DE ATRASO que esta condição cobra, em PERCENTUAL — a REGRA, não o fato.
+ *
+ * **Percentual aqui, valor na baixa, e essa divisão é o ponto.** O legado guarda os seis campos (`juros`, `multa` e `desconto`, cada um em `_vl` e `_por`) **três vezes**: no título (`Ctp_juros_por`), na parcela (`contas_apagar_det`) e na baixa (`Cpp_juros_por`, que ainda acrescenta um par de acréscimo só dela). São três cópias da mesma informação, e elas divergem no dia em que alguém edita uma. Aqui a regra mora num lugar só — a condição de pagamento —, e o VALOR mora noutro — a baixa —, que é onde ele deixa de ser previsão e vira dinheiro que andou. A migração `0071_financeiro_titulos.sql` do `cabinet-erp-api` declarou essa dívida com essas palavras (*"o encargo é registrado em VALOR, na baixa, que é o único lugar onde ele é fato e não previsão"*); este schema é a metade que faltava, e ela é a metade da previsão.
+ *
+ * **Não confundir com o desconto/acréscimo COMERCIAL da condição.** `PaymentTermDto` explica por que `Fpg_desconto_lu`/`_ma`/`_se` e os pares de acréscimo ficam fora — são o GERADOR de `groupAdjustments`, e incidem no preço na hora de fechar a venda. O encargo daqui é outra coisa: incide DEPOIS do vencimento, sobre quem não pagou no dia. Os dois convivem sem se tocar.
+ *
+ * **O DESCONTO por antecipação não entra, e é falta MEDIDA.** `Ctp_Desconto_por` existe no legado ao lado dos outros dois, mas desconto por antecipação precisa de uma janela — até quantos dias antes do vencimento ele vale — e essa coluna não aparece em nada do que foi levantado (`docs/legado/dbml/softlux-completo.dbml`, `docs/legado/exe/sql-*.sql`). Publicar o percentual sem a janela deixaria a tela oferecendo desconto sem saber até quando, que é pior que não oferecer.
+ *
+ * **O CARIMBO no documento é a próxima peça, e ela não está aqui.** Hoje o documento carimba a política de parcelamento (`QuoteDetailDto.installmentPolicy`) justamente para que mudar o parâmetro amanhã não reescreva o que foi assinado ontem; o encargo de atraso tem exatamente o mesmo problema e ainda não tem essa proteção. Enquanto não tiver, quem edita a condição muda a mora dos documentos que já apontam para ela — o comportamento do legado, e está escrito aqui em vez de descoberto pelo operador.
+ */
+export interface LateChargePolicyDto {
+  /**
+     * JUROS DE MORA ao MÊS — `Ctp_juros_por` do legado. Int com 4 casas implícitas: `10000` = 1%, `20000` = 2%, a mesma escala de `PaymentTermInstallmentDto.percent` e de `QuoteDetailDto.discountPercent`.
+     *
+     * **Ao mês, e não ao dia**, porque é assim que o contrato de venda enuncia a cobrança ("1% ao mês") e é a frase que o cliente leu. Quem precisa do dia divide por 30 na hora de calcular; publicar o valor diário obrigaria toda tela a multiplicar de volta só para exibir o que está escrito no documento — e a diferença de arredondamento entre as duas voltas apareceria no centavo.
+     *
+     * **Zero é dado, não ausência:** condição conferida que não cobra mora grava `0`. Quem nunca configurou atraso deixa `lateCharges` inteiro em `null`.
+     */
+  interestPercentMonthly: number;
+  /**
+     * MULTA por atraso, percentual sobre o valor da parcela — `Ctp_multa_por`. Mesma escala de 4 casas (`20000` = 2%).
+     *
+     * **Ela não corre com o tempo, e é isso que a separa dos juros:** a multa é cobrada UMA vez, e vale 2% no primeiro dia de atraso e 2% no sexagésimo. Dois campos e não um justamente porque as duas contas são diferentes — somá-las num "encargo total" só funcionaria enquanto ninguém precisasse imprimir a composição, que é o que o cliente pede quando liga.
+     */
+  finePercent: number;
+}
+
+/**
+ * Proposto. O encargo de atraso no corpo de escrita.
+ *
+ * **Mesma forma do DTO, e ainda assim schema próprio** — pelo motivo de `PaymentTermInstallmentWriteRequest`: o dia em que a leitura ganhar campo derivado, reusar o DTO na escrita deixaria o cliente mandando o que o servidor calcula.
+ *
+ * Os dois percentuais são **obrigatórios juntos**. Metade do par é 400 com `fields[]`: condição que cobra mora e não diz a multa não é dado incompleto por acaso, é uma das duas frases que o boleto imprime faltando.
+ */
+export interface LateChargePolicyWriteRequest {
+  interestPercentMonthly: number;
+  finePercent: number;
+}
+
+/**
  * Proposto. O AJUSTE que esta condição de pagamento dá a um GRUPO DE PRODUTO — `Forma_PagamentoGrupProd` do legado, PK `(Fpg_codigo, GrupoProduto_Codigo)`, **169 linhas** com `Emp_codigo` na coluna. É a dívida que `PaymentTermDto` declarou por escrito e que `SupplierGroupMinimumDto` registrou como ainda aberta: *"ela é sobre desconto na CONDIÇÃO DE PAGAMENTO, não sobre mínimo do fornecedor"*.
  *
  * **O argumento que a adiava está vencido, e é por isso que ela entra agora.** Ele era que grupo de produto não tinha id — *"casar por texto faria PENDENTES e Pendentes renderem descontos diferentes no mesmo documento"*. Há id desde `QuoteItemDto.productGroupId` (kind `GRUPO_PRODUTO` de `catalog-lookups`), e é nele que esta linha pendura, como já penduram `QuoteGroupDiscountDto` e `SupplierGroupMinimumDto`.
@@ -4392,6 +4432,8 @@ export interface PaymentTermGroupAdjustmentDto {
  *
  * **O ajuste por GRUPO DE PRODUTO entra aqui, em `groupAdjustments`** — `Forma_PagamentoGrupProd` do legado. Esta descrição declarava a dívida e o motivo de ela esperar (grupo de produto sem id, e casar por texto faria "PENDENTES" e "Pendentes" renderem descontos diferentes no mesmo documento); o id chegou com `QuoteItemDto.productGroupId`, e a dívida foi paga. Ver `PaymentTermGroupAdjustmentDto` para o que entrou e o que continua fora — as SEIS colunas de desconto/acréscimo do cabeçalho (`Fpg_desconto`, `Fpg_acrescimo` e os pares `_lu`/`_ma`/`_se`) não entram porque são o GERADOR destas linhas, medido no SQL do executável.
  *
+ * **O ENCARGO DE ATRASO é outra coisa, e entra — em `lateCharges`.** Aquelas seis colunas são desconto e acréscimo COMERCIAL, que incidem no preço na hora de fechar a venda; `lateCharges` são juros de mora e multa, que incidem DEPOIS do vencimento sobre quem não pagou no dia. Os dois convivem sem se tocar, e é por isso que a exclusão de um não é argumento contra o outro.
+ *
  * **E há uma SEGUNDA verdade sobre condição de pagamento neste contrato, hoje:** `PartnerDto.paymentTerms` é `string` livre, sem descrição — a condição habitual do parceiro, digitada. Ela NÃO foi trocada por `paymentTermId` aqui de propósito: o campo é do VÍNCULO do parceiro com a empresa, converter texto em id é migração de dado (e escolha de para qual condição cada texto aponta), e fazer as duas coisas na mesma PR deixaria a segunda sem quem a revisasse. Enquanto isso não acontece, as duas convivem e o documento manda: quem grava orçamento escolhe `paymentTermId`, e o texto do parceiro é sugestão para quem digita.
  */
 export interface PaymentTermDto {
@@ -4400,6 +4442,12 @@ export interface PaymentTermDto {
   name: string;
   /** Desativação lógica — `Fpg_situacao` (A/I). Condição inativa sai do combo e continua legível nos documentos que a usaram. */
   active: boolean;
+  /**
+     * O encargo de ATRASO desta condição — juros de mora e multa, em percentual. `null` quando a condição não define encargo nenhum, e isso NÃO é o mesmo que definir zero: `null` é "ninguém configurou o atraso desta condição" e a tela mostra um traço; `{interestPercentMonthly: 0, finePercent: 0}` é "conferido, e esta condição não cobra". A diferença importa porque a primeira é pergunta em aberto para quem cadastra e a segunda é resposta.
+     *
+     * **O par é indivisível de propósito** — objeto anulável em vez de dois campos anuláveis soltos. Dois campos deixariam existir a condição com mora e sem multa por OMISSÃO, que se lê igual a "multa zero" e não é; num objeto só, o que falta é a regra inteira, e ela falta de uma vez.
+     */
+  lateCharges?: null | LateChargePolicyDto;
   /**
      * Quantas parcelas a condição tem — `Fpg_quantidade`. DERIVADO de `installments`, calculado pelo servidor, e por isso não existe na escrita.
      *
@@ -4462,6 +4510,12 @@ export interface PaymentTermWriteRequest {
   /** @nullable */
   active: boolean | null;
   installments: PaymentTermInstallmentWriteRequest[];
+  /**
+     * SUBSTITUI o encargo de atraso da condição.
+     *
+     * **Omitir é diferente de mandar `null`, pela razão de `groupAdjustments`:** ausente quer dizer "não mexi no atraso" e conserva o que está gravado; `null` explícito apaga a regra. A assimetria existe porque este campo nasce DEPOIS das telas que já gravam condição — sem ela, a primeira tela antiga a salvar um nome zeraria em silêncio a mora que alguém configurou na tela nova.
+     */
+  lateCharges?: null | LateChargePolicyWriteRequest;
   /**
      * SUBSTITUI as linhas de ajuste por grupo, como `installments` substitui as parcelas — `PUT` troca a condição INTEIRA.
      *

@@ -39,6 +39,10 @@ import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
  *    o mesmo defeito que a web#315 pegou no `orcamentoSchema`, e que só aparece
  *    gravando duas vezes.
  *
+ * 5. **O ENCARGO DE ATRASO tem TRÊS estados, e dois se parecem.** `null` é
+ *    "ninguém configurou"; `{0, 0}` é "conferido, não cobra". Sem o caso, a
+ *    tela lê os dois como zero e a pergunta em aberto desaparece.
+ *
  * Exercita pelo CLIENTE GERADO, e não por `fetch` cru: é o caminho inteiro que
  * a tela vai usar quando houver tela.
  */
@@ -414,6 +418,96 @@ describe('o ajuste por GRUPO DE PRODUTO', () => {
     expect(r.status).toBe(400)
     if (r.status !== 400) return
     expect(r.data.fields?.some((f) => f.path === 'groupAdjustments[0].productGroupId')).toBe(true)
+  })
+})
+
+describe('o ENCARGO DE ATRASO da condição', () => {
+  it('distingue não-configurado (null) de conferido-e-não-cobra (zeros)', async () => {
+    await entrar()
+
+    const { data } = await listPaymentTerms({ pageSize: 100, sortBy: 'name' })
+    const porNome = new Map(data.rows.map((c) => [c.name, c]))
+
+    // Os três estados do seed, e os dois do meio são os que se confundem.
+    expect(porNome.get('À VISTA')?.lateCharges).toBeNull()
+    expect(porNome.get('ENTRADA + 2x')?.lateCharges).toEqual({
+      interestPercentMonthly: 0,
+      finePercent: 0,
+    })
+    expect(porNome.get('30/60/90')?.lateCharges).toEqual({
+      interestPercentMonthly: 10_000,
+      finePercent: 20_000,
+    })
+  })
+
+  it('devolve `null` EXPLÍCITO, e não campo ausente', async () => {
+    await entrar()
+
+    const { data } = await listPaymentTerms({ pageSize: 100 })
+    const aVista = data.rows.find((c) => c.name === 'À VISTA')
+
+    // `in` e não `?? null`: campo omitido leria `undefined` na tela, que é um
+    // terceiro estado que ninguém declarou.
+    expect(aVista !== undefined && 'lateCharges' in aVista).toBe(true)
+  })
+
+  it('grava o encargo na criação', async () => {
+    await entrar()
+
+    const { data } = await createPaymentTerm({
+      ...EM_DOIS,
+      lateCharges: { interestPercentMonthly: 10_000, finePercent: 20_000 },
+    })
+
+    expect(data.lateCharges).toEqual({ interestPercentMonthly: 10_000, finePercent: 20_000 })
+  })
+
+  it('OMITIR o campo conserva o encargo; `null` explícito apaga', async () => {
+    await entrar()
+
+    const criada = await createPaymentTerm({
+      ...EM_DOIS,
+      lateCharges: { interestPercentMonthly: 10_000, finePercent: 20_000 },
+    })
+
+    // A tela que só renomeia não manda `lateCharges` — e não pode zerar a mora
+    // de quem a configurou. É o mesmo defeito que `groupAdjustments` já cobre.
+    const renomeada = await updatePaymentTerm(criada.data.id, { ...EM_DOIS, name: 'OUTRO NOME' })
+    expect(renomeada.data.lateCharges).toEqual({
+      interestPercentMonthly: 10_000,
+      finePercent: 20_000,
+    })
+
+    const apagada = await updatePaymentTerm(criada.data.id, {
+      ...EM_DOIS,
+      name: 'OUTRO NOME',
+      lateCharges: null,
+    })
+    expect(apagada.data.lateCharges).toBeNull()
+  })
+
+  it('recusa o PAR PELA METADE — juros sem multa é 400, não multa zero', async () => {
+    await entrar()
+
+    const resposta = await createPaymentTerm({
+      ...EM_DOIS,
+      // A metade que falta é a que a aparadura silenciosa preencheria com zero.
+      lateCharges: { interestPercentMonthly: 10_000 } as never,
+    })
+
+    expect(resposta.status).toBe(400)
+    expect(JSON.stringify(resposta.data)).toContain('finePercent')
+  })
+
+  it('recusa percentual NEGATIVO — encargo negativo seria desconto', async () => {
+    await entrar()
+
+    const resposta = await createPaymentTerm({
+      ...EM_DOIS,
+      lateCharges: { interestPercentMonthly: -10_000, finePercent: 0 },
+    })
+
+    expect(resposta.status).toBe(400)
   })
 })
 

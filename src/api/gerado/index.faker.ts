@@ -128,7 +128,7 @@ import type {
 } from './index.schemas';
 
 
-export const getHealthResponseMock = (overrideResponse: Partial<Extract<HealthStatus, object>> = {}): HealthStatus => ({status: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
+export const getHealthResponseMock = (overrideResponse: Partial<Extract<HealthStatus, object>> = {}): HealthStatus => ({status: faker.string.alpha({length: {min: 10, max: 20}}), version: faker.string.alpha({length: {min: 10, max: 20}}), commit: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
 export const getHealthDbResponseMock = (overrideResponse: Partial<Extract<ReadinessStatus, object>> = {}): ReadinessStatus => ({status: faker.string.alpha({length: {min: 10, max: 20}}), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), pendingMigrations: faker.helpers.arrayElement([faker.number.int(), null]), ...overrideResponse})
 

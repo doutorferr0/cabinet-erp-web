@@ -20,17 +20,37 @@ import contrato from '../../contracts/openapi-v1.json'
  * costuma precisar da outra.
  */
 
+interface SchemaDoContrato {
+  required?: string[]
+  properties?: Record<string, { type?: unknown; $ref?: string; oneOf?: unknown[] }>
+}
+
+type VerbosDoCaminho = Record<string, { operationId?: string }>
+
 const doc = contrato as unknown as {
-  paths: Record<string, Record<string, { operationId?: string }>>
-  components: {
-    schemas: Record<
-      string,
-      {
-        required?: string[]
-        properties?: Record<string, { type?: unknown; $ref?: string; oneOf?: unknown[] }>
-      }
-    >
-  }
+  paths: Record<string, VerbosDoCaminho>
+  components: { schemas: Record<string, SchemaDoContrato> }
+}
+
+/**
+ * Lê um schema pelo nome e EXPLODE se ele não existir.
+ *
+ * Com `noUncheckedIndexedAccess` o acesso indexado devolve `T | undefined`, e o
+ * jeito curto de calar o compilador seria `?.` — que é exatamente o errado
+ * aqui: `expect(undefined?.required).toContain('reason')` falharia por motivo
+ * nenhum, e o schema APAGADO passaria como schema mal declarado. A guarda
+ * precisa distinguir "o campo mudou" de "o schema sumiu".
+ */
+function schemaDoContrato(nome: string): SchemaDoContrato {
+  const s = doc.components.schemas[nome]
+  if (!s) throw new Error(`o contrato não tem mais o schema \`${nome}\``)
+  return s
+}
+
+function caminhoDoContrato(caminho: string): VerbosDoCaminho {
+  const c = doc.paths[caminho]
+  if (!c) throw new Error(`o contrato não tem mais o caminho \`${caminho}\``)
+  return c
 }
 
 /**
@@ -59,8 +79,7 @@ describe('o super-admin não volta pelo contrato', () => {
   })
 
   it('a sessão não declara alcance próprio — ela aponta para UMA concessão', () => {
-    const sessao = doc.components.schemas.SessaoAtual
-    expect(sessao).toBeDefined()
+    const sessao = schemaDoContrato('SessaoAtual')
 
     // `organizationId` é a organização da PESSOA; `support` é o alcance
     // emprestado. Um `organizationIds` plural aqui seria o super-admin de volta.
@@ -69,15 +88,8 @@ describe('o super-admin não volta pelo contrato', () => {
   })
 
   it('a concessão nomeia UMA organização, no singular', () => {
-    const pedido = doc.components.schemas.SupportGrantRequest
-    const concessao = doc.components.schemas.SupportGrantDto
-
-    for (const [nome, schema] of [
-      ['SupportGrantRequest', pedido],
-      ['SupportGrantDto', concessao],
-      ['SupportContextDto', doc.components.schemas.SupportContextDto],
-    ] as const) {
-      const props = Object.keys(schema.properties ?? {})
+    for (const nome of ['SupportGrantRequest', 'SupportGrantDto', 'SupportContextDto']) {
+      const props = Object.keys(schemaDoContrato(nome).properties ?? {})
       expect(props, `${nome} precisa nomear a organização`).toContain('organizationId')
       // O plural é o modo elegante de reconstruir a flag: um array de
       // organizações numa concessão é acesso a N clientes com um motivo só.
@@ -86,11 +98,11 @@ describe('o super-admin não volta pelo contrato', () => {
       )
     }
 
-    expect(pedido.properties?.organizationId?.type).toBe('string')
+    expect(schemaDoContrato('SupportGrantRequest').properties?.organizationId?.type).toBe('string')
   })
 
   it('motivo e prazo são OBRIGATÓRIOS no pedido — não há acesso sem os dois', () => {
-    const pedido = doc.components.schemas.SupportGrantRequest
+    const pedido = schemaDoContrato('SupportGrantRequest')
     // É a asserção central do trilho. Qualquer um dos dois virando opcional
     // devolve o acesso irrestrito, só que com um formulário na frente.
     expect(pedido.required).toContain('organizationId')
@@ -99,19 +111,18 @@ describe('o super-admin não volta pelo contrato', () => {
   })
 
   it('a concessão publica prazo e estado, e o contexto da sessão publica o prazo', () => {
-    expect(doc.components.schemas.SupportGrantDto.required).toEqual(
+    expect(schemaDoContrato('SupportGrantDto').required).toEqual(
       expect.arrayContaining(['expiresAt', 'status', 'revokedAt', 'reason']),
     )
     // Sem `expiresAt` no contexto, a tela não teria como dizer até quando o
     // acesso vale — e acesso sem fim visível volta a parecer permanente.
-    expect(doc.components.schemas.SupportContextDto.required).toEqual(
+    expect(schemaDoContrato('SupportContextDto').required).toEqual(
       expect.arrayContaining(['expiresAt', 'organizationId', 'reason']),
     )
   })
 
   it('a trilha existe e não tem como ser apagada pelo contrato', () => {
-    const caminhoDaTrilha = doc.paths['/api/platform/support-grants/{id}/audit']
-    expect(caminhoDaTrilha).toBeDefined()
+    const caminhoDaTrilha = caminhoDoContrato('/api/platform/support-grants/{id}/audit')
     // Só leitura. `DELETE` publicado aqui deixaria a trilha ser limpa por quem
     // ela existe para vigiar, que é a única pessoa com motivo para limpá-la.
     expect(Object.keys(caminhoDaTrilha)).toEqual(['get'])

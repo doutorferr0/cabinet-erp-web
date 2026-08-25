@@ -2994,8 +2994,11 @@ export interface CredentialTokenDto {
 export interface SetPasswordRequest {
   token: string;
   /**
-     * A senha nova. Mínimo de 8 caracteres, o mesmo piso de `AuthChangePassword` — dois pisos diferentes para o mesmo campo fariam a regra depender do caminho por onde a pessoa passou.
-     * @minLength 8
+     * A senha nova. O piso é de 8 caracteres, o mesmo de `AuthChangePassword`, e **NÃO é declarado como `minLength` de propósito** — nem aqui nem lá.
+     *
+     * O validador de schema roda ANTES do handler, então um `minLength` faria a forma vencer a ordem que esta operação promete: senha curta num link já morto responderia “senha fraca”, a pessoa melhoraria a senha, e só então tomaria o erro do link. Medido — foi assim que a primeira versão desta operação se comportou.
+     *
+     * A política de senha é do SERVIDOR, e a recusa dela tem URN própria (`urn:cabinet:erro:senha-fraca`). Duas autoridades sobre a mesma regra é o que este contrato evita em toda parte: a mais fraca ganharia por rodar primeiro, e a URN nunca sairia.
      */
   password: string;
 }

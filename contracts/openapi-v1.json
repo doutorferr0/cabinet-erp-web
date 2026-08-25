@@ -1676,7 +1676,7 @@
             "description": "No Content — senha gravada, token gasto, sessões antigas encerradas. A tela manda para o login."
           },
           "400": {
-            "description": "Bad Request — token morto (`urn:cabinet:erro:token-invalido` · `urn:cabinet:erro:token-expirado`) ou senha curta demais (`urn:cabinet:erro:senha-fraca`). A ordem importa: o token é conferido ANTES da senha, para não deixar alguém melhorando a senha num link que já não vale.",
+            "description": "Bad Request — token morto (`urn:cabinet:erro:token-invalido` · `urn:cabinet:erro:token-expirado`) ou senha curta demais (`urn:cabinet:erro:senha-fraca`). A ordem importa: o token é conferido ANTES da senha, para não deixar alguém melhorando a senha num link que já não vale — e é por isso que `password` não declara `minLength`, que rodaria antes do handler e inverteria as duas.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15755,9 +15755,8 @@
             "type": "string"
           },
           "password": {
-            "description": "A senha nova. Mínimo de 8 caracteres, o mesmo piso de `AuthChangePassword` — dois pisos diferentes para o mesmo campo fariam a regra depender do caminho por onde a pessoa passou.",
-            "type": "string",
-            "minLength": 8
+            "description": "A senha nova. O piso é de 8 caracteres, o mesmo de `AuthChangePassword`, e **NÃO é declarado como `minLength` de propósito** — nem aqui nem lá.\n\nO validador de schema roda ANTES do handler, então um `minLength` faria a forma vencer a ordem que esta operação promete: senha curta num link já morto responderia \u201csenha fraca\u201d, a pessoa melhoraria a senha, e só então tomaria o erro do link. Medido — foi assim que a primeira versão desta operação se comportou.\n\nA política de senha é do SERVIDOR, e a recusa dela tem URN própria (`urn:cabinet:erro:senha-fraca`). Duas autoridades sobre a mesma regra é o que este contrato evita em toda parte: a mais fraca ganharia por rodar primeiro, e a URN nunca sairia.",
+            "type": "string"
           }
         }
       },

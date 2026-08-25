@@ -9,6 +9,7 @@ import {
   FILTRAVEIS as FILTRAVEIS_PARCEIRO,
   ORDENAVEIS as ORDENAVEIS_PARCEIRO,
 } from '@/data/parceiros-api'
+import { FILTRAVEIS_PEDIDO_VENDA, ORDENAVEIS_PEDIDO_VENDA } from '@/data/pedidos-venda-api'
 import {
   FILTRAVEIS as FILTRAVEIS_PRODUTO,
   ORDENAVEIS as ORDENAVEIS_PRODUTO,
@@ -41,6 +42,12 @@ import {
 } from '@/mocks/api/handlers'
 import { FILTRAVEIS as FILTRAVEIS_OBRA, ORDENAVEIS as ORDENAVEIS_OBRA } from '@/mocks/api/obras'
 import { ORDENAVEIS_CONDICAO } from '@/mocks/api/pagamento'
+import {
+  FILTRAVEIS_PEDIDO as FILTRAVEIS_PEDIDO_MOCK,
+  ORDENAVEIS_INDICACAO as ORDENAVEIS_INDICACAO_MOCK,
+  ORDENAVEIS_PARTICIPACAO as ORDENAVEIS_PARTICIPACAO_MOCK,
+  ORDENAVEIS_PEDIDO as ORDENAVEIS_PEDIDO_MOCK,
+} from '@/mocks/api/pedidos'
 import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
@@ -172,9 +179,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListPickingQueue:
     'a fila de separação ainda não tem tela — as telas de entrega são a Fase C do trilho',
   ListDeliveries: 'o romaneio ainda não tem tela — as telas de entrega são a Fase C do trilho',
-  ListOrders: 'pedido de venda ainda não tem listagem própria na tela',
   ListOrderProfessionalHistory:
-    'a trilha de indicação (G13) é sub-recurso do pedido e nasce sem tela — cabeçalho ordenável exigiria a tela do pedido, que não existe',
+    'a trilha de indicação (G13) é DIÁLOGO dentro da folha do pedido, não grade com cabeçalho — o contrato publica uma whitelist de um campo só (`startedAt`) justamente porque a ordem dela é cronológica e não se escolhe',
   ListCatalogLookups: 'o combo pede por `kind` e não ordena — não há cabeçalho para clicar',
   ListStockMovements: 'kardex desenha em ordem fixa (`occurredAt` desc), sem coluna ordenável',
   ListEmployees: 'colaborador ainda é provider de mock, com lista própria lá',
@@ -245,7 +251,7 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // dinheiro inventado com cara de conta fechada, que é pior do que não mostrar nada.
   // Cada uma sai daqui quando ganhar a tela, com `ORDENAVEIS` próprio.
   ListOrderParticipants:
-    'a aba Participação do pedido ainda não existe — a grade é Fase C do trilho de comissões',
+    'a folha do pedido LÊ a participação (o painel de `participacao-do-pedido.tsx`), e leitura não é grade: não há cabeçalho para clicar, e a EDIÇÃO — que precisa das faixas do perfil — segue Fase C do trilho de comissões',
   ListEmployeeCommissionTiers:
     'o perfil de comissão do colaborador ainda não tem aba — o cadastro de colaborador é provider de mock',
   ListPartnerCommissionTiers:
@@ -263,6 +269,7 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListProducts: ORDENAVEIS_PRODUTO,
   ListPartners: ORDENAVEIS_PARCEIRO,
   ListQuotes: ORDENAVEIS_ORCAMENTO,
+  ListOrders: ORDENAVEIS_PEDIDO_VENDA,
   ListActivities: ORDENAVEIS_ATIVIDADE,
   ListCrmPipelines: ORDENAVEIS_FUNIL,
   ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE,
@@ -290,6 +297,9 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListStockMovements: ORDENAVEIS_MOVIMENTO_MOCK,
   ListPartnerContacts: ORDENAVEIS_CONTATO_MOCK,
   ListQuotes: ORDENAVEIS_ORCAMENTO_MOCK,
+  ListOrders: ORDENAVEIS_PEDIDO_MOCK,
+  ListOrderProfessionalHistory: ORDENAVEIS_INDICACAO_MOCK,
+  ListOrderParticipants: ORDENAVEIS_PARTICIPACAO_MOCK,
   ListActivities: ORDENAVEIS_ATIVIDADE_MOCK,
   ListCrmPipelines: ORDENAVEIS_FUNIL_MOCK,
   ListCrmLostReasons: ORDENAVEIS_MOTIVO_MOCK,
@@ -358,7 +368,6 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'a fila de separação é derivada do pedido de venda, que não tem handler no mock — a fila sem o documento dono listaria peça de pedido inexistente',
   ListDeliveries:
     'o romaneio pende do pedido de venda, que não tem handler no mock — mockar a entrega sem o documento dono casaria id inventado com id de servidor',
-  ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
   ListCostProfiles:
     'o perfil de custo (G9) passa direto para o servidor — ver `rotas-do-backend.ts`: a simulação exige a cascata inteira, e um mock dela devolveria margem inventada',
   // COMPRAS (G2) SAIU DAQUI. O motivo que estava escrito — "o mock não guarda
@@ -375,8 +384,6 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // (estoque, orçamento, aniversário) e devolve envelope VAZIO onde a fonte é o
   // pedido de venda, que o mock não guarda. Nenhuma soma disputa com o
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
-  ListOrderProfessionalHistory:
-    'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
   ListGoodsReceipts:
     'recebimento não tem handler no mock — a grade confronta o que a ordem de compra pediu com o que chegou, e o mock não guarda ordem; mockar a conferência sem a ordem dona daria divergência calculada contra número inventado',
   // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
@@ -385,8 +392,6 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // fechada, calculado sobre documento que não existe. As três primeiras são
   // sub-recurso de pedido/pessoa e casariam id inventado com id de servidor;
   // as quatro últimas não têm sobre o que somar.
-  ListOrderParticipants:
-    'sub-recurso do pedido de venda, que não tem handler no mock — participação sem o documento dono casaria id inventado com id de servidor',
   ListEmployeeCommissionTiers:
     'perfil de comissão é sub-recurso do colaborador, e a lista de pessoas do mock diverge da do servidor (a costura já declarada em `cobertura-do-colaborador`)',
   ListPartnerCommissionTiers:
@@ -414,6 +419,7 @@ const FILTRAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListProducts: Object.keys(FILTRAVEIS_PRODUTO_MOCK),
   ListPartners: Object.keys(FILTRAVEIS_PARCEIRO_MOCK),
   ListQuotes: Object.keys(FILTRAVEIS_ORCAMENTO_MOCK),
+  ListOrders: Object.keys(FILTRAVEIS_PEDIDO_MOCK),
   ListCrmOpportunities: Object.keys(FILTRAVEIS_OPORTUNIDADE_MOCK),
   ListWorks: Object.keys(FILTRAVEIS_OBRA),
 }
@@ -423,6 +429,7 @@ const FILTRAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListProducts: FILTRAVEIS_PRODUTO,
   ListPartners: FILTRAVEIS_PARCEIRO,
   ListQuotes: FILTRAVEIS_ORCAMENTO,
+  ListOrders: FILTRAVEIS_PEDIDO_VENDA,
   ListCrmOpportunities: FILTRAVEIS_OPORTUNIDADE,
   ListWorks: Object.keys(FILTRAVEIS_OBRA),
 }

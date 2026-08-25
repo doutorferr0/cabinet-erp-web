@@ -4,13 +4,7 @@ import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
-import {
-  DateField,
-  LookupSelectField,
-  RadioField,
-  SelectField,
-  TextField,
-} from '@/components/cabinet/form-controls'
+import { DateField, RadioField, SelectField, TextField } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -433,13 +427,27 @@ function Cabecalho() {
               </Button>
             </div>
           </div>
-          {/* TODO(transcricao): `Consultor(a)` é `[busca +...]` no legado e o
-              cadastro que ela busca não foi identificado (§10) — mesma pendência
-              que o orçamento registra. Não trocar por SearchDialog às cegas. */}
-          <LookupSelectField
+          {/* `Consultor(a)` é LEITURA, e o campo diz isso ao ser `readOnly`.
+              Duas coisas o tiraram da edição, e as duas são medidas:
+
+              1. **O contrato**: `salespersonId` é o atendente `isPrincipal` da
+                 participação (`OrderParticipantDto`), "não um segundo lugar
+                 onde se grava". Quem muda o consultor é a grade de
+                 participação, que tem percentual e vigência — trocar o nome
+                 aqui deixaria a comissão apontando para quem saiu.
+              2. **O campo mentia**: até aqui ele era um combo do lookup `CARGO`
+                 rotulado `Consultor(a)`. O operador escolhia um CARGO, o valor
+                 ia para `consultor` (o NOME), e `paraEscrita` nunca manda nome
+                 nenhum — o servidor resolve o nome do id. Gravar e reabrir
+                 devolvia o texto de antes, sem erro em lugar nenhum.
+
+              O painel `ParticipacaoDoPedido`, abaixo do formulário, é onde a
+              lista inteira aparece — é lá que o nome daqui vem. */}
+          <TextField
             name="consultor"
             label="Consultor(a)"
-            kind="cargo"
+            readOnly
+            placeholder="Sem atendente principal"
             className="col-span-6 sm:col-span-3"
           />
           <div className="col-span-6 sm:col-span-4">

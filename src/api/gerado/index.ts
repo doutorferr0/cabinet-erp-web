@@ -198,6 +198,7 @@ import type {
   TaskWriteRequest,
   TechnicalReserveDto,
   TechnicalReserveWriteRequest,
+  TemporaryPasswordDto,
   TodoDto,
   TodoPatchRequest,
   TransferProfessionalRequest,
@@ -4464,6 +4465,64 @@ export const updateEmployeeLink = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(employeeLinkRequest)
+  }
+);}
+
+
+
+export type resetEmployeePasswordResponse200 = {
+  data: TemporaryPasswordDto
+  status: 200
+}
+
+export type resetEmployeePasswordResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type resetEmployeePasswordResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type resetEmployeePasswordResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type resetEmployeePasswordResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type resetEmployeePasswordResponseSuccess = (resetEmployeePasswordResponse200) & {
+  headers: Headers;
+};
+export type resetEmployeePasswordResponseError = (resetEmployeePasswordResponse401 | resetEmployeePasswordResponse403 | resetEmployeePasswordResponse404 | resetEmployeePasswordResponse409) & {
+  headers: Headers;
+};
+
+export type resetEmployeePasswordResponse = (resetEmployeePasswordResponseSuccess | resetEmployeePasswordResponseError)
+
+export const getResetEmployeePasswordUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/reset-password`
+}
+
+/**
+ * Proposto. O único caminho que dá credencial a um colaborador: `CreateEmployee` grava senha inutilizável de propósito, então sem esta operação a conta nunca entra. O SERVIDOR gera a senha provisória — o admin não escolhe — e ela aparece UMA única vez, nesta resposta; não há leitura que a devolva depois, nem para quem a gerou. `mustChangePassword` liga junto: o primeiro login exige `/auth/change-password` antes de qualquer outra coisa. Repetir a chamada é o reset de quem esqueceu — invalida a credencial atual e gera outra provisória.
+ */
+export const resetEmployeePassword = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<resetEmployeePasswordResponse> => {
+
+  return apiFetch<resetEmployeePasswordResponse>(getResetEmployeePasswordUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

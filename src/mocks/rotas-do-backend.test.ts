@@ -521,17 +521,22 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('sem rota SEM CONTRATO o console NÃO inventa aviso — e é o estado de hoje', () => {
-    // A outra metade, e ela mede as constantes REAIS de propósito: o dia em que
-    // alguém declarar uma `sem-contrato` sem querer, este caso fica vermelho e
-    // aponta qual. Medido em 2026-08-24 contra `cabinet-erp-api` `5b2d560`, com
-    // os dois `contracts/openapi-v1.json` iguais byte a byte.
+  it('a ÚNICA rota SEM CONTRATO é a da senha inicial — publicada por esta PR', () => {
+    // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
+    // byte a byte). A PR da senha inicial publica `reset-password` AQUI, então
+    // a cópia do api fica atrás por definição até o `sync:contract` de lá — o
+    // estado `sem-contrato` é o correto e o console DEVE avisar. A lista é
+    // FECHADA de propósito: a segunda rota que aparecer aqui sem querer
+    // continua reprovando e sendo nomeada. Quando a PR do api sincronizar e
+    // ligar o handler, a linha sai de `ROTAS_NO_MOCK` e este caso volta a
+    // cobrar o vazio.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
       'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
-    ).toEqual([])
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toEqual([])
+    ).toEqual(['post /api/employees/{id}/reset-password'])
+    // Cabeçalho com o próximo passo + uma linha por rota = 2.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(2)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

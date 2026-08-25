@@ -7,9 +7,23 @@ Espec de tela, não componente. Uma das duas telas já existe como rota
 
 ## 1. Gaps de CONTRATO
 
-Não há **nenhum** caminho de estoque em `contracts/openapi-v1.json`. Sem eles, a tela não pode
-mostrar número nenhum — e a regra do repo diz o que fazer nesse meio-tempo: coluna que o DTO não
-tem sai da listagem, e o `AvisoDeCobertura` conta ao operador o que ainda não vem do servidor.
+> **Vencido em parte — remedido em 2026-08-25.** A frase original desta seção ("não há **nenhum**
+> caminho de estoque em `contracts/openapi-v1.json`") deixou de ser verdade. Hoje o contrato tem
+> `GET`/`POST /api/variants/{variantId}/stock-movements` (kardex **por variante**),
+> `GET /api/variants/{variantId}/stock-balances`, `GET`/`POST /api/stock-locations` +
+> `PUT …/{id}`, `GET /api/picking-queue`, as reservas técnicas (`/api/technical-reserves`, com
+> `POST` e `…/{id}/cancel`) e três relatórios (`/api/reports/stock-aging`, `…/stock-valuation`,
+> `…/quote-vs-stock`). `src/data/estoque-api.ts` consome saldo, depósitos, kardex e fila.
+>
+> **O que esta seção pede e continua faltando é a forma TRANSVERSAL**: a listagem de movimento que
+> não parte de uma variante (com a whitelist de filtro dos 6 campos), a ficha por id, o saldo com
+> `asOf`, e as quatro escritas por OPERAÇÃO da tabela abaixo — hoje há um `POST` de movimento
+> genérico, que é justamente o desenho que o parágrafo seguinte recusa. Ler o resto como proposta
+> viva, não como diagnóstico do contrato de hoje.
+
+Sem eles, a tela não pode mostrar número nenhum — e a regra do repo diz o que fazer nesse
+meio-tempo: coluna que o DTO não tem sai da listagem, e o `AvisoDeCobertura` conta ao operador o
+que ainda não vem do servidor.
 
 ### Leitura
 

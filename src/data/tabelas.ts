@@ -46,7 +46,7 @@ export const tabelas = {
 } as const satisfies Record<string, readonly string[]>
 
 /**
- * Os 19 kinds do padrão `[combo]`/`[combo +...]` (§9 padrão 2) NÃO moram aqui:
+ * Os 21 kinds do padrão `[combo]`/`[combo +...]` (§9 padrão 2) NÃO moram aqui:
  * vêm de `GET /api/catalog-lookups` via `useLookupOptions` (`src/data/lookups-api.ts`).
  * O que sobra neste arquivo são as listas que o contrato não expõe como kind.
  */

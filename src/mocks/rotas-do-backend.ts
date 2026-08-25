@@ -471,7 +471,8 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/projects' },
   { metodo: 'get', caminho: '/api/projects/{projectId}/plan' },
 
-  // listas de apoio — os 19 kinds do padrão `[combo]`, numa operação só.
+  // listas de apoio — os 21 kinds do padrão `[combo]`, numa leitura só (a
+  // escrita entrou depois, e está mais abaixo).
   //
   // Passa porque é a RAIZ de quase toda combinação: enquanto o catálogo vinha
   // do mock e os registros vinham do servidor, todo `sectorId`/`jobTitleId` que

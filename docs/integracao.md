@@ -239,11 +239,16 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Fronteira | Caminhos | Onde |
 |---|---|---|
 | Sessão, empresa ativa, troca de senha | `/auth/login` · `/auth/logout` · `/auth/me` · `/auth/tenants` · `/auth/active-tenant` · `/auth/change-password` | `src/data/sessao.ts`, `empresas-api.ts` |
-| Listas de apoio (19 kinds) | `GET /api/catalog-lookups` | `src/data/lookups-api.ts` |
+| Listas de apoio (21 kinds) | `GET`/`POST` `/api/catalog-lookups` · `PUT` `…/{id}` | `src/data/lookups-api.ts` — o `+...` do `LookupCombo` grava pelo `POST` (#252); o `PUT` está publicado e ainda sem consumidor |
 | Produtos (listagem, detalhe, escrita, desativar) | `GET`/`POST` `/api/products` · `GET`/`PUT` `/api/products/{id}` | `src/data/produtos-api.ts` |
 | Variantes (grade de Valores) | `POST` `/api/products/{productId}/variants` · `PUT` `…/variants/{id}` | `src/data/produtos-api.ts` |
-| Kardex de estoque | `GET`/`POST` `/api/variants/{variantId}/stock-movements` | só o **tipo** chegou; tela é decisão de produto |
+| Estoque — kardex, saldo por variante, depósitos, fila de separação | `GET`/`POST` `/api/variants/{variantId}/stock-movements` · `GET` `…/stock-balances` · `GET`/`POST` `/api/stock-locations` · `PUT` `…/{id}` · `GET` `/api/picking-queue` | `src/data/estoque-api.ts` — a ESCRITA de movimento e a de depósito seguem sem consumidor |
 | Parceiros — Fornecedor, Cliente, Profissional | `GET`/`POST` `/api/partners` (filtro `role`) · `GET`/`PUT` `/api/partners/{id}` · `POST` `/api/partners/{id}/link` | `src/data/parceiros-api.ts` |
+| Contatos do parceiro | `GET`/`POST` `/api/partners/{partnerId}/contacts` · `PUT` `…/{contactId}` | `src/data/contatos-api.ts` |
+| Orçamento — listagem, documento, cancelar, converter, revisar | `GET`/`POST` `/api/quotes` · `GET`/`PUT` `…/{id}` · `POST` `…/{id}/cancel` · `…/{id}/order` · `…/{id}/revise` | `src/data/quotes-api.ts` — `GET …/{id}/print` publicado e sem tela |
+| Pedido de venda — da folha à separação | `GET`/`POST` `/api/orders` · `GET`/`PUT` `…/{id}` · `POST` `…/cancel`, `…/conclude`, `…/demo-return`, `…/professional` · `GET` `…/professional-history`, `…/fulfillment` · `POST` `…/items/{lineNumber}/pick`, `…/release` | `src/data/pedidos-venda-api.ts` — `GET`/`PUT …/participants` sem consumidor |
+| Entrega (a carga do pedido) | `GET`/`POST` `/api/deliveries` · `POST` `…/{id}/items`, `…/{id}/close`, `…/{id}/cancel` | `src/data/entrega-api.ts` |
+| Condição de pagamento e política de parcelas | `GET`/`POST` `/api/payment-terms` · `PUT` `…/{id}` · `GET`/`PUT` `/api/installment-policy` | `src/data/pagamento-api.ts` — a tela LÊ as duas; a escrita segue sem consumidor |
 
 | CRM — funis, estágios, oportunidades, motivos de perda | `GET`/`POST` `/api/crm/pipelines` · `GET`/`PUT` `…/{id}` · `GET`/`POST` `…/{pipelineId}/stages` · `PUT` `…/stages/{id}` · `GET`/`POST` `/api/crm/opportunities` · `GET`/`PUT` `…/{id}` · **`PATCH` `…/{id}/stage`** · `GET`/`POST` `/api/crm/lost-reasons` · `PUT` `…/{id}` · **`GET` `/api/crm/reports/lost-reasons`** | `src/data/crm-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/crm.ts` no modo mock |
 
@@ -252,6 +257,19 @@ com id inventado e responderia "não encontrado" para registro que existe.
 | Compras — pedido, ordem, previsão de chegada, reposição | `GET`/`POST` `/api/purchase-requests` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/cancel`** · `GET`/`POST` `/api/purchase-orders` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/send`** · **`…/{id}/reschedule`** · **`…/{id}/cancel`** · `GET` `/api/purchases/arrival-forecast` · `GET` `/api/purchases/stock-replenishment` | caminhos `Proposto`, servidos por `src/mocks/api/compras.ts` no modo mock — **a TELA ainda não fala nenhum deles** (ver abaixo) |
 
 **Ainda mock, por falta de caminho no contrato:** cidades · resumo do Boletim.
+
+**Ainda mock, com caminho no contrato:** colaborador (a família tem 8 operações e a passagem as
+liga; quem não migrou foi `data.colaboradores` — ver a costura abaixo) e as telas de compras
+(parágrafo seguinte).
+
+**PUBLICADO, SERVIDO E SEM CONSUMIDOR é o terceiro estado, e é o que mais cresce.** O contrato
+andou 47 operações desde a última edição desta página, e a maior parte nasceu sem tela do lado de
+cá: obra (4) · comissões (4, mais as 4 de faixa em `employees`/`partners`) · perfis de custo (5) ·
+recebimento de mercadoria (6) · etiquetas e impressão (8) · índices e tabela de preço (5) ·
+reservas técnicas (3) · serviços (3) · papéis e permissões (5) · relatórios (10). **Não é dívida
+escondida nem promessa:** o caminho existe, o backend responde, e o que falta é a tela — que é
+trabalho de front, não de contrato. Medir isto é `grep` do nome da função gerada fora de
+`src/api/gerado/`, e é a conta que envelhece sozinha se ninguém a refizer.
 
 **COMPRAS é o caso do meio, e ele merece o parágrafo:** o contrato publica as 14 operações e o
 MSW as serve com estado de verdade, mas as telas de `/compras` continuam lendo os fixtures de
@@ -265,13 +283,23 @@ A tabela acima diz o que a TELA fala por HTTP. Quem responde é outra pergunta, 
 segunda resposta desde que existe backend: com `VITE_API_PROXY`, as operações de
 `src/mocks/rotas-do-backend.ts` atravessam o proxy e o resto continua no MSW.
 
-**Medido em 2026-08-21 (#274) contra `cabinet-erp-api` `3089106`: o contrato tem 78 operações,
-NENHUMA responde 501, e a passagem declara as 78 — ela está COMPLETA.** Com `VITE_API_PROXY` de
-pé, nenhum caminho de `/api` chega ao MSW; sem a variável, todos chegam.
+**A conta de hoje (2026-08-25, conferida contra o contrato e a lista, NÃO contra o servidor):
+o contrato tem 122 caminhos e 171 operações; `ROTAS_DO_BACKEND` declara 138 e `ROTAS_NO_MOCK`
+as outras 33** — compras (14), comissões (13) e recebimento (6), cada uma com `natureza` e
+motivo datado. Com `VITE_API_PROXY` de pé, essas 33 continuam no MSW e o resto atravessa;
+sem a variável, tudo chega ao MSW.
 
-A lista deixou de medir dívida do backend e virou **o interruptor entre dois ambientes**. Por isso
-ela e o `browser.ts` não foram apagados quando fechou, e `VITE_API_MODE=http` continua fora de
-questão **no projeto do demo**: `cabinetonline.cc` é 100% mock, e o modo http o apagaria.
+**A última MEDIÇÃO contra o api é de 2026-08-24** (`5b2d560`, #348) e cobria 163 operações; as
+8 de impressão que a #333 acrescentou depois entraram na passagem com 404 medido — o api ainda
+não tinha sincronizado o contrato. Número desta página não substitui sonda: quem for concluir
+alguma coisa a partir daqui remede com o par local, porque **declaração de ausência não tem
+quem a invalide** e fica verde para sempre no CI.
+
+**A lista é as DUAS coisas, e qual delas vale depende do dia.** Em 21/08, com a passagem completa,
+ela era só **o interruptor entre dois ambientes**; hoje, com 33 operações em `ROTAS_NO_MOCK`, ela
+voltou a medir dívida do backend também. Por isso ela e o `browser.ts` não foram apagados quando
+fechou, e `VITE_API_MODE=http` continua fora de questão **no projeto do demo**:
+`cabinetonline.cc` é 100% mock, e o modo http o apagaria.
 
 O que deixou de valer é a frase "o site público é mock" no singular — ver a seção abaixo.
 
@@ -300,7 +328,10 @@ Três consequências para quem lê este documento:
 
 *(Histórico da conta, porque ela envelhece calada: em `744bd75` (2026-08-19) eram 69 operações, 51
 servidas e 18 em 501; em `33db0df` a passagem foi a 58; em `3af4f01` o 501 zerou e sobraram 20 por
-decisão nossa. Remedir antes de citar — e remedir pela SONDA: contar `operationId` nos `rotas.ts`
+decisão nossa; em `f810a39` (24/08) o contrato estava em 124 com 110 servidas; em `5b2d560`
+(#348) em 163 com 130 na passagem; hoje são 171 com 138 — o contrato correu na frente três vezes
+em uma semana, e as três vezes a lista só soube porque alguém remediu. Remedir antes de citar — e
+remedir pela SONDA: contar `operationId` nos `rotas.ts`
 dos módulos deixou de fora `ListCatalogLookups`, que mora em `catalogo/lookups.ts`.)*
 
 **Duas operações da passagem entraram respondendo 403, de propósito — e já não respondem.**
@@ -325,8 +356,10 @@ erro:
 | atividades + colaborador | `atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de `listEmployees`. Atividade no Postgres com pessoa do mock grava o uuid de quem o servidor não conhece, e o `responsável` volta em branco no registro que TEM responsável |
 | listas de apoio + todo o resto | `catalog-lookups` é a raiz de quase todo combo: catálogo mockado ao lado de registro do servidor faz `sectorId`/`jobTitleId` apontarem para id que o mock nunca viu, e o rótulo sai em branco na leitura |
 
-Ficam inteiras no mock, por terem operação em 501: **oportunidades e motivos de perda do CRM**,
-**indicadores e agenda do dashboard**, **escrita de produto**, **variantes** e **kardex**.
+Ficam inteiras no mock as três famílias de `ROTAS_NO_MOCK`: **compras** (14), **comissões** (13)
+e **recebimento de mercadoria** (6). As que este parágrafo listava até 21/08 — oportunidades e
+motivos de perda do CRM, indicadores e agenda do dashboard, escrita de produto, variantes e
+kardex — **passaram todas**, e a #274 removeu junto o aviso de cobertura do funil.
 
 Duas armadilhas de MEDIÇÃO, complementares:
 
@@ -337,22 +370,23 @@ Duas armadilhas de MEDIÇÃO, complementares:
    "servidos" por isso; com `from` e `to` os dois respondem 501. **Toda leitura de 400 numa sonda
    é inconclusiva** — significa "a validação respondeu antes", e não diz nada sobre haver handler.
 
-#### A costura que sobrou: o quadro do funil
+#### A costura do quadro do funil ACABOU (#274) — fica o mecanismo
 
-`pagina-do-funil.tsx` lê funis e estágios (servidos) e as oportunidades (**501**). Com backend
-real o quadro recebe colunas do Postgres e pede ao mock as oportunidades de um `pipelineId` que o
-mock nunca viu: `{rows: [], total: 0}`, com status **200**.
+Enquanto o funil passava pela metade, `pagina-do-funil.tsx` lia funis e estágios do servidor e as
+oportunidades do mock (**501**): o quadro recebia colunas do Postgres e pedia ao mock as
+oportunidades de um `pipelineId` que o mock nunca viu — `{rows: [], total: 0}`, com status **200**.
 
 **Zero linhas com status 200 é a forma mais cara de errar** — o quadro montado e vazio se lê como
 uma afirmação sobre o negócio ("não há oportunidade neste funil"), e não sobre a integração. A
-tela não tem como distinguir as duas depois do fato: as duas chegam como lista vazia.
+tela não tem como distinguir as duas depois do fato: as duas chegam como lista vazia. Foi por isso
+que a costura foi para a TELA, em `cobertura-do-funil.tsx`, e só com backend real.
 
-`src/features/crm/cobertura-do-funil.tsx` diz isso ao operador, e **só quando há backend real** —
-sem `VITE_API_PROXY` o MSW responde as duas metades, os ids casam e o quadro funciona (é o caso do
-demo público, `cabinetonline.cc`; em `app.cabinetonline.cc` não há MSW e o aviso vale). Avisar
-ali inventaria um defeito que aquele ambiente não tem, e aviso que aparece quando não devia é o
-que ensina o operador a ignorar avisos. `rotas-do-backend.test.ts` amarra as
-duas pontas: enquanto as oportunidades faltarem, tirar o aviso reprova.
+**A #274 ligou oportunidades, motivos de perda e `…/quote`, as duas metades passaram a vir do
+mesmo lado e o componente foi REMOVIDO** — `src/features/crm/cobertura-do-funil.tsx` não existe
+mais. E a guarda inverteu junto: `rotas-do-backend.test.ts` reprovava tirar o aviso enquanto a
+falta existisse, e hoje reprova MONTÁ-LO (`o funil não avisa mais de uma falta que não existe`).
+Aviso de falta que já foi paga é a mesma mentira com o sinal trocado, e custa a mesma coisa —
+ensina o operador a ignorar avisos.
 
 #### A segunda costura: o cadastro de colaborador
 
@@ -369,7 +403,8 @@ mesma mecânica do funil (só com `VITE_API_PROXY`).
 **Por que a tela não migrou junto** — e o motivo é o MOCK, não o servidor:
 
 - não existe handler mock para `GET /api/employees/{id}`. Trocar o provider deixaria o cadastro
-  sem detalhe **no demo público** (`cabinetonline.cc`), que é 100% mock: quebra de produção para ganhar coerência em dev;
+  sem detalhe **no demo público** (`cabinetonline.cc`), que é 100% mock: quebra de produção para
+  ganhar coerência em dev;
 - as duas sementes de colaborador são conjuntos diferentes — `src/mocks/colaboradores.ts` (a tela)
   e `crm.colaboradores` (que serve `GET /api/employees` no mock);
 - `Colaborador.id` é `number` e o contrato declara `format: uuid`, o que arrasta o schema de
@@ -394,8 +429,9 @@ corrigidos junto:
 - **`environmentCode` é `format: uuid`** — id do ambiente no catálogo — e o botão `Ambiente`
   insere uma linha com um nome de `tabelas.ambientes`, lista INVENTADA (§8.2 capturou a grade
   vazia). Mandá-lo é **400 ao gravar**, e o operador perde o documento por causa de uma coluna.
-  Enquanto `GET /api/catalog-lookups` responder 501 e não existir kind `AMBIENTE`, código que o
-  documento não conhece não sai: a linha grava **sem ambiente** em vez de não gravar.
+  Enquanto não existir kind `AMBIENTE`, código que o documento não conhece não sai: a linha grava
+  **sem ambiente** em vez de não gravar. (A outra metade da condição venceu: `catalog-lookups`
+  responde há tempo, e hoje até a ESCRITA passa — o que falta é só o kind.)
 
 ### Atividades — uma tabela polimórfica, um recurso só (2026-08-14)
 
@@ -426,12 +462,14 @@ concluindo; o que foi agendado é parte do histórico que a análise lê. També
 há `active`: `activities` não é cadastro, e o padrão 8 não se aplica.
 
 **Onde o painel está montado, e por que não em toda parte.** Oportunidade
-(`/crm/oportunidades/{id}`) e os três papéis de parceiro (Cliente, Fornecedor,
-Profissional) — os dois recursos cujo id é do SERVIDOR. **Orçamento e pedido de
-compra ficam fora enquanto forem mock puro:** o `entityId` é `uuid` no contrato,
-e o id que essas telas têm hoje é inventado no front. A atividade sobreviveria à
-troca mock→HTTP apontando para registro que não existe. É a mesma regra do
-registry — o que depende do servidor só entra quando o caminho existe de verdade.
+(`/crm/oportunidades/{id}`), os três papéis de parceiro (Cliente, Fornecedor,
+Profissional) e — desde que a folha passou a falar HTTP — o **orçamento**
+(`/vendas/orcamentos/{id}`, `tipo: 'quote'`). São os recursos cujo id é do
+SERVIDOR, e a regra é essa, não a lista: **o pedido de COMPRA continua fora
+enquanto for mock puro**, porque o `entityId` é `uuid` no contrato e o id que
+aquelas telas têm é inventado no front — a atividade não sobreviveria à troca
+mock→HTTP, ficaria apontando para registro que não existe. É a mesma regra do
+registry: o que depende do servidor só entra quando o caminho existe de verdade.
 
 **O `kind` é conjunto fechado e a lista é PROPOSTA do front**
 (`call`/`meeting`/`email`/`task`). A transcrição do SoftLux não cobre atividade e
@@ -594,12 +632,15 @@ passado (regra do `project-core` @arquitetura).
 
 ### Pedido de venda — `/api/orders`
 
-O caminho existe no contrato com **dez** operações; o backend serve **seis**
-(`ListOrders`, `GetOrder`, `CreateOrder`, `UpdateOrder`, `CancelOrder`,
-`CreateOrderFromQuote`). As outras quatro respondem **501** e por isso a tela não
-as oferece: `ConcludeOrder`, `ReturnDemoOrder`, `TransferOrderProfessional` e
-`ListOrderProfessionalHistory`. Oferecer botão que responde 501 faria o operador
-descobrir a ausência errando.
+O caminho existe no contrato com **catorze** operações e **todas estão na passagem**:
+às seis do começo (`ListOrders`, `GetOrder`, `CreateOrder`, `UpdateOrder`, `CancelOrder`,
+`CreateOrderFromQuote`) juntaram-se `ConcludeOrder`, `ReturnDemoOrder`,
+`TransferOrderProfessional` e `ListOrderProfessionalHistory` (#317), a separação
+(`GetOrderFulfillment`, `PickOrderItem`, `ReleaseOrderItem`, #342/#349) e os participantes
+(`ListOrderParticipants`, `ReplaceOrderParticipants`, #350). **A regra que valia enquanto elas
+respondiam 501 não mudou de forma, só de alvo:** botão que responde 501 faz o operador
+descobrir a ausência errando, e hoje quem está nessa situação é `…/participants` — publicado,
+servido, e ainda sem tela que o consuma.
 
 Três coisas que a fronteira (`src/data/pedidos-venda-api.ts`) resolve e que a
 tela não mostra:
@@ -623,22 +664,35 @@ tela não mostra:
 prazo de retorno pendurado num pedido de venda é prazo que nunca vence.
 
 **Falta conhecida:** `kind` `AMBIENTE` ainda não está no vocabulário de
-`src/data/lookups-api.ts` (são 19 kinds hoje). Entra junto com a wiring da tela.
+`src/data/lookups-api.ts` (são 21 kinds hoje). Entra junto com a wiring da tela.
 
-### Colaborador — `GET /api/employees`, só leitura
+### Colaborador — a família inteira existe; a TELA é que não migrou
 
-Aberto para o `salespersonId` do orçamento ter para onde apontar. **Não tem
-`POST`, `PUT` nem detalhe por id**: o formulário de RH são ~30 campos da
-transcrição §2 e merece corte próprio; detalhe que devolvesse só os 5 campos da
-listagem mostraria formulário quase em branco. **Não tem `code`** — o legado
-identifica funcionário por CPF e não guarda código humano, então a coluna
-`Código` sai da listagem em vez de exibir um uuid.
+Começou como `GET /api/employees` só-leitura, aberto para o `salespersonId` do
+orçamento ter para onde apontar. **Hoje são oito operações** — `ListEmployees`,
+`CreateEmployee`, `GetEmployee`, `UpdateEmployee`, `LinkEmployee`,
+`UpdateEmployeeLink` e o par de faixas de comissão — e a passagem liga todas.
+**A frase "não tem `POST`, `PUT` nem detalhe por id" morreu quando o colaborador
+ganhou ficha e vínculo;
+o que sobrou dela é o motivo de a tela não ter migrado junto**, e esse é do lado
+do MOCK: falta handler de `GET /api/employees/{id}`, as duas sementes de
+colaborador são conjuntos diferentes e `Colaborador.id` é `number` contra o
+`format: uuid` do contrato. Enquanto isso, `data.colaboradores` é provider em
+memória e a costura está declarada na tela.
 
-### Dashboard e Planner — caminhos `Proposto`, sem servidor ainda
+**A escrita responde 403 `papel-insuficiente` para `operator-full`, e ali é
+DECISÃO, não herança:** `/api/employees` é `admin` porque vínculo é o que decide
+o papel dos outros.
 
-Entraram no contrato pelo front (nenhum backend os implementa) e no
-`VITE_API_MODE=mock` quem responde é `src/mocks/api/handlers.ts` sobre o store em
-memória. Do ponto de vista da tela **já são HTTP**: passam pelo cliente gerado,
+**Não tem `code`** — o legado identifica funcionário por CPF e não guarda código
+humano, então a coluna `Código` sai da listagem em vez de exibir um uuid.
+
+### Dashboard e Planner — caminhos `Proposto`, e desde a #274 com servidor
+
+Entraram no contrato pelo front, antes de existir implementação — é o que
+`Proposto` marca. **Passaram a ser servidos na #274 e estão na passagem**; no
+`VITE_API_MODE=mock` (o site público) quem responde é `src/mocks/api/handlers.ts`
+sobre o store em memória. Do ponto de vista da tela **já são HTTP**: passam pelo cliente gerado,
 pelos helpers de `src/data/api-provider.ts` e pelo mesmo tratamento de
 `problem+json` do resto. Trocar o mock pelo backend não mexe em tela nenhuma.
 
@@ -656,10 +710,13 @@ Três decisões que quem implementar o backend precisa honrar:
 1. **`GET /api/tasks` NÃO é `PagedResult`.** O quadro mostra as quatro colunas de
    uma vez; página de 10 cortaria coluna no meio e daria contagem de coluna
    errada. Crescendo o volume, o corte é por período/responsável, não por página.
-2. **`PATCH /api/tasks/{taskId}` é a única exceção à regra do `PUT` inteiro**, e
-   ela existe porque o cartão do quadro não carrega o registro completo — um
-   `PUT` a partir dele apagaria o que a tela não mostra. Campo **ausente** fica
-   como está; campo **`null`** apaga.
+2. **`PATCH /api/tasks/{taskId}` e `PATCH /api/todos/{todoId}` são as exceções à
+   regra do `PUT` inteiro** — são duas, não uma, e pela mesma razão: o cartão do
+   quadro e a linha do A fazer não carregam o registro completo, e um `PUT` a
+   partir deles apagaria o que a tela não mostra. Campo **ausente** fica como
+   está; campo **`null`** apaga. (O terceiro `PATCH` do contrato,
+   `…/opportunities/{id}/stage`, não é escrita parcial: é INTENÇÃO de mover, com
+   corpo próprio — ver a seção do CRM.)
 3. **`from`/`to` são obrigatórios na agenda.** Sem eles a resposta seria a agenda
    inteira, e a tela pediria um mês achando que recebeu um mês.
 
@@ -668,9 +725,12 @@ nome, em vez de exibir e-mail ou id, que são identificador de sistema.
 
 **Faltas conhecidas do contrato:** sem `DELETE` de variante (excluir linha da
 grade tira da TELA; a saída é desmarcar `Ativo` e gravar) · `Índice` e
-`Tipo de Valor` da §6.3 não existem no DTO · `Marca`, `Fábrica` e
-`Tipo de Produto` não existem no `ProductDto`. Coluna que o DTO não tem **sai da
-listagem** e campo que o servidor não guarda aparece **em branco**, com o
+`Tipo de Valor` da §6.3 não existem no DTO. **`Marca`, `Fábrica` e `Tipo de
+Produto` saíram desta lista:** a segunda leva do produto os publicou como
+`brandId`/`brandName`, `factoryId`/`factoryName` e `productTypeId`/
+`productTypeName`, e é o que a seção §Produto acima descreve — a falta vivia aqui
+e a entrada foi escrita lá, sem ninguém apagar a primeira. Coluna que o DTO não
+tem **sai da listagem** e campo que o servidor não guarda aparece **em branco**, com o
 `AvisoDeCobertura` dizendo isso ao operador — preencher com mock daria dado de
 mentira com cara de dado do servidor.
 
@@ -716,9 +776,10 @@ recurso escolheu, `filters` é campo a campo.
 ### Whitelist, e onde ela é barrada
 
 Cada recurso declara a sua no contrato, na descrição do parâmetro. Em produtos e
-parceiros é a **mesma do `sortBy`** — `code`/`description`/`active` em produtos,
-mais `legalName`/`tradeName`/`document` em parceiros — e cresce quando uma tela
-precisar. Campo fora dela é **400**, como no `sortBy`: filtro ignorado faria a
+parceiros é a **mesma do `sortBy`** — `code`/`description`/`active` em produtos;
+`code`/`legalName`/`tradeName`/`document`/`active`/`parentId` em parceiros, onde
+`parentId` entrou pela hierarquia pai/filho — e cresce quando uma tela precisar. Campo fora dela é
+**400**, como no `sortBy`: filtro ignorado faria a
 tela mostrar resultado errado sem sintoma.
 
 **Oportunidade é a primeira whitelist MENOR que a de `sortBy`**, e a subtração é
@@ -729,15 +790,18 @@ R$ 10,00 para quem procurava mil reais — número certo, significado errado, se
 sintoma. Ordenar por centavos continua valendo: a ordem é a mesma. Sobram `name`,
 `partnerName`, `stageName`, `expectedCloseDate` e `stageChangedAt`.
 
-**Obra (#273/#280) é a segunda, e a subtração tem outro motivo.** `sortBy` aceita
-`customerId`, `description`, `workType`, `active` **e `customerName`**; `filters`
-aceita os quatro primeiros. `customerName` fica de fora do filtro porque filtrar
-por nome de cliente seria uma **segunda forma de perguntar** o que `customerId` já
-responde — o combo escolhe o cliente e manda o id, que é como a tela pede "as
-obras deste cliente". Ordenar é outra coisa: acontece sobre o que já veio, e o
-operador ordena pelo que LÊ, que é o nome (`WorkDto.customerName` existe
-declaradamente "para a listagem mostrar de quem é a obra"). No servidor o campo
-sai de `LEFT JOIN partners`, como `partnerName` em oportunidades.
+**Obra é a segunda, e ela TROCOU de forma no meio do caminho — o parágrafo que
+vivia aqui descrevia o estado anterior à #289.** Hoje as duas listas se cruzam em
+vez de uma conter a outra: `sortBy` aceita `customerName`, `description`,
+`workType`, `active`; `filters` aceita esses quatro **mais `customerId`**. Cada
+lado tem o campo que faz sentido nele: filtrar é escolher o cliente no combo e
+mandar o **id** (nome como filtro seria uma segunda forma de perguntar a mesma
+coisa, e casaria por texto o que o id casa por identidade); ordenar acontece sobre
+o que já veio, e o operador ordena pelo que LÊ, que é o **nome**
+(`WorkDto.customerName` existe declaradamente "para a listagem mostrar de quem é a
+obra"). No servidor o campo sai de `LEFT JOIN partners`, como `partnerName` em
+oportunidades — ordenar por id agruparia por uuid, que não é ordem nenhuma para
+quem lê.
 
 **A lição das duas juntas: "a whitelist do `filters` é a do `sortBy`" deixou de
 ser regra e virou coincidência de dois recursos.** Cada listagem declara as suas
@@ -751,13 +815,14 @@ No front a lista mora em `FILTRAVEIS` (alias de `ORDENAVEIS` em `produtos-api.ts
 de sair** — mesma escolha já feita para `page` e `pageSize`: requisição sabidamente
 inválida faria o defeito de quem chamou chegar à tela com cara de erro do servidor.
 
-### O modo mock filtra de verdade — nos três recursos que publicam o parâmetro
+### O modo mock filtra de verdade — nos seis recursos que publicam o parâmetro
 
 `src/mocks/api/filtro-do-servidor.ts` é a peça compartilhada: converte `filters`
 para o vocabulário de `filtro-de-consulta`, aplica com `linhaPassaNosFiltros` e
-responde **400** ao que o contrato manda recusar. Usam-na `crm.ts` (oportunidades)
-e `handlers.ts` (produtos e parceiros). **Fronteira em duas cópias vira duas
-fronteiras** — a regra tem de ser a mesma nos três, com o mesmo texto de erro.
+responde **400** ao que o contrato manda recusar. Usam-na `crm.ts` (oportunidades),
+`handlers.ts` (produtos, parceiros e pedidos de venda), `quotes.ts` (orçamentos) e
+`obras.ts`. **Fronteira em N cópias vira N fronteiras** — a regra tem de ser a
+mesma nos seis, com o mesmo texto de erro, e é por isso que ela mora numa peça só.
 
 Cada recurso declara a whitelist COM O TIPO de cada campo, porque `variante` não
 viaja no contrato (é decisão de qual controle desenhar) e sem ela a comparação de
@@ -824,10 +889,11 @@ tela cujo provider sabe responder. Hoje filtram:
 | Fornecedores | HTTP (`/api/partners`) | Código · Nome Fantasia · Razão Social · CNPJ/CPF · Ativo |
 | Profissionais | HTTP (`/api/partners`) | Código · Nome de Apresentação · Nome · CNPJ/CPF · Ativo |
 | Colaboradores | mock | Código · Nome · Setor · Cargo · Ativo |
-| Orçamentos | mock | Número · Cliente · Descrição da Obra · **Data Emissão** · **Data Validade** |
-| Pedidos de Venda | HTTP (`/api/orders`) | Número · Série · Cliente · Descrição da Obra · Data Emissão · **Situação** · **Tipo** · Total |
+| Orçamentos | HTTP (`/api/quotes`) | Número · Cliente · Descrição da Obra · **Data Emissão** · **Data Validade** |
+| Pedidos de Venda | HTTP (`/api/orders`) | Número · Cliente · Descrição da Obra · Data Emissão · **Situação** · **Tipo** |
 | Pedidos de Compra | mock | Código · Pedido de Venda · Data · **Fornecedores** (multivalorado) |
 | Ordens de Compra | mock | Código · Fornecedor · Data Ordem · Data Envio · Data Prevista |
+| Funil (CRM) | HTTP (`/api/crm/opportunities`) | Título · Cliente · Etapa · **Previsão** · **Na etapa desde** |
 
 **Campo filtrável ≠ coluna**, mas as telas de parceiro seguem as colunas de
 propósito, com uma exceção: `document` filtra sem ser coluna, porque é a busca
@@ -901,20 +967,25 @@ acoplamento tem preço: trocar o `queryKey` por motivo de cache faria os favorit
 sumirem em silêncio, e por isso há teste fixando a chave de cada tela. Se ele
 ficar vermelho, a decisão é migrar o guardado, não atualizar o valor esperado.
 
-**Agrupamento não entra ainda porque não existe** — os view modes são padrão
-aprovado e não implementados. O campo cabe depois sem quebrar o que já está
-gravado: ausência = sem agrupamento.
+**Agrupamento e visão JÁ entram** — os view modes saíram do papel (#86, piloto no
+funil) e `favoritos-de-consulta.ts` guarda `visao`, `agruparPor` e `densidade` ao
+lado de filtros, junção e ordem: é a mesma frase ("quais registros, em que ordem,
+como desenhados, em que colunas, quantas linhas cabem"). O que a previsão desta
+página acertou foi a COMPATIBILIDADE: favorito gravado antes dos campos continua
+abrindo, porque ausência lê como `''` — sem visão escolhida, sem agrupamento.
 
 ### O que continua de fora, agora medido
 
-**Dinheiro não tem consumidor.** As oito listagens com filtro foram verificadas e
-**nenhuma tem coluna de dinheiro** — valor de orçamento é da variante, faturamento
-mínimo é do formulário. A variante fica de fora por isso, que é razão mais forte do
-que a anterior ("trafega em centavos"): esta é sobre demanda, aquela era sobre
-mecanismo. Quando existir a coluna, o obstáculo real é que reais→centavos é
-mudança de UNIDADE e não limpeza de caractere, então `normalizar` não serve — o
-operador que digita `1234` quer R$ 1.234,00, e o mesmo texto lido como centavos dá
-R$ 12,34.
+**Dinheiro ficou sem a razão fácil, e sobrou a difícil.** Esta página dizia que a
+variante de dinheiro não tinha consumidor porque nenhuma das listagens com filtro
+tinha coluna de dinheiro. **Deixou de ser verdade:** o funil publica `Valor
+previsto` (`expectedValueCents`) na visão de lista, e é exatamente o campo que o
+contrato mantém fora da whitelist de `filters` de propósito. Então o obstáculo
+voltou a ser o MECANISMO, que era o argumento original: reais→centavos é mudança de
+UNIDADE e não limpeza de caractere, então `normalizar` não serve — o operador que
+digita `1234` quer R$ 1.234,00, e o mesmo texto lido como centavos dá R$ 12,34.
+Enquanto não existir variante que converta na borda, coluna de dinheiro é ordenável
+e não filtrável, e a assimetria está escrita no contrato, não só aqui.
 
 **Faixa por slider** segue fora por falta de componente, e essa checagem foi
 refeita: não há slider no repo.

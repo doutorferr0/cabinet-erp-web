@@ -99,6 +99,8 @@ import type {
   ListStockBalancesParams,
   ListStockLocationsParams,
   ListStockMovementsParams,
+  ListSupportGrantAuditParams,
+  ListSupportGrantsParams,
   ListTasksParams,
   ListTechnicalReservesParams,
   ListWorksParams,
@@ -142,6 +144,8 @@ import type {
   PagedResultOfStockBalanceDto,
   PagedResultOfStockLocationDto,
   PagedResultOfStockMovementDto,
+  PagedResultOfSupportAuditEntryDto,
+  PagedResultOfSupportGrantDto,
   PagedResultOfTechnicalReserveDto,
   PagedResultOfWorkDto,
   PartnerContactDto,
@@ -193,6 +197,8 @@ import type {
   StockMovementRequest,
   StockValuationReportDto,
   SupplierMovementReportDto,
+  SupportGrantDto,
+  SupportGrantRequest,
   TaskDto,
   TaskPatchRequest,
   TaskWriteRequest,
@@ -4824,6 +4830,326 @@ export const updateRole = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(roleWriteRequest)
+  }
+);}
+
+
+
+export type listSupportGrantsResponse200 = {
+  data: PagedResultOfSupportGrantDto
+  status: 200
+}
+
+export type listSupportGrantsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listSupportGrantsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listSupportGrantsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listSupportGrantsResponseSuccess = (listSupportGrantsResponse200) & {
+  headers: Headers;
+};
+export type listSupportGrantsResponseError = (listSupportGrantsResponse400 | listSupportGrantsResponse401 | listSupportGrantsResponse403) & {
+  headers: Headers;
+};
+
+export type listSupportGrantsResponse = (listSupportGrantsResponseSuccess | listSupportGrantsResponseError)
+
+export const getListSupportGrantsUrl = (params?: ListSupportGrantsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/support-grants?${stringifiedParams}` : `/api/platform/support-grants`
+}
+
+/**
+ * Proposto. As CONCESSÕES de suporte — abertas, encerradas e vencidas, na mesma lista. É a superfície de leitura da trilha, e existe para que "quem entrou na organização do cliente, quando, por quê e até quando" seja uma consulta, não uma escavação de log.
+ *
+ * **Este caminho é o que substitui o `super-admin`.** O papel de suporte-da-plataforma não carrega flag nenhuma: o alcance dele É esta lista, e cada linha nomeia UMA organização. Sem concessão aberta, o suporte não lê dado de cliente algum — a resposta é 403 `urn:cabinet:erro:sem-concessao-de-suporte`, e não uma lista vazia, porque vazio se confunde com "a organização não tem nada".
+ *
+ * Mora sob `/api/platform/` e não sob `/api/`: é superfície ADMINISTRATIVA, com autorização própria, e nenhuma operação daqui responde ao papel da organização. Admin de cliente — inclusive `owner` — recebe 403 em todas elas.
+ *
+ * `sortBy` aceita `grantedAt`, `expiresAt`, `organizationName`; fora da lista é 400.
+ */
+export const listSupportGrants = async (params?: ListSupportGrantsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listSupportGrantsResponse> => {
+
+  return apiFetch<listSupportGrantsResponse>(getListSupportGrantsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type openSupportGrantResponse201 = {
+  data: SupportGrantDto
+  status: 201
+}
+
+export type openSupportGrantResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type openSupportGrantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type openSupportGrantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type openSupportGrantResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type openSupportGrantResponseSuccess = (openSupportGrantResponse201) & {
+  headers: Headers;
+};
+export type openSupportGrantResponseError = (openSupportGrantResponse400 | openSupportGrantResponse401 | openSupportGrantResponse403 | openSupportGrantResponse409) & {
+  headers: Headers;
+};
+
+export type openSupportGrantResponse = (openSupportGrantResponseSuccess | openSupportGrantResponseError)
+
+export const getOpenSupportGrantUrl = () => {
+
+
+
+
+  return `/api/platform/support-grants`
+}
+
+/**
+ * Proposto. ABRE uma concessão de suporte — o break-glass. Uma organização, com motivo escrito e prazo, e nada disso é opcional.
+ *
+ * **As três recusas são a razão de este caminho existir**, e nenhuma delas é conveniência de tela:
+ *
+ * 1. **Sem `reason` ou sem `expiresAt` → 400** `urn:cabinet:erro:campos-invalidos`, com o campo em `fields`. Acesso a dado de terceiro sem motivo registrado é exatamente o que uma flag global daria de graça; aqui ele não chega a existir. O servidor NÃO tem padrão para nenhum dos dois — motivo padrão é motivo de ninguém, e prazo padrão vira permanente.
+ * 2. **Já há concessão aberta em OUTRA organização → 409** `urn:cabinet:erro:suporte-ja-em-organizacao`, carregando o id da que está aberta. É a regra de UMA POR VEZ, e ela é do servidor: deixar o cliente "escolher a organização atual" faria do conjunto de concessões abertas um super-admin com outro nome. Para trocar de organização, encerra-se a atual (`/revoke`) e abre-se outra — o corte fica na trilha.
+ * 3. **`expiresAt` no passado, ou além do TETO de 8 horas a partir de agora → 400.** O teto é do desenho, não do gosto: concessão de um mês é flag global escrita com data. Precisou de mais tempo, abre-se outra concessão, e cada renovação deixa a sua linha.
+ *
+ * Abrir uma concessão **não muda a sessão em curso** — ela passa a valer na próxima leitura de `GET /auth/me`, onde aparece em `support`. A sessão continua sendo a mesma pessoa; o que muda é o alcance dela, e o alcance tem hora para acabar.
+ */
+export const openSupportGrant = async (supportGrantRequest: SupportGrantRequest, options?: Parameters<typeof apiFetch>[1]): Promise<openSupportGrantResponse> => {
+
+  return apiFetch<openSupportGrantResponse>(getOpenSupportGrantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(supportGrantRequest)
+  }
+);}
+
+
+
+export type getSupportGrantResponse200 = {
+  data: SupportGrantDto
+  status: 200
+}
+
+export type getSupportGrantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getSupportGrantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getSupportGrantResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getSupportGrantResponseSuccess = (getSupportGrantResponse200) & {
+  headers: Headers;
+};
+export type getSupportGrantResponseError = (getSupportGrantResponse401 | getSupportGrantResponse403 | getSupportGrantResponse404) & {
+  headers: Headers;
+};
+
+export type getSupportGrantResponse = (getSupportGrantResponseSuccess | getSupportGrantResponseError)
+
+export const getGetSupportGrantUrl = (id: string,) => {
+
+
+
+
+  return `/api/platform/support-grants/${id}`
+}
+
+/**
+ * Proposto. Uma concessão, pelo id. Legível depois de vencida ou encerrada — é registro de auditoria, e registro que some com o prazo não prova nada.
+ */
+export const getSupportGrant = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getSupportGrantResponse> => {
+
+  return apiFetch<getSupportGrantResponse>(getGetSupportGrantUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type revokeSupportGrantResponse200 = {
+  data: SupportGrantDto
+  status: 200
+}
+
+export type revokeSupportGrantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type revokeSupportGrantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type revokeSupportGrantResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type revokeSupportGrantResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type revokeSupportGrantResponseSuccess = (revokeSupportGrantResponse200) & {
+  headers: Headers;
+};
+export type revokeSupportGrantResponseError = (revokeSupportGrantResponse401 | revokeSupportGrantResponse403 | revokeSupportGrantResponse404 | revokeSupportGrantResponse409) & {
+  headers: Headers;
+};
+
+export type revokeSupportGrantResponse = (revokeSupportGrantResponseSuccess | revokeSupportGrantResponseError)
+
+export const getRevokeSupportGrantUrl = (id: string,) => {
+
+
+
+
+  return `/api/platform/support-grants/${id}/revoke`
+}
+
+/**
+ * Proposto. ENCERRA a concessão antes do prazo — a saída explícita do break-glass, e o caminho que precisa ser mais fácil que o de entrar.
+ *
+ * Não pede corpo de propósito: exigir justificativa para SAIR faria o suporte deixar a concessão aberta até vencer, que é o oposto do que a operação existe para provocar. O motivo já foi dado na abertura; o encerramento só precisa da hora, e ela vira `revokedAt`.
+ *
+ * Encerrar tem efeito ÚNICO e erro explícito: concessão já encerrada ou já vencida responde 409 `urn:cabinet:erro:concessao-encerrada`, porque "encerrei agora" e "já estava encerrada" são fatos diferentes na trilha e a tela não deve dizer o segundo como se fosse o primeiro.
+ */
+export const revokeSupportGrant = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<revokeSupportGrantResponse> => {
+
+  return apiFetch<revokeSupportGrantResponse>(getRevokeSupportGrantUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listSupportGrantAuditResponse200 = {
+  data: PagedResultOfSupportAuditEntryDto
+  status: 200
+}
+
+export type listSupportGrantAuditResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listSupportGrantAuditResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listSupportGrantAuditResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listSupportGrantAuditResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listSupportGrantAuditResponseSuccess = (listSupportGrantAuditResponse200) & {
+  headers: Headers;
+};
+export type listSupportGrantAuditResponseError = (listSupportGrantAuditResponse400 | listSupportGrantAuditResponse401 | listSupportGrantAuditResponse403 | listSupportGrantAuditResponse404) & {
+  headers: Headers;
+};
+
+export type listSupportGrantAuditResponse = (listSupportGrantAuditResponseSuccess | listSupportGrantAuditResponseError)
+
+export const getListSupportGrantAuditUrl = (id: string,
+    params?: ListSupportGrantAuditParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/support-grants/${id}/audit?${stringifiedParams}` : `/api/platform/support-grants/${id}/audit`
+}
+
+/**
+ * Proposto. A TRILHA da concessão — o que o suporte fez enquanto esteve dentro, entrada por entrada.
+ *
+ * É trilha PRÓPRIA, e não o log de auditoria da organização: o dono do cliente lê o que a equipe DELE fez no `audit_log` da empresa; esta lista responde por quem entrou de fora. Misturar as duas faria o acesso da plataforma parecer atividade do cliente na tela dele, que é o pior lugar para essa informação se esconder.
+ *
+ * **A trilha é do servidor, não do cliente.** O front não escreve entrada nenhuma — quem grava é quem atende a requisição, em todo acesso autorizado pela concessão. Trilha alimentada pela tela registraria só o que a tela lembrou de contar.
+ *
+ * APENDE-SE, nunca se apaga: não existe `DELETE` aqui, e encerrar a concessão não limpa o que ela produziu. `sortBy` aceita `at`; fora da lista é 400.
+ */
+export const listSupportGrantAudit = async (id: string,
+    params?: ListSupportGrantAuditParams, options?: Parameters<typeof apiFetch>[1]): Promise<listSupportGrantAuditResponse> => {
+
+  return apiFetch<listSupportGrantAuditResponse>(getListSupportGrantAuditUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

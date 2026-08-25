@@ -1120,6 +1120,40 @@ const COMISSOES: readonly RotaNoMock[] = [
   },
 ]
 
+/**
+ * SUPORTE-DA-PLATAFORMA (5 operações) — o item 6 da fundação, publicado NESTE
+ * PR e por isso desconhecido do outro lado.
+ *
+ * `sem-contrato` e não `sem-handler`, e a diferença aqui é literal: a cópia do
+ * contrato do api não tem estes caminhos, então o `setNotFoundHandler` dele
+ * responde **404**, nem chega a 501. É o estado normal e temporário logo depois
+ * de um caminho nascer aqui — o mesmo que a `#335` produziu com `cost-profiles`.
+ *
+ * **Não medi contra par local, e digo em vez de deixar implícito:** o backend
+ * não conhece o caminho, então a medição só poderia devolver o 404 que a
+ * natureza já declara. O que ela responderia depois de `pnpm sync:contract` lá
+ * é 501, e aí a linha muda de natureza — não de lista.
+ *
+ * Ficam no mock por decisão, não por espera: enquanto não houver console de
+ * suporte, ligar a passagem tiraria os handlers que provam a regra (motivo,
+ * prazo, uma-por-vez, trilha) em troca de 404 — a "rota adiantada" que o
+ * cabeçalho deste arquivo chama de pior que rota ausente.
+ */
+const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
+  [
+    ['get', '/api/platform/support-grants'],
+    ['post', '/api/platform/support-grants'],
+    ['get', '/api/platform/support-grants/{id}'],
+    ['post', '/api/platform/support-grants/{id}/revoke'],
+    ['get', '/api/platform/support-grants/{id}/audit'],
+  ] as const
+).map(([metodo, caminho]) => ({
+  metodo,
+  caminho,
+  motivo: '404 no api — caminho publicado neste repo em 25/08 e ainda não sincronizado lá',
+  natureza: 'sem-contrato' as const,
+}))
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   {
     metodo: 'get',
@@ -1203,6 +1237,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     motivo: SENHA_INICIAL_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
   },
+  ...SUPORTE_DA_PLATAFORMA,
 ]
 
 /** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */

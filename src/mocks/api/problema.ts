@@ -89,6 +89,15 @@ export const TIPO = {
   entregaFechada: 'urn:cabinet:erro:entrega-fechada',
   entregaVazia: 'urn:cabinet:erro:entrega-vazia',
   entregaDeOutroPedido: 'urn:cabinet:erro:entrega-de-outro-pedido',
+  // O break-glass do suporte-da-plataforma. As três dizem coisas diferentes e
+  // por isso são três: "você não tem acesso a esta organização" (o PADRÃO, e o
+  // que existe no lugar do `super-admin`), "você já está em outra" (a regra de
+  // uma-por-vez) e "esta já acabou". Um 403 genérico em cima das duas primeiras
+  // faria a recusa por falta de concessão parecer falta de permissão de papel,
+  // que é o erro que este trilho existe para não deixar acontecer.
+  semConcessaoDeSuporte: 'urn:cabinet:erro:sem-concessao-de-suporte',
+  suporteJaEmOrganizacao: 'urn:cabinet:erro:suporte-ja-em-organizacao',
+  concessaoEncerrada: 'urn:cabinet:erro:concessao-encerrada',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -144,6 +153,9 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:entrega-fechada': 'Entrega fechada',
   'urn:cabinet:erro:entrega-vazia': 'Entrega vazia',
   'urn:cabinet:erro:entrega-de-outro-pedido': 'Entrega de outro pedido',
+  'urn:cabinet:erro:sem-concessao-de-suporte': 'Sem concessão de suporte',
+  'urn:cabinet:erro:suporte-ja-em-organizacao': 'Suporte já está em outra organização',
+  'urn:cabinet:erro:concessao-encerrada': 'Concessão já encerrada',
   'urn:cabinet:erro:nao-implementado': 'Não implementado',
   'urn:cabinet:erro:resposta-nao-json': 'Resposta não é da API',
 }
@@ -165,12 +177,13 @@ export function tituloDoProblema(tipo: ProblemType, status: number): string {
 }
 
 /**
- * Os MEMBROS DE EXTENSÃO da RFC, e o contrato declara dois. Extensão nova entra
+ * Os MEMBROS DE EXTENSÃO da RFC, e o contrato declara três. Extensão nova entra
  * no schema primeiro — solta aqui, o front a descobriria por acidente.
  */
 export type Extensoes = {
   fields?: ProblemFieldError[]
   existingPartnerId?: string
+  openGrantId?: string
 }
 
 /**

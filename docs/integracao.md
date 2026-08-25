@@ -634,6 +634,69 @@ listagem mostraria formulário quase em branco. **Não tem `code`** — o legado
 identifica funcionário por CPF e não guarda código humano, então a coluna
 `Código` sai da listagem em vez de exibir um uuid.
 
+### Suporte-da-plataforma — o break-glass, `/api/platform/support-grants`
+
+Item 6 da fundação (`current-state.md` @pendencias), e o único caminho do
+contrato que mora sob `/api/platform/`: é **superfície administrativa
+separada**, com autorização própria, e nenhuma operação dela responde ao papel
+da organização — admin de cliente, inclusive `owner`, recebe 403.
+
+**A regra inteira é que não existe flag.** O que existiria por inércia é um
+booleano — `isSuperAdmin` no colaborador, ou um sexto valor no `CHECK` de
+`employee_company.role` — e com o produto vendido a terceiros isso é acesso
+irrestrito a dado de cliente que não deixa de existir quando ninguém o usa. O
+papel foi partido em dois:
+
+- **Identidade** — "é da equipe da plataforma". **Não concede nada.** Sozinha, o
+  alcance é zero e toda operação de organização de cliente responde 403
+  `urn:cabinet:erro:sem-concessao-de-suporte`. Ser inútil sozinha é o desenho.
+- **Concessão** — UMA organização, com `reason` e `expiresAt`, os dois
+  obrigatórios. É ela que autoriza, e ela tem hora para acabar.
+
+As três recusas, e nenhuma é conveniência de tela:
+
+| situação | resposta |
+| --- | --- |
+| sem `reason` ou sem `expiresAt` (ou prazo no passado / além do teto de 8h) | 400 `campos-invalidos`, com o campo em `fields` |
+| já há concessão aberta — inclusive na MESMA organização | 409 `suporte-ja-em-organizacao`, com `openGrantId` |
+| `/revoke` no que já foi encerrado ou já venceu | 409 `concessao-encerrada` |
+
+**O teto de 8 horas é do desenho, não do gosto:** concessão de um mês é flag
+global escrita com data. Precisou de mais tempo, abre-se outra, e cada renovação
+deixa a sua linha.
+
+**A expiração é DERIVADA, nunca gravada.** `status` é calculado a cada leitura
+comparando `expiresAt` com o relógio do SERVIDOR. Um `status` persistido
+dependeria de alguém passar marcando concessão vencida, e o dia em que esse
+alguém não roda é o dia em que o acesso continua valendo. Pelo mesmo motivo o
+cliente não decide expiração: ele desenha a contagem a partir de `expiresAt` e
+**pergunta** ao servidor se ainda pode — relógio de navegador é ajustável pelo
+operador.
+
+**A sessão sabe.** `SessaoAtual.support` é `null` em quase toda sessão que
+existe; quando não é, traz a organização, o motivo e o prazo. Duas organizações
+ao mesmo tempo não têm como ser representadas nesse campo, e é de propósito.
+Vencido o prazo, o campo volta a `null` sozinho — a tela não expira nada, ela
+pergunta.
+
+**A trilha é do servidor.** `granted`, `revoked` e `expired` são gravados por
+quem os presencia; `accessed` é gravado pelo laço que atende requisição. Trilha
+alimentada pela tela registraria só o que a tela lembrou de contar. Ela guarda
+**verbo e caminho, nunca corpo**: auditoria que copia o dado do cliente vira uma
+segunda cópia do que ela existe para proteger. Só leitura — não há `DELETE`, e
+encerrar a concessão não limpa o que ela produziu.
+
+**Ainda não há tela.** Console de suporte é trilho próprio, a mesma decisão que
+a #292 tomou para a tela de checkboxes de papéis. O mock responde inteiro
+(`src/mocks/api/suporte.ts`) e a fronteira existe (`src/data/suporte-api.ts`)
+para que a tela, quando vier, nasça contra o comportamento que o servidor
+promete. **A identidade nasce desligada no mock** — `entrarComoSuporte()` é do
+ensaio; sem ela, tudo é 403, que é o padrão certo.
+
+A guarda contra a volta da flag é `src/data/sem-super-admin.test.ts`: ela lê o
+contrato direto e reprova booleano com cara de alcance global, `organizationIds`
+no plural, e `reason`/`expiresAt` deixando de ser obrigatórios.
+
 ### Dashboard e Planner — caminhos `Proposto`, sem servidor ainda
 
 Entraram no contrato pelo front (nenhum backend os implementa) e no

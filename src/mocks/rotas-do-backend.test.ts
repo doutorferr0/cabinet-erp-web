@@ -521,22 +521,33 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('a ÚNICA rota SEM CONTRATO é a da senha inicial — publicada por esta PR', () => {
+  it('as rotas SEM CONTRATO são as publicadas aqui e ainda não sincronizadas lá', () => {
     // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
-    // byte a byte). A PR da senha inicial publica `reset-password` AQUI, então
-    // a cópia do api fica atrás por definição até o `sync:contract` de lá — o
-    // estado `sem-contrato` é o correto e o console DEVE avisar. A lista é
-    // FECHADA de propósito: a segunda rota que aparecer aqui sem querer
-    // continua reprovando e sendo nomeada. Quando a PR do api sincronizar e
-    // ligar o handler, a linha sai de `ROTAS_NO_MOCK` e este caso volta a
-    // cobrar o vazio.
+    // byte a byte). Depois passou a cobrar UMA — `reset-password`, publicada
+    // AQUI pela PR da senha inicial —, e agora cobra SEIS: as cinco do
+    // suporte-da-plataforma (item 6 da fundação) nasceram no mesmo estado, e
+    // pelo mesmo motivo estrutural. Caminho nasce neste repo; a cópia do api
+    // fica atrás por definição até o `sync:contract` de lá, e enquanto isso o
+    // 404 é a resposta correta e o console DEVE avisar.
+    //
+    // A lista continua FECHADA de propósito: cada entrada aqui é uma DECISÃO
+    // escrita, e a rota que aparecer sem querer segue reprovando e sendo
+    // nomeada. Quando o api sincronizar e ligar o handler, a linha sai de
+    // `ROTAS_NO_MOCK` e este caso encolhe de novo.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
       'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
-    ).toEqual(['post /api/employees/{id}/reset-password'])
-    // Cabeçalho com o próximo passo + uma linha por rota = 2.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(2)
+    ).toEqual([
+      'post /api/employees/{id}/reset-password',
+      'get /api/platform/support-grants',
+      'post /api/platform/support-grants',
+      'get /api/platform/support-grants/{id}',
+      'post /api/platform/support-grants/{id}/revoke',
+      'get /api/platform/support-grants/{id}/audit',
+    ])
+    // Cabeçalho com o próximo passo + uma linha por rota = 7.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(7)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

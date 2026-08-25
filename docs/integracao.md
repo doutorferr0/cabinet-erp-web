@@ -54,6 +54,14 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
   casas implícitas (`10000` = 1%). Quantidade com até 3 casas. Datas ISO no dado.
   CPF/CNPJ sem máscara no dado.
 - **Desativação é lógica.** Existe `active`; nada é excluído de verdade.
+- **`GET /health` diz QUAL BINÁRIO respondeu** (`Proposto`): `version` e `commit`
+  são **obrigatórios**, e valem `desconhecido` quando a imagem foi construída sem
+  carimbo — nunca ausentes, nunca vazios. Obrigatórios de propósito: opcional
+  faria o cliente tratar "não sei" e "não me disseram" como o mesmo caso, quando
+  o primeiro é imagem mal construída e o segundo é servidor velho. É a primeira
+  pergunta de qualquer incidente ("o deploy pegou?"), e ela não pode depender de
+  alguém abrir SSH na VM. No mock os dois valem `mock`: não há imagem publicada
+  do outro lado, e `desconhecido` mandaria caçar um deploy que não existe.
 
 ## Sessão no contrato — `security`, e as quatro exceções
 

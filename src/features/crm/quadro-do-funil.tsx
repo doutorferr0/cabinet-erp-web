@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEstagios, useMoverOportunidade } from '@/data/crm-api'
+import { mensagemDoErro } from '@/lib/erros'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
@@ -436,8 +437,13 @@ function Cartao({
       {mover.isError ? (
         // O `detail` do problem+json diz o motivo — "estágio de perda exige
         // motivo", por exemplo. Sem ele o cartão simplesmente não se mexeria.
+        //
+        // E era o que acontecia: `error.message` do `ErroDaApi` é a frase que o
+        // ADAPTADOR passou ao `dadosOuErro` ("Falha ao mover a oportunidade."),
+        // nunca o `detail`. O comentário acima descrevia a intenção; o código
+        // mostrava o genérico. `mensagemDoErro` é quem cumpre a promessa.
         <p role="alert" className="mt-1 text-[0.75rem] text-destructive">
-          {mover.error instanceof Error ? mover.error.message : 'Falha ao mover.'}
+          {mensagemDoErro(mover.error, 'Falha ao mover.')}
         </p>
       ) : null}
     </li>

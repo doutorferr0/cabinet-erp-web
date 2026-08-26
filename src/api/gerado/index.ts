@@ -108,6 +108,7 @@ import type {
   ListPaymentModesParams,
   ListPaymentTermsParams,
   ListPickingQueueParams,
+  ListPriceAdjustmentsParams,
   ListPriceIndexesParams,
   ListProductsParams,
   ListProjectsParams,
@@ -124,6 +125,7 @@ import type {
   ListTasksParams,
   ListTechnicalReservesParams,
   ListTenantsParams,
+  ListVariantTablePricesParams,
   ListWorksParams,
   LoginOk,
   LoginRequest,
@@ -159,6 +161,7 @@ import type {
   PagedResultOfPaymentModeDto,
   PagedResultOfPaymentTermDto,
   PagedResultOfPickingQueueItemDto,
+  PagedResultOfPriceAdjustmentDto,
   PagedResultOfPriceIndexDto,
   PagedResultOfProductDto,
   PagedResultOfPurchaseArrivalRowDto,
@@ -187,6 +190,8 @@ import type {
   PickOrderItemRequest,
   PlanItemDto,
   PlanItemRescheduleRequest,
+  PriceAdjustmentDto,
+  PriceAdjustmentWriteRequest,
   PriceIndexDto,
   PriceIndexWriteRequest,
   PrintProductLabelsParams,
@@ -11183,24 +11188,35 @@ export type listVariantTablePricesResponseError = (listVariantTablePricesRespons
 
 export type listVariantTablePricesResponse = (listVariantTablePricesResponseSuccess | listVariantTablePricesResponseError)
 
-export const getListVariantTablePricesUrl = (variantId: string,) => {
+export const getListVariantTablePricesUrl = (variantId: string,
+    params?: ListVariantTablePricesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/table-prices/${variantId}`
+  return stringifiedParams.length > 0 ? `/api/table-prices/${variantId}?${stringifiedParams}` : `/api/table-prices/${variantId}`
 }
 
 /**
- * Proposto. As tabelas de preço desta variante, uma por fornecedor.
+ * Proposto. As tabelas de preço desta variante — por padrão, **a vigente hoje**, uma linha por fornecedor.
  *
- * Lista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.
+ * Lista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante. Com `history=true` ela deixa de ser curta por fornecedor e passa a ser curta por fornecedor × vigência, que continua sendo uma tela e não um cadastro.
+ *
+ * **O padrão é o vigente de propósito.** Quem abre a ficha da peça quer o preço que vale, e uma resposta que trouxesse o histórico inteiro obrigaria toda tela a filtrar por data antes de mostrar qualquer coisa — o primeiro que esquecesse mostraria o preço de 2019 ao lado do de hoje, sem nada distinguindo os dois.
  *
  * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
  */
-export const listVariantTablePrices = async (variantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listVariantTablePricesResponse> => {
+export const listVariantTablePrices = async (variantId: string,
+    params?: ListVariantTablePricesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listVariantTablePricesResponse> => {
 
-  return apiFetch<listVariantTablePricesResponse>(getListVariantTablePricesUrl(variantId),
+  return apiFetch<listVariantTablePricesResponse>(getListVariantTablePricesUrl(variantId,params),
   {
     ...options,
     method: 'GET'
@@ -11259,11 +11275,15 @@ export const getReplaceVariantTablePricesUrl = (variantId: string,) => {
 }
 
 /**
- * Proposto. Substitui a lista inteira de tabelas desta variante.
+ * Proposto. **Abre uma vigência** para as tabelas desta variante — não substitui o histórico.
+ *
+ * A lista do corpo passa a valer a partir de `effectiveFrom` (ausente = hoje). Fornecedor que não vier fica sem tabela A PARTIR DAQUELA DATA, e as vigências anteriores continuam de pé: é assim que a venda de ontem continua explicável depois de a tabela de hoje mudar. Repetir uma `effectiveFrom` que já existe SUBSTITUI aquela vigência, que é a correção da tabela digitada errada.
  *
  * **Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.
  *
  * Fornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.
+ *
+ * **Para mover o catálogo inteiro de um fornecedor, o caminho é `POST /api/price-adjustments`** — este aqui é uma variante por vez, e um reajuste feito por N chamadas dele deixaria N vigências sem nada em comum, que nenhuma tela consegue apresentar como um fato só.
  *
  * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
  */
@@ -13094,6 +13114,143 @@ export const printProductLabels = async (params: PrintProductLabelsParams, optio
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type listPriceAdjustmentsResponse200 = {
+  data: PagedResultOfPriceAdjustmentDto
+  status: 200
+}
+
+export type listPriceAdjustmentsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPriceAdjustmentsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPriceAdjustmentsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPriceAdjustmentsResponseSuccess = (listPriceAdjustmentsResponse200) & {
+  headers: Headers;
+};
+export type listPriceAdjustmentsResponseError = (listPriceAdjustmentsResponse400 | listPriceAdjustmentsResponse401 | listPriceAdjustmentsResponse403) & {
+  headers: Headers;
+};
+
+export type listPriceAdjustmentsResponse = (listPriceAdjustmentsResponseSuccess | listPriceAdjustmentsResponseError)
+
+export const getListPriceAdjustmentsUrl = (params?: ListPriceAdjustmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/price-adjustments?${stringifiedParams}` : `/api/price-adjustments`
+}
+
+/**
+ * Proposto. Os reajustes de tabela da empresa ativa, do mais recente para o mais antigo.
+ *
+ * **Inclui os de vigência FUTURA, e é metade da razão de a listagem existir.** Um reajuste lançado hoje para valer no dia 1º não aparece em preço nenhum até lá; sem uma lista que o mostre, a única forma de saber que ele existe é a virada acontecer.
+ *
+ * Empresa ativa vazia devolve `{rows: [], total: 0}`, como toda listagem deste contrato: aqui a empresa vem da sessão, e "sem empresa" é o operador recém-criado, não erro do cliente.
+ */
+export const listPriceAdjustments = async (params?: ListPriceAdjustmentsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPriceAdjustmentsResponse> => {
+
+  return apiFetch<listPriceAdjustmentsResponse>(getListPriceAdjustmentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPriceAdjustmentResponse201 = {
+  data: PriceAdjustmentDto
+  status: 201
+}
+
+export type createPriceAdjustmentResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPriceAdjustmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPriceAdjustmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPriceAdjustmentResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPriceAdjustmentResponseSuccess = (createPriceAdjustmentResponse201) & {
+  headers: Headers;
+};
+export type createPriceAdjustmentResponseError = (createPriceAdjustmentResponse400 | createPriceAdjustmentResponse401 | createPriceAdjustmentResponse403 | createPriceAdjustmentResponse409) & {
+  headers: Headers;
+};
+
+export type createPriceAdjustmentResponse = (createPriceAdjustmentResponseSuccess | createPriceAdjustmentResponseError)
+
+export const getCreatePriceAdjustmentUrl = () => {
+
+
+
+
+  return `/api/price-adjustments`
+}
+
+/**
+ * Proposto. Reajusta em massa as tabelas de um fornecedor, abrindo uma vigência nova.
+ *
+ * É a operação que a metade VENDA do preço pedia e não tinha: sem ela, "o fornecedor subiu 12%" é digitar 200 vezes o mesmo raciocínio, uma variante por vez, e cada digitação é uma chance de o preço sair errado numa peça que ninguém vai conferir.
+ *
+ * **Aplica na hora e responde com o resultado**, não agenda. As linhas de `VariantTablePriceDto` já existem quando o 201 volta, com `adjustmentId` apontando para o `id` desta resposta; a vigência futura é que decide quando elas passam a valer. Ver `PriceAdjustmentDto`.
+ *
+ * **Papel: `admin` ou superior**, a mesma linha de corte de `/api/price-indexes` e `/api/table-prices/{variantId}`, e aqui ela pesa mais: uma requisição move o preço de todo o catálogo daquele fornecedor.
+ *
+ * **Recusas, e nenhuma delas apara em silêncio:**
+ *
+ * * `percent` e `prices` juntos, ou nenhum dos dois — **400** `campos-invalidos`.
+ * * `variantId` repetido em `prices` — **400**, pela mesma razão do `PUT` de tabelas.
+ * * variante de `prices` que não existe, ou que não é da empresa ativa — **400**, com a linha nomeada em `fields`. Não é 404: o que não existe é um item do corpo, não o recurso pedido.
+ * * `percent` sobre fornecedor sem NENHUMA tabela vigente em `effectiveFrom` — **409** `reajuste-sem-base`.
+ *
+ * **Não há como desfazer por este contrato, e é decisão.** O que desfaz um reajuste é outro reajuste, com vigência própria — apagar a vigência criada faria sumir a explicação dos preços que valeram entre a aplicação e o arrependimento, que é exatamente o que o histórico existe para guardar.
+ */
+export const createPriceAdjustment = async (priceAdjustmentWriteRequest: PriceAdjustmentWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPriceAdjustmentResponse> => {
+
+  return apiFetch<createPriceAdjustmentResponse>(getCreatePriceAdjustmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(priceAdjustmentWriteRequest)
   }
 );}
 

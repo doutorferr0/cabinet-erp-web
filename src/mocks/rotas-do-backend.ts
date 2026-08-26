@@ -417,6 +417,24 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/table-prices/{variantId}' },
   { metodo: 'put', caminho: '/api/table-prices/{variantId}' },
 
+  // reajuste em massa (2 operações) — o caminho NASCE nesta PR (26/08), e por
+  // isso **não foi medido contra par local: não havia o que medir**. A cópia do
+  // contrato do api não pode conhecer `/api/price-adjustments` antes de um
+  // `sync:contract` de lá, então o que ele responde hoje é 404 `Este caminho não
+  // existe no contrato` — a mesma `natureza: 'sem-contrato'` que as cinco de
+  // suporte carregam em `ROTAS_NO_MOCK`.
+  //
+  // **E mesmo assim o lugar delas é AQUI, não em `ROTAS_NO_MOCK`** — é a decisão
+  // que o cabeçalho deste arquivo já tomou por `cost-profiles` em 24/08, pelo
+  // mesmo raciocínio: sem handler de mock e sem tela, mover para a outra lista
+  // faria a rota cair no fallback da SPA e devolver `index.html` com **200**, que
+  // é pior que o 404 honesto. O dano hoje é ZERO porque ninguém as consome.
+  //
+  // Quem escrever a tela do reajuste remede: se o api já servir, está no lugar
+  // certo; se responder 501, o lugar passa a ser `ROTAS_NO_MOCK` COM handler.
+  { metodo: 'get', caminho: '/api/price-adjustments' },
+  { metodo: 'post', caminho: '/api/price-adjustments' },
+
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
   // atende as três telas de uma vez.

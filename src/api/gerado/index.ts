@@ -7678,6 +7678,8 @@ export const getGetPurchaseArrivalForecastUrl = (params?: GetPurchaseArrivalFore
  *
  * Linha a linha de ITEM, não de ordem: a pergunta que a tela responde é "quando chega a peça do cliente X". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.
  *
+ * **E só o que AINDA NÃO CHEGOU.** Linha inteiramente recebida sai da previsão; a parcialmente recebida fica pelo que falta — `quantity` aqui é o SALDO A CHEGAR (ver o campo), e não a quantidade original da ordem. Previsão que mostrasse o que já desceu do caminhão faria o vendedor prometer duas vezes a mesma peça, que é o defeito que esta tela existe para não ter.
+ *
  * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
  */
 export const getPurchaseArrivalForecast = async (params?: GetPurchaseArrivalForecastParams, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseArrivalForecastResponse> => {
@@ -8155,6 +8157,8 @@ export const getPostGoodsReceiptUrl = (id: string,) => {
  * **O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.
  *
  * **A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, "o que vem em ordem enviada e ainda não recebida". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.
+ *
+ * **E essa baixa não é coluna que este lançamento escreve: é a LINHA que ele deixa apontada.** `qtyOnOrder` e `PurchaseOrderItemDto.quantityReceived` são DERIVADOS do vínculo `purchaseOrderId` + `purchaseOrderLine` das linhas de recebimentos LANÇADOS. Um contador decrementado aqui divergiria do documento no primeiro estorno, e ninguém reconcilia isso depois; o derivado não tem como divergir do que os documentos dizem. Recebimento em `draft` ou `checked` não conta — enquanto não lançou, a peça não entrou no galpão —, e linha SEM vínculo não baixa reserva nenhuma, porque ordem nenhuma a esperava.
  *
  * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
  */

@@ -841,32 +841,43 @@ export function VitraDataTable<T>({
           // (§9, padrão 4) em vez de somar um botão ao lado: a barra tem a mesma
           // ordem em oito telas, e dois caminhos para "filtrar" lado a lado
           // fariam o operador escolher qual dos dois é o de verdade.
-          if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
-            // O modo por módulo (#104) troca a barra plana pela faixa de
-            // chips. Reusa o MESMO `filtrosInput`, então debounce, consulta
-            // salva e a recusa na fronteira continuam valendo de graça — a
-            // diferença é só como o operador monta a pergunta.
-            if (modoDeFiltro === 'modulo' && entidade) {
-              // O seletor de colunas sai no MESMO slot, e não numa barra
-              // própria: filtro e colunas respondem juntos "como esta listagem
-              // está montada agora". Separá-los faria o operador procurar em
-              // dois lugares o ajuste da mesma pergunta.
-              return (
-                <span key={action.id} className="contents">
+          // O modo por módulo (#104) troca a barra plana pela faixa de chips.
+          // Reusa o MESMO `filtrosInput`, então debounce, consulta salva e a
+          // recusa na fronteira continuam valendo de graça — a diferença é só
+          // como o operador monta a pergunta.
+          //
+          // **Este braço NÃO exige `camposFiltraveis`, e a separação é de
+          // 2026-08-25.** Enquanto ele vivia dentro do `if` do filtro, LIGAR
+          // COLUNA dependia de EXISTIR FILTRO — duas funções diferentes presas
+          // por um `&&`. A conta apareceu quando `/cadastros/colaboradores`
+          // migrou para `GET /api/employees`: o servidor não publica `filters`,
+          // os campos filtráveis saíram da tela, e o seletor de colunas foi
+          // junto sem que nada no servidor o impedisse. Recurso que o contrato
+          // não deixa FILTRAR continua podendo escolher o que MOSTRAR.
+          if (action.id === 'filtro' && modoDeFiltro === 'modulo' && entidade) {
+            // O seletor de colunas sai no MESMO slot, e não numa barra
+            // própria: filtro e colunas respondem juntos "como esta listagem
+            // está montada agora". Separá-los faria o operador procurar em
+            // dois lugares o ajuste da mesma pergunta.
+            return (
+              <span key={action.id} className="contents">
+                {camposFiltraveis && camposFiltraveis.length > 0 ? (
                   <FiltroPorModulo
                     entidade={entidade}
                     filtros={filtrosInput}
                     onChange={setFiltrosInput}
                   />
-                  <ColunasPorModulo
-                    entidade={entidade}
-                    extras={colunasExtras}
-                    fixas={declaradas}
-                    onChange={setColunasExtras}
-                  />
-                </span>
-              )
-            }
+                ) : null}
+                <ColunasPorModulo
+                  entidade={entidade}
+                  extras={colunasExtras}
+                  fixas={declaradas}
+                  onChange={setColunasExtras}
+                />
+              </span>
+            )
+          }
+          if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
             return modoDeFiltro === 'lista' ? (
               <span key={action.id} className="contents">
                 <ListaDeFiltros

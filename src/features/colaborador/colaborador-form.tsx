@@ -19,7 +19,16 @@ import { z } from 'zod'
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const colaboradorSchema = z.object({
-  id: z.number(),
+  /**
+   * TEXTO desde 2026-08-25, junto com `Colaborador.id`: a tela lê
+   * `GET /api/employees/{id}` e o id é o uuid do servidor.
+   *
+   * **Enquanto era `z.number()`, o Gravar falhava CALADO.** O uuid não passa em
+   * `z.number()`, o resolver recusa o submit e o formulário não navega — e o
+   * erro não aparece em campo nenhum, porque `id` não é campo desenhado. A tela
+   * ficava parada no `/novo` sem dizer por quê, que é o pior modo de recusar.
+   */
+  id: z.string(),
   nome: z.string().min(1, 'Nome é obrigatório'),
   setor: z.string().nullable(),
   atendimentoCliente: z.boolean(),

@@ -1,3 +1,4 @@
+import { stubDeColaboradores } from '@/test/colaboradores'
 import { stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
@@ -23,21 +24,33 @@ function grade() {
 }
 
 describe('a coluna que o operador liga chega à grade', () => {
-  // Colaborador é MOCK: o id da coluna é a chave do registro. `Data de
-  // admissão` está no schema e NÃO na grade que a tela declara — é exatamente o
-  // caso que o seletor existe para resolver.
-  it('Colaboradores — ligar `Data de admissão` acrescenta a coluna', async () => {
-    const { user } = renderRoute('/cadastros/colaboradores')
+  /**
+   * INVERTIDO em 2026-08-25, e a inversão é o assunto do caso.
+   *
+   * Ele provava que ligar `Data de admissão` acrescentava a coluna — Colaborador
+   * era MOCK, o provider em memória resolvia qualquer campo do schema, e o
+   * seletor podia oferecer tudo.
+   *
+   * Com a listagem em `GET /api/employees`, a LINHA é o `EmployeeDto`, que tem
+   * CINCO campos: `id`, `name`, `sector`, `jobTitle`, `active`. A admissão só
+   * existe no `EmployeeDetailDto`, isto é, na ficha. **Oferecê-la aqui daria uma
+   * coluna vazia em toda linha**, e o operador leria isso como "ninguém tem data
+   * de admissão" — pior que não ter a coluna, porque parece dado.
+   *
+   * O caso vale mais invertido do que valia antes: ele agora guarda a regra que
+   * o `dto:`/`whitelist` do schema existe para impor. Volta ao que era no dia em
+   * que a listagem publicar o campo.
+   */
+  it('Colaboradores — `Data de admissão` NÃO é oferecida: a listagem não a traz', async () => {
+    const { user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
-    expect(grade().queryByRole('columnheader', { name: 'Data de admissão' })).toBeNull()
-
     await user.click(await screen.findByRole('button', { name: 'Colunas' }))
-    await user.click(await screen.findByLabelText('Data de admissão'))
 
-    expect(
-      await grade().findByRole('columnheader', { name: 'Data de admissão' }),
-    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Data de admissão')).not.toBeInTheDocument()
+    // …e o que a listagem TRAZ continua no seletor. Sem esta metade, o caso
+    // passaria com o seletor inteiro vazio.
+    expect(await screen.findByLabelText(/^Cargo/)).toBeInTheDocument()
   })
 
   // Cliente é HTTP: o id é o nome do contrato (`email`), e não o do schema.
@@ -57,7 +70,7 @@ describe('a coluna que o operador liga chega à grade', () => {
   // O "fixa" sai da GRADE, não do `col: true` do schema. Setor é coluna
   // declarada pela tela de Colaboradores, então não se desmarca.
   it('coluna que a tela já desenha aparece travada no seletor', async () => {
-    const { user } = renderRoute('/cadastros/colaboradores')
+    const { user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
     await user.click(await screen.findByRole('button', { name: 'Colunas' }))
@@ -82,7 +95,7 @@ describe('a coluna que o operador liga chega à grade', () => {
   // em todas as opções de cadastro) — veste o púrpura de Pessoas
   // (`profissionais`). O ponto do cabeçalho acompanha o schema.
   it('Colaboradores — com a cor de Pessoas, o cabeçalho ganha ponto', async () => {
-    renderRoute('/cadastros/colaboradores')
+    renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
     const nome = await grade().findByRole('columnheader', { name: /Nome/ })

@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { data } from '@/data'
+import { stubDeColaboradores } from '@/test/colaboradores'
 import { renderRoute } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -87,28 +88,25 @@ Passe \`origem={data.<recurso>.origem}\` na TelaDeListagem, use a TelaDeDocument
  */
 describe('o aviso chega ao operador', () => {
   /*
-   * As duas telas de COMPRA saíram desta lista na fase C do G2, e a saída é a
-   * cura do caso que abriu este arquivo: os treze pedidos do Softlux que um
-   * usuário real leu como se fossem dele eram fixture de `src/mocks/`, e agora
-   * não há fixture nenhuma ali — `data.pedidosCompra` e `data.ordensCompra` são
-   * HTTP. Sem `origem: 'exemplo'`, não há aviso a exibir, e exigi-lo aqui
-   * cobraria da tela uma frase que seria mentira.
+   * **NÃO HÁ MAIS TELA DE LISTAGEM SERVIDA POR FIXTURE, e a lista foi APAGADA
+   * em vez de ficar vazia.** As duas telas de COMPRA saíram na fase C do G2;
+   * `/cadastros/colaboradores` foi a ÚLTIMA, em 2026-08-25, quando
+   * `data.colaboradores` virou `GET /api/employees`.
    *
-   * A varredura estática do `describe` acima continua cobrindo as duas: ela lê
-   * o registry, então recurso que voltasse a ser fixture volta a ser cobrado
-   * sem ninguém editar este arquivo.
+   * A saída é a cura do caso que abriu este arquivo: os treze pedidos do Softlux
+   * que um usuário real leu como se fossem dele eram fixture de `src/mocks/`, e
+   * hoje nenhuma tela de listagem lê de lá. Exigir o aviso de alguma delas
+   * cobraria uma frase que seria MENTIRA.
+   *
+   * `it.each([])` não foi opção: caso que não roda tem cara de verde. O que
+   * sobrou são as CONTRAPROVAS abaixo — elas provam que o aviso não aparece onde
+   * o dado é do servidor, que é a metade da regra que ainda tem como falhar.
+   *
+   * **A varredura estática do `describe` acima continua cobrindo a outra
+   * metade**, e ela lê o registry: recurso que volte a ser fixture volta a ser
+   * cobrado sem ninguém editar este arquivo. Tela de listagem nova servida por
+   * fixture traz este bloco de volta, escrita para ela.
    */
-  const TELAS = [['/cadastros/colaboradores', 'Cadastro de Colaboradores']] as const
-
-  // Pelo `heading`, e não pelo texto: o título da tela também é o rótulo do
-  // link dela na sidebar, e `findByText` acha os dois.
-  it.each(TELAS)('%s mostra "Dados de exemplo"', async (url, titulo) => {
-    renderRoute(url)
-
-    expect(await screen.findByRole('heading', { name: titulo })).toBeInTheDocument()
-    expect(await screen.findByText(/Dados de exemplo/)).toBeInTheDocument()
-    expect(screen.getByText(/não será salvo/)).toBeInTheDocument()
-  })
 
   // O par deste caso era `/compras/pedidos/1` e `/compras/pedidos/novo` — a
   // TelaDeDocumento decidindo sozinha pelo `provider`. Saiu pelo mesmo motivo
@@ -124,6 +122,22 @@ describe('o aviso chega ao operador', () => {
     renderRoute('/cadastros/produtos')
 
     expect(await screen.findByRole('heading', { name: /Produtos/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Dados de exemplo/)).not.toBeInTheDocument()
+  })
+
+  /**
+   * A contraprova da MIGRAÇÃO, e não só do componente: esta tela avisava
+   * "Dados de exemplo" até 25/08, e o aviso tinha de sumir junto com a fixture.
+   * Sem este caso, alguém que revertesse `data.colaboradores` para
+   * `createMockProvider` só descobriria pela varredura estática — que cobra a
+   * prop, não a frase na tela.
+   */
+  it('colaborador deixou de avisar quando virou HTTP', async () => {
+    renderRoute('/cadastros/colaboradores', stubDeColaboradores())
+
+    expect(
+      await screen.findByRole('heading', { name: 'Cadastro de Colaboradores' }),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/Dados de exemplo/)).not.toBeInTheDocument()
   })
 })

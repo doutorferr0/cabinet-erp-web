@@ -66,10 +66,20 @@ describe('toda listagem que declara filtro desenha o controle na tela', () => {
     await exigeFaixaDeModulo(user)
   })
 
-  it('Colaboradores', async () => {
-    const { user } = renderRoute('/cadastros/colaboradores')
-    await exigeFaixaDeModulo(user)
-  })
+  /**
+   * Colaboradores saiu desta varredura em 2026-08-25, e a saída é o próprio
+   * assunto do arquivo: a tela **não declara filtro** desde que migrou para
+   * `GET /api/employees`, porque o servidor recusa o parâmetro `filters` inteiro
+   * (400 `urn:cabinet:erro:filtro-invalido`, medido contra a main `2ee954b`).
+   * Exigir aqui a faixa de chips cobraria da tela um controle que produziria um
+   * 400 no primeiro uso.
+   *
+   * **Não é buraco na cobertura.** A regra "declarou filtro, desenha o
+   * controle" continua medida pelas outras cinco telas, e a regra inversa — "não
+   * pode declarar filtro quem não pode filtrar" — está em
+   * `invariantes.test.ts`, sobre o schema, que é onde a declaração mora. As
+   * duas juntas fecham o par; esta linha sozinha só media metade.
+   */
 
   it('Profissionais', async () => {
     const { user } = renderRoute('/cadastros/profissionais', stubDeParceiros())

@@ -1,4 +1,5 @@
-import { CARGOS, SETORES } from '@/mocks/colaboradores'
+import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
+import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import { renderRoute } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -34,8 +35,22 @@ import { describe, expect, it } from 'vitest'
  * **pertence à lista de apoio** trava a regra de verdade — o operador lê o
  * vocabulário que ele conhece — e falha em qualquer id, de qualquer formato.
  *
- * Os dois campos aferidos são os que têm lista exportada do mock (`SETORES`,
- * `CARGOS`). Os outros seis mudam junto e não têm lista pública para comparar;
+ * ## A tela migrou para HTTP, e a sentinela ficou MAIS forte
+ *
+ * Em 2026-08-25 `data.colaboradores` virou `GET /api/employees`, e o "passa
+ * sozinho" descrito acima ACABOU: `daFichaDoServidor` guarda o **id** em `setor`
+ * e `cargo` (é o que o formulário precisa para gravar), então o dia que este
+ * teste esperava chegou. O rótulo só aparece porque a rota passa `rotulos` de
+ * `useRotulosDeApoio` — tire a tradução e a ficha imprime `lk-SETOR-1` na cara
+ * do operador, que é exatamente o que a asserção abaixo recusa.
+ *
+ * O vocabulário conferido passou a ser o de `src/mocks/lookups.ts`
+ * (`VOCABULARIO_DE_APOIO`), que é o que `respostaLookups()` publica ao stub —
+ * antes eram `SETORES`/`CARGOS` do fixture de colaborador, que a tela não lê
+ * mais. Mesma regra, medida contra a lista que hoje manda.
+ *
+ * Os dois campos aferidos são os que têm lista no vocabulário (`SETOR`,
+ * `CARGO`). Os outros seis mudam junto e não têm lista pública para comparar;
  * quando a #133 entrar, o conserto (a rota passar `rotulos`) cobre os oito de
  * uma vez, e estes dois bastam como sentinela.
  *
@@ -59,9 +74,16 @@ function valorDoCampo(rotulo: string): string {
 
 describe('ficha em consulta: valor de lista de apoio é legível', () => {
   it('Setor e Cargo mostram o rótulo do vocabulário, não o id', async () => {
-    renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    renderRoute(
+      `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+      stubDeColaboradores(),
+    )
 
-    await screen.findByRole('heading', { level: 1 })
+    // A espera é pelo NOME do colaborador, e não por `heading level 1`: quem
+    // desenha o título da ficha é a banda do cadastro, e o esqueleto de
+    // carregamento não o tem. Esperar o nome garante que a FICHA chegou — antes
+    // dele, `valorDoCampo` leria de uma tela ainda em branco.
+    await screen.findAllByText('CARLA SOUZA')
 
     const setor = valorDoCampo('Setor')
     // O rótulo é o do schema, literal — `Cargo / função`, não `Cargo`.
@@ -69,7 +91,7 @@ describe('ficha em consulta: valor de lista de apoio é legível', () => {
 
     // Não basta "tem alguma coisa": um id também tem. O que se cobra é
     // pertencer ao vocabulário que o operador reconhece.
-    expect(SETORES).toContain(setor)
-    expect(CARGOS).toContain(cargo)
+    expect(VOCABULARIO_DE_APOIO.SETOR).toContain(setor)
+    expect(VOCABULARIO_DE_APOIO.CARGO).toContain(cargo)
   })
 })

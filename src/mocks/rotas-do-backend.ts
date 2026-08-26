@@ -850,6 +850,54 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/orders/{id}/print' },
   { metodo: 'get', caminho: '/api/company-letterhead' },
   { metodo: 'put', caminho: '/api/company-letterhead' },
+
+  // compras — as 14 do G2 (`api#176`), PROMOVIDAS. A nota que as segurava aqui
+  // dizia "a api#176 está ABERTA — parada por cobrança do GitHub Actions, não
+  // por revisão", e as duas metades daquela frase venceram: a PR mergeou, e o
+  // bloqueio de cobrança caiu quando o `cabinet-erp-api` passou a PÚBLICO
+  // (repositório público não gasta cota de Actions). As três famílias fecham
+  // INTEIRAS — pedido de compra, requisição e os dois relatórios de previsão —,
+  // que é a condição desta lista: meia família põe id do servidor de um lado e
+  // id do mock do outro.
+  { metodo: 'get', caminho: '/api/purchase-requests' },
+  { metodo: 'post', caminho: '/api/purchase-requests' },
+  { metodo: 'get', caminho: '/api/purchase-requests/{id}' },
+  { metodo: 'put', caminho: '/api/purchase-requests/{id}' },
+  { metodo: 'post', caminho: '/api/purchase-requests/{id}/cancel' },
+  { metodo: 'get', caminho: '/api/purchase-orders' },
+  { metodo: 'post', caminho: '/api/purchase-orders' },
+  { metodo: 'get', caminho: '/api/purchase-orders/{id}' },
+  { metodo: 'put', caminho: '/api/purchase-orders/{id}' },
+  { metodo: 'post', caminho: '/api/purchase-orders/{id}/send' },
+  { metodo: 'post', caminho: '/api/purchase-orders/{id}/reschedule' },
+  { metodo: 'post', caminho: '/api/purchase-orders/{id}/cancel' },
+  { metodo: 'get', caminho: '/api/purchases/arrival-forecast' },
+  { metodo: 'get', caminho: '/api/purchases/stock-replenishment' },
+
+  // comissões — as 13 do G8 (`api#118`), PROMOVIDAS. Elas trocaram de natureza
+  // duas vezes em três dias (501 → 404 do roteador → 501) e a #341 mediu por
+  // que: ninguém remedia o que não roda. Agora `rotas.ts` existe do outro lado
+  // e as treze respondem — as quatro de `commission-tiers` inclusive, que uma
+  // conferência por regex quase deu como ausentes porque o mapa do glue as
+  // escreve `OperationId: doColaborador.lista`, sem `async` no meio.
+  //
+  // Entram JUNTAS com participantes e reserva técnica, e não é arredondamento:
+  // a apuração cruza os três — o fechamento lê participante do pedido e a faixa
+  // do colaborador. Qualquer uma no mock faria a apuração somar id que o outro
+  // lado nunca viu.
+  { metodo: 'get', caminho: '/api/orders/{id}/participants' },
+  { metodo: 'put', caminho: '/api/orders/{id}/participants' },
+  { metodo: 'get', caminho: '/api/employees/{id}/commission-tiers' },
+  { metodo: 'put', caminho: '/api/employees/{id}/commission-tiers' },
+  { metodo: 'get', caminho: '/api/partners/{id}/commission-tiers' },
+  { metodo: 'put', caminho: '/api/partners/{id}/commission-tiers' },
+  { metodo: 'get', caminho: '/api/technical-reserves' },
+  { metodo: 'post', caminho: '/api/technical-reserves' },
+  { metodo: 'post', caminho: '/api/technical-reserves/{id}/cancel' },
+  { metodo: 'get', caminho: '/api/commissions/earnings' },
+  { metodo: 'get', caminho: '/api/commissions/closings' },
+  { metodo: 'post', caminho: '/api/commissions/closings' },
+  { metodo: 'get', caminho: '/api/commissions/closings/{id}/entries' },
 ]
 
 /**
@@ -931,28 +979,6 @@ export const PROXIMO_PASSO: Record<NaturezaDaAusencia, string> = {
     'o api responde 404, nem 501 — falta `pnpm sync:contract` + `pnpm codegen` LÁ, antes do handler',
 }
 
-/**
- * **AS 14 FORAM MEDIDAS CONTRA A PR, EM 25/08, E RESPONDEM.** A fase C (as
- * telas) foi construída contra o servidor de verdade, subido do commit
- * `e8a30f6` da `worktree-g2-compras-rotas` — a `api#176` — com Postgres
- * próprio: pedido de venda → pedido de compra → ordem agrupando a linha →
- * `send` → previsão de chegada, com as duas datas do reagendamento e o cliente
- * ecoado até a última linha.
- *
- * **Ficam aqui assim mesmo**, e o motivo é o par que esta lista exige: a
- * `api#176` está ABERTA — parada por cobrança do GitHub Actions, não por
- * revisão —, então par local contra a `main` do api ainda recebe 501. Ligá-las
- * agora tiraria o mock, que serve as 14 inteiras, para entregar 501 à tela: a
- * "rota adiantada" que o cabeçalho deste arquivo chama de pior que rota
- * ausente. **Quem mergear a `api#176` move as 14 no mesmo PR** — não há mais
- * nada a medir antes disso.
- */
-const COMPRAS_501 =
-  '501 na main do api — a fase B (api#176) está aberta, parada por billing; medido em 25/08 contra a PR: as 14 respondem'
-
-const COMISSOES_SEM_PORTA =
-  'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
-
 const SENHA_INICIAL_SEM_CONTRATO_LA =
   'publicada por ESTA PR — a copia do contrato no api ainda nao a conhece; sync + handler na PR da api'
 
@@ -1024,131 +1050,6 @@ const RECEBIMENTO: readonly RotaNoMock[] = [
     metodo: 'post',
     caminho: '/api/goods-receipts/{id}/post',
     motivo: RECEBIMENTO_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-]
-
-/**
- * AS TREZE DE COMISSÕES (G8, `api#118`) — vieram da `#337`, que as declarou
- * enquanto esta PR estava aberta, e o rebase as trouxe para cá.
- *
- * **A razão delas é uma TERCEIRA, e a `#337` a nomeou bem: o módulo do api
- * EXISTE e não tem porta.** A migração `0044_participacao_e_comissao.sql` está
- * aplicada (seis tabelas com RLS forçada) e `src/modules/comissoes/` tem os
- * quatro arquivos do cálculo — o que falta é `rotas.ts`, e nenhum `operationId`
- * desta família está no mapa de `servidor.ts`.
- *
- * **Estas treze mudaram de natureza DUAS vezes em três dias, e é por isso que a
- * distinção virou campo.** A `#337` as declarou 501 medindo contra `844b360` —
- * o checkout compartilhado do api, que estava ATRÁS da main. A `#341` remediu
- * contra `02721f0` e achou **404 `Este caminho não existe no contrato`**: a
- * cópia do contrato de lá ainda não tinha sincronizado. **REMEDIDO agora contra
- * `5b2d560`: 501 de novo**, porque o `sync:contract` do api aconteceu e os dois
- * `contracts/openapi-v1.json` batem byte a byte (`c8118093…`).
- *
- * O destino nunca mudou — ficam fora da passagem nas três leituras. O que mudou
- * foi o PRÓXIMO PASSO, e ele é a única coisa que o console tinha para oferecer:
- * com 404 o passo é `pnpm sync:contract` no api; com 501 é o handler. Uma frase
- * dentro de uma string não tem como ser conferida contra o servidor. O campo
- * `natureza` tem — ver a sonda em `ao-vivo.test.ts`.
- *
- * Sai INTEIRA quando a Fase B ligar os handlers: a apuração é justamente onde os
- * dois lados têm de ser o mesmo id.
- *
- * **A FASE B LIGOU OS HANDLERS, e esta lista ainda não foi re-medida.** Achado
- * em 2026-08-25, pela FONTE do `cabinet-erp-api` (`main`, `e961bad`):
- * `src/modules/comissoes/rotas.ts` existe, `ListOrderParticipants` e
- * `ReplaceOrderParticipants` são chaves de handler nele, e
- * `src/core/http/servidor.ts` espalha `...rotasDeComissoes()`. O módulo tem
- * porta.
- *
- * O bloco continua aqui de propósito, e a razão é a regra deste arquivo: quem
- * acrescenta rota mede AO VIVO, e as treze foram declaradas juntas — mover duas
- * por leitura de fonte partiria o bloco e deixaria onze com uma medição de três
- * dias atrás. A re-medição é do trilho do G8, com o par local de pé e a sonda de
- * `ao-vivo.test.ts`, que é o único lugar onde 404, 501 e 200 se distinguem.
- *
- * Enquanto isso, a costura tem NOME na tela: `participacao-do-pedido.tsx` avisa
- * o operador que, com o proxy ligado, o pedido vem do servidor e a participação
- * vem do mock — as duas não se encontram, e a lista aparece vazia.
- */
-const COMISSOES: readonly RotaNoMock[] = [
-  {
-    metodo: 'get',
-    caminho: '/api/orders/{id}/participants',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'put',
-    caminho: '/api/orders/{id}/participants',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/employees/{id}/commission-tiers',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'put',
-    caminho: '/api/employees/{id}/commission-tiers',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/partners/{id}/commission-tiers',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'put',
-    caminho: '/api/partners/{id}/commission-tiers',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/technical-reserves',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/technical-reserves',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/technical-reserves/{id}/cancel',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/commissions/earnings',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/commissions/closings',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/commissions/closings',
-    motivo: COMISSOES_SEM_PORTA,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/commissions/closings/{id}/entries',
-    motivo: COMISSOES_SEM_PORTA,
     natureza: 'sem-handler',
   },
 ]
@@ -1329,81 +1230,6 @@ const REAGENDAR_SEM_CONTRATO_LA =
   'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
 
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
-  {
-    metodo: 'get',
-    caminho: '/api/purchase-requests',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/purchase-requests',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/purchase-requests/{id}',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'put',
-    caminho: '/api/purchase-requests/{id}',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/purchase-requests/{id}/cancel',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  { metodo: 'get', caminho: '/api/purchase-orders', motivo: COMPRAS_501, natureza: 'sem-handler' },
-  { metodo: 'post', caminho: '/api/purchase-orders', motivo: COMPRAS_501, natureza: 'sem-handler' },
-  {
-    metodo: 'get',
-    caminho: '/api/purchase-orders/{id}',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'put',
-    caminho: '/api/purchase-orders/{id}',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/purchase-orders/{id}/send',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/purchase-orders/{id}/reschedule',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'post',
-    caminho: '/api/purchase-orders/{id}/cancel',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/purchases/arrival-forecast',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  {
-    metodo: 'get',
-    caminho: '/api/purchases/stock-replenishment',
-    motivo: COMPRAS_501,
-    natureza: 'sem-handler',
-  },
-  ...COMISSOES,
   ...RECEBIMENTO,
   ...TESOURARIA,
   {

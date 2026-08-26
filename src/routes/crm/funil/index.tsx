@@ -1,4 +1,7 @@
-import { EsqueletoDeCarregamento } from '@/components/cabinet/estado-de-consulta'
+import {
+  ErroDeCarregamento,
+  EsqueletoDeCarregamento,
+} from '@/components/cabinet/estado-de-consulta'
 import { useFunis } from '@/data/crm-api'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
@@ -30,6 +33,19 @@ function EscolheFunil() {
   }, [escolhido, navigate])
 
   if (funis.isPending) return <EsqueletoDeCarregamento />
+
+  // Antes do `!escolhido`, e é por isso que o ramo existe: a consulta que falha também
+  // não escolhe funil nenhum, e caía na frase abaixo — mandando cadastrar um funil que
+  // está lá. "Não há" e "não consegui ver" pedem gestos opostos.
+  if (funis.isError) {
+    return (
+      <ErroDeCarregamento
+        mensagem="Não foi possível consultar os funis."
+        erro={funis.error}
+        refazer={() => funis.refetch()}
+      />
+    )
+  }
 
   if (!escolhido) {
     // Nenhum funil ativo é estado legítimo de empresa que ainda não configurou

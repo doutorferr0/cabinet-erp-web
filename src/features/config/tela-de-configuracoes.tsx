@@ -93,13 +93,23 @@ function PainelDoGrupo({ grupo }: { grupo: NavGroup }) {
  * opera um recurso não vê a tela dele nem por este caminho.
  */
 export function TelaDeConfiguracoes() {
-  const { tem } = useRecursosDaEmpresa()
+  // `conhecido` junto com `tem`, e não só o `tem`: quando a consulta do vínculo FALHA o
+  // hook devolve o conjunto de recursos VAZIO — então `tem()` responde não a tudo, toda
+  // seção some, e a folha afirmava "Nenhuma configuração disponível para esta empresa"
+  // por causa de uma requisição que não voltou. O hook publica `conhecido` exatamente
+  // para separar "a empresa não tem" de "eu não sei o que a empresa tem"; era o único
+  // ponto do repo, fora de `require-recurso`, onde a resposta importava na tela.
+  const { tem, conhecido } = useRecursosDaEmpresa()
   const config = secoesVisiveis(tem).find((secao) => secao.oculta)
 
   return (
     <div className="flex flex-col gap-5">
       <BandaDeIdentidade titulo="Configurações" contexto="Como o sistema é montado" />
-      {config ? (
+      {!conhecido ? (
+        <p className="text-muted-foreground text-sm" role="alert">
+          Não foi possível saber quais recursos esta empresa tem. Recarregue a página.
+        </p>
+      ) : config ? (
         <div className="grid gap-5 md:grid-cols-2">
           {config.grupos.map((grupo) => (
             <PainelDoGrupo key={grupo.title} grupo={grupo} />

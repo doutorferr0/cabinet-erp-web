@@ -1,4 +1,4 @@
-import { json } from '@/test/servidor'
+import { json, problema } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
@@ -189,6 +189,40 @@ function servidor() {
 }
 
 describe('tela de acesso', () => {
+  /**
+   * NUMA TELA DE PERMISSÃO, TABELA VAZIA É UMA AFIRMAÇÃO PERIGOSA.
+   *
+   * `(usuarios.data?.rows ?? []).map(...)` desenhava o mesmo corpo vazio para "esta
+   * empresa não tem usuário" e para "a consulta não voltou". Na primeira leitura, a
+   * segunda parece a primeira — e o operador conclui que ninguém tem acesso.
+   *
+   * A gravação já tinha `ErroDeGravacao`; era a LEITURA que não tinha nada.
+   */
+  /*
+   * 409 e não 500, e a escolha é do PRODUTO, não do teste: `repetirSeValeAPena` só
+   * repete 5xx e rede fora — 4xx é a resposta do servidor SOBRE o pedido e nunca se
+   * repete. Com 500 o erro só chegaria à tela depois de três esperas crescentes (~7s),
+   * e o teste mediria a política de repetição em vez do estado da folha. O 409 aqui é
+   * caso real: é o que o contrato responde quando não há empresa ativa na sessão.
+   */
+  it('leitura que falha diz que falhou, em vez de tabela vazia', async () => {
+    const { stub } = servidor()
+    const comFalha = (entrada: RequestInfo | URL) => {
+      const url = String(entrada instanceof Request ? entrada.url : entrada)
+      const caminho = new URL(url, 'http://localhost').pathname
+      if (caminho === '/api/employees') {
+        return Promise.resolve(problema(409, 'Nenhuma empresa ativa na sessão.'))
+      }
+      return Promise.resolve(stub(entrada))
+    }
+    renderRoute('/config/usuarios', comFalha as typeof stub)
+
+    expect(await screen.findByText('A lista de usuários não carregou')).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma empresa ativa na sessão.')).toBeInTheDocument()
+    // E o vazio NÃO aparece junto — as duas frases na mesma tela se anulariam.
+    expect(screen.queryByText('Nenhum usuário nesta empresa.')).not.toBeInTheDocument()
+  })
+
   it('lista os usuários da empresa ativa', async () => {
     const { stub } = servidor()
     renderRoute('/config/usuarios', stub)

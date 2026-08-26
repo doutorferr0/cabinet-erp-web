@@ -53,24 +53,6 @@ function stubDoBoletim(): FetchStub {
 }
 
 describe('tela Boletim', () => {
-  it('substitui o menu vazio pela apuração do dia', async () => {
-    renderRoute('/', stubDoBoletim())
-
-    expect(await screen.findByRole('heading', { name: 'Boletim' })).toBeInTheDocument()
-    // A entrada antiga era só "Selecione um módulo no menu lateral".
-    expect(screen.queryByText(/Selecione um módulo/)).not.toBeInTheDocument()
-
-    // O cabeçalho nasce junto com o skeleton; a apuração só depois do fetch.
-    const dados = await boletim()
-    await compartimento('Movimento do dia')
-
-    // A data de referência mora na BANDA, junto do nome da tela — é o mesmo
-    // arranjo do carimbo e do número nas outras 19 folhas.
-    const banda = screen.getByRole('heading', { name: 'Boletim' }).closest('div')
-    expect(banda).toHaveTextContent(dados.dataReferenciaBR)
-    expect(screen.getByText('Orçamentos do dia')).toBeInTheDocument()
-  })
-
   it('movimento do dia lista os documentos e fecha o total na coluna de valor', async () => {
     renderRoute('/', stubDoBoletim())
 

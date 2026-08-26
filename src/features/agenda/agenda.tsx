@@ -1,3 +1,4 @@
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { useAgenda } from '@/data/dashboard-api'
 import { useTheme } from '@/hooks/use-theme'
 import { type Mes, diaLocalISO, limitesDoMes } from '@/lib/datas'
@@ -73,6 +74,22 @@ export function AgendaTela() {
   useEffect(() => {
     calendarApp?.setTheme(resolved)
   }, [calendarApp, resolved])
+
+  // DEPOIS de todo hook, e não antes: o `useCalendarApp` e o `useEffect` acima têm de
+  // rodar em toda renderização.
+  //
+  // Mês sem compromisso e consulta que não chegou desenham a MESMA grade limpa — e é a
+  // primeira que o operador acredita. A `useAgenda` daqui é a mesma de
+  // `dashboard/hoje.tsx`, que já trata o caso; era o mesmo dado com dois destinos.
+  if (agenda.isError) {
+    return (
+      <FalhaDoPainel
+        titulo="A agenda não carregou"
+        erro={agenda.error}
+        aoTentar={() => agenda.refetch()}
+      />
+    )
+  }
 
   return (
     <div className="agenda-schedule-x flex h-[calc(100vh-12rem)] flex-col gap-4">

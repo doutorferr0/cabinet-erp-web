@@ -1,4 +1,5 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { Button } from '@/components/ui/button'
 import {
@@ -93,6 +94,19 @@ export function ContatosDoParceiro({
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           Carregando os contatos…
         </p>
+      ) : /* A grade NÃO monta sobre leitura que falhou. O `useEffect` acima só chama
+            `form.reset` quando `query.data` existe, então o erro deixava a grade em
+            branco com o `Gravar contatos` ativo — e a grade em branco afirma que o
+            cadastro não tem contato. Nada seria apagado (o `desativar` do plano deriva
+            de `original`, que fica vazio), mas o operador redigita o contato que já está
+            no servidor e cria a duplicata. É a distinção que `HierarquiaParceiro`, ao
+            lado, já escreve na letra: "ninguém" e "não consultei" não são a mesma coisa. */
+      query.isError ? (
+        <FalhaDoPainel
+          titulo="Os contatos não carregaram"
+          erro={query.error}
+          aoTentar={() => query.refetch()}
+        />
       ) : (
         <FormProvider {...form}>
           <FormGrid

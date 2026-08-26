@@ -29,6 +29,18 @@ export default defineConfig({
      * apontava para a cópia. É a mesma família do `biome check` que já saía 1
      * dentro de worktree.
      */
-    exclude: [...configDefaults.exclude, '**/.claude/worktrees/**'],
+    /**
+     * `e2e/` FORA da varredura, e pela razão oposta à de cima.
+     *
+     * Aquelas cópias eram ruído; estes são testes de VERDADE — só que de outro
+     * corredor. `e2e/fluxo-vivo.spec.ts` importa `@playwright/test`, precisa de
+     * navegador e de Postgres, e roda por `pnpm e2e`. Coletado aqui, ele derruba
+     * `pnpm test` inteiro na importação: MEDIDO — 2069 casos verdes e um arquivo
+     * vermelho que nunca teve chance de rodar.
+     *
+     * O padrão do vitest é `**\/*.{test,spec}.?(c|m)[jt]s?(x)`, e `.spec.ts`
+     * casa: o nome do arquivo não separa os dois mundos. O diretório separa.
+     */
+    exclude: [...configDefaults.exclude, '**/.claude/worktrees/**', 'e2e/**'],
   },
 })

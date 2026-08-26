@@ -362,7 +362,19 @@ function Cabecalho() {
         queryKey={['busca-cliente-orcamento']}
         fetcher={(state) => data.clientes.list(state, 0)}
         onSelect={(c) => {
+          // O NOME E O ID, sempre os dois. O corpo do contrato leva `customerId`
+          // e a tela mostra `cliente`; gravar só o nome deixava `clienteId` no
+          // valor inicial (`''`), e o servidor recusava com
+          // `body/customerId must match format "uuid"` — 400 em TODA criação de
+          // orçamento pelo caminho do operador.
+          //
+          // Passou despercebido porque o mock aceita `customerId: ''` e devolve
+          // 201: contra a camada em memória a tela funcionava inteira. Só o par
+          // vivo reprova, e até `e2e/fluxo-vivo.spec.ts` existir nada rodava o
+          // par vivo. O comentário do `clienteId` no esquema acima já dizia que
+          // o id tem de atravessar o formulário; faltava alguém escrevê-lo.
           setValue('cliente', c.legalName, { shouldDirty: true })
+          setValue('clienteId', c.id, { shouldDirty: true })
           setBuscaClienteOpen(false)
         }}
       />
@@ -374,7 +386,13 @@ function Cabecalho() {
         queryKey={['busca-profissional-orcamento']}
         fetcher={(state) => data.profissionais.list(state, 0)}
         onSelect={(p) => {
+          // Mesmo par do cliente, e o mesmo motivo. Aqui o campo é opcional no
+          // contrato (`professionalId` aceita `null`), então o sintoma é mais
+          // silencioso que um 400: o documento gravaria com o NOME do
+          // profissional na tela e `professionalId: null` no banco — e na
+          // releitura o campo voltaria vazio, sem erro nenhum no caminho.
           setValue('profissionalExterno', p.legalName, { shouldDirty: true })
+          setValue('profissionalId', p.id, { shouldDirty: true })
           setBuscaProfissionalOpen(false)
         }}
       />

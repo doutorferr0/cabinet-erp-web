@@ -109,3 +109,153 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # O PAR VIVO — Postgres de verdade, api de verdade, navegador de verdade.
+  #
+  # Este job existe porque duas baterias deste repositório NUNCA rodaram:
+  # `src/mocks/ao-vivo.test.ts` nasceu `describe.skipIf(!CABINET_AO_VIVO)` e o
+  # E2E não existia. A razão gravada no arquivo era honesta — *"o CI não tem
+  # Postgres, e teste que precisa de infra externa vira teste vermelho por
+  # ambiente"* — e o preço dela foi medido na #341: das 46 rotas declaradas como
+  # não-servidas em 22/08, **27 eram falsas 48h depois e nada avisou**. Teste
+  # desligado por padrão não fica vermelho: fica quieto.
+  #
+  # O obstáculo real nunca foi o Postgres — era o `cabinet-erp-api` ser PRIVADO.
+  # Este repositório é público, e repositório público não recebe segredo em PR de
+  # fork: um checkout cross-repo por deploy key nasceria vermelho e insalvável.
+  # O api passou a público em 25/08 (api#220), e daí o `actions/checkout` abaixo
+  # não precisar de token nenhum.
+  ao-vivo:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # A MESMA imagem do `docker-compose.yml` do api. Divergir aqui faria o CI
+        # medir um Postgres que ninguém roda.
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cabinet
+        ports: ['5432:5432']
+        # Sem healthcheck o job segue com o banco ainda subindo e a migração
+        # falha com `ECONNREFUSED`, que não se parece nada com o problema.
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cabinet"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      # As TRÊS identidades do api, e a separação é a garantia de isolamento —
+      # não organização de arquivo. Superusuário só no passo de bootstrap; dono
+      # do schema só na migração; runtime (sem BYPASSRLS) serve request.
+      DATABASE_URL_SUPERUSUARIO: postgres://postgres:postgres@localhost:5432/cabinet
+      DATABASE_URL_MIGRACAO: postgres://cabinet_owner:cabinet_owner@localhost:5432/cabinet
+      DATABASE_URL: postgres://cabinet_runtime:cabinet_runtime@localhost:5432/cabinet
+      SESSION_SECRET: segredo-de-ci-com-mais-de-32-caracteres
+      CABINET_API_DIR: ${{ github.workspace }}/api
+      CABINET_API_PORT: '3000'
+      CABINET_APP_PORT: '5173'
+      CABINET_BACKEND: http://localhost:3000
+      CABINET_APP: http://localhost:5173
+      # O workflow sobe o par; a suíte do Playwright reaproveita em vez de tentar
+      # subir um segundo Vite na mesma porta.
+      CABINET_PAR_EXTERNO: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      # O api é PÚBLICO desde a api#220: checkout cross-repo sem segredo. A `main`
+      # de propósito, e não um sha fixo — o valor deste job é justamente pegar a
+      # divergência no dia em que ela nasce. Fixar o ref mediria o backend de
+      # ontem e daria verde para um par que já não existe.
+      - name: Checkout do cabinet-erp-api
+        uses: actions/checkout@v7
+        with:
+          repository: doutorferr0/cabinet-erp-api
+          ref: main
+          path: api
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          run_install: false
+
+      # Node 24, e não o 22 dos outros jobs: o api roda TypeScript direto e
+      # declara `engines.node >= 24`. O Vite 8 e a suíte deste repo rodam nos
+      # dois, então 24 é o denominador que serve aos dois checkouts.
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies (web)
+        run: pnpm install --frozen-lockfile
+
+      - name: Install dependencies (api)
+        run: pnpm install --frozen-lockfile
+        working-directory: api
+
+      # O comando ÚNICO de semeadura: bootstrap de superusuário (papel dono +
+      # `unaccent`) + migrações + papel de runtime + semente. O primeiro passo
+      # existe porque *service container do Actions não monta volume* — em dev
+      # quem entrega o `preparar-banco.sql` é o `docker-entrypoint-initdb.d` do
+      # compose, e aqui não há initdb. Sem ele a `0004` falha alto criando
+      # `sem_acento()`.
+      - name: Semear o banco (setup:ci do api)
+        run: pnpm par:semear
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Api e Vite sobem AQUI, e não dentro do Playwright, porque a mesma dupla
+      # serve as duas baterias: o `ao-vivo` roda em Node e não teria como pedir a
+      # Playwright que subisse nada.
+      - name: Subir o par (api + Vite)
+        run: |
+          node --env-file-if-exists=.env api/src/main.ts > api.log 2>&1 &
+          VITE_API_PROXY=http://localhost:3000 \
+            pnpm exec vite --port 5173 --strictPort > vite.log 2>&1 &
+          # Espera em bash, e não `npx wait-on`: este repo fixa
+          # `minimumReleaseAge` justamente para não puxar pacote fresco do npm,
+          # e um `npx --yes` no CI faria exatamente isso, toda execução.
+          for i in $(seq 1 120); do
+            curl -sf -o /dev/null http://localhost:3000/health \
+              && curl -sf -o /dev/null http://localhost:5173/ \
+              && echo "par de pé em ${i}s" && exit 0
+            sleep 1
+          done
+          echo '::error::o par não subiu em 120s'
+          tail -50 api.log vite.log || true
+          exit 1
+
+      # A FRONTEIRA: status, shape e quem respondeu cada rota — inclusive a
+      # remedição da #341, que reprova a rota declarada como não-servida que
+      # passou a ser servida.
+      - name: Fronteira contra o backend real (ao-vivo)
+        run: pnpm par:ao-vivo
+
+      # A TELA: o que o `ao-vivo` não alcança rodando em Node. Um fluxo só,
+      # encadeado, no navegador — login → parceiro → produto → orçamento →
+      # pedido, com cada elo sendo um id que atravessou HTTP e RLS.
+      - name: Fluxo vivo no navegador (E2E)
+        run: pnpm e2e
+
+      # Falhou? O motivo quase nunca está no log do Playwright: está no do api
+      # (o 400 com o `detail` do contrato) ou no do Vite (proxy não montado).
+      - name: Logs do par
+        if: failure()
+        run: |
+          echo '::group::api'; tail -200 api.log || true; echo '::endgroup::'
+          echo '::group::vite'; tail -100 vite.log || true; echo '::endgroup::'
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

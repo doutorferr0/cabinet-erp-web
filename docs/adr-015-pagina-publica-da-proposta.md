@@ -7,6 +7,9 @@
   confirma no merge.
 - **Origem:** `docs/design/moodboard/espec-moodboard.md`, fase C —
   *"**DECISÃO ABERTA (user):** quem serve a página pública (api ou front)."*
+- **A espec ainda não está na `main`:** ela vive na PR **#376** (branch `docs/moodboard-espec`).
+  Até o merge, lê-se com `git fetch origin docs/moodboard-espec && git show FETCH_HEAD:<caminho>`
+  — `grep` no working tree não a acha. A fase A é a issue **#377**.
 - **Não decide:** fase B (onde moram os bytes da foto — outra decisão aberta) nem fase D
   (PPTX, que a espec já fixou no front).
 

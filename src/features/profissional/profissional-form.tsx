@@ -2,6 +2,11 @@ import { EnderecoBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
+import {
+  CamposDoModulo,
+  Pendencias,
+  ProgressoDeObrigatorios,
+} from '@/components/cabinet/campos-do-modulo'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { TextField } from '@/components/cabinet/form-controls'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -9,11 +14,6 @@ import { Input } from '@/components/ui/input'
 import { data } from '@/data'
 import { camposDe, profissional as esquema, propsDoIcone } from '@/features/cadastro/modulos'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
-import {
-  CamposDoModulo,
-  Pendencias,
-  ProgressoDeObrigatorios,
-} from '@/features/profissional/campos-do-modulo'
 import type { Banco } from '@/mocks/bancos'
 import type { Profissional } from '@/mocks/profissionais'
 import { useNavigate } from '@tanstack/react-router'

@@ -35,4 +35,25 @@ describe('BandaDeIdentidade', () => {
     expect(banda.className).toContain('border-2')
     expect(banda.className).not.toContain('rounded')
   })
+
+  /**
+   * A escala maior do #236 é do DOCUMENTO, e entra por opt-in. A banda é a
+   * headline de toda tela — login, configurações, boletim, os cadastros —, e
+   * subir a medida no padrão mudaria o título do sistema inteiro para atender
+   * uma decisão tomada sobre o documento. Ninguém leria isso como decisão de
+   * desenho: leria como a tela de login ter engordado sozinha.
+   */
+  it('o título de tela fica em 28px por padrão', () => {
+    render(<BandaDeIdentidade titulo="Cadastro de fornecedores" />)
+    const h1 = screen.getByRole('heading', { level: 1 })
+    expect(h1.className).toContain('text-[1.75rem]')
+    expect(h1.className).not.toContain('text-[2.25rem]')
+  })
+
+  it('só o documento pede os 36px, e pede explicitamente', () => {
+    render(<BandaDeIdentidade titulo="Orçamento" escalaTitulo="documento" />)
+    const h1 = screen.getByRole('heading', { level: 1 })
+    expect(h1.className).toContain('text-[2.25rem]')
+    expect(h1.className).not.toContain('text-[1.75rem]')
+  })
 })

@@ -523,59 +523,35 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('as SEM CONTRATO são a tesouraria, o ciclo da credencial e o suporte', () => {
-    // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
-    // byte a byte), depois a rota única da senha inicial, e agora cobra VINTE E
-    // CINCO: os quinze caminhos de tesouraria da FASE A do G7, as cinco do
-    // ciclo da credencial e as cinco do suporte-da-plataforma entram pelo mesmo
-    // mecanismo, e não por um afrouxamento. Todas publicadas NESTE repo, que é
-    // o dono do contrato, então a cópia do api fica atrás por definição até o
-    // `sync:contract` de lá; `sem-contrato` é o estado correto e o console DEVE
-    // avisar.
+  it('a ÚNICA sem-contrato é o reagendamento do Planner', () => {
+    // ESTE CASO É O CONTADOR DA DÍVIDA, e ele já valeu 0, 1, 26 e agora 1 de
+    // novo. O comentário anterior previa o encolhimento — *"quando a PR do api
+    // sincronizar e ligar os handlers, este caso encolhe de novo"* — e o dia
+    // chegou: a `api#229` rodou o `sync:contract` (196 → 199 operações) e as
+    // vinte e cinco deixaram de ser 404 do roteador.
     //
-    // **A lista continua FECHADA, e é isso que a mantém útil:** a rota que
-    // aparecer aqui sem querer reprova e sai nomeada. Quando a PR do api
-    // sincronizar e ligar os handlers, as linhas saem de `ROTAS_NO_MOCK` — as
-    // do ciclo JUNTAS, porque o token emitido pelo convite do servidor não
-    // existe no mock que gastaria — e este caso encolhe de novo.
+    // **Elas NÃO saíram de `ROTAS_NO_MOCK`: mudaram de NATUREZA.** O api conhece
+    // os caminhos e não tem handler, que é `sem-handler` — e a diferença é o
+    // próximo passo que o console imprime: era `pnpm sync:contract` lá, agora é
+    // o handler. Tesouraria continua esperando a fase B (`api#112`), o ciclo da
+    // credencial continua sem tabela de token, o suporte da plataforma continua
+    // sem porta.
     //
-    // A VIGÉSIMA SEXTA é o `PATCH` do item do plano — o reagendamento que ligou
-    // o arraste da barra no Planner. Mesmo mecanismo, mesma dedução: o caminho
-    // nasce aqui e a cópia do api ainda não o conhece.
+    // **E quem descobriu o dia foi a sonda, não uma releitura.** Esta lista é
+    // dedução — "publicamos aqui, logo a cópia de lá está atrás" — e dedução
+    // sobre o estado de OUTRO repositório vence sem avisar: a #341 mediu 27
+    // declarações falsas em 48 horas. O que a invalida é `ao-vivo.test.ts`
+    // rodando contra o par, e desde a #372 ele roda no CI em toda PR.
+    //
+    // A lista segue FECHADA: rota que apareça aqui sem querer reprova e sai
+    // nomeada.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
       'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
-    ).toEqual([
-      'get /api/financial-titles',
-      'post /api/financial-titles',
-      'get /api/financial-titles/{id}',
-      'put /api/financial-titles/{id}',
-      'post /api/financial-titles/{id}/cancel',
-      'get /api/financial-installments',
-      'post /api/financial-installments/{id}/settlements',
-      'post /api/financial-settlements/batch',
-      'get /api/cash-movements',
-      'post /api/cash-movements',
-      'post /api/cash-movements/{id}/reconcile',
-      'post /api/cash-transfers',
-      'get /api/bank-accounts',
-      'get /api/cash-registers',
-      'get /api/payment-modes',
-      'post /api/employees/{id}/reset-password',
-      'post /api/employees/{id}/invite',
-      'post /auth/forgot-password',
-      'post /auth/credential-token',
-      'post /auth/set-password',
-      'get /api/platform/support-grants',
-      'post /api/platform/support-grants',
-      'get /api/platform/support-grants/{id}',
-      'post /api/platform/support-grants/{id}/revoke',
-      'get /api/platform/support-grants/{id}/audit',
-      'patch /api/projects/{projectId}/plan/items/{itemId}',
-    ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 26.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(27)
+    ).toEqual(['patch /api/projects/{projectId}/plan/items/{itemId}'])
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 1.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(2)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

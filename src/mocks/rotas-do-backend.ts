@@ -979,11 +979,15 @@ export const PROXIMO_PASSO: Record<NaturezaDaAusencia, string> = {
     'o api responde 404, nem 501 — falta `pnpm sync:contract` + `pnpm codegen` LÁ, antes do handler',
 }
 
+// O nome guarda a HISTORIA (`_SEM_CONTRATO_LA`), a natureza guarda o FATO —
+// e desde 26/08 os dois divergem: o sync do api aconteceu (api#229) e o
+// caminho existe lá. Renomear a constante seria um diff maior sem ganho; o
+// que o console imprime, e o que a sonda confere, é a `natureza`.
 const SENHA_INICIAL_SEM_CONTRATO_LA =
-  'publicada por ESTA PR — a copia do contrato no api ainda nao a conhece; sync + handler na PR da api'
+  '501 no api — o contrato sincronizou (api#229) e o handler do reset de senha nao existe; api#209'
 
 const CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA =
-  'publicadas por ESTA PR — o api nao conhece os caminhos; sync + handlers + tabela de token na PR da api'
+  '501 no api — o contrato sincronizou (api#229); faltam handlers e a tabela de token do ciclo da credencial'
 
 const RECEBIMENTO_SEM_PORTA =
   'sem handler no api — modulo existe (0047 + src/modules/recebimento/), rotas nao; G3 fase B'
@@ -1054,8 +1058,12 @@ const RECEBIMENTO: readonly RotaNoMock[] = [
   },
 ]
 
+// A frase anterior PREVIU o que aconteceu — "depois do sync vira 501 ate a
+// fase B" — e o sync veio na api#229. Quem a escreveu acertou o futuro e
+// não tinha como saber a data; foi a sonda do `ao-vivo` rodando no CI que
+// disse o dia.
 const TESOURARIA_SEM_CONTRATO_LA =
-  'contrato novo — a copia do api ainda nao sincronizou; depois do sync vira 501 ate a fase B (api#112)'
+  '501 no api — o contrato sincronizou (api#229) e a fase B da tesouraria nao ligou os handlers (api#112)'
 
 /**
  * AS QUINZE DE TESOURARIA (G7 fase A, `api#112`) — nascem NESTE PR, que é o que
@@ -1085,91 +1093,91 @@ const TESOURARIA: readonly RotaNoMock[] = [
     metodo: 'get',
     caminho: '/api/financial-titles',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-titles',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'get',
     caminho: '/api/financial-titles/{id}',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'put',
     caminho: '/api/financial-titles/{id}',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-titles/{id}/cancel',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'get',
     caminho: '/api/financial-installments',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-installments/{id}/settlements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-settlements/batch',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'get',
     caminho: '/api/cash-movements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/cash-movements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/cash-movements/{id}/reconcile',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/api/cash-transfers',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'get',
     caminho: '/api/bank-accounts',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'get',
     caminho: '/api/cash-registers',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'get',
     caminho: '/api/payment-modes',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
 ]
 /**
@@ -1202,8 +1210,13 @@ const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
 ).map(([metodo, caminho]) => ({
   metodo,
   caminho,
-  motivo: '404 no api — caminho publicado neste repo em 25/08 e ainda não sincronizado lá',
-  natureza: 'sem-contrato' as const,
+  // REMEDIDO em 26/08: o `sync:contract` do api aconteceu (api#229, 196 → 199
+  // operações) e as cinco deixaram de ser 404 do roteador. O caminho existe lá;
+  // o handler é que não. `sem-contrato` → `sem-handler` muda o PRÓXIMO PASSO de
+  // quem lê o console: era `pnpm sync:contract` no api, agora é o handler.
+  motivo:
+    '501 no api — o contrato sincronizou (api#229) e o handler do suporte da plataforma nao existe',
+  natureza: 'sem-handler' as const,
 }))
 
 /**
@@ -1236,7 +1249,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     metodo: 'post',
     caminho: '/api/employees/{id}/reset-password',
     motivo: SENHA_INICIAL_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   // AS QUATRO DO CICLO DA CREDENCIAL — publicadas por ESTA PR, e as quatro COM
   // handler de mock (`src/mocks/api/acesso.ts`), o que nao e detalhe: sem ele,
@@ -1250,25 +1263,25 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     metodo: 'post',
     caminho: '/api/employees/{id}/invite',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/auth/forgot-password',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/auth/credential-token',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   {
     metodo: 'post',
     caminho: '/auth/set-password',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
-    natureza: 'sem-contrato',
+    natureza: 'sem-handler',
   },
   ...SUPORTE_DA_PLATAFORMA,
   {

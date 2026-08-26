@@ -33,6 +33,8 @@ import type {
   CostSimulationDto,
   CostSimulationRequest,
   CreateDeliveryRequest,
+  CredentialTokenDto,
+  CredentialTokenRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
   CrmLostReasonsReportDto,
@@ -51,6 +53,7 @@ import type {
   FinancialSettlementDto,
   FinancialTitleDto,
   FinancialTitleWriteRequest,
+  ForgotPasswordRequest,
   FulfillmentFactDto,
   GetAbcCurveReportParams,
   GetBirthdaysReportParams,
@@ -71,6 +74,7 @@ import type {
   HealthStatus,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
+  InvitationDto,
   LabelLayoutDto,
   LabelLayoutWriteRequest,
   ListActivitiesParams,
@@ -205,6 +209,7 @@ import type {
   ServiceDto,
   ServiceWriteRequest,
   SessaoAtual,
+  SetPasswordRequest,
   SettlementBatchRequest,
   SettlementBatchResultDto,
   SettlementWriteRequest,
@@ -1582,6 +1587,147 @@ export const authChangePassword = async (changePasswordRequest: ChangePasswordRe
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(changePasswordRequest)
+  }
+);}
+
+
+
+export type authForgotPasswordResponse202 = {
+  data: void
+  status: 202
+}
+
+export type authForgotPasswordResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type authForgotPasswordResponseSuccess = (authForgotPasswordResponse202) & {
+  headers: Headers;
+};
+export type authForgotPasswordResponseError = (authForgotPasswordResponse400) & {
+  headers: Headers;
+};
+
+export type authForgotPasswordResponse = (authForgotPasswordResponseSuccess | authForgotPasswordResponseError)
+
+export const getAuthForgotPasswordUrl = () => {
+
+
+
+
+  return `/auth/forgot-password`
+}
+
+/**
+ * Proposto. O pedido de recuperação: quem esqueceu a senha manda o e-mail e recebe um LINK, sem falar com ninguém. Fecha a metade que `ResetEmployeePassword` deixou aberta — lá o administrador gera uma provisória e a lê para a pessoa; aqui a pessoa se resolve sozinha, e o segredo nunca passa por um terceiro.
+ *
+ * **A resposta é 202 SEMPRE**, exista a conta ou não, esteja ela ativa ou não. Responder 404 para e-mail desconhecido transformaria este caminho — que é público por necessidade — em consulta de quem tem conta aqui, e ela responderia a qualquer um, sem sessão e sem limite. O corpo não diz nada além do aceite: quem tem a conta descobre pelo e-mail que chega, e quem não tem não descobre nada.
+ *
+ * Pedir de novo INVALIDA o link anterior. Dois links vivos ao mesmo tempo dobram a janela de quem interceptou um deles, e o segundo pedido é quase sempre “não chegou” — não “quero mais um”.
+ */
+export const authForgotPassword = async (forgotPasswordRequest: ForgotPasswordRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authForgotPasswordResponse> => {
+
+  return apiFetch<authForgotPasswordResponse>(getAuthForgotPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(forgotPasswordRequest)
+  }
+);}
+
+
+
+export type authCredentialTokenResponse200 = {
+  data: CredentialTokenDto
+  status: 200
+}
+
+export type authCredentialTokenResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type authCredentialTokenResponseSuccess = (authCredentialTokenResponse200) & {
+  headers: Headers;
+};
+export type authCredentialTokenResponseError = (authCredentialTokenResponse400) & {
+  headers: Headers;
+};
+
+export type authCredentialTokenResponse = (authCredentialTokenResponseSuccess | authCredentialTokenResponseError)
+
+export const getAuthCredentialTokenUrl = () => {
+
+
+
+
+  return `/auth/credential-token`
+}
+
+/**
+ * Proposto. Lê o token do link SEM consumi-lo, para que a tela de definir senha saiba o que mostrar antes de a pessoa digitar: “Bem-vindo, Fulano — escolha sua senha” num convite, “Nova senha para fulano@x” numa recuperação. Sem esta leitura, quem clicou num link vencido só descobre depois de escolher e confirmar a senha duas vezes.
+ *
+ * **É POST, e não GET, embora não mude nada** — de propósito. O token é a credencial inteira: em GET ele viajaria na URL e ficaria no log de acesso do servidor, no histórico do navegador e no `Referer` de qualquer imagem da página. No corpo, não fica em nenhum dos três. Idempotência não é o critério aqui; onde o segredo repousa é.
+ *
+ * Não é oráculo: sem o token não se chega a esta resposta, e quem o tem já provou posse. O que ela devolve é o que o link já autoriza a fazer.
+ */
+export const authCredentialToken = async (credentialTokenRequest: CredentialTokenRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authCredentialTokenResponse> => {
+
+  return apiFetch<authCredentialTokenResponse>(getAuthCredentialTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(credentialTokenRequest)
+  }
+);}
+
+
+
+export type authSetPasswordResponse204 = {
+  data: void
+  status: 204
+}
+
+export type authSetPasswordResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type authSetPasswordResponseSuccess = (authSetPasswordResponse204) & {
+  headers: Headers;
+};
+export type authSetPasswordResponseError = (authSetPasswordResponse400) & {
+  headers: Headers;
+};
+
+export type authSetPasswordResponse = (authSetPasswordResponseSuccess | authSetPasswordResponseError)
+
+export const getAuthSetPasswordUrl = () => {
+
+
+
+
+  return `/auth/set-password`
+}
+
+/**
+ * Proposto. GASTA o token e grava a senha escolhida. É o fim dos dois caminhos — o convite de quem nunca entrou e a recuperação de quem esqueceu —, e é o mesmo caminho porque o que muda entre eles é o texto do e-mail, não o ato: em ambos alguém que provou posse de um endereço define a própria senha pela primeira vez.
+ *
+ * **Uso único, e a garantia é do servidor, não da tela:** o token é marcado como consumido na MESMA instrução que o valida, então duas chamadas simultâneas com o mesmo link deixam exatamente uma gravar. Junto com a senha, `mustChangePassword` DESLIGA — a pessoa acabou de escolher, não há o que forçar depois — e **toda sessão dela é encerrada**, inclusive a de quem estivesse usando a senha antiga em outro lugar, que é o motivo mais comum de se pedir uma recuperação.
+ *
+ * Não cria sessão: quem definiu a senha vai para o login e a usa. Autenticar aqui faria o link do e-mail valer como login, e um link encaminhado por engano entregaria a conta.
+ */
+export const authSetPassword = async (setPasswordRequest: SetPasswordRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authSetPasswordResponse> => {
+
+  return apiFetch<authSetPasswordResponse>(getAuthSetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setPasswordRequest)
   }
 );}
 
@@ -8654,6 +8800,75 @@ export const replaceOrderParticipants = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(orderParticipantsWriteRequest)
+  }
+);}
+
+
+
+export type inviteEmployeeResponse200 = {
+  data: InvitationDto
+  status: 200
+}
+
+export type inviteEmployeeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type inviteEmployeeResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type inviteEmployeeResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type inviteEmployeeResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type inviteEmployeeResponse502 = {
+  data: ProblemDetails
+  status: 502
+}
+
+export type inviteEmployeeResponseSuccess = (inviteEmployeeResponse200) & {
+  headers: Headers;
+};
+export type inviteEmployeeResponseError = (inviteEmployeeResponse401 | inviteEmployeeResponse403 | inviteEmployeeResponse404 | inviteEmployeeResponse409 | inviteEmployeeResponse502) & {
+  headers: Headers;
+};
+
+export type inviteEmployeeResponse = (inviteEmployeeResponseSuccess | inviteEmployeeResponseError)
+
+export const getInviteEmployeeUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/invite`
+}
+
+/**
+ * Proposto. Manda ao colaborador o link que lhe dá a primeira senha. É a alternativa a `ResetEmployeePassword` para a MESMA falta — a conta que `CreateEmployee` cria sem credencial utilizável — e a diferença entre as duas é quem fica sabendo do segredo: lá o administrador lê a provisória na tela e a repassa por algum canal; aqui ele não vê senha nenhuma, e quem escolhe é a própria pessoa, no `AuthSetPassword`.
+ *
+ * As duas continuam existindo porque cobrem casos diferentes: o convite pressupõe que o e-mail cadastrado é da pessoa e que ela consegue lê-lo; a provisória serve para quando não é — colaborador de chão de fábrica com e-mail da empresa, endereço errado no cadastro, urgência. **Convidar não é mais seguro por si só; é seguro quando o e-mail é dela.**
+ *
+ * Convidar de novo INVALIDA o convite anterior, pelo mesmo motivo do `AuthForgotPassword`: o segundo pedido é “não chegou”, e dois links vivos dobram a janela de quem interceptou um.
+ *
+ * **Permissão: `colaboradores:gerenciar`**, herdada da família `/api/employees` — dar acesso é a mesma decisão, seja por senha lida na tela ou por link no e-mail.
+ */
+export const inviteEmployee = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<inviteEmployeeResponse> => {
+
+  return apiFetch<inviteEmployeeResponse>(getInviteEmployeeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

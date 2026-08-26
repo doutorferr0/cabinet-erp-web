@@ -1,14 +1,18 @@
 import {
   type ChangePasswordRequest,
+  type CredentialTokenDto,
   type LoginOk,
   type LoginRequest,
   type SessaoAtual,
   authChangePassword,
+  authCredentialToken,
+  authForgotPassword,
   authLogin,
   authLogout,
   authMe,
+  authSetPassword,
 } from '@/api/gerado'
-import { type RespostaDaApi, detalheDoProblema } from '@/data/api-provider'
+import { type RespostaDaApi, detalheDoProblema, tipoDoProblema } from '@/data/api-provider'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -140,5 +144,96 @@ export function useTrocarSenha() {
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SESSAO_KEY }),
+  })
+}
+
+/**
+ * O CICLO DA CREDENCIAL — as três operações de quem NÃO tem sessão.
+ *
+ * Ficam neste arquivo, e não num `src/data/credencial.ts`, porque são a mesma
+ * família de `/auth/*`: quem lê "onde mora o que fala de sessão" tem de achar
+ * as seis num lugar só. E, como as outras, a tela pede daqui — nunca chama o
+ * cliente gerado direto.
+ */
+
+/** Por que o link não vale — o que separa "peça outro" de "não há o que fazer". */
+export type RecusaDoLink = 'invalido' | 'expirado'
+
+export type LinkDeCredencial = CredentialTokenDto
+
+const RECUSA_POR_URN: Record<string, RecusaDoLink> = {
+  'urn:cabinet:erro:token-invalido': 'invalido',
+  'urn:cabinet:erro:token-expirado': 'expirado',
+}
+
+/**
+ * A recusa lida pelo `type`, NUNCA pelo texto.
+ *
+ * É a razão de as duas URNs existirem separadas: a tela oferece um botão de
+ * "pedir outro link" no expirado e não oferece nada no inválido. Ler isso do
+ * `detail` quebraria na primeira revisão de frase — e a frase é para gente.
+ */
+function recusaDe(dados: unknown): RecusaDoLink {
+  return RECUSA_POR_URN[tipoDoProblema(dados) ?? ''] ?? 'invalido'
+}
+
+/**
+ * Lê o link SEM gastar, para a tela saber o que mostrar antes de a pessoa
+ * digitar. Sem isto, quem clicou num link vencido só descobre depois de
+ * escolher e confirmar a senha duas vezes.
+ *
+ * `retry: false`: link recusado é RESPOSTA, não falha de rede — repetir três
+ * vezes só atrasaria a mensagem.
+ */
+export function useLinkDeCredencial(token: string | undefined) {
+  return useQuery({
+    queryKey: ['credencial', token] as const,
+    enabled: Boolean(token),
+    retry: false,
+    queryFn: async (): Promise<LinkDeCredencial | { recusa: RecusaDoLink }> => {
+      const resposta: RespostaDaApi = await authCredentialToken({ token: token as string })
+      if (resposta.status === 0) throw new Error('Falha ao consultar o link.')
+      if (resposta.status === 400) return { recusa: recusaDe(resposta.data) }
+      if (resposta.status !== 200) throw new Error('Falha ao consultar o link.')
+      return resposta.data as LinkDeCredencial
+    },
+  })
+}
+
+/**
+ * Gasta o link e grava a senha. Não cria sessão — quem definiu vai para o
+ * login e usa a senha, como o contrato manda.
+ */
+export function useDefinirSenha() {
+  return useMutation({
+    mutationFn: async (body: { token: string; password: string }) => {
+      const resposta: RespostaDaApi = await authSetPassword(body)
+      if (resposta.status !== 204) {
+        throw new Error(
+          detalheDoProblema(resposta.data) ?? 'Não foi possível definir a senha. Tente de novo.',
+        )
+      }
+    },
+  })
+}
+
+/**
+ * Pede o link de recuperação.
+ *
+ * **Não distingue sucesso de "não existe", e não pode**: o servidor responde
+ * 202 nos dois casos de propósito, e uma tela que mostrasse "e-mail não
+ * cadastrado" desfaria a defesa inteira — bastaria digitar endereços para
+ * descobrir quem tem conta.
+ */
+export function usePedirRecuperacao() {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const resposta: RespostaDaApi = await authForgotPassword({ email })
+      if (resposta.status !== 202) {
+        throw new Error(
+          detalheDoProblema(resposta.data) ?? 'Não foi possível enviar o link. Tente de novo.',
+        )
+      }
+    },
   })
 }

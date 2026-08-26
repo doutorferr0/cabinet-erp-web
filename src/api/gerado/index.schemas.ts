@@ -1032,6 +1032,9 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |
  * | `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |
  * | `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |
+ * | `urn:cabinet:erro:token-invalido` | 400 | `Link inválido` | o token do link de convite ou de recuperação não existe, já foi usado, ou foi substituído por um pedido mais novo. **Sem saída na tela** — ela manda pedir outro link, e não oferece repetir o mesmo |
+ * | `urn:cabinet:erro:token-expirado` | 400 | `Link expirado` | o link existiu e venceu. Separado do anterior porque a tela TEM o que oferecer: pedir outro, num botão, em vez de mandar a pessoa recomeçar sem saber por quê |
+ * | `urn:cabinet:erro:email-nao-enviado` | 502 | `E-mail não enviado` | o servidor de e-mail recusou ou não respondeu. **Não é 500:** nada aqui deu errado, e o que falhou é um terceiro — a tela oferece tentar de novo, e o convite não ficou pendente pela metade |
  * | `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |
  * | `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |
  * | `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |
@@ -1090,6 +1093,9 @@ export const ProblemType = {
   'urn:cabinet:erro:hierarquia-em-laco': 'urn:cabinet:erro:hierarquia-em-laco',
   'urn:cabinet:erro:senha-atual-invalida': 'urn:cabinet:erro:senha-atual-invalida',
   'urn:cabinet:erro:senha-fraca': 'urn:cabinet:erro:senha-fraca',
+  'urn:cabinet:erro:token-invalido': 'urn:cabinet:erro:token-invalido',
+  'urn:cabinet:erro:token-expirado': 'urn:cabinet:erro:token-expirado',
+  'urn:cabinet:erro:email-nao-enviado': 'urn:cabinet:erro:email-nao-enviado',
   'urn:cabinet:erro:liberacao-acima-do-vendido': 'urn:cabinet:erro:liberacao-acima-do-vendido',
   'urn:cabinet:erro:separacao-sem-liberacao': 'urn:cabinet:erro:separacao-sem-liberacao',
   'urn:cabinet:erro:entrega-sem-separacao': 'urn:cabinet:erro:entrega-sem-separacao',
@@ -2949,6 +2955,79 @@ export interface EmployeeLinkRequest {
   customerFacing?: boolean | null;
   /** @nullable */
   active: boolean | null;
+}
+
+/**
+ * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
+ */
+export interface TemporaryPasswordDto {
+  temporaryPassword: string;
+}
+
+/**
+ * Proposto. Só o endereço. Nada mais é pedido de propósito: qualquer campo a mais (documento, nome) viraria um jeito de conferir se ele bate com o cadastro, e isso é o oráculo que o 202 fixo existe para fechar.
+ */
+export interface ForgotPasswordRequest {
+  /** O e-mail do colaborador, como ele o digitaria no login. A comparação ignora a caixa, igual à do login (`uq_employees_email_lower`). */
+  email: string;
+}
+
+/**
+ * Proposto. O token que veio no link, para leitura ou para gasto.
+ */
+export interface CredentialTokenRequest {
+  /** Opaco, gerado pelo servidor. A tela o recebe do link e o repassa sem interpretar — não há parte legível dentro dele, e não há como derivá-lo do e-mail nem do id de ninguém. */
+  token: string;
+}
+
+/**
+ * Por que este link existe. Muda o TEXTO da tela, não o que ela faz: `invite` é a primeira senha de quem nunca entrou, `reset` é a nova senha de quem esqueceu. As duas terminam no mesmo `AuthSetPassword`.
+ */
+export type CredentialTokenDtoPurpose = typeof CredentialTokenDtoPurpose[keyof typeof CredentialTokenDtoPurpose];
+
+
+export const CredentialTokenDtoPurpose = {
+  invite: 'invite',
+  reset: 'reset',
+} as const;
+
+/**
+ * Proposto. O que a tela de definir senha precisa saber ANTES de a pessoa digitar. Sem identificadores internos: o id do colaborador não entra aqui porque a tela não precisa dele — quem sabe de quem é o token é o servidor, e devolvê-lo daria a um link vazado uma chave a mais.
+ */
+export interface CredentialTokenDto {
+  /** Por que este link existe. Muda o TEXTO da tela, não o que ela faz: `invite` é a primeira senha de quem nunca entrou, `reset` é a nova senha de quem esqueceu. As duas terminam no mesmo `AuthSetPassword`. */
+  purpose: CredentialTokenDtoPurpose;
+  /** Para onde o link foi. A tela o mostra para que a pessoa confirme que é a conta certa antes de escolher a senha. */
+  email: string;
+  /** Nome do colaborador, para a saudação do convite. */
+  name: string;
+  /** Quando o link morre. A tela pode avisar que resta pouco tempo em vez de deixar a pessoa descobrir no envio. */
+  expiresAt: string;
+}
+
+/**
+ * Proposto. O token e a senha escolhida. **Não pede a senha atual** — é justamente quem não a tem que chega aqui —, e não pede confirmação: repetir a senha é conferência de digitação, e ela é da tela, não do contrato.
+ */
+export interface SetPasswordRequest {
+  token: string;
+  /**
+     * A senha nova. O piso é de 8 caracteres, o mesmo de `AuthChangePassword`, e **NÃO é declarado como `minLength` de propósito** — nem aqui nem lá.
+     *
+     * O validador de schema roda ANTES do handler, então um `minLength` faria a forma vencer a ordem que esta operação promete: senha curta num link já morto responderia “senha fraca”, a pessoa melhoraria a senha, e só então tomaria o erro do link. Medido — foi assim que a primeira versão desta operação se comportou.
+     *
+     * A política de senha é do SERVIDOR, e a recusa dela tem URN própria (`urn:cabinet:erro:senha-fraca`). Duas autoridades sobre a mesma regra é o que este contrato evita em toda parte: a mais fraca ganharia por rodar primeiro, e a URN nunca sairia.
+     */
+  password: string;
+}
+
+/**
+ * Proposto. O recibo do convite. **Não devolve o token** — ele foi para o e-mail, e devolvê-lo aqui daria ao administrador a chave que este caminho existe para NÃO lhe dar. Quem quiser a credencial na mão usa `ResetEmployeePassword`, que é honesto sobre isso.
+ */
+export interface InvitationDto {
+  /** O endereço para onde a mensagem saiu, para o administrador conferir que é o certo. */
+  sentTo: string;
+  /** Quando o link morre. O administrador precisa saber para responder à pessoa que voltar dizendo que não deu. */
+  expiresAt: string;
 }
 
 /**
@@ -7672,13 +7751,6 @@ export interface PagedResultOfCashRegisterDto {
 export interface PagedResultOfPaymentModeDto {
   rows: PaymentModeDto[];
   total: number;
-}
-
-/**
- * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
- */
-export interface TemporaryPasswordDto {
-  temporaryPassword: string;
 }
 
 /**

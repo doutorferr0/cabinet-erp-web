@@ -1,12 +1,12 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Marca } from '@/components/cabinet/marca'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useLogin } from '@/data/sessao'
 import { destinoDepoisDoLogin } from '@/lib/rota-de-origem'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -100,6 +100,14 @@ export function LoginTela() {
             <Button type="submit" disabled={login.isPending} className="mt-1">
               {login.isPending ? 'Entrando…' : 'Entrar'}
             </Button>
+            {/*
+              A saída de quem não consegue entrar mora AQUI, e não numa página
+              de ajuda: é neste ponto que a pessoa descobre que esqueceu a
+              senha. Discreto de propósito — o caminho principal é entrar.
+            */}
+            <Link to="/esqueci-senha" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+              Esqueci minha senha
+            </Link>
           </form>
         </Form>
       </div>

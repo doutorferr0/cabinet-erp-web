@@ -21,6 +21,7 @@ import { useLookupOptions } from '@/data/lookups-api'
 import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
 import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
+import { MenuDeExportacao } from '@/features/orcamento/menu-de-exportacao'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
@@ -29,7 +30,6 @@ import type { ColumnDef } from '@tanstack/react-table'
 import {
   Calculator,
   CreditCard,
-  FileText,
   Hash,
   Home,
   List,
@@ -501,6 +501,10 @@ function GradeItens() {
 }
 
 function AbaPrincipal() {
+  // O menu de exportação lê o documento no CLIQUE, não no render — ver
+  // `MenuDeExportacao`. `getValues` é estável entre renders no RHF.
+  const { getValues } = useFormContext<Orcamento>()
+
   return (
     <div data-zonas className="flex flex-col gap-4">
       {/* Card agrupador (mockup `.card`): o CABEÇALHO do documento — para quem,
@@ -552,14 +556,10 @@ function AbaPrincipal() {
       </Secao>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => console.info('[mock] Imprimir Orçamento')}
-        >
-          <FileText className="size-4" /> Orçamento
-        </Button>
+        <MenuDeExportacao
+          obterDocumento={getValues}
+          onImprimir={() => console.info('[mock] Imprimir Orçamento')}
+        />
         <Button
           type="button"
           variant="outline"

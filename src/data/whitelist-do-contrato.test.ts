@@ -1,5 +1,10 @@
 import { ORDENAVEIS_ATIVIDADE } from '@/data/atividades-api'
 import {
+  ORDENAVEIS_FAIXA,
+  ORDENAVEIS_PARTICIPACAO,
+  ORDENAVEIS_RESERVA_TECNICA,
+} from '@/data/comissoes-api'
+import {
   FILTRAVEIS_OPORTUNIDADE,
   ORDENAVEIS_FUNIL,
   ORDENAVEIS_MOTIVO_DE_PERDA,
@@ -244,18 +249,36 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // servidor pela razão que o módulo inteiro tem: apuração sobre dado mockado mostra
   // dinheiro inventado com cara de conta fechada, que é pior do que não mostrar nada.
   // Cada uma sai daqui quando ganhar a tela, com `ORDENAVEIS` próprio.
-  ListOrderParticipants:
-    'a aba Participação do pedido ainda não existe — a grade é Fase C do trilho de comissões',
+  // TRÊS DAS SETE SAÍRAM DAQUI: a aba `Participação` do pedido, o perfil de
+  // participação do profissional e a tela da Reserva Técnica nasceram na fase
+  // C, e as três declaram `ORDENAVEIS` próprio logo abaixo.
+  //
+  // A DO COLABORADOR FICA, e o motivo não é falta de componente: `FaixasDeComissao`
+  // atende as duas portas e a de `employee` está escrita na fronteira
+  // (`useFaixas('employee', …)`). O que falta é o CADASTRO — `data.colaboradores`
+  // continua sendo provider de mock, e as duas listas de pessoas divergem (a
+  // costura que `CoberturaDoColaborador` declara). Montar a aba ali mandaria ao
+  // servidor o uuid de quem ele não conhece, e o 404 sairia com cara de "esta
+  // pessoa não tem faixa". Sai daqui junto com a migração daquela tela.
   ListEmployeeCommissionTiers:
-    'o perfil de comissão do colaborador ainda não tem aba — o cadastro de colaborador é provider de mock',
-  ListPartnerCommissionTiers:
-    'o perfil de participação do profissional ainda não tem aba — a tela do parceiro é Fase C do trilho',
-  ListTechnicalReserves: 'a Reserva Técnica ainda não tem tela — Fase C do trilho de comissões',
+    'o perfil de comissão do colaborador não tem aba porque o CADASTRO dele ainda é provider de mock — o componente e a porta existem, o id do servidor é que não',
   GetCommissionEarnings: 'a consulta de ganhos ainda não tem tela — Fase C do trilho de comissões',
   ListCommissionClosings:
     'o fechamento de comissão ainda não tem tela — Fase C do trilho de comissões',
   ListCommissionClosingEntries:
     'as linhas do fechamento são sub-recurso e nascem sem tela, junto com o fechamento',
+  // AS SEIS LISTAGENS DE TESOURARIA (G7 fase A, api#112). As telas — Contas a
+  // Pagar, Contas a Receber, Caixa e Movimentos Bancários — são a FASE C deste
+  // mesmo trilho. Cada uma sai daqui quando ganhar a sua, com `ORDENAVEIS`
+  // próprio.
+  ListFinancialTitles:
+    'contas a pagar/receber ainda não tem tela — as telas de Tesouraria são a Fase C do trilho',
+  ListFinancialInstallments:
+    'a agenda de vencimentos (e a seleção do lote) nasce com a tela de quitação, que é a Fase C',
+  ListCashMovements: 'o extrato de caixa/banco ainda não tem tela — Fase C do trilho',
+  ListBankAccounts: 'a conta bancária é COMBO, não grade — não há cabeçalho para clicar',
+  ListCashRegisters: 'o caixa é COMBO, não grade — idem',
+  ListPaymentModes: 'o modo de pagamento é COMBO da baixa, não grade — idem',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -268,6 +291,12 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE,
   ListCrmLostReasons: ORDENAVEIS_MOTIVO_DE_PERDA,
   ListWorks: ORDENAVEIS_OBRA,
+  // AS TRÊS DE COMISSÕES QUE GANHARAM TELA (G8, fase C). A whitelist é uma só
+  // para as duas portas do perfil, como o schema do contrato — o que muda entre
+  // colaborador e parceiro é o endereço, não o que se ordena.
+  ListOrderParticipants: ORDENAVEIS_PARTICIPACAO,
+  ListPartnerCommissionTiers: ORDENAVEIS_FAIXA,
+  ListTechnicalReserves: ORDENAVEIS_RESERVA_TECNICA,
 }
 
 /**
@@ -399,6 +428,27 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
   ListPriceIndexes:
     'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
+  // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
+  // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
+  // de ensinar, e aqui ele ensinaria sozinho:
+  //
+  // As regras deste módulo não são de apresentação, são de DINHEIRO — o lote é
+  // tudo-ou-nada, o destino da baixa é exclusivo, a transferência grava duas
+  // pernas ou nenhuma, e período fechado recusa lançamento. Todas elas já
+  // existem implementadas e exercitadas no `cabinet-erp-api` (as tabelas da
+  // `0065` e da `0071`, com bateria própria). Uma segunda implementação aqui,
+  // sem NENHUMA tela que a consuma, é comportamento sem chamador: ela não seria
+  // medida por uso, e no dia em que divergisse do servidor a divergência
+  // apareceria como bug da tela.
+  //
+  // Sai daqui na FASE C, escrito CONTRA a tela que o consome — que é como
+  // `compras.ts` e `relatorios.ts` puderam nascer úteis.
+  ListFinancialTitles: 'tesouraria não tem handler no mock — nenhuma tela a consome ainda (Fase C)',
+  ListFinancialInstallments: 'idem — a agenda de vencimentos nasce com a tela de quitação',
+  ListCashMovements: 'idem — o extrato nasce com a tela de caixa/movimentos bancários',
+  ListBankAccounts: 'idem — o combo de conta nasce com a tela que o abre',
+  ListCashRegisters: 'idem — o combo de caixa nasce com a tela que o abre',
+  ListPaymentModes: 'idem — o combo de modo nasce com a tela da baixa',
 }
 
 /**

@@ -324,10 +324,55 @@ function descricaoDaVariante(
   return [descricao, finish, size].filter((parte) => parte).join(' · ')
 }
 
-function estoqueDaEmpresa(tenantId: string, incluirZero: boolean): LinhaDeEstoque[] {
+/**
+ * O DEPÓSITO pedido, ou `null` — o recorte da #352.
+ *
+ * Formato inválido é **400**, e não recorte vazio: o contrato declara
+ * `format: uuid`, e devolver zero linhas para um id malformado seria
+ * indistinguível de "este depósito está vazio". O depósito que não existe (ou é
+ * de outra empresa) segue outro caminho e sai como recorte vazio de propósito —
+ * do ponto de vista da empresa ele não está lá, que é a mesma resposta que o RLS
+ * dá do outro lado.
+ */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function deposito(url: URL): { recusa: Response } | { warehouseId: string | null } {
+  const pedido = url.searchParams.get('warehouseId')
+  if (pedido === null || pedido === '') return { warehouseId: null }
+  // O id do mock não é uuid (`novoId('dep')`), então a checagem é de FORMA só
+  // quando o valor tem cara de uuid — do contrário o próprio seed do navegador
+  // seria recusado pelo mock e aceito pelo servidor.
+  if (pedido.includes('-') && pedido.length === 36 && !UUID.test(pedido)) {
+    return {
+      recusa: camposInvalidos([
+        { path: 'warehouseId', message: 'Informe o identificador do depósito.' },
+      ]),
+    }
+  }
+  return { warehouseId: pedido }
+}
+
+/**
+ * O estoque da empresa, opcionalmente RECORTADO por depósito.
+ *
+ * `warehouseId` filtra as linhas de `store.saldos` — que já nascem por
+ * (depósito, variante), o mesmo shape de `stock_balances` no servidor. É por
+ * isso que o recorte é possível aqui e é trabalho de migração lá: o agregado
+ * por empresa (`product_tenant.stock_qty`) não tem a dimensão para recortar.
+ *
+ * **Sob recorte, `minStock` continua sendo o da EMPRESA.** Mínimo é cadastro por
+ * empresa, e compará-lo com o saldo de um depósito só marcaria "abaixo do
+ * mínimo" a peça que sobra na prateleira ao lado.
+ */
+function estoqueDaEmpresa(
+  tenantId: string,
+  incluirZero: boolean,
+  warehouseId: string | null = null,
+): LinhaDeEstoque[] {
   const saldoPorVariante = new Map<string, { qty: number; desde: string | null }>()
   for (const saldo of store.saldos) {
     if (saldo.tenantId !== tenantId) continue
+    if (warehouseId !== null && saldo.locationId !== warehouseId) continue
     const atual = saldoPorVariante.get(saldo.variantId) ?? { qty: 0, desde: null }
     saldoPorVariante.set(saldo.variantId, {
       qty: atual.qty + saldo.qty,
@@ -665,6 +710,8 @@ export const handlersDeRelatorios = [
     const url = new URL(request.url)
     const porta = fronteira(url, ORDENAVEIS_ESTOQUE_VALORIZADO)
     if ('recusa' in porta) return porta.recusa
+    const local = deposito(url)
+    if ('recusa' in local) return local.recusa
 
     const asOf = new Date().toISOString()
     const tenantId = tenantAtivo()
@@ -675,7 +722,7 @@ export const handlersDeRelatorios = [
     // A LINHA INTERNA É NUMÉRICA e vira DTO só depois de ordenar e paginar —
     // ver `paginar`. `valueCents` ausente é item SEM preço, e ele não vale zero:
     // vale desconhecido, e vai para o fim da ordenação nos dois sentidos.
-    const linhas = (tenantId ? estoqueDaEmpresa(tenantId, incluirZero) : [])
+    const linhas = (tenantId ? estoqueDaEmpresa(tenantId, incluirZero, local.warehouseId) : [])
       .filter((linha) => !grupo || linha.productGroup === grupo)
       .map((linha) => ({
         ...linha,
@@ -704,6 +751,10 @@ export const handlersDeRelatorios = [
       // a preço de VENDA. O dia em que `"cost"` for possível, a tela já sabe
       // olhar para este campo antes de escrever "valorizado" no cabeçalho.
       valuationBasis: 'sale_price',
+      // O ECO da #352: o servidor confirma o recorte que USOU. Ausente quando a
+      // resposta é da empresa inteira — e quem pediu depósito e não recebeu o
+      // eco recebeu o total da empresa, que é o que a tela precisa distinguir.
+      ...seHouver('warehouseId', local.warehouseId ?? undefined),
       page: porta.pagina.page,
       pageSize: porta.pagina.pageSize,
       total,
@@ -726,6 +777,8 @@ export const handlersDeRelatorios = [
     const url = new URL(request.url)
     const porta = fronteira(url, ORDENAVEIS_DIAS_SEM_VENDA)
     if ('recusa' in porta) return porta.recusa
+    const local = deposito(url)
+    if ('recusa' in local) return local.recusa
 
     const agora = new Date()
     const tenantId = tenantAtivo()
@@ -749,7 +802,10 @@ export const handlersDeRelatorios = [
     // E quem nunca vendeu SATISFAZ qualquer `minDaysWithoutSale`: está parado há
     // mais tempo que qualquer corte. Excluí-lo faria o filtro esconder
     // exatamente o pior caso que ele existe para encontrar.
-    const linhas = (tenantId ? estoqueDaEmpresa(tenantId, incluirZero) : [])
+    // O recorte por depósito muda a QUANTIDADE e quais itens aparecem; não muda
+    // dias sem venda, que é da venda e não do local — ver a descrição do
+    // parâmetro no contrato.
+    const linhas = (tenantId ? estoqueDaEmpresa(tenantId, incluirZero, local.warehouseId) : [])
       .filter((linha) => !grupo || linha.productGroup === grupo)
       .map((linha) => ({
         ...linha,
@@ -773,6 +829,7 @@ export const handlersDeRelatorios = [
 
     const corpo: StockAgingReportDto = {
       asOf: agora.toISOString(),
+      ...seHouver('warehouseId', local.warehouseId ?? undefined),
       page: porta.pagina.page,
       pageSize: porta.pagina.pageSize,
       total,
@@ -793,6 +850,8 @@ export const handlersDeRelatorios = [
     if ('recusa' in porta) return porta.recusa
     const janela = periodo(url)
     if ('recusa' in janela) return janela.recusa
+    const local = deposito(url)
+    if ('recusa' in local) return local.recusa
 
     const tenantId = tenantAtivo()
     const soFalta = url.searchParams.get('shortageOnly') === 'true'
@@ -817,8 +876,14 @@ export const handlersDeRelatorios = [
       }
     }
 
+    // O ESTOQUE se recorta por depósito; o ORÇADO não. O orçamento promete a
+    // peça, não o local de onde ela sai — e é dessa assimetria que sai a
+    // pergunta "o que falta SE eu atender só deste depósito".
     const saldos = new Map(
-      (tenantId ? estoqueDaEmpresa(tenantId, true) : []).map((linha) => [linha.variantId, linha]),
+      (tenantId ? estoqueDaEmpresa(tenantId, true, local.warehouseId) : []).map((linha) => [
+        linha.variantId,
+        linha,
+      ]),
     )
     const linhas = [...prometido.entries()]
       .map(([variantId, pedido]) => {
@@ -856,6 +921,7 @@ export const handlersDeRelatorios = [
     const corpo: QuoteVsStockReportDto = {
       from: janela.from,
       to: janela.to,
+      ...seHouver('warehouseId', local.warehouseId ?? undefined),
       page: porta.pagina.page,
       pageSize: porta.pagina.pageSize,
       total,

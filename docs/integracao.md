@@ -54,6 +54,14 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
   casas implícitas (`10000` = 1%). Quantidade com até 3 casas. Datas ISO no dado.
   CPF/CNPJ sem máscara no dado.
 - **Desativação é lógica.** Existe `active`; nada é excluído de verdade.
+- **`GET /health` diz QUAL BINÁRIO respondeu** (`Proposto`): `version` e `commit`
+  são **obrigatórios**, e valem `desconhecido` quando a imagem foi construída sem
+  carimbo — nunca ausentes, nunca vazios. Obrigatórios de propósito: opcional
+  faria o cliente tratar "não sei" e "não me disseram" como o mesmo caso, quando
+  o primeiro é imagem mal construída e o segundo é servidor velho. É a primeira
+  pergunta de qualquer incidente ("o deploy pegou?"), e ela não pode depender de
+  alguém abrir SSH na VM. No mock os dois valem `mock`: não há imagem publicada
+  do outro lado, e `desconhecido` mandaria caçar um deploy que não existe.
 
 ## Sessão no contrato — `security`, e as quatro exceções
 
@@ -192,6 +200,21 @@ viaja no 400 que já existe.
 servidor e pode não ter a forma prometida; item malformado é descartado em vez de
 quebrar a tela. `ErroDoServidor` (`src/components/cabinet/`) é o componente único
 que mostra os quatro textos em papéis distintos e leva o foco ao campo recusado.
+
+**A leitura do `type` é UMA — `typeDoErro`, em `src/lib/erros.ts` (2026-08-25).**
+Eram duas: essa, que valida contra o enum gerado, e `urnDaRecusa` em
+`features/vendas/recusa.ts`, que devolvia a string do corpo como veio. O arranjo
+falhava exatamente onde o vocabulário fechado deveria proteger — URN renomeada no
+contrato continuaria chegando por um dos caminhos e quebraria só metade das
+telas. `recusa.ts` foi embora; `mensagemDaRecusa` mora em `lib/erros.ts`, junto
+da leitura, porque o segundo chamador dela veio de OUTRA feature
+(`orcamento/revisar-orcamento.tsx` importava da vizinha `vendas/`).
+
+O mapa de frases de cada tela é `FrasesDeRecusa` (`Partial<Record<ProblemType,
+string>>`) e não `Record<string, string>`: com chave `string`, URN inventada
+compila calada e nunca casa. `Partial` porque tela nenhuma traduz o vocabulário
+inteiro — **o que ela não traduz cai no `detail`, que o servidor escreveu melhor
+do que a tela escreveria**, e por isso não há nem deve haver mapa "completo".
 
 **A guarda é `src/data/problem-details.test.ts`**, que lê o contrato DIRETO:
 caminho novo com 4xx entra na verificação sozinho. Ela **segue o `$ref` de
@@ -624,6 +647,53 @@ prazo de retorno pendurado num pedido de venda é prazo que nunca vence.
 
 **Falta conhecida:** `kind` `AMBIENTE` ainda não está no vocabulário de
 `src/data/lookups-api.ts` (são 19 kinds hoje). Entra junto com a wiring da tela.
+
+### Comissões — participação, faixas e Reserva Técnica (G8, fase C)
+
+O contrato publicou as **13 operações** na `web#337`; estas telas consomem
+**sete** delas — participação (2), faixas do perfil (2 do parceiro) e Reserva
+Técnica (3). Apuração (`GetCommissionEarnings`) e fechamento continuam sem tela.
+
+**As três nascem HTTP puro, e isso é decisão declarada.** As sete listagens da
+família estão em `SEM_HANDLER_NO_MOCK` (`whitelist-do-contrato.test.ts`) com o
+motivo escrito: a apuração soma sobre o PEDIDO DE VENDA, que o mock não guarda.
+Reimplementá-la ali mostraria dinheiro inventado com cara de conta fechada. A
+folha do pedido já é HTTP desde a `#317`, então a aba de participação vive onde
+o documento vive; a Reserva Técnica tem tela própria e depende do servidor.
+
+Três semânticas que a fronteira (`src/data/comissoes-api.ts`) carrega, e que
+nenhuma delas aparece como erro quando quebra:
+
+1. **O eco de `id` na participação preserva o CONGELAMENTO.** O `PUT` é integral
+   — ele substitui o conjunto. Linha que volta com o `id` que veio da leitura é a
+   MESMA linha, e as faixas congeladas nela ficam onde estão; linha SEM `id` é
+   nova, e é só nela que o servidor copia o perfil de HOJE. Sem o eco, corrigir
+   um percentual num pedido de março regravaria as faixas dele com o perfil de
+   agosto, e a apuração daquele mês mudaria de valor sozinha, com 200.
+2. **`percent` `null` NÃO é zero: é "use o perfil".** O servidor lê a faixa geral
+   do cadastro da pessoa e congela o valor dela na linha. Zero explícito é
+   participação sem comissão, que é caso real. A grade deixa a célula em branco e
+   o rodapé DIZ o que o branco significa — branco que significa alguma coisa não
+   se adivinha.
+3. **A Reserva Técnica não manda valor.** `productCents` e `serviceCents` são do
+   servidor, sobre a participação congelada. O diálogo de lançamento pede pedido,
+   profissional e tipo, e diz por escrito quem faz a conta. Não existe flag de
+   "RT automática" para portar: `Ven_RtAutomatico`/`Ven_RtCalcular` são colunas
+   órfãs no legado, e o automático é propriedade do CÁLCULO.
+
+**A porta do COLABORADOR existe na fronteira e não está montada.**
+`FaixasDeComissao` atende as duas (`useFaixas('employee' | 'partner', …)`), e é a
+do parceiro que tem tela — a família `/api/partners` atravessa o proxy inteira, e
+o id daquele cadastro é o que o servidor conhece. O cadastro de colaborador ainda
+é provider de mock (a costura que `CoberturaDoColaborador` declara), e pendurar o
+perfil ali mandaria ao servidor o uuid de quem ele não conhece: o 404 sairia com
+cara de "esta pessoa não tem faixa". Liga junto com a migração daquela tela.
+
+**Dívida que a tela DIZ em voz alta:** o kind `GRUPO_PRODUTO` entrou em
+`src/data/lookups-api.ts` porque a faixa por grupo é a primeira tela que precisa
+ESCOLHER um grupo. O mock não semeia esse kind, então a lista volta vazia e o
+painel avisa que só a faixa GERAL pode ser incluída — em vez de mostrar um combo
+mudo. As faixas por grupo que já existirem continuam legíveis e editáveis.
 
 ### Colaborador — `GET /api/employees`, só leitura
 

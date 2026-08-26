@@ -33,6 +33,7 @@ import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
 import { Route as VendasCargasRouteImport } from './routes/vendas/cargas'
+import { Route as VendasReservasTecnicasRouteImport } from './routes/vendas/reservas-tecnicas'
 import { Route as CadastrosClientesIndexRouteImport } from './routes/cadastros/clientes/index'
 import { Route as CadastrosClientesClienteIdRouteImport } from './routes/cadastros/clientes/$clienteId'
 import { Route as CadastrosColaboradoresIndexRouteImport } from './routes/cadastros/colaboradores/index'
@@ -52,6 +53,9 @@ import { Route as CrmFunilFunilIdRouteImport } from './routes/crm/funil/$funilId
 import { Route as CrmFunisIndexRouteImport } from './routes/crm/funis/index'
 import { Route as CrmFunisFunilIdRouteImport } from './routes/crm/funis/$funilId'
 import { Route as CrmOportunidadesOportunidadeIdRouteImport } from './routes/crm/oportunidades/$oportunidadeId'
+import { Route as EstoqueRelatoriosOrcadoXEstoqueRouteImport } from './routes/estoque/relatorios/orcado-x-estoque'
+import { Route as EstoqueRelatoriosParadoRouteImport } from './routes/estoque/relatorios/parado'
+import { Route as EstoqueRelatoriosValorizadoRouteImport } from './routes/estoque/relatorios/valorizado'
 import { Route as VendasOrcamentosIndexRouteImport } from './routes/vendas/orcamentos/index'
 import { Route as VendasOrcamentosOrcamentoIdRouteImport } from './routes/vendas/orcamentos/$orcamentoId'
 import { Route as VendasPedidosIndexRouteImport } from './routes/vendas/pedidos/index'
@@ -177,6 +181,11 @@ const VendasCargasRoute = VendasCargasRouteImport.update({
   path: '/cargas',
   getParentRoute: () => VendasRoute,
 } as any)
+const VendasReservasTecnicasRoute = VendasReservasTecnicasRouteImport.update({
+  id: '/reservas-tecnicas',
+  path: '/reservas-tecnicas',
+  getParentRoute: () => VendasRoute,
+} as any)
 const CadastrosClientesIndexRoute = CadastrosClientesIndexRouteImport.update({
   id: '/clientes/',
   path: '/clientes/',
@@ -281,6 +290,23 @@ const CrmOportunidadesOportunidadeIdRoute =
     path: '/oportunidades/$oportunidadeId',
     getParentRoute: () => CrmRoute,
   } as any)
+const EstoqueRelatoriosOrcadoXEstoqueRoute =
+  EstoqueRelatoriosOrcadoXEstoqueRouteImport.update({
+    id: '/relatorios/orcado-x-estoque',
+    path: '/relatorios/orcado-x-estoque',
+    getParentRoute: () => EstoqueRoute,
+  } as any)
+const EstoqueRelatoriosParadoRoute = EstoqueRelatoriosParadoRouteImport.update({
+  id: '/relatorios/parado',
+  path: '/relatorios/parado',
+  getParentRoute: () => EstoqueRoute,
+} as any)
+const EstoqueRelatoriosValorizadoRoute =
+  EstoqueRelatoriosValorizadoRouteImport.update({
+    id: '/relatorios/valorizado',
+    path: '/relatorios/valorizado',
+    getParentRoute: () => EstoqueRoute,
+  } as any)
 const VendasOrcamentosIndexRoute = VendasOrcamentosIndexRouteImport.update({
   id: '/orcamentos/',
   path: '/orcamentos/',
@@ -323,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/vendas/cargas': typeof VendasCargasRoute
+  '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
@@ -338,6 +365,9 @@ export interface FileRoutesByFullPath {
   '/crm/funil/$funilId': typeof CrmFunilFunilIdRoute
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/crm/oportunidades/$oportunidadeId': typeof CrmOportunidadesOportunidadeIdRoute
+  '/estoque/relatorios/orcado-x-estoque': typeof EstoqueRelatoriosOrcadoXEstoqueRoute
+  '/estoque/relatorios/parado': typeof EstoqueRelatoriosParadoRoute
+  '/estoque/relatorios/valorizado': typeof EstoqueRelatoriosValorizadoRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/vendas/pedidos/$pedidoId': typeof VendasPedidosPedidoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
@@ -368,6 +398,7 @@ export interface FileRoutesByTo {
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/vendas/cargas': typeof VendasCargasRoute
+  '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/config': typeof ConfigIndexRoute
@@ -383,6 +414,9 @@ export interface FileRoutesByTo {
   '/crm/funil/$funilId': typeof CrmFunilFunilIdRoute
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/crm/oportunidades/$oportunidadeId': typeof CrmOportunidadesOportunidadeIdRoute
+  '/estoque/relatorios/orcado-x-estoque': typeof EstoqueRelatoriosOrcadoXEstoqueRoute
+  '/estoque/relatorios/parado': typeof EstoqueRelatoriosParadoRoute
+  '/estoque/relatorios/valorizado': typeof EstoqueRelatoriosValorizadoRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/vendas/pedidos/$pedidoId': typeof VendasPedidosPedidoIdRoute
   '/cadastros/clientes': typeof CadastrosClientesIndexRoute
@@ -418,6 +452,7 @@ export interface FileRoutesById {
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/vendas/cargas': typeof VendasCargasRoute
+  '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
@@ -433,6 +468,9 @@ export interface FileRoutesById {
   '/crm/funil/$funilId': typeof CrmFunilFunilIdRoute
   '/crm/funis/$funilId': typeof CrmFunisFunilIdRoute
   '/crm/oportunidades/$oportunidadeId': typeof CrmOportunidadesOportunidadeIdRoute
+  '/estoque/relatorios/orcado-x-estoque': typeof EstoqueRelatoriosOrcadoXEstoqueRoute
+  '/estoque/relatorios/parado': typeof EstoqueRelatoriosParadoRoute
+  '/estoque/relatorios/valorizado': typeof EstoqueRelatoriosValorizadoRoute
   '/vendas/orcamentos/$orcamentoId': typeof VendasOrcamentosOrcamentoIdRoute
   '/vendas/pedidos/$pedidoId': typeof VendasPedidosPedidoIdRoute
   '/cadastros/clientes/': typeof CadastrosClientesIndexRoute
@@ -469,6 +507,7 @@ export interface FileRouteTypes {
     | '/crm/motivos'
     | '/estoque/movimentacao'
     | '/vendas/cargas'
+    | '/vendas/reservas-tecnicas'
     | '/cadastros/'
     | '/compras/'
     | '/config/'
@@ -484,6 +523,9 @@ export interface FileRouteTypes {
     | '/crm/funil/$funilId'
     | '/crm/funis/$funilId'
     | '/crm/oportunidades/$oportunidadeId'
+    | '/estoque/relatorios/orcado-x-estoque'
+    | '/estoque/relatorios/parado'
+    | '/estoque/relatorios/valorizado'
     | '/vendas/orcamentos/$orcamentoId'
     | '/vendas/pedidos/$pedidoId'
     | '/cadastros/clientes/'
@@ -514,6 +556,7 @@ export interface FileRouteTypes {
     | '/crm/motivos'
     | '/estoque/movimentacao'
     | '/vendas/cargas'
+    | '/vendas/reservas-tecnicas'
     | '/cadastros'
     | '/compras'
     | '/config'
@@ -529,6 +572,9 @@ export interface FileRouteTypes {
     | '/crm/funil/$funilId'
     | '/crm/funis/$funilId'
     | '/crm/oportunidades/$oportunidadeId'
+    | '/estoque/relatorios/orcado-x-estoque'
+    | '/estoque/relatorios/parado'
+    | '/estoque/relatorios/valorizado'
     | '/vendas/orcamentos/$orcamentoId'
     | '/vendas/pedidos/$pedidoId'
     | '/cadastros/clientes'
@@ -563,6 +609,7 @@ export interface FileRouteTypes {
     | '/crm/motivos'
     | '/estoque/movimentacao'
     | '/vendas/cargas'
+    | '/vendas/reservas-tecnicas'
     | '/cadastros/'
     | '/compras/'
     | '/config/'
@@ -578,6 +625,9 @@ export interface FileRouteTypes {
     | '/crm/funil/$funilId'
     | '/crm/funis/$funilId'
     | '/crm/oportunidades/$oportunidadeId'
+    | '/estoque/relatorios/orcado-x-estoque'
+    | '/estoque/relatorios/parado'
+    | '/estoque/relatorios/valorizado'
     | '/vendas/orcamentos/$orcamentoId'
     | '/vendas/pedidos/$pedidoId'
     | '/cadastros/clientes/'
@@ -782,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendasCargasRouteImport
       parentRoute: typeof VendasRoute
     }
+    '/vendas/reservas-tecnicas': {
+      id: '/vendas/reservas-tecnicas'
+      path: '/reservas-tecnicas'
+      fullPath: '/vendas/reservas-tecnicas'
+      preLoaderRoute: typeof VendasReservasTecnicasRouteImport
+      parentRoute: typeof VendasRoute
+    }
     '/cadastros/clientes/': {
       id: '/cadastros/clientes/'
       path: '/clientes'
@@ -915,6 +972,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CrmOportunidadesOportunidadeIdRouteImport
       parentRoute: typeof CrmRoute
     }
+    '/estoque/relatorios/orcado-x-estoque': {
+      id: '/estoque/relatorios/orcado-x-estoque'
+      path: '/relatorios/orcado-x-estoque'
+      fullPath: '/estoque/relatorios/orcado-x-estoque'
+      preLoaderRoute: typeof EstoqueRelatoriosOrcadoXEstoqueRouteImport
+      parentRoute: typeof EstoqueRoute
+    }
+    '/estoque/relatorios/parado': {
+      id: '/estoque/relatorios/parado'
+      path: '/relatorios/parado'
+      fullPath: '/estoque/relatorios/parado'
+      preLoaderRoute: typeof EstoqueRelatoriosParadoRouteImport
+      parentRoute: typeof EstoqueRoute
+    }
+    '/estoque/relatorios/valorizado': {
+      id: '/estoque/relatorios/valorizado'
+      path: '/relatorios/valorizado'
+      fullPath: '/estoque/relatorios/valorizado'
+      preLoaderRoute: typeof EstoqueRelatoriosValorizadoRouteImport
+      parentRoute: typeof EstoqueRoute
+    }
     '/vendas/orcamentos/': {
       id: '/vendas/orcamentos/'
       path: '/orcamentos'
@@ -1025,11 +1103,17 @@ const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
 interface EstoqueRouteChildren {
   EstoqueMovimentacaoRoute: typeof EstoqueMovimentacaoRoute
   EstoqueIndexRoute: typeof EstoqueIndexRoute
+  EstoqueRelatoriosOrcadoXEstoqueRoute: typeof EstoqueRelatoriosOrcadoXEstoqueRoute
+  EstoqueRelatoriosParadoRoute: typeof EstoqueRelatoriosParadoRoute
+  EstoqueRelatoriosValorizadoRoute: typeof EstoqueRelatoriosValorizadoRoute
 }
 
 const EstoqueRouteChildren: EstoqueRouteChildren = {
   EstoqueMovimentacaoRoute: EstoqueMovimentacaoRoute,
   EstoqueIndexRoute: EstoqueIndexRoute,
+  EstoqueRelatoriosOrcadoXEstoqueRoute: EstoqueRelatoriosOrcadoXEstoqueRoute,
+  EstoqueRelatoriosParadoRoute: EstoqueRelatoriosParadoRoute,
+  EstoqueRelatoriosValorizadoRoute: EstoqueRelatoriosValorizadoRoute,
 }
 
 const EstoqueRouteWithChildren =
@@ -1037,6 +1121,7 @@ const EstoqueRouteWithChildren =
 
 interface VendasRouteChildren {
   VendasCargasRoute: typeof VendasCargasRoute
+  VendasReservasTecnicasRoute: typeof VendasReservasTecnicasRoute
   VendasIndexRoute: typeof VendasIndexRoute
   VendasOrcamentosOrcamentoIdRoute: typeof VendasOrcamentosOrcamentoIdRoute
   VendasPedidosPedidoIdRoute: typeof VendasPedidosPedidoIdRoute
@@ -1046,6 +1131,7 @@ interface VendasRouteChildren {
 
 const VendasRouteChildren: VendasRouteChildren = {
   VendasCargasRoute: VendasCargasRoute,
+  VendasReservasTecnicasRoute: VendasReservasTecnicasRoute,
   VendasIndexRoute: VendasIndexRoute,
   VendasOrcamentosOrcamentoIdRoute: VendasOrcamentosOrcamentoIdRoute,
   VendasPedidosPedidoIdRoute: VendasPedidosPedidoIdRoute,

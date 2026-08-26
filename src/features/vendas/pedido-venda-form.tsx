@@ -21,6 +21,7 @@ import { data } from '@/data'
 import { useLookupOptions } from '@/data/lookups-api'
 import { type PedidoDeVenda, useGravarPedidoDeVenda } from '@/data/pedidos-venda-api'
 import { tabelas } from '@/data/tabelas'
+import { ParticipacaoDoPedido } from '@/features/comissoes/participacao-do-pedido'
 import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
 import { AcoesDoCiclo } from '@/features/vendas/acoes-do-ciclo'
 import { formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
@@ -647,7 +648,22 @@ export function PedidoDeVendaForm({
           documento fechado, que não se edita, continua tendo histórico. */}
       <AcoesDoCiclo pedido={pedido} somenteLeitura={readOnly} />
       <Tabs defaultValue="principal">
-        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
+        <AbasSemCaptura
+          capturada={['principal', 'Principal']}
+          abas={ABAS_SEM_CAPTURA}
+          // A PARTICIPAÇÃO é aba de verdade: sub-recurso do contrato, com grade
+          // e `PUT` próprios. Ela não entra no corpo do documento e por isso não
+          // pode viver dentro de `AbaPrincipal`, onde o `Gravar` do rodapé
+          // prometeria levá-la.
+          adicionais={[
+            {
+              aba: ['participacao', 'Participação'],
+              conteudo: (
+                <ParticipacaoDoPedido pedidoId={pedido.id || null} readOnly={readOnly || fechado} />
+              ),
+            },
+          ]}
+        >
           <AbaPrincipal />
         </AbasSemCaptura>
       </Tabs>

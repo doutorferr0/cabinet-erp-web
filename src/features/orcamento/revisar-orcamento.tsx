@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useRevisarOrcamento } from '@/data/quotes-api'
-import { mensagemDaRecusa, urnDaRecusa } from '@/features/vendas/recusa'
+import { type FrasesDeRecusa, mensagemDaRecusa, typeDoErro } from '@/lib/erros'
 import { useNavigate } from '@tanstack/react-router'
 
 /**
@@ -55,7 +55,7 @@ import { useNavigate } from '@tanstack/react-router'
  * acontecer — e nesse caso o servidor responde `transicao-invalida`, a URN
  * única da máquina de estados, não uma própria da revisão.
  */
-const RECUSAS: Record<string, string> = {
+const RECUSAS: FrasesDeRecusa = {
   [ProblemType['urn:cabinet:erro:orcamento-ja-revisado']]:
     'Este orçamento já tem uma revisão. A próxima sai da mais recente — senão a cadeia de versões vira árvore, e "qual vale" fica sem resposta.',
   [ProblemType['urn:cabinet:erro:transicao-invalida']]:
@@ -74,7 +74,7 @@ export function RevisarOrcamento({ orcamento, onFechar }: RevisarOrcamentoProps)
 
   const cancelado = orcamento?.status === 'cancelled'
   const jaRevisado =
-    urnDaRecusa(revisar.error) === ProblemType['urn:cabinet:erro:orcamento-ja-revisado']
+    typeDoErro(revisar.error) === ProblemType['urn:cabinet:erro:orcamento-ja-revisado']
   const erro = mensagemDaRecusa(revisar.error, 'Não foi possível revisar o orçamento.', RECUSAS)
 
   function fechar() {

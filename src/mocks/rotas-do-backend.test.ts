@@ -523,33 +523,48 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('as SEM CONTRATO são as cinco do ciclo da credencial — publicadas por esta PR e a anterior', () => {
+  it('as SEM CONTRATO são a tesouraria e o ciclo da credencial — publicadas aqui', () => {
     // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
-    // byte a byte). Depois passou a cobrar UMA — o `reset-password` da PR da
-    // senha inicial —, e agora cobra CINCO: as quatro do ciclo da credencial
-    // entram pelo mesmo mecanismo, e não por um afrouxamento. Todas publicadas
-    // AQUI, então a cópia do api fica atrás por definição até o
-    // `sync:contract` de lá; `sem-contrato` é o estado correto e o console DEVE
-    // avisar.
+    // byte a byte), depois a rota única da senha inicial, e agora cobra VINTE:
+    // os quinze caminhos de tesouraria da FASE A do G7 e as cinco do ciclo da
+    // credencial entram pelo mesmo mecanismo, e não por um afrouxamento. Todas
+    // publicadas NESTE repo, que é o dono do contrato, então a cópia do api
+    // fica atrás por definição até o `sync:contract` de lá; `sem-contrato` é o
+    // estado correto e o console DEVE avisar.
     //
-    // **A lista continua FECHADA, e é isso que a mantém útil:** a sexta rota
-    // que aparecer aqui sem querer reprova e sai nomeada. Quando a PR do api
-    // sincronizar e ligar os handlers, as cinco saem de `ROTAS_NO_MOCK` —
-    // JUNTAS, porque o token emitido pelo convite do servidor não existe no
-    // mock que gastaria — e este caso volta a cobrar o vazio.
+    // **A lista continua FECHADA, e é isso que a mantém útil:** a rota que
+    // aparecer aqui sem querer reprova e sai nomeada. Quando a PR do api
+    // sincronizar e ligar os handlers, as linhas saem de `ROTAS_NO_MOCK` — as
+    // do ciclo JUNTAS, porque o token emitido pelo convite do servidor não
+    // existe no mock que gastaria — e este caso volta a cobrar o vazio.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
       'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
     ).toEqual([
+      'get /api/financial-titles',
+      'post /api/financial-titles',
+      'get /api/financial-titles/{id}',
+      'put /api/financial-titles/{id}',
+      'post /api/financial-titles/{id}/cancel',
+      'get /api/financial-installments',
+      'post /api/financial-installments/{id}/settlements',
+      'post /api/financial-settlements/batch',
+      'get /api/cash-movements',
+      'post /api/cash-movements',
+      'post /api/cash-movements/{id}/reconcile',
+      'post /api/cash-transfers',
+      'get /api/bank-accounts',
+      'get /api/cash-registers',
+      'get /api/payment-modes',
       'post /api/employees/{id}/reset-password',
       'post /api/employees/{id}/invite',
       'post /auth/forgot-password',
       'post /auth/credential-token',
       'post /auth/set-password',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 6.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(6)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 20.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(21)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

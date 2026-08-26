@@ -5741,7 +5741,9 @@ export interface GoodsReceiptItemDto {
      */
   purchaseOrderLine?: number | null;
   /**
-     * O que a ordem de compra pedia, em SNAPSHOT congelado na gravação.
+     * O que a linha da ordem AINDA ESPERAVA quando este recebimento foi gravado — a quantidade dela menos o que recebimentos já lançados fecharam.
+     *
+     * **Não é a quantidade original da ordem, e a diferença aparece na entrega parcelada**, que é caso normal: pediu 10, vieram 8 hoje e 2 amanhã. A segunda carga confere contra as 2 que faltavam, não contra as 10 — senão toda parcela nasceria divergente e pediria motivo para uma diferença que já tem explicação, o caminhão anterior. Congelado na gravação, como todo snapshot da família.
      *
      * **Com vínculo, quem preenche é o SERVIDOR**, lendo a linha apontada por `purchaseOrderId` + `purchaseOrderLine` — pela mesma razão de `description`: aceitá-la do cliente faria a divergência ser medida contra um número digitado, e a conferência passaria a dizer o que o operador lembrou, não o que a ordem pede. **Sem vínculo é o que a tela digitou** — a ordem feita por telefone, a carga do legado —, e aí ela é declaração do operador, não fato do sistema.
      *
@@ -5848,7 +5850,7 @@ export interface GoodsReceiptItemWriteRequest {
   /** @nullable */
   purchaseOrderLine?: number | null;
   /**
-     * O que a ordem pedia, e **só na linha SEM vínculo**: ordem feita por telefone, carga do legado. Com `purchaseOrderId` preenchido o servidor resolve a quantidade da própria ordem e IGNORA o que vier aqui, pela mesma razão de `description`.
+     * O que a ordem pedia, e **só na linha SEM vínculo**: ordem feita por telefone, carga do legado. Com `purchaseOrderId` preenchido o servidor resolve o SALDO A CHEGAR da própria linha da ordem e IGNORA o que vier aqui, pela mesma razão de `description` — ver `GoodsReceiptItemDto.quantityOrdered`, que explica por que é o saldo e não o total.
      *
      * `null` no avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria "a ordem pedia nada", que não é linha de ordem nenhuma.
      * @nullable

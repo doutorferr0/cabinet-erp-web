@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   BookUser,
   Boxes,
+  CalendarClock,
   CalendarDays,
   CircleDollarSign,
   Filter,
@@ -461,7 +462,56 @@ export const navSecoes: NavSecao[] = [
                 icon: ShoppingCart,
                 descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
               },
+              {
+                /**
+                 * CONSULTA, não cadastro: não tem `incluir` porque não há o que
+                 * incluir — ela lê ordens ENVIADAS de vários documentos. É a
+                 * terceira filha do grupo e não uma aba da ordem de compra: a
+                 * pergunta que ela responde ("o que chega esta semana, e o que
+                 * está atrasado") não é sobre UM documento.
+                 */
+                title: 'Previsão de Chegada',
+                url: '/compras/previsao',
+                icon: CalendarClock,
+                descricao:
+                  'O que já foi enviado e ainda não chegou, com o atraso contra a promessa.',
+              },
             ],
+          },
+        ],
+      },
+      {
+        /**
+         * RELATÓRIOS de estoque — o terceiro degrau do esqueleto (Documentos →
+         * Cadastros → Relatórios), e o primeiro que existe de verdade em
+         * qualquer seção: o item `Relatórios` de Início ainda é `futuro`.
+         *
+         * Os três saem do contrato (#310) e ganharam o recorte por depósito na
+         * #352. Vêm por último na seção porque é onde o esqueleto os põe:
+         * primeiro o que se opera, depois o que consolida o que foi operado.
+         */
+        title: 'Relatórios',
+        url: '/estoque/relatorios/valorizado',
+        icon: Table2,
+        modulo: 'estoque',
+        items: [
+          {
+            title: 'Estoque Valorizado',
+            url: '/estoque/relatorios/valorizado',
+            icon: Table2,
+            descricao: 'Quanto vale o que está em casa, agora — por depósito ou na empresa.',
+          },
+          {
+            title: 'Estoque Parado',
+            url: '/estoque/relatorios/parado',
+            icon: Table2,
+            descricao: 'O dinheiro parado na prateleira: dias sem venda e última saída.',
+          },
+          {
+            title: 'Orçado × Estoque',
+            url: '/estoque/relatorios/orcado-x-estoque',
+            icon: Table2,
+            descricao: 'O que os orçamentos abertos prometem, contra o que existe em casa.',
           },
         ],
       },
@@ -661,8 +711,7 @@ export const navSecoes: NavSecao[] = [
             title: 'Usuários e Empresas',
             url: '/config/usuarios',
             icon: Settings,
-            descricao: 'Ainda não existe. Quem entra, em qual empresa, com qual acesso.',
-            futuro: true,
+            descricao: 'Quem entra, com qual papel — e a senha provisória do primeiro acesso.',
           },
         ],
       },

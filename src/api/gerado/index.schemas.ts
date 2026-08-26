@@ -63,8 +63,15 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+/**
+ * Prova de VIDA. Diz que o processo responde — não que ele está pronto (isso é `/health/db`). Carrega também a identidade do binário que respondeu: em produção, a pergunta que precede todas as outras é *qual código está no ar*, e ela não pode depender de alguém abrir SSH na VM para conferir.
+ */
 export interface HealthStatus {
   status: string;
+  /** `Proposto`. Versão legível do que está rodando — o `describe` do commit publicado (ex.: `v0.3.1-12-g844b360`), ou `desconhecido` quando a imagem foi construída sem carimbo. Obrigatório de propósito: campo opcional faria o cliente tratar "não sei" e "não me disseram" como o mesmo caso, e são casos diferentes — o primeiro é uma imagem mal construída, o segundo é um servidor velho. */
+  version: string;
+  /** `Proposto`. O SHA do commit publicado, curto (7+ posições). É o que casa o que está no ar com o que está no GitHub, e o que fecha a dúvida de "o deploy pegou?" sem abrir SSH. `desconhecido` quando a imagem não foi carimbada — nunca vazio, nunca ausente. */
+  commit: string;
 }
 
 export interface LoginOk {
@@ -2935,6 +2942,13 @@ export interface EmployeeLinkRequest {
 }
 
 /**
+ * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
+ */
+export interface TemporaryPasswordDto {
+  temporaryPassword: string;
+}
+
+/**
  * Proposto. Ambiente da obra dentro do PEDIDO. Mesma forma do ambiente do orçamento e schema próprio de propósito: os dois documentos são agregados distintos (decisão de 2026-08-10), e compartilhar o tipo faria uma mudança no orçamento chegar ao pedido sem ninguém pedir. O nome continua CONGELADO na emissão.
  */
 export interface OrderEnvironmentDto {
@@ -4542,6 +4556,13 @@ export interface StockValuationReportDto {
   asOf: string;
   /** Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer "a preço de venda" com base no que o servidor afirma, não no que ela supõe. */
   valuationBasis: StockValuationReportDtoValuationBasis;
+  /**
+     * O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.
+     *
+     * **Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.
+     * @nullable
+     */
+  warehouseId?: string | null;
   summary: StockValuationSummaryDto;
   rows: StockValuationRowDto[];
 }
@@ -4603,6 +4624,13 @@ export interface StockAgingReportDto {
   total: number;
   /** O instante da foto — `daysWithoutSale` é contado a partir dele. */
   asOf: string;
+  /**
+     * O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.
+     *
+     * **Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.
+     * @nullable
+     */
+  warehouseId?: string | null;
   summary: StockAgingSummaryDto;
   rows: StockAgingRowDto[];
 }
@@ -4646,6 +4674,13 @@ export interface QuoteVsStockReportDto {
   pageSize: number;
   /** Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos. */
   total: number;
+  /**
+     * O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.
+     *
+     * **Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.
+     * @nullable
+     */
+  warehouseId?: string | null;
   summary: QuoteVsStockSummaryDto;
   rows: QuoteVsStockRowDto[];
 }
@@ -7681,6 +7716,14 @@ includeZero?: boolean;
  */
 belowMinimumOnly?: boolean;
 /**
+ * Recorta o saldo por DEPÓSITO (`stock_locations`). Ausente = a empresa inteira, que é o comportamento de sempre e não muda por este parâmetro existir.
+ *
+ * **O saldo por depósito mora em `stock_balances`, e o agregado por empresa (`product_tenant.stock_qty`) não sabe recortar.** Servidor que aceite o parâmetro e continue somando o agregado responde 200 com o total da empresa sob o rótulo de um depósito — a pior forma de errar, porque o número parece certo. Por isso o envelope ECOA `warehouseId`: sem o eco, quem pediu não distingue recorte feito de recorte ignorado.
+ *
+ * `minStock` e `belowMinimum` continuam sendo da EMPRESA sob recorte: mínimo é cadastro por empresa, não por depósito. Compará-lo com o saldo de um depósito só diria "abaixo do mínimo" para peça que sobra na prateleira ao lado.
+ */
+warehouseId?: string;
+/**
  * Whitelist: `valueCents`, `quantity`, `minStock`, `description`. Campo fora dela é 400.
  *
  * Item SEM preço ordena por `valueCents` como ausente, não como zero — e vai para o fim nos dois sentidos: ele não vale zero, vale desconhecido.
@@ -7720,6 +7763,12 @@ productGroup?: string;
  */
 includeZero?: boolean;
 /**
+ * Recorta o saldo por DEPÓSITO (`stock_locations`). Ausente = a empresa inteira. Mesma semântica de `/api/reports/stock-valuation`, e o envelope ECOA o valor usado.
+ *
+ * **Recorta a QUANTIDADE, nunca os dias.** `lastSaleAt` e `daysWithoutSale` são da venda, e venda não acontece em depósito — sai do saldo da empresa. Contar "dias sem venda deste depósito" exigiria saber de qual local a peça saiu em cada pedido, e o pedido não guarda isso. O que o recorte muda é QUANTO está parado ali, e quais itens aparecem.
+ */
+warehouseId?: string;
+/**
  * Whitelist: `daysWithoutSale`, `valueCents`, `quantity`, `lastSaleAt`, `description`. Campo fora dela é 400.
  *
  * Quem NUNCA vendeu não tem dias a contar e fica no fim em qualquer sentido — no topo, enterraria os que já venderam e pararam, que é onde mora a decisão de queima.
@@ -7757,6 +7806,12 @@ to: string;
  * Só o que falta. É a lista de compras que o relatório existe para gerar.
  */
 shortageOnly?: boolean;
+/**
+ * Recorta o ESTOQUE por depósito — `stockQuantity` e, por consequência, `shortageQuantity`. Ausente = a empresa inteira. O envelope ECOA o valor usado.
+ *
+ * **O que foi ORÇADO não se recorta, e a assimetria é a pergunta do relatório:** o orçamento promete a peça, não o depósito de onde ela sai. Com recorte, `shortageQuantity` responde "o que falta SE eu atender só deste depósito" — falta local, que pode ser transferência em vez de compra. Sem ele, responde "o que falta na empresa", que é a lista de compras. As duas perguntas são legítimas e dão números diferentes; por isso a tela precisa do eco para dizer qual delas respondeu.
+ */
+warehouseId?: string;
 /**
  * Whitelist: `shortageQuantity`, `quotedQuantity`, `stockQuantity`, `description`. Campo fora dela é 400.
  *

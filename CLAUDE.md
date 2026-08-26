@@ -285,18 +285,28 @@ backend, e morre junto com o modo mock no dia em que as duas metades se encontra
 
 Variáveis documentadas em `.env.example` (copiar para `.env.local`, que é gitignored).
 
-**Provar contra o backend real** (feito em 2026-08-18, `cabinet-erp-api` `c34f763`):
+**Provar contra o backend real** — o par vivo agora RODA NO CI (job `ao-vivo`), e o que segue é
+o mesmo caminho na sua máquina:
 
 ```
-cd ../cabinet-erp-api && cp .env.example .env && pnpm setup:dev && pnpm dev   # :3000
-VITE_API_PROXY=http://localhost:3000 pnpm dev                                # :5173
-CABINET_AO_VIVO=1 npx vitest run src/mocks/ao-vivo.test.ts
+pnpm par:semear     # o api cria papel dono + unaccent, migra e SEMEIA (setup:ci de lá)
+pnpm e2e            # sobe api + Vite e roda o fluxo no navegador
+pnpm par:ao-vivo    # a fronteira em Node, com o par já de pé
 ```
 
-**O banco de dev nasce VAZIO** — os testes do backend semeiam por Testcontainers, e `setup:dev`
-só migra. Sem um `employees` com hash de senha de verdade (`protegerSenha`), mais `tenants` e
-`employee_company`, não há login real para provar. Semear é dado de ambiente, não código do outro
-repo.
+`CABINET_API_DIR` aponta o checkout do api (padrão `../cabinet-erp-api`), e
+`CABINET_API_PORT`/`CABINET_APP_PORT` movem as portas — necessário quando dois agentes têm par
+local no mesmo micro, senão o segundo mede o servidor do primeiro.
+
+**A frase que vivia aqui — "o banco de dev nasce VAZIO, semear é dado de ambiente" — VENCEU.**
+`pnpm seed:dev` do api semeia duas empresas, colaborador com senha de verdade, catálogo,
+parceiros, orçamentos e pedidos; `pnpm setup:ci` acrescenta o passo de superusuário
+(`preparar-banco.sql`), que em dev entra pelo `initdb` do compose e num *service container* do
+Actions não entraria nunca — service container não monta volume.
+
+**E o ritual manual era o problema, não o detalhe.** Enquanto provar o par fosse quatro comandos
+decorados, as baterias que dependiam dele não rodavam: a #341 mediu 27 declarações falsas em 48
+horas. Guarda que depende de alguém lembrar não é guarda.
 
 Três armadilhas de MEDIÇÃO, pagas nesta sessão:
 1. **curl no `:5173` não prova a divisão.** O MSW vive no navegador; curl atravessa o proxy e

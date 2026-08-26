@@ -47,11 +47,11 @@ const SCHEMAS = CONTRATO.components.schemas
  * inventado. Segue o `$ref` do próprio contrato em vez de guardar uma lista: o
  * dia em que `city` for renomeado lá, quebra aqui.
  */
-function existeNoContrato(dto: string): boolean {
+function existeNoContrato(dto: string, schema = 'PartnerDto'): boolean {
   const partes = dto.split('.')
   const raiz = partes[0] ?? ''
   const aninhado = partes[1]
-  const propriedade = SCHEMAS.PartnerDto?.properties?.[raiz]
+  const propriedade = SCHEMAS[schema]?.properties?.[raiz]
   if (!propriedade) return false
   if (aninhado === undefined) return true
   const ref = propriedade.oneOf?.find((alternativa) => alternativa.$ref !== undefined)?.$ref
@@ -121,12 +121,12 @@ describe('invariantes da consulta — o que a grade pode PEDIR ao servidor', () 
   )
 
   it.each(entidades.filter(([, e]) => e.fonte === 'http'))(
-    '%s: todo `dto` declarado existe mesmo no PartnerDto',
+    '%s: todo `dto` declarado existe mesmo no DTO da listagem',
     (_, entidade) => {
       // Lê o contrato de verdade, não uma cópia. Campo renomeado lá quebra aqui,
       // que é onde deve quebrar — e não na tela, em branco.
       const inventados = camposDe(entidade)
-        .filter((campo) => campo.dto && !existeNoContrato(campo.dto))
+        .filter((campo) => campo.dto && !existeNoContrato(campo.dto, entidade.dtoDoContrato))
         .map((campo) => `${campo.k} → ${campo.dto}`)
       expect(inventados).toEqual([])
     },
@@ -139,10 +139,51 @@ describe('invariantes da consulta — o que a grade pode PEDIR ao servidor', () 
     },
   )
 
-  it.each(entidades)('%s: a grade tem coluna, e o filtro tem campo', (_, entidade) => {
+  it.each(entidades)('%s: a grade tem coluna', (_, entidade) => {
     // Piso, não teto: listagem sem nenhuma coluna derivável não é listagem.
     expect(colunasDe(entidade).length).toBeGreaterThan(0)
-    expect(filtrosDe(entidade).length).toBeGreaterThan(0)
+  })
+
+  /**
+   * O filtro deixou de ser exigido de TODA entidade em 2026-08-25, e a exceção
+   * é medida, não concedida: `whitelistDeFiltro: []` diz que o servidor recusa o
+   * parâmetro `filters` inteiro (400 `urn:cabinet:erro:filtro-invalido`), e é o
+   * caso de `/api/employees`. Cobrar filtro de quem não pode filtrar faria a
+   * tela oferecer um recorte que nunca chega.
+   */
+  it.each(entidades.filter(([, e]) => e.whitelistDeFiltro?.length !== 0))(
+    '%s: o filtro tem campo',
+    (_, entidade) => {
+      expect(filtrosDe(entidade).length).toBeGreaterThan(0)
+    },
+  )
+
+  /**
+   * O OUTRO LADO da exceção, e sem ele `whitelistDeFiltro: []` seria porta
+   * aberta: quem a declara não pode derivar filtro NENHUM. Sem esta guarda,
+   * alguém acrescentaria `fil` a um campo do colaborador, a faixa de chips
+   * voltaria à tela, e o primeiro filtro montado viraria 400 na cara do
+   * operador — que é exatamente o que a lista vazia existe para impedir.
+   *
+   * **A lista de entidades cobradas pode ficar vazia**, e por isso o caso é UM
+   * só, sobre o conjunto: `it.each([])` não roda, mas um `expect` sobre o filtro
+   * roda sempre e mede zero quando não há exceção declarada.
+   */
+  it('entidade que declara `whitelistDeFiltro: []` não deriva filtro nenhum', () => {
+    const semFiltro = entidades.filter(([, e]) => e.whitelistDeFiltro?.length === 0)
+    const oferecendo = semFiltro
+      .filter(([, e]) => filtrosDe(e).length > 0)
+      .map(
+        ([id, e]) =>
+          `${id}: ${filtrosDe(e)
+            .map((c) => c.k)
+            .join(', ')}`,
+      )
+
+    expect(
+      oferecendo,
+      'o servidor recusa `filters` nestes recursos — a tela não pode oferecê-lo',
+    ).toEqual([])
   })
 })
 

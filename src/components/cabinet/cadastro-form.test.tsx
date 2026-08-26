@@ -2,6 +2,7 @@ import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import {
   acaoNaLinha,
   renderRoute,
@@ -86,7 +87,7 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('sem o search param a tela continua editável', async () => {
-    renderRoute('/cadastros/colaboradores/1')
+    renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
 
     const nome = await screen.findByLabelText('Nome completo')
     expect(nome).toBeEnabled()
@@ -95,14 +96,14 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('a LINHA leva ao modo consulta — o botão Consul. deixou de existir', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores')
+    const { router, user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     // #198: clicar na linha abre o registro em consulta. O passo "marca a
     // linha, procura o botão" morreu com ela.
     await user.click(await screen.findByText('CARLA SOUZA'))
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
+      expect(router.state.location.pathname).toBe(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`)
     })
     expect(router.state.location.search).toEqual({ modo: 'consulta' })
     // A saída da tela é o `Voltar` da folha (#235). Era o `Fechar` do cabeçalho
@@ -111,12 +112,12 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('Alterar da barra de seleção NÃO entra em consulta', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores')
+    const { router, user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await acaoNaLinha(user, 'CARLA SOUZA', 'Alterar')
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
+      expect(router.state.location.pathname).toBe(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`)
     })
     expect(router.state.location.search).toEqual({})
   })
@@ -203,7 +204,7 @@ describe('CadastroForm em modo consulta', () => {
   }, 30_000)
 
   it('rodapé fixo usa régua forte na borda superior (DESIGN.md)', async () => {
-    renderRoute('/cadastros/colaboradores/1')
+    renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
 
     const gravar = await screen.findByRole('button', { name: /Gravar/ })
     const rodape = gravar.closest('div')

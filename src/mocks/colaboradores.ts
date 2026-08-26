@@ -4,7 +4,15 @@ import { idDeApoio } from '@/mocks/lookups'
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
  */
 export interface Colaborador {
-  id: number
+  /**
+   * TEXTO, e não número, desde que a tela migrou para `GET /api/employees`
+   * (2026-08-25): o id passou a ser o uuid do servidor. Enquanto era `number`,
+   * o parâmetro de rota vinha string e `Number('ac956183-…')` é **`NaN`** — a
+   * tela pediria o registro `NaN` e diria "não encontrado" para um colaborador
+   * que existe, sem erro nenhum no caminho. É o mesmo defeito que `/api/quotes`
+   * pagou na #134, documentado em `DocumentoProvider.get`.
+   */
+  id: string
   nome: string
   setor: string | null
   atendimentoCliente: boolean
@@ -61,7 +69,7 @@ const NOMES = [
 ] as const
 
 /** O id de semente do usuário demo — o último nome da lista, 1-based. */
-export const ID_DO_USUARIO_DEMO = NOMES.length
+export const ID_DO_USUARIO_DEMO = String(NOMES.length)
 
 /**
  * Exportados porque a listagem os oferece como OPÇÕES do filtro por setor e por
@@ -91,12 +99,12 @@ export const SETORES = ['VENDAS', 'ESTOQUE', 'FINANCEIRO', 'ADMINISTRATIVO', 'CO
  * sessão do mock e as atividades semeadas o referenciam. Derivá-lo como os
  * outros obrigaria a mexer nos dois, sem ganhar nada — o id é opaco.
  */
-export function idDeColaborador(id: number): string {
-  return id === ID_DO_USUARIO_DEMO ? 'emp-admin' : `emp-${String(id).padStart(4, '0')}`
+export function idDeColaborador(id: string): string {
+  return id === ID_DO_USUARIO_DEMO ? 'emp-admin' : `emp-${id.padStart(4, '0')}`
 }
 
 export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
-  id: i + 1,
+  id: String(i + 1),
   nome,
   setor: idDeApoio('SETOR', SETORES[i % SETORES.length]),
   atendimentoCliente: i % 4 !== 3,
@@ -127,9 +135,15 @@ export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
   empresa: EMPRESAS[i % EMPRESAS.length] ?? null,
 }))
 
-export function colaboradorVazio(id: number): Colaborador {
+/**
+ * O registro em branco. **Sem argumento**: o id do que ainda não existe é do
+ * servidor, e vem no 201 — quem abre o "Incluir" não tem por que inventar um.
+ * Enquanto o recurso era mock, `createMockProvider` passava aqui o negativo de
+ * `proximoIdEmBranco()`; hoje quem chama é `documentoDoColaborador.empty`.
+ */
+export function colaboradorVazio(): Colaborador {
   return {
-    id,
+    id: '',
     nome: '',
     setor: null,
     atendimentoCliente: true,

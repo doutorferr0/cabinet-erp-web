@@ -1,10 +1,18 @@
+import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+/**
+ * A tela migrou para `GET /api/employees` em 2026-08-25, e estes casos migraram
+ * junto: onde liam `src/mocks/colaboradores.ts`, agora leem o servidor falso de
+ * `src/test/colaboradores.ts`. **A rota `/novo` continua sem stub de propósito**
+ * — o "Incluir" é local (`empty()` não toca a rede), e um stub ali esconderia
+ * uma chamada que não deve existir.
+ */
 describe('tela Colaborador', () => {
-  it('listagem mostra colaboradores mockados', async () => {
-    renderRoute('/cadastros/colaboradores')
+  it('listagem mostra os colaboradores do servidor', async () => {
+    renderRoute('/cadastros/colaboradores', stubDeColaboradores())
     expect(await screen.findByText('CARLA SOUZA')).toBeInTheDocument()
     expect(screen.getByText('Cadastro de Colaboradores')).toBeInTheDocument()
   })
@@ -22,8 +30,8 @@ describe('tela Colaborador', () => {
     })
   })
 
-  it('abrir registro existente carrega os dados', async () => {
-    renderRoute('/cadastros/colaboradores/1')
+  it('abrir registro existente carrega a ficha do servidor', async () => {
+    renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
     expect(await screen.findByDisplayValue('CARLA SOUZA')).toBeInTheDocument()
   })
 
@@ -96,7 +104,10 @@ describe('tela Colaborador', () => {
      * cai junto com os de lá.
      */
     it('consulta não abre mais o formulário — quem lê é a ficha', async () => {
-      renderRoute('/cadastros/colaboradores/1?modo=consulta')
+      renderRoute(
+        `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+        stubDeColaboradores(),
+      )
 
       // O valor está na tela como texto — duas vezes, no contexto da banda e no
       // par de leitura do módulo.

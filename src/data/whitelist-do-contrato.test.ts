@@ -1,5 +1,10 @@
 import { ORDENAVEIS_ATIVIDADE } from '@/data/atividades-api'
 import {
+  ORDENAVEIS_FAIXA,
+  ORDENAVEIS_PARTICIPACAO,
+  ORDENAVEIS_RESERVA_TECNICA,
+} from '@/data/comissoes-api'
+import {
   FILTRAVEIS_OPORTUNIDADE,
   ORDENAVEIS_FUNIL,
   ORDENAVEIS_MOTIVO_DE_PERDA,
@@ -244,13 +249,19 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // servidor pela razão que o módulo inteiro tem: apuração sobre dado mockado mostra
   // dinheiro inventado com cara de conta fechada, que é pior do que não mostrar nada.
   // Cada uma sai daqui quando ganhar a tela, com `ORDENAVEIS` próprio.
-  ListOrderParticipants:
-    'a aba Participação do pedido ainda não existe — a grade é Fase C do trilho de comissões',
+  // TRÊS DAS SETE SAÍRAM DAQUI: a aba `Participação` do pedido, o perfil de
+  // participação do profissional e a tela da Reserva Técnica nasceram na fase
+  // C, e as três declaram `ORDENAVEIS` próprio logo abaixo.
+  //
+  // A DO COLABORADOR FICA, e o motivo não é falta de componente: `FaixasDeComissao`
+  // atende as duas portas e a de `employee` está escrita na fronteira
+  // (`useFaixas('employee', …)`). O que falta é o CADASTRO — `data.colaboradores`
+  // continua sendo provider de mock, e as duas listas de pessoas divergem (a
+  // costura que `CoberturaDoColaborador` declara). Montar a aba ali mandaria ao
+  // servidor o uuid de quem ele não conhece, e o 404 sairia com cara de "esta
+  // pessoa não tem faixa". Sai daqui junto com a migração daquela tela.
   ListEmployeeCommissionTiers:
-    'o perfil de comissão do colaborador ainda não tem aba — o cadastro de colaborador é provider de mock',
-  ListPartnerCommissionTiers:
-    'o perfil de participação do profissional ainda não tem aba — a tela do parceiro é Fase C do trilho',
-  ListTechnicalReserves: 'a Reserva Técnica ainda não tem tela — Fase C do trilho de comissões',
+    'o perfil de comissão do colaborador não tem aba porque o CADASTRO dele ainda é provider de mock — o componente e a porta existem, o id do servidor é que não',
   GetCommissionEarnings: 'a consulta de ganhos ainda não tem tela — Fase C do trilho de comissões',
   ListCommissionClosings:
     'o fechamento de comissão ainda não tem tela — Fase C do trilho de comissões',
@@ -280,6 +291,12 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE,
   ListCrmLostReasons: ORDENAVEIS_MOTIVO_DE_PERDA,
   ListWorks: ORDENAVEIS_OBRA,
+  // AS TRÊS DE COMISSÕES QUE GANHARAM TELA (G8, fase C). A whitelist é uma só
+  // para as duas portas do perfil, como o schema do contrato — o que muda entre
+  // colaborador e parceiro é o endereço, não o que se ordena.
+  ListOrderParticipants: ORDENAVEIS_PARTICIPACAO,
+  ListPartnerCommissionTiers: ORDENAVEIS_FAIXA,
+  ListTechnicalReserves: ORDENAVEIS_RESERVA_TECNICA,
 }
 
 /**

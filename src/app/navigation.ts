@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Filter,
   GanttChart,
+  HandCoins,
   Home,
   LayoutDashboard,
   type LucideIcon,
@@ -333,6 +334,32 @@ export const navSecoes: NavSecao[] = [
             url: '/vendas/cargas',
             icon: Truck,
             descricao: 'O que está liberado e ainda não saiu do galpão, por pedido.',
+          },
+          {
+            /**
+             * A RESERVA TÉCNICA fica DEPOIS do pedido porque é o que vem depois
+             * dele: o documento guarda a participação, e este lançamento é o
+             * momento em que ela vira valor apurado. Mesma regra de ordem do
+             * Quadro de Cargas — a barra segue o fluxo, e nada entra na fila
+             * antes de existir documento.
+             *
+             * **`do Profissional` no nome é DESAMBIGUAÇÃO, não enfeite.** Existe
+             * um `Reserva Técnica` em Estoque, `futuro`, e ele é OUTRA coisa: "a
+             * peça separada para um projeto, antes de sair". Este aqui é o
+             * `Reserva_tecnica` do legado — dinheiro que o profissional externo
+             * recebe pela indicação, com valor calculado pelo servidor sobre a
+             * participação congelada no pedido.
+             *
+             * Homônimo é o mesmo caso do Quadro de Cargas (elétrico × entrega), e
+             * a saída é a que está escrita lá: quem chega depois entra com nome
+             * próprio, em vez de herdar o slot e fazer uma sumir dentro da outra.
+             * O dia em que a de Estoque for construída, ela também precisa do
+             * nome dela — `Reserva de Peça` diz o que a descrição dela já diz.
+             */
+            title: 'Reserva Técnica do Profissional',
+            url: '/vendas/reservas-tecnicas',
+            icon: HandCoins,
+            descricao: 'O que o profissional externo recebe pela indicação. Cancela, não apaga.',
           },
         ],
       },

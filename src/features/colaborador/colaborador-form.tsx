@@ -1,16 +1,16 @@
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
+import {
+  CamposDoModulo,
+  Pendencias,
+  ProgressoDeObrigatorios,
+} from '@/components/cabinet/campos-do-modulo'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { camposDe, colaborador as esquema, propsDoIcone } from '@/features/cadastro/modulos'
-import {
-  CamposDoModulo,
-  Pendencias,
-  ProgressoDeObrigatorios,
-} from '@/features/colaborador/campos-do-modulo'
 import type { Colaborador } from '@/mocks/colaboradores'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'

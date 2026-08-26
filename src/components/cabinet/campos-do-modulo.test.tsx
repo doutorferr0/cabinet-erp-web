@@ -1,6 +1,7 @@
+import { readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { Pendencias } from '@/components/cabinet/campos-do-modulo'
 import { moduloContatos } from '@/features/cadastro/modulos'
-import { Pendencias as PendenciasDoColaborador } from '@/features/colaborador/campos-do-modulo'
-import { Pendencias } from '@/features/profissional/campos-do-modulo'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -17,14 +18,6 @@ import { describe, expect, it } from 'vitest'
  * Foi por isso que a declaração ficou de fora da #331 (web#293): espec certa
  * com tela mentindo é pior que espec incompleta. As duas metades entram juntas,
  * e este arquivo é o que impede de voltarem separadas.
- *
- * ## Por que as DUAS cópias são exercitadas aqui
- *
- * `campos-do-modulo.tsx` existe duplicado em `profissional/` e `colaborador/`
- * por decisão de zona registrada na #101 (peça compartilhada moraria em
- * `components/cabinet/`, fora da zona daquela issue). Cópia que diverge calada é
- * o risco inteiro do arranjo — então o mesmo caso corre nas duas, e a que ficar
- * para trás reprova aqui em vez de reprovar na tela de alguém.
  */
 describe('Pendencias não conta sub-recurso como lacuna', () => {
   // O módulo REAL do Cliente: `comunicadores: false` deixa os quatro
@@ -40,11 +33,8 @@ describe('Pendencias não conta sub-recurso como lacuna', () => {
     expect(grade?.campo).toBeUndefined()
   })
 
-  it.each([
-    ['profissional', Pendencias],
-    ['colaborador', PendenciasDoColaborador],
-  ])('%s: o rodapé cita as lacunas reais e NÃO a grade', (_, Componente) => {
-    render(<Componente modulo={modulo} />)
+  it('o rodapé cita as lacunas reais e NÃO a grade', () => {
+    render(<Pendencias modulo={modulo} />)
 
     const rodape = screen.getByText(/Ainda não guardamos/)
     // A lacuna verdadeira continua dita pelo nome — o filtro novo não pode
@@ -53,15 +43,12 @@ describe('Pendencias não conta sub-recurso como lacuna', () => {
     expect(rodape).not.toHaveTextContent('Contatos')
   })
 
-  it.each([
-    ['profissional', Pendencias],
-    ['colaborador', PendenciasDoColaborador],
-  ])('%s: módulo cuja ÚNICA falta é o sub não imprime rodapé nenhum', (_, Componente) => {
+  it('módulo cuja ÚNICA falta é o sub não imprime rodapé nenhum', () => {
     // O caso extremo, e o que mais engana: um bloco onde tudo tem `campo` menos
     // a grade. Filtrando só `!campo.campo`, ele imprimiria um rodapé de uma
     // linha, dizendo que não guardamos exatamente aquilo que a grade lista.
     render(
-      <Componente
+      <Pendencias
         modulo={{
           id: 'so-sub',
           titulo: 'Outros contatos',
@@ -75,5 +62,35 @@ describe('Pendencias não conta sub-recurso como lacuna', () => {
     )
 
     expect(screen.queryByText(/Ainda não guardamos/)).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * A GUARDA QUE SUBSTITUI A DAS DUAS CÓPIAS.
+ *
+ * Até esta leva `campos-do-modulo.tsx` existia duplicado em `profissional/` e
+ * `colaborador/` (decisão de zona da #101), e o caso de pendências corria nas
+ * DUAS — porque cópia que diverge calada era o risco inteiro daquele arranjo.
+ * A promoção para `components/cabinet/` tirou o risco, e com ele o objeto
+ * daquela guarda.
+ *
+ * Apagá-la sem repor deixaria o repo sem nada dizendo *"não volte a copiar"* —
+ * e a próxima tela de cadastro que precisar do render genérico estando fora
+ * desta zona faria exatamente o que a #101 fez, com a mesma boa razão. Esta
+ * guarda é o bilhete: existe UM render genérico, e ele mora aqui.
+ */
+describe('o render genérico existe em uma cópia só', () => {
+  function arquivos(dir: string): string[] {
+    return readdirSync(dir).flatMap((nome) => {
+      if (nome === 'node_modules') return []
+      const caminho = join(dir, nome)
+      return statSync(caminho).isDirectory() ? arquivos(caminho) : [caminho]
+    })
+  }
+
+  it('só há um campos-do-modulo.tsx em src/, e é o de components/cabinet', () => {
+    const copias = arquivos('src').filter((caminho) => caminho.endsWith('campos-do-modulo.tsx'))
+
+    expect(copias).toEqual(['src/components/cabinet/campos-do-modulo.tsx'])
   })
 })

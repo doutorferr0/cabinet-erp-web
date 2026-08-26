@@ -838,6 +838,18 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/label-layouts/{id}' },
   { metodo: 'put', caminho: '/api/label-layouts/{id}' },
   { metodo: 'get', caminho: '/api/labels/products/print' },
+  // IMPRESSAO DE PEDIDO e TIMBRE, publicados por esta PR. As tres respondem
+  // **501 hoje** - a medicao e mecanica, nao empirica: caminho novo no contrato
+  // sem handler no mapa de `servidor.ts` e 501 por construcao, e o handler vem
+  // na PR de api desta mesma sessao. Entram na PASSAGEM e nao em
+  // `FORA_DE_PROPOSITO` pelo mesmo motivo que `/api/quotes/{id}/print` entrou
+  // aqui na web#333, quando o api ainda nao a servia: **nenhuma tela chama as
+  // tres**, entao nao ha ficcao a proteger - e declaracao de ausencia com
+  // validade de horas e exatamente o que o cabecalho deste arquivo documenta
+  // como o jeito de a lista envelhecer calada.
+  { metodo: 'get', caminho: '/api/orders/{id}/print' },
+  { metodo: 'get', caminho: '/api/company-letterhead' },
+  { metodo: 'put', caminho: '/api/company-letterhead' },
 ]
 
 /**

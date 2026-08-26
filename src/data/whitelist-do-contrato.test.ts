@@ -19,6 +19,7 @@ import {
   ORDENAVEIS as ORDENAVEIS_PRODUTO,
 } from '@/data/produtos-api'
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
+import { ORDENAVEIS_CONCESSAO } from '@/data/suporte-api'
 import { ORDENAVEIS_PAPEL as ORDENAVEIS_PAPEL_MOCK } from '@/mocks/api/acesso'
 import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
 import {
@@ -63,6 +64,10 @@ import {
   ORDENAVEIS_PROFISSIONAL,
 } from '@/mocks/api/relatorios'
 import { ORDENAVEIS_SERVICO } from '@/mocks/api/servicos'
+import {
+  ORDENAVEIS_CONCESSAO as ORDENAVEIS_CONCESSAO_MOCK,
+  ORDENAVEIS_TRILHA as ORDENAVEIS_TRILHA_MOCK,
+} from '@/mocks/api/suporte'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -162,6 +167,14 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  * reprova e cobra a entrada aqui — que é o mesmo que cobrar a conferência.
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
+  // A TRILHA do suporte (item 6 da fundação). A fronteira a lê, mas não publica
+  // `sortBy`: a trilha se lê por SEQUÊNCIA, e a única ordenação que faz sentido
+  // nela — tempo — é o padrão. Oferecer o parâmetro à tela seria oferecer a
+  // leitura errada da auditoria, agrupada por tipo de evento em vez de por
+  // ordem dos fatos. Quem ganhar tela de suporte herda esta decisão, não um
+  // `ORDENAVEIS` a preencher.
+  ListSupportGrantAudit:
+    'a trilha ordena só por tempo, e é o padrão — a fronteira não expõe `sortBy` de propósito',
   // IMPRESSÃO (web#333 / api#163). A tela de layouts de etiqueta é o editor de
   // medidas, e ela nasce depois do motor de render pela mesma razão das telas de
   // entrega: sem PDF para conferir, o editor deixaria alguém acertar milímetro
@@ -297,6 +310,10 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListOrderParticipants: ORDENAVEIS_PARTICIPACAO,
   ListPartnerCommissionTiers: ORDENAVEIS_FAIXA,
   ListTechnicalReserves: ORDENAVEIS_RESERVA_TECNICA,
+  // A fronteira do suporte existe antes da tela (regra de acesso a dado não
+  // abre exceção), e ela já carrega a whitelist — então entra AQUI, e não no
+  // inventário de "sem lista no front".
+  ListSupportGrants: ORDENAVEIS_CONCESSAO,
 }
 
 /**
@@ -326,6 +343,11 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListEmployees: ORDENAVEIS_COLABORADOR_MOCK,
   ListWorks: ORDENAVEIS_OBRA,
   ListRoles: ORDENAVEIS_PAPEL_MOCK,
+  // SUPORTE-DA-PLATAFORMA (item 6 da fundação) — nasce sem tela e COM mock, e
+  // aqui isso pesa mais que no resto: o site público é 100% mock, então quem
+  // recusa prazo ausente, motivo de fachada e segunda concessão é o handler.
+  ListSupportGrants: ORDENAVEIS_CONCESSAO_MOCK,
+  ListSupportGrantAudit: ORDENAVEIS_TRILHA_MOCK,
   // Depósito e saldo nascem sem tela e COM mock (#291). É este eixo que os
   // mede, e não o de cima: quem recusa `sortBy` fora da whitelist, hoje, é o
   // handler — e o site público é 100% mock.

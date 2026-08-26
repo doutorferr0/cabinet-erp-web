@@ -1047,6 +1047,9 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe "vincular ao existente", duas pessoas não compartilham login |
  * | `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |
  * | `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |
+ * | `urn:cabinet:erro:sem-concessao-de-suporte` | 403 | `Sem concessão de suporte` | suporte-da-plataforma tocando dado de cliente sem concessão ABERTA para aquela organização — ou com a concessão já vencida. 403 e não 404: a organização existe, o que falta é o acesso. É a recusa que existe no lugar do `super-admin`, e ela é o caso PADRÃO — o suporte começa sem alcançar nada. |
+ * | `urn:cabinet:erro:suporte-ja-em-organizacao` | 409 | `Suporte já está em outra organização` | tentativa de abrir a segunda concessão com uma aberta. Carrega `openGrantId`, para a tela oferecer encerrar aquela em vez de deixar o operador procurar qual é. É a regra de UMA POR VEZ dita em tempo de execução. |
+ * | `urn:cabinet:erro:concessao-encerrada` | 409 | `Concessão já encerrada` | `/revoke` numa concessão que já foi encerrada ou já venceu. 409 e não 204: encerrar de novo não é o mesmo fato, e a trilha não ganha uma segunda linha por um clique repetido. |
  * | `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |
  * | `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |
  * | `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |
@@ -1130,6 +1133,9 @@ export const ProblemType = {
   'urn:cabinet:erro:parcela-ja-quitada': 'urn:cabinet:erro:parcela-ja-quitada',
   'urn:cabinet:erro:valor-acima-do-saldo': 'urn:cabinet:erro:valor-acima-do-saldo',
   'urn:cabinet:erro:movimento-ja-conciliado': 'urn:cabinet:erro:movimento-ja-conciliado',
+  'urn:cabinet:erro:sem-concessao-de-suporte': 'urn:cabinet:erro:sem-concessao-de-suporte',
+  'urn:cabinet:erro:suporte-ja-em-organizacao': 'urn:cabinet:erro:suporte-ja-em-organizacao',
+  'urn:cabinet:erro:concessao-encerrada': 'urn:cabinet:erro:concessao-encerrada',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -1171,6 +1177,11 @@ export interface ProblemDetails {
      * @nullable
      */
   fields?: ProblemFieldError[] | null;
+  /**
+     * Só no 409 de `POST /api/platform/support-grants`: o id da concessão que JÁ está aberta, e que precisa ser encerrada antes de abrir outra. Sem o campo, o 409 diria "não pode" sem dizer contra o quê — e a regra de uma-organização-por-vez pareceria arbitrária em vez de mostrável.
+     * @nullable
+     */
+  openGrantId?: string | null;
   /**
      * Só no 409 de parceiro com documento já cadastrado: o id do cadastro que já existe. É ele que habilita \"vincular esta empresa ao cadastro existente\" (`POST /api/partners/{id}/link`) — sem o campo, o 409 vira beco sem saída.
      * @nullable
@@ -1341,6 +1352,20 @@ export interface ReadinessStatus {
   pendingMigrations: number | null;
 }
 
+/**
+ * Proposto. O que a SESSÃO sabe sobre estar dentro de uma organização de cliente — `null` na esmagadora maioria das sessões, que é o caso normal.
+ *
+ * Existe para a tela poder dizer, o tempo todo e sem ambiguidade, "você está na organização X do cliente até HH:MM". Sessão de suporte que parece sessão comum é como o acesso irrestrito passa despercebido de quem o está usando.
+ */
+export interface SupportContextDto {
+  grantId: string;
+  organizationId: string;
+  organizationName: string;
+  reason: string;
+  /** Quando este alcance acaba. A tela desenha a contagem a partir dele; quem decide se ainda vale continua sendo o servidor, a cada requisição. */
+  expiresAt: string;
+}
+
 export interface SessaoAtual {
   organizationId: string;
   employeeId: string;
@@ -1353,6 +1378,14 @@ export interface SessaoAtual {
      * @nullable
      */
   displayName?: string | null;
+  /**
+     * Proposto. A concessão de suporte que esta sessão está usando, ou `null` — e `null` é o caso de quase toda sessão que existe.
+     *
+     * **É aqui que se vê que não há flag global.** A sessão não carrega "é super-admin": ela carrega, no máximo, UMA concessão viva, com a organização, o motivo e a hora de acabar. Duas organizações ao mesmo tempo não têm como ser representadas neste campo, e é de propósito.
+     *
+     * O campo some sozinho: passado o `expiresAt`, o servidor devolve `null` aqui e 403 nas operações da organização do cliente. A tela não precisa expirar nada — ela precisa PERGUNTAR, e este é o campo que responde.
+     */
+  support?: SupportContextDto | null;
 }
 
 export interface StockMovementRequest {
@@ -4052,6 +4085,120 @@ export interface RoleWriteRequest {
   permissions: string[];
   /** Desativação lógica; `false` tira o papel da escolha do vínculo. */
   active: boolean;
+}
+
+/**
+ * Proposto. O pedido de break-glass. **Os três campos são obrigatórios, e é isso que quebra o `super-admin`:** flag global não tem organização, não tem motivo e não tem hora para acabar — este corpo tem os três, e o servidor recusa sem qualquer um deles.
+ */
+export interface SupportGrantRequest {
+  /** A organização — UMA, no singular, e é o singular que importa. Um array aqui reconstruiria o acesso irrestrito com sintaxe melhor; para a segunda organização, encerra-se esta concessão e abre-se outra. */
+  organizationId: string;
+  /**
+     * Por que se está entrando, escrito por gente e para gente — número do chamado, o que o cliente relatou. Vai na trilha e é o que alguém lerá meses depois.
+     *
+     * **Sem padrão e sem valor de conveniência.** O servidor recusa vazio e recusa só-espaços com 400: motivo que a tela preenche sozinha não é motivo, é campo cumprido.
+     * @minLength 8
+     * @maxLength 500
+     */
+  reason: string;
+  /**
+     * Quando o acesso acaba — instante, não duração, para não haver dois relógios discordando sobre o fim.
+     *
+     * O servidor recusa passado e recusa além do TETO de 8 horas a partir do recebimento. O front espelha a mesma regra para avisar antes de enviar, e o servidor revalida: validação de tela é conveniência, nunca a garantia.
+     */
+  expiresAt: string;
+}
+
+/**
+ * O estado CALCULADO pelo servidor, e a resposta única para "isto ainda vale?". `active` só enquanto não venceu e não foi encerrada.
+ *
+ * Vem pronto porque o cliente não tem como calculá-lo com honestidade: comparar `expiresAt` com o relógio do navegador põe a decisão de acesso num relógio que o operador ajusta.
+ */
+export type SupportGrantDtoStatus = typeof SupportGrantDtoStatus[keyof typeof SupportGrantDtoStatus];
+
+
+export const SupportGrantDtoStatus = {
+  active: 'active',
+  expired: 'expired',
+  revoked: 'revoked',
+} as const;
+
+/**
+ * Proposto. Uma concessão de suporte — a UNIDADE de acesso da plataforma a dado de cliente. Não existe acesso fora de uma destas, e cada uma nomeia exatamente uma organização.
+ */
+export interface SupportGrantDto {
+  id: string;
+  organizationId: string;
+  /** Nome da organização, do servidor. Vem junto porque a trilha é lida por gente: uuid não diz de quem era o dado. */
+  organizationName: string;
+  /** O motivo dado na abertura, como foi escrito. Não é editável — motivo que se corrige depois do fato deixa de ser trilha. */
+  reason: string;
+  grantedAt: string;
+  /** O fim previsto. Passado ele, `status` é `expired` e a concessão não autoriza mais nada — a expiração é do SERVIDOR e acontece sem ninguém clicar. O cliente usa este instante para desenhar a contagem, nunca para decidir se ainda pode. */
+  expiresAt: string;
+  /**
+     * Quando foi encerrada à mão. `null` enquanto não foi — inclusive depois de vencer, porque vencer e encerrar são fatos diferentes e a trilha guarda os dois separados.
+     * @nullable
+     */
+  revokedAt: string | null;
+  /**
+     * O estado CALCULADO pelo servidor, e a resposta única para "isto ainda vale?". `active` só enquanto não venceu e não foi encerrada.
+     *
+     * Vem pronto porque o cliente não tem como calculá-lo com honestidade: comparar `expiresAt` com o relógio do navegador põe a decisão de acesso num relógio que o operador ajusta.
+     */
+  status: SupportGrantDtoStatus;
+  /** Quem abriu — a pessoa do suporte, não a organização. Acesso sem nome de gente atrás não é auditável. */
+  actorEmployeeId: string;
+  /**
+     * Como essa pessoa se chama. `null` quando o servidor não sabe; a tela então mostra o id, que é feio e verdadeiro.
+     * @nullable
+     */
+  actorDisplayName?: string | null;
+}
+
+/**
+ * O que aconteceu. `granted` e `revoked` são os extremos; `expired` é gravado pelo servidor quando o prazo passa, e é o que faz o fim por decurso deixar rastro igual ao fim por clique. `accessed` é cada requisição que a concessão autorizou.
+ */
+export type SupportAuditEntryDtoAction = typeof SupportAuditEntryDtoAction[keyof typeof SupportAuditEntryDtoAction];
+
+
+export const SupportAuditEntryDtoAction = {
+  granted: 'granted',
+  accessed: 'accessed',
+  revoked: 'revoked',
+  expired: 'expired',
+} as const;
+
+/**
+ * Proposto. UMA linha da trilha da concessão — um fato que aconteceu, com hora. Gravada pelo SERVIDOR a cada acesso autorizado; o cliente só lê.
+ */
+export interface SupportAuditEntryDto {
+  id: string;
+  at: string;
+  /** O que aconteceu. `granted` e `revoked` são os extremos; `expired` é gravado pelo servidor quando o prazo passa, e é o que faz o fim por decurso deixar rastro igual ao fim por clique. `accessed` é cada requisição que a concessão autorizou. */
+  action: SupportAuditEntryDtoAction;
+  /**
+     * Verbo HTTP do acesso — `null` nas entradas que não são requisição de dado (`granted`, `revoked`, `expired`).
+     * @nullable
+     */
+  method?: string | null;
+  /**
+     * O caminho acessado, sem query string. **É o caminho, nunca o corpo:** a trilha registra QUE houve acesso e a QUÊ, e copiar o dado do cliente para dentro dela faria o registro de auditoria virar uma segunda cópia do dado que ele existe para proteger.
+     * @nullable
+     */
+  path?: string | null;
+  /** @nullable */
+  actorEmployeeId?: string | null;
+}
+
+export interface PagedResultOfSupportGrantDto {
+  rows: SupportGrantDto[];
+  total: number;
+}
+
+export interface PagedResultOfSupportAuditEntryDto {
+  rows: SupportAuditEntryDto[];
+  total: number;
 }
 
 export interface PagedResultOfRoleDto {
@@ -8223,6 +8370,59 @@ sortDesc?: boolean;
 page?: number;
 pageSize?: number;
 };
+
+export type ListSupportGrantsParams = {
+/**
+ * Restringe a UMA organização. Sem ele vêm todas — o que é leitura de trilha, não acesso a dado: a linha diz que houve acesso, nunca o que foi acessado.
+ */
+organizationId?: string;
+/**
+ * Filtra pelo ESTADO calculado da concessão. `active` é o único que autoriza alguma coisa; `expired` e `revoked` são histórico e continuam legíveis para sempre — trilha que some não é trilha.
+ */
+status?: ListSupportGrantsStatus;
+page?: number;
+pageSize?: number;
+/**
+ * Whitelist: `grantedAt`, `expiresAt`, `organizationName`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDir?: ListSupportGrantsSortDir;
+};
+
+export type ListSupportGrantsStatus = typeof ListSupportGrantsStatus[keyof typeof ListSupportGrantsStatus];
+
+
+export const ListSupportGrantsStatus = {
+  active: 'active',
+  expired: 'expired',
+  revoked: 'revoked',
+} as const;
+
+export type ListSupportGrantsSortDir = typeof ListSupportGrantsSortDir[keyof typeof ListSupportGrantsSortDir];
+
+
+export const ListSupportGrantsSortDir = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type ListSupportGrantAuditParams = {
+page?: number;
+pageSize?: number;
+/**
+ * Whitelist: `at`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDir?: ListSupportGrantAuditSortDir;
+};
+
+export type ListSupportGrantAuditSortDir = typeof ListSupportGrantAuditSortDir[keyof typeof ListSupportGrantAuditSortDir];
+
+
+export const ListSupportGrantAuditSortDir = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
 
 export type ListOrdersParams = {
 q?: string;

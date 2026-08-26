@@ -80,6 +80,14 @@ inconveniente, é promessa errada.
 
 ## 6. Antes de existir caminho no contrato: a coluna NÃO entra
 
+> **Remedido em 2026-08-25, e a frase abaixo continua valendo — com uma correção de precisão.** O
+> contrato JÁ tem saldo (`GET /api/variants/{variantId}/stock-balances`), mas `StockBalanceDto` é
+> `{locationId, variantId, qty, updatedAt}`: **um número só.** O que esta nota pede é a SEPARAÇÃO
+> — `onHand`, `allocated`, `available` —, e ela não existe em lugar nenhum do contrato, nem o erro
+> de estoque insuficiente com `requested`/`available`. Quem for escrever o caminho acrescenta os
+> campos ao saldo que já existe, em vez de publicar um segundo caminho de saldo. (`/api/technical-
+> reserves` é outra coisa: é o DOCUMENTO de reserva técnica do comercial, não a alocação de saldo.)
+
 Nenhum dos campos desta nota existe em `contracts/openapi-v1.json` hoje. A regra do repo vale
 inteira: **coluna que o DTO não tem sai da listagem**, e o `AvisoDeCobertura` conta ao operador
 que o dado de estoque ainda não vem do servidor. Preencher com mock daria dado de mentira com cara

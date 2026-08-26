@@ -83,7 +83,8 @@ FECHAMENTO + frente-visual.md.
 ## TAREFA V3 — LookupCombo + blocos compartilhados
 ```
 Continua. <LookupCombo kind> (Command+Popover + botão "..." com Dialog de
-cadastro rápido; mock com os 19 kinds do transcricaosoftlux @padroes).
+cadastro rápido; mock com os 21 kinds do vocabulário — a transcricaosoftlux @padroes
+registrou 19, e a lista cresce por PR).
 Blocos: <EnderecoBlock> (CEP com busca mockada), <TelefonesBlock>,
 <ComunicadoresBlock> (2 pares combo+texto), <RedesSociaisBlock>.
 Tudo integrado a RHF+Zod. Testes mínimos por componente.

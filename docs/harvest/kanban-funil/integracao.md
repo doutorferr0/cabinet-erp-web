@@ -3,8 +3,18 @@
 Fonte: [marmelab/atomic-crm](https://github.com/marmelab/atomic-crm), MIT (ver `NOTICE`).
 Arquivos lidos: `DealListContent.tsx`, `DealColumn.tsx`, `DealCard.tsx`, `stages.ts`.
 
-**Estado: staged.** Nada aqui é importado por `src/`. O que falta para virar tela está abaixo, em
-ordem de dependência — nenhum passo é calendário, é precedência.
+**Estado: ENTREGUE — nota histórica desde 2026-08-25.** Nada aqui é importado por `src/` (era
+material colhido, não código), mas o que estava "abaixo, em ordem de dependência" aconteceu: o
+quadro é `src/features/crm/pagina-do-funil.tsx` e o caminho existe no contrato como
+`PATCH /api/crm/opportunities/{id}/stage`, servido pelo backend desde a #274.
+
+**Uma coisa mudou de nome no caminho, e é a que mais confunde quem lê isto agora:** o corpo
+proposto aqui é `{ "stage": "negociacao", "precedeId": … }` e o contrato fechou
+`{ "stageId": <uuid>, "precedeId": <uuid|null> }` — o estágio virou REGISTRO por funil
+(`CrmStageDto`: `id`, `pipelineId`, `name`, `sort`, `probability`, `isWon`/`isLost`, `rotDays`),
+então o destino viaja por id e não por slug; o contrato ainda escreve que estágio de OUTRO funil
+é 400, porque mudar de funil é `PUT` e reseta a posição. `precedeId` sobreviveu exatamente como
+está descrito abaixo. Ler o resto como o registro do PORQUÊ; o QUE está no contrato.
 
 ## Por que esta fonte, e não outra
 

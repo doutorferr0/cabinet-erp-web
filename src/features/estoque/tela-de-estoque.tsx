@@ -1,5 +1,6 @@
 import type { ProductDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Painel } from '@/components/cabinet/painel'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -240,6 +241,16 @@ export function TelaDeEstoque() {
           </p>
         ) : saldos.isPending ? (
           <p className="text-muted-foreground text-sm">Carregando o saldo…</p>
+        ) : /* Sem este ramo a falha caía no vazio abaixo, e o vazio afirma o passado:
+              "nunca esteve em depósito nenhum" para uma peça que pode estar em três. O
+              `api-provider.ts` escreve a regra em comentário — falha do servidor nunca
+              pode virar lista vazia — e é esta consulta que a quebrava. */
+        saldos.isError ? (
+          <FalhaDoPainel
+            titulo="O saldo não carregou"
+            erro={saldos.error}
+            aoTentar={() => saldos.refetch()}
+          />
         ) : linhas.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             {depositoId === null

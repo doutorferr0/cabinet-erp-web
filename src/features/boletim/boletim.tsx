@@ -1,5 +1,6 @@
 import { rotaLiberada } from '@/app/navigation'
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { PainelBoletim } from '@/components/cabinet/painel-boletim'
 import { Stamp } from '@/components/cabinet/stamp'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -276,8 +277,18 @@ export function BoletimTela() {
         ) : null}
       </BandaDeIdentidade>
 
-      {query.isPending || !dados ? (
+      {query.isPending ? (
         <BoletimSkeleton />
+      ) : /* `isError || !dados`, e nunca `!dados` sozinho — a forma que estava aqui
+            segurava o ESQUELETO no erro: `isPending` cai para falso, `dados` fica
+            indefinido, e o segundo termo do `||` prendia a folha no carregamento que
+            nunca termina. O par certo é o de `indicadores.tsx`, dois arquivos ao lado. */
+      query.isError || !dados ? (
+        <FalhaDoPainel
+          titulo="O boletim não carregou"
+          erro={query.error}
+          aoTentar={() => query.refetch()}
+        />
       ) : (
         <>
           <Apuracao dados={dados} />

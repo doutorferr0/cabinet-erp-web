@@ -1,6 +1,6 @@
 import type { StockBalanceDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
 import { saldosDoDeposito, somaDosSaldos } from '@/data/estoque-api'
-import { instalarServidor, json } from '@/test/servidor'
+import { type Rota, instalarServidor, json, problema } from '@/test/servidor'
 import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -76,7 +76,7 @@ const PRODUTO = {
   active: true,
 }
 
-function servidor() {
+function servidor(sobrepoe: Record<string, Rota> = {}) {
   return instalarServidor({
     '/auth/me': () => respostaSessao(),
     '/auth/tenants': () => respostaVinculos(),
@@ -101,6 +101,7 @@ function servidor() {
     '/api/variants/var-1/stock-balances': () => json({ rows: SALDOS, total: SALDOS.length }),
     '/api/variants/var-1/stock-movements': () =>
       json({ rows: MOVIMENTOS, total: MOVIMENTOS.length }),
+    ...sobrepoe,
   })
 }
 
@@ -199,6 +200,36 @@ describe('estoque por depósito', () => {
 
     const comLocationId = falso.chamadas.filter((c) => c.url.includes('locationId'))
     expect(comLocationId).toEqual([])
+  })
+})
+
+describe('saldo que não chegou', () => {
+  /**
+   * "NÃO ACHEI" NÃO PODE SAIR COMO "NUNCA EXISTIU".
+   *
+   * O ternário da tela ia de `isPending` direto para `linhas.length === 0`, e o vazio
+   * dali afirma o PASSADO — "esta variante nunca esteve em depósito nenhum" — para uma
+   * peça que pode estar em três. Quem procura a peça conclui que ela nunca entrou e
+   * cadastra de novo o que já está no galpão.
+   */
+  /*
+   * 409 e não 500, e a escolha é do PRODUTO, não do teste: `repetirSeValeAPena` só
+   * repete 5xx e rede fora — 4xx é a resposta do servidor SOBRE o pedido e nunca se
+   * repete. Com 500 o erro só chegaria à tela depois de três esperas crescentes (~7s),
+   * e o teste mediria a política de repetição em vez do estado da folha. O 409 aqui é
+   * caso real: é o que o contrato responde quando não há empresa ativa na sessão.
+   */
+  it('a falha da consulta não vira "nunca esteve em depósito nenhum"', async () => {
+    const falso = servidor({
+      '/api/variants/var-1/stock-balances': () => problema(409, 'Nenhuma empresa ativa na sessão.'),
+    })
+    const { user } = renderRoute('/estoque/movimentacao', falso.fetch)
+    await escolherAPeca(user)
+
+    expect(await screen.findByText('O saldo não carregou')).toBeInTheDocument()
+    expect(screen.getByText('Nenhuma empresa ativa na sessão.')).toBeInTheDocument()
+    expect(screen.queryByText(/nunca esteve em depósito nenhum/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/nunca esteve neste depósito/i)).not.toBeInTheDocument()
   })
 })
 

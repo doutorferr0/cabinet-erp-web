@@ -1,6 +1,7 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
+import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Nome } from '@/components/cabinet/nome'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,6 +60,14 @@ export function TelaDeAcesso() {
   const [timbreAberto, setTimbreAberto] = useState(false)
   const [buscaDeEmpresa, setBuscaDeEmpresa] = useState('')
   const empresas = useEmpresasDoGrupo(buscaDeEmpresa)
+  // Nomeadas porque agora são lidas DUAS vezes — pelo vazio e pela grade. Inline nos dois
+  // lugares, o `?? []` diria "sem linha" também no ERRO, e numa tela de permissão tabela
+  // vazia lê-se como "ninguém tem acesso": o operador conclui que o acesso sumiu e vai
+  // conceder de novo o que já está concedido. A gravação já tinha `ErroDeGravacao`; a
+  // leitura não tinha nada.
+  const linhasDeUsuario = usuarios.data?.rows ?? []
+  const linhasDePapel = papeis.data?.rows ?? []
+  const linhasDeEmpresa = empresas.data?.rows ?? []
   const { ativa, trocar, trocando } = useEmpresasDaSessao()
   /**
    * Montar o grupo é `owner`, e a aba DIZ isso em vez de deixar o botão aceso.
@@ -104,46 +113,62 @@ export function TelaDeAcesso() {
               o 409 de colaborador sem e-mail morreria em silêncio. */}
           <ErroDeGravacao erro={gerar.error} mensagem="Falha ao gerar a senha provisória." />
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Ativo</TableHead>
-                <TableHead className="w-64">Acesso</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(usuarios.data?.rows ?? []).map((linha) => (
-                <TableRow key={linha.id}>
-                  <TableCell>
-                    <Nome>{linha.name}</Nome>
-                  </TableCell>
-                  <TableCell>
-                    <CelulaAtivo ativo={linha.active} />
-                  </TableCell>
-                  <TableCell className="flex gap-1.5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setVinculosDe({ id: linha.id, nome: linha.name })}
-                    >
-                      Empresas e papel…
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={gerar.isPending}
-                      onClick={() => gerarSenha(linha.id, linha.name)}
-                    >
-                      Gerar senha
-                    </Button>
-                  </TableCell>
+          {usuarios.isPending ? (
+            <p className="text-muted-foreground text-sm">Carregando os usuários…</p>
+          ) : usuarios.isError ? (
+            <FalhaDoPainel
+              titulo="A lista de usuários não carregou"
+              erro={usuarios.error}
+              aoTentar={() => usuarios.refetch()}
+            />
+          ) : linhasDeUsuario.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {busca
+                ? `A busca por “${busca}” não encontrou usuário.`
+                : 'Nenhum usuário nesta empresa.'}
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Ativo</TableHead>
+                  <TableHead className="w-64">Acesso</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {linhasDeUsuario.map((linha) => (
+                  <TableRow key={linha.id}>
+                    <TableCell>
+                      <Nome>{linha.name}</Nome>
+                    </TableCell>
+                    <TableCell>
+                      <CelulaAtivo ativo={linha.active} />
+                    </TableCell>
+                    <TableCell className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setVinculosDe({ id: linha.id, nome: linha.name })}
+                      >
+                        Empresas e papel…
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={gerar.isPending}
+                        onClick={() => gerarSenha(linha.id, linha.name)}
+                      >
+                        Gerar senha
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TabsContent>
 
         <TabsContent value="papeis" className="flex flex-col gap-3">
@@ -152,41 +177,53 @@ export function TelaDeAcesso() {
               Incluir papel
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Permissões</TableHead>
-                <TableHead>Ativo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(papeis.data?.rows ?? []).map((papel) => (
-                <TableRow
-                  key={papel.id}
-                  className="cursor-pointer"
-                  onClick={() => setPapelEmEdicao({ id: papel.id })}
-                >
-                  <TableCell>
-                    <Nome>{papel.name}</Nome>
-                    {papel.system ? (
-                      <span className="ml-2 border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
-                        sistema
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {papel.description ?? '—'}
-                  </TableCell>
-                  <TableCell>{papel.permissionCount}</TableCell>
-                  <TableCell>
-                    <CelulaAtivo ativo={papel.active} />
-                  </TableCell>
+          {papeis.isPending ? (
+            <p className="text-muted-foreground text-sm">Carregando os papéis…</p>
+          ) : papeis.isError ? (
+            <FalhaDoPainel
+              titulo="A lista de papéis não carregou"
+              erro={papeis.error}
+              aoTentar={() => papeis.refetch()}
+            />
+          ) : linhasDePapel.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Nenhum papel cadastrado.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Permissões</TableHead>
+                  <TableHead>Ativo</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {linhasDePapel.map((papel) => (
+                  <TableRow
+                    key={papel.id}
+                    className="cursor-pointer"
+                    onClick={() => setPapelEmEdicao({ id: papel.id })}
+                  >
+                    <TableCell>
+                      <Nome>{papel.name}</Nome>
+                      {papel.system ? (
+                        <span className="ml-2 border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
+                          sistema
+                        </span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {papel.description ?? '—'}
+                    </TableCell>
+                    <TableCell>{papel.permissionCount}</TableCell>
+                    <TableCell>
+                      <CelulaAtivo ativo={papel.active} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </TabsContent>
 
         <TabsContent value="empresas" className="flex flex-col gap-3">
@@ -218,68 +255,84 @@ export function TelaDeAcesso() {
           {/* A lista é a das empresas que EXISTEM, não a das que o usuário
               alcança: a empresa criada aqui nasce sem vínculo nenhum e não
               apareceria no seletor do rodapé. Ver `empresas-do-grupo-api.ts`. */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-24">Código</TableHead>
-                <TableHead>Nome fantasia</TableHead>
-                <TableHead>CNPJ</TableHead>
-                <TableHead>Ativa</TableHead>
-                <TableHead className="w-44" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(empresas.data?.rows ?? []).map((empresa) => {
-                const eAtiva = empresa.id === ativa?.tenantId
-                return (
-                  <TableRow key={empresa.id}>
-                    <TableCell
-                      className="cursor-pointer font-mono"
-                      onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
-                    >
-                      {empresa.code}
-                    </TableCell>
-                    <TableCell
-                      className="cursor-pointer"
-                      onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
-                    >
-                      <Nome>{empresa.name}</Nome>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{empresa.cnpj ?? '—'}</TableCell>
-                    <TableCell>
-                      <CelulaAtivo ativo={empresa.active} />
-                    </TableCell>
-                    {/* O TIMBRE é singleton da empresa ATIVA — o id não viaja
+          {empresas.isPending ? (
+            <p className="text-muted-foreground text-sm">Carregando as empresas…</p>
+          ) : empresas.isError ? (
+            <FalhaDoPainel
+              titulo="A lista de empresas não carregou"
+              erro={empresas.error}
+              aoTentar={() => empresas.refetch()}
+            />
+          ) : linhasDeEmpresa.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {buscaDeEmpresa
+                ? `A busca por “${buscaDeEmpresa}” não encontrou empresa.`
+                : 'Nenhuma empresa no grupo.'}
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-24">Código</TableHead>
+                  <TableHead>Nome fantasia</TableHead>
+                  <TableHead>CNPJ</TableHead>
+                  <TableHead>Ativa</TableHead>
+                  <TableHead className="w-44" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {linhasDeEmpresa.map((empresa) => {
+                  const eAtiva = empresa.id === ativa?.tenantId
+                  return (
+                    <TableRow key={empresa.id}>
+                      <TableCell
+                        className="cursor-pointer font-mono"
+                        onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
+                      >
+                        {empresa.code}
+                      </TableCell>
+                      <TableCell
+                        className="cursor-pointer"
+                        onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
+                      >
+                        <Nome>{empresa.name}</Nome>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{empresa.cnpj ?? '—'}</TableCell>
+                      <TableCell>
+                        <CelulaAtivo ativo={empresa.active} />
+                      </TableCell>
+                      {/* O TIMBRE é singleton da empresa ATIVA — o id não viaja
                         na rota, de propósito. Por isso só esta linha o oferece,
                         e as outras oferecem o gesto que torna o botão possível
                         em vez de um Timbre que gravaria na empresa errada. */}
-                    <TableCell>
-                      {eAtiva ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTimbreAberto(true)}
-                        >
-                          Timbre…
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          isDisabled={trocando}
-                          onClick={() => trocar(empresa.id)}
-                        >
-                          Ativar para o timbre
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                      <TableCell>
+                        {eAtiva ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTimbreAberto(true)}
+                          >
+                            Timbre…
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            isDisabled={trocando}
+                            onClick={() => trocar(empresa.id)}
+                          >
+                            Ativar para o timbre
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          )}
 
           {/* O teto de 100 do contrato DITO em voz alta. Cortar em silêncio
               faria quem tem 120 empresas concluir que tem 100. */}

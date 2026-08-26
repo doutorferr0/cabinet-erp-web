@@ -7928,6 +7928,74 @@ export interface PrintSettingsWriteRequest {
 }
 
 /**
+ * Proposto. O timbre da empresa ativa — os sete elementos que o cabeçalho do impresso carimba, na grafia que `partners` já usa para o mesmo dado sobre pessoa jurídica.
+ */
+export interface CompanyLetterheadDto {
+  /** Nome FANTASIA da empresa — o mesmo de `VinculoDeEmpresa.name`. Só leitura: quem o troca não é a tela de timbre. Viaja aqui para a tela dizer de quem é o timbre que está editando. */
+  readonly name: string;
+  /**
+     * CNPJ, sem máscara e alfanumérico (regra da Receita desde 31/07/2026). Escrevível — nenhuma outra rota do contrato o grava.
+     * @nullable
+     */
+  cnpj: string | null;
+  /**
+     * Razão social — `empresa.razao`. É o nome que o cabeçalho imprime, e NÃO é `name`.
+     * @nullable
+     */
+  legalName: string | null;
+  /**
+     * Inscrição Estadual — `empresa.INSC`.
+     * @nullable
+     */
+  stateRegistration: string | null;
+  /** Endereço da empresa. Reusa `PartnerAddress`, que já é o endereço em 7 partes deste contrato — duas grafias para a mesma coisa é como a whitelist de `sortBy` começa a divergir entre recursos. `null` apaga o endereço inteiro. */
+  address: null | PartnerAddress;
+  /**
+     * Telefone — `empresa.TEL`.
+     * @nullable
+     */
+  phone: string | null;
+  /**
+     * E-mail — `empresa.email`.
+     * @nullable
+     */
+  email: string | null;
+}
+
+/**
+ * Proposto. Corpo de `UpdateCompanyLetterhead`. Todo campo é OBRIGATÓRIO na presença e anulável no valor — é a regra do `PUT` integral deste contrato, e aqui ela morde: omitir um campo é 400, mandá-lo `null` apaga o que estava gravado. `name` não está aqui de propósito, e `logoUrl` também não; a operação explica os dois.
+ */
+export interface CompanyLetterheadWriteRequest {
+  /**
+     * CNPJ, sem máscara e alfanumérico.
+     * @nullable
+     */
+  cnpj: string | null;
+  /**
+     * Razão social. É o campo cuja ausência deixa o cabeçalho sem identidade.
+     * @nullable
+     */
+  legalName: string | null;
+  /**
+     * Inscrição Estadual.
+     * @nullable
+     */
+  stateRegistration: string | null;
+  /** Endereço em 7 partes. O objeto viaja INTEIRO: `null` apaga, e um campo a menos apaga aquele campo. */
+  address: null | PartnerAddress;
+  /**
+     * Telefone.
+     * @nullable
+     */
+  phone: string | null;
+  /**
+     * E-mail.
+     * @nullable
+     */
+  email: string | null;
+}
+
+/**
  * `EtqPront_codigobarra`: qual campo do produto vira código de barras, ou `null` para etiqueta sem código. Vocabulário FECHADO de dois — a coluna do legado é `varchar(50)` livre, e campo livre aqui seria nome de coluna escolhido pelo cliente.
  * @nullable
  */

@@ -28,6 +28,8 @@ import type {
   CommissionClosingWriteRequest,
   CommissionEarningsReportDto,
   CommissionTiersWriteRequest,
+  CompanyLetterheadDto,
+  CompanyLetterheadWriteRequest,
   CostProfileDto,
   CostProfileWriteRequest,
   CostSimulationDto,
@@ -12068,6 +12070,76 @@ export const printQuote = async (id: string, options?: Parameters<typeof apiFetc
 
 
 
+export type printOrderResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type printOrderResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type printOrderResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type printOrderResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type printOrderResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type printOrderResponseSuccess = (printOrderResponse200) & {
+  headers: Headers;
+};
+export type printOrderResponseError = (printOrderResponse401 | printOrderResponse403 | printOrderResponse404 | printOrderResponse409) & {
+  headers: Headers;
+};
+
+export type printOrderResponse = (printOrderResponseSuccess | printOrderResponseError)
+
+export const getPrintOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/orders/${id}/print`
+}
+
+/**
+ * Proposto. O pedido como **PDF pronto**, renderizado no servidor — o mesmo motor, o mesmo corpo e o mesmo fechamento de `PrintQuote`, com o cabeçalho trocado.
+ *
+ * **No legado orçamento e pedido são o MESMO impresso, e o nome dos formulários registra isso:** `RltOrcPed*` são 20 variantes cujo prefixo é `Orc`+`Ped` no mesmo formulário — `RltOrcPedFicha`, `RltOrcPedCabecalho`, `RltOrcPedPersonalisado`, `RltOrcPedCabResumo`. Não existe relatório de pedido separado lá.
+ *
+ * **Do lado do dado o gap é ZERO, e está medido.** `OrderDetailDto` cobre todo o corpo que o orçamento imprime — `environments`, `items`, `serviceItems`, `groupDiscounts`, `paymentInstallments` — e ainda traz `status`, `type`, `salespersonName`, `professionalName`, `folderNumber` e `workName`. Os ÚNICOS quatro campos que `QuoteDetailDto` tem e ele não tem são `expiresAt`, `revision`, `revisionOfId` e `revisionOfNumber`: validade e revisão, que é exatamente o que o pedido não tem. É a medição confirmando a leitura do legado — o que muda entre os dois papéis é o cabeçalho, não o corpo.
+ *
+ * **Por que é operação PRÓPRIA e não um parâmetro de `PrintQuote`.** São dois recursos, com dois espaços de id e duas permissões: `pedidos:imprimir` é ação separada de `orcamento:imprimir`, como `SisPermissao` separa `Imprimir` de `Consultar` em 875 linhas reais. Um `?tipo=` faria a permissão depender do valor de um parâmetro em vez do caminho, que é onde o RBAC deste contrato a lê.
+ *
+ * **O título sai do MESMO `quoteTitle` de `PrintSettings`, e isso não é economia — é o que o legado faz.** `Paramentros` tem `Par_TituloImpOrcamento`, `Par_TituloImpProjeto` e `Par_TituloImpVAvulsa`; **não existe `Par_TituloImpPedido`**. E o legado sabe separar os dois quando quer: `Par_ImpFornecOrc` e `Par_ImpFornecPed` são parâmetros distintos para o mesmo eixo. O par Orc/Ped compartilha o título de propósito, então não há coluna nova.
+ *
+ * **A linha de VALIDADE não sai no pedido.** Ela é `expiresAt`, e o pedido não tem — imprimir "válido até" num documento já aceito descreveria um prazo que não existe.
+ *
+ * **Sem storage, como `PrintQuote`:** gerado a cada chamada e não guardado. Não existe "a via emitida" arquivada — o papel sai como o pedido está AGORA.
+ */
+export const printOrder = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<printOrderResponse> => {
+
+  return apiFetch<printOrderResponse>(getPrintOrderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export type getPrintSettingsResponse200 = {
   data: PrintSettingsDto
   status: 200
@@ -12182,6 +12254,129 @@ export const updatePrintSettings = async (printSettingsWriteRequest: PrintSettin
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(printSettingsWriteRequest)
+  }
+);}
+
+
+
+export type getCompanyLetterheadResponse200 = {
+  data: CompanyLetterheadDto
+  status: 200
+}
+
+export type getCompanyLetterheadResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getCompanyLetterheadResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getCompanyLetterheadResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getCompanyLetterheadResponseSuccess = (getCompanyLetterheadResponse200) & {
+  headers: Headers;
+};
+export type getCompanyLetterheadResponseError = (getCompanyLetterheadResponse401 | getCompanyLetterheadResponse403 | getCompanyLetterheadResponse409) & {
+  headers: Headers;
+};
+
+export type getCompanyLetterheadResponse = (getCompanyLetterheadResponseSuccess | getCompanyLetterheadResponseError)
+
+export const getGetCompanyLetterheadUrl = () => {
+
+
+
+
+  return `/api/company-letterhead`
+}
+
+/**
+ * Proposto. O timbre da empresa ativa — o que o cabeçalho de todo impresso carimba.
+ *
+ * **O timbre é o cabeçalho que TODO documento impresso repete**, e hoje não existe caminho para preenchê-lo. As colunas estão em `tenants` desde a migração do timbre (razão social, Inscrição Estadual, endereço em 7 partes, fone, e-mail); `VinculoDeEmpresa` publica `tenantId`, `name`, `role` e `features` e mais nada, e as únicas rotas de empresa do contrato são `GET /auth/tenants` e `PUT /auth/active-tenant`. Consequência medida: o orçamento impresso só funciona para empresa cujo timbre foi semeado por SQL — em produção ninguém consegue cadastrar.
+ *
+ * **Singleton da empresa ATIVA, e o id não viaja.** Não há `POST`, não há id no caminho: a empresa é a da sessão. Isso não é conveniência — `tenants` é tabela GLOBAL e **não tem política de RLS nenhuma**, então quem recorta é a borda ao escolher o id. Aceitar um id do cliente aqui seria deixar o cliente escolher o timbre de qual empresa ele grava.
+ *
+ * **Empresa sem timbre responde 200 com os campos em `null`, não 404.** Ausência de timbre é o estado inicial de toda empresa nova, e é a tela de cadastro que existe para resolvê-la; devolver erro faria a tela tratar como falha o caso que ela foi feita para atender. Quem responde 404 é a IMPRESSÃO, e é lá que a ausência é fatal.
+ */
+export const getCompanyLetterhead = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getCompanyLetterheadResponse> => {
+
+  return apiFetch<getCompanyLetterheadResponse>(getGetCompanyLetterheadUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateCompanyLetterheadResponse200 = {
+  data: CompanyLetterheadDto
+  status: 200
+}
+
+export type updateCompanyLetterheadResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateCompanyLetterheadResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateCompanyLetterheadResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateCompanyLetterheadResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateCompanyLetterheadResponseSuccess = (updateCompanyLetterheadResponse200) & {
+  headers: Headers;
+};
+export type updateCompanyLetterheadResponseError = (updateCompanyLetterheadResponse400 | updateCompanyLetterheadResponse401 | updateCompanyLetterheadResponse403 | updateCompanyLetterheadResponse409) & {
+  headers: Headers;
+};
+
+export type updateCompanyLetterheadResponse = (updateCompanyLetterheadResponseSuccess | updateCompanyLetterheadResponseError)
+
+export const getUpdateCompanyLetterheadUrl = () => {
+
+
+
+
+  return `/api/company-letterhead`
+}
+
+/**
+ * Proposto. Substitui o timbre INTEIRO da empresa ativa. `PUT` de singleton: campo omitido é 400, e campo em `null` APAGA — mandar meio timbre grava meio cabeçalho.
+ *
+ * **`name` não entra no corpo, e a distinção é do legado.** Em `empresa`, `EMPRESA` é o nome FANTASIA e `razao` é o registrado; o cabeçalho do impresso carimba o registrado. `name` é o fantasia — é o rótulo que o seletor de empresa e a barra imprimem, e trocá-lo por aqui renomearia a empresa na navegação de quem estivesse só corrigindo um CEP. Ele viaja no `Dto`, para a tela mostrar de quem é o timbre, e só.
+ *
+ * **`cnpj` ENTRA no corpo apesar de ser identidade**, porque nenhuma outra rota deste contrato o escreve: não há criação de empresa publicada. Sem ele aqui, empresa com CNPJ nulo imprimiria o cabeçalho do `§E` com o campo em branco para sempre.
+ *
+ * **O logo fica de FORA desta operação, de propósito.** A coluna existe e guarda CAMINHO, não arquivo — e o renderizador se recusa a lê-la, porque um Chromium do servidor buscando URL escolhida pelo cliente é SSRF. Publicar a escrita de um campo que nada lê criaria um formulário que promete o que o papel não cumpre. O logo volta junto com a decisão de onde a imagem mora, que também é a que trava a foto do produto.
+ */
+export const updateCompanyLetterhead = async (companyLetterheadWriteRequest: CompanyLetterheadWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateCompanyLetterheadResponse> => {
+
+  return apiFetch<updateCompanyLetterheadResponse>(getUpdateCompanyLetterheadUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(companyLetterheadWriteRequest)
   }
 );}
 

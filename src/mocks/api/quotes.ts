@@ -108,7 +108,7 @@ export const FILTRAVEIS: CamposFiltraveis = {
  * e valida, e acrescentar campo lá é mexer em tela. Aqui é estado de servidor
  * falso — o mesmo lugar onde `number` e `totalCents` já são do servidor.
  */
-interface OrcamentoGuardado extends Orcamento {
+export interface OrcamentoGuardado extends Orcamento {
   /** `QuoteDetailDto.workId` — a OBRA (`Venda.Obr_codigo` do legado). */
   obraId: string | null
   /**
@@ -656,6 +656,27 @@ export function criarOrcamento(corpo: QuoteWriteRequest): OrcamentoGuardado {
 /** O DTO de detalhe de uma linha guardada — o CRM devolve o mesmo shape. */
 export function detalheDoOrcamento(o: OrcamentoGuardado): QuoteDetailDto {
   return detalheDto(o)
+}
+
+/**
+ * O orçamento GUARDADO, pelo id — a leitura de que a conversão precisa.
+ *
+ * Existe porque `POST /api/quotes/{id}/order` COPIA o documento (o contrato é
+ * explícito: no legado era troca de `Ven_Tipo` no mesmo registro, aqui são dois
+ * agregados), e quem monta o pedido é `pedidos.ts`. Devolver a linha viva, e
+ * não uma cópia, é de propósito: o handler de lá só a LÊ, e clonar aqui
+ * esconderia de quem chama que a cópia é responsabilidade dele.
+ *
+ * O par `servicosDoOrcamento` vem junto porque a aba Serviços é estado próprio
+ * deste módulo (ver `Estado.servicos`) e a conversão leva as duas coleções.
+ */
+export function orcamentoPorId(id: string): OrcamentoGuardado | undefined {
+  return estado.linhas.find((o) => o.id === id)
+}
+
+/** As linhas da aba Serviços de um orçamento — vazio quando não tem nenhuma. */
+export function servicosDoOrcamento(id: string): QuoteServiceItemDto[] {
+  return servicosDe(id)
 }
 
 export const handlersDeOrcamento = [

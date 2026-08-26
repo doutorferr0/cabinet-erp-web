@@ -133,6 +133,13 @@ function servidor({
       return json({ rows: historico, total: historico.length })
     }
 
+    // A PARTICIPAÇÃO é filha de `/api/orders` e precisa vir ANTES do casamento
+    // genérico abaixo: sem esta linha o painel receberia o DOCUMENTO onde
+    // espera `{rows,total}` e leria uma grade vazia — verde por acidente. O
+    // ciclo não mede a grade (quem a mede é `participacao-na-tela.test.tsx`);
+    // o que ela faz aqui é não mentir para o painel que a folha monta.
+    if (url.includes('/participants')) return json({ rows: [], total: 0 })
+
     if (url.includes('/api/orders')) {
       if (metodo !== 'GET') {
         const cru = (await req?.text()) ?? ''

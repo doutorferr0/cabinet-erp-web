@@ -1,5 +1,10 @@
 import { ORDENAVEIS_ATIVIDADE } from '@/data/atividades-api'
 import {
+  ORDENAVEIS_FAIXA,
+  ORDENAVEIS_PARTICIPACAO,
+  ORDENAVEIS_RESERVA_TECNICA,
+} from '@/data/comissoes-api'
+import {
   FILTRAVEIS_OPORTUNIDADE,
   ORDENAVEIS_FUNIL,
   ORDENAVEIS_MOTIVO_DE_PERDA,
@@ -9,11 +14,13 @@ import {
   FILTRAVEIS as FILTRAVEIS_PARCEIRO,
   ORDENAVEIS as ORDENAVEIS_PARCEIRO,
 } from '@/data/parceiros-api'
+import { FILTRAVEIS_PEDIDO_VENDA, ORDENAVEIS_PEDIDO_VENDA } from '@/data/pedidos-venda-api'
 import {
   FILTRAVEIS as FILTRAVEIS_PRODUTO,
   ORDENAVEIS as ORDENAVEIS_PRODUTO,
 } from '@/data/produtos-api'
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
+import { ORDENAVEIS_CONCESSAO } from '@/data/suporte-api'
 import { ORDENAVEIS_PAPEL as ORDENAVEIS_PAPEL_MOCK } from '@/mocks/api/acesso'
 import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
 import {
@@ -42,6 +49,12 @@ import {
 import { FILTRAVEIS as FILTRAVEIS_OBRA, ORDENAVEIS as ORDENAVEIS_OBRA } from '@/mocks/api/obras'
 import { ORDENAVEIS_CONDICAO } from '@/mocks/api/pagamento'
 import {
+  FILTRAVEIS_PEDIDO as FILTRAVEIS_PEDIDO_MOCK,
+  ORDENAVEIS_INDICACAO as ORDENAVEIS_INDICACAO_MOCK,
+  ORDENAVEIS_PARTICIPACAO as ORDENAVEIS_PARTICIPACAO_MOCK,
+  ORDENAVEIS_PEDIDO as ORDENAVEIS_PEDIDO_MOCK,
+} from '@/mocks/api/pedidos'
+import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
 } from '@/mocks/api/quotes'
@@ -58,6 +71,10 @@ import {
   ORDENAVEIS_PROFISSIONAL,
 } from '@/mocks/api/relatorios'
 import { ORDENAVEIS_SERVICO } from '@/mocks/api/servicos'
+import {
+  ORDENAVEIS_CONCESSAO as ORDENAVEIS_CONCESSAO_MOCK,
+  ORDENAVEIS_TRILHA as ORDENAVEIS_TRILHA_MOCK,
+} from '@/mocks/api/suporte'
 import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
@@ -157,6 +174,14 @@ function publicamSemDeclarar(listagens: readonly Listagem[], qual: 'sortBy' | 'f
  * reprova e cobra a entrada aqui — que é o mesmo que cobrar a conferência.
  */
 const SEM_LISTA_NO_FRONT: Record<string, string> = {
+  // A TRILHA do suporte (item 6 da fundação). A fronteira a lê, mas não publica
+  // `sortBy`: a trilha se lê por SEQUÊNCIA, e a única ordenação que faz sentido
+  // nela — tempo — é o padrão. Oferecer o parâmetro à tela seria oferecer a
+  // leitura errada da auditoria, agrupada por tipo de evento em vez de por
+  // ordem dos fatos. Quem ganhar tela de suporte herda esta decisão, não um
+  // `ORDENAVEIS` a preencher.
+  ListSupportGrantAudit:
+    'a trilha ordena só por tempo, e é o padrão — a fronteira não expõe `sortBy` de propósito',
   // IMPRESSÃO (web#333 / api#163). A tela de layouts de etiqueta é o editor de
   // medidas, e ela nasce depois do motor de render pela mesma razão das telas de
   // entrega: sem PDF para conferir, o editor deixaria alguém acertar milímetro
@@ -172,9 +197,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   ListPickingQueue:
     'a fila de separação ainda não tem tela — as telas de entrega são a Fase C do trilho',
   ListDeliveries: 'o romaneio ainda não tem tela — as telas de entrega são a Fase C do trilho',
-  ListOrders: 'pedido de venda ainda não tem listagem própria na tela',
   ListOrderProfessionalHistory:
-    'a trilha de indicação (G13) é sub-recurso do pedido e nasce sem tela — cabeçalho ordenável exigiria a tela do pedido, que não existe',
+    'a trilha de indicação (G13) é DIÁLOGO dentro da folha do pedido, não grade com cabeçalho — o contrato publica uma whitelist de um campo só (`startedAt`) justamente porque a ordem dela é cronológica e não se escolhe',
   ListCatalogLookups: 'o combo pede por `kind` e não ordena — não há cabeçalho para clicar',
   ListStockMovements: 'kardex desenha em ordem fixa (`occurredAt` desc), sem coluna ordenável',
   ListEmployees: 'colaborador ainda é provider de mock, com lista própria lá',
@@ -244,18 +268,36 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // servidor pela razão que o módulo inteiro tem: apuração sobre dado mockado mostra
   // dinheiro inventado com cara de conta fechada, que é pior do que não mostrar nada.
   // Cada uma sai daqui quando ganhar a tela, com `ORDENAVEIS` próprio.
-  ListOrderParticipants:
-    'a aba Participação do pedido ainda não existe — a grade é Fase C do trilho de comissões',
+  // TRÊS DAS SETE SAÍRAM DAQUI: a aba `Participação` do pedido, o perfil de
+  // participação do profissional e a tela da Reserva Técnica nasceram na fase
+  // C, e as três declaram `ORDENAVEIS` próprio logo abaixo.
+  //
+  // A DO COLABORADOR FICA, e o motivo não é falta de componente: `FaixasDeComissao`
+  // atende as duas portas e a de `employee` está escrita na fronteira
+  // (`useFaixas('employee', …)`). O que falta é o CADASTRO — `data.colaboradores`
+  // continua sendo provider de mock, e as duas listas de pessoas divergem (a
+  // costura que `CoberturaDoColaborador` declara). Montar a aba ali mandaria ao
+  // servidor o uuid de quem ele não conhece, e o 404 sairia com cara de "esta
+  // pessoa não tem faixa". Sai daqui junto com a migração daquela tela.
   ListEmployeeCommissionTiers:
-    'o perfil de comissão do colaborador ainda não tem aba — o cadastro de colaborador é provider de mock',
-  ListPartnerCommissionTiers:
-    'o perfil de participação do profissional ainda não tem aba — a tela do parceiro é Fase C do trilho',
-  ListTechnicalReserves: 'a Reserva Técnica ainda não tem tela — Fase C do trilho de comissões',
+    'o perfil de comissão do colaborador não tem aba porque o CADASTRO dele ainda é provider de mock — o componente e a porta existem, o id do servidor é que não',
   GetCommissionEarnings: 'a consulta de ganhos ainda não tem tela — Fase C do trilho de comissões',
   ListCommissionClosings:
     'o fechamento de comissão ainda não tem tela — Fase C do trilho de comissões',
   ListCommissionClosingEntries:
     'as linhas do fechamento são sub-recurso e nascem sem tela, junto com o fechamento',
+  // AS SEIS LISTAGENS DE TESOURARIA (G7 fase A, api#112). As telas — Contas a
+  // Pagar, Contas a Receber, Caixa e Movimentos Bancários — são a FASE C deste
+  // mesmo trilho. Cada uma sai daqui quando ganhar a sua, com `ORDENAVEIS`
+  // próprio.
+  ListFinancialTitles:
+    'contas a pagar/receber ainda não tem tela — as telas de Tesouraria são a Fase C do trilho',
+  ListFinancialInstallments:
+    'a agenda de vencimentos (e a seleção do lote) nasce com a tela de quitação, que é a Fase C',
+  ListCashMovements: 'o extrato de caixa/banco ainda não tem tela — Fase C do trilho',
+  ListBankAccounts: 'a conta bancária é COMBO, não grade — não há cabeçalho para clicar',
+  ListCashRegisters: 'o caixa é COMBO, não grade — idem',
+  ListPaymentModes: 'o modo de pagamento é COMBO da baixa, não grade — idem',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -263,11 +305,22 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListProducts: ORDENAVEIS_PRODUTO,
   ListPartners: ORDENAVEIS_PARCEIRO,
   ListQuotes: ORDENAVEIS_ORCAMENTO,
+  ListOrders: ORDENAVEIS_PEDIDO_VENDA,
   ListActivities: ORDENAVEIS_ATIVIDADE,
   ListCrmPipelines: ORDENAVEIS_FUNIL,
   ListCrmOpportunities: ORDENAVEIS_OPORTUNIDADE,
   ListCrmLostReasons: ORDENAVEIS_MOTIVO_DE_PERDA,
   ListWorks: ORDENAVEIS_OBRA,
+  // AS TRÊS DE COMISSÕES QUE GANHARAM TELA (G8, fase C). A whitelist é uma só
+  // para as duas portas do perfil, como o schema do contrato — o que muda entre
+  // colaborador e parceiro é o endereço, não o que se ordena.
+  ListOrderParticipants: ORDENAVEIS_PARTICIPACAO,
+  ListPartnerCommissionTiers: ORDENAVEIS_FAIXA,
+  ListTechnicalReserves: ORDENAVEIS_RESERVA_TECNICA,
+  // A fronteira do suporte existe antes da tela (regra de acesso a dado não
+  // abre exceção), e ela já carrega a whitelist — então entra AQUI, e não no
+  // inventário de "sem lista no front".
+  ListSupportGrants: ORDENAVEIS_CONCESSAO,
 }
 
 /**
@@ -290,6 +343,9 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListStockMovements: ORDENAVEIS_MOVIMENTO_MOCK,
   ListPartnerContacts: ORDENAVEIS_CONTATO_MOCK,
   ListQuotes: ORDENAVEIS_ORCAMENTO_MOCK,
+  ListOrders: ORDENAVEIS_PEDIDO_MOCK,
+  ListOrderProfessionalHistory: ORDENAVEIS_INDICACAO_MOCK,
+  ListOrderParticipants: ORDENAVEIS_PARTICIPACAO_MOCK,
   ListActivities: ORDENAVEIS_ATIVIDADE_MOCK,
   ListCrmPipelines: ORDENAVEIS_FUNIL_MOCK,
   ListCrmLostReasons: ORDENAVEIS_MOTIVO_MOCK,
@@ -297,6 +353,11 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListEmployees: ORDENAVEIS_COLABORADOR_MOCK,
   ListWorks: ORDENAVEIS_OBRA,
   ListRoles: ORDENAVEIS_PAPEL_MOCK,
+  // SUPORTE-DA-PLATAFORMA (item 6 da fundação) — nasce sem tela e COM mock, e
+  // aqui isso pesa mais que no resto: o site público é 100% mock, então quem
+  // recusa prazo ausente, motivo de fachada e segunda concessão é o handler.
+  ListSupportGrants: ORDENAVEIS_CONCESSAO_MOCK,
+  ListSupportGrantAudit: ORDENAVEIS_TRILHA_MOCK,
   // Depósito e saldo nascem sem tela e COM mock (#291). É este eixo que os
   // mede, e não o de cima: quem recusa `sortBy` fora da whitelist, hoje, é o
   // handler — e o site público é 100% mock.
@@ -358,7 +419,6 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'a fila de separação é derivada do pedido de venda, que não tem handler no mock — a fila sem o documento dono listaria peça de pedido inexistente',
   ListDeliveries:
     'o romaneio pende do pedido de venda, que não tem handler no mock — mockar a entrega sem o documento dono casaria id inventado com id de servidor',
-  ListOrders: 'pedido de venda não tem handler no mock — nenhuma tela o consome ainda',
   ListCostProfiles:
     'o perfil de custo (G9) passa direto para o servidor — ver `rotas-do-backend.ts`: a simulação exige a cascata inteira, e um mock dela devolveria margem inventada',
   // COMPRAS (G2) SAIU DAQUI. O motivo que estava escrito — "o mock não guarda
@@ -375,8 +435,6 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // (estoque, orçamento, aniversário) e devolve envelope VAZIO onde a fonte é o
   // pedido de venda, que o mock não guarda. Nenhuma soma disputa com o
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
-  ListOrderProfessionalHistory:
-    'a trilha de indicação é sub-recurso do pedido, que não tem handler no mock — mockar a trilha sem o documento dono casaria id inventado com id de servidor',
   ListGoodsReceipts:
     'recebimento não tem handler no mock — a grade confronta o que a ordem de compra pediu com o que chegou, e o mock não guarda ordem; mockar a conferência sem a ordem dona daria divergência calculada contra número inventado',
   // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
@@ -385,8 +443,6 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // fechada, calculado sobre documento que não existe. As três primeiras são
   // sub-recurso de pedido/pessoa e casariam id inventado com id de servidor;
   // as quatro últimas não têm sobre o que somar.
-  ListOrderParticipants:
-    'sub-recurso do pedido de venda, que não tem handler no mock — participação sem o documento dono casaria id inventado com id de servidor',
   ListEmployeeCommissionTiers:
     'perfil de comissão é sub-recurso do colaborador, e a lista de pessoas do mock diverge da do servidor (a costura já declarada em `cobertura-do-colaborador`)',
   ListPartnerCommissionTiers:
@@ -399,6 +455,27 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
   ListPriceIndexes:
     'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
+  // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
+  // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
+  // de ensinar, e aqui ele ensinaria sozinho:
+  //
+  // As regras deste módulo não são de apresentação, são de DINHEIRO — o lote é
+  // tudo-ou-nada, o destino da baixa é exclusivo, a transferência grava duas
+  // pernas ou nenhuma, e período fechado recusa lançamento. Todas elas já
+  // existem implementadas e exercitadas no `cabinet-erp-api` (as tabelas da
+  // `0065` e da `0071`, com bateria própria). Uma segunda implementação aqui,
+  // sem NENHUMA tela que a consuma, é comportamento sem chamador: ela não seria
+  // medida por uso, e no dia em que divergisse do servidor a divergência
+  // apareceria como bug da tela.
+  //
+  // Sai daqui na FASE C, escrito CONTRA a tela que o consome — que é como
+  // `compras.ts` e `relatorios.ts` puderam nascer úteis.
+  ListFinancialTitles: 'tesouraria não tem handler no mock — nenhuma tela a consome ainda (Fase C)',
+  ListFinancialInstallments: 'idem — a agenda de vencimentos nasce com a tela de quitação',
+  ListCashMovements: 'idem — o extrato nasce com a tela de caixa/movimentos bancários',
+  ListBankAccounts: 'idem — o combo de conta nasce com a tela que o abre',
+  ListCashRegisters: 'idem — o combo de caixa nasce com a tela que o abre',
+  ListPaymentModes: 'idem — o combo de modo nasce com a tela da baixa',
 }
 
 /**
@@ -414,6 +491,7 @@ const FILTRAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   ListProducts: Object.keys(FILTRAVEIS_PRODUTO_MOCK),
   ListPartners: Object.keys(FILTRAVEIS_PARCEIRO_MOCK),
   ListQuotes: Object.keys(FILTRAVEIS_ORCAMENTO_MOCK),
+  ListOrders: Object.keys(FILTRAVEIS_PEDIDO_MOCK),
   ListCrmOpportunities: Object.keys(FILTRAVEIS_OPORTUNIDADE_MOCK),
   ListWorks: Object.keys(FILTRAVEIS_OBRA),
 }
@@ -423,6 +501,7 @@ const FILTRAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   ListProducts: FILTRAVEIS_PRODUTO,
   ListPartners: FILTRAVEIS_PARCEIRO,
   ListQuotes: FILTRAVEIS_ORCAMENTO,
+  ListOrders: FILTRAVEIS_PEDIDO_VENDA,
   ListCrmOpportunities: FILTRAVEIS_OPORTUNIDADE,
   ListWorks: Object.keys(FILTRAVEIS_OBRA),
 }

@@ -28,6 +28,7 @@ import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
 import { handlersDePagamento } from './pagamento'
+import { handlersDePedidoDeVenda } from './pedidos'
 import { verificarEscrita } from './permissao'
 import {
   TIPO,
@@ -42,6 +43,7 @@ import { handlersDeOrcamento } from './quotes'
 import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
+import { contextoDeSuporte, handlersDeSuporte, trilhaDeSuporte } from './suporte'
 
 /**
  * Handlers do modo mock — o "backend" do `VITE_API_MODE=mock`.
@@ -201,6 +203,11 @@ function sessaoAtual(): SessaoAtual {
     activeTenantId: store.activeTenantId,
     expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
     mustChangePassword: store.mustChangePassword,
+    // `null` em toda sessão comum, que é quase toda. Quando não é `null`, o
+    // campo é PERGUNTADO e não guardado: `contextoDeSuporte()` recalcula o
+    // prazo a cada leitura, então a concessão que venceu some daqui sem
+    // ninguém precisar avisar a tela.
+    support: contextoDeSuporte(),
   }
 }
 
@@ -246,6 +253,14 @@ export const handlers = [
     store.expiraProximaEscrita = false
     return semSessao()
   }),
+
+  // ---------------- trilha do suporte-da-plataforma ----------------
+  //
+  // LOGO DEPOIS do gatilho de expiração, e antes de todo recurso: a trilha
+  // precisa ver a requisição que o handler do recurso vai atender, e cai para o
+  // próximo sem responder nada. Enquanto não há concessão de suporte aberta —
+  // que é o estado de toda sessão comum — ele não faz absolutamente nada.
+  trilhaDeSuporte,
 
   // ---------------- auth ----------------
   http.post('*/auth/login', async ({ request }) => {
@@ -902,6 +917,13 @@ export const handlers = [
   // Mesma razão do CRM: estado e handlers em `quotes.ts`.
   ...handlersDeOrcamento,
 
+  // ---------------- pedido de venda ----------------
+  // Entram DEPOIS do orçamento porque `POST /api/quotes/{id}/order` mora em
+  // `pedidos.ts` — a conversão CRIA um pedido, e o estado dele é de lá. A ordem
+  // não muda o casamento (os padrões são disjuntos), mas põe o handler ao lado
+  // do módulo que o explica.
+  ...handlersDePedidoDeVenda,
+
   // ---------------- atividades ----------------
   // Mesma decisão do CRM, e aqui ela pesa mais: a tabela é POLIMÓRFICA e o
   // painel monta em oportunidade, parceiro, orçamento e pedido — o estado não é
@@ -955,6 +977,7 @@ export const handlers = [
   // antigas. Ainda SEM TELA — a de checkboxes é trilho próprio, e o que existe
   // aqui é para o mock não ficar mudo em caminho publicado.
   ...handlersDeAcesso,
+  ...handlersDeSuporte,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da
@@ -962,7 +985,11 @@ export const handlers = [
   ...handlersDeLookups,
 
   // ---------------- health ----------------
-  http.get('*/health', () => HttpResponse.json({ status: 'ok' })),
+  // `version`/`commit` dizem QUAL BINÁRIO respondeu, e no mock a resposta
+  // honesta é `mock`: não existe imagem publicada do outro lado. `desconhecido`
+  // seria mentira de outro tipo — ele significa "imagem construída sem carimbo",
+  // e quem lesse isso na tela iria caçar um deploy mal feito que não existe.
+  http.get('*/health', () => HttpResponse.json({ status: 'ok', version: 'mock', commit: 'mock' })),
   http.get('*/health/db', () =>
     HttpResponse.json({ status: 'ok', detail: null, pendingMigrations: null }),
   ),

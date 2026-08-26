@@ -49,6 +49,27 @@ export const VOCABULARIO_DE_APOIO: Record<string, string[]> = {
   CATEGORIA_CLIENTE: ['ARQUITETO', 'CONSUMIDOR FINAL', 'REVENDA'],
   ORGAO_REGISTRO: ['CREA', 'CAU', 'CFT'],
   CATEGORIA_PROFISSIONAL: ['ARQUITETO', 'DESIGNER', 'ENGENHEIRO', 'LOJISTA'],
+  // `GrupoProduto` do legado — 12 linhas, e o kind que TRÊS frentes deste mock
+  // contornavam por não existir: `compras.test.ts` escrevia o par (fornecedor,
+  // grupo) direto no store, `nomeDoGrupo` de `pagamento.ts` ecoava o próprio id
+  // no lugar do nome, e a quinta recusa do `PaymentTermDto` — `productGroupId`
+  // que não é grupo ATIVO — não tinha como ser exercitada.
+  //
+  // **A LISTA e a ORDEM são acordo com o `cabinet-erp-api`**: o id daqui é
+  // derivado da POSIÇÃO (`lk-GRUPO_PRODUTO-3`), e a semente de dev de lá
+  // (`APOIOS.GRUPO_PRODUTO`, em `src/core/db/semear-dev.ts`) grava estes mesmos
+  // nomes nesta mesma sequência. Trocar um item de lugar aqui faz o modo mock e
+  // o par local mostrarem grupos diferentes para a mesma tela.
+  //
+  // **São SEIS e não os 12 do legado, e a diferença entre eles é o que se sabe.**
+  // `GrupoProduto` tem 12 linhas, mas a extração trouxe CONTAGEM, não rótulos —
+  // semear doze nomes adivinhados daria a aparência do dado real e a substância
+  // de um chute. Os quatro primeiros são propostas do domínio, como os de
+  // `MOTIVO_CANCELAMENTO`. Os dois últimos NÃO são: `1000 = SERVIÇOS` e
+  // `1001 = FRETE` são pseudo-produtos medidos (`docs/legado`/`docs/harvest`), e
+  // é o `1000` que dá onde pousar ao desconto que a condição de pagamento aplica
+  // a serviço (`Fpg_desconto_se`).
+  GRUPO_PRODUTO: ['PENDENTES', 'ARANDELAS', 'EMBUTIDOS', 'TRILHOS E SPOTS', 'SERVIÇOS', 'FRETE'],
 }
 
 /**

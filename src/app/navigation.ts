@@ -5,10 +5,12 @@ import {
   ArrowLeftRight,
   BookUser,
   Boxes,
+  CalendarClock,
   CalendarDays,
   CircleDollarSign,
   Filter,
   GanttChart,
+  HandCoins,
   Home,
   LayoutDashboard,
   type LucideIcon,
@@ -333,6 +335,32 @@ export const navSecoes: NavSecao[] = [
             icon: Truck,
             descricao: 'O que está liberado e ainda não saiu do galpão, por pedido.',
           },
+          {
+            /**
+             * A RESERVA TÉCNICA fica DEPOIS do pedido porque é o que vem depois
+             * dele: o documento guarda a participação, e este lançamento é o
+             * momento em que ela vira valor apurado. Mesma regra de ordem do
+             * Quadro de Cargas — a barra segue o fluxo, e nada entra na fila
+             * antes de existir documento.
+             *
+             * **`do Profissional` no nome é DESAMBIGUAÇÃO, não enfeite.** Existe
+             * um `Reserva Técnica` em Estoque, `futuro`, e ele é OUTRA coisa: "a
+             * peça separada para um projeto, antes de sair". Este aqui é o
+             * `Reserva_tecnica` do legado — dinheiro que o profissional externo
+             * recebe pela indicação, com valor calculado pelo servidor sobre a
+             * participação congelada no pedido.
+             *
+             * Homônimo é o mesmo caso do Quadro de Cargas (elétrico × entrega), e
+             * a saída é a que está escrita lá: quem chega depois entra com nome
+             * próprio, em vez de herdar o slot e fazer uma sumir dentro da outra.
+             * O dia em que a de Estoque for construída, ela também precisa do
+             * nome dela — `Reserva de Peça` diz o que a descrição dela já diz.
+             */
+            title: 'Reserva Técnica do Profissional',
+            url: '/vendas/reservas-tecnicas',
+            icon: HandCoins,
+            descricao: 'O que o profissional externo recebe pela indicação. Cancela, não apaga.',
+          },
         ],
       },
     ],
@@ -461,7 +489,56 @@ export const navSecoes: NavSecao[] = [
                 icon: ShoppingCart,
                 descricao: 'A compra efetivada, amarrada ao pedido de venda que a originou.',
               },
+              {
+                /**
+                 * CONSULTA, não cadastro: não tem `incluir` porque não há o que
+                 * incluir — ela lê ordens ENVIADAS de vários documentos. É a
+                 * terceira filha do grupo e não uma aba da ordem de compra: a
+                 * pergunta que ela responde ("o que chega esta semana, e o que
+                 * está atrasado") não é sobre UM documento.
+                 */
+                title: 'Previsão de Chegada',
+                url: '/compras/previsao',
+                icon: CalendarClock,
+                descricao:
+                  'O que já foi enviado e ainda não chegou, com o atraso contra a promessa.',
+              },
             ],
+          },
+        ],
+      },
+      {
+        /**
+         * RELATÓRIOS de estoque — o terceiro degrau do esqueleto (Documentos →
+         * Cadastros → Relatórios), e o primeiro que existe de verdade em
+         * qualquer seção: o item `Relatórios` de Início ainda é `futuro`.
+         *
+         * Os três saem do contrato (#310) e ganharam o recorte por depósito na
+         * #352. Vêm por último na seção porque é onde o esqueleto os põe:
+         * primeiro o que se opera, depois o que consolida o que foi operado.
+         */
+        title: 'Relatórios',
+        url: '/estoque/relatorios/valorizado',
+        icon: Table2,
+        modulo: 'estoque',
+        items: [
+          {
+            title: 'Estoque Valorizado',
+            url: '/estoque/relatorios/valorizado',
+            icon: Table2,
+            descricao: 'Quanto vale o que está em casa, agora — por depósito ou na empresa.',
+          },
+          {
+            title: 'Estoque Parado',
+            url: '/estoque/relatorios/parado',
+            icon: Table2,
+            descricao: 'O dinheiro parado na prateleira: dias sem venda e última saída.',
+          },
+          {
+            title: 'Orçado × Estoque',
+            url: '/estoque/relatorios/orcado-x-estoque',
+            icon: Table2,
+            descricao: 'O que os orçamentos abertos prometem, contra o que existe em casa.',
           },
         ],
       },
@@ -661,8 +738,7 @@ export const navSecoes: NavSecao[] = [
             title: 'Usuários e Empresas',
             url: '/config/usuarios',
             icon: Settings,
-            descricao: 'Ainda não existe. Quem entra, em qual empresa, com qual acesso.',
-            futuro: true,
+            descricao: 'Quem entra, com qual papel — e a senha provisória do primeiro acesso.',
           },
         ],
       },

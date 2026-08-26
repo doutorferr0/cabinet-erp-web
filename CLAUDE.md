@@ -173,6 +173,25 @@ respondida por ninguém: cai no fallback da SPA e devolve `index.html` com 200.*
 **Não copiar esses números para lugar nenhum sem remedir** — este arquivo não roda. A fonte viva
 é o console, que os imprime a cada `pnpm dev` com proxy.
 
+**2026-08-25 — CONFERÊNCIA ESTÁTICA, e ela não substitui a medição ao vivo.** O contrato foi de
+163 para **172 operações (123 caminhos)**, e a lista continuou onde estava. Cruzando o contrato
+daqui com o FONTE do `cabinet-erp-api` em `origin/main` (`2ee954b`) — presença da chave
+`<OperationId>` no mapa que `src/core/http/servidor.ts` compõe —, **160 das 172 têm handler** e as
+12 sem handler são: **recebimento (6, `/api/goods-receipts`), layout de etiqueta (5) e
+`ResetEmployeePassword`**. Consequência direta: as `natureza: 'sem-handler'` declaradas para
+**comissões (13) e relatórios (10)** estão VELHAS — aquelas famílias têm handler hoje.
+
+Isto é leitura de código, não sonda: só o `ao-vivo.test.ts` contra servidor de pé pode promover
+uma linha para a passagem, e é ele que continua mandando. O que a conferência estática faz é
+apontar ONDE remedir primeiro, em vez de deixar a declaração envelhecendo verde — que é
+exatamente a falha que este arquivo descreve dois parágrafos acima.
+
+**Duas armadilhas da conferência estática, as duas mordidas:** (1) o checkout local do api estava
+**74 commits atrás** do `origin/main` — medir por ele apontou 85 operações "sem handler" que
+existiam há dias; conferir `git rev-list --left-right --count origin/main...HEAD` ANTES. (2) o
+mapa de manipuladores tem DUAS formas de chave, `Op: async (req, reply) =>` e `Op: objeto.metodo,`
+— casar só a primeira perde ~90 operações e inventa um buraco que não existe.
+
 ### 501 e 404 não são a mesma dívida — `natureza`
 
 Toda rota de `ROTAS_NO_MOCK` é respondida pelo mock, e por isso a tela mostra dado bonito em
@@ -186,11 +205,13 @@ todas. O que muda é **o que falta do outro lado**, e o campo `natureza` diz qua
 **`sem-contrato` é uma janela, não uma prateleira.** Ela abre no merge de contrato AQUI (este repo
 é o dono) e fecha no `sync:contract` de LÁ. Enquanto está aberta, o mock responde 200 onde o
 servidor responderia 404 — e é isso que o passthrough não pode mascarar. O console grita o número
-e os caminhos numa linha própria, antes do relatório por família. **A classe estava vazia em
-2026-08-24** — os dois `contracts/openapi-v1.json` batiam byte a byte (`c8118093…`, 117 caminhos
-/ 163 operações). **Não está mais garantido:** este repo mergeou contrato depois disso (#333
-publicou os 5 caminhos de impressão e mediu 404 no api; #350 mexeu em papel), e a igualdade só
-volta a valer quando o api rodar `sync:contract`. Igualdade de contrato é MEDIDA, não herdada.
+e os caminhos numa linha própria, antes do relatório por família. **A classe DEIXOU de estar
+vazia, e cresceu:** medido em 26/08, os dois `contracts/openapi-v1.json` já não batem byte a byte
+— o daqui tem 143 caminhos / 196 operações, o do api tem 122 / 171, e as **25 que faltam lá são
+exatamente as 25 declaradas `sem-contrato`**: os quinze da tesouraria (G7 fase A), os cinco do
+ciclo da credencial e os cinco do suporte-da-plataforma. A janela está aberta e fecha no
+`sync:contract` de lá. Foi a terceira vez que a frase "a classe está vazia" envelheceu sem ninguém
+a invalidar; ela é verdadeira só no dia em que foi medida, e o número acima também.
 
 **Errar a natureza manda alguém para o repositório errado**, e já aconteceu duas vezes com as
 mesmas 13 rotas de comissões: a `#337` as declarou 501 medindo contra o checkout compartilhado do

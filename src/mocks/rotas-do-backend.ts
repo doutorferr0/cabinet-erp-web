@@ -919,11 +919,33 @@ export const PROXIMO_PASSO: Record<NaturezaDaAusencia, string> = {
     'o api responde 404, nem 501 — falta `pnpm sync:contract` + `pnpm codegen` LÁ, antes do handler',
 }
 
+/**
+ * **AS 14 FORAM MEDIDAS CONTRA A PR, EM 25/08, E RESPONDEM.** A fase C (as
+ * telas) foi construída contra o servidor de verdade, subido do commit
+ * `e8a30f6` da `worktree-g2-compras-rotas` — a `api#176` — com Postgres
+ * próprio: pedido de venda → pedido de compra → ordem agrupando a linha →
+ * `send` → previsão de chegada, com as duas datas do reagendamento e o cliente
+ * ecoado até a última linha.
+ *
+ * **Ficam aqui assim mesmo**, e o motivo é o par que esta lista exige: a
+ * `api#176` está ABERTA — parada por cobrança do GitHub Actions, não por
+ * revisão —, então par local contra a `main` do api ainda recebe 501. Ligá-las
+ * agora tiraria o mock, que serve as 14 inteiras, para entregar 501 à tela: a
+ * "rota adiantada" que o cabeçalho deste arquivo chama de pior que rota
+ * ausente. **Quem mergear a `api#176` move as 14 no mesmo PR** — não há mais
+ * nada a medir antes disso.
+ */
 const COMPRAS_501 =
-  '501 no api — a fase B do módulo (api#176) ainda não mergeou; medido em 24/08 contra `f810a39`'
+  '501 na main do api — a fase B (api#176) está aberta, parada por billing; medido em 25/08 contra a PR: as 14 respondem'
 
 const COMISSOES_SEM_PORTA =
   'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
+
+const SENHA_INICIAL_SEM_CONTRATO_LA =
+  'publicada por ESTA PR — a copia do contrato no api ainda nao a conhece; sync + handler na PR da api'
+
+const CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA =
+  'publicadas por ESTA PR — o api nao conhece os caminhos; sync + handlers + tabela de token na PR da api'
 
 const RECEBIMENTO_SEM_PORTA =
   'sem handler no api — modulo existe (0047 + src/modules/recebimento/), rotas nao; G3 fase B'
@@ -1020,6 +1042,23 @@ const RECEBIMENTO: readonly RotaNoMock[] = [
  *
  * Sai INTEIRA quando a Fase B ligar os handlers: a apuração é justamente onde os
  * dois lados têm de ser o mesmo id.
+ *
+ * **A FASE B LIGOU OS HANDLERS, e esta lista ainda não foi re-medida.** Achado
+ * em 2026-08-25, pela FONTE do `cabinet-erp-api` (`main`, `e961bad`):
+ * `src/modules/comissoes/rotas.ts` existe, `ListOrderParticipants` e
+ * `ReplaceOrderParticipants` são chaves de handler nele, e
+ * `src/core/http/servidor.ts` espalha `...rotasDeComissoes()`. O módulo tem
+ * porta.
+ *
+ * O bloco continua aqui de propósito, e a razão é a regra deste arquivo: quem
+ * acrescenta rota mede AO VIVO, e as treze foram declaradas juntas — mover duas
+ * por leitura de fonte partiria o bloco e deixaria onze com uma medição de três
+ * dias atrás. A re-medição é do trilho do G8, com o par local de pé e a sonda de
+ * `ao-vivo.test.ts`, que é o único lugar onde 404, 501 e 200 se distinguem.
+ *
+ * Enquanto isso, a costura tem NOME na tela: `participacao-do-pedido.tsx` avisa
+ * o operador que, com o proxy ligado, o pedido vem do servidor e a participação
+ * vem do mock — as duas não se encontram, e a lista aparece vazia.
  */
 const COMISSOES: readonly RotaNoMock[] = [
   {
@@ -1102,6 +1141,158 @@ const COMISSOES: readonly RotaNoMock[] = [
   },
 ]
 
+const TESOURARIA_SEM_CONTRATO_LA =
+  'contrato novo — a copia do api ainda nao sincronizou; depois do sync vira 501 ate a fase B (api#112)'
+
+/**
+ * AS QUINZE DE TESOURARIA (G7 fase A, `api#112`) — nascem NESTE PR, que é o que
+ * publica a família. O contrato voltou a andar na frente, que é o estado normal
+ * do repo que o possui.
+ *
+ * **A razão é a mesma das treze de comissões, um degrau antes: o módulo do api
+ * EXISTE e não tem porta — e agora nem o contrato de lá conhece o caminho.** As
+ * seis tabelas estão aplicadas na `main` do api (`0065_tesouraria.sql` +
+ * `0070_financeiro_apoio.sql` + `0071_financeiro_titulos.sql`: título, parcela,
+ * baixa com `batch_id`, movimento, transferência e fechamento, todas com RLS
+ * forçada), e nenhum dos quinze `operationId` está no mapa de
+ * `src/core/http/servidor.ts` — medido contra a `main` `f810a39`.
+ *
+ * **Duas respostas em sequência, e a distinção é a que a #341 pagou para
+ * aprender:** hoje é **404** (`Este caminho não existe no contrato`), porque a
+ * cópia de `contracts/openapi-v1.json` do api é anterior a este merge; depois do
+ * `sync:contract` de lá vira **501**, que é o "conheço a rota, falta handler".
+ * As duas mantêm a família fora da passagem, mas só a segunda diz que o próximo
+ * passo é o handler, e não o sync.
+ *
+ * Sai INTEIRA quando a FASE B ligar os handlers — meia família põe id do
+ * servidor de um lado e id inventado do outro, e aqui os dois lados são dinheiro.
+ */
+const TESOURARIA: readonly RotaNoMock[] = [
+  {
+    metodo: 'get',
+    caminho: '/api/financial-titles',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-titles',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-titles/{id}',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/financial-titles/{id}',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-titles/{id}/cancel',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-installments',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-installments/{id}/settlements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-settlements/batch',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/cash-movements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-movements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-movements/{id}/reconcile',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-transfers',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/bank-accounts',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/cash-registers',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/payment-modes',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+]
+/**
+ * SUPORTE-DA-PLATAFORMA (5 operações) — o item 6 da fundação, publicado NESTE
+ * PR e por isso desconhecido do outro lado.
+ *
+ * `sem-contrato` e não `sem-handler`, e a diferença aqui é literal: a cópia do
+ * contrato do api não tem estes caminhos, então o `setNotFoundHandler` dele
+ * responde **404**, nem chega a 501. É o estado normal e temporário logo depois
+ * de um caminho nascer aqui — o mesmo que a `#335` produziu com `cost-profiles`.
+ *
+ * **Não medi contra par local, e digo em vez de deixar implícito:** o backend
+ * não conhece o caminho, então a medição só poderia devolver o 404 que a
+ * natureza já declara. O que ela responderia depois de `pnpm sync:contract` lá
+ * é 501, e aí a linha muda de natureza — não de lista.
+ *
+ * Ficam no mock por decisão, não por espera: enquanto não houver console de
+ * suporte, ligar a passagem tiraria os handlers que provam a regra (motivo,
+ * prazo, uma-por-vez, trilha) em troca de 404 — a "rota adiantada" que o
+ * cabeçalho deste arquivo chama de pior que rota ausente.
+ */
+const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
+  [
+    ['get', '/api/platform/support-grants'],
+    ['post', '/api/platform/support-grants'],
+    ['get', '/api/platform/support-grants/{id}'],
+    ['post', '/api/platform/support-grants/{id}/revoke'],
+    ['get', '/api/platform/support-grants/{id}/audit'],
+  ] as const
+).map(([metodo, caminho]) => ({
+  metodo,
+  caminho,
+  motivo: '404 no api — caminho publicado neste repo em 25/08 e ainda não sincronizado lá',
+  natureza: 'sem-contrato' as const,
+}))
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   {
     metodo: 'get',
@@ -1179,10 +1370,61 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   },
   ...COMISSOES,
   ...RECEBIMENTO,
+  ...TESOURARIA,
+  {
+    metodo: 'post',
+    caminho: '/api/employees/{id}/reset-password',
+    motivo: SENHA_INICIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  // AS QUATRO DO CICLO DA CREDENCIAL — publicadas por ESTA PR, e as quatro COM
+  // handler de mock (`src/mocks/api/acesso.ts`), o que nao e detalhe: sem ele,
+  // declarar aqui faria `/auth/set-password` cair no fallback da SPA e devolver
+  // `index.html` com 200 — a tela leria HTML como se fosse resposta.
+  //
+  // Saem JUNTAS quando o api mergear, e juntas de proposito: meia familia poria
+  // o convite no servidor e o gasto do token no mock, e o token emitido de um
+  // lado nao existe do outro. E o mesmo argumento do `get` no registry.
+  {
+    metodo: 'post',
+    caminho: '/api/employees/{id}/invite',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/forgot-password',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/credential-token',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/set-password',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  ...SUPORTE_DA_PLATAFORMA,
 ]
 
-/** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */
-function familia(caminho: string): string {
+/**
+ * A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`,
+ * e `/auth/forgot-password` → `auth`.
+ *
+ * **Exportada por causa da GUARDA**, e é decisão, não vazamento: o caso do
+ * console replicava esta regra com um `partes[1]` cego, e as duas versões
+ * concordaram enquanto TODA rota mockada morava em `/api/*` — onde `partes[1]`
+ * é mesmo a família. A primeira rota mockada em `/auth/*` separou as duas
+ * (`forgot-password` de um lado, `auth` do outro) e a guarda reprovou o código
+ * certo. Regra medida em dois lugares é regra que diverge no dia em que um dos
+ * lados ganha um caso novo.
+ */
+export function familia(caminho: string): string {
   const partes = caminho.split('/').filter(Boolean)
   const primeiro = partes[0] ?? caminho
   return primeiro === 'api' ? (partes[1] ?? 'api') : primeiro

@@ -232,6 +232,51 @@ describe('AppShell', () => {
     expect(screen.getByRole('navigation', { name: 'Você está em' })).toHaveTextContent('Início')
   })
 
+  /**
+   * REGRESSÃO: voltar para a seção da PRÓPRIA rota depois de espiar outra.
+   *
+   * O ícone de seção é `<Link>`, e clicar no de Estoque estando em
+   * `/estoque/movimentacao` não muda o caminho — não há navegação para
+   * `secaoDaRota` reavaliar. Enquanto só o `<button>` avisava a escolha, a
+   * escolha ANTERIOR (Financeiro) sobrevivia ao clique: a barra continuava
+   * listando Contas a Receber e o fio ficava aceso na seção errada.
+   *
+   * A asserção mira o DESTAQUE (`bg-modulo`, que é o que o `ativa` liga) e o
+   * conteúdo da barra, não `aria-current`: o `<Link>` do router marca
+   * `aria-current` sozinho quando a rota casa, então Estoque já o tinha
+   * enquanto o operador via Financeiro na tela. Foi por isso que o defeito
+   * passou por baixo dos testes que existiam.
+   */
+  it('voltar para a seção da rota depois de espiar outra', async () => {
+    setup('/estoque/movimentacao')
+    const user = userEvent.setup()
+    const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
+    // `classList`, e não `className.includes`: o ícone também carrega
+    // `hover:bg-modulo`, e uma busca por substring dava verde em todos.
+    const destacado = (nome: string) =>
+      (
+        (
+          document.querySelector('[data-slot="appbar"] nav[aria-label="Seções"]') as HTMLElement
+        ).querySelector(`[aria-label="${nome}"]`) as HTMLElement
+      ).classList.contains('bg-modulo')
+
+    await waitFor(() => {
+      expect(barra().getByRole('link', { name: 'Movimentação' })).toBeInTheDocument()
+    })
+    expect(destacado('Estoque')).toBe(true)
+
+    await user.click(fileira().getByRole('button', { name: 'Financeiro' }))
+    expect(await barra().findByText('Contas a Receber')).toBeInTheDocument()
+    expect(destacado('Financeiro')).toBe(true)
+
+    // O mesmo destino da rota atual: o clique não navega, e mesmo assim manda.
+    await user.click(fileira().getByRole('link', { name: 'Estoque' }))
+    expect(await barra().findByRole('link', { name: 'Movimentação' })).toBeInTheDocument()
+    expect(barra().queryByText('Contas a Receber')).not.toBeInTheDocument()
+    expect(destacado('Estoque')).toBe(true)
+    expect(destacado('Financeiro')).toBe(false)
+  })
+
   it('a busca da barra filtra a seção, e diz quando não acha', async () => {
     setup('/compras/ordens')
     const user = userEvent.setup()

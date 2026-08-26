@@ -30,6 +30,7 @@ import { handlersDeObras } from './obras'
 import { handlersDePagamento } from './pagamento'
 import { handlersDePedidoDeVenda } from './pedidos'
 import { verificarEscrita } from './permissao'
+import { handlersDoPlanner } from './planner'
 import {
   TIPO,
   camposInvalidos,
@@ -907,6 +908,11 @@ export const handlers = [
     if (!plano) return naoEncontrado('Projeto não encontrado.')
     return HttpResponse.json(plano)
   }),
+
+  // A ESCRITA do Planner mora em `planner.ts`, pela razão de sempre: arquivo
+  // novo não disputa linha com quem edita este aqui. A leitura ficou onde
+  // estava — mover as duas rotas pagaria um diff grande por arrumação.
+  ...handlersDoPlanner,
 
   // ---------------- crm ----------------
   // Estado e handlers do funil vivem em `crm.ts`: estado próprio, e arquivo

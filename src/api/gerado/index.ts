@@ -182,6 +182,8 @@ import type {
   PaymentTermWriteRequest,
   PermissionCatalogDto,
   PickOrderItemRequest,
+  PlanItemDto,
+  PlanItemRescheduleRequest,
   PriceIndexDto,
   PriceIndexWriteRequest,
   PrintProductLabelsParams,
@@ -2386,6 +2388,72 @@ export const getProjectPlan = async (projectId: string, options?: Parameters<typ
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type reschedulePlanItemResponse200 = {
+  data: PlanItemDto
+  status: 200
+}
+
+export type reschedulePlanItemResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type reschedulePlanItemResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type reschedulePlanItemResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type reschedulePlanItemResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type reschedulePlanItemResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type reschedulePlanItemResponseSuccess = (reschedulePlanItemResponse200) & {
+  headers: Headers;
+};
+export type reschedulePlanItemResponseError = (reschedulePlanItemResponse400 | reschedulePlanItemResponse401 | reschedulePlanItemResponse403 | reschedulePlanItemResponse404 | reschedulePlanItemResponse409) & {
+  headers: Headers;
+};
+
+export type reschedulePlanItemResponse = (reschedulePlanItemResponseSuccess | reschedulePlanItemResponseError)
+
+export const getReschedulePlanItemUrl = (projectId: string,
+    itemId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/plan/items/${itemId}`
+}
+
+/**
+ * Proposto. Reagenda UM item do plano — é o que o arraste da barra no gantt grava. `PATCH` e não `PUT` de propósito: a barra carrega data, e só. Um `PUT` a partir dela apagaria `label`, `kind` e `progressPercent`, que o operador não tocou e a barra nem exibe. As duas datas vêm JUNTAS e obrigatórias porque o gesto move as duas: arrastar desloca o intervalo inteiro, e mandar só a ponta que mudou faria o servidor adivinhar a outra. `endsOn` continua INCLUSIVO, como no `PlanItemDto` — a convenção exclusiva do motor do gantt não atravessa a fronteira. **A FASE acompanha:** item reagendado para fora do intervalo da fase que o contém estica essa fase até contê-lo, e a resposta seguinte de `GetProjectPlan` já traz a fase esticada. Recusar o gesto travaria o replanejamento no lugar onde ele mais acontece; deixar a fase curta desenharia uma barra-resumo menor que os próprios filhos.
+ */
+export const reschedulePlanItem = async (projectId: string,
+    itemId: string,
+    planItemRescheduleRequest: PlanItemRescheduleRequest, options?: Parameters<typeof apiFetch>[1]): Promise<reschedulePlanItemResponse> => {
+
+  return apiFetch<reschedulePlanItemResponse>(getReschedulePlanItemUrl(projectId,itemId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(planItemRescheduleRequest)
   }
 );}
 

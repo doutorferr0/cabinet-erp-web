@@ -1,13 +1,16 @@
 import type { ProjectPlanDto } from '@/api/gerado'
 import { describe, expect, it } from 'vitest'
 import {
+  type EventoDeTarefa,
   TIPOS,
   idDaFase,
   idDoItem,
   idOriginal,
+  isoDoDia,
   janelaDoPlano,
   periodoDaFase,
   progressoDoProjeto,
+  reagendamentoDoEvento,
   tarefasDoPlano,
   totalDeItens,
 } from './dados-do-gantt'
@@ -178,5 +181,75 @@ describe('o que a tela resume, e o SVAR não sabe', () => {
 
   it('plano vazio não é 0% — é projeto sem plano', () => {
     expect(progressoDoProjeto({ projectId: 'p', phases: [] }).percentual).toBeNull()
+  })
+})
+
+/**
+ * A VOLTA — o arraste vira pedido do contrato.
+ *
+ * Estes casos existem porque o miolo do SVAR NÃO renderiza em jsdom (o limite
+ * está medido no cabeçalho de `planner.test.tsx`): não há como arrastar uma
+ * barra num teste e conferir o que saiu. O que se pode fazer — e é o que estes
+ * casos fazem — é alimentar a função com o evento que a lib emite e travar a
+ * tradução, que é a parte nossa e a parte que erra em silêncio.
+ */
+describe('o arraste vira reagendamento', () => {
+  const evento = (extra: Partial<EventoDeTarefa> = {}): EventoDeTarefa => ({
+    id: idDoItem('item-1'),
+    task: { start: new Date(2026, 6, 1), end: new Date(2026, 7, 1) },
+    ...extra,
+  })
+
+  it('o id perde o prefixo e as datas viram dia ISO', () => {
+    expect(reagendamentoDoEvento(evento())).toEqual({
+      itemId: 'item-1',
+      startsOn: '2026-07-01',
+      // Fim EXCLUSIVO na lib (1º de agosto) é 31 de julho no contrato.
+      endsOn: '2026-07-31',
+    })
+  })
+
+  it('o fim volta a ser INCLUSIVO — item de um dia não vira dois', () => {
+    const umDia = evento({
+      task: { start: new Date(2026, 6, 10), end: new Date(2026, 6, 11) },
+    })
+    const r = reagendamentoDoEvento(umDia)
+    expect(r?.startsOn).toBe('2026-07-10')
+    expect(r?.endsOn).toBe('2026-07-10')
+  })
+
+  it('fim já DENTRO do último dia não perde um dia', () => {
+    // O `-1ms` existe para este caso: com `-1 dia` a barra encolheria sozinha a
+    // cada arraste, e ninguém liga um encolhimento gradual ao arraste.
+    const r = reagendamentoDoEvento(
+      evento({ task: { start: new Date(2026, 6, 10), end: new Date(2026, 6, 12, 23, 59, 59) } }),
+    )
+    expect(r?.endsOn).toBe('2026-07-12')
+  })
+
+  it('durante o arraste não grava nada', () => {
+    // Um `PATCH` por quadro faria o último a CHEGAR decidir a data final.
+    expect(reagendamentoDoEvento(evento({ inProgress: true }))).toBeNull()
+  })
+
+  it('evento sem data não é reagendamento', () => {
+    // O mesmo evento carrega progresso, texto e abertura de fase. Só data tem
+    // caminho no contrato; o resto seria escrita inventada.
+    expect(reagendamentoDoEvento(evento({ task: { progress: 40 } }))).toBeNull()
+  })
+
+  it('mexer na FASE não vira escrita — o contrato reagenda ITEM', () => {
+    expect(reagendamentoDoEvento(evento({ id: idDaFase('fase-1') }))).toBeNull()
+  })
+
+  it('id que não veio daqui não vira uuid adivinhado', () => {
+    expect(reagendamentoDoEvento(evento({ id: 'solto-42' }))).toBeNull()
+  })
+
+  it('o dia é o LOCAL, não o de UTC', () => {
+    // `toISOString().slice(0,10)` devolveria 2026-06-30 num fuso negativo — erro
+    // de um dia que só aparece em parte do dia e some para quem confere em UTC.
+    expect(isoDoDia(new Date(2026, 6, 1, 0, 0, 0))).toBe('2026-07-01')
+    expect(isoDoDia(new Date(2026, 6, 1, 23, 59, 59))).toBe('2026-07-01')
   })
 })

@@ -1305,6 +1305,29 @@ const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
   natureza: 'sem-contrato' as const,
 }))
 
+/**
+ * O reagendamento do Planner (`web#XXX`), publicado NESTE PR.
+ *
+ * `sem-contrato`, e sem precisar de par local para afirmá-lo: o caminho nasce
+ * aqui, e a cópia do contrato do api é da `main` deste repo. Handler para
+ * operação que o glue de lá ainda não registra não existe — o 404 `Este caminho
+ * não existe no contrato` é dedução, não medição otimista.
+ *
+ * **Tem handler de mock** (`src/mocks/api/planner.ts`), que é a condição que o
+ * bloco de `cost-profiles` acima deixou escrita: sem handler, a rota cairia no
+ * fallback da SPA e devolveria `index.html` com 200 — pior que o 404 honesto.
+ *
+ * **Sabendo o preço:** as duas LEITURAS do planner estão na passagem e vão ao
+ * api de verdade; esta ESCRITA fica no mock. No par local isso significa
+ * arrastar, ver a barra no lugar novo e vê-la voltar na releitura — os dois
+ * lados guardam planos diferentes. É o estado normal e temporário de uma
+ * operação recém-publicada, e ele acaba em dois passos no api: `sync:contract` +
+ * `codegen`, depois o handler. Aí esta entrada migra para `ROTAS_DO_BACKEND`.
+ */
+const REAGENDAR_SEM_CONTRATO_LA =
+  'PATCH do item do plano publicado neste PR: a cópia do contrato do api ainda não o conhece. ' +
+  'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   {
     metodo: 'get',
@@ -1422,6 +1445,12 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     natureza: 'sem-contrato',
   },
   ...SUPORTE_DA_PLATAFORMA,
+  {
+    metodo: 'patch',
+    caminho: '/api/projects/{projectId}/plan/items/{itemId}',
+    motivo: REAGENDAR_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
 ]
 
 /**

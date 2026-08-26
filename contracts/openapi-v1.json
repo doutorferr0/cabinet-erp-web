@@ -7227,6 +7227,15 @@
             "description": "Só o que está abaixo do mínimo — a lista de compras."
           },
           {
+            "name": "warehouseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Recorta o saldo por DEPÓSITO (`stock_locations`). Ausente = a empresa inteira, que é o comportamento de sempre e não muda por este parâmetro existir.\n\n**O saldo por depósito mora em `stock_balances`, e o agregado por empresa (`product_tenant.stock_qty`) não sabe recortar.** Servidor que aceite o parâmetro e continue somando o agregado responde 200 com o total da empresa sob o rótulo de um depósito — a pior forma de errar, porque o número parece certo. Por isso o envelope ECOA `warehouseId`: sem o eco, quem pediu não distingue recorte feito de recorte ignorado.\n\n`minStock` e `belowMinimum` continuam sendo da EMPRESA sob recorte: mínimo é cadastro por empresa, não por depósito. Compará-lo com o saldo de um depósito só diria \"abaixo do mínimo\" para peça que sobra na prateleira ao lado."
+          },
+          {
             "name": "sortBy",
             "in": "query",
             "schema": {
@@ -7329,6 +7338,15 @@
               "default": false
             },
             "description": "Incluir itens com saldo zero."
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Recorta o saldo por DEPÓSITO (`stock_locations`). Ausente = a empresa inteira. Mesma semântica de `/api/reports/stock-valuation`, e o envelope ECOA o valor usado.\n\n**Recorta a QUANTIDADE, nunca os dias.** `lastSaleAt` e `daysWithoutSale` são da venda, e venda não acontece em depósito — sai do saldo da empresa. Contar \"dias sem venda deste depósito\" exigiria saber de qual local a peça saiu em cada pedido, e o pedido não guarda isso. O que o recorte muda é QUANTO está parado ali, e quais itens aparecem."
           },
           {
             "name": "sortBy",
@@ -7434,6 +7452,15 @@
               "default": false
             },
             "description": "Só o que falta. É a lista de compras que o relatório existe para gerar."
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Recorta o ESTOQUE por depósito — `stockQuantity` e, por consequência, `shortageQuantity`. Ausente = a empresa inteira. O envelope ECOA o valor usado.\n\n**O que foi ORÇADO não se recorta, e a assimetria é a pergunta do relatório:** o orçamento promete a peça, não o depósito de onde ela sai. Com recorte, `shortageQuantity` responde \"o que falta SE eu atender só deste depósito\" — falta local, que pode ser transferência em vez de compra. Sem ele, responde \"o que falta na empresa\", que é a lista de compras. As duas perguntas são legítimas e dão números diferentes; por isso a tela precisa do eco para dizer qual delas respondeu."
           },
           {
             "name": "sortBy",
@@ -12159,10 +12186,19 @@
         }
       },
       "HealthStatus": {
-        "required": ["status"],
+        "description": "Prova de VIDA. Diz que o processo responde — não que ele está pronto (isso é `/health/db`). Carrega também a identidade do binário que respondeu: em produção, a pergunta que precede todas as outras é *qual código está no ar*, e ela não pode depender de alguém abrir SSH na VM para conferir.",
+        "required": ["status", "version", "commit"],
         "type": "object",
         "properties": {
           "status": {
+            "type": "string"
+          },
+          "version": {
+            "description": "`Proposto`. Versão legível do que está rodando — o `describe` do commit publicado (ex.: `v0.3.1-12-g844b360`), ou `desconhecido` quando a imagem foi construída sem carimbo. Obrigatório de propósito: campo opcional faria o cliente tratar \"não sei\" e \"não me disseram\" como o mesmo caso, e são casos diferentes — o primeiro é uma imagem mal construída, o segundo é um servidor velho.",
+            "type": "string"
+          },
+          "commit": {
+            "description": "`Proposto`. O SHA do commit publicado, curto (7+ posições). É o que casa o que está no ar com o que está no GitHub, e o que fecha a dúvida de \"o deploy pegou?\" sem abrir SSH. `desconhecido` quando a imagem não foi carimbada — nunca vazio, nunca ausente.",
             "type": "string"
           }
         }
@@ -17766,6 +17802,11 @@
             "enum": ["sale_price"],
             "description": "Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer \"a preço de venda\" com base no que o servidor afirma, não no que ela supõe."
           },
+          "warehouseId": {
+            "description": "O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.\n\n**Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
           "summary": {
             "$ref": "#/components/schemas/StockValuationSummaryDto"
           },
@@ -17869,6 +17910,11 @@
             "format": "date-time",
             "description": "O instante da foto — `daysWithoutSale` é contado a partir dele."
           },
+          "warehouseId": {
+            "description": "O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.\n\n**Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
           "summary": {
             "$ref": "#/components/schemas/StockAgingSummaryDto"
           },
@@ -17971,6 +18017,11 @@
             "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
             "type": "integer",
             "format": "int32"
+          },
+          "warehouseId": {
+            "description": "O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.\n\n**Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.",
+            "type": ["string", "null"],
+            "format": "uuid"
           },
           "summary": {
             "$ref": "#/components/schemas/QuoteVsStockSummaryDto"

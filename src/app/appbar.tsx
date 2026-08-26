@@ -113,6 +113,14 @@ function MioloDoIcone({ secao, ativa }: { secao: NavSecao; ativa: boolean }) {
  * menu da seção, sem navegar — inventar um `/financeiro` daria 404. As duas
  * metades levam ao mesmo lugar visível: a barra passa a mostrar a seção.
  *
+ * **As DUAS avisam `aoEscolher`, e o `<Link>` não é exceção.** A escolha do
+ * operador é o mesmo fato nos dois casos; só o `<button>` avisar deixava a
+ * escolha ANTERIOR de pé quando o clique não mudava a rota — clicar em Estoque
+ * já estando em `/estoque/movimentacao` não navega, então `secaoDaRota` não
+ * tinha o que reavaliar e a barra continuava em Financeiro, com o fio aceso na
+ * seção errada. Avisar sempre custa uma linha e apaga a classe inteira do
+ * defeito, em vez do caso que alguém lembrou.
+ *
  * ## O fio é TINTA, o pastel é do módulo
  *
  * O mockup pinta o fio de 3px na CHEIA /01 do módulo. Ela mede 1,36–2,63:1
@@ -152,7 +160,7 @@ function SecoesNoTopo({
           ),
         }
         return destino ? (
-          <Link key={secao.id} to={destino} {...comum}>
+          <Link key={secao.id} to={destino} onClick={() => aoEscolher(secao.id)} {...comum}>
             <MioloDoIcone secao={secao} ativa={ativa} />
           </Link>
         ) : (

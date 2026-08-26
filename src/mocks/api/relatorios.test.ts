@@ -523,3 +523,103 @@ describe('6. sem sessão é 401 nos dez', () => {
     expect(resposta.data.type).toBe('urn:cabinet:erro:sem-sessao')
   })
 })
+
+/**
+ * O RECORTE POR DEPÓSITO — `warehouseId` (web#352).
+ *
+ * O seed põe TODO o saldo da matriz no `dep-0001` (PRINCIPAL) e deixa o
+ * `dep-0003` (SHOWROOM) sem linha nenhuma. Não é pobreza do fixture: é o par que
+ * prova que o recorte recorta. Um seed com saldo espalhado por igual deixaria o
+ * filtro passar por implementado mesmo se fosse ignorado.
+ *
+ * O caso que dá nome à issue é o ÚLTIMO: sem o eco, "recortou" e "ignorou o
+ * parâmetro" chegam idênticos ao cliente.
+ */
+describe('7. o recorte por depósito recorta, e o envelope ecoa', () => {
+  it('o depósito com todo o saldo devolve o mesmo que a empresa inteira', async () => {
+    const empresa = envelope<StockValuationReportDto>(
+      await getStockValuationReport({ page: 1, pageSize: 100 }),
+    )
+    const principal = envelope<StockValuationReportDto>(
+      await getStockValuationReport({ page: 1, pageSize: 100, warehouseId: 'dep-0001' }),
+    )
+
+    expect(principal.total).toBe(empresa.total)
+    expect(principal.summary.valueCents).toBe(empresa.summary.valueCents)
+  })
+
+  it('o depósito que nunca viu peça devolve VAZIO, e não a empresa inteira', async () => {
+    const empresa = envelope<StockValuationReportDto>(
+      await getStockValuationReport({ page: 1, pageSize: 100 }),
+    )
+    const showroom = envelope<StockValuationReportDto>(
+      await getStockValuationReport({ page: 1, pageSize: 100, warehouseId: 'dep-0003' }),
+    )
+
+    expect(empresa.total).toBeGreaterThan(0)
+    // O modo de falhar que a #352 nomeia: servidor que aceita o parâmetro e
+    // continua somando o agregado da empresa responde 200 com o total inteiro
+    // sob o rótulo de um depósito.
+    expect(showroom.total).toBe(0)
+    expect(showroom.rows).toEqual([])
+    expect(showroom.summary.valueCents).toBe(0)
+  })
+
+  it('os três ecoam o depósito que USARAM', async () => {
+    const valorizado = envelope<StockValuationReportDto>(
+      await getStockValuationReport({ page: 1, pageSize: 100, warehouseId: 'dep-0001' }),
+    )
+    const parado = envelope<StockAgingReportDto>(
+      await getStockAgingReport({ page: 1, pageSize: 100, warehouseId: 'dep-0001' }),
+    )
+    const orcado = envelope<QuoteVsStockReportDto>(
+      await getQuoteVsStockReport({
+        from: '2025-08-01',
+        to: '2025-08-31',
+        page: 1,
+        pageSize: 100,
+        warehouseId: 'dep-0001',
+      }),
+    )
+
+    expect(valorizado.warehouseId).toBe('dep-0001')
+    expect(parado.warehouseId).toBe('dep-0001')
+    expect(orcado.warehouseId).toBe('dep-0001')
+  })
+
+  it('sem recorte o eco fica AUSENTE — não é nulo nem string vazia', async () => {
+    const dados = envelope<StockValuationReportDto>(
+      await getStockValuationReport({ page: 1, pageSize: 100 }),
+    )
+
+    // Ausente é o que a tela lê como "resposta da empresa inteira". Nulo diria a
+    // mesma coisa, mas o contrato declara o campo opcional e o mock não inventa
+    // membro que o servidor não precisa mandar.
+    expect(dados.warehouseId).toBeUndefined()
+  })
+
+  it('o estoque parado recorta a quantidade e mantém os dias', async () => {
+    const empresa = envelope<StockAgingReportDto>(
+      await getStockAgingReport({ page: 1, pageSize: 100 }),
+    )
+    const showroom = envelope<StockAgingReportDto>(
+      await getStockAgingReport({ page: 1, pageSize: 100, warehouseId: 'dep-0003' }),
+    )
+
+    expect(empresa.summary.itemCount).toBeGreaterThan(0)
+    expect(showroom.summary.itemCount).toBe(0)
+    // Dias sem venda é da VENDA, e venda não acontece em depósito: o que o
+    // recorte muda é quanto está parado ali, e quais itens aparecem.
+    expect(empresa.rows.every((linha) => linha.daysWithoutSale === undefined)).toBe(true)
+  })
+
+  it('`warehouseId` com cara de uuid e forma inválida é 400, não recorte vazio', async () => {
+    // Zero linhas seria indistinguível de "este depósito está vazio" — o mesmo
+    // precedente do período invertido, que também é 400 e não lista vazia.
+    const resposta = await pedir(
+      '/api/reports/stock-valuation?warehouseId=zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz',
+    )
+
+    expect(resposta.status).toBe(400)
+  })
+})

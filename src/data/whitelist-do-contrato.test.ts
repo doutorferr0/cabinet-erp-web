@@ -267,6 +267,18 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o fechamento de comissão ainda não tem tela — Fase C do trilho de comissões',
   ListCommissionClosingEntries:
     'as linhas do fechamento são sub-recurso e nascem sem tela, junto com o fechamento',
+  // AS SEIS LISTAGENS DE TESOURARIA (G7 fase A, api#112). As telas — Contas a
+  // Pagar, Contas a Receber, Caixa e Movimentos Bancários — são a FASE C deste
+  // mesmo trilho. Cada uma sai daqui quando ganhar a sua, com `ORDENAVEIS`
+  // próprio.
+  ListFinancialTitles:
+    'contas a pagar/receber ainda não tem tela — as telas de Tesouraria são a Fase C do trilho',
+  ListFinancialInstallments:
+    'a agenda de vencimentos (e a seleção do lote) nasce com a tela de quitação, que é a Fase C',
+  ListCashMovements: 'o extrato de caixa/banco ainda não tem tela — Fase C do trilho',
+  ListBankAccounts: 'a conta bancária é COMBO, não grade — não há cabeçalho para clicar',
+  ListCashRegisters: 'o caixa é COMBO, não grade — idem',
+  ListPaymentModes: 'o modo de pagamento é COMBO da baixa, não grade — idem',
 }
 
 /** O `sortBy` publicado × a lista que o front manda. */
@@ -416,6 +428,27 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
   ListPriceIndexes:
     'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
+  // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
+  // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
+  // de ensinar, e aqui ele ensinaria sozinho:
+  //
+  // As regras deste módulo não são de apresentação, são de DINHEIRO — o lote é
+  // tudo-ou-nada, o destino da baixa é exclusivo, a transferência grava duas
+  // pernas ou nenhuma, e período fechado recusa lançamento. Todas elas já
+  // existem implementadas e exercitadas no `cabinet-erp-api` (as tabelas da
+  // `0065` e da `0071`, com bateria própria). Uma segunda implementação aqui,
+  // sem NENHUMA tela que a consuma, é comportamento sem chamador: ela não seria
+  // medida por uso, e no dia em que divergisse do servidor a divergência
+  // apareceria como bug da tela.
+  //
+  // Sai daqui na FASE C, escrito CONTRA a tela que o consome — que é como
+  // `compras.ts` e `relatorios.ts` puderam nascer úteis.
+  ListFinancialTitles: 'tesouraria não tem handler no mock — nenhuma tela a consome ainda (Fase C)',
+  ListFinancialInstallments: 'idem — a agenda de vencimentos nasce com a tela de quitação',
+  ListCashMovements: 'idem — o extrato nasce com a tela de caixa/movimentos bancários',
+  ListBankAccounts: 'idem — o combo de conta nasce com a tela que o abre',
+  ListCashRegisters: 'idem — o combo de caixa nasce com a tela que o abre',
+  ListPaymentModes: 'idem — o combo de modo nasce com a tela da baixa',
 }
 
 /**

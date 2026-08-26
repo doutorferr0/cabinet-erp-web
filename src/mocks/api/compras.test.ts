@@ -16,11 +16,12 @@ import {
   updatePurchaseOrder,
   updatePurchaseRequest,
 } from '@/api/gerado'
+import { idDeApoio } from '@/mocks/lookups'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetCompras } from './compras'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
+import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
 
 /**
  * O MOCK DE COMPRAS (G2) — pedido, ordem e as duas consultas.
@@ -63,6 +64,14 @@ async function entrar(tenantId = TENANT_MATRIZ) {
 
 const EVOLED = 'parc-0001'
 const MISTER_LED = 'parc-0006'
+/**
+ * Os grupos de produto vêm do CATÁLOGO (`catalog-lookups`, kind
+ * `GRUPO_PRODUTO`), como qualquer combo — e não de um id inventado no caso. A
+ * MISTER LED impõe mínimo em `PENDENTES` e em nenhum outro, que é o par de que
+ * as duas contas precisam: uma com mínimo próprio, outra sem.
+ */
+const PENDENTES = idDeApoio('GRUPO_PRODUTO', 'PENDENTES') as string
+const FRETE = idDeApoio('GRUPO_PRODUTO', 'FRETE') as string
 
 /** O pedido do seed com as DUAS linhas de fornecedores diferentes. */
 async function pedidoMisturado() {
@@ -82,6 +91,33 @@ async function linhaAberta(supplierId: string) {
     if (linha) return { pedido, linha }
   }
   throw new Error(`sem linha aberta de ${supplierId}`)
+}
+
+/**
+ * Uma linha ABERTA da MISTER LED, criada pelo próprio caso.
+ *
+ * A única linha dela no seed já está numa ordem (`oc-0002`), e é assim de
+ * propósito — é o que sustenta o caso do reagendamento. As contas de mínimo por
+ * grupo precisam de linha livre, e criá-la aqui é o caminho que o comprador
+ * percorre: pedido primeiro, ordem depois.
+ */
+async function pedidoAbertoDaMisterLed() {
+  const criado = await createPurchaseRequest({
+    issuedAt: '2026-08-20',
+    items: [
+      {
+        lineNumber: 1,
+        description: 'PENDENTE ALUMÍNIO 40CM',
+        quantity: 1,
+        destination: 'stock',
+        supplierId: MISTER_LED,
+      },
+    ],
+  })
+  if (criado.status !== 201) throw new Error('o pedido da MISTER LED não foi criado')
+  const linha = criado.data.items[0]
+  if (!linha) throw new Error('o pedido nasceu sem linha')
+  return { pedido: criado.data, linha }
 }
 
 const ORDEM_BASE = {
@@ -465,18 +501,15 @@ describe('ordem de compra', () => {
 
   it('o mínimo POR GRUPO é conta própria, e não some na soma geral', async () => {
     await entrar()
-    // O kind `GRUPO_PRODUTO` ainda não existe em `catalog-lookups` (dívida
-    // declarada no próprio contrato), então o par (fornecedor, grupo) é escrito
-    // direto no store — que é o único lugar honesto para ele hoje.
-    const fornecedor = store.parceiros.find((p) => p.id === EVOLED)
-    if (!fornecedor) throw new Error('o seed perdeu a EVOLED')
-    fornecedor.minimumBillingCents = null
-    fornecedor.groupMinimums = [{ productGroupId: 'grupo-pendentes', minimumBillingCents: 500_000 }]
-
-    const { pedido, linha } = await linhaAberta(EVOLED)
+    // A MISTER LED é quem o seed configura sem mínimo geral e COM mínimo por
+    // grupo — o único arranjo em que a recusa só pode ter vindo da conta do
+    // grupo. O par (fornecedor, grupo) era escrito direto no store aqui,
+    // enquanto o kind `GRUPO_PRODUTO` não existia em `catalog-lookups` e não
+    // havia id legítimo para ele; agora sai do catálogo, como qualquer combo.
+    const { pedido, linha } = await pedidoAbertoDaMisterLed()
     const resposta = await createPurchaseOrder({
       ...ORDEM_BASE,
-      supplierId: EVOLED,
+      supplierId: MISTER_LED,
       items: [
         {
           lineNumber: 1,
@@ -484,7 +517,7 @@ describe('ordem de compra', () => {
           sourceLineNumber: linha.lineNumber,
           quantity: 1,
           unitCostCents: 10_000,
-          productGroupId: 'grupo-pendentes',
+          productGroupId: PENDENTES,
         },
       ],
     })
@@ -492,7 +525,36 @@ describe('ordem de compra', () => {
     expect(resposta.status, 'sem mínimo geral, a recusa só pode vir da conta do grupo').toBe(409)
     if (resposta.status === 409) {
       expect(resposta.data.type).toBe('urn:cabinet:erro:faturamento-minimo-nao-atingido')
+      // O NOME do grupo na frase, e não o id: era o id que saía enquanto o
+      // catálogo não tinha a linha, e frase com uuid no meio não diz ao
+      // comprador o que fazer.
+      expect(resposta.data.detail).toContain('PENDENTES')
     }
+  })
+
+  it('linha de grupo SEM mínimo próprio cai na conta geral, não na do grupo', async () => {
+    await entrar()
+    // O outro lado da mesma decisão, e o que "substitui" quer dizer: a MISTER
+    // LED singularizou PENDENTES e mais nada, então a linha de FRETE não tem
+    // conta própria — ela soma contra o mínimo geral, que aqui é NULO. Sem
+    // mínimo geral e sem mínimo do grupo, a ordem passa.
+    const { pedido, linha } = await pedidoAbertoDaMisterLed()
+    const resposta = await createPurchaseOrder({
+      ...ORDEM_BASE,
+      supplierId: MISTER_LED,
+      items: [
+        {
+          lineNumber: 1,
+          sourceRequestId: pedido.id,
+          sourceLineNumber: linha.lineNumber,
+          quantity: 1,
+          unitCostCents: 10_000,
+          productGroupId: FRETE,
+        },
+      ],
+    })
+
+    expect(resposta.status, 'grupo sem mínimo próprio não inventa conta').toBe(201)
   })
 
   it('o desconto está na escala da casa: 10000 = 1%', async () => {

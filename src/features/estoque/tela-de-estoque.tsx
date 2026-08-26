@@ -22,7 +22,7 @@ import {
   useDepositos,
   useSaldosDaVariante,
 } from '@/data/estoque-api'
-import { formatQuantidade } from '@/lib/formatters'
+import { formatInstanteBR, formatQuantidade } from '@/lib/formatters'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Search } from 'lucide-react'
@@ -198,7 +198,7 @@ export function TelaDeEstoque() {
                     <TableCell className="text-right font-mono">
                       {formatQuantidade(saldo.qty)}
                     </TableCell>
-                    <TableCell>{formatarInstante(saldo.updatedAt)}</TableCell>
+                    <TableCell>{formatInstanteBR(saldo.updatedAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -248,20 +248,6 @@ export function TelaDeEstoque() {
 }
 
 /**
- * `timestamptz` do contrato → data e hora legíveis.
- *
- * Local em vez de `src/lib/formatters.ts` porque `formatDateBR` de lá espera
- * `YYYY-MM-DD` e parte a string — dar-lhe um instante ISO devolveria o dia
- * grudado na hora. Quem precisar disto numa segunda tela promove; uma tela só
- * não justifica mexer no módulo que oito telas importam.
- */
-function formatarInstante(iso: string): string {
-  const quando = new Date(iso)
-  if (Number.isNaN(quando.getTime())) return iso
-  return quando.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-}
-
-/**
  * Colunas do kardex. `accessorKey` em inglês porque é ele que viaja como
  * `sortBy` — a whitelist do servidor é `occurredAt`, `delta` e `reason`, e
  * traduzir a chave quebraria a ordenação com 400 só ao clicar no cabeçalho.
@@ -274,7 +260,7 @@ function colunasDoKardex(depositos: readonly StockLocationDto[]) {
     {
       accessorKey: 'occurredAt',
       header: 'Quando',
-      cell: ({ row }) => formatarInstante(row.original.occurredAt),
+      cell: ({ row }) => formatInstanteBR(row.original.occurredAt),
     },
     {
       id: 'locationId',

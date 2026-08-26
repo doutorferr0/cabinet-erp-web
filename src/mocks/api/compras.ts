@@ -571,6 +571,11 @@ function linhaDeOrdemDto(ordem: OrdemGuardada, linha: LinhaDeOrdem): PurchaseOrd
     size: linha.size,
     unit: linha.unit,
     quantity: linha.quantity,
+    // Zero, e é o FATO deste mundo, não campo preenchido para o tipo fechar: o
+    // recebimento (G3) não tem handler no mock — `whitelist-do-contrato.test.ts`
+    // nomeia o motivo —, então nenhuma linha de ordem jamais chegou aqui. É a
+    // mesma razão pela qual `emOrdem` soma a quantidade INTEIRA da linha.
+    quantityReceived: 0,
     unitCostCents: linha.unitCostCents,
     totalCents: totalDaLinha(linha),
     destination: linha.destination,
@@ -639,9 +644,18 @@ function faltaFaturamentoMinimo(ordem: OrdemGuardada): string | undefined {
   const comMinimoProprio = new Set(fornecedor.groupMinimums.map((g) => g.productGroupId))
 
   for (const grupo of fornecedor.groupMinimums) {
-    const base = ordem.itens
-      .filter((linha) => linha.productGroupId === grupo.productGroupId)
-      .reduce((soma, linha) => soma + totalDaLinha(linha), 0)
+    const doGrupo = ordem.itens.filter((linha) => linha.productGroupId === grupo.productGroupId)
+    // **A conta de um grupo só roda se a ordem TEM linha dele.** Sem isto, o
+    // grupo configurado e ausente soma zero, zero é menor que o mínimo, e o
+    // fornecedor que exige R$ 5.000 em luminárias recusaria uma ordem só de
+    // perfil — recusaria, na prática, toda ordem que não fosse daquele grupo.
+    // É o espelho do ramo que `faltasDeFaturamentoMinimo` do `cabinet-erp-api`
+    // já tinha na conta GERAL ("só roda se sobrou linha para ela"), e a
+    // divergência ficou invisível enquanto nenhum fornecedor do seed tinha
+    // mínimo por grupo: o único caso que a exercitava escrevia o par direto no
+    // store e sempre mandava uma linha daquele grupo junto.
+    if (doGrupo.length === 0) continue
+    const base = doGrupo.reduce((soma, linha) => soma + totalDaLinha(linha), 0)
     if (liquido(base) < grupo.minimumBillingCents) {
       return `O grupo ${nomeDeApoio(grupo.productGroupId) ?? grupo.productGroupId} não atinge o faturamento mínimo do fornecedor.`
     }
@@ -1398,6 +1412,10 @@ function previsaoDto(ordem: OrdemGuardada, linha: LinhaDeOrdem): PurchaseArrival
     description: linha.description,
     finish: linha.finish,
     size: linha.size,
+    // O contrato diz SALDO A CHEGAR — a quantidade da linha menos o que
+    // recebimento lançado já apontou para ela. Aqui as duas coincidem porque o
+    // recebimento não tem handler no mock: nada chegou, então nada foi
+    // descontado. Ver `quantityReceived` em `linhaDeOrdemDto`.
     quantity: linha.quantity,
     destination: linha.destination,
     // Reposição não tem cliente, e é isso que a tela mostra — "estoque", não

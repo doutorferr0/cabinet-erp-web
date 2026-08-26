@@ -54,6 +54,14 @@ codificada em `src/data/` e travada por teste, e mudar qualquer uma quebra tela.
   casas implícitas (`10000` = 1%). Quantidade com até 3 casas. Datas ISO no dado.
   CPF/CNPJ sem máscara no dado.
 - **Desativação é lógica.** Existe `active`; nada é excluído de verdade.
+- **`GET /health` diz QUAL BINÁRIO respondeu** (`Proposto`): `version` e `commit`
+  são **obrigatórios**, e valem `desconhecido` quando a imagem foi construída sem
+  carimbo — nunca ausentes, nunca vazios. Obrigatórios de propósito: opcional
+  faria o cliente tratar "não sei" e "não me disseram" como o mesmo caso, quando
+  o primeiro é imagem mal construída e o segundo é servidor velho. É a primeira
+  pergunta de qualquer incidente ("o deploy pegou?"), e ela não pode depender de
+  alguém abrir SSH na VM. No mock os dois valem `mock`: não há imagem publicada
+  do outro lado, e `desconhecido` mandaria caçar um deploy que não existe.
 
 ## Sessão no contrato — `security`, e as quatro exceções
 
@@ -192,6 +200,21 @@ viaja no 400 que já existe.
 servidor e pode não ter a forma prometida; item malformado é descartado em vez de
 quebrar a tela. `ErroDoServidor` (`src/components/cabinet/`) é o componente único
 que mostra os quatro textos em papéis distintos e leva o foco ao campo recusado.
+
+**A leitura do `type` é UMA — `typeDoErro`, em `src/lib/erros.ts` (2026-08-25).**
+Eram duas: essa, que valida contra o enum gerado, e `urnDaRecusa` em
+`features/vendas/recusa.ts`, que devolvia a string do corpo como veio. O arranjo
+falhava exatamente onde o vocabulário fechado deveria proteger — URN renomeada no
+contrato continuaria chegando por um dos caminhos e quebraria só metade das
+telas. `recusa.ts` foi embora; `mensagemDaRecusa` mora em `lib/erros.ts`, junto
+da leitura, porque o segundo chamador dela veio de OUTRA feature
+(`orcamento/revisar-orcamento.tsx` importava da vizinha `vendas/`).
+
+O mapa de frases de cada tela é `FrasesDeRecusa` (`Partial<Record<ProblemType,
+string>>`) e não `Record<string, string>`: com chave `string`, URN inventada
+compila calada e nunca casa. `Partial` porque tela nenhuma traduz o vocabulário
+inteiro — **o que ela não traduz cai no `detail`, que o servidor escreveu melhor
+do que a tela escreveria**, e por isso não há nem deve haver mapa "completo".
 
 **A guarda é `src/data/problem-details.test.ts`**, que lê o contrato DIRETO:
 caminho novo com 4xx entra na verificação sozinho. Ela **segue o `$ref` de

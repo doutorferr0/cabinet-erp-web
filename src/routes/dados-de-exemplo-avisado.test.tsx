@@ -86,11 +86,19 @@ Passe \`origem={data.<recurso>.origem}\` na TelaDeListagem, use a TelaDeDocument
  * ninguém monta continuaria verde na primeira e mentindo na tela.
  */
 describe('o aviso chega ao operador', () => {
-  const TELAS = [
-    ['/compras/pedidos', 'Pedido de Compra'],
-    ['/compras/ordens', 'Ordem de Compra'],
-    ['/cadastros/colaboradores', 'Cadastro de Colaboradores'],
-  ] as const
+  /*
+   * As duas telas de COMPRA saíram desta lista na fase C do G2, e a saída é a
+   * cura do caso que abriu este arquivo: os treze pedidos do Softlux que um
+   * usuário real leu como se fossem dele eram fixture de `src/mocks/`, e agora
+   * não há fixture nenhuma ali — `data.pedidosCompra` e `data.ordensCompra` são
+   * HTTP. Sem `origem: 'exemplo'`, não há aviso a exibir, e exigi-lo aqui
+   * cobraria da tela uma frase que seria mentira.
+   *
+   * A varredura estática do `describe` acima continua cobrindo as duas: ela lê
+   * o registry, então recurso que voltasse a ser fixture volta a ser cobrado
+   * sem ninguém editar este arquivo.
+   */
+  const TELAS = [['/cadastros/colaboradores', 'Cadastro de Colaboradores']] as const
 
   // Pelo `heading`, e não pelo texto: o título da tela também é o rótulo do
   // link dela na sidebar, e `findByText` acha os dois.
@@ -102,17 +110,12 @@ describe('o aviso chega ao operador', () => {
     expect(screen.getByText(/não será salvo/)).toBeInTheDocument()
   })
 
-  // A tela de documento não recebe prop nenhuma: quem decide é o `provider`.
-  // Em `novo`, que é onde o estrago da sessão 60 seria maior: o operador
-  // preenche um pedido inteiro e o `Gravar` é `console.info`.
-  it.each(['/compras/pedidos/1', '/compras/pedidos/novo'])(
-    '%s avisa sem a rota pedir',
-    async (url) => {
-      renderRoute(url)
-
-      expect(await screen.findByText(/Dados de exemplo/)).toBeInTheDocument()
-    },
-  )
+  // O par deste caso era `/compras/pedidos/1` e `/compras/pedidos/novo` — a
+  // TelaDeDocumento decidindo sozinha pelo `provider`. Saiu pelo mesmo motivo
+  // da lista acima: o pedido de compra virou HTTP, e o `Gravar` que era
+  // `console.info` virou `PUT`. Não há hoje outra tela de DOCUMENTO servida por
+  // fixture para exercitar o caminho, e inventar uma só para o teste mediria a
+  // invenção. O `describe` estático acima é quem guarda a regra enquanto isso.
 
   // A contraprova. Sem ela, um aviso montado incondicionalmente passaria em
   // todos os casos acima — e o site inteiro diria "dados de exemplo", inclusive

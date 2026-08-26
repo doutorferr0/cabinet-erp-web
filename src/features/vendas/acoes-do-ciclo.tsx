@@ -27,7 +27,7 @@ import {
   useRegistrarRetornoDaDemonstracao,
   useTransferirProfissional,
 } from '@/data/pedidos-venda-api'
-import { mensagemDaRecusa } from '@/features/vendas/recusa'
+import { type FrasesDeRecusa, mensagemDaRecusa } from '@/lib/erros'
 import { formatDateBR } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CheckCircle2, History, PackageCheck, UserCog } from 'lucide-react'
@@ -54,7 +54,7 @@ import { useId, useState } from 'react'
  */
 
 /** As duas recusas do `conclude`, e a diferença entre elas é a SAÍDA. */
-const RECUSAS: Record<string, string> = {
+const RECUSAS: FrasesDeRecusa = {
   [ProblemType['urn:cabinet:erro:transicao-invalida']]:
     'A situação atual não permite esta ação, e ela não volta atrás. Recarregue a folha para ver como o documento está agora.',
   [ProblemType['urn:cabinet:erro:demonstracao-em-aberto']]:
@@ -62,8 +62,11 @@ const RECUSAS: Record<string, string> = {
 }
 
 /**
- * A tradução mora em `recusa.ts` desde que a conversão do orçamento virou o
- * segundo chamador. O mapa continua aqui: as frases são desta tela.
+ * A tradução mora em `lib/erros.ts`, junto com a única leitura do `type`. O
+ * mapa continua aqui: as frases são desta tela, e é por isso que
+ * `transicao-invalida` diz "recarregue a folha" aqui e "recarregue a listagem"
+ * na revisão do orçamento — mesma URN, saídas diferentes, porque o operador
+ * está olhando para telas diferentes.
  */
 function recusaDoCiclo(erro: unknown, generica: string): string | null {
   return mensagemDaRecusa(erro, generica, RECUSAS)

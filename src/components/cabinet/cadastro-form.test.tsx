@@ -2,7 +2,14 @@ import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { acaoNaLinha, renderRoute, renderWithQuery } from '@/test/utils'
+import {
+  acaoNaLinha,
+  renderRoute,
+  renderWithQuery,
+  respostaLookups,
+  respostaSessao,
+  respostaVinculos,
+} from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
@@ -114,15 +121,86 @@ describe('CadastroForm em modo consulta', () => {
     expect(router.state.location.search).toEqual({})
   })
 
+  /*
+   * A ordem de compra virou HTTP na fase C do G2, então este caso passou a
+   * montar o próprio servidor em vez de ler a fixture. O que ele mede não
+   * mudou — é do `CadastroForm`, não do módulo de compras: em modo consulta a
+   * grade calcula e exibe, e nada aceita digitação.
+   *
+   * O documento é montado com 3 × R$ 103,27 justamente para o subtotal cair em
+   * R$ 309,81, que é o número que este caso conferia antes: trocar o valor
+   * junto com a origem esconderia uma regressão de cálculo dentro da migração.
+   */
   it('grade do documento também fica somente-leitura', async () => {
-    renderRoute('/compras/ordens/2?modo=consulta')
+    const ordem = {
+      id: 'oc-consulta',
+      number: '2',
+      status: 'draft',
+      supplierId: 'forn-1',
+      supplierName: 'FILLAMENTO',
+      buyingTenantId: '00000000-0000-0000-0000-000000000003',
+      buyingTenantName: 'MATRIZ',
+      orderedAt: '2026-08-12',
+      sentAt: null,
+      expectedAt: null,
+      rescheduledAt: null,
+      rescheduleReason: null,
+      minimumBillingCents: null,
+      carrierId: null,
+      carrierName: null,
+      paymentTermId: null,
+      paymentTermName: null,
+      discountPercent: 0,
+      surchargeCents: 0,
+      subtotalCents: 30981,
+      totalCents: 30981,
+      notes: null,
+      items: [
+        {
+          lineNumber: 1,
+          sourceRequestId: 'pc-1',
+          sourceRequestNumber: 'PC-1',
+          sourceLineNumber: 1,
+          variantId: null,
+          description: 'ARANDELA ALUMÍNIO IP65',
+          finish: 'BRANCO',
+          size: 'ÚNICO',
+          unit: 'UN',
+          quantity: 3,
+          unitCostCents: 10327,
+          totalCents: 30981,
+          destination: 'stock',
+          productGroupId: null,
+          productGroupName: null,
+        },
+      ],
+    }
+
+    const stub = async (entrada: RequestInfo | URL) => {
+      const url = String(entrada instanceof Request ? entrada.url : entrada)
+      if (url.includes('/auth/me')) return respostaSessao()
+      if (url.includes('/auth/tenants')) return respostaVinculos()
+      if (url.includes('/api/catalog-lookups')) return respostaLookups()
+      if (url.includes('/api/purchase-orders')) {
+        return new Response(JSON.stringify(ordem), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ rows: [], total: 0 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
+
+    renderRoute('/compras/ordens/oc-consulta?modo=consulta', stub as never)
 
     // O total continua sendo calculado e exibido…
     expect(await screen.findByLabelText('SubTotal')).toHaveTextContent('309,81')
     // …mas nenhuma célula aceita digitação.
     expect(screen.getByLabelText('Quantidade linha 1')).toBeDisabled()
     expect(screen.getByRole('button', { name: /Busca Alt\+T/ })).toBeDisabled()
-  })
+  }, 30_000)
 
   it('rodapé fixo usa régua forte na borda superior (DESIGN.md)', async () => {
     renderRoute('/cadastros/colaboradores/1')

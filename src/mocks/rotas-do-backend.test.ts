@@ -521,17 +521,40 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('sem rota SEM CONTRATO o console NÃO inventa aviso — e é o estado de hoje', () => {
-    // A outra metade, e ela mede as constantes REAIS de propósito: o dia em que
-    // alguém declarar uma `sem-contrato` sem querer, este caso fica vermelho e
-    // aponta qual. Medido em 2026-08-24 contra `cabinet-erp-api` `5b2d560`, com
-    // os dois `contracts/openapi-v1.json` iguais byte a byte.
+  it('as rotas SEM CONTRATO são a tesouraria e a senha inicial — publicadas aqui', () => {
+    // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
+    // byte a byte) e depois a rota única da senha inicial. A FASE A do G7
+    // publica os doze caminhos de tesouraria NESTE repo, que é o dono do
+    // contrato, então a cópia do api fica atrás por definição até o
+    // `sync:contract` de lá — `sem-contrato` é o estado correto das quinze
+    // operações, e o console DEVE avisar. A lista continua FECHADA de
+    // propósito: a rota que aparecer aqui sem querer segue reprovando e sendo
+    // nomeada. Quando a PR do api sincronizar e ligar os handlers, as linhas
+    // saem de `ROTAS_NO_MOCK` e este caso volta a cobrar o vazio.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
       'rota declarada sem-contrato — remeça contra o par local: se o api já sincronizou, é sem-handler',
-    ).toEqual([])
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toEqual([])
+    ).toEqual([
+      'get /api/financial-titles',
+      'post /api/financial-titles',
+      'get /api/financial-titles/{id}',
+      'put /api/financial-titles/{id}',
+      'post /api/financial-titles/{id}/cancel',
+      'get /api/financial-installments',
+      'post /api/financial-installments/{id}/settlements',
+      'post /api/financial-settlements/batch',
+      'get /api/cash-movements',
+      'post /api/cash-movements',
+      'post /api/cash-movements/{id}/reconcile',
+      'post /api/cash-transfers',
+      'get /api/bank-accounts',
+      'get /api/cash-registers',
+      'get /api/payment-modes',
+      'post /api/employees/{id}/reset-password',
+    ])
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 16.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(17)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

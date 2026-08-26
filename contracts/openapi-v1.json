@@ -7171,6 +7171,15 @@
             "description": "Só o que está abaixo do mínimo — a lista de compras."
           },
           {
+            "name": "warehouseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Recorta o saldo por DEPÓSITO (`stock_locations`). Ausente = a empresa inteira, que é o comportamento de sempre e não muda por este parâmetro existir.\n\n**O saldo por depósito mora em `stock_balances`, e o agregado por empresa (`product_tenant.stock_qty`) não sabe recortar.** Servidor que aceite o parâmetro e continue somando o agregado responde 200 com o total da empresa sob o rótulo de um depósito — a pior forma de errar, porque o número parece certo. Por isso o envelope ECOA `warehouseId`: sem o eco, quem pediu não distingue recorte feito de recorte ignorado.\n\n`minStock` e `belowMinimum` continuam sendo da EMPRESA sob recorte: mínimo é cadastro por empresa, não por depósito. Compará-lo com o saldo de um depósito só diria \"abaixo do mínimo\" para peça que sobra na prateleira ao lado."
+          },
+          {
             "name": "sortBy",
             "in": "query",
             "schema": {
@@ -7273,6 +7282,15 @@
               "default": false
             },
             "description": "Incluir itens com saldo zero."
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Recorta o saldo por DEPÓSITO (`stock_locations`). Ausente = a empresa inteira. Mesma semântica de `/api/reports/stock-valuation`, e o envelope ECOA o valor usado.\n\n**Recorta a QUANTIDADE, nunca os dias.** `lastSaleAt` e `daysWithoutSale` são da venda, e venda não acontece em depósito — sai do saldo da empresa. Contar \"dias sem venda deste depósito\" exigiria saber de qual local a peça saiu em cada pedido, e o pedido não guarda isso. O que o recorte muda é QUANTO está parado ali, e quais itens aparecem."
           },
           {
             "name": "sortBy",
@@ -7378,6 +7396,15 @@
               "default": false
             },
             "description": "Só o que falta. É a lista de compras que o relatório existe para gerar."
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Recorta o ESTOQUE por depósito — `stockQuantity` e, por consequência, `shortageQuantity`. Ausente = a empresa inteira. O envelope ECOA o valor usado.\n\n**O que foi ORÇADO não se recorta, e a assimetria é a pergunta do relatório:** o orçamento promete a peça, não o depósito de onde ela sai. Com recorte, `shortageQuantity` responde \"o que falta SE eu atender só deste depósito\" — falta local, que pode ser transferência em vez de compra. Sem ele, responde \"o que falta na empresa\", que é a lista de compras. As duas perguntas são legítimas e dão números diferentes; por isso a tela precisa do eco para dizer qual delas respondeu."
           },
           {
             "name": "sortBy",
@@ -11468,6 +11495,1241 @@
         }
       }
     },
+    "/api/financial-titles": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "ListFinancialTitles",
+        "description": "Proposto. Os TÍTULOS financeiros da empresa ativa — contas a pagar e a receber, discriminadas por `direction`.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para \"quantos títulos tem a empresa que você não tem\".\n\n**`direction` é filtro e não caminho.** As duas telas do legado (`Contas a Pagar → Lançamento` e `Contas a Receber → Lançamentos`) chamam a mesma operação com o valor trocado — ver `FinancialTitleDto` para por que um recurso só.\n\n**Ausente, `direction` traz os dois lados**, e isso é de propósito: é a leitura que a busca por número de documento precisa, quando o operador tem a nota na mão e não sabe se ela é de compra ou de venda.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca por número do título, número do documento e nome da parte."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `number`, `issuedAt`, `totalCents`, `openCents`, `status`, `partnerName`. Campo fora dela é 400.\n\n`dueDate` NÃO está aqui, e a ausência é a decisão que mais importa nesta listagem: vencimento é da PARCELA, e um título de cinco parcelas tem cinco. Ordenar título por vencimento exigiria escolher uma delas em silêncio — a menor, a maior, a próxima —, e cada escolha produz uma lista diferente que parece a mesma. Quem quer a agenda de vencimentos usa `GET /api/financial-installments`, que é a listagem cuja linha É um vencimento.\n\n`partnerName` entra, ao contrário do resto do contrato, porque aqui ele é coluna CONGELADA no título e não eco de outra tabela."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "`payable` ou `receivable`. Ausente traz os dois."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "`open`, `settled` ou `cancelled`."
+          },
+          {
+            "name": "partnerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só os títulos desta parte."
+          },
+          {
+            "name": "issuedFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Emitidos a partir desta data, inclusive.\n\n**Nome qualificado, e não o `from`/`to` dos relatórios**, de propósito: lá o par é OBRIGATÓRIO e define o período que o relatório soma — agregação sem recorte responde outra pergunta. Aqui é filtro opcional, e o título tem TRÊS datas (emissão, competência e o vencimento das parcelas): um `from` sem qualificação obrigaria quem lê a adivinhar qual delas recorta."
+          },
+          {
+            "name": "issuedTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Emitidos até esta data, inclusive."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfFinancialTitleDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "CreateFinancialTitle",
+        "description": "Proposto. Lança um título com as suas parcelas.\n\n**Permissão: `financeiro:editar`.**\n\nAs recusas de negócio:\n\n1. **400** — `sequence` das parcelas fora de 1..N, parcela de valor zero ou negativo, `competenceMonth` com dia diferente de 1, ou a parte sem o PAPEL da direção (fornecedor em `payable`, cliente em `receivable`). Todas são conferíveis pelo cliente, e por isso vêm com `fields[]`.\n2. **409** — sem empresa ativa.\n\n**Sem empresa ativa é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: falta uma ação da pessoa (escolher empresa), o pedido não está malformado.\n\n**O título nasce `open` e sem baixa**, sempre: criar já quitado exigiria a baixa no mesmo corpo, e a baixa tem destino, meio e data próprios — o que geraria dois fatos numa requisição que a auditoria registraria como um.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialTitleWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialTitleDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/financial-titles/{id}": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "GetFinancialTitle",
+        "description": "Proposto. Um título pelo id, com as parcelas e as BAIXAS de cada uma — é o extrato do título.\n\n**Sem empresa ativa é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: falta uma ação da pessoa (escolher empresa), o pedido não está malformado.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialTitleDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["financeiro"],
+        "operationId": "UpdateFinancialTitle",
+        "description": "Proposto. SUBSTITUI o título inteiro, parcelas incluídas.\n\n**Permissão: `financeiro:editar`.**\n\n**Recusa (409, `urn:cabinet:erro:titulo-com-baixa`) o título que já tem qualquer baixa.** Reescrever parcela já quitada moveria dinheiro conciliado, e a tela não teria como mostrar o que aconteceu: a baixa aponta a parcela, e a parcela teria mudado de valor por baixo dela.\n\n**Recusa (409, `urn:cabinet:erro:transicao-invalida`) o título cancelado.** Cancelado é estado final; o caminho de voltar atrás é lançar outro título.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialTitleWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialTitleDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — título com baixa (`urn:cabinet:erro:titulo-com-baixa`), título cancelado (`urn:cabinet:erro:transicao-invalida`) ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/financial-titles/{id}/cancel": {
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "CancelFinancialTitle",
+        "description": "Proposto. CANCELA o título. É o lugar do DELETE que este contrato não tem: o título fica, com o estado dizendo que a dívida não vale mais.\n\n**Permissão: `financeiro:editar`.**\n\n**Recusa (409) o título que já tem baixa** — dinheiro que andou não se cancela, se estorna, e estorno não existe neste contrato (ver `FinancialSettlementDto`). Recusa também (409, `urn:cabinet:erro:transicao-invalida`) o que já está cancelado: repetir o gesto não é erro do operador, mas responder 200 faria a tela concluir que houve um segundo cancelamento.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialTitleDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — título com baixa (`urn:cabinet:erro:titulo-com-baixa`), já cancelado (`urn:cabinet:erro:transicao-invalida`) ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/financial-installments": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "ListFinancialInstallments",
+        "description": "Proposto. As PARCELAS da empresa ativa — a agenda de vencimentos, e a lista que a QUITAÇÃO EM LOTE consome.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para \"quantos títulos tem a empresa que você não tem\".\n\n**Existe além da listagem de títulos porque a linha é outra.** Lá a linha é uma dívida; aqui é um vencimento. A pergunta do financeiro todo dia — \"o que vence hoje\" — não tem resposta na lista de títulos sem escolher uma parcela por título em silêncio (ver o `sortBy` de `ListFinancialTitles`). E é esta lista que alimenta a seleção do lote: o lote paga PARCELAS, de títulos diferentes.\n\n**`overdue` vem do servidor**, não do cliente: \"hoje\" é o dia do servidor, e o relógio errado de uma estação marcaria vencido o que não está — bem na coluna que decide o que será pago.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca por número do título, número do documento da parcela e nome da parte."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `dueDate`, `amountCents`, `openCents`, `partnerName`, `titleNumber`, `sequence`. Campo fora dela é 400. O padrão é `dueDate` crescente — a agenda começa pelo que vence primeiro."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "`payable` ou `receivable`. Ausente traz os dois."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "`open` ou `settled`. O padrão da tela de quitação é `open`, mas o filtro não tem valor implícito: quem pede a lista sem `status` recebe as duas, e uma lista que esconde o que já foi pago sem dizer é o que faz o operador pagar de novo."
+          },
+          {
+            "name": "partnerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Só as parcelas de títulos desta parte."
+          },
+          {
+            "name": "dueFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Vencimento a partir desta data, inclusive."
+          },
+          {
+            "name": "dueTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Vencimento até esta data, inclusive. Com `dueFrom`, é o recorte da tela de quitação em lote."
+          },
+          {
+            "name": "overdue",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`true` traz só as vencidas e em aberto."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfFinancialInstallmentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/financial-installments/{id}/settlements": {
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "SettleInstallment",
+        "description": "Proposto. QUITA uma parcela — a baixa avulsa.\n\n**Permissão: `financeiro:quitar`** — separada de `financeiro:editar` porque lançar a conta e pagá-la são funções diferentes em qualquer financeiro que tenha mais de uma pessoa. Quitar A MENOS que o saldo pede ainda a ação fina `financeiro:quitacao-a-menor` (403 sem ela), que é a permissão especial nº 45 do legado.\n\n**A baixa gera o MOVIMENTO de caixa na mesma transação** — é o que faz o dinheiro aparecer no extrato da conta escolhida, com `sourceType = 'settlement'`. Por isso o destino é obrigatório: ver `SettlementWriteRequest`.\n\nAs recusas:\n\n1. **400** — destino ausente ou duplicado, valor zero ou negativo, modo de pagamento que não serve para quitação (`usableInSettlement = false`).\n2. **403** — quitação a menor sem a ação fina.\n3. **409** — parcela já quitada (`urn:cabinet:erro:parcela-ja-quitada`), valor acima do saldo (`urn:cabinet:erro:valor-acima-do-saldo`), título cancelado (`urn:cabinet:erro:transicao-invalida`), data em período fechado (`urn:cabinet:erro:periodo-fechado`) ou sem empresa ativa.\n\n**Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "A PARCELA que está sendo quitada."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettlementWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialSettlementDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — parcela já quitada, valor acima do saldo, título cancelado, período fechado ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/financial-settlements/batch": {
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "SettleBatch",
+        "description": "Proposto. QUITAÇÃO EM LOTE — paga N parcelas num ato só, com um `batchId` que as amarra.\n\n**Permissão: `financeiro:quitar`**, e a ação fina `financeiro:quitacao-a-menor` quando QUALQUER item do lote abate menos que o saldo da sua parcela.\n\n**Tudo ou nada.** Uma parcela recusada derruba o lote inteiro e nenhuma baixa fica gravada — ver `SettlementBatchRequest` para por que o parcial seria pior. A resposta de erro diz em `detail` qual parcela recusou e por quê.\n\nAs recusas são as mesmas da baixa avulsa, aplicadas a qualquer item do lote, mais o **400** de parcela repetida na mesma requisição.\n\n**Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettlementBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementBatchResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — alguma parcela já quitada, valor acima do saldo, título cancelado, período fechado ou sem empresa ativa. Nenhuma baixa foi gravada.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cash-movements": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "ListCashMovements",
+        "description": "Proposto. O EXTRATO — os movimentos de caixa e de conta bancária da empresa ativa. Serve as duas telas do legado (`Caixa → Lançamento` e `Movimentos Bancários → Lançamentos`), que se distinguem pelo filtro de conta.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para \"quantos títulos tem a empresa que você não tem\".\n\n**`bankAccountId` e `cashRegisterId` são filtros exclusivos entre si** — mandar os dois é 400. Extrato é de uma conta: somar duas contas numa lista ordenada por data produz um saldo corrente que não existe em nenhuma delas.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca no histórico do lançamento."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `occurredOn`, `amountCents`, `direction`, `createdAt`. Campo fora dela é 400. O padrão é `occurredOn` — extrato se lê em ordem de dia."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "bankAccountId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Extrato desta conta bancária."
+          },
+          {
+            "name": "cashRegisterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Extrato deste caixa."
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "`in` ou `out`."
+          },
+          {
+            "name": "occurredFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "A partir desta data, inclusive."
+          },
+          {
+            "name": "occurredTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Até esta data, inclusive."
+          },
+          {
+            "name": "reconciled",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`false` traz só o que ainda NÃO foi conciliado — é a lista que a tela de conciliação bancária abre."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCashMovementDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "CreateCashMovement",
+        "description": "Proposto. Lança um movimento MANUAL — entrada ou saída avulsa de caixa ou banco.\n\n**Permissão: `financeiro:editar`.**\n\n**Só `manual` entra por aqui.** Movimento de transferência nasce em `POST /api/cash-transfers` e movimento de baixa nasce na quitação; aceitar os dois tipos neste caminho deixaria existir transferência de uma perna só e baixa sem parcela.\n\n**Não há PUT nem DELETE de movimento** — a correção é o lançamento contrário. Extrato que se reescreve não concilia com o do banco.\n\n**Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.\n\n**Sem empresa ativa é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: falta uma ação da pessoa (escolher empresa), o pedido não está malformado.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashMovementWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashMovementDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — período fechado (`urn:cabinet:erro:periodo-fechado`) ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cash-movements/{id}/reconcile": {
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "ReconcileCashMovement",
+        "description": "Proposto. Marca o movimento como CONCILIADO contra o extrato do banco. Menu `Financeiro → Conciliação Bancária` do legado.\n\n**Permissão: `financeiro:editar`.**\n\n**Conciliar é declarar que a linha foi CONFERIDA**, e por isso o servidor grava quem conferiu e quando — conciliação anônima não responde à única pergunta que se faz dela depois, que é quem viu.\n\n**Repetir é 409** (`urn:cabinet:erro:movimento-ja-conciliado`) e não 200: a segunda chamada quase sempre é a tela desatualizada de outra pessoa, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato.\n\n**Desconciliar não existe aqui**, pelo mesmo motivo do estorno: é decisão de alçada que ninguém tomou.\n\n**O que esta operação ainda NÃO faz, e é dívida nomeada:** o legado guarda em `Cpp_IDConcBancaria` o ID DA LINHA DO EXTRATO do banco — é o único ponto do módulo que fala com dado de fora (`docs/harvest/financeiro.md` §3.5). Aqui a conciliação registra QUEM conferiu e QUANDO, e não contra qual linha do extrato. Casar com o extrato exige importá-lo, que é trilho próprio; publicar o campo antes da importação seria pedir à tela um id que ela não tem de onde tirar.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashMovementDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — movimento já conciliado (`urn:cabinet:erro:movimento-ja-conciliado`) ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cash-transfers": {
+      "post": {
+        "tags": ["financeiro"],
+        "operationId": "CreateCashTransfer",
+        "description": "Proposto. TRANSFERE dinheiro entre duas contas da empresa — as quatro direções do legado (caixa→conta, caixa→caixa, conta→caixa, conta→conta) num caminho só.\n\n**Permissão: `financeiro:editar`.**\n\n**Grava DOIS movimentos ou nenhum**, os dois com o mesmo `transferId`. Ver `CashTransferRequest`.\n\nAs recusas:\n\n1. **400** — origem ausente, destino ausente, os dois ids do mesmo lado preenchidos, ou origem igual ao destino.\n2. **409** — data em período fechado de QUALQUER uma das duas contas, ou sem empresa ativa. As duas pontas contam: metade da transferência dentro de um período fechado é o buraco que o fechamento existe para não ter.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashTransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashTransferDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — período fechado em alguma das contas (`urn:cabinet:erro:periodo-fechado`) ou sem empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bank-accounts": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "ListBankAccounts",
+        "description": "Proposto. As CONTAS BANCÁRIAS da empresa ativa — o combo de destino do lançamento, da transferência e da baixa.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para \"quantos títulos tem a empresa que você não tem\".\n\n**Só leitura**: o cadastro é do trilho `Tabelas → Financeiro`, que traz junto banco e agência. Ver `BankAccountDto`.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca por nome, número da conta e nome do banco."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `name`, `number`, `bankCode`, `active`. Campo fora dela é 400."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`true` traz só as ativas — o que todo combo quer."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfBankAccountDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/cash-registers": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "ListCashRegisters",
+        "description": "Proposto. Os CAIXAS da empresa ativa. Mesmo papel e mesmo recorte de `GET /api/bank-accounts`.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para \"quantos títulos tem a empresa que você não tem\".",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca por código e nome."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `code`, `name`, `active`. Campo fora dela é 400."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`true` traz só os ativos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCashRegisterDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/payment-modes": {
+      "get": {
+        "tags": ["financeiro"],
+        "operationId": "ListPaymentModes",
+        "description": "Proposto. Os MODOS DE PAGAMENTO da empresa ativa (`Modo`, 26 linhas no legado).\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para \"quantos títulos tem a empresa que você não tem\".\n\n**Publicado porque a baixa não existe sem ele** — `paymentModeId` é obrigatório em toda quitação. Não confundir com `GET /api/payment-terms`, que é a CONDIÇÃO (em quantas vezes e quando); o modo é o MEIO (dinheiro, transferência, cartão).",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca por código e nome."
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Whitelist: `code`, `name`, `active`. Campo fora dela é 400."
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`true` traz só os ativos."
+          },
+          {
+            "name": "usableInSettlement",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "`true` traz só os que servem para QUITAR — é o recorte que o combo da baixa usa."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPaymentModeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/employees/{id}/reset-password": {
+      "post": {
+        "tags": ["cadastros"],
+        "operationId": "ResetEmployeePassword",
+        "description": "Proposto. O único caminho que dá credencial a um colaborador: `CreateEmployee` grava senha inutilizável de propósito, então sem esta operação a conta nunca entra. O SERVIDOR gera a senha provisória — o admin não escolhe — e ela aparece UMA única vez, nesta resposta; não há leitura que a devolva depois, nem para quem a gerou. `mustChangePassword` liga junto: o primeiro login exige `/auth/change-password` antes de qualquer outra coisa. Repetir a chamada é o reset de quem esqueceu — invalida a credencial atual e gera outra provisória.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporaryPasswordDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — colaborador sem e-mail não tem credencial para resetar.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/quotes/{id}/print": {
       "get": {
         "tags": ["impressao"],
@@ -12103,10 +13365,19 @@
         }
       },
       "HealthStatus": {
-        "required": ["status"],
+        "description": "Prova de VIDA. Diz que o processo responde — não que ele está pronto (isso é `/health/db`). Carrega também a identidade do binário que respondeu: em produção, a pergunta que precede todas as outras é *qual código está no ar*, e ela não pode depender de alguém abrir SSH na VM para conferir.",
+        "required": ["status", "version", "commit"],
         "type": "object",
         "properties": {
           "status": {
+            "type": "string"
+          },
+          "version": {
+            "description": "`Proposto`. Versão legível do que está rodando — o `describe` do commit publicado (ex.: `v0.3.1-12-g844b360`), ou `desconhecido` quando a imagem foi construída sem carimbo. Obrigatório de propósito: campo opcional faria o cliente tratar \"não sei\" e \"não me disseram\" como o mesmo caso, e são casos diferentes — o primeiro é uma imagem mal construída, o segundo é um servidor velho.",
+            "type": "string"
+          },
+          "commit": {
+            "description": "`Proposto`. O SHA do commit publicado, curto (7+ posições). É o que casa o que está no ar com o que está no GitHub, e o que fecha a dúvida de \"o deploy pegou?\" sem abrir SSH. `desconhecido` quando a imagem não foi carimbada — nunca vazio, nunca ausente.",
             "type": "string"
           }
         }
@@ -12996,7 +14267,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -13041,6 +14312,11 @@
           "urn:cabinet:erro:participante-ja-apurado",
           "urn:cabinet:erro:profissional-exige-transferencia",
           "urn:cabinet:erro:reserva-ja-lancada",
+          "urn:cabinet:erro:periodo-fechado",
+          "urn:cabinet:erro:titulo-com-baixa",
+          "urn:cabinet:erro:parcela-ja-quitada",
+          "urn:cabinet:erro:valor-acima-do-saldo",
+          "urn:cabinet:erro:movimento-ja-conciliado",
           "urn:cabinet:erro:nao-implementado",
           "urn:cabinet:erro:resposta-nao-json"
         ]
@@ -17700,6 +18976,11 @@
             "enum": ["sale_price"],
             "description": "Sobre qual preço a valoração foi feita. Hoje só existe `sale_price`: **o custo ainda não é dado do sistema** (decisão D1, Custo+Índice, pendente). O campo nasce declarado para que, quando o custo entrar, a tela antiga não passe a mostrar outro número sem avisar — hoje ela pode dizer \"a preço de venda\" com base no que o servidor afirma, não no que ela supõe."
           },
+          "warehouseId": {
+            "description": "O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.\n\n**Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
           "summary": {
             "$ref": "#/components/schemas/StockValuationSummaryDto"
           },
@@ -17803,6 +19084,11 @@
             "format": "date-time",
             "description": "O instante da foto — `daysWithoutSale` é contado a partir dele."
           },
+          "warehouseId": {
+            "description": "O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.\n\n**Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
           "summary": {
             "$ref": "#/components/schemas/StockAgingSummaryDto"
           },
@@ -17905,6 +19191,11 @@
             "description": "Linhas AGREGADAS no período — o denominador da paginação. Não é a contagem de documentos.",
             "type": "integer",
             "format": "int32"
+          },
+          "warehouseId": {
+            "description": "O depósito do recorte, ECOADO — ausente ou nulo quando a resposta é da empresa inteira.\n\n**Confirmação, não conveniência.** Quem pediu `warehouseId` e não recebeu o eco recebeu o total da empresa com nome de depósito, e o eco é a única coisa na resposta que permite à tela saber disso antes de rotular a coluna. Ausente é também a resposta honesta de um servidor que ainda não implementa o recorte: a implementação parcial fica visível em vez de silenciosa.",
+            "type": ["string", "null"],
+            "format": "uuid"
           },
           "summary": {
             "$ref": "#/components/schemas/QuoteVsStockSummaryDto"
@@ -20945,6 +22236,943 @@
         },
         "description": "Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.\n\nÉ uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio."
       },
+      "FinancialTitleDto": {
+        "description": "Proposto. Um TÍTULO financeiro — a conta a pagar ou a receber. Menus `Financeiro → Contas a Pagar → Lançamento` e `Financeiro → Contas a Receber → Lançamentos` do legado (`contas_apagar`, 30.043 linhas; `contas_receber`, 9.076).\n\n**Um recurso para as duas telas, discriminado por `direction`** — e não `/api/payables` + `/api/receivables`. O precedente é `/api/partners` com filtro `role`: no legado as duas tabelas são a MESMA tabela com o prefixo trocado (`Ctp_`/`Ctr_`), coluna a coluna, e é assim que elas envelheceram — a correção feita num lado só chegava ao outro por cópia manual. Dois caminhos aqui duplicariam parcela, baixa, quitação em lote e conciliação, que não têm uma diferença sequer entre pagar e receber. O que MUDA é o sinal do dinheiro e a parte (fornecedor de um lado, cliente do outro), e as duas coisas cabem numa coluna.\n\n**O título não guarda valor pago.** `totalCents` é o que foi lançado; o que sobrou sai da soma das parcelas (`openCents`), porque quem quita é a PARCELA. Materializar o pago no cabeçalho criaria um segundo lugar onde a mesma verdade mora, e o legado paga essa conta: `Ctp_valor_total_original` diverge da soma de `contas_apagar_det` em base de produção.\n\n**Não há DELETE.** Título que some é dinheiro que o sistema esqueceu de dever. Desistir é `POST /{id}/cancel`, e ele recusa (409) o título que já tem baixa.\n\n**Não há `TipoContaFinanceira` aqui, e a ausência é DECISÃO PENDENTE, não esquecimento.** O legado classifica o título em seis categorias — OFICIAL, SIMULAÇÃO, APROVISIONAMENTO, CONTA CLONE, HISTÓRICO, AGRUPADA — com FK declarada, e guardar ensaio na mesma tabela do que vale obriga TODO relatório a filtrar. `docs/harvest/financeiro.md` §11.3 põe as três saídas na mesa (replicar · virar rascunho de status · não migrar as não-oficiais) e nenhuma foi escolhida. O campo entra quando a escolha existir; inventá-lo agora fixaria a mais cara das três.",
+        "required": [
+          "id",
+          "direction",
+          "number",
+          "partnerId",
+          "partnerName",
+          "issuedAt",
+          "totalCents",
+          "settledCents",
+          "openCents",
+          "status",
+          "sourceType",
+          "installments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "direction": {
+            "description": "`payable` é conta a PAGAR (a parte é o fornecedor), `receivable` é conta a RECEBER (a parte é o cliente). É o único eixo que separa as duas telas.",
+            "type": "string",
+            "enum": ["payable", "receivable"]
+          },
+          "number": {
+            "description": "O número do título, atribuído pelo servidor e sequencial POR DIREÇÃO — pagar e receber contam separado, como no legado.\n\n**Texto e não inteiro, pelo mesmo motivo de `OrderDto.number`:** o legado carrega SÉRIE junto do número (`ParSV_serie`, três caracteres, presente nas duas tabelas de título), e número com série não é um inteiro. Publicar `int64` aqui obrigaria a inventar um segundo campo no dia em que a série viesse junto — e a tela já teria formatado o primeiro como número.",
+            "type": "string"
+          },
+          "documentNumber": {
+            "type": ["string", "null"],
+            "description": "O número do DOCUMENTO que originou o título — nota fiscal, duplicata, recibo. É o que o financeiro procura quando o fornecedor liga, e por isso entra na busca (`q`)."
+          },
+          "partnerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "partnerName": {
+            "type": "string",
+            "description": "Nome da parte CONGELADO na emissão. Renomear o cadastro amanhã não reescreve quem devia ontem — o mesmo motivo de `QuoteDto`."
+          },
+          "documentTypeId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "A ESPÉCIE do documento (`Tipo_documento`, 33 linhas no legado). Cadastro por empresa, sem caminho no contrato ainda — ver a dívida declarada em `FinancialTitleWriteRequest`."
+          },
+          "chartAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "A conta do PLANO DE CONTAS. Hoje vem de `GET /api/catalog-lookups?kind=PLANO_CONTA`."
+          },
+          "costCenterId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O CENTRO DE CUSTO. Cadastro por empresa, sem caminho no contrato ainda."
+          },
+          "paymentTermId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "A condição de pagamento que gerou as parcelas (`GET /api/payment-terms`). Referência histórica: as parcelas já estão gravadas e não se recalculam se a condição mudar."
+          },
+          "sourceType": {
+            "description": "De ONDE o título nasceu. `manual` é digitado na tela; `sale_order` é o título que o PEDIDO DE VENDA gerou; `goods_receipt` é o que a entrada de nota gerou.\n\n**É o campo que sustenta o DoD do trilho** — \"título nascido de um pedido é quitado pela tela\" só é verificável se a tela souber dizer de onde a linha veio. Sem ele, o título automático e o digitado ficam indistinguíveis, e o operador reemite à mão o que o pedido já emitiu.",
+            "type": "string",
+            "enum": ["manual", "sale_order", "goods_receipt"]
+          },
+          "sourceId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O documento de origem. `null` quando `sourceType` é `manual`, e preenchido nos outros dois — tipo e id andam juntos."
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date",
+            "description": "Data de EMISSÃO do título."
+          },
+          "competenceMonth": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Mês de COMPETÊNCIA, sempre no dia 1. Separado da emissão porque a despesa de dezembro paga em janeiro pertence a dezembro no resultado, e é essa a pergunta que o DRE faz."
+          },
+          "totalCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total LANÇADO do título, em centavos. É a soma das parcelas na emissão."
+          },
+          "settledCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quanto já foi QUITADO, somando as baixas das parcelas. Derivado — o servidor calcula, não guarda."
+          },
+          "openCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quanto FALTA: `totalCents - settledCents`. Derivado. Vem pronto porque é a coluna que a tela ordena e soma no rodapé, e calculá-la no cliente sobre uma página daria total de página, não de título."
+          },
+          "status": {
+            "description": "`open` enquanto sobra saldo, `settled` quando a última parcela fecha, `cancelled` na desistência. **Não é campo de escrita**: quem o move é a baixa e o `cancel`.",
+            "type": "string",
+            "enum": ["open", "settled", "cancelled"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "installments": {
+            "description": "As PARCELAS do título, em ordem de `sequence`. Sempre pelo menos uma — título à vista é título de uma parcela, e não um título sem parcela: sem essa regra, quitar à vista precisaria de um caminho próprio.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialInstallmentDto"
+            }
+          }
+        }
+      },
+      "FinancialInstallmentDto": {
+        "description": "Proposto. Uma PARCELA do título — e a unidade de quitação. `contas_apagar_det` (42.161 linhas) e `contas_Receber_det` (18.555) do legado.\n\n**A parcela existe para ser quitada em PARTES.** `settledCents` menor que `amountCents` com a parcela ainda `open` é o pagamento parcial, que o legado faz por permissão especial (`PERMITIR QUITAÇÃO COM VALOR A MENOS QUE O VALOR DO VENCIMENTO`) e que aqui é a mesma coisa: ver `SettlementWriteRequest`.",
+        "required": [
+          "id",
+          "titleId",
+          "direction",
+          "sequence",
+          "dueDate",
+          "amountCents",
+          "settledCents",
+          "openCents",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "titleId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "direction": {
+            "type": "string",
+            "description": "Ecoado do título, porque a listagem de parcelas é o que a tela de quitação em lote consome — e ali a linha precisa dizer sozinha se é dinheiro que entra ou que sai.",
+            "enum": ["payable", "receivable"]
+          },
+          "titleNumber": {
+            "description": "Número do título, ecoado na listagem de parcelas para a tela não resolver o id. Texto, como em `FinancialTitleDto.number`.",
+            "type": ["string", "null"]
+          },
+          "partnerId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "partnerName": {
+            "type": ["string", "null"],
+            "description": "Nome da parte, ecoado — presente na listagem de parcelas, dispensável dentro do título, que já o traz no cabeçalho."
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32",
+            "description": "A ordem da parcela DENTRO do título, 1-based."
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Data de VENCIMENTO. É por ela que a tela de contas a pagar abre o dia — e o `sortBy` padrão da listagem de parcelas."
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor da parcela no vencimento, em centavos."
+          },
+          "settledCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quanto já foi baixado nesta parcela, somando as baixas."
+          },
+          "openCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Saldo em aberto: `amountCents - settledCents`. É contra ele que a baixa é conferida."
+          },
+          "status": {
+            "description": "`open` enquanto há saldo, `settled` quando `settledCents` alcança `amountCents`. **Derivado no banco**, não escrito: parcela cujo estado é coluna solta fica `open` com saldo zero na primeira baixa que esquecer de atualizá-lo.",
+            "type": "string",
+            "enum": ["open", "settled"]
+          },
+          "overdue": {
+            "type": "boolean",
+            "description": "`true` quando a parcela está `open` e `dueDate` já passou. Vem do servidor porque \"hoje\" é o dia do SERVIDOR: calculado no cliente, o relógio errado da estação marca vencido o que não está — e é essa a coluna que o operador usa para decidir o que pagar."
+          },
+          "paymentModeId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O MODO previsto para esta parcela (dinheiro, transferência, cartão). Previsão, não fato: o modo do pagamento efetivo é o da baixa."
+          },
+          "documentNumber": {
+            "type": ["string", "null"],
+            "description": "Número do documento DESTA parcela — a duplicata 3/5 tem número próprio, diferente do da nota."
+          },
+          "settlements": {
+            "description": "As BAIXAS desta parcela, em ordem de data. Presente no detalhe do título; ausente na listagem de parcelas, que é grade e não extrato.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialSettlementDto"
+            }
+          }
+        }
+      },
+      "FinancialSettlementDto": {
+        "description": "Proposto. Uma BAIXA — o fato de que dinheiro andou contra uma parcela. `Contas_apagar_pag` (41.981 linhas) e `Contas_receber_pag` (17.885) do legado.\n\n**A baixa aponta a CONTA, não só o modo** — e é aqui que este contrato fecha um elo que estava aberto por escrito (issue api#112). O módulo financeiro já grava o modo (`paymentModeId`: dinheiro, PIX, cheque), e saber que foi PIX não diz em qual conta bancária o dinheiro entrou. É a conta que o extrato lê, que a conciliação casa e que o saldo soma. Por isso o destino é obrigatório na escrita, e a baixa produz o movimento de caixa correspondente na MESMA transação — `CashMovementDto.sourceType = 'settlement'`.\n\n**Não há estorno neste contrato, e a ausência é declarada.** A baixa errada se desfaz por decisão de quem pode desfazê-la, e essa decisão não foi tomada; sem ela, um caminho de estorno seria eu escolhendo quem apaga dinheiro lançado. Fica como dívida nomeada, não como esquecimento.",
+        "required": [
+          "id",
+          "installmentId",
+          "settledOn",
+          "amountCents",
+          "interestCents",
+          "fineCents",
+          "discountCents",
+          "paidCents",
+          "paymentModeId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "installmentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "settledOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Data em que o dinheiro andou. É ela que o FECHAMENTO de período compara — baixa com data dentro de período fechado é 409."
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor ABATIDO do saldo da parcela, em centavos. É este que reduz `openCents`, e é ele que a quitação a menor deixa abaixo do saldo."
+          },
+          "interestCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "JUROS cobrados no atraso. Somam ao que saiu do caixa e NÃO abatem a parcela — a dívida de R$ 100 paga com R$ 10 de juros quita 100 e tira 110 da conta."
+          },
+          "fineCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "MULTA por atraso. Mesma mecânica dos juros."
+          },
+          "discountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "DESCONTO concedido na quitação. Subtrai do que saiu do caixa e não muda o abatimento: parcela de R$ 100 com R$ 5 de desconto continua quitada em 100 e tira 95 da conta."
+          },
+          "paidCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O que de fato ANDOU na conta: `amountCents + interestCents + fineCents - discountCents`. Derivado no banco, e vem pronto porque é ele — e não `amountCents` — que tem de bater com o extrato bancário."
+          },
+          "paymentModeId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O MEIO pelo qual o dinheiro andou (`GET /api/payment-modes`). Obrigatório: baixa sem meio não se concilia."
+          },
+          "bankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "A CONTA BANCÁRIA que recebeu ou pagou. Exclusiva com `cashRegisterId` — exatamente um dos dois vem preenchido."
+          },
+          "cashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O CAIXA que recebeu ou pagou. Exclusivo com `bankAccountId`."
+          },
+          "batchId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O LOTE de quitação, quando a baixa veio de `POST /api/financial-settlements/batch`. `null` na baixa avulsa. É o que permite listar \"o que foi pago naquele lote\" — o `LotePagCtRec` do legado."
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "FinancialTitleWriteRequest": {
+        "description": "Proposto. Cria ou SUBSTITUI o título inteiro, parcelas incluídas (PUT substitui o registro inteiro, como todo PUT deste contrato).\n\n**As parcelas vêm do cliente, e não de um `paymentTermId` que o servidor expandiria.** A condição de pagamento sugere o plano na TELA; o que se grava é o que o operador aceitou, porque no financeiro a parcela negociada quase nunca é a calculada — o fornecedor concede uma data, o cliente pede outra. Expandir aqui faria a condição mandar mais que o acordo, e reescreveria o plano de todo título ao mudar a condição.\n\n**O PUT recusa (409) o título que já tem baixa.** Reescrever um título quitado moveria dinheiro já conciliado; o que se corrige depois da primeira baixa é a próxima baixa, não o passado.\n\n**Dívida declarada:** `documentTypeId` e `costCenterId` são ids de cadastros por empresa (`document_types`, `cost_centers`) que **ainda não têm caminho neste contrato** — o menu `Tabelas → Financeiro` do legado é trilho próprio. Os dois são opcionais aqui de propósito: publicar o campo antes do combo deixa a tela em branco, que é honesto; deixá-lo de fora obrigaria a migrar o título depois.",
+        "required": ["direction", "partnerId", "issuedAt", "installments"],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["payable", "receivable"]
+          },
+          "partnerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Fornecedor quando `payable`, cliente quando `receivable`. O servidor confere o PAPEL da parte — parceiro sem o papel da direção é 400."
+          },
+          "documentNumber": {
+            "type": ["string", "null"]
+          },
+          "documentTypeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "chartAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "costCenterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "paymentTermId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "competenceMonth": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Mês de competência. Se vier com dia diferente de 1, é 400 — o mês é o dado, e aceitar o dia faria duas linhas do mesmo mês competirem."
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "installments": {
+            "description": "As parcelas, ao menos uma. `sequence` tem de ser 1..N sem buraco, e a soma dos valores tem de bater com o total pretendido do título — o servidor não arredonda diferença.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialInstallmentWriteRequest"
+            }
+          }
+        }
+      },
+      "FinancialInstallmentWriteRequest": {
+        "description": "Proposto. Uma parcela na escrita do título. Valor em centavos e sempre maior que zero: parcela de zero é linha que a grade mostra e o caixa nunca vê.",
+        "required": ["sequence", "dueDate", "amountCents"],
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentModeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "documentNumber": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "SettlementWriteRequest": {
+        "description": "Proposto. A BAIXA de uma parcela.\n\n**O destino é obrigatório e exclusivo:** exatamente um entre `bankAccountId` e `cashRegisterId`. Os dois juntos, ou nenhum, é 400. É o que faz a baixa virar linha de extrato — sem conta, o dinheiro é quitado no sistema e invisível no caixa.\n\n**Quitação A MENOS é permissão, não erro.** `amountCents` abaixo de `openCents` da parcela deixa saldo e é recusado com **403** para quem não tem a ação fina — o legado a tem como permissão especial nº 45 (`PERMITIR QUITAÇÃO COM VALOR A MENOS QUE O VALOR DO VENCIMENTO`), e é o mesmo desenho de `venda:desconto-acima-do-teto`: a recusa depende de QUEM pede, não do valor, então é 403 e não 400.\n\n`amountCents` ACIMA do saldo é 409 e não tem permissão que libere: pagar mais do que se deve não é decisão de alçada, é engano de digitação — e o troco não tem onde ser lançado.",
+        "required": ["settledOn", "amountCents", "paymentModeId"],
+        "type": "object",
+        "properties": {
+          "settledOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interestCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Juros. Ausente = 0."
+          },
+          "fineCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Multa. Ausente = 0."
+          },
+          "discountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Desconto concedido. Ausente = 0."
+          },
+          "paymentModeId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "bankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "cashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "SettlementBatchRequest": {
+        "description": "Proposto. QUITAÇÃO EM LOTE — N parcelas pagas de uma vez, na mesma data, pelo mesmo meio e contra a mesma conta. É a tela que o financeiro usa todo dia: seleciona os vencimentos do dia e paga o bloco.\n\n**O lote é TUDO OU NADA.** Uma parcela recusada derruba a requisição inteira, e nenhuma baixa fica gravada. O contrário — gravar as que passam e listar as que falharam — parece gentil e é a forma de perder dinheiro: o operador vê o erro, corrige, reenvia o lote inteiro, e as que já tinham passado são pagas duas vezes.\n\n**A resposta traz `batchId`**, e é ele que amarra as baixas como um ato só — o `LotePagCtRec` do legado. Sem o agrupador, desfazer ou conferir um pagamento em bloco exigiria casar data, valor e meio, que é adivinhação assim que dois lotes saem no mesmo dia.\n\n**Cabeçalho decide meio, data e conta; a linha decide valor, juros, multa e desconto.** É a divisão que o caso real pede: paga-se o bloco pelo mesmo banco no mesmo dia, e cada título tem o seu acréscimo.",
+        "required": ["settledOn", "paymentModeId", "items"],
+        "type": "object",
+        "properties": {
+          "settledOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "paymentModeId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "bankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "cashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "items": {
+            "description": "As parcelas do lote, ao menos uma. Parcela repetida na mesma requisição é 400 — duas linhas para a mesma parcela é o mesmo pagamento contado duas vezes, e o cliente consegue ver isso sozinho.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettlementBatchItem"
+            }
+          }
+        }
+      },
+      "SettlementBatchItem": {
+        "description": "Proposto. Uma parcela dentro do lote. `amountCents` ausente quita o SALDO INTEIRO da parcela — é o caso normal do lote, e obrigar o cliente a repetir um número que o servidor já sabe faria a tela pagar a mais quando o saldo mudasse entre a leitura e o envio.",
+        "required": ["installmentId"],
+        "type": "object",
+        "properties": {
+          "installmentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "amountCents": {
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
+          "interestCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fineCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "discountCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SettlementBatchResultDto": {
+        "description": "Proposto. O resultado do lote: o agrupador e as baixas que ele gravou.",
+        "required": ["batchId", "totalPaidCents", "settlements"],
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "totalPaidCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "A soma de `paidCents` das baixas — o que de fato saiu (ou entrou) na conta. É o número que o operador confere contra o comprovante do banco."
+          },
+          "settlements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialSettlementDto"
+            }
+          }
+        }
+      },
+      "CashMovementDto": {
+        "description": "Proposto. Um MOVIMENTO de caixa ou de conta bancária — a linha do extrato. Menus `Financeiro → Caixa → Lançamento` e `Financeiro → Movimentos Bancários → Lançamentos` do legado.\n\n**Uma tabela para as duas telas, e a conta é banco OU caixa** — exatamente um dos dois ids vem preenchido. Caixa e conta bancária diferem no cadastro e em nada no movimento: mesmo sentido, mesmo valor, mesma classificação, mesma transferência entre eles. Dois recursos exigiriam duas conciliações e dois extratos.\n\n**Sentido e valor são campos separados, e `amountCents` é sempre positivo.** Guardar `-1500` para a saída encurtaria o saldo (`SUM`) e estragaria todo o resto: \"quanto entrou no mês\" viraria um filtro por sinal, e o dia em que um estorno gravasse entrada negativa ele contaria como saída.",
+        "required": [
+          "id",
+          "direction",
+          "amountCents",
+          "occurredOn",
+          "description",
+          "sourceType",
+          "accountKind",
+          "accountName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "accountKind": {
+            "description": "Se a linha é de conta bancária ou de caixa. Redundante com o par de ids e presente de propósito: é o que a grade agrupa, e derivá-lo de \"qual id não é nulo\" espalha a regra por toda tela que mostrar a lista.",
+            "type": "string",
+            "enum": ["bank", "cash"]
+          },
+          "accountName": {
+            "type": "string",
+            "description": "Nome da conta ou do caixa, ecoado."
+          },
+          "bankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "cashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "direction": {
+            "description": "`in` é dinheiro que ENTRA, `out` é dinheiro que SAI.",
+            "type": "string",
+            "enum": ["in", "out"]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor do movimento, sempre positivo. Quem dá o sinal é `direction`."
+          },
+          "occurredOn": {
+            "type": "string",
+            "format": "date",
+            "description": "O DIA DE CAIXA do movimento. É com ele que o fechamento de período compara — e por isso é data, não instante: o extrato fecha por dia, não por hora."
+          },
+          "chartAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Classificação no PLANO DE CONTAS (`GET /api/catalog-lookups?kind=PLANO_CONTA`)."
+          },
+          "costCenterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string",
+            "description": "O HISTÓRICO do lançamento. Obrigatório: linha de extrato sem histórico é o que torna a conciliação impossível três meses depois."
+          },
+          "sourceType": {
+            "description": "De onde o movimento veio. `manual` é digitado; `transfer` é a perna de uma transferência; `settlement` é o movimento que uma BAIXA gerou — o elo que liga contas a pagar/receber ao caixa. Os demais são as origens que o servidor já reserva (`sale`, `purchase`, `installment`, `commission`).\n\n**A tela não lança `transfer` nem `settlement` direto**: eles nascem da operação que os causou, e aceitar um deles em `POST /api/cash-movements` deixaria existir transferência de uma perna só.",
+            "type": "string",
+            "enum": [
+              "manual",
+              "transfer",
+              "settlement",
+              "sale",
+              "purchase",
+              "installment",
+              "commission"
+            ]
+          },
+          "sourceId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O documento de origem. Nulo exatamente quando `sourceType` é `manual` ou `transfer` — nos dois casos não há outro documento, e na transferência quem amarra é `transferId`."
+          },
+          "sourceNumber": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "A PARCELA de origem, quando `sourceType` é `installment`."
+          },
+          "transferId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "A transferência que gerou este movimento. As duas pernas do par carregam o mesmo id — é assim que \"estas duas linhas são uma transferência\" fica verificável em vez de convencionado."
+          },
+          "reconciledAt": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "Quando a linha foi CONCILIADA contra o extrato do banco. Nulo = ainda não conferida, e é esse o filtro que a tela de conciliação abre."
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "CashMovementWriteRequest": {
+        "description": "Proposto. Um lançamento MANUAL de caixa ou banco.\n\n**Exatamente um destino:** `bankAccountId` ou `cashRegisterId`. Os dois, ou nenhum, é 400.\n\n**Não há PUT nem DELETE de movimento**, e a ausência é a regra do módulo: extrato que se reescreve não concilia com o do banco. O erro se corrige com o lançamento contrário, que é o que o contador chama de estorno e o que deixa os dois fatos visíveis.\n\n**Lançar com `occurredOn` dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`): o fechamento existe para que o saldo conferido de ontem não mude hoje.",
+        "required": ["direction", "amountCents", "occurredOn", "description"],
+        "type": "object",
+        "properties": {
+          "bankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "cashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["in", "out"]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Sempre positivo, em centavos. Zero ou negativo é 400."
+          },
+          "occurredOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "chartAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "costCenterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "CashTransferRequest": {
+        "description": "Proposto. TRANSFERÊNCIA entre contas — as quatro direções que o legado tem como quatro itens de menu (caixa→conta, caixa→caixa, conta→caixa, conta→conta) e que aqui são um caminho só: o que muda entre elas é qual par de ids vem preenchido.\n\n**Dois movimentos ou nenhum.** A transferência grava a saída na origem e a entrada no destino na MESMA transação, as duas apontando o mesmo `transferId`. Meia transferência gravada é dinheiro que sumiu do extrato de uma conta sem aparecer na outra — e é o defeito que só é descoberto no fechamento do mês.\n\n**Origem e destino não podem ser a mesma conta** (400): o par teria as duas pernas na mesma linha do extrato e somaria zero, escondendo um erro de digitação atrás de um saldo correto.",
+        "required": ["occurredOn", "amountCents", "description"],
+        "type": "object",
+        "properties": {
+          "occurredOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor transferido, positivo, em centavos."
+          },
+          "description": {
+            "type": "string"
+          },
+          "fromBankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "fromCashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "toBankAccountId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "toCashRegisterId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        }
+      },
+      "CashTransferDto": {
+        "description": "Proposto. A transferência gravada, com as DUAS pernas. A resposta traz os dois movimentos porque é o que prova o par — e é o que a tela precisa para atualizar os dois extratos sem reconsultar.",
+        "required": ["id", "occurredOn", "amountCents", "description", "movements"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "occurredOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "movements": {
+            "description": "As duas pernas: a `out` da origem e a `in` do destino, nesta ordem.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashMovementDto"
+            }
+          }
+        }
+      },
+      "BankAccountDto": {
+        "description": "Proposto. Uma CONTA BANCÁRIA da empresa — o destino dos movimentos e das baixas. `Contas_Bancarias` (19 linhas) do legado.\n\n**Só LEITURA neste contrato.** O cadastro (banco, agência, conta, caixa) é o menu `Tabelas → Financeiro`, trilho próprio; publicar a escrita aqui traria junto banco e agência, que são cadastro nacional. O que a FASE do lançamento precisa é escolher a conta, e escolher é ler.",
+        "required": ["id", "name", "number", "kind", "active", "openingBalanceCents"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "name": {
+            "type": "string"
+          },
+          "bankId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "bankCode": {
+            "type": ["string", "null"],
+            "description": "O código do banco na FEBRABAN (`001`, `341`), ecoado — é como o operador reconhece a conta na lista."
+          },
+          "bankName": {
+            "type": ["string", "null"]
+          },
+          "branchId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "branchNumber": {
+            "type": ["string", "null"]
+          },
+          "number": {
+            "type": "string",
+            "description": "Número da conta, sem o dígito."
+          },
+          "digit": {
+            "type": ["string", "null"]
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["checking", "savings", "investment", "payment"]
+          },
+          "openingBalanceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "SALDO DE ABERTURA da conta, em centavos. O saldo de hoje é ele mais a soma dos movimentos — não há coluna de saldo atual, porque saldo materializado é cache que precisa de quem o reconcilie."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CashRegisterDto": {
+        "description": "Proposto. Um CAIXA da empresa. `Bancos_Caixas` do legado, do lado `tipo = caixa`. Só leitura, pelo mesmo motivo de `BankAccountDto`.",
+        "required": ["id", "code", "name", "active", "openingBalanceCents"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "openingBalanceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Saldo de abertura do caixa, em centavos."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaymentModeDto": {
+        "description": "Proposto. Um MODO DE PAGAMENTO — dinheiro, transferência, cartão, boleto. `Modo` (26 linhas) do legado.\n\nPublicado porque a BAIXA não existe sem ele: `paymentModeId` é obrigatório em toda quitação, e sem a lista a tela de contas a pagar não tem o que oferecer. Só leitura; o cadastro é do trilho de tabelas.",
+        "required": ["id", "code", "name", "usableInSettlement", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.\n\n**Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.\n\nFica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título."
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "adminFeePercent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Taxa de administração, na escala da casa: inteiro com 4 casas implícitas, `10000` = 1%. É o custo do cartão, e a tela o mostra ao escolher o modo."
+          },
+          "termDays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Prazo em dias até o dinheiro cair — 30 no cartão, 0 no dinheiro."
+          },
+          "fixedDay": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "Dia fixo do mês em que o modo liquida, quando houver."
+          },
+          "usableInSettlement": {
+            "type": "boolean",
+            "description": "Se este modo pode ser escolhido numa BAIXA.\n\n**Não é campo inventado para o caso geral — é o que o legado faz com uma cláusula solta.** A quitação em lote de lá exclui os modos 1000 e 1001 por número, escrito na consulta (`mdo_codigo not in (1000, 1001)`): são pseudo-modos que classificam venda e não quitam nada, o mesmo padrão do `GrupoProduto` 1000=SERVIÇOS / 1001=FRETE (`docs/harvest/financeiro.md` §3.6). Número mágico na consulta é a regra que some no dia em que alguém cadastrar o terceiro; em coluna, ela é cadastro."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfFinancialTitleDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialTitleDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfFinancialInstallmentDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialInstallmentDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfCashMovementDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashMovementDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfBankAccountDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankAccountDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfCashRegisterDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CashRegisterDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfPaymentModeDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentModeDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TemporaryPasswordDto": {
+        "description": "Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.",
+        "required": ["temporaryPassword"],
+        "type": "object",
+        "properties": {
+          "temporaryPassword": {
+            "type": "string"
+          }
+        }
+      },
       "PrintClauseDto": {
         "required": ["order", "text"],
         "type": "object",
@@ -21224,6 +23452,9 @@
     },
     {
       "name": "impressao"
+    },
+    {
+      "name": "financeiro"
     }
   ]
 }

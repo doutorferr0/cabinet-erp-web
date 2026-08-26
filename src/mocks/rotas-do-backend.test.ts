@@ -11,6 +11,7 @@ import {
   ROTAS_NO_MOCK,
   avisoDeSemContrato,
   declararPassagem,
+  familia,
   handlersDePassagem,
   montarRelatorio,
   relatorioDaPassagem,
@@ -405,9 +406,10 @@ describe('passthrough por rota', () => {
     // aqui foi o que este caso fez primeiro, e ele quebrou no mesmo dia, no
     // rebase que trouxe comissões: `orders`, `employees` e `partners` passaram a
     // ter rota real E rota mockada.
-    const familiasMockadas = new Set(
-      ROTAS_NO_MOCK.map((r) => r.caminho.split('/').filter(Boolean)[1] ?? ''),
-    )
+    // A família sai da MESMA função que o console usa. Repetir a regra aqui
+    // funcionou enquanto toda rota mockada era `/api/*`; a primeira em
+    // `/auth/*` fez as duas divergirem e este caso acusou o código certo.
+    const familiasMockadas = new Set(ROTAS_NO_MOCK.map((r) => familia(r.caminho)))
     for (const f of familiasMockadas) {
       expect(
         ditas.some((l) => l.includes(f) && (l.includes('MOCK') || l.includes('PARTIDA'))),
@@ -521,16 +523,20 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('as rotas SEM CONTRATO são a tesouraria e a senha inicial — publicadas aqui', () => {
+  it('as SEM CONTRATO são a tesouraria e o ciclo da credencial — publicadas aqui', () => {
     // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
-    // byte a byte) e depois a rota única da senha inicial. A FASE A do G7
-    // publica os doze caminhos de tesouraria NESTE repo, que é o dono do
-    // contrato, então a cópia do api fica atrás por definição até o
-    // `sync:contract` de lá — `sem-contrato` é o estado correto das quinze
-    // operações, e o console DEVE avisar. A lista continua FECHADA de
-    // propósito: a rota que aparecer aqui sem querer segue reprovando e sendo
-    // nomeada. Quando a PR do api sincronizar e ligar os handlers, as linhas
-    // saem de `ROTAS_NO_MOCK` e este caso volta a cobrar o vazio.
+    // byte a byte), depois a rota única da senha inicial, e agora cobra VINTE:
+    // os quinze caminhos de tesouraria da FASE A do G7 e as cinco do ciclo da
+    // credencial entram pelo mesmo mecanismo, e não por um afrouxamento. Todas
+    // publicadas NESTE repo, que é o dono do contrato, então a cópia do api
+    // fica atrás por definição até o `sync:contract` de lá; `sem-contrato` é o
+    // estado correto e o console DEVE avisar.
+    //
+    // **A lista continua FECHADA, e é isso que a mantém útil:** a rota que
+    // aparecer aqui sem querer reprova e sai nomeada. Quando a PR do api
+    // sincronizar e ligar os handlers, as linhas saem de `ROTAS_NO_MOCK` — as
+    // do ciclo JUNTAS, porque o token emitido pelo convite do servidor não
+    // existe no mock que gastaria — e este caso volta a cobrar o vazio.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
@@ -552,9 +558,13 @@ describe('passthrough por rota', () => {
       'get /api/cash-registers',
       'get /api/payment-modes',
       'post /api/employees/{id}/reset-password',
+      'post /api/employees/{id}/invite',
+      'post /auth/forgot-password',
+      'post /auth/credential-token',
+      'post /auth/set-password',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 16.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(17)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 20.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(21)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

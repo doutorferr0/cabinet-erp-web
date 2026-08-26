@@ -943,6 +943,9 @@ const COMISSOES_SEM_PORTA =
 const SENHA_INICIAL_SEM_CONTRATO_LA =
   'publicada por ESTA PR — a copia do contrato no api ainda nao a conhece; sync + handler na PR da api'
 
+const CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA =
+  'publicadas por ESTA PR — o api nao conhece os caminhos; sync + handlers + tabela de token na PR da api'
+
 const RECEBIMENTO_SEM_PORTA =
   'sem handler no api — modulo existe (0047 + src/modules/recebimento/), rotas nao; G3 fase B'
 
@@ -1323,10 +1326,53 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     motivo: SENHA_INICIAL_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
   },
+  // AS QUATRO DO CICLO DA CREDENCIAL — publicadas por ESTA PR, e as quatro COM
+  // handler de mock (`src/mocks/api/acesso.ts`), o que nao e detalhe: sem ele,
+  // declarar aqui faria `/auth/set-password` cair no fallback da SPA e devolver
+  // `index.html` com 200 — a tela leria HTML como se fosse resposta.
+  //
+  // Saem JUNTAS quando o api mergear, e juntas de proposito: meia familia poria
+  // o convite no servidor e o gasto do token no mock, e o token emitido de um
+  // lado nao existe do outro. E o mesmo argumento do `get` no registry.
+  {
+    metodo: 'post',
+    caminho: '/api/employees/{id}/invite',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/forgot-password',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/credential-token',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/set-password',
+    motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
 ]
 
-/** A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`. */
-function familia(caminho: string): string {
+/**
+ * A família de um caminho: `/api/purchase-orders/{id}/send` → `purchase-orders`,
+ * e `/auth/forgot-password` → `auth`.
+ *
+ * **Exportada por causa da GUARDA**, e é decisão, não vazamento: o caso do
+ * console replicava esta regra com um `partes[1]` cego, e as duas versões
+ * concordaram enquanto TODA rota mockada morava em `/api/*` — onde `partes[1]`
+ * é mesmo a família. A primeira rota mockada em `/auth/*` separou as duas
+ * (`forgot-password` de um lado, `auth` do outro) e a guarda reprovou o código
+ * certo. Regra medida em dois lugares é regra que diverge no dia em que um dos
+ * lados ganha um caso novo.
+ */
+export function familia(caminho: string): string {
   const partes = caminho.split('/').filter(Boolean)
   const primeiro = partes[0] ?? caminho
   return primeiro === 'api' ? (partes[1] ?? 'api') : primeiro

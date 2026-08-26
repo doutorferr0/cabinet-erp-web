@@ -201,6 +201,24 @@ describe('volta para a rota de origem depois de entrar', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
   })
 
+  it('o destino recusado não CHEGA ao match — o efeito não bastava', async () => {
+    // **Este caso existe porque o de cima ficava verde com a guarda
+    // desligada.** Ele mede o EFEITO (cair no Dashboard), e o efeito acontecia
+    // por outro motivo: `navigate` com `//host/x` não acha rota interna e cai
+    // no Dashboard de todo jeito. O `validateSearch` devolvia `{}`, e `{}` não
+    // REMOVE a chave — a busca de um match é o merge com a do pai, e a raiz não
+    // valida nada, então o destino cru passava inteiro para a tela.
+    //
+    // Aqui a asserção é sobre o MECANISMO: o valor que o match carrega. Ela
+    // fica VERMELHA com `return {}` no lugar de `redirect: undefined`.
+    const { stub } = servidorDeAuth()
+    const { router } = renderRoute('/login?redirect=https://exemplo.test/phishing', stub)
+    await screen.findByLabelText('E-mail')
+
+    const search = router.state.matches.at(-1)?.search as { redirect?: string }
+    expect(search.redirect).toBeUndefined()
+  })
+
   it('senha provisória vence o destino guardado', async () => {
     const { stub } = servidorDeAuth({ precisaTrocarSenha: true })
     const { router, user } = renderRoute('/login?redirect=/cadastros/clientes', stub)

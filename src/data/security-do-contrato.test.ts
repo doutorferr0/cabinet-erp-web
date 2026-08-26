@@ -31,7 +31,7 @@ const doc = contrato as unknown as {
 }
 
 /**
- * As quatro que NÃO exigem sessão. Lista fechada, e cada uma tem um motivo que
+ * As sete que NÃO exigem sessão. Lista fechada, e cada uma tem um motivo que
  * não é conveniência:
  *
  * - `Health`/`HealthDb` — prova de vida é lida por ORQUESTRADOR, que não tem
@@ -40,8 +40,33 @@ const doc = contrato as unknown as {
  * - `AuthLogin` — é o caminho que CRIA a sessão.
  * - `AuthLogout` — encerrar o que já não existe é 204, não 401. Um 401 aqui
  *   deixaria o cliente sem como limpar um cookie vencido.
+ *
+ * As TRÊS do ciclo da credencial entraram juntas, e pelo mesmo motivo: quem as
+ * chama não tem sessão **por definição** — é a pessoa que ainda não recebeu
+ * senha nenhuma (convite) ou que perdeu a que tinha (recuperação). Exigir
+ * sessão aqui seria exigir a credencial de quem veio justamente buscá-la.
+ *
+ * - `AuthForgotPassword` — pede o link. Responde 202 sempre, exista a conta ou
+ *   não: é a única defesa contra usar um caminho público como consulta de quem
+ *   tem conta aqui.
+ * - `AuthCredentialToken` — lê o token do link sem gastá-lo, para a tela saber
+ *   o que mostrar. Não é buraco: **o token É a autenticação desta chamada**, e
+ *   sem ele não se chega a resposta nenhuma.
+ * - `AuthSetPassword` — gasta o token e grava a senha. Mesma coisa: a prova de
+ *   identidade é a posse do token, e ela vale uma vez só.
+ *
+ * A diferença entre elas e o resto de `/auth` é essa: `AuthChangePassword` e
+ * `AuthMe` continuam exigindo sessão, porque quem as chama já tem uma.
  */
-const PUBLICAS = ['AuthLogin', 'AuthLogout', 'Health', 'HealthDb']
+const PUBLICAS = [
+  'AuthCredentialToken',
+  'AuthForgotPassword',
+  'AuthLogin',
+  'AuthLogout',
+  'AuthSetPassword',
+  'Health',
+  'HealthDb',
+]
 
 function operacoes(): Array<{ caminho: string; verbo: string; op: Operacao }> {
   return Object.entries(doc.paths).flatMap(([caminho, verbos]) =>

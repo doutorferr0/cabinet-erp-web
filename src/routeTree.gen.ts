@@ -15,6 +15,8 @@ import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
+import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -87,6 +89,16 @@ const CrmRoute = CrmRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
+  id: '/definir-senha',
+  path: '/definir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
+  id: '/esqueci-senha',
+  path: '/esqueci-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstoqueRoute = EstoqueRouteImport.update({
@@ -324,6 +336,8 @@ export interface FileRoutesByFullPath {
   '/compras': typeof ComprasRouteWithChildren
   '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
@@ -373,6 +387,8 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
@@ -423,6 +439,8 @@ export interface FileRoutesById {
   '/compras': typeof ComprasRouteWithChildren
   '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
@@ -476,6 +494,8 @@ export interface FileRouteTypes {
     | '/compras'
     | '/crm'
     | '/dashboard'
+    | '/definir-senha'
+    | '/esqueci-senha'
     | '/estoque'
     | '/login'
     | '/planner'
@@ -525,6 +545,8 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/crm'
     | '/dashboard'
+    | '/definir-senha'
+    | '/esqueci-senha'
     | '/login'
     | '/planner'
     | '/tarefas'
@@ -574,6 +596,8 @@ export interface FileRouteTypes {
     | '/compras'
     | '/crm'
     | '/dashboard'
+    | '/definir-senha'
+    | '/esqueci-senha'
     | '/estoque'
     | '/login'
     | '/planner'
@@ -626,6 +650,8 @@ export interface RootRouteChildren {
   ComprasRoute: typeof ComprasRouteWithChildren
   CrmRoute: typeof CrmRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  DefinirSenhaRoute: typeof DefinirSenhaRoute
+  EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   EstoqueRoute: typeof EstoqueRouteWithChildren
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRoute
@@ -678,6 +704,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/definir-senha': {
+      id: '/definir-senha'
+      path: '/definir-senha'
+      fullPath: '/definir-senha'
+      preLoaderRoute: typeof DefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esqueci-senha': {
+      id: '/esqueci-senha'
+      path: '/esqueci-senha'
+      fullPath: '/esqueci-senha'
+      preLoaderRoute: typeof EsqueciSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estoque': {
@@ -1109,6 +1149,8 @@ const rootRouteChildren: RootRouteChildren = {
   ComprasRoute: ComprasRouteWithChildren,
   CrmRoute: CrmRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  DefinirSenhaRoute: DefinirSenhaRoute,
+  EsqueciSenhaRoute: EsqueciSenhaRoute,
   EstoqueRoute: EstoqueRouteWithChildren,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRoute,

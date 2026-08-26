@@ -847,6 +847,15 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   // tres**, entao nao ha ficcao a proteger - e declaracao de ausencia com
   // validade de horas e exatamente o que o cabecalho deste arquivo documenta
   // como o jeito de a lista envelhecer calada.
+  //
+  // EMENDA (esta PR): a frase "nenhuma tela chama as tres" venceu para o
+  // TIMBRE. `/config/usuarios` passou a edita-lo pela aba Empresas, e com
+  // consumidor a ausencia de handler de mock deixa de ser inofensiva: sem
+  // `VITE_API_PROXY` a passagem nasce VAZIA (e o site publico e 100% mock),
+  // entao a rota sem handler cai no fallback da SPA e devolve `index.html` com
+  // 200 - o "pior mascaramento" que o paragrafo acima descreve. As duas
+  // continuam AQUI, que e o certo (com proxy elas saem para a rede), e ganharam
+  // handler em `src/mocks/api/empresas.ts` para o caso sem proxy.
   { metodo: 'get', caminho: '/api/orders/{id}/print' },
   { metodo: 'get', caminho: '/api/company-letterhead' },
   { metodo: 'put', caminho: '/api/company-letterhead' },
@@ -952,6 +961,22 @@ const COMPRAS_501 =
 
 const COMISSOES_SEM_PORTA =
   'sem handler no api — modulo existe (0044 + src/modules/comissoes/), rotas.ts nao; api#118'
+
+/**
+ * AS CINCO DA ADMINISTRAÇÃO DO GRUPO — publicadas por ESTA PR, e por isso
+ * `sem-contrato`: a cópia do api não conhece caminho que nasceu aqui hoje.
+ *
+ * **A natureza delas não é medição, é aritmética.** As outras naturezas deste
+ * arquivo saíram de sonda contra o par local; esta sai da definição: o
+ * `check:contract` do api compara a cópia byte a byte com o que a `main` DESTE
+ * repo publica, então enquanto esta PR não mergear, o `openapi-v1.json` de lá
+ * não tem `/api/tenants` nem `/api/employees/{id}/links` — e o glue de lá
+ * responde o 404 do ROTEADOR, não 501, para caminho que o documento não
+ * declara. Medir contra o par local hoje devolveria exatamente isso, ao custo
+ * de subir dois servidores para confirmar uma subtração.
+ */
+const ADMIN_DO_GRUPO_SEM_CONTRATO_LA =
+  'publicadas por ESTA PR — a copia do contrato no api ainda nao as conhece; sync + handlers na PR da api'
 
 const SENHA_INICIAL_SEM_CONTRATO_LA =
   'publicada por ESTA PR — a copia do contrato no api ainda nao a conhece; sync + handler na PR da api'
@@ -1449,6 +1474,36 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     metodo: 'patch',
     caminho: '/api/projects/{projectId}/plan/items/{itemId}',
     motivo: REAGENDAR_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/employees/{id}/links',
+    motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/tenants',
+    motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/tenants',
+    motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/tenants/{id}',
+    motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/tenants/{id}',
+    motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
   },
 ]

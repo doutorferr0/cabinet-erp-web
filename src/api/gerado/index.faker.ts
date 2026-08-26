@@ -37,6 +37,7 @@ import type {
   DashboardSummaryDto,
   DeliveryDetailDto,
   EmployeeDetailDto,
+  EmployeeTenantLinkDto,
   FinancialSettlementDto,
   FinancialTitleDto,
   FulfillmentFactDto,
@@ -89,6 +90,7 @@ import type {
   PagedResultOfSupportAuditEntryDto,
   PagedResultOfSupportGrantDto,
   PagedResultOfTechnicalReserveDto,
+  PagedResultOfTenantDto,
   PagedResultOfWorkDto,
   PartnerAddress,
   PartnerContactDto,
@@ -129,6 +131,7 @@ import type {
   TaskDto,
   TechnicalReserveDto,
   TemporaryPasswordDto,
+  TenantDetailDto,
   TodoDto,
   VariantTablePriceDto,
   VinculoDeEmpresa,
@@ -335,6 +338,14 @@ export const getCreateRoleResponseMock = (overrideResponse: Partial<Extract<Role
 export const getGetRoleResponseMock = (overrideResponse: Partial<Extract<RoleDetailDto, object>> = {}): RoleDetailDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), system: faker.datatype.boolean(), template: faker.datatype.boolean(), active: faker.datatype.boolean(), permissionCount: faker.number.int(), permissions: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
 
 export const getUpdateRoleResponseMock = (overrideResponse: Partial<Extract<RoleDetailDto, object>> = {}): RoleDetailDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), system: faker.datatype.boolean(), template: faker.datatype.boolean(), active: faker.datatype.boolean(), permissionCount: faker.number.int(), permissions: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
+
+export const getListTenantsResponseMock = (overrideResponse: Partial<Extract<PagedResultOfTenantDto, object>> = {}): PagedResultOfTenantDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), cnpj: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), active: faker.datatype.boolean()})), total: faker.number.int(), ...overrideResponse})
+
+export const getCreateTenantResponseMock = (overrideResponse: Partial<Extract<TenantDetailDto, object>> = {}): TenantDetailDto => ({id: faker.string.uuid(), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), cnpj: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), active: faker.datatype.boolean(), features: faker.helpers.arrayElements(['suppliers','professionals','employees'] as const), ...overrideResponse})
+
+export const getGetTenantResponseMock = (overrideResponse: Partial<Extract<TenantDetailDto, object>> = {}): TenantDetailDto => ({id: faker.string.uuid(), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), cnpj: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), active: faker.datatype.boolean(), features: faker.helpers.arrayElements(['suppliers','professionals','employees'] as const), ...overrideResponse})
+
+export const getUpdateTenantResponseMock = (overrideResponse: Partial<Extract<TenantDetailDto, object>> = {}): TenantDetailDto => ({id: faker.string.uuid(), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), cnpj: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), active: faker.datatype.boolean(), features: faker.helpers.arrayElements(['suppliers','professionals','employees'] as const), ...overrideResponse})
 
 export const getListSupportGrantsResponseMock = (overrideResponse: Partial<Extract<PagedResultOfSupportGrantDto, object>> = {}): PagedResultOfSupportGrantDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), organizationId: faker.string.uuid(), organizationName: faker.string.alpha({length: {min: 10, max: 20}}), reason: faker.string.alpha({length: {min: 10, max: 20}}), grantedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', revokedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), status: faker.helpers.arrayElement(['active','expired','revoked'] as const), actorEmployeeId: faker.string.uuid(), actorDisplayName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined])})), total: faker.number.int(), ...overrideResponse})
 
@@ -549,6 +560,8 @@ export const getListBankAccountsResponseMock = (overrideResponse: Partial<Extrac
 export const getListCashRegistersResponseMock = (overrideResponse: Partial<Extract<PagedResultOfCashRegisterDto, object>> = {}): PagedResultOfCashRegisterDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), openingBalanceCents: faker.number.int(), active: faker.datatype.boolean()})), total: faker.number.int(), ...overrideResponse})
 
 export const getListPaymentModesResponseMock = (overrideResponse: Partial<Extract<PagedResultOfPaymentModeDto, object>> = {}): PagedResultOfPaymentModeDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), code: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), adminFeePercent: faker.helpers.arrayElement([faker.number.int(), undefined]), termDays: faker.helpers.arrayElement([faker.number.int(), undefined]), fixedDay: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), usableInSettlement: faker.datatype.boolean(), active: faker.datatype.boolean()})), total: faker.number.int(), ...overrideResponse})
+
+export const getListEmployeeLinksResponseMock = (): EmployeeTenantLinkDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), tenantName: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.uuid(), null]), undefined]), roleName: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), active: faker.datatype.boolean()})))
 
 export const getResetEmployeePasswordResponseMock = (overrideResponse: Partial<Extract<TemporaryPasswordDto, object>> = {}): TemporaryPasswordDto => ({temporaryPassword: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 

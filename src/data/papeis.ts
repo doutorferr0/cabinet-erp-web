@@ -71,6 +71,7 @@ export type FamiliaDeCaminho =
   | 'projects'
   | 'dashboard'
   | 'roles'
+  | 'tenants'
 
 /**
  * Papel mínimo por família de caminho — cópia da matriz do backend
@@ -191,6 +192,20 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * junto com `alcanca()` — não só esta linha.
    */
   roles: 'admin',
+  /**
+   * `owner` e não `admin`, e a diferença é de espécie.
+   *
+   * O critério desta matriz é *o erro de um vaza para os documentos de todo
+   * mundo* — e aqui vaza mais longe que isso. A empresa é a unidade de
+   * ISOLAMENTO deste sistema: criar uma acrescenta um recorte ao grupo, e
+   * desativar uma tira do seletor todo mundo que trabalhava nela. `admin`
+   * administra as pessoas DE uma empresa; quem monta o grupo responde por ele.
+   *
+   * Não é adivinhação: `/api/tenants` é caminho novo, e caminho de domínio sem
+   * linha na matriz do SERVIDOR cai em `owner`. Declarar `admin` aqui acenderia
+   * na tela um botão que o servidor recusa.
+   */
+  tenants: 'owner',
 }
 
 /**
@@ -219,6 +234,7 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   projects: ['/api/projects'],
   dashboard: ['/api/dashboard'],
   roles: ['/api/roles'],
+  tenants: ['/api/tenants'],
 }
 
 /** Devolve a família de um caminho de API, ou `undefined` quando não se aplica. */

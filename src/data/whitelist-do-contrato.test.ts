@@ -10,6 +10,7 @@ import {
   ORDENAVEIS_MOTIVO_DE_PERDA,
   ORDENAVEIS_OPORTUNIDADE,
 } from '@/data/crm-api'
+import { ORDENAVEIS_EMPRESA } from '@/data/empresas-do-grupo-api'
 import {
   FILTRAVEIS as FILTRAVEIS_PARCEIRO,
   ORDENAVEIS as ORDENAVEIS_PARCEIRO,
@@ -38,6 +39,7 @@ import {
   ORDENAVEIS_OPORTUNIDADE as ORDENAVEIS_OPORTUNIDADE_MOCK,
 } from '@/mocks/api/crm'
 import { ORDENAVEIS_DEPOSITO, ORDENAVEIS_SALDO } from '@/mocks/api/depositos'
+import { ORDENAVEIS_EMPRESA as ORDENAVEIS_EMPRESA_MOCK } from '@/mocks/api/empresas'
 import {
   FILTRAVEIS_PARCEIRO as FILTRAVEIS_PARCEIRO_MOCK,
   FILTRAVEIS_PRODUTO as FILTRAVEIS_PRODUTO_MOCK,
@@ -321,6 +323,13 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   // abre exceção), e ela já carrega a whitelist — então entra AQUI, e não no
   // inventário de "sem lista no front".
   ListSupportGrants: ORDENAVEIS_CONCESSAO,
+  // A aba Empresas não desenha cabeçalho clicável — um grupo tem unidades, não
+  // milhares de linhas, e na prática sai sempre `code`. A lista entra por ESTE
+  // eixo assim mesmo, e não em `SEM_LISTA_NO_FRONT`: ela EXISTE no front
+  // (`empresas-do-grupo-api.ts`), e é ela que fecha o `sortBy` que a fronteira
+  // pode mandar. Declarar ausência de lista onde há uma faria a coluna que um
+  // dia virar clicável escapar da guarda.
+  ListTenants: ORDENAVEIS_EMPRESA,
 }
 
 /**
@@ -392,6 +401,10 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   GetStockAgingReport: ORDENAVEIS_DIAS_SEM_VENDA,
   GetQuoteVsStockReport: ORDENAVEIS_ORCAMENTO_X_ESTOQUE,
   GetBirthdaysReport: ORDENAVEIS_ANIVERSARIANTES,
+  // As empresas do grupo entram nos DOIS eixos: têm tela (acima) e têm mock —
+  // o site público é 100% mock, e ali quem recusa `sortBy` fora da whitelist é
+  // o handler de `src/mocks/api/empresas.ts`.
+  ListTenants: ORDENAVEIS_EMPRESA_MOCK,
 }
 
 /**

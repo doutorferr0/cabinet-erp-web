@@ -81,6 +81,24 @@ const KINDS = {
 
 export type LookupKind = keyof typeof KINDS
 
+/**
+ * Os kinds, na ordem em que `KINDS` os declara — a lista que a tela de gestão
+ * das listas de apoio percorre.
+ *
+ * **Derivada, nunca escrita à mão.** O vocabulário não viaja pelo contrato
+ * (ADR-011: `kind` é `string` livre, sem enum, porque enumerá-lo faria
+ * cadastrar uma lista nova virar PR de contrato), então a única fonte que o
+ * front tem é este mapa. Uma segunda lista, para a tela, envelheceria no
+ * primeiro kind acrescentado — e envelheceria calada, porque kind desconhecido
+ * na LEITURA devolve 200 vazio, não erro.
+ */
+export const LOOKUP_KINDS = Object.keys(KINDS) as LookupKind[]
+
+/** O nome do kind como o servidor o guarda (`MARCA`), a partir da chave de UI. */
+export function kindDoBackend(kind: LookupKind): string {
+  return KINDS[kind].backend
+}
+
 /** Nome do kind para o operador. Rótulo é UI, não dado — por isso não vem do servidor. */
 export function lookupLabel(kind: LookupKind): string {
   return KINDS[kind].label

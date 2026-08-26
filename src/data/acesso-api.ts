@@ -1,6 +1,7 @@
 import {
   type EmployeeDetailDto,
   type EmployeeLinkRequest,
+  type EmployeeTenantLinkDto,
   type EmployeeWriteRequest,
   type PagedResultOfEmployeeDto,
   type PagedResultOfRoleDto,
@@ -11,6 +12,7 @@ import {
   createRole,
   getRole,
   linkEmployee,
+  listEmployeeLinks,
   listEmployees,
   listPermissions,
   listRoles,
@@ -38,6 +40,7 @@ const CHAVES_ACESSO = {
   papeis: ['acesso', 'roles'] as const,
   papel: (id: string) => ['acesso', 'roles', id] as const,
   usuarios: ['acesso', 'employees'] as const,
+  vinculos: (id: string) => ['acesso', 'employees', id, 'links'] as const,
 }
 
 export function useCatalogoDePermissoes() {
@@ -181,6 +184,35 @@ export function useAlterarVinculo() {
       return dadosOuErro<EmployeeDetailDto>(alterada, 'Falha ao alterar o vínculo.')
     },
     onSuccess: invalidar,
+  })
+}
+
+/**
+ * Em quais empresas do grupo esta pessoa entra, e com que papel.
+ *
+ * A pergunta que `EmployeeDetailDto` não responde: ele publica o vínculo da
+ * empresa ATIVA, que é o recorte da escrita, e por isso a linha da listagem
+ * mostra o papel de agora. Quem administra o grupo precisa das outras — "o João
+ * é Financeiro na Matriz e nada na Filial" — e descobrir isso pelo detalhe
+ * exigiria trocar de empresa ativa uma vez por empresa.
+ *
+ * **A ESCRITA continua sendo por empresa, e a tela diz isso.** O vínculo é a
+ * linha que define o poder da pessoa NAQUELA empresa; gravá-lo de fora dela
+ * seria decidir o poder de uma empresa com a autorização obtida em outra. Quem
+ * quer mexer no vínculo da empresa B ativa a empresa B — e o diálogo oferece o
+ * gesto na própria linha.
+ *
+ * `enabled` só com id: o diálogo monta fechado, e uma consulta com id vazio
+ * gastaria um 404 por abertura da tela.
+ */
+export function useVinculosDoUsuario(id: string | null) {
+  return useQuery({
+    queryKey: CHAVES_ACESSO.vinculos(id ?? ''),
+    enabled: id !== null,
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listEmployeeLinks(id ?? '')
+      return dadosOuErro<EmployeeTenantLinkDto[]>(resposta, 'Falha ao consultar os vínculos.')
+    },
   })
 }
 

@@ -259,16 +259,40 @@ test('login → parceiro → produto → orçamento → pedido, contra o Postgre
     // resolvido NO SERVIDOR: filtrar aqui é mais uma coisa provada, não um
     // desvio.
     await busca.getByLabel('Busca').fill(MARCA)
-    const achado = busca.locator('tbody tr', { hasText: MARCA }).first()
-    await expect(achado, 'o `q` do servidor não achou o parceiro recém-criado').toBeVisible({
-      timeout: 60_000,
-    })
+
+    // ESPERAR A GRADE FILTRAR, e não só a linha aparecer.
+    //
+    // O `q` vai ao SERVIDOR. Enquanto a resposta não chega, o diálogo segue
+    // mostrando a lista inteira — e a linha procurada já está visível ali, vinda
+    // da página 1. Clicar nesse instante acerta um nó que o React substitui
+    // quando a resposta filtrada chega: o clique se perde, e a falha aparece
+    // duas linhas abaixo como **`Selecionar` desabilitado**, que descreve a
+    // consequência e não a causa.
+    //
+    // MEDIDO no CI, e SÓ lá: nesta máquina o servidor responde antes da
+    // asserção e o defeito não existe. É o caso clássico do teste que passa no
+    // dev e reprova no runner por diferença de tempo — e o conserto não é
+    // timeout maior, é uma condição que só o estado FILTRADO satisfaz.
+    //
+    // `MARCA` é único por execução, então a grade filtrada tem exatamente UMA
+    // linha. Esperar por isso é esperar a resposta do servidor, e de quebra
+    // prova que o `q` filtra de verdade.
+    await expect(
+      busca.locator('tbody tr'),
+      'o `q` do servidor não filtrou até o parceiro recém-criado',
+    ).toHaveCount(1, { timeout: 60_000 })
+
+    const achado = busca.locator('tbody tr').first()
 
     // Clicar a linha MARCA a escolha; quem a aplica é `Selecionar` (o próprio
     // diálogo diz isso na descrição). Aqui a linha marca em vez de abrir — é a
     // outra metade do par da `#198`: *"onde a linha marca (janela de busca), os
     // dois marcam"*.
     await achado.click()
+
+    // A seleção PEGOU — asserção própria, para a falha acusar o gesto em vez do
+    // botão que ficou desabilitado por consequência.
+    await expect(achado, 'o clique não marcou a linha').toHaveAttribute('data-state', 'selected')
     await busca.getByRole('button', { name: 'Selecionar' }).click()
     await expect(busca).toBeHidden({ timeout: 30_000 })
     await expect(page.getByLabel('Cliente')).toHaveValue(nomeDoCliente)
@@ -321,12 +345,20 @@ test('login → parceiro → produto → orçamento → pedido, contra o Postgre
     // encontrado", apontando para o seletor em vez do gesto. Checkbox também
     // não serve: a coluna de marcação não existe nesta grade, e procurá-lo
     // esgota o tempo sem dizer o motivo.
-    await linha.press(' ')
-
+    //
+    // O gesto vai dentro de um `toPass` porque a grade REFAZ a consulta ao
+    // trocar o tamanho da página, e um gesto disparado durante a troca acerta um
+    // nó que o React substitui — o mesmo defeito que derrubou o diálogo de busca
+    // no CI, aqui com outra causa. `toPass` reexecuta o par gesto+asserção; não
+    // é afrouxamento, porque a asserção é a mesma e ela ainda reprova no fim.
+    //
     // `Gerar Pedido` mora na barra de SELEÇÃO (`needsSelection: true`), não no
-    // cabeçalho da tela: sem linha marcada o botão não existe, e a falha sairia
-    // como "botão não encontrado" em vez de "a linha não ficou selecionada".
-    await expect(linha).toHaveAttribute('data-state', 'selected')
+    // cabeçalho: sem linha marcada o botão não existe, e a falha sairia como
+    // "botão não encontrado" em vez de "a linha não ficou selecionada".
+    await expect(async () => {
+      await linha.press(' ')
+      await expect(linha).toHaveAttribute('data-state', 'selected', { timeout: 5_000 })
+    }).toPass({ timeout: 60_000 })
 
     await page.getByRole('button', { name: 'Gerar Pedido' }).click()
     // O diálogo confirma antes de converter, e o texto do botão é minúsculo no

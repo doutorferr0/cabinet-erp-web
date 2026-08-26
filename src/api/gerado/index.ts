@@ -15,6 +15,10 @@ import type {
   AgendaEventDto,
   BirthdaysReportDto,
   CancelDocumentRequest,
+  CashMovementDto,
+  CashMovementWriteRequest,
+  CashTransferDto,
+  CashTransferRequest,
   CatalogLookupCreateRequest,
   CatalogLookupDto,
   CatalogLookupUpdateRequest,
@@ -29,6 +33,8 @@ import type {
   CostSimulationDto,
   CostSimulationRequest,
   CreateDeliveryRequest,
+  CredentialTokenDto,
+  CredentialTokenRequest,
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
   CrmLostReasonsReportDto,
@@ -44,6 +50,10 @@ import type {
   EmployeeDetailDto,
   EmployeeLinkRequest,
   EmployeeWriteRequest,
+  FinancialSettlementDto,
+  FinancialTitleDto,
+  FinancialTitleWriteRequest,
+  ForgotPasswordRequest,
   FulfillmentFactDto,
   GetAbcCurveReportParams,
   GetBirthdaysReportParams,
@@ -64,10 +74,14 @@ import type {
   HealthStatus,
   InstallmentPolicyDto,
   InstallmentPolicyWriteRequest,
+  InvitationDto,
   LabelLayoutDto,
   LabelLayoutWriteRequest,
   ListActivitiesParams,
   ListAgendaEventsParams,
+  ListBankAccountsParams,
+  ListCashMovementsParams,
+  ListCashRegistersParams,
   ListCatalogLookupsParams,
   ListCommissionClosingEntriesParams,
   ListCommissionClosingsParams,
@@ -78,6 +92,8 @@ import type {
   ListDeliveriesParams,
   ListEmployeeCommissionTiersParams,
   ListEmployeesParams,
+  ListFinancialInstallmentsParams,
+  ListFinancialTitlesParams,
   ListGoodsReceiptsParams,
   ListLabelLayoutsParams,
   ListOrderParticipantsParams,
@@ -86,6 +102,7 @@ import type {
   ListPartnerCommissionTiersParams,
   ListPartnerContactsParams,
   ListPartnersParams,
+  ListPaymentModesParams,
   ListPaymentTermsParams,
   ListPickingQueueParams,
   ListPriceIndexesParams,
@@ -113,6 +130,9 @@ import type {
   OrderParticipantsWriteRequest,
   OrderWriteRequest,
   PagedResultOfActivityDto,
+  PagedResultOfBankAccountDto,
+  PagedResultOfCashMovementDto,
+  PagedResultOfCashRegisterDto,
   PagedResultOfCatalogLookupDto,
   PagedResultOfCommissionClosingDto,
   PagedResultOfCommissionClosingEntryDto,
@@ -123,6 +143,8 @@ import type {
   PagedResultOfCrmPipelineDto,
   PagedResultOfDeliveryDto,
   PagedResultOfEmployeeDto,
+  PagedResultOfFinancialInstallmentDto,
+  PagedResultOfFinancialTitleDto,
   PagedResultOfGoodsReceiptDto,
   PagedResultOfLabelLayoutDto,
   PagedResultOfOrderDto,
@@ -130,6 +152,7 @@ import type {
   PagedResultOfOrderProfessionalAssignmentDto,
   PagedResultOfPartnerContactDto,
   PagedResultOfPartnerDto,
+  PagedResultOfPaymentModeDto,
   PagedResultOfPaymentTermDto,
   PagedResultOfPickingQueueItemDto,
   PagedResultOfPriceIndexDto,
@@ -190,6 +213,10 @@ import type {
   ServiceDto,
   ServiceWriteRequest,
   SessaoAtual,
+  SetPasswordRequest,
+  SettlementBatchRequest,
+  SettlementBatchResultDto,
+  SettlementWriteRequest,
   StockAgingReportDto,
   StockLocationDto,
   StockLocationWriteRequest,
@@ -1566,6 +1593,147 @@ export const authChangePassword = async (changePasswordRequest: ChangePasswordRe
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(changePasswordRequest)
+  }
+);}
+
+
+
+export type authForgotPasswordResponse202 = {
+  data: void
+  status: 202
+}
+
+export type authForgotPasswordResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type authForgotPasswordResponseSuccess = (authForgotPasswordResponse202) & {
+  headers: Headers;
+};
+export type authForgotPasswordResponseError = (authForgotPasswordResponse400) & {
+  headers: Headers;
+};
+
+export type authForgotPasswordResponse = (authForgotPasswordResponseSuccess | authForgotPasswordResponseError)
+
+export const getAuthForgotPasswordUrl = () => {
+
+
+
+
+  return `/auth/forgot-password`
+}
+
+/**
+ * Proposto. O pedido de recuperação: quem esqueceu a senha manda o e-mail e recebe um LINK, sem falar com ninguém. Fecha a metade que `ResetEmployeePassword` deixou aberta — lá o administrador gera uma provisória e a lê para a pessoa; aqui a pessoa se resolve sozinha, e o segredo nunca passa por um terceiro.
+ *
+ * **A resposta é 202 SEMPRE**, exista a conta ou não, esteja ela ativa ou não. Responder 404 para e-mail desconhecido transformaria este caminho — que é público por necessidade — em consulta de quem tem conta aqui, e ela responderia a qualquer um, sem sessão e sem limite. O corpo não diz nada além do aceite: quem tem a conta descobre pelo e-mail que chega, e quem não tem não descobre nada.
+ *
+ * Pedir de novo INVALIDA o link anterior. Dois links vivos ao mesmo tempo dobram a janela de quem interceptou um deles, e o segundo pedido é quase sempre “não chegou” — não “quero mais um”.
+ */
+export const authForgotPassword = async (forgotPasswordRequest: ForgotPasswordRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authForgotPasswordResponse> => {
+
+  return apiFetch<authForgotPasswordResponse>(getAuthForgotPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(forgotPasswordRequest)
+  }
+);}
+
+
+
+export type authCredentialTokenResponse200 = {
+  data: CredentialTokenDto
+  status: 200
+}
+
+export type authCredentialTokenResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type authCredentialTokenResponseSuccess = (authCredentialTokenResponse200) & {
+  headers: Headers;
+};
+export type authCredentialTokenResponseError = (authCredentialTokenResponse400) & {
+  headers: Headers;
+};
+
+export type authCredentialTokenResponse = (authCredentialTokenResponseSuccess | authCredentialTokenResponseError)
+
+export const getAuthCredentialTokenUrl = () => {
+
+
+
+
+  return `/auth/credential-token`
+}
+
+/**
+ * Proposto. Lê o token do link SEM consumi-lo, para que a tela de definir senha saiba o que mostrar antes de a pessoa digitar: “Bem-vindo, Fulano — escolha sua senha” num convite, “Nova senha para fulano@x” numa recuperação. Sem esta leitura, quem clicou num link vencido só descobre depois de escolher e confirmar a senha duas vezes.
+ *
+ * **É POST, e não GET, embora não mude nada** — de propósito. O token é a credencial inteira: em GET ele viajaria na URL e ficaria no log de acesso do servidor, no histórico do navegador e no `Referer` de qualquer imagem da página. No corpo, não fica em nenhum dos três. Idempotência não é o critério aqui; onde o segredo repousa é.
+ *
+ * Não é oráculo: sem o token não se chega a esta resposta, e quem o tem já provou posse. O que ela devolve é o que o link já autoriza a fazer.
+ */
+export const authCredentialToken = async (credentialTokenRequest: CredentialTokenRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authCredentialTokenResponse> => {
+
+  return apiFetch<authCredentialTokenResponse>(getAuthCredentialTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(credentialTokenRequest)
+  }
+);}
+
+
+
+export type authSetPasswordResponse204 = {
+  data: void
+  status: 204
+}
+
+export type authSetPasswordResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type authSetPasswordResponseSuccess = (authSetPasswordResponse204) & {
+  headers: Headers;
+};
+export type authSetPasswordResponseError = (authSetPasswordResponse400) & {
+  headers: Headers;
+};
+
+export type authSetPasswordResponse = (authSetPasswordResponseSuccess | authSetPasswordResponseError)
+
+export const getAuthSetPasswordUrl = () => {
+
+
+
+
+  return `/auth/set-password`
+}
+
+/**
+ * Proposto. GASTA o token e grava a senha escolhida. É o fim dos dois caminhos — o convite de quem nunca entrou e a recuperação de quem esqueceu —, e é o mesmo caminho porque o que muda entre eles é o texto do e-mail, não o ato: em ambos alguém que provou posse de um endereço define a própria senha pela primeira vez.
+ *
+ * **Uso único, e a garantia é do servidor, não da tela:** o token é marcado como consumido na MESMA instrução que o valida, então duas chamadas simultâneas com o mesmo link deixam exatamente uma gravar. Junto com a senha, `mustChangePassword` DESLIGA — a pessoa acabou de escolher, não há o que forçar depois — e **toda sessão dela é encerrada**, inclusive a de quem estivesse usando a senha antiga em outro lugar, que é o motivo mais comum de se pedir uma recuperação.
+ *
+ * Não cria sessão: quem definiu a senha vai para o login e a usa. Autenticar aqui faria o link do e-mail valer como login, e um link encaminhado por engano entregaria a conta.
+ */
+export const authSetPassword = async (setPasswordRequest: SetPasswordRequest, options?: Parameters<typeof apiFetch>[1]): Promise<authSetPasswordResponse> => {
+
+  return apiFetch<authSetPasswordResponse>(getAuthSetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setPasswordRequest)
   }
 );}
 
@@ -4471,64 +4639,6 @@ export const updateEmployeeLink = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(employeeLinkRequest)
-  }
-);}
-
-
-
-export type resetEmployeePasswordResponse200 = {
-  data: TemporaryPasswordDto
-  status: 200
-}
-
-export type resetEmployeePasswordResponse401 = {
-  data: NaoAutenticadoResponse
-  status: 401
-}
-
-export type resetEmployeePasswordResponse403 = {
-  data: SemPermissaoResponse
-  status: 403
-}
-
-export type resetEmployeePasswordResponse404 = {
-  data: ProblemDetails
-  status: 404
-}
-
-export type resetEmployeePasswordResponse409 = {
-  data: ProblemDetails
-  status: 409
-}
-
-export type resetEmployeePasswordResponseSuccess = (resetEmployeePasswordResponse200) & {
-  headers: Headers;
-};
-export type resetEmployeePasswordResponseError = (resetEmployeePasswordResponse401 | resetEmployeePasswordResponse403 | resetEmployeePasswordResponse404 | resetEmployeePasswordResponse409) & {
-  headers: Headers;
-};
-
-export type resetEmployeePasswordResponse = (resetEmployeePasswordResponseSuccess | resetEmployeePasswordResponseError)
-
-export const getResetEmployeePasswordUrl = (id: string,) => {
-
-
-
-
-  return `/api/employees/${id}/reset-password`
-}
-
-/**
- * Proposto. O único caminho que dá credencial a um colaborador: `CreateEmployee` grava senha inutilizável de propósito, então sem esta operação a conta nunca entra. O SERVIDOR gera a senha provisória — o admin não escolhe — e ela aparece UMA única vez, nesta resposta; não há leitura que a devolva depois, nem para quem a gerou. `mustChangePassword` liga junto: o primeiro login exige `/auth/change-password` antes de qualquer outra coisa. Repetir a chamada é o reset de quem esqueceu — invalida a credencial atual e gera outra provisória.
- */
-export const resetEmployeePassword = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<resetEmployeePasswordResponse> => {
-
-  return apiFetch<resetEmployeePasswordResponse>(getResetEmployeePasswordUrl(id),
-  {
-    ...options,
-    method: 'POST'
-
-
   }
 );}
 
@@ -8040,6 +8150,8 @@ export const getGetPurchaseArrivalForecastUrl = (params?: GetPurchaseArrivalFore
  *
  * Linha a linha de ITEM, não de ordem: a pergunta que a tela responde é "quando chega a peça do cliente X". Só entram itens de ordem **enviada e não cancelada** — ordem em `draft` é intenção do comprador, e mostrá-la como peça a caminho é o que faz o vendedor prometer data ao cliente com base numa ordem que ninguém mandou.
  *
+ * **E só o que AINDA NÃO CHEGOU.** Linha inteiramente recebida sai da previsão; a parcialmente recebida fica pelo que falta — `quantity` aqui é o SALDO A CHEGAR (ver o campo), e não a quantidade original da ordem. Previsão que mostrasse o que já desceu do caminhão faria o vendedor prometer duas vezes a mesma peça, que é o defeito que esta tela existe para não ter.
+ *
  * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
  */
 export const getPurchaseArrivalForecast = async (params?: GetPurchaseArrivalForecastParams, options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseArrivalForecastResponse> => {
@@ -8517,6 +8629,8 @@ export const getPostGoodsReceiptUrl = (id: string,) => {
  * **O que este lançamento NÃO baixa: `PurchaseReplenishmentRowDto.qtyAllocated`** — a reserva de VENDA, peça física já prometida a um cliente. Entrada de compra não desfaz promessa de venda: ela é o que a torna cumprível. Decrementá-la aqui liberaria, em silêncio, peça que alguém já vendeu, e a conta que o comprador lê (`qtyAvailable = qtyOnHand − qtyAllocated`) passaria a prometer duas vezes a mesma peça.
  *
  * **A reserva que ele de fato baixa é a de CHEGADA FUTURA: `PurchaseReplenishmentRowDto.qtyOnOrder`**, "o que vem em ordem enviada e ainda não recebida". Ela mora na ordem de compra, não no saldo, e é por ela que a sugestão de reposição para de pedir de novo o que já desceu do caminhão. Sem esse elo, a peça recebida conta duas vezes e a sugestão sai MENOR que a real — o comprador compra de menos.
+ *
+ * **E essa baixa não é coluna que este lançamento escreve: é a LINHA que ele deixa apontada.** `qtyOnOrder` e `PurchaseOrderItemDto.quantityReceived` são DERIVADOS do vínculo `purchaseOrderId` + `purchaseOrderLine` das linhas de recebimentos LANÇADOS. Um contador decrementado aqui divergiria do documento no primeiro estorno, e ninguém reconcilia isso depois; o derivado não tem como divergir do que os documentos dizem. Recebimento em `draft` ou `checked` não conta — enquanto não lançou, a peça não entrou no galpão —, e linha SEM vínculo não baixa reserva nenhuma, porque ordem nenhuma a esperava.
  *
  * **Sem empresa ativa na sessão é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: a empresa vem da sessão e não do cliente, então "sem empresa" é operador recém-criado, não requisição malformada. A LISTAGEM, por outro lado, responde `{rows: [], total: 0}`.
  */
@@ -9012,6 +9126,75 @@ export const replaceOrderParticipants = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(orderParticipantsWriteRequest)
+  }
+);}
+
+
+
+export type inviteEmployeeResponse200 = {
+  data: InvitationDto
+  status: 200
+}
+
+export type inviteEmployeeResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type inviteEmployeeResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type inviteEmployeeResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type inviteEmployeeResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type inviteEmployeeResponse502 = {
+  data: ProblemDetails
+  status: 502
+}
+
+export type inviteEmployeeResponseSuccess = (inviteEmployeeResponse200) & {
+  headers: Headers;
+};
+export type inviteEmployeeResponseError = (inviteEmployeeResponse401 | inviteEmployeeResponse403 | inviteEmployeeResponse404 | inviteEmployeeResponse409 | inviteEmployeeResponse502) & {
+  headers: Headers;
+};
+
+export type inviteEmployeeResponse = (inviteEmployeeResponseSuccess | inviteEmployeeResponseError)
+
+export const getInviteEmployeeUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/invite`
+}
+
+/**
+ * Proposto. Manda ao colaborador o link que lhe dá a primeira senha. É a alternativa a `ResetEmployeePassword` para a MESMA falta — a conta que `CreateEmployee` cria sem credencial utilizável — e a diferença entre as duas é quem fica sabendo do segredo: lá o administrador lê a provisória na tela e a repassa por algum canal; aqui ele não vê senha nenhuma, e quem escolhe é a própria pessoa, no `AuthSetPassword`.
+ *
+ * As duas continuam existindo porque cobrem casos diferentes: o convite pressupõe que o e-mail cadastrado é da pessoa e que ela consegue lê-lo; a provisória serve para quando não é — colaborador de chão de fábrica com e-mail da empresa, endereço errado no cadastro, urgência. **Convidar não é mais seguro por si só; é seguro quando o e-mail é dela.**
+ *
+ * Convidar de novo INVALIDA o convite anterior, pelo mesmo motivo do `AuthForgotPassword`: o segundo pedido é “não chegou”, e dois links vivos dobram a janela de quem interceptou um.
+ *
+ * **Permissão: `colaboradores:gerenciar`**, herdada da família `/api/employees` — dar acesso é a mesma decisão, seja por senha lida na tela ou por link no e-mail.
+ */
+export const inviteEmployee = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<inviteEmployeeResponse> => {
+
+  return apiFetch<inviteEmployeeResponse>(getInviteEmployeeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 
@@ -10761,6 +10944,1061 @@ export const replaceVariantTablePrices = async (variantId: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(variantTablePricesWriteRequest)
+  }
+);}
+
+
+
+export type listFinancialTitlesResponse200 = {
+  data: PagedResultOfFinancialTitleDto
+  status: 200
+}
+
+export type listFinancialTitlesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listFinancialTitlesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listFinancialTitlesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listFinancialTitlesResponseSuccess = (listFinancialTitlesResponse200) & {
+  headers: Headers;
+};
+export type listFinancialTitlesResponseError = (listFinancialTitlesResponse400 | listFinancialTitlesResponse401 | listFinancialTitlesResponse403) & {
+  headers: Headers;
+};
+
+export type listFinancialTitlesResponse = (listFinancialTitlesResponseSuccess | listFinancialTitlesResponseError)
+
+export const getListFinancialTitlesUrl = (params?: ListFinancialTitlesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/financial-titles?${stringifiedParams}` : `/api/financial-titles`
+}
+
+/**
+ * Proposto. Os TÍTULOS financeiros da empresa ativa — contas a pagar e a receber, discriminadas por `direction`.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para "quantos títulos tem a empresa que você não tem".
+ *
+ * **`direction` é filtro e não caminho.** As duas telas do legado (`Contas a Pagar → Lançamento` e `Contas a Receber → Lançamentos`) chamam a mesma operação com o valor trocado — ver `FinancialTitleDto` para por que um recurso só.
+ *
+ * **Ausente, `direction` traz os dois lados**, e isso é de propósito: é a leitura que a busca por número de documento precisa, quando o operador tem a nota na mão e não sabe se ela é de compra ou de venda.
+ */
+export const listFinancialTitles = async (params?: ListFinancialTitlesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listFinancialTitlesResponse> => {
+
+  return apiFetch<listFinancialTitlesResponse>(getListFinancialTitlesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createFinancialTitleResponse201 = {
+  data: FinancialTitleDto
+  status: 201
+}
+
+export type createFinancialTitleResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createFinancialTitleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createFinancialTitleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createFinancialTitleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createFinancialTitleResponseSuccess = (createFinancialTitleResponse201) & {
+  headers: Headers;
+};
+export type createFinancialTitleResponseError = (createFinancialTitleResponse400 | createFinancialTitleResponse401 | createFinancialTitleResponse403 | createFinancialTitleResponse409) & {
+  headers: Headers;
+};
+
+export type createFinancialTitleResponse = (createFinancialTitleResponseSuccess | createFinancialTitleResponseError)
+
+export const getCreateFinancialTitleUrl = () => {
+
+
+
+
+  return `/api/financial-titles`
+}
+
+/**
+ * Proposto. Lança um título com as suas parcelas.
+ *
+ * **Permissão: `financeiro:editar`.**
+ *
+ * As recusas de negócio:
+ *
+ * 1. **400** — `sequence` das parcelas fora de 1..N, parcela de valor zero ou negativo, `competenceMonth` com dia diferente de 1, ou a parte sem o PAPEL da direção (fornecedor em `payable`, cliente em `receivable`). Todas são conferíveis pelo cliente, e por isso vêm com `fields[]`.
+ * 2. **409** — sem empresa ativa.
+ *
+ * **Sem empresa ativa é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: falta uma ação da pessoa (escolher empresa), o pedido não está malformado.
+ *
+ * **O título nasce `open` e sem baixa**, sempre: criar já quitado exigiria a baixa no mesmo corpo, e a baixa tem destino, meio e data próprios — o que geraria dois fatos numa requisição que a auditoria registraria como um.
+ */
+export const createFinancialTitle = async (financialTitleWriteRequest: FinancialTitleWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createFinancialTitleResponse> => {
+
+  return apiFetch<createFinancialTitleResponse>(getCreateFinancialTitleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(financialTitleWriteRequest)
+  }
+);}
+
+
+
+export type getFinancialTitleResponse200 = {
+  data: FinancialTitleDto
+  status: 200
+}
+
+export type getFinancialTitleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getFinancialTitleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getFinancialTitleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getFinancialTitleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type getFinancialTitleResponseSuccess = (getFinancialTitleResponse200) & {
+  headers: Headers;
+};
+export type getFinancialTitleResponseError = (getFinancialTitleResponse401 | getFinancialTitleResponse403 | getFinancialTitleResponse404 | getFinancialTitleResponse409) & {
+  headers: Headers;
+};
+
+export type getFinancialTitleResponse = (getFinancialTitleResponseSuccess | getFinancialTitleResponseError)
+
+export const getGetFinancialTitleUrl = (id: string,) => {
+
+
+
+
+  return `/api/financial-titles/${id}`
+}
+
+/**
+ * Proposto. Um título pelo id, com as parcelas e as BAIXAS de cada uma — é o extrato do título.
+ *
+ * **Sem empresa ativa é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: falta uma ação da pessoa (escolher empresa), o pedido não está malformado.
+ */
+export const getFinancialTitle = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getFinancialTitleResponse> => {
+
+  return apiFetch<getFinancialTitleResponse>(getGetFinancialTitleUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateFinancialTitleResponse200 = {
+  data: FinancialTitleDto
+  status: 200
+}
+
+export type updateFinancialTitleResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateFinancialTitleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateFinancialTitleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateFinancialTitleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateFinancialTitleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateFinancialTitleResponseSuccess = (updateFinancialTitleResponse200) & {
+  headers: Headers;
+};
+export type updateFinancialTitleResponseError = (updateFinancialTitleResponse400 | updateFinancialTitleResponse401 | updateFinancialTitleResponse403 | updateFinancialTitleResponse404 | updateFinancialTitleResponse409) & {
+  headers: Headers;
+};
+
+export type updateFinancialTitleResponse = (updateFinancialTitleResponseSuccess | updateFinancialTitleResponseError)
+
+export const getUpdateFinancialTitleUrl = (id: string,) => {
+
+
+
+
+  return `/api/financial-titles/${id}`
+}
+
+/**
+ * Proposto. SUBSTITUI o título inteiro, parcelas incluídas.
+ *
+ * **Permissão: `financeiro:editar`.**
+ *
+ * **Recusa (409, `urn:cabinet:erro:titulo-com-baixa`) o título que já tem qualquer baixa.** Reescrever parcela já quitada moveria dinheiro conciliado, e a tela não teria como mostrar o que aconteceu: a baixa aponta a parcela, e a parcela teria mudado de valor por baixo dela.
+ *
+ * **Recusa (409, `urn:cabinet:erro:transicao-invalida`) o título cancelado.** Cancelado é estado final; o caminho de voltar atrás é lançar outro título.
+ */
+export const updateFinancialTitle = async (id: string,
+    financialTitleWriteRequest: FinancialTitleWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateFinancialTitleResponse> => {
+
+  return apiFetch<updateFinancialTitleResponse>(getUpdateFinancialTitleUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(financialTitleWriteRequest)
+  }
+);}
+
+
+
+export type cancelFinancialTitleResponse200 = {
+  data: FinancialTitleDto
+  status: 200
+}
+
+export type cancelFinancialTitleResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type cancelFinancialTitleResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type cancelFinancialTitleResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type cancelFinancialTitleResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type cancelFinancialTitleResponseSuccess = (cancelFinancialTitleResponse200) & {
+  headers: Headers;
+};
+export type cancelFinancialTitleResponseError = (cancelFinancialTitleResponse401 | cancelFinancialTitleResponse403 | cancelFinancialTitleResponse404 | cancelFinancialTitleResponse409) & {
+  headers: Headers;
+};
+
+export type cancelFinancialTitleResponse = (cancelFinancialTitleResponseSuccess | cancelFinancialTitleResponseError)
+
+export const getCancelFinancialTitleUrl = (id: string,) => {
+
+
+
+
+  return `/api/financial-titles/${id}/cancel`
+}
+
+/**
+ * Proposto. CANCELA o título. É o lugar do DELETE que este contrato não tem: o título fica, com o estado dizendo que a dívida não vale mais.
+ *
+ * **Permissão: `financeiro:editar`.**
+ *
+ * **Recusa (409) o título que já tem baixa** — dinheiro que andou não se cancela, se estorna, e estorno não existe neste contrato (ver `FinancialSettlementDto`). Recusa também (409, `urn:cabinet:erro:transicao-invalida`) o que já está cancelado: repetir o gesto não é erro do operador, mas responder 200 faria a tela concluir que houve um segundo cancelamento.
+ */
+export const cancelFinancialTitle = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<cancelFinancialTitleResponse> => {
+
+  return apiFetch<cancelFinancialTitleResponse>(getCancelFinancialTitleUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listFinancialInstallmentsResponse200 = {
+  data: PagedResultOfFinancialInstallmentDto
+  status: 200
+}
+
+export type listFinancialInstallmentsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listFinancialInstallmentsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listFinancialInstallmentsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listFinancialInstallmentsResponseSuccess = (listFinancialInstallmentsResponse200) & {
+  headers: Headers;
+};
+export type listFinancialInstallmentsResponseError = (listFinancialInstallmentsResponse400 | listFinancialInstallmentsResponse401 | listFinancialInstallmentsResponse403) & {
+  headers: Headers;
+};
+
+export type listFinancialInstallmentsResponse = (listFinancialInstallmentsResponseSuccess | listFinancialInstallmentsResponseError)
+
+export const getListFinancialInstallmentsUrl = (params?: ListFinancialInstallmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/financial-installments?${stringifiedParams}` : `/api/financial-installments`
+}
+
+/**
+ * Proposto. As PARCELAS da empresa ativa — a agenda de vencimentos, e a lista que a QUITAÇÃO EM LOTE consome.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para "quantos títulos tem a empresa que você não tem".
+ *
+ * **Existe além da listagem de títulos porque a linha é outra.** Lá a linha é uma dívida; aqui é um vencimento. A pergunta do financeiro todo dia — "o que vence hoje" — não tem resposta na lista de títulos sem escolher uma parcela por título em silêncio (ver o `sortBy` de `ListFinancialTitles`). E é esta lista que alimenta a seleção do lote: o lote paga PARCELAS, de títulos diferentes.
+ *
+ * **`overdue` vem do servidor**, não do cliente: "hoje" é o dia do servidor, e o relógio errado de uma estação marcaria vencido o que não está — bem na coluna que decide o que será pago.
+ */
+export const listFinancialInstallments = async (params?: ListFinancialInstallmentsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listFinancialInstallmentsResponse> => {
+
+  return apiFetch<listFinancialInstallmentsResponse>(getListFinancialInstallmentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type settleInstallmentResponse201 = {
+  data: FinancialSettlementDto
+  status: 201
+}
+
+export type settleInstallmentResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type settleInstallmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type settleInstallmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type settleInstallmentResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type settleInstallmentResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type settleInstallmentResponseSuccess = (settleInstallmentResponse201) & {
+  headers: Headers;
+};
+export type settleInstallmentResponseError = (settleInstallmentResponse400 | settleInstallmentResponse401 | settleInstallmentResponse403 | settleInstallmentResponse404 | settleInstallmentResponse409) & {
+  headers: Headers;
+};
+
+export type settleInstallmentResponse = (settleInstallmentResponseSuccess | settleInstallmentResponseError)
+
+export const getSettleInstallmentUrl = (id: string,) => {
+
+
+
+
+  return `/api/financial-installments/${id}/settlements`
+}
+
+/**
+ * Proposto. QUITA uma parcela — a baixa avulsa.
+ *
+ * **Permissão: `financeiro:quitar`** — separada de `financeiro:editar` porque lançar a conta e pagá-la são funções diferentes em qualquer financeiro que tenha mais de uma pessoa. Quitar A MENOS que o saldo pede ainda a ação fina `financeiro:quitacao-a-menor` (403 sem ela), que é a permissão especial nº 45 do legado.
+ *
+ * **A baixa gera o MOVIMENTO de caixa na mesma transação** — é o que faz o dinheiro aparecer no extrato da conta escolhida, com `sourceType = 'settlement'`. Por isso o destino é obrigatório: ver `SettlementWriteRequest`.
+ *
+ * As recusas:
+ *
+ * 1. **400** — destino ausente ou duplicado, valor zero ou negativo, modo de pagamento que não serve para quitação (`usableInSettlement = false`).
+ * 2. **403** — quitação a menor sem a ação fina.
+ * 3. **409** — parcela já quitada (`urn:cabinet:erro:parcela-ja-quitada`), valor acima do saldo (`urn:cabinet:erro:valor-acima-do-saldo`), título cancelado (`urn:cabinet:erro:transicao-invalida`), data em período fechado (`urn:cabinet:erro:periodo-fechado`) ou sem empresa ativa.
+ *
+ * **Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.
+ */
+export const settleInstallment = async (id: string,
+    settlementWriteRequest: SettlementWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<settleInstallmentResponse> => {
+
+  return apiFetch<settleInstallmentResponse>(getSettleInstallmentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(settlementWriteRequest)
+  }
+);}
+
+
+
+export type settleBatchResponse201 = {
+  data: SettlementBatchResultDto
+  status: 201
+}
+
+export type settleBatchResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type settleBatchResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type settleBatchResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type settleBatchResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type settleBatchResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type settleBatchResponseSuccess = (settleBatchResponse201) & {
+  headers: Headers;
+};
+export type settleBatchResponseError = (settleBatchResponse400 | settleBatchResponse401 | settleBatchResponse403 | settleBatchResponse404 | settleBatchResponse409) & {
+  headers: Headers;
+};
+
+export type settleBatchResponse = (settleBatchResponseSuccess | settleBatchResponseError)
+
+export const getSettleBatchUrl = () => {
+
+
+
+
+  return `/api/financial-settlements/batch`
+}
+
+/**
+ * Proposto. QUITAÇÃO EM LOTE — paga N parcelas num ato só, com um `batchId` que as amarra.
+ *
+ * **Permissão: `financeiro:quitar`**, e a ação fina `financeiro:quitacao-a-menor` quando QUALQUER item do lote abate menos que o saldo da sua parcela.
+ *
+ * **Tudo ou nada.** Uma parcela recusada derruba o lote inteiro e nenhuma baixa fica gravada — ver `SettlementBatchRequest` para por que o parcial seria pior. A resposta de erro diz em `detail` qual parcela recusou e por quê.
+ *
+ * As recusas são as mesmas da baixa avulsa, aplicadas a qualquer item do lote, mais o **400** de parcela repetida na mesma requisição.
+ *
+ * **Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.
+ */
+export const settleBatch = async (settlementBatchRequest: SettlementBatchRequest, options?: Parameters<typeof apiFetch>[1]): Promise<settleBatchResponse> => {
+
+  return apiFetch<settleBatchResponse>(getSettleBatchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(settlementBatchRequest)
+  }
+);}
+
+
+
+export type listCashMovementsResponse200 = {
+  data: PagedResultOfCashMovementDto
+  status: 200
+}
+
+export type listCashMovementsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCashMovementsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCashMovementsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listCashMovementsResponseSuccess = (listCashMovementsResponse200) & {
+  headers: Headers;
+};
+export type listCashMovementsResponseError = (listCashMovementsResponse400 | listCashMovementsResponse401 | listCashMovementsResponse403) & {
+  headers: Headers;
+};
+
+export type listCashMovementsResponse = (listCashMovementsResponseSuccess | listCashMovementsResponseError)
+
+export const getListCashMovementsUrl = (params?: ListCashMovementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cash-movements?${stringifiedParams}` : `/api/cash-movements`
+}
+
+/**
+ * Proposto. O EXTRATO — os movimentos de caixa e de conta bancária da empresa ativa. Serve as duas telas do legado (`Caixa → Lançamento` e `Movimentos Bancários → Lançamentos`), que se distinguem pelo filtro de conta.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para "quantos títulos tem a empresa que você não tem".
+ *
+ * **`bankAccountId` e `cashRegisterId` são filtros exclusivos entre si** — mandar os dois é 400. Extrato é de uma conta: somar duas contas numa lista ordenada por data produz um saldo corrente que não existe em nenhuma delas.
+ */
+export const listCashMovements = async (params?: ListCashMovementsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCashMovementsResponse> => {
+
+  return apiFetch<listCashMovementsResponse>(getListCashMovementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createCashMovementResponse201 = {
+  data: CashMovementDto
+  status: 201
+}
+
+export type createCashMovementResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCashMovementResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createCashMovementResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createCashMovementResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCashMovementResponseSuccess = (createCashMovementResponse201) & {
+  headers: Headers;
+};
+export type createCashMovementResponseError = (createCashMovementResponse400 | createCashMovementResponse401 | createCashMovementResponse403 | createCashMovementResponse409) & {
+  headers: Headers;
+};
+
+export type createCashMovementResponse = (createCashMovementResponseSuccess | createCashMovementResponseError)
+
+export const getCreateCashMovementUrl = () => {
+
+
+
+
+  return `/api/cash-movements`
+}
+
+/**
+ * Proposto. Lança um movimento MANUAL — entrada ou saída avulsa de caixa ou banco.
+ *
+ * **Permissão: `financeiro:editar`.**
+ *
+ * **Só `manual` entra por aqui.** Movimento de transferência nasce em `POST /api/cash-transfers` e movimento de baixa nasce na quitação; aceitar os dois tipos neste caminho deixaria existir transferência de uma perna só e baixa sem parcela.
+ *
+ * **Não há PUT nem DELETE de movimento** — a correção é o lançamento contrário. Extrato que se reescreve não concilia com o do banco.
+ *
+ * **Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.
+ *
+ * **Sem empresa ativa é 409** (`urn:cabinet:erro:sem-empresa-ativa`), não 400: falta uma ação da pessoa (escolher empresa), o pedido não está malformado.
+ */
+export const createCashMovement = async (cashMovementWriteRequest: CashMovementWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCashMovementResponse> => {
+
+  return apiFetch<createCashMovementResponse>(getCreateCashMovementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cashMovementWriteRequest)
+  }
+);}
+
+
+
+export type reconcileCashMovementResponse200 = {
+  data: CashMovementDto
+  status: 200
+}
+
+export type reconcileCashMovementResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type reconcileCashMovementResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type reconcileCashMovementResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type reconcileCashMovementResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type reconcileCashMovementResponseSuccess = (reconcileCashMovementResponse200) & {
+  headers: Headers;
+};
+export type reconcileCashMovementResponseError = (reconcileCashMovementResponse401 | reconcileCashMovementResponse403 | reconcileCashMovementResponse404 | reconcileCashMovementResponse409) & {
+  headers: Headers;
+};
+
+export type reconcileCashMovementResponse = (reconcileCashMovementResponseSuccess | reconcileCashMovementResponseError)
+
+export const getReconcileCashMovementUrl = (id: string,) => {
+
+
+
+
+  return `/api/cash-movements/${id}/reconcile`
+}
+
+/**
+ * Proposto. Marca o movimento como CONCILIADO contra o extrato do banco. Menu `Financeiro → Conciliação Bancária` do legado.
+ *
+ * **Permissão: `financeiro:editar`.**
+ *
+ * **Conciliar é declarar que a linha foi CONFERIDA**, e por isso o servidor grava quem conferiu e quando — conciliação anônima não responde à única pergunta que se faz dela depois, que é quem viu.
+ *
+ * **Repetir é 409** (`urn:cabinet:erro:movimento-ja-conciliado`) e não 200: a segunda chamada quase sempre é a tela desatualizada de outra pessoa, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato.
+ *
+ * **Desconciliar não existe aqui**, pelo mesmo motivo do estorno: é decisão de alçada que ninguém tomou.
+ *
+ * **O que esta operação ainda NÃO faz, e é dívida nomeada:** o legado guarda em `Cpp_IDConcBancaria` o ID DA LINHA DO EXTRATO do banco — é o único ponto do módulo que fala com dado de fora (`docs/harvest/financeiro.md` §3.5). Aqui a conciliação registra QUEM conferiu e QUANDO, e não contra qual linha do extrato. Casar com o extrato exige importá-lo, que é trilho próprio; publicar o campo antes da importação seria pedir à tela um id que ela não tem de onde tirar.
+ */
+export const reconcileCashMovement = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<reconcileCashMovementResponse> => {
+
+  return apiFetch<reconcileCashMovementResponse>(getReconcileCashMovementUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type createCashTransferResponse201 = {
+  data: CashTransferDto
+  status: 201
+}
+
+export type createCashTransferResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createCashTransferResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createCashTransferResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createCashTransferResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createCashTransferResponseSuccess = (createCashTransferResponse201) & {
+  headers: Headers;
+};
+export type createCashTransferResponseError = (createCashTransferResponse400 | createCashTransferResponse401 | createCashTransferResponse403 | createCashTransferResponse409) & {
+  headers: Headers;
+};
+
+export type createCashTransferResponse = (createCashTransferResponseSuccess | createCashTransferResponseError)
+
+export const getCreateCashTransferUrl = () => {
+
+
+
+
+  return `/api/cash-transfers`
+}
+
+/**
+ * Proposto. TRANSFERE dinheiro entre duas contas da empresa — as quatro direções do legado (caixa→conta, caixa→caixa, conta→caixa, conta→conta) num caminho só.
+ *
+ * **Permissão: `financeiro:editar`.**
+ *
+ * **Grava DOIS movimentos ou nenhum**, os dois com o mesmo `transferId`. Ver `CashTransferRequest`.
+ *
+ * As recusas:
+ *
+ * 1. **400** — origem ausente, destino ausente, os dois ids do mesmo lado preenchidos, ou origem igual ao destino.
+ * 2. **409** — data em período fechado de QUALQUER uma das duas contas, ou sem empresa ativa. As duas pontas contam: metade da transferência dentro de um período fechado é o buraco que o fechamento existe para não ter.
+ */
+export const createCashTransfer = async (cashTransferRequest: CashTransferRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createCashTransferResponse> => {
+
+  return apiFetch<createCashTransferResponse>(getCreateCashTransferUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cashTransferRequest)
+  }
+);}
+
+
+
+export type listBankAccountsResponse200 = {
+  data: PagedResultOfBankAccountDto
+  status: 200
+}
+
+export type listBankAccountsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listBankAccountsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listBankAccountsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listBankAccountsResponseSuccess = (listBankAccountsResponse200) & {
+  headers: Headers;
+};
+export type listBankAccountsResponseError = (listBankAccountsResponse400 | listBankAccountsResponse401 | listBankAccountsResponse403) & {
+  headers: Headers;
+};
+
+export type listBankAccountsResponse = (listBankAccountsResponseSuccess | listBankAccountsResponseError)
+
+export const getListBankAccountsUrl = (params?: ListBankAccountsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/bank-accounts?${stringifiedParams}` : `/api/bank-accounts`
+}
+
+/**
+ * Proposto. As CONTAS BANCÁRIAS da empresa ativa — o combo de destino do lançamento, da transferência e da baixa.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para "quantos títulos tem a empresa que você não tem".
+ *
+ * **Só leitura**: o cadastro é do trilho `Tabelas → Financeiro`, que traz junto banco e agência. Ver `BankAccountDto`.
+ */
+export const listBankAccounts = async (params?: ListBankAccountsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listBankAccountsResponse> => {
+
+  return apiFetch<listBankAccountsResponse>(getListBankAccountsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listCashRegistersResponse200 = {
+  data: PagedResultOfCashRegisterDto
+  status: 200
+}
+
+export type listCashRegistersResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listCashRegistersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listCashRegistersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listCashRegistersResponseSuccess = (listCashRegistersResponse200) & {
+  headers: Headers;
+};
+export type listCashRegistersResponseError = (listCashRegistersResponse400 | listCashRegistersResponse401 | listCashRegistersResponse403) & {
+  headers: Headers;
+};
+
+export type listCashRegistersResponse = (listCashRegistersResponseSuccess | listCashRegistersResponseError)
+
+export const getListCashRegistersUrl = (params?: ListCashRegistersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cash-registers?${stringifiedParams}` : `/api/cash-registers`
+}
+
+/**
+ * Proposto. Os CAIXAS da empresa ativa. Mesmo papel e mesmo recorte de `GET /api/bank-accounts`.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para "quantos títulos tem a empresa que você não tem".
+ */
+export const listCashRegisters = async (params?: ListCashRegistersParams, options?: Parameters<typeof apiFetch>[1]): Promise<listCashRegistersResponse> => {
+
+  return apiFetch<listCashRegistersResponse>(getListCashRegistersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listPaymentModesResponse200 = {
+  data: PagedResultOfPaymentModeDto
+  status: 200
+}
+
+export type listPaymentModesResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPaymentModesResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPaymentModesResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPaymentModesResponseSuccess = (listPaymentModesResponse200) & {
+  headers: Headers;
+};
+export type listPaymentModesResponseError = (listPaymentModesResponse400 | listPaymentModesResponse401 | listPaymentModesResponse403) & {
+  headers: Headers;
+};
+
+export type listPaymentModesResponse = (listPaymentModesResponseSuccess | listPaymentModesResponseError)
+
+export const getListPaymentModesUrl = (params?: ListPaymentModesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/payment-modes?${stringifiedParams}` : `/api/payment-modes`
+}
+
+/**
+ * Proposto. Os MODOS DE PAGAMENTO da empresa ativa (`Modo`, 26 linhas no legado).
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`** — a empresa vem da SESSÃO, e lista vazia é a resposta certa para "quantos títulos tem a empresa que você não tem".
+ *
+ * **Publicado porque a baixa não existe sem ele** — `paymentModeId` é obrigatório em toda quitação. Não confundir com `GET /api/payment-terms`, que é a CONDIÇÃO (em quantas vezes e quando); o modo é o MEIO (dinheiro, transferência, cartão).
+ */
+export const listPaymentModes = async (params?: ListPaymentModesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPaymentModesResponse> => {
+
+  return apiFetch<listPaymentModesResponse>(getListPaymentModesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type resetEmployeePasswordResponse200 = {
+  data: TemporaryPasswordDto
+  status: 200
+}
+
+export type resetEmployeePasswordResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type resetEmployeePasswordResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type resetEmployeePasswordResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type resetEmployeePasswordResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type resetEmployeePasswordResponseSuccess = (resetEmployeePasswordResponse200) & {
+  headers: Headers;
+};
+export type resetEmployeePasswordResponseError = (resetEmployeePasswordResponse401 | resetEmployeePasswordResponse403 | resetEmployeePasswordResponse404 | resetEmployeePasswordResponse409) & {
+  headers: Headers;
+};
+
+export type resetEmployeePasswordResponse = (resetEmployeePasswordResponseSuccess | resetEmployeePasswordResponseError)
+
+export const getResetEmployeePasswordUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/reset-password`
+}
+
+/**
+ * Proposto. O único caminho que dá credencial a um colaborador: `CreateEmployee` grava senha inutilizável de propósito, então sem esta operação a conta nunca entra. O SERVIDOR gera a senha provisória — o admin não escolhe — e ela aparece UMA única vez, nesta resposta; não há leitura que a devolva depois, nem para quem a gerou. `mustChangePassword` liga junto: o primeiro login exige `/auth/change-password` antes de qualquer outra coisa. Repetir a chamada é o reset de quem esqueceu — invalida a credencial atual e gera outra provisória.
+ */
+export const resetEmployeePassword = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<resetEmployeePasswordResponse> => {
+
+  return apiFetch<resetEmployeePasswordResponse>(getResetEmployeePasswordUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

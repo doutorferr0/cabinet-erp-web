@@ -326,6 +326,9 @@ export function resetAcesso(): void {
     const linha = crm.colaboradores[i]
     if (linha && criados.has(linha.id)) crm.colaboradores.splice(i, 1)
   }
+  // Os tokens vão junto: link emitido por um teste que sobrevivesse ao reset
+  // continuaria valendo no próximo, e "uso único" deixaria de ser mensurável.
+  tokensDeCredencial.length = 0
 }
 
 function linha(papel: PapelGuardado): RoleDto {
@@ -433,6 +436,103 @@ function gerarSenhaProvisoria(): string {
     senha += alfabeto[Math.floor(Math.random() * alfabeto.length)]
   }
   return senha
+}
+
+/**
+ * O TOKEN DE CREDENCIAL do mock — convite e recuperação.
+ *
+ * Um registro por emissão, e não um campo no usuário, porque é isso que torna
+ * o "uso único" observável: gasto e substituído são estados diferentes de um
+ * token que existiu, e apagá-los faria os dois responderem como link que nunca
+ * existiu. A tela precisa distinguir para saber se oferece pedir outro.
+ *
+ * Vive em memória do módulo, como todo o resto do mock: recarregar a página
+ * zera, e é honesto — o mock não é banco.
+ */
+type TokenDeCredencial = {
+  token: string
+  usuarioId: string
+  purpose: 'invite' | 'reset'
+  expiraEm: number
+  usadoEm: number | null
+  substituidoEm: number | null
+}
+
+const tokensDeCredencial: TokenDeCredencial[] = []
+
+/**
+ * Convite dura mais que recuperação, e a diferença é de quem os recebe: quem é
+ * convidado pode estar de férias na semana em que foi cadastrado; quem pediu
+ * uma recuperação está na frente da tela agora.
+ */
+const VALIDADE_MS: Record<TokenDeCredencial['purpose'], number> = {
+  invite: 7 * 24 * 60 * 60 * 1000,
+  reset: 60 * 60 * 1000,
+}
+
+/**
+ * Emite e MATA os anteriores do mesmo propósito. Dois links vivos dobram a
+ * janela de quem interceptou um deles, e o segundo pedido é quase sempre "não
+ * chegou" — não "quero mais um".
+ */
+function emitirToken(usuario: UsuarioDeAcesso, purpose: TokenDeCredencial['purpose']) {
+  const agora = Date.now()
+  for (const anterior of tokensDeCredencial) {
+    const mesmo = anterior.usuarioId === usuario.id && anterior.purpose === purpose
+    if (mesmo && !anterior.usadoEm && !anterior.substituidoEm) anterior.substituidoEm = agora
+  }
+  const registro: TokenDeCredencial = {
+    // `randomUUID` e não o `novoId` sequencial do store: token previsível é
+    // token adivinhável, e o site público demo serve este mock a quem quiser.
+    token: crypto.randomUUID(),
+    usuarioId: usuario.id,
+    purpose,
+    expiraEm: agora + VALIDADE_MS[purpose],
+    usadoEm: null,
+    substituidoEm: null,
+  }
+  tokensDeCredencial.push(registro)
+  // O driver de log do servidor faz o mesmo em dev: sem e-mail de verdade, o
+  // link precisa aparecer em ALGUM lugar, ou o fluxo não se demonstra.
+  // `globalThis.location` e não `location`: o mesmo handler roda no navegador e
+  // sob `msw/node` na suíte, e lá não existe `location` nenhum.
+  const origem = globalThis.location?.origin ?? ''
+  console.info(
+    `[mock] link de ${purpose} para ${usuario.email}: ${origem}/definir-senha?token=${registro.token}`,
+  )
+  return { token: registro.token, expiresAt: new Date(registro.expiraEm).toISOString() }
+}
+
+/** A resposta de recusa, do mesmo formato que todo erro do contrato. */
+type RecusaDeToken = ReturnType<typeof problemaJson>
+
+/**
+ * Confere sem gastar. Devolve a recusa PRONTA em vez de um booleano porque os
+ * dois modos de falha têm URNs diferentes e a distinção é o que a tela usa:
+ * expirado oferece pedir outro link, inválido não tem o que oferecer.
+ */
+function conferirToken(
+  token: string,
+): { registro: TokenDeCredencial; usuario: UsuarioDeAcesso } | { recusa: RecusaDeToken } {
+  const registro = tokensDeCredencial.find((t) => t.token === token)
+  if (!registro || registro.usadoEm || registro.substituidoEm) {
+    return {
+      recusa: problemaJson(400, 'Este link não vale mais.', {}, TIPO.tokenInvalido),
+    }
+  }
+  if (registro.expiraEm <= Date.now()) {
+    return {
+      recusa: problemaJson(400, 'Este link expirou. Peça outro.', {}, TIPO.tokenExpirado),
+    }
+  }
+  const usuario = acharUsuario(registro.usuarioId)
+  // Usuário que sumiu do store depois da emissão: link sem dono é link morto.
+  if (!usuario || !usuario.active) {
+    return {
+      recusa: problemaJson(400, 'Este link não vale mais.', {}, TIPO.tokenInvalido),
+    }
+  }
+  return { registro, usuario }
 }
 
 function validarPapelDoVinculo(corpo: EmployeeLinkRequest) {
@@ -631,5 +731,61 @@ export const handlersDeAcesso = [
     }
     // A senha sai daqui e de NENHUMA leitura — igual ao servidor.
     return HttpResponse.json({ temporaryPassword: gerarSenhaProvisoria() })
+  }),
+
+  http.post('*/api/employees/:id/invite', ({ params }) => {
+    if (!store.logado) return semSessao()
+    const semPermissao = verificarEscrita('employees')
+    if (semPermissao) return semPermissao
+    const usuario = acharUsuario(String(params.id))
+    if (!usuario) return naoEncontrado('Colaborador não encontrado.')
+    if (!usuario.email)
+      return conflito('Colaborador sem e-mail não tem para onde receber o convite.')
+    if (!usuario.active) return conflito('Colaborador desativado não recebe convite.')
+    const emitido = emitirToken(usuario, 'invite')
+    return HttpResponse.json({ sentTo: usuario.email, expiresAt: emitido.expiresAt })
+  }),
+
+  // As TRÊS públicas. Sem `store.logado`, e é o ponto: quem chega aqui é quem
+  // ainda não tem senha nenhuma. O mock reproduz isso para que a tela não seja
+  // escrita assumindo uma sessão que no servidor não existiria.
+  http.post('*/auth/forgot-password', async ({ request }) => {
+    const { email } = (await request.json()) as { email?: string }
+    const alvo = (email ?? '').trim().toLowerCase()
+    const usuario = usuarios.find((u) => (u.email ?? '').toLowerCase() === alvo && u.active)
+    // Só emite se achou — mas responde igual nos dois casos. A resposta é a
+    // MESMA a ponto de não haver ramo depois deste `if`: qualquer diferença
+    // observável (status, corpo, atraso) devolveria a enumeração de contas que
+    // o 202 fixo existe para fechar.
+    if (usuario) emitirToken(usuario, 'reset')
+    return new HttpResponse(null, { status: 202 })
+  }),
+
+  http.post('*/auth/credential-token', async ({ request }) => {
+    const { token } = (await request.json()) as { token?: string }
+    const achado = conferirToken(token ?? '')
+    if ('recusa' in achado) return achado.recusa
+    const { registro, usuario } = achado
+    return HttpResponse.json({
+      purpose: registro.purpose,
+      email: usuario.email,
+      name: usuario.name,
+      expiresAt: new Date(registro.expiraEm).toISOString(),
+    })
+  }),
+
+  http.post('*/auth/set-password', async ({ request }) => {
+    const { token, password } = (await request.json()) as { token?: string; password?: string }
+    const achado = conferirToken(token ?? '')
+    // Token ANTES da senha: recusar por senha curta num link que já não vale
+    // faria a pessoa melhorar a senha e tomar o erro do link em seguida.
+    if ('recusa' in achado) return achado.recusa
+    if ((password ?? '').length < 8) {
+      return problemaJson(400, 'A senha precisa de pelo menos 8 caracteres.', {}, TIPO.senhaFraca)
+    }
+    // Uso único: o token morre aqui, e é a marca — não a remoção — que deixa a
+    // segunda tentativa distinguível de um link que nunca existiu.
+    achado.registro.usadoEm = Date.now()
+    return new HttpResponse(null, { status: 204 })
   }),
 ]

@@ -12,7 +12,15 @@ function RootComponent() {
 
   // Login é a porta de entrada, não uma tela do sistema: sem shell (não há
   // módulo para navegar) e sem guarda (é ele quem cria a sessão).
-  if (pathname === '/login') return <Outlet />
+  //
+  // As DUAS do ciclo da credencial entram na mesma exceção, e pelo motivo mais
+  // forte ainda: quem as abre não tem senha — é o convidado que nunca entrou ou
+  // quem perdeu a que tinha. Uma guarda aqui mandaria para o login exatamente
+  // quem veio buscar como fazer login. Em `/definir-senha` a autenticação é o
+  // TOKEN da barra de endereço, e ele vale uma vez.
+  if (pathname === '/login' || pathname === '/esqueci-senha' || pathname === '/definir-senha') {
+    return <Outlet />
+  }
 
   // Troca de senha: exige sessão (o endpoint responde 401 sem ela) mas ainda
   // não entra no shell — quem troca a senha provisória não tem sistema para

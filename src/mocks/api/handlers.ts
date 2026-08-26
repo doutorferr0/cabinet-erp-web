@@ -977,7 +977,11 @@ export const handlers = [
   ...handlersDeLookups,
 
   // ---------------- health ----------------
-  http.get('*/health', () => HttpResponse.json({ status: 'ok' })),
+  // `version`/`commit` dizem QUAL BINÁRIO respondeu, e no mock a resposta
+  // honesta é `mock`: não existe imagem publicada do outro lado. `desconhecido`
+  // seria mentira de outro tipo — ele significa "imagem construída sem carimbo",
+  // e quem lesse isso na tela iria caçar um deploy mal feito que não existe.
+  http.get('*/health', () => HttpResponse.json({ status: 'ok', version: 'mock', commit: 'mock' })),
   http.get('*/health/db', () =>
     HttpResponse.json({ status: 'ok', detail: null, pendingMigrations: null }),
   ),

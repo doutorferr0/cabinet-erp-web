@@ -571,6 +571,11 @@ function linhaDeOrdemDto(ordem: OrdemGuardada, linha: LinhaDeOrdem): PurchaseOrd
     size: linha.size,
     unit: linha.unit,
     quantity: linha.quantity,
+    // Zero, e é o FATO deste mundo, não campo preenchido para o tipo fechar: o
+    // recebimento (G3) não tem handler no mock — `whitelist-do-contrato.test.ts`
+    // nomeia o motivo —, então nenhuma linha de ordem jamais chegou aqui. É a
+    // mesma razão pela qual `emOrdem` soma a quantidade INTEIRA da linha.
+    quantityReceived: 0,
     unitCostCents: linha.unitCostCents,
     totalCents: totalDaLinha(linha),
     destination: linha.destination,
@@ -1407,6 +1412,10 @@ function previsaoDto(ordem: OrdemGuardada, linha: LinhaDeOrdem): PurchaseArrival
     description: linha.description,
     finish: linha.finish,
     size: linha.size,
+    // O contrato diz SALDO A CHEGAR — a quantidade da linha menos o que
+    // recebimento lançado já apontou para ela. Aqui as duas coincidem porque o
+    // recebimento não tem handler no mock: nada chegou, então nada foi
+    // descontado. Ver `quantityReceived` em `linhaDeOrdemDto`.
     quantity: linha.quantity,
     destination: linha.destination,
     // Reposição não tem cliente, e é isso que a tela mostra — "estoque", não

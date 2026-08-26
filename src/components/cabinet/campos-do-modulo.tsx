@@ -34,17 +34,20 @@ import { useFormContext, useWatch } from 'react-hook-form'
  * mesma economia do `AvisoDeCobertura` — coluna que o DTO não tem sai da
  * listagem, e o operador é avisado de que ela existe e ainda não vem.
  *
- * ## Por que duplicado com `profissional/`
+ * ## Era duplicado, e a promoção era o plano desde a #101
  *
- * A zona da issue #101 é `src/features/profissional/**` e
- * `src/features/colaborador/**`. Peça compartilhada mora em
- * `src/components/cabinet/` (CLAUDE.md), que está fora dela — então este
- * arquivo nasce em duas cópias, de propósito e com registro na issue. Promover
- * a uma peça só é trabalho de quem tiver a zona, não gambiarra a fazer aqui.
+ * Este arquivo viveu em duas cópias — `features/profissional/` e
+ * `features/colaborador/` — porque a zona daquela issue não alcançava
+ * `src/components/cabinet/`, que é onde o CLAUDE.md manda peça compartilhada
+ * morar. As duas foram mantidas IDÊNTICAS de propósito, para que a promoção
+ * fosse um `git mv` em vez de merge manual; foi o que aconteceu, e o único
+ * conteúdo a reconciliar foi o `KIND_POR_CAMPO` — a cópia do colaborador
+ * conhecia seis listas de apoio a mais, e a união está abaixo.
  *
- * **As duas cópias são idênticas de propósito**: divergir a do colaborador
- * (acrescentando um tipo aqui, mudando uma largura ali) faria a promoção futura
- * virar merge manual em vez de `git mv`.
+ * A TERCEIRA tela é que forçou a mão. O Cliente desenhava `Fone Comer.`,
+ * `FAX` e `Fone Resid.` à mão enquanto `moduloContatos` já declarava os três
+ * com `campo` e `dto`, e importar o render genérico de dentro de
+ * `features/profissional/` faria uma tela de cadastro depender de outra.
  */
 
 /** Largura no grid de 12 colunas. Vazio = a linha inteira, como o schema diz. */

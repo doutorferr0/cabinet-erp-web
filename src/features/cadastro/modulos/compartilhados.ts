@@ -164,19 +164,27 @@ export function moduloContatos({
       // Os três ganharam `dto` em #244. O prefixo continua importando: o mesmo
       // telefone comercial mora em `foneComercial` no Cliente e em
       // `telefones.foneComercial` no Profissional, e o contrato tem um nome só.
+      //
+      // `w: 'medio'` entrou quando o Cliente parou de desenhá-los à mão: sem
+      // largura declarada o render genérico dá a linha inteira (metade da
+      // grade por campo), e três telefones ocupariam duas fileiras onde a tela
+      // sempre teve uma. Telefone é campo CURTO em qualquer das três fichas —
+      // a largura é do dado, não da tela, e por isso mora aqui.
       {
         k: 'comercial',
         r: 'Telefone comercial',
+        w: 'medio',
         campo: em(prefixo, 'foneComercial'),
         dto: 'businessPhone',
       },
       {
         k: 'residencial',
         r: 'Telefone residencial',
+        w: 'medio',
         campo: em(prefixo, 'foneResidencial'),
         dto: 'homePhone',
       },
-      { k: 'fax', r: 'Fax', campo: em(prefixo, 'fax'), dto: 'fax' },
+      { k: 'fax', r: 'Fax', w: 'medio', campo: em(prefixo, 'fax'), dto: 'fax' },
       {
         k: 'com1tipo',
         r: 'Comunicador',

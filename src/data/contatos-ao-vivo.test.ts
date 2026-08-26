@@ -36,8 +36,21 @@ const SENHA = process.env.CABINET_SENHA ?? 'senha-de-desenvolvimento'
 /** Marca desta rodada nos registros que ela cria — some da grade no fim. */
 const MARCA = 'AO VIVO CONTATOS'
 
+/**
+ * Nomes do PAR que o `beforeAll` garante existir. Ver `semearOPar`.
+ *
+ * Distintos entre si e da `MARCA` do ciclo: os três casos convivem no mesmo
+ * cadastro, e um nome só faria a asserção de um caso casar com a linha de
+ * outro.
+ */
+const NOME_ATIVO = 'AO VIVO ATIVO'
+const NOME_INATIVO = 'AO VIVO REMOVIDO'
+
 let cookie = ''
 let partnerId = ''
+/** Ids do par semeado — a régua de todos os casos que olham situação. */
+let ativoId = ''
+let inativoId = ''
 const fetchOriginal = globalThis.fetch
 
 describe.skipIf(!process.env.CABINET_AO_VIVO)('contatos contra o backend real', () => {
@@ -75,7 +88,89 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('contatos contra o backend real', 
     const pagina = (await lista.json()) as { rows: { id: string }[] }
     partnerId = pagina.rows[0]?.id ?? ''
     expect(partnerId, 'o banco de dev precisa de ao menos um fornecedor semeado').not.toBe('')
+
+    await semearOPar()
   })
+
+  /**
+   * O PAR ATIVO/INATIVO QUE OS CASOS MEDEM — semeado por ESTA rodada.
+   *
+   * ## Por que existe
+   *
+   * `semear-dev.ts` não escreve em `partner_contacts`: o fornecedor semeado
+   * nasce com ZERO contatos (medido no par local em 2026-08-26, api `67aa331`).
+   * Os casos abaixo pediam "qualquer ativo" e "qualquer inativo" do cadastro, e
+   * em banco limpo os dois vinham `undefined` — o de tela morria com *"undefined
+   * was passed instead of a matcher"*, e o de leitura reprovava na própria
+   * pré-condição.
+   *
+   * Pior: rodando DUAS vezes seguidas, a segunda encontrava os inativos que a
+   * primeira deixou (não há DELETE no contrato) e a pré-condição passava. O
+   * caso media o resíduo da rodada anterior — verde que depende de ter rodado
+   * antes é o tipo de verde que some quando alguém limpa o banco.
+   *
+   * ## Por que pelas ROTAS, e não por INSERT
+   *
+   * Semear por dentro do banco deixaria os casos verdes mesmo com `POST` e
+   * `PUT` quebrados — o teste passaria por cima da porta que ele existe para
+   * provar que está aberta. Aqui o próprio preparo exercita as duas operações
+   * de escrita do sub-recurso, e é o primeiro lugar onde a rodada reprova se o
+   * servidor deixar de aceitá-las.
+   *
+   * ## Idempotente de propósito
+   *
+   * Reaproveita o par quando ele já existe, em vez de empilhar uma dupla nova a
+   * cada rodada: sem isto o cadastro de demonstração vira um depósito de linhas
+   * de teste, e a grade que o operador abre no par local mostra vinte
+   * `AO VIVO ...` antes do primeiro contato de verdade.
+   *
+   * O par, e SÓ o par. O caso do ciclo continua criando uma linha nova por
+   * rodada e a deixando desativada no fim — é o preço de provar o `POST` num
+   * contrato sem `DELETE`, e é deliberado. Quem rodar muitas vezes contra o
+   * mesmo banco vai ver `AO VIVO CONTATOS` acumular; o par não acumula, e é ele
+   * que os outros dois casos usam como régua.
+   */
+  async function semearOPar(): Promise<void> {
+    const existentes = (await (
+      await fetchOriginal(`${BACKEND}/api/partners/${partnerId}/contacts?pageSize=100`, {
+        headers: { cookie },
+      })
+    ).json()) as { rows: { id: string; name: string; active: boolean }[] }
+
+    async function garantir(nome: string, ativo: boolean): Promise<string> {
+      const achado = existentes.rows.find((c) => c.name === nome)
+      const corpo = JSON.stringify({
+        name: nome,
+        role: 'AO VIVO',
+        phone: '1130009000',
+        mobilePhone: null,
+        fax: null,
+        email: null,
+        active: ativo,
+      })
+      if (achado) {
+        // Reafirma a SITUAÇÃO: a rodada anterior pode ter deixado o ativo
+        // desativado (o caso do ciclo mexe na lista inteira), e um par cuja
+        // metade ativa não está ativa não é régua de nada.
+        const resposta = await fetchOriginal(
+          `${BACKEND}/api/partners/${partnerId}/contacts/${achado.id}`,
+          { method: 'PUT', headers: { cookie, 'content-type': 'application/json' }, body: corpo },
+        )
+        expect(resposta.status, `PUT do contato ${nome} no par local`).toBe(200)
+        return achado.id
+      }
+      const resposta = await fetchOriginal(`${BACKEND}/api/partners/${partnerId}/contacts`, {
+        method: 'POST',
+        headers: { cookie, 'content-type': 'application/json' },
+        body: corpo,
+      })
+      expect(resposta.status, `POST do contato ${nome} no par local`).toBe(201)
+      return ((await resposta.json()) as { id: string }).id
+    }
+
+    ativoId = await garantir(NOME_ATIVO, true)
+    inativoId = await garantir(NOME_INATIVO, false)
+  }
 
   afterAll(() => {
     globalThis.fetch = fetchOriginal
@@ -88,6 +183,11 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('contatos contra o backend real', 
     // a leitura CRUA logo abaixo — a fronteira devolve só os ativos, e a
     // diferença para o que o servidor guarda é o contato desativado.
     const linhas = await listarContatos(partnerId)
+    // As DUAS metades, e nesta ordem: sem a primeira, "não contém o inativo"
+    // passaria por a fronteira não ter devolvido nada.
+    expect(linhas.map((l) => l.id)).toContain(ativoId)
+    expect(linhas.map((l) => l.id)).not.toContain(inativoId)
+
     // Nenhum inativo atravessou: se um dia esta asserção cair, a grade está
     // prestes a ressuscitar contato removido no primeiro `Gravar`.
     const direto = await fetchOriginal(
@@ -96,7 +196,9 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('contatos contra o backend real', 
     )
     const todos = (await direto.json()) as { rows: { id: string; active: boolean }[] }
     const inativos = todos.rows.filter((c) => !c.active).map((c) => c.id)
-    expect(inativos.length, 'a semente do dev precisa de um contato inativo').toBeGreaterThan(0)
+    // O par semeado garante esta pré-condição — antes dele ela dependia de
+    // resíduo de rodada anterior, e reprovava em banco limpo.
+    expect(inativos, 'o par semeado precisa ter deixado um inativo').toContain(inativoId)
     for (const id of inativos) expect(linhas.map((l) => l.id)).not.toContain(id)
   })
 
@@ -177,18 +279,22 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('contatos contra o backend real', 
 
     await user.click(await screen.findByRole('button', { name: 'Representante e contatos' }))
 
+    // O par vem do `beforeAll`, com nome PRÓPRIO. Antes, o caso pegava "o
+    // primeiro ativo" e "o primeiro inativo" do cadastro — e em banco limpo os
+    // dois eram `undefined`, o que fazia o matcher morrer com *"undefined was
+    // passed instead of a matcher"* em vez de dizer que faltava semente.
     const direto = await fetchOriginal(
       `${BACKEND}/api/partners/${partnerId}/contacts?pageSize=100`,
       { headers: { cookie } },
     )
-    const todos = (await direto.json()) as { rows: { name: string; active: boolean }[] }
-    const ativo = todos.rows.find((c) => c.active)
-    const inativo = todos.rows.find((c) => !c.active)
+    const todos = (await direto.json()) as { rows: { id: string; active: boolean }[] }
+    expect(todos.rows.find((c) => c.id === ativoId)?.active, 'o par semeado').toBe(true)
+    expect(todos.rows.find((c) => c.id === inativoId)?.active, 'o par semeado').toBe(false)
 
     // O nome que está no Postgres aparece na célula da grade.
-    expect(await screen.findByDisplayValue(ativo?.name as string)).toBeInTheDocument()
+    expect(await screen.findByDisplayValue(NOME_ATIVO)).toBeInTheDocument()
     // E o que foi removido não volta à tela — a desativação lógica se sustenta
     // do banco até a célula.
-    expect(screen.queryByDisplayValue(inativo?.name as string)).not.toBeInTheDocument()
+    expect(screen.queryByDisplayValue(NOME_INATIVO)).not.toBeInTheDocument()
   }, 30_000)
 })

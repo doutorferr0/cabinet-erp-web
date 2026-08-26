@@ -281,6 +281,84 @@ describe('tela Cliente', () => {
     expect(corpo.address).toBeNull()
   }, 30_000)
 
+  /**
+   * OS TELEFONES SAEM DA ESPEC, E QUEM PROVA É O CORPO DO `PUT`.
+   *
+   * Esta tela desenhava `Fone Comer.`, `FAX` e `Fone Resid.` à mão enquanto
+   * `moduloContatos` já declarava os três com `campo`, `dto` e rótulo. Duas
+   * fontes para a mesma resposta, e já divergindo no rótulo — a espec diz
+   * `Fax`, a tela dizia `FAX`.
+   *
+   * O teste pede os campos pelos rótulos DA ESPEC: quem voltar a desenhá-los à
+   * mão com os rótulos antigos reprova aqui. E mede o corpo do `PUT` porque
+   * rótulo certo com caminho Zod errado daria um campo bonito que não viaja —
+   * o defeito exato que a #244 pagou.
+   */
+  it('os telefones vêm do módulo compartilhado e chegam ao PUT', async () => {
+    const { stub, chamadas } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+
+    await user.click(screen.getByRole('button', { name: 'Outros contatos' }))
+    const contatos = within(screen.getByRole('group', { name: 'Outros contatos' }))
+    await user.type(contatos.getByLabelText('Telefone comercial'), '11 3322-1200')
+    await user.type(contatos.getByLabelText('Telefone residencial'), '11 3322-1210')
+    await user.type(contatos.getByLabelText('Fax'), '11 3322-1201')
+
+    // `name` EXATO, e não `/Gravar/`: com o bloco `Outros contatos` aberto há
+    // dois botões que casam — o do rodapé e o `Gravar contatos` da grade, que
+    // tem gravação própria de propósito. A regex pegava os dois e o caso
+    // morria antes de medir o corpo.
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/cadastros/clientes')
+      },
+      { timeout: 5000 },
+    )
+
+    const corpo = chamadas.find((c) => c.metodo === 'PUT')?.corpo as Record<string, unknown>
+    expect(corpo.businessPhone).toBe('11 3322-1200')
+    expect(corpo.homePhone).toBe('11 3322-1210')
+    expect(corpo.fax).toBe('11 3322-1201')
+  }, 30_000)
+
+  /**
+   * A LACUNA DO COMUNICADOR NÃO PODE SUMIR JUNTO COM O CAMPO À MÃO.
+   *
+   * `moduloContatos({ comunicadores: false })` deixa os quatro comunicadores
+   * sem `campo` de propósito — o mockup os pede e o contrato não os publica
+   * (zero ocorrência de `communicator` nos schemas). Renderizando pela espec,
+   * `CampoDoModulo` os pula; sem `<Pendencias>` no bloco, a falta ficaria
+   * invisível na tela e contável só em relatório, que é como dívida declarada
+   * vira dívida esquecida.
+   */
+  it('o bloco de contatos diz o que ainda não guarda, sem desenhar o campo', async () => {
+    const { stub } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+
+    await user.click(screen.getByRole('button', { name: 'Outros contatos' }))
+    const contatos = within(screen.getByRole('group', { name: 'Outros contatos' }))
+
+    expect(contatos.getByText(/Ainda não guardamos/)).toHaveTextContent('Comunicador')
+    // Dito, e não desenhado: campo que aceita digitação e é descartado no
+    // `Gravar` é pior que campo ausente, porque parece que funcionou.
+    expect(contatos.queryByLabelText('Comunicador')).not.toBeInTheDocument()
+    // E o rodapé não pode acusar a GRADE de contatos, que existe e está logo
+    // acima — é sub-recurso, não lacuna.
+    expect(contatos.getByText(/Ainda não guardamos/)).not.toHaveTextContent('Contatos')
+  }, 30_000)
+
   it('o que o servidor mandou nos dois endereços volta para a tela', async () => {
     const { stub } = servidorDeParceiros([
       parceiro({

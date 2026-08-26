@@ -1041,6 +1041,23 @@ const RECEBIMENTO: readonly RotaNoMock[] = [
  *
  * Sai INTEIRA quando a Fase B ligar os handlers: a apuração é justamente onde os
  * dois lados têm de ser o mesmo id.
+ *
+ * **A FASE B LIGOU OS HANDLERS, e esta lista ainda não foi re-medida.** Achado
+ * em 2026-08-25, pela FONTE do `cabinet-erp-api` (`main`, `e961bad`):
+ * `src/modules/comissoes/rotas.ts` existe, `ListOrderParticipants` e
+ * `ReplaceOrderParticipants` são chaves de handler nele, e
+ * `src/core/http/servidor.ts` espalha `...rotasDeComissoes()`. O módulo tem
+ * porta.
+ *
+ * O bloco continua aqui de propósito, e a razão é a regra deste arquivo: quem
+ * acrescenta rota mede AO VIVO, e as treze foram declaradas juntas — mover duas
+ * por leitura de fonte partiria o bloco e deixaria onze com uma medição de três
+ * dias atrás. A re-medição é do trilho do G8, com o par local de pé e a sonda de
+ * `ao-vivo.test.ts`, que é o único lugar onde 404, 501 e 200 se distinguem.
+ *
+ * Enquanto isso, a costura tem NOME na tela: `participacao-do-pedido.tsx` avisa
+ * o operador que, com o proxy ligado, o pedido vem do servidor e a participação
+ * vem do mock — as duas não se encontram, e a lista aparece vazia.
  */
 const COMISSOES: readonly RotaNoMock[] = [
   {

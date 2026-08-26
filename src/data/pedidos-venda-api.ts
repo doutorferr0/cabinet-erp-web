@@ -4,8 +4,10 @@ import type {
   OrderDetailDto,
   OrderDto,
   OrderGroupDiscountDto,
+  OrderParticipantDto,
   OrderServiceItemDto,
   OrderWriteRequest,
+  PagedResultOfOrderParticipantDto,
   PagedResultOfOrderProfessionalAssignmentDto,
 } from '@/api/gerado'
 import {
@@ -13,6 +15,7 @@ import {
   concludeOrder,
   createOrder,
   getOrder,
+  listOrderParticipants,
   listOrderProfessionalHistory,
   returnDemoOrder,
   transferOrderProfessional,
@@ -114,6 +117,16 @@ export const CHAVES_PEDIDO_VENDA = {
    */
   historico: ['pedido-venda-profissionais'] as const,
   historicoDe: (id: string) => ['pedido-venda-profissionais', id] as const,
+  /**
+   * A PARTICIPAÇÃO tem raiz própria pela mesma razão da trilha: não vem no
+   * `GET` do documento, e pendurá-la em `['pedido-venda', id, …]` faria toda
+   * gravação do formulário derrubar uma lista que a gravação não muda.
+   *
+   * Quem a invalida é a TRANSFERÊNCIA, e só ela — é a única operação desta
+   * fronteira que mexe na grade (troca o profissional principal).
+   */
+  participacao: ['pedido-venda-participantes'] as const,
+  participacaoDe: (id: string) => ['pedido-venda-participantes', id] as const,
 }
 
 /** Modo de desconto na língua da tela — TRÊS, não dois. */
@@ -577,6 +590,11 @@ export function useTransferirProfissional() {
       // documento não a carrega. Invalidar só o pedido deixaria o histórico
       // aberto na tela mostrando o estado de antes da troca que acabou de sair.
       void cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.historico, exact: false })
+      // A PARTICIPAÇÃO também: a transferência troca o profissional PRINCIPAL
+      // da grade, e é a única operação desta fronteira que mexe nela. Sem esta
+      // linha o painel continuaria mostrando quem saiu, ao lado de um cabeçalho
+      // já atualizado — a divergência que o contrato chama de "trilha que mente".
+      void cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.participacao, exact: false })
       avisar(
         `Venda ${pedido.number} transferida.`,
         pedido.professionalName
@@ -606,6 +624,48 @@ export function useHistoricoDeProfissional(id: string, habilitado: boolean) {
       )
     },
   })
+}
+
+/**
+ * A PARTICIPAÇÃO do pedido — `GET /api/orders/{id}/participants`.
+ *
+ * **É daqui que sai o `Consultor(a)` da folha.** O contrato diz que
+ * `salespersonId` é o atendente `isPrincipal` desta lista, "não um segundo
+ * lugar onde se grava" — e o campo do cabeçalho passou a ser leitura por causa
+ * disso. A lista chega em UMA requisição, com as faixas embutidas em cada linha
+ * (`OrderParticipantDto.tiers`).
+ *
+ * **Só LEITURA, e a ausência da escrita é decisão.** `ReplaceOrderParticipants`
+ * existe no contrato e o backend a serve, mas gravar a grade exige o cadastro de
+ * FAIXAS da pessoa (`/api/employees/{id}/commission-tiers`), que nenhuma tela
+ * tem: o servidor copia o perfil de HOJE para dentro de cada linha nova, e
+ * editar aqui sem ver o perfil seria decidir comissão às cegas. A grade
+ * editável é a aba Participação do trilho de comissões (G8).
+ */
+export function useParticipantesDoPedido(id: string, habilitado = true) {
+  return useQuery({
+    queryKey: CHAVES_PEDIDO_VENDA.participacaoDe(id),
+    enabled: habilitado && Boolean(id),
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listOrderParticipants(id)
+      return dadosOuErro<PagedResultOfOrderParticipantDto>(
+        resposta,
+        'Falha ao carregar a participação do pedido.',
+      )
+    },
+  })
+}
+
+/**
+ * O atendente PRINCIPAL — quem responde por `salespersonId`.
+ *
+ * `undefined` quando não há nenhum, e a tela mostra o campo vazio. Escolher "o
+ * primeiro da lista" inventaria um responsável, e responsável é quem recebe.
+ */
+export function atendentePrincipal(
+  linhas: readonly OrderParticipantDto[] | undefined,
+): OrderParticipantDto | undefined {
+  return linhas?.find((p) => p.role === 'attendant' && p.isPrincipal)
 }
 
 /** O teto do contrato, reexportado para quem monta consulta sem paginar. */

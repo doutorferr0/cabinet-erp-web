@@ -28,6 +28,7 @@ import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
 import { handlersDePagamento } from './pagamento'
+import { handlersDePedidoDeVenda } from './pedidos'
 import { verificarEscrita } from './permissao'
 import {
   TIPO,
@@ -915,6 +916,13 @@ export const handlers = [
   // ---------------- orçamento ----------------
   // Mesma razão do CRM: estado e handlers em `quotes.ts`.
   ...handlersDeOrcamento,
+
+  // ---------------- pedido de venda ----------------
+  // Entram DEPOIS do orçamento porque `POST /api/quotes/{id}/order` mora em
+  // `pedidos.ts` — a conversão CRIA um pedido, e o estado dele é de lá. A ordem
+  // não muda o casamento (os padrões são disjuntos), mas põe o handler ao lado
+  // do módulo que o explica.
+  ...handlersDePedidoDeVenda,
 
   // ---------------- atividades ----------------
   // Mesma decisão do CRM, e aqui ela pesa mais: a tabela é POLIMÓRFICA e o

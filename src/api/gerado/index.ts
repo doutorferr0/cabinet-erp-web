@@ -185,6 +185,7 @@ import type {
   PriceIndexDto,
   PriceIndexWriteRequest,
   PrintProductLabelsParams,
+  PrintQuoteParams,
   PrintSettingsDto,
   PrintSettingsWriteRequest,
   ProblemDetails,
@@ -12011,6 +12012,11 @@ export type printQuoteResponse200 = {
   status: 200
 }
 
+export type printQuoteResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
 export type printQuoteResponse401 = {
   data: NaoAutenticadoResponse
   status: 401
@@ -12034,18 +12040,26 @@ export type printQuoteResponse409 = {
 export type printQuoteResponseSuccess = (printQuoteResponse200) & {
   headers: Headers;
 };
-export type printQuoteResponseError = (printQuoteResponse401 | printQuoteResponse403 | printQuoteResponse404 | printQuoteResponse409) & {
+export type printQuoteResponseError = (printQuoteResponse400 | printQuoteResponse401 | printQuoteResponse403 | printQuoteResponse404 | printQuoteResponse409) & {
   headers: Headers;
 };
 
 export type printQuoteResponse = (printQuoteResponseSuccess | printQuoteResponseError)
 
-export const getPrintQuoteUrl = (id: string,) => {
+export const getPrintQuoteUrl = (id: string,
+    params?: PrintQuoteParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/quotes/${id}/print`
+  return stringifiedParams.length > 0 ? `/api/quotes/${id}/print?${stringifiedParams}` : `/api/quotes/${id}/print`
 }
 
 /**
@@ -12057,9 +12071,10 @@ export const getPrintQuoteUrl = (id: string,) => {
  *
  * **Sem storage: o PDF é gerado a cada chamada e não fica guardado.** Não existe 'via emitida' arquivada — o documento sai sempre como o orçamento está AGORA. Guardar a via é decisão própria, e traz junto onde mora o blob.
  */
-export const printQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<printQuoteResponse> => {
+export const printQuote = async (id: string,
+    params?: PrintQuoteParams, options?: Parameters<typeof apiFetch>[1]): Promise<printQuoteResponse> => {
 
-  return apiFetch<printQuoteResponse>(getPrintQuoteUrl(id),
+  return apiFetch<printQuoteResponse>(getPrintQuoteUrl(id,params),
   {
     ...options,
     method: 'GET'

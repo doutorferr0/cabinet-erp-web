@@ -1,4 +1,4 @@
-import type { QuoteDetailDto } from '@/api/gerado'
+import { PrintQuoteTemplate, type QuoteDetailDto } from '@/api/gerado'
 import {
   FILTRAVEIS_ORCAMENTO,
   ORDENAVEIS_ORCAMENTO,
@@ -342,5 +342,44 @@ describe('whitelist do contrato', () => {
     }
     expect(FILTRAVEIS_ORCAMENTO).not.toContain('series')
     expect(FILTRAVEIS_ORCAMENTO).not.toContain('totalCents')
+  })
+})
+
+describe('eixo de template na impressão', () => {
+  const impressao = (
+    contrato as unknown as {
+      paths: Record<
+        string,
+        {
+          get: {
+            parameters: {
+              name: string
+              in: string
+              required?: boolean
+              schema: { enum?: string[]; default?: string }
+            }[]
+            responses: Record<string, unknown>
+          }
+        }
+      >
+    }
+  ).paths['/api/quotes/{id}/print']?.get
+
+  const template = impressao?.parameters?.find((p) => p.name === 'template')
+
+  it('`template` é opcional e cai no impresso de hoje quando ausente', () => {
+    expect(template, 'o contrato precisa publicar `template` no print').toBeDefined()
+    expect(template?.in).toBe('query')
+    expect(template?.required).toBeUndefined()
+    expect(template?.schema.default).toBe('padrao')
+  })
+
+  it('o enum do contrato é o mesmo do tipo gerado — gerado velho reprova aqui', () => {
+    expect(template?.schema.enum).toEqual(['padrao', 'moodboard'])
+    expect(Object.values(PrintQuoteTemplate)).toEqual(template?.schema.enum)
+  })
+
+  it('valor fora do enum tem 400 declarado, não padrão calado', () => {
+    expect(impressao?.responses?.['400']).toBeDefined()
   })
 })

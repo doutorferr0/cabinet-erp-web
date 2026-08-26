@@ -9529,6 +9529,27 @@ active?: boolean;
 usableInSettlement?: boolean;
 };
 
+export type PrintQuoteParams = {
+/**
+ * Proposto. Qual DESENHO do mesmo documento sai no papel. O corpo é o mesmo orçamento — o que muda é a diagramação e o que ganha destaque.
+ *
+ * `padrao` é o impresso operacional herdado do legado: tabela densa, cabeçalho repetido por página, `Página :N` na margem. `moodboard` é a peça de APRESENTAÇÃO que o consultor entrega ao cliente — capa, uma seção por ambiente com a peça de maior valor como âncora e lista de compras consolidada no fim (espec e mockup em `docs/design/moodboard/`).
+ *
+ * **É eixo do MESMO template, não template clonado por combinação** (ADR-014). Daí ser parâmetro e não operação nova: os dois desenhos leem o mesmo `QuoteDetailDto`, saem do mesmo id e são a mesma ação de RBAC — `orcamento:imprimir` protege imprimir O ORÇAMENTO, não imprimir um layout. É o oposto de `PrintOrder`, que é operação própria porque pedido e orçamento são dois recursos, com dois espaços de id e duas permissões.
+ *
+ * Ausente = `padrao`, e o impresso de hoje sai como sempre saiu. Valor fora do enum é **400**: cair no padrão calado entregaria ao cliente o documento errado sem ninguém ver.
+ */
+template?: PrintQuoteTemplate;
+};
+
+export type PrintQuoteTemplate = typeof PrintQuoteTemplate[keyof typeof PrintQuoteTemplate];
+
+
+export const PrintQuoteTemplate = {
+  padrao: 'padrao',
+  moodboard: 'moodboard',
+} as const;
+
 export type ListLabelLayoutsParams = {
 q?: string;
 /**

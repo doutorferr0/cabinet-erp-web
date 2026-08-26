@@ -64,6 +64,16 @@ const DIVIDAS: Record<string, string> = {
   // a reescrevê-lo igual na próxima tela não capturada.
   'components/cabinet/tela-nao-capturada.tsx':
     'órfão desde a tela de estoque por depósito; religa no primeiro slot `futuro` do menu a ganhar rota (Reserva Técnica é o próximo)',
+  // Nasceu órfã de propósito, e a alternativa era pior. O console de suporte é
+  // superfície administrativa separada (core @arquitetura) e trilho próprio — a
+  // mesma decisão que a #292 tomou para a tela de checkboxes de papéis. A
+  // fronteira vem junto do contrato porque a REGRA DE ACESSO A DADO não abre
+  // exceção: tela nenhuma chama o cliente gerado direto. Deixá-la para depois
+  // convidaria a primeira tela de suporte a improvisar o caminho, que é o
+  // defeito que a regra existe para impedir — e improvisar ali é improvisar o
+  // acesso a dado de terceiro.
+  'data/suporte-api.ts':
+    'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
 }
 
 function arquivosDe(dir: string): string[] {

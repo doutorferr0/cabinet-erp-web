@@ -189,7 +189,7 @@ por máscara, jamais preta.
 - **Faixa de acento**: painel importante ganha barra de 8px na lateral esquerda, com traço à direita
 - Dinheiro escreve em VERDE, negativo em vermelho; célula de valor ganha fundo da zona
 - Foco = **amarelo 3px com fio preto de 1px por fora**, em todo controle (§Foco)
-- **Quatro** famílias, todas **self-hosted**, divididas por SEMÂNTICA: Newsreader (quem — nome de entidade e o H1 da tela, e nada mais) · Sora (o quê — produto, descrição e cabeçalho de H2 para baixo) · Inter (UI) · PT Mono (quanto — número, código, data)
+- **Cinco** famílias, todas **self-hosted**, divididas por SEMÂNTICA: Newsreader (quem — nome de entidade e o H1 da tela, **exceto** o da banda de identidade, que fala em condensada desde 2026-08-19) · Sora (o quê — produto, descrição e cabeçalho de H2 para baixo) · Inter (UI) · PT Mono (quanto — número, código, data) · Bebas Neue (número-herói — nome e número do documento, total, contagem do cartão; só pelo `<NumeroHeroi>`)
 - **Serifada não leva caixa alta**: o título ficou com maiúscula só na inicial dos substantivos; caixa alta segue em mono e Inter (etiqueta, carimbo, cabeçalho de coluna)
 
 ## Colors
@@ -839,8 +839,20 @@ que não se lê. As outras são de superfície, onde o contorno preto é o delim
 
 ## Typography
 
-**Quatro** famílias self-hosted (`@fontsource`), **zero CDN** — CDN em produção é dependência
-externa e IP do operador vazando a cada carga. **Teto de 4: nenhuma quinta entra depois.**
+**Cinco** famílias self-hosted (`@fontsource`), **zero CDN** — CDN em produção é dependência
+externa e IP do operador vazando a cada carga.
+
+O teto era **4**, e a decisão do user de **2026-08-19** (issue #236) abriu a quinta com condição:
+**um peso e emprego único** — a Bebas Neue só fala no número-herói do documento, e em nenhum
+outro lugar. O que a quinta paga em carga são 13,8 KB; o que ela compra não é estilo, é medida:
+`R$ 9.999.999,99` sai a **222px** em Bebas contra **363px** em Sora, e a 48px o total não caberia
+na largura do documento em família nenhuma das quatro. Condensar o Sora foi levantado e é
+INERTE — nenhum peso do `@fontsource/sora` tem eixo `wdth`, todos declaram `usWidthClass = 5`, e
+browser nenhum condensa sinteticamente.
+
+**Teto de 5, e a sexta tem o mesmo ônus:** entra quem provar, com medida, que nenhuma das cinco
+faz o serviço. `docs/design/medir-tabular.py` reprova pacote `@fontsource` importado que ninguém
+mediu, então a família nova não passa calada como esta passou por dois dias.
 
 A divisão é **SEMÂNTICA, não por tamanho** (decisão do user, 2026-08-13, formulada por ele:
 *"'cliente:' estaria em Sora e o nome do cliente em Newsreader"*). Até aqui a rampa separava por
@@ -853,6 +865,7 @@ altura — quem titula fala em Display, quem informa em Inter. Agora separa por 
 | **o quê** | Sora 600/700 | nome de produto, descrição — e **todo cabeçalho de H2 para baixo** (painel, diálogo, gaveta, estado vazio) |
 | **UI** | Inter 400/500/600 | rótulo de campo, cabeçalho de coluna, botão, menu, aba, mensagem |
 | **quanto** | PT Mono 400 | número, código, data, valor, quantidade — **inclusive o número grande do KPI**, e sem negrito (só existe o peso 400) |
+| **número-herói** | Bebas Neue 400 | o H1 do DOCUMENTO (36px), o nº do documento (36px), o TOTAL (48px) e a contagem do cartão de indicador (38px) — e nada mais. Todos pelo `<NumeroHeroi>`, com escala NOMEADA: medida solta na tela é como a quinta família viraria sexta sem ninguém decidir (#236) |
 
 **A serifa tem DOIS lugares e nenhum outro** (refinado pelo user em 2026-08-13, vendo a tela de
 Tarefas): o componente `<Nome>` e o **H1 único** da tela. A primeira versão da regra dava
@@ -895,7 +908,7 @@ licença: grátis só para uso pessoal, e o Cabinet é vendido a terceiros).
 
 Regras do Número Tabular e da Mono para Identificador: inalteradas.
 
-### Algarismo tabular — MEDIDO nas quatro famílias (2026-08-14, issue #123)
+### Algarismo tabular — MEDIDO em todas as famílias importadas (2026-08-14, issue #123; a quinta em 2026-08-20, #266)
 
 A pergunta era concreta: `1111` e `9999` ocupam a mesma largura? Numa coluna de valores, se não
 ocuparem, o olho perde a casa decimal e a conferência contra o orçamento deixa de ser
@@ -910,6 +923,7 @@ arquivo e não depende de rasterizador, hinting ou zoom da máquina. Mesmo princ
 | **Sora** | 600 · 700 | 425 … 763 / 1000 em | **não** | **sim** |
 | **Newsreader** | 400 · 700 | 1133 e 1268 / 2000 em | **sim** (dentro de cada peso) | sim |
 | **PT Mono** | 400 | 600 / 1000 em | **sim** | não |
+| **Bebas Neue** | 400 | 400 / 1000 em | **sim** | **sim** |
 
 **Mede-se o PESO que o CSS importa, não o 400 por convenção.** `tnum` é declarado por ARQUIVO, e
 o WOFF de cada peso tem o seu próprio `GSUB` — nada obriga dois pesos da mesma família a
@@ -1492,6 +1506,8 @@ Fusão, não substituição: a cara do v5 entra SEM revogar as lições medidas 
 - Foco por zona via `:focus-within`: zona ativa acende, resto recua (opacidade .78 / brilho .94,
   220ms, sem escala). Desligado por padrão.
 - Voltar/cancelar universal no canto superior esquerdo (appbar/page-frame).
-- Display condensado (Bebas Neue, fontsource) para número-herói (total, nº do documento) —
-  avaliar contra o teto de 4 famílias: entra no lugar de quê, ou não entra.
+- ~~Display condensado (Bebas Neue, fontsource) para número-herói~~ — **ENTREGUE** (#236). Não
+  entrou no lugar de nenhuma: entrou como quinta, com um peso e emprego único (decisão do user,
+  2026-08-19), e os tamanhos vieram depois — 36px no nome e no nº do documento, 48px no total,
+  este último fora da grade, em bloco próprio (`TotalBox`).
 - Sidebar escura com dots de módulo (avaliar contra a bancada creme antes de decidir).

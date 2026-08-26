@@ -8,8 +8,24 @@ export interface BandaDeIdentidadeProps {
   contexto?: string
   /** Fim da banda: carimbo, nº do documento — o que a tela precisar à direita. */
   children?: React.ReactNode
+  /**
+   * Escala do título (#236). `tela` (padrão) é a headline de qualquer tela;
+   * `documento` sobe para 36px, o par do número-herói ao lado.
+   *
+   * É opt-in, e não o novo padrão, porque a banda é a headline de TODA tela —
+   * login, configurações, boletim, os cadastros. Subir a medida aqui mudaria
+   * o título do sistema inteiro para atender uma decisão que a issue tomou
+   * sobre o DOCUMENTO, e ninguém leria isso como decisão: leria como a tela de
+   * login ter engordado sozinha.
+   */
+  escalaTitulo?: 'tela' | 'documento'
   className?: string
 }
+
+const ESCALA_TITULO = {
+  tela: 'text-[1.75rem]',
+  documento: 'text-[2.25rem]',
+} as const
 
 /**
  * Banda de identidade (DESIGN.md §CadastroForm): a faixa em caixa preta onde a
@@ -35,6 +51,7 @@ export function BandaDeIdentidade({
   titulo,
   contexto,
   children,
+  escalaTitulo = 'tela',
   className,
 }: BandaDeIdentidadeProps) {
   return (
@@ -61,7 +78,12 @@ export function BandaDeIdentidade({
           Peso 700 e não 800: o Newsreader entra com dois pesos só (400/700), e
           `font-extrabold` sem arquivo de 800 vira negrito SINTÉTICO — o browser
           engorda o traço por conta e fecha as hastes finas. */}
-      <h1 className="font-[family-name:var(--font-display-condensada)] text-[1.75rem] leading-none tracking-[0.02em] uppercase">
+      <h1
+        className={cn(
+          'font-[family-name:var(--font-display-condensada)] leading-none tracking-[0.02em] uppercase',
+          ESCALA_TITULO[escalaTitulo],
+        )}
+      >
         {titulo}
       </h1>
       {contexto ? (

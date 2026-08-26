@@ -1,5 +1,6 @@
 import type { Modulo } from '@/app/modulo'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
 import { Selo } from '@/components/cabinet/selo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
@@ -73,15 +74,11 @@ function Cartao({ indicador }: { indicador: Indicador }) {
         {/* r7 (ref. Devora): a CONTAGEM fala em display condensado grande —
             número-herói do cartão. Dinheiro continua na voz de QUANTO (mono,
             regra de 2026-08-13): moeda não troca de voz por moda. */}
-        <span
-          className={cn(
-            indicador.dinheiro
-              ? 'font-mono text-2xl tabular-nums text-money'
-              : 'font-[family-name:var(--font-display-condensada)] text-[2.375rem] leading-none tracking-[0.02em]',
-          )}
-        >
-          {indicador.valor}
-        </span>
+        {indicador.dinheiro ? (
+          <span className="font-mono text-2xl tabular-nums text-money">{indicador.valor}</span>
+        ) : (
+          <NumeroHeroi escala="cartao">{indicador.valor}</NumeroHeroi>
+        )}
         {/* Delta com sinal vira CHIP tonal — verde soma, coral subtrai. */}
         {/^[+−-]/.test(indicador.apoio) ? (
           <span

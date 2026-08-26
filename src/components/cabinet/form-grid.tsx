@@ -1,4 +1,5 @@
 import { VOZ_DE_NOME } from '@/components/cabinet/nome'
+import { TotalBox } from '@/components/cabinet/total-box'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -55,7 +56,10 @@ export type FormGridRow = Record<string, string | number | boolean | null>
 export interface FormGridTotalRow {
   label: string
   valorCentavos: number
-  /** `Total`: régua forte acima e único em Title (1.125rem/600) — o GRAND TOTAL do invoice. */
+  /**
+   * `Total`: o GRAND TOTAL do invoice. Não é uma fileira com destaque — é o
+   * FECHO, e sai da malha para o bloco próprio abaixo da grade (#236).
+   */
   destaque?: boolean
 }
 
@@ -83,10 +87,12 @@ export interface FormGridProps {
    */
   sectionKey?: string
   /**
-   * Totais como últimas fileiras da própria grade (DESIGN.md §DocumentoTotais):
-   * células da esquerda mescladas, rótulo em Meta na coluna anterior à de
-   * valor, valor tabular caindo exatamente sob `valueColumnKey`. Sempre
-   * derivados dos itens — nunca campo paralelo.
+   * Totais do pé do documento (DESIGN.md §DocumentoTotais). SubTotal e ajustes
+   * são fileiras da própria grade — células da esquerda mescladas, rótulo em
+   * Meta na coluna anterior à de valor, valor tabular caindo exatamente sob
+   * `valueColumnKey`. A linha `destaque` é o Total e NÃO é fileira: vira o
+   * fecho, bloco próprio abaixo da grade. Sempre derivados dos itens — nunca
+   * campo paralelo.
    */
   totals?: { valueColumnKey: string; rows: FormGridTotalRow[] }
 }
@@ -238,6 +244,17 @@ export function FormGrid({
   const rows = useWatch({ control, name }) as FormGridRow[] | undefined
   // Coluna de valor sob a qual os totais caem (precisa ter uma coluna antes, para o rótulo).
   const totalsValueIndex = totals ? columns.findIndex((c) => c.key === totals.valueColumnKey) : -1
+  // FUSÃO v5 r3 (#236): o Total deixa de ser a última fileira da malha e vira
+  // o FECHO — bloco próprio abaixo da grade, em display condensado a 48px.
+  // SubTotal e ajustes continuam fileiras, onde o alinhamento sob a coluna de
+  // valor é o que os torna conferíveis contra os itens.
+  //
+  // O fecho NÃO depende de `totalsValueIndex`: fora da malha, ele não cai sob
+  // coluna nenhuma. Quando `valueColumnKey` não casa com coluna alguma, as
+  // fileiras somem — comportamento antigo — mas o total continua na tela, que
+  // é o dado que o operador foi ali buscar.
+  const fecho = totals?.rows.find((t) => t.destaque === true)
+  const fileirasNaMalha = totals?.rows.filter((t) => t.destaque !== true) ?? []
 
   return (
     // Barra→grade é relação entre partes de um mesmo componente: `{spacing.md}`.
@@ -366,24 +383,12 @@ export function FormGrid({
                 )
               })
             )}
-            {totals && totalsValueIndex >= 1
-              ? totals.rows.map((t, i) => (
+            {totalsValueIndex >= 1
+              ? fileirasNaMalha.map((t) => (
                   // Totais são fileiras da grade: esquerda mesclada, rótulo em
-                  // Meta na coluna anterior, valor sob a coluna de valor.
-                  <TableRow
-                    key={t.label}
-                    className={cn(
-                      // Zona de dinheiro: creme-esverdeado é exclusivo das
-                      // fileiras de total — dado comum da malha fica em tinta
-                      // normal, senão a cor deixa de significar.
-                      t.destaque === true
-                        ? 'bg-fill-money hover:bg-fill-money'
-                        : 'bg-zone-money hover:bg-zone-money',
-                      // Sem fio duplo: a régua forte do Total substitui o fio da fileira acima.
-                      totals.rows[i + 1]?.destaque === true && 'border-b-0',
-                      t.destaque === true && 'rule-strong-top',
-                    )}
-                  >
+                  // Meta na coluna anterior, valor sob a coluna de valor. O
+                  // Total não está mais entre elas — ver `fecho`, abaixo.
+                  <TableRow key={t.label} className="bg-zone-money hover:bg-zone-money">
                     {totalsValueIndex > 1 ? (
                       <TableCell colSpan={totalsValueIndex - 1} className="p-1" />
                     ) : null}
@@ -399,9 +404,6 @@ export function FormGrid({
                           // que subtrai escreve em vermelho. Sem isso, um
                           // desconto se lê igualzinho a uma soma.
                           t.valorCentavos < 0 ? 'text-destructive' : 'text-money',
-                          // FUSÃO v5: o Total é o número-herói da tela —
-                          // 2xl, o maior dado da malha. Ninguém procura o total.
-                          t.destaque === true && 'text-2xl font-extrabold',
                         )}
                       >
                         {formatMoneyBRL(t.valorCentavos)}
@@ -415,6 +417,11 @@ export function FormGrid({
           </TableBody>
         </Table>
       </div>
+      {/* O fecho fica FORA da caixa da grade, encostado à direita: é o único
+          dado da tela que não deve alinhamento a coluna nenhuma. */}
+      {fecho ? (
+        <TotalBox label={fecho.label} valorCentavos={fecho.valorCentavos} className="self-end" />
+      ) : null}
     </div>
   )
 }

@@ -9,8 +9,8 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * Anatomia do documento (DESIGN.md §DocumentoHeader / §DocumentoTotais):
- * número em mono 600 à direita com régua forte fechando o bloco; Total é o
- * único em Title e vem separado dos demais por régua forte.
+ * número-herói em display condensado à direita; o Total é o FECHO — bloco
+ * próprio, fora da tira, em 48px (#236).
  */
 describe('DocumentoHeader', () => {
   it('título em Headline à esquerda e número em Número do Documento à direita', () => {
@@ -22,12 +22,16 @@ describe('DocumentoHeader', () => {
     const titulo = screen.getByRole('heading', { name: 'Orçamento' })
     expect(titulo.className).toContain('font-[family-name:var(--font-display-condensada)]')
     expect(titulo.className).toContain('uppercase')
-    // Nº do Documento: mono 700, 1.5rem — a âncora do cabeçalho.
+    // #236: o título do DOCUMENTO sobe a 36px — é o par do número ao lado.
+    // A banda de qualquer outra tela fica em 28px; ver banda-identidade.test.
+    expect(titulo.className).toContain('text-[2.25rem]')
+    // Nº do Documento: número-herói, display condensado a 36px, na caixa preta.
     const numero = screen.getByText('ORÇ-2026-00184')
-    expect(numero.className).toContain('font-mono')
-    expect(numero.className).toContain('font-bold')
-    expect(numero.className).toContain('text-2xl')
+    expect(numero.className).toContain('font-[family-name:var(--font-display-condensada)]')
+    expect(numero.className).toContain('text-[2.25rem]')
     expect(numero.className).toContain('tabular-nums')
+    // A caixa preta continua sendo dele: é a única peça escura do cabeçalho.
+    expect(numero.className).toContain('bg-primary')
   })
 
   // O cabeçalho de documento é a MESMA banda de identidade do cadastro: quem
@@ -70,16 +74,30 @@ describe('DocumentoTotais', () => {
     const total = screen.getByText('Total:')
     expect(total.className).toContain('font-mono')
     expect(total.className).toContain('uppercase')
-    expect(total.parentElement?.className).toContain('border-rule-strong')
+    // O fecho é o `TotalBox`, e não mais um item da tira separado por régua.
+    expect(total.closest('[data-slot="total-box"]')).not.toBeNull()
     // Total derivado: 1000,00 - 100,00 = 900,00
     expect(screen.getByLabelText('Total')).toHaveTextContent('900')
   })
 
   it('tira tem canto de 4px (rounded-lg) e borda em Régua', () => {
     const { container } = render(<DocumentoTotais subtotalCentavos={0} />)
-    const tira = container.firstElementChild
+    // A tira agora é irmã do fecho dentro da coluna alinhada à direita —
+    // `firstElementChild` do container é essa coluna, não a tira.
+    const tira = container.firstElementChild?.firstElementChild
     expect(tira?.className).toContain('rounded-lg')
     expect(tira?.className).toContain('border')
+  })
+
+  // O fecho NÃO fica dentro da tira: se ficasse, a tela sem grade teria um
+  // total de 48px espremido entre dois pares de 14px, e a decisão do #236
+  // apareceria como desalinho em vez de hierarquia.
+  it('o fecho é bloco próprio, irmão da tira e não item dela', () => {
+    const { container } = render(<DocumentoTotais subtotalCentavos={100_000} />)
+    const fecho = container.querySelector('[data-slot="total-box"]')
+    expect(fecho).not.toBeNull()
+    expect(fecho?.closest('.rounded-lg')).toBeNull()
+    expect(screen.getByLabelText('Total').firstElementChild?.className).toContain('text-[3rem]')
   })
 })
 

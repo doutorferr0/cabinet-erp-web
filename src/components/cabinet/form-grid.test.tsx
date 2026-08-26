@@ -137,9 +137,10 @@ describe('FormGrid — foco da célula editável', () => {
 })
 
 /**
- * Totais como últimas fileiras da grade (DESIGN.md §DocumentoTotais): rótulo
- * em Meta na coluna anterior à de valor, valor sob a coluna de valor, Total
- * com régua forte acima e único em Title.
+ * Totais no pé do documento (DESIGN.md §DocumentoTotais): SubTotal e ajustes
+ * são fileiras da grade — rótulo em Meta na coluna anterior à de valor, valor
+ * sob a coluna de valor. O Total NÃO é fileira: é o fecho, bloco próprio
+ * abaixo da grade, em display condensado a 48px (#236).
  */
 function HarnessTotais({ vazio = false }) {
   const form = useForm({
@@ -172,26 +173,34 @@ describe('FormGrid — totais no pé da grade', () => {
   it('rótulo em Meta na penúltima coluna e valor sob a coluna de valor', () => {
     render(<HarnessTotais />)
 
-    const total = screen.getByLabelText('Total')
-    expect(total).toHaveTextContent('10,00')
+    const subtotal = screen.getByLabelText('SubTotal')
+    expect(subtotal).toHaveTextContent('10,00')
     // O valor cai na coluna `valor`; a célula imediatamente antes é o rótulo.
-    const celulaValor = total.closest('td')
-    expect(celulaValor?.previousElementSibling?.textContent).toBe('Total:')
+    const celulaValor = subtotal.closest('td')
+    expect(celulaValor?.previousElementSibling?.textContent).toBe('SubTotal:')
     const rotulo = celulaValor?.previousElementSibling
     expect(rotulo?.className).toContain('font-mono')
     expect(rotulo?.className).toContain('uppercase')
   })
 
-  it('Total é o único em Title e leva régua forte acima', () => {
+  // #236: o Total sai da malha. Enquanto era fileira, 48px caía ao lado de
+  // itens de 13px e não compartilhava casa decimal com ninguém — o alinhamento
+  // quebrava por TAMANHO, antes de qualquer questão de fonte.
+  it('o Total não é fileira da grade: é o fecho, fora da tabela', () => {
     render(<HarnessTotais />)
 
     const total = screen.getByLabelText('Total')
-    // Fusão v5: o Total é o número-herói da tela — 2xl, o maior dado da malha.
-    expect(total.className).toContain('text-2xl')
-    expect(total.closest('tr')?.className).toContain('rule-strong-top')
+    expect(total.closest('table')).toBeNull()
+    expect(total.closest('[data-slot="total-box"]')).not.toBeNull()
+    // 48px em display condensado — o maior dado da tela.
+    const valor = total.firstElementChild
+    expect(valor?.className).toContain('font-[family-name:var(--font-display-condensada)]')
+    expect(valor?.className).toContain('text-[3rem]')
 
+    // SubTotal continua fileira, e continua na medida da malha.
     const subtotal = screen.getByLabelText('SubTotal')
-    expect(subtotal.className).not.toContain('text-2xl')
+    expect(subtotal.closest('table')).not.toBeNull()
+    expect(subtotal.className).toContain('text-sm')
   })
 
   it('totais aparecem mesmo com a grade vazia (zero derivado)', () => {
@@ -251,13 +260,16 @@ describe('FormGrid — zona de dinheiro nos totais', () => {
     expect(desconto.className).not.toContain('text-money')
   })
 
-  it('Total leva a régua de 3px e o peso 800 do fecho do documento', () => {
+  it('o fecho leva a borda de 3px, o lima e a sombra dura do documento', () => {
     render(<HarnessZona />)
 
-    const total = screen.getByLabelText('Total')
-    expect(total.className).toContain('font-extrabold')
-    // Régua de 3px vem da utility, não de `border-t` + cor solta na tela.
-    expect(total.closest('tr')?.className).toContain('rule-strong-top')
+    const caixa = screen.getByLabelText('Total').closest('[data-slot="total-box"]')
+    expect(caixa?.className).toContain('border-[3px]')
+    expect(caixa?.className).toContain('border-rule-strong')
+    // Mesma tinta de dinheiro que a fileira de total tinha — o fecho não
+    // estreia par de cor que ninguém mediu.
+    expect(caixa?.className).toContain('bg-fill-money')
+    expect(caixa?.className).toContain('shadow-el3')
   })
 
   it('célula comum da malha NÃO usa a cor de dinheiro', () => {

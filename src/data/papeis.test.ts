@@ -102,10 +102,21 @@ describe('podeEscrever', () => {
     expect(podeEscrever('viewer', 'catalog-lookups')).toBe(false)
   })
 
-  it('admin escreve em employees e catalog-lookups', () => {
+  it('admin escreve em employees, catalog-lookups e projects', () => {
     expect(podeEscrever('admin', 'employees')).toBe(true)
     expect(podeEscrever('admin', 'catalog-lookups')).toBe(true)
-    expect(podeEscrever('admin', 'projects')).toBe(false)
+    // `projects` saiu de `owner` quando ganhou a primeira ESCRITA (o arraste do
+    // Planner). Reagendar a obra é gestão; quem alcança colaborador alcança o
+    // plano. Abaixo de `admin` continua fechado — ver o caso do operador.
+    expect(podeEscrever('admin', 'projects')).toBe(true)
+  })
+
+  it('abaixo de admin, projects continua fechado', () => {
+    // O gesto de arrastar some da tela para estes: `planner.tsx` decide o
+    // `readonly` do gantt por esta mesma função.
+    expect(podeEscrever('operator-full', 'projects')).toBe(false)
+    expect(podeEscrever('operator-sales', 'projects')).toBe(false)
+    expect(podeEscrever('viewer', 'projects')).toBe(false)
   })
 
   it('papel ausente ou desconhecido é sempre false', () => {

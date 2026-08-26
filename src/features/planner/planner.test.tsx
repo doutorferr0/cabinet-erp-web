@@ -79,7 +79,7 @@ const PLANO: ProjectPlanDto = {
   ],
 }
 
-function servidor({ encerrados = [] as ProjectDto[] } = {}) {
+function servidor({ encerrados = [] as ProjectDto[], papel = 'owner' } = {}) {
   const chamadas: string[] = []
   const stub: FetchStub = async (input) => {
     const url = String(input instanceof Request ? input.url : input)
@@ -93,7 +93,19 @@ function servidor({ encerrados = [] as ProjectDto[] } = {}) {
       })
 
     if (alvo.pathname === '/auth/me') return respostaSessao()
-    if (alvo.pathname === '/auth/tenants') return respostaVinculos()
+    if (alvo.pathname === '/auth/tenants') {
+      // O papel decide se a barra é arrastável, então ele precisa ser
+      // escolhível aqui — `respostaVinculos` fixa `owner`, que é o teto.
+      if (papel === 'owner') return respostaVinculos()
+      return json([
+        {
+          tenantId: '00000000-0000-0000-0000-000000000003',
+          name: 'VERTZ ILUMINAÇÃO',
+          role: papel,
+          features: ['suppliers', 'professionals', 'employees'],
+        },
+      ])
+    }
     if (alvo.pathname === '/api/projects') {
       return json(alvo.searchParams.get('status') === 'closed' ? encerrados : PROJETOS)
     }
@@ -168,5 +180,46 @@ describe('tela Planner', () => {
     // Grade de zero mês seria pior que a frase: o operador leria "não há nada
     // acontecendo" onde o certo é "este projeto não tem plano".
     expect(document.querySelector('[data-slot="gantt"]')).toBeNull()
+  })
+})
+
+/**
+ * ARRASTAR DATAS — o que esta bateria alcança, e o que não.
+ *
+ * O limite do cabeçalho continua valendo: jsdom não faz layout, e um arraste de
+ * verdade depende de coordenadas que não existem aqui. O que existe, e foi
+ * MEDIDO nesta sessão comparando os dois modos do `Gantt`, é o rastro do gesto
+ * no DOM: com a escrita liberada o SVAR desenha as alças da barra
+ * (`wx-target`, nas duas pontas) e o marcador de progresso; com `readonly` não
+ * desenha nenhuma. É por aí que se prova que o papel chegou até a barra — e é
+ * uma asserção que fica VERMELHA se o `readonly={travado}` voltar a ser fixo.
+ *
+ * **O elo que fica descoberto é um só:** o fio entre o evento `onupdatetask` e
+ * o `mutate`. Ele não é alcançável sem arraste, e dublar o `Gantt` para forçá-lo
+ * provaria o dublê. As duas pontas desse fio estão cobertas em separado —
+ * `reagendamentoDoEvento` em `dados-do-gantt.test.ts`, o `PATCH` inteiro em
+ * `src/mocks/api/planner.test.ts` — e a conferência do meio é a tela real.
+ */
+describe('Planner: reagendar pelo arraste', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('quem alcança a escrita ganha as alças da barra', async () => {
+    renderRoute('/planner', servidor().stub)
+    await screen.findByText('Aquisição')
+
+    const gantt = document.querySelector('[data-slot="gantt"]')
+    expect(gantt?.querySelectorAll('.wx-target').length ?? 0).toBeGreaterThan(0)
+    expect(screen.queryByText(/Somente leitura/)).toBeNull()
+  })
+
+  it('o papel de CONSULTA não ganha as alças, e vê por quê', async () => {
+    renderRoute('/planner', servidor({ papel: 'viewer' }).stub)
+    await screen.findByText('Aquisição')
+
+    const gantt = document.querySelector('[data-slot="gantt"]')
+    // Zero alça: oferecer o gesto a quem o servidor recusa faria a barra andar
+    // e voltar sem explicação — a forma mais confusa de dizer "você não pode".
+    expect(gantt?.querySelectorAll('.wx-target').length ?? 0).toBe(0)
+    expect(screen.getByText(/Somente leitura/)).toBeInTheDocument()
   })
 })

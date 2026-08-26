@@ -2249,6 +2249,91 @@
         }
       }
     },
+    "/api/projects/{projectId}/plan/items/{itemId}": {
+      "patch": {
+        "tags": ["planner"],
+        "operationId": "ReschedulePlanItem",
+        "description": "Proposto. Reagenda UM item do plano — é o que o arraste da barra no gantt grava. `PATCH` e não `PUT` de propósito: a barra carrega data, e só. Um `PUT` a partir dela apagaria `label`, `kind` e `progressPercent`, que o operador não tocou e a barra nem exibe. As duas datas vêm JUNTAS e obrigatórias porque o gesto move as duas: arrastar desloca o intervalo inteiro, e mandar só a ponta que mudou faria o servidor adivinhar a outra. `endsOn` continua INCLUSIVO, como no `PlanItemDto` — a convenção exclusiva do motor do gantt não atravessa a fronteira. **A FASE acompanha:** item reagendado para fora do intervalo da fase que o contém estica essa fase até contê-lo, e a resposta seguinte de `GetProjectPlan` já traz a fase esticada. Recusar o gesto travaria o replanejamento no lugar onde ele mais acontece; deixar a fase curta desenharia uma barra-resumo menor que os próprios filhos.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanItemRescheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/employees": {
       "get": {
         "tags": ["cadastros"],
@@ -15944,6 +16029,22 @@
             "items": {
               "$ref": "#/components/schemas/PlanItemDto"
             }
+          }
+        }
+      },
+      "PlanItemRescheduleRequest": {
+        "description": "Proposto. O novo intervalo de um item do plano. Só datas: reagendar não renomeia nem mexe em progresso, e campo que o gesto não produz não entra no corpo que ele manda.",
+        "required": ["startsOn", "endsOn"],
+        "type": "object",
+        "properties": {
+          "startsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "endsOn": {
+            "description": "Previsão de término, INCLUSIVA — o mesmo dia que `PlanItemDto.endsOn`. Item de um dia só chega aqui com `startsOn` igual a `endsOn`, nunca com o dia seguinte.",
+            "type": "string",
+            "format": "date"
           }
         }
       },

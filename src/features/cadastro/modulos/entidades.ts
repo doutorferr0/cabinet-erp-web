@@ -576,7 +576,28 @@ export const colaborador: EntidadeCadastro = {
   // `profissionais` porque os dois são o domínio Pessoas — o azure do mockup
   // antigo era a cor do Estoque e colidiria com o bloco Documentos.
   cor: 'profissionais',
-  fonte: 'mock',
+  // `http` desde 2026-08-25: a tela lê `GET /api/employees`. É esta linha que
+  // faz `idDoFiltro` passar a usar o `dto` de cada campo em vez do caminho no
+  // schema Zod — com ela em `mock`, o seletor de colunas ligaria `nome` numa
+  // linha que só tem `name`, e a coluna sairia vazia em toda linha.
+  fonte: 'http',
+  // A whitelist de ORDENAÇÃO, medida em 25/08 contra a main `2ee954b` do api:
+  // pedir `sortBy=nome` responde 400 `urn:cabinet:erro:ordenacao-invalida`
+  // nomeando estes quatro. Não foi lida do `openapi-v1.json` — o contrato não
+  // publica a lista, o servidor é que a diz.
+  whitelist: ['name', 'sector', 'jobTitle', 'active'],
+  // **VAZIA, e vazia é a medição.** `/api/employees` recusa o parâmetro
+  // `filters` inteiro: 400 `urn:cabinet:erro:filtro-invalido` — "Este recurso
+  // não publica o parâmetro filters". Enquanto for assim a tela não oferece
+  // filtro estruturado, e a invariante de `invariantes.test.ts` cobra que ela
+  // não o ofereça. Sai desta linha no dia em que o contrato publicar `filters`
+  // para o recurso — PR neste repo, e depois handler no api.
+  whitelistDeFiltro: [],
+  // A LINHA da listagem é o `EmployeeDto`, e não o `EmployeeDetailDto`: é ele
+  // que a grade recebe, e é contra ele que cada `dto` tem de existir. Conferir
+  // contra o detalhe deixaria passar `hiredAt` como coluna — campo que a ficha
+  // tem e a listagem não manda, isto é, coluna vazia em toda linha.
+  dtoDoContrato: 'EmployeeDto',
   modulos: [
     {
       id: 'identificacao',
@@ -585,7 +606,20 @@ export const colaborador: EntidadeCadastro = {
       cor: 'profissionais',
       obrigatorio: true,
       campos: [
-        { k: 'nome', r: 'Nome completo', req: true, col: true, fil: 'texto', campo: 'nome' },
+        // `dto:` entrou nos quatro em 2026-08-25, quando a tela migrou para
+        // `GET /api/employees`: a GRADE recebe o `EmployeeDto` cru, e sem o nome
+        // do contrato o seletor de colunas ligaria `nome` numa linha que só tem
+        // `name` — coluna vazia em toda linha, que é o defeito que o caso de
+        // Clientes em `colunas-chegam-na-grade.test.tsx` já nomeia.
+        {
+          k: 'nome',
+          r: 'Nome completo',
+          req: true,
+          col: true,
+          fil: 'texto',
+          campo: 'nome',
+          dto: 'name',
+        },
         {
           k: 'cargo',
           r: 'Cargo / função',
@@ -594,6 +628,7 @@ export const colaborador: EntidadeCadastro = {
           col: true,
           fil: 'sel',
           campo: 'cargo',
+          dto: 'jobTitle',
         },
         {
           k: 'admissao',
@@ -601,11 +636,16 @@ export const colaborador: EntidadeCadastro = {
           t: 'data',
           req: true,
           w: 'medio',
-          col: true,
+          // **SEM `col`, e a ausência é medição.** `EmployeeDto` tem CINCO
+          // campos (`id`, `name`, `sector`, `jobTitle`, `active`) — a admissão
+          // só existe no `EmployeeDetailDto`, isto é, na ficha. Oferecê-la no
+          // seletor de colunas acrescentaria à grade uma coluna vazia em toda
+          // linha, e o operador leria isso como "ninguém tem data de admissão".
+          // Volta a ter `col` no dia em que a LISTAGEM publicar o campo.
           fil: 'data',
           campo: 'dataAdmissao',
         },
-        { k: 'setor', r: 'Setor', t: 'select', fil: 'sel', campo: 'setor' },
+        { k: 'setor', r: 'Setor', t: 'select', fil: 'sel', campo: 'setor', dto: 'sector' },
         {
           k: 'atendente',
           r: 'É atendente — pode ser vinculado a venda',
@@ -613,7 +653,15 @@ export const colaborador: EntidadeCadastro = {
           fil: 'bool',
           campo: 'atendimentoCliente',
         },
-        { k: 'ativo', r: 'Ativo', t: 'check', col: true, fil: 'bool', campo: 'ativo' },
+        {
+          k: 'ativo',
+          r: 'Ativo',
+          t: 'check',
+          col: true,
+          fil: 'bool',
+          campo: 'ativo',
+          dto: 'active',
+        },
         // Do mockup, sem onde gravar hoje. Colaborador é usuário do sistema
         // (issue #105) e o e-mail de login é o que falta para isso ser verdade.
         { k: 'login', r: 'E-mail de login', fil: 'texto' },
@@ -626,9 +674,14 @@ export const colaborador: EntidadeCadastro = {
       resumo: 'Um colaborador pode atuar em mais de uma empresa, com papel diferente em cada',
       cor: 'fornecedores',
       campos: [
-        { k: 'empresa', r: 'Empresa', t: 'select', col: true, fil: 'sel', campo: 'empresa' },
+        // Os dois perderam o `col` pelo mesmo motivo da admissão: nenhum existe
+        // no `EmployeeDto`. `empresa` nem no `EmployeeDetailDto` — a empresa é a
+        // ATIVA da sessão, não uma coluna da pessoa; e `perfil` é o vínculo,
+        // que o detalhe publica como `roleName`. Seletor de coluna só oferece o
+        // que a LISTAGEM traz.
+        { k: 'empresa', r: 'Empresa', t: 'select', fil: 'sel', campo: 'empresa' },
         // O perfil por empresa é o escopo da issue #105 (Acesso-1).
-        { k: 'perfil', r: 'Perfil', t: 'select', col: true, fil: 'sel' },
+        { k: 'perfil', r: 'Perfil', t: 'select', fil: 'sel' },
       ],
     },
     {

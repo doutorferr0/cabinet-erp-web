@@ -1,3 +1,4 @@
+import type { EmployeeDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { Nome } from '@/components/cabinet/nome'
@@ -6,79 +7,73 @@ import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
 import { CoberturaDoColaborador } from '@/features/colaborador/cobertura-do-colaborador'
-import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { CARGOS, type Colaborador, SETORES } from '@/mocks/colaboradores'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { BriefcaseBusiness, Building2, CircleCheck, Hash, User } from 'lucide-react'
 
 export const Route = createFileRoute('/cadastros/colaboradores/')({
   component: ColaboradoresPage,
 })
 
-const columns: ColumnDef<Colaborador>[] = [
-  { accessorKey: 'id', header: 'Código' },
+/**
+ * As colunas são os campos do `EmployeeDto` CRU, e os `accessorKey` são o que o
+ * `sortBy` manda ao servidor: `name`, `sector`, `jobTitle`, `active` — a
+ * whitelist medida em 25/08 (pedir `nome` responde 400
+ * `urn:cabinet:erro:ordenacao-invalida`, nomeando os aceitos).
+ *
+ * **A coluna `Código` saiu, e o contrato diz por quê:** "o legado identifica
+ * funcionário por CPF e não guarda código humano, então a coluna `Código` da
+ * listagem sai da tela em vez de exibir um uuid". Mostrar
+ * `ac956183-c6b5-4adf-…` onde o operador procurava `12` é ruído com cara de
+ * dado.
+ *
+ * `sector` e `jobTitle` vêm com o NOME já resolvido pelo servidor — é serviço
+ * que o DTO presta de propósito, para a listagem não ter de buscar o rótulo de
+ * cada lista de apoio só para imprimir uma linha.
+ */
+const columns: ColumnDef<EmployeeDto>[] = [
   {
-    accessorKey: 'nome',
+    accessorKey: 'name',
     header: 'Nome',
     cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
   },
   {
-    accessorKey: 'setor',
+    accessorKey: 'sector',
     header: 'Setor',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
   {
-    accessorKey: 'cargo',
+    accessorKey: 'jobTitle',
     header: 'Cargo',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
   {
-    accessorKey: 'ativo',
+    accessorKey: 'active',
     header: 'Ativo',
     cell: ({ getValue }) => <CelulaAtivo ativo={getValue<boolean>()} />,
   },
 ]
 
 /**
- * TELA PILOTO do filtro estruturado (issue #68).
+ * O FILTRO ESTRUTURADO SAIU DAQUI, e a saída é medição, não preferência.
  *
- * Colaborador é piloto do lado MOCK: quem responde `campo + operador + valor`
- * aqui é o provider em memória. O piloto HTTP é Produtos, desde que o contrato
- * publicou `filters` em `/api/products` (issue #77) — `GET /api/employees` existe
- * no contrato para o `salespersonId` do orçamento, não serve esta listagem, e
- * enquanto for assim o filtro daqui não passa por rede.
+ * Esta era a tela piloto do filtro por módulo (issue #68) do lado MOCK: quem
+ * respondia `campo + operador + valor` era o provider em memória. Com a
+ * listagem em `GET /api/employees` quem responde é o servidor, e **ele não
+ * publica o parâmetro `filters`**: medido em 2026-08-25 contra a main `2ee954b`
+ * do api, pedir `filters` responde 400 `urn:cabinet:erro:filtro-invalido` —
+ * "Este recurso não publica o parâmetro filters".
  *
- * Os `id` são os campos do mock (§2 da transcrição). Quando colaborador ganhar
- * caminho no contrato, eles viram os nomes do DTO — a mesma regra do
- * `accessorKey` das colunas ordenáveis.
+ * Deixar os campos na tela faria `filtrosDaTabela` LANÇAR antes da rede (é
+ * guarda dela, e a mensagem nomeia as duas saídas) — ou, sem ela, o operador
+ * montaria um filtro e receberia 400 sem entender o que fez de errado.
  *
- * `salario` fica de fora de propósito: trafega em centavos, e um filtro numérico
- * ali compararia com centavos ("1000" acharia R$ 10,00). Entra quando houver
- * variante de dinheiro.
+ * **O piloto não se perdeu:** o piloto HTTP é Produtos, desde que o contrato
+ * publicou `filters` em `/api/products` (issue #77), e é ele que exercita o
+ * caminho de verdade. Esta tela volta a filtrar no dia em que o contrato
+ * publicar `filters` para `/api/employees` — que é PR no dono do contrato,
+ * este repo, e depois handler no api. Enquanto isso a busca é o `q`, que o
+ * servidor serve.
  */
-const camposFiltraveis: readonly CampoFiltravel[] = [
-  { id: 'id', rotulo: 'Código', variante: 'number', icon: Hash, placeholder: 'Ex.: 12' },
-  { id: 'nome', rotulo: 'Nome', variante: 'text', icon: User, placeholder: 'Parte do nome…' },
-  {
-    id: 'setor',
-    rotulo: 'Setor',
-    variante: 'select',
-    icon: Building2,
-    opcoes: SETORES.map((s) => ({ valor: s, rotulo: s })),
-  },
-  {
-    // Múltipla escolha porque a pergunta real é "quem é vendedor OU consultor" —
-    // com `select` o operador teria de rodar a consulta duas vezes e somar de
-    // cabeça.
-    id: 'cargo',
-    rotulo: 'Cargo',
-    variante: 'multiSelect',
-    icon: BriefcaseBusiness,
-    opcoes: CARGOS.map((c) => ({ valor: c, rotulo: c })),
-  },
-  { id: 'ativo', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
-]
 
 function ColaboradoresPage() {
   const navigate = useNavigate()
@@ -92,7 +87,7 @@ function ColaboradoresPage() {
     })
   }
 
-  const actions = cadastroActions<Colaborador>({
+  const actions = cadastroActions<EmployeeDto>({
     entidade: 'colaborador',
     readOnly,
     onIncluir: () => abrir('novo'),
@@ -113,11 +108,15 @@ function ColaboradoresPage() {
         fetcher={data.colaboradores.list}
         actions={actions}
         origem={data.colaboradores.origem}
-        filtros={camposFiltraveis}
-        // Filtro POR MÓDULO (#104): o mesmo schema que desenha o formulário e a
-        // ficha agrupa os campos aqui. Colaborador é MOCK, então o id do filtro é
-        // a chave do registro (e não o campo do DTO) — as duas pontas saem do
-        // mesmo schema, e é ele que mantém as duas de acordo.
+        // O SELETOR DE COLUNAS continua, e é função diferente do filtro: o
+        // schema diz quais colunas o operador pode ligar, e cada uma declara o
+        // `dto:` que a casa com o campo do `EmployeeDto`. Ele saiu junto com o
+        // filtro num primeiro corte desta migração, e a única coisa que isso
+        // fez foi tirar da tela uma função que o servidor não impede.
+        // `modoDeFiltro="modulo"` SEM `filtros`: desde 25/08 o braço por módulo
+        // do DataTable não exige campo filtrável, então isto pede o seletor de
+        // COLUNAS sem pedir a faixa de chips de filtro — que é exatamente o que
+        // esta tela pode oferecer enquanto o contrato não publicar `filters`.
         modoDeFiltro="modulo"
         entidadeDoSchema={esquemaColaborador}
       />

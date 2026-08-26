@@ -82,31 +82,20 @@ describe('tabelaDeApoio', () => {
 
 describe('registry de providers', () => {
   /**
-   * Os recursos que ainda são MOCK. Saíram daqui os que viraram HTTP —
-   * `produtos` (`produtos-api.test.ts`), os três papéis de parceiro
-   * (`parceiros-api.test.ts`) e `orcamentos` (`quotes-api.test.ts`), asseridos
-   * contra servidor falso.
+   * **NÃO HÁ MAIS RECURSO DE CADASTRO MOCK, e a lista foi APAGADA em vez de
+   * ficar vazia.** `colaboradores` era o último; migrou para
+   * `GET /api/employees` em 2026-08-25, e a bateria dele é
+   * `colaboradores-api.test.ts`, contra servidor falso.
    *
-   * `clientes`, `fornecedores` e `profissionais` não voltam a esta lista tal como
-   * estavam: sem `GET /api/partners/{id}` eles não têm `get`, e é essa a forma
-   * que o contrato oferece hoje.
+   * `it.each([])` não é "zero casos passando": é caso que não roda, com cara de
+   * verde. Enquanto a lista existir vazia, quem escrever o próximo cadastro mock
+   * a preenche sem descobrir que ela parou de medir há meses — e quem NÃO
+   * escrever nenhum fica com uma guarda que nunca mais falha. Recurso de
+   * cadastro novo que nasça mock traz o caso de volta, escrito para ele.
    *
-   * `ordensCompra` e `pedidosCompra` saíram na fase C do G2: as duas passaram a
-   * ser HTTP (`compras-api.ts`), e este caso chama `list()` de verdade — contra
-   * provider de rede, sem servidor, ele mediria a ausência de servidor. Quem os
-   * cobre agora são as baterias de tela, contra servidor falso.
+   * O que sobrou aqui são as TABELAS DE APOIO, que continuam locais por não
+   * terem caminho no contrato — e são elas que os dois casos abaixo medem.
    */
-  const recursosComCadastro = ['colaboradores'] as const
-
-  it.each(recursosComCadastro)('%s expõe list/get/empty', async (nome) => {
-    const p = data[nome]
-    const lista = await p.list(tableState(), 0)
-    expect(lista.total).toBeGreaterThan(0)
-
-    const primeiro = lista.rows[0] as { id: number }
-    await expect(p.get(String(primeiro.id), 0)).resolves.toMatchObject({ id: primeiro.id })
-    expect(p.empty()).toHaveProperty('id')
-  })
 
   it('cidades é só consulta (tabela de apoio, sem cadastro)', async () => {
     const r = await data.cidades.list(tableState({ q: 'campinas' }), 0)

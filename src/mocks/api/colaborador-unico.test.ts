@@ -75,7 +75,7 @@ describe('a lista de pessoas do mock é uma só', () => {
 
     const alguem = colaboradores.find((p) => p.setor && p.cargo)
     expect(alguem).toBeDefined()
-    const linha = resposta.data.rows.find((c) => c.id === idDeColaborador(alguem?.id ?? 0))
+    const linha = resposta.data.rows.find((c) => c.id === idDeColaborador(alguem?.id ?? ''))
 
     expect(linha?.sector).toBe(nomeDeApoio(alguem?.setor ?? null))
     expect(linha?.jobTitle).toBe(nomeDeApoio(alguem?.cargo ?? null))
@@ -102,7 +102,7 @@ describe('o detalhe do colaborador', () => {
     const alguem = colaboradores.find((p) => p.setor && p.cargo)
     expect(alguem).toBeDefined()
 
-    const detalhe = await getEmployee(idDeColaborador(alguem?.id ?? 0))
+    const detalhe = await getEmployee(idDeColaborador(alguem?.id ?? ''))
     expect(detalhe.status).toBe(200)
     if (detalhe.status !== 200) return
 

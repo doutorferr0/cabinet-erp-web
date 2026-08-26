@@ -934,7 +934,23 @@ function parceirosDoSeed(): ParceiroDaOrg[] {
         { tenantId: TENANT_FILIAL, validFrom: '2024-01-01', validTo: '2025-06-30' },
         { tenantId: TENANT_MATRIZ, validFrom: '2025-07-01', validTo: null },
       ],
-      groupMinimums: [],
+      // **Sem mínimo GERAL e COM mínimo por grupo** — a terceira diferença deste
+      // fornecedor para a EVOLED, e a que esperava um catálogo para existir. É
+      // configuração real: quem não exige nada da ordem inteira ainda pode
+      // exigir da linha de luminária, e é o único arranjo em que a conta POR
+      // GRUPO é medida sozinha — com mínimo geral junto, ele explicaria a recusa
+      // e o caso não provaria nada.
+      //
+      // Ficou VAZIO até o kind `GRUPO_PRODUTO` ser servido: sem catálogo o par
+      // (fornecedor, grupo) não tinha id legítimo, e `compras.test.ts` escrevia
+      // esta linha direto no store, na hora do caso. O contorno caiu junto com o
+      // buraco que o justificava.
+      groupMinimums: [
+        {
+          productGroupId: idDeApoio('GRUPO_PRODUTO', 'PENDENTES') as string,
+          minimumBillingCents: 500_000,
+        },
+      ],
       ruralProducerRegistration: null,
       categoryId: null,
       specifierId: null,

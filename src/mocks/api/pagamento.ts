@@ -44,21 +44,20 @@ import { type CondicaoDaEmpresa, novoId, store } from './store'
  * Não há `DELETE` — condição usada por documento antigo não some, ela desativa
  * (padrão 8).
  *
- * ## O ajuste por GRUPO DE PRODUTO entra, e uma das recusas NÃO é exercitável
+ * ## O ajuste por GRUPO DE PRODUTO, com as CINCO recusas
  *
  * `groupAdjustments` (`Forma_PagamentoGrupProd` do legado) é servido e gravado.
  * O argumento que o adiava — grupo é texto livre, e casar por texto faria
  * "PENDENTES" e "Pendentes" renderem descontos diferentes — caiu quando
  * `QuoteItemDto.productGroupId` publicou o id.
  *
- * **O que este mock NÃO consegue medir é a recusa por grupo INEXISTENTE:** o
- * kind `GRUPO_PRODUTO` ainda não existe em `catalog-lookups`, dívida já
- * declarada — `compras.test.ts` escreve o par (fornecedor, grupo) direto no
- * store pelo mesmo motivo. Validar contra `store.lookups` aqui recusaria TODO
- * `productGroupId`, o certo inclusive, e a tela aprenderia que o campo não
- * funciona. As outras quatro recusas não dependem de catálogo e estão todas
- * aqui: repetido, negativo, desconto acima de 100% e os dois lados > 0. Quem
- * servir o kind fecha a quinta sem mexer no resto.
+ * **A quinta recusa — grupo inexistente ou inativo — passou a ser exercitável
+ * quando o kind `GRUPO_PRODUTO` foi servido**, e ela era a última das cinco a
+ * faltar. Enquanto o catálogo não tinha a lista, validar contra `store.lookups`
+ * recusaria TODO `productGroupId`, o certo inclusive, e a tela aprenderia que o
+ * campo não funciona; por isso ela ficava de fora, e por isso `compras.test.ts`
+ * escrevia o par (fornecedor, grupo) direto no store. As duas coisas caíram
+ * juntas, no mesmo trilho, porque eram o mesmo buraco.
  */
 
 /**
@@ -288,10 +287,10 @@ function corpoInvalido(corpo: PaymentTermWriteRequest, maxInstallments: number) 
 }
 
 /**
- * As recusas de `groupAdjustments`, e nenhuma delas apara em silêncio.
+ * As CINCO recusas de `groupAdjustments`, e nenhuma delas apara em silêncio.
  *
- * A quinta do contrato — `productGroupId` que não é um `GRUPO_PRODUTO` ativo —
- * fica de fora por falta de catálogo, não por decisão; ver o cabeçalho.
+ * A quinta — `productGroupId` que não é um `GRUPO_PRODUTO` ativo — é a que
+ * esperava o catálogo, e é a única que consulta o store; ver o cabeçalho.
  *
  * A dos DOIS lados maiores que zero é a que parece rigor demais e não é: não
  * está decidido se o acréscimo incide antes ou depois do desconto, nem sobre
@@ -345,7 +344,23 @@ function ajustesInvalidos(
           'Desconto e acréscimo no mesmo grupo ainda não é suportado — a ordem de aplicação não foi decidida.',
       })
     }
+    // A QUINTA, que esperava o catálogo existir. Grupo INATIVO cai aqui junto
+    // com o inexistente, e é de propósito: o ajuste é escolha de hoje, e
+    // apontar para uma lista aposentada gravaria uma condição que o combo não
+    // consegue mais reproduzir. Quem desativou o grupo no meio do caminho troca
+    // o ajuste — que é a conversa certa a ter, e não um silêncio.
+    if (!grupoAtivo(ajuste.productGroupId)) {
+      fields.push({
+        path: `groupAdjustments[${i}].productGroupId`,
+        message: 'Grupo de produto não encontrado entre os ativos.',
+      })
+    }
   })
+}
+
+/** O grupo existe em `catalog-lookups` e está ATIVO? É a chave da quinta recusa. */
+function grupoAtivo(id: string): boolean {
+  return store.lookups.some((l) => l.id === id && l.kind === 'GRUPO_PRODUTO' && l.active)
 }
 
 /** O corpo de escrita → as parcelas como o store as guarda. */
@@ -376,9 +391,9 @@ function ajustesDaEscrita(
   return corpo.groupAdjustments
     .map((a) => ({
       productGroupId: a.productGroupId,
-      // O nome é ECOADO pelo servidor, e aqui ele não tem de onde vir enquanto o
-      // kind não existir. String vazia seria mentira de dado; o id é o que a
-      // tela tem, e é por ele que ela casa.
+      // O nome é ECOADO pelo servidor, e sai do catálogo — a escrita já recusou
+      // grupo que não é ativo, então aqui ele existe. Ver `nomeDoGrupo` para o
+      // único caso em que o eco ainda cai no id.
       productGroupName: nomeDoGrupo(a.productGroupId),
       discountPercent: a.discountPercent,
       surchargePercent: a.surchargePercent,
@@ -387,10 +402,14 @@ function ajustesDaEscrita(
 }
 
 /**
- * O nome do grupo, ecoado. Cai no próprio id quando o catálogo não tem a linha —
- * que hoje é SEMPRE, porque o kind `GRUPO_PRODUTO` ainda não existe. Devolver o
- * id é o que `nomeDeEmpresa` do store já faz no mesmo aperto: a tela mostra algo
- * estável e ninguém confunde com nome de verdade.
+ * O nome do grupo, ecoado do catálogo — que agora EXISTE (kind `GRUPO_PRODUTO`
+ * em `VOCABULARIO_DE_APOIO`).
+ *
+ * O `?? id` fica, e deixou de ser o caminho normal: a escrita recusa grupo que
+ * não é ativo, então o eco só cai no id para uma condição gravada ANTES do
+ * catálogo, ou para um grupo desativado depois de gravada. Nos dois casos a tela
+ * mostra algo estável em vez de string vazia numa chave obrigatória — e o id
+ * visível é o sinal de que aquela linha precisa ser reeditada.
  */
 function nomeDoGrupo(id: string): string {
   return store.lookups.find((l) => l.id === id && l.kind === 'GRUPO_PRODUTO')?.name ?? id

@@ -380,25 +380,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const daRota = secaoDaRota(secoes, location.pathname) ?? daBarra[0]
 
   /**
-   * A SEÇÃO ESPIADA — a seção SEM TELA que o operador abriu no topo.
+   * A SEÇÃO ESCOLHIDA no topo — o último clique da fileira, seja ele qual for.
    *
-   * Só existe para `Financeiro`, hoje a única seção cujos itens são todos
-   * futuros: `destinoDaSecao` devolve `undefined`, o ícone dela é `<button>`
-   * em vez de `<Link>`, e clicar abre o menu sem navegar. Toda seção com tela
-   * navega, e aí quem responde é a rota — sem estado nenhum.
+   * Nasceu para `Financeiro`, hoje a única seção cujos itens são todos futuros:
+   * `destinoDaSecao` devolve `undefined`, o ícone dela é `<button>` em vez de
+   * `<Link>`, e clicar abre o menu sem navegar. **Mas registrar só o clique que
+   * NÃO navega era o defeito:** clicar numa seção cujo destino é a rota em que
+   * o operador já está também não muda o caminho — voltar para Estoque depois
+   * de espiar Financeiro estando em `/estoque/movimentacao` deixava a escolha
+   * velha de pé, com a barra e o fio em Financeiro. Hoje o `<Link>` avisa
+   * junto, e a última escolha é sempre a que vale.
    *
    * O caminho em que a escolha foi feita viaja JUNTO com ela, e é a chave que
    * a expira: mudou de rota, a escolha caducou e quem manda volta a ser
    * `secaoDaRota`. Sem `useEffect`, sem sincronizar dois estados — o derivado
    * não tem como sobreviver ao fato que o contradiz.
    *
-   * Espiar seção que a empresa perdeu (recurso revogado entre um clique e o
+   * Escolher seção que a empresa perdeu (recurso revogado entre um clique e o
    * outro) resolve para `undefined` no `find` e cai na rota também.
    */
   const [espiada, setEspiada] = useState<{ id: string; em: string } | null>(null)
-  const secaoEspiada =
+  const secaoEscolhida =
     espiada?.em === location.pathname ? daBarra.find((secao) => secao.id === espiada.id) : undefined
-  const secaoAtiva = secaoEspiada ?? daRota
+  const secaoAtiva = secaoEscolhida ?? daRota
 
   /**
    * A seção que a BARRA desenha — sempre uma das operáveis.

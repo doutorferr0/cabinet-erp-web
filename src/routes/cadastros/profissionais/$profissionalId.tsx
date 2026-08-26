@@ -5,6 +5,7 @@ import {
 import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { useRotulosDeApoio } from '@/data/lookups-api'
 import { camposDoContrato, profissional as esquema } from '@/features/cadastro/modulos'
+import { PerfilDeParticipacaoDoProfissional } from '@/features/comissoes/perfil-do-profissional'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
@@ -103,6 +104,7 @@ function ProfissionalEditPage() {
             {/* A ficha do `Consul.` não monta o formulário — sem isto quem
                 consulta deixaria de ver quem atende no cadastro. */}
             <ContatosDoParceiro partnerId={profissionalId} readOnly />
+            <PerfilDeParticipacaoDoProfissional partnerId={profissionalId} readOnly />
             {atividades}
           </>
         }
@@ -128,6 +130,13 @@ function ProfissionalEditPage() {
         aviso={aviso}
         onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />
+
+      {/* O perfil de participação pende do CADASTRO, não do formulário: as
+          faixas têm caminho e gravação próprios, e o `Gravar` do rodapé não as
+          leva. No `Incluir` ainda não há parceiro a que pendurá-las. */}
+      {isNovo ? null : (
+        <PerfilDeParticipacaoDoProfissional partnerId={profissionalId} readOnly={readOnly} />
+      )}
 
       {atividades}
     </div>

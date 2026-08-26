@@ -1061,6 +1061,11 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |
  * | `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |
  * | `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |
+ * | `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é "tente de novo": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |
+ * | `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |
+ * | `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |
+ * | `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |
+ * | `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
@@ -1114,6 +1119,11 @@ export const ProblemType = {
   'urn:cabinet:erro:participante-ja-apurado': 'urn:cabinet:erro:participante-ja-apurado',
   'urn:cabinet:erro:profissional-exige-transferencia': 'urn:cabinet:erro:profissional-exige-transferencia',
   'urn:cabinet:erro:reserva-ja-lancada': 'urn:cabinet:erro:reserva-ja-lancada',
+  'urn:cabinet:erro:periodo-fechado': 'urn:cabinet:erro:periodo-fechado',
+  'urn:cabinet:erro:titulo-com-baixa': 'urn:cabinet:erro:titulo-com-baixa',
+  'urn:cabinet:erro:parcela-ja-quitada': 'urn:cabinet:erro:parcela-ja-quitada',
+  'urn:cabinet:erro:valor-acima-do-saldo': 'urn:cabinet:erro:valor-acima-do-saldo',
+  'urn:cabinet:erro:movimento-ja-conciliado': 'urn:cabinet:erro:movimento-ja-conciliado',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -2939,13 +2949,6 @@ export interface EmployeeLinkRequest {
   customerFacing?: boolean | null;
   /** @nullable */
   active: boolean | null;
-}
-
-/**
- * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
- */
-export interface TemporaryPasswordDto {
-  temporaryPassword: string;
 }
 
 /**
@@ -6882,6 +6885,759 @@ export interface VariantTablePricesWriteRequest {
 }
 
 /**
+ * `payable` é conta a PAGAR (a parte é o fornecedor), `receivable` é conta a RECEBER (a parte é o cliente). É o único eixo que separa as duas telas.
+ */
+export type FinancialTitleDtoDirection = typeof FinancialTitleDtoDirection[keyof typeof FinancialTitleDtoDirection];
+
+
+export const FinancialTitleDtoDirection = {
+  payable: 'payable',
+  receivable: 'receivable',
+} as const;
+
+/**
+ * De ONDE o título nasceu. `manual` é digitado na tela; `sale_order` é o título que o PEDIDO DE VENDA gerou; `goods_receipt` é o que a entrada de nota gerou.
+ *
+ * **É o campo que sustenta o DoD do trilho** — "título nascido de um pedido é quitado pela tela" só é verificável se a tela souber dizer de onde a linha veio. Sem ele, o título automático e o digitado ficam indistinguíveis, e o operador reemite à mão o que o pedido já emitiu.
+ */
+export type FinancialTitleDtoSourceType = typeof FinancialTitleDtoSourceType[keyof typeof FinancialTitleDtoSourceType];
+
+
+export const FinancialTitleDtoSourceType = {
+  manual: 'manual',
+  sale_order: 'sale_order',
+  goods_receipt: 'goods_receipt',
+} as const;
+
+/**
+ * `open` enquanto sobra saldo, `settled` quando a última parcela fecha, `cancelled` na desistência. **Não é campo de escrita**: quem o move é a baixa e o `cancel`.
+ */
+export type FinancialTitleDtoStatus = typeof FinancialTitleDtoStatus[keyof typeof FinancialTitleDtoStatus];
+
+
+export const FinancialTitleDtoStatus = {
+  open: 'open',
+  settled: 'settled',
+  cancelled: 'cancelled',
+} as const;
+
+/**
+ * Ecoado do título, porque a listagem de parcelas é o que a tela de quitação em lote consome — e ali a linha precisa dizer sozinha se é dinheiro que entra ou que sai.
+ */
+export type FinancialInstallmentDtoDirection = typeof FinancialInstallmentDtoDirection[keyof typeof FinancialInstallmentDtoDirection];
+
+
+export const FinancialInstallmentDtoDirection = {
+  payable: 'payable',
+  receivable: 'receivable',
+} as const;
+
+/**
+ * `open` enquanto há saldo, `settled` quando `settledCents` alcança `amountCents`. **Derivado no banco**, não escrito: parcela cujo estado é coluna solta fica `open` com saldo zero na primeira baixa que esquecer de atualizá-lo.
+ */
+export type FinancialInstallmentDtoStatus = typeof FinancialInstallmentDtoStatus[keyof typeof FinancialInstallmentDtoStatus];
+
+
+export const FinancialInstallmentDtoStatus = {
+  open: 'open',
+  settled: 'settled',
+} as const;
+
+/**
+ * Proposto. Uma BAIXA — o fato de que dinheiro andou contra uma parcela. `Contas_apagar_pag` (41.981 linhas) e `Contas_receber_pag` (17.885) do legado.
+ *
+ * **A baixa aponta a CONTA, não só o modo** — e é aqui que este contrato fecha um elo que estava aberto por escrito (issue api#112). O módulo financeiro já grava o modo (`paymentModeId`: dinheiro, PIX, cheque), e saber que foi PIX não diz em qual conta bancária o dinheiro entrou. É a conta que o extrato lê, que a conciliação casa e que o saldo soma. Por isso o destino é obrigatório na escrita, e a baixa produz o movimento de caixa correspondente na MESMA transação — `CashMovementDto.sourceType = 'settlement'`.
+ *
+ * **Não há estorno neste contrato, e a ausência é declarada.** A baixa errada se desfaz por decisão de quem pode desfazê-la, e essa decisão não foi tomada; sem ela, um caminho de estorno seria eu escolhendo quem apaga dinheiro lançado. Fica como dívida nomeada, não como esquecimento.
+ */
+export interface FinancialSettlementDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  installmentId: string;
+  /** Data em que o dinheiro andou. É ela que o FECHAMENTO de período compara — baixa com data dentro de período fechado é 409. */
+  settledOn: string;
+  /** Valor ABATIDO do saldo da parcela, em centavos. É este que reduz `openCents`, e é ele que a quitação a menor deixa abaixo do saldo. */
+  amountCents: number;
+  /** JUROS cobrados no atraso. Somam ao que saiu do caixa e NÃO abatem a parcela — a dívida de R$ 100 paga com R$ 10 de juros quita 100 e tira 110 da conta. */
+  interestCents: number;
+  /** MULTA por atraso. Mesma mecânica dos juros. */
+  fineCents: number;
+  /** DESCONTO concedido na quitação. Subtrai do que saiu do caixa e não muda o abatimento: parcela de R$ 100 com R$ 5 de desconto continua quitada em 100 e tira 95 da conta. */
+  discountCents: number;
+  /** O que de fato ANDOU na conta: `amountCents + interestCents + fineCents - discountCents`. Derivado no banco, e vem pronto porque é ele — e não `amountCents` — que tem de bater com o extrato bancário. */
+  paidCents: number;
+  /** O MEIO pelo qual o dinheiro andou (`GET /api/payment-modes`). Obrigatório: baixa sem meio não se concilia. */
+  paymentModeId: string;
+  /**
+     * A CONTA BANCÁRIA que recebeu ou pagou. Exclusiva com `cashRegisterId` — exatamente um dos dois vem preenchido.
+     * @nullable
+     */
+  bankAccountId?: string | null;
+  /**
+     * O CAIXA que recebeu ou pagou. Exclusivo com `bankAccountId`.
+     * @nullable
+     */
+  cashRegisterId?: string | null;
+  /**
+     * O LOTE de quitação, quando a baixa veio de `POST /api/financial-settlements/batch`. `null` na baixa avulsa. É o que permite listar "o que foi pago naquele lote" — o `LotePagCtRec` do legado.
+     * @nullable
+     */
+  batchId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+/**
+ * Proposto. Uma PARCELA do título — e a unidade de quitação. `contas_apagar_det` (42.161 linhas) e `contas_Receber_det` (18.555) do legado.
+ *
+ * **A parcela existe para ser quitada em PARTES.** `settledCents` menor que `amountCents` com a parcela ainda `open` é o pagamento parcial, que o legado faz por permissão especial (`PERMITIR QUITAÇÃO COM VALOR A MENOS QUE O VALOR DO VENCIMENTO`) e que aqui é a mesma coisa: ver `SettlementWriteRequest`.
+ */
+export interface FinancialInstallmentDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  titleId: string;
+  /** Ecoado do título, porque a listagem de parcelas é o que a tela de quitação em lote consome — e ali a linha precisa dizer sozinha se é dinheiro que entra ou que sai. */
+  direction: FinancialInstallmentDtoDirection;
+  /**
+     * Número do título, ecoado na listagem de parcelas para a tela não resolver o id. Texto, como em `FinancialTitleDto.number`.
+     * @nullable
+     */
+  titleNumber?: string | null;
+  /** @nullable */
+  partnerId?: string | null;
+  /**
+     * Nome da parte, ecoado — presente na listagem de parcelas, dispensável dentro do título, que já o traz no cabeçalho.
+     * @nullable
+     */
+  partnerName?: string | null;
+  /** A ordem da parcela DENTRO do título, 1-based. */
+  sequence: number;
+  /** Data de VENCIMENTO. É por ela que a tela de contas a pagar abre o dia — e o `sortBy` padrão da listagem de parcelas. */
+  dueDate: string;
+  /** Valor da parcela no vencimento, em centavos. */
+  amountCents: number;
+  /** Quanto já foi baixado nesta parcela, somando as baixas. */
+  settledCents: number;
+  /** Saldo em aberto: `amountCents - settledCents`. É contra ele que a baixa é conferida. */
+  openCents: number;
+  /** `open` enquanto há saldo, `settled` quando `settledCents` alcança `amountCents`. **Derivado no banco**, não escrito: parcela cujo estado é coluna solta fica `open` com saldo zero na primeira baixa que esquecer de atualizá-lo. */
+  status: FinancialInstallmentDtoStatus;
+  /** `true` quando a parcela está `open` e `dueDate` já passou. Vem do servidor porque "hoje" é o dia do SERVIDOR: calculado no cliente, o relógio errado da estação marca vencido o que não está — e é essa a coluna que o operador usa para decidir o que pagar. */
+  overdue?: boolean;
+  /**
+     * O MODO previsto para esta parcela (dinheiro, transferência, cartão). Previsão, não fato: o modo do pagamento efetivo é o da baixa.
+     * @nullable
+     */
+  paymentModeId?: string | null;
+  /**
+     * Número do documento DESTA parcela — a duplicata 3/5 tem número próprio, diferente do da nota.
+     * @nullable
+     */
+  documentNumber?: string | null;
+  /** As BAIXAS desta parcela, em ordem de data. Presente no detalhe do título; ausente na listagem de parcelas, que é grade e não extrato. */
+  settlements?: FinancialSettlementDto[];
+}
+
+/**
+ * Proposto. Um TÍTULO financeiro — a conta a pagar ou a receber. Menus `Financeiro → Contas a Pagar → Lançamento` e `Financeiro → Contas a Receber → Lançamentos` do legado (`contas_apagar`, 30.043 linhas; `contas_receber`, 9.076).
+ *
+ * **Um recurso para as duas telas, discriminado por `direction`** — e não `/api/payables` + `/api/receivables`. O precedente é `/api/partners` com filtro `role`: no legado as duas tabelas são a MESMA tabela com o prefixo trocado (`Ctp_`/`Ctr_`), coluna a coluna, e é assim que elas envelheceram — a correção feita num lado só chegava ao outro por cópia manual. Dois caminhos aqui duplicariam parcela, baixa, quitação em lote e conciliação, que não têm uma diferença sequer entre pagar e receber. O que MUDA é o sinal do dinheiro e a parte (fornecedor de um lado, cliente do outro), e as duas coisas cabem numa coluna.
+ *
+ * **O título não guarda valor pago.** `totalCents` é o que foi lançado; o que sobrou sai da soma das parcelas (`openCents`), porque quem quita é a PARCELA. Materializar o pago no cabeçalho criaria um segundo lugar onde a mesma verdade mora, e o legado paga essa conta: `Ctp_valor_total_original` diverge da soma de `contas_apagar_det` em base de produção.
+ *
+ * **Não há DELETE.** Título que some é dinheiro que o sistema esqueceu de dever. Desistir é `POST /{id}/cancel`, e ele recusa (409) o título que já tem baixa.
+ *
+ * **Não há `TipoContaFinanceira` aqui, e a ausência é DECISÃO PENDENTE, não esquecimento.** O legado classifica o título em seis categorias — OFICIAL, SIMULAÇÃO, APROVISIONAMENTO, CONTA CLONE, HISTÓRICO, AGRUPADA — com FK declarada, e guardar ensaio na mesma tabela do que vale obriga TODO relatório a filtrar. `docs/harvest/financeiro.md` §11.3 põe as três saídas na mesa (replicar · virar rascunho de status · não migrar as não-oficiais) e nenhuma foi escolhida. O campo entra quando a escolha existir; inventá-lo agora fixaria a mais cara das três.
+ */
+export interface FinancialTitleDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  /** `payable` é conta a PAGAR (a parte é o fornecedor), `receivable` é conta a RECEBER (a parte é o cliente). É o único eixo que separa as duas telas. */
+  direction: FinancialTitleDtoDirection;
+  /**
+     * O número do título, atribuído pelo servidor e sequencial POR DIREÇÃO — pagar e receber contam separado, como no legado.
+     *
+     * **Texto e não inteiro, pelo mesmo motivo de `OrderDto.number`:** o legado carrega SÉRIE junto do número (`ParSV_serie`, três caracteres, presente nas duas tabelas de título), e número com série não é um inteiro. Publicar `int64` aqui obrigaria a inventar um segundo campo no dia em que a série viesse junto — e a tela já teria formatado o primeiro como número.
+     */
+  number: string;
+  /**
+     * O número do DOCUMENTO que originou o título — nota fiscal, duplicata, recibo. É o que o financeiro procura quando o fornecedor liga, e por isso entra na busca (`q`).
+     * @nullable
+     */
+  documentNumber?: string | null;
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  partnerId: string;
+  /** Nome da parte CONGELADO na emissão. Renomear o cadastro amanhã não reescreve quem devia ontem — o mesmo motivo de `QuoteDto`. */
+  partnerName: string;
+  /**
+     * A ESPÉCIE do documento (`Tipo_documento`, 33 linhas no legado). Cadastro por empresa, sem caminho no contrato ainda — ver a dívida declarada em `FinancialTitleWriteRequest`.
+     * @nullable
+     */
+  documentTypeId?: string | null;
+  /**
+     * A conta do PLANO DE CONTAS. Hoje vem de `GET /api/catalog-lookups?kind=PLANO_CONTA`.
+     * @nullable
+     */
+  chartAccountId?: string | null;
+  /**
+     * O CENTRO DE CUSTO. Cadastro por empresa, sem caminho no contrato ainda.
+     * @nullable
+     */
+  costCenterId?: string | null;
+  /**
+     * A condição de pagamento que gerou as parcelas (`GET /api/payment-terms`). Referência histórica: as parcelas já estão gravadas e não se recalculam se a condição mudar.
+     * @nullable
+     */
+  paymentTermId?: string | null;
+  /**
+     * De ONDE o título nasceu. `manual` é digitado na tela; `sale_order` é o título que o PEDIDO DE VENDA gerou; `goods_receipt` é o que a entrada de nota gerou.
+     *
+     * **É o campo que sustenta o DoD do trilho** — "título nascido de um pedido é quitado pela tela" só é verificável se a tela souber dizer de onde a linha veio. Sem ele, o título automático e o digitado ficam indistinguíveis, e o operador reemite à mão o que o pedido já emitiu.
+     */
+  sourceType: FinancialTitleDtoSourceType;
+  /**
+     * O documento de origem. `null` quando `sourceType` é `manual`, e preenchido nos outros dois — tipo e id andam juntos.
+     * @nullable
+     */
+  sourceId?: string | null;
+  /** Data de EMISSÃO do título. */
+  issuedAt: string;
+  /**
+     * Mês de COMPETÊNCIA, sempre no dia 1. Separado da emissão porque a despesa de dezembro paga em janeiro pertence a dezembro no resultado, e é essa a pergunta que o DRE faz.
+     * @nullable
+     */
+  competenceMonth?: string | null;
+  /** Total LANÇADO do título, em centavos. É a soma das parcelas na emissão. */
+  totalCents: number;
+  /** Quanto já foi QUITADO, somando as baixas das parcelas. Derivado — o servidor calcula, não guarda. */
+  settledCents: number;
+  /** Quanto FALTA: `totalCents - settledCents`. Derivado. Vem pronto porque é a coluna que a tela ordena e soma no rodapé, e calculá-la no cliente sobre uma página daria total de página, não de título. */
+  openCents: number;
+  /** `open` enquanto sobra saldo, `settled` quando a última parcela fecha, `cancelled` na desistência. **Não é campo de escrita**: quem o move é a baixa e o `cancel`. */
+  status: FinancialTitleDtoStatus;
+  /** @nullable */
+  notes?: string | null;
+  /** As PARCELAS do título, em ordem de `sequence`. Sempre pelo menos uma — título à vista é título de uma parcela, e não um título sem parcela: sem essa regra, quitar à vista precisaria de um caminho próprio. */
+  installments: FinancialInstallmentDto[];
+}
+
+export type FinancialTitleWriteRequestDirection = typeof FinancialTitleWriteRequestDirection[keyof typeof FinancialTitleWriteRequestDirection];
+
+
+export const FinancialTitleWriteRequestDirection = {
+  payable: 'payable',
+  receivable: 'receivable',
+} as const;
+
+/**
+ * Proposto. Uma parcela na escrita do título. Valor em centavos e sempre maior que zero: parcela de zero é linha que a grade mostra e o caixa nunca vê.
+ */
+export interface FinancialInstallmentWriteRequest {
+  sequence: number;
+  dueDate: string;
+  amountCents: number;
+  /** @nullable */
+  paymentModeId?: string | null;
+  /** @nullable */
+  documentNumber?: string | null;
+}
+
+/**
+ * Proposto. Cria ou SUBSTITUI o título inteiro, parcelas incluídas (PUT substitui o registro inteiro, como todo PUT deste contrato).
+ *
+ * **As parcelas vêm do cliente, e não de um `paymentTermId` que o servidor expandiria.** A condição de pagamento sugere o plano na TELA; o que se grava é o que o operador aceitou, porque no financeiro a parcela negociada quase nunca é a calculada — o fornecedor concede uma data, o cliente pede outra. Expandir aqui faria a condição mandar mais que o acordo, e reescreveria o plano de todo título ao mudar a condição.
+ *
+ * **O PUT recusa (409) o título que já tem baixa.** Reescrever um título quitado moveria dinheiro já conciliado; o que se corrige depois da primeira baixa é a próxima baixa, não o passado.
+ *
+ * **Dívida declarada:** `documentTypeId` e `costCenterId` são ids de cadastros por empresa (`document_types`, `cost_centers`) que **ainda não têm caminho neste contrato** — o menu `Tabelas → Financeiro` do legado é trilho próprio. Os dois são opcionais aqui de propósito: publicar o campo antes do combo deixa a tela em branco, que é honesto; deixá-lo de fora obrigaria a migrar o título depois.
+ */
+export interface FinancialTitleWriteRequest {
+  direction: FinancialTitleWriteRequestDirection;
+  /** Fornecedor quando `payable`, cliente quando `receivable`. O servidor confere o PAPEL da parte — parceiro sem o papel da direção é 400. */
+  partnerId: string;
+  /** @nullable */
+  documentNumber?: string | null;
+  /** @nullable */
+  documentTypeId?: string | null;
+  /** @nullable */
+  chartAccountId?: string | null;
+  /** @nullable */
+  costCenterId?: string | null;
+  /** @nullable */
+  paymentTermId?: string | null;
+  issuedAt: string;
+  /**
+     * Mês de competência. Se vier com dia diferente de 1, é 400 — o mês é o dado, e aceitar o dia faria duas linhas do mesmo mês competirem.
+     * @nullable
+     */
+  competenceMonth?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** As parcelas, ao menos uma. `sequence` tem de ser 1..N sem buraco, e a soma dos valores tem de bater com o total pretendido do título — o servidor não arredonda diferença. */
+  installments: FinancialInstallmentWriteRequest[];
+}
+
+/**
+ * Proposto. A BAIXA de uma parcela.
+ *
+ * **O destino é obrigatório e exclusivo:** exatamente um entre `bankAccountId` e `cashRegisterId`. Os dois juntos, ou nenhum, é 400. É o que faz a baixa virar linha de extrato — sem conta, o dinheiro é quitado no sistema e invisível no caixa.
+ *
+ * **Quitação A MENOS é permissão, não erro.** `amountCents` abaixo de `openCents` da parcela deixa saldo e é recusado com **403** para quem não tem a ação fina — o legado a tem como permissão especial nº 45 (`PERMITIR QUITAÇÃO COM VALOR A MENOS QUE O VALOR DO VENCIMENTO`), e é o mesmo desenho de `venda:desconto-acima-do-teto`: a recusa depende de QUEM pede, não do valor, então é 403 e não 400.
+ *
+ * `amountCents` ACIMA do saldo é 409 e não tem permissão que libere: pagar mais do que se deve não é decisão de alçada, é engano de digitação — e o troco não tem onde ser lançado.
+ */
+export interface SettlementWriteRequest {
+  settledOn: string;
+  amountCents: number;
+  /** Juros. Ausente = 0. */
+  interestCents?: number;
+  /** Multa. Ausente = 0. */
+  fineCents?: number;
+  /** Desconto concedido. Ausente = 0. */
+  discountCents?: number;
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  paymentModeId: string;
+  /** @nullable */
+  bankAccountId?: string | null;
+  /** @nullable */
+  cashRegisterId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * Proposto. Uma parcela dentro do lote. `amountCents` ausente quita o SALDO INTEIRO da parcela — é o caso normal do lote, e obrigar o cliente a repetir um número que o servidor já sabe faria a tela pagar a mais quando o saldo mudasse entre a leitura e o envio.
+ */
+export interface SettlementBatchItem {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  installmentId: string;
+  /** @nullable */
+  amountCents?: number | null;
+  interestCents?: number;
+  fineCents?: number;
+  discountCents?: number;
+}
+
+/**
+ * Proposto. QUITAÇÃO EM LOTE — N parcelas pagas de uma vez, na mesma data, pelo mesmo meio e contra a mesma conta. É a tela que o financeiro usa todo dia: seleciona os vencimentos do dia e paga o bloco.
+ *
+ * **O lote é TUDO OU NADA.** Uma parcela recusada derruba a requisição inteira, e nenhuma baixa fica gravada. O contrário — gravar as que passam e listar as que falharam — parece gentil e é a forma de perder dinheiro: o operador vê o erro, corrige, reenvia o lote inteiro, e as que já tinham passado são pagas duas vezes.
+ *
+ * **A resposta traz `batchId`**, e é ele que amarra as baixas como um ato só — o `LotePagCtRec` do legado. Sem o agrupador, desfazer ou conferir um pagamento em bloco exigiria casar data, valor e meio, que é adivinhação assim que dois lotes saem no mesmo dia.
+ *
+ * **Cabeçalho decide meio, data e conta; a linha decide valor, juros, multa e desconto.** É a divisão que o caso real pede: paga-se o bloco pelo mesmo banco no mesmo dia, e cada título tem o seu acréscimo.
+ */
+export interface SettlementBatchRequest {
+  settledOn: string;
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  paymentModeId: string;
+  /** @nullable */
+  bankAccountId?: string | null;
+  /** @nullable */
+  cashRegisterId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** As parcelas do lote, ao menos uma. Parcela repetida na mesma requisição é 400 — duas linhas para a mesma parcela é o mesmo pagamento contado duas vezes, e o cliente consegue ver isso sozinho. */
+  items: SettlementBatchItem[];
+}
+
+/**
+ * Proposto. O resultado do lote: o agrupador e as baixas que ele gravou.
+ */
+export interface SettlementBatchResultDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  batchId: string;
+  /** A soma de `paidCents` das baixas — o que de fato saiu (ou entrou) na conta. É o número que o operador confere contra o comprovante do banco. */
+  totalPaidCents: number;
+  settlements: FinancialSettlementDto[];
+}
+
+/**
+ * Se a linha é de conta bancária ou de caixa. Redundante com o par de ids e presente de propósito: é o que a grade agrupa, e derivá-lo de "qual id não é nulo" espalha a regra por toda tela que mostrar a lista.
+ */
+export type CashMovementDtoAccountKind = typeof CashMovementDtoAccountKind[keyof typeof CashMovementDtoAccountKind];
+
+
+export const CashMovementDtoAccountKind = {
+  bank: 'bank',
+  cash: 'cash',
+} as const;
+
+/**
+ * `in` é dinheiro que ENTRA, `out` é dinheiro que SAI.
+ */
+export type CashMovementDtoDirection = typeof CashMovementDtoDirection[keyof typeof CashMovementDtoDirection];
+
+
+export const CashMovementDtoDirection = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+/**
+ * De onde o movimento veio. `manual` é digitado; `transfer` é a perna de uma transferência; `settlement` é o movimento que uma BAIXA gerou — o elo que liga contas a pagar/receber ao caixa. Os demais são as origens que o servidor já reserva (`sale`, `purchase`, `installment`, `commission`).
+ *
+ * **A tela não lança `transfer` nem `settlement` direto**: eles nascem da operação que os causou, e aceitar um deles em `POST /api/cash-movements` deixaria existir transferência de uma perna só.
+ */
+export type CashMovementDtoSourceType = typeof CashMovementDtoSourceType[keyof typeof CashMovementDtoSourceType];
+
+
+export const CashMovementDtoSourceType = {
+  manual: 'manual',
+  transfer: 'transfer',
+  settlement: 'settlement',
+  sale: 'sale',
+  purchase: 'purchase',
+  installment: 'installment',
+  commission: 'commission',
+} as const;
+
+/**
+ * Proposto. Um MOVIMENTO de caixa ou de conta bancária — a linha do extrato. Menus `Financeiro → Caixa → Lançamento` e `Financeiro → Movimentos Bancários → Lançamentos` do legado.
+ *
+ * **Uma tabela para as duas telas, e a conta é banco OU caixa** — exatamente um dos dois ids vem preenchido. Caixa e conta bancária diferem no cadastro e em nada no movimento: mesmo sentido, mesmo valor, mesma classificação, mesma transferência entre eles. Dois recursos exigiriam duas conciliações e dois extratos.
+ *
+ * **Sentido e valor são campos separados, e `amountCents` é sempre positivo.** Guardar `-1500` para a saída encurtaria o saldo (`SUM`) e estragaria todo o resto: "quanto entrou no mês" viraria um filtro por sinal, e o dia em que um estorno gravasse entrada negativa ele contaria como saída.
+ */
+export interface CashMovementDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  /** Se a linha é de conta bancária ou de caixa. Redundante com o par de ids e presente de propósito: é o que a grade agrupa, e derivá-lo de "qual id não é nulo" espalha a regra por toda tela que mostrar a lista. */
+  accountKind: CashMovementDtoAccountKind;
+  /** Nome da conta ou do caixa, ecoado. */
+  accountName: string;
+  /** @nullable */
+  bankAccountId?: string | null;
+  /** @nullable */
+  cashRegisterId?: string | null;
+  /** `in` é dinheiro que ENTRA, `out` é dinheiro que SAI. */
+  direction: CashMovementDtoDirection;
+  /** Valor do movimento, sempre positivo. Quem dá o sinal é `direction`. */
+  amountCents: number;
+  /** O DIA DE CAIXA do movimento. É com ele que o fechamento de período compara — e por isso é data, não instante: o extrato fecha por dia, não por hora. */
+  occurredOn: string;
+  /**
+     * Classificação no PLANO DE CONTAS (`GET /api/catalog-lookups?kind=PLANO_CONTA`).
+     * @nullable
+     */
+  chartAccountId?: string | null;
+  /** @nullable */
+  costCenterId?: string | null;
+  /** O HISTÓRICO do lançamento. Obrigatório: linha de extrato sem histórico é o que torna a conciliação impossível três meses depois. */
+  description: string;
+  /**
+     * De onde o movimento veio. `manual` é digitado; `transfer` é a perna de uma transferência; `settlement` é o movimento que uma BAIXA gerou — o elo que liga contas a pagar/receber ao caixa. Os demais são as origens que o servidor já reserva (`sale`, `purchase`, `installment`, `commission`).
+     *
+     * **A tela não lança `transfer` nem `settlement` direto**: eles nascem da operação que os causou, e aceitar um deles em `POST /api/cash-movements` deixaria existir transferência de uma perna só.
+     */
+  sourceType: CashMovementDtoSourceType;
+  /**
+     * O documento de origem. Nulo exatamente quando `sourceType` é `manual` ou `transfer` — nos dois casos não há outro documento, e na transferência quem amarra é `transferId`.
+     * @nullable
+     */
+  sourceId?: string | null;
+  /**
+     * A PARCELA de origem, quando `sourceType` é `installment`.
+     * @nullable
+     */
+  sourceNumber?: number | null;
+  /**
+     * A transferência que gerou este movimento. As duas pernas do par carregam o mesmo id — é assim que "estas duas linhas são uma transferência" fica verificável em vez de convencionado.
+     * @nullable
+     */
+  transferId?: string | null;
+  /**
+     * Quando a linha foi CONCILIADA contra o extrato do banco. Nulo = ainda não conferida, e é esse o filtro que a tela de conciliação abre.
+     * @nullable
+     */
+  reconciledAt?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+export type CashMovementWriteRequestDirection = typeof CashMovementWriteRequestDirection[keyof typeof CashMovementWriteRequestDirection];
+
+
+export const CashMovementWriteRequestDirection = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+/**
+ * Proposto. Um lançamento MANUAL de caixa ou banco.
+ *
+ * **Exatamente um destino:** `bankAccountId` ou `cashRegisterId`. Os dois, ou nenhum, é 400.
+ *
+ * **Não há PUT nem DELETE de movimento**, e a ausência é a regra do módulo: extrato que se reescreve não concilia com o do banco. O erro se corrige com o lançamento contrário, que é o que o contador chama de estorno e o que deixa os dois fatos visíveis.
+ *
+ * **Lançar com `occurredOn` dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`): o fechamento existe para que o saldo conferido de ontem não mude hoje.
+ */
+export interface CashMovementWriteRequest {
+  /** @nullable */
+  bankAccountId?: string | null;
+  /** @nullable */
+  cashRegisterId?: string | null;
+  direction: CashMovementWriteRequestDirection;
+  /** Sempre positivo, em centavos. Zero ou negativo é 400. */
+  amountCents: number;
+  occurredOn: string;
+  /** @nullable */
+  chartAccountId?: string | null;
+  /** @nullable */
+  costCenterId?: string | null;
+  description: string;
+}
+
+/**
+ * Proposto. TRANSFERÊNCIA entre contas — as quatro direções que o legado tem como quatro itens de menu (caixa→conta, caixa→caixa, conta→caixa, conta→conta) e que aqui são um caminho só: o que muda entre elas é qual par de ids vem preenchido.
+ *
+ * **Dois movimentos ou nenhum.** A transferência grava a saída na origem e a entrada no destino na MESMA transação, as duas apontando o mesmo `transferId`. Meia transferência gravada é dinheiro que sumiu do extrato de uma conta sem aparecer na outra — e é o defeito que só é descoberto no fechamento do mês.
+ *
+ * **Origem e destino não podem ser a mesma conta** (400): o par teria as duas pernas na mesma linha do extrato e somaria zero, escondendo um erro de digitação atrás de um saldo correto.
+ */
+export interface CashTransferRequest {
+  occurredOn: string;
+  /** Valor transferido, positivo, em centavos. */
+  amountCents: number;
+  description: string;
+  /** @nullable */
+  fromBankAccountId?: string | null;
+  /** @nullable */
+  fromCashRegisterId?: string | null;
+  /** @nullable */
+  toBankAccountId?: string | null;
+  /** @nullable */
+  toCashRegisterId?: string | null;
+}
+
+/**
+ * Proposto. A transferência gravada, com as DUAS pernas. A resposta traz os dois movimentos porque é o que prova o par — e é o que a tela precisa para atualizar os dois extratos sem reconsultar.
+ */
+export interface CashTransferDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  occurredOn: string;
+  amountCents: number;
+  description: string;
+  /** As duas pernas: a `out` da origem e a `in` do destino, nesta ordem. */
+  movements: CashMovementDto[];
+}
+
+export type BankAccountDtoKind = typeof BankAccountDtoKind[keyof typeof BankAccountDtoKind];
+
+
+export const BankAccountDtoKind = {
+  checking: 'checking',
+  savings: 'savings',
+  investment: 'investment',
+  payment: 'payment',
+} as const;
+
+/**
+ * Proposto. Uma CONTA BANCÁRIA da empresa — o destino dos movimentos e das baixas. `Contas_Bancarias` (19 linhas) do legado.
+ *
+ * **Só LEITURA neste contrato.** O cadastro (banco, agência, conta, caixa) é o menu `Tabelas → Financeiro`, trilho próprio; publicar a escrita aqui traria junto banco e agência, que são cadastro nacional. O que a FASE do lançamento precisa é escolher a conta, e escolher é ler.
+ */
+export interface BankAccountDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  name: string;
+  /** @nullable */
+  bankId?: string | null;
+  /**
+     * O código do banco na FEBRABAN (`001`, `341`), ecoado — é como o operador reconhece a conta na lista.
+     * @nullable
+     */
+  bankCode?: string | null;
+  /** @nullable */
+  bankName?: string | null;
+  /** @nullable */
+  branchId?: string | null;
+  /** @nullable */
+  branchNumber?: string | null;
+  /** Número da conta, sem o dígito. */
+  number: string;
+  /** @nullable */
+  digit?: string | null;
+  kind: BankAccountDtoKind;
+  /** SALDO DE ABERTURA da conta, em centavos. O saldo de hoje é ele mais a soma dos movimentos — não há coluna de saldo atual, porque saldo materializado é cache que precisa de quem o reconcilie. */
+  openingBalanceCents: number;
+  active: boolean;
+}
+
+/**
+ * Proposto. Um CAIXA da empresa. `Bancos_Caixas` do legado, do lado `tipo = caixa`. Só leitura, pelo mesmo motivo de `BankAccountDto`.
+ */
+export interface CashRegisterDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  code: string;
+  name: string;
+  /** Saldo de abertura do caixa, em centavos. */
+  openingBalanceCents: number;
+  active: boolean;
+}
+
+/**
+ * Proposto. Um MODO DE PAGAMENTO — dinheiro, transferência, cartão, boleto. `Modo` (26 linhas) do legado.
+ *
+ * Publicado porque a BAIXA não existe sem ele: `paymentModeId` é obrigatório em toda quitação, e sem a lista a tela de contas a pagar não tem o que oferecer. Só leitura; o cadastro é do trilho de tabelas.
+ */
+export interface PaymentModeDto {
+  /**
+     * A CONTRAPARTE — fornecedor quando `payable`, cliente quando `receivable`.
+     *
+     * **Dívida herdada do legado, e ela é real:** lá o contraparte é polimórfico por TEXTO (`Ctp_vinculo`, sem FK nem CHECK) e assume oito valores — `CLIENTE`, `FORNECEDOR`, `INDICAÇÃO`, `PROFISSIONAL EXTERNO`, `PESSOAL`, `TRANSPORTADORA`, `MATRIZ/FILIAL`, `OUTROS` (`docs/harvest/financeiro.md` §3.3). Os quatro primeiros são UMA tabela aqui (`partners`, com os três papéis), e a tradução melhora o modelo. Os outros quatro NÃO cabem: título a pagar para um colaborador (comissão) ou para outra empresa do grupo não tem parceiro para apontar.
+     *
+     * Fica assim porque é o que o banco decidiu — `financial_titles.partner_id` nasceu `NOT NULL` referenciando `partners` —, e alargar isso é migração, não campo de contrato. Enquanto durar, a comissão do profissional passa por parceiro (ele é `is_professional`) e a do colaborador não tem como virar título.
+     */
+  id: string;
+  code: string;
+  name: string;
+  /** Taxa de administração, na escala da casa: inteiro com 4 casas implícitas, `10000` = 1%. É o custo do cartão, e a tela o mostra ao escolher o modo. */
+  adminFeePercent?: number;
+  /** Prazo em dias até o dinheiro cair — 30 no cartão, 0 no dinheiro. */
+  termDays?: number;
+  /**
+     * Dia fixo do mês em que o modo liquida, quando houver.
+     * @nullable
+     */
+  fixedDay?: number | null;
+  /**
+     * Se este modo pode ser escolhido numa BAIXA.
+     *
+     * **Não é campo inventado para o caso geral — é o que o legado faz com uma cláusula solta.** A quitação em lote de lá exclui os modos 1000 e 1001 por número, escrito na consulta (`mdo_codigo not in (1000, 1001)`): são pseudo-modos que classificam venda e não quitam nada, o mesmo padrão do `GrupoProduto` 1000=SERVIÇOS / 1001=FRETE (`docs/harvest/financeiro.md` §3.6). Número mágico na consulta é a regra que some no dia em que alguém cadastrar o terceiro; em coluna, ela é cadastro.
+     */
+  usableInSettlement: boolean;
+  active: boolean;
+}
+
+export interface PagedResultOfFinancialTitleDto {
+  rows: FinancialTitleDto[];
+  total: number;
+}
+
+export interface PagedResultOfFinancialInstallmentDto {
+  rows: FinancialInstallmentDto[];
+  total: number;
+}
+
+export interface PagedResultOfCashMovementDto {
+  rows: CashMovementDto[];
+  total: number;
+}
+
+export interface PagedResultOfBankAccountDto {
+  rows: BankAccountDto[];
+  total: number;
+}
+
+export interface PagedResultOfCashRegisterDto {
+  rows: CashRegisterDto[];
+  total: number;
+}
+
+export interface PagedResultOfPaymentModeDto {
+  rows: PaymentModeDto[];
+  total: number;
+}
+
+/**
+ * Proposto. A senha provisória existe AQUI e em nenhum outro lugar — não há operação que a devolva de novo. Quem chama mostra uma vez e descarta.
+ */
+export interface TemporaryPasswordDto {
+  temporaryPassword: string;
+}
+
+/**
  * Proposto. Uma cláusula das condições comerciais da última página do orçamento. O legado imprime 12.
  */
 export interface PrintClauseDto {
@@ -8213,6 +8969,180 @@ sortBy?: string;
 sortDesc?: boolean;
 page?: number;
 pageSize?: number;
+};
+
+export type ListFinancialTitlesParams = {
+/**
+ * Busca por número do título, número do documento e nome da parte.
+ */
+q?: string;
+/**
+ * Whitelist: `number`, `issuedAt`, `totalCents`, `openCents`, `status`, `partnerName`. Campo fora dela é 400.
+ *
+ * `dueDate` NÃO está aqui, e a ausência é a decisão que mais importa nesta listagem: vencimento é da PARCELA, e um título de cinco parcelas tem cinco. Ordenar título por vencimento exigiria escolher uma delas em silêncio — a menor, a maior, a próxima —, e cada escolha produz uma lista diferente que parece a mesma. Quem quer a agenda de vencimentos usa `GET /api/financial-installments`, que é a listagem cuja linha É um vencimento.
+ *
+ * `partnerName` entra, ao contrário do resto do contrato, porque aqui ele é coluna CONGELADA no título e não eco de outra tabela.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * `payable` ou `receivable`. Ausente traz os dois.
+ */
+direction?: string;
+/**
+ * `open`, `settled` ou `cancelled`.
+ */
+status?: string;
+/**
+ * Só os títulos desta parte.
+ */
+partnerId?: string;
+/**
+ * Emitidos a partir desta data, inclusive.
+ *
+ * **Nome qualificado, e não o `from`/`to` dos relatórios**, de propósito: lá o par é OBRIGATÓRIO e define o período que o relatório soma — agregação sem recorte responde outra pergunta. Aqui é filtro opcional, e o título tem TRÊS datas (emissão, competência e o vencimento das parcelas): um `from` sem qualificação obrigaria quem lê a adivinhar qual delas recorta.
+ */
+issuedFrom?: string;
+/**
+ * Emitidos até esta data, inclusive.
+ */
+issuedTo?: string;
+};
+
+export type ListFinancialInstallmentsParams = {
+/**
+ * Busca por número do título, número do documento da parcela e nome da parte.
+ */
+q?: string;
+/**
+ * Whitelist: `dueDate`, `amountCents`, `openCents`, `partnerName`, `titleNumber`, `sequence`. Campo fora dela é 400. O padrão é `dueDate` crescente — a agenda começa pelo que vence primeiro.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * `payable` ou `receivable`. Ausente traz os dois.
+ */
+direction?: string;
+/**
+ * `open` ou `settled`. O padrão da tela de quitação é `open`, mas o filtro não tem valor implícito: quem pede a lista sem `status` recebe as duas, e uma lista que esconde o que já foi pago sem dizer é o que faz o operador pagar de novo.
+ */
+status?: string;
+/**
+ * Só as parcelas de títulos desta parte.
+ */
+partnerId?: string;
+/**
+ * Vencimento a partir desta data, inclusive.
+ */
+dueFrom?: string;
+/**
+ * Vencimento até esta data, inclusive. Com `dueFrom`, é o recorte da tela de quitação em lote.
+ */
+dueTo?: string;
+/**
+ * `true` traz só as vencidas e em aberto.
+ */
+overdue?: boolean;
+};
+
+export type ListCashMovementsParams = {
+/**
+ * Busca no histórico do lançamento.
+ */
+q?: string;
+/**
+ * Whitelist: `occurredOn`, `amountCents`, `direction`, `createdAt`. Campo fora dela é 400. O padrão é `occurredOn` — extrato se lê em ordem de dia.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Extrato desta conta bancária.
+ */
+bankAccountId?: string;
+/**
+ * Extrato deste caixa.
+ */
+cashRegisterId?: string;
+/**
+ * `in` ou `out`.
+ */
+direction?: string;
+/**
+ * A partir desta data, inclusive.
+ */
+occurredFrom?: string;
+/**
+ * Até esta data, inclusive.
+ */
+occurredTo?: string;
+/**
+ * `false` traz só o que ainda NÃO foi conciliado — é a lista que a tela de conciliação bancária abre.
+ */
+reconciled?: boolean;
+};
+
+export type ListBankAccountsParams = {
+/**
+ * Busca por nome, número da conta e nome do banco.
+ */
+q?: string;
+/**
+ * Whitelist: `name`, `number`, `bankCode`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * `true` traz só as ativas — o que todo combo quer.
+ */
+active?: boolean;
+};
+
+export type ListCashRegistersParams = {
+/**
+ * Busca por código e nome.
+ */
+q?: string;
+/**
+ * Whitelist: `code`, `name`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * `true` traz só os ativos.
+ */
+active?: boolean;
+};
+
+export type ListPaymentModesParams = {
+/**
+ * Busca por código e nome.
+ */
+q?: string;
+/**
+ * Whitelist: `code`, `name`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * `true` traz só os ativos.
+ */
+active?: boolean;
+/**
+ * `true` traz só os que servem para QUITAR — é o recorte que o combo da baixa usa.
+ */
+usableInSettlement?: boolean;
 };
 
 export type ListLabelLayoutsParams = {

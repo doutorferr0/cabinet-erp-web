@@ -1120,6 +1120,125 @@ const COMISSOES: readonly RotaNoMock[] = [
   },
 ]
 
+const TESOURARIA_SEM_CONTRATO_LA =
+  'contrato novo — a copia do api ainda nao sincronizou; depois do sync vira 501 ate a fase B (api#112)'
+
+/**
+ * AS QUINZE DE TESOURARIA (G7 fase A, `api#112`) — nascem NESTE PR, que é o que
+ * publica a família. O contrato voltou a andar na frente, que é o estado normal
+ * do repo que o possui.
+ *
+ * **A razão é a mesma das treze de comissões, um degrau antes: o módulo do api
+ * EXISTE e não tem porta — e agora nem o contrato de lá conhece o caminho.** As
+ * seis tabelas estão aplicadas na `main` do api (`0065_tesouraria.sql` +
+ * `0070_financeiro_apoio.sql` + `0071_financeiro_titulos.sql`: título, parcela,
+ * baixa com `batch_id`, movimento, transferência e fechamento, todas com RLS
+ * forçada), e nenhum dos quinze `operationId` está no mapa de
+ * `src/core/http/servidor.ts` — medido contra a `main` `f810a39`.
+ *
+ * **Duas respostas em sequência, e a distinção é a que a #341 pagou para
+ * aprender:** hoje é **404** (`Este caminho não existe no contrato`), porque a
+ * cópia de `contracts/openapi-v1.json` do api é anterior a este merge; depois do
+ * `sync:contract` de lá vira **501**, que é o "conheço a rota, falta handler".
+ * As duas mantêm a família fora da passagem, mas só a segunda diz que o próximo
+ * passo é o handler, e não o sync.
+ *
+ * Sai INTEIRA quando a FASE B ligar os handlers — meia família põe id do
+ * servidor de um lado e id inventado do outro, e aqui os dois lados são dinheiro.
+ */
+const TESOURARIA: readonly RotaNoMock[] = [
+  {
+    metodo: 'get',
+    caminho: '/api/financial-titles',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-titles',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-titles/{id}',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'put',
+    caminho: '/api/financial-titles/{id}',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-titles/{id}/cancel',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/financial-installments',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-installments/{id}/settlements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/financial-settlements/batch',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/cash-movements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-movements',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-movements/{id}/reconcile',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'post',
+    caminho: '/api/cash-transfers',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/bank-accounts',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/cash-registers',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+  {
+    metodo: 'get',
+    caminho: '/api/payment-modes',
+    motivo: TESOURARIA_SEM_CONTRATO_LA,
+    natureza: 'sem-contrato',
+  },
+]
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   {
     metodo: 'get',
@@ -1197,6 +1316,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   },
   ...COMISSOES,
   ...RECEBIMENTO,
+  ...TESOURARIA,
   {
     metodo: 'post',
     caminho: '/api/employees/{id}/reset-password',

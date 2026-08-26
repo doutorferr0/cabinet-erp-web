@@ -129,6 +129,15 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:item-ja-em-ordem': 'Item já está em uma ordem',
   'urn:cabinet:erro:ordem-ja-enviada': 'Ordem já enviada',
   'urn:cabinet:erro:fornecedor-divergente': 'Fornecedor divergente',
+  // TESOURARIA (G7 fase A) — os títulos saem da mesma tabela do `ProblemType`,
+  // e `problem-details.test.ts` cobra isso por texto: título escolhido aqui
+  // faria o mesmo erro chegar com um cabeçalho no modo mock e outro contra o
+  // backend.
+  'urn:cabinet:erro:periodo-fechado': 'Período fechado',
+  'urn:cabinet:erro:titulo-com-baixa': 'Título com baixa',
+  'urn:cabinet:erro:parcela-ja-quitada': 'Parcela já quitada',
+  'urn:cabinet:erro:valor-acima-do-saldo': 'Valor acima do saldo',
+  'urn:cabinet:erro:movimento-ja-conciliado': 'Movimento já conciliado',
   'urn:cabinet:erro:periodo-ja-fechado': 'Período já fechado',
   'urn:cabinet:erro:origem-ja-paga': 'Origem já paga',
   'urn:cabinet:erro:participante-ja-apurado': 'Participação já apurada',

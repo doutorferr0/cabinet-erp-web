@@ -1,6 +1,8 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
+import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
+import { TotalBox } from '@/components/cabinet/total-box'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { useId } from 'react'
@@ -20,9 +22,9 @@ export interface DocumentoHeaderProps {
   /** Modo da tela (`Incluir`, `Consulta`) — vai em Meta AO LADO do título, sem traço. */
   modo?: string | undefined
   /**
-   * Número do documento — a âncora visual do cabeçalho: Nº do Documento
-   * (mono 700, 1.5rem) à direita, como o `591890` da comanda. Ausente em
-   * documento novo.
+   * Número do documento — a âncora visual do cabeçalho: Nº do Documento em
+   * display condensado a 36px, à direita, como o `591890` da comanda. Ausente
+   * em documento novo.
    */
   numero?: string | number | undefined
   /** Carimbo de situação ao lado do número — só quando a enumeração real chegar. */
@@ -41,16 +43,21 @@ export interface DocumentoHeaderProps {
  */
 export function DocumentoHeader({ titulo, modo, numero, stamp }: DocumentoHeaderProps) {
   return (
-    <BandaDeIdentidade titulo={titulo} {...(modo ? { contexto: modo } : {})}>
+    <BandaDeIdentidade
+      titulo={titulo}
+      escalaTitulo="documento"
+      {...(modo ? { contexto: modo } : {})}
+    >
       {numero !== undefined && (
         // FUSÃO v5: o número é a ÂNCORA do documento — caixa preta, tinta
         // clara, sombra de decisão. É a única peça escura do cabeçalho.
-        <span
+        <NumeroHeroi
+          escala="documento"
           data-slot="documento-numero"
-          className="rounded-item bg-primary px-3 py-0.5 font-bold font-mono text-2xl text-primary-foreground tracking-[-0.01em] tabular-nums shadow-el2"
+          className="rounded-item bg-primary px-3 py-1 text-primary-foreground shadow-el2"
         >
           {numero}
-        </span>
+        </NumeroHeroi>
       )}
       {stamp && <Stamp tom={stamp.tom} label={stamp.label} />}
     </BandaDeIdentidade>
@@ -111,26 +118,28 @@ export interface DocumentoTotaisProps {
 
 /**
  * Tira de totais — a EXCEÇÃO (DESIGN.md §DocumentoTotais): só para tela sem
- * grade de itens (resumos, consultas). Com grade, os totais são as últimas
- * fileiras da própria grade via `fileirasTotais` + prop `totals` do FormGrid.
+ * grade de itens (resumos, consultas). Com grade, subtotal e ajustes são as
+ * últimas fileiras da própria grade via `fileirasTotais` + prop `totals` do
+ * FormGrid.
+ *
+ * O FECHO é o mesmo `TotalBox` dos dois casos (#236). Duas telas do mesmo
+ * documento com dois totais de tamanhos diferentes é a deriva que a fusão v5
+ * fechou — e aqui ela apareceria como "o total encolhe quando a tela não tem
+ * grade", que ninguém leria como decisão de desenho.
  */
 export function DocumentoTotais({ subtotalCentavos, ajustes = [] }: DocumentoTotaisProps) {
   const total = ajustes.reduce((acc, a) => acc + a.sinal * a.valorCentavos, subtotalCentavos)
 
   return (
-    // Tira alinhada à direita, borda em Régua, canto 4px; pares separados por 24px.
-    <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 rounded-lg border p-3">
-      <TotalItem label="SubTotal" valor={subtotalCentavos} />
-      {ajustes.map((a) => (
-        <TotalItem key={a.label} label={a.label} valor={a.valorCentavos} />
-      ))}
-      {/* Total é o único em Title e vem separado por régua forte — o GRAND TOTAL do invoice. */}
-      <TotalItem
-        label="Total"
-        valor={total}
-        destaque
-        className="border-l border-rule-strong pl-6"
-      />
+    <div className="flex flex-col items-end gap-3">
+      {/* Tira alinhada à direita, borda em Régua, canto 4px; pares separados por 24px. */}
+      <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 rounded-lg border p-3">
+        <TotalItem label="SubTotal" valor={subtotalCentavos} />
+        {ajustes.map((a) => (
+          <TotalItem key={a.label} label={a.label} valor={a.valorCentavos} />
+        ))}
+      </div>
+      <TotalBox valorCentavos={total} />
     </div>
   )
 }
@@ -138,12 +147,10 @@ export function DocumentoTotais({ subtotalCentavos, ajustes = [] }: DocumentoTot
 function TotalItem({
   label,
   valor,
-  destaque,
   className,
 }: {
   label: string
   valor: number
-  destaque?: boolean
   className?: string
 }) {
   return (
@@ -152,10 +159,7 @@ function TotalItem({
       <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {label}:
       </span>
-      <output
-        aria-label={label}
-        className={destaque ? 'text-lg font-semibold tabular-nums' : 'tabular-nums'}
-      >
+      <output aria-label={label} className="tabular-nums">
         {formatMoneyBRL(valor)}
       </output>
     </div>

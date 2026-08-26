@@ -96,6 +96,7 @@ import type {
   PartnerPayoutBankInfo,
   PaymentTermDto,
   PermissionCatalogDto,
+  PlanItemDto,
   PriceIndexDto,
   PrintSettingsDto,
   ProductDetailDto,
@@ -240,6 +241,8 @@ export const getPatchTodoResponseMock = (overrideResponse: Partial<Extract<TodoD
 export const getListProjectsResponseMock = (): ProjectDto[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(['active','proposed','closed'] as const)})))
 
 export const getGetProjectPlanResponseMock = (overrideResponse: Partial<Extract<ProjectPlanDto, object>> = {}): ProjectPlanDto => ({projectId: faker.string.uuid(), phases: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), startsOn: faker.date.past().toISOString().slice(0, 10), endsOn: faker.date.past().toISOString().slice(0, 10), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), label: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(['task','order','delivery'] as const), startsOn: faker.date.past().toISOString().slice(0, 10), endsOn: faker.date.past().toISOString().slice(0, 10), progressPercent: faker.number.int()}))})), ...overrideResponse})
+
+export const getReschedulePlanItemResponseMock = (overrideResponse: Partial<Extract<PlanItemDto, object>> = {}): PlanItemDto => ({id: faker.string.uuid(), label: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(['task','order','delivery'] as const), startsOn: faker.date.past().toISOString().slice(0, 10), endsOn: faker.date.past().toISOString().slice(0, 10), progressPercent: faker.number.int(), ...overrideResponse})
 
 export const getListEmployeesResponseMock = (overrideResponse: Partial<Extract<PagedResultOfEmployeeDto, object>> = {}): PagedResultOfEmployeeDto => ({rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), sector: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), jobTitle: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), active: faker.datatype.boolean()})), total: faker.number.int(), ...overrideResponse})
 

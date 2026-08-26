@@ -173,7 +173,12 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * errou.
    */
   'catalog-lookups': 'operator-full',
-  projects: 'owner',
+  // ESCREVER aqui é reagendar item do plano pelo arraste da barra do gantt —
+  // gestão da obra, não propriedade da empresa. Ficou em `owner` enquanto
+  // `projects` era só leitura, quando o mínimo não governava nada e o padrão
+  // "fecha, não abre" era de graça. A primeira escrita transformou o padrão em
+  // DECISÃO, e ela é do user (2026-08-25): `admin`.
+  projects: 'admin',
   dashboard: 'owner',
   /**
    * Gerenciar papéis é distribuir permissão para os outros — é a definição de

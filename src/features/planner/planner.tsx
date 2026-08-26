@@ -3,18 +3,28 @@ import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Barra as BarraDeProgresso, Painel } from '@/components/cabinet/painel'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FILTROS, type FiltroDeProjeto, usePlanoDoProjeto, useProjetos } from '@/data/planner-api'
+import { ErroDaApi } from '@/data/api-provider'
+import { useReadOnlyPorPapel } from '@/data/papeis'
+import {
+  FILTROS,
+  type FiltroDeProjeto,
+  usePlanoDoProjeto,
+  useProjetos,
+  useReagendarItem,
+} from '@/data/planner-api'
 import { Gantt } from '@svar-ui/react-gantt'
 // O tema do gantt vem COM o gantt, e não do `src/main.tsx` (#227): folha de
 // lib importada na entrada é paga em toda página por causa de uma tela. O
 // especificador é `style.css` e não `all.css` — este último traz grid, editor,
 // menu e toolbar da suíte SVAR, que o planner não monta.
 import '@svar-ui/react-gantt/style.css'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
+  type EventoDeTarefa,
   TIPOS,
   janelaDoPlano,
   progressoDoProjeto,
+  reagendamentoDoEvento,
   tarefasDoPlano,
   totalDeItens,
 } from './dados-do-gantt'
@@ -34,13 +44,30 @@ import {
  * O que ficou é o que o SVAR não sabe: o recorte de projeto, o Andamento e as
  * três frases de estado vazio — que são deste domínio, não do gantt.
  *
- * ## O que a troca NÃO ligou, de propósito
+ * ## ARRASTAR DATAS entrou; dependência e recorrência não
  *
- * `readonly` fica ligado, e as três coisas que a lib traz de graça — arrastar
- * barra, redimensionar e ligar dependência — continuam desligadas: a spec
- * aprovada (`topicos/dashboard.md` @planner) põe as três fora da fase 1, que é
- * de leitura. A troca é de motor, não de escopo; ligá-las é decisão de produto e
- * merece a própria issue.
+ * A spec aprovada (`topicos/dashboard.md` @planner) punha arrastar, redimensionar
+ * e dependência fora da fase 1 — e a versão anterior deste arquivo citava isso
+ * como razão do `readonly` fixo. **O user decidiu depois** que reagendar pelo
+ * arraste é a interação mínima da primeira entrega; dependência entre tarefas e
+ * recorrência ficam para a rodada seguinte. Esta nota fica no lugar da antiga
+ * porque prosa que descreve um mundo que mudou envelhece calada.
+ *
+ * O que a decisão trouxe junto: o gesto precisa de um caminho de ESCRITA, e não
+ * havia nenhum. `PATCH /api/projects/{projectId}/plan/items/{itemId}` entrou no
+ * contrato marcado `Proposto`, como a própria spec manda para o que o Planner
+ * precisa e o backend ainda não serve.
+ *
+ * **`readonly` não sumiu — virou pergunta de PAPEL.** A família `projects` pede
+ * `owner` para escrever (`PAPEL_MINIMO_POR_FAMILIA`), então quem não alcança
+ * continua vendo o gantt de leitura, e vendo POR QUÊ. Oferecer o gesto a quem o
+ * servidor vai recusar faz a barra andar e voltar sem explicação, que é a forma
+ * mais confusa de dizer "você não pode".
+ *
+ * Continuam desligados: **dependência entre tarefas** (rodada 2) e o **card de
+ * detalhe** da spec (ícone, datas, progresso e link) — este último por não ser
+ * alcançável neste runner, ver o cabeçalho de `planner.test.tsx`, e entregar
+ * desenho que nenhuma bateria toca é entregar não medido.
  *
  * **Nada de `schedule`, `baselines` ou `criticalPath`:** os três existem na
  * tipagem e são PRO PAGO no SVAR. A spec não pede nenhum, e por isso a troca
@@ -104,6 +131,35 @@ export function PlannerTela() {
 
   const tarefas = useMemo(() => (plano.data ? tarefasDoPlano(plano.data) : []), [plano.data])
   const janela = useMemo(() => (plano.data ? janelaDoPlano(plano.data.phases) : null), [plano.data])
+
+  const reagendar = useReagendarItem(projetoId)
+  const { readOnly, conhecido } = useReadOnlyPorPapel('projects')
+  // Travado ENQUANTO NÃO SE SABE, e não só quando se sabe que não pode: o hook
+  // devolve `readOnly: false` antes do vínculo chegar, e abrir o arraste nesse
+  // intervalo deixaria o operador mover uma barra que o servidor recusa.
+  const travado = !conhecido || readOnly
+
+  const aoMexerNaTarefa = useCallback(
+    (evento: EventoDeTarefa) => {
+      // Durante o arraste o SVAR dispara a cada quadro. Sai cedo: o resto desta
+      // função só faz sentido na soltura.
+      if (evento.inProgress) return
+
+      const novo = reagendamentoDoEvento(evento)
+      if (novo) {
+        reagendar.mutate(novo)
+        return
+      }
+
+      // Chegou aqui, o gesto não vira escrita. Se foi uma FASE que se mexeu,
+      // a grade agora mostra um intervalo que ninguém gravou — o contrato
+      // reagenda ITEM, e a fase acompanha os filhos. Recarregar devolve a
+      // barra ao que o servidor tem, em vez de deixá-la mentindo até que
+      // alguém troque de projeto e volte.
+      if (String(evento.id ?? '').startsWith('fase:')) void plano.refetch()
+    },
+    [reagendar, plano],
+  )
 
   return (
     <div className="flex flex-col gap-8">
@@ -198,13 +254,31 @@ export function PlannerTela() {
             `#FF6B2C`, s120): quem lê a cor sabe em que parte do sistema está, e
             a troca de motor não pode mudar isso.
           */}
+          {conhecido && readOnly ? (
+            <p data-slot="planner-somente-leitura" className="text-sm text-muted-foreground">
+              Somente leitura: seu papel nesta empresa não reagenda o plano.
+            </p>
+          ) : null}
+
+          {/* Mesmo lugar e mesma voz do quadro do CRM, que também é arrastar: o
+              `detail` do problem+json diz o motivo — data invertida, papel que
+              não alcança —, e sem ele a barra voltaria sozinha e sem palavra. */}
+          {reagendar.isError ? (
+            <p role="alert" data-slot="planner-erro" className="text-sm text-destructive">
+              {reagendar.error instanceof ErroDaApi
+                ? (reagendar.error.detail ?? reagendar.error.message)
+                : 'Falha ao reagendar o item do plano.'}
+            </p>
+          ) : null}
+
           <div
             data-secao="dashboard"
             data-slot="gantt"
             className="overflow-hidden rounded-panel border-2 bg-card"
           >
             <Gantt
-              readonly
+              readonly={travado}
+              onupdatetask={aoMexerNaTarefa}
               tasks={tarefas}
               scales={ESCALAS}
               {...(janela ? { start: janela.inicio, end: janela.fim } : {})}

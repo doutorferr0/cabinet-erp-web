@@ -1688,6 +1688,15 @@ export interface PlanPhaseDto {
 }
 
 /**
+ * Proposto. O novo intervalo de um item do plano. Só datas: reagendar não renomeia nem mexe em progresso, e campo que o gesto não produz não entra no corpo que ele manda.
+ */
+export interface PlanItemRescheduleRequest {
+  startsOn: string;
+  /** Previsão de término, INCLUSIVA — o mesmo dia que `PlanItemDto.endsOn`. Item de um dia só chega aqui com `startsOn` igual a `endsOn`, nunca com o dia seguinte. */
+  endsOn: string;
+}
+
+/**
  * Proposto. O plano inteiro de um projeto.
  */
 export interface ProjectPlanDto {

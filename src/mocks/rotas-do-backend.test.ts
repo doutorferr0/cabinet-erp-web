@@ -538,6 +538,10 @@ describe('passthrough por rota', () => {
     // sincronizar e ligar os handlers, as linhas saem de `ROTAS_NO_MOCK` — as
     // do ciclo JUNTAS, porque o token emitido pelo convite do servidor não
     // existe no mock que gastaria — e este caso encolhe de novo.
+    //
+    // A VIGÉSIMA SEXTA é o `PATCH` do item do plano — o reagendamento que ligou
+    // o arraste da barra no Planner. Mesmo mecanismo, mesma dedução: o caminho
+    // nasce aqui e a cópia do api ainda não o conhece.
     const semContrato = ROTAS_NO_MOCK.filter((r) => r.natureza === 'sem-contrato')
     expect(
       semContrato.map((r) => `${r.metodo} ${r.caminho}`),
@@ -568,9 +572,10 @@ describe('passthrough por rota', () => {
       'get /api/platform/support-grants/{id}',
       'post /api/platform/support-grants/{id}/revoke',
       'get /api/platform/support-grants/{id}/audit',
+      'patch /api/projects/{projectId}/plan/items/{itemId}',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 25.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(26)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 26.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(27)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

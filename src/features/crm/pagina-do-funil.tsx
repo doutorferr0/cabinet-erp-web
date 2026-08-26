@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { oportunidadesDoFunil, useEstagios, useFunis } from '@/data/crm-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
+import { mensagemDoErro } from '@/lib/erros'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -284,6 +285,14 @@ export function PaginaDoFunil({ pipelineId }: { pipelineId: string }) {
       >
         {funis.isPending ? (
           <Skeleton className="h-8 w-40" />
+        ) : /* A tira de funis nasce de `funis.data ?? []`, e sem este ramo a falha da
+              consulta desenhava uma tira VAZIA: o operador conclui que a empresa tem um
+              funil só — este — e não procura o resto. `QuadroDoFunil`, logo abaixo, já
+              trata a falha dos ESTÁGIOS com `FalhaDoPainel`; era a casca que calava. */
+        funis.isError ? (
+          <p className="text-sm text-muted-foreground" role="alert">
+            {mensagemDoErro(funis.error, 'A lista de funis não chegou.')}
+          </p>
         ) : (
           <nav aria-label="Funis" className="flex flex-wrap items-center gap-2">
             {(funis.data ?? []).map((funil) => (

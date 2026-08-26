@@ -22,6 +22,7 @@ import {
   useDepositos,
   useSaldosDaVariante,
 } from '@/data/estoque-api'
+import { LancarMovimento, type ModoDeLancamento } from '@/features/estoque/lancar-movimento'
 import { formatInstanteBR, formatQuantidade } from '@/lib/formatters'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -59,6 +60,25 @@ import { useState } from 'react'
  * contrato não publica `locationId` como parâmetro de nenhuma das duas
  * operações. Inventá-lo daria 400 no servidor e verde no mock.
  *
+ * ## As TRÊS escritas moram aqui, e a quarta não existe
+ *
+ * Entrada, saída e ajuste são a mesma operação do contrato
+ * (`CreateStockMovement`) com sinais diferentes — não há tipo de movimento no
+ * corpo. Elas ficam nesta tela, e não em telas próprias, porque o contexto que
+ * exigem (variante e depósito) é o que a barra de filtros acabou de escolher:
+ * uma tela separada faria o operador escolher a peça duas vezes, e a segunda
+ * escolha é onde ele erra a peça. O diálogo é `lancar-movimento.tsx`.
+ *
+ * **A transferência entre depósitos NÃO está aqui, e a ausência é medida.** O
+ * api tem o par atômico pronto desde a migração `0042`
+ * (`src/modules/estoque/transferencia.ts`), com documento próprio, e ele **não
+ * tem rota** — nenhuma operação do contrato o alcança. Fazer a transferência
+ * com dois `POST` daqui reintroduziria, do lado de fora, exatamente o defeito
+ * que aquele documento existe para eliminar: falha entre um e outro some com a
+ * peça, e as duas pontas ficariam ligadas só pelo `reason`, que é texto livre.
+ * Quem vigia isso é `src/data/familia-de-estoque.test.ts`, que fica vermelho no
+ * dia em que o contrato publicar a operação.
+ *
  * ## O nome do depósito é resolvido AQUI
  *
  * Saldo e movimento trazem `locationId` (uuid) e nada de nome, por decisão
@@ -71,6 +91,10 @@ export function TelaDeEstoque() {
   const [variantId, setVariantId] = useState<string | null>(null)
   const [depositoId, setDepositoId] = useState<string | null>(null)
   const [buscaAberta, setBuscaAberta] = useState(false)
+  // `null` = nenhum diálogo aberto. O MODO é o estado, e não um booleano por
+  // botão: os três são o mesmo diálogo, e três booleanos abririam a porta para
+  // dois abertos ao mesmo tempo.
+  const [modo, setModo] = useState<ModoDeLancamento | null>(null)
 
   const depositos = useDepositos()
   const saldos = useSaldosDaVariante(variantId)
@@ -168,6 +192,47 @@ export function TelaDeEstoque() {
         </label>
       </div>
 
+      {/* AS TRÊS ESCRITAS. Ficam aqui, e não numa tela própria, porque o
+          contexto que elas exigem — variante e depósito — é o que esta barra
+          acabou de escolher. Uma tela separada faria o operador escolher a peça
+          duas vezes, e a segunda escolha é onde ele erra a peça.
+
+          Desabilitadas sem variante: o caminho da operação é
+          `/api/variants/{variantId}/stock-movements`, e sem ela não há pedido a
+          montar. O aviso ao lado diz por quê — botão desabilitado e mudo é o que
+          faz o operador concluir que a tela está quebrada. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          isDisabled={variantId === null}
+          onClick={() => setModo('entrada')}
+        >
+          Entrada
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          isDisabled={variantId === null}
+          onClick={() => setModo('saida')}
+        >
+          Saída
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          isDisabled={variantId === null}
+          onClick={() => setModo('ajuste')}
+        >
+          Ajuste
+        </Button>
+        {variantId === null ? (
+          <span className="text-muted-foreground text-sm">
+            Escolha a variante para lançar movimento.
+          </span>
+        ) : null}
+      </div>
+
       <Painel titulo="Saldo por depósito" modulo="estoque">
         {variantId === null ? (
           <p className="text-muted-foreground text-sm">
@@ -233,6 +298,26 @@ export function TelaDeEstoque() {
           </>
         )}
       </Painel>
+
+      {/* Montado só com variante escolhida — e é isso que faz `variantId as
+          string` ser verdade dentro dele, em vez de um `?? ''` que mandaria
+          `/api/variants//stock-movements` no primeiro clique. */}
+      {modo !== null && variantId !== null ? (
+        <LancarMovimento
+          aberto
+          modo={modo}
+          variantId={variantId}
+          depositos={listaDeDepositos}
+          // O depósito do FILTRO vira a sugestão: quem estava olhando o
+          // showroom quase sempre quer lançar no showroom. `null` (todos os
+          // depósitos) vira o padrão da empresa, que é o que o contrato entende
+          // por `locationId` ausente.
+          depositoSugerido={depositoId}
+          onOpenChange={(aberto) => {
+            if (!aberto) setModo(null)
+          }}
+        />
+      ) : null}
 
       <SearchDialog<ProductDto>
         open={buscaAberta}

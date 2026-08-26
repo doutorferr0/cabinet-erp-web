@@ -4,8 +4,14 @@ import type {
   StockBalanceDto,
   StockLocationDto,
   StockMovementDto,
+  StockMovementRequest,
 } from '@/api/gerado'
-import { listStockBalances, listStockLocations, listStockMovements } from '@/api/gerado'
+import {
+  createStockMovement,
+  listStockBalances,
+  listStockLocations,
+  listStockMovements,
+} from '@/api/gerado'
 import {
   PAGE_SIZE_MAX,
   type RespostaDaApi,
@@ -14,7 +20,7 @@ import {
   repetirSeValeAPena,
 } from '@/data/api-provider'
 import type { PagedResult, TableFetcher } from '@/lib/table-query'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE ESTOQUE — depósito, saldo por depósito e kardex.
@@ -173,4 +179,70 @@ export function fetcherDoKardex(variantId: string): TableFetcher<StockMovementDt
     )
     return { rows: pagina.rows ?? [], total: pagina.total ?? 0 }
   }
+}
+
+/**
+ * O LANÇAMENTO — a única escrita de estoque que o contrato publica.
+ *
+ * `CreateStockMovement` é uma operação só, e as três telas de lançamento
+ * (entrada, saída, ajuste) são a MESMA chamada com sinais diferentes. O corpo
+ * tem três campos e nada mais: `locationId`, `delta` e `reason`. Não há tipo de
+ * movimento, não há documento, não há origem — o servidor grava tudo o que vem
+ * daqui como `manual`, e recusa origem vinda do cliente de propósito (deixar a
+ * tela afirmar que uma baixa saiu de uma venda que ninguém conferiu).
+ *
+ * ## O que a tela NÃO pré-valida, e é decisão
+ *
+ * **Variante nunca precificada.** Movimento numa variante sem linha de
+ * `product_tenant` faz o SERVIDOR criar a linha — estoque é fato físico, preço é
+ * decisão comercial, e um não espera o outro (decisão do user, 2026-08-18,
+ * escrita no cabeçalho de `src/modules/estoque/rotas.ts` do api). A tela não
+ * confere isso antes de mandar: conferir exigiria saber a regra do servidor de
+ * cor, e regra copiada envelhece calada. Se vier recusa, ela aparece pelo
+ * `detail` do problem+json.
+ *
+ * Mesma razão para o DEPÓSITO PADRÃO: `locationId` ausente significa "o padrão
+ * da empresa", que o servidor CRIA sob demanda. A tela oferece o seletor já
+ * preenchido quando há depósito, e manda `null` quando não há — nunca cadastra
+ * depósito por conta própria para poder movimentar.
+ *
+ * ## As quatro recusas que chegam daqui, e nenhuma delas é pré-validada
+ *
+ * | quando | status |
+ * |---|---|
+ * | `delta` ausente ou `reason` em branco | 400 com `fields[]` |
+ * | variante não encontrada · depósito que a empresa não tem | 404 |
+ * | depósito INATIVO | 409 |
+ * | movimento deixaria o saldo do DEPÓSITO negativo | 409 |
+ *
+ * A do saldo negativo é a que mais aparece na operação, e a tela **não** a
+ * antecipa comparando com o saldo que carregou: entre a leitura e o clique
+ * outro operador pode ter movimentado, e recusar aqui mostraria "não tem saldo"
+ * para um pedido que o servidor aceitaria — ou pior, deixaria passar um que ele
+ * recusa. Quem conta é quem grava.
+ *
+ * ## O que se invalida, e por quê são TRÊS chaves
+ *
+ * Um movimento muda os dois caches do ADR-009 e a grade que os explica:
+ * `stock_balances` (o saldo do depósito), `product_tenant.stock_qty` (o total da
+ * variante, que viaja como `stockQty` no `ProductVariantDto`) e o kardex. A
+ * terceira é `['produtos']` porque o `stockQty` da variante mora no detalhe do
+ * produto — invalidar só as duas de estoque deixaria a tela de produto exibindo
+ * o total de antes do movimento, que é a divergência que o ADR-009 chama de
+ * fraude ou bug.
+ */
+export function useLancarMovimento(variantId: string | null) {
+  const cliente = useQueryClient()
+  return useMutation({
+    mutationFn: async (corpo: StockMovementRequest) => {
+      const resposta: RespostaDaApi = await createStockMovement(variantId as string, corpo)
+      return dadosOuErro<StockMovementDto>(resposta, 'Falha ao lançar o movimento.')
+    },
+    onSuccess: () => {
+      const id = variantId ?? ''
+      cliente.invalidateQueries({ queryKey: CHAVES_ESTOQUE.saldos(id) })
+      cliente.invalidateQueries({ queryKey: CHAVES_ESTOQUE.kardex(id) })
+      cliente.invalidateQueries({ queryKey: ['produtos'] })
+    },
+  })
 }

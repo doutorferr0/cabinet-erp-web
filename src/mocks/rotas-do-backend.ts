@@ -453,12 +453,14 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 
   // quadro de tarefas e lista A fazer (5 operações) — módulo inteiro.
   //
-  // Convivem com um dashboard ainda mockado (`/api/dashboard/summary` e
-  // `/api/dashboard/agenda` são 501) e isso é DIFERENTE do caso do funil: os
-  // indicadores e a agenda são painéis próprios, com consulta própria, sem id
-  // em comum com a tarefa. O que se perde é a contagem do resumo bater com o
-  // quadro ao lado — dois painéis discordando, e não um quadro vazio mentindo
-  // que não há trabalho.
+  // Entraram ANTES do dashboard, e por um tempo conviveram com ele mockado: o
+  // resumo contava a ficção e o quadro ao lado contava o Postgres. Era
+  // discordância entre dois painéis, não quadro vazio mentindo que não há
+  // trabalho, e por isso a passagem pôde acontecer sem esperar. **Desde a #274
+  // não há mais o que conviver — `/api/dashboard/summary` e
+  // `/api/dashboard/agenda` estão nesta mesma lista, mais abaixo.** A frase
+  // anterior aqui dizia que os dois "são 501" e sobreviveu à própria correção,
+  // a 140 linhas das entradas que a desmentem.
   { metodo: 'get', caminho: '/api/tasks' },
   { metodo: 'post', caminho: '/api/tasks' },
   { metodo: 'patch', caminho: '/api/tasks/{taskId}' },

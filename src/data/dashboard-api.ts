@@ -22,16 +22,24 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 /**
  * FRONTEIRA DO DASHBOARD — resumo, agenda, quadro de tarefas e lista A fazer.
  *
- * Os quatro caminhos entraram no contrato marcados `Proposto` (§dashboard): são
- * pedido do front ao backend que ainda não existe, e no `VITE_API_MODE=mock`
- * quem responde é o handler de `src/mocks/api/handlers.ts`. A tela não sabe a
- * diferença — chama estes hooks, como manda a regra de acesso a dado.
+ * Os quatro caminhos entraram no contrato marcados `Proposto` (§dashboard) — eram
+ * pedido do front a um backend que ainda não os tinha. **Os quatro já são
+ * servidos**, e os quatro estão na passagem de `src/mocks/rotas-do-backend.ts`;
+ * a marca `Proposto` sobreviveu no texto do contrato e hoje descreve a origem
+ * deles, não o estado. No `VITE_API_MODE=mock` quem responde continua sendo o
+ * handler de `src/mocks/api/handlers.ts`, e a tela não sabe a diferença — chama
+ * estes hooks, como manda a regra de acesso a dado.
  *
  * **Nada aqui inventa número.** O que o servidor não apura, a tela não mostra: a
  * variação contra o mês anterior sai de dois campos do próprio DTO
  * (`monthSalesCents` e `previousMonthSalesCents`), e é derivação, não estimativa.
  * Percentual pronto vindo do servidor seria número que o operador não consegue
  * conferir contra nada na tela.
+ *
+ * A recíproca dessa regra é o cartão `Pedidos a receber`: `incomingOrders` vem
+ * do servidor, mas vem SEMPRE `0` porque ninguém o apura, e por isso a tela não
+ * o imprime — ver `features/dashboard/indicadores.tsx`. Campo obrigatório no DTO
+ * não é o mesmo que campo medido.
  */
 
 /** Chaves de cache num lugar só: mutação que invalida a chave errada é bug mudo. */

@@ -4216,6 +4216,112 @@ export interface PagedResultOfRoleDto {
 }
 
 /**
+ * Proposto. A LINHA da listagem de empresas — o que a tabela desenha, sem o timbre.
+ */
+export interface TenantDto {
+  id: string;
+  /** O código humano da empresa (`01`, `02`), único no sistema. É o que aparece no documento e em conversa; por isso é ele, e não o uuid, que a listagem mostra e ordena. */
+  code: string;
+  /** O nome FANTASIA — `empresa.EMPRESA` do legado. Não é a razão social: quem imprime é `legalName`, e sobrescrever um com o outro apagaria o que distingue os dois. */
+  name: string;
+  /**
+     * Sem máscara, 14 posições, alfanumérico (regra da Receita desde 31/07/2026). `null` na empresa que ainda não tem inscrição.
+     *
+     * **Só de leitura por aqui**: quem grava o CNPJ é `PUT /api/company-letterhead`, junto com o resto do timbre. Ele aparece na linha porque é como se confere de qual empresa se está falando — ler não é autoridade.
+     * @nullable
+     */
+  readonly cnpj?: string | null;
+  /** Desativação lógica: empresa aposentada sai do seletor de empresa ativa e continua legível em tudo o que já gravou. É o que substitui o `DELETE` que este recurso não publica. */
+  active: boolean;
+}
+
+export type TenantDetailDtoFeaturesItem = typeof TenantDetailDtoFeaturesItem[keyof typeof TenantDetailDtoFeaturesItem];
+
+
+export const TenantDetailDtoFeaturesItem = {
+  suppliers: 'suppliers',
+  professionals: 'professionals',
+  employees: 'employees',
+} as const;
+
+/**
+ * Proposto. A empresa com os RECURSOS contratados — o corpo que abre o formulário de alteração.
+ *
+ * **Sem o TIMBRE**, e a ausência é deliberada: razão social, Inscrição Estadual, endereço, fone e e-mail são de `CompanyLetterheadDto`, singleton da empresa ATIVA. As colunas são as mesmas em `tenants`, e publicá-las nos dois lugares deixaria duas rotas gravando o mesmo cabeçalho — esta com um `id` vindo do cliente, que é justamente o que a outra recusa por `tenants` não ter política de RLS.
+ */
+export interface TenantDetailDto {
+  id: string;
+  /** Código humano, único no sistema. */
+  code: string;
+  /** Nome fantasia — o rótulo que o seletor de empresa e a barra imprimem. NÃO é a razão social: quem imprime no cabeçalho é `CompanyLetterheadDto.legalName`, e sobrescrever um com o outro apagaria o que distingue os dois. */
+  name: string;
+  /**
+     * Sem máscara, 14 posições, alfanumérico. **Só de leitura** — quem o grava é `PUT /api/company-letterhead`.
+     * @nullable
+     */
+  readonly cnpj?: string | null;
+  /** Desativação lógica. */
+  active: boolean;
+  /** Recursos CONTRATADOS pela empresa — o que ela opera, não o que o usuário pode fazer nela (isso é o papel do vínculo). Mesmo conjunto fechado de `VinculoDeEmpresa.features`, e é ele que comanda a navegação. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo. */
+  features: TenantDetailDtoFeaturesItem[];
+}
+
+export type TenantWriteRequestFeaturesItem = typeof TenantWriteRequestFeaturesItem[keyof typeof TenantWriteRequestFeaturesItem];
+
+
+export const TenantWriteRequestFeaturesItem = {
+  suppliers: 'suppliers',
+  professionals: 'professionals',
+  employees: 'employees',
+} as const;
+
+/**
+ * Proposto. Corpo de criação e de alteração da empresa — a IDENTIDADE dela, não o timbre.
+ *
+ * `id` e `organizationId` ficam de fora porque a identidade e o grupo são do servidor: empresa que declarasse a própria organização seria linha plantada no grupo de outro.
+ *
+ * **`cnpj`, razão social, Inscrição Estadual, endereço, fone e e-mail também ficam de fora, e é o ponto.** Eles são o timbre, e o timbre tem dono: `PUT /api/company-letterhead`, que grava o da empresa ATIVA e não aceita id do cliente — `tenants` não tem RLS, então um `id` no caminho de escrita de timbre seria o cliente escolhendo de quem grava. A empresa nova nasce sem cabeçalho e o ganha quando alguém a ativa, que é o mesmo caminho pelo qual ela ganha vínculo.
+ */
+export interface TenantWriteRequest {
+  /** Único no sistema; repetido é 409. Até 20 caracteres. */
+  code: string;
+  /** Nome fantasia. Obrigatório — é por ele que a empresa aparece no seletor. */
+  name: string;
+  /** Desativação lógica; `false` tira a empresa do seletor de empresa ativa. */
+  active: boolean;
+  /** Conjunto FINAL de recursos — substitui o que havia, não acrescenta. Valor fora do conjunto fechado é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` em `features`. */
+  features: TenantWriteRequestFeaturesItem[];
+}
+
+export interface PagedResultOfTenantDto {
+  rows: TenantDto[];
+  total: number;
+}
+
+/**
+ * Proposto. UM vínculo de uma pessoa com uma empresa do grupo — a linha de `employee_company` vista pela tela de administração.
+ *
+ * Traz `tenantName` e `roleName` junto dos ids porque quem lê isto está olhando uma lista de empresas e precisa dos nomes; buscar cada um por id daria um pedido por linha para escrever o que o servidor já tinha em mãos.
+ */
+export interface EmployeeTenantLinkDto {
+  tenantId: string;
+  /** Nome fantasia da empresa, como em `TenantDto.name`. */
+  tenantName: string;
+  /**
+     * O papel NESTA empresa — `RoleDto.id`. `null` é vínculo herdado de antes de o papel existir, e a tela o mostra como pendente em vez de inventar um.
+     * @nullable
+     */
+  roleId?: string | null;
+  /**
+     * Nome do papel, para a tela não ter de casar id com a listagem de papéis.
+     * @nullable
+     */
+  roleName?: string | null;
+  /** Vínculo desativado: a pessoa não entra nesta empresa, e a linha continua visível para dizer que já entrou. */
+  active: boolean;
+}
+
+/**
  * Proposto. Uma PARCELA da condição — `Forma_Pagamento_Parcela` do legado, PK `(Fpg_codigo, Fpp_parcela)`. Não tem id: a identidade dela é o par condição + `number`, e é por isso que ela viaja embutida (ver `ListPaymentTerms`).
  */
 export interface PaymentTermInstallmentDto {
@@ -8441,6 +8547,20 @@ export type ListRolesParams = {
 q?: string;
 /**
  * Whitelist: `name`, `active`. Campo fora dela é 400.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+};
+
+export type ListTenantsParams = {
+/**
+ * Busca por código ou nome fantasia da empresa.
+ */
+q?: string;
+/**
+ * Whitelist: `code`, `name`, `active`. Campo fora dela é 400.
  */
 sortBy?: string;
 sortDesc?: boolean;

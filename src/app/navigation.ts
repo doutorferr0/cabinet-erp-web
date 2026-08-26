@@ -738,7 +738,15 @@ export const navSecoes: NavSecao[] = [
             title: 'Usuários e Empresas',
             url: '/config/usuarios',
             icon: Settings,
-            descricao: 'Quem entra, com qual papel — e a senha provisória do primeiro acesso.',
+            descricao:
+              'Quem entra, com qual papel, em quais empresas do grupo — e o timbre do impresso.',
+          },
+          {
+            title: 'Listas de apoio',
+            url: '/config/listas',
+            icon: Table2,
+            descricao:
+              'O que os combos oferecem: marca, setor, cargo, motivo. Renomear e aposentar item.',
           },
         ],
       },

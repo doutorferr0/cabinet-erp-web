@@ -3,7 +3,6 @@ import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Nome } from '@/components/cabinet/nome'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -15,25 +14,32 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  useAlterarVinculo,
-  useGerarSenhaProvisoria,
-  usePapeis,
-  useUsuariosDeAcesso,
-} from '@/data/acesso-api'
+import { useGerarSenhaProvisoria, usePapeis, useUsuariosDeAcesso } from '@/data/acesso-api'
+import { useEmpresasDaSessao } from '@/data/empresas-api'
+import { useEmpresasDoGrupo } from '@/data/empresas-do-grupo-api'
+import { useReadOnlyPorPapel } from '@/data/papeis'
+import { EmpresaFormDialog } from '@/features/acesso/empresa-form'
 import { NovoUsuarioDialog } from '@/features/acesso/novo-usuario'
 import { PapelFormDialog } from '@/features/acesso/papel-form'
 import { SenhaProvisoriaDialog } from '@/features/acesso/senha-provisoria'
+import { TimbreFormDialog } from '@/features/acesso/timbre-form'
+import { VinculosDoUsuarioDialog } from '@/features/acesso/vinculos-do-usuario'
 import { useState } from 'react'
 
 /**
  * USUÁRIOS E EMPRESAS — a tela que a navegação prometia como `futuro`.
  *
- * Quem entra (usuários), com qual acesso (papéis por caixas) e como entra pela
- * primeira vez (senha provisória de exibição única). Duas abas e não duas
- * telas: papel e usuário são as duas metades da mesma decisão — o papel é o
- * conjunto de caixas, o usuário é quem o carrega — e o admin alterna entre
- * elas na mesma tarefa ("criei o papel, agora crio quem o usa").
+ * Quem entra (usuários), com qual acesso (papéis por caixas), como entra pela
+ * primeira vez (senha provisória de exibição única) e ONDE entra (as empresas
+ * do grupo). Três abas e não três telas: papel, usuário e empresa são as três
+ * pontas da mesma decisão — o papel é o conjunto de caixas, o usuário é quem o
+ * carrega, a empresa é onde ele o carrega — e o admin alterna entre elas na
+ * mesma tarefa ("criei a filial, agora crio quem trabalha nela").
+ *
+ * **A aba Empresas fecha uma promessa que o título já fazia.** Esta tela se
+ * chamava "Usuários e Empresas" desde que nasceu, com duas abas e nenhuma delas
+ * de empresa: o grupo existia no seletor do rodapé e em lugar nenhum onde
+ * pudesse ser cadastrado ou corrigido.
  *
  * A listagem de usuários é a MESMA `GET /api/employees` do cadastro de RH:
  * usuário não é outra entidade, é o colaborador olhado pelo lado do acesso.
@@ -48,7 +54,21 @@ export function TelaDeAcesso() {
   const [novoAberto, setNovoAberto] = useState(false)
   const [senha, setSenha] = useState<{ nome: string; valor: string } | null>(null)
   const [papelEmEdicao, setPapelEmEdicao] = useState<{ id: string | null } | null>(null)
-  const [vinculoDe, setVinculoDe] = useState<{ id: string; nome: string } | null>(null)
+  const [vinculosDe, setVinculosDe] = useState<{ id: string; nome: string } | null>(null)
+  const [empresaEmEdicao, setEmpresaEmEdicao] = useState<{ id: string | null } | null>(null)
+  const [timbreAberto, setTimbreAberto] = useState(false)
+  const [buscaDeEmpresa, setBuscaDeEmpresa] = useState('')
+  const empresas = useEmpresasDoGrupo(buscaDeEmpresa)
+  const { ativa, trocar, trocando } = useEmpresasDaSessao()
+  /**
+   * Montar o grupo é `owner`, e a aba DIZ isso em vez de deixar o botão aceso.
+   *
+   * A LEITURA fica: quem administra acesso precisa ver em que empresas pôr as
+   * pessoas. O que o papel insuficiente tira é criar e alterar — e tirar aqui
+   * não é adivinhação: `/api/tenants` é caminho novo, e caminho de domínio sem
+   * linha na matriz do servidor cai em `owner`. Botão aceso levaria ao 403.
+   */
+  const empresaSomenteLeitura = useReadOnlyPorPapel('tenants').readOnly
 
   const gerar = useGerarSenhaProvisoria()
 
@@ -65,6 +85,7 @@ export function TelaDeAcesso() {
         <TabsList>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="papeis">Papéis</TabsTrigger>
+          <TabsTrigger value="empresas">Empresas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="usuarios" className="flex flex-col gap-3">
@@ -105,9 +126,9 @@ export function TelaDeAcesso() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setVinculoDe({ id: linha.id, nome: linha.name })}
+                      onClick={() => setVinculosDe({ id: linha.id, nome: linha.name })}
                     >
-                      Papel…
+                      Empresas e papel…
                     </Button>
                     <Button
                       type="button"
@@ -167,6 +188,108 @@ export function TelaDeAcesso() {
             </TableBody>
           </Table>
         </TabsContent>
+
+        <TabsContent value="empresas" className="flex flex-col gap-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex w-64 flex-col gap-1">
+              <Label htmlFor="empresa-busca">Buscar</Label>
+              <Input
+                id="empresa-busca"
+                value={buscaDeEmpresa}
+                onChange={(e) => setBuscaDeEmpresa(e.target.value)}
+              />
+            </div>
+            <Button
+              type="button"
+              isDisabled={empresaSomenteLeitura}
+              onClick={() => setEmpresaEmEdicao({ id: null })}
+            >
+              Nova empresa
+            </Button>
+          </div>
+
+          {empresaSomenteLeitura ? (
+            <p className="border-2 border-border p-2.5 text-muted-foreground text-sm leading-snug">
+              Seu papel nesta empresa vê o grupo, mas não o altera. Criar e alterar empresa é do
+              responsável pelo grupo.
+            </p>
+          ) : null}
+
+          {/* A lista é a das empresas que EXISTEM, não a das que o usuário
+              alcança: a empresa criada aqui nasce sem vínculo nenhum e não
+              apareceria no seletor do rodapé. Ver `empresas-do-grupo-api.ts`. */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-24">Código</TableHead>
+                <TableHead>Nome fantasia</TableHead>
+                <TableHead>CNPJ</TableHead>
+                <TableHead>Ativa</TableHead>
+                <TableHead className="w-44" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(empresas.data?.rows ?? []).map((empresa) => {
+                const eAtiva = empresa.id === ativa?.tenantId
+                return (
+                  <TableRow key={empresa.id}>
+                    <TableCell
+                      className="cursor-pointer font-mono"
+                      onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
+                    >
+                      {empresa.code}
+                    </TableCell>
+                    <TableCell
+                      className="cursor-pointer"
+                      onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
+                    >
+                      <Nome>{empresa.name}</Nome>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{empresa.cnpj ?? '—'}</TableCell>
+                    <TableCell>
+                      <CelulaAtivo ativo={empresa.active} />
+                    </TableCell>
+                    {/* O TIMBRE é singleton da empresa ATIVA — o id não viaja
+                        na rota, de propósito. Por isso só esta linha o oferece,
+                        e as outras oferecem o gesto que torna o botão possível
+                        em vez de um Timbre que gravaria na empresa errada. */}
+                    <TableCell>
+                      {eAtiva ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTimbreAberto(true)}
+                        >
+                          Timbre…
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          isDisabled={trocando}
+                          onClick={() => trocar(empresa.id)}
+                        >
+                          Ativar para o timbre
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+
+          {/* O teto de 100 do contrato DITO em voz alta. Cortar em silêncio
+              faria quem tem 120 empresas concluir que tem 100. */}
+          {(empresas.data?.total ?? 0) > (empresas.data?.rows.length ?? 0) ? (
+            <p className="text-muted-foreground text-sm">
+              Mostrando {empresas.data?.rows.length} de {empresas.data?.total} empresas — use a
+              busca para chegar às demais.
+            </p>
+          ) : null}
+        </TabsContent>
       </Tabs>
 
       <NovoUsuarioDialog
@@ -185,77 +308,18 @@ export function TelaDeAcesso() {
         senha={senha?.valor ?? ''}
         onFechar={() => setSenha(null)}
       />
-      <VinculoDialog vinculo={vinculoDe} onFechar={() => setVinculoDe(null)} />
+      <VinculosDoUsuarioDialog usuario={vinculosDe} onFechar={() => setVinculosDe(null)} />
+      <EmpresaFormDialog
+        aberto={empresaEmEdicao !== null}
+        empresaId={empresaEmEdicao?.id ?? null}
+        somenteLeitura={empresaSomenteLeitura}
+        onFechar={() => setEmpresaEmEdicao(null)}
+      />
+      <TimbreFormDialog
+        aberto={timbreAberto}
+        somenteLeitura={empresaSomenteLeitura}
+        onFechar={() => setTimbreAberto(false)}
+      />
     </div>
-  )
-}
-
-/**
- * DEFINIR O PAPEL de um usuário existente — `PUT` no vínculo, com `POST` de
- * criação quando ainda não há (a ordem e a razão estão em `useAlterarVinculo`).
- *
- * O diálogo não mostra o papel atual: a linha da listagem não o traz (decisão
- * do `EmployeeDto`) e buscá-lo por usuário seria o N+1 que aquele DTO evita.
- * O que o operador faz aqui é AFIRMAR o papel, não conferi-lo.
- */
-function VinculoDialog({
-  vinculo,
-  onFechar,
-}: {
-  vinculo: { id: string; nome: string } | null
-  onFechar: () => void
-}) {
-  const papeis = usePapeis()
-  const alterar = useAlterarVinculo()
-  const [roleId, setRoleId] = useState('')
-
-  const escolhiveis = (papeis.data?.rows ?? []).filter((p) => p.active)
-
-  function gravar() {
-    if (!vinculo || !roleId) return
-    alterar.mutate(
-      { id: vinculo.id, roleId },
-      {
-        onSuccess: () => {
-          setRoleId('')
-          onFechar()
-        },
-      },
-    )
-  }
-
-  return (
-    <Dialog isOpen={vinculo !== null} onOpenChange={(estado) => (estado ? undefined : onFechar())}>
-      <DialogHeader>
-        <DialogTitle>Papel de {vinculo?.nome ?? ''}</DialogTitle>
-      </DialogHeader>
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="vinculo-papel">Papel na empresa ativa</Label>
-          <select
-            id="vinculo-papel"
-            className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-          >
-            <option value="">Escolha o papel</option>
-            {escolhiveis.map((papel) => (
-              <option key={papel.id} value={papel.id}>
-                {papel.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <ErroDeGravacao erro={alterar.error} mensagem="Falha ao definir o papel." />
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onFechar}>
-          Cancelar
-        </Button>
-        <Button type="button" onClick={gravar} disabled={!roleId || alterar.isPending}>
-          Gravar
-        </Button>
-      </DialogFooter>
-    </Dialog>
   )
 }

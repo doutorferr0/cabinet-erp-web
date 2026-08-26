@@ -1,6 +1,7 @@
 import type {
   EmployeeDetailDto,
   EmployeeLinkRequest,
+  EmployeeTenantLinkDto,
   EmployeeWriteRequest,
   PermissionCatalogDto,
   RoleDetailDto,
@@ -9,6 +10,7 @@ import type {
 } from '@/api/gerado'
 import { http, HttpResponse } from 'msw'
 import { crm } from './crm'
+import { nomeDaEmpresa } from './empresas'
 import { verificarEscrita } from './permissao'
 import { TIPO, camposInvalidos, conflito, naoEncontrado, problemaJson, semSessao } from './problema'
 import { novoId, store } from './store'
@@ -304,13 +306,41 @@ let papeis: PapelGuardado[] = semear()
  * - **`roleId` é o único caminho do papel** (400 `papel-invalido` para papel
  *   inexistente ou inativo) e o vínculo repetido no `POST` é 409.
  */
+type VinculoGuardado = {
+  roleId: string | null
+  active: boolean
+}
+
 type UsuarioDeAcesso = {
   id: string
   name: string
   email: string | null
   active: boolean
-  /** Vínculo com a empresa ativa do mock; `null` = sem vínculo. */
-  roleId: string | null
+  /**
+   * Os vínculos POR EMPRESA — `tenantId` → papel naquela empresa. Sem entrada =
+   * não vinculado ali.
+   *
+   * Era um `roleId` só, e um só bastava enquanto a única leitura era a da
+   * empresa ativa. `GET /api/employees/{id}/links` publica a outra pergunta —
+   * "em quais empresas do grupo esta pessoa entra" —, e ela não tem resposta
+   * num campo que só sabe falar da empresa de agora: a mesma pessoa é
+   * Financeiro na Matriz e nada na Filial, e o campo único apagaria a segunda
+   * metade dessa frase toda vez que alguém trocasse de empresa no rodapé.
+   */
+  vinculos: Record<string, VinculoGuardado>
+}
+
+/**
+ * O vínculo da pessoa na empresa ATIVA — o recorte que `POST`/`PUT
+ * /api/employees/{id}/link` escrevem e que `EmployeeDetailDto` publica.
+ *
+ * Sem empresa ativa não há vínculo a mostrar, e `undefined` é a resposta certa:
+ * o contrário — devolver o primeiro vínculo que houver — faria a tela exibir o
+ * papel de uma empresa enquanto o rodapé diz outra.
+ */
+function vinculoAtivo(u: UsuarioDeAcesso): VinculoGuardado | undefined {
+  if (!store.activeTenantId) return undefined
+  return u.vinculos[store.activeTenantId]
 }
 
 let usuarios: UsuarioDeAcesso[] = []
@@ -380,7 +410,8 @@ function recusarCorpo(corpo: RoleWriteRequest, id: string | null) {
  * inventado: cargo, setor e datas são do cadastro de RH, outro trilho.
  */
 function detalheDeUsuario(u: UsuarioDeAcesso): EmployeeDetailDto {
-  const papel = u.roleId ? (papeis.find((p) => p.id === u.roleId) ?? null) : null
+  const vinculo = vinculoAtivo(u)
+  const papel = vinculo?.roleId ? (papeis.find((p) => p.id === vinculo.roleId) ?? null) : null
   return {
     id: u.id,
     name: u.name,
@@ -398,7 +429,7 @@ function detalheDeUsuario(u: UsuarioDeAcesso): EmployeeDetailDto {
     hiredAt: null,
     dismissedAt: null,
     customerFacing: null,
-    linkActive: u.roleId ? true : null,
+    linkActive: vinculo ? vinculo.active : null,
   }
 }
 
@@ -418,7 +449,7 @@ function acharUsuario(id: string): UsuarioDeAcesso | undefined {
     name: daSemente.name,
     email: null,
     active: daSemente.active,
-    roleId: null,
+    vinculos: {},
   }
   usuarios.push(novo)
   return novo
@@ -675,7 +706,11 @@ export const handlersDeAcesso = [
       name: corpo.name.trim(),
       email,
       active: corpo.active ?? true,
-      roleId: papelInicial?.id ?? null,
+      // O vínculo nasce na empresa ATIVA e só nela — criar pessoa numa empresa
+      // não a põe nas outras do grupo.
+      vinculos: store.activeTenantId
+        ? { [store.activeTenantId]: { roleId: papelInicial?.id ?? null, active: true } }
+        : {},
     }
     usuarios.push(novo)
     crm.colaboradores.push({
@@ -698,8 +733,9 @@ export const handlersDeAcesso = [
     const recusa = validarPapelDoVinculo(corpo)
     if (recusa) return recusa
     // POST cria; repetir é 409 (o contrato manda o PUT para substituir).
-    if (usuario.roleId) return conflito('Vínculo já existe — use o Alterar.')
-    usuario.roleId = corpo.roleId ?? null
+    if (!store.activeTenantId) return naoEncontrado('Sem empresa ativa para vincular.')
+    if (vinculoAtivo(usuario)) return conflito('Vínculo já existe — use o Alterar.')
+    usuario.vinculos[store.activeTenantId] = { roleId: corpo.roleId ?? null, active: true }
     return HttpResponse.json(detalheDeUsuario(usuario), { status: 201 })
   }),
 
@@ -710,12 +746,50 @@ export const handlersDeAcesso = [
     const usuario = acharUsuario(String(params.id))
     if (!usuario) return naoEncontrado('Colaborador não encontrado.')
     // PUT substitui o que existe; sem vínculo é 404, não criação disfarçada.
-    if (!usuario.roleId) return naoEncontrado('Este colaborador não tem vínculo aqui.')
+    const atual = vinculoAtivo(usuario)
+    if (!atual || !store.activeTenantId) {
+      return naoEncontrado('Este colaborador não tem vínculo aqui.')
+    }
     const corpo = (await request.json()) as EmployeeLinkRequest
     const recusa = validarPapelDoVinculo(corpo)
     if (recusa) return recusa
-    usuario.roleId = corpo.roleId ?? null
+    usuario.vinculos[store.activeTenantId] = {
+      roleId: corpo.roleId ?? null,
+      // PUT substitui o registro INTEIRO: `active` omitido não conserva o que
+      // havia, ele volta ao padrão do contrato.
+      active: corpo.active ?? true,
+    }
     return HttpResponse.json(detalheDeUsuario(usuario))
+  }),
+
+  http.get('*/api/employees/:id/links', ({ params }) => {
+    if (!store.logado) return semSessao()
+    const usuario = acharUsuario(String(params.id))
+    // 404 é da PESSOA, nunca da lista: quem não tem vínculo nenhum devolve
+    // `[]`, e é o estado de quem foi criado e ainda não entrou em empresa
+    // alguma. Confundir os dois faria a tela dizer "colaborador não existe"
+    // para alguém que ela acabou de listar.
+    if (!usuario) return naoEncontrado('Colaborador não encontrado.')
+    const linhas: EmployeeTenantLinkDto[] = Object.entries(usuario.vinculos)
+      // Vínculo apontando para empresa que não existe mais não vira linha sem
+      // nome: ele some. O contrato exige `tenantName`, e "—" seria dado
+      // inventado ocupando o lugar da ausência.
+      .flatMap(([tenantId, vinculo]) => {
+        const tenantName = nomeDaEmpresa(tenantId)
+        if (!tenantName) return []
+        const papel = vinculo.roleId ? papeis.find((p) => p.id === vinculo.roleId) : undefined
+        return [
+          {
+            tenantId,
+            tenantName,
+            roleId: vinculo.roleId,
+            roleName: papel?.name ?? null,
+            active: vinculo.active,
+          },
+        ]
+      })
+      .sort((a, b) => a.tenantName.localeCompare(b.tenantName))
+    return HttpResponse.json(linhas)
   }),
 
   http.post('*/api/employees/:id/reset-password', ({ params }) => {

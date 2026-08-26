@@ -142,6 +142,7 @@ describe('secoesVisiveis', () => {
     expect(config?.grupos.flatMap((g) => g.items).map((i) => i.title)).toEqual([
       'Mapeamento de Tabelas',
       'Usuários e Empresas',
+      'Listas de apoio',
     ])
   })
 

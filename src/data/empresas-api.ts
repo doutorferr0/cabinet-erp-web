@@ -14,7 +14,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
  * é a ativa") mostraria a empresa errada no dia em que o usuário trocar e voltar.
  */
 
-const CHAVE_VINCULOS = ['auth', 'tenants'] as const
+/**
+ * Exportada porque a administração do grupo precisa INVALIDÁ-LA: renomear uma
+ * empresa em `/api/tenants` muda o nome que este seletor mostra. Ver
+ * `empresas-do-grupo-api.ts`.
+ */
+export const CHAVE_VINCULOS = ['auth', 'tenants'] as const
 
 export interface EmpresasDaSessao {
   empresas: VinculoDeEmpresa[]

@@ -1,6 +1,6 @@
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -14,11 +14,47 @@ import { describe, expect, it } from 'vitest'
  * - **a senha provisória aparece no diálogo de exibição única** — o valor que
  *   o servidor devolve UMA vez chega inteiro ao operador;
  * - **o papel se monta por CAIXAS do catálogo** e grava o conjunto FINAL em
- *   `permissions` — desmarcar tem efeito, marcar fora do catálogo não existe.
+ *   `permissions` — desmarcar tem efeito, marcar fora do catálogo não existe;
+ * - **a aba Empresas lista o GRUPO**, não os vínculos do usuário — a empresa em
+ *   que ninguém entra aparece do mesmo jeito;
+ * - **a empresa e o TIMBRE são dois formulários e duas rotas** — o cadastro não
+ *   manda razão social, e o timbre é da empresa ATIVA, sem id no caminho;
+ * - **o diálogo de vínculos** só oferece escrita na empresa ativa: as outras
+ *   linhas trazem "Ativar e editar", nunca um Gravar que o servidor recusaria.
  */
 
 const PAPEL_ID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
 const USUARIO_ID = 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e'
+/** O mesmo id que `respostaVinculos` devolve — é a empresa ATIVA do teste. */
+const EMPRESA_ATIVA = '00000000-0000-0000-0000-000000000003'
+const EMPRESA_OUTRA = '00000000-0000-0000-0000-000000000004'
+
+const EMPRESA_DETALHE = {
+  id: EMPRESA_ATIVA,
+  code: '01',
+  name: 'VERTZ ILUMINAÇÃO',
+  cnpj: '12345678000199',
+  active: true,
+  features: ['suppliers', 'professionals', 'employees'],
+}
+
+const TIMBRE = {
+  name: 'VERTZ ILUMINAÇÃO',
+  cnpj: '12345678000199',
+  legalName: 'Vertz Comércio de Iluminação Ltda.',
+  stateRegistration: '110042490114',
+  address: {
+    zipCode: '01310-100',
+    street: 'Avenida Paulista',
+    number: '1000',
+    complement: null,
+    district: 'Bela Vista',
+    city: 'São Paulo',
+    state: 'SP',
+  },
+  phone: '1132001000',
+  email: 'contato@vertz.com.br',
+}
 
 const CATALOGO = {
   version: 'teste-1',
@@ -91,6 +127,10 @@ function servidor() {
         return json({ temporaryPassword: 'xK7mPq2wRt9v' })
       }
       if (caminho === '/api/roles') return json({ ...PAPEL, permissions: ['orcamento:ver'] }, 201)
+      if (caminho === '/api/tenants') return json(EMPRESA_DETALHE, 201)
+      if (caminho === `/api/tenants/${EMPRESA_ATIVA}`) return json(EMPRESA_DETALHE)
+      if (caminho === '/api/company-letterhead') return json(TIMBRE)
+      if (caminho === '/auth/active-tenant') return new Response(null, { status: 204 })
       throw new Error(`escrita sem stub no teste: ${caminho}`)
     }
 
@@ -106,6 +146,41 @@ function servidor() {
     if (caminho === '/api/permissions') return json(CATALOGO)
     if (caminho === `/api/roles/${PAPEL_ID}`) {
       return json({ ...PAPEL, permissions: ['orcamento:ver'] })
+    }
+    if (caminho === '/api/tenants') {
+      return json({
+        rows: [
+          {
+            id: EMPRESA_ATIVA,
+            code: '01',
+            name: 'VERTZ ILUMINAÇÃO',
+            cnpj: '12345678000199',
+            active: true,
+          },
+          { id: EMPRESA_OUTRA, code: '02', name: 'VERTZ FILIAL', cnpj: null, active: true },
+        ],
+        total: 2,
+      })
+    }
+    if (caminho === `/api/tenants/${EMPRESA_ATIVA}`) return json(EMPRESA_DETALHE)
+    if (caminho === '/api/company-letterhead') return json(TIMBRE)
+    if (caminho === `/api/employees/${USUARIO_ID}/links`) {
+      return json([
+        {
+          tenantId: EMPRESA_ATIVA,
+          tenantName: 'VERTZ ILUMINAÇÃO',
+          roleId: PAPEL_ID,
+          roleName: 'Vendedor',
+          active: true,
+        },
+        {
+          tenantId: EMPRESA_OUTRA,
+          tenantName: 'VERTZ FILIAL',
+          roleId: null,
+          roleName: null,
+          active: false,
+        },
+      ])
     }
     throw new Error(`fetch sem stub no teste: ${url}`)
   }
@@ -164,6 +239,107 @@ describe('tela de acesso', () => {
       permissions: ['orcamento:ver'],
       active: true,
     })
+  })
+
+  it('a aba Empresas lista o GRUPO — inclusive a empresa em que o usuário não entra', async () => {
+    const { stub } = servidor()
+    const { user } = renderRoute('/config/usuarios', stub)
+
+    await user.click(await screen.findByRole('tab', { name: 'Empresas' }))
+    // Escopo na TABELA, não na tela: o nome da empresa ativa aparece também no
+    // seletor do rodapé, e um `findByText` solto casaria o rodapé e passaria
+    // sem a aba ter listado nada.
+    const tabela = within(await screen.findByRole('table'))
+    // `respostaVinculos` declara UMA empresa; a aba mostra as DUAS, porque
+    // `/api/tenants` é "quais existem" e não "onde eu entro".
+    expect(await tabela.findByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
+    expect(tabela.getByText('VERTZ FILIAL')).toBeInTheDocument()
+  })
+
+  it('o cadastro da empresa NÃO manda o timbre — são duas rotas', async () => {
+    const { stub, escritas } = servidor()
+    const { user } = renderRoute('/config/usuarios', stub)
+
+    await user.click(await screen.findByRole('tab', { name: 'Empresas' }))
+    // Pelo CÓDIGO, que é único na página — o nome se repete no rodapé.
+    await user.click(await screen.findByText('01'))
+
+    const nome = await screen.findByLabelText('Nome fantasia')
+    await waitFor(() => expect(nome).toHaveValue('VERTZ ILUMINAÇÃO'))
+    await user.clear(nome)
+    await user.type(nome, 'VERTZ MATRIZ')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    await waitFor(() => expect(escritas).toHaveLength(1))
+    expect(escritas[0]).toMatchObject({ metodo: 'PUT', caminho: `/api/tenants/${EMPRESA_ATIVA}` })
+    // A IDENTIDADE, e só ela: razão social e endereço são do singleton do
+    // timbre, cuja rota não aceita id — publicá-los aqui abriria por baixo a
+    // porta que ela fecha (`tenants` não tem RLS).
+    expect(escritas[0]?.corpo).toEqual({
+      code: '01',
+      name: 'VERTZ MATRIZ',
+      active: true,
+      features: ['suppliers', 'professionals', 'employees'],
+    })
+  })
+
+  it('o TIMBRE é da empresa ATIVA, e o PUT leva os campos todos', async () => {
+    const { stub, escritas } = servidor()
+    const { user } = renderRoute('/config/usuarios', stub)
+
+    await user.click(await screen.findByRole('tab', { name: 'Empresas' }))
+    // Só a linha da empresa ATIVA oferece o timbre; a outra oferece o gesto que
+    // torna o botão possível. Medido ANTES de abrir: o diálogo é modal e tira a
+    // tabela da árvore de acessibilidade.
+    const abrir = await screen.findByRole('button', { name: 'Timbre…' })
+    expect(screen.getAllByRole('button', { name: 'Ativar para o timbre' })).toHaveLength(1)
+    await user.click(abrir)
+
+    const cidade = await screen.findByLabelText('Cidade')
+    await waitFor(() => expect(cidade).toHaveValue('São Paulo'))
+    await user.clear(cidade)
+    await user.type(cidade, 'Santos')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    await waitFor(() => expect(escritas).toHaveLength(1))
+    expect(escritas[0]).toMatchObject({ metodo: 'PUT', caminho: '/api/company-letterhead' })
+    // `PUT` de singleton: campo ausente é 400 e campo `null` apaga — por isso o
+    // corpo leva TODOS, e não só a cidade que mudou.
+    expect(escritas[0]?.corpo).toEqual({
+      cnpj: '12345678000199',
+      legalName: 'Vertz Comércio de Iluminação Ltda.',
+      stateRegistration: '110042490114',
+      address: {
+        zipCode: '01310-100',
+        street: 'Avenida Paulista',
+        number: '1000',
+        complement: null,
+        district: 'Bela Vista',
+        city: 'Santos',
+        state: 'SP',
+      },
+      phone: '1132001000',
+      email: 'contato@vertz.com.br',
+    })
+  })
+
+  it('o diálogo de vínculos lista o grupo e só oferece escrita na empresa ATIVA', async () => {
+    const { stub } = servidor()
+    const { user } = renderRoute('/config/usuarios', stub)
+
+    await user.click(await screen.findByRole('button', { name: 'Empresas e papel…' }))
+
+    const dialogo = within(await screen.findByRole('dialog'))
+    // E dentro dele, na TABELA: "Vendedor" é também `<option>` do combo de
+    // papel logo abaixo — a asserção no diálogo inteiro passaria com a lista de
+    // vínculos vazia.
+    const vinculos = within(await dialogo.findByRole('table'))
+    // As duas empresas, com o papel de cada uma. `null` sai como ausência
+    // declarada, não como um papel plausível.
+    expect(await vinculos.findByText('Vendedor')).toBeInTheDocument()
+    expect(vinculos.getByText('— sem papel')).toBeInTheDocument()
+    // Uma linha só oferece a troca: a da empresa que NÃO está ativa.
+    expect(dialogo.getAllByRole('button', { name: 'Ativar e editar' })).toHaveLength(1)
   })
 
   it('Gerar senha na linha mostra o diálogo de exibição única', async () => {

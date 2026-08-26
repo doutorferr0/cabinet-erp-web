@@ -51,6 +51,7 @@ import type {
   DeliveryDetailDto,
   EmployeeDetailDto,
   EmployeeLinkRequest,
+  EmployeeTenantLinkDto,
   EmployeeWriteRequest,
   FinancialSettlementDto,
   FinancialTitleDto,
@@ -122,6 +123,7 @@ import type {
   ListSupportGrantsParams,
   ListTasksParams,
   ListTechnicalReservesParams,
+  ListTenantsParams,
   ListWorksParams,
   LoginOk,
   LoginRequest,
@@ -172,6 +174,7 @@ import type {
   PagedResultOfSupportAuditEntryDto,
   PagedResultOfSupportGrantDto,
   PagedResultOfTechnicalReserveDto,
+  PagedResultOfTenantDto,
   PagedResultOfWorkDto,
   PartnerContactDto,
   PartnerContactWriteRequest,
@@ -236,6 +239,8 @@ import type {
   TechnicalReserveDto,
   TechnicalReserveWriteRequest,
   TemporaryPasswordDto,
+  TenantDetailDto,
+  TenantWriteRequest,
   TodoDto,
   TodoPatchRequest,
   TransferProfessionalRequest,
@@ -5010,6 +5015,263 @@ export const updateRole = async (id: string,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(roleWriteRequest)
+  }
+);}
+
+
+
+export type listTenantsResponse200 = {
+  data: PagedResultOfTenantDto
+  status: 200
+}
+
+export type listTenantsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listTenantsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listTenantsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listTenantsResponseSuccess = (listTenantsResponse200) & {
+  headers: Headers;
+};
+export type listTenantsResponseError = (listTenantsResponse400 | listTenantsResponse401 | listTenantsResponse403) & {
+  headers: Headers;
+};
+
+export type listTenantsResponse = (listTenantsResponseSuccess | listTenantsResponseError)
+
+export const getListTenantsUrl = (params?: ListTenantsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tenants?${stringifiedParams}` : `/api/tenants`
+}
+
+/**
+ * Proposto. As EMPRESAS do grupo — a organização inteira, não só aquelas em que quem pede tem vínculo.
+ *
+ * É o par de `GET /auth/tenants` visto do outro lado: lá a lista é "onde EU entro" e serve o seletor de empresa ativa; aqui é "quais empresas existem" e serve quem administra o grupo. Confundir as duas faria a empresa recém-criada — em que ninguém ainda tem vínculo — desaparecer da tela que a criou.
+ *
+ * O recorte é a ORGANIZAÇÃO, como em `/api/roles` e `/api/employees`. Não há 409 por empresa ativa: administrar o grupo é anterior a estar dentro de uma das empresas dele, e exigir empresa ativa aqui trancaria para fora exatamente quem precisa criar a primeira.
+ *
+ * `sortBy` aceita `code`, `name` e `active`. `q` busca por `code` e `name`.
+ */
+export const listTenants = async (params?: ListTenantsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listTenantsResponse> => {
+
+  return apiFetch<listTenantsResponse>(getListTenantsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createTenantResponse201 = {
+  data: TenantDetailDto
+  status: 201
+}
+
+export type createTenantResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createTenantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createTenantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createTenantResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createTenantResponseSuccess = (createTenantResponse201) & {
+  headers: Headers;
+};
+export type createTenantResponseError = (createTenantResponse400 | createTenantResponse401 | createTenantResponse403 | createTenantResponse409) & {
+  headers: Headers;
+};
+
+export type createTenantResponse = (createTenantResponseSuccess | createTenantResponseError)
+
+export const getCreateTenantUrl = () => {
+
+
+
+
+  return `/api/tenants`
+}
+
+/**
+ * Proposto. Cria uma empresa na organização de quem pede. `organizationId` NÃO entra no corpo: ele sai da sessão, e uma empresa que declarasse a própria organização seria o caminho para plantar linha no grupo de outro.
+ *
+ * `code` repetido é 409 `about:blank` — a tela não tem saída própria a oferecer, quem criou corrige o código ali mesmo. **O código é único no sistema, não só na organização**, porque é ele que aparece no documento e em conversa ("a 01 faturou") e dois significados para o mesmo número é o que uma chave humana não pode ter.
+ *
+ * **A empresa nasce SEM TIMBRE, e sem CNPJ.** Quem grava os dois é `PUT /api/company-letterhead`, depois de a empresa nova estar ATIVA — ver a nota de `TenantWriteRequest`.
+ *
+ * A empresa nasce **sem vínculo nenhum**, inclusive o de quem a criou. É deliberado e é o que separa criar de entrar: quem administra o grupo nem sempre opera dentro dele, e vincular sozinho faria toda empresa nova aparecer no seletor de quem só queria cadastrá-la. O vínculo entra por `/api/employees/{id}/link`, com a empresa nova ATIVA.
+ */
+export const createTenant = async (tenantWriteRequest: TenantWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createTenantResponse> => {
+
+  return apiFetch<createTenantResponse>(getCreateTenantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tenantWriteRequest)
+  }
+);}
+
+
+
+export type getTenantResponse200 = {
+  data: TenantDetailDto
+  status: 200
+}
+
+export type getTenantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getTenantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getTenantResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getTenantResponseSuccess = (getTenantResponse200) & {
+  headers: Headers;
+};
+export type getTenantResponseError = (getTenantResponse401 | getTenantResponse403 | getTenantResponse404) & {
+  headers: Headers;
+};
+
+export type getTenantResponse = (getTenantResponseSuccess | getTenantResponseError)
+
+export const getGetTenantUrl = (id: string,) => {
+
+
+
+
+  return `/api/tenants/${id}`
+}
+
+/**
+ * Proposto. A empresa com os RECURSOS contratados — o corpo que abre o formulário de alteração.
+ *
+ * **O TIMBRE não está aqui**, e a ausência é a decisão: quem o publica é `GET /api/company-letterhead`, singleton da empresa ATIVA. Razão social, Inscrição Estadual, endereço, fone e e-mail moram nas mesmas colunas de `tenants`, e publicá-las nos dois lugares deixaria duas rotas gravando o mesmo cabeçalho — com a diferença de que esta aceita um `id` do cliente, que é exatamente o que aquela recusa: `tenants` é tabela GLOBAL, sem política de RLS nenhuma, então quem recorta é a borda ao escolher o id.
+ */
+export const getTenant = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getTenantResponse> => {
+
+  return apiFetch<getTenantResponse>(getGetTenantUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateTenantResponse200 = {
+  data: TenantDetailDto
+  status: 200
+}
+
+export type updateTenantResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateTenantResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateTenantResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateTenantResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateTenantResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateTenantResponseSuccess = (updateTenantResponse200) & {
+  headers: Headers;
+};
+export type updateTenantResponseError = (updateTenantResponse400 | updateTenantResponse401 | updateTenantResponse403 | updateTenantResponse404 | updateTenantResponse409) & {
+  headers: Headers;
+};
+
+export type updateTenantResponse = (updateTenantResponseSuccess | updateTenantResponseError)
+
+export const getUpdateTenantUrl = (id: string,) => {
+
+
+
+
+  return `/api/tenants/${id}`
+}
+
+/**
+ * Proposto. Substitui a empresa INTEIRA — campo omitido vira `null`, como em todo PUT deste contrato. `features` que vier é o conjunto FINAL: tirar um recurso precisa ter efeito, e corpo que só soma nunca desliga nada.
+ *
+ * **O timbre não se altera por aqui** — ver `GetTenant`. Esta operação mexe na IDENTIDADE da empresa (código, nome fantasia, o que ela opera, se está ativa); o cabeçalho do impresso é `PUT /api/company-letterhead`.
+ *
+ * **Mexer em `features` muda o que a empresa VÊ.** Elas comandam a navegação (`VinculoDeEmpresa.features`), então desligar `suppliers` some com a tela de Fornecedores para todo mundo daquela empresa no próximo carregamento. Não é destrutivo — nenhum dado é apagado e religar traz tudo de volta —, mas é a única alteração desta tela cujo efeito aparece na barra lateral de outra pessoa.
+ *
+ * **Não há `DELETE`.** Vale o padrão de cadastro: desativação lógica por `active: false`. Empresa apagada deixaria orçamento, pedido e estoque apontando para o nada, e o recorte por empresa é a garantia de isolamento inteira deste sistema — a linha que o define não pode sumir. Empresa inativa sai do seletor de empresa ativa e continua legível em tudo o que já gravou.
+ *
+ * `code` repetido é 409.
+ */
+export const updateTenant = async (id: string,
+    tenantWriteRequest: TenantWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateTenantResponse> => {
+
+  return apiFetch<updateTenantResponse>(getUpdateTenantUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tenantWriteRequest)
   }
 );}
 
@@ -12006,6 +12268,65 @@ export const getListPaymentModesUrl = (params?: ListPaymentModesParams,) => {
 export const listPaymentModes = async (params?: ListPaymentModesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPaymentModesResponse> => {
 
   return apiFetch<listPaymentModesResponse>(getListPaymentModesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listEmployeeLinksResponse200 = {
+  data: EmployeeTenantLinkDto[]
+  status: 200
+}
+
+export type listEmployeeLinksResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listEmployeeLinksResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listEmployeeLinksResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type listEmployeeLinksResponseSuccess = (listEmployeeLinksResponse200) & {
+  headers: Headers;
+};
+export type listEmployeeLinksResponseError = (listEmployeeLinksResponse401 | listEmployeeLinksResponse403 | listEmployeeLinksResponse404) & {
+  headers: Headers;
+};
+
+export type listEmployeeLinksResponse = (listEmployeeLinksResponseSuccess | listEmployeeLinksResponseError)
+
+export const getListEmployeeLinksUrl = (id: string,) => {
+
+
+
+
+  return `/api/employees/${id}/links`
+}
+
+/**
+ * Proposto. Os vínculos desta pessoa em TODAS as empresas do grupo — o que `POST`/`PUT /api/employees/{id}/link` escrevem uma empresa por vez.
+ *
+ * É a mesma consulta de `GET /auth/tenants`, apontada para outra pessoa: quem administra o grupo precisa ver "em quais empresas o João entra, e como" sem trocar de empresa ativa cinco vezes para descobrir.
+ *
+ * **Ler é do grupo, escrever continua sendo da empresa.** Este caminho atravessa as empresas porque o recorte dele é a ORGANIZAÇÃO, como em `/api/roles` e `/api/employees`. A ESCRITA não atravessa, e é decisão, não esquecimento: o vínculo é a linha que diz o que a pessoa pode fazer NAQUELA empresa, e gravá-lo de fora dela seria decidir o poder de uma empresa a partir da autorização obtida noutra. Quem quer mudar o vínculo da empresa B ativa a empresa B (`PUT /auth/active-tenant`) e usa `/link` — a tela oferece o gesto na própria linha.
+ *
+ * Devolve `[]` para pessoa sem vínculo nenhum, que é o estado de quem foi criado e ainda não entrou em empresa alguma. `404` é reservado para a PESSOA que não existe: lista vazia e pessoa inexistente são coisas diferentes e a tela reage diferente às duas.
+ */
+export const listEmployeeLinks = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<listEmployeeLinksResponse> => {
+
+  return apiFetch<listEmployeeLinksResponse>(getListEmployeeLinksUrl(id),
   {
     ...options,
     method: 'GET'

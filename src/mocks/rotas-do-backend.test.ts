@@ -523,12 +523,13 @@ describe('passthrough por rota', () => {
     expect(linhas.join('\n')).not.toContain('/api/purchase-orders')
   })
 
-  it('as SEM CONTRATO são a tesouraria, o ciclo da credencial e o suporte', () => {
+  it('as SEM CONTRATO são a tesouraria, o ciclo, o suporte e a administração do grupo', () => {
     // Este caso já cobrou o VAZIO (medido em 24/08 contra `5b2d560`, cópias
-    // byte a byte), depois a rota única da senha inicial, e agora cobra VINTE E
-    // CINCO: os quinze caminhos de tesouraria da FASE A do G7, as cinco do
-    // ciclo da credencial e as cinco do suporte-da-plataforma entram pelo mesmo
-    // mecanismo, e não por um afrouxamento. Todas publicadas NESTE repo, que é
+    // byte a byte), depois a rota única da senha inicial, e agora cobra TRINTA E
+    // UMA: os quinze caminhos de tesouraria da FASE A do G7, as cinco do ciclo
+    // da credencial, as cinco do suporte-da-plataforma, o reagendamento do
+    // planner e as cinco da administração do grupo entram pelo mesmo mecanismo,
+    // e não por um afrouxamento. Todas publicadas NESTE repo, que é
     // o dono do contrato, então a cópia do api fica atrás por definição até o
     // `sync:contract` de lá; `sem-contrato` é o estado correto e o console DEVE
     // avisar.
@@ -573,9 +574,14 @@ describe('passthrough por rota', () => {
       'post /api/platform/support-grants/{id}/revoke',
       'get /api/platform/support-grants/{id}/audit',
       'patch /api/projects/{projectId}/plan/items/{itemId}',
+      'get /api/employees/{id}/links',
+      'get /api/tenants',
+      'post /api/tenants',
+      'get /api/tenants/{id}',
+      'put /api/tenants/{id}',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 26.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(27)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 31.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(32)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

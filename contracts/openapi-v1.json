@@ -5193,6 +5193,255 @@
         }
       }
     },
+    "/api/tenants": {
+      "get": {
+        "tags": ["acesso"],
+        "operationId": "ListTenants",
+        "description": "Proposto. As EMPRESAS do grupo — a organização inteira, não só aquelas em que quem pede tem vínculo.\n\nÉ o par de `GET /auth/tenants` visto do outro lado: lá a lista é \"onde EU entro\" e serve o seletor de empresa ativa; aqui é \"quais empresas existem\" e serve quem administra o grupo. Confundir as duas faria a empresa recém-criada — em que ninguém ainda tem vínculo — desaparecer da tela que a criou.\n\nO recorte é a ORGANIZAÇÃO, como em `/api/roles` e `/api/employees`. Não há 409 por empresa ativa: administrar o grupo é anterior a estar dentro de uma das empresas dele, e exigir empresa ativa aqui trancaria para fora exatamente quem precisa criar a primeira.\n\n`sortBy` aceita `code`, `name` e `active`. `q` busca por `code` e `name`.",
+        "parameters": [
+          {
+            "name": "q",
+            "description": "Busca por código ou nome fantasia da empresa.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `code`, `name`, `active`. Campo fora dela é 400.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfTenantDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["acesso"],
+        "operationId": "CreateTenant",
+        "description": "Proposto. Cria uma empresa na organização de quem pede. `organizationId` NÃO entra no corpo: ele sai da sessão, e uma empresa que declarasse a própria organização seria o caminho para plantar linha no grupo de outro.\n\n`code` repetido é 409 `about:blank` — a tela não tem saída própria a oferecer, quem criou corrige o código ali mesmo. **O código é único no sistema, não só na organização**, porque é ele que aparece no documento e em conversa (\"a 01 faturou\") e dois significados para o mesmo número é o que uma chave humana não pode ter.\n\n**A empresa nasce SEM TIMBRE, e sem CNPJ.** Quem grava os dois é `PUT /api/company-letterhead`, depois de a empresa nova estar ATIVA — ver a nota de `TenantWriteRequest`.\n\nA empresa nasce **sem vínculo nenhum**, inclusive o de quem a criou. É deliberado e é o que separa criar de entrar: quem administra o grupo nem sempre opera dentro dele, e vincular sozinho faria toda empresa nova aparecer no seletor de quem só queria cadastrá-la. O vínculo entra por `/api/employees/{id}/link`, com a empresa nova ATIVA.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{id}": {
+      "get": {
+        "tags": ["acesso"],
+        "operationId": "GetTenant",
+        "description": "Proposto. A empresa com os RECURSOS contratados — o corpo que abre o formulário de alteração.\n\n**O TIMBRE não está aqui**, e a ausência é a decisão: quem o publica é `GET /api/company-letterhead`, singleton da empresa ATIVA. Razão social, Inscrição Estadual, endereço, fone e e-mail moram nas mesmas colunas de `tenants`, e publicá-las nos dois lugares deixaria duas rotas gravando o mesmo cabeçalho — com a diferença de que esta aceita um `id` do cliente, que é exatamente o que aquela recusa: `tenants` é tabela GLOBAL, sem política de RLS nenhuma, então quem recorta é a borda ao escolher o id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["acesso"],
+        "operationId": "UpdateTenant",
+        "description": "Proposto. Substitui a empresa INTEIRA — campo omitido vira `null`, como em todo PUT deste contrato. `features` que vier é o conjunto FINAL: tirar um recurso precisa ter efeito, e corpo que só soma nunca desliga nada.\n\n**O timbre não se altera por aqui** — ver `GetTenant`. Esta operação mexe na IDENTIDADE da empresa (código, nome fantasia, o que ela opera, se está ativa); o cabeçalho do impresso é `PUT /api/company-letterhead`.\n\n**Mexer em `features` muda o que a empresa VÊ.** Elas comandam a navegação (`VinculoDeEmpresa.features`), então desligar `suppliers` some com a tela de Fornecedores para todo mundo daquela empresa no próximo carregamento. Não é destrutivo — nenhum dado é apagado e religar traz tudo de volta —, mas é a única alteração desta tela cujo efeito aparece na barra lateral de outra pessoa.\n\n**Não há `DELETE`.** Vale o padrão de cadastro: desativação lógica por `active: false`. Empresa apagada deixaria orçamento, pedido e estoque apontando para o nada, e o recorte por empresa é a garantia de isolamento inteira deste sistema — a linha que o define não pode sumir. Empresa inativa sai do seletor de empresa ativa e continua legível em tudo o que já gravou.\n\n`code` repetido é 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/platform/support-grants": {
       "get": {
         "tags": ["suporte"],
@@ -13265,6 +13514,55 @@
         }
       }
     },
+    "/api/employees/{id}/links": {
+      "get": {
+        "tags": ["acesso"],
+        "operationId": "ListEmployeeLinks",
+        "description": "Proposto. Os vínculos desta pessoa em TODAS as empresas do grupo — o que `POST`/`PUT /api/employees/{id}/link` escrevem uma empresa por vez.\n\nÉ a mesma consulta de `GET /auth/tenants`, apontada para outra pessoa: quem administra o grupo precisa ver \"em quais empresas o João entra, e como\" sem trocar de empresa ativa cinco vezes para descobrir.\n\n**Ler é do grupo, escrever continua sendo da empresa.** Este caminho atravessa as empresas porque o recorte dele é a ORGANIZAÇÃO, como em `/api/roles` e `/api/employees`. A ESCRITA não atravessa, e é decisão, não esquecimento: o vínculo é a linha que diz o que a pessoa pode fazer NAQUELA empresa, e gravá-lo de fora dela seria decidir o poder de uma empresa a partir da autorização obtida noutra. Quem quer mudar o vínculo da empresa B ativa a empresa B (`PUT /auth/active-tenant`) e usa `/link` — a tela oferece o gesto na própria linha.\n\nDevolve `[]` para pessoa sem vínculo nenhum, que é o estado de quem foi criado e ainda não entrou em empresa alguma. `404` é reservado para a PESSOA que não existe: lista vazia e pessoa inexistente são coisas diferentes e a tela reage diferente às duas.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeTenantLinkDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/employees/{id}/reset-password": {
       "post": {
         "tags": ["cadastros"],
@@ -19006,6 +19304,141 @@
           "total": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "TenantDto": {
+        "description": "Proposto. A LINHA da listagem de empresas — o que a tabela desenha, sem o timbre.",
+        "required": ["id", "code", "name", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "description": "O código humano da empresa (`01`, `02`), único no sistema. É o que aparece no documento e em conversa; por isso é ele, e não o uuid, que a listagem mostra e ordena.",
+            "type": "string"
+          },
+          "name": {
+            "description": "O nome FANTASIA — `empresa.EMPRESA` do legado. Não é a razão social: quem imprime é `legalName`, e sobrescrever um com o outro apagaria o que distingue os dois.",
+            "type": "string"
+          },
+          "cnpj": {
+            "description": "Sem máscara, 14 posições, alfanumérico (regra da Receita desde 31/07/2026). `null` na empresa que ainda não tem inscrição.\n\n**Só de leitura por aqui**: quem grava o CNPJ é `PUT /api/company-letterhead`, junto com o resto do timbre. Ele aparece na linha porque é como se confere de qual empresa se está falando — ler não é autoridade.",
+            "readOnly": true,
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Desativação lógica: empresa aposentada sai do seletor de empresa ativa e continua legível em tudo o que já gravou. É o que substitui o `DELETE` que este recurso não publica.",
+            "type": "boolean"
+          }
+        }
+      },
+      "TenantDetailDto": {
+        "description": "Proposto. A empresa com os RECURSOS contratados — o corpo que abre o formulário de alteração.\n\n**Sem o TIMBRE**, e a ausência é deliberada: razão social, Inscrição Estadual, endereço, fone e e-mail são de `CompanyLetterheadDto`, singleton da empresa ATIVA. As colunas são as mesmas em `tenants`, e publicá-las nos dois lugares deixaria duas rotas gravando o mesmo cabeçalho — esta com um `id` vindo do cliente, que é justamente o que a outra recusa por `tenants` não ter política de RLS.",
+        "required": ["id", "code", "name", "active", "features"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "description": "Código humano, único no sistema.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nome fantasia — o rótulo que o seletor de empresa e a barra imprimem. NÃO é a razão social: quem imprime no cabeçalho é `CompanyLetterheadDto.legalName`, e sobrescrever um com o outro apagaria o que distingue os dois.",
+            "type": "string"
+          },
+          "cnpj": {
+            "description": "Sem máscara, 14 posições, alfanumérico. **Só de leitura** — quem o grava é `PUT /api/company-letterhead`.",
+            "readOnly": true,
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Desativação lógica.",
+            "type": "boolean"
+          },
+          "features": {
+            "description": "Recursos CONTRATADOS pela empresa — o que ela opera, não o que o usuário pode fazer nela (isso é o papel do vínculo). Mesmo conjunto fechado de `VinculoDeEmpresa.features`, e é ele que comanda a navegação. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["suppliers", "professionals", "employees"]
+            }
+          }
+        }
+      },
+      "TenantWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração da empresa — a IDENTIDADE dela, não o timbre.\n\n`id` e `organizationId` ficam de fora porque a identidade e o grupo são do servidor: empresa que declarasse a própria organização seria linha plantada no grupo de outro.\n\n**`cnpj`, razão social, Inscrição Estadual, endereço, fone e e-mail também ficam de fora, e é o ponto.** Eles são o timbre, e o timbre tem dono: `PUT /api/company-letterhead`, que grava o da empresa ATIVA e não aceita id do cliente — `tenants` não tem RLS, então um `id` no caminho de escrita de timbre seria o cliente escolhendo de quem grava. A empresa nova nasce sem cabeçalho e o ganha quando alguém a ativa, que é o mesmo caminho pelo qual ela ganha vínculo.",
+        "required": ["code", "name", "active", "features"],
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Único no sistema; repetido é 409. Até 20 caracteres.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nome fantasia. Obrigatório — é por ele que a empresa aparece no seletor.",
+            "type": "string"
+          },
+          "active": {
+            "description": "Desativação lógica; `false` tira a empresa do seletor de empresa ativa.",
+            "type": "boolean"
+          },
+          "features": {
+            "description": "Conjunto FINAL de recursos — substitui o que havia, não acrescenta. Valor fora do conjunto fechado é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` em `features`.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["suppliers", "professionals", "employees"]
+            }
+          }
+        }
+      },
+      "PagedResultOfTenantDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EmployeeTenantLinkDto": {
+        "description": "Proposto. UM vínculo de uma pessoa com uma empresa do grupo — a linha de `employee_company` vista pela tela de administração.\n\nTraz `tenantName` e `roleName` junto dos ids porque quem lê isto está olhando uma lista de empresas e precisa dos nomes; buscar cada um por id daria um pedido por linha para escrever o que o servidor já tinha em mãos.",
+        "required": ["tenantId", "tenantName", "active"],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantName": {
+            "description": "Nome fantasia da empresa, como em `TenantDto.name`.",
+            "type": "string"
+          },
+          "roleId": {
+            "description": "O papel NESTA empresa — `RoleDto.id`. `null` é vínculo herdado de antes de o papel existir, e a tela o mostra como pendente em vez de inventar um.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "roleName": {
+            "description": "Nome do papel, para a tela não ter de casar id com a listagem de papéis.",
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Vínculo desativado: a pessoa não entra nesta empresa, e a linha continua visível para dizer que já entrou.",
+            "type": "boolean"
           }
         }
       },

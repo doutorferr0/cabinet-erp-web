@@ -23,6 +23,7 @@ import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
 import { handlersDoCrm } from './crm'
 import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
+import { handlersDeEmpresas } from './empresas'
 import { handlersDeEntrega } from './entrega'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
@@ -983,6 +984,13 @@ export const handlers = [
   // antigas. Ainda SEM TELA — a de checkboxes é trilho próprio, e o que existe
   // aqui é para o mock não ficar mudo em caminho publicado.
   ...handlersDeAcesso,
+
+  // ---------------- empresas do grupo (`/api/tenants`) + TIMBRE ----------------
+  // O par de `/auth/tenants`: lá é "onde EU entro", aqui é "quais empresas
+  // existem". O cabeçalho de `empresas.ts` explica por que esta lista NÃO é
+  // `store.empresas` — e por que o timbre, que a #373 publicou e ninguém
+  // servia, precisou de handler quando ganhou tela.
+  ...handlersDeEmpresas,
   ...handlersDeSuporte,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em

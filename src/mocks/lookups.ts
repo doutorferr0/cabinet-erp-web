@@ -8,7 +8,8 @@
  * existem nela. Quando o vocabulário morava só no store, o registro semeado
  * guardava o NOME — e o nome bastava enquanto o combo escolhia por nome.
  *
- * **Cobre os 19 kinds.** Antes eram oito, e os outros onze combos abriam vazios
+ * **Cobre os 21 kinds do `VOCABULARIO_DE_APOIO`** — eram 19 quando isto foi
+ * escrito, e a lista cresce por PR. Antes eram oito, e os outros onze combos abriam vazios
  * no modo mock sem que ninguém notasse: o campo exibia o texto que o próprio
  * registro trazia, então lista vazia parecia lista carregada. Escolhendo por
  * id, kind sem lista é campo que não dá para preencher — a lacuna deixou de ser

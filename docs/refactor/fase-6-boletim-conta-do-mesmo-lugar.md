@@ -31,6 +31,19 @@ documento do Boletim (Vendas do dia, Pedidos de Compra, Ordens sem envio) també
 usam `src/mocks/orcamentos.ts`/`pedidos-compra.ts`/`ordens-compra.ts`, que são a mesma fonte da
 listagem de cada um (ainda mock nos dois lados).
 
+> **A metade do orçamento venceu — remedido em 2026-08-25, e a divergência é de AMBIENTE.**
+> `data.orcamentos` é `quotes-api.ts` (HTTP) desde que a listagem migrou, e `src/data/boletim.ts`
+> continua importando `orcamentos` de `src/mocks/orcamentos.ts` para "Vendas do dia", com `href`
+> para `/vendas/orcamentos/{id}`.
+>
+> **No modo mock isso não aparece**, e é por um acidente feliz: `src/mocks/api/quotes.ts` semeia o
+> store a partir do MESMO array (`import { orcamentos } from '@/mocks/orcamentos'`), então os ids
+> casam e o link abre. **Com backend real (`app.cabinetonline.cc`, ou o par local) as duas fontes
+> se separam:** o Boletim conta documentos da fixture e linka para uuid que o Postgres não
+> conhece. É o mesmo defeito que esta fase corrigiu nos cadastros, só que escondido atrás de uma
+> semente compartilhada — a receita é a da §Implementação, agora com `data.orcamentos.list`.
+> Pedido e ordem de COMPRA seguem mock nos dois lados; esses continuam certos.
+
 ## Implementação
 
 Em `src/data/boletim.ts`, localizar onde a apuração hoje conta `clientes.length`,

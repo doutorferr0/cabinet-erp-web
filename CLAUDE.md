@@ -15,18 +15,26 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   do que é pedido. **O `Proposto` continua sendo marca de INTENÇÃO, não de ausência de backend:**
   o `cabinet-erp-api` existe e implementa por partes, e operação do contrato que ele ainda não
   serve responde **501** (não 404), justamente para a diferença ficar visível.
-- **Já é HTTP, e desde a #274 é TUDO que o contrato publica:** as **78 operações** têm servidor
-  do outro lado — sessão (`/auth/*`), listas de apoio, produto com variantes e kardex, os três
-  papéis de parceiro (`/api/partners`, filtro `role`), orçamento, pedido de venda, obra, contatos,
-  colaborador, atividades, tarefas e A fazer, planner, dashboard e o CRM inteiro. Ver
-  `docs/integracao.md` e `src/mocks/rotas-do-backend.ts`.
+- **Já é HTTP quase tudo, e o "quase" é a parte que muda toda semana:** o contrato tem **171
+  operações em 122 caminhos** (25/08) e `ROTAS_DO_BACKEND` liga **138** — sessão (`/auth/*`),
+  listas de apoio (leitura e escrita), produto com variantes e kardex, os três papéis de
+  parceiro (`/api/partners`, filtro `role`) e seus contatos, orçamento, pedido de venda com
+  separação e entrega, obra, colaborador, atividades, tarefas e A fazer, planner, dashboard,
+  o CRM inteiro, preços, impressão e relatórios. **As outras 33 estão em `ROTAS_NO_MOCK`** —
+  compras (14), comissões (13), recebimento (6). Ver `docs/integracao.md` e
+  `src/mocks/rotas-do-backend.ts`, que é a lista que o CI confere.
 - **O que o `Proposto` marca continua sendo INTENÇÃO, não ausência de servidor.** Dashboard e
   planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
   respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
   diferença: é isso que mantém `cabinetonline.cc` de pé sem backend nenhum.
-- **Ainda mock:** colaborador, cidades, boletim — **por falta de caminho no contrato, não por
-  escolha.** Esses seguem a regra antiga: dados tipados em `src/mocks/`, campos LITERAIS de
-  `topicos/transcricaosoftlux.md` da memória.
+- **Ainda mock por falta de caminho no contrato:** cidades e boletim. Seguem a regra antiga:
+  dados tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **Ainda mock COM caminho no contrato — que é outra coisa:** colaborador. A família tem 8
+  operações — listagem, ficha, escrita, vínculo e faixas de comissão — e a passagem as liga;
+  quem não migrou foi `data.colaboradores`, e o que segura é o lado do MOCK — falta handler de
+  `GET /api/employees/{id}`, as duas sementes divergem e `Colaborador.id` é `number` contra o
+  `format: uuid` do contrato. Dizer "falta caminho" aqui manda o próximo agente escrever
+  contrato que já existe.
 - **COMPRAS saiu dessa lista e ficou no MEIO do caminho, que é o estado a não esquecer.** O
   contrato publica as 14 operações do módulo (#316) e `src/mocks/api/compras.ts` as serve com
   estado de verdade — reserva da linha de pedido, devolução no cancelamento, faturamento mínimo.
@@ -147,10 +155,12 @@ Sem a variável, o MSW responde tudo e nada sai da origem — é o modo de quem 
 e o do site público. **Com ela, e só com ela**, as operações listadas em
 `rotas-do-backend.ts` saem do mock e atravessam o proxy.
 
-A #274 (2026-08-21) fechou a passagem sobre as 78 operações de então, e **aquilo venceu duas
-vezes desde**: o contrato foi a 124 (#341) e a **163** agora. **Remedido em 2026-08-24 contra
-`cabinet-erp-api` `5b2d560`, com par local próprio: 130 operações saem para a rede e 33 continuam
-no MSW** — compras (14), comissões (13) e recebimento (6). Ou seja, `rotas-do-backend.ts` não é
+A #274 (2026-08-21) fechou a passagem sobre as 78 operações de então, e **aquilo já venceu três
+vezes**: o contrato foi a 124 (#341), a 163 (#348) e a **171** agora (122 caminhos). **A última
+MEDIÇÃO contra o api é de 2026-08-24 (`5b2d560`, #348): 130 saíam para a rede e 33 ficavam no
+MSW** — compras (14), comissões (13) e recebimento (6). Hoje a lista declara **138 e as mesmas
+33**: a diferença são as 8 de impressão que a #333 acrescentou DEPOIS daquela medição, com 404
+medido (o api ainda não tinha sincronizado o contrato). Ou seja, `rotas-do-backend.ts` não é
 "a lista do que já dá para ligar" NEM "o interruptor entre dois ambientes" — é as duas coisas, e
 qual delas vale depende de o contrato estar ou não à frente do backend naquele dia. Ele esteve
 nos três estados em três dias.
@@ -196,10 +206,12 @@ todas. O que muda é **o que falta do outro lado**, e o campo `natureza` diz qua
 é o dono) e fecha no `sync:contract` de LÁ. Enquanto está aberta, o mock responde 200 onde o
 servidor responderia 404 — e é isso que o passthrough não pode mascarar. O console grita o número
 e os caminhos numa linha própria, antes do relatório por família. **A classe DEIXOU de estar
-vazia em 25/08:** os dois `contracts/openapi-v1.json` já não batem byte a byte — o daqui tem 172
-operações, o do api tem 171, e a que falta lá é `POST /api/employees/{id}/reset-password` (#359).
-A janela está aberta e fecha no `sync:contract` de lá. Foi a segunda vez que a frase "a classe
-está vazia" envelheceu sem ninguém a invalidar; ela é verdadeira só no dia em que foi medida.
+vazia, e cresceu:** medido em 26/08, os dois `contracts/openapi-v1.json` já não batem byte a byte
+— o daqui tem 143 caminhos / 196 operações, o do api tem 122 / 171, e as **25 que faltam lá são
+exatamente as 25 declaradas `sem-contrato`**: os quinze da tesouraria (G7 fase A), os cinco do
+ciclo da credencial e os cinco do suporte-da-plataforma. A janela está aberta e fecha no
+`sync:contract` de lá. Foi a terceira vez que a frase "a classe está vazia" envelheceu sem ninguém
+a invalidar; ela é verdadeira só no dia em que foi medida, e o número acima também.
 
 **Errar a natureza manda alguém para o repositório errado**, e já aconteceu duas vezes com as
 mesmas 13 rotas de comissões: a `#337` as declarou 501 medindo contra o checkout compartilhado do

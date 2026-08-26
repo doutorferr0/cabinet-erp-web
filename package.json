@@ -64,8 +64,6 @@
     "vitest": "^3.0.9"
   },
   "msw": {
-    "workerDirectory": [
-      "public"
-    ]
+    "workerDirectory": ["public"]
   }
 }

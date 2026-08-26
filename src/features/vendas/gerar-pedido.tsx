@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useConverterEmPedido } from '@/data/quotes-api'
-import { mensagemDaRecusa, urnDaRecusa } from '@/features/vendas/recusa'
+import { type FrasesDeRecusa, mensagemDaRecusa, typeDoErro } from '@/lib/erros'
 import { Link, useNavigate } from '@tanstack/react-router'
 
 /**
@@ -49,7 +49,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
  * operador. A tradução dele continua aqui porque a situação pode ter mudado na
  * sessão de outra pessoa entre a listagem carregar e o clique acontecer.
  */
-const RECUSAS: Record<string, string> = {
+const RECUSAS: FrasesDeRecusa = {
   [ProblemType['urn:cabinet:erro:pedido-ja-convertido']]:
     'Este orçamento já virou pedido. Gerar um segundo faria a mesma venda sair duas vezes.',
 }
@@ -66,7 +66,7 @@ export function GerarPedido({ orcamento, onFechar }: GerarPedidoProps) {
 
   const cancelado = orcamento?.status === 'cancelled'
   const jaConvertido =
-    urnDaRecusa(converter.error) === ProblemType['urn:cabinet:erro:pedido-ja-convertido']
+    typeDoErro(converter.error) === ProblemType['urn:cabinet:erro:pedido-ja-convertido']
   const erro = mensagemDaRecusa(
     converter.error,
     'Não foi possível gerar o pedido de venda.',

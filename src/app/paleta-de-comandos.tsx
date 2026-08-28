@@ -7,10 +7,17 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import {
+  MINIMO_DE_LETRAS,
+  type ResultadoDeBusca,
+  useBuscaDeRegistro,
+  useTermoAdiado,
+} from '@/data/busca-de-registro'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useFilter } from 'react-aria-components'
 
 export interface PaletaDeComandosProps {
   aberta: boolean
@@ -18,7 +25,8 @@ export interface PaletaDeComandosProps {
 }
 
 /**
- * PALETA DE COMANDOS GLOBAL — ir para qualquer tela e abrir registro novo.
+ * PALETA DE COMANDOS GLOBAL — ir para qualquer tela, abrir registro novo e
+ * ACHAR REGISTRO pelo nome ou pelo número.
  *
  * Referência: a command palette do Supabase Studio (Apache-2.0, `project-core`
  * @regras). Do original vem a ANATOMIA — caixa modal, uma busca no topo,
@@ -38,14 +46,33 @@ export interface PaletaDeComandosProps {
  *
  * `comandosDaPaleta` lê os mesmos `gruposVisiveis` da barra lateral. Uma tela
  * cujo recurso a empresa não tem some dos dois ao mesmo tempo — oferecer aqui o
- * que a barra esconde daria caminho para uma tela que a guarda vai recusar.
+ * que a barra esconde daria caminho para uma tela que a guarda vai recusar. A
+ * busca de registro segue a mesma regra: parceiro cujo único papel a empresa
+ * não opera não vira resultado (`fichaDoParceiro`).
+ *
+ * ## Os REGISTROS vêm por último, e é uma decisão, não sobra
+ *
+ * Os comandos chegam sem rede e a lista deles não muda; os registros chegam
+ * depois, quando as quatro consultas voltam. Pôr os registros em cima faria a
+ * lista CRESCER POR CIMA do item que o operador já estava mirando com a seta —
+ * ele teclaria Enter num destino que não escolheu. Embaixo, a chegada da rede
+ * nunca move o que já está na tela.
  */
 export function PaletaDeComandos({ aberta, onOpenChange }: PaletaDeComandosProps) {
   const navigate = useNavigate()
   const { pathname } = useRouterState({ select: (estado) => estado.location })
   const { tem } = useRecursosDaEmpresa()
+  const [texto, setTexto] = useState('')
 
   const comandos = useMemo(() => comandosDaPaleta(tem, pathname), [tem, pathname])
+  const busca = useBuscaDeRegistro(useTermoAdiado(texto))
+
+  // Fechar e reabrir tem de dar uma caixa limpa: a paleta é o começo de uma
+  // ação nova, e reabrir com o termo da anterior mostraria resultados de uma
+  // busca que a pessoa já abandonou.
+  useEffect(() => {
+    if (!aberta) setTexto('')
+  }, [aberta])
 
   // Os grupos saem na ordem em que os comandos vêm — `comandosDaPaleta` já
   // decidiu que o contexto encabeça. Reordenar aqui seria uma segunda regra de
@@ -59,6 +86,26 @@ export function PaletaDeComandos({ aberta, onOpenChange }: PaletaDeComandosProps
     }
     return [...porGrupo.entries()]
   }, [comandos])
+
+  /**
+   * O filtro do `Autocomplete` é LOCAL, e os registros vieram do servidor.
+   *
+   * Quem casou o termo lá foi o `q` do backend, por campos que nem sempre estão
+   * escritos na linha — CNPJ, código, número do documento. Deixar o filtro local
+   * decidir de novo esconderia resultado já encontrado, e o operador leria
+   * "nada achado" para uma busca que achou. Por isso todo `textValue` que a
+   * busca devolveu passa direto; o filtro continua valendo para os comandos.
+   */
+  const { contains } = useFilter({ sensitivity: 'base' })
+  const doServidor = useMemo(
+    () => new Set(busca.grupos.flatMap((grupo) => grupo.itens.map((item) => item.textValue))),
+    [busca.grupos],
+  )
+  const filtro = useCallback(
+    (textValue: string, inputValue: string) =>
+      doServidor.has(textValue) || contains(textValue, inputValue),
+    [doServidor, contains],
+  )
 
   useEffect(() => bindShortcut(SHORTCUTS.busca, () => onOpenChange(true)), [onOpenChange])
 
@@ -75,19 +122,24 @@ export function PaletaDeComandos({ aberta, onOpenChange }: PaletaDeComandosProps
     void navigate({ to: comando.url })
   }
 
+  function abrir(resultado: ResultadoDeBusca) {
+    onOpenChange(false)
+    void navigate({ to: resultado.url })
+  }
+
   return (
     <CommandDialog
       open={aberta}
       onOpenChange={onOpenChange}
       title="Comandos"
-      description="Digite para achar uma tela ou uma ação."
+      description="Digite para achar uma tela, uma ação ou um registro."
     >
-      <Command>
-        <CommandInput placeholder="Ir para uma tela ou incluir um registro…" />
+      <Command inputValue={texto} onInputChange={setTexto} filter={filtro}>
+        <CommandInput placeholder="Tela, ação, ou nome/número de um registro…" />
         <CommandList
           renderEmptyState={() => (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              Nenhum comando encontrado.
+              {busca.buscando ? 'Procurando…' : 'Nenhum comando encontrado.'}
             </div>
           )}
         >
@@ -106,10 +158,93 @@ export function PaletaDeComandos({ aberta, onOpenChange }: PaletaDeComandosProps
               ))}
             </CommandGroup>
           ))}
+          {busca.grupos.map((grupo) => (
+            <CommandGroup
+              key={grupo.chave}
+              // O cabeçalho DIZ quando a página cortou: "3 de 47" é a diferença
+              // entre "só há três" e "estes são os três primeiros de 47", e sem
+              // ela o operador conclui que o registro não existe.
+              heading={
+                grupo.cortado
+                  ? `${grupo.titulo} — ${grupo.itens.length} de ${grupo.total}`
+                  : grupo.titulo
+              }
+            >
+              {grupo.itens.map((item) => (
+                <CommandItem
+                  key={item.id}
+                  id={item.id}
+                  textValue={item.textValue}
+                  onAction={() => abrir(item)}
+                >
+                  <item.icon aria-hidden="true" className="size-4 text-modulo" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">{item.titulo}</span>
+                    {item.subtitulo && (
+                      <span className="truncate text-xs text-muted-foreground">
+                        {item.subtitulo}
+                      </span>
+                    )}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          ))}
         </CommandList>
+        <RodapeDaBusca
+          curto={busca.curto}
+          buscando={busca.buscando}
+          falharam={busca.falharam}
+          digitou={texto.trim().length > 0}
+        />
       </Command>
     </CommandDialog>
   )
+}
+
+/**
+ * A linha de baixo, que diz por que a busca de registro não respondeu.
+ *
+ * São três silêncios diferentes e o operador não tem como distingui-los sozinho:
+ * ainda não digitou o bastante, está esperando o servidor, ou uma das consultas
+ * falhou. O terceiro é o caro — sem ele, alvo fora do ar vira "não existe
+ * nenhum produto com esse nome", que é a mesma tela de uma busca bem-sucedida e
+ * vazia.
+ */
+function RodapeDaBusca({
+  curto,
+  buscando,
+  falharam,
+  digitou,
+}: {
+  curto: boolean
+  buscando: boolean
+  falharam: string[]
+  digitou: boolean
+}) {
+  if (falharam.length > 0) {
+    return (
+      <p className="border-t border-border px-3 py-2 text-xs text-destructive">
+        Não foi possível procurar em: {falharam.join(', ')}. As telas dessas listagens continuam
+        abrindo pelo nome.
+      </p>
+    )
+  }
+  if (buscando) {
+    return (
+      <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+        Procurando registros…
+      </p>
+    )
+  }
+  if (digitou && curto) {
+    return (
+      <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+        Digite {MINIMO_DE_LETRAS} letras ou mais para procurar clientes, produtos e documentos.
+      </p>
+    )
+  }
+  return null
 }
 
 /** Rótulo do atalho, para a appbar anunciar por onde mais se abre. */

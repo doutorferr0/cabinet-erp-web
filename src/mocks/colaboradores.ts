@@ -17,11 +17,26 @@ export interface Colaborador {
   setor: string | null
   atendimentoCliente: boolean
   ativo: boolean
-  sexo: string | null
+  /**
+   * SEXO e RAÇA/COR SAÍRAM DAQUI, e a ausência é decisão (user, 2026-08-28).
+   *
+   * Eram os dois únicos campos de dado pessoal SENSÍVEL na letra do art. 5º II
+   * da LGPD que este cadastro coletava, e o produto não tem finalidade para
+   * eles: nenhuma tela decide nada com sexo ou raça de colaborador, nenhum
+   * relatório os pede, e `EmployeeWriteRequest` nunca teve onde gravá-los.
+   * Campo sensível sem finalidade declarada é passivo, não funcionalidade —
+   * então saíram do tipo, do schema do formulário, do módulo de cadastro e do
+   * contrato no mesmo corte, em vez de ficarem nascendo em branco como o resto
+   * do bloco pessoal ficou até esta issue.
+   *
+   * **`sexo` continua existindo no CLIENTE** (`PartnerDto.gender`, e o mock em
+   * `clientes.ts`): lá é pessoa física de fora, campo do print do legado e já
+   * implementado no contrato. A decisão foi sobre colaborador, que é a relação
+   * de emprego — não sobre o campo em toda parte.
+   */
   dtNascimento: string | null
   grauInstrucao: string | null
   profissao: string | null
-  racaCor: string | null
   estadoCivil: string | null
   nomeConjuge: string
   dtNascConjuge: string | null
@@ -109,11 +124,9 @@ export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
   setor: idDeApoio('SETOR', SETORES[i % SETORES.length]),
   atendimentoCliente: i % 4 !== 3,
   ativo: i !== 8,
-  sexo: i % 2 === 0 ? 'FEMININO' : 'MASCULINO',
   dtNascimento: `19${80 + (i % 18)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 27) + 1).padStart(2, '0')}`,
   grauInstrucao: idDeApoio('GRAU_INSTRUCAO', i % 3 === 0 ? 'SUPERIOR' : 'MÉDIO'),
   profissao: idDeApoio('PROFISSAO', 'VENDEDOR'),
-  racaCor: idDeApoio('RACA_COR', ['BRANCA', 'PARDA', 'PRETA'][i % 3]),
   estadoCivil: idDeApoio('ESTADO_CIVIL', ['SOLTEIRO(A)', 'CASADO(A)', 'UNIÃO ESTÁVEL'][i % 3]),
   nomeConjuge: i % 3 === 1 ? `CÔNJUGE DE ${nome.split(' ')[0]}` : '',
   dtNascConjuge: i % 3 === 1 ? `19${82 + (i % 15)}-06-15` : null,
@@ -148,11 +161,9 @@ export function colaboradorVazio(): Colaborador {
     setor: null,
     atendimentoCliente: true,
     ativo: true,
-    sexo: null,
     dtNascimento: null,
     grauInstrucao: null,
     profissao: null,
-    racaCor: null,
     estadoCivil: null,
     nomeConjuge: '',
     dtNascConjuge: null,

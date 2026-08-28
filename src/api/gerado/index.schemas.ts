@@ -1071,6 +1071,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |
  * | `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |
  * | `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |
+ * | `urn:cabinet:erro:quitacao-a-menor` | 403 | `Quitação a menor` | a baixa abate MENOS que o saldo e quem pede não tem a ação fina `financeiro:quitacao-a-menor` (permissão especial nº 45 do legado). URN própria e não `papel-insuficiente` porque a saída da tela é OUTRA e é acionável: ali o valor se ajusta ao saldo e a baixa passa, sem trocar de pessoa. Esconder o controle — que é o que a tela faz no `papel-insuficiente` — tiraria da frente o campo que resolve o caso |
  * | `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
@@ -1136,6 +1137,7 @@ export const ProblemType = {
   'urn:cabinet:erro:sem-concessao-de-suporte': 'urn:cabinet:erro:sem-concessao-de-suporte',
   'urn:cabinet:erro:suporte-ja-em-organizacao': 'urn:cabinet:erro:suporte-ja-em-organizacao',
   'urn:cabinet:erro:concessao-encerrada': 'urn:cabinet:erro:concessao-encerrada',
+  'urn:cabinet:erro:quitacao-a-menor': 'urn:cabinet:erro:quitacao-a-menor',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -7607,7 +7609,7 @@ export interface FinancialTitleWriteRequest {
  *
  * **O destino é obrigatório e exclusivo:** exatamente um entre `bankAccountId` e `cashRegisterId`. Os dois juntos, ou nenhum, é 400. É o que faz a baixa virar linha de extrato — sem conta, o dinheiro é quitado no sistema e invisível no caixa.
  *
- * **Quitação A MENOS é permissão, não erro.** `amountCents` abaixo de `openCents` da parcela deixa saldo e é recusado com **403** para quem não tem a ação fina — o legado a tem como permissão especial nº 45 (`PERMITIR QUITAÇÃO COM VALOR A MENOS QUE O VALOR DO VENCIMENTO`), e é o mesmo desenho de `venda:desconto-acima-do-teto`: a recusa depende de QUEM pede, não do valor, então é 403 e não 400.
+ * **Quitação A MENOS é permissão, não erro.** `amountCents` abaixo de `openCents` da parcela deixa saldo e é recusado com **403** `urn:cabinet:erro:quitacao-a-menor` para quem não tem a ação fina — o legado a tem como permissão especial nº 45 (`PERMITIR QUITAÇÃO COM VALOR A MENOS QUE O VALOR DO VENCIMENTO`), e é o mesmo desenho de `venda:desconto-acima-do-teto`: a recusa depende de QUEM pede, não do valor, então é 403 e não 400.
  *
  * `amountCents` ACIMA do saldo é 409 e não tem permissão que libere: pagar mais do que se deve não é decisão de alçada, é engano de digitação — e o troco não tem onde ser lançado.
  */

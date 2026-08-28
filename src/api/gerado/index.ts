@@ -11731,7 +11731,7 @@ export const getSettleInstallmentUrl = (id: string,) => {
  * As recusas:
  *
  * 1. **400** — destino ausente ou duplicado, valor zero ou negativo, modo de pagamento que não serve para quitação (`usableInSettlement = false`).
- * 2. **403** — quitação a menor sem a ação fina.
+ * 2. **403** — quitação a menor sem a ação fina (`urn:cabinet:erro:quitacao-a-menor`).
  * 3. **409** — parcela já quitada (`urn:cabinet:erro:parcela-ja-quitada`), valor acima do saldo (`urn:cabinet:erro:valor-acima-do-saldo`), título cancelado (`urn:cabinet:erro:transicao-invalida`), data em período fechado (`urn:cabinet:erro:periodo-fechado`) ou sem empresa ativa.
  *
  * **Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.
@@ -11800,7 +11800,7 @@ export const getSettleBatchUrl = () => {
 /**
  * Proposto. QUITAÇÃO EM LOTE — paga N parcelas num ato só, com um `batchId` que as amarra.
  *
- * **Permissão: `financeiro:quitar`**, e a ação fina `financeiro:quitacao-a-menor` quando QUALQUER item do lote abate menos que o saldo da sua parcela.
+ * **Permissão: `financeiro:quitar`**, e a ação fina `financeiro:quitacao-a-menor` quando QUALQUER item do lote abate menos que o saldo da sua parcela — sem ela a recusa é **403** `urn:cabinet:erro:quitacao-a-menor`, e o lote inteiro cai com ela.
  *
  * **Tudo ou nada.** Uma parcela recusada derruba o lote inteiro e nenhuma baixa fica gravada — ver `SettlementBatchRequest` para por que o parcial seria pior. A resposta de erro diz em `detail` qual parcela recusou e por quê.
  *

@@ -332,3 +332,40 @@ describe('FormGrid — voz da coluna', () => {
     expect(classes).not.toContain('text-muted-foreground')
   })
 })
+
+/**
+ * A célula de DATA — `<input type="date">` nativo, o mesmo do filtro de data.
+ *
+ * O que este bloco trava é o VALOR: entra e sai ISO, que é como a data viaja no
+ * contrato. Uma máscara própria exibiria `dd/mm/aaaa` e guardaria o texto da
+ * máscara, e o documento gravaria uma data que o servidor recusa.
+ */
+function HarnessDeData() {
+  const form = useForm({ defaultValues: { linhas: [{ vencimento: '2026-08-20' }] } })
+  return (
+    <Form {...form}>
+      <form>
+        <FormGrid
+          name="linhas"
+          columns={[{ key: 'vencimento', label: 'Vencimento', type: 'date' }]}
+          newRow={{ vencimento: '2026-09-20' }}
+        />
+      </form>
+    </Form>
+  )
+}
+
+describe('FormGrid — célula de data', () => {
+  it('é o input nativo, e o valor é ISO nas duas direções', async () => {
+    const user = userEvent.setup()
+    render(<HarnessDeData />)
+
+    const campo = screen.getByLabelText('Vencimento linha 1') as HTMLInputElement
+    expect(campo.type).toBe('date')
+    expect(campo.value).toBe('2026-08-20')
+
+    await user.clear(campo)
+    await user.type(campo, '2026-12-31')
+    expect(campo.value).toBe('2026-12-31')
+  })
+})

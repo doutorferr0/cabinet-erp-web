@@ -1,5 +1,6 @@
 import { moduloDaRota } from '@/app/modulo'
 import {
+  type NavSecao,
   destinoDaSecao,
   gruposVisiveis,
   itemDaRota,
@@ -9,6 +10,7 @@ import {
   secoesVisiveis,
 } from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
+import { CircleDollarSign } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
 
 /** `tem` de uma empresa que opera exatamente os recursos listados. */
@@ -98,7 +100,10 @@ describe('secoesVisiveis', () => {
       'Contas a Pagar',
       'Comissões',
     ])
-    expect(titulos(Object.values(RECURSOS))).not.toContain('Contas a Pagar')
+    // `Comissões` é a que segue futura na seção — as outras duas ganharam tela
+    // na fase C do G7, e por isso passaram a aparecer também na paleta.
+    expect(titulos(Object.values(RECURSOS))).not.toContain('Comissões')
+    expect(titulos(Object.values(RECURSOS))).toContain('Contas a Pagar')
   })
 
   it('sete seções na barra, na ordem do fluxo, e Configurações fora dela', () => {
@@ -190,8 +195,10 @@ describe('itemDaRota', () => {
   })
 
   it('tela futura não casa rota — ela não está lá', () => {
-    expect(itemDaRota('/financeiro/pagar')).toBeUndefined()
+    expect(itemDaRota('/financeiro/comissoes')).toBeUndefined()
     expect(itemDaRota('/obras')).toBeUndefined()
+    // E a que DEIXOU de ser futura casa: é o outro lado da mesma regra.
+    expect(itemDaRota('/financeiro/pagar')?.title).toBe('Contas a Pagar')
   })
 })
 
@@ -337,9 +344,39 @@ describe('destinoDaSecao', () => {
   })
 
   it('seção só com tela futura não inventa destino', () => {
+    // Financeiro era o caso vivo desta regra e deixou de ser (fase C do G7): o
+    // destino dele agora é a primeira tela de verdade. A garantia continua
+    // valendo e passa a ser medida sobre uma seção MONTADA aqui — se ela
+    // dependesse de uma seção vazia existir no menu, morreria em silêncio na
+    // próxima tela entregue, que é exatamente o que acabou de acontecer.
+    const soFuturo: NavSecao = {
+      id: 'so-futuro',
+      rotulo: 'Só futuro',
+      icon: CircleDollarSign,
+      grupos: [
+        {
+          title: 'Documentos',
+          url: '/nao-existe',
+          icon: CircleDollarSign,
+          items: [
+            {
+              title: 'Ainda não existe',
+              url: '/nao-existe/tela',
+              icon: CircleDollarSign,
+              descricao: 'Ainda não existe.',
+              futuro: true,
+            },
+          ],
+        },
+      ],
+    }
+    expect(destinoDaSecao(soFuturo)).toBeUndefined()
+  })
+
+  it('a seção com tela entregue leva à primeira delas', () => {
     const financeiro = porId('financeiro')
     expect(financeiro).toBeDefined()
-    expect(financeiro && destinoDaSecao(financeiro)).toBeUndefined()
+    expect(financeiro && destinoDaSecao(financeiro)).toBe('/financeiro/receber')
   })
 
   it('todo destino publicado é um item navegável de verdade', () => {

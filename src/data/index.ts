@@ -51,9 +51,10 @@ export const data = {
    * A família inteira já atravessava para a rede desde a #276; o que faltava era
    * esta tela CONSUMI-LA, e enquanto faltou o sistema tinha duas listas de quem
    * trabalha aqui — o combo de responsável das atividades lia o Postgres e este
-   * cadastro lia a semente. Ver `colaboradores-api.ts` para o que o contrato v1
-   * ainda não cobre (o bloco de RH, e a ESCRITA, que responde 403 ao papel da
-   * semente por decisão de permissão do api).
+   * cadastro lia a semente. **O bloco de RH deixou de ser o buraco na #403** —
+   * pessoal e trabalhista entraram no contrato, e sexo e raça/cor saíram da tela
+   * por LGPD. O que resta é a ESCRITA, que responde 403 ao papel da semente por
+   * decisão de permissão do api. Ver `colaboradores-api.ts`.
    *
    * Mesma divisão de `produtos` e `orcamentos`: a grade recebe o `EmployeeDto`
    * cru, para o `sortBy` casar com a whitelist do servidor, e o formulário

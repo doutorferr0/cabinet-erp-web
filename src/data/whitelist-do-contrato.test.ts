@@ -56,10 +56,12 @@ import {
   ORDENAVEIS_PARTICIPACAO as ORDENAVEIS_PARTICIPACAO_MOCK,
   ORDENAVEIS_PEDIDO as ORDENAVEIS_PEDIDO_MOCK,
 } from '@/mocks/api/pedidos'
+import { ORDENAVEIS_INDICE, ORDENAVEIS_PERFIL_DE_CUSTO } from '@/mocks/api/precos'
 import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
 } from '@/mocks/api/quotes'
+import { ORDENAVEIS_RECEBIMENTO } from '@/mocks/api/recebimento'
 import {
   ORDENAVEIS_ANIVERSARIANTES,
   ORDENAVEIS_ATENDENTE,
@@ -214,10 +216,19 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o bloco Pagamento do documento consome a lista inteira ordenada por `name` e não oferece ordenação ao operador — a whitelist existe no mock, e é lá que é conferida',
   ListServices:
     'o cadastro de serviços nasceu no contrato antes da tela — a lista existe no mock, e é lá que é conferida',
+  // AS DUAS DO G9 GANHARAM MOCK (#379) E CONTINUAM AQUI — o eixo é OUTRO.
+  //
+  // Esta tabela é "listagem sem cabeçalho ordenável NA TELA"; a de baixo é
+  // "listagem que o mock não serve". Elas saíram da segunda e ficam na
+  // primeira, porque a aba Preço e Margem consome as duas sem oferecer
+  // ordenação a ninguém: o índice ela LÊ para derivar o preço sugerido (uma
+  // linha por fornecedor da peça, resolvida em memória), e o perfil ela nem
+  // lista — chega pelo `costProfileId` do índice. Quem confere a whitelist é o
+  // handler do mock, em `src/mocks/api/precos.ts`.
   ListCostProfiles:
-    'o perfil de custo (G9) nasce no servidor sem tela e sem mock — a cascata não se reimplementa em fixture, e margem inventada é pior que tela vazia',
+    'o perfil de custo não é listado pela tela — ele chega pelo `costProfileId` do índice; a whitelist existe no mock, e é lá que é conferida',
   ListPriceIndexes:
-    'o índice de venda (G9) é a METADE VENDA do mesmo trilho do perfil de custo acima, e fica de fora pela mesma razão: o mock teria de inventar índice E tabela de fornecedor para ecoar um preço calculado, e o terceiro dado de mentira sai com cara de preço apurado pelo servidor',
+    'a aba de preço lê o índice para derivar o preço sugerido, sem cabeçalho ordenável — a whitelist existe no mock, e é lá que é conferida',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
   // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
   // mostra número inventado com cara de apuração, que é pior do que não mostrar
@@ -246,7 +257,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // a ORDEM DE COMPRA pediu com o que chegou, e sobre dado mockado ela
   // confrontaria uma ordem inventada. O `sortBy` publicado é conferido do lado
   // do api, contra o `MapaDeCampos` do módulo, na fase B.
-  ListGoodsReceipts: 'recebimento ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  ListGoodsReceipts:
+    'recebimento ainda não tem tela — as telas de Compras são a Fase C do trilho; a whitelist do mock é a que vale hoje, e ela é conferida contra o contrato logo abaixo',
   GetProductsSoldReport:
     'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
   GetSalesComparisonReport:
@@ -405,6 +417,17 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   // o site público é 100% mock, e ali quem recusa `sortBy` fora da whitelist é
   // o handler de `src/mocks/api/empresas.ts`.
   ListTenants: ORDENAVEIS_EMPRESA_MOCK,
+  // PREÇO (G9 · #379) entra por este eixo pelo mesmo motivo dos relatórios e de
+  // compras: a aba consome as duas listagens e não oferece cabeçalho ordenável
+  // a ninguém, então quem recusa `sortBy` fora da whitelist é o handler do mock
+  // — e o site público é 100% mock. As duas saíram de `SEM_HANDLER_NO_MOCK` no
+  // mesmo commit em que `src/mocks/api/precos.ts` passou a servi-las.
+  ListCostProfiles: ORDENAVEIS_PERFIL_DE_CUSTO,
+  ListPriceIndexes: ORDENAVEIS_INDICE,
+  // O RECEBIMENTO (G3) entra pelo mesmo eixo dos relatórios: nasce sem tela, e
+  // quem recusa `sortBy` fora da whitelist hoje é o handler do mock — que é
+  // quem o site público tem.
+  ListGoodsReceipts: ORDENAVEIS_RECEBIMENTO,
 }
 
 /**
@@ -432,8 +455,18 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'a fila de separação é derivada do pedido de venda, que não tem handler no mock — a fila sem o documento dono listaria peça de pedido inexistente',
   ListDeliveries:
     'o romaneio pende do pedido de venda, que não tem handler no mock — mockar a entrega sem o documento dono casaria id inventado com id de servidor',
-  ListCostProfiles:
-    'o perfil de custo (G9) passa direto para o servidor — ver `rotas-do-backend.ts`: a simulação exige a cascata inteira, e um mock dela devolveria margem inventada',
+  // O PERFIL DE CUSTO SAIU DAQUI (#379), e a linha que o mantinha continua
+  // verdadeira — ela só era maior que o problema. "A simulação exige a cascata
+  // inteira, e um mock dela devolveria margem inventada" é exato, e por isso
+  // `src/mocks/api/precos.ts` NÃO simula: `POST /cost-profiles/{id}/simulate`
+  // responde **501 `nao-implementado`**, o mesmo que o backend responde por
+  // caminho que ainda não serve, e a tela mostra o aviso de módulo em
+  // construção. O que ele passou a guardar é o CADASTRO — o número que o
+  // operador digitou —, que é a parte que nunca precisou de cascata nenhuma.
+  //
+  // O que forçou a distinção foi a aba nascer: sem handler, `/api/cost-profiles`
+  // cai no fallback da SPA e volta `index.html` com 200. Recusar em voz alta é
+  // a única resposta honesta que sobra quando alguém finalmente pergunta.
   // COMPRAS (G2) SAIU DAQUI. O motivo que estava escrito — "o mock não guarda
   // qual linha já foi levada por uma ordem" — deixou de valer: `compras.ts`
   // guarda esse estado em `LinhaDePedido.purchaseOrderId`, e é dele que saem o
@@ -448,8 +481,13 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // (estoque, orçamento, aniversário) e devolve envelope VAZIO onde a fonte é o
   // pedido de venda, que o mock não guarda. Nenhuma soma disputa com o
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
-  ListGoodsReceipts:
-    'recebimento não tem handler no mock — a grade confronta o que a ordem de compra pediu com o que chegou, e o mock não guarda ordem; mockar a conferência sem a ordem dona daria divergência calculada contra número inventado',
+  // O RECEBIMENTO (G3) SAIU DAQUI. O motivo que estava escrito — "o mock não
+  // guarda ordem, e a conferência daria divergência calculada contra número
+  // inventado" — deixou de valer em duas etapas: `compras.ts` passou a guardar
+  // ordem com linha, quantidade e fornecedor, e a #354 publicou o VÍNCULO por
+  // linha (`purchaseOrderId` + `purchaseOrderLine`), que é o que faz a
+  // divergência ser medida contra a ordem de verdade. `recebimento.ts` serve as
+  // seis, e `ListGoodsReceipts` está em `ORDENAVEIS_DO_MOCK`, acima.
   // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
   // do 501: a apuração soma sobre o PEDIDO DE VENDA, que o mock não guarda.
   // Reimplementá-la aqui inventaria dinheiro — um número com cara de conta
@@ -466,8 +504,16 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   ListCommissionClosings: 'fechamento é consequência da apuração, que o mock não tem como calcular',
   ListCommissionClosingEntries:
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
-  ListPriceIndexes:
-    'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
+  // O ÍNDICE SAIU DAQUI (#379), e saiu pela porta que a própria linha nomeava:
+  // *"sai daqui quando a tela do G9 nascer, com o mock derivando o preço da
+  // MESMA fórmula do servidor"*. A tela nasceu, e a fórmula é uma só —
+  // `vendaSugeridaCents` em `src/data/precos-api.ts`, `round(tabela × índice)`,
+  // o caminho VIVO da proc `CalcularProduto` medido contra 41 de 41 casos reais.
+  //
+  // A ressalva do `calculatedUnitPriceCents` do orçamento continua de pé e NÃO
+  // foi paga aqui: o handler do orçamento não foi tocado, e o item de lá segue
+  // com o preço que já tinha. Preço sugerido é da aba do produto; congelar
+  // preço em documento é do documento.
   // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
   // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
   // de ensinar, e aqui ele ensinaria sozinho:

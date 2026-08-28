@@ -2875,7 +2875,9 @@ export interface PagedResultOfActivityDto {
 }
 
 /**
- * Proposto. A ficha do colaborador — o cadastro que o legado tem em `Funcionario` e que a listagem só arranhava. Os campos vêm de DOIS níveis e o corpo os junta de propósito: nome, documento e contato são da ORGANIZAÇÃO (a mesma pessoa nas duas empresas do grupo), enquanto papel, cargo, setor e as datas de vínculo são da EMPRESA ATIVA — o mesmo colaborador pode ser vendedor numa e gerente na outra (decisão do user, 2026-08-18). Colaborador sem vínculo na empresa ativa devolve os campos do vínculo em `null`, e não 404: ele existe, só não trabalha aqui.
+ * Proposto. A ficha do colaborador — o cadastro que o legado tem em `Funcionario` e que a listagem só arranhava. Os campos vêm de DOIS níveis e o corpo os junta de propósito: nome, documento, contato e o bloco pessoal (nascimento, estado civil, filiação, naturalidade, nacionalidade, instrução, profissão) são da ORGANIZAÇÃO — a mesma pessoa nas duas empresas do grupo —, enquanto papel, cargo, setor, vínculo, salário e as datas de vínculo são da EMPRESA ATIVA: o mesmo colaborador pode ser vendedor numa e gerente na outra (decisão do user, 2026-08-18). Colaborador sem vínculo na empresa ativa devolve os campos do vínculo em `null`, e não 404: ele existe, só não trabalha aqui.
+ *
+ * **SEXO e RAÇA/COR não estão aqui, e a ausência é decisão, não pendência** (decisão do user, 2026-08-28). São dado pessoal sensível na letra do art. 5º II da LGPD, e o produto não tem regra de acesso que os justifique: nenhuma tela decide nada com eles e nenhum relatório os pede. Campo sensível sem finalidade declarada é passivo, não funcionalidade — quem vier a precisar deles abre a discussão de finalidade e base legal primeiro, e o campo nasce depois. Saíram junto da tela e do schema do formulário, no mesmo corte.
  */
 export interface EmployeeDetailDto {
   id: string;
@@ -2894,6 +2896,92 @@ export interface EmployeeDetailDto {
   phone?: string | null;
   /** @nullable */
   photoUrl?: string | null;
+  /**
+     * Proposto. Data de nascimento. Nível ORGANIZAÇÃO: a pessoa nasceu uma vez, não uma vez por empresa.
+     * @nullable
+     */
+  birthDate?: string | null;
+  /**
+     * Proposto. Estado civil — `CatalogLookupDto.id`, kind `ESTADO_CIVIL`.
+     * @nullable
+     */
+  maritalStatusId?: string | null;
+  /**
+     * Proposto. Nome do estado civil, resolvido pelo servidor — o mesmo serviço que `sector` e `jobTitle` prestam.
+     * @nullable
+     */
+  maritalStatus?: string | null;
+  /**
+     * Proposto. Nome do cônjuge.
+     * @nullable
+     */
+  spouseName?: string | null;
+  /**
+     * Proposto. Data de nascimento do cônjuge.
+     * @nullable
+     */
+  spouseBirthDate?: string | null;
+  /**
+     * Proposto. Filiação — nome do pai.
+     * @nullable
+     */
+  fatherName?: string | null;
+  /**
+     * Proposto. Filiação — nome da mãe.
+     * @nullable
+     */
+  motherName?: string | null;
+  /**
+     * Proposto. Código da cidade de nascimento, como o legado o guarda. **Texto opaco e NÃO chave estrangeira**: o contrato não publica recurso de cidades, então não há `/api/cities/{id}` para este valor apontar. Existe para o dado sobreviver ao ida-e-volta — a tela busca a cidade numa lista local e perderia o código no `PUT` se só o nome viajasse. Vira referência de verdade no dia em que cidades ganharem caminho.
+     * @nullable
+     */
+  birthCityCode?: string | null;
+  /**
+     * Proposto. Naturalidade — nome da cidade de nascimento.
+     * @nullable
+     */
+  birthCity?: string | null;
+  /**
+     * Proposto. UF de nascimento, duas letras. Separada da UF do endereço e da do órgão expedidor: são três perguntas diferentes sobre a mesma pessoa.
+     * @nullable
+     */
+  birthState?: string | null;
+  /**
+     * Proposto. Nacionalidade — `CatalogLookupDto.id`, kind `NACIONALIDADE`.
+     * @nullable
+     */
+  nationalityId?: string | null;
+  /**
+     * Proposto. Nome da nacionalidade, resolvido pelo servidor.
+     * @nullable
+     */
+  nationality?: string | null;
+  /**
+     * Proposto. Ano de chegada ao país, quatro dígitos — só faz sentido para quem não nasceu aqui. **Texto e não `integer`** porque é o que o legado guarda e porque ano isolado não é data: somar, subtrair ou comparar com `birthDate` são operações que ninguém faz com ele.
+     * @nullable
+     * @pattern ^[0-9]{4}$
+     */
+  arrivalYear?: string | null;
+  /**
+     * Proposto. Grau de instrução — `CatalogLookupDto.id`, kind `GRAU_INSTRUCAO`.
+     * @nullable
+     */
+  educationLevelId?: string | null;
+  /**
+     * Proposto. Nome do grau de instrução, resolvido pelo servidor.
+     * @nullable
+     */
+  educationLevel?: string | null;
+  /**
+     * Proposto. Profissão — `CatalogLookupDto.id`, kind `PROFISSAO`. **Não confundir com `jobTitleId`**: profissão é da pessoa e vai com ela para qualquer empresa (kind `PROFISSAO`); cargo é do vínculo e pode ser outro em cada uma (kind `CARGO`).
+     * @nullable
+     */
+  occupationId?: string | null;
+  /**
+     * Proposto. Nome da profissão, resolvido pelo servidor.
+     * @nullable
+     */
+  occupation?: string | null;
   /** Ativo na ORGANIZAÇÃO. Desligar aqui tira a pessoa de todas as empresas do grupo. */
   active: boolean;
   /**
@@ -2937,6 +3025,23 @@ export interface EmployeeDetailDto {
      */
   dismissedAt?: string | null;
   /**
+     * Proposto. Vínculo (CLT, PJ, estágio…) — `CatalogLookupDto.id`, kind `VINCULO`. Nível EMPRESA ATIVA: a mesma pessoa pode ser CLT numa empresa do grupo e PJ na outra, pela mesma razão que cargo e setor moram aqui.
+     * @nullable
+     */
+  employmentTypeId?: string | null;
+  /**
+     * Proposto. Nome do vínculo, resolvido pelo servidor.
+     * @nullable
+     */
+  employmentType?: string | null;
+  /**
+     * Proposto. Salário em centavos (inteiro — nunca float). Nível EMPRESA ATIVA, ao lado de `hiredAt` e `dismissedAt`: quem trabalha em duas empresas do grupo tem uma remuneração em cada, e guardar isto na pessoa faria gravar a ficha numa empresa reescrever em silêncio o salário da outra.
+     *
+     * **LEITURA E ESCRITA SÃO `admin`-only, e a leitura é a metade que se esquece.** Para papel sem a permissão o servidor OMITE o campo do corpo em vez de devolvê-lo em `null`: `null` significa "não há salário registrado", e usar o mesmo valor para "você não pode ver" faria a tela imprimir um branco idêntico nos dois casos. Escrita por papel não-admin é 403 `urn:cabinet:erro:papel-insuficiente`, e não recusa silenciosa.
+     * @nullable
+     */
+  salaryCents?: number | null;
+  /**
      * `Atendimento ao cliente` do legado — é quem aparece no combo de Consultor(a) do orçamento. `null` quando não há vínculo.
      * @nullable
      */
@@ -2949,7 +3054,11 @@ export interface EmployeeDetailDto {
 }
 
 /**
- * Proposto. Só o nível ORGANIZAÇÃO. Cargo, setor e papel não entram aqui — moram no vínculo e mudam por `/link`, senão gravar a ficha numa empresa reescreveria em silêncio o cargo que a pessoa tem na outra. **Salário e o resto do bloco de RH ficam fora deste corte**: a pergunta de LGPD sobre dado sensível de funcionário segue sem resposta, e campo sem regra de acesso é pior que campo ausente. `PUT` substitui o registro inteiro: omitir apaga.
+ * Proposto. Só o nível ORGANIZAÇÃO — a pessoa. Cargo, setor, papel, vínculo e salário não entram aqui: moram no vínculo e mudam por `/link`, senão gravar a ficha numa empresa reescreveria em silêncio o que a pessoa tem na outra.
+ *
+ * **O bloco pessoal ENTROU neste corte** (decisão do user, 2026-08-28): nascimento, estado civil, cônjuge, filiação, naturalidade, nacionalidade, ano de chegada, instrução e profissão. O que ficou de fora ficou por LGPD, e não por corte de escopo — **sexo e raça/cor**, dado sensível (art. 5º II) sem finalidade nem regra de acesso declarada no produto. **Salário também não está aqui, e por outra razão**: é do vínculo, e viaja por `EmployeeLinkRequest.salaryCents`, `admin`-only na leitura e na escrita.
+ *
+ * `PUT` substitui o registro inteiro: omitir apaga.
  */
 export interface EmployeeWriteRequest {
   name: string;
@@ -2964,12 +3073,80 @@ export interface EmployeeWriteRequest {
   phone: string | null;
   /** @nullable */
   photoUrl?: string | null;
+  /**
+     * Proposto. Data de nascimento. Nível ORGANIZAÇÃO: a pessoa nasceu uma vez, não uma vez por empresa.
+     * @nullable
+     */
+  birthDate?: string | null;
+  /**
+     * Proposto. Estado civil — `CatalogLookupDto.id`, kind `ESTADO_CIVIL`.
+     * @nullable
+     */
+  maritalStatusId?: string | null;
+  /**
+     * Proposto. Nome do cônjuge.
+     * @nullable
+     */
+  spouseName?: string | null;
+  /**
+     * Proposto. Data de nascimento do cônjuge.
+     * @nullable
+     */
+  spouseBirthDate?: string | null;
+  /**
+     * Proposto. Filiação — nome do pai.
+     * @nullable
+     */
+  fatherName?: string | null;
+  /**
+     * Proposto. Filiação — nome da mãe.
+     * @nullable
+     */
+  motherName?: string | null;
+  /**
+     * Proposto. Código da cidade de nascimento, como o legado o guarda. **Texto opaco e NÃO chave estrangeira**: o contrato não publica recurso de cidades, então não há `/api/cities/{id}` para este valor apontar. Existe para o dado sobreviver ao ida-e-volta — a tela busca a cidade numa lista local e perderia o código no `PUT` se só o nome viajasse. Vira referência de verdade no dia em que cidades ganharem caminho.
+     * @nullable
+     */
+  birthCityCode?: string | null;
+  /**
+     * Proposto. Naturalidade — nome da cidade de nascimento.
+     * @nullable
+     */
+  birthCity?: string | null;
+  /**
+     * Proposto. UF de nascimento, duas letras. Separada da UF do endereço e da do órgão expedidor: são três perguntas diferentes sobre a mesma pessoa.
+     * @nullable
+     */
+  birthState?: string | null;
+  /**
+     * Proposto. Nacionalidade — `CatalogLookupDto.id`, kind `NACIONALIDADE`.
+     * @nullable
+     */
+  nationalityId?: string | null;
+  /**
+     * Proposto. Ano de chegada ao país, quatro dígitos — só faz sentido para quem não nasceu aqui. **Texto e não `integer`** porque é o que o legado guarda e porque ano isolado não é data: somar, subtrair ou comparar com `birthDate` são operações que ninguém faz com ele.
+     * @nullable
+     * @pattern ^[0-9]{4}$
+     */
+  arrivalYear?: string | null;
+  /**
+     * Proposto. Grau de instrução — `CatalogLookupDto.id`, kind `GRAU_INSTRUCAO`.
+     * @nullable
+     */
+  educationLevelId?: string | null;
+  /**
+     * Proposto. Profissão — `CatalogLookupDto.id`, kind `PROFISSAO`. **Não confundir com `jobTitleId`**: profissão é da pessoa e vai com ela para qualquer empresa (kind `PROFISSAO`); cargo é do vínculo e pode ser outro em cada uma (kind `CARGO`).
+     * @nullable
+     */
+  occupationId?: string | null;
   /** @nullable */
   active: boolean | null;
 }
 
 /**
  * Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).
+ *
+ * **Vínculo e salário entraram aqui, e não na ficha da pessoa** (decisão do user, 2026-08-28): são da empresa, como cargo e setor. `salaryCents` é `admin`-only na leitura E na escrita — a descrição do campo diz como o servidor recusa cada uma.
  *
  * **O papel entra por `roleId`, e só por ele.** Até a fase 3 do api#84 havia um segundo caminho — `role`, o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) —, e ele saiu junto com a escala: os cinco viraram linhas de `org_roles` como qualquer papel que o admin monta, e a coluna que guardava o texto não existe mais no servidor. **`roleId` e não o `slug` porque o nome do papel é editável pelo CRUD** — `PUT /api/roles/{id}` renomeia `Vendedor` para `Consultor` sem mover vínculo nenhum, e uma chave que a tela pode reescrever não serve de referência.
  */
@@ -2993,6 +3170,18 @@ export interface EmployeeLinkRequest {
   hiredAt?: string | null;
   /** @nullable */
   dismissedAt?: string | null;
+  /**
+     * Proposto. Vínculo (CLT, PJ, estágio…) — `CatalogLookupDto.id`, kind `VINCULO`. Nível EMPRESA ATIVA: a mesma pessoa pode ser CLT numa empresa do grupo e PJ na outra, pela mesma razão que cargo e setor moram aqui.
+     * @nullable
+     */
+  employmentTypeId?: string | null;
+  /**
+     * Proposto. Salário em centavos (inteiro — nunca float). Nível EMPRESA ATIVA, ao lado de `hiredAt` e `dismissedAt`: quem trabalha em duas empresas do grupo tem uma remuneração em cada, e guardar isto na pessoa faria gravar a ficha numa empresa reescrever em silêncio o salário da outra.
+     *
+     * **LEITURA E ESCRITA SÃO `admin`-only, e a leitura é a metade que se esquece.** Para papel sem a permissão o servidor OMITE o campo do corpo em vez de devolvê-lo em `null`: `null` significa "não há salário registrado", e usar o mesmo valor para "você não pode ver" faria a tela imprimir um branco idêntico nos dois casos. Escrita por papel não-admin é 403 `urn:cabinet:erro:papel-insuficiente`, e não recusa silenciosa.
+     * @nullable
+     */
+  salaryCents?: number | null;
   /** @nullable */
   customerFacing?: boolean | null;
   /** @nullable */

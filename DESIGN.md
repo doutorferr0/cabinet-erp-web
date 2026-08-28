@@ -1425,10 +1425,15 @@ Três receitas, e a lista do que NÃO anima vale tanto quanto elas.
 
 | o quê | receita | onde mora |
 |---|---|---|
-| Entrada de tela | fade + sobe 16px, mola `{120,30}`, escalonamento ≤80ms (teto de 6 regiões) | `<Entrada>` (lib `motion`) |
+| Entrada de tela | fade + sobe 16px, mola `{260,32}` (endurecida 2026-08-28; a `{120,30}` lia como tela lavada), escalonamento ≤80ms (teto de 6 regiões) | `<Entrada>` (lib `motion`) |
 | Peça que aparece (popover, menu, diálogo, dica) | fade + escala 0,96→1, mola `{400,30}` | `pop-spring` (CSS) |
 | Cortina do diálogo | só opacidade, 160ms | `fade-veil` (CSS) |
 | Hover e press | §Lift, 140ms `ease-out` | `lift-control` / `lift-flat` (CSS) |
+| Foco por zona (v2, 2026-08-28) | seção sem o campo focado recua a 0,78 + dessatura; a ativa ganha halo e o TÍTULO escala 1,06. Gatilho: `:has(campo:focus)` em `[data-zonas]` — mira `[data-slot]`, nunca filho direto (o DocumentoBloco engolia as seções) | `index.css` |
+| Troca de aba | painel entra com fade + sobe 6px, 200ms, na remontagem | `painel-entra` (CSS) |
+
+Durações e curvas novas saem dos tokens `--dur-curta/media/longa` e `--ease-saida/entrada`
+(`:root`, 2026-08-28) — receita nova não inventa número.
 
 **A entrada anima na MONTAGEM e só.** Quem garante "uma vez por navegação" é a `key` por caminho
 que o shell dá à folha: trocar de tela remonta e anima; paginar, ordenar e digitar mexem em search
@@ -1441,7 +1446,8 @@ devolve o foco ao trigger. Trocar isso por `AnimatePresence` seria tirar dela a 
 `{400,30}` está escrita em `linear()` de 30 pontos — uma bezier de 4 pontos não representa passar do
 alvo e voltar.
 
-**Nunca animam:** linha de tabela · célula de grade · campo · anel de foco.
+**Nunca animam:** linha de tabela · célula de grade · campo · anel de foco. Tamanho de
+texto anima por `transform: scale`, nunca por `font-size` — escala não relayouta.
 
 `<MotionConfig reducedMotion="user">` fica na raiz e é item de DoD, não sugestão. Animação escrita
 em CSS tem a própria rede: `@media (prefers-reduced-motion: reduce)` em cada receita.

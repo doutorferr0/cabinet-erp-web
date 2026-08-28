@@ -109,6 +109,7 @@ export function CadastroForm<T extends FieldValues>({
   return (
     <Form {...form}>
       <form
+        data-zonas
         onSubmit={form.handleSubmit((values) => {
           enviadoRef.current = true
           setEnviado(true)

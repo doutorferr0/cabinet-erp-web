@@ -283,25 +283,38 @@ function ordenar(linhas: ApprovalRequestDto[], sortBy: string, desc: boolean) {
 }
 
 /**
- * As duas recusas da decisão, num lugar só — as duas valem para aprovar E para
- * recusar, e escrevê-las duas vezes daria duas chances de divergirem.
+ * As recusas da decisão, num lugar só — todas valem para aprovar E para recusar,
+ * e escrevê-las duas vezes daria duas chances de divergirem.
+ *
+ * **A ORDEM é decisão, não acaso**, porque um pedido pode bater em mais de uma e
+ * a tela mostra a PRIMEIRA. Ela vai do RECURSO para o PEDINTE:
+ *
+ * 1. **Não existe** — nada mais a dizer sobre ele.
+ * 2. **Já foi decidido.** É o estado do recurso, e vale para quem quer que
+ *    pergunte: a tela que mandou isso está mostrando o passado, e recarregar
+ *    resolve o que ela vê. Vem antes das duas de baixo porque nenhuma delas
+ *    mudaria o desfecho — decidido é terminal para todo mundo.
+ * 3. **Você foi quem pediu.** Sobre o pedinte, e a saída é procurar outra pessoa.
+ * 4. **Seu papel não alcança.** O último porque é o mais genérico: dito antes do
+ *    item 3, mandaria o próprio solicitante — que pode ter papel de sobra — atrás
+ *    de um acesso que não destravaria nada.
  */
 function recusaDaDecisao(pedido: PedidoGuardado | undefined) {
   if (!pedido) return naoEncontrado('Pedido de aprovação não encontrado.')
-  if (pedido.requestedByEmployeeId === EU) {
-    return problemaJson(
-      403,
-      'Quem pediu o desconto não decide o próprio pedido.',
-      {},
-      TIPO.aprovacaoDoSolicitante,
-    )
-  }
   if (pedido.status !== 'pending') {
     return problemaJson(
       409,
       'Este pedido já foi decidido. Recarregue a fila.',
       {},
       TIPO.aprovacaoJaDecidida,
+    )
+  }
+  if (pedido.requestedByEmployeeId === EU) {
+    return problemaJson(
+      403,
+      'Quem pediu o desconto não decide o próprio pedido.',
+      {},
+      TIPO.aprovacaoDoSolicitante,
     )
   }
   if (!podeDecidir()) {

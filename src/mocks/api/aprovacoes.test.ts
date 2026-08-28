@@ -172,6 +172,18 @@ describe('decidir', () => {
     expect(resposta.status).toBe(404)
   })
 
+  it('já decidido vence "foi você quem pediu" — decidido é terminal para todo mundo', async () => {
+    await entrar()
+    // `apr-0003` é do próprio operador; se fosse pendente, a resposta seria o
+    // 403 do solicitante. Decidido, o que a tela precisa saber é que ela está
+    // mostrando o passado — e é isso que a ordem das recusas garante.
+    await rejectApprovalRequest('apr-0002', { reason: 'Não passa.' })
+    const resposta = await approveApprovalRequest('apr-0002', { reason: null })
+
+    expect(resposta.status).toBe(409)
+    expect((resposta.data as { type: string }).type).toBe('urn:cabinet:erro:aprovacao-ja-decidida')
+  })
+
   it('pedido inexistente é 404, não 500', async () => {
     await entrar()
     const resposta = await approveApprovalRequest('apr-9999', { reason: null })

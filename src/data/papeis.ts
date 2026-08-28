@@ -72,6 +72,7 @@ export type FamiliaDeCaminho =
   | 'dashboard'
   | 'roles'
   | 'tenants'
+  | 'approval-requests'
 
 /**
  * Papel mínimo por família de caminho — cópia da matriz do backend
@@ -206,6 +207,23 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * na tela um botão que o servidor recusa.
    */
   tenants: 'owner',
+  /**
+   * A FILA DE APROVAÇÕES (F12) fica onde ficaram o depósito e a condição de
+   * pagamento, e pela MESMA linha de corte — não por simetria.
+   *
+   * Liberar desconto acima do teto é decidir o que TODO vendedor pode oferecer:
+   * o erro de um sai em documento assinado, e o desconto liberado por engano não
+   * volta. `operator-sales` grava o orçamento — é o trabalho dele, e é o que
+   * ABRE o pedido; decidir o pedido é outra coisa, e a fila existe justamente
+   * para separar as duas.
+   *
+   * No legado a régua era a permissão especial 5 (`MARGEM DE DESCONTO PARA O
+   * CLIENTE`), ligada a usuário ou grupo em `SisPermissaoEspecial`. Aqui ela é o
+   * papel, **INTERINAMENTE** — vira a permissão nomeada `aprovacoes:decidir`
+   * quando o modelo por AÇÃO (api#84) entregar, como já está escrito para o
+   * depósito e para a condição.
+   */
+  'approval-requests': 'admin',
 }
 
 /**
@@ -235,6 +253,7 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   dashboard: ['/api/dashboard'],
   roles: ['/api/roles'],
   tenants: ['/api/tenants'],
+  'approval-requests': ['/api/approval-requests'],
 }
 
 /** Devolve a família de um caminho de API, ou `undefined` quando não se aplica. */

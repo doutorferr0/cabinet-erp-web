@@ -13,6 +13,10 @@ import type {
   ActivityWriteRequest,
   AddDeliveryItemRequest,
   AgendaEventDto,
+  ApprovalDecisionRequest,
+  ApprovalRejectionRequest,
+  ApprovalRequestDto,
+  ApprovalSummaryDto,
   BirthdaysReportDto,
   CancelDocumentRequest,
   CashMovementDto,
@@ -82,6 +86,7 @@ import type {
   LabelLayoutWriteRequest,
   ListActivitiesParams,
   ListAgendaEventsParams,
+  ListApprovalRequestsParams,
   ListBankAccountsParams,
   ListCashMovementsParams,
   ListCashRegistersParams,
@@ -134,6 +139,7 @@ import type {
   OrderParticipantsWriteRequest,
   OrderWriteRequest,
   PagedResultOfActivityDto,
+  PagedResultOfApprovalRequestDto,
   PagedResultOfBankAccountDto,
   PagedResultOfCashMovementDto,
   PagedResultOfCashRegisterDto,
@@ -13094,6 +13100,307 @@ export const printProductLabels = async (params: PrintProductLabelsParams, optio
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export type listApprovalRequestsResponse200 = {
+  data: PagedResultOfApprovalRequestDto
+  status: 200
+}
+
+export type listApprovalRequestsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listApprovalRequestsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listApprovalRequestsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listApprovalRequestsResponseSuccess = (listApprovalRequestsResponse200) & {
+  headers: Headers;
+};
+export type listApprovalRequestsResponseError = (listApprovalRequestsResponse400 | listApprovalRequestsResponse401 | listApprovalRequestsResponse403) & {
+  headers: Headers;
+};
+
+export type listApprovalRequestsResponse = (listApprovalRequestsResponseSuccess | listApprovalRequestsResponseError)
+
+export const getListApprovalRequestsUrl = (params?: ListApprovalRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/approval-requests?${stringifiedParams}` : `/api/approval-requests`
+}
+
+/**
+ * Proposto. A FILA DE APROVAÇÕES da empresa ativa.
+ *
+ * **Quem vê o quê é decisão do SERVIDOR, e a tela não filtra.** Quem tem a permissão de decidir vê a fila inteira; quem não tem vê só os pedidos que ELE abriu — é assim que o vendedor acompanha o próprio desconto sem enxergar o do colega. Fazer esse recorte no cliente exigiria mandar para o navegador exatamente o que se quer esconder.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ */
+export const listApprovalRequests = async (params?: ListApprovalRequestsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listApprovalRequestsResponse> => {
+
+  return apiFetch<listApprovalRequestsResponse>(getListApprovalRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getApprovalSummaryResponse200 = {
+  data: ApprovalSummaryDto
+  status: 200
+}
+
+export type getApprovalSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getApprovalSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getApprovalSummaryResponseSuccess = (getApprovalSummaryResponse200) & {
+  headers: Headers;
+};
+export type getApprovalSummaryResponseError = (getApprovalSummaryResponse401 | getApprovalSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getApprovalSummaryResponse = (getApprovalSummaryResponseSuccess | getApprovalSummaryResponseError)
+
+export const getGetApprovalSummaryUrl = () => {
+
+
+
+
+  return `/api/approval-requests/summary`
+}
+
+/**
+ * Proposto. Quantos pedidos esperam ESTA sessão. Barato de propósito — o shell o pede em toda tela.
+ *
+ * **Sem empresa ativa devolve `{pendingCount: 0, canDecide: false}`**, e não 409: o badge é ornamento de barra, e derrubar a navegação inteira porque ninguém escolheu empresa seria o rabo abanando o cachorro.
+ */
+export const getApprovalSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getApprovalSummaryResponse> => {
+
+  return apiFetch<getApprovalSummaryResponse>(getGetApprovalSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getApprovalRequestResponse200 = {
+  data: ApprovalRequestDto
+  status: 200
+}
+
+export type getApprovalRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getApprovalRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getApprovalRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getApprovalRequestResponseSuccess = (getApprovalRequestResponse200) & {
+  headers: Headers;
+};
+export type getApprovalRequestResponseError = (getApprovalRequestResponse401 | getApprovalRequestResponse403 | getApprovalRequestResponse404) & {
+  headers: Headers;
+};
+
+export type getApprovalRequestResponse = (getApprovalRequestResponseSuccess | getApprovalRequestResponseError)
+
+export const getGetApprovalRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/approval-requests/${id}`
+}
+
+/**
+ * Proposto. Um pedido. Mesma forma da linha da fila — não há filho a carregar, e um `DetailDto` que só repete o `Dto` seria dois nomes para uma coisa.
+ */
+export const getApprovalRequest = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getApprovalRequestResponse> => {
+
+  return apiFetch<getApprovalRequestResponse>(getGetApprovalRequestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type approveApprovalRequestResponse200 = {
+  data: ApprovalRequestDto
+  status: 200
+}
+
+export type approveApprovalRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type approveApprovalRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type approveApprovalRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type approveApprovalRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type approveApprovalRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type approveApprovalRequestResponseSuccess = (approveApprovalRequestResponse200) & {
+  headers: Headers;
+};
+export type approveApprovalRequestResponseError = (approveApprovalRequestResponse400 | approveApprovalRequestResponse401 | approveApprovalRequestResponse403 | approveApprovalRequestResponse404 | approveApprovalRequestResponse409) & {
+  headers: Headers;
+};
+
+export type approveApprovalRequestResponse = (approveApprovalRequestResponseSuccess | approveApprovalRequestResponseError)
+
+export const getApproveApprovalRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/approval-requests/${id}/approve`
+}
+
+/**
+ * Proposto. LIBERA o pedido, e com ele o documento.
+ *
+ * Quem PEDIU não pode aprovar o próprio pedido: 403 `aprovacao-do-solicitante`, e a URN é separada de `papel-insuficiente` porque a saída é outra — não falta acesso, falta outra pessoa. Pedido já decidido é 409 `aprovacao-ja-decidida`: não há reabrir, e a tela recarrega a fila em vez de insistir.
+ */
+export const approveApprovalRequest = async (id: string,
+    approvalDecisionRequest?: ApprovalDecisionRequest, options?: Parameters<typeof apiFetch>[1]): Promise<approveApprovalRequestResponse> => {
+
+  return apiFetch<approveApprovalRequestResponse>(getApproveApprovalRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(approvalDecisionRequest)
+  }
+);}
+
+
+
+export type rejectApprovalRequestResponse200 = {
+  data: ApprovalRequestDto
+  status: 200
+}
+
+export type rejectApprovalRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type rejectApprovalRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type rejectApprovalRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type rejectApprovalRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type rejectApprovalRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type rejectApprovalRequestResponseSuccess = (rejectApprovalRequestResponse200) & {
+  headers: Headers;
+};
+export type rejectApprovalRequestResponseError = (rejectApprovalRequestResponse400 | rejectApprovalRequestResponse401 | rejectApprovalRequestResponse403 | rejectApprovalRequestResponse404 | rejectApprovalRequestResponse409) & {
+  headers: Headers;
+};
+
+export type rejectApprovalRequestResponse = (rejectApprovalRequestResponseSuccess | rejectApprovalRequestResponseError)
+
+export const getRejectApprovalRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/approval-requests/${id}/reject`
+}
+
+/**
+ * Proposto. RECUSA o pedido, com motivo obrigatório, e o documento fica barrado.
+ *
+ * **A recusa não desfaz nada e não apaga o documento** — ela registra que aquele desconto não passou. Quem gravou corrige e grava de novo, o que gera pedido NOVO: decisão é fato, e reciclar o pedido antigo apagaria a primeira recusa junto com o motivo dela.
+ *
+ * Mesmas duas recusas do `approve`: 403 `aprovacao-do-solicitante` para quem pediu, 409 `aprovacao-ja-decidida` para pedido fora de `pending`.
+ */
+export const rejectApprovalRequest = async (id: string,
+    approvalRejectionRequest: ApprovalRejectionRequest, options?: Parameters<typeof apiFetch>[1]): Promise<rejectApprovalRequestResponse> => {
+
+  return apiFetch<rejectApprovalRequestResponse>(getRejectApprovalRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(approvalRejectionRequest)
   }
 );}
 

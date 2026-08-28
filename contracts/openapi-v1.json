@@ -14270,6 +14270,330 @@
           }
         }
       }
+    },
+    "/api/approval-requests": {
+      "get": {
+        "tags": ["aprovacoes"],
+        "operationId": "ListApprovalRequests",
+        "description": "Proposto. A FILA DE APROVAÇÕES da empresa ativa.\n\n**Quem vê o quê é decisão do SERVIDOR, e a tela não filtra.** Quem tem a permissão de decidir vê a fila inteira; quem não tem vê só os pedidos que ELE abriu — é assim que o vendedor acompanha o próprio desconto sem enxergar o do colega. Fazer esse recorte no cliente exigiria mandar para o navegador exatamente o que se quer esconder.\n\n**Sem empresa ativa devolve `{rows: [], total: 0}`.**",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por número do documento, cliente ou nome de quem pediu.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `requestedAt`, `status`, `requestedPercent`, `discountCents`. Campo fora dela é 400.\n\n`subjectLabel`, `customerName` e `requestedByName` ficam de fora pelo motivo de sempre — são cópias congeladas de outra tabela, e ordenar por elas prometeria ordem que o servidor não indexa.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Recorta por situação (`pending`, `approved`, `rejected`). Ausente devolve as três: a fila decidida é o histórico, e escondê-la por padrão faria a tela perder o rastro no dia seguinte à decisão.",
+            "schema": {
+              "$ref": "#/components/schemas/ApprovalRequestStatus"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "Só os pedidos desta espécie.",
+            "schema": {
+              "$ref": "#/components/schemas/ApprovalRequestKind"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "description": "Só os pedidos deste documento — é como a folha do orçamento mostra \"este documento está esperando liberação\" sem varrer a fila inteira.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfApprovalRequestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/approval-requests/summary": {
+      "get": {
+        "tags": ["aprovacoes"],
+        "operationId": "GetApprovalSummary",
+        "description": "Proposto. Quantos pedidos esperam ESTA sessão. Barato de propósito — o shell o pede em toda tela.\n\n**Sem empresa ativa devolve `{pendingCount: 0, canDecide: false}`**, e não 409: o badge é ornamento de barra, e derrubar a navegação inteira porque ninguém escolheu empresa seria o rabo abanando o cachorro.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/approval-requests/{id}": {
+      "get": {
+        "tags": ["aprovacoes"],
+        "operationId": "GetApprovalRequest",
+        "description": "Proposto. Um pedido. Mesma forma da linha da fila — não há filho a carregar, e um `DetailDto` que só repete o `Dto` seria dois nomes para uma coisa.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — pedido inexistente nesta empresa, ou fora do que esta sessão pode ver.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/approval-requests/{id}/approve": {
+      "post": {
+        "tags": ["aprovacoes"],
+        "operationId": "ApproveApprovalRequest",
+        "description": "Proposto. LIBERA o pedido, e com ele o documento.\n\nQuem PEDIU não pode aprovar o próprio pedido: 403 `aprovacao-do-solicitante`, e a URN é separada de `papel-insuficiente` porque a saída é outra — não falta acesso, falta outra pessoa. Pedido já decidido é 409 `aprovacao-ja-decidida`: não há reabrir, e a tela recarrega a fila em vez de insistir.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — pedido inexistente nesta empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — o pedido já saiu de `pending`, ou não há empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/approval-requests/{id}/reject": {
+      "post": {
+        "tags": ["aprovacoes"],
+        "operationId": "RejectApprovalRequest",
+        "description": "Proposto. RECUSA o pedido, com motivo obrigatório, e o documento fica barrado.\n\n**A recusa não desfaz nada e não apaga o documento** — ela registra que aquele desconto não passou. Quem gravou corrige e grava de novo, o que gera pedido NOVO: decisão é fato, e reciclar o pedido antigo apagaria a primeira recusa junto com o motivo dela.\n\nMesmas duas recusas do `approve`: 403 `aprovacao-do-solicitante` para quem pediu, 409 `aprovacao-ja-decidida` para pedido fora de `pending`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalRejectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — pedido inexistente nesta empresa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — o pedido já saiu de `pending`, ou não há empresa ativa.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15306,7 +15630,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:token-invalido` | 400 | `Link inválido` | o token do link de convite ou de recuperação não existe, já foi usado, ou foi substituído por um pedido mais novo. **Sem saída na tela** — ela manda pedir outro link, e não oferece repetir o mesmo |\n| `urn:cabinet:erro:token-expirado` | 400 | `Link expirado` | o link existiu e venceu. Separado do anterior porque a tela TEM o que oferecer: pedir outro, num botão, em vez de mandar a pessoa recomeçar sem saber por quê |\n| `urn:cabinet:erro:email-nao-enviado` | 502 | `E-mail não enviado` | o servidor de e-mail recusou ou não respondeu. **Não é 500:** nada aqui deu errado, e o que falhou é um terceiro — a tela oferece tentar de novo, e o convite não ficou pendente pela metade |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:sem-concessao-de-suporte` | 403 | `Sem concessão de suporte` | suporte-da-plataforma tocando dado de cliente sem concessão ABERTA para aquela organização — ou com a concessão já vencida. 403 e não 404: a organização existe, o que falta é o acesso. É a recusa que existe no lugar do `super-admin`, e ela é o caso PADRÃO — o suporte começa sem alcançar nada. |\n| `urn:cabinet:erro:suporte-ja-em-organizacao` | 409 | `Suporte já está em outra organização` | tentativa de abrir a segunda concessão com uma aberta. Carrega `openGrantId`, para a tela oferecer encerrar aquela em vez de deixar o operador procurar qual é. É a regra de UMA POR VEZ dita em tempo de execução. |\n| `urn:cabinet:erro:concessao-encerrada` | 409 | `Concessão já encerrada` | `/revoke` numa concessão que já foi encerrada ou já venceu. 409 e não 204: encerrar de novo não é o mesmo fato, e a trilha não ganha uma segunda linha por um clique repetido. |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:token-invalido` | 400 | `Link inválido` | o token do link de convite ou de recuperação não existe, já foi usado, ou foi substituído por um pedido mais novo. **Sem saída na tela** — ela manda pedir outro link, e não oferece repetir o mesmo |\n| `urn:cabinet:erro:token-expirado` | 400 | `Link expirado` | o link existiu e venceu. Separado do anterior porque a tela TEM o que oferecer: pedir outro, num botão, em vez de mandar a pessoa recomeçar sem saber por quê |\n| `urn:cabinet:erro:email-nao-enviado` | 502 | `E-mail não enviado` | o servidor de e-mail recusou ou não respondeu. **Não é 500:** nada aqui deu errado, e o que falhou é um terceiro — a tela oferece tentar de novo, e o convite não ficou pendente pela metade |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:sem-concessao-de-suporte` | 403 | `Sem concessão de suporte` | suporte-da-plataforma tocando dado de cliente sem concessão ABERTA para aquela organização — ou com a concessão já vencida. 403 e não 404: a organização existe, o que falta é o acesso. É a recusa que existe no lugar do `super-admin`, e ela é o caso PADRÃO — o suporte começa sem alcançar nada. |\n| `urn:cabinet:erro:suporte-ja-em-organizacao` | 409 | `Suporte já está em outra organização` | tentativa de abrir a segunda concessão com uma aberta. Carrega `openGrantId`, para a tela oferecer encerrar aquela em vez de deixar o operador procurar qual é. É a regra de UMA POR VEZ dita em tempo de execução. |\n| `urn:cabinet:erro:concessao-encerrada` | 409 | `Concessão já encerrada` | `/revoke` numa concessão que já foi encerrada ou já venceu. 409 e não 204: encerrar de novo não é o mesmo fato, e a trilha não ganha uma segunda linha por um clique repetido. |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:aprovacao-ja-decidida` | 409 | `Aprovação já decidida` | aprovar ou recusar pedido que já saiu de `pending`. **Não é erro de quem clicou** — é a fila mostrando estado velho, e a tela recarrega em vez de insistir |\n| `urn:cabinet:erro:aprovacao-do-solicitante` | 403 | `Decisão do próprio solicitante` | quem PEDIU o desconto tentou decidi-lo. Separado de `papel-insuficiente` porque a saída é outra: não falta permissão, falta OUTRA PESSOA |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -15362,6 +15686,8 @@
           "urn:cabinet:erro:sem-concessao-de-suporte",
           "urn:cabinet:erro:suporte-ja-em-organizacao",
           "urn:cabinet:erro:concessao-encerrada",
+          "urn:cabinet:erro:aprovacao-ja-decidida",
+          "urn:cabinet:erro:aprovacao-do-solicitante",
           "urn:cabinet:erro:nao-implementado",
           "urn:cabinet:erro:resposta-nao-json"
         ]
@@ -24940,6 +25266,176 @@
             "format": "int32"
           }
         }
+      },
+      "ApprovalRequestKind": {
+        "description": "O QUE se está pedindo para liberar. Enum e não texto livre: a tela desenha uma linha diferente por espécie (o desconto mostra percentual pedido × teto) e o servidor decide o efeito de cada uma sobre o documento.\n\nNasce com UM valor, e isso é a fase 1, não enum inútil. No legado o teto de desconto é a opção especial 5 de `SisOpcoesEspecial` (`MARGEM DE DESCONTO PARA O CLIENTE`) — uma entre 52, e pelo menos oito das outras são da mesma família (valor unitário do produto, teto de parcelas, valor mínimo da parcela, plano de conta na venda). Elas entram aqui quando a regra de cada uma estiver escrita; um enum de um valor hoje é o que impede que a segunda espécie precise de um caminho novo.",
+        "type": "string",
+        "enum": ["quote-discount"]
+      },
+      "ApprovalRequestStatus": {
+        "description": "`pending` é a fila; `approved` e `rejected` são TERMINAIS. Não há \"reabrir\": decisão registrada é fato, e desfazê-la apagaria o rastro de quem liberou o desconto — que é justamente o que o legado não tinha. Mudou de ideia, o documento gera pedido novo.",
+        "type": "string",
+        "enum": ["pending", "approved", "rejected"]
+      },
+      "ApprovalSubjectType": {
+        "description": "A que DOCUMENTO o pedido pertence. Polimórfico como `ActivityDto.entityType`, e pela mesma razão: o pedido não é filho de uma tabela só. Hoje só `quote` — o gancho da fase 1 é o desconto do orçamento.",
+        "type": "string",
+        "enum": ["quote"]
+      },
+      "ApprovalRequestDto": {
+        "description": "Proposto. UM PEDIDO DE APROVAÇÃO — a permissão especial do legado virada fila.\n\n## O que muda em relação ao legado\n\nNo Softlux isto é uma CAIXA MARCADA: `SisPermissaoEspecial` liga a opção 5 (`MARGEM DE DESCONTO PARA O CLIENTE`) a um usuário ou grupo, e quem a tem digita o desconto que quiser. Quem não a tem é barrado na tela e **não sobra rastro nenhum** — nem do que se tentou, nem de quem destravou por cima. Era permissão, não fluxo.\n\nAqui o pedido é REGISTRO: guarda o que se pediu, o teto que valia, quem pediu, quem decidiu e por quê. É o que torna a regra auditável, e é a única razão de existir uma entidade onde o legado tinha um booleano.\n\n## Quem CRIA não é a tela\n\n**Não há `POST /api/approval-requests`, e a ausência é deliberada.** O pedido nasce no SERVIDOR, ao gravar documento cujo desconto passa do teto de quem grava — o mesmo instante em que o legado mostrava a recusa. Publicar a criação deixaria a tela abrir pedido para desconto que ela não gravou, e dois caminhos escrevendo a mesma fila divergem no primeiro campo que um deles esquecer.\n\n## O que é CONGELADO, e por quê\n\n`limitPercent`, `requestedByName` e `subjectLabel` são cópias na hora do pedido, não junções. Mudar o teto da empresa amanhã não pode reescrever a decisão de ontem: o aprovador julgou contra um teto, e a fila precisa continuar dizendo qual era. Mesma razão do `carrierName` do romaneio e do snapshot do item do orçamento.",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "subjectType",
+          "subjectId",
+          "requestedByEmployeeId",
+          "requestedAt",
+          "requestedPercent",
+          "limitPercent",
+          "discountCents",
+          "documentTotalCents",
+          "canDecide"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ApprovalRequestKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalRequestStatus"
+          },
+          "subjectType": {
+            "$ref": "#/components/schemas/ApprovalSubjectType"
+          },
+          "subjectId": {
+            "description": "O documento — `QuoteDto.id` quando `subjectType` é `quote`.",
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectLabel": {
+            "description": "Como o documento se chama para quem lê a fila — o NÚMERO dele, congelado. `null` quando o servidor não o tem; a tela então mostra a linha sem apelido, em vez de exibir o uuid, que não é nome de documento.",
+            "type": ["string", "null"]
+          },
+          "customerName": {
+            "description": "Cliente do documento, congelado — a fila decide olhando para quem é a venda.",
+            "type": ["string", "null"]
+          },
+          "requestedByEmployeeId": {
+            "description": "Quem gravou o documento que gerou o pedido (`EmployeeDto.id`).",
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByName": {
+            "description": "Nome de quem pediu, CONGELADO ao lado do id — a fila é histórico.",
+            "type": ["string", "null"]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "requestedPercent": {
+            "description": "O desconto que se PEDIU, em percentual com 4 casas escaladas por 10.000: `10000` = 1%. Mesma unidade de `QuoteDetailDto.discountPercent` — é o mesmo número, e converter aqui faria a fila discordar do documento.\n\n**É o `VenDesc_DescPorcUsuario` do legado**, a coluna que `QuoteGroupDiscountDto` declara ter deixado de fora *\"só faz sentido junto com a regra que os separa — o teto — e essa regra é do servidor\"*. A regra é esta, e é por isso que o campo aparece AQUI e não lá: o que o usuário pediu é matéria do pedido, não do documento.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "limitPercent": {
+            "description": "O teto que valia para quem pediu, na hora em que pediu. Mesma unidade. CONGELADO: o aprovador precisa ver contra o que a régua bateu, e a régua muda.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "discountCents": {
+            "description": "Quanto o desconto pedido vale em DINHEIRO, em centavos. É a régua real da decisão: 3% num documento de mil reais e 3% num de duzentos mil são a mesma linha na fila e duas decisões diferentes. Percentual sozinho esconde isso.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "documentTotalCents": {
+            "description": "Total do documento COM o desconto pedido, em centavos — o que o cliente pagaria se liberado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "decidedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "decidedByEmployeeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "decidedByName": {
+            "description": "Nome de quem decidiu, congelado. `null` enquanto `pending`.",
+            "type": ["string", "null"]
+          },
+          "decisionReason": {
+            "description": "O MOTIVO da decisão. Obrigatório na recusa (`RejectApprovalRequest` o exige), opcional na aprovação — recusa sem motivo devolve o documento a quem pediu sem dizer o que corrigir, e o operador só pode tentar de novo às cegas.",
+            "type": ["string", "null"]
+          },
+          "canDecide": {
+            "description": "ESTA sessão pode decidir ESTE pedido. É o servidor quem responde, e por isso o campo existe: `SessaoAtual` não carrega permissões, e deduzir o poder de aprovar pelo papel do vínculo faria a tela oferecer botão que o servidor recusa com 403.\n\n`false` tem DOIS motivos e a tela não precisa distingui-los para desenhar: o pedido já foi decidido, ou quem olha é o próprio solicitante. Quem pediu vê o próprio pedido na fila — é como sabe que está esperando alguém.",
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResultOfApprovalRequestDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApprovalRequestDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ApprovalDecisionRequest": {
+        "description": "Proposto. A aprovação. O motivo é OPCIONAL aqui e obrigatório na recusa — liberar é seguir o que já se pediu; barrar é devolver trabalho, e trabalho devolvido sem motivo volta igual.",
+        "type": "object",
+        "properties": {
+          "reason": {
+            "description": "Nota do aprovador, quando houver. Vai para `ApprovalRequestDto.decisionReason`.",
+            "type": ["string", "null"],
+            "maxLength": 500
+          }
+        }
+      },
+      "ApprovalRejectionRequest": {
+        "description": "Proposto. A recusa, e ela EXIGE motivo — `required`, e não convenção de tela.\n\nA obrigação vive no contrato porque é o servidor que precisa recusar o corpo vazio: deixada só na validação do formulário, a primeira integração que não passasse pela tela gravaria recusa muda, e o operador ficaria com documento barrado sem nada a corrigir. `minLength: 3` barra o ponto solitário; o resto é julgamento de gente.",
+        "required": ["reason"],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "description": "Por que não. É o que o solicitante lê para saber o que mudar.",
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      },
+      "ApprovalSummaryDto": {
+        "description": "Proposto. A CONTAGEM da fila — o que o badge da barra mostra sem carregar a lista.\n\nExiste como operação PRÓPRIA em vez de sair do `total` da listagem porque quem o pede é o shell, em toda tela, e a listagem devolve linha. Pedir a página inteira para ler um número faria toda navegação carregar a fila de aprovações no fundo.",
+        "required": ["pendingCount", "canDecide"],
+        "type": "object",
+        "properties": {
+          "pendingCount": {
+            "description": "Quantos pedidos estão `pending` e ESTA sessão pode decidir. Não é o total da empresa: badge que conta o que quem olha não pode resolver é aviso que não sai, e o operador aprende a ignorá-lo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "canDecide": {
+            "description": "Esta sessão decide pedidos de aprovação. Governa a EXISTÊNCIA do badge, não o número: quem não aprova nada não vê contador zerado, vê nada.",
+            "type": "boolean"
+          }
+        }
       }
     }
   },
@@ -25000,6 +25496,9 @@
     },
     {
       "name": "financeiro"
+    },
+    {
+      "name": "aprovacoes"
     }
   ]
 }

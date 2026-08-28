@@ -573,9 +573,19 @@ describe('passthrough por rota', () => {
       'post /api/tenants',
       'get /api/tenants/{id}',
       'put /api/tenants/{id}',
+      // AS CINCO DA FILA DE APROVAÇÕES (F12), publicadas por esta PR. Entram
+      // pela mesma aritmética das cinco acima — não por medição —, e é por isso
+      // que o caso nomeia o motivo em vez de só contar: `sem-contrato` que
+      // sobreviva ao `sync:contract` do api vira `sem-handler`, e quem remedir
+      // precisa saber qual das duas dívidas está olhando.
+      'get /api/approval-requests',
+      'get /api/approval-requests/summary',
+      'get /api/approval-requests/{id}',
+      'post /api/approval-requests/{id}/approve',
+      'post /api/approval-requests/{id}/reject',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 6.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(7)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 11.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(12)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

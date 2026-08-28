@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/sidebar'
 import { normalize } from '@/data/provider'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
+import { PendentesDeAprovacao } from '@/features/aprovacao/pendentes-de-aprovacao'
 import { cn } from '@/lib/utils'
 import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
 import { Link, useRouterState } from '@tanstack/react-router'
@@ -223,6 +224,11 @@ function ItemDaBarra({
           <Link to={item.url}>
             <IconeDoItem item={item} />
             <span>{item.title}</span>
+            {/* O contador é MONTADO aqui e PERGUNTA sozinho — a navegação é
+                dado estático e não chama API (ver `NavItem.contador`). Ele some
+                quando não há o que contar, então o item volta ao desenho de
+                sempre em vez de carregar um `0` permanente. */}
+            {item.contador === 'aprovacoes-pendentes' ? <PendentesDeAprovacao /> : null}
           </Link>
         )}
       </SidebarMenuButton>

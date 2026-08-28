@@ -43,6 +43,14 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   escondida: é o trilho seguinte, e enquanto durar, as telas de compras e o mock do contrato são
   dois mundos que não se falam — gravar numa não aparece na outra. Migrar mexe em `src/data/`,
   não na tela, que é a regra de acesso a dado logo abaixo.
+- **APROVAÇÕES (F12) é o caso NOVO da lista, e é mock por falta de SERVIDOR, não de caminho.** O
+  contrato publica as 5 operações de `/api/approval-requests` (fila, resumo, ficha, aprovar,
+  recusar), `src/mocks/api/aprovacoes.ts` as serve com estado de verdade e a tela
+  (`features/aprovacao/`) as consome. O que falta do outro lado não são handlers: é o GANCHO que
+  CRIA o pedido, ao gravar documento com desconto acima do teto (`cabinet-erp-api#237`, fase 1).
+  Por isso as cinco ficam em `ROTAS_NO_MOCK` mesmo depois de o api sincronizar o contrato —
+  ligá-las antes do gancho poria uma fila vazia no lugar de uma que funciona, e "não há nada
+  para aprovar" é indistinguível de "o gancho não existe". Ver `docs/integracao.md` §Fila.
 - **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
   escrever à mão tipo que o contrato define. Todo tipo de servidor vem do codegen —
   `pnpm codegen` (Orval + pós-codegen), saída em `src/api/gerado/`, **commitada**, com

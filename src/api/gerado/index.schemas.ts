@@ -1072,6 +1072,8 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |
  * | `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |
  * | `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |
+ * | `urn:cabinet:erro:aprovacao-ja-decidida` | 409 | `Aprovação já decidida` | aprovar ou recusar pedido que já saiu de `pending`. **Não é erro de quem clicou** — é a fila mostrando estado velho, e a tela recarrega em vez de insistir |
+ * | `urn:cabinet:erro:aprovacao-do-solicitante` | 403 | `Decisão do próprio solicitante` | quem PEDIU o desconto tentou decidi-lo. Separado de `papel-insuficiente` porque a saída é outra: não falta permissão, falta OUTRA PESSOA |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
@@ -1136,6 +1138,8 @@ export const ProblemType = {
   'urn:cabinet:erro:sem-concessao-de-suporte': 'urn:cabinet:erro:sem-concessao-de-suporte',
   'urn:cabinet:erro:suporte-ja-em-organizacao': 'urn:cabinet:erro:suporte-ja-em-organizacao',
   'urn:cabinet:erro:concessao-encerrada': 'urn:cabinet:erro:concessao-encerrada',
+  'urn:cabinet:erro:aprovacao-ja-decidida': 'urn:cabinet:erro:aprovacao-ja-decidida',
+  'urn:cabinet:erro:aprovacao-do-solicitante': 'urn:cabinet:erro:aprovacao-do-solicitante',
   'urn:cabinet:erro:nao-implementado': 'urn:cabinet:erro:nao-implementado',
   'urn:cabinet:erro:resposta-nao-json': 'urn:cabinet:erro:resposta-nao-json',
 } as const;
@@ -8203,6 +8207,159 @@ export interface PagedResultOfLabelLayoutDto {
 }
 
 /**
+ * O QUE se está pedindo para liberar. Enum e não texto livre: a tela desenha uma linha diferente por espécie (o desconto mostra percentual pedido × teto) e o servidor decide o efeito de cada uma sobre o documento.
+ *
+ * Nasce com UM valor, e isso é a fase 1, não enum inútil. No legado o teto de desconto é a opção especial 5 de `SisOpcoesEspecial` (`MARGEM DE DESCONTO PARA O CLIENTE`) — uma entre 52, e pelo menos oito das outras são da mesma família (valor unitário do produto, teto de parcelas, valor mínimo da parcela, plano de conta na venda). Elas entram aqui quando a regra de cada uma estiver escrita; um enum de um valor hoje é o que impede que a segunda espécie precise de um caminho novo.
+ */
+export type ApprovalRequestKind = typeof ApprovalRequestKind[keyof typeof ApprovalRequestKind];
+
+
+export const ApprovalRequestKind = {
+  'quote-discount': 'quote-discount',
+} as const;
+
+/**
+ * `pending` é a fila; `approved` e `rejected` são TERMINAIS. Não há "reabrir": decisão registrada é fato, e desfazê-la apagaria o rastro de quem liberou o desconto — que é justamente o que o legado não tinha. Mudou de ideia, o documento gera pedido novo.
+ */
+export type ApprovalRequestStatus = typeof ApprovalRequestStatus[keyof typeof ApprovalRequestStatus];
+
+
+export const ApprovalRequestStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+/**
+ * A que DOCUMENTO o pedido pertence. Polimórfico como `ActivityDto.entityType`, e pela mesma razão: o pedido não é filho de uma tabela só. Hoje só `quote` — o gancho da fase 1 é o desconto do orçamento.
+ */
+export type ApprovalSubjectType = typeof ApprovalSubjectType[keyof typeof ApprovalSubjectType];
+
+
+export const ApprovalSubjectType = {
+  quote: 'quote',
+} as const;
+
+/**
+ * Proposto. UM PEDIDO DE APROVAÇÃO — a permissão especial do legado virada fila.
+ *
+ * ## O que muda em relação ao legado
+ *
+ * No Softlux isto é uma CAIXA MARCADA: `SisPermissaoEspecial` liga a opção 5 (`MARGEM DE DESCONTO PARA O CLIENTE`) a um usuário ou grupo, e quem a tem digita o desconto que quiser. Quem não a tem é barrado na tela e **não sobra rastro nenhum** — nem do que se tentou, nem de quem destravou por cima. Era permissão, não fluxo.
+ *
+ * Aqui o pedido é REGISTRO: guarda o que se pediu, o teto que valia, quem pediu, quem decidiu e por quê. É o que torna a regra auditável, e é a única razão de existir uma entidade onde o legado tinha um booleano.
+ *
+ * ## Quem CRIA não é a tela
+ *
+ * **Não há `POST /api/approval-requests`, e a ausência é deliberada.** O pedido nasce no SERVIDOR, ao gravar documento cujo desconto passa do teto de quem grava — o mesmo instante em que o legado mostrava a recusa. Publicar a criação deixaria a tela abrir pedido para desconto que ela não gravou, e dois caminhos escrevendo a mesma fila divergem no primeiro campo que um deles esquecer.
+ *
+ * ## O que é CONGELADO, e por quê
+ *
+ * `limitPercent`, `requestedByName` e `subjectLabel` são cópias na hora do pedido, não junções. Mudar o teto da empresa amanhã não pode reescrever a decisão de ontem: o aprovador julgou contra um teto, e a fila precisa continuar dizendo qual era. Mesma razão do `carrierName` do romaneio e do snapshot do item do orçamento.
+ */
+export interface ApprovalRequestDto {
+  id: string;
+  kind: ApprovalRequestKind;
+  status: ApprovalRequestStatus;
+  subjectType: ApprovalSubjectType;
+  /** O documento — `QuoteDto.id` quando `subjectType` é `quote`. */
+  subjectId: string;
+  /**
+     * Como o documento se chama para quem lê a fila — o NÚMERO dele, congelado. `null` quando o servidor não o tem; a tela então mostra a linha sem apelido, em vez de exibir o uuid, que não é nome de documento.
+     * @nullable
+     */
+  subjectLabel?: string | null;
+  /**
+     * Cliente do documento, congelado — a fila decide olhando para quem é a venda.
+     * @nullable
+     */
+  customerName?: string | null;
+  /** Quem gravou o documento que gerou o pedido (`EmployeeDto.id`). */
+  requestedByEmployeeId: string;
+  /**
+     * Nome de quem pediu, CONGELADO ao lado do id — a fila é histórico.
+     * @nullable
+     */
+  requestedByName?: string | null;
+  requestedAt: string;
+  /**
+     * O desconto que se PEDIU, em percentual com 4 casas escaladas por 10.000: `10000` = 1%. Mesma unidade de `QuoteDetailDto.discountPercent` — é o mesmo número, e converter aqui faria a fila discordar do documento.
+     *
+     * **É o `VenDesc_DescPorcUsuario` do legado**, a coluna que `QuoteGroupDiscountDto` declara ter deixado de fora *"só faz sentido junto com a regra que os separa — o teto — e essa regra é do servidor"*. A regra é esta, e é por isso que o campo aparece AQUI e não lá: o que o usuário pediu é matéria do pedido, não do documento.
+     */
+  requestedPercent: number;
+  /** O teto que valia para quem pediu, na hora em que pediu. Mesma unidade. CONGELADO: o aprovador precisa ver contra o que a régua bateu, e a régua muda. */
+  limitPercent: number;
+  /** Quanto o desconto pedido vale em DINHEIRO, em centavos. É a régua real da decisão: 3% num documento de mil reais e 3% num de duzentos mil são a mesma linha na fila e duas decisões diferentes. Percentual sozinho esconde isso. */
+  discountCents: number;
+  /** Total do documento COM o desconto pedido, em centavos — o que o cliente pagaria se liberado. */
+  documentTotalCents: number;
+  /** @nullable */
+  decidedAt?: string | null;
+  /** @nullable */
+  decidedByEmployeeId?: string | null;
+  /**
+     * Nome de quem decidiu, congelado. `null` enquanto `pending`.
+     * @nullable
+     */
+  decidedByName?: string | null;
+  /**
+     * O MOTIVO da decisão. Obrigatório na recusa (`RejectApprovalRequest` o exige), opcional na aprovação — recusa sem motivo devolve o documento a quem pediu sem dizer o que corrigir, e o operador só pode tentar de novo às cegas.
+     * @nullable
+     */
+  decisionReason?: string | null;
+  /**
+     * ESTA sessão pode decidir ESTE pedido. É o servidor quem responde, e por isso o campo existe: `SessaoAtual` não carrega permissões, e deduzir o poder de aprovar pelo papel do vínculo faria a tela oferecer botão que o servidor recusa com 403.
+     *
+     * `false` tem DOIS motivos e a tela não precisa distingui-los para desenhar: o pedido já foi decidido, ou quem olha é o próprio solicitante. Quem pediu vê o próprio pedido na fila — é como sabe que está esperando alguém.
+     */
+  canDecide: boolean;
+}
+
+export interface PagedResultOfApprovalRequestDto {
+  rows: ApprovalRequestDto[];
+  total: number;
+}
+
+/**
+ * Proposto. A aprovação. O motivo é OPCIONAL aqui e obrigatório na recusa — liberar é seguir o que já se pediu; barrar é devolver trabalho, e trabalho devolvido sem motivo volta igual.
+ */
+export interface ApprovalDecisionRequest {
+  /**
+     * Nota do aprovador, quando houver. Vai para `ApprovalRequestDto.decisionReason`.
+     * @maxLength 500
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+/**
+ * Proposto. A recusa, e ela EXIGE motivo — `required`, e não convenção de tela.
+ *
+ * A obrigação vive no contrato porque é o servidor que precisa recusar o corpo vazio: deixada só na validação do formulário, a primeira integração que não passasse pela tela gravaria recusa muda, e o operador ficaria com documento barrado sem nada a corrigir. `minLength: 3` barra o ponto solitário; o resto é julgamento de gente.
+ */
+export interface ApprovalRejectionRequest {
+  /**
+     * Por que não. É o que o solicitante lê para saber o que mudar.
+     * @minLength 3
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+/**
+ * Proposto. A CONTAGEM da fila — o que o badge da barra mostra sem carregar a lista.
+ *
+ * Existe como operação PRÓPRIA em vez de sair do `total` da listagem porque quem o pede é o shell, em toda tela, e a listagem devolve linha. Pedir a página inteira para ler um número faria toda navegação carregar a fila de aprovações no fundo.
+ */
+export interface ApprovalSummaryDto {
+  /** Quantos pedidos estão `pending` e ESTA sessão pode decidir. Não é o total da empresa: badge que conta o que quem olha não pode resolver é aviso que não sai, e o operador aprende a ignorá-lo. */
+  pendingCount: number;
+  /** Esta sessão decide pedidos de aprovação. Governa a EXISTÊNCIA do badge, não o número: quem não aprova nada não vê contador zerado, vê nada. */
+  canDecide: boolean;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -9684,5 +9841,33 @@ q?: string;
  * Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro.
  */
 copies?: number;
+};
+
+export type ListApprovalRequestsParams = {
+/**
+ * Busca por número do documento, cliente ou nome de quem pediu.
+ */
+q?: string;
+/**
+ * Whitelist: `requestedAt`, `status`, `requestedPercent`, `discountCents`. Campo fora dela é 400.
+ *
+ * `subjectLabel`, `customerName` e `requestedByName` ficam de fora pelo motivo de sempre — são cópias congeladas de outra tabela, e ordenar por elas prometeria ordem que o servidor não indexa.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
+/**
+ * Recorta por situação (`pending`, `approved`, `rejected`). Ausente devolve as três: a fila decidida é o histórico, e escondê-la por padrão faria a tela perder o rastro no dia seguinte à decisão.
+ */
+status?: ApprovalRequestStatus;
+/**
+ * Só os pedidos desta espécie.
+ */
+kind?: ApprovalRequestKind;
+/**
+ * Só os pedidos deste documento — é como a folha do orçamento mostra "este documento está esperando liberação" sem varrer a fila inteira.
+ */
+subjectId?: string;
 };
 

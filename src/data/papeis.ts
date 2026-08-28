@@ -72,6 +72,7 @@ export type FamiliaDeCaminho =
   | 'dashboard'
   | 'roles'
   | 'tenants'
+  | 'prices'
 
 /**
  * Papel mínimo por família de caminho — cópia da matriz do backend
@@ -206,6 +207,29 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * na tela um botão que o servidor recusa.
    */
   tenants: 'owner',
+  /**
+   * PREÇO (G9) — `admin`, e a linha vem do contrato, não desta matriz.
+   *
+   * As duas escritas do módulo — a tabela do fornecedor e o índice de venda —
+   * exigem `precos:gerenciar`, **ação nova que nenhum template de fábrica
+   * concede**: só `Proprietário` e `Administrador` a alcançam, por `grants_all`.
+   * Quem entra com `Operação completa` vê 403 `papel-insuficiente`, e ali é
+   * decisão do api, escrita em `rotas-do-backend.ts`: *quem vende usa o preço,
+   * quem o define responde pela margem.*
+   *
+   * Bate com o critério desta matriz sem precisar dele: preço de tabela é a
+   * entrada do `calculatedUnitPriceCents` de TODO orçamento novo, então o erro
+   * de um vaza para os documentos de todo mundo — é palavra por palavra o que
+   * já pôs `products` acima do atendimento, um degrau mais alto porque aqui o
+   * que vaza é dinheiro.
+   *
+   * A LEITURA não passa por aqui: esta matriz só governa escrita, e quem vende
+   * precisa ver o preço para vender.
+   *
+   * Vira a permissão nomeada `precos:gerenciar` quando o modelo por AÇÃO
+   * (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+   */
+  prices: 'admin',
 }
 
 /**
@@ -235,6 +259,11 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   dashboard: ['/api/dashboard'],
   roles: ['/api/roles'],
   tenants: ['/api/tenants'],
+  // Os três caminhos do módulo Preço. `/api/table-prices` está na frente e não
+  // sob `/api/variants/{id}/…` por decisão do SERVIDOR: a matriz de permissão
+  // do api casa por PREFIXO, e sob o caminho aninhado a tabela herdaria a
+  // exigência do kardex — quem movimenta estoque passaria a editar preço.
+  prices: ['/api/table-prices', '/api/price-indexes', '/api/cost-profiles'],
 }
 
 /** Devolve a família de um caminho de API, ou `undefined` quando não se aplica. */

@@ -218,6 +218,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o perfil de custo (G9) nasce no servidor sem tela e sem mock — a cascata não se reimplementa em fixture, e margem inventada é pior que tela vazia',
   ListPriceIndexes:
     'o índice de venda (G9) é a METADE VENDA do mesmo trilho do perfil de custo acima, e fica de fora pela mesma razão: o mock teria de inventar índice E tabela de fornecedor para ecoar um preço calculado, e o terceiro dado de mentira sai com cara de preço apurado pelo servidor',
+  ListPriceAdjustments:
+    'o reajuste em massa (G9) é o terceiro do mesmo trilho, e a tela dele NASCE depois do servidor pela razão que os dois de cima já carregam: um reajuste listado é a consequência de tabelas que o mock não guarda, e a lista inventada mostraria "12% em 214 peças" sobre um catálogo que não existe. Sai daqui com a tela, e com `ORDENAVEIS` próprio',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
   // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
   // mostra número inventado com cara de apuração, que é pior do que não mostrar
@@ -468,6 +470,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
     'as linhas do fechamento são sub-recurso do fechamento, que não tem handler',
   ListPriceIndexes:
     'o índice é METADE de um cálculo, não um cadastro que se olha: servi-lo obrigaria o mock a inventar também a tabela de preço por fornecedor e a ecoar `calculatedUnitPriceCents` no item do orçamento — três dados de mentira encadeados, e o terceiro sai com cara de preço apurado pelo servidor. Envelope vazio seria pior: a tela concluiria que a empresa não tem índice nenhum. Sai daqui quando a tela do G9 nascer, com o mock derivando o preço da MESMA fórmula do servidor',
+  ListPriceAdjustments:
+    'o reajuste PENDE da tabela de preço, que o mock não guarda — listar reajuste sem as vigências que ele criou é mostrar o efeito sem a causa, e `lineCount` seria um número escolhido a dedo. Sai junto com o índice, no dia em que o mock guardar tabela e vigência',
   // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
   // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
   // de ensinar, e aqui ele ensinaria sozinho:

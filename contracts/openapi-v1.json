@@ -12203,7 +12203,7 @@
       "get": {
         "tags": ["produtos"],
         "operationId": "ListVariantTablePrices",
-        "description": "Proposto. As tabelas de preço desta variante, uma por fornecedor.\n\nLista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
+        "description": "Proposto. As tabelas de preço desta variante — por padrão, **a vigente hoje**, uma linha por fornecedor.\n\nLista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante. Com `history=true` ela deixa de ser curta por fornecedor e passa a ser curta por fornecedor × vigência, que continua sendo uma tela e não um cadastro.\n\n**O padrão é o vigente de propósito.** Quem abre a ficha da peça quer o preço que vale, e uma resposta que trouxesse o histórico inteiro obrigaria toda tela a filtrar por data antes de mostrar qualquer coisa — o primeiro que esquecesse mostraria o preço de 2019 ao lado do de hoje, sem nada distinguindo os dois.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
         "parameters": [
           {
             "name": "variantId",
@@ -12212,6 +12212,23 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "description": "Reconstitui a tabela vigente NAQUELE dia, em vez da de hoje. Formato `YYYY-MM-DD`.\n\nÉ o que responde \"por quanto esta peça estava tabelada quando o orçamento saiu\". **Reconstitui a TABELA, não o preço de venda** — ver `VariantTablePriceDto.effectiveFrom`: o índice não é versionado, e multiplicar esta resposta pelo índice de hoje mistura duas datas.\n\nJunto com `history=true` é **400** `campos-invalidos`: um pede um retrato, o outro pede o filme, e escolher um dos dois em silêncio devolveria ao operador uma resposta que ele não pediu.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "history",
+            "in": "query",
+            "description": "Devolve TODAS as vigências desta variante, de todos os fornecedores, da mais recente para a mais antiga. Ausente ou `false` devolve só a vigente.\n\nÉ o que alimenta a grade de histórico da ficha da peça: cada linha com sua `effectiveFrom` e seu `adjustmentId`, que é como a tela mostra que aquele preço veio de um reajuste em massa e não da mão de alguém.",
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -12260,7 +12277,7 @@
       "put": {
         "tags": ["produtos"],
         "operationId": "ReplaceVariantTablePrices",
-        "description": "Proposto. Substitui a lista inteira de tabelas desta variante.\n\n**Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.\n\nFornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
+        "description": "Proposto. **Abre uma vigência** para as tabelas desta variante — não substitui o histórico.\n\nA lista do corpo passa a valer a partir de `effectiveFrom` (ausente = hoje). Fornecedor que não vier fica sem tabela A PARTIR DAQUELA DATA, e as vigências anteriores continuam de pé: é assim que a venda de ontem continua explicável depois de a tabela de hoje mudar. Repetir uma `effectiveFrom` que já existe SUBSTITUI aquela vigência, que é a correção da tabela digitada errada.\n\n**Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.\n\nFornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.\n\n**Para mover o catálogo inteiro de um fornecedor, o caminho é `POST /api/price-adjustments`** — este aqui é uma variante por vez, e um reajuste feito por N chamadas dele deixaria N vigências sem nada em comum, que nenhuma tela consegue apresentar como um fato só.\n\n**O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.",
         "parameters": [
           {
             "name": "variantId",
@@ -14270,6 +14287,144 @@
           }
         }
       }
+    },
+    "/api/price-adjustments": {
+      "get": {
+        "tags": ["precos"],
+        "operationId": "ListPriceAdjustments",
+        "description": "Proposto. Os reajustes de tabela da empresa ativa, do mais recente para o mais antigo.\n\n**Inclui os de vigência FUTURA, e é metade da razão de a listagem existir.** Um reajuste lançado hoje para valer no dia 1º não aparece em preço nenhum até lá; sem uma lista que o mostre, a única forma de saber que ele existe é a virada acontecer.\n\nEmpresa ativa vazia devolve `{rows: [], total: 0}`, como toda listagem deste contrato: aqui a empresa vem da sessão, e \"sem empresa\" é o operador recém-criado, não erro do cliente.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca por `note`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "description": "Filtra pelos reajustes de UM fornecedor. É a pergunta que a ficha do fornecedor faz, e ela não cabe em `q` — `q` casa texto, e aqui a chave é identidade.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Whitelist: `effectiveFrom`, `supplierName`, `percent`, `lineCount`, `createdAt`. Campo fora dela é 400 `ordenacao-invalida`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPriceAdjustmentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["precos"],
+        "operationId": "CreatePriceAdjustment",
+        "description": "Proposto. Reajusta em massa as tabelas de um fornecedor, abrindo uma vigência nova.\n\nÉ a operação que a metade VENDA do preço pedia e não tinha: sem ela, \"o fornecedor subiu 12%\" é digitar 200 vezes o mesmo raciocínio, uma variante por vez, e cada digitação é uma chance de o preço sair errado numa peça que ninguém vai conferir.\n\n**Aplica na hora e responde com o resultado**, não agenda. As linhas de `VariantTablePriceDto` já existem quando o 201 volta, com `adjustmentId` apontando para o `id` desta resposta; a vigência futura é que decide quando elas passam a valer. Ver `PriceAdjustmentDto`.\n\n**Papel: `admin` ou superior**, a mesma linha de corte de `/api/price-indexes` e `/api/table-prices/{variantId}`, e aqui ela pesa mais: uma requisição move o preço de todo o catálogo daquele fornecedor.\n\n**Recusas, e nenhuma delas apara em silêncio:**\n\n* `percent` e `prices` juntos, ou nenhum dos dois — **400** `campos-invalidos`.\n* `variantId` repetido em `prices` — **400**, pela mesma razão do `PUT` de tabelas.\n* variante de `prices` que não existe, ou que não é da empresa ativa — **400**, com a linha nomeada em `fields`. Não é 404: o que não existe é um item do corpo, não o recurso pedido.\n* `percent` sobre fornecedor sem NENHUMA tabela vigente em `effectiveFrom` — **409** `reajuste-sem-base`.\n\n**Não há como desfazer por este contrato, e é decisão.** O que desfaz um reajuste é outro reajuste, com vigência própria — apagar a vigência criada faria sumir a explicação dos preços que valeram entre a aplicação e o arrependimento, que é exatamente o que o histórico existe para guardar.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceAdjustmentWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceAdjustmentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15306,7 +15461,7 @@
         }
       },
       "ProblemType": {
-        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:token-invalido` | 400 | `Link inválido` | o token do link de convite ou de recuperação não existe, já foi usado, ou foi substituído por um pedido mais novo. **Sem saída na tela** — ela manda pedir outro link, e não oferece repetir o mesmo |\n| `urn:cabinet:erro:token-expirado` | 400 | `Link expirado` | o link existiu e venceu. Separado do anterior porque a tela TEM o que oferecer: pedir outro, num botão, em vez de mandar a pessoa recomeçar sem saber por quê |\n| `urn:cabinet:erro:email-nao-enviado` | 502 | `E-mail não enviado` | o servidor de e-mail recusou ou não respondeu. **Não é 500:** nada aqui deu errado, e o que falhou é um terceiro — a tela oferece tentar de novo, e o convite não ficou pendente pela metade |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:sem-concessao-de-suporte` | 403 | `Sem concessão de suporte` | suporte-da-plataforma tocando dado de cliente sem concessão ABERTA para aquela organização — ou com a concessão já vencida. 403 e não 404: a organização existe, o que falta é o acesso. É a recusa que existe no lugar do `super-admin`, e ela é o caso PADRÃO — o suporte começa sem alcançar nada. |\n| `urn:cabinet:erro:suporte-ja-em-organizacao` | 409 | `Suporte já está em outra organização` | tentativa de abrir a segunda concessão com uma aberta. Carrega `openGrantId`, para a tela oferecer encerrar aquela em vez de deixar o operador procurar qual é. É a regra de UMA POR VEZ dita em tempo de execução. |\n| `urn:cabinet:erro:concessao-encerrada` | 409 | `Concessão já encerrada` | `/revoke` numa concessão que já foi encerrada ou já venceu. 409 e não 204: encerrar de novo não é o mesmo fato, e a trilha não ganha uma segunda linha por um clique repetido. |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
+        "description": "O VOCABULÁRIO de `type` — a lista FECHADA de tipos de problema, e o discriminador de MÁQUINA de toda 4xx/5xx.\n\nExiste porque `status` é grosso e `detail` é frase: 409 é o conflito de sete coisas diferentes, e a tela que tem uma saída a oferecer (vincular ao cadastro que já existe, abrir o pedido que já saiu, mandar escolher empresa) precisa saber QUAL delas aconteceu. Distinguir por texto quebra na primeira revisão de frase; distinguir só por status manda a tela adivinhar.\n\n**URN nova é PR NESTE repositório**, como todo o resto do contrato. Servidor que inventa `type` fora desta lista responde o que a tela não tem como tratar, e front que lê URN não declarada aqui a escreve à mão — que é justamente o que o codegen existe para impedir.\n\n`title` é o rótulo do TIPO (RFC 9457 §3.1.2) e não varia de uma ocorrência para outra: cada `type` tem UM título canônico, o da tabela abaixo, e o servidor manda aquele texto. Em PT-BR porque é o cabeçalho que o operador lê — não há camada de tradução, e a tela imprime o `title` como veio. Título derivado do status devolveria a informação que o status já deu: `Conflict` em cima de sete conflitos diferentes não distingue nenhum deles.\n\n| `type` | status | `title` | quando |\n| --- | --- | --- | --- |\n| `about:blank` | o do próprio caso | a frase do status: `Requisição inválida` (400) · `Não autenticado` (401) · `Sem permissão` (403) · `Não encontrado` (404) · `Conflito` (409) · `Erro interno` (500) | o tipo É o status, e não há nada a distinguir — recusa de negócio sem saída própria na tela |\n| `urn:cabinet:erro:sem-sessao` | 401 | `Sem sessão` | sessão ausente, expirada ou encerrada — o único 401 das operações de domínio. **O 401 do `POST /auth/login` NÃO é este:** lá a recusa é de credencial, o tipo é `about:blank`, e mandar `sem-sessao` na resposta do próprio login diz ao cliente para reautenticar quem acabou de tentar |\n| `urn:cabinet:erro:senha-precisa-trocar` | 403 | `Senha precisa ser trocada` | credencial vale, falta o passo. 403 e não 401: derrubar a sessão recém-criada põe o cliente em laço de relogin |\n| `urn:cabinet:erro:sem-vinculo-com-empresa` | 403 | `Sem vínculo com a empresa` | a empresa ativa pedida não está entre os vínculos. 403 e não 404 — `tenantId` não é segredo, ele viaja em `GET /auth/tenants` |\n| `urn:cabinet:erro:papel-insuficiente` | 403 | `Papel insuficiente` | o papel não alcança a escrita. É o único dos três 403 em que a pessoa não resolve sozinha, e é por isso que tem URN própria: a tela esconde o controle em vez de mandar tentar de novo |\n| `urn:cabinet:erro:campos-invalidos` | 400 | `Campos inválidos` | validação por campo — vem com `fields[]`, e é ele que leva o erro ao controle certo |\n| `urn:cabinet:erro:ordenacao-invalida` | 400 | `Ordenação inválida` | `sortBy` fora da whitelist da listagem |\n| `urn:cabinet:erro:paginacao-invalida` | 400 | `Paginação inválida` | `page`/`pageSize` fora do que a listagem aceita (teto de 100) |\n| `urn:cabinet:erro:filtro-invalido` | 400 | `Filtro inválido` | `filters`/`joinOperator` malformado, campo fora da whitelist ou operador que o tipo do campo não aceita |\n| `urn:cabinet:erro:papel-invalido` | 400 | `Papel inválido` | o `roleId` pedido no vínculo não é papel desta organização, ou é papel inativo. **Não cobre a ausência**: vínculo sem `roleId` é `campos-invalidos`, porque falta um campo — aqui o campo veio e o papel é que não serve |\n| `urn:cabinet:erro:hierarquia-em-laco` | 400 | `Hierarquia em laço` | o pai escolhido é descendente do próprio registro |\n| `urn:cabinet:erro:senha-atual-invalida` | 400 | `Senha atual não confere` | troca de senha com a atual errada |\n| `urn:cabinet:erro:senha-fraca` | 400 | `Senha fraca` | a senha nova não passa na política do servidor |\n| `urn:cabinet:erro:token-invalido` | 400 | `Link inválido` | o token do link de convite ou de recuperação não existe, já foi usado, ou foi substituído por um pedido mais novo. **Sem saída na tela** — ela manda pedir outro link, e não oferece repetir o mesmo |\n| `urn:cabinet:erro:token-expirado` | 400 | `Link expirado` | o link existiu e venceu. Separado do anterior porque a tela TEM o que oferecer: pedir outro, num botão, em vez de mandar a pessoa recomeçar sem saber por quê |\n| `urn:cabinet:erro:email-nao-enviado` | 502 | `E-mail não enviado` | o servidor de e-mail recusou ou não respondeu. **Não é 500:** nada aqui deu errado, e o que falhou é um terceiro — a tela oferece tentar de novo, e o convite não ficou pendente pela metade |\n| `urn:cabinet:erro:liberacao-acima-do-vendido` | 409 | `Liberação acima do vendido` | liberar mais peça do que a linha vendeu. Sem ação na tela: o operador digitou o número errado, e o campo é que se corrige |\n| `urn:cabinet:erro:separacao-sem-liberacao` | 409 | `Separação sem liberação` | separar acima do que foi liberado. A tela oferece `liberar` — e o gate é o CHECK monótono do banco, que não depende de papel: quem pula a liberação não separa |\n| `urn:cabinet:erro:entrega-sem-separacao` | 409 | `Entrega sem separação` | entregar acima do que saiu da prateleira. A tela oferece `separar` |\n| `urn:cabinet:erro:entrega-fechada` | 409 | `Entrega fechada` | o romaneio não está `open` — fechado ou cancelado. **Uma URN para os dois estados**, porque a tela faz a mesma coisa: abrir outro romaneio. Qual dos dois é informação de leitura, e viaja em `status` do próprio recurso |\n| `urn:cabinet:erro:entrega-vazia` | 409 | `Entrega vazia` | fechar romaneio sem um item lançado. A saída é a OPOSTA da tentada — quem não saiu se cancela, não se fecha —, e sem o discriminador o \"conflito\" no botão Fechar sugere tentar de novo |\n| `urn:cabinet:erro:entrega-de-outro-pedido` | 409 | `Entrega de outro pedido` | lançar item de um pedido no romaneio de outro. Acontece de verdade: a expedição tem vários romaneios abertos ao mesmo tempo. A tela troca o romaneio; um 409 sem nome a faria duvidar da quantidade |\n| `urn:cabinet:erro:nao-encontrado` | 404 | `Não encontrado` | id que não existe, ou que existe fora do recorte da sessão |\n| `urn:cabinet:erro:sem-empresa-ativa` | 409 | `Sem empresa ativa` | o recurso EXIGE empresa e a sessão não tem uma. 409 e não 400: falta uma AÇÃO da pessoa (escolher empresa), o pedido não está malformado. **Listagem não usa isto** — ela devolve `{rows:[],total:0}` |\n| `urn:cabinet:erro:documento-ja-cadastrado` | 409 | `Documento já cadastrado` | CNPJ/CPF repetido no grupo. Vem com `existingPartnerId`, que é o que habilita vincular em vez de duplicar |\n| `urn:cabinet:erro:email-ja-cadastrado` | 409 | `E-mail já cadastrado` | e-mail de colaborador repetido. Separado do documento porque é CREDENCIAL: não existe \"vincular ao existente\", duas pessoas não compartilham login |\n| `urn:cabinet:erro:codigo-ja-cadastrado` | 409 | `Código já cadastrado` | código único do recurso já em uso (produto no grupo, variante no produto) |\n| `urn:cabinet:erro:vinculo-ja-existe` | 409 | `Vínculo já existe` | `POST` de vínculo que já existe — o caminho de mudar é o `PUT` |\n| `urn:cabinet:erro:sem-concessao-de-suporte` | 403 | `Sem concessão de suporte` | suporte-da-plataforma tocando dado de cliente sem concessão ABERTA para aquela organização — ou com a concessão já vencida. 403 e não 404: a organização existe, o que falta é o acesso. É a recusa que existe no lugar do `super-admin`, e ela é o caso PADRÃO — o suporte começa sem alcançar nada. |\n| `urn:cabinet:erro:suporte-ja-em-organizacao` | 409 | `Suporte já está em outra organização` | tentativa de abrir a segunda concessão com uma aberta. Carrega `openGrantId`, para a tela oferecer encerrar aquela em vez de deixar o operador procurar qual é. É a regra de UMA POR VEZ dita em tempo de execução. |\n| `urn:cabinet:erro:concessao-encerrada` | 409 | `Concessão já encerrada` | `/revoke` numa concessão que já foi encerrada ou já venceu. 409 e não 204: encerrar de novo não é o mesmo fato, e a trilha não ganha uma segunda linha por um clique repetido. |\n| `urn:cabinet:erro:papel-de-sistema` | 409 | `Papel de sistema` | tentativa de alterar ou desativar `owner`/`admin`, que toda organização tem e ninguém edita. 409 e não 403: quem pede TEM a permissão de gerenciar papéis — o que recusa é o RECURSO, não o pedinte, e um 403 aqui mandaria o admin procurar uma permissão que não existe. URN própria porque a tela tem o que fazer com ela: esconder `Alterar` na linha do papel de sistema |\n| `urn:cabinet:erro:pedido-ja-convertido` | 409 | `Pedido já gerado` | o orçamento já virou pedido. URN própria porque a tela tem uma ação para ela — abrir o pedido que existe. Sem discriminador, o operador tenta de novo e a compra sai dobrada |\n| `urn:cabinet:erro:valor-nao-parcelavel` | 400 | `Valor não parcelável` | o total do documento não alcança `minTotalToInstallCents` e a condição escolhida tem mais de uma parcela. URN própria porque a tela tem UMA saída clara: oferecer só as condições de parcela única — sem o discriminador ela mostraria a mesma lista e o operador tentaria a segunda condição, que falha igual |\n| `urn:cabinet:erro:parcelas-acima-do-teto` | 400 | `Parcelas acima do teto` | mais parcelas que `maxInstallments` da empresa. Vale nos DOIS lados: cadastrar a condição e escolhê-la no documento. A saída da tela é diferente da de cima — aqui o recorte é por número de parcelas, não por valor |\n| `urn:cabinet:erro:parcela-abaixo-do-minimo` | 400 | `Parcela abaixo do mínimo` | alguma parcela do plano ficaria abaixo de `minInstallmentCents`. É o limite que corta na prática, e o único dos três que depende do TOTAL e do número de parcelas ao mesmo tempo: a mesma condição passa num documento e falha no outro, então a tela não consegue prevê-lo filtrando o combo — ela precisa da recusa nomeada para explicar por que aquela condição não serve PARA ESTE documento |\n| `urn:cabinet:erro:transicao-invalida` | 409 | `Transição inválida` | o documento não pode ir para o estado pedido: concluir cancelado, cancelar concluído, repetir qualquer uma das duas, devolver demonstração que já voltou ou devolver pedido que não é demonstração. **Uma URN para toda a máquina de estados, e não uma por transição:** a saída da tela é a mesma nos cinco casos — reler o documento, porque o estado que ela mostra é passado —, e `detail` diz qual foi. URN por transição multiplicaria o vocabulário sem dar à tela uma decisão nova |\n| `urn:cabinet:erro:demonstracao-em-aberto` | 409 | `Demonstração em aberto` | concluir pedido de demonstração cuja peça ainda não voltou (`demoReturnedAt` nulo). **Não cabe na URN de cima** porque a saída é OUTRA e é acionável: registrar o retorno (`POST .../demo-return`) e concluir de novo. Sem o discriminador, a tela ofereceria \"recarregue\" para um caso que se resolve com dois cliques |\n| `urn:cabinet:erro:orcamento-ja-revisado` | 409 | `Orçamento já revisado` | pedir revisão de um orçamento que já tem uma. A saída é abrir a revisão existente e revisar A PARTIR dela — mesmo papel de `pedido-ja-convertido`, que é o precedente: sem a URN, o operador repete o gesto e a cadeia de versões vira árvore |\n| `urn:cabinet:erro:faturamento-minimo-nao-atingido` | 409 | `Faturamento mínimo não atingido` | a ordem de compra não alcança o mínimo que o fornecedor exige — geral ou o do grupo de produto. `detail` diz quanto falta e para qual grupo, porque o mínimo é cadastro do fornecedor e a tela não tem como calculá-lo |\n| `urn:cabinet:erro:item-ja-em-ordem` | 409 | `Item já está em uma ordem` | a linha de pedido de compra apontada já foi levada por outra ordem, ou o pedido que se tenta reescrever tem linha nesse estado — é a corrida entre dois compradores montando ordem ao mesmo tempo |\n| `urn:cabinet:erro:ordem-ja-enviada` | 409 | `Ordem já enviada` | a ordem de compra já saiu para o fornecedor e não se reescreve nem se reenvia; o que muda a partir dali é data, por reagendamento |\n| `urn:cabinet:erro:fornecedor-divergente` | 409 | `Fornecedor divergente` | alguma linha da ordem vem de um pedido cujo item é de outro fornecedor — a ordem é de UM fornecedor por definição |\n| `urn:cabinet:erro:periodo-ja-fechado` | 409 | `Período já fechado` | pedir o fechamento de um período que já tem um. `detail` diz quando fechou. Sem a URN o operador repete o gesto achando que o primeiro não pegou — mesmo papel de `pedido-ja-convertido`, que é o precedente |\n| `urn:cabinet:erro:origem-ja-paga` | 409 | `Origem já paga` | alguma origem do período JÁ foi paga em OUTRO fechamento, e nada é gravado. Acontece quando dois períodos se sobrepõem — refechar com datas um dia diferentes pagaria tudo de novo, e cada pagamento duplicado seria legítimo para quem só olhasse o fechamento. `detail` diz qual origem, porque a saída é ajustar o período, não insistir |\n| `urn:cabinet:erro:participante-ja-apurado` | 409 | `Participação já apurada` | remover ou mexer no percentual de uma participação que já virou linha de fechamento. O que já foi pago não se reescreve pelo documento — a saída é fechamento novo |\n| `urn:cabinet:erro:profissional-exige-transferencia` | 409 | `Troca de profissional exige transferência` | trocar o profissional PRINCIPAL pela grade de participação. A troca tem DATA e justificativa, e a comissão pergunta por elas: quem a faz é `POST /api/orders/{id}/professional`. Pela grade, a vigência seria reescrita sem ninguém dizer — mesma razão de o `PUT` do pedido não mover `professionalId` |\n| `urn:cabinet:erro:reserva-ja-lancada` | 409 | `Reserva técnica já lançada` | o par (pedido, profissional) já tem reserva ativa. Lançar de novo duplicaria o que o fechamento vai pagar; a saída é cancelar a existente e lançar outra |\n| `urn:cabinet:erro:periodo-fechado` | 409 | `Período fechado` | lançamento, baixa ou transferência com data dentro de período já fechado para aquela conta ou caixa. URN própria porque a saída da tela é específica e não é \"tente de novo\": mudar a data, ou pedir a reabertura a quem pode — que é permissão que este contrato ainda não tem |\n| `urn:cabinet:erro:titulo-com-baixa` | 409 | `Título com baixa` | reescrever (PUT) ou cancelar um título financeiro que já tem pagamento lançado. Distinta de `transicao-invalida` porque a saída é outra: não é reler o documento, é lançar um título novo — o passado não se reescreve depois que o dinheiro andou |\n| `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |\n| `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |\n| `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |\n| `urn:cabinet:erro:reajuste-sem-base` | 409 | `Reajuste sem base` | o reajuste por PERCENTUAL não achou nenhuma tabela vigente daquele fornecedor na data pedida — não há o que multiplicar. URN própria porque a saída da tela não é \"tente de novo\": ou o fornecedor ainda não tem tabela cadastrada, ou a vigência pedida é anterior à primeira delas. Responder 201 com zero linhas devolveria SUCESSO a quem não reajustou preço nenhum, e o operador só descobriria no dia da virada |\n| `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |\n| `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |\n\nO 409 de nome repetido em `/api/catalog-lookups` fica no `about:blank` de propósito: a tela não tem saída própria a oferecer — quem inclui pelo `+...` corrige o nome ali mesmo.\n\n**Os três de parcelamento são 400 e não 409, e a escolha tem precedente:** o par mais próximo é `hierarquia-em-laco` — id bem formado cuja RELAÇÃO com o estado existente é inválida. O 409 do contrato é para conflito com um recurso que JÁ EXISTE (documento repetido, pedido já gerado, empresa ausente); aqui não há segundo recurso: há um `paymentTermId` que não serve para este documento. A api#103 propôs 409 — fica registrada a divergência, e o motivo dela.",
         "type": "string",
         "enum": [
           "about:blank",
@@ -15359,6 +15514,7 @@
           "urn:cabinet:erro:parcela-ja-quitada",
           "urn:cabinet:erro:valor-acima-do-saldo",
           "urn:cabinet:erro:movimento-ja-conciliado",
+          "urn:cabinet:erro:reajuste-sem-base",
           "urn:cabinet:erro:sem-concessao-de-suporte",
           "urn:cabinet:erro:suporte-ja-em-organizacao",
           "urn:cabinet:erro:concessao-encerrada",
@@ -23669,7 +23825,7 @@
         }
       },
       "VariantTablePriceDto": {
-        "required": ["supplierId", "tablePriceCents"],
+        "required": ["supplierId", "effectiveFrom", "tablePriceCents"],
         "type": "object",
         "properties": {
           "supplierId": {
@@ -23689,9 +23845,19 @@
             "type": "integer",
             "format": "int64",
             "description": "O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe."
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date",
+            "description": "O dia em que ESTA tabela passou a valer — a `Dt de Vigência` da tela de produto.\n\nVale até a véspera da vigência seguinte do mesmo fornecedor, e a última vale sem prazo. Não há `validTo`: com duas datas por linha, fechar a anterior e abrir a nova são duas escritas, e a que falhasse deixaria buraco ou sobreposição — dois preços vigentes no mesmo dia, com o preço dependendo de qual linha a consulta achasse primeiro. `SupplierBuyingCompanyDto` carrega as duas porque lá o vínculo pode simplesmente TERMINAR sem nada no lugar; tabela de preço não termina, ela é substituída.\n\n**Vigência futura e retroativa são as duas legítimas.** Futura é o caso comum: o fornecedor manda em setembro a tabela que passa a valer em outubro. Retroativa é a tabela que chegou atrasada. Nenhuma das duas reescreve venda passada — `QuoteItemDto.calculatedUnitPriceCents` é CONGELADO na emissão, e é isso que separa \"reconstituir o preço de um dia\" de \"mudar o que já foi vendido\".\n\n**A costura, dita em voz alta:** o ÍNDICE não é versionado (`PriceIndexDto` segue linha única por fornecedor — o `Indice_preco` do legado, 376 linhas, não tem coluna de data). Então `at=<dia>` reconstitui a TABELA daquele dia, não o preço de venda daquele dia: quem multiplicar o resultado pelo índice de hoje está misturando duas datas. Para o preço praticado no passado a resposta certa é o documento, que o congelou."
+          },
+          "adjustmentId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "O reajuste em massa que criou esta linha — `PriceAdjustmentDto.id`. **`null` é caso normal**: é a linha digitada uma a uma no `PUT`, e a maioria das primeiras tabelas nasce assim.\n\nExiste para a tela PODER dizer de onde o preço veio. Sem ele, uma tabela que mudou de R$ 100,00 para R$ 112,00 em 200 variantes no mesmo dia é 200 fatos soltos, e quem pergunta \"quem mexeu nisso\" não tem a quem perguntar. Com ele, os 200 apontam para um reajuste que tem data, autor e `note`."
           }
         },
-        "description": "Proposto. O preço de tabela de UM fornecedor para UMA variante.\n\n**Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.\n\n**Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado."
+        "description": "Proposto. O preço de tabela de UM fornecedor para UMA variante, **em UMA vigência**.\n\n**Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.\n\n**Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado.\n\n**E a chave inteira é (variante × fornecedor × `effectiveFrom`), porque preço é HISTÓRICO e não coluna.** Sobrescrever a linha na chegada da tabela nova apagaria por que a venda de ontem saiu no valor em que saiu. O legado já dizia isso de dois jeitos: `Preco_Produto_Log` tem 3,1 milhões de linhas, e a tela de produto mostra uma `Dt de Vigência` colada à grade de Fornecedor. É o mesmo desenho que `SupplierBuyingCompanyDto` já usa neste contrato para o vínculo fornecedor↔empresa, e pela mesma razão."
       },
       "VariantTablePricesWriteRequest": {
         "required": ["prices"],
@@ -23703,9 +23869,14 @@
               "$ref": "#/components/schemas/VariantTablePriceDto"
             },
             "description": "A lista INTEIRA. Fornecedor que não vier é apagado."
+          },
+          "effectiveFrom": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "O dia a partir do qual esta lista vale. **Ausente ou nulo = hoje**, que é o que o operador quer dizer quando digita a tabela e grava.\n\nÉ opcional aqui e OBRIGATÓRIO em `PriceAdjustmentWriteRequest`, e a diferença não é descuido: aqui alguém está olhando uma variante e digitando um número, e \"hoje\" é a leitura honesta do gesto; lá o gesto move centenas de preços de uma vez, e a data em que isso passa a valer é a decisão inteira."
           }
         },
-        "description": "Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.\n\nÉ uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio."
+        "description": "Proposto. **O `PUT` abre uma VIGÊNCIA, e não apaga o passado.** A lista que vier no corpo passa a ser a lista a partir de `effectiveFrom`; o fornecedor que não veio deixa de ter tabela DAQUELE DIA EM DIANTE, e as vigências anteriores continuam onde estavam. Corpo parcial não preserva linha DENTRO da vigência que ele abre.\n\n**Continua sendo `PUT` e continua idempotente:** a chave é (variante × `effectiveFrom`), e repetir a mesma data substitui aquela vigência inteira em vez de empilhar uma segunda. É a correção da tabela que chegou errada — mandar de novo com a mesma data conserta, sem virar duas verdades para o mesmo dia.\n\nÉ uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio."
       },
       "FinancialTitleDto": {
         "description": "Proposto. Um TÍTULO financeiro — a conta a pagar ou a receber. Menus `Financeiro → Contas a Pagar → Lançamento` e `Financeiro → Contas a Receber → Lançamentos` do legado (`contas_apagar`, 30.043 linhas; `contas_receber`, 9.076).\n\n**Um recurso para as duas telas, discriminado por `direction`** — e não `/api/payables` + `/api/receivables`. O precedente é `/api/partners` com filtro `role`: no legado as duas tabelas são a MESMA tabela com o prefixo trocado (`Ctp_`/`Ctr_`), coluna a coluna, e é assim que elas envelheceram — a correção feita num lado só chegava ao outro por cópia manual. Dois caminhos aqui duplicariam parcela, baixa, quitação em lote e conciliação, que não têm uma diferença sequer entre pagar e receber. O que MUDA é o sinal do dinheiro e a parte (fornecedor de um lado, cliente do outro), e as duas coisas cabem numa coluna.\n\n**O título não guarda valor pago.** `totalCents` é o que foi lançado; o que sobrou sai da soma das parcelas (`openCents`), porque quem quita é a PARCELA. Materializar o pago no cabeçalho criaria um segundo lugar onde a mesma verdade mora, e o legado paga essa conta: `Ctp_valor_total_original` diverge da soma de `contas_apagar_det` em base de produção.\n\n**Não há DELETE.** Título que some é dinheiro que o sistema esqueceu de dever. Desistir é `POST /{id}/cancel`, e ele recusa (409) o título que já tem baixa.\n\n**Não há `TipoContaFinanceira` aqui, e a ausência é DECISÃO PENDENTE, não esquecimento.** O legado classifica o título em seis categorias — OFICIAL, SIMULAÇÃO, APROVISIONAMENTO, CONTA CLONE, HISTÓRICO, AGRUPADA — com FK declarada, e guardar ensaio na mesma tabela do que vale obriga TODO relatório a filtrar. `docs/harvest/financeiro.md` §11.3 põe as três saídas na mesa (replicar · virar rascunho de status · não migrar as não-oficiais) e nenhuma foi escolhida. O campo entra quando a escolha existir; inventá-lo agora fixaria a mais cara das três.",
@@ -24933,6 +25104,121 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LabelLayoutDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PriceAdjustmentLineWriteRequest": {
+        "required": ["variantId", "tablePriceCents"],
+        "type": "object",
+        "description": "Proposto. Uma linha da tabela nova que o fornecedor mandou.",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A variante — `ProductVariantDto.id`. Repetida no mesmo corpo é **400**, pela razão de sempre: dois preços para a mesma peça deixariam o resultado depender da ordem do array."
+          },
+          "tablePriceCents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O preço de tabela NOVO desta variante, em centavos — a mesma unidade e o mesmo significado de `VariantTablePriceDto.tablePriceCents`: preço de LISTA da compra, antes da cascata."
+          }
+        }
+      },
+      "PriceAdjustmentWriteRequest": {
+        "required": ["supplierId", "effectiveFrom"],
+        "type": "object",
+        "description": "Proposto. Um reajuste em massa: abre UMA vigência nova para as tabelas de UM fornecedor.\n\n**Ou `percent`, ou `prices` — exatamente um dos dois.** Os dois juntos, ou nenhum dos dois, é **400** `campos-invalidos`, com o campo nomeado em `fields`. São os dois jeitos reais de a tabela nova chegar: o fornecedor avisa \"subiu 12% em tudo\", ou manda a planilha com preço por peça. Aceitar os dois na mesma requisição obrigaria a decidir qual vence, e a decisão silenciosa apareceria como preço errado em centenas de peças.",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor cujas tabelas o reajuste move — `PartnerDto.id` com papel `supplier`. O reajuste é de UM fornecedor por definição: tabela e índice são dele, e um reajuste que atravessasse fornecedores seria N reajustes com um nome só, impossível de desfazer separadamente."
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date",
+            "description": "O dia em que a vigência nova passa a valer. **Obrigatório, e sem padrão** — ver `VariantTablePricesWriteRequest.effectiveFrom`: mover centenas de preços \"a partir de hoje\" por omissão é o erro que não se desfaz com um `Cancelar`."
+          },
+          "percent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "O reajuste linear sobre a tabela vigente, em percentual com **4 casas decimais**, inteiro escalado por 10.000: `120000` = 12%, `10000` = 1%. **Negativo é válido** — `-50000` é uma redução de 5%, e redução de tabela acontece.\n\n**A base é a vigência que valeria em `effectiveFrom` se este reajuste não existisse**, e não a de hoje. É o que faz dois reajustes futuros empilhados darem o resultado que o operador espera em vez de dois saltos a partir do mesmo ponto de partida.\n\nFornecedor sem NENHUMA tabela vigente naquela data é **409** `reajuste-sem-base`.\n\nO arredondamento é o mesmo da fórmula de venda — meio centavo para cima, uma vez, no fim: `round(base × (1.000.000 + percent) / 1.000.000)`."
+          },
+          "prices": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PriceAdjustmentLineWriteRequest"
+            },
+            "description": "A tabela nova, peça por peça. **É lista PARCIAL de propósito**, e aqui ela diverge do `PUT` de `/api/table-prices/{variantId}`: a variante que não vier CONTINUA com o preço que a vigência anterior lhe dava. O fornecedor que reajusta 40 peças de um catálogo de 900 manda 40 linhas, e tratar as 860 ausentes como \"sem preço\" apagaria o catálogo inteiro em uma requisição."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "O que o operador escreve para se lembrar — `Tabela ALFILUX 09/2026`, `reajuste anual`. É o que a listagem mostra, e é a única pista humana de por que 200 preços mudaram naquele dia."
+          }
+        }
+      },
+      "PriceAdjustmentDto": {
+        "required": ["id", "supplierId", "effectiveFrom", "lineCount", "createdAt"],
+        "type": "object",
+        "description": "Proposto. Um reajuste em massa já aplicado: a IDENTIDADE que as telas usam para explicar um preço.\n\nEle não é um agendamento nem um rascunho — as linhas de `VariantTablePriceDto` já existem quando esta resposta volta, e apontam para cá por `adjustmentId`. Guardar o reajuste como intenção a ser executada por um job criaria um segundo estado (\"pedido, ainda não aplicado\") que a tela teria de exibir e o operador de conferir; a vigência futura já resolve o \"a partir de\", sem estado novo.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": ""
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "O fornecedor cujas tabelas foram movidas — `PartnerDto.id`."
+          },
+          "supplierName": {
+            "type": ["string", "null"],
+            "description": "Para exibição. Não é escrita."
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date",
+            "description": "A vigência que este reajuste abriu. Data no futuro quer dizer que os preços de hoje ainda são os de antes — e a listagem é o único lugar onde isso é visível antes da virada."
+          },
+          "percent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "O percentual aplicado, na escala de 4 casas (`120000` = 12%). **`null` quando o reajuste veio por lista de preços** — e aí não há um percentual único a mostrar, porque cada peça andou o seu."
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Quantas linhas de tabela a vigência nova ganhou. É o número que a tela mostra para o operador conferir o tamanho do que fez — \"12% em 214 peças\" — antes de ele descobrir isso peça por peça."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "O texto que o operador escreveu."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando o reajuste foi gravado. **Não confundir com `effectiveFrom`**: um reajuste lançado hoje para valer em outubro tem as duas datas diferentes, e é a diferença entre elas que explica por que o preço de hoje ainda não mudou."
+          },
+          "createdByName": {
+            "type": ["string", "null"],
+            "description": "Quem gravou, para exibição."
+          }
+        }
+      },
+      "PagedResultOfPriceAdjustmentDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceAdjustmentDto"
             }
           },
           "total": {

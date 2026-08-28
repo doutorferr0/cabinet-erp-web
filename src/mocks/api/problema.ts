@@ -153,6 +153,7 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:parcela-ja-quitada': 'Parcela já quitada',
   'urn:cabinet:erro:valor-acima-do-saldo': 'Valor acima do saldo',
   'urn:cabinet:erro:movimento-ja-conciliado': 'Movimento já conciliado',
+  'urn:cabinet:erro:reajuste-sem-base': 'Reajuste sem base',
   'urn:cabinet:erro:periodo-ja-fechado': 'Período já fechado',
   'urn:cabinet:erro:origem-ja-paga': 'Origem já paga',
   'urn:cabinet:erro:participante-ja-apurado': 'Participação já apurada',

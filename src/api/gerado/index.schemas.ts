@@ -1072,6 +1072,7 @@ export interface PartnerWriteRequest {
  * | `urn:cabinet:erro:parcela-ja-quitada` | 409 | `Parcela já quitada` | baixa sobre parcela cujo saldo já é zero. É a corrida entre dois operadores no mesmo vencimento, e é o caso que produz pagamento em dobro quando a recusa não é nomeada: sem a URN, a tela mostra erro genérico e o operador tenta de novo |
  * | `urn:cabinet:erro:valor-acima-do-saldo` | 409 | `Valor acima do saldo` | a baixa abate mais do que a parcela deve. Não tem permissão que libere, ao contrário da quitação a MENOS: pagar mais do que se deve não é alçada, é engano — e o troco não teria onde ser lançado |
  * | `urn:cabinet:erro:movimento-ja-conciliado` | 409 | `Movimento já conciliado` | conciliar um movimento que outra pessoa já conferiu. 409 e não 200 porque o segundo pedido quase sempre vem de uma tela desatualizada, e responder OK esconderia que dois operadores estavam conferindo o mesmo extrato |
+ * | `urn:cabinet:erro:reajuste-sem-base` | 409 | `Reajuste sem base` | o reajuste por PERCENTUAL não achou nenhuma tabela vigente daquele fornecedor na data pedida — não há o que multiplicar. URN própria porque a saída da tela não é "tente de novo": ou o fornecedor ainda não tem tabela cadastrada, ou a vigência pedida é anterior à primeira delas. Responder 201 com zero linhas devolveria SUCESSO a quem não reajustou preço nenhum, e o operador só descobriria no dia da virada |
  * | `urn:cabinet:erro:nao-implementado` | 501 | `Não implementado` | a operação está no contrato e ESTE servidor ainda não a serve. É a marca da fase, não erro do pedido: 404 aqui faria a tela concluir que o caminho não existe |
  * | `urn:cabinet:erro:resposta-nao-json` | 0 | `Resposta não é da API` | **nenhum servidor emite este.** O CLIENTE o sintetiza quando a resposta não é do contrato — tipicamente o `index.html` do fallback da SPA chegando com 200 porque o proxy do dev não está no ar. Está declarado aqui porque um `type` que a tela lê e o contrato não conhece é a mesma dívida pelo outro lado |
  *
@@ -1133,6 +1134,7 @@ export const ProblemType = {
   'urn:cabinet:erro:parcela-ja-quitada': 'urn:cabinet:erro:parcela-ja-quitada',
   'urn:cabinet:erro:valor-acima-do-saldo': 'urn:cabinet:erro:valor-acima-do-saldo',
   'urn:cabinet:erro:movimento-ja-conciliado': 'urn:cabinet:erro:movimento-ja-conciliado',
+  'urn:cabinet:erro:reajuste-sem-base': 'urn:cabinet:erro:reajuste-sem-base',
   'urn:cabinet:erro:sem-concessao-de-suporte': 'urn:cabinet:erro:sem-concessao-de-suporte',
   'urn:cabinet:erro:suporte-ja-em-organizacao': 'urn:cabinet:erro:suporte-ja-em-organizacao',
   'urn:cabinet:erro:concessao-encerrada': 'urn:cabinet:erro:concessao-encerrada',
@@ -7236,11 +7238,13 @@ export interface PagedResultOfPriceIndexDto {
 }
 
 /**
- * Proposto. O preço de tabela de UM fornecedor para UMA variante.
+ * Proposto. O preço de tabela de UM fornecedor para UMA variante, **em UMA vigência**.
  *
  * **Por que a chave é (variante × fornecedor), e não só a variante.** A tabela é do fornecedor, e o índice também. A mesma peça comprada de dois fornecedores tem duas tabelas e dois índices, e rende dois preços de venda diferentes — é o caso que `ProductDto.suppliers` publica e que `isDefault` desempata. Guardar um preço de tabela por variante forçaria escolher um fornecedor no cadastro e jogar a segunda tabela fora, que é justamente a informação de que o comprador precisa para decidir de quem comprar.
  *
  * **Variante e não produto** porque acabamento e tamanho mudam o preço de lista: é o que `Preco_Produto` faz no legado.
+ *
+ * **E a chave inteira é (variante × fornecedor × `effectiveFrom`), porque preço é HISTÓRICO e não coluna.** Sobrescrever a linha na chegada da tabela nova apagaria por que a venda de ontem saiu no valor em que saiu. O legado já dizia isso de dois jeitos: `Preco_Produto_Log` tem 3,1 milhões de linhas, e a tela de produto mostra uma `Dt de Vigência` colada à grade de Fornecedor. É o mesmo desenho que `SupplierBuyingCompanyDto` já usa neste contrato para o vínculo fornecedor↔empresa, e pela mesma razão.
  */
 export interface VariantTablePriceDto {
   /** O fornecedor de quem é esta tabela — `PartnerDto.id`. */
@@ -7257,16 +7261,42 @@ export interface VariantTablePriceDto {
   supplierCode?: string | null;
   /** O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe. */
   tablePriceCents: number;
+  /**
+     * O dia em que ESTA tabela passou a valer — a `Dt de Vigência` da tela de produto.
+     *
+     * Vale até a véspera da vigência seguinte do mesmo fornecedor, e a última vale sem prazo. Não há `validTo`: com duas datas por linha, fechar a anterior e abrir a nova são duas escritas, e a que falhasse deixaria buraco ou sobreposição — dois preços vigentes no mesmo dia, com o preço dependendo de qual linha a consulta achasse primeiro. `SupplierBuyingCompanyDto` carrega as duas porque lá o vínculo pode simplesmente TERMINAR sem nada no lugar; tabela de preço não termina, ela é substituída.
+     *
+     * **Vigência futura e retroativa são as duas legítimas.** Futura é o caso comum: o fornecedor manda em setembro a tabela que passa a valer em outubro. Retroativa é a tabela que chegou atrasada. Nenhuma das duas reescreve venda passada — `QuoteItemDto.calculatedUnitPriceCents` é CONGELADO na emissão, e é isso que separa "reconstituir o preço de um dia" de "mudar o que já foi vendido".
+     *
+     * **A costura, dita em voz alta:** o ÍNDICE não é versionado (`PriceIndexDto` segue linha única por fornecedor — o `Indice_preco` do legado, 376 linhas, não tem coluna de data). Então `at=<dia>` reconstitui a TABELA daquele dia, não o preço de venda daquele dia: quem multiplicar o resultado pelo índice de hoje está misturando duas datas. Para o preço praticado no passado a resposta certa é o documento, que o congelou.
+     */
+  effectiveFrom: string;
+  /**
+     * O reajuste em massa que criou esta linha — `PriceAdjustmentDto.id`. **`null` é caso normal**: é a linha digitada uma a uma no `PUT`, e a maioria das primeiras tabelas nasce assim.
+     *
+     * Existe para a tela PODER dizer de onde o preço veio. Sem ele, uma tabela que mudou de R$ 100,00 para R$ 112,00 em 200 variantes no mesmo dia é 200 fatos soltos, e quem pergunta "quem mexeu nisso" não tem a quem perguntar. Com ele, os 200 apontam para um reajuste que tem data, autor e `note`.
+     * @nullable
+     */
+  adjustmentId?: string | null;
 }
 
 /**
- * Proposto. **`PUT` substitui a lista inteira**, como o `PUT` de parcelas da condição de pagamento: a lista que vier no corpo passa a ser a lista, e o fornecedor que não veio deixa de ter tabela para esta variante. Corpo parcial não preserva linha.
+ * Proposto. **O `PUT` abre uma VIGÊNCIA, e não apaga o passado.** A lista que vier no corpo passa a ser a lista a partir de `effectiveFrom`; o fornecedor que não veio deixa de ter tabela DAQUELE DIA EM DIANTE, e as vigências anteriores continuam onde estavam. Corpo parcial não preserva linha DENTRO da vigência que ele abre.
+ *
+ * **Continua sendo `PUT` e continua idempotente:** a chave é (variante × `effectiveFrom`), e repetir a mesma data substitui aquela vigência inteira em vez de empilhar uma segunda. É a correção da tabela que chegou errada — mandar de novo com a mesma data conserta, sem virar duas verdades para o mesmo dia.
  *
  * É uma requisição só, e não N escritas linha a linha, pela mesma razão do `QuoteDetailDto`: a tabela chega do fornecedor como uma lista e é conferida como uma lista. Gravar linha a linha faria um `Gravar` virar N requisições sem transação entre elas, deixando meia tabela no banco quando a terceira falhasse — e meia tabela de preço precifica errado em silêncio.
  */
 export interface VariantTablePricesWriteRequest {
   /** A lista INTEIRA. Fornecedor que não vier é apagado. */
   prices: VariantTablePriceDto[];
+  /**
+     * O dia a partir do qual esta lista vale. **Ausente ou nulo = hoje**, que é o que o operador quer dizer quando digita a tabela e grava.
+     *
+     * É opcional aqui e OBRIGATÓRIO em `PriceAdjustmentWriteRequest`, e a diferença não é descuido: aqui alguém está olhando uma variante e digitando um número, e "hoje" é a leitura honesta do gesto; lá o gesto move centenas de preços de uma vez, e a data em que isso passa a valer é a decisão inteira.
+     * @nullable
+     */
+  effectiveFrom?: string | null;
 }
 
 /**
@@ -8199,6 +8229,91 @@ export interface LabelLayoutWriteRequest {
 
 export interface PagedResultOfLabelLayoutDto {
   rows: LabelLayoutDto[];
+  total: number;
+}
+
+/**
+ * Proposto. Uma linha da tabela nova que o fornecedor mandou.
+ */
+export interface PriceAdjustmentLineWriteRequest {
+  /** A variante — `ProductVariantDto.id`. Repetida no mesmo corpo é **400**, pela razão de sempre: dois preços para a mesma peça deixariam o resultado depender da ordem do array. */
+  variantId: string;
+  /** O preço de tabela NOVO desta variante, em centavos — a mesma unidade e o mesmo significado de `VariantTablePriceDto.tablePriceCents`: preço de LISTA da compra, antes da cascata. */
+  tablePriceCents: number;
+}
+
+/**
+ * Proposto. Um reajuste em massa: abre UMA vigência nova para as tabelas de UM fornecedor.
+ *
+ * **Ou `percent`, ou `prices` — exatamente um dos dois.** Os dois juntos, ou nenhum dos dois, é **400** `campos-invalidos`, com o campo nomeado em `fields`. São os dois jeitos reais de a tabela nova chegar: o fornecedor avisa "subiu 12% em tudo", ou manda a planilha com preço por peça. Aceitar os dois na mesma requisição obrigaria a decidir qual vence, e a decisão silenciosa apareceria como preço errado em centenas de peças.
+ */
+export interface PriceAdjustmentWriteRequest {
+  /** O fornecedor cujas tabelas o reajuste move — `PartnerDto.id` com papel `supplier`. O reajuste é de UM fornecedor por definição: tabela e índice são dele, e um reajuste que atravessasse fornecedores seria N reajustes com um nome só, impossível de desfazer separadamente. */
+  supplierId: string;
+  /** O dia em que a vigência nova passa a valer. **Obrigatório, e sem padrão** — ver `VariantTablePricesWriteRequest.effectiveFrom`: mover centenas de preços "a partir de hoje" por omissão é o erro que não se desfaz com um `Cancelar`. */
+  effectiveFrom: string;
+  /**
+     * O reajuste linear sobre a tabela vigente, em percentual com **4 casas decimais**, inteiro escalado por 10.000: `120000` = 12%, `10000` = 1%. **Negativo é válido** — `-50000` é uma redução de 5%, e redução de tabela acontece.
+     *
+     * **A base é a vigência que valeria em `effectiveFrom` se este reajuste não existisse**, e não a de hoje. É o que faz dois reajustes futuros empilhados darem o resultado que o operador espera em vez de dois saltos a partir do mesmo ponto de partida.
+     *
+     * Fornecedor sem NENHUMA tabela vigente naquela data é **409** `reajuste-sem-base`.
+     *
+     * O arredondamento é o mesmo da fórmula de venda — meio centavo para cima, uma vez, no fim: `round(base × (1.000.000 + percent) / 1.000.000)`.
+     * @nullable
+     */
+  percent?: number | null;
+  /**
+     * A tabela nova, peça por peça. **É lista PARCIAL de propósito**, e aqui ela diverge do `PUT` de `/api/table-prices/{variantId}`: a variante que não vier CONTINUA com o preço que a vigência anterior lhe dava. O fornecedor que reajusta 40 peças de um catálogo de 900 manda 40 linhas, e tratar as 860 ausentes como "sem preço" apagaria o catálogo inteiro em uma requisição.
+     * @nullable
+     */
+  prices?: PriceAdjustmentLineWriteRequest[] | null;
+  /**
+     * O que o operador escreve para se lembrar — `Tabela ALFILUX 09/2026`, `reajuste anual`. É o que a listagem mostra, e é a única pista humana de por que 200 preços mudaram naquele dia.
+     * @nullable
+     */
+  note?: string | null;
+}
+
+/**
+ * Proposto. Um reajuste em massa já aplicado: a IDENTIDADE que as telas usam para explicar um preço.
+ *
+ * Ele não é um agendamento nem um rascunho — as linhas de `VariantTablePriceDto` já existem quando esta resposta volta, e apontam para cá por `adjustmentId`. Guardar o reajuste como intenção a ser executada por um job criaria um segundo estado ("pedido, ainda não aplicado") que a tela teria de exibir e o operador de conferir; a vigência futura já resolve o "a partir de", sem estado novo.
+ */
+export interface PriceAdjustmentDto {
+  id: string;
+  /** O fornecedor cujas tabelas foram movidas — `PartnerDto.id`. */
+  supplierId: string;
+  /**
+     * Para exibição. Não é escrita.
+     * @nullable
+     */
+  supplierName?: string | null;
+  /** A vigência que este reajuste abriu. Data no futuro quer dizer que os preços de hoje ainda são os de antes — e a listagem é o único lugar onde isso é visível antes da virada. */
+  effectiveFrom: string;
+  /**
+     * O percentual aplicado, na escala de 4 casas (`120000` = 12%). **`null` quando o reajuste veio por lista de preços** — e aí não há um percentual único a mostrar, porque cada peça andou o seu.
+     * @nullable
+     */
+  percent?: number | null;
+  /** Quantas linhas de tabela a vigência nova ganhou. É o número que a tela mostra para o operador conferir o tamanho do que fez — "12% em 214 peças" — antes de ele descobrir isso peça por peça. */
+  lineCount: number;
+  /**
+     * O texto que o operador escreveu.
+     * @nullable
+     */
+  note?: string | null;
+  /** Quando o reajuste foi gravado. **Não confundir com `effectiveFrom`**: um reajuste lançado hoje para valer em outubro tem as duas datas diferentes, e é a diferença entre elas que explica por que o preço de hoje ainda não mudou. */
+  createdAt: string;
+  /**
+     * Quem gravou, para exibição.
+     * @nullable
+     */
+  createdByName?: string | null;
+}
+
+export interface PagedResultOfPriceAdjustmentDto {
+  rows: PriceAdjustmentDto[];
   total: number;
 }
 
@@ -9484,6 +9599,23 @@ page?: number;
 pageSize?: number;
 };
 
+export type ListVariantTablePricesParams = {
+/**
+ * Reconstitui a tabela vigente NAQUELE dia, em vez da de hoje. Formato `YYYY-MM-DD`.
+ *
+ * É o que responde "por quanto esta peça estava tabelada quando o orçamento saiu". **Reconstitui a TABELA, não o preço de venda** — ver `VariantTablePriceDto.effectiveFrom`: o índice não é versionado, e multiplicar esta resposta pelo índice de hoje mistura duas datas.
+ *
+ * Junto com `history=true` é **400** `campos-invalidos`: um pede um retrato, o outro pede o filme, e escolher um dos dois em silêncio devolveria ao operador uma resposta que ele não pediu.
+ */
+at?: string;
+/**
+ * Devolve TODAS as vigências desta variante, de todos os fornecedores, da mais recente para a mais antiga. Ausente ou `false` devolve só a vigente.
+ *
+ * É o que alimenta a grade de histórico da ficha da peça: cada linha com sua `effectiveFrom` e seu `adjustmentId`, que é como a tela mostra que aquele preço veio de um reajuste em massa e não da mão de alguém.
+ */
+history?: boolean;
+};
+
 export type ListFinancialTitlesParams = {
 /**
  * Busca por número do título, número do documento e nome da parte.
@@ -9684,5 +9816,23 @@ q?: string;
  * Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro.
  */
 copies?: number;
+};
+
+export type ListPriceAdjustmentsParams = {
+/**
+ * Busca por `note`.
+ */
+q?: string;
+/**
+ * Filtra pelos reajustes de UM fornecedor. É a pergunta que a ficha do fornecedor faz, e ela não cabe em `q` — `q` casa texto, e aqui a chave é identidade.
+ */
+supplierId?: string;
+/**
+ * Whitelist: `effectiveFrom`, `supplierName`, `percent`, `lineCount`, `createdAt`. Campo fora dela é 400 `ordenacao-invalida`.
+ */
+sortBy?: string;
+sortDesc?: boolean;
+page?: number;
+pageSize?: number;
 };
 

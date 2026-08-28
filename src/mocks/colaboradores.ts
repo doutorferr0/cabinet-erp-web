@@ -14,6 +14,19 @@ export interface Colaborador {
    */
   id: string
   nome: string
+  /**
+   * O E-MAIL DE LOGIN — `EmployeeDetailDto.email`, e a credencial da pessoa.
+   *
+   * Esteve no schema de módulos desde a #101 SEM `campo:`, isto é, desenhado
+   * como pendência ("Ainda não guardamos: E-mail de login") porque o repo não
+   * tinha onde gravá-lo. Passou a ter: `EmployeeWriteRequest` publica `email`,
+   * e o `POST /api/employees` o EXIGE — `employees.email` é NOT NULL e é por
+   * ele que a pessoa entra. Sem este campo o `Incluir` desta tela mandaria
+   * `email: null` e tomaria 400 em toda tentativa.
+   */
+  email: string | null
+  /** `EmployeeDetailDto.phone` — o `Celular` do mockup, agora com onde gravar. */
+  telefone: string | null
   setor: string | null
   atendimentoCliente: boolean
   ativo: boolean
@@ -106,6 +119,12 @@ export function idDeColaborador(id: string): string {
 export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
   id: String(i + 1),
   nome,
+  // A semente NÃO inventa e-mail nem celular: `GET /api/employees/{id}` os
+  // devolve `null` para quem veio dela, e um valor aqui faria a tela mostrar
+  // dado que o servidor não tem — o mesmo motivo por que o handler do detalhe
+  // já os manda nulos.
+  email: null,
+  telefone: null,
   setor: idDeApoio('SETOR', SETORES[i % SETORES.length]),
   atendimentoCliente: i % 4 !== 3,
   ativo: i !== 8,
@@ -145,6 +164,8 @@ export function colaboradorVazio(): Colaborador {
   return {
     id: '',
     nome: '',
+    email: null,
+    telefone: null,
     setor: null,
     atendimentoCliente: true,
     ativo: true,

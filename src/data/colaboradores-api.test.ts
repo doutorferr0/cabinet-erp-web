@@ -1,9 +1,15 @@
 import { ErroDaApi } from '@/data/api-provider'
 import {
+  atualizarColaborador,
+  corpoDeEscrita,
+  corpoDeInclusao,
   daFichaDoServidor,
   documentoDoColaborador,
+  incluirColaborador,
   listaDeColaboradores,
 } from '@/data/colaboradores-api'
+import { ehErroDePapelInsuficiente } from '@/lib/erros'
+import { colaboradorVazio } from '@/mocks/colaboradores'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -182,5 +188,162 @@ describe('detalhe do colaborador', () => {
 
     expect(documentoDoColaborador.empty()).toMatchObject({ id: '', nome: '', ativo: true })
     expect(servidor.chamadas).toHaveLength(0)
+  })
+})
+
+/**
+ * A ESCRITA (#402) — `POST /api/employees` e `PUT /api/employees/{id}`.
+ *
+ * **O sucesso é assertado pela RESPOSTA (status + id), nunca pela navegação.**
+ * A troca de tela depende do router e de um `onSuccess` assíncrono, e um teste
+ * que espera a URL mudar afirma coisas sobre o roteamento quando queria afirmar
+ * coisas sobre a gravação (issue #405).
+ */
+describe('escrita do colaborador', () => {
+  /** `application/problem+json` com o `type` do vocabulário fechado do contrato. */
+  function recusa(status: number, type: string, detail: string) {
+    return new Response(JSON.stringify({ type, title: 'Sem permissão', status, detail }), {
+      status,
+      headers: { 'content-type': 'application/problem+json' },
+    })
+  }
+
+  const doFormulario = { ...colaboradorVazio(), nome: 'CARLA SOUZA', email: 'carla@vertz.dev' }
+
+  it('POST manda só o recorte do EmployeeWriteRequest e devolve a ficha gravada', async () => {
+    servidor = instalarServidor({
+      '/api/employees': () => json(detalhe({ name: 'CARLA SOUZA' }), 201),
+    })
+
+    const ficha = await incluirColaborador(corpoDeInclusao(doFormulario))
+
+    // Pela RESPOSTA: o id do registro novo é do servidor, e é ele que prova a
+    // gravação — não a tela ter trocado.
+    expect(ficha.id).toBe(ID)
+    expect(ficha.name).toBe('CARLA SOUZA')
+
+    const [chamada] = servidor.em('/api/employees')
+    expect(chamada?.metodo).toBe('POST')
+    // Chaves EXATAS, e não `toMatchObject`: um campo a mais no corpo é um campo
+    // que o contrato não publica atravessando a fronteira.
+    expect(Object.keys(chamada?.corpo as object).sort()).toEqual([
+      'active',
+      'document',
+      'email',
+      'name',
+      'phone',
+      'photoUrl',
+    ])
+    expect(chamada?.corpo).toEqual({
+      name: 'CARLA SOUZA',
+      email: 'carla@vertz.dev',
+      phone: null,
+      active: true,
+      document: null,
+      photoUrl: null,
+    })
+  })
+
+  /**
+   * O QUE A TELA NÃO EDITA VOLTA COMO VEIO — o `PUT` substitui o registro
+   * inteiro. `document` e `photoUrl` não têm controle no formulário, e um
+   * `null` aqui apagaria o CPF e a foto de quem foi cadastrado por
+   * `/config/usuarios`. É a regra do core de 18/08, medida contra o Postgres.
+   */
+  it('PUT devolve document e photoUrl como vieram, e grava o que a tela edita', async () => {
+    const original = detalhe({ document: '12345678901', photoUrl: 'https://cdn/foto.png' })
+    servidor = instalarServidor({
+      [`/api/employees/${ID}`]: () => json({ ...original, name: 'CARLA S. SOUZA' }),
+    })
+
+    const editado = { ...daFichaDoServidor(original), nome: 'CARLA S. SOUZA' }
+    const ficha = await atualizarColaborador(ID, corpoDeEscrita(original, editado))
+
+    expect(ficha.id).toBe(ID)
+    expect(ficha.name).toBe('CARLA S. SOUZA')
+
+    const [chamada] = servidor.em(`/api/employees/${ID}`)
+    expect(chamada?.metodo).toBe('PUT')
+    expect(chamada?.corpo).toEqual({
+      name: 'CARLA S. SOUZA',
+      email: 'demo@vertz.dev',
+      phone: null,
+      active: true,
+      document: '12345678901',
+      photoUrl: 'https://cdn/foto.png',
+    })
+  })
+
+  /**
+   * Cargo, setor, admissão e demissão são do VÍNCULO com a empresa e mudam por
+   * `PUT /api/employees/{id}/link`. Mandá-los aqui reescreveria em silêncio o
+   * cargo que a pessoa tem na outra empresa do grupo.
+   */
+  it('não manda cargo, setor nem datas de vínculo no corpo', () => {
+    const original = detalhe()
+    const corpo = corpoDeEscrita(original, {
+      ...daFichaDoServidor(original),
+      cargo: 'outro-cargo',
+      setor: 'outro-setor',
+      dataAdmissao: '2024-01-01',
+      salario: 999_00,
+    })
+
+    for (const proibido of ['jobTitleId', 'sectorId', 'hiredAt', 'dismissedAt', 'roleId']) {
+      expect(corpo).not.toHaveProperty(proibido)
+    }
+  })
+
+  /**
+   * RECUSA EM VOZ ALTA quando a ficha veio sem um dos preservados: gravar assim
+   * apagaria o campo, e um `?? null` calado transformaria "o servidor não
+   * mandou" em "o operador quis apagar".
+   */
+  it('recusa gravar quando a ficha veio sem os campos que o PUT apagaria', () => {
+    const { document: _d, ...semDocumento } = detalhe()
+
+    expect(() =>
+      corpoDeEscrita(semDocumento as Parameters<typeof corpoDeEscrita>[0], doFormulario),
+    ).toThrow(/apagaria o campo/)
+  })
+
+  /**
+   * **403 `papel-insuficiente` é o caso comum, não a exceção**: a matriz do api
+   * reserva `/api/employees` a `admin`, e o papel da semente (`operator-full`,
+   * o do usuário demo) recebe a recusa em toda escrita. Ela precisa chegar à
+   * tela COM o `detail` — é ele que diz ao operador por que não pode.
+   */
+  it('403 papel-insuficiente chega como ErroDaApi com detail e type', async () => {
+    servidor = instalarServidor({
+      '/api/employees': () =>
+        recusa(
+          403,
+          'urn:cabinet:erro:papel-insuficiente',
+          'Seu papel não permite alterar colaboradores.',
+        ),
+    })
+
+    const erro = await incluirColaborador(corpoDeInclusao(doFormulario)).catch((e) => e)
+
+    expect(erro).toBeInstanceOf(ErroDaApi)
+    expect(erro.status).toBe(403)
+    expect(erro.detail).toBe('Seu papel não permite alterar colaboradores.')
+    expect(ehErroDePapelInsuficiente(erro)).toBe(true)
+  })
+
+  it('403 na alteração também recusa em voz alta', async () => {
+    const original = detalhe()
+    servidor = instalarServidor({
+      [`/api/employees/${ID}`]: () =>
+        recusa(403, 'urn:cabinet:erro:papel-insuficiente', 'Apenas administradores.'),
+    })
+
+    const erro = await atualizarColaborador(
+      ID,
+      corpoDeEscrita(original, daFichaDoServidor(original)),
+    ).catch((e) => e)
+
+    expect(ehErroDePapelInsuficiente(erro)).toBe(true)
+    expect(erro.detail).toBe('Apenas administradores.')
   })
 })

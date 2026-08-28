@@ -98,6 +98,11 @@ export const TIPO = {
   // uma-por-vez) e "esta já acabou". Um 403 genérico em cima das duas primeiras
   // faria a recusa por falta de concessão parecer falta de permissão de papel,
   // que é o erro que este trilho existe para não deixar acontecer.
+  // A FILA DE APROVAÇÕES (F12). Duas, e não uma: "já foi decidido" manda a tela
+  // recarregar, "você foi quem pediu" manda procurar outra pessoa. Um 403
+  // genérico sobre a segunda faria o solicitante ir pedir acesso que ele já tem.
+  aprovacaoJaDecidida: 'urn:cabinet:erro:aprovacao-ja-decidida',
+  aprovacaoDoSolicitante: 'urn:cabinet:erro:aprovacao-do-solicitante',
   semConcessaoDeSuporte: 'urn:cabinet:erro:sem-concessao-de-suporte',
   suporteJaEmOrganizacao: 'urn:cabinet:erro:suporte-ja-em-organizacao',
   concessaoEncerrada: 'urn:cabinet:erro:concessao-encerrada',
@@ -168,6 +173,11 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:entrega-fechada': 'Entrega fechada',
   'urn:cabinet:erro:entrega-vazia': 'Entrega vazia',
   'urn:cabinet:erro:entrega-de-outro-pedido': 'Entrega de outro pedido',
+  // A FILA DE APROVAÇÕES (F12) — os dois títulos saem da tabela do `ProblemType`,
+  // como os da tesouraria: título escolhido aqui faria o mesmo erro chegar com um
+  // cabeçalho no modo mock e outro contra o backend.
+  'urn:cabinet:erro:aprovacao-ja-decidida': 'Aprovação já decidida',
+  'urn:cabinet:erro:aprovacao-do-solicitante': 'Decisão do próprio solicitante',
   'urn:cabinet:erro:sem-concessao-de-suporte': 'Sem concessão de suporte',
   'urn:cabinet:erro:suporte-ja-em-organizacao': 'Suporte já está em outra organização',
   'urn:cabinet:erro:concessao-encerrada': 'Concessão já encerrada',

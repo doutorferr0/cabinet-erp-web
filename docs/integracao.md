@@ -871,6 +871,52 @@ tem **sai da listagem** e campo que o servidor não guarda aparece **em branco**
 `AvisoDeCobertura` dizendo isso ao operador — preencher com mock daria dado de
 mentira com cara de dado do servidor.
 
+### Fila de aprovações — `/api/approval-requests` (F12, `Proposto`)
+
+Cinco operações, e nenhuma tem servidor: `GET` da fila · `GET .../summary` (o
+contador do badge) · `GET .../{id}` · `POST .../{id}/approve` · `POST
+.../{id}/reject`. `rotas-do-backend.ts` as mantém em `ROTAS_NO_MOCK` com natureza
+`sem-contrato` — a cópia do api ainda não as conhece.
+
+**O que o legado tinha, e o que mudou.** No Softlux o teto de desconto é a opção
+especial 5 de `SisOpcoesEspecial` (`MARGEM DE DESCONTO PARA O CLIENTE`), ligada a
+usuário ou grupo em `SisPermissaoEspecial`. É PERMISSÃO BINÁRIA: quem a tem digita
+o desconto que quiser, quem não a tem é barrado na tela — e **não sobra rastro
+nenhum**, nem do que se tentou, nem de quem liberou por cima. Fila não existia. O
+registro é o ganho; a tela é consequência dele.
+
+**Quatro semânticas inegociáveis:**
+
+1. **Não há criação pelo cliente.** O pedido nasce no SERVIDOR, ao gravar
+   documento cujo desconto passa do teto de quem grava (`cabinet-erp-api#237`,
+   fase 1). Publicar `POST /api/approval-requests` deixaria a tela abrir pedido
+   para desconto que ela não gravou.
+2. **O recorte da listagem é do servidor.** Quem tem a permissão de decidir vê a
+   fila inteira da empresa; quem não tem vê só os pedidos que ELE abriu. Feito no
+   cliente, o pedido do colega estaria no navegador de quem não pode vê-lo.
+3. **`canDecide` vem na LINHA, e a tela não o deduz.** `SessaoAtual` não carrega
+   permissões, e o caso mais comum de `false` não é nem de papel: é o próprio
+   solicitante, que tem o papel e mesmo assim não decide o que pediu (403
+   `urn:cabinet:erro:aprovacao-do-solicitante`, separado de `papel-insuficiente`
+   porque a saída é outra — não falta acesso, falta outra pessoa).
+4. **Decisão é TERMINAL.** Não há reabrir: 409
+   `urn:cabinet:erro:aprovacao-ja-decidida`. Mudou de ideia, o documento gera
+   pedido novo — reciclar o antigo apagaria a primeira decisão junto com o motivo.
+
+**`requestedPercent` é o `VenDesc_DescPorcUsuario` do legado**, a coluna que
+`QuoteGroupDiscountDto` declara ter deixado de fora *"só faz sentido junto com a
+regra que os separa — o teto — e essa regra é do servidor"*. A regra é esta, e o
+campo aparece no PEDIDO e não no documento: o que o usuário pediu é matéria do
+pedido. Mesma unidade do documento (4 casas escaladas, `10000` = 1%).
+
+**`limitPercent`, `requestedByName` e `subjectLabel` são congelados**, não
+junções: mudar o teto amanhã não pode reescrever a decisão de ontem. Mesma razão
+do `carrierName` do romaneio.
+
+**O que o mock NÃO finge:** aprovar não destrava documento nenhum. No servidor a
+decisão volta para o orçamento; fingir o efeito exigiria inventar no `QuoteDto`
+um estado que o contrato não publica.
+
 ## Filtro estruturado da listagem — `filters` + `joinOperator` (`Proposto`)
 
 A `VitraDataTable` filtra por `campo + operador + valor` (issue #68, portado de

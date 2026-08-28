@@ -18,6 +18,7 @@ import type {
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDeAcesso } from './acesso'
+import { handlersDeAprovacao } from './aprovacoes'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
@@ -978,6 +979,15 @@ export const handlers = [
   // que o mock não guarda, o envelope vem vazio em vez de somar número
   // inventado. O cabeçalho de `relatorios.ts` é onde essa linha está desenhada.
   ...handlersDeRelatorios,
+
+  // ---------------- FILA DE APROVAÇÕES (F12) ----------------
+  // Arquivo próprio, como compras e relatórios. As cinco operações nasceram
+  // NESTA PR e nenhum servidor as implementa — o gancho que CRIA o pedido é a
+  // fase 1 do `cabinet-erp-api#237`. Sem este arquivo a tela da fila cairia no
+  // fallback da SPA e receberia `index.html` com 200; com ele, a fila mostra as
+  // duas metades da regra (quem decide vê tudo, quem pediu vê o próprio) antes
+  // de o backend existir. Ver o cabeçalho de `aprovacoes.ts`.
+  ...handlersDeAprovacao,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------
   // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas

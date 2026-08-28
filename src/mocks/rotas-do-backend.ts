@@ -1269,6 +1269,42 @@ const REAGENDAR_SEM_CONTRATO_LA =
   'PATCH do item do plano publicado neste PR: a cópia do contrato do api ainda não o conhece. ' +
   'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
 
+/**
+ * AS CINCO DA FILA DE APROVAÇÕES (F12) — publicadas por ESTA PR, e por isso
+ * `sem-contrato`, pela mesma ARITMÉTICA que as cinco da administração do grupo:
+ * o `check:contract` do api compara a cópia de lá byte a byte com a `main`
+ * DESTE repo, então enquanto esta PR não mergear o `openapi-v1.json` de lá não
+ * tem `/api/approval-requests` — e o glue responde o 404 do ROTEADOR, não 501,
+ * para caminho que o documento não declara.
+ *
+ * **As cinco COM handler de mock** (`src/mocks/api/aprovacoes.ts`), e isso não é
+ * detalhe: sem ele, declarar aqui faria a fila cair no fallback da SPA e devolver
+ * `index.html` com 200 — a tela leria HTML como se fosse resposta, que é
+ * exatamente o buraco que a entrega (G4) pagou.
+ *
+ * **Saem juntas, e a família aqui é maior que a lista.** O que falta do outro
+ * lado não são só handlers: é o GANCHO que cria o pedido, ao gravar documento
+ * com desconto acima do teto (`cabinet-erp-api#237`, fase 1). Ligar a leitura
+ * antes disso poria a fila do servidor — vazia, porque ninguém a alimenta — no
+ * lugar de uma que mostra as duas metades da regra, e "não há nada para aprovar"
+ * é indistinguível de "o gancho não existe".
+ */
+const FILA_DE_APROVACOES: readonly RotaNoMock[] = (
+  [
+    ['get', '/api/approval-requests'],
+    ['get', '/api/approval-requests/summary'],
+    ['get', '/api/approval-requests/{id}'],
+    ['post', '/api/approval-requests/{id}/approve'],
+    ['post', '/api/approval-requests/{id}/reject'],
+  ] as const
+).map(([metodo, caminho]) => ({
+  metodo,
+  caminho,
+  motivo:
+    'publicadas por ESTA PR — a copia do contrato no api ainda nao as conhece, e o gancho que CRIA o pedido e a fase 1 da api#237',
+  natureza: 'sem-contrato' as const,
+}))
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   ...RECEBIMENTO,
   ...TESOURARIA,
@@ -1347,6 +1383,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
   },
+  ...FILA_DE_APROVACOES,
 ]
 
 /**

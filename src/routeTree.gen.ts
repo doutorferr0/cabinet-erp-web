@@ -33,6 +33,7 @@ import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
+import { Route as VendasAprovacoesRouteImport } from './routes/vendas/aprovacoes'
 import { Route as VendasCargasRouteImport } from './routes/vendas/cargas'
 import { Route as VendasReservasTecnicasRouteImport } from './routes/vendas/reservas-tecnicas'
 import { Route as CadastrosClientesIndexRouteImport } from './routes/cadastros/clientes/index'
@@ -180,6 +181,11 @@ const EstoqueMovimentacaoRoute = EstoqueMovimentacaoRouteImport.update({
 const VendasIndexRoute = VendasIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => VendasRoute,
+} as any)
+const VendasAprovacoesRoute = VendasAprovacoesRouteImport.update({
+  id: '/aprovacoes',
+  path: '/aprovacoes',
   getParentRoute: () => VendasRoute,
 } as any)
 const VendasCargasRoute = VendasCargasRouteImport.update({
@@ -355,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
   '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros/': typeof CadastrosIndexRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
   '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros': typeof CadastrosIndexRoute
@@ -460,6 +468,7 @@ export interface FileRoutesById {
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
   '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros/': typeof CadastrosIndexRoute
@@ -516,6 +525,7 @@ export interface FileRouteTypes {
     | '/config/usuarios'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/aprovacoes'
     | '/vendas/cargas'
     | '/vendas/reservas-tecnicas'
     | '/cadastros/'
@@ -566,6 +576,7 @@ export interface FileRouteTypes {
     | '/config/usuarios'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/aprovacoes'
     | '/vendas/cargas'
     | '/vendas/reservas-tecnicas'
     | '/cadastros'
@@ -620,6 +631,7 @@ export interface FileRouteTypes {
     | '/config/usuarios'
     | '/crm/motivos'
     | '/estoque/movimentacao'
+    | '/vendas/aprovacoes'
     | '/vendas/cargas'
     | '/vendas/reservas-tecnicas'
     | '/cadastros/'
@@ -843,6 +855,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/vendas/'
       preLoaderRoute: typeof VendasIndexRouteImport
+      parentRoute: typeof VendasRoute
+    }
+    '/vendas/aprovacoes': {
+      id: '/vendas/aprovacoes'
+      path: '/aprovacoes'
+      fullPath: '/vendas/aprovacoes'
+      preLoaderRoute: typeof VendasAprovacoesRouteImport
       parentRoute: typeof VendasRoute
     }
     '/vendas/cargas': {
@@ -1140,6 +1159,7 @@ const EstoqueRouteWithChildren =
   EstoqueRoute._addFileChildren(EstoqueRouteChildren)
 
 interface VendasRouteChildren {
+  VendasAprovacoesRoute: typeof VendasAprovacoesRoute
   VendasCargasRoute: typeof VendasCargasRoute
   VendasReservasTecnicasRoute: typeof VendasReservasTecnicasRoute
   VendasIndexRoute: typeof VendasIndexRoute
@@ -1150,6 +1170,7 @@ interface VendasRouteChildren {
 }
 
 const VendasRouteChildren: VendasRouteChildren = {
+  VendasAprovacoesRoute: VendasAprovacoesRoute,
   VendasCargasRoute: VendasCargasRoute,
   VendasReservasTecnicasRoute: VendasReservasTecnicasRoute,
   VendasIndexRoute: VendasIndexRoute,

@@ -1,3 +1,4 @@
+import { ORDENAVEIS_APROVACAO } from '@/data/aprovacoes-api'
 import { ORDENAVEIS_ATIVIDADE } from '@/data/atividades-api'
 import {
   ORDENAVEIS_FAIXA,
@@ -23,6 +24,7 @@ import {
 import { FILTRAVEIS_ORCAMENTO, ORDENAVEIS_ORCAMENTO } from '@/data/quotes-api'
 import { ORDENAVEIS_CONCESSAO } from '@/data/suporte-api'
 import { ORDENAVEIS_PAPEL as ORDENAVEIS_PAPEL_MOCK } from '@/mocks/api/acesso'
+import { ORDENAVEIS as ORDENAVEIS_APROVACAO_MOCK } from '@/mocks/api/aprovacoes'
 import { ORDENAVEIS as ORDENAVEIS_ATIVIDADE_MOCK } from '@/mocks/api/atividades'
 import {
   ORDENAVEIS_ORDEM_DE_COMPRA,
@@ -330,6 +332,11 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   // pode mandar. Declarar ausência de lista onde há uma faria a coluna que um
   // dia virar clicável escapar da guarda.
   ListTenants: ORDENAVEIS_EMPRESA,
+  // A FILA DE APROVAÇÕES (F12) nasce COM tela e COM fronteira, e por isso entra
+  // pelos DOIS eixos — este e o do mock, logo abaixo. A tela desenha cabeçalho
+  // clicável em `requestedAt` e `discountCents`, que são as duas perguntas que
+  // ela responde: o que está esperando há mais tempo, e o que custa mais caro.
+  ListApprovalRequests: ORDENAVEIS_APROVACAO,
 }
 
 /**
@@ -401,6 +408,11 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   GetStockAgingReport: ORDENAVEIS_DIAS_SEM_VENDA,
   GetQuoteVsStockReport: ORDENAVEIS_ORCAMENTO_X_ESTOQUE,
   GetBirthdaysReport: ORDENAVEIS_ANIVERSARIANTES,
+  // A FILA DE APROVAÇÕES (F12) entra também por AQUI, e não só pelo eixo do
+  // front: nenhum servidor a implementa — o gancho que cria o pedido é a fase 1
+  // da api#237 —, então quem recusa `sortBy` fora da whitelist, hoje, é o
+  // handler do mock. E o site público é 100% mock.
+  ListApprovalRequests: ORDENAVEIS_APROVACAO_MOCK,
   // As empresas do grupo entram nos DOIS eixos: têm tela (acima) e têm mock —
   // o site público é 100% mock, e ali quem recusa `sortBy` fora da whitelist é
   // o handler de `src/mocks/api/empresas.ts`.

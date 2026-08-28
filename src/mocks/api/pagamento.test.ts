@@ -425,10 +425,13 @@ describe('o ENCARGO DE ATRASO da condição', () => {
   it('distingue não-configurado (null) de conferido-e-não-cobra (zeros)', async () => {
     await entrar()
 
-    const { data } = await listPaymentTerms({ pageSize: 100, sortBy: 'name' })
-    const porNome = new Map(data.rows.map((c) => [c.name, c]))
+    const lista = await listPaymentTerms({ page: 1, pageSize: 100, sortBy: 'name' })
+    expect(lista.status).toBe(200)
+    if (lista.status !== 200) return
 
-    // Os três estados do seed, e os dois do meio são os que se confundem.
+    const porNome = new Map(lista.data.rows.map((c) => [c.name, c]))
+
+    // Os três estados do seed, e os dois últimos são os que se confundem.
     expect(porNome.get('À VISTA')?.lateCharges).toBeNull()
     expect(porNome.get('ENTRADA + 2x')?.lateCharges).toEqual({
       interestPercentMonthly: 0,
@@ -443,8 +446,11 @@ describe('o ENCARGO DE ATRASO da condição', () => {
   it('devolve `null` EXPLÍCITO, e não campo ausente', async () => {
     await entrar()
 
-    const { data } = await listPaymentTerms({ pageSize: 100 })
-    const aVista = data.rows.find((c) => c.name === 'À VISTA')
+    const lista = await listPaymentTerms({ page: 1, pageSize: 100 })
+    expect(lista.status).toBe(200)
+    if (lista.status !== 200) return
+
+    const aVista = lista.data.rows.find((c) => c.name === 'À VISTA')
 
     // `in` e não `?? null`: campo omitido leria `undefined` na tela, que é um
     // terceiro estado que ninguém declarou.
@@ -454,12 +460,17 @@ describe('o ENCARGO DE ATRASO da condição', () => {
   it('grava o encargo na criação', async () => {
     await entrar()
 
-    const { data } = await createPaymentTerm({
+    const criada = await createPaymentTerm({
       ...EM_DOIS,
       lateCharges: { interestPercentMonthly: 10_000, finePercent: 20_000 },
     })
 
-    expect(data.lateCharges).toEqual({ interestPercentMonthly: 10_000, finePercent: 20_000 })
+    expect(criada.status).toBe(201)
+    if (criada.status !== 201) return
+    expect(criada.data.lateCharges).toEqual({
+      interestPercentMonthly: 10_000,
+      finePercent: 20_000,
+    })
   })
 
   it('OMITIR o campo conserva o encargo; `null` explícito apaga', async () => {
@@ -469,10 +480,14 @@ describe('o ENCARGO DE ATRASO da condição', () => {
       ...EM_DOIS,
       lateCharges: { interestPercentMonthly: 10_000, finePercent: 20_000 },
     })
+    expect(criada.status).toBe(201)
+    if (criada.status !== 201) return
 
     // A tela que só renomeia não manda `lateCharges` — e não pode zerar a mora
     // de quem a configurou. É o mesmo defeito que `groupAdjustments` já cobre.
     const renomeada = await updatePaymentTerm(criada.data.id, { ...EM_DOIS, name: 'OUTRO NOME' })
+    expect(renomeada.status).toBe(200)
+    if (renomeada.status !== 200) return
     expect(renomeada.data.lateCharges).toEqual({
       interestPercentMonthly: 10_000,
       finePercent: 20_000,
@@ -483,6 +498,8 @@ describe('o ENCARGO DE ATRASO da condição', () => {
       name: 'OUTRO NOME',
       lateCharges: null,
     })
+    expect(apagada.status).toBe(200)
+    if (apagada.status !== 200) return
     expect(apagada.data.lateCharges).toBeNull()
   })
 

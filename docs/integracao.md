@@ -756,6 +756,37 @@ memória e a costura está declarada na tela.
 DECISÃO, não herança:** `/api/employees` é `admin` porque vínculo é o que decide
 o papel dos outros.
 
+#### O corte meio-termo do bloco pessoal (#403, 2026-08-28)
+
+O formulário tinha ~30 campos e o contrato publicava 17. A diferença fechou pelos
+DOIS lados, e nenhuma das metades é "o que deu para fazer":
+
+- **Sexo e raça/cor SAÍRAM** — da tela, do schema, do módulo de cadastro e do
+  contrato. São dado pessoal sensível na letra do art. 5º II da LGPD e o produto
+  não tem finalidade para eles: nenhuma tela decide nada com sexo ou raça de
+  colaborador e nenhum relatório os pede. **`sexo` continua no CLIENTE**
+  (`PartnerDto.gender`), que é pessoa física de fora e não relação de emprego.
+- **O resto ENTROU, em DOIS níveis.** Pessoal (nascimento, estado civil, cônjuge,
+  filiação, naturalidade, nacionalidade, ano de chegada, instrução, profissão) é
+  da ORGANIZAÇÃO e mora em `EmployeeDetailDto` + `EmployeeWriteRequest`.
+  **Vínculo e salário são da EMPRESA ATIVA** e moram no detalhe (leitura) e em
+  `EmployeeLinkRequest` (escrita), ao lado de cargo, setor e `hiredAt` — salário
+  na ficha da pessoa faria gravar numa empresa reescrever em silêncio o da outra.
+
+**`salaryCents` é `admin`-only na leitura E na escrita, e a leitura é a metade que
+se esquece.** Para papel sem permissão o servidor OMITE o campo do corpo, em vez
+de devolvê-lo `null`: `null` já quer dizer "não há salário registrado", e usar o
+mesmo valor para "você não pode ver" faria a tela imprimir um branco idêntico nos
+dois casos. `daFichaDoServidor` ainda não distingue as duas ausências —
+`Colaborador.salario` é `number | null` —, e isso está declarado no cabeçalho de
+`colaboradores-api.ts` e preso por teste. Espelho no servidor: **api#250**.
+
+A naturalidade viaja como `birthCityCode` + `birthCity` + `birthState`, e o código
+é **texto opaco, não chave estrangeira**: o contrato não publica recurso de
+cidades, então não há `/api/cities/{id}` para ele apontar. Existe para o dado
+sobreviver ao ida-e-volta, e vira referência de verdade quando cidades ganharem
+caminho.
+
 ### Suporte-da-plataforma — o break-glass, `/api/platform/support-grants`
 
 Item 6 da fundação (`current-state.md` @pendencias), e o único caminho do

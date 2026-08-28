@@ -26,18 +26,35 @@ import { type Colaborador, colaboradorVazio } from '@/mocks/colaboradores'
  * `nome` responde 400 `urn:cabinet:erro:ordenacao-invalida`). O formulário
  * recebe `Colaborador`, a forma da transcrição §2.
  *
- * ## O contrato v1 é MUITO menor que o formulário, e isso fica VISÍVEL
+ * ## O buraco entre contrato e formulário FECHOU — pelos dois lados (#403)
  *
- * `EmployeeDetailDto` traz 17 campos; a §2 da transcrição tem ~30. Sexo, raça,
- * estado civil, filiação, naturalidade, nacionalidade e o bloco inteiro de RH
- * **não existem no contrato** — e `EmployeeWriteRequest` diz por quê, em letra:
- * "salário e o resto do bloco de RH ficam fora deste corte: a pergunta de LGPD
- * sobre dado sensível de funcionário segue sem resposta, e campo sem regra de
- * acesso é pior que campo ausente".
+ * Até 2026-08-28 o `EmployeeDetailDto` trazia 17 campos contra os ~30 da §2 da
+ * transcrição, e os ~13 restantes nasciam em BRANCO. O corte que fechou a
+ * diferença foi de MEIO-TERMO (decisão do user), e as duas metades importam:
  *
- * Esses campos nascem em BRANCO, como em `produtos-api.ts` — a alternativa
- * seria esconder do formulário o que o cadastro precisa vir a ter, apagando a
- * dívida em vez de mostrá-la.
+ * 1. **O contrato subiu.** Nascimento, estado civil, cônjuge, filiação,
+ *    naturalidade, nacionalidade, ano de chegada, instrução e profissão são do
+ *    nível ORGANIZAÇÃO e entraram em `EmployeeDetailDto` + `EmployeeWriteRequest`.
+ *    Vínculo e salário são do nível EMPRESA ATIVA — foram para o detalhe (leitura)
+ *    e para `EmployeeLinkRequest` (escrita), ao lado de cargo, setor e `hiredAt`.
+ *    **Salário na ficha da pessoa gravaria numa empresa e reescreveria em
+ *    silêncio o da outra**, que é o mesmo defeito que já mantinha cargo e setor
+ *    fora do `EmployeeWriteRequest`.
+ * 2. **A tela desceu.** `sexo` e `racaCor` SAÍRAM — do formulário, do schema, do
+ *    módulo de cadastro e do tipo. São dado sensível (LGPD art. 5º II) sem
+ *    finalidade nem regra de acesso no produto, e a decisão foi não os coletar
+ *    em vez de os deixar nascendo em branco.
+ *
+ * **`salaryCents` é `admin`-only na LEITURA também**, e o contrato manda o
+ * servidor OMITIR o campo — não devolvê-lo em `null` — para quem não pode vê-lo.
+ * `daFichaDoServidor` ainda não distingue as duas coisas: `Colaborador.salario`
+ * é `number | null` e não tem como dizer "existe e você não pode ver". É dívida
+ * declarada, não esquecimento — quem for ligar a leitura admin-only (api#250)
+ * precisa de um terceiro estado aqui e de um rótulo próprio na tela; até lá o
+ * campo aparece vazio, que é o mesmo que "sem salário registrado".
+ *
+ * O que continua em branco: metas e comissão (módulo inteiro do mockup, sem
+ * lastro em schema nenhum) e o perfil por empresa, que é o escopo da #105.
  *
  * ## O que NÃO migrou junto, e não foi esquecimento
  *
@@ -67,11 +84,19 @@ export const listaDeColaboradores: ListProvider<EmployeeDto> = createApiListProv
  * espalhados: um branco escrito à mão aqui divergiria do branco do "Incluir" na
  * primeira vez que o formulário ganhasse campo.
  *
- * **`setor` e `cargo` recebem o ID, não o nome.** O formulário e a ficha os
- * tratam como lista de apoio (`useRotulosDeApoio` traduz id → rótulo na
- * leitura), e o DTO traz os dois: `sectorId`/`sector` e `jobTitleId`/`jobTitle`.
+ * **Todo campo de lista de apoio recebe o ID, não o nome.** O formulário e a
+ * ficha os tratam como lista de apoio (`useRotulosDeApoio` traduz id → rótulo na
+ * leitura), e o DTO traz sempre o par — `sectorId`/`sector`, `jobTitleId`/`jobTitle`,
+ * e desde a #403 também `maritalStatusId`, `nationalityId`, `educationLevelId`,
+ * `occupationId` e `employmentTypeId`, cada um com seu nome resolvido ao lado.
  * Gravar o NOME onde a tela espera id faria o combo abrir sem seleção e a ficha
  * imprimir o rótulo cru — parece certo na tela e erra na hora de gravar.
+ *
+ * **Os campos de texto caem em `''` e não em `null`, e a diferença é do tipo.**
+ * `nomeConjuge`, `nomePai`, `nomeMae`, `anoChegada` e `naturalidade.cidadeNome`
+ * são `string` em `Colaborador` (são `<input>` controlado, e `null` num deles é
+ * o aviso de campo não-controlado do React); os que são `string | null` seguem
+ * `null`. O DTO manda `null` nos dois casos — quem converte é aqui.
  */
 export function daFichaDoServidor(dto: EmployeeDetailDto): Colaborador {
   return {
@@ -84,6 +109,30 @@ export function daFichaDoServidor(dto: EmployeeDetailDto): Colaborador {
     atendimentoCliente: dto.customerFacing ?? false,
     dataAdmissao: dto.hiredAt ?? null,
     dataDemissao: dto.dismissedAt ?? null,
+    // Bloco pessoal — nível ORGANIZAÇÃO.
+    dtNascimento: dto.birthDate ?? null,
+    estadoCivil: dto.maritalStatusId ?? null,
+    nomeConjuge: dto.spouseName ?? '',
+    dtNascConjuge: dto.spouseBirthDate ?? null,
+    nomePai: dto.fatherName ?? '',
+    nomeMae: dto.motherName ?? '',
+    naturalidade: {
+      cidadeCodigo: dto.birthCityCode ?? null,
+      cidadeNome: dto.birthCity ?? '',
+      uf: dto.birthState ?? null,
+    },
+    // `colaboradorVazio()` semeia BRASILEIRA, e para um registro que veio do
+    // servidor isso seria chute: quem não tem nacionalidade gravada tem `null`,
+    // não a nacionalidade mais provável.
+    nacionalidade: dto.nationalityId ?? null,
+    anoChegada: dto.arrivalYear ?? '',
+    grauInstrucao: dto.educationLevelId ?? null,
+    profissao: dto.occupationId ?? null,
+    // Bloco trabalhista — nível EMPRESA ATIVA.
+    vinculo: dto.employmentTypeId ?? null,
+    // Vazio aqui é ambíguo por enquanto: `admin` sem salário gravado e papel sem
+    // permissão de ver chegam os dois como ausência. Ver o cabeçalho do arquivo.
+    salario: dto.salaryCents ?? null,
   }
 }
 

@@ -6,6 +6,7 @@ import { pedidosDeVendaApi } from '@/data/pedidos-venda-api'
 import { produtosApi } from '@/data/produtos-api'
 import { type ListProvider, type ResourceProvider, tabelaDeApoio } from '@/data/provider'
 import { orcamentosApi } from '@/data/quotes-api'
+import { servicosApi } from '@/data/servicos-api'
 import { bancos } from '@/mocks/bancos'
 import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
@@ -114,6 +115,17 @@ export const data = {
    * a tela não as oferece.
    */
   pedidosVenda: pedidosDeVendaApi,
+
+  /**
+   * Cadastro de SERVIÇOS — HTTP (`GET /api/services`), só listagem.
+   *
+   * Entrada de LISTA e não de recurso: o contrato publica listagem e escrita, e
+   * nenhum detalhe por id — o `ServiceDto` é plano, e a linha da listagem já é o
+   * registro inteiro. Quem a consome hoje é a aba Serviços do orçamento, que
+   * precisa escolher o que cobrar e congelar preço e percentual do eletricista
+   * na linha do documento.
+   */
+  servicos: servicosApi,
 
   /**
    * Funil de venda (CRM). Listagem, detalhe e registro em branco são todos do

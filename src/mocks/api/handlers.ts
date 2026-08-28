@@ -32,6 +32,7 @@ import { handlersDePagamento } from './pagamento'
 import { handlersDePedidoDeVenda } from './pedidos'
 import { verificarEscrita } from './permissao'
 import { handlersDoPlanner } from './planner'
+import { handlersDePrecos } from './precos'
 import {
   TIPO,
   camposInvalidos,
@@ -992,6 +993,18 @@ export const handlers = [
   // servia, precisou de handler quando ganhou tela.
   ...handlersDeEmpresas,
   ...handlersDeSuporte,
+
+  // ---------------- PREÇO (G9 · issue #379) ----------------
+  // Arquivo próprio, como compras e relatórios. As dez operações estavam no
+  // contrato desde a #335 e handler nenhum as servia — decisão declarada em
+  // `rotas-do-backend.ts`, e ela custava caro no dia em que a aba nasceu: sem
+  // handler a requisição cai no fallback da SPA e volta `index.html` com 200.
+  //
+  // A linha onde este mock para está no cabeçalho de `precos.ts`, e é o que
+  // torna a decisão antiga compatível com ter tela: ele GUARDA o cadastro (o
+  // número que o operador digitou) e RECUSA a apuração com 501 — a cascata de
+  // vinte e três parcelas continua sendo do servidor.
+  ...handlersDePrecos,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da

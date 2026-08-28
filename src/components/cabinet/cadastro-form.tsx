@@ -5,7 +5,7 @@ import { Form } from '@/components/ui/form'
 import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
 import type { z } from 'zod'
 
@@ -21,6 +21,19 @@ export interface CadastroFormProps<T extends FieldValues> {
    * idênticas virariam dois registros ou um 409 sem explicação.
    */
   gravando?: boolean
+  /**
+   * Gravação que deu CERTO (`mutation.isSuccess`) — o par de `gravando`.
+   *
+   * Existe desde a #405, quando a alteração passou a PERMANECER na tela: o que
+   * está nos campos acabou de virar o que o servidor tem, e um formulário que
+   * segue marcado como sujo depois disso mente duas vezes — levanta a barra de
+   * "alterações não salvas" na primeira tecla e faz a guarda de navegação
+   * perguntar se pode descartar o que já foi gravado.
+   *
+   * Na inclusão o efeito é inofensivo: a tela navega para o documento que
+   * nasceu e o formulário desmonta em seguida.
+   */
+  gravou?: boolean
   /**
    * Modo `Consul.` da barra de ações (§9 padrão 8): mesma tela, sem edição.
    * Desabilita TODO o conteúdo via `<fieldset disabled>` — inclusive botões de
@@ -67,6 +80,7 @@ export function CadastroForm<T extends FieldValues>({
   onGravar,
   onCancelar,
   gravando = false,
+  gravou = false,
   readOnly: readOnlyProp = false,
   titulo,
   contexto,
@@ -101,6 +115,26 @@ export function CadastroForm<T extends FieldValues>({
     enviadoRef.current = false
     if (enviado) setEnviado(false)
   }
+
+  /**
+   * Gravou e a tela PERMANECE (#405): o que está nos campos é o que o servidor
+   * tem, então o formulário deixa de estar sujo — `reset` com os próprios
+   * valores zera `isDirty` sem mexer em nada do que está escrito.
+   *
+   * O `enviado` volta a `false` no mesmo gesto, e é ele que devolve a barra de
+   * alterações à próxima tecla: sem isto, a segunda edição da mesma tela seria
+   * a única do sistema sem aviso de trabalho pendente.
+   */
+  useEffect(() => {
+    if (!gravou) return
+    form.reset(form.getValues())
+    enviadoRef.current = false
+    setEnviado(false)
+    // `form` entra na lista porque a regra do lint a exige; a referência do RHF
+    // é estável entre renders, então quem dispara o efeito continua sendo a
+    // gravação — e o `reset` com os próprios valores é idempotente de qualquer
+    // forma.
+  }, [gravou, form])
 
   // Modo consulta não tem o que gravar; e depois do `Gravar` a barra sai de
   // cena para não pedir de novo o que já foi pedido.

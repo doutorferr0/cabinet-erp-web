@@ -1,4 +1,4 @@
-import type { PartnerDto } from '@/api/gerado'
+import type { PartnerDto, QuoteDetailDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
@@ -12,6 +12,7 @@ import {
 } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
@@ -80,12 +81,12 @@ export const orcamentoSchema = z.object({
   //
   // **MEDIDO: remover estas três linhas hoje não quebra nenhum caso.** A folha
   // exibe a revisão a partir da hidratação (`defaultValues`), e o parse do Zod
-  // só roda no `submit` — depois do qual o `Gravar` navega de volta para a
-  // listagem, então o registro podado nunca chega a ser desenhado. A declaração
-  // fica porque é ela que segura o dia em que a folha PARAR de navegar no
-  // sucesso: aí o registro pós-parse vira o que a tela mostra, e a revisão 2
-  // reapareceria como original, com 200 e sem aviso. Escrever aqui que o
-  // sintoma existe hoje seria afirmar o que a medição nega.
+  // só roda no `submit` — o registro podado vai para o corpo da escrita e não
+  // volta para o estado do formulário. A declaração fica porque é ela que
+  // segura o dia em que o registro pós-parse VIRAR o que a tela mostra: aí a
+  // revisão 2 reapareceria como original, com 200 e sem aviso. Esse dia ficou
+  // mais perto com a #405 — a alteração deixou de navegar e permanece na tela,
+  // e o que sobrevive ao `Gravar` passou a ser desenhado de novo.
   revisao: z.number(),
   revisaoDeId: z.string().nullable(),
   revisaoDeNumero: z.string().nullable(),
@@ -628,7 +629,18 @@ export function OrcamentoForm({
     // recusa mostraria o mesmo desfecho de uma gravação que deu certo, que é
     // exatamente o defeito que este trecho tinha (`console.info` + navigate).
     gravar.mutate(values, {
-      onSuccess: () => void navigate({ to: '/vendas/orcamentos' }),
+      // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+      // documento novo abre o orçamento que nasceu — com o número que só o
+      // servidor sabe atribuir —, alteração permanece na tela com o toast.
+      onSuccess: posGravar<QuoteDetailDto>({
+        eraNovo: !values.id,
+        abrirDocumento: (orcamentoId) =>
+          void navigate({
+            to: '/vendas/orcamentos/$orcamentoId',
+            params: { orcamentoId },
+            replace: true,
+          }),
+      }),
     })
   }
 
@@ -640,6 +652,7 @@ export function OrcamentoForm({
       onCancelar={() => void navigate({ to: '/vendas/orcamentos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       familia="quotes"
     >
       {/* A recusa do servidor em destaque, ANTES das abas (#138): o `detail` do

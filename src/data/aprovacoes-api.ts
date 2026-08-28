@@ -10,12 +10,7 @@ import {
   listApprovalRequests,
   rejectApprovalRequest,
 } from '@/api/gerado'
-import {
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
-  dadosOuErro,
-  repetirSeValeAPena,
-} from '@/data/api-provider'
+import { PAGE_SIZE_MAX, type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
 import type { TableFetcher } from '@/lib/table-query'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -111,14 +106,24 @@ export function filaDeAprovacoes(
  * toda tela, e puxar a fila inteira para ler um número faria toda navegação
  * carregar a lista no fundo.
  *
- * **Sem `throwOnError` e sem repetição agressiva de propósito:** o badge é
- * ornamento. Falhou, ele some — derrubar a navegação porque o contador não
- * respondeu seria o rabo abanando o cachorro.
+ * **`retry: false`, e é a única consulta do repo que o declara.** O badge é
+ * ornamento: falhou, ele some, e ninguém fica esperando. A política padrão
+ * (`repetirSeValeAPena`: 3 tentativas com espera crescente) existe para dado que
+ * a TELA precisa — aqui ela custaria três viagens e ~7s de backoff para desenhar
+ * um número que já decidimos não desenhar quando não há resposta.
+ *
+ * **E o custo não é só do badge.** Este hook monta na BARRA, então ele roda em
+ * toda tela cuja seção esteja aberta — inclusive nas de documento, cujos testes
+ * usam servidor falso fechado. Com repetição, uma consulta de ornamento que
+ * ninguém stubou passa a segurar o relógio de um teste que não fala de
+ * aprovação: foi assim que a primeira versão desta PR deixou
+ * `sessao-venceu-no-envio.test.tsx` vermelho no CI e verde na máquina, que é o
+ * pior tipo de flake — o que só aparece longe de onde nasceu.
  */
 export function useResumoDeAprovacoes() {
   return useQuery({
     queryKey: CHAVES_APROVACOES.resumo,
-    retry: repetirSeValeAPena,
+    retry: false,
     queryFn: async () => {
       const resposta: RespostaDaApi = await getApprovalSummary()
       return dadosOuErro<ApprovalSummaryDto>(resposta, 'Falha ao contar as aprovações pendentes.')

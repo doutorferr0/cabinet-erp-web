@@ -81,12 +81,23 @@ describe('AppShell', () => {
 
     const secoes = within(screen.getByRole('navigation', { name: 'Seções' }))
     // Seção com tela é `<Link>` — o destino é rota de verdade e abre em outra
-    // aba pelo navegador. `Financeiro`, que só tem tela futura, é `<button>`:
-    // não há para onde apontar, e um href inventado daria 404.
-    for (const rotulo of ['Início', 'Comercial', 'CRM', 'Estoque', 'Pessoas', 'Catálogo']) {
+    // aba pelo navegador. `Financeiro` era o contraexemplo vivo (só tela futura
+    // ⇒ `<button>` sem href) e deixou de ser na fase C do G7: as SETE têm tela.
+    // A regra "seção sem destino não vira link" continua travada onde ela mora,
+    // em `destinoDaSecao` (`navigation.test.ts`), sobre uma seção montada lá —
+    // amarrá-la a uma seção vazia do menu era o que a fazia morrer em silêncio
+    // na primeira tela entregue.
+    for (const rotulo of [
+      'Início',
+      'Comercial',
+      'CRM',
+      'Estoque',
+      'Financeiro',
+      'Pessoas',
+      'Catálogo',
+    ]) {
       expect(secoes.getByRole('link', { name: rotulo })).toHaveAttribute('href')
     }
-    expect(secoes.getByRole('button', { name: 'Financeiro' })).not.toHaveAttribute('href')
     expect(secoes.queryByRole('link', { name: 'Configurações' })).not.toBeInTheDocument()
     // O único caminho até ela: a engrenagem da topbar, que NAVEGA.
     const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
@@ -212,11 +223,14 @@ describe('AppShell', () => {
   })
 
   /**
-   * `Financeiro` só publica tela futura: `destinoDaSecao` devolve `undefined`,
-   * o ícone é `<button>` e clicar ABRE o menu sem navegar. É a metade da
-   * fileira que não pode virar 404.
+   * Dentro da seção, a tela FUTURA aparece e não navega — "o operador vê pra
+   * onde cresce" sem que o menu possa levá-lo a um 404.
+   *
+   * `Financeiro` era o exemplo da seção inteira futura e virou o oposto: duas
+   * telas de verdade e uma futura (`Comissões`), que é o par que este teste
+   * mede agora — as duas viram link, ela não.
    */
-  it('seção só com tela futura abre o menu sem navegar', async () => {
+  it('a tela futura da seção aparece sem virar link', async () => {
     setup()
     const user = userEvent.setup()
     const barra = () => within(document.querySelector('[data-slot="sidebar"]') as HTMLElement)
@@ -224,12 +238,13 @@ describe('AppShell', () => {
       expect(barra().getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     })
 
-    await user.click(fileira().getByRole('button', { name: 'Financeiro' }))
+    await user.click(fileira().getByRole('link', { name: 'Financeiro' }))
 
-    expect(await barra().findByText('Contas a Receber')).toBeInTheDocument()
-    expect(barra().queryByRole('link', { name: 'Contas a Receber' })).not.toBeInTheDocument()
-    // O rastro conta a ROTA, que não mudou — o menu abriu, o operador não saiu.
-    expect(screen.getByRole('navigation', { name: 'Você está em' })).toHaveTextContent('Início')
+    expect(await barra().findByRole('link', { name: 'Contas a Receber' })).toBeInTheDocument()
+    expect(barra().getByRole('link', { name: 'Contas a Pagar' })).toBeInTheDocument()
+    // A futura está escrita na barra e não é alcançável.
+    expect(barra().getByText('Comissões')).toBeInTheDocument()
+    expect(barra().queryByRole('link', { name: 'Comissões' })).not.toBeInTheDocument()
   })
 
   /**
@@ -265,7 +280,7 @@ describe('AppShell', () => {
     })
     expect(destacado('Estoque')).toBe(true)
 
-    await user.click(fileira().getByRole('button', { name: 'Financeiro' }))
+    await user.click(fileira().getByRole('link', { name: 'Financeiro' }))
     expect(await barra().findByText('Contas a Receber')).toBeInTheDocument()
     expect(destacado('Financeiro')).toBe(true)
 
@@ -812,7 +827,7 @@ describe('AppShell', () => {
       expect(icone.className).not.toContain('bg-modulo-cheia')
 
       // Seção inativa não desenha fio nenhum — o estado é do ícone aceso.
-      const inativa = fileira().getByRole('button', { name: 'Financeiro' })
+      const inativa = fileira().getByRole('link', { name: 'Financeiro' })
       expect(inativa).not.toHaveAttribute('aria-current')
       expect(inativa.querySelector('span[aria-hidden="true"]')).toBeNull()
     })

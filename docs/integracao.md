@@ -279,8 +279,36 @@ com id inventado e responderia "não encontrado" para registro que existe.
 
 | Compras — pedido, ordem, previsão de chegada, reposição | `GET`/`POST` `/api/purchase-requests` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/cancel`** · `GET`/`POST` `/api/purchase-orders` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/send`** · **`…/{id}/reschedule`** · **`…/{id}/cancel`** · `GET` `/api/purchases/arrival-forecast` · `GET` `/api/purchases/stock-replenishment` | caminhos `Proposto`, servidos por `src/mocks/api/compras.ts` no modo mock — **a TELA ainda não fala nenhum deles** (ver abaixo) |
 
+| Financeiro — título, agenda de vencimentos e quitação | `GET`/`POST` `/api/financial-titles` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/cancel`** · `GET` `/api/financial-installments` · **`POST` `…/{id}/settlements`** · **`POST` `/api/financial-settlements/batch`** · `GET` `/api/bank-accounts` · `GET` `/api/cash-registers` · `GET` `/api/payment-modes` | `src/data/financeiro-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/financeiro.ts` no modo mock; a api#199 (fase B) ainda responde **501**, então quem responde nos DOIS modos é o mock |
+
 **Ainda mock, por falta de caminho no contrato:** cidades · resumo do Boletim.
 
+<<<<<<< HEAD
+**FINANCEIRO — as três regras que a tela não pode contrariar** (G7 fase C):
+
+1. **O destino da baixa é obrigatório e EXCLUSIVO** — `bankAccountId` XOR `cashRegisterId`. Os dois,
+   ou nenhum, é **400**. É o destino que faz a baixa virar linha de extrato; sem ele o dinheiro fica
+   quitado no sistema e invisível no caixa. Na tela isso não é validação: é a FORMA do controle —
+   uma lista só, com contas e caixas dentro, onde o estado impossível não existe para ser validado
+   (`src/features/financeiro/destino-da-baixa.tsx`).
+2. **Quitar A MENOS é permissão, não erro** — **403 `urn:cabinet:erro:quitacao-a-menor`**, a
+   permissão especial nº 45 do legado. URN PRÓPRIA e não `papel-insuficiente`, e a diferença é a
+   saída que a tela oferece: ali ela esconde o controle, porque a pessoa não resolve sozinha; aqui o
+   controle é o que resolve — o valor sobe até o saldo e a baixa passa. **O backend ainda emite
+   `papel-insuficiente`** (api#199, `financeiro/baixa.ts`): a URN entrou no contrato pela fase C e a
+   fase B a adota ao reler o contrato. Quem já a manda é o mock.
+   **Acima do saldo é 409** e não tem alçada que libere — o troco não teria onde ser lançado.
+3. **A quitação em lote é UM ato, tudo ou nada.** Uma parcela recusada derruba a requisição inteira
+   e nenhuma baixa fica gravada. Por isso a tela **não tem laço de N requisições**: o laço falha pela
+   metade, o operador corrige e reenvia o bloco, e o que já tinha passado sai de novo. É a primeira
+   escrita em lote do contrato, e é ela que abriu a prop `emLote` da barra de seleção da
+   `VitraDataTable` — ação sem uma operação assim atrás continua morrendo com duas linhas marcadas.
+
+O `GET /api/cash-movements` (extrato), a transferência e a conciliação ficam de fora desta fase e
+**sem handler no mock**, declarados em `whitelist-do-contrato.test.ts`: a tela deles é Caixa e
+Movimentos Bancários, trilho seguinte. A baixa não precisa do extrato para lançar — a conta que
+recebeu o dinheiro está na própria baixa.
+=======
 **Ainda mock, com caminho no contrato:** colaborador (a família tem 8 operações e a passagem as
 liga; quem não migrou foi `data.colaboradores` — ver a costura abaixo) e as telas de compras
 (parágrafo seguinte).
@@ -293,6 +321,7 @@ reservas técnicas (3) · serviços (3) · papéis e permissões (5) · relatór
 escondida nem promessa:** o caminho existe, o backend responde, e o que falta é a tela — que é
 trabalho de front, não de contrato. Medir isto é `grep` do nome da função gerada fora de
 `src/api/gerado/`, e é a conta que envelhece sozinha se ninguém a refizer.
+>>>>>>> origin/main
 
 **COMPRAS é o caso do meio, e ele merece o parágrafo:** o contrato publica as 14 operações e o
 MSW as serve com estado de verdade, mas as telas de `/compras` continuam lendo os fixtures de

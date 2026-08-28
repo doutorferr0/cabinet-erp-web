@@ -99,6 +99,22 @@ export interface DataTableAction<T> {
   icon?: LucideIcon
   /** Recebe a linha selecionada (null quando `needsSelection` é false). */
   onClick?: (row: T | null) => void
+  /**
+   * A ação que sabe agir em VÁRIAS linhas de uma vez.
+   *
+   * Quando presente, a barra de seleção deixa de matar o botão com mais de uma
+   * linha marcada e chama ISTO com todas elas. Ausente = a ação continua sendo
+   * de um registro por vez, que é o caso de `Alterar` e `Excluir`.
+   *
+   * **A porta se abriu porque o contrato abriu.** Enquanto nenhuma escrita em
+   * lote existia, a única implementação possível era um laço de N requisições no
+   * cliente — que falha pela metade sem ninguém saber quantas passaram, e é por
+   * isso que a barra as desabilitava. `POST /api/financial-settlements/batch` é
+   * a primeira escrita TUDO-OU-NADA do contrato: o lote inteiro é um ato do
+   * servidor, e a tela pode prometê-lo sem mentir. Ação que não tenha uma
+   * operação assim atrás continua sem `emLote`.
+   */
+  emLote?: (linhas: readonly T[]) => void
   /** Desabilita sem linha selecionada (Alterar, Consul., Excluir/Cancelar). */
   needsSelection?: boolean
   /** Desabilita SEMPRE — a ação existe na barra mas não é possível aqui. */
@@ -430,12 +446,16 @@ function VazioDaConsulta({
  * ## Ação de UM registro com VÁRIAS linhas marcadas
  *
  * `Alterar` abre um cadastro; `Excluir` desativa um por vez, com confirmação
- * que nomeia o registro. Nenhuma das duas tem hoje uma versão em lote na
- * fronteira de dados — o contrato não publica escrita em lote e um laço de N
- * requisições no cliente falha pela metade sem ninguém saber quantas passaram.
- * Então elas ficam DESABILITADAS com mais de uma linha marcada, dizendo o
- * motivo. Prometer massa e agir na primeira linha seria a promessa errada no
- * botão mais caro da tela.
+ * que nomeia o registro. Nenhuma das duas tem versão em lote na fronteira de
+ * dados — e um laço de N requisições no cliente falha pela metade sem ninguém
+ * saber quantas passaram. Então elas ficam DESABILITADAS com mais de uma linha
+ * marcada, dizendo o motivo. Prometer massa e agir na primeira linha seria a
+ * promessa errada no botão mais caro da tela.
+ *
+ * **A exceção é a ação que declara `emLote`**, e ela só existe onde o SERVIDOR
+ * faz o lote num ato só: hoje, a quitação em lote do financeiro
+ * (`POST /api/financial-settlements/batch`, tudo-ou-nada). Ali a promessa é
+ * verdadeira, porque nenhuma baixa fica gravada se uma parcela recusar.
  */
 function BarraDeSelecao<T>({
   quantidade,
@@ -461,7 +481,10 @@ function BarraDeSelecao<T>({
       </output>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         {acoes.map((acao) => {
-          const morta = acao.disabled === true || varias
+          // Ação com `emLote` NÃO morre com várias marcadas — é justamente o que
+          // ela existe para fazer.
+          const emLote = acao.emLote !== undefined
+          const morta = acao.disabled === true || (varias && !emLote)
           return (
             <Button
               key={acao.id}
@@ -471,11 +494,18 @@ function BarraDeSelecao<T>({
               title={
                 acao.disabled === true
                   ? acao.title
-                  : varias
+                  : varias && !emLote
                     ? `${acao.label} age em um registro por vez — desmarque as outras linhas.`
                     : undefined
               }
-              onClick={() => acao.onClick?.(linhas[0] ?? null)}
+              onClick={() => {
+                // Com uma linha marcada, a ação em lote continua passando pelo
+                // caminho de lote: o diálogo de N=1 é o mesmo de N=10, e mandar
+                // uma para `onClick` faria a tela ter dois caminhos para o mesmo
+                // gesto — com uma chance de divergir a cada mudança.
+                if (emLote) acao.emLote?.(linhas)
+                else acao.onClick?.(linhas[0] ?? null)
+              }}
             >
               {acao.icon ? <acao.icon aria-hidden="true" className="text-modulo" /> : null}
               {acao.label}

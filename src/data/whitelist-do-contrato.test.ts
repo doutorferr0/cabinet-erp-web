@@ -12,6 +12,10 @@ import {
 } from '@/data/crm-api'
 import { ORDENAVEIS_EMPRESA } from '@/data/empresas-do-grupo-api'
 import {
+  ORDENAVEIS_PARCELA as ORDENAVEIS_PARCELA_FRONT,
+  ORDENAVEIS_TITULO as ORDENAVEIS_TITULO_FRONT,
+} from '@/data/financeiro-api'
+import {
   FILTRAVEIS as FILTRAVEIS_PARCEIRO,
   ORDENAVEIS as ORDENAVEIS_PARCEIRO,
 } from '@/data/parceiros-api'
@@ -40,6 +44,13 @@ import {
 } from '@/mocks/api/crm'
 import { ORDENAVEIS_DEPOSITO, ORDENAVEIS_SALDO } from '@/mocks/api/depositos'
 import { ORDENAVEIS_EMPRESA as ORDENAVEIS_EMPRESA_MOCK } from '@/mocks/api/empresas'
+import {
+  ORDENAVEIS_CAIXA as ORDENAVEIS_CAIXA_MOCK,
+  ORDENAVEIS_CONTA_BANCARIA as ORDENAVEIS_CONTA_MOCK,
+  ORDENAVEIS_MODO_DE_PAGAMENTO as ORDENAVEIS_MODO_MOCK,
+  ORDENAVEIS_PARCELA as ORDENAVEIS_PARCELA_MOCK,
+  ORDENAVEIS_TITULO as ORDENAVEIS_TITULO_MOCK,
+} from '@/mocks/api/financeiro'
 import {
   FILTRAVEIS_PARCEIRO as FILTRAVEIS_PARCEIRO_MOCK,
   FILTRAVEIS_PRODUTO as FILTRAVEIS_PRODUTO_MOCK,
@@ -292,10 +303,9 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // Pagar, Contas a Receber, Caixa e Movimentos Bancários — são a FASE C deste
   // mesmo trilho. Cada uma sai daqui quando ganhar a sua, com `ORDENAVEIS`
   // próprio.
-  ListFinancialTitles:
-    'contas a pagar/receber ainda não tem tela — as telas de Tesouraria são a Fase C do trilho',
-  ListFinancialInstallments:
-    'a agenda de vencimentos (e a seleção do lote) nasce com a tela de quitação, que é a Fase C',
+  // `ListFinancialTitles` e `ListFinancialInstallments` SAÍRAM daqui na fase C
+  // (telas de Contas a Pagar/Receber): as duas têm `ORDENAVEIS` próprio em
+  // `src/data/financeiro-api.ts`, que é o que esta guarda passa a conferir.
   ListCashMovements: 'o extrato de caixa/banco ainda não tem tela — Fase C do trilho',
   ListBankAccounts: 'a conta bancária é COMBO, não grade — não há cabeçalho para clicar',
   ListCashRegisters: 'o caixa é COMBO, não grade — idem',
@@ -323,6 +333,8 @@ const ORDENAVEIS_DO_FRONT: Record<string, readonly string[]> = {
   // abre exceção), e ela já carrega a whitelist — então entra AQUI, e não no
   // inventário de "sem lista no front".
   ListSupportGrants: ORDENAVEIS_CONCESSAO,
+  ListFinancialTitles: ORDENAVEIS_TITULO_FRONT,
+  ListFinancialInstallments: ORDENAVEIS_PARCELA_FRONT,
   // A aba Empresas não desenha cabeçalho clicável — um grupo tem unidades, não
   // milhares de linhas, e na prática sai sempre `code`. A lista entra por ESTE
   // eixo assim mesmo, e não em `SEM_LISTA_NO_FRONT`: ela EXISTE no front
@@ -401,6 +413,15 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   GetStockAgingReport: ORDENAVEIS_DIAS_SEM_VENDA,
   GetQuoteVsStockReport: ORDENAVEIS_ORCAMENTO_X_ESTOQUE,
   GetBirthdaysReport: ORDENAVEIS_ANIVERSARIANTES,
+  // FINANCEIRO (G7) nasce COM tela e COM mock no mesmo commit — o oposto de
+  // compras e relatórios, que nasceram mockados e sem tela. A razão é a mesma
+  // por outro lado: o site público é 100% mock, e a agenda de vencimentos sem
+  // handler abriria em branco com cara de "não há o que pagar".
+  ListFinancialTitles: ORDENAVEIS_TITULO_MOCK,
+  ListFinancialInstallments: ORDENAVEIS_PARCELA_MOCK,
+  ListBankAccounts: ORDENAVEIS_CONTA_MOCK,
+  ListCashRegisters: ORDENAVEIS_CAIXA_MOCK,
+  ListPaymentModes: ORDENAVEIS_MODO_MOCK,
   // As empresas do grupo entram nos DOIS eixos: têm tela (acima) e têm mock —
   // o site público é 100% mock, e ali quem recusa `sortBy` fora da whitelist é
   // o handler de `src/mocks/api/empresas.ts`.
@@ -483,12 +504,13 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   //
   // Sai daqui na FASE C, escrito CONTRA a tela que o consome — que é como
   // `compras.ts` e `relatorios.ts` puderam nascer úteis.
-  ListFinancialTitles: 'tesouraria não tem handler no mock — nenhuma tela a consome ainda (Fase C)',
-  ListFinancialInstallments: 'idem — a agenda de vencimentos nasce com a tela de quitação',
-  ListCashMovements: 'idem — o extrato nasce com a tela de caixa/movimentos bancários',
-  ListBankAccounts: 'idem — o combo de conta nasce com a tela que o abre',
-  ListCashRegisters: 'idem — o combo de caixa nasce com a tela que o abre',
-  ListPaymentModes: 'idem — o combo de modo nasce com a tela da baixa',
+  // As cinco irmãs SAÍRAM daqui na fase C, com as telas que as consomem —
+  // título, agenda de vencimentos e os três combos da baixa. `ListCashMovements`
+  // fica: o EXTRATO é a tela de Caixa e Movimentos Bancários, trilho seguinte, e
+  // a baixa não precisa dele para lançar (a conta que recebeu o dinheiro está na
+  // própria baixa). Sai daqui quando aquela tela existir.
+  ListCashMovements:
+    'o extrato de caixa/banco não tem handler no mock — a tela dele é o trilho seguinte, e a baixa mostra a conta sem precisar do extrato',
 }
 
 /**

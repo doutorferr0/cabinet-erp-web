@@ -26,6 +26,7 @@ import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './deposi
 import { handlersDeEmpresas } from './empresas'
 import { handlersDeEntrega } from './entrega'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { handlersDeFinanceiro } from './financeiro'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
 import { handlersDePagamento } from './pagamento'
@@ -968,6 +969,16 @@ export const handlers = [
   // mas ligar a passagem é medição de par local, que é outra decisão. Sem este
   // arquivo o quadro de cargas não tinha resposta em ambiente nenhum.
   ...handlersDeEntrega,
+  // ---------------- FINANCEIRO (G7) ----------------
+  // Arquivo próprio, como compras. As 15 operações da tag `financeiro` entraram
+  // pela #340 sem handler nenhum, e a ausência estava DECLARADA com o motivo:
+  // nenhuma tela as consumia. As telas de título, agenda de vencimentos e
+  // quitação são a Fase C, e é a chegada delas que traz o mock junto — o site
+  // público é 100% mock, e sem handler Contas a Pagar abriria em branco com
+  // cara de "não há o que pagar". Ver o cabeçalho de `financeiro.ts` para o que
+  // ele reproduz e o que declara de fora (movimento de caixa, transferência,
+  // conciliação e período fechado).
+  ...handlersDeFinanceiro,
 
   // ---------------- RELATÓRIOS DE GESTÃO (#310) ----------------
   // Arquivo próprio, como compras. As dez operações estavam no contrato desde a

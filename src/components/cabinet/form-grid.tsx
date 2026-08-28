@@ -19,9 +19,23 @@ import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-
 /**
  * Tipo da célula. `money` guarda centavos (int) e digita em reais;
  * `check` guarda boolean; `select` é combo puro; `computed` é derivado da
- * linha (não vive no form state). Default `text`.
+ * linha (não vive no form state); `date` é o `<input type="date">` nativo e
+ * guarda ISO, como a data viaja no contrato. Default `text`.
+
+ * **Coluna de NÚMERO que o operador não digita não é campo** — use `computed`.
+ * Um `<input>` de texto devolve STRING, e um schema que espera `number` recusa
+ * a gravação inteira com `expected number, received string`; erro de linha de
+ * grade não tem onde aparecer, então o `Gravar` para de funcionar em silêncio.
+ * Foi o que a sequência da parcela do financeiro custou.
  */
-export type FormGridCellType = 'text' | 'money' | 'percent' | 'check' | 'select' | 'computed'
+export type FormGridCellType =
+  | 'text'
+  | 'money'
+  | 'percent'
+  | 'check'
+  | 'select'
+  | 'computed'
+  | 'date'
 
 export interface FormGridColumn {
   /** Nome do campo dentro da linha do array. */
@@ -142,6 +156,33 @@ function PercentCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
             const digits = e.target.value.replace(/\D/g, '')
             field.onChange(digits === '' ? null : Number(digits))
           }}
+          onBlur={field.onBlur}
+          ref={field.ref}
+        />
+      )}
+    />
+  )
+}
+
+/**
+ * VENCIMENTO na grade — `<input type="date">` nativo, como no filtro de data.
+ *
+ * Nativo e não máscara: o seletor do sistema já entende o formato local, a
+ * navegação por teclado vem de graça e o valor que sai é ISO — que é como a data
+ * viaja no contrato. Uma máscara própria aqui teria de reimplementar as três
+ * coisas para exibir o mesmo `dd/mm/aaaa` que o browser exibe sozinho.
+ */
+function DateCell({ name, ariaLabel }: { name: string; ariaLabel: string }) {
+  return (
+    <Controller
+      name={name}
+      render={({ field }) => (
+        <Input
+          type="date"
+          aria-label={ariaLabel}
+          className="h-8 border-0 bg-transparent shadow-none focus-visible:focus-ring-inset"
+          value={typeof field.value === 'string' ? field.value : ''}
+          onChange={(e) => field.onChange(e.target.value || null)}
           onBlur={field.onBlur}
           ref={field.ref}
         />
@@ -334,6 +375,8 @@ export function FormGrid({
                         <TableCell key={col.key} className="p-1">
                           {col.type === 'money' ? (
                             <MoneyCell name={path} ariaLabel={ariaLabel} />
+                          ) : col.type === 'date' ? (
+                            <DateCell name={path} ariaLabel={ariaLabel} />
                           ) : col.type === 'percent' ? (
                             <PercentCell name={path} ariaLabel={ariaLabel} />
                           ) : col.type === 'check' ? (

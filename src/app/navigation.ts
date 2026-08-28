@@ -546,10 +546,14 @@ export const navSecoes: NavSecao[] = [
   },
   {
     /**
-     * Financeiro entra INTEIRO como futuro, e de propósito: o user decidiu que
-     * Contas a Pagar e a Receber moram juntas, e a seção existir vazia é o que
-     * mostra onde elas vão cair. Sem módulo — não há cor de financeiro na
-     * paleta travada, e inventar uma seria decisão dele, não minha.
+     * Financeiro nasceu INTEIRO como futuro — a seção existir vazia era o que
+     * mostrava onde Contas a Pagar e a Receber iam cair. **As duas existem
+     * agora** (G7 fase C): a tela é a AGENDA DE VENCIMENTOS, que é literalmente
+     * o que a descrição delas já prometia — "por vencimento". Comissões segue
+     * futura.
+     *
+     * Sem módulo — não há cor de financeiro na paleta travada, e inventar uma
+     * seria decisão do user, não minha.
      */
     id: 'financeiro',
     rotulo: 'Financeiro',
@@ -564,15 +568,17 @@ export const navSecoes: NavSecao[] = [
             title: 'Contas a Receber',
             url: '/financeiro/receber',
             icon: CircleDollarSign,
-            descricao: 'Ainda não existe. O que o cliente deve, por vencimento.',
-            futuro: true,
+            descricao: 'O que o cliente deve, por vencimento — com a quitação.',
+            // `Incluir` abre um TÍTULO, que é onde a conta nasce: o vencimento
+            // não é registro que se cria sozinho, ele é parcela de um título.
+            incluir: '/financeiro/receber/titulos/novo',
           },
           {
             title: 'Contas a Pagar',
             url: '/financeiro/pagar',
             icon: CircleDollarSign,
-            descricao: 'Ainda não existe. O que se deve ao fornecedor, por vencimento.',
-            futuro: true,
+            descricao: 'O que se deve ao fornecedor, por vencimento — com a quitação.',
+            incluir: '/financeiro/pagar/titulos/novo',
           },
           {
             title: 'Comissões',

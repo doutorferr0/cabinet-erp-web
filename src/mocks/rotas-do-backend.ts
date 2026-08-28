@@ -1045,6 +1045,13 @@ const RECEBIMENTO_SEM_PORTA =
  *
  * Sai INTEIRA quando a fase B ligar os handlers: meia família poria o documento
  * no servidor e a conferência no mock, e é a grade que faz o recebimento.
+ *
+ * **E desde 26/08 elas são MOCKADAS de verdade** (`src/mocks/api/recebimento.ts`).
+ * Até aqui a declaração era só metade: a rota ficava do lado do mock e handler
+ * nenhum a respondia, então em modo mock ela caía no fallback da SPA e voltava
+ * `index.html` com 200 — o pior caso que este arquivo descreve, e o mesmo que a
+ * entrega (G4) pagou. Agora a fila do galpão responde nos DOIS ambientes: mock
+ * puro e par local.
  */
 const RECEBIMENTO: readonly RotaNoMock[] = [
   {

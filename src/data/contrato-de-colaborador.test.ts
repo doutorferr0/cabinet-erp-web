@@ -161,13 +161,16 @@ describe('salário: centavos inteiros e admin-only nas DUAS pontas', () => {
     expect(prop.format).toBe('int64')
   })
 
-  it.each([LEITURA, ESCRITA_VINCULO])('%s.salaryCents declara admin-only na descrição', (schema) => {
-    // A regra de acesso não tem onde morar no OpenAPI a não ser na descrição —
-    // `security` é por operação, e a operação inteira não é admin-only, só este
-    // campo. É por este parágrafo que o api#250 implementa a permissão.
-    const desc = campo(schema, 'salaryCents').description ?? ''
-    expect(desc).toContain('admin')
-  })
+  it.each([LEITURA, ESCRITA_VINCULO])(
+    '%s.salaryCents declara admin-only na descrição',
+    (schema) => {
+      // A regra de acesso não tem onde morar no OpenAPI a não ser na descrição —
+      // `security` é por operação, e a operação inteira não é admin-only, só este
+      // campo. É por este parágrafo que o api#250 implementa a permissão.
+      const desc = campo(schema, 'salaryCents').description ?? ''
+      expect(desc).toContain('admin')
+    },
+  )
 
   it('a descrição diz que a LEITURA omite o campo em vez de mandar null', () => {
     // A metade que se esquece. `null` já significa "não há salário registrado";

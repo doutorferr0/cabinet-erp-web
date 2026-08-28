@@ -61,6 +61,7 @@ import {
   FILTRAVEIS as FILTRAVEIS_ORCAMENTO_MOCK,
   ORDENAVEIS as ORDENAVEIS_ORCAMENTO_MOCK,
 } from '@/mocks/api/quotes'
+import { ORDENAVEIS_RECEBIMENTO } from '@/mocks/api/recebimento'
 import {
   ORDENAVEIS_ANIVERSARIANTES,
   ORDENAVEIS_ATENDENTE,
@@ -256,7 +257,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
   // a ORDEM DE COMPRA pediu com o que chegou, e sobre dado mockado ela
   // confrontaria uma ordem inventada. O `sortBy` publicado é conferido do lado
   // do api, contra o `MapaDeCampos` do módulo, na fase B.
-  ListGoodsReceipts: 'recebimento ainda não tem tela — as telas de Compras são a Fase C do trilho',
+  ListGoodsReceipts:
+    'recebimento ainda não tem tela — as telas de Compras são a Fase C do trilho; a whitelist do mock é a que vale hoje, e ela é conferida contra o contrato logo abaixo',
   GetProductsSoldReport:
     'produto vendido ainda não tem tela — a seção Relatórios é a Fase C do trilho',
   GetSalesComparisonReport:
@@ -422,6 +424,10 @@ const ORDENAVEIS_DO_MOCK: Record<string, readonly string[]> = {
   // mesmo commit em que `src/mocks/api/precos.ts` passou a servi-las.
   ListCostProfiles: ORDENAVEIS_PERFIL_DE_CUSTO,
   ListPriceIndexes: ORDENAVEIS_INDICE,
+  // O RECEBIMENTO (G3) entra pelo mesmo eixo dos relatórios: nasce sem tela, e
+  // quem recusa `sortBy` fora da whitelist hoje é o handler do mock — que é
+  // quem o site público tem.
+  ListGoodsReceipts: ORDENAVEIS_RECEBIMENTO,
 }
 
 /**
@@ -475,8 +481,13 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // (estoque, orçamento, aniversário) e devolve envelope VAZIO onde a fonte é o
   // pedido de venda, que o mock não guarda. Nenhuma soma disputa com o
   // `GROUP BY` do servidor, e o caminho deixa de responder `index.html` com 200.
-  ListGoodsReceipts:
-    'recebimento não tem handler no mock — a grade confronta o que a ordem de compra pediu com o que chegou, e o mock não guarda ordem; mockar a conferência sem a ordem dona daria divergência calculada contra número inventado',
+  // O RECEBIMENTO (G3) SAIU DAQUI. O motivo que estava escrito — "o mock não
+  // guarda ordem, e a conferência daria divergência calculada contra número
+  // inventado" — deixou de valer em duas etapas: `compras.ts` passou a guardar
+  // ordem com linha, quantidade e fornecedor, e a #354 publicou o VÍNCULO por
+  // linha (`purchaseOrderId` + `purchaseOrderLine`), que é o que faz a
+  // divergência ser medida contra a ordem de verdade. `recebimento.ts` serve as
+  // seis, e `ListGoodsReceipts` está em `ORDENAVEIS_DO_MOCK`, acima.
   // AS SETE DE COMISSÕES (G8) pela MESMA razão da trilha de indicação, e não pela
   // do 501: a apuração soma sobre o PEDIDO DE VENDA, que o mock não guarda.
   // Reimplementá-la aqui inventaria dinheiro — um número com cara de conta

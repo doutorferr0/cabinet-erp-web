@@ -68,6 +68,73 @@ describe('bindShortcut', () => {
   })
 })
 
+describe('pilha por combo — a tecla tem UM dono', () => {
+  it('o último a ligar atende, e o de baixo não dispara junto', () => {
+    // O defeito real da #362: a paleta (shell, nunca desmonta) e a busca de
+    // cidade do cadastro de cliente ligavam `Ctrl+K` ao mesmo tempo, e a tecla
+    // abria as duas coisas uma por cima da outra.
+    const paleta = vi.fn()
+    const formulario = vi.fn()
+    const offPaleta = bindShortcut('ctrl+k', paleta)
+    const offFormulario = bindShortcut('ctrl+k', formulario)
+
+    tecla({ key: 'k', ctrlKey: true })
+    expect(formulario).toHaveBeenCalledTimes(1)
+    expect(paleta).not.toHaveBeenCalled()
+
+    offFormulario()
+    offPaleta()
+  })
+
+  it('ao desmontar o de cima, a tecla volta para quem estava embaixo', () => {
+    const paleta = vi.fn()
+    const formulario = vi.fn()
+    const offPaleta = bindShortcut('ctrl+k', paleta)
+    const offFormulario = bindShortcut('ctrl+k', formulario)
+
+    offFormulario()
+    tecla({ key: 'k', ctrlKey: true })
+    expect(paleta).toHaveBeenCalledTimes(1)
+
+    offPaleta()
+  })
+
+  it('desmontar fora de ordem não deixa a tecla presa em quem já saiu', () => {
+    // Ordem de desmontagem não é garantida entre componentes irmãos: soltar o
+    // de baixo primeiro não pode fazer o de cima parar de responder.
+    const debaixo = vi.fn()
+    const decima = vi.fn()
+    const offDebaixo = bindShortcut('alt+p', debaixo)
+    const offDecima = bindShortcut('alt+p', decima)
+
+    offDebaixo()
+    tecla({ key: 'p', altKey: true })
+    expect(decima).toHaveBeenCalledTimes(1)
+    expect(debaixo).not.toHaveBeenCalled()
+
+    offDecima()
+    tecla({ key: 'p', altKey: true })
+    expect(decima).toHaveBeenCalledTimes(1)
+  })
+
+  it('o mesmo handler ligado duas vezes solta uma ocorrência por cleanup', () => {
+    // `useEffect(() => bindShortcut(...))` sem lista de dependências re-registra
+    // a cada render — três telas fazem isso hoje. O cleanup do render anterior
+    // não pode levar o registro do render novo junto.
+    const handler = vi.fn()
+    const primeiro = bindShortcut('alt+t', handler)
+    const segundo = bindShortcut('alt+t', handler)
+
+    primeiro()
+    tecla({ key: 't', altKey: true })
+    expect(handler).toHaveBeenCalledTimes(1)
+
+    segundo()
+    tecla({ key: 't', altKey: true })
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('shortcutLabel', () => {
   it('formata o combo para exibir junto do botão', () => {
     expect(shortcutLabel('alt+p')).toBe('Alt+P')

@@ -11,6 +11,7 @@ import type {
 import { http, HttpResponse } from 'msw'
 import { crm } from './crm'
 import { nomeDaEmpresa } from './empresas'
+import { erroCanonico } from './erros-canonicos'
 import { verificarEscrita } from './permissao'
 import { TIPO, camposInvalidos, conflito, naoEncontrado, problemaJson, semSessao } from './problema'
 import { novoId, store } from './store'
@@ -694,8 +695,11 @@ export const handlersDeAcesso = [
     const email = corpo.email.trim().toLowerCase()
     // 409 e não 400: o pedido está bem formado — o e-mail é a credencial e ela
     // é única no produto inteiro, sem diferença de caixa (regra do contrato).
+    // Emitia `about:blank`, e o vocabulário tem a URN desde sempre: a tela via
+    // "Conflito" onde o backend real diria `E-mail já cadastrado`, e não tinha
+    // como oferecer a saída (procurar o colaborador que já usa o e-mail).
     if (email && usuarios.some((u) => u.email === email)) {
-      return conflito('Já existe um colaborador com este e-mail.')
+      return erroCanonico('urn:cabinet:erro:email-ja-cadastrado')
     }
     // O vínculo NASCE JUNTO, no papel de menor poder — igual ao servidor, que
     // vincula ao `viewer` no próprio CreateEmployee. É por isso que a tela usa
@@ -739,7 +743,7 @@ export const handlersDeAcesso = [
     if (recusa) return recusa
     // POST cria; repetir é 409 (o contrato manda o PUT para substituir).
     if (!store.activeTenantId) return naoEncontrado('Sem empresa ativa para vincular.')
-    if (vinculoAtivo(usuario)) return conflito('Vínculo já existe — use o Alterar.')
+    if (vinculoAtivo(usuario)) return erroCanonico('urn:cabinet:erro:vinculo-ja-existe')
     usuario.vinculos[store.activeTenantId] = { roleId: corpo.roleId ?? null, active: true }
     return HttpResponse.json(detalheDeUsuario(usuario), { status: 201 })
   }),

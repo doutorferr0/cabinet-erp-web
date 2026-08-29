@@ -44,11 +44,12 @@ export const colaboradorSchema = z.object({
   setor: z.string().nullable(),
   atendimentoCliente: z.boolean(),
   ativo: z.boolean(),
-  sexo: z.string().nullable(),
+  // `sexo` e `racaCor` saíram em 2026-08-28 — dado sensível (LGPD art. 5º II)
+  // sem finalidade nem regra de acesso no produto. O porquê inteiro está em
+  // `Colaborador`, no mock, que é onde o tipo mora.
   dtNascimento: z.string().nullable(),
   grauInstrucao: z.string().nullable(),
   profissao: z.string().nullable(),
-  racaCor: z.string().nullable(),
   estadoCivil: z.string().nullable(),
   nomeConjuge: z.string(),
   dtNascConjuge: z.string().nullable(),

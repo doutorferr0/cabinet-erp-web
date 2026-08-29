@@ -101,6 +101,10 @@ export const TIPO = {
   semConcessaoDeSuporte: 'urn:cabinet:erro:sem-concessao-de-suporte',
   suporteJaEmOrganizacao: 'urn:cabinet:erro:suporte-ja-em-organizacao',
   concessaoEncerrada: 'urn:cabinet:erro:concessao-encerrada',
+  // A marca da FASE, e a única URN daqui que não descreve erro do pedido: o
+  // caminho está no contrato e ESTE servidor ainda não serve esta parte dele.
+  // 501 e nunca 404, para "não existe" continuar significando "não existe".
+  naoImplementado: 'urn:cabinet:erro:nao-implementado',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -253,6 +257,24 @@ export const naoEncontrado = (detail: string) => problemaJson(404, detail, {}, T
  */
 export const camposInvalidos = (fields: ProblemFieldError[]) =>
   problemaJson(400, 'Confira os campos destacados.', { fields }, TIPO.camposInvalidos)
+
+/**
+ * 501 — o caminho existe no contrato e ESTE servidor não serve esta parte dele.
+ *
+ * O mock passa a poder dizê-lo, e o motivo é a formação de preço. Ele guarda o
+ * CADASTRO de preço (tabela e índice são o número que o operador digitou;
+ * guardá-lo não inventa nada) e **recusa a APURAÇÃO**: a simulação de custo tem
+ * vinte e três parcelas, quatro delas sobre a venda, e a ordem do arredondamento
+ * é dado medido do legado. Reproduzi-la aqui daria número de margem inventado
+ * com cara de apuração do servidor, que é pior do que tela vazia — é a nota que
+ * `rotas-do-backend.ts` já escrevera para não dar mock nenhum a estas rotas.
+ *
+ * A tela lê isso pelo STATUS (`ehModuloEmConstrucao`) e mostra o aviso de módulo
+ * em construção, o mesmo que o backend real acende. É o que faz o modo mock
+ * ENSINAR a recusa em vez de escondê-la.
+ */
+export const naoImplementado = (detail: string) =>
+  problemaJson(501, detail, {}, TIPO.naoImplementado)
 
 export const conflito = (
   detail: string,

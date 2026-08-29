@@ -706,7 +706,10 @@ export const colaborador: EntidadeCadastro = {
           fil: 'data',
           campo: 'dtNascimento',
         },
-        { k: 'sexo', r: 'Sexo', t: 'select', w: 'medio', campo: 'sexo' },
+        // `Sexo` e `Raça / cor` saíram deste módulo em 2026-08-28: dado
+        // sensível (LGPD art. 5º II) sem finalidade nem regra de acesso no
+        // produto. A decisão vale para o COLABORADOR — o Cliente mantém `sexo`,
+        // que é `PartnerDto.gender` e já grava. Ver `Colaborador`, no mock.
         { k: 'civil', r: 'Estado civil', t: 'select', fil: 'sel', campo: 'estadoCivil' },
         { k: 'conjuge', r: 'Nome do cônjuge', campo: 'nomeConjuge' },
         { k: 'nascConjuge', r: 'Nasc. do cônjuge', t: 'data', w: 'medio', campo: 'dtNascConjuge' },
@@ -714,7 +717,6 @@ export const colaborador: EntidadeCadastro = {
         { k: 'mae', r: 'Nome da mãe', campo: 'nomeMae' },
         { k: 'instrucao', r: 'Grau de instrução', t: 'select', fil: 'sel', campo: 'grauInstrucao' },
         { k: 'profissao', r: 'Profissão', t: 'busca', fil: 'texto', campo: 'profissao' },
-        { k: 'racaCor', r: 'Raça / cor', t: 'select', campo: 'racaCor' },
         { k: 'cidadeNatal', r: 'Naturalidade', t: 'busca', campo: 'naturalidade.cidadeNome' },
         { k: 'ufNatal', r: 'UF de nascimento', t: 'select', w: 'curto', campo: 'naturalidade.uf' },
         { k: 'nacionalidade', r: 'Nacionalidade', t: 'select', campo: 'nacionalidade' },

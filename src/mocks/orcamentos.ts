@@ -24,6 +24,56 @@ export interface OrcamentoItem {
   ambiente: string
 }
 
+/**
+ * Linha da ABA SERVIÇOS — `QuoteServiceItemDto` na língua da tela.
+ *
+ * Coleção SEPARADA dos itens, e não um item com flag, porque as duas linhas não
+ * têm as mesmas colunas: serviço não tem acabamento, tamanho, unidade nem
+ * fornecedor, e tem percentual de eletricista, que produto nenhum tem. É o que o
+ * contrato diz em `QuoteServiceItemDto`, e é o que o legado guarda em
+ * `VendaServico` — tabela própria, 4.450 linhas.
+ *
+ * As chaves de valor (`quantidade`, `valorUnitarioCentavos`,
+ * `descontoPercentual`) repetem as do `OrcamentoItem` de propósito: é o que
+ * deixa `totalItemCentavos` valer para as duas grades, em vez de o documento ter
+ * duas fórmulas para a mesma conta.
+ */
+export interface ServicoDoOrcamento {
+  /** Coluna `Item` — reordenada na gravação (`lineNumber` é o índice + 1). */
+  item: string
+  /**
+   * `ServiceDto.id` do cadastro, ou `null` na descrição AVULSA — que o contrato
+   * permite e o legado usa (`ose_descricao` existe ao lado do `Sev_cod`).
+   */
+  servicoId: string | null
+  /** Descrição CONGELADA na emissão: corrigir o cadastro não reescreve documento. */
+  descricao: string
+  /** Texto, como na grade de itens: número em campo de texto perde o "1," no meio da digitação. */
+  quantidade: string
+  /** Valor unitário congelado, em centavos. */
+  valorUnitarioCentavos: number | null
+  /** Desconto da linha, 4 casas implícitas (10000 = 1%). */
+  descontoPercentual: number | null
+  /**
+   * Percentual do eletricista NESTA linha. **`null` = herda do cadastro** na
+   * gravação; qualquer valor é override explícito, `0` inclusive — zero é "esta
+   * linha não paga instalador". A distinção é do contrato, e some se o campo
+   * virar não-nulável.
+   */
+  percentualEletricista: number | null
+  /**
+   * Quanto o instalador recebe, em centavos — CARIMBO do servidor, leitura pura.
+   *
+   * Não sobe no corpo e não se recalcula aqui: o número vira pagamento de gente
+   * (`acerto_eletrecistas_servicos` no legado), e um arredondamento por cliente
+   * sobre a linha que alguém recebe é diferença que ninguém procura depois.
+   * `null` na linha ainda não gravada.
+   */
+  eletricistaCentavos: number | null
+  /** Código do ambiente, como na grade de itens — `null` no contrato é fora de ambiente. */
+  ambiente: string
+}
+
 export type ModoDesconto = 'PRODUTO' | 'GERAL'
 
 /**
@@ -114,6 +164,15 @@ export interface Orcamento {
    */
   ambientes: AmbienteDoOrcamento[]
   itens: OrcamentoItem[]
+  /**
+   * As linhas da ABA SERVIÇOS. Vem sempre, vazia quando o documento não tem
+   * serviço nenhum — é o que `QuoteDetailDto.serviceItems` promete.
+   *
+   * **Precisa existir no modelo da tela mesmo se a tela não as editasse**: o
+   * `PUT` é INTEGRAL, e corpo sem `serviceItems` é documento sem serviço. Foi
+   * essa a razão de o pedido de venda as declarar antes de ter grade.
+   */
+  servicos: ServicoDoOrcamento[]
   /** A condição de pagamento escolhida — `PaymentTermDto.id`, `Ven_formaPag`. */
   condicaoPagamentoId: string | null
   /** Nome da condição na emissão, resolvido pelo servidor. */
@@ -243,6 +302,11 @@ export const orcamentos: Orcamento[] = LINHAS.map((l, i) => ({
   condicaoPagamentoId: null,
   condicaoPagamento: null,
   parcelas: [],
+  // VAZIA aqui, e não por falta de serviço no sistema: a §8.1 é listagem, e a
+  // aba Serviços não entrou na captura. Quem semeia a aba do primeiro orçamento
+  // é o servidor falso (`servicosDoSeed` em `src/mocks/api/quotes.ts`), que é
+  // quem responde `serviceItems` — deste lado seria dado sem dono.
+  servicos: [],
 }))
 
 export function orcamentoVazio(id = ''): Orcamento {
@@ -276,5 +340,6 @@ export function orcamentoVazio(id = ''): Orcamento {
     // `[]` e não `undefined`: documento sem condição tem plano VAZIO, e é o que
     // impede a tela de quebrar num `.map` só no orçamento recém-aberto.
     parcelas: [],
+    servicos: [],
   }
 }

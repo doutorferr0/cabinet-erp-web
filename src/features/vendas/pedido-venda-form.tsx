@@ -1,4 +1,4 @@
-import type { PartnerDto } from '@/api/gerado'
+import type { OrderDetailDto, PartnerDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -7,6 +7,7 @@ import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { DateField, RadioField, SelectField, TextField } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
@@ -623,7 +624,13 @@ export function PedidoDeVendaForm({
     // SUCESSO: sair da tela depois de uma recusa mostraria o mesmo desfecho de
     // uma gravação que deu certo.
     gravar.mutate(values, {
-      onSuccess: () => void navigate({ to: '/vendas/pedidos' }),
+      // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+      // documento novo abre o pedido que nasceu, alteração permanece na tela.
+      onSuccess: posGravar<OrderDetailDto>({
+        eraNovo: !values.id,
+        abrirDocumento: (pedidoId) =>
+          void navigate({ to: '/vendas/pedidos/$pedidoId', params: { pedidoId }, replace: true }),
+      }),
     })
   }
 
@@ -639,6 +646,7 @@ export function PedidoDeVendaForm({
       onCancelar={() => void navigate({ to: '/vendas/pedidos' })}
       readOnly={readOnly || fechado}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       familia="orders"
     >
       {/* A recusa do servidor em destaque, ANTES das abas: o `detail` do

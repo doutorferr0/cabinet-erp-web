@@ -160,6 +160,24 @@ export function paraOrcamento(dto: QuoteDetailDto): Orcamento {
       fornecedor: item.supplierName ?? '',
       ambiente: item.environmentCode ?? '',
     })),
+    // A ABA SERVIÇOS. Coleção própria, como o contrato a publica — e o
+    // `serviceItems` vem SEMPRE, vazio quando o documento não tem serviço.
+    //
+    // `electricianAmountCents` desce e não sobe: é o que o instalador recebe,
+    // carimbado pelo servidor na gravação. A tela mostra o número dele em vez de
+    // refazer a conta, que é o que o contrato pede em letra.
+    servicos: (dto.serviceItems ?? []).map((servico) => ({
+      item: String(servico.lineNumber),
+      servicoId: servico.serviceId ?? null,
+      descricao: servico.description,
+      // Texto pelo mesmo motivo da quantidade do item: a grade é editável.
+      quantidade: String(servico.quantity),
+      valorUnitarioCentavos: servico.unitPriceCents,
+      descontoPercentual: servico.discountPercent,
+      percentualEletricista: servico.electricianPercent,
+      eletricistaCentavos: servico.electricianAmountCents,
+      ambiente: servico.environmentCode ?? '',
+    })),
   }
 }
 
@@ -243,6 +261,30 @@ export function paraEscrita(o: Orcamento): QuoteWriteRequest {
       supplierDescription: item.descricaoFornecedor || null,
       productGroup: item.grupoProduto || null,
       pieceType: item.tipoPeca || null,
+    })),
+    // A ABA SERVIÇOS SOBE, e a ausência dela era destruição de dado: o `PUT` é
+    // INTEGRAL, então um corpo sem `serviceItems` apaga a aba inteira do
+    // documento — com 200, e sem nada na tela dizendo. O pedido de venda já
+    // contornava isso declarando a coleção no schema sem editá-la; aqui a folha
+    // EDITA, e a coleção volta ao servidor como o operador a deixou.
+    //
+    // **`totalCents` e `electricianAmountCents` não saem daqui**: quem os
+    // calcula é o servidor, e o segundo vira pagamento de gente.
+    serviceItems: o.servicos.map((servico, i) => ({
+      // A ordem da grade É a numeração: renumerar aqui é o que faz excluir a
+      // linha 1 deixar as outras em 1..N em vez de abrir um buraco.
+      lineNumber: i + 1,
+      environmentCode: codigoDoItem(servico),
+      serviceId: servico.servicoId,
+      description: servico.descricao,
+      quantity: Number(String(servico.quantidade).replace(',', '.')) || 0,
+      unitPriceCents: servico.valorUnitarioCentavos ?? 0,
+      discountPercent: servico.descontoPercentual ?? 0,
+      // `null` ATRAVESSA, e é o ponto: null pede ao servidor o percentual do
+      // CADASTRO no momento da gravação, e `0` diz "esta linha não paga
+      // instalador". Trocar o null por zero aqui congelaria, em toda linha
+      // avulsa, um percentual que ninguém escolheu.
+      electricianPercent: servico.percentualEletricista,
     })),
   }
 }

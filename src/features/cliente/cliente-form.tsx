@@ -385,6 +385,7 @@ export function ClienteForm({
   moduloEmFoco,
   idDoRegistro,
   onGravar: gravarDeFora,
+  gravou = false,
 }: {
   cliente: Cliente
   readOnly?: boolean
@@ -414,6 +415,11 @@ export function ClienteForm({
    * ainda não atende.
    */
   onGravar?: (values: Cliente) => void
+  /**
+   * Gravação que deu certo (#405) — a alteração PERMANECE na tela, e é este
+   * sinal que devolve o formulário ao estado limpo. Ver `CadastroForm`.
+   */
+  gravou?: boolean
 }) {
   const navigate = useNavigate()
   const [buscaCidadePrefixo, setBuscaCidadePrefixo] = useState<PrefixoCidade | null>(null)
@@ -439,6 +445,7 @@ export function ClienteForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/clientes' })}
       readOnly={readOnly}
+      gravou={gravou}
       titulo="Cadastro de Clientes"
       familia="partners"
       {...(contexto ? { contexto } : {})}

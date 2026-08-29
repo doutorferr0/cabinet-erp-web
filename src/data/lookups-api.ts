@@ -25,7 +25,11 @@ const KINDS = {
   setor: { label: 'Setor', backend: 'SETOR' },
   grauInstrucao: { label: 'Grau de Instrução', backend: 'GRAU_INSTRUCAO' },
   profissao: { label: 'Profissão', backend: 'PROFISSAO' },
-  racaCor: { label: 'Raça/Cor', backend: 'RACA_COR' },
+  // `racaCor` SAIU (2026-08-28), junto do campo que era seu único consumidor.
+  // O kind não é dado pessoal — é vocabulário —, mas o campo `racaCor` do
+  // colaborador saiu por LGPD (art. 5º II) e nenhum outro cadastro o usa. Kind
+  // sem campo é lista que a tela de gestão (`/listas`) oferece para o admin
+  // editar sem que editá-la mude coisa alguma.
   estadoCivil: { label: 'Estado Civil', backend: 'ESTADO_CIVIL' },
   nacionalidade: { label: 'Nacionalidade', backend: 'NACIONALIDADE' },
   cargo: { label: 'Cargo', backend: 'CARGO' },

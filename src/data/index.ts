@@ -1,13 +1,13 @@
 import { documentoDoColaborador, listaDeColaboradores } from '@/data/colaboradores-api'
 import { ordensDeCompraApi, pedidosDeCompraApi } from '@/data/compras-api'
 import { funis } from '@/data/crm-api'
+import { municipiosIbge } from '@/data/geografia/municipios'
 import { parceiros } from '@/data/parceiros-api'
 import { pedidosDeVendaApi } from '@/data/pedidos-venda-api'
 import { produtosApi } from '@/data/produtos-api'
 import { type ListProvider, type ResourceProvider, tabelaDeApoio } from '@/data/provider'
 import { orcamentosApi } from '@/data/quotes-api'
 import { bancos } from '@/mocks/bancos'
-import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
 
 import { fornecedorVazio } from '@/mocks/fornecedores'
@@ -127,8 +127,17 @@ export const data = {
    */
   funis,
 
-  /** Tabela de apoio: só consulta, chave é `codigo` e não há "Incluir". */
-  cidades: tabelaDeApoio({ rows: cidades }),
+  /**
+   * Municípios do IBGE — tabela de apoio, só consulta, e a ÚNICA entrada do
+   * registry cuja origem é `'local'`: os 5571 municípios são dado público que
+   * mora no front (`src/data/geografia/`), carregado sob demanda.
+   *
+   * O nome da entrada continua `cidades` porque é o que a tela procura; o que
+   * mudou por baixo é o `codigo`, que era sequência inventada de três dígitos e
+   * agora é o código do IBGE — o mesmo que a NF-e vai exigir. Ver
+   * `docs/geografia-ibge.md` para por que local agora e servidor na fase fiscal.
+   */
+  cidades: municipiosIbge,
 
   /**
    * Tabela de apoio: busca de `Nº do banco` em Dados Bancários (transcrição

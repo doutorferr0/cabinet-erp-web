@@ -97,9 +97,16 @@ describe('registry de providers', () => {
    * terem caminho no contrato — e são elas que os dois casos abaixo medem.
    */
 
-  it('cidades é só consulta (tabela de apoio, sem cadastro)', async () => {
+  /**
+   * Cidades saiu da mesma prateleira das outras duas: não é fixture aguardando
+   * caminho no contrato, é a lista do IBGE (`src/data/geografia/`), local por
+   * decisão. O que a mantém aqui é a fronteira — continua sendo só consulta, e
+   * o registry é quem a serve. A bateria da própria lista é
+   * `src/data/geografia/municipios.test.ts`.
+   */
+  it('cidades é só consulta, e devolve o código do IBGE', async () => {
     const r = await data.cidades.list(tableState({ q: 'campinas' }), 0)
-    expect(r.rows[0]).toMatchObject({ nome: 'CAMPINAS', uf: 'SP' })
+    expect(r.rows[0]).toMatchObject({ codigo: '3509502', nome: 'Campinas', uf: 'SP' })
     expect(data.cidades).not.toHaveProperty('empty')
   })
 

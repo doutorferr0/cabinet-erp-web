@@ -32,8 +32,13 @@ import { mockDelay, normalize, pagedMock } from '@/mocks/query'
  * Some entrada por entrada, junto com o mock: no dia em que `pedidosCompra`
  * virar HTTP, a marca sai do registry e o aviso some das quatro telas sem
  * ninguém lembrar de apagá-lo.
+ * `local` é a terceira: dado público que mora no front e não veio de lugar
+ * nenhum — a lista de municípios do IBGE (`src/data/geografia/`). Não é ficção
+ * (o aviso amarelo mentiria) nem servidor (não há rede no caminho), e por isso
+ * precisa de nome próprio: sem ele, marcar `exemplo` acusaria dado oficial de
+ * inventado e omitir a marca o creditaria a um backend que não o serve.
  */
-export type OrigemDosDados = 'servidor' | 'exemplo'
+export type OrigemDosDados = 'servidor' | 'exemplo' | 'local'
 
 /** Recurso só de consulta: tabelas de apoio e as consultas read-only (§9 padrão 8). */
 export interface ListProvider<T> {

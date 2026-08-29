@@ -1,10 +1,11 @@
-import type { PartnerDto } from '@/api/gerado'
+import type { CrmOpportunityDto, PartnerDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { DateField, MoneyField, SelectIdField, TextField } from '@/components/cabinet/form-controls'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Input } from '@/components/ui/input'
 import { data } from '@/data'
@@ -172,10 +173,27 @@ export function OportunidadeForm({
     <CadastroForm
       schema={oportunidadeSchema}
       defaultValues={oportunidade}
-      onGravar={(valores: Oportunidade) => gravar.mutate(valores, { onSuccess: voltar })}
+      onGravar={(valores: Oportunidade) =>
+        // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+        // oportunidade nova abre a que nasceu; alteração permanece na tela, e
+        // quem volta para o quadro é o `Cancelar` — que continua sendo o gesto
+        // de sair sem gravar.
+        gravar.mutate(valores, {
+          onSuccess: posGravar<CrmOpportunityDto>({
+            eraNovo: !oportunidade.id,
+            abrirDocumento: (oportunidadeId) =>
+              void navigate({
+                to: '/crm/oportunidades/$oportunidadeId',
+                params: { oportunidadeId },
+                replace: true,
+              }),
+          }),
+        })
+      }
       onCancelar={voltar}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       titulo="Oportunidade"
       familia="crm"
       {...(contexto ? { contexto } : {})}

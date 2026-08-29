@@ -720,6 +720,11 @@ export const handlersDeAcesso = [
       jobTitle: null,
       active: novo.active,
     })
+    // A FICHA nasce junto com a linha (#402): `GET /api/employees/{id}` lê
+    // `crm.fichas`, e sem esta linha a pessoa recém-criada apareceria na
+    // listagem e daria "não encontrado" ao abrir — o mesmo defeito que a tela
+    // de colaborador teve enquanto o detalhe não tinha handler.
+    crm.fichas.push(detalheDeUsuario(novo))
     return HttpResponse.json(detalheDeUsuario(novo), { status: 201 })
   }),
 

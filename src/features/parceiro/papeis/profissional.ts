@@ -113,6 +113,11 @@ function contaDaComissao(values: Profissional) {
 export const papelProfissional: PapelDeCadastro<Profissional> = {
   role: 'professional',
   rota: '/cadastros/profissionais',
+  rotaDoDocumento: (profissionalId) => ({
+    to: '/cadastros/profissionais/$profissionalId',
+    params: { profissionalId },
+    replace: true,
+  }),
   queryKeyListagem: ['profissionais'],
   camposDeEdicao:
     'Nome, Nome de Apresentação, CPF/CNPJ, E-mail, Registro Profissional, Dados Bancários, Telefones, Endereço, Tipo de pessoa, RG, Data de nascimento, Observação, Redes sociais e Ativo',

@@ -215,7 +215,11 @@ describe('a lacuna entre a espec e o que o repo guarda', () => {
         'limite',
         'ultima',
       ],
-      colaborador: ['login', 'cel', 'perfil', 'comissaoInterna', 'comissaoExterna', 'meta'],
+      // `login` e `cel` SAÍRAM na #402: o contrato publica `email` e `phone` no
+      // `EmployeeWriteRequest`, os dois ganharam `campo:` e a tela passou a
+      // gravá-los. É o número CAINDO, que é o movimento que este retrato existe
+      // para tornar deliberado.
+      colaborador: ['perfil', 'comissaoInterna', 'comissaoExterna', 'meta'],
       fornecedor: ['regime', 'cnae', 'custo', 'indice', 'frete', 'minimo'],
       profissional: ['pix', 'pct', 'operador', 'indicados', 'gerado'],
     })

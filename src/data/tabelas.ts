@@ -1,4 +1,3 @@
-import { EMPRESAS } from '@/mocks/colaboradores'
 import { AMBIENTES } from '@/mocks/orcamentos'
 import { DESTINOS, FORNECEDORES_DOC } from '@/mocks/pedidos-compra'
 import {
@@ -31,8 +30,6 @@ export const tabelas = {
   origensProduto: ORIGENS_PRODUTO,
   /** Empresas do grupo — mesmas do CompanySwitcher (§9 padrão 7). */
   empresasCompradoras: EMPRESAS_COMPRADORAS,
-  /** Empresas do cadastro de colaborador. */
-  empresas: EMPRESAS,
   /** Fornecedores que aparecem nos documentos §7.1/§7.3. */
   fornecedoresDocumento: FORNECEDORES_DOC,
   /** Ambientes da obra (`Ambiente F5`) — INVENTADA, §8.2 tem a grade vazia. */
@@ -46,6 +43,14 @@ export const tabelas = {
 } as const satisfies Record<string, readonly string[]>
 
 /**
+ * `empresas` SAIU daqui (#407). Era `EMPRESAS` de `@/mocks/colaboradores` — as
+ * duas razões sociais da semente — e **nenhuma tela a montava**: combo morto
+ * mantendo vivo um import de `src/mocks/` dentro de `src/data/`. As empresas
+ * que existem de verdade vêm de `GET /api/tenants`
+ * (`useEmpresasDoGrupo`, `empresas-do-grupo-api.ts`); as em que o usuário
+ * ENTRA, de `/auth/tenants`. Combo de empresa que nascer no cadastro de
+ * colaborador pede uma das duas, não uma terceira lista literal.
+ *
  * Os 21 kinds do padrão `[combo]`/`[combo +...]` (§9 padrão 2) NÃO moram aqui:
  * vêm de `GET /api/catalog-lookups` via `useLookupOptions` (`src/data/lookups-api.ts`).
  * O que sobra neste arquivo são as listas que o contrato não expõe como kind.

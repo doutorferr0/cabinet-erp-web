@@ -193,9 +193,56 @@ interface OrdemGuardada {
   itens: LinhaDeOrdem[]
 }
 
+/**
+ * A LINHA CONFERIDA do recebimento — o que a ordem pedia, o que o caminhão
+ * trouxe, e por que veio diferente.
+ *
+ * O par `purchaseOrderId` + `purchaseOrderLine` é o vínculo por LINHA que o
+ * contrato publicou na #354, e é ele que permite uma nota fechar DUAS ordens: o
+ * caminhão traz o que ficou pronto, não o que uma ordem inteira pediu. `null`
+ * nos dois é o recebimento AVULSO — mercadoria que chegou sem ordem, que existe
+ * na operação.
+ */
+export interface LinhaDeRecebimento {
+  lineNumber: number
+  variantId: string
+  /** CONGELADA na gravação: quem lê a conferência de ontem lê o que estava escrito ontem. */
+  description: string
+  purchaseOrderId: string | null
+  purchaseOrderLine: number | null
+  /** SNAPSHOT do que a ordem pedia — lido DA ordem quando há vínculo. `null` no avulso. */
+  quantityOrdered: number | null
+  quantityReceived: number
+  divergenceReason: string | null
+}
+
+/** O RECEBIMENTO como o mock o guarda. Os handlers moram em `recebimento.ts`. */
+export interface RecebimentoGuardado {
+  id: string
+  tenantId: string
+  status: 'draft' | 'checked' | 'posted'
+  supplierId: string
+  carrierId: string | null
+  locationId: string
+  invoiceNumber: string | null
+  issuedAt: string | null
+  receivedAt: string
+  postedAt: string | null
+  employeeId: string | null
+  notes: string | null
+  itens: LinhaDeRecebimento[]
+}
+
 interface Estado {
   pedidos: PedidoGuardado[]
   ordens: OrdemGuardada[]
+  /**
+   * Os RECEBIMENTOS. Moram aqui, e não num estado próprio, porque a grade deles
+   * só significa alguma coisa contra a ordem — e porque `quantityReceived`,
+   * `qtyOnOrder` e a previsão de chegada são DERIVADOS deles. Dois estados
+   * fariam este arquivo e `recebimento.ts` se importarem em círculo.
+   */
+  recebimentos: RecebimentoGuardado[]
 }
 
 /**
@@ -449,7 +496,77 @@ function estadoInicial(): Estado {
     },
   ]
 
-  return { pedidos, ordens }
+  /**
+   * Os dois recebimentos do seed, NENHUM lançado — e isso é decisão.
+   *
+   * Recebimento lançado teria de vir com o movimento de kardex e o saldo que ele
+   * gerou, e o saldo do seed é montado noutro arquivo (`store.ts`): um `posted`
+   * sem movimento diria que oito peças entraram e o extrato da peça não teria
+   * linha nenhuma. Do jeito que está, a demonstração faz o caminho inteiro —
+   * conferir, lançar, ver o saldo subir e a reposição parar de pedir de novo.
+   */
+  const recebimentos: RecebimentoGuardado[] = [
+    {
+      id: 'rec-0001',
+      tenantId: TENANT_MATRIZ,
+      status: 'draft',
+      supplierId: 'parc-0006',
+      carrierId: null,
+      locationId: 'dep-0001',
+      invoiceNumber: '004512',
+      issuedAt: diaRelativo(-2),
+      receivedAt: diaRelativo(-1),
+      postedAt: null,
+      employeeId: null,
+      notes: null,
+      itens: [
+        {
+          lineNumber: 1,
+          variantId: 'var-0003',
+          description: 'ARANDELA ALUMÍNIO IP65',
+          // Fecha a linha 1 da OC-5102, que pediu 10 — e vieram 8. A divergência
+          // COM motivo é o caso que a conferência existe para registrar.
+          purchaseOrderId: 'oc-0002',
+          purchaseOrderLine: 1,
+          quantityOrdered: 10,
+          quantityReceived: 8,
+          divergenceReason: 'FALTOU CAIXA NO CARREGAMENTO',
+        },
+      ],
+    },
+    {
+      id: 'rec-0002',
+      tenantId: TENANT_MATRIZ,
+      // CONFERIDO e esperando quem responde pelo estoque: é a segunda metade da
+      // fila de trabalho, e a razão de o estado do meio existir.
+      status: 'checked',
+      supplierId: 'parc-0001',
+      carrierId: null,
+      locationId: 'dep-0001',
+      invoiceNumber: '77301',
+      issuedAt: diaRelativo(-4),
+      receivedAt: diaRelativo(-3),
+      postedAt: null,
+      employeeId: null,
+      notes: 'ENTREGA AVULSA — COMPRA POR TELEFONE',
+      itens: [
+        {
+          lineNumber: 1,
+          variantId: 'var-0002',
+          description: 'PENDENTE VIDRO FUMÊ 30CM',
+          // AVULSO: chegou sem ordem, e por isso não há divergência — há
+          // mercadoria e ninguém com quem comparar.
+          purchaseOrderId: null,
+          purchaseOrderLine: null,
+          quantityOrdered: null,
+          quantityReceived: 2,
+          divergenceReason: null,
+        },
+      ],
+    },
+  ]
+
+  return { pedidos, ordens, recebimentos }
 }
 
 let estado: Estado = estadoInicial()
@@ -459,10 +576,77 @@ export function resetCompras(): void {
   estado = estadoInicial()
 }
 
+/**
+ * O estado da família, para `recebimento.ts` — que é o outro arquivo de
+ * handlers do MESMO estado.
+ *
+ * Função e não `export const` porque `estado` é REATRIBUÍDO pelo
+ * `resetCompras()`: um binding exportado direto continuaria apontando para o
+ * objeto velho depois do reset, e o teste seguinte leria o seed do anterior.
+ */
+export function estadoDeCompras(): Estado {
+  return estado
+}
+
+/**
+ * A linha da ordem que um recebimento diz estar fechando, com a ordem junto.
+ *
+ * Devolve as duas porque quem valida o vínculo precisa das duas: a linha para o
+ * snapshot de `quantityOrdered`, e o cabeçalho para conferir `status` e
+ * fornecedor.
+ */
+export function linhaDeOrdemPara(
+  tenantId: string,
+  ordemId: string,
+  lineNumber: number,
+): { ordem: OrdemGuardada; linha: LinhaDeOrdem } | undefined {
+  const ordem = daEmpresa(estado.ordens, tenantId).find((o) => o.id === ordemId)
+  const linha = ordem?.itens.find((i) => i.lineNumber === lineNumber)
+  if (!ordem || !linha) return undefined
+  return { ordem, linha }
+}
+
+/**
+ * Quanto desta LINHA DE ORDEM já chegou — a soma dos recebimentos LANÇADOS que a
+ * apontam.
+ *
+ * **Derivado, e não contador decrementado no lançamento.** Um contador
+ * divergiria do documento no primeiro estorno, e ninguém reconcilia isso depois;
+ * isto não tem como divergir do que os documentos dizem. `draft` e `checked` não
+ * contam: enquanto não lançou, a peça não entrou no galpão.
+ */
+export function recebidoDaLinhaDeOrdem(
+  tenantId: string,
+  ordemId: string,
+  lineNumber: number,
+): number {
+  return daEmpresa(estado.recebimentos, tenantId)
+    .filter((r) => r.status === 'posted')
+    .flatMap((r) => r.itens)
+    .filter((l) => l.purchaseOrderId === ordemId && l.purchaseOrderLine === lineNumber)
+    .reduce((soma, l) => soma + l.quantityReceived, 0)
+}
+
+/**
+ * O que AINDA FALTA chegar nesta linha. Nunca negativo: recebido a mais fecha em
+ * zero.
+ *
+ * É o SNAPSHOT que a linha do recebimento congela como `quantityOrdered` quando
+ * há vínculo — e por isso ele é o saldo, e não o total da ordem: a segunda carga
+ * de uma entrega parcelada confere contra o que faltava, senão toda parcela
+ * nasceria divergente e pediria motivo para uma diferença que já tem explicação.
+ */
+export function faltaChegar(ordem: OrdemGuardada, linha: LinhaDeOrdem): number {
+  return Math.max(
+    0,
+    linha.quantity - recebidoDaLinhaDeOrdem(ordem.tenantId, ordem.id, linha.lineNumber),
+  )
+}
+
 // ---------------------------------------------------------------- derivações
 
 /** Razão social do parceiro; cai no id quando ele sumiu, para a linha continuar legível. */
-function nomeDeParceiro(id: string | null): string | null {
+export function nomeDeParceiro(id: string | null): string | null {
   if (!id) return null
   return store.parceiros.find((p) => p.id === id)?.legalName ?? id
 }
@@ -472,7 +656,7 @@ function nomeDeApoio(id: string | null): string | null {
   return store.lookups.find((l) => l.id === id)?.name ?? null
 }
 
-function fornecedorDoCadastro(id: string) {
+export function fornecedorDoCadastro(id: string) {
   return store.parceiros.find((p) => p.id === id && p.isSupplier)
 }
 
@@ -571,11 +755,9 @@ function linhaDeOrdemDto(ordem: OrdemGuardada, linha: LinhaDeOrdem): PurchaseOrd
     size: linha.size,
     unit: linha.unit,
     quantity: linha.quantity,
-    // Zero, e é o FATO deste mundo, não campo preenchido para o tipo fechar: o
-    // recebimento (G3) não tem handler no mock — `whitelist-do-contrato.test.ts`
-    // nomeia o motivo —, então nenhuma linha de ordem jamais chegou aqui. É a
-    // mesma razão pela qual `emOrdem` soma a quantidade INTEIRA da linha.
-    quantityReceived: 0,
+    // DERIVADO dos recebimentos lançados que apontam esta linha — a mesma conta
+    // que `qtyOnOrder` e a previsão de chegada usam, num lugar só.
+    quantityReceived: recebidoDaLinhaDeOrdem(ordem.tenantId, ordem.id, linha.lineNumber),
     unitCostCents: linha.unitCostCents,
     totalCents: totalDaLinha(linha),
     destination: linha.destination,
@@ -675,7 +857,7 @@ function faltaFaturamentoMinimo(ordem: OrdemGuardada): string | undefined {
 
 // -------------------------------------------------------------- listagem
 
-interface Consulta {
+export interface Consulta {
   q: string | null
   sortBy: string | null
   sortDesc: boolean
@@ -684,7 +866,7 @@ interface Consulta {
   url: URL
 }
 
-function lerConsulta(url: URL): Consulta {
+export function lerConsulta(url: URL): Consulta {
   return {
     q: url.searchParams.get('q'),
     sortBy: url.searchParams.get('sortBy'),
@@ -708,7 +890,7 @@ function lerConsulta(url: URL): Consulta {
  * direções: `sentAt` e `daysLate` são nulos na maioria das linhas, e uma
  * ordenação que os jogue na frente parece defeito.
  */
-function responder<T>(
+export function responder<T>(
   linhas: T[],
   consulta: Consulta,
   ordenaveis: readonly string[],
@@ -755,7 +937,7 @@ function responder<T>(
   })
 }
 
-function casaTexto(q: string | null, campos: (string | null | undefined)[]): boolean {
+export function casaTexto(q: string | null, campos: (string | null | undefined)[]): boolean {
   if (!q) return true
   const alvo = q.toLowerCase()
   return campos.some((texto) => (texto ?? '').toLowerCase().includes(alvo))
@@ -837,7 +1019,7 @@ function proximoNumero(prefixo: string, existentes: string[]): string {
   return `${prefixo}-${maior + 1}`
 }
 
-function daEmpresa<T extends { tenantId: string }>(linhas: T[], tenantId: string): T[] {
+export function daEmpresa<T extends { tenantId: string }>(linhas: T[], tenantId: string): T[] {
   return linhas.filter((l) => l.tenantId === tenantId)
 }
 
@@ -1204,7 +1386,11 @@ export const handlersDeCompras = [
       // mostrá-la como peça a caminho é o que faz o vendedor prometer data ao
       // cliente com base numa ordem que ninguém mandou.
       .filter((o) => o.status === 'sent')
-      .flatMap((o) => o.itens.map((linha) => previsaoDto(o, linha)))
+      // Linha inteiramente recebida SAI da previsão — ela não é mais peça a
+      // caminho, e mantê-la faria a tela cobrar do fornecedor o que já chegou.
+      .flatMap((o) =>
+        o.itens.filter((linha) => faltaChegar(o, linha) > 0).map((linha) => previsaoDto(o, linha)),
+      )
       .filter((l) => (supplierId ? l.supplierId === supplierId : true))
       .filter((l) => (customerId ? l.customerId === customerId : true))
       .filter((l) => (destination ? l.destination === destination : true))
@@ -1412,11 +1598,9 @@ function previsaoDto(ordem: OrdemGuardada, linha: LinhaDeOrdem): PurchaseArrival
     description: linha.description,
     finish: linha.finish,
     size: linha.size,
-    // O contrato diz SALDO A CHEGAR — a quantidade da linha menos o que
-    // recebimento lançado já apontou para ela. Aqui as duas coincidem porque o
-    // recebimento não tem handler no mock: nada chegou, então nada foi
-    // descontado. Ver `quantityReceived` em `linhaDeOrdemDto`.
-    quantity: linha.quantity,
+    // SALDO A CHEGAR, e não a quantidade da ordem: previsão que mostrasse o que
+    // já desceu do caminhão faria o vendedor prometer duas vezes a mesma peça.
+    quantity: faltaChegar(ordem, linha),
     destination: linha.destination,
     // Reposição não tem cliente, e é isso que a tela mostra — "estoque", não
     // vazio. Só a linha `sale` carrega a venda.
@@ -1446,11 +1630,17 @@ function reservaDaVariante(tenantId: string, variantId: string): number {
  * ninguém mandou.
  */
 function emOrdem(tenantId: string, variantId: string): number {
-  return estado.ordens
-    .filter((o) => o.tenantId === tenantId && o.status === 'sent')
-    .flatMap((o) => o.itens)
-    .filter((linha) => linha.variantId === variantId)
-    .reduce((soma, linha) => soma + linha.quantity, 0)
+  return (
+    estado.ordens
+      .filter((o) => o.tenantId === tenantId && o.status === 'sent')
+      .flatMap((o) => o.itens.map((linha) => ({ ordem: o, linha })))
+      .filter(({ linha }) => linha.variantId === variantId)
+      // **"Ainda não recebida" é o vínculo, não uma data.** Chegou a menos, o
+      // resto continua aberto e continua contando; chegou a mais, a linha fecha em
+      // ZERO e não vira saldo negativo — a sobra é divergência do recebimento,
+      // pergunta para o fornecedor, e não peça a caminho que reduza a sugestão.
+      .reduce((soma, { ordem, linha }) => soma + faltaChegar(ordem, linha), 0)
+  )
 }
 
 function reposicaoDto(

@@ -21,6 +21,7 @@ import { data } from '@/data'
 import { useLookupOptions } from '@/data/lookups-api'
 import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
+import { AbaServicos } from '@/features/orcamento/aba-servicos'
 import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
@@ -119,6 +120,28 @@ export const orcamentoSchema = z.object({
       maxInstallments: z.number(),
     })
     .optional(),
+  // A ABA SERVIÇOS — declarada como todo o resto que atravessa o formulário, e
+  // aqui a omissão custava dado: o Zod REMOVE o que não declara, e `paraEscrita`
+  // mandaria um `PUT` (integral) sem `serviceItems`, apagando a aba inteira do
+  // documento com 200 e sem aviso. O pedido de venda declarou a coleção antes de
+  // ter grade exatamente por isso; esta folha agora também a edita.
+  servicos: z.array(
+    z.object({
+      item: z.string(),
+      servicoId: z.string().nullable(),
+      descricao: z.string(),
+      quantidade: z.string(),
+      valorUnitarioCentavos: z.number().nullable(),
+      descontoPercentual: z.number().nullable(),
+      // Nulável de propósito: `null` herda o percentual do CADASTRO na
+      // gravação e `0` é "esta linha não paga instalador" — a distinção é do
+      // contrato, e um campo não-nulável a apagaria.
+      percentualEletricista: z.number().nullable(),
+      // Carimbo do servidor: desce, aparece na coluna e não volta no corpo.
+      eletricistaCentavos: z.number().nullable(),
+      ambiente: z.string(),
+    }),
+  ),
   itens: z.array(
     z.object({
       item: z.string(),
@@ -608,9 +631,16 @@ function AbaPrincipal() {
   )
 }
 
-/** Abas superiores não capturadas — §10. */
+/**
+ * Abas superiores não capturadas — §10.
+ *
+ * `Serviços` SAIU desta lista: ela não era ausência de captura, era ausência de
+ * grade. O contrato publica a seção inteira (`QuoteServiceItemDto` e
+ * `serviceItems` no documento) e o legado a guarda em `VendaServico` — a moldura
+ * "aguardando prints" dizia ao operador que não havia o que mostrar, num
+ * documento cujo total já dependia dela.
+ */
 const ABAS_SEM_CAPTURA = [
-  ['servicos', 'Serviços'],
   ['cliente', 'Cliente'],
   ['pagamento', 'Pagamento'],
   ['outrosDados', 'Outros Dados'],
@@ -667,7 +697,15 @@ export function OrcamentoForm({
         mensagem="Não foi possível gravar o orçamento."
       />
       <Tabs defaultValue="principal">
-        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
+        {/* `Serviços` entra por `adicionais` — a porta das abas REAIS, a mesma
+            que a participação do pedido usa. Ela fica ao lado de `Principal`,
+            antes das molduras sem captura: o que funciona junto do que
+            funciona. */}
+        <AbasSemCaptura
+          capturada={['principal', 'Principal']}
+          abas={ABAS_SEM_CAPTURA}
+          adicionais={[{ aba: ['servicos', 'Serviços'], conteudo: <AbaServicos /> }]}
+        >
           <AbaPrincipal />
         </AbasSemCaptura>
       </Tabs>

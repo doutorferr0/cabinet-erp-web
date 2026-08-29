@@ -1,4 +1,4 @@
-import type { PartnerDto } from '@/api/gerado'
+import type { PartnerDto, PurchaseOrderDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco, fileirasTotais } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
@@ -6,6 +6,7 @@ import { FormBlock } from '@/components/cabinet/form-block'
 import { DateField, MoneyField, TextareaField } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
@@ -921,8 +922,14 @@ export function OrdemCompraForm({
   const cancelar = useCancelarOrdemDeCompra()
 
   function onGravar(valores: OrdemNoFormulario) {
+    // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+    // documento novo abre a ordem que nasceu, alteração permanece na tela.
     gravar.mutate(doFormulario(valores), {
-      onSuccess: () => void navigate({ to: '/compras/ordens' }),
+      onSuccess: posGravar<PurchaseOrderDto>({
+        eraNovo: !ordem.id,
+        abrirDocumento: (ordemId) =>
+          void navigate({ to: '/compras/ordens/$ordemId', params: { ordemId }, replace: true }),
+      }),
     })
   }
 
@@ -943,6 +950,7 @@ export function OrdemCompraForm({
         onCancelar={() => void navigate({ to: '/compras/ordens' })}
         readOnly={somenteLeitura}
         gravando={gravar.isPending}
+        gravou={gravar.isSuccess}
         familia="purchases"
       >
         <ErroDeGravacao

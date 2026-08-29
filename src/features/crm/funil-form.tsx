@@ -1,8 +1,10 @@
+import type { CrmPipelineDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { CheckboxField, TextField } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { type Funil, estagioVazio, useGravarFunil } from '@/data/crm-api'
 import { useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -64,9 +66,17 @@ export function FunilForm({
   function onGravar(values: Funil) {
     // O registro COMO VEIO do servidor viaja junto: é comparando com ele que a
     // gravação decide o que da grade mudou — coluna intocada não vira escrita.
+    // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+    // funil novo abre o que nasceu, alteração permanece na tela com o toast.
     gravar.mutate(
       { values, original: funil.id ? funil : null },
-      { onSuccess: () => void navigate({ to: '/crm/funis' }) },
+      {
+        onSuccess: posGravar<CrmPipelineDto>({
+          eraNovo: !funil.id,
+          abrirDocumento: (funilId) =>
+            void navigate({ to: '/crm/funis/$funilId', params: { funilId }, replace: true }),
+        }),
+      },
     )
   }
 
@@ -78,6 +88,7 @@ export function FunilForm({
       onCancelar={() => void navigate({ to: '/crm/funis' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       titulo="Cadastro de Funis"
       familia="crm"
       {...(contexto ? { contexto } : {})}

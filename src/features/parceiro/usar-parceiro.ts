@@ -1,4 +1,5 @@
 import type { PartnerDto } from '@/api/gerado'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import {
   type CamposEditaveis,
   type PapelDeParceiro,
@@ -12,13 +13,24 @@ import {
 } from '@/data/parceiros-api'
 import { avisar } from '@/lib/avisos'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { type NavigateOptions, useNavigate } from '@tanstack/react-router'
 
 /** As três listagens de parceiro — a única coisa que `navigate({ to })` aceita aqui. */
 export type RotaDeParceiro =
   | '/cadastros/clientes'
   | '/cadastros/fornecedores'
   | '/cadastros/profissionais'
+
+/**
+ * Para onde a INCLUSÃO leva (#405): o cadastro que acabou de nascer.
+ *
+ * É uma FUNÇÃO que devolve as opções de navegação, e não um par
+ * `{ to, param }`, porque o param tem nome próprio em cada rota
+ * (`clienteId`, `fornecedorId`, `profissionalId`) — montar o objeto aqui
+ * dentro obrigaria a uma chave dinâmica, e chave dinâmica desliga justamente a
+ * checagem que o router faz do par `to`/`params`.
+ */
+export type DocumentoDeParceiro = (id: string) => NavigateOptions
 
 /**
  * O que separa Cliente, Fornecedor e Profissional Externo — mesma tabela,
@@ -28,6 +40,8 @@ export type RotaDeParceiro =
 export interface PapelDeCadastro<T> {
   role: PapelDeParceiro
   rota: RotaDeParceiro
+  /** Para onde a INCLUSÃO leva (#405) — o cadastro que acabou de nascer. */
+  rotaDoDocumento: DocumentoDeParceiro
   queryKeyListagem: readonly unknown[]
   /** Lista de campos que o Gravar envia na EDIÇÃO, para o aviso de cobertura. */
   camposDeEdicao: string
@@ -80,18 +94,26 @@ export function usarParceiro<T>(papel: PapelDeCadastro<T>, idParam: string) {
   const linha = query.data ?? null
 
   /**
-   * Gravou: reconsulta a listagem, avisa e volta.
+   * Gravou: avisa, reconsulta a listagem e aplica a REGRA do destino (#405).
    *
    * O aviso entra AQUI porque este é o único ponto que sabe que a escrita
-   * terminou — a tela que tinha o formulário está sendo desmontada na linha
-   * seguinte, e a listagem que recebe o operador é idêntica à que ele viu antes
-   * de editar. Sem isto, o `Gravar` respondia com uma troca de tela e mais
-   * nada. Ver `lib/avisos.ts` (#201).
+   * terminou. Ver `lib/avisos.ts` (#201).
+   *
+   * A invalidação NÃO é mais esperada, e a diferença é o defeito da #405: com
+   * `await`, o TanStack Query segurava o `onSuccess` da tela até o refetch
+   * responder, e a troca de tela passava a durar o tempo do servidor — variável
+   * a cada execução, e engolida de vez se o componente desmontasse no meio. A
+   * listagem se refaz sozinha; ninguém precisa esperar por ela para decidir
+   * para onde ir.
    */
-  async function aposGravar(_dado: unknown, _variaveis: unknown, mensagem = 'Cadastro gravado.') {
+  function aposGravar(dado: PartnerDto, _variaveis: unknown, mensagem = 'Cadastro gravado.') {
     avisar(mensagem)
-    await queryClient.invalidateQueries({ queryKey: papel.queryKeyListagem })
-    void navigate({ to: papel.rota })
+    void queryClient.invalidateQueries({ queryKey: papel.queryKeyListagem })
+    posGravar<PartnerDto>({
+      // Só a INCLUSÃO navega: quem editou já está olhando o registro gravado.
+      eraNovo: isNovo,
+      abrirDocumento: (id) => void navigate(papel.rotaDoDocumento(id)),
+    })(dado)
   }
 
   const gravar = useMutation({

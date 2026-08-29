@@ -10,13 +10,22 @@ import type {
   CrmStageWriteRequest,
   EmployeeDetailDto,
   EmployeeDto,
+  EmployeeWriteRequest,
 } from '@/api/gerado'
 import { idDeColaborador, colaboradores as pessoas } from '@/mocks/colaboradores'
 import { nomeDeApoio } from '@/mocks/lookups'
 import { http, HttpResponse } from 'msw'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { verificarEscrita } from './permissao'
-import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
+import {
+  TIPO,
+  camposInvalidos,
+  conflito,
+  naoEncontrado,
+  problemaJson,
+  semEmpresaAtiva,
+  semSessao,
+} from './problema'
 import { criarOrcamento, detalheDoOrcamento } from './quotes'
 import { novoId, store } from './store'
 
@@ -168,6 +177,21 @@ interface EstadoDoCrm {
    * endpoint — aí ele deixa de ser exclusividade desta fronteira.
    */
   colaboradores: EmployeeDto[]
+  /**
+   * As FICHAS — `EmployeeDetailDto`, o que `GET /api/employees/{id}` devolve.
+   *
+   * Separadas das linhas porque são um tipo diferente (o detalhe publica
+   * `sectorId` E `sector`, e mais nove campos que a listagem não manda), e
+   * MUTÁVEIS porque `PUT /api/employees/{id}` existe desde a #402. Antes o
+   * detalhe era derivado da semente importada a cada requisição — leitura pura,
+   * sem onde gravar: o `Gravar` respondia 200 e a próxima abertura mostrava o
+   * valor velho.
+   *
+   * As duas listas andam JUNTAS: quem escreve aqui sincroniza a linha em
+   * `colaboradores` (`sincronizarLinha`), senão o nome muda na ficha e a grade
+   * continua mostrando o anterior.
+   */
+  fichas: EmployeeDetailDto[]
 }
 
 /** Dias atrás, em ISO — o apodrecimento do cartão precisa de data relativa ao dia da execução. */
@@ -292,7 +316,32 @@ function estadoInicial(): EstadoDoCrm {
     active: p.ativo,
   }))
 
-  return { funis, estagios, oportunidades, motivos, colaboradores }
+  // A ficha sai da MESMA semente da listagem, para o que o combo oferece e o
+  // que o detalhe abre serem a mesma pessoa. Campo que a transcrição não tem
+  // sai `null` — `document`, `email`, `phone`, `photoUrl`, `linkActive` —, e
+  // não preenchido com invenção: dado de mentira com cara de dado do servidor é
+  // o que o `AvisoDeCobertura` existe para evitar.
+  const fichas: EmployeeDetailDto[] = pessoas.map((p) => ({
+    id: idDeColaborador(p.id),
+    name: p.nome,
+    document: null,
+    email: null,
+    phone: null,
+    photoUrl: null,
+    active: p.ativo,
+    roleId: null,
+    roleName: null,
+    sectorId: p.setor,
+    sector: nomeDeApoio(p.setor),
+    jobTitleId: p.cargo,
+    jobTitle: nomeDeApoio(p.cargo),
+    hiredAt: p.dataAdmissao,
+    dismissedAt: p.dataDemissao,
+    customerFacing: p.atendimentoCliente,
+    linkActive: null,
+  }))
+
+  return { funis, estagios, oportunidades, motivos, colaboradores, fichas }
 }
 
 function est(
@@ -350,6 +399,23 @@ export const crm: EstadoDoCrm = estadoInicial()
 /** Devolve o CRM ao seed — o `resetStore()` do CRM, para os testes. */
 export function resetCrm(): void {
   Object.assign(crm, estadoInicial())
+}
+
+/**
+ * A linha da grade segue a ficha. As duas leituras da mesma pessoa não podem
+ * divergir: sem isto, alterar o nome mudaria o formulário e deixaria a listagem
+ * (e o combo de responsável das atividades) com o valor anterior.
+ *
+ * `sector` e `jobTitle` saem como RÓTULO porque é o que o `EmployeeDto`
+ * publica; a ficha guarda os dois lados.
+ */
+function sincronizarLinha(ficha: EmployeeDetailDto): void {
+  const linha = crm.colaboradores.find((c) => c.id === ficha.id)
+  if (!linha) return
+  linha.name = ficha.name
+  linha.sector = ficha.sector ?? null
+  linha.jobTitle = ficha.jobTitle ?? null
+  linha.active = ficha.active
 }
 
 // ------------------------------------------------------------------ resolução
@@ -789,26 +855,65 @@ export const handlersDoCrm = [
   http.get('*/api/employees/:id', ({ params }) => {
     if (!store.logado) return semSessao()
     if (!store.activeTenantId) return semEmpresaAtiva()
-    const achada = pessoas.find((p) => idDeColaborador(p.id) === String(params.id))
+    const achada = crm.fichas.find((f) => f.id === String(params.id))
     if (!achada) return naoEncontrado('Colaborador não encontrado.')
-    const detalhe: EmployeeDetailDto = {
-      id: idDeColaborador(achada.id),
-      name: achada.nome,
-      document: null,
-      email: null,
-      phone: null,
-      photoUrl: null,
-      active: achada.ativo,
-      sectorId: achada.setor,
-      sector: nomeDeApoio(achada.setor),
-      jobTitleId: achada.cargo,
-      jobTitle: nomeDeApoio(achada.cargo),
-      hiredAt: achada.dataAdmissao,
-      dismissedAt: achada.dataDemissao,
-      customerFacing: achada.atendimentoCliente,
-      linkActive: null,
+    return HttpResponse.json(achada)
+  }),
+
+  /**
+   * `PUT /api/employees/{id}` — a escrita que a #402 ligou na tela.
+   *
+   * Faltava handler, e a falta não aparecia como erro: no modo mock puro (o
+   * `cabinetonline.cc`) uma rota sem handler cai no fallback da SPA e devolve
+   * `index.html` com **status 200**. O `Gravar` do site público teria
+   * "gravado" uma página HTML.
+   *
+   * **Substitui o registro inteiro**, como o contrato manda: campo omitido do
+   * corpo vira `null`, não conserva o que havia. É o que faz a guarda de
+   * `corpoDeEscrita` (devolver `document` e `photoUrl` como vieram) valer a
+   * pena aqui também, e não só contra o Postgres.
+   *
+   * **Não toca no VÍNCULO.** Cargo, setor, admissão, demissão e papel ficam
+   * como estão — mudam por `PUT /api/employees/{id}/link`, que é outra
+   * operação. Gravar a ficha numa empresa não reescreve o cargo da outra.
+   */
+  http.put('*/api/employees/:id', async ({ params, request }) => {
+    if (!store.logado) return semSessao()
+    if (!store.activeTenantId) return semEmpresaAtiva()
+    // A matriz do api reserva `/api/employees` a quem administra: vínculo é o
+    // que decide o papel dos OUTROS. O mock espelha a recusa (403
+    // `papel-insuficiente`) para a tela poder exercitá-la sem backend.
+    const semPermissao = verificarEscrita('employees')
+    if (semPermissao) return semPermissao
+    const achada = crm.fichas.find((f) => f.id === String(params.id))
+    if (!achada) return naoEncontrado('Colaborador não encontrado.')
+
+    const corpo = (await request.json()) as EmployeeWriteRequest
+    if (!corpo.name?.trim()) {
+      return camposInvalidos([{ path: 'name', message: 'Nome é obrigatório.' }])
     }
-    return HttpResponse.json(detalhe)
+    // `employees.email` é NOT NULL no servidor e é por ele que a pessoa entra —
+    // o mesmo motivo por que o `POST` daqui o exige.
+    if (!corpo.email?.trim()) {
+      return camposInvalidos([
+        { path: 'email', message: 'Informe o e-mail — é por ele que a pessoa entra.' },
+      ])
+    }
+    const email = corpo.email.trim().toLowerCase()
+    // 409 e não 400: o pedido está bem formado — a credencial é única no
+    // produto inteiro, sem diferença de caixa.
+    if (crm.fichas.some((f) => f.id !== achada.id && f.email?.toLowerCase() === email)) {
+      return conflito('Já existe um colaborador com este e-mail.')
+    }
+
+    achada.name = corpo.name.trim()
+    achada.document = corpo.document ?? null
+    achada.email = email
+    achada.phone = corpo.phone ?? null
+    achada.photoUrl = corpo.photoUrl ?? null
+    achada.active = corpo.active ?? true
+    sincronizarLinha(achada)
+    return HttpResponse.json(achada)
   }),
 
   // ---------------- motivos de perda ----------------

@@ -247,12 +247,14 @@ import { http, type RequestHandler, passthrough } from 'msw'
  *   ele saiu. **Aviso de falta que não existe mais é a mesma mentira com o sinal trocado**, e é
  *   pior que a original: ensina o operador a ignorar avisos, e o próximo será de verdade.
  *
- * - **Cadastro de colaborador — CONTINUA, e nunca foi buraco desta lista.** As seis operações de
- *   `/api/employees` passam desde antes; o que falta é do lado do MOCK, não do backend:
- *   `data.colaboradores` ainda é provider de mock, sem handler de `GET /api/employees/{id}` e com
- *   duas sementes de pessoas que são conjuntos diferentes. `cobertura-do-colaborador.tsx` diz
- *   isso ao operador e segue no lugar. Migrar a tela deixaria o cadastro sem detalhe no SITE
- *   PÚBLICO, que é 100% mock — está em curso na #276/PR #277, fora daqui.
+ * - **Cadastro de colaborador — RESOLVIDA em duas etapas, e o aviso MUDOU DE ASSUNTO.** Esta nota
+ *   dizia que faltava o lado do MOCK: sem handler de `GET /api/employees/{id}` e com duas
+ *   sementes de pessoas que eram conjuntos diferentes. A #276 uniu as sementes e a #396 pôs o
+ *   detalhe; a **#402** ligou a escrita e acrescentou `PUT /api/employees/{id}` ao mock — sem ele,
+ *   no site público (100% mock) o `Gravar` cairia no fallback da SPA e receberia `index.html` com
+ *   status 200. `data.colaboradores` é HTTP, e o `cobertura-do-colaborador.tsx` continua no lugar
+ *   falando de outra coisa: a escrita responde **403 `papel-insuficiente`** a quem não administra,
+ *   e o operador precisa ler por quê.
  *
  * ## A costura de PAPEL que esta rodada abriu, e que durou menos que a PR
  *
@@ -1045,6 +1047,13 @@ const RECEBIMENTO_SEM_PORTA =
  *
  * Sai INTEIRA quando a fase B ligar os handlers: meia família poria o documento
  * no servidor e a conferência no mock, e é a grade que faz o recebimento.
+ *
+ * **E desde 26/08 elas são MOCKADAS de verdade** (`src/mocks/api/recebimento.ts`).
+ * Até aqui a declaração era só metade: a rota ficava do lado do mock e handler
+ * nenhum a respondia, então em modo mock ela caía no fallback da SPA e voltava
+ * `index.html` com 200 — o pior caso que este arquivo descreve, e o mesmo que a
+ * entrega (G4) pagou. Agora a fila do galpão responde nos DOIS ambientes: mock
+ * puro e par local.
  */
 const RECEBIMENTO: readonly RotaNoMock[] = [
   {

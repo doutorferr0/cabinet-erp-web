@@ -24,7 +24,7 @@ import {
 import { AtoNaLinha } from '@/features/carga/ato-na-linha'
 import { diaLocalISO } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
-import { formatDateBR, formatQuantidade } from '@/lib/formatters'
+import { formatDateBR, formatInstanteBR, formatQuantidade } from '@/lib/formatters'
 import { useState } from 'react'
 
 /**
@@ -201,7 +201,10 @@ export function CargaDoPedido({ orderId }: { orderId: string }) {
                   <TableCell className="font-mono">{romaneio.number}</TableCell>
                   <TableCell>{ROTULO_DO_ROMANEIO[romaneio.status]}</TableCell>
                   <TableCell>{formatDateBR(romaneio.scheduledFor)}</TableCell>
-                  <TableCell>{formatDateBR(romaneio.deliveredAt)}</TableCell>
+                  {/* INSTANTE, não dia — ver a nota gêmea em
+                      `situacao-do-pedido.tsx`. Passá-lo ao `formatDateBR`
+                      devolvia `02T15:00:00.000Z/09/2026` nesta coluna. */}
+                  <TableCell>{formatInstanteBR(romaneio.deliveredAt)}</TableCell>
                   <TableCell>{romaneio.receivedBy ?? '—'}</TableCell>
                 </TableRow>
               ))}

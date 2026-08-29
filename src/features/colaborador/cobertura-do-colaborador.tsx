@@ -1,59 +1,89 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
+import type { CamposDoContrato } from '@/components/cabinet/erro-do-servidor'
+import { camposDoContrato, colaborador as esquema } from '@/features/cadastro/modulos'
 
 /**
- * A COSTURA DO COLABORADOR, dita em voz alta — e ela MUDOU DE LADO em 25/08.
+ * `fields[].path` do servidor → campo desta tela.
  *
- * ## O que este aviso dizia, e por que deixou de ser verdade
- *
- * Ele nasceu para uma divergência de LEITURA: `GET /api/employees` estava na
- * lista de passagem porque a família de atividades depende dela
- * (`atividade-dialogo.tsx` escolhe o `assigneeEmployeeId` no combo de
- * `listEmployees`), enquanto ESTA tela lia `src/mocks/colaboradores.ts`. Com o
- * par local de pé havia **duas listas de quem trabalha aqui**, e o operador via
- * a errada dependendo da tela em que estivesse.
- *
- * **Essa metade acabou.** `data.colaboradores` é HTTP desde 25/08
- * (`colaboradores-api.ts`): a listagem e a ficha saem do mesmo `/api/employees`
- * que o combo já lia, e as duas telas voltaram a falar da mesma pessoa.
- *
- * ## O que sobrou, e não é código
- *
- * `Gravar` continua sendo `console.info`. `POST /api/employees` e
- * `PUT /api/employees/{id}` existem e respondem — mas com **403
- * `urn:cabinet:erro:papel-insuficiente`** para `operator-full`, o papel da
- * semente e do usuário demo (medido em 25/08 contra a main `2ee954b`). A matriz
- * do api reserva esta família a `admin` por razão própria e boa: o vínculo é o
- * que decide o papel dos OUTROS, e quem pode editá-lo pode promover a si mesmo.
- *
- * Ligar a escrita agora trocaria um cadastro que finge gravar por um que
- * recusa, e a pergunta de produto — "quem cadastra colaborador?" — segue sem
- * resposta. Por isso o aviso não sumiu: ele **encolheu** para o que ainda é
- * verdade, que é a metade da escrita.
- *
- * ## Por que continua dependendo de `VITE_API_PROXY`
- *
- * Sem backend real o `Gravar` do mock é coerente com o mock que a tela lê — é o
- * caso do site público. Avisar ali inventaria um defeito que aquele ambiente não
- * tem, e aviso que aparece quando não devia é o que ensina o operador a ignorar
- * avisos.
- *
- * Some quando a escrita migrar — ou quando o produto decidir que este cadastro
- * é só de leitura, que também é resposta.
+ * A base sai de `camposDoContrato(esquema)`, que lê o `dto:` de cada campo — e
+ * o `dto:` do schema é o da **LISTAGEM** (`EmployeeDto`, os cinco campos da
+ * grade), porque é ele que o seletor de colunas consome. `email` e `phone` não
+ * estão lá: são do `EmployeeDetailDto`, e declará-los como `dto` reprovaria a
+ * guarda que confere cada `dto` contra `dtoDoContrato`. Os dois entram aqui, ao
+ * lado do consumidor, e não como uma terceira coluna no schema.
  */
-export function coberturaDoColaboradorVisivel(): boolean {
-  return Boolean(import.meta.env.VITE_API_PROXY)
+const CAMPOS_DA_RECUSA: CamposDoContrato = {
+  ...camposDoContrato(esquema),
+  email: { nome: 'email', rotulo: 'E-mail de login' },
+  phone: { nome: 'telefone', rotulo: 'Celular' },
 }
 
-export function CoberturaDoColaborador() {
-  if (!coberturaDoColaboradorVisivel()) return null
+/**
+ * A COSTURA DO COLABORADOR, dita em voz alta — e ela MUDOU DE LADO DUAS VEZES.
+ *
+ * ## 25/08: a leitura migrou
+ *
+ * Este aviso nasceu para uma divergência de LEITURA: `GET /api/employees`
+ * estava na lista de passagem porque a família de atividades depende dela,
+ * enquanto ESTA tela lia `src/mocks/colaboradores.ts`. Com o par local de pé
+ * havia **duas listas de quem trabalha aqui**. Acabou: `data.colaboradores` é
+ * HTTP desde 25/08 (`colaboradores-api.ts`).
+ *
+ * ## 28/08 (#402): a ESCRITA migrou, e o que sobra é uma regra de PERMISSÃO
+ *
+ * `Gravar` era `console.info`. Agora é `POST /api/employees` e
+ * `PUT /api/employees/{id}` — e a matriz do api reserva a família a `admin`,
+ * porque vínculo é o que decide o papel dos OUTROS. Quem entra com
+ * `operator-full` (o papel da semente e do usuário demo) recebe **403
+ * `urn:cabinet:erro:papel-insuficiente`**, e a decisão do user foi ligar assim
+ * mesmo: um cadastro que RECUSA em voz alta diz ao operador que ele precisa de
+ * outro papel; um que finge gravar não diz nada.
+ *
+ * Por isso este componente ganhou o `ErroDeGravacao`: o 403 não pode chegar
+ * como troca de tela silenciosa. O `detail` do problem+json é quem sabe qual
+ * permissão faltou — a tela não teria como adivinhar.
+ *
+ * ## O aviso de COBERTURA não depende mais do proxy
+ *
+ * Antes ele só aparecia com `VITE_API_PROXY`, porque falava de uma divergência
+ * que só existia com backend real. O que ele diz agora vale nos DOIS ambientes:
+ * o `Gravar` envia quatro campos de um formulário que tem trinta, e cargo,
+ * setor e admissão são do VÍNCULO — mudam por outra operação, em outra tela.
+ * Esconder isso no modo mock ensinaria o operador do site público que o
+ * cadastro grava tudo.
+ */
+export function CoberturaDoColaborador({
+  erro,
+  isNovo = false,
+}: {
+  /** Recusa da escrita, quando houve. Ausente: só o aviso de cobertura. */
+  erro?: unknown
+  isNovo?: boolean
+}) {
+  const falha = erro ? (
+    <ErroDeGravacao
+      erro={erro}
+      mensagem={
+        isNovo
+          ? 'Não foi possível incluir este colaborador.'
+          : 'Não foi possível gravar este cadastro.'
+      }
+      campos={CAMPOS_DA_RECUSA}
+      className="w-full"
+    />
+  ) : null
 
   return (
-    <AvisoDeCobertura>
+    <AvisoDeCobertura {...(falha ? { erro: falha } : {})}>
       <p>
-        Este cadastro <strong>lê o servidor</strong>, e é a mesma lista que o combo de responsável
-        das atividades usa. O que ele ainda <strong>não faz é gravar</strong>: alterar colaborador é
-        reservado ao papel de administrador, e o botão Gravar desta tela ainda não chega ao
-        servidor.
+        <strong>Gravar</strong> envia ao servidor apenas nome, e-mail de login, celular e situação.
+        Cargo, setor e datas de admissão pertencem ao <strong>vínculo com a empresa</strong> e mudam
+        em Configurações · Usuários; o bloco de RH ainda não existe no contrato e não é enviado.
+      </p>
+      <p>
+        Alterar colaborador é reservado a quem <strong>administra</strong> — o vínculo é o que
+        decide o papel dos outros. Sem esse papel o servidor recusa, e a recusa aparece aqui.
       </p>
     </AvisoDeCobertura>
   )

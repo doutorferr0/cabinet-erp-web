@@ -1,7 +1,28 @@
-import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
-import { renderRoute } from '@/test/utils'
+import { ID_DO_COLABORADOR, fichaDeColaborador, stubDeColaboradores } from '@/test/colaboradores'
+import { type Rota, instalarServidor, json } from '@/test/servidor'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+/**
+ * Servidor falso COM REGISTRO DE CHAMADAS — o que `stubDeColaboradores` não dá.
+ *
+ * A escrita se prova pelo que SAIU (verbo, caminho, corpo) e pelo que voltou
+ * (status e id), e o `instalarServidor` guarda as duas coisas. O stub simples
+ * continua servindo para os casos de leitura, que só precisam da resposta.
+ */
+function servidorDeColaborador(rotas: Record<string, Rota> = {}) {
+  return instalarServidor({
+    '/auth/me': () => respostaSessao(),
+    '/auth/tenants': () => respostaVinculos(),
+    '/api/catalog-lookups': () => respostaLookups(),
+    ...rotas,
+  })
+}
 
 /**
  * A tela migrou para `GET /api/employees` em 2026-08-25, e estes casos migraram
@@ -17,17 +38,116 @@ describe('tela Colaborador', () => {
     expect(screen.getByText('Cadastro de Colaboradores')).toBeInTheDocument()
   })
 
-  it('formulário grava novo colaborador (volta para a listagem)', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores/novo')
+  /**
+   * A ESCRITA (#402). **O sucesso é assertado pela RESPOSTA — status e id —, e
+   * não pela navegação**, que depende do router e de um `onSuccess` assíncrono
+   * (issue #405, que não se conserta aqui). O que este caso prova é que o
+   * `Gravar` de `/novo` faz `POST /api/employees` com o recorte do
+   * `EmployeeWriteRequest`, e nada além dele.
+   */
+  it('Gravar em /novo faz POST /api/employees com só o recorte do contrato', async () => {
+    const NOVO_ID = 'f0e1d2c3-b4a5-4968-8776-554433221100'
+    const servidor = servidorDeColaborador({
+      '/api/employees': (chamada) =>
+        chamada.metodo === 'POST'
+          ? json(fichaDeColaborador({ id: NOVO_ID, name: 'COLABORADOR TESTE' }), 201)
+          : json({ rows: [], total: 0 }),
+    })
+    const { user } = renderRoute('/cadastros/colaboradores/novo', servidor.fetch)
 
-    const nome = await screen.findByLabelText('Nome completo')
-    await user.type(nome, 'COLABORADOR TESTE')
-
+    await user.type(await screen.findByLabelText('Nome completo'), 'COLABORADOR TESTE')
+    await user.type(await screen.findByLabelText('E-mail de login'), 'teste@vertz.dev')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/colaboradores')
+      expect(servidor.em('/api/employees').some((c) => c.metodo === 'POST')).toBe(true)
     })
+    const escrita = servidor.em('/api/employees').find((c) => c.metodo === 'POST')
+    expect(escrita?.corpo).toEqual({
+      name: 'COLABORADOR TESTE',
+      email: 'teste@vertz.dev',
+      phone: null,
+      active: true,
+      document: null,
+      photoUrl: null,
+    })
+    // A recusa não apareceu: 201 é sucesso, e o bloco de erro só existe quando
+    // o servidor diz não.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  /**
+   * O `PUT` SUBSTITUI o registro inteiro, e `document` não tem campo nesta
+   * tela: ele volta como veio. Um `null` aqui apagaria o CPF de quem foi
+   * cadastrado por `/config/usuarios` — a regra do core de 18/08.
+   */
+  it('Gravar em edição faz PUT e devolve o que a tela não edita como veio', async () => {
+    const ficha = fichaDeColaborador({ document: '12345678901', email: 'carla@vertz.dev' })
+    const servidor = servidorDeColaborador({
+      '/api/employees': () => json({ rows: [], total: 0 }),
+      [`/api/employees/${ID_DO_COLABORADOR}`]: (chamada) =>
+        chamada.metodo === 'PUT' ? json({ ...ficha, name: 'CARLA S. SOUZA' }) : json(ficha),
+    })
+    const { user } = renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, servidor.fetch)
+
+    const nome = await screen.findByDisplayValue('CARLA SOUZA')
+    await user.clear(nome)
+    await user.type(nome, 'CARLA S. SOUZA')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    await waitFor(() => {
+      expect(
+        servidor.em(`/api/employees/${ID_DO_COLABORADOR}`).some((c) => c.metodo === 'PUT'),
+      ).toBe(true)
+    })
+    const escrita = servidor
+      .em(`/api/employees/${ID_DO_COLABORADOR}`)
+      .find((c) => c.metodo === 'PUT')
+    expect(escrita?.corpo).toEqual({
+      name: 'CARLA S. SOUZA',
+      email: 'carla@vertz.dev',
+      phone: null,
+      active: true,
+      document: '12345678901',
+      photoUrl: null,
+    })
+  })
+
+  /**
+   * **403 `papel-insuficiente` é o caso comum desta família, não a exceção**: a
+   * matriz do api reserva `/api/employees` a `admin`, e o papel da semente é
+   * `operator-full`. A recusa tem de chegar à TELA com a frase do servidor —
+   * silêncio faria o operador clicar de novo achando que o botão não pegou.
+   */
+  it('403 papel-insuficiente vira mensagem na tela, não silêncio', async () => {
+    const servidor = servidorDeColaborador({
+      '/api/employees': (chamada) =>
+        chamada.metodo === 'POST'
+          ? new Response(
+              JSON.stringify({
+                type: 'urn:cabinet:erro:papel-insuficiente',
+                title: 'Sem permissão',
+                status: 403,
+                detail: 'Alterar colaborador é reservado a quem administra.',
+              }),
+              { status: 403, headers: { 'content-type': 'application/problem+json' } },
+            )
+          : json({ rows: [], total: 0 }),
+    })
+    const { router, user } = renderRoute('/cadastros/colaboradores/novo', servidor.fetch)
+
+    await user.type(await screen.findByLabelText('Nome completo'), 'SEM PERMISSÃO')
+    await user.type(await screen.findByLabelText('E-mail de login'), 'sem@vertz.dev')
+    await user.click(screen.getByRole('button', { name: /Gravar/ }))
+
+    // O `detail` do problem+json é quem sabe QUAL permissão faltou; a tela não
+    // teria como adivinhar, e a frase genérica não diz o que fazer.
+    expect(
+      await screen.findByText('Alterar colaborador é reservado a quem administra.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Sem permissão')).toBeInTheDocument()
+    // E não navegou: recusa não é gravação.
+    expect(router.state.location.pathname).toBe('/cadastros/colaboradores/novo')
   })
 
   it('abrir registro existente carrega a ficha do servidor', async () => {
@@ -73,20 +193,30 @@ describe('tela Colaborador', () => {
     })
 
     /**
-     * O mockup pede e-mail de login e celular como obrigatórios (#101), e o
-     * mock do colaborador não guarda nenhum dos dois. Em vez de um input que
-     * aceita digitação e descarta no Gravar, a falta é DITA — mesma economia do
-     * `AvisoDeCobertura`. Quando a #105 der onde gravar, o campo aparece.
+     * **O E-MAIL DE LOGIN DEIXOU DE SER PENDÊNCIA na #402**, e a inversão deste
+     * caso é o registro disso. Ele nasceu afirmando o contrário: o mockup pedia
+     * o campo (#101), o repo não tinha onde gravá-lo, e a falta era DITA em vez
+     * de fingida com um input que descarta no Gravar.
+     *
+     * `EmployeeWriteRequest` publica `email` e `phone`, e o `POST` EXIGE o
+     * primeiro (`employees.email` é NOT NULL — é por ele que a pessoa entra).
+     * Sem o campo, o `Incluir` mandaria `email: null` e tomaria 400 em toda
+     * tentativa, com o `fields[].path` apontando para um controle inexistente.
+     *
+     * O que CONTINUA pendência é o bloco de RH, e ele segue dito pelo nome.
      */
-    it('o que o repo ainda não guarda é dito, não fingido', async () => {
+    it('o que o repo ainda não guarda é dito, e o que ele passou a guardar tem campo', async () => {
       renderRoute('/cadastros/colaboradores/novo')
 
       await screen.findByLabelText('Nome completo')
-      // Mais de um módulo tem lacuna — a do bloco obrigatório é a que importa
-      // aqui, porque é ela que a issue lista como campo que deveria travar.
+      expect(screen.getByLabelText('E-mail de login')).toBeInTheDocument()
+      expect(screen.getByLabelText('Celular')).toBeInTheDocument()
+
       const pendencias = screen.getAllByText(/Ainda não guardamos/)
-      expect(pendencias.some((p) => p.textContent?.includes('E-mail de login'))).toBe(true)
-      expect(screen.queryByLabelText('E-mail de login')).not.toBeInTheDocument()
+      expect(pendencias.some((p) => p.textContent?.includes('E-mail de login'))).toBe(false)
+      // O módulo de metas continua inteiro sem lastro — nenhum schema guarda
+      // comissão nem meta, e a falta segue dita pelo nome.
+      expect(pendencias.some((p) => p.textContent?.includes('% comissão interna'))).toBe(true)
     })
     /**
      * DEFEITO ENCONTRADO ESCREVENDO A #101, e RESOLVIDO NA RAIZ pela #103.

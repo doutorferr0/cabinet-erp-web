@@ -681,6 +681,156 @@ describe.skipIf(!process.env.CABINET_AO_VIVO)('front + backend real', () => {
     expect(await aniversarios.json()).toHaveProperty('month', 8)
   })
 
+  /**
+   * COMPRAS — as 14 operações promovidas em 26/08, e a família mais nova da
+   * passagem. `src/data/compras-api.ts` já as consome; o que faltava era prova
+   * de que do outro lado da rede existe quem as sirva.
+   *
+   * **O `status` sozinho não distingue nada aqui**, e é o motivo de cada caso
+   * abaixo asserir sobre o CORPO: a rota que ninguém responde cai no fallback
+   * da SPA e devolve `index.html` com 200. Uma sonda que olhasse só o número
+   * marcaria verde exatamente no pior caso.
+   */
+  it('o PEDIDO DE COMPRA passa — listagem e ficha do mesmo id, com as linhas', async () => {
+    const lista = await fetch(`${APP}/api/purchase-requests`, { headers: { cookie } })
+    expect(lista.status).toBe(200)
+    // `rows` prova que veio JSON de listagem, não o HTML da SPA com 200.
+    const { rows } = (await lista.json()) as { rows: { id: string; number: string }[] }
+    expect(Array.isArray(rows)).toBe(true)
+    const primeiro = rows[0]
+    if (!primeiro) return // banco de dev sem pedido de compra: nada a casar
+
+    const ficha = await fetch(`${APP}/api/purchase-requests/${primeiro.id}`, {
+      headers: { cookie },
+    })
+    expect(ficha.status).toBe(200)
+    // O par é o que importa: listagem no servidor com ficha no mock pediria ao
+    // mock um uuid que só existe no Postgres, e o formulário nem abriria.
+    const pedido = (await ficha.json()) as { id: string; items: { supplierId: string }[] }
+    expect(pedido.id).toBe(primeiro.id)
+    // As linhas vêm na ficha, e o fornecedor é DELAS — sem isso a tela não tem
+    // como agrupar em ordem de compra.
+    expect(Array.isArray(pedido.items)).toBe(true)
+  })
+
+  it('a ORDEM DE COMPRA passa, e a linha traz a amarração com o pedido', async () => {
+    const lista = await fetch(`${APP}/api/purchase-orders`, { headers: { cookie } })
+    expect(lista.status).toBe(200)
+    const { rows } = (await lista.json()) as { rows: { id: string }[] }
+    expect(Array.isArray(rows)).toBe(true)
+    const primeira = rows[0]
+    if (!primeira) return // banco de dev sem ordem: nada a casar
+
+    const ficha = await fetch(`${APP}/api/purchase-orders/${primeira.id}`, { headers: { cookie } })
+    expect(ficha.status).toBe(200)
+    const ordem = (await ficha.json()) as {
+      id: string
+      supplierId: string
+      items: { sourceRequestId: string; sourceLineNumber: number }[]
+    }
+    expect(ordem.id).toBe(primeira.id)
+    // O par (`sourceRequestId`, `sourceLineNumber`) é o que liga os dois
+    // documentos. Vindo do MESMO lado, ele aponta para um pedido que existe;
+    // com uma metade no mock, apontaria para um id que ninguém tem.
+    for (const linha of ordem.items) {
+      expect(linha.sourceRequestId).toBeTruthy()
+      expect(typeof linha.sourceLineNumber).toBe('number')
+    }
+  })
+
+  it('a ordenação do pedido de compra usa a whitelist do SERVIDOR — fora dela é 400', async () => {
+    // Prova que quem ordena é o backend, e não o provider: o mock aceitaria a
+    // coluna inventada e devolveria a lista assim mesmo.
+    const dentro = await fetch(`${APP}/api/purchase-requests?sortBy=issuedAt&sortDesc=true`, {
+      headers: { cookie },
+    })
+    expect(dentro.status).toBe(200)
+
+    const fora = await fetch(`${APP}/api/purchase-requests?sortBy=fornecedor`, {
+      headers: { cookie },
+    })
+    expect(fora.status).toBe(400)
+  })
+
+  it('as duas CONSULTAS de compras respondem — e não é o fallback da SPA', async () => {
+    // `arrival-forecast` e `stock-replenishment` não têm tela de documento nem
+    // `Incluir`, então não passam pelo registry de providers: se caíssem no
+    // fallback, nenhuma outra sonda daqui perceberia.
+    const previsao = await fetch(
+      `${APP}/api/purchases/arrival-forecast?page=1&pageSize=50&sortBy=expectedAt&sortDesc=false`,
+      { headers: { cookie } },
+    )
+    expect(previsao.status).toBe(200)
+    expect(previsao.headers.get('content-type')).toMatch(/application\/json/)
+    expect(await previsao.json()).toHaveProperty('rows')
+
+    const reposicao = await fetch(
+      `${APP}/api/purchases/stock-replenishment?page=1&pageSize=50&sortBy=qtySuggested&sortDesc=true`,
+      { headers: { cookie } },
+    )
+    expect(reposicao.status).toBe(200)
+    expect(reposicao.headers.get('content-type')).toMatch(/application\/json/)
+    // A reposição é a única das quatro que devolve linha com o banco recém
+    // semeado: ela nasce do CATÁLOGO, não de documento de compra nenhum. É a
+    // prova positiva de que quem respondeu foi o Postgres.
+    expect(await reposicao.json()).toHaveProperty('rows')
+  })
+
+  /**
+   * A ESCRITA de compras é recusada pelo PAPEL, e isto é medição, não suposição.
+   *
+   * Medido em 2026-08-29 contra o par local com a semente do `seed:dev`: os dois
+   * `POST` respondem **403 `urn:cabinet:erro:papel-insuficiente`** — "O papel
+   * `operator-full` não pode escrever neste recurso". A LEITURA passa inteira
+   * para o mesmo papel, e é por isso que os casos acima são de leitura.
+   *
+   * **O corpo tem de ser VÁLIDO para a medição valer.** Com corpo incompleto o
+   * `POST /api/purchase-orders` responde 400 (`body must have required property
+   * 'discountPercent'`): a validação de schema atende ANTES da checagem de
+   * papel, e uma sonda com corpo vazio concluiria "escrita implementada" de um
+   * recurso que ela nunca alcançou. É a mesma armadilha que o CLAUDE.md
+   * registra para separar 501 de implementado, aqui com outro status.
+   *
+   * Não se conclui daqui que a escrita FALTA: o handler existe do outro lado da
+   * borda que recusou. O que se afirma é o que se viu — com este papel, a tela
+   * de compras lê do servidor e não grava nele.
+   */
+  it('a ESCRITA de compras é recusada pelo PAPEL — 403, e não 501', async () => {
+    const pedido = await fetch(`${APP}/api/purchase-requests`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({
+        issuedAt: '2026-08-29',
+        orderId: null,
+        notes: 'SONDA AO VIVO',
+        items: [
+          {
+            lineNumber: 1,
+            variantId: null,
+            description: 'PECA DA SONDA',
+            finish: null,
+            size: null,
+            unit: 'UN',
+            quantity: 3,
+            // `stock` de propósito: `sale` sem `orderId` é 400 por regra do
+            // contrato, e 400 não distinguiria papel de corpo malformado.
+            destination: 'stock',
+            supplierId: '00000000-0000-0000-0000-000000000000',
+            sourceOrderItemLine: null,
+            notes: null,
+          },
+        ],
+      }),
+    })
+
+    expect(pedido.status).toBe(403)
+    const problema = (await pedido.json()) as { type: string; detail: string }
+    expect(problema.type).toBe('urn:cabinet:erro:papel-insuficiente')
+    // O papel vem na frase do servidor: quem remedir num banco com vínculo
+    // `owner` verá esta asserção falhar, e é o sinal certo — o recorte mudou.
+    expect(problema.detail).toContain('operator-full')
+  })
+
   it('nenhuma rota de /api sobrou no mock — a passagem cobre o contrato', () => {
     // A afirmação central da #274, conferida onde o leitor deste arquivo está.
     //

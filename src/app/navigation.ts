@@ -8,6 +8,7 @@ import {
   CalendarClock,
   CalendarDays,
   CircleDollarSign,
+  ClipboardCheck,
   Filter,
   GanttChart,
   HandCoins,
@@ -448,6 +449,20 @@ export const navSecoes: NavSecao[] = [
             url: '/estoque/movimentacao',
             icon: ArrowLeftRight,
             descricao: 'Entrada, saída e transferência do estoque.',
+          },
+          {
+            /**
+             * INVENTÁRIO — o contraponto da Movimentação: lá se lança o que se
+             * sabe que aconteceu, aqui se confere o que a prateleira tem contra
+             * o que o sistema diz. Vem depois dela porque o ajuste que ele
+             * produz É um movimento, e quem não entendeu o kardex não entende a
+             * folha de contagem.
+             */
+            title: 'Inventário',
+            url: '/estoque/inventario',
+            icon: ClipboardCheck,
+            descricao:
+              'Contagem por depósito: o contado contra o sistema, e o ajuste da diferença.',
           },
           {
             title: 'Reserva Técnica',

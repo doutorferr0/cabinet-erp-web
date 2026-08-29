@@ -20,7 +20,7 @@ import {
   repetirSeValeAPena,
 } from '@/data/api-provider'
 import type { PagedResult, TableFetcher } from '@/lib/table-query'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE ESTOQUE — depósito, saldo por depósito e kardex.
@@ -124,20 +124,34 @@ export function useSaldosDaVariante(variantId: string | null) {
     queryKey: CHAVES_ESTOQUE.saldos(variantId ?? ''),
     enabled: variantId !== null,
     retry: repetirSeValeAPena,
-    queryFn: async () => {
-      const resposta: RespostaDaApi = await listStockBalances(variantId as string, {
-        page: 1,
-        pageSize: PAGE_SIZE_MAX,
-        sortBy: 'qty',
-        sortDesc: true,
-      })
-      const pagina = dadosOuErro<PagedResultOfStockBalanceDto>(
-        resposta,
-        'Falha ao carregar o saldo por depósito.',
-      )
-      return pagina.rows ?? []
-    },
+    queryFn: () => buscarSaldosDaVariante(variantId as string),
   })
+}
+
+/**
+ * A mesma leitura, IMPERATIVA — para quem precisa do saldo fora de um render.
+ *
+ * O inventário é o caso: ele lê o saldo de uma variante no instante em que o
+ * operador acrescenta a linha à contagem, e de novo no instante de aplicar o
+ * ajuste. Nenhum dos dois é um render — são gestos —, e um hook por linha
+ * obrigaria a montar componente para consultar.
+ *
+ * Fica AQUI e não lá porque a chamada ao cliente gerado é desta fronteira: é
+ * este arquivo que a guarda de `familia-de-estoque.test.ts` lê para dizer quem
+ * consome `ListStockBalances`.
+ */
+export async function buscarSaldosDaVariante(variantId: string): Promise<StockBalanceDto[]> {
+  const resposta: RespostaDaApi = await listStockBalances(variantId, {
+    page: 1,
+    pageSize: PAGE_SIZE_MAX,
+    sortBy: 'qty',
+    sortDesc: true,
+  })
+  const pagina = dadosOuErro<PagedResultOfStockBalanceDto>(
+    resposta,
+    'Falha ao carregar o saldo por depósito.',
+  )
+  return pagina.rows ?? []
 }
 
 /**
@@ -234,15 +248,37 @@ export function fetcherDoKardex(variantId: string): TableFetcher<StockMovementDt
 export function useLancarMovimento(variantId: string | null) {
   const cliente = useQueryClient()
   return useMutation({
-    mutationFn: async (corpo: StockMovementRequest) => {
-      const resposta: RespostaDaApi = await createStockMovement(variantId as string, corpo)
-      return dadosOuErro<StockMovementDto>(resposta, 'Falha ao lançar o movimento.')
-    },
-    onSuccess: () => {
-      const id = variantId ?? ''
-      cliente.invalidateQueries({ queryKey: CHAVES_ESTOQUE.saldos(id) })
-      cliente.invalidateQueries({ queryKey: CHAVES_ESTOQUE.kardex(id) })
-      cliente.invalidateQueries({ queryKey: ['produtos'] })
-    },
+    mutationFn: (corpo: StockMovementRequest) => lancarMovimento(variantId as string, corpo),
+    onSuccess: () => invalidarEstoqueDaVariante(cliente, variantId ?? ''),
   })
+}
+
+/**
+ * O lançamento, IMPERATIVO — a mesma escrita sem um hook por variante.
+ *
+ * O inventário lança N movimentos de uma vez (um por linha divergente), e
+ * `useLancarMovimento` é ligado a UMA variante: chamá-lo em laço exigiria um
+ * hook por linha, que é justamente o que as regras de hook proíbem. A função é
+ * a mesma chamada; o que o hook acrescenta é a invalidação, e ela está logo
+ * abaixo, para quem lança em laço invalidar no fim.
+ */
+export async function lancarMovimento(
+  variantId: string,
+  corpo: StockMovementRequest,
+): Promise<StockMovementDto> {
+  const resposta: RespostaDaApi = await createStockMovement(variantId, corpo)
+  return dadosOuErro<StockMovementDto>(resposta, 'Falha ao lançar o movimento.')
+}
+
+/**
+ * As TRÊS chaves que um movimento suja, num lugar só.
+ *
+ * `['produtos']` está aqui pelo motivo escrito em `useLancarMovimento`: o
+ * `stockQty` da variante mora no detalhe do produto, e invalidar só as duas de
+ * estoque deixaria a tela de produto exibindo o total de antes do movimento.
+ */
+export function invalidarEstoqueDaVariante(cliente: QueryClient, variantId: string): void {
+  cliente.invalidateQueries({ queryKey: CHAVES_ESTOQUE.saldos(variantId) })
+  cliente.invalidateQueries({ queryKey: CHAVES_ESTOQUE.kardex(variantId) })
+  cliente.invalidateQueries({ queryKey: ['produtos'] })
 }

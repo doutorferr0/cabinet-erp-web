@@ -123,6 +123,12 @@ function contatoEEndereco(values: Cliente) {
 export const papelCliente: PapelDeCadastro<Cliente> = {
   role: 'customer',
   rota: '/cadastros/clientes',
+  rotaDoDocumento: (clienteId) => ({
+    to: '/cadastros/clientes/$clienteId',
+    params: { clienteId },
+    // `replace`: o `/novo` já gravado não é destino de volta (#405).
+    replace: true,
+  }),
   queryKeyListagem: ['clientes'],
   camposDeEdicao:
     'Nome, CPF/CNPJ, E-mail, Telefones, Endereço, Endereço de cobrança, Endereço comercial (com Empresa, Cargo, CNPJ e Fundação), Tipo de pessoa, RG, Órgão expedidor, UF do RG, Sexo, Data de nascimento, Inscrição Estadual, IE Produtor Rural, Categoria, Profissional que indicou, Observação, Redes sociais e Ativo',

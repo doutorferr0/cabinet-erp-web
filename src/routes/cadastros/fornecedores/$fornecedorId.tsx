@@ -135,6 +135,9 @@ function FornecedorEditPage() {
           <ContatosDoParceiro partnerId={isNovo ? null : fornecedorId} readOnly={readOnly} />
         }
         onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+        // A alteração PERMANECE na tela (#405): é este sinal que devolve o
+        // formulário ao estado limpo depois que o servidor confirmou.
+        gravou={isNovo ? incluir.isSuccess : gravar.isSuccess}
       />
 
       {atividades}

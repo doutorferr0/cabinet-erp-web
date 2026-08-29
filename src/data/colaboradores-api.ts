@@ -81,8 +81,10 @@ import { type Colaborador, colaboradorVazio } from '@/mocks/colaboradores'
  *    faz `filtrosDaTabela` lançar, com o nome do arquivo, se alguém devolver
  *    campos filtráveis à tela antes de o contrato publicar o parâmetro.
  */
+export const URL_COLABORADORES = '/api/employees'
+
 export const listaDeColaboradores: ListProvider<EmployeeDto> = createApiListProvider<EmployeeDto>({
-  url: '/api/employees',
+  url: URL_COLABORADORES,
 })
 
 /**

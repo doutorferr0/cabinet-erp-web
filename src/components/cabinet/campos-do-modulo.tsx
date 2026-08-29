@@ -72,7 +72,6 @@ const KIND_POR_CAMPO: Record<string, LookupKind> = {
   cargo: 'cargo',
   vinculo: 'vinculo',
   grauInstrucao: 'grauInstrucao',
-  racaCor: 'racaCor',
   nacionalidade: 'nacionalidade',
 }
 

@@ -32,6 +32,7 @@ import { handlersDePagamento } from './pagamento'
 import { handlersDePedidoDeVenda } from './pedidos'
 import { verificarEscrita } from './permissao'
 import { handlersDoPlanner } from './planner'
+import { handlersDePrecos } from './precos'
 import {
   TIPO,
   camposInvalidos,
@@ -42,6 +43,7 @@ import {
   semSessao,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
+import { handlersDeRecebimento } from './recebimento'
 import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
@@ -961,6 +963,15 @@ export const handlers = [
   // responde 501 nelas. Compras não tinha resposta em ambiente nenhum.
   ...handlersDeCompras,
 
+  // ---------------- RECEBIMENTO DE COMPRA (G3) ----------------
+  // A nota do fornecedor virando entrada no estoque. Arquivo próprio de
+  // handlers, ESTADO compartilhado com compras (`estadoDeCompras()`): a grade do
+  // recebimento confronta a linha da ordem, e `PurchaseOrderItemDto.quantityReceived`,
+  // `qtyOnOrder` e a previsão de chegada saem daqui. O que destravou o mock foi o
+  // vínculo por linha publicado na #354 — sem ele a divergência seria calculada
+  // contra número digitado, que era o motivo escrito na guarda.
+  ...handlersDeRecebimento,
+
   // ---------------- O BLOCO FÍSICO DA VENDA (G4) ----------------
   // Liberar, separar, o romaneio e a situação do pedido. As dez operações
   // entraram no contrato pela web#342 e `rotas-do-backend.ts` as mantém do lado
@@ -992,6 +1003,18 @@ export const handlers = [
   // servia, precisou de handler quando ganhou tela.
   ...handlersDeEmpresas,
   ...handlersDeSuporte,
+
+  // ---------------- PREÇO (G9 · issue #379) ----------------
+  // Arquivo próprio, como compras e relatórios. As dez operações estavam no
+  // contrato desde a #335 e handler nenhum as servia — decisão declarada em
+  // `rotas-do-backend.ts`, e ela custava caro no dia em que a aba nasceu: sem
+  // handler a requisição cai no fallback da SPA e volta `index.html` com 200.
+  //
+  // A linha onde este mock para está no cabeçalho de `precos.ts`, e é o que
+  // torna a decisão antiga compatível com ter tela: ele GUARDA o cadastro (o
+  // número que o operador digitou) e RECUSA a apuração com 501 — a cascata de
+  // vinte e três parcelas continua sendo do servidor.
+  ...handlersDePrecos,
 
   // A ESCRITA das listas de apoio (o `+...` do combo). A leitura ficou aqui em
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da

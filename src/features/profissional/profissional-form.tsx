@@ -238,6 +238,7 @@ export function ProfissionalForm({
   moduloEmFoco,
   partnerId = null,
   onGravar: gravarDeFora,
+  gravou = false,
 }: {
   profissional: Profissional
   readOnly?: boolean
@@ -258,6 +259,11 @@ export function ProfissionalForm({
    * ainda não atende.
    */
   onGravar?: (values: Profissional) => void
+  /**
+   * Gravação que deu certo (#405) — a alteração PERMANECE na tela, e é este
+   * sinal que devolve o formulário ao estado limpo. Ver `CadastroForm`.
+   */
+  gravou?: boolean
 }) {
   const navigate = useNavigate()
   const [buscaCidadePrefix, setBuscaCidadePrefix] = useState<PrefixoCidade | null>(null)
@@ -280,6 +286,7 @@ export function ProfissionalForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/profissionais' })}
       readOnly={readOnly}
+      gravou={gravou}
       titulo="Cadastro de Profissional Externo"
       familia="partners"
       {...(contexto ? { contexto } : {})}

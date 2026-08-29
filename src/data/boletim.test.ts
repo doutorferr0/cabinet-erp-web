@@ -1,7 +1,7 @@
 import { boletim } from '@/data/boletim'
+import { URL_COLABORADORES } from '@/data/colaboradores-api'
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { URL_PRODUTOS } from '@/data/produtos-api'
-import { colaboradores } from '@/mocks/colaboradores'
 import { orcamentos } from '@/mocks/orcamentos'
 import { ordensCompra } from '@/mocks/ordens-compra'
 import { instalarServidor, json, problema } from '@/test/servidor'
@@ -13,9 +13,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * contagem direta, alguém inventou métrica.
  *
  * As linhas de CADASTROS (Clientes, Fornecedores, Profissional Externo,
- * Produtos) pedem `data.<recurso>.list`, que é HTTP de verdade — por isso o
- * teste precisa do servidor falso (`docs/integracao.md`), não só dos arrays
- * de `src/mocks/`. `/api/partners` filtra por `role` (query param) e o stub
+ * Produtos, Colaboradores) pedem `data.<recurso>.list`, que é HTTP de verdade
+ * — por isso o teste precisa do servidor falso (`docs/integracao.md`), não só
+ * dos arrays de `src/mocks/`. `/api/partners` filtra por `role` (query param) e o
+ * stub
  * abaixo responde DIFERENTE por papel — se o boletim um dia pedir dois papéis
  * com a mesma consulta (bug de `fixa: { role }` perdido), o teste quebra em
  * vez de passar com número igual por coincidência.
@@ -58,6 +59,18 @@ function servidorDeCadastros() {
           { id: 'pr4', active: true },
         ],
         total: 4,
+      }),
+    // A semente de `@/mocks/colaboradores` tem dezenas de pessoas; o servidor
+    // falso responde TRÊS. Número da semente aparecendo aqui é o defeito da
+    // #407 de volta — o boletim contando de outra lista que não a do cadastro.
+    [URL_COLABORADORES]: () =>
+      json({
+        rows: [
+          { id: 'e1', active: true },
+          { id: 'e2', active: false },
+          { id: 'e3', active: true },
+        ],
+        total: 3,
       }),
   })
 }
@@ -117,7 +130,7 @@ describe('boletim', () => {
     }
   })
 
-  it('cadastros de parceiro e produto contam pela MESMA fonte da listagem (HTTP)', async () => {
+  it('todo cadastro conta pela MESMA fonte da listagem (HTTP)', async () => {
     const servidor = servidorDeCadastros()
     const b = await boletim()
 
@@ -140,6 +153,7 @@ describe('boletim', () => {
       inativosParcial: false,
     })
     expect(porNome.Produtos).toMatchObject({ total: 4, inativos: 1, inativosParcial: false })
+    expect(porNome.Colaboradores).toMatchObject({ total: 3, inativos: 1, inativosParcial: false })
 
     const chamadasDeParceiro = servidor.em(URL_PARCEIROS)
     const roles = chamadasDeParceiro.map((c) => new URL(c.url).searchParams.get('role')).sort()
@@ -150,6 +164,7 @@ describe('boletim', () => {
     instalarServidor({
       [URL_PARCEIROS]: () => problema(409, 'Nenhuma empresa ativa na sessão.'),
       [URL_PRODUTOS]: () => json({ rows: [{ id: 'pr1', active: true }], total: 1 }),
+      [URL_COLABORADORES]: () => json({ rows: [{ id: 'e1', active: true }], total: 1 }),
     })
 
     const b = await boletim()
@@ -160,8 +175,8 @@ describe('boletim', () => {
     expect(porNome['Profissional Externo']).toMatchObject({ total: null, inativos: null })
     // Produtos respondeu — não é o `Promise.all` derrubando tudo junto.
     expect(porNome.Produtos).toMatchObject({ total: 1, inativos: 0 })
-    // Colaboradores é mock puro — nem passa perto do servidor falso.
-    expect(porNome.Colaboradores).toMatchObject({ total: colaboradores.length })
+    // Colaboradores respondeu por conta própria, como Produtos.
+    expect(porNome.Colaboradores).toMatchObject({ total: 1, inativos: 0 })
   })
 
   it('inativos vira piso (`inativosParcial`) quando a listagem pagina antes do total', async () => {

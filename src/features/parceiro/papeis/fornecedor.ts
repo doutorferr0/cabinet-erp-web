@@ -76,6 +76,11 @@ function contatoEEndereco(values: Fornecedor) {
 export const papelFornecedor: PapelDeCadastro<Fornecedor> = {
   role: 'supplier',
   rota: '/cadastros/fornecedores',
+  rotaDoDocumento: (fornecedorId) => ({
+    to: '/cadastros/fornecedores/$fornecedorId',
+    params: { fornecedorId },
+    replace: true,
+  }),
   queryKeyListagem: ['fornecedores'],
   camposDeEdicao:
     'Razão Social, Nome Fantasia, CNPJ/CPF, E-mail, Fone 1, FAX, Endereço, Inscrição Estadual, Observação, Redes sociais e Ativo',

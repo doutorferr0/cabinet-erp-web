@@ -1,3 +1,4 @@
+import type { ProductDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
@@ -11,6 +12,7 @@ import {
   TextareaField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGravarProduto } from '@/data/produtos-api'
@@ -636,9 +638,22 @@ export function ProdutoForm({
     //
     // O registro COMO VEIO do servidor viaja junto: é comparando com ele que a
     // gravação decide o que da grade mudou — linha intocada não vira escrita.
+    // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+    // cadastro novo abre o produto que nasceu — com o id e o código que o
+    // servidor deu —, alteração permanece na tela com o toast.
     gravar.mutate(
       { values, original: produto },
-      { onSuccess: () => void navigate({ to: '/cadastros/produtos' }) },
+      {
+        onSuccess: posGravar<ProductDto>({
+          eraNovo: !produto.id,
+          abrirDocumento: (produtoId) =>
+            void navigate({
+              to: '/cadastros/produtos/$produtoId',
+              params: { produtoId },
+              replace: true,
+            }),
+        }),
+      },
     )
   }
 
@@ -650,6 +665,7 @@ export function ProdutoForm({
       onCancelar={() => void navigate({ to: '/cadastros/produtos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       titulo="Cadastro de Produtos"
       familia="products"
       {...(contexto ? { contexto } : {})}

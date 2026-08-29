@@ -289,6 +289,7 @@ export function FornecedorForm({
   moduloEmFoco,
   contatos,
   onGravar: gravarDeFora,
+  gravou = false,
 }: {
   fornecedor: Fornecedor
   readOnly?: boolean
@@ -312,6 +313,11 @@ export function FornecedorForm({
    * ainda não atende.
    */
   onGravar?: (values: Fornecedor) => void
+  /**
+   * Gravação que deu certo (#405) — a alteração PERMANECE na tela, e é este
+   * sinal que devolve o formulário ao estado limpo. Ver `CadastroForm`.
+   */
+  gravou?: boolean
 }) {
   const navigate = useNavigate()
   const [buscaCidadeOpen, setBuscaCidadeOpen] = useState(false)
@@ -333,6 +339,7 @@ export function FornecedorForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/fornecedores' })}
       readOnly={readOnly}
+      gravou={gravou}
       titulo="Cadastro de Fornecedores"
       familia="partners"
       {...(contexto ? { contexto } : {})}

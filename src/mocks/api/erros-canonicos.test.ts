@@ -34,8 +34,11 @@ function tabelaDoContrato(): Map<string, LinhaDoContrato> {
       .trim()
       .replace(/^\||\|$/g, '')
       .split('|')
-    if (celulas.length !== 4) continue
     const [tipo, status, title, quando] = celulas.map((c) => c.trim())
+    // As quatro colunas, ou a linha não é da tabela. O `continue` não é zelo:
+    // o cabeçalho da `description` tem markdown com `|` fora dela.
+    if (tipo === undefined || status === undefined || title === undefined) continue
+    if (quando === undefined) continue
     mapa.set(tipo.replace(/`/g, ''), { status, title, quando })
   }
   return mapa
@@ -80,7 +83,8 @@ function urnsEmitidasPeloMock(): Set<string> {
     }
     // A fixture: `erroCanonico('urn:…')`.
     for (const achado of fonte.matchAll(/erroCanonico\(\s*'(urn:cabinet:erro:[a-z-]+)'/g)) {
-      emitidas.add(achado[1])
+      const urn = achado[1]
+      if (urn) emitidas.add(urn)
     }
   }
   return emitidas
@@ -196,8 +200,11 @@ function tabelaGerada(): string {
 describe('docs/spring/erros.md', () => {
   it('publica a tabela gerada do contrato e da fixture', () => {
     const doc = readFileSync(DOC, 'utf8')
-    const [antes, resto] = doc.split(INICIO)
-    const [miolo, depois] = resto.split(FIM)
+    const [antes = '', resto = ''] = doc.split(INICIO)
+    // Marcador ausente é a doc mexida à mão de um jeito que a quebra: falha
+    // aqui, e não silenciosamente com a tabela fora do lugar.
+    expect(resto, `${DOC} perdeu o marcador ${INICIO}`).not.toBe('')
+    const [miolo = '', depois = ''] = resto.split(FIM)
     const esperado = `\n${tabelaGerada()}\n`
 
     if (miolo !== esperado && process.env.ATUALIZAR_DOC_DE_ERROS) {

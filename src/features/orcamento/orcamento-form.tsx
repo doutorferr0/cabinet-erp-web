@@ -1,4 +1,4 @@
-import type { PartnerDto } from '@/api/gerado'
+import type { PartnerDto, QuoteDetailDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
@@ -12,6 +12,7 @@ import {
 } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ import { data } from '@/data'
 import { useLookupOptions } from '@/data/lookups-api'
 import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
+import { AbaServicos } from '@/features/orcamento/aba-servicos'
 import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
@@ -80,12 +82,12 @@ export const orcamentoSchema = z.object({
   //
   // **MEDIDO: remover estas três linhas hoje não quebra nenhum caso.** A folha
   // exibe a revisão a partir da hidratação (`defaultValues`), e o parse do Zod
-  // só roda no `submit` — depois do qual o `Gravar` navega de volta para a
-  // listagem, então o registro podado nunca chega a ser desenhado. A declaração
-  // fica porque é ela que segura o dia em que a folha PARAR de navegar no
-  // sucesso: aí o registro pós-parse vira o que a tela mostra, e a revisão 2
-  // reapareceria como original, com 200 e sem aviso. Escrever aqui que o
-  // sintoma existe hoje seria afirmar o que a medição nega.
+  // só roda no `submit` — o registro podado vai para o corpo da escrita e não
+  // volta para o estado do formulário. A declaração fica porque é ela que
+  // segura o dia em que o registro pós-parse VIRAR o que a tela mostra: aí a
+  // revisão 2 reapareceria como original, com 200 e sem aviso. Esse dia ficou
+  // mais perto com a #405 — a alteração deixou de navegar e permanece na tela,
+  // e o que sobrevive ao `Gravar` passou a ser desenhado de novo.
   revisao: z.number(),
   revisaoDeId: z.string().nullable(),
   revisaoDeNumero: z.string().nullable(),
@@ -118,6 +120,28 @@ export const orcamentoSchema = z.object({
       maxInstallments: z.number(),
     })
     .optional(),
+  // A ABA SERVIÇOS — declarada como todo o resto que atravessa o formulário, e
+  // aqui a omissão custava dado: o Zod REMOVE o que não declara, e `paraEscrita`
+  // mandaria um `PUT` (integral) sem `serviceItems`, apagando a aba inteira do
+  // documento com 200 e sem aviso. O pedido de venda declarou a coleção antes de
+  // ter grade exatamente por isso; esta folha agora também a edita.
+  servicos: z.array(
+    z.object({
+      item: z.string(),
+      servicoId: z.string().nullable(),
+      descricao: z.string(),
+      quantidade: z.string(),
+      valorUnitarioCentavos: z.number().nullable(),
+      descontoPercentual: z.number().nullable(),
+      // Nulável de propósito: `null` herda o percentual do CADASTRO na
+      // gravação e `0` é "esta linha não paga instalador" — a distinção é do
+      // contrato, e um campo não-nulável a apagaria.
+      percentualEletricista: z.number().nullable(),
+      // Carimbo do servidor: desce, aparece na coluna e não volta no corpo.
+      eletricistaCentavos: z.number().nullable(),
+      ambiente: z.string(),
+    }),
+  ),
   itens: z.array(
     z.object({
       item: z.string(),
@@ -607,9 +631,16 @@ function AbaPrincipal() {
   )
 }
 
-/** Abas superiores não capturadas — §10. */
+/**
+ * Abas superiores não capturadas — §10.
+ *
+ * `Serviços` SAIU desta lista: ela não era ausência de captura, era ausência de
+ * grade. O contrato publica a seção inteira (`QuoteServiceItemDto` e
+ * `serviceItems` no documento) e o legado a guarda em `VendaServico` — a moldura
+ * "aguardando prints" dizia ao operador que não havia o que mostrar, num
+ * documento cujo total já dependia dela.
+ */
 const ABAS_SEM_CAPTURA = [
-  ['servicos', 'Serviços'],
   ['cliente', 'Cliente'],
   ['pagamento', 'Pagamento'],
   ['outrosDados', 'Outros Dados'],
@@ -628,7 +659,18 @@ export function OrcamentoForm({
     // recusa mostraria o mesmo desfecho de uma gravação que deu certo, que é
     // exatamente o defeito que este trecho tinha (`console.info` + navigate).
     gravar.mutate(values, {
-      onSuccess: () => void navigate({ to: '/vendas/orcamentos' }),
+      // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+      // documento novo abre o orçamento que nasceu — com o número que só o
+      // servidor sabe atribuir —, alteração permanece na tela com o toast.
+      onSuccess: posGravar<QuoteDetailDto>({
+        eraNovo: !values.id,
+        abrirDocumento: (orcamentoId) =>
+          void navigate({
+            to: '/vendas/orcamentos/$orcamentoId',
+            params: { orcamentoId },
+            replace: true,
+          }),
+      }),
     })
   }
 
@@ -640,6 +682,7 @@ export function OrcamentoForm({
       onCancelar={() => void navigate({ to: '/vendas/orcamentos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       familia="quotes"
     >
       {/* A recusa do servidor em destaque, ANTES das abas (#138): o `detail` do
@@ -654,7 +697,15 @@ export function OrcamentoForm({
         mensagem="Não foi possível gravar o orçamento."
       />
       <Tabs defaultValue="principal">
-        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
+        {/* `Serviços` entra por `adicionais` — a porta das abas REAIS, a mesma
+            que a participação do pedido usa. Ela fica ao lado de `Principal`,
+            antes das molduras sem captura: o que funciona junto do que
+            funciona. */}
+        <AbasSemCaptura
+          capturada={['principal', 'Principal']}
+          abas={ABAS_SEM_CAPTURA}
+          adicionais={[{ aba: ['servicos', 'Serviços'], conteudo: <AbaServicos /> }]}
+        >
           <AbaPrincipal />
         </AbasSemCaptura>
       </Tabs>

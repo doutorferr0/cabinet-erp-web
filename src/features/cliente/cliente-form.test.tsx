@@ -48,17 +48,17 @@ describe('tela Cliente', () => {
     expect(await screen.findByLabelText('CPF / CNPJ')).toHaveValue('12.345.678/0001-90')
   })
 
-  it('formulário grava e volta para a listagem, com o papel desta tela', async () => {
+  it('formulário grava e abre o cadastro que nasceu, com o papel desta tela', async () => {
     const { stub, chamadas } = servidorDeParceiros()
     const { router, user } = renderRoute('/cadastros/clientes/novo', stub)
 
     await user.type(await screen.findByLabelText('Nome'), 'CLIENTE TESTE')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
+    // A INCLUSÃO abre o registro que nasceu (#405) — o id é o que o servidor
+    // devolveu, e é ele que prova que a tela foi para o registro certo.
     await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
+      () => expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./),
       { timeout: 5000 },
     )
 
@@ -150,12 +150,12 @@ describe('tela Cliente', () => {
     await user.type(ie, '110055443322')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     // O que o operador digitou chegou ao corpo do `PUT`. Sem o campo na tela, a
     // IE do cliente só existia se outra tela a tivesse gravado.
@@ -187,12 +187,12 @@ describe('tela Cliente', () => {
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     // Os nomes são os do contrato, e `personType` não está aqui: o radio fica
     // no bloco obrigatório e tem teste próprio, porque é o único que traduz
@@ -221,12 +221,12 @@ describe('tela Cliente', () => {
     await user.click(screen.getByRole('radio', { name: 'JURÍDICA' }))
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
       personType: 'company',
@@ -262,12 +262,12 @@ describe('tela Cliente', () => {
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     const corpo = chamadas.find((c) => c.metodo === 'PUT')?.corpo as Record<string, unknown>
     // Cada rua no SEU endereço: o que separa os três é o prefixo do formulário,
@@ -315,12 +315,12 @@ describe('tela Cliente', () => {
     // morria antes de medir o corpo.
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     const corpo = chamadas.find((c) => c.metodo === 'PUT')?.corpo as Record<string, unknown>
     expect(corpo.businessPhone).toBe('11 3322-1200')

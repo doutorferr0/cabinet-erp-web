@@ -129,6 +129,9 @@ function ProfissionalEditPage() {
         partnerId={isNovo ? null : profissionalId}
         aviso={aviso}
         onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+        // A alteração PERMANECE na tela (#405): é este sinal que devolve o
+        // formulário ao estado limpo depois que o servidor confirmou.
+        gravou={isNovo ? incluir.isSuccess : gravar.isSuccess}
       />
 
       {/* O perfil de participação pende do CADASTRO, não do formulário: as

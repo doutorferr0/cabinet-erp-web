@@ -70,12 +70,12 @@ describe('tela Fornecedor', () => {
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
     // A volta espera o PUT E a reconsulta da listagem (`invalidateQueries`).
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/fornecedores\/./)
 
     const put = chamadas.find((c) => c.metodo === 'PUT')
     // `PUT` substitui o registro inteiro: `code`, `paymentTerms`, os papéis e —
@@ -170,12 +170,12 @@ describe('tela Fornecedor', () => {
     await user.type(observacao, 'Entrega só com agendamento.')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/fornecedores\/./)
 
     expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
       notes: 'Entrega só com agendamento.',
@@ -393,10 +393,10 @@ describe('tela Fornecedor', () => {
     await user.type(await screen.findByLabelText('Razão Social'), 'NOVA LTDA')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
+    // A INCLUSÃO abre o registro que nasceu (#405) — o id é o que o servidor
+    // devolveu, e é ele que prova que a tela foi para o registro certo.
     await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
-      },
+      () => expect(router.state.location.pathname).toMatch(/^\/cadastros\/fornecedores\/./),
       { timeout: 5000 },
     )
 
@@ -414,7 +414,7 @@ describe('tela Fornecedor', () => {
 
   // O 409 de documento repetido não é beco: o cadastro existe no GRUPO e falta
   // esta empresa se ligar a ele. Criar outro duplicaria o mesmo CNPJ.
-  it('documento repetido oferece vincular, e vincular volta para a listagem', async () => {
+  it('documento repetido oferece vincular, e vincular abre o cadastro do grupo', async () => {
     const OUTRO = '11111111-1111-4111-8111-111111111111'
     const { stub, chamadas } = servidorDeParceiros([parceiro()], { documentoRepetido: OUTRO })
     const { router, user } = renderRoute('/cadastros/fornecedores/novo', stub)
@@ -430,10 +430,10 @@ describe('tela Fornecedor', () => {
 
     await user.click(vincular)
 
+    // A INCLUSÃO abre o registro que nasceu (#405) — o id é o que o servidor
+    // devolveu, e é ele que prova que a tela foi para o registro certo.
     await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
-      },
+      () => expect(router.state.location.pathname).toMatch(/^\/cadastros\/fornecedores\/./),
       { timeout: 5000 },
     )
     expect(chamadas.some((c) => c.caminho === `/api/partners/${OUTRO}/link`)).toBe(true)

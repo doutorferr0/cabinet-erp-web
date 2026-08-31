@@ -589,9 +589,7 @@ describe('AppShell', () => {
 
       await user.click(gatilho)
 
-      expect(
-        await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/),
-      ).toBeInTheDocument()
+      expect(await screen.findByPlaceholderText(/nome\/número de um registro/)).toBeInTheDocument()
     })
 
     it('Ctrl+K abre a paleta de qualquer lugar — conveniência, não requisito', async () => {
@@ -601,9 +599,7 @@ describe('AppShell', () => {
 
       await user.keyboard('{Control>}k{/Control}')
 
-      expect(
-        await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/),
-      ).toBeInTheDocument()
+      expect(await screen.findByPlaceholderText(/nome\/número de um registro/)).toBeInTheDocument()
     })
 
     it('a paleta navega, e o comando da tela atual vem primeiro', async () => {
@@ -611,7 +607,7 @@ describe('AppShell', () => {
       const user = userEvent.setup()
       await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
 
-      await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/)
+      await screen.findByPlaceholderText(/nome\/número de um registro/)
       expect(screen.getByText('Nesta tela')).toBeInTheDocument()
 
       await user.click(await screen.findByRole('menuitem', { name: /Novo cliente/ }))
@@ -637,7 +633,7 @@ describe('AppShell', () => {
       const { router } = setup('/cadastros/clientes')
       const user = userEvent.setup()
       await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
-      await screen.findByPlaceholderText(/Ir para uma tela ou incluir um registro/)
+      await screen.findByPlaceholderText(/nome\/número de um registro/)
 
       await user.click(await screen.findByRole('menuitem', { name: /Mapeamento de Tabelas/ }))
 

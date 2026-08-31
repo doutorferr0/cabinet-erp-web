@@ -45,8 +45,12 @@ import { useState } from 'react'
  * mesma regra do padrão 9 (visão que não é tabela pede o conjunto inteiro e
  * declara o corte).
  */
-export function QuadroDeCargas() {
-  const [orderId, setOrderId] = useState<string | null>(null)
+export function QuadroDeCargas({ pedidoInicial = null }: { pedidoInicial?: string | null } = {}) {
+  // `pedidoInicial` é o `?pedido=` da rota — quem chega do documento de venda já
+  // escolheu, e refazer a escolha aqui perderia o pedido no caminho. É estado
+  // INICIAL de propósito: depois disso quem manda é o clique na fila, senão a
+  // URL travaria a escolha e o quadro deixaria de ser um quadro.
+  const [orderId, setOrderId] = useState<string | null>(pedidoInicial)
   const fila = useFilaDeSeparacao()
 
   const linhas = fila.data?.rows ?? []

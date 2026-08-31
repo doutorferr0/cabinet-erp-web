@@ -1,10 +1,11 @@
-import type { OrderDto, PartnerDto } from '@/api/gerado'
+import type { OrderDto, PartnerDto, PurchaseRequestDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { DateField, TextareaField } from '@/components/cabinet/form-controls'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
@@ -425,8 +426,14 @@ export function PedidoCompraForm({
   function onGravar(valores: PedidoNoFormulario) {
     // A navegação é do SUCESSO: sair da tela depois de uma recusa mostraria o
     // mesmo desfecho de uma gravação que deu certo.
+    // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+    // documento novo abre o pedido que nasceu, alteração permanece na tela.
     gravar.mutate(doFormulario(valores), {
-      onSuccess: () => void navigate({ to: '/compras/pedidos' }),
+      onSuccess: posGravar<PurchaseRequestDto>({
+        eraNovo: !pedido.id,
+        abrirDocumento: (pedidoId) =>
+          void navigate({ to: '/compras/pedidos/$pedidoId', params: { pedidoId }, replace: true }),
+      }),
     })
   }
 
@@ -440,6 +447,7 @@ export function PedidoCompraForm({
       onCancelar={() => void navigate({ to: '/compras/pedidos' })}
       readOnly={readOnly || cancelado}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       familia="purchases"
     >
       <ErroDeGravacao

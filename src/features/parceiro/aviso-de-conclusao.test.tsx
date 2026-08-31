@@ -1,7 +1,7 @@
 import { limparAvisos } from '@/lib/avisos'
 import { parceiro, servidorDeParceiros } from '@/test/parceiros'
 import { acaoNaLinha, renderRoute } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 afterEach(limparAvisos)
@@ -16,7 +16,7 @@ afterEach(limparAvisos)
  * navegação e a região de avisos juntas, na ordem real.
  */
 describe('aviso de conclusão', () => {
-  it('gravar volta para a listagem DIZENDO que gravou', async () => {
+  it('gravar DIZ que gravou, sem trocar de tela', async () => {
     const linha = parceiro()
     const { stub } = servidorDeParceiros([linha])
     // Pelo ID e não pelo `Alterar` da listagem: o que está sob teste é o
@@ -28,13 +28,12 @@ describe('aviso de conclusão', () => {
     await user.type(razaoSocial, 'STELLA NOVA LTDA')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/fornecedores')
-    })
-    // A listagem que recebe o operador é idêntica à que ele viu antes de
-    // editar: sem o aviso, o clique no `Gravar` respondia com uma troca de tela
-    // e mais nada.
+    // O aviso é a ÚNICA resposta ao clique desde a #405: a alteração permanece
+    // no documento, e a tela depois de gravar é igual à de antes. Enquanto o
+    // `Gravar` trocava de tela, a troca podia passar por resposta — e passava,
+    // ainda que fosse a mesma coisa que o `Cancelar` fazia.
     expect(await screen.findByText('Alterações gravadas.')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe(`/cadastros/fornecedores/${linha.id}`)
   })
 
   it('desativar diz o que aconteceu, e que o cadastro continua lá', async () => {

@@ -22,11 +22,13 @@ import type { OrigemDosDados } from '@/data/provider'
  *
  * ## Por que aparece SEMPRE, inclusive no site público
  *
- * A `CoberturaDoColaborador` só acende com `VITE_API_PROXY`, e está certa: o
- * que ela denuncia (duas listas de pessoas divergindo) só existe quando há
- * backend real. Este aviso é o oposto — o ambiente onde o defeito foi visto é
- * justamente o 100% mock, que é o que `cabinetonline.cc` serve. Esconder no
- * mock seria esconder exatamente onde dói.
+ * Aviso que depende do ambiente já existiu aqui perto: a `CoberturaDoColaborador`
+ * só acendia com `VITE_API_PROXY`, porque o que ela denunciava (duas listas de
+ * pessoas divergindo) só existia com backend real — e deixou de depender do
+ * proxy na #402, quando passou a falar de uma regra de PERMISSÃO, que vale nos
+ * dois ambientes. Este aviso é o oposto do primeiro caso: o ambiente onde o
+ * defeito foi visto é justamente o 100% mock, que é o que `cabinetonline.cc`
+ * serve. Esconder no mock seria esconder exatamente onde dói.
  *
  * Some sozinho: quem decide é `provider.origem`, e ela sai do registry quando o
  * recurso vira HTTP. Ninguém precisa lembrar de apagar o aviso das telas.

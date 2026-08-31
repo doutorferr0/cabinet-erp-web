@@ -631,10 +631,16 @@ export function useGravarProduto() {
   return useMutation({
     mutationFn: gravarProduto,
     onSuccess: (gravado) => {
-      // Ver `lib/avisos.ts` (#201): o `Gravar` navega de volta para a listagem,
-      // e sem isto a resposta ao clique era uma troca de tela e mais nada.
+      // Ver `lib/avisos.ts` (#201): sem isto a resposta ao clique era uma troca
+      // de tela e mais nada.
       avisar('Produto gravado.', gravado.description ?? undefined)
-      return Promise.all([
+      // `void`, e não `return` (#405). Devolver a promise fazia o TanStack Query
+      // SEGURAR o `onSuccess` da tela — o que decide o destino — até os dois
+      // refetches responderem. Como um deles é o detalhe ABERTO, a troca de tela
+      // passava a durar o tempo do servidor: medido no navegador, `PUT` em
+      // 718 ms e a tela trocando só em 1000 ms. Quem invalida não precisa ser
+      // esperado; o cache se refaz sozinho.
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: ['produtos'] }),
         queryClient.invalidateQueries({ queryKey: ['produto', gravado.id] }),
       ])

@@ -1,6 +1,6 @@
 import { type NavItem, gruposVisiveis, itemDaRota } from '@/app/navigation'
 import type { RecursoDaEmpresa } from '@/data/recursos-da-empresa'
-import type { LucideIcon } from 'lucide-react'
+import { Keyboard, type LucideIcon } from 'lucide-react'
 
 /**
  * COMANDOS DA PALETA — montados da navegação, não de uma tabela paralela.
@@ -19,10 +19,16 @@ import type { LucideIcon } from 'lucide-react'
  * pergunta é a própria listagem. Um comando que abre outra tela para escolher o
  * alvo é a listagem com passos a mais.
  *
- * **Não busca REGISTRO.** "Ir para o cliente ANDRÉ BATALHA" exigiria consulta ao
- * servidor a cada tecla, em todo recurso ao mesmo tempo, e o contrato não tem
- * busca global — cada recurso tem a sua listagem. Prometer isso aqui daria uma
- * caixa que às vezes acha e às vezes não, sem o operador saber por quê.
+ * **Não monta a busca de REGISTRO — ela existe, e vem de outro lugar.** "Ir para
+ * o cliente ANDRÉ BATALHA" é `useBuscaDeRegistro` (`src/data/busca-de-registro.ts`),
+ * que pergunta o `q` das quatro listagens ao servidor. Este arquivo continua
+ * sendo só o que se monta SEM rede, e a divisão é o que deixa a paleta abrir
+ * cheia antes de qualquer resposta chegar.
+ *
+ * O motivo que ficou escrito aqui até a #362 — "o contrato não tem busca
+ * global" — estava vencido: rota única de fato não há, mas o `q` de cada
+ * listagem já casa nome, código, documento e número, e nenhuma delas precisou
+ * de caminho novo no contrato.
  */
 export type TipoDeComando = 'navegar' | 'incluir'
 
@@ -51,6 +57,29 @@ export interface Comando {
 export const GRUPO_NESTA_TELA = 'Nesta tela'
 export const GRUPO_IR_PARA = 'Ir para'
 export const GRUPO_INCLUIR = 'Incluir'
+export const GRUPO_AJUDA = 'Ajuda'
+
+/**
+ * O mapa de atalhos, alcançável de qualquer tela.
+ *
+ * **Entra por aqui e não pela barra lateral** porque a barra é o mapa dos
+ * MÓDULOS do negócio — vendas, compras, estoque — e ajuda não é um deles.
+ * Enfiá-la num grupo de módulo daria à referência de teclado o mesmo peso do
+ * cadastro de produto na primeira leitura da barra.
+ *
+ * Fixo e sem `recurso`: o mapa vale para toda empresa, e a tela que o operador
+ * procura quando a tecla não fez o que ele esperava não pode depender de a
+ * empresa ter contratado alguma coisa.
+ */
+const AJUDA_DE_ATALHOS: Comando = {
+  id: 'ir:/ajuda/atalhos',
+  titulo: 'Atalhos do teclado',
+  descricao: 'A tecla de cada ação, e a do sistema antigo que ela substitui.',
+  grupo: GRUPO_AJUDA,
+  url: '/ajuda/atalhos',
+  icon: Keyboard,
+  tipo: 'navegar',
+}
 
 /**
  * O verbo do `Incluir` acompanha o SUBSTANTIVO da tela, no singular.
@@ -133,5 +162,7 @@ export function comandosDaPaleta(
 
   const navegar = itens.map((item) => comandoDeNavegacao(item, GRUPO_IR_PARA))
 
-  return [...nestaTela, ...incluir, ...navegar]
+  // A ajuda vai por último de propósito: é a que se procura pelo nome, nunca a
+  // que se quer ver antes das dezoito telas ao abrir a paleta em branco.
+  return [...nestaTela, ...incluir, ...navegar, AJUDA_DE_ATALHOS]
 }

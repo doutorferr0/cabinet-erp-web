@@ -2,6 +2,7 @@ import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { data } from '@/data'
 import { ParticipacaoDoPedido } from '@/features/vendas/participacao-do-pedido'
 import { PedidoDeVendaForm } from '@/features/vendas/pedido-venda-form'
+import { SituacaoDoPedido } from '@/features/vendas/situacao-do-pedido'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -34,6 +35,11 @@ function PedidoDeVendaEditPage() {
               mesmo arranjo que o orçamento usa para o painel de atividades.
               Em `Incluir` não há id a que pendurar participação. */}
           {isNovo ? null : <ParticipacaoDoPedido pedidoId={pedidoId} />}
+          {/* A situação da entrega monta pelo mesmo motivo e com a mesma
+              regra: é leitura de `GET /api/orders/{id}/fulfillment`, tem
+              caminho próprio e não entra no `PUT` do pedido. Em `Incluir` não
+              há id, e não há peça separada de documento que ainda não existe. */}
+          {isNovo ? null : <SituacaoDoPedido pedidoId={pedidoId} />}
         </>
       )}
     </TelaDeDocumento>

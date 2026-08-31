@@ -43,6 +43,7 @@ import {
   semSessao,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
+import { handlersDeRecebimento } from './recebimento'
 import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
@@ -961,6 +962,15 @@ export const handlers = [
   // handler nenhum — e também FORA da passagem, porque o `cabinet-erp-api`
   // responde 501 nelas. Compras não tinha resposta em ambiente nenhum.
   ...handlersDeCompras,
+
+  // ---------------- RECEBIMENTO DE COMPRA (G3) ----------------
+  // A nota do fornecedor virando entrada no estoque. Arquivo próprio de
+  // handlers, ESTADO compartilhado com compras (`estadoDeCompras()`): a grade do
+  // recebimento confronta a linha da ordem, e `PurchaseOrderItemDto.quantityReceived`,
+  // `qtyOnOrder` e a previsão de chegada saem daqui. O que destravou o mock foi o
+  // vínculo por linha publicado na #354 — sem ele a divergência seria calculada
+  // contra número digitado, que era o motivo escrito na guarda.
+  ...handlersDeRecebimento,
 
   // ---------------- O BLOCO FÍSICO DA VENDA (G4) ----------------
   // Liberar, separar, o romaneio e a situação do pedido. As dez operações

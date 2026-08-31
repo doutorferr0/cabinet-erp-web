@@ -6,9 +6,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
 import {
+  CONGELAMENTO_DO_NODE,
+  EPOCA_DO_SERVIDOR,
   PROXIMO_PASSO,
   ROTAS_DO_BACKEND,
   ROTAS_NO_MOCK,
+  avisoDaEpoca,
   avisoDeSemContrato,
   declararPassagem,
   familia,
@@ -441,6 +444,7 @@ describe('passthrough por rota', () => {
           caminho: '/api/quotes/{id}',
           motivo: '501 de mentira, para o teste',
           natureza: 'sem-handler',
+          servidor: 'node-congelado',
         },
       ],
     )
@@ -504,12 +508,14 @@ describe('passthrough por rota', () => {
         caminho: '/api/cost-profiles',
         motivo: 'publicada aqui, e o api ainda não rodou o sync — 404 lá',
         natureza: 'sem-contrato',
+        servidor: 'node-congelado',
       },
       {
         metodo: 'get',
         caminho: '/api/purchase-orders',
         motivo: '501 de mentira, para o teste',
         natureza: 'sem-handler',
+        servidor: 'node-congelado',
       },
     ])
 
@@ -608,6 +614,139 @@ describe('passthrough por rota', () => {
         )
       }
     }
+  })
+
+  it('toda rota mockada declara a ÉPOCA do servidor que falta', () => {
+    // `natureza` diz o que o api RESPONDE; `servidor` diz se ainda há alguém do
+    // outro lado para ouvir. Enquanto o Node avançava as duas eram a mesma
+    // frase, e por isso o campo não existia. O congelamento de 28/08 as partiu:
+    // o 501 continua sendo o que o servidor responde, e o handler que ele pede
+    // não vai ser escrito — o repositório é implementação de referência agora.
+    for (const r of ROTAS_NO_MOCK) {
+      expect(
+        ['node-congelado', 'spring-pendente'],
+        `${r.metodo} ${r.caminho} com servidor fora do vocabulário`,
+      ).toContain(r.servidor)
+    }
+  })
+
+  it('o recenseamento do congelamento é FECHADO — rota nova nasce spring-pendente', () => {
+    // ESTA É A GUARDA DO ENUNCIADO, e ela é um recenseamento e não uma regra
+    // porque a regra não tem como ser verificada: "nasceu antes do dia X" não
+    // está escrito em lugar nenhum do código. O que está é a LISTA de quem
+    // nasceu antes — congelada aqui, no dia do congelamento.
+    //
+    // O efeito é o pedido: entrada nova declarada `node-congelado` não está no
+    // recenseamento e reprova, nomeada. Quem a escreveu tem duas saídas, e as
+    // duas são honestas: declarar `spring-pendente`, que é o que ela é; ou, se
+    // for mesmo lacuna antiga que ninguém tinha declarado, acrescentá-la aqui
+    // com o motivo — o mesmo custo que `natureza` cobra, e pela mesma razão.
+    //
+    // **Não é lista de tarefas e não deve encolher sozinha.** Uma rota sai
+    // daqui quando SAI de `ROTAS_NO_MOCK`, isto é, quando algum servidor passa
+    // a respondê-la. Apagar linha para "passar a guarda" é apagar a fronteira
+    // entre as duas épocas, que é a única coisa que este caso protege.
+    const CONGELADAS_EM_28_08: readonly string[] = [
+      'get /api/goods-receipts',
+      'post /api/goods-receipts',
+      'get /api/goods-receipts/{id}',
+      'put /api/goods-receipts/{id}',
+      'post /api/goods-receipts/{id}/check',
+      'post /api/goods-receipts/{id}/post',
+      'get /api/financial-titles',
+      'post /api/financial-titles',
+      'get /api/financial-titles/{id}',
+      'put /api/financial-titles/{id}',
+      'post /api/financial-titles/{id}/cancel',
+      'get /api/financial-installments',
+      'post /api/financial-installments/{id}/settlements',
+      'post /api/financial-settlements/batch',
+      'get /api/cash-movements',
+      'post /api/cash-movements',
+      'post /api/cash-movements/{id}/reconcile',
+      'post /api/cash-transfers',
+      'get /api/bank-accounts',
+      'get /api/cash-registers',
+      'get /api/payment-modes',
+      'post /api/employees/{id}/reset-password',
+      'post /api/employees/{id}/invite',
+      'post /auth/forgot-password',
+      'post /auth/credential-token',
+      'post /auth/set-password',
+      'get /api/platform/support-grants',
+      'post /api/platform/support-grants',
+      'get /api/platform/support-grants/{id}',
+      'post /api/platform/support-grants/{id}/revoke',
+      'get /api/platform/support-grants/{id}/audit',
+      'patch /api/projects/{projectId}/plan/items/{itemId}',
+      'get /api/employees/{id}/links',
+      'get /api/tenants',
+      'post /api/tenants',
+      'get /api/tenants/{id}',
+      'put /api/tenants/{id}',
+    ]
+
+    const declaradas = ROTAS_NO_MOCK.filter((r) => r.servidor === 'node-congelado').map(
+      (r) => `${r.metodo} ${r.caminho}`,
+    )
+    expect(
+      declaradas,
+      `rota fora do recenseamento de ${CONGELAMENTO_DO_NODE}: se ela nasceu depois, é spring-pendente — o Node não fecha mais lacuna`,
+    ).toEqual(CONGELADAS_EM_28_08)
+  })
+
+  it('o console DIZ a época ANTES do próximo passo — que aponta para repo parado', () => {
+    // A ordem é o conteúdo. `PROXIMO_PASSO` manda escrever handler no
+    // `servidor.ts` do api, e `avisoDeSemContrato` manda rodar `sync:contract`
+    // lá: os dois eram certos enquanto o Node andava. Lidos sem o enquadramento
+    // da época, mandam abrir PR num repositório congelado — e é exatamente a
+    // classe de defeito que fez `natureza` nascer, com a data trocada.
+    const ditas: string[] = []
+    declararPassagem('http://localhost:3000', (...a) => ditas.push(a.join(' ')))
+
+    const iEpoca = ditas.findIndex((d) => d.includes('esperam o SPRING'))
+    expect(iEpoca, 'o console não disse a época de nenhuma lacuna').toBeGreaterThan(-1)
+    expect(ditas[iEpoca + 1]).toContain(EPOCA_DO_SERVIDOR['node-congelado'])
+
+    const iPasso = ditas.findIndex((d) => d.includes(PROXIMO_PASSO['sem-handler']))
+    expect(iPasso, 'o console não imprimiu passo nenhum por natureza').toBeGreaterThan(-1)
+    expect(iEpoca, 'a época saiu DEPOIS do passo que ela reenquadra').toBeLessThan(iPasso)
+  })
+
+  it('a rota SEM SERVIDOR NENHUM sai nomeada — nenhuma medição a alcança', () => {
+    // Com lista de MENTIRA, e pela razão de sempre: hoje as 37 entradas são
+    // anteriores ao congelamento, então sobre as constantes reais este caso
+    // ficaria verde sem exercitar nada. Guarda que não pode ficar vermelha não
+    // mede nada — e esta mede o dia em que a primeira rota pós-Spring nascer.
+    //
+    // A `node-congelado` NÃO sai nomeada, e a assimetria é o argumento: ela tem
+    // medição contra o Node e aparece no relatório por família. A
+    // `spring-pendente` não aparece em medição alguma — nem 501 nem 404 dizem
+    // algo sobre ela — e o console é o único lugar onde ela existe.
+    const linhas = avisoDaEpoca([
+      {
+        metodo: 'post',
+        caminho: '/api/warranties',
+        motivo: 'publicada depois do congelamento — nenhum servidor a conheceu',
+        natureza: 'sem-contrato',
+        servidor: 'spring-pendente',
+      },
+      {
+        metodo: 'get',
+        caminho: '/api/goods-receipts',
+        motivo: '501 de mentira, para o teste',
+        natureza: 'sem-handler',
+        servidor: 'node-congelado',
+      },
+    ])
+
+    const tudo = linhas.join('\n')
+    expect(linhas[0]).toContain('2 rota(s) no MSW esperam o SPRING')
+    expect(linhas[0]).toContain('1 nasceram com o Node de alvo, 1 depois de ele parar')
+    expect(tudo).toContain('sem servidor nenhum: POST   /api/warranties')
+    expect(tudo).not.toContain('/api/goods-receipts')
+    // Lista vazia não vira cabeçalho órfão: sem lacuna, sem aviso.
+    expect(avisoDaEpoca([])).toEqual([])
   })
 
   it('toda rota da lista existe no contrato — typo aqui seria silencioso', () => {

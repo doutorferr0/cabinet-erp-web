@@ -25,6 +25,7 @@ import { handlersDoCrm } from './crm'
 import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
 import { handlersDeEmpresas } from './empresas'
 import { handlersDeEntrega } from './entrega'
+import { erroCanonico } from './erros-canonicos'
 import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
@@ -36,7 +37,6 @@ import { handlersDePrecos } from './precos'
 import {
   TIPO,
   camposInvalidos,
-  conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
@@ -407,7 +407,13 @@ export const handlers = [
       ])
     }
     if (store.produtos.some((p) => p.code === corpo.code)) {
-      return conflito(`Já existe produto com o código ${corpo.code}.`, TIPO.codigoJaCadastrado)
+      // O status e a URN saem da fixture; a frase é a específica, porque ela
+      // diz QUAL código colidiu — é o caso em que o ponto de chamada sabe mais.
+      return erroCanonico(
+        'urn:cabinet:erro:codigo-ja-cadastrado',
+        {},
+        `Já existe produto com o código ${corpo.code}.`,
+      )
     }
     const produto = {
       id: novoId('prod'),
@@ -433,8 +439,16 @@ export const handlers = [
     const produto = store.produtos.find((p) => p.id === params.id)
     if (!produto) return naoEncontrado('Produto não encontrado.')
     const corpo = (await request.json()) as ProductWriteRequest
+    // A MESMA validação do POST, e agora na mesma forma. Ela recusava com
+    // `about:blank` e uma frase no topo enquanto o POST mandava
+    // `campos-invalidos` com `fields[]`: o operador que errasse o código via o
+    // erro no controle ao incluir e uma frase solta ao alterar, e o Spring leria
+    // as duas como se fossem duas regras.
     if (!corpo.code || !corpo.description) {
-      return problemaJson(400, 'Código e descrição são obrigatórios.')
+      return camposInvalidos([
+        ...(corpo.code ? [] : [{ path: 'code', message: 'Informe o código do produto.' }]),
+        ...(corpo.description ? [] : [{ path: 'description', message: 'Informe a descrição.' }]),
+      ])
     }
     // PUT substitui o registro inteiro — campo ausente APAGA, não preserva.
     produto.code = corpo.code
@@ -597,7 +611,7 @@ export const handlers = [
     if (existente) {
       // O 409 carrega o membro de extensão que a tela usa para oferecer o
       // vínculo — é a semântica do backend, não invenção do mock.
-      return conflito('Documento já cadastrado no grupo.', TIPO.documentoJaCadastrado, {
+      return erroCanonico('urn:cabinet:erro:documento-ja-cadastrado', {
         existingPartnerId: existente.id,
       })
     }

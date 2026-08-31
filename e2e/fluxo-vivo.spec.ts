@@ -202,8 +202,12 @@ test('login → parceiro → produto → orçamento → pedido, contra o Postgre
     // Custou três execuções descobrir por quê: depois de gravar, o app ora
     // parava na listagem, ora seguia para o documento — e um teste preso à
     // navegação reprova por essa diferença sem ter nada a dizer sobre o que foi
-    // gravado. O 201 é do servidor e não tem duas leituras; o `id` que ele
-    // devolve é o que o Postgres gerou, e é ele que os passos seguintes usam.
+    // gravado. **A #405 achou a causa e a fechou** (o destino virou regra única:
+    // inclusão abre o documento que nasceu, alteração permanece), então prender
+    // este passo à navegação voltou a ser possível. Continua não sendo o que ele
+    // faz: o 201 é do servidor e não tem duas leituras, o `id` que ele devolve é
+    // o que o Postgres gerou, e é ele que os passos seguintes usam — asserir a
+    // url provaria menos, e sobre outra coisa.
     const gravou = esperarEscrita(page, '/api/partners')
     await page.getByRole('button', { name: 'Gravar' }).click()
     const criado = (await (await gravou).json()) as { id: string }

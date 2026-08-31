@@ -128,8 +128,10 @@ describe('tela Orçamento', () => {
     })
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
+    // A INCLUSÃO abre o orçamento que nasceu (#405) — a numeração é do servidor,
+    // e ir para o documento é o que a põe à vista.
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/vendas/orcamentos')
+      expect(router.state.location.pathname).toMatch(/^\/vendas\/orcamentos\/./)
     })
   })
 

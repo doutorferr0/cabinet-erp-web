@@ -44,6 +44,23 @@ import contrato from '../../contracts/openapi-v1.json'
  * escrita de DEPÓSITO (`CreateStockLocation`/`UpdateStockLocation`) está no
  * contrato desde a #291 e nenhuma tela o chama. Está na tabela abaixo com o
  * motivo, e não escondido.
+ *
+ * ## A segunda ausência que este caso vigia: a CONTAGEM (#446)
+ *
+ * A tela de inventário existe (`src/features/estoque/inventario.tsx`) e o ciclo
+ * dela é abrir por depósito → contar → aplicar. **Só o último passo tem
+ * operação**: o ajuste é `CreateStockMovement` com o `delta` da diferença. Abrir
+ * a folha, acrescentar item e digitar o contado não têm caminho no contrato —
+ * não há `/api/stock-counts` nem nada parecido —, e por isso vivem no
+ * navegador, marcados `spring-pendente` em `src/data/inventario-api.ts`.
+ *
+ * Ao contrário da transferência, aqui a ausência não impediu a tela: um ajuste
+ * é UM movimento, e um movimento é atômico do lado do servidor. O que se perde é
+ * a folha sobreviver ao recarregar, ser vista por outro operador e deixar
+ * histórico — e a tela avisa isso ao operador em vez de fingir que gravou.
+ *
+ * O caso abaixo é o que reprova no dia em que a contagem ganhar operação: é a
+ * hora de trocar o corpo de `inventario-api.ts` por chamadas de verdade.
  */
 
 type Caminhos = Record<string, Record<string, { operationId?: string }>>

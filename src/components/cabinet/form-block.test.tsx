@@ -26,19 +26,24 @@ describe('FormBlock', () => {
     expect(fieldset?.className).not.toContain('--hard-2')
   })
 
-  it('o título é `.t-bloco` e o `<legend>` continua nomeando o grupo', () => {
+  it('o título é um `h3` de verdade, e é ele que nomeia o grupo', () => {
     render(<FormBlock titulo="Transportadora">conteúdo</FormBlock>)
 
-    // Um nome, dois papéis: `<legend>` (sr-only) dá o nome acessível ao
-    // `<fieldset>`; o texto visível é o degrau tipográfico.
+    // Um texto, um papel. O `<legend class="sr-only">` da 1.7 saiu: ao lado de
+    // um `<h3>` com o mesmo texto ele diria o nome duas vezes, e esconder o h3
+    // com `aria-hidden` para evitar isso deixaria um heading mudo — que é o que
+    // `a11y/useHeadingContent` reprova, e com razão: quem navega por títulos
+    // não acharia o bloco.
     const grupo = screen.getByRole('group', { name: 'Transportadora' })
-    expect(grupo.querySelector('legend')?.className).toContain('sr-only')
-    const visivel = grupo.querySelector('[aria-hidden="true"]')
-    expect(visivel?.className).toContain('t-bloco')
-    // O nome do bloco perdeu a caixa: `--t-rotulo` (e o título) nunca tem
-    // borda, fundo nem contorno próprio.
-    expect(visivel?.className).not.toContain('border')
-    expect(visivel?.className).not.toContain('bg-')
+    const titulo = screen.getByRole('heading', { name: 'Transportadora' })
+    expect(titulo.tagName).toBe('H3')
+    expect(titulo.className).toContain('t-bloco')
+    expect(grupo).toHaveAttribute('aria-labelledby', titulo.id)
+    expect(grupo.querySelector('legend')).toBeNull()
+    // O nome do bloco não tem caixa: título e `--t-rotulo` nunca têm borda,
+    // fundo nem contorno próprio.
+    expect(titulo.className).not.toContain('border')
+    expect(titulo.className).not.toContain('bg-')
   })
 
   it('`legend` continua aceito — vinte telas montam o bloco assim', () => {
@@ -48,12 +53,13 @@ describe('FormBlock', () => {
 
   // A transcrição §2 registra moldura sem nome ("Bloco separado por moldura"):
   // o compartimento existe mesmo quando não há legenda para citar.
-  it('sem nome, mantém o card e não renderiza <legend> vazio', () => {
+  it('sem nome, mantém o card e não inventa título vazio', () => {
     render(<FormBlock>conteúdo</FormBlock>)
 
     const fieldset = screen.getByText('conteúdo').closest('fieldset')
     expect(fieldset?.className).toContain('[border-color:var(--n-300)]')
-    expect(fieldset?.querySelector('legend')).toBeNull()
+    expect(fieldset?.querySelector('h3')).toBeNull()
+    expect(fieldset).not.toHaveAttribute('aria-labelledby')
   })
 
   it('`acoes` entra à direita do título, em `.t-rotulo`', () => {

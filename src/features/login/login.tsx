@@ -102,11 +102,11 @@ export function LoginTela() {
           <div className="flex items-baseline justify-between gap-3">
             <Link
               to="/esqueci-senha"
-              className="t-ui text-[color:var(--main-text)] underline-offset-4 hover:underline"
+              className="t-ui shrink-0 text-[color:var(--main-text)] underline-offset-4 hover:underline"
             >
               Esqueci a senha
             </Link>
-            <span className="t-meta">Precisa de acesso? Fale com o administrador</span>
+            <span className="t-meta text-right">Precisa de acesso? Fale com o administrador</span>
           </div>
         </form>
       </Form>

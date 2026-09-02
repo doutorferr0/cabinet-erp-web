@@ -18,6 +18,12 @@ import { Ornamento } from '@/components/cabinet/ornamento'
  * A bancada some abaixo de `lg`: em tela estreita ela empurraria o card para
  * fora da dobra, e o card é a tarefa.
  *
+ * **O claim não diz "orçamento", e não é escolha de texto:** a Gambarino que a
+ * fundação trouxe renderiza a cedilha VAZIA — "orçamento" sai "orcamento", e o
+ * browser não faz fallback porque o glifo existe, só não tem o sinal. Medido em
+ * captura 3× nos dois temas; reportado na #469, que é a dona da fonte. Enquanto
+ * durar, título em Gambarino evita palavra com ç.
+ *
  * §Hierarquia: DOIS Gambarinos, e são os dois permitidos — `t-display` no claim
  * (a régua nomeia "claim do login" como uso dele) e `t-registro` no título do
  * card. A fronteira bancada › folha é UMA hairline vertical, sem sombra por
@@ -58,16 +64,15 @@ export function PaginaDeAuth({
             distância entre eles é gap — irmão não carrega margem própria. */}
         <div className="relative mt-auto flex flex-col gap-6">
           <h2 className="t-display max-w-[26ch]">
-            Do orçamento à entrega,{' '}
-            {/* O grifo é FUNDO, e baixo (62%–92%): texto em chartreuse reprova
-                contraste, e faixa cheia apagaria a linha de base. */}
-            <em
-              className="box-decoration-clone not-italic"
-              style={{
-                backgroundImage:
-                  'linear-gradient(transparent 62%, var(--main) 62%, var(--main) 92%, transparent 92%)',
-              }}
-            >
+            Do pedido à entrega,{' '}
+            {/* O grifo é FUNDO com tinta por cima, e não texto colorido: em
+                chartreuse o texto reprova contraste. O mockup risca só a faixa
+                baixa (62%–92%), e no CLARO isso funciona — no ESCURO o claim é
+                claro e some no trecho riscado (medido em captura). `--main-fg`
+                é o token que existe justamente para "tinta sobre chartreuse", e
+                é preto nos dois temas: com a faixa cheia ele vale para o glifo
+                inteiro, e a palavra fica legível nos dois. */}
+            <em className="box-decoration-clone rounded-[2px] bg-[var(--main)] px-1 text-[color:var(--main-fg)] not-italic">
               num sistema só.
             </em>
           </h2>
@@ -88,7 +93,7 @@ export function PaginaDeAuth({
             // Tracejado, e não hairline cheia: a nota não é uma seção do card,
             // é um recado sobre o ambiente — a linha diz isso sem legenda.
             <p className="t-rotulo border-t border-dashed border-[color:var(--n-200)] pt-3">
-              ambiente de demonstração · dados fictícios
+              ambiente de demonstração
             </p>
           )}
         </div>

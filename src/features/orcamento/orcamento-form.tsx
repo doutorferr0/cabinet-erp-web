@@ -440,7 +440,10 @@ function AbaPrincipal() {
 
         {/* r5: nota de rodapé fala na voz editorial (serifa itálica) — degrau
             tipográfico das referências para o que é conselho, não dado. */}
-        <p className="font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic">
+        {/* A nota é AJUDA, e ajuda tem um degrau só: `--t-meta`. Antes vinha
+            em serifa de 15px — voz editorial que a escala 2.0 não tem, e
+            `font-size` literal que a régua da rodada proíbe. */}
+        <p className="t-meta italic">
           Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.
         </p>
       </DocumentoBloco>

@@ -99,7 +99,7 @@ function InsercoesDoOrcamento({
  * parcela nomeada, a conta se lê de cima a baixo — que é o que um extrato faz.
  * O total continua idêntico ao de `useTotaisDoOrcamento`.
  */
-export function useAjustesDoOrcamento(): readonly AjusteDoTotal[] {
+function useAjustesDoOrcamento(): readonly AjusteDoTotal[] {
   const { subtotalDeServicosCentavos, descontoGeralCentavos } = useTotaisDoOrcamento()
   const ajustes: AjusteDoTotal[] = []
   if (subtotalDeServicosCentavos !== 0) {

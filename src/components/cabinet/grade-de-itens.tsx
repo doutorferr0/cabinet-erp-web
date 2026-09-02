@@ -52,6 +52,8 @@ const PAPEL = {
   dado: 't-dado',
   /** `--t-dado-meta`: a contagem e o eco, um degrau abaixo do dado. */
   dadoMeta: 't-dado-meta',
+  /** `--t-ui`: botão e ação — a voz de quem faz, não de quem lê. */
+  ui: 't-ui',
 } as const
 
 /**
@@ -323,8 +325,10 @@ export function AcaoDoRodape({
       onClick={onClick}
       className={cn(
         'h-7 gap-1.5 px-2',
-        PAPEL.corpo,
-        primaria ? 'font-medium' : 'border-0 text-muted-foreground hover:text-foreground',
+        // `--t-ui` é o degrau do BOTÃO (§Hierarquia). `--t-corpo` é texto de
+        // leitura e deixaria a ação com a mesma voz da célula ao lado dela.
+        PAPEL.ui,
+        primaria ? null : 'border-0 text-muted-foreground hover:text-foreground',
       )}
     >
       {children}
@@ -563,7 +567,7 @@ function LinhaDeTotal({
  * O grid próprio (`rótulo | valor`, encostado à direita) devolve ao total a
  * régua que ele precisa e não deve alinhamento a coluna nenhuma.
  */
-export function BlocoDeTotais({
+function BlocoDeTotais({
   subtotalCentavos,
   ajustes = [],
   totalCentavos,

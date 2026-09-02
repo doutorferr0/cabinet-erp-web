@@ -27,7 +27,9 @@ describe('tela Orçamento', () => {
   it('filtro por período de emissão estreita a listagem', async () => {
     const { user } = renderRoute('/vendas/orcamentos', servidorDeOrcamentos())
     await screen.findByText('ANDRÉ BATALHA')
-    expect(screen.getByText('17 registros')).toBeInTheDocument()
+    // O rodapé da grade 2.0 conta "n de N registros" (D8) — o total é o segundo
+    // número, e a contagem inteira vive no `data-testid` que ela publica.
+    expect(screen.getByTestId('contagem-da-grade')).toHaveTextContent(/de\s*17\s*registros/)
 
     await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
     await user.click(await screen.findByRole('menuitem', { name: /Data Emissão/ }))
@@ -37,7 +39,9 @@ describe('tela Orçamento', () => {
     await user.type(await screen.findByLabelText('Valor do filtro 1 — de'), '2025-08-01')
     await user.type(screen.getByLabelText('Valor do filtro 1 — até'), '2025-08-02')
 
-    expect(await screen.findByText('5 registros')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('contagem-da-grade')).toHaveTextContent(/de\s*5\s*registros/)
+    })
   })
 
   it('o campo de data é o input nativo — o calendário vem do sistema', async () => {

@@ -1,4 +1,8 @@
-import type { DocumentInstallmentDto, InstallmentPolicyDto } from '@/api/gerado'
+import type {
+  DocumentInstallmentDto,
+  InstallmentPolicyDto,
+  LateChargePolicyDto,
+} from '@/api/gerado'
 import { totalItemCentavos } from '@/components/cabinet/documento'
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import {
@@ -6,7 +10,7 @@ import {
   useCondicoesDePagamento,
   usePoliticaDeParcelamento,
 } from '@/data/pagamento-api'
-import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { useWatch } from 'react-hook-form'
 
@@ -131,6 +135,12 @@ export function BlocoPagamento() {
   const limites = carimbo ?? politicaCorrente
   const limitesSaoDoCarimbo = carimbo !== undefined
 
+  // A condição ESCOLHIDA, quando a listagem a traz. Condição inativa (ou lista
+  // que falhou) não aparece aqui, e o encargo dela some junto — de propósito:
+  // o documento não carimba encargo, então o único encargo que a tela pode
+  // afirmar é o da condição que ela acabou de ler.
+  const escolhida = condicoes.find((c) => c.id === condicaoId)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
@@ -155,6 +165,7 @@ export function BlocoPagamento() {
             {limitesSaoDoCarimbo ? '— vigentes na gravação' : '— vigentes hoje na empresa'}
           </span>
         </p>
+        {condicaoId !== null ? <EncargoDeAtraso condicao={escolhida} /> : null}
       </div>
 
       {erro ? (
@@ -178,6 +189,50 @@ export function BlocoPagamento() {
         <PlanoCarimbado parcelas={parcelas} />
       )}
     </div>
+  )
+}
+
+/**
+ * O ENCARGO DE ATRASO da condição escolhida — juros de mora e multa.
+ *
+ * ## Três estados, e dois deles se parecem
+ *
+ * O contrato distingue `lateCharges: null` ("ninguém configurou o atraso desta
+ * condição") de `{0, 0}` ("conferido, esta condição não cobra"), e a tela tem de
+ * distinguir junto: a primeira é pergunta em aberto para quem cadastra, a
+ * segunda é resposta. Mostrar "0%" nas duas apagaria a pergunta.
+ *
+ * ## Ele diz "hoje", e isso não é hedge
+ *
+ * O documento carimba o plano e os limites de parcelamento; o encargo de atraso
+ * ele **não** carimba — está declarado assim em `LateChargePolicyDto`. Então o
+ * que aparece aqui é a regra VIGENTE da condição, e ela pode ter mudado desde a
+ * gravação. A frase diz isso pela mesma razão que a linha de limites diz
+ * "vigentes hoje na empresa": o operador que lê um número numa tela de documento
+ * assume que ele é do documento.
+ */
+function EncargoDeAtraso({
+  condicao,
+}: {
+  condicao: { lateCharges?: LateChargePolicyDto | null } | undefined
+}) {
+  // Condição fora da listagem (inativa, ou lista que falhou): sem o dado, o
+  // silêncio é a única leitura honesta — "não cobra" seria afirmação inventada.
+  if (condicao === undefined) return null
+
+  const encargo = condicao.lateCharges ?? null
+  const texto =
+    encargo === null
+      ? 'Encargo de atraso não configurado nesta condição'
+      : encargo.interestPercentMonthly === 0 && encargo.finePercent === 0
+        ? 'Sem encargo de atraso'
+        : `Atraso: ${formatPercent(encargo.interestPercentMonthly)} % ao mês de mora · ${formatPercent(encargo.finePercent)} % de multa`
+
+  return (
+    <p aria-label="Encargo de atraso" className="pb-2 text-muted-foreground text-sm tabular-nums">
+      {texto}{' '}
+      <span className="font-[family-name:var(--font-nome)] italic">— vigente hoje na condição</span>
+    </p>
   )
 }
 

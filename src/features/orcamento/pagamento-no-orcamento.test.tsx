@@ -116,6 +116,8 @@ const CONDICOES = [
     name: 'À vista',
     active: true,
     installmentCount: 1,
+    // Sem encargo CONFIGURADO — o estado que se confunde com "não cobra".
+    lateCharges: null,
     installments: [{ number: 1, daysAfterIssue: 0, percent: 1000000, amountCents: null }],
   },
   {
@@ -123,6 +125,8 @@ const CONDICOES = [
     name: '30/60/90',
     active: true,
     installmentCount: 3,
+    // 1% ao mês de mora e 2% de multa — escala de 4 casas (`10000` = 1%).
+    lateCharges: { interestPercentMonthly: 10000, finePercent: 20000 },
     installments: [
       { number: 1, daysAfterIssue: 30, percent: 333334, amountCents: null },
       { number: 2, daysAfterIssue: 60, percent: 333333, amountCents: null },
@@ -134,6 +138,8 @@ const CONDICOES = [
     name: '10 vezes',
     active: true,
     installmentCount: 10,
+    // Conferido e NÃO cobra — o outro lado do par que a tela precisa separar.
+    lateCharges: { interestPercentMonthly: 0, finePercent: 0 },
     installments: Array.from({ length: 10 }, (_, i) => ({
       number: i + 1,
       daysAfterIssue: 30 * (i + 1),
@@ -374,6 +380,56 @@ describe('a recusa que a tela NÃO previne chega do servidor', () => {
       await screen.findByText(/Alguma parcela ficaria abaixo do valor mínimo da empresa\./i),
     ).toBeInTheDocument()
     expect(router.state.location.pathname).toContain(ID)
+  })
+})
+
+describe('o ENCARGO DE ATRASO aparece, e separa os três estados', () => {
+  it('mostra mora e multa da condição escolhida', async () => {
+    await abrirDocumento(servidor())
+
+    const linha = await screen.findByLabelText('Encargo de atraso')
+    expect(linha).toHaveTextContent(/1,0000 % ao mês de mora/)
+    expect(linha).toHaveTextContent(/2,0000 % de multa/)
+  })
+
+  it('diz que o número é o VIGENTE, porque o documento não o carimba', async () => {
+    await abrirDocumento(servidor())
+
+    // O plano e os limites são carimbo; o encargo não é. A tela não pode
+    // deixar o operador ler um número de documento onde há um número de hoje.
+    const linha = await screen.findByLabelText('Encargo de atraso')
+    expect(linha).toHaveTextContent(/vigente hoje na condição/)
+  })
+
+  it('condição sem encargo CONFIGURADO diz isso — e não "0%"', async () => {
+    await abrirDocumento(
+      servidor({
+        detalhe: { ...DETALHE, paymentTermId: CONDICAO_A_VISTA, paymentTermName: 'À vista' },
+      }),
+    )
+
+    const linha = await screen.findByLabelText('Encargo de atraso')
+    expect(linha).toHaveTextContent(/não configurado/i)
+    expect(linha).not.toHaveTextContent(/mora/)
+  })
+
+  it('condição com os dois em ZERO diz que não cobra — a outra metade do par', async () => {
+    await abrirDocumento(
+      servidor({
+        detalhe: { ...DETALHE, paymentTermId: CONDICAO_10X, paymentTermName: '10 vezes' },
+      }),
+    )
+
+    const linha = await screen.findByLabelText('Encargo de atraso')
+    expect(linha).toHaveTextContent(/Sem encargo de atraso/)
+    expect(linha).not.toHaveTextContent(/não configurado/i)
+  })
+
+  it('documento SEM condição não afirma encargo nenhum', async () => {
+    await abrirDocumento(servidor({ detalhe: { ...DETALHE, paymentTermId: null } }))
+
+    await screen.findByText(/Documento sem condição de pagamento/i)
+    expect(screen.queryByLabelText('Encargo de atraso')).toBeNull()
   })
 })
 

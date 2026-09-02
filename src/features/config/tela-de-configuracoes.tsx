@@ -2,6 +2,7 @@ import type { NavGroup, NavItem } from '@/app/navigation'
 import { secoesVisiveis } from '@/app/navigation'
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { Painel } from '@/components/cabinet/painel'
+import { Stamp } from '@/components/cabinet/stamp'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink } from 'lucide-react'
@@ -18,14 +19,14 @@ import { ExternalLink } from 'lucide-react'
 function LinhaDaTela({ item }: { item: NavItem }) {
   const corpo = (
     <>
-      <span className="flex items-center gap-2 font-medium text-sm">
+      <span className="t-bloco flex items-center gap-[var(--s-2)]">
         <item.icon aria-hidden="true" className="size-4 shrink-0 text-modulo" />
         <span className="min-w-0 truncate">{item.title}</span>
         {item.externo ? (
           <ExternalLink aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
         ) : null}
       </span>
-      <span className="text-muted-foreground text-sm leading-snug">{item.descricao}</span>
+      <span className="t-meta">{item.descricao}</span>
     </>
   )
 
@@ -35,12 +36,12 @@ function LinhaDaTela({ item }: { item: NavItem }) {
       // da barra lateral, porque é a mesma informação: a tela vai existir.
       <div
         aria-disabled="true"
-        className="flex cursor-not-allowed flex-col gap-1 border-2 border-transparent bg-muted p-2.5"
+        className="flex cursor-not-allowed flex-col gap-[var(--s-1)] border-2 border-transparent bg-muted p-2.5"
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-[var(--s-2)]">
           {corpo}
-          <span className="ml-auto shrink-0 self-start border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
-            futuro
+          <span className="ml-auto shrink-0 self-start">
+            <Stamp tom="neutral" label="futuro" />
           </span>
         </span>
       </div>
@@ -48,7 +49,7 @@ function LinhaDaTela({ item }: { item: NavItem }) {
   }
 
   const classe =
-    'flex flex-col gap-1 border-2 border-transparent p-2.5 outline-none hover:border-border hover:bg-modulo focus-visible:focus-ring'
+    'flex flex-col gap-[var(--s-1)] border-2 border-transparent p-2.5 outline-none hover:border-border hover:bg-modulo focus-visible:focus-ring'
 
   // Item EXTERNO é `<a href>`: o alvo é arquivo estático servido ao lado da
   // SPA, e `<Link to>` o mandaria ao roteador — 404 com o arquivo ali do lado.
@@ -103,14 +104,14 @@ export function TelaDeConfiguracoes() {
   const config = secoesVisiveis(tem).find((secao) => secao.oculta)
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-[var(--s-5)]">
       <BandaDeIdentidade titulo="Configurações" contexto="Como o sistema é montado" />
       {!conhecido ? (
-        <p className="text-muted-foreground text-sm" role="alert">
+        <p className="t-meta" role="alert">
           Não foi possível saber quais recursos esta empresa tem. Recarregue a página.
         </p>
       ) : config ? (
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-[var(--s-5)] md:grid-cols-2">
           {config.grupos.map((grupo) => (
             <PainelDoGrupo key={grupo.title} grupo={grupo} />
           ))}
@@ -118,9 +119,7 @@ export function TelaDeConfiguracoes() {
       ) : (
         // Empresa cujos recursos derrubaram todo item de configuração: a página
         // DIZ que não há o que ajustar. Folha em branco faria parecer defeito.
-        <p className="text-muted-foreground text-sm">
-          Nenhuma configuração disponível para esta empresa.
-        </p>
+        <p className="t-meta">Nenhuma configuração disponível para esta empresa.</p>
       )}
     </div>
   )

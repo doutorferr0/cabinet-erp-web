@@ -1,8 +1,12 @@
+import type { EmployeeDto } from '@/api/gerado'
+import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import { VitraDataTable } from '@/components/cabinet/data-table'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Nome } from '@/components/cabinet/nome'
+import { Stamp } from '@/components/cabinet/stamp'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +19,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useGerarSenhaProvisoria, usePapeis, useUsuariosDeAcesso } from '@/data/acesso-api'
+import {
+  listarUsuariosDeAcesso,
+  useConvidarUsuario,
+  useGerarSenhaProvisoria,
+  usePapeis,
+} from '@/data/acesso-api'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useEmpresasDoGrupo } from '@/data/empresas-do-grupo-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
@@ -25,7 +34,94 @@ import { PapelFormDialog } from '@/features/acesso/papel-form'
 import { SenhaProvisoriaDialog } from '@/features/acesso/senha-provisoria'
 import { TimbreFormDialog } from '@/features/acesso/timbre-form'
 import { VinculosDoUsuarioDialog } from '@/features/acesso/vinculos-do-usuario'
+import { avisar } from '@/lib/avisos'
+import { formatDateBR } from '@/lib/formatters'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
+
+/**
+ * As colunas da listagem de usuários — a entidade, a situação e a PRÓXIMA AÇÃO.
+ *
+ * A entidade é nome + subtítulo (cargo · setor) numa célula só: são o mesmo
+ * assunto — quem é a pessoa —, e três colunas as separariam em três perguntas
+ * quando a linha responde uma. Cargo e setor entram na whitelist de `sortBy` do
+ * contrato, mas a coluna composta não ordena por nenhum dos dois sozinho, então
+ * a ordenação fica no `name`, que é por onde se procura gente.
+ *
+ * A ação da linha é UMA — `Convidar` —, e a segunda existe porque a primeira
+ * tem uma recusa nomeada: o 409 de `InviteEmployee` é "colaborador sem e-mail,
+ * ou desativado", e quem cai nele precisa da senha provisória sem sair da tela.
+ * A terceira decisão (empresas e papel) é o clique na LINHA, não um botão.
+ */
+function colunasDeUsuario({
+  convidar,
+  convidando,
+  gerarSenha,
+  gerando,
+}: {
+  convidar: (linha: EmployeeDto) => void
+  convidando: boolean
+  gerarSenha: (linha: EmployeeDto) => void
+  gerando: boolean
+}): ColumnDef<EmployeeDto>[] {
+  return [
+    {
+      accessorKey: 'name',
+      header: 'Usuário',
+      cell: ({ row }) => {
+        const cargo = [row.original.jobTitle, row.original.sector].filter(Boolean).join(' · ')
+        return (
+          <div className="flex flex-col">
+            <Nome>{row.original.name}</Nome>
+            {cargo ? <span className="t-meta">{cargo}</span> : null}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'active',
+      header: 'Situação',
+      cell: ({ row }) => <CelulaAtivo ativo={row.original.active} />,
+    },
+    {
+      id: 'proximaAcao',
+      header: 'Próxima ação',
+      enableSorting: false,
+      cell: ({ row }) => (
+        // `stopPropagation` na SUBIDA, nunca na captura: a linha inteira abre o
+        // vínculo, e sem barreira clicar em `Convidar` mandaria o convite E
+        // abriria o diálogo por cima dele. Na captura a barreira desceria antes
+        // do botão e mataria o próprio clique — foi o que o teste do `Gerar
+        // senha` mediu, com zero escritas.
+        <div
+          className="flex gap-[var(--s-2)]"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <Button
+            type="button"
+            size="sm"
+            disabled={convidando || !row.original.active}
+            title={row.original.active ? undefined : 'Colaborador inativo não recebe convite.'}
+            onClick={() => convidar(row.original)}
+          >
+            Convidar
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={gerando}
+            onClick={() => gerarSenha(row.original)}
+          >
+            Gerar senha
+          </Button>
+        </div>
+      ),
+    },
+  ]
+}
 
 /**
  * USUÁRIOS E EMPRESAS — a tela que a navegação prometia como `futuro`.
@@ -48,8 +144,6 @@ import { useState } from 'react'
  * detalhe por linha); o papel aparece e muda pelas ações da linha.
  */
 export function TelaDeAcesso() {
-  const [busca, setBusca] = useState('')
-  const usuarios = useUsuariosDeAcesso(busca)
   const papeis = usePapeis()
 
   const [novoAberto, setNovoAberto] = useState(false)
@@ -64,8 +158,8 @@ export function TelaDeAcesso() {
   // lugares, o `?? []` diria "sem linha" também no ERRO, e numa tela de permissão tabela
   // vazia lê-se como "ninguém tem acesso": o operador conclui que o acesso sumiu e vai
   // conceder de novo o que já está concedido. A gravação já tinha `ErroDeGravacao`; a
-  // leitura não tinha nada.
-  const linhasDeUsuario = usuarios.data?.rows ?? []
+  // leitura não tinha nada. (Usuários saiu desta lista: a `VitraDataTable` já
+  // distingue vazio de falha por conta própria.)
   const linhasDePapel = papeis.data?.rows ?? []
   const linhasDeEmpresa = empresas.data?.rows ?? []
   const { ativa, trocar, trocando } = useEmpresasDaSessao()
@@ -80,6 +174,7 @@ export function TelaDeAcesso() {
   const empresaSomenteLeitura = useReadOnlyPorPapel('tenants').readOnly
 
   const gerar = useGerarSenhaProvisoria()
+  const convidar = useConvidarUsuario()
 
   function gerarSenha(id: string, nome: string) {
     gerar.mutate(id, {
@@ -87,8 +182,25 @@ export function TelaDeAcesso() {
     })
   }
 
+  /**
+   * O recibo do convite é AVISO, não diálogo: não há segredo para ler na tela
+   * (o token foi para o e-mail, e é essa a diferença entre convidar e gerar
+   * senha). O que o administrador precisa saber é para ONDE saiu — para
+   * conferir que o endereço é o certo — e até quando o link vale, para
+   * responder a quem voltar dizendo que não deu.
+   */
+  function convidarUsuario(id: string, nome: string) {
+    convidar.mutate(id, {
+      onSuccess: ({ sentTo, expiresAt }) =>
+        avisar(
+          `Convite enviado a ${nome}`,
+          `Para ${sentTo} — o link vale até ${formatDateBR(expiresAt)}.`,
+        ),
+    })
+  }
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-[var(--s-5)]">
       <BandaDeIdentidade titulo="Usuários e Empresas" contexto="Quem entra, e com qual acesso" />
       <Tabs defaultValue="usuarios">
         <TabsList>
@@ -97,88 +209,63 @@ export function TelaDeAcesso() {
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="usuarios" className="flex flex-col gap-3">
-          <div className="flex items-end justify-between gap-2">
-            <div className="flex w-64 flex-col gap-1">
-              <Label htmlFor="acesso-busca">Buscar</Label>
-              <Input id="acesso-busca" value={busca} onChange={(e) => setBusca(e.target.value)} />
-            </div>
-            <Button type="button" onClick={() => setNovoAberto(true)}>
-              Novo usuário
-            </Button>
-          </div>
-
-          {/* O erro do GERAR SENHA mora na tela, não numa linha: a ação é de
-              linha mas o diálogo da senha só abre no sucesso — sem este bloco,
-              o 409 de colaborador sem e-mail morreria em silêncio. */}
-          <ErroDeGravacao erro={gerar.error} mensagem="Falha ao gerar a senha provisória." />
-
-          {usuarios.isPending ? (
-            <p className="text-muted-foreground text-sm">Carregando os usuários…</p>
-          ) : usuarios.isError ? (
-            <FalhaDoPainel
-              titulo="A lista de usuários não carregou"
-              erro={usuarios.error}
-              aoTentar={() => usuarios.refetch()}
-            />
-          ) : linhasDeUsuario.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {busca
-                ? `A busca por “${busca}” não encontrou usuário.`
-                : 'Nenhum usuário nesta empresa.'}
+        <TabsContent value="usuarios" className="flex flex-col gap-[var(--s-3)]">
+          {/* O que a listagem 2.0 pede e o contrato não publica. `EmployeeDto`
+              tem `id`, `name`, `sector`, `jobTitle` e `active` — não há papel
+              nem último acesso. A coluna SAI em vez de aparecer em branco ou de
+              custar um pedido por linha; o papel de agora se lê em
+              `Empresas e papel…`, que é onde ele também se muda.
+              Blocker registrado na issue #495. */}
+          {/* Um `<p>` só: o `AvisoDeCobertura` empilha children num `flex-col`,
+              e três `<strong>` inline viravam três linhas próprias. */}
+          <AvisoDeCobertura>
+            <p className="t-corpo">
+              A listagem não traz <strong>papel</strong> nem <strong>último acesso</strong> — o
+              contrato não os publica na linha. O papel desta empresa se lê e se muda em{' '}
+              <strong>Empresas e papel…</strong>, uma linha por vez.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Ativo</TableHead>
-                  <TableHead className="w-64">Acesso</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {linhasDeUsuario.map((linha) => (
-                  <TableRow key={linha.id}>
-                    <TableCell>
-                      <Nome>{linha.name}</Nome>
-                    </TableCell>
-                    <TableCell>
-                      <CelulaAtivo ativo={linha.active} />
-                    </TableCell>
-                    <TableCell className="flex gap-1.5">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setVinculosDe({ id: linha.id, nome: linha.name })}
-                      >
-                        Empresas e papel…
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={gerar.isPending}
-                        onClick={() => gerarSenha(linha.id, linha.name)}
-                      >
-                        Gerar senha
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          </AvisoDeCobertura>
+
+          {/* Os erros das ações de LINHA moram na tela: a ação é da linha, mas o
+              que se abre no sucesso é um diálogo — sem este bloco, o 409 de
+              colaborador sem e-mail morreria em silêncio nas duas. */}
+          <ErroDeGravacao erro={gerar.error} mensagem="Falha ao gerar a senha provisória." />
+          <ErroDeGravacao erro={convidar.error} mensagem="Falha ao enviar o convite." />
+
+          <VitraDataTable<EmployeeDto>
+            columns={colunasDeUsuario({
+              convidar: (linha) => convidarUsuario(linha.id, linha.name),
+              convidando: convidar.isPending,
+              gerarSenha: (linha) => gerarSenha(linha.id, linha.name),
+              gerando: gerar.isPending,
+            })}
+            queryKey={['acesso', 'employees', 'listagem']}
+            fetcher={listarUsuariosDeAcesso}
+            searchPlaceholder="Buscar por nome…"
+            actions={[
+              {
+                id: 'incluir',
+                label: 'Novo usuário',
+                icon: Plus,
+                onClick: () => setNovoAberto(true),
+              },
+            ]}
+            // Abrir a linha é ir ao vínculo — a decisão que a tela existe para
+            // tomar. Sem isto, "Empresas e papel…" seria um terceiro botão numa
+            // coluna que já carrega a próxima ação.
+            aoAbrirLinha={(linha) => setVinculosDe({ id: linha.id, nome: linha.name })}
+            acaoDoVazio={{ label: 'Novo usuário', onClick: () => setNovoAberto(true) }}
+          />
         </TabsContent>
 
-        <TabsContent value="papeis" className="flex flex-col gap-3">
+        <TabsContent value="papeis" className="flex flex-col gap-[var(--s-3)]">
           <div className="flex justify-end">
             <Button type="button" onClick={() => setPapelEmEdicao({ id: null })}>
               Incluir papel
             </Button>
           </div>
           {papeis.isPending ? (
-            <p className="text-muted-foreground text-sm">Carregando os papéis…</p>
+            <p className="t-meta">Carregando os papéis…</p>
           ) : papeis.isError ? (
             <FalhaDoPainel
               titulo="A lista de papéis não carregou"
@@ -186,7 +273,7 @@ export function TelaDeAcesso() {
               aoTentar={() => papeis.refetch()}
             />
           ) : linhasDePapel.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Nenhum papel cadastrado.</p>
+            <p className="t-meta">Nenhum papel cadastrado.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -206,15 +293,17 @@ export function TelaDeAcesso() {
                   >
                     <TableCell>
                       <Nome>{papel.name}</Nome>
+                      {/* Selo, não caixa própria: o chip tinha `font-size`
+                          literal fora da rampa (§Hierarquia proíbe literal em
+                          componente) e desenhava a quarta borda numa linha que
+                          já tem hairline. `Stamp` é o mesmo selo de `Ativo`. */}
                       {papel.system ? (
-                        <span className="ml-2 border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
-                          sistema
+                        <span className="ml-2 inline-flex align-middle">
+                          <Stamp tom="neutral" label="sistema" />
                         </span>
                       ) : null}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {papel.description ?? '—'}
-                    </TableCell>
+                    <TableCell className="t-meta">{papel.description ?? '—'}</TableCell>
                     <TableCell>{papel.permissionCount}</TableCell>
                     <TableCell>
                       <CelulaAtivo ativo={papel.active} />
@@ -226,10 +315,12 @@ export function TelaDeAcesso() {
           )}
         </TabsContent>
 
-        <TabsContent value="empresas" className="flex flex-col gap-3">
-          <div className="flex items-end justify-between gap-2">
-            <div className="flex w-64 flex-col gap-1">
-              <Label htmlFor="empresa-busca">Buscar</Label>
+        <TabsContent value="empresas" className="flex flex-col gap-[var(--s-3)]">
+          <div className="flex items-end justify-between gap-[var(--s-2)]">
+            <div className="flex w-64 flex-col gap-[var(--s-1)]">
+              <Label htmlFor="empresa-busca" className="t-rotulo">
+                Buscar
+              </Label>
               <Input
                 id="empresa-busca"
                 value={buscaDeEmpresa}
@@ -246,7 +337,7 @@ export function TelaDeAcesso() {
           </div>
 
           {empresaSomenteLeitura ? (
-            <p className="border-2 border-border p-2.5 text-muted-foreground text-sm leading-snug">
+            <p className="t-meta border-2 border-border p-2.5">
               Seu papel nesta empresa vê o grupo, mas não o altera. Criar e alterar empresa é do
               responsável pelo grupo.
             </p>
@@ -256,7 +347,7 @@ export function TelaDeAcesso() {
               alcança: a empresa criada aqui nasce sem vínculo nenhum e não
               apareceria no seletor do rodapé. Ver `empresas-do-grupo-api.ts`. */}
           {empresas.isPending ? (
-            <p className="text-muted-foreground text-sm">Carregando as empresas…</p>
+            <p className="t-meta">Carregando as empresas…</p>
           ) : empresas.isError ? (
             <FalhaDoPainel
               titulo="A lista de empresas não carregou"
@@ -264,7 +355,7 @@ export function TelaDeAcesso() {
               aoTentar={() => empresas.refetch()}
             />
           ) : linhasDeEmpresa.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
+            <p className="t-meta">
               {buscaDeEmpresa
                 ? `A busca por “${buscaDeEmpresa}” não encontrou empresa.`
                 : 'Nenhuma empresa no grupo.'}
@@ -286,7 +377,7 @@ export function TelaDeAcesso() {
                   return (
                     <TableRow key={empresa.id}>
                       <TableCell
-                        className="cursor-pointer font-mono"
+                        className="t-dado cursor-pointer"
                         onClick={() => setEmpresaEmEdicao({ id: empresa.id })}
                       >
                         {empresa.code}
@@ -297,7 +388,7 @@ export function TelaDeAcesso() {
                       >
                         <Nome>{empresa.name}</Nome>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{empresa.cnpj ?? '—'}</TableCell>
+                      <TableCell className="t-dado-meta">{empresa.cnpj ?? '—'}</TableCell>
                       <TableCell>
                         <CelulaAtivo ativo={empresa.active} />
                       </TableCell>
@@ -337,7 +428,7 @@ export function TelaDeAcesso() {
           {/* O teto de 100 do contrato DITO em voz alta. Cortar em silêncio
               faria quem tem 120 empresas concluir que tem 100. */}
           {(empresas.data?.total ?? 0) > (empresas.data?.rows.length ?? 0) ? (
-            <p className="text-muted-foreground text-sm">
+            <p className="t-meta">
               Mostrando {empresas.data?.rows.length} de {empresas.data?.total} empresas — use a
               busca para chegar às demais.
             </p>

@@ -15,7 +15,9 @@ import { describe, expect, it } from 'vitest'
  *   UI (`marca`) — kind desconhecido devolve 200 VAZIO, então errar aqui não dá
  *   erro nenhum, dá uma tela em branco;
  * - **alterar manda nome E `active` juntos** — o `PUT` do contrato substitui o
- *   registro, e mandar só o nome apagaria o `active` que estava lá;
+ *   registro, e mandar só o nome apagaria o `active` que estava lá. Desde a D27
+ *   as duas edições são gestos SEPARADOS (célula e botão), e por isso cada uma
+ *   precisa provar que carrega o campo que ela não mexeu;
  * - **`kind` NÃO viaja na alteração**: mudar o kind de um item o mudaria de
  *   lista, e o contrato o deixa fora do corpo por isso.
  */
@@ -87,38 +89,60 @@ describe('tela de listas de apoio', () => {
     expect(consultas).not.toContain('marca')
   })
 
-  it('alterar manda nome E active juntos, e NUNCA o kind', async () => {
+  it('renomear pela CÉLULA manda nome E active juntos, e NUNCA o kind', async () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/config/listas', stub)
 
     const tabela = within(await screen.findByRole('table'))
-    await user.click(await tabela.findByText('STELLA'))
+    // Sem diálogo no caminho: a célula É o campo (D27). O gatilho nomeia coluna
+    // e registro porque numa lista de 30 "Editar" sozinho não diz o quê.
+    await user.click(await tabela.findByRole('button', { name: 'Editar Nome de STELLA' }))
 
-    const nome = await screen.findByLabelText('Nome')
-    await waitFor(() => expect(nome).toHaveValue('STELLA'))
+    const nome = await screen.findByRole('textbox', { name: 'Nome de STELLA' })
+    expect(nome).toHaveValue('STELLA')
     await user.clear(nome)
-    await user.type(nome, 'STELLA LED')
-    // Reativar o que estava aposentado — o gesto que só existe nesta tela.
-    await user.click(screen.getByRole('checkbox', { name: /Ativo/ }))
-    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+    await user.type(nome, 'STELLA LED{Enter}')
 
     await waitFor(() => expect(escritas).toHaveLength(1))
     expect(escritas[0]).toMatchObject({
       metodo: 'PUT',
       caminho: `/api/catalog-lookups/${ITEM_INATIVO}`,
     })
-    // O `PUT` substitui o registro: os dois campos, sempre.
-    expect(escritas[0]?.corpo).toEqual({ name: 'STELLA LED', active: true })
+    // O `PUT` substitui o registro: os dois campos, sempre. O `active` do
+    // registro viaja como está — mandar só o nome apagaria a desativação, e o
+    // item aposentado voltaria ao combo sem ninguém ter pedido.
+    expect(escritas[0]?.corpo).toEqual({ name: 'STELLA LED', active: false })
   })
 
-  it('incluir manda o kind do backend e nasce ativo', async () => {
+  it('REATIVAR é a outra escrita, e não passa por confirmação', async () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/config/listas', stub)
 
     await screen.findByRole('table')
-    await user.click(screen.getByRole('button', { name: 'Incluir item' }))
-    await user.type(await screen.findByLabelText('Nome'), 'PHILIPS')
-    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+    // `Reativar` é único na grade — só STELLA está inativa —, e é justamente
+    // isso que o botão diz: a linha de item ATIVO oferece `Desativar`. O gesto
+    // não passa por confirmação: confirmar o reversível ensina o operador a
+    // clicar `Sim` sem ler.
+    await user.click(await screen.findByRole('button', { name: 'Reativar' }))
+
+    await waitFor(() => expect(escritas).toHaveLength(1))
+    expect(escritas[0]).toMatchObject({
+      metodo: 'PUT',
+      caminho: `/api/catalog-lookups/${ITEM_INATIVO}`,
+    })
+    // O nome vai junto, intacto — é a mesma substituição de registro inteiro.
+    expect(escritas[0]?.corpo).toEqual({ name: 'STELLA', active: true })
+  })
+
+  it('incluir pelo RODAPÉ manda o kind do backend e nasce ativo', async () => {
+    const { stub, escritas } = servidor()
+    const { user } = renderRoute('/config/listas', stub)
+
+    await screen.findByRole('table')
+    // A linha nova mora na grade, não num diálogo: o campo do rodapé tracejado
+    // é o próprio gesto de incluir.
+    const campo = await screen.findByRole('textbox', { name: /Novo item em/ })
+    await user.type(campo, 'PHILIPS{Enter}')
 
     await waitFor(() => expect(escritas).toHaveLength(1))
     expect(escritas[0]).toMatchObject({ metodo: 'POST', caminho: '/api/catalog-lookups' })
@@ -126,5 +150,8 @@ describe('tela de listas de apoio', () => {
     // O kind viaja no CORPO (a tabela é uma só, discriminada por ele) e é o do
     // backend, em MAIÚSCULA.
     expect((escritas[0]?.corpo as { kind: string }).kind).toMatch(/^[A-Z_]+$/)
+    // E o campo esvazia para o próximo: quem povoa uma lista digita vários
+    // seguidos, e isso é o que torna a série um gesto só.
+    await waitFor(() => expect(campo).toHaveValue(''))
   })
 })

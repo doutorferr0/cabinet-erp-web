@@ -91,6 +91,14 @@ describe('recorte das listas', () => {
     ])
   })
 
+  it('resposta que não é lista vira lista vazia — a barra não pode cair com a tela', () => {
+    // Medido na suíte: um teste de outra tela respondia `{rows, total}` a
+    // qualquer caminho, o `filter` estourou dentro do grupo de favoritos e
+    // apagou a tela que estava sendo testada. A barra monta em cima de tudo.
+    expect(viewsFavoritas({ rows: [], total: 0 } as never)).toEqual([])
+    expect(viewsDaRota(undefined as never, '/compras/ordens')).toEqual([])
+  })
+
   it('sem posição, o nome decide — e não a ordem em que vieram', () => {
     expect(
       viewsDaRota([SEM_POSICAO_B, SEM_POSICAO_A], '/compras/ordens').map((v) => v.name),

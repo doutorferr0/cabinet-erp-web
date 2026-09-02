@@ -45,11 +45,16 @@ function porPosicao(a: SavedViewDto, b: SavedViewDto): number {
 
 /** Só as de uma tela, na ordem gravada. Empate por nome, para não trocar de lugar. */
 export function viewsDaRota(views: readonly SavedViewDto[], rota: string): SavedViewDto[] {
+  if (!Array.isArray(views)) return []
   return views.filter((v) => v.route === rota).sort(porPosicao)
 }
 
 /** As fixadas na barra lateral, de TODAS as telas — é o grupo FAVORITOS. */
 export function viewsFavoritas(views: readonly SavedViewDto[]): SavedViewDto[] {
+  // Cinto e suspensório: `useViews` já normaliza, e mesmo assim isto fica. O
+  // consumidor é a barra lateral, que aparece em cima de toda tela — o custo de
+  // um `Array.isArray` é zero e o de não tê-lo foi uma tela em branco.
+  if (!Array.isArray(views)) return []
   return views.filter((v) => v.favorite).sort(porPosicao)
 }
 
@@ -69,12 +74,25 @@ export function corpoDaView(
   return { ...resto, ...mudancas }
 }
 
+/**
+ * As views do usuário. **Sempre um array, mesmo quando o servidor mente.**
+ *
+ * A barra lateral monta em TODA rota autenticada, e é o único consumidor do app
+ * que aparece em cima de qualquer tela. Se uma resposta não-lista chegasse até o
+ * `filter`, o erro derrubaria a árvore INTEIRA — foi o que aconteceu, medido: um
+ * teste de outra tela devolvia `{rows, total}` para qualquer caminho e o
+ * `TypeError` do grupo de favoritos apagou a tela que estava sendo testada.
+ *
+ * É a mesma regra que o mock já aplica ao ler lixo do `localStorage`: perder as
+ * views é aborrecimento, perder a tela por causa delas é defeito.
+ */
 export function useViews() {
   return useQuery({
     queryKey: CHAVE_VIEWS,
     queryFn: async () => {
       const resposta: RespostaDaApi = await listMyViews()
-      return dadosOuErro<SavedViewDto[]>(resposta, 'Falha ao carregar as consultas salvas.')
+      const dados = dadosOuErro<SavedViewDto[]>(resposta, 'Falha ao carregar as consultas salvas.')
+      return Array.isArray(dados) ? dados : []
     },
   })
 }

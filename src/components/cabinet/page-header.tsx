@@ -185,7 +185,10 @@ export function PageHeader({
           {contexto ? (
             <span
               data-slot="page-header-contexto"
-              className="t-rotulo shrink-0 text-muted-foreground"
+              // Sem `text-muted-foreground`: `.t-rotulo` já é n-500, e a utility
+              // perderia para ele de todo jeito (regra sem `@layer` vence
+              // `@layer utilities`).
+              className="t-rotulo shrink-0"
             >
               {contexto}
             </span>
@@ -195,7 +198,7 @@ export function PageHeader({
         </div>
 
         {subtitulo ? (
-          <p data-slot="page-header-subtitulo" className="t-meta text-muted-foreground">
+          <p data-slot="page-header-subtitulo" className="t-meta">
             {subtitulo}
           </p>
         ) : null}

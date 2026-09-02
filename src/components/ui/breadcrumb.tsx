@@ -54,7 +54,9 @@ function BreadcrumbList<T extends object>({ className, ...props }: BreadcrumbsPr
     <BreadcrumbsPrimitive
       data-slot="breadcrumb-list"
       className={cn(
-        't-ui flex flex-wrap items-center gap-1.5 wrap-break-word text-muted-foreground',
+        // `!` na cor: `.t-ui` é regra sem `@layer` e vence a utility (que vive em
+        // `@layer utilities`). Sem ele a fileira inteira sai em n-900.
+        't-ui flex flex-wrap items-center gap-1.5 wrap-break-word text-muted-foreground!',
         className,
       )}
       {...props}
@@ -102,7 +104,7 @@ function BreadcrumbLink({ className, ...props }: LinkProps) {
       className={composeRenderProps(className, (className) =>
         cn(
           'cursor-pointer rounded-item no-underline outline-none transition-colors',
-          'hover:text-foreground',
+          'hover:text-foreground!',
           // O original não estilizava foco. Aqui o anel é obrigatório: migalha
           // é caminho de volta, e caminho de volta tem que ser alcançável.
           'focus-visible:focus-ring',
@@ -127,7 +129,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
       // Tinta, e não `font-bold`: dentro de Inter a hierarquia é peso E cor, e
       // aqui o peso já é o 500 de `.t-ui` na fileira inteira — subir para 700
       // só no último faria o degrau atual parecer de outro degrau da escala.
-      className={cn('text-foreground', className)}
+      className={cn('text-foreground!', className)}
       {...props}
     />
   )

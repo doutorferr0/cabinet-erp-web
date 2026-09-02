@@ -38,6 +38,14 @@ const TECLA_GLOBAL = 'size-8'
  * arquitetura que não é desta issue. Ela segue no repo, reafinada à régua 2.0,
  * para a migalha de dentro da página.
  */
+/**
+ * `text-…!` e `hover:…!`: as classes `.t-*` de `tokens-2.0.css` são regra SEM
+ * `@layer`, e no cascade autor-sem-camada vence autor-em-camada — as utilities
+ * do Tailwind v4 vivem em `@layer utilities`. Sem o `!`, `.t-ui { color: n-900 }`
+ * apagaria a cor de cada degrau e a migalha inteira sairia em tinta cheia, que
+ * é justamente a hierarquia que ela existe para mostrar. Falha SILENCIOSA: a
+ * classe está lá, o teste que confere classe passa, e só a tela mostra.
+ */
 function MigalhaDaRota() {
   const { location } = useRouterState()
   const { tem } = useRecursosDaEmpresa()
@@ -60,7 +68,7 @@ function MigalhaDaRota() {
               {degrau.url && !ultimo ? (
                 <Link
                   to={degrau.url}
-                  className="t-ui shrink-0 rounded-control text-muted-foreground outline-none hover:text-foreground focus-visible:focus-ring"
+                  className="t-ui shrink-0 rounded-control text-muted-foreground! outline-none hover:text-foreground! focus-visible:focus-ring"
                 >
                   {degrau.rotulo}
                 </Link>
@@ -69,7 +77,7 @@ function MigalhaDaRota() {
                   {...(ultimo && { 'aria-current': 'page' as const })}
                   className={cn(
                     't-ui min-w-0 truncate',
-                    ultimo ? 'text-foreground' : 'text-muted-foreground',
+                    ultimo ? 'text-foreground!' : 'text-muted-foreground!',
                   )}
                 >
                   {degrau.rotulo}

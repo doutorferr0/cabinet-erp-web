@@ -259,3 +259,47 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # A REGRA ADITIVA, EXECUTADA.
+  #
+  # `contracts/baseline/v1.0.0.json` é a versão que o Spring implementa. Em 1.x
+  # só entra ADIÇÃO — operação nova, campo opcional novo, valor de enum novo.
+  # Renomear campo, remover, mudar tipo, tornar obrigatório ou trocar status é
+  # quebra, e quebra não se corrige com aviso em documento: enquanto isto foi
+  # prosa em `docs/`, dependia de alguém lembrar. Aqui o `oasdiff` compara o
+  # contrato vivo contra a baseline e reprova a PR com `fail-on: ERR`.
+  #
+  # Quebrou de propósito? Então não é 1.x: é operação nova (ou `/v2`), nunca
+  # edição da existente. Ver docs/spring/contrato.md §Regra aditiva.
+  #
+  # **É Action e não dependência de propósito.** Este repo fixa
+  # `minimumReleaseAge: 10080` no workspace e o dono do lockfile é outro trilho;
+  # um `pnpm add -D oasdiff` daqui atravessaria as duas regras. A tag é fixada
+  # (`v0.1.14`) pelo mesmo motivo que o lockfile existe.
+  #
+  # `v0.2` NÃO EXISTE — a série publicada é `v0.1.x`, e `v0.1.14` é a de
+  # 2026-08-30 (oasdiff 1.30.0). Medido em 2026-09-02: o binário aceita este
+  # documento, que é **OpenAPI 3.1.1**, e acusa `response-required-property-removed`
+  # ao renomear um campo de `PartnerDto` — por isso o fallback de baixar o
+  # binário à mão ficou sem motivo, e o job usa a Action.
+  #
+  # `review: 'false'` e `github-token: ''` são deliberados: o padrão da action
+  # SOBE a spec para oasdiff.com e comenta o link na PR. O contrato é a
+  # especificação do produto e não precisa sair do CI para a comparação
+  # funcionar — a detecção e as anotações não dependem do upload.
+  contrato-compat:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Contrato vivo é compatível com a baseline v1.0.0
+        uses: oasdiff/oasdiff-action/breaking@v0.1.14
+        with:
+          base: contracts/baseline/v1.0.0.json
+          revision: contracts/openapi-v1.json
+          fail-on: ERR
+          review: 'false'
+          github-token: ''

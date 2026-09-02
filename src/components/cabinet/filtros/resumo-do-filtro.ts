@@ -101,7 +101,7 @@ export function resumoDoFiltro(filtro: FiltroDaTabela, campo: CampoFiltravel): s
 export interface PartesDoChip {
   rotulo: string
   /** `undefined` quando é o operador padrão da variante — os dois-pontos bastam. */
-  operador?: string
+  operador?: string | undefined
   /** `''` enquanto a pessoa ainda não digitou; o chip mostra `…` no lugar. */
   valor: string
 }

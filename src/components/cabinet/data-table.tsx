@@ -32,7 +32,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -81,7 +80,6 @@ import {
   ChevronRight,
   type LucideIcon,
   Rows3,
-  Search,
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from 'react'
 

@@ -79,7 +79,7 @@ export interface AbasDeConsultaProps {
    * a que não sabe (janela de busca, tabela dentro de dialog) fica sem número,
    * que é melhor que um número errado ou uma espera que ninguém pediu.
    */
-  contagens?: ReadonlyMap<string, number>
+  contagens?: ReadonlyMap<string, number> | undefined
   onAplicar: (favorito: FavoritoDeConsulta) => void
   /** Volta à listagem crua (aba `Todos`). */
   onLimpar: () => void
@@ -193,7 +193,7 @@ function Aba({
 }: {
   ativa: boolean
   cor: string
-  contagem?: number
+  contagem?: number | undefined
   /** O que o leitor de tela anuncia — o texto visível pode trazer contagem e estrela. */
   rotulo: string
   children: React.ReactNode

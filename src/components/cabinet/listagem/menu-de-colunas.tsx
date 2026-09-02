@@ -90,9 +90,9 @@ export interface MenuDeColunasProps {
   onAlternar: (id: string) => void
   /** Recebe a ordem INTEIRA, já rearranjada — a tabela não deduz movimento. */
   onReordenar: (ids: string[]) => void
-  opcionais?: readonly GrupoDeColunasOpcionais[]
-  onAlternarOpcional?: (id: string) => void
-  disabled?: boolean
+  opcionais?: readonly GrupoDeColunasOpcionais[] | undefined
+  onAlternarOpcional?: ((id: string) => void) | undefined
+  disabled?: boolean | undefined
 }
 
 export function MenuDeColunas({

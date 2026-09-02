@@ -38,8 +38,8 @@ export interface CaixaDeBuscaProps {
   onChange: (valor: string) => void
   /** Campos filtráveis da tela; é deles que saem os prefixos aceitos. */
   campos: readonly CampoFiltravel[]
-  placeholder?: string
-  disabled?: boolean
+  placeholder?: string | undefined
+  disabled?: boolean | undefined
 }
 
 function classeDoPedaco(pedaco: PedacoDaBusca): string {

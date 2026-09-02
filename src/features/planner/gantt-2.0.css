@@ -5,11 +5,15 @@
    por este app: `wx-willow-theme` e `wx-material-theme` existem na folha da
    lib, mas quem as põe no DOM é o exemplo do vendor, não o componente. O
    efeito medido em 02/09 é que boa parte das variáveis chegava **indefinida**
-   ao navegador — e regra que resolve para nada não pinta nada. O caso mais
-   caro: `.wx-marker { background: var(--wx-gantt-marker-color) }` sem valor =
-   a LINHA DO HOJE nunca apareceu, embora `markers` estivesse ligado em
-   `planner.tsx` desde a troca de motor. Não era estilo faltando: era um
-   recurso ligado que ninguém via.
+   ao navegador — e regra que resolve para nada não pinta nada.
+
+   **`--wx-gantt-marker-*` não está aqui, e a ausência é a decisão.** Definir
+   aquelas variáveis foi a primeira tentativa de trazer a linha do hoje de
+   volta, e ela não podia funcionar: `markers` é recurso PRO, o `init` da store
+   do SVAR faz `t.markers = []`, e `.wx-marker` nunca chega ao DOM. Estilo para
+   um seletor que não existe é a mesma mentira que a variável vazia, com o
+   sinal trocado — quem lesse a folha concluiria que a linha vem da lib. Ela
+   vem de `linha-do-hoje.tsx`, e o desenho dela está no fim deste arquivo.
 
    Por isso esta folha define o conjunto INTEIRO que a tela usa, e o define a
    partir dos tokens 2.0 (`--n-*`, `--s-*`, `--t-*`). O escopo é
@@ -118,11 +122,6 @@
   --wx-gantt-milestone-color: var(--n-900);
   --wx-gantt-milestone-border-radius: 0;
 
-  /* ---------- hoje ---------- */
-  --wx-gantt-marker-color: var(--n-900);
-  --wx-gantt-marker-font: 600 var(--t-rotulo-size, 10.5px) / 1.2 var(--font-sans);
-  --wx-gantt-marker-font-color: var(--n-0);
-
   /* ---------- seleção e fim de semana ---------- */
   --wx-gantt-select-color: var(--n-50);
   --wx-table-select-background: var(--n-50);
@@ -143,20 +142,6 @@
    cabeçalho de corpo em toda tabela do sistema. */
 [data-slot="gantt"] .wx-scale {
   background-color: var(--n-50);
-}
-
-/* O rótulo do marcador do hoje. A folha da lib inverte o marcador em X
-   (`transform: scaleX(-1)`) para o texto cair à esquerda da linha; o
-   conteúdo precisa desinverter, senão sai espelhado. */
-[data-slot="gantt"] .wx-marker .wx-content {
-  transform: scaleX(-1);
-  padding: 2px var(--s-2);
-  background-color: var(--n-900);
-  color: var(--n-0);
-  font: var(--wx-gantt-marker-font);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 /* Barra sem fundo próprio: quem pinta é o `taskTemplate`. Sem isto, o `border`

@@ -1,6 +1,6 @@
 import type { Modulo } from '@/app/modulo'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
-import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
+import { NumeroHeroi } from '@/components/cabinet/kpi-tile'
 import { Selo } from '@/components/cabinet/selo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'

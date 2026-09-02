@@ -18,6 +18,7 @@ import type {
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDeAcesso } from './acesso'
+import { handlersDeAgregados } from './agregados'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
@@ -969,6 +970,13 @@ export const handlers = [
   ...handlersDePagamento,
   ...handlersDeServicos,
   ...handlersDeContatos,
+
+  // ---------------- AGREGADOS DE KPI (D11, #479) ----------------
+  // Os quatro resumos por família e os contadores da navegação. Arquivo próprio
+  // e NENHUM estado próprio: cada módulo exporta o leitor do que já guarda, e
+  // `agregados.ts` só compõe. É o que impede a faixa de KPI de contar "aberto"
+  // por um critério e a grade abaixo dela por outro.
+  ...handlersDeAgregados,
 
   // ---------------- COMPRAS (G2) ----------------
   // Arquivo próprio, como CRM, orçamento e pagamento: estado que não é do store

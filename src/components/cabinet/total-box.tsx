@@ -1,5 +1,4 @@
-import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
-import { formatMoneyBRL } from '@/lib/formatters'
+import { KpiTile } from '@/components/cabinet/kpi-tile'
 import { cn } from '@/lib/utils'
 
 export interface TotalBoxProps {
@@ -10,43 +9,56 @@ export interface TotalBoxProps {
 }
 
 /**
- * FECHO DO DOCUMENTO (espec v5 `TotalBox`, issue #236): bloco lima, borda
- * forte, sombra dura, valor em display condensado a 48px.
+ * FECHO DO DOCUMENTO — agora um `KpiTile`, e não mais um bloco próprio.
  *
- * Bloco PRÓPRIO, e não a última fileira da grade, por uma razão de medida e
- * não de gosto: a fileira alinha o valor sob a coluna de valor, e um número de
- * 48px ao lado de itens de 13px não compartilha casa decimal com ninguém — o
- * alinhamento quebra por TAMANHO, antes de qualquer questão de fonte. Fora da
- * malha, o total não deve alinhamento a ninguém e pode ter a medida que o
- * papel dele pede.
+ * ## Por que virou tile (D11, #479)
  *
- * A tinta é a mesma da zona de dinheiro que ele substitui (`text-money` sobre
- * `--fill-money`, 3,56:1 no claro e 5,76:1 no escuro — texto grande, AA), para
- * que o fecho não estreie um par de cor que ninguém mediu. Negativo continua
- * em vermelho: a convenção do ledger vale no fecho como vale na malha.
+ * O fecho e o KPI sempre foram a mesma coisa dita duas vezes: *um número que
+ * resume o que está abaixo dele, fora da malha que ele fecha.* Enquanto foram
+ * duas peças, divergiram — o fecho tinha borda de 3px e o KPI de 1,5px, o fecho
+ * tinha `shadow-el3` e o KPI `--hard-1`, e nenhuma das duas diferenças foi
+ * decidida: elas aconteceram em PRs diferentes. Uma peça só não pode divergir
+ * de si mesma.
+ *
+ * ## O que mudou de aparência, e por quê
+ *
+ * O número era 48px em display CONDENSADO (`NumeroHeroi`, #236). Não é mais:
+ *
+ * 1. **A fonte que tornava os 48px possíveis saiu.** A justificativa medida era
+ *    da Bebas — `R$ 9.999.999,99` a 222px condensado contra 363px no Sora. A D1
+ *    removeu a Bebas e `--font-display-condensada` passou a apontar para a
+ *    Gambarino, que não é condensada. Manter 48px seria manter o tamanho sem o
+ *    que o justificava, e o total estouraria a largura do documento.
+ * 2. **§Hierarquia não tem degrau acima de 30px fora do display**, e Gambarino
+ *    nunca entra em dado — "mono = dado, sem exceção". O total é dado.
+ *
+ * Fica em `escala="destaque"` (24px, o `.kpi .v.big` do mockup): o maior número
+ * mono da tela, ainda o maior dado do documento, agora dentro da régua.
+ *
+ * ## O que NÃO mudou
+ *
+ * Continua BLOCO próprio e fora da grade — a razão de medida vale igual: um
+ * número de 24px sob uma coluna de 12,5px não compartilha casa decimal com
+ * ninguém, e o alinhamento quebraria por tamanho antes de qualquer questão de
+ * fonte. Continua na tinta de dinheiro (`--tint-mint`, a zona de dinheiro do
+ * 2.0), continua com o rótulo em `--t-rotulo`, e o negativo continua em
+ * vermelho — a convenção do ledger vale no fecho como vale na malha, e quem a
+ * aplica agora é o `KpiTile` (valor negativo → `--bad`).
+ *
+ * A assinatura é a MESMA de antes: `form-grid.tsx` e `documento.tsx` montam
+ * este componente sem saber que ele trocou de corpo.
  */
 export function TotalBox({ label = 'Total', valorCentavos, className }: TotalBoxProps) {
   return (
-    <div
+    <KpiTile
       data-slot="total-box"
-      className={cn(
-        'flex flex-wrap items-baseline justify-end gap-x-4 gap-y-1',
-        'rounded-card border-[3px] border-rule-strong bg-fill-money px-4 py-3 shadow-el3',
-        className,
-      )}
-    >
-      {/* Rótulo em Meta, como em toda linha de total — 5,49:1 sobre o lima. */}
-      <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-        {label}:
-      </span>
-      <output aria-label={label}>
-        <NumeroHeroi
-          escala="total"
-          className={valorCentavos < 0 ? 'text-destructive' : 'text-money'}
-        >
-          {formatMoneyBRL(valorCentavos)}
-        </NumeroHeroi>
-      </output>
-    </div>
+      rotulo={label}
+      valorCentavos={valorCentavos}
+      tint="mint"
+      escala="destaque"
+      // Encolhe ao conteúdo: o fecho alinha à direita do documento, e um tile
+      // esticado ali seria uma faixa de um KPI só ocupando a linha inteira.
+      className={cn('w-fit', className)}
+    />
   )
 }

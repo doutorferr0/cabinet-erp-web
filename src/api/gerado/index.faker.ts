@@ -47,6 +47,8 @@ import type {
   InvitationDto,
   LabelLayoutDto,
   LoginOk,
+  NavCountersDto,
+  OpportunitiesSummaryDto,
   OrderDetailDto,
   OrderFulfillmentDto,
   PagedResultOfActivityDto,
@@ -111,9 +113,11 @@ import type {
   ProjectDto,
   ProjectPlanDto,
   PurchaseOrderDto,
+  PurchaseOrdersSummaryDto,
   PurchaseRequestDto,
   QuoteDetailDto,
   QuoteVsStockReportDto,
+  QuotesSummaryDto,
   ReadinessStatus,
   RoleDetailDto,
   SalesComparisonReportDto,
@@ -124,6 +128,7 @@ import type {
   StockAgingReportDto,
   StockLocationDto,
   StockMovementDto,
+  StockSummaryDto,
   StockValuationReportDto,
   SupplierMovementReportDto,
   SupportContextDto,
@@ -590,4 +595,14 @@ export const getGetLabelLayoutResponseMock = (overrideResponse: Partial<Extract<
 export const getUpdateLabelLayoutResponseMock = (overrideResponse: Partial<Extract<LabelLayoutDto, object>> = {}): LabelLayoutDto => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), pageWidthMm: faker.number.float({fractionDigits: 2}), pageHeightMm: faker.number.float({fractionDigits: 2}), marginTopMm: faker.number.float({fractionDigits: 2}), marginBottomMm: faker.number.float({fractionDigits: 2}), marginLeftMm: faker.number.float({fractionDigits: 2}), marginRightMm: faker.number.float({fractionDigits: 2}), columns: faker.number.int(), columnGapMm: faker.number.float({fractionDigits: 2}), labelHeightMm: faker.number.float({fractionDigits: 2}), barcodeField: faker.helpers.arrayElement([faker.helpers.arrayElement(['code','barcode'] as const), null]), isDefault: faker.datatype.boolean(), active: faker.datatype.boolean(), ...overrideResponse})
 
 export const getPrintProductLabelsResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
+
+export const getGetPurchaseOrdersSummaryResponseMock = (overrideResponse: Partial<Extract<PurchaseOrdersSummaryDto, object>> = {}): PurchaseOrdersSummaryDto => ({openOrders: faker.number.int(), openOrdersValueCents: faker.number.int(), lateOrders: faker.number.int(), arrivingThisWeek: faker.number.int(), monthValueCents: faker.number.int(), previousMonthValueCents: faker.number.int(), monthlyValueSeries: Array.from({ length: faker.number.int({min: 1, max: 12}) }, (_, i) => i + 1).map(() => (faker.number.int())), ...overrideResponse})
+
+export const getGetQuotesSummaryResponseMock = (overrideResponse: Partial<Extract<QuotesSummaryDto, object>> = {}): QuotesSummaryDto => ({openQuotes: faker.number.int(), openQuotesValueCents: faker.number.int(), expiringThisWeek: faker.number.int(), wonThisMonth: faker.number.int(), monthValueCents: faker.number.int(), previousMonthValueCents: faker.number.int(), monthlyValueSeries: Array.from({ length: faker.number.int({min: 1, max: 12}) }, (_, i) => i + 1).map(() => (faker.number.int())), ...overrideResponse})
+
+export const getGetStockSummaryResponseMock = (overrideResponse: Partial<Extract<StockSummaryDto, object>> = {}): StockSummaryDto => ({variantCount: faker.number.int(), criticalItems: faker.number.int(), stockValueCents: faker.number.int(), previousMonthStockValueCents: faker.number.int(), movementsThisMonth: faker.number.int(), monthlyValueSeries: Array.from({ length: faker.number.int({min: 1, max: 12}) }, (_, i) => i + 1).map(() => (faker.number.int())), unpricedVariants: faker.number.int(), ...overrideResponse})
+
+export const getGetOpportunitiesSummaryResponseMock = (overrideResponse: Partial<Extract<OpportunitiesSummaryDto, object>> = {}): OpportunitiesSummaryDto => ({openOpportunities: faker.number.int(), openValueCents: faker.number.int(), weightedValueCents: faker.number.int(), wonThisMonth: faker.number.int(), wonThisMonthCents: faker.number.int(), previousMonthWonCents: faker.number.int(), monthlyWonSeries: Array.from({ length: faker.number.int({min: 1, max: 12}) }, (_, i) => i + 1).map(() => (faker.number.int())), ...overrideResponse})
+
+export const getGetNavCountersResponseMock = (overrideResponse: Partial<Extract<NavCountersDto, object>> = {}): NavCountersDto => ({quotesOpen: faker.number.int(), ordersOpen: faker.number.int(), purchaseOrdersOpen: faker.number.int(), goodsReceiptsPending: faker.number.int(), opportunitiesOpen: faker.number.int(), tasksDue: faker.number.int(), todosOpen: faker.number.int(), stockCritical: faker.number.int(), ...overrideResponse})
 

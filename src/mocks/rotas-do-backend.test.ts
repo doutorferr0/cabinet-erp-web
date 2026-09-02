@@ -579,9 +579,18 @@ describe('passthrough por rota', () => {
       'post /api/tenants',
       'get /api/tenants/{id}',
       'put /api/tenants/{id}',
+      // Os cinco agregados de KPI (#479, D11) nasceram AQUI hoje: caminho novo
+      // publicado neste repo, cópia do contrato do api ainda sem ele. São
+      // `sem-contrato` por CONSTRUÇÃO, não por medição — e é isto que os separa
+      // dos seis acima, cuja natureza a sonda já conferiu contra o par.
+      'get /api/purchases/orders-summary',
+      'get /api/sales/quotes-summary',
+      'get /api/stock/summary',
+      'get /api/crm/opportunities-summary',
+      'get /api/nav/counters',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 6.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(7)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 11.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(12)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

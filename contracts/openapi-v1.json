@@ -14270,6 +14270,131 @@
           }
         }
       }
+    },
+    "/api/purchases/orders-summary": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseOrdersSummary",
+        "description": "Proposto. Os números da faixa de KPI acima da listagem de ordens de compra, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata.\n\nCaminho sob `/api/purchases/`, e não `/api/purchase-orders/summary`, pelo precedente que já está no contrato (`arrival-forecast`, `stock-replenishment`): agregado ganha prefixo próprio em vez de virar irmão de `/{id}`, onde `summary` e um uuid disputam a mesma posição do roteador. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrdersSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/sales/quotes-summary": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetQuotesSummary",
+        "description": "Proposto. Os números da faixa de KPI acima da listagem de orçamentos, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuotesSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/stock/summary": {
+      "get": {
+        "tags": ["estoque"],
+        "operationId": "GetStockSummary",
+        "description": "Proposto. Os números da faixa de KPI acima das listagens de estoque (valorizado, parado, movimentação), da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/crm/opportunities-summary": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "GetOpportunitiesSummary",
+        "description": "Proposto. Os números da faixa de KPI acima do funil de oportunidades, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunitiesSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/nav/counters": {
+      "get": {
+        "tags": ["nav"],
+        "operationId": "GetNavCounters",
+        "description": "Proposto. Os contadores da navegação, do usuário e da EMPRESA ATIVA da sessão, numa leitura só. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavCountersDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -25098,6 +25223,267 @@
             "format": "int32"
           }
         }
+      },
+      "KpiSeriesDto": {
+        "description": "Proposto. A série da sparkline de um KPI: os **doze últimos meses fechados**, do mais antigo para o mais recente, na unidade do número que ela acompanha (centavos quando o KPI é dinheiro, contagem quando é contagem).\n\nÉ um schema só, referenciado pelas quatro famílias, porque a JANELA é propriedade do desenho e não de cada resumo: quatro cópias divergiriam na primeira vez que alguém mudasse uma para dezoito meses, e a faixa passaria a comparar sparklines de escalas diferentes lado a lado.\n\nMenos de doze pontos é resposta legítima — empresa nova não tem doze meses de movimento. A tela desenha o que veio; não completa com zero, que seria inventar queda que não houve.",
+        "type": "array",
+        "maxItems": 12,
+        "items": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "PurchaseOrdersSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI da listagem de ORDENS DE COMPRA. Dinheiro em CENTAVOS, inteiro — a regra do repo vale no contrato. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openOrders",
+          "openOrdersValueCents",
+          "lateOrders",
+          "arrivingThisWeek",
+          "monthValueCents",
+          "previousMonthValueCents",
+          "monthlyValueSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openOrders": {
+            "description": "Ordens ainda não recebidas por inteiro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openOrdersValueCents": {
+            "description": "Valor somado das ordens em aberto.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "lateOrders": {
+            "description": "Destas, quantas com previsão de chegada já vencida.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "arrivingThisWeek": {
+            "description": "Destas, quantas com previsão nos próximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthValueCents": {
+            "description": "Emitido no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthValueCents": {
+            "description": "Emitido no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyValueSeries": {
+            "description": "Emitido por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "QuotesSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI da listagem de ORÇAMENTOS. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openQuotes",
+          "openQuotesValueCents",
+          "expiringThisWeek",
+          "wonThisMonth",
+          "monthValueCents",
+          "previousMonthValueCents",
+          "monthlyValueSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openQuotes": {
+            "description": "Orçamentos em aberto — nem virados em pedido, nem cancelados.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openQuotesValueCents": {
+            "description": "Valor somado dos orçamentos em aberto.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiringThisWeek": {
+            "description": "Destes, quantos com validade nos próximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "wonThisMonth": {
+            "description": "Quantos viraram pedido de venda no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthValueCents": {
+            "description": "Valor dos orçamentos emitidos no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthValueCents": {
+            "description": "O mesmo, no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyValueSeries": {
+            "description": "Emitido por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "StockSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI das listagens de ESTOQUE. O valor do estoque é fotografia do instante, e por isso a base de comparação é o FECHAMENTO do mês anterior — comparar com \"o mês corrente\" não faria sentido para um saldo. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "variantCount",
+          "criticalItems",
+          "stockValueCents",
+          "previousMonthStockValueCents",
+          "movementsThisMonth",
+          "monthlyValueSeries",
+          "unpricedVariants"
+        ],
+        "type": "object",
+        "properties": {
+          "variantCount": {
+            "description": "Variantes ativas com saldo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "criticalItems": {
+            "description": "Destas, quantas com saldo abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockValueCents": {
+            "description": "Valor do estoque AGORA, pelo mesmo preço de valoração que `GET /api/reports/stock-valuation` usa — não um segundo critério. Variante sem preço na empresa NÃO entra na soma (não vale zero, vale desconhecido), e é `unpricedVariants` que diz quantas ficaram de fora: sem esse par, um buraco de cadastro apareceria como estoque barato.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthStockValueCents": {
+            "description": "O mesmo valor no fechamento do mês anterior, pelo mesmo critério.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "movementsThisMonth": {
+            "description": "Movimentos lançados no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyValueSeries": {
+            "description": "Valor do estoque no fechamento de cada mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          },
+          "unpricedVariants": {
+            "description": "Variantes ativas com saldo e SEM preço — as que ficaram fora de `stockValueCents`. Zero é a resposta normal; qualquer outra coisa é cadastro para arrumar, e o número existe para o operador saber que a soma acima está incompleta antes de decidir por ela.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OpportunitiesSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI do funil de OPORTUNIDADES. `weightedValueCents` é o aberto ponderado pela probabilidade da etapa — apurado no servidor porque a probabilidade é do funil, não da tela, e a tela não tem como somá-la sem baixar o funil inteiro. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openOpportunities",
+          "openValueCents",
+          "weightedValueCents",
+          "wonThisMonth",
+          "wonThisMonthCents",
+          "previousMonthWonCents",
+          "monthlyWonSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openOpportunities": {
+            "description": "Oportunidades em etapa aberta.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openValueCents": {
+            "description": "Valor somado das oportunidades abertas.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "weightedValueCents": {
+            "description": "O mesmo valor, ponderado pela probabilidade da etapa.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "wonThisMonth": {
+            "description": "Quantas foram ganhas no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "wonThisMonthCents": {
+            "description": "Valor ganho no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthWonCents": {
+            "description": "Valor ganho no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyWonSeries": {
+            "description": "Ganho por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "NavCountersDto": {
+        "description": "Proposto. Os contadores que a NAVEGAÇÃO mostra ao lado dos itens — o número que diz \"tem coisa aqui\" antes de a pessoa entrar.\n\n**É UMA chamada, e não uma por módulo, de propósito:** a sidebar mostra os oito ao mesmo tempo, e oito consultas para desenhar uma coluna dariam oito instantes diferentes no mesmo quadro — o item some de um contador e aparece noutro sem nunca ter existido nos dois. Um DTO é uma leitura só, coerente consigo mesma.\n\nContagem, nunca dinheiro: badge de navegação que mostra valor obriga a ler antes de decidir para onde ir, que é o contrário do que ela serve. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "required": [
+          "quotesOpen",
+          "ordersOpen",
+          "purchaseOrdersOpen",
+          "goodsReceiptsPending",
+          "opportunitiesOpen",
+          "tasksDue",
+          "todosOpen",
+          "stockCritical"
+        ],
+        "type": "object",
+        "properties": {
+          "quotesOpen": {
+            "description": "Orçamentos em aberto.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "ordersOpen": {
+            "description": "Pedidos de venda ainda não concluídos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "purchaseOrdersOpen": {
+            "description": "Ordens de compra ainda não recebidas por inteiro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "goodsReceiptsPending": {
+            "description": "Recebimentos conferidos e ainda não lançados.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "opportunitiesOpen": {
+            "description": "Oportunidades em etapa aberta.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "tasksDue": {
+            "description": "Tarefas do usuário da sessão com prazo hoje ou vencido.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "todosOpen": {
+            "description": "Itens de A fazer não concluídos, do usuário da sessão.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockCritical": {
+            "description": "Variantes com saldo abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -25158,6 +25544,10 @@
     },
     {
       "name": "financeiro"
+    },
+    {
+      "name": "nav",
+      "description": "Proposto. Os contadores que a navegação mostra — a única família cujo consumidor é o CHROME da aplicação, e não uma tela. Tag própria porque o número não pertence a módulo nenhum: ele atravessa os oito."
     }
   ]
 }

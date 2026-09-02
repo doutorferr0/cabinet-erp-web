@@ -40,11 +40,30 @@ describe('CabecalhoDoRegistro', () => {
     expect(container.querySelector('[data-slot="registro-id"]')).toBeNull()
   })
 
-  it('badge e procedência ficam na linha de meta, abaixo do título', () => {
+  /**
+   * O cabeçalho de documento é o MESMO `PageHeader` de toda tela — só a
+   * variante muda (D5). Uma faixa própria aqui teria o mesmo desenho com
+   * outros valores, que é a deriva que a guarda de rota daquela issue existe
+   * para impedir.
+   */
+  it('é o cabeçalho de página na variante registro, sem caixa em volta', () => {
+    render(<CabecalhoDoRegistro titulo="Pedido de compra" id="PC-001" />)
+    const cabecalho = screen.getByRole('heading', { level: 1 }).closest('header')
+
+    expect(cabecalho).toHaveAttribute('data-slot', 'page-header')
+    expect(cabecalho).toHaveAttribute('data-variante', 'registro')
+    // Nem a zona lilás da banda, nem o traço de 2px: a fronteira com o que vem
+    // abaixo é espaço.
+    expect(cabecalho?.className).not.toContain('zone-id')
+    expect(cabecalho?.className).not.toContain('border-2')
+  })
+
+  it('badge fica junto do id; a procedência desce para a linha de baixo', () => {
     render(
       <CabecalhoDoRegistro
         titulo="Ordem de compra"
         id="OC-5102"
+        modo="Consulta"
         badge={{ tom: 'open', label: 'Enviada' }}
         meta="Mister LED · criada 20/08/2026 por Henrique · reagendada 1×"
       />,
@@ -52,9 +71,12 @@ describe('CabecalhoDoRegistro', () => {
 
     expect(screen.getByText('Enviada')).toHaveAttribute('data-tom', 'open')
     const meta = screen.getByText(/reagendada 1×/)
+    expect(meta).toHaveAttribute('data-slot', 'page-header-subtitulo')
     expect(meta.className).toContain('t-meta')
-    // A meta é irmã do badge e NÃO parte do nome acessível do documento.
-    expect(screen.getByRole('heading', { name: 'Ordem de compra OC-5102' })).toBeInTheDocument()
+    // O modo é RÓTULO ao lado do título, não parte dele: colados, o leitor de
+    // tela anunciava "Ordem de compra — Consulta" como nome do documento.
+    expect(screen.getByText('Consulta')).toHaveAttribute('data-slot', 'page-header-contexto')
+    expect(screen.getByRole('heading', { name: 'Ordem de compra' })).toBeInTheDocument()
   })
 
   /**
@@ -88,13 +110,15 @@ describe('CabecalhoDoRegistro', () => {
     expect(screen.queryByRole('button', { name: /Gravar/ })).not.toBeInTheDocument()
   })
 
-  it('ghost e secundária ficam à vista; o perigoso fica atrás do ···', async () => {
+  it('as ações fracas ficam à vista; o perigoso fica atrás do ···', async () => {
     const cancelar = vi.fn()
     const { user } = renderWithQuery(
       <CabecalhoDoRegistro
         titulo="Orçamento"
-        ghost={[{ id: 'imprimir', label: 'Imprimir' }]}
-        secundarias={[{ id: 'duplicar', label: 'Duplicar' }]}
+        acoes={[
+          { id: 'imprimir', label: 'Imprimir' },
+          { id: 'duplicar', label: 'Duplicar' },
+        ]}
         menu={[
           { id: 'cancelar', label: 'Cancelar orçamento', destrutiva: true, onClick: cancelar },
         ]}

@@ -1,83 +1,117 @@
 import { Button } from '@/components/ui/button'
 import { type Aviso, assinarAvisos, avisosAtuais, dispensarAviso } from '@/lib/avisos'
-import { Check, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { X } from 'lucide-react'
 import { useEffect, useSyncExternalStore } from 'react'
 
-/** Quanto tempo um aviso fica na tela antes de sair sozinho. */
+/** Quanto tempo uma CONFIRMAÇÃO fica na faixa antes de sair sozinha. */
 const DURACAO_MS = 6000
 
 /**
- * A REGIÃO DE AVISOS — onde "gravou" e "desativou" aparecem (Polaris-6, #201).
+ * O tint e a tinta de cada tom, escritos uma vez.
  *
- * Monta uma vez, na raiz, e escuta a fila de `lib/avisos`. Fica fora de
+ * Fundo em alpha (`--*-bg`) e não em tint sobre folha: a faixa pousa sobre a
+ * bancada da appbar em claro e sobre a folha escura no escuro, e alpha é o que
+ * atravessa os dois temas com um valor só (`tokens-2.0.css` §semântica).
+ */
+const TINTA_DO_TOM = {
+  ok: 'bg-[var(--ok-bg)] text-[var(--ok)]',
+  info: 'bg-[var(--info-bg)] text-[var(--info)]',
+  warn: 'bg-[var(--warn-bg)] text-[var(--warn)]',
+  bad: 'bg-[var(--bad-bg)] text-[var(--bad)]',
+} as const
+
+/**
+ * A REGIÃO DE AVISOS — onde "gravou" e "desativou" aparecem (Polaris-6, #201),
+ * e desde a 2.0 (D5) uma FAIXA logo abaixo da appbar, não um cartão flutuante.
+ *
+ * Monta uma vez, no shell, e escuta a fila de `lib/avisos`. Fica fora de
  * qualquer tela de propósito: o aviso nasce numa tela que está saindo (o
  * `Gravar` navega de volta para a listagem) e precisa continuar vivo na que
  * entra.
  *
+ * ## Por que faixa, e por que ali
+ *
+ * O cartão flutuante do 1.x pousava no canto inferior direito, com borda preta
+ * de 2px e sombra dura — três ferramentas de separação (borda, sombra e a
+ * própria flutuação) para uma frase de cinco palavras, no canto mais longe do
+ * que o operador estava olhando. A faixa gasta UMA (tint), aparece onde o olho
+ * acabou de passar ao trocar de tela, e empurra o conteúdo em vez de cobri-lo —
+ * aviso que tapa botão é aviso que atrapalha quem já entendeu.
+ *
+ * ## O relógio é do tom, não da região
+ *
+ * Só `ok` sai sozinho. `warn` e `bad` ficam até alguém dispensar, porque é
+ * exatamente o que o próprio `lib/avisos` diz do que não pode sumir em cinco
+ * segundos: o que o operador precisa LER e AGIR. Uma região que apaga tudo por
+ * tempo transforma a diferença entre "gravou" e "não gravou" em sorte.
+ *
  * ## Acessibilidade sem roubar o foco
  *
- * `aria-live="polite"` num container que existe SEMPRE — região viva criada
- * junto com o texto costuma não ser anunciada, porque o leitor de tela precisa
- * já estar observando o nó quando o conteúdo muda. Nada de `role="alert"`
- * (assertivo interrompe a leitura em curso) e nada de mover o foco: o operador
+ * `aria-live` num container que existe SEMPRE — região viva criada junto com o
+ * texto costuma não ser anunciada, porque o leitor de tela precisa já estar
+ * observando o nó quando o conteúdo muda. Nada de mover o foco: o operador
  * acabou de agir e já está olhando para a tela; roubar o foco tiraria o cursor
- * do campo em que ele estiver.
- *
- * O botão de dispensar existe porque o relógio não serve a todos: quem lê
- * devagar, ou usa leitor de tela, precisa de um jeito de tirar o aviso da
- * frente sem esperar — e de um jeito de alcançá-lo pelo teclado, já que ele é
- * o último da ordem de tabulação da página.
+ * do campo em que ele estiver. `assertive` só quando há falha na fila — é o
+ * caso em que interromper a leitura em curso é o certo.
  *
  * ## Por que não desmonta a página inteira quando some
  *
  * `useSyncExternalStore` lê a fila do módulo. Sem ele, a alternativa seria um
  * contexto no topo da árvore: cada aviso re-renderizaria o app inteiro para
- * mudar uma caixinha no canto.
+ * mudar uma faixa.
  */
 export function RegiaoDeAvisos() {
   const avisos = useSyncExternalStore(assinarAvisos, avisosAtuais, avisosAtuais)
+  const urgente = avisos.some((aviso) => aviso.tom === 'bad')
 
   return (
-    // `pointer-events-none` no container e `auto` no cartão: a faixa vazia
-    // ocupa o canto inferior direito da tela inteira, e sem isso ela engoliria
-    // o clique de quem mira num botão embaixo dela.
     <div
-      aria-live="polite"
+      aria-live={urgente ? 'assertive' : 'polite'}
       data-slot="regiao-de-avisos"
-      className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2"
+      className="shrink-0 empty:hidden"
     >
       {avisos.map((aviso) => (
-        <CartaoDeAviso key={aviso.id} aviso={aviso} />
+        <FaixaDeAviso key={aviso.id} aviso={aviso} />
       ))}
     </div>
   )
 }
 
-function CartaoDeAviso({ aviso }: { aviso: Aviso }) {
+function FaixaDeAviso({ aviso }: { aviso: Aviso }) {
+  const tom = aviso.tom ?? 'ok'
+
   useEffect(() => {
+    if (tom !== 'ok') return
     const relogio = setTimeout(() => dispensarAviso(aviso.id), DURACAO_MS)
     return () => clearTimeout(relogio)
-  }, [aviso.id])
+  }, [aviso.id, tom])
 
   return (
-    <div className="pointer-events-auto flex max-w-sm items-start gap-2.5 rounded-card border-2 border-border bg-card px-3.5 py-2.5 shadow-el3">
-      {/* O sinal é o mesmo do `Gravar` — quem apertou o botão com este desenho
-          reconhece a resposta dele. `aria-hidden`: quem informa é o texto.
-          Em TINTA, não em verde: o verde deste sistema tem dono (`--zone-money`,
-          dinheiro) e não há token de sucesso — pintar um de improviso aqui
-          criaria a segunda voz do verde na mesma tela. */}
-      <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <div className="flex min-w-0 flex-col">
-        <span className="font-semibold text-sm">{aviso.texto}</span>
+    <div
+      data-slot="faixa-de-aviso"
+      data-tom={tom}
+      // Sem borda e sem sombra: a natureza da região já a separa do conteúdo
+      // (§Hierarquia — tint, e uma ferramenta por fronteira). `py-2 px-4`
+      // alinha o texto com a migalha da appbar, na mesma calha de 16px.
+      className={cn('flex items-center gap-3 px-4 py-2', TINTA_DO_TOM[tom])}
+    >
+      <p className="t-ui min-w-0 flex-1 font-semibold">
+        {aviso.texto}
         {aviso.detalhe ? (
-          <span className="truncate text-muted-foreground text-sm">{aviso.detalhe}</span>
+          // O detalhe divide a LINHA com o texto, não uma linha própria: a
+          // faixa empurra o conteúdo para baixo, e cada linha dela custa altura
+          // em toda tela que o aviso atravessar.
+          <span className="t-meta ml-2 font-normal opacity-80">{aviso.detalhe}</span>
         ) : null}
-      </div>
+      </p>
       <Button
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="-mr-1.5 ml-auto"
+        // `text-current`: a tecla herda a tinta do tom, senão o `X` sairia em
+        // n-900 sobre âmbar — a única peça da faixa fora da própria voz dela.
+        className="-mr-1.5 shrink-0 text-current hover:bg-black/5"
         aria-label={`Dispensar aviso: ${aviso.texto}`}
         onClick={() => dispensarAviso(aviso.id)}
       >

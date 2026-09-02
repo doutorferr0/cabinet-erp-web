@@ -1,3 +1,4 @@
+import { BotaoVoltar } from '@/components/cabinet/botao-voltar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,7 +11,7 @@ import { type LucideIcon, MoreHorizontal } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
- * Ação do cabeçalho — a mesma forma para a primária e para as do menu `⋯`.
+ * Ação do cabeçalho — a mesma forma para a fraca, a forte e a do menu `⋯`.
  *
  * Não é a `DataTableAction`: aquela carrega a linha selecionada no `onClick`
  * (`(row: T | null) => void`) porque nasceu dentro da tabela, que é quem sabe o
@@ -29,8 +30,7 @@ export interface AcaoDeCabecalho {
    * Por que a ação não serve agora. Sai **visível**, em linha própria dentro do
    * item, e não no `title`: item de menu desabilitado não recebe evento de
    * mouse em toda plataforma, e um motivo que só aparece no hover é um motivo
-   * que metade dos operadores nunca lê. A barra antiga podia se dar ao luxo do
-   * `title` porque o botão ficava à vista o tempo todo.
+   * que metade dos operadores nunca lê.
    */
   motivo?: string
   /** Desativação/cancelamento — tinta de destrutivo no item. */
@@ -40,8 +40,29 @@ export interface AcaoDeCabecalho {
 export interface PageHeaderProps {
   /** Nome da tela, literal da transcrição ("Cadastro de Clientes"). */
   titulo: string
-  /** Contexto que qualifica o título (empresa, banco, nº do documento). */
+  /**
+   * A linha de baixo: o que a tela TEM agora ("14 ordens · 3 fornecedores"),
+   * não o que ela é. Descrever a tela em prosa embaixo do próprio nome é ruído
+   * que o operador aprende a pular no segundo dia.
+   */
+  subtitulo?: string
+  /** Contexto que qualifica o título (modo da tela, empresa, nº do documento). */
   contexto?: string
+  /**
+   * As ações FRACAS da tela, à esquerda do `⋯` — o que vale a pena estar à
+   * vista sem disputar com a primária (`Imprimir`, `Exportar`).
+   *
+   * ## Por que a forte continua numa prop própria
+   *
+   * O mockup desenha três pesos na faixa (ghost · `⋯` · primária), e a leitura
+   * literal disso seria UMA lista com um campo `tom`. Foi tentado e recusado:
+   * `tom` só descobre a segunda primária em tempo de execução, com um
+   * `console.error` que ninguém lê em produção, e "a ação principal" no plural
+   * não é hierarquia — é a barra Softlux de volta. Com a forte em prop
+   * separada, quem tenta duas não compila. A ordem visual dos três grupos é do
+   * componente, não da tela.
+   */
+  acoes?: readonly AcaoDeCabecalho[]
   /**
    * A ÚNICA ação forte da tela. Uma, e à direita: é o que separa este cabeçalho
    * da barra Softlux, onde `Incluir` tinha o mesmo peso de `Imprimir`.
@@ -55,86 +76,156 @@ export interface PageHeaderProps {
    * em cada item que ele explica.
    */
   avisoDasSecundarias?: string
+  /**
+   * A saída. Ligada por padrão: quem some sozinho quando não há para onde
+   * voltar é o `BotaoVoltar` (tela que o menu publica não ganha tecla). Passar
+   * `false` é para a tela que MONTA a própria saída — o diálogo em página
+   * inteira do login, por exemplo.
+   */
+  voltar?: boolean
+  /**
+   * O degrau do título na régua (§Hierarquia), e são três porque a régua tem
+   * três: `pagina` (28px, o padrão), `registro` (24px — a ficha e o documento,
+   * onde o id em mono divide a linha com o nome) e `display` (30px, reservado
+   * à saudação do dashboard e ao claim do login).
+   *
+   * Não é escolha de gosto da tela: `--t-display` tem UM uso declarado, e
+   * `registro` e `pagina` nunca coexistem numa tela ("um Gambarino por tela,
+   * no máximo dois").
+   */
+  variante?: 'display' | 'pagina' | 'registro'
   /** Fim da faixa: carimbo, nº do documento — o que a tela precisar. */
   children?: ReactNode
   className?: string
 }
 
 /**
- * CABEÇALHO DE PÁGINA (Polaris-2, issue #197) — título à esquerda, **uma** ação
- * forte à direita, o resto atrás do `⋯`.
+ * Cada variante é UM degrau da régua, escrito uma vez. A tela pede o papel
+ * ("isto é uma ficha"), não a medida — mudar 24 para 22 é uma linha em
+ * `index.css`, e nenhuma tela precisa saber.
+ */
+const DEGRAU_DO_TITULO = {
+  display: 't-display',
+  pagina: 't-pagina',
+  registro: 't-registro',
+} as const
+
+/**
+ * CABEÇALHO DE PÁGINA 2.0 (Reface 2.0 · D5) — o título desce da casca para o
+ * CONTEÚDO, em Gambarino 28px, com o subtítulo de dado embaixo e as ações à
+ * direita.
  *
- * Substitui, nas listagens, a barra herdada do Softlux: sete botões de peso
- * igual (`Filtro · Incluir · Alterar · Consul. · Excluir · Imprimir`) enfileirados
- * acima da tabela. Ela era fiel ao legado e cara de ler — a ação que o operador
- * usa dez vezes por dia tinha o mesmo desenho da que ele usa uma vez por mês, e
- * escolher entre sete iguais custa uma parada a cada abertura de tela.
+ * ## Um `<h1>` no sistema inteiro, e ele é este
  *
- * O que muda de fato:
+ * Antes havia três vozes para a mesma frase: o `<h1>` deste componente, o
+ * `<h1>` dentro da caixa preta da `BandaDeIdentidade` (19 telas) e o `<h1>`
+ * solto copiado em rota (`Previsão de Chegada`, `Tarefas`, `Planner`). Cada uma
+ * com sua fonte, seu tamanho e sua caixa. Na 2.0 todas passam por aqui —
+ * `grep "<h1" src/routes src/features` não acha nenhum, e mudar o degrau do
+ * título do sistema volta a ser uma linha.
  *
- * 1. **`Incluir` vira a única peça forte** e mora sempre no mesmo canto, em
- *    toda tela. Achar não depende mais de ler a fileira.
- * 2. **Ação de REGISTRO (`Alterar`, `Consul.`, `Excluir`) sai do caminho** — ela
- *    só existe depois de haver linha marcada, e um botão que passa o dia
- *    desabilitado ocupa o lugar de um que serve. Enquanto a linha clicável não
- *    chega (Polaris-3), o `⋯` é onde elas ficam, e o menu DIZ que falta escolher
- *    a linha.
- * 3. **Filtro, colunas e consultas salvas NÃO sobem para cá.** Os três respondem
- *    "como esta listagem está montada agora" e continuam junto da tabela, que é
- *    o que eles montam. Subir só o `Filtro` separaria irmãos.
+ * ## A caixa preta saiu
  *
- * A banda preta da `BandaDeIdentidade` não vem junto: com a fundação Polaris
- * (#195) o título é hierarquia tipográfica, não caixa pintada. Ela segue em pé
- * onde ainda não houve troca — formulário, documento, boletim.
+ * A banda pintava uma faixa lilás com borda de 2px em volta do nome da tela.
+ * Pela §Hierarquia, título é TIPO, não caixa: a fronteira entre o cabeçalho e o
+ * que vem abaixo é espaço (`--s-5`), e gastar borda + fundo + gradiente ali
+ * consumia três das quatro ferramentas de separação numa fronteira que não
+ * precisava de nenhuma.
  *
- * ## A SAÍDA NÃO MORA AQUI (issue #235)
+ * ## A saída volta para o cabeçalho, e agora sem opt-in
  *
- * Havia a prop `voltar`, opt-in, e de três consumidores deste cabeçalho **um**
- * a passava: as outras telas ficavam sem saída visível. Desde a #235 quem monta
- * a saída é a folha (`PageFrame` → `BotaoVoltar`), no canto superior esquerdo
- * de toda tela — a regra fixa da espec da fusão v5.
- *
- * Devolver a prop devolve o buraco: volta a existir tela com saída e tela sem,
- * e a que tiver passa a mostrar duas.
+ * A prop `voltar` já existiu, era opcional, e de três consumidores UM a passava
+ * — o resto das telas ficava sem saída visível (#235, que a mudou para o
+ * `PageFrame`). Ela volta porque o mockup 2.0 põe a tecla colada no título, que
+ * é onde o olho já está; o que não volta é o opt-in: o padrão é LIGADO e quem
+ * decide se há tecla é `rotaMaeDe`, não a tela. Tela nova continua nascendo com
+ * saída sem ninguém lembrar de pedir.
  */
 export function PageHeader({
   titulo,
+  subtitulo,
   contexto,
+  acoes = [],
   primaria,
   secundarias = [],
   avisoDasSecundarias,
+  voltar = true,
+  variante = 'pagina',
   children,
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2', className)}>
-      {/* Headline: um por tela, na voz de QUEM (o seletor `h1` do `index.css`
-          dá a serifada). `min-w-0` + `truncate` porque título de documento
-          carrega nome de cliente, e nome comprido não pode empurrar a ação
-          primária para fora da linha. */}
-      <h1 className="min-w-0 truncate font-bold text-2xl">{titulo}</h1>
+    <header
+      data-slot="page-header"
+      data-variante={variante}
+      // A fronteira com o que vem abaixo é ESPAÇO, sem linha (§Hierarquia:
+      // uma ferramenta de separação por fronteira, e a mais barata que resolve).
+      className={cn('mb-6 flex flex-wrap items-start gap-x-3 gap-y-2', className)}
+    >
+      {voltar ? <BotaoVoltar /> : null}
 
-      {contexto ? (
-        <span className="font-bold font-mono text-[0.75rem] text-text-strong uppercase tracking-[0.07em]">
-          {contexto}
-        </span>
-      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          {/* `t-pagina`/`t-registro`: os degraus da §Hierarquia, definidos uma
+              vez em `index.css` (D1). Tamanho literal aqui seria a 12ª medida
+              de um sistema que tem 11. `min-w-0` + `truncate` porque título de
+              documento carrega nome de cliente, e nome comprido não pode
+              empurrar a ação primária para fora da linha. */}
+          <h1
+            data-slot="page-header-titulo"
+            className={cn('min-w-0 truncate', DEGRAU_DO_TITULO[variante])}
+          >
+            {titulo}
+          </h1>
 
-      {children}
+          {/* O MODO da tela é rótulo, não título: `t-rotulo` é o único degrau
+              em caixa alta da régua, e ele não leva caixa nem borda próprias
+              (§Hierarquia). O pill âmbar da banda 1.x era a segunda ferramenta
+              de separação numa fronteira que já tinha espaço. */}
+          {contexto ? (
+            <span
+              data-slot="page-header-contexto"
+              className="t-rotulo shrink-0 text-muted-foreground"
+            >
+              {contexto}
+            </span>
+          ) : null}
+
+          {children}
+        </div>
+
+        {subtitulo ? (
+          <p data-slot="page-header-subtitulo" className="t-meta text-muted-foreground">
+            {subtitulo}
+          </p>
+        ) : null}
+      </div>
 
       {/* `ml-auto` no GRUPO, não em cada peça: as ações formam um bloco só no
           canto, com o mesmo gutter entre elas que o resto da tela usa. */}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {acoes.map((acao) => (
+          <Button
+            key={acao.id}
+            type="button"
+            variant="ghost"
+            disabled={acao.disabled === true}
+            {...(acao.motivo ? { title: acao.motivo } : {})}
+            onClick={() => acao.onClick?.()}
+          >
+            {acao.icon ? <acao.icon aria-hidden="true" /> : null}
+            {acao.label}
+          </Button>
+        ))}
+
         {secundarias.length > 0 ? (
           <DropdownMenuTrigger>
             <Button type="button" variant="outline" size="icon" aria-label="Mais ações">
               <MoreHorizontal aria-hidden="true" />
             </Button>
             {/* `min-w-64` e não `w-64`: a largura base do menu é a do gatilho
-                (`w-(--trigger-width)`), e aqui o gatilho é um ícone de 36px —
-                sobrescrever a largura dependeria da ordem das classes no CSS,
-                que não é a ordem em que elas aparecem aqui. O mínimo não
-                disputa: ele vence sempre. */}
+                (`w-(--trigger-width)`), e aqui o gatilho é um ícone — o mínimo
+                não disputa com ela, vence sempre. */}
             <DropdownMenu placement="bottom end" className="min-w-64">
               {avisoDasSecundarias ? (
                 <DropdownMenuLabel className="font-normal text-muted-foreground">
@@ -176,6 +267,6 @@ export function PageHeader({
           </Button>
         ) : null}
       </div>
-    </div>
+    </header>
   )
 }

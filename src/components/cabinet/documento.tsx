@@ -1,13 +1,11 @@
 import type { EstadoDoAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
-import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
+import { type AcaoDeCabecalho, PageHeader } from '@/components/cabinet/page-header'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { TotalBox } from '@/components/cabinet/total-box'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { MoreHorizontal } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useWatch } from 'react-hook-form'
 
@@ -37,6 +35,7 @@ export interface IndicadorDeGravacaoProps {
   estado: EstadoDoAutosave
   /** Refaz a gravação que falhou — o botão que o autosave deve ao operador. */
   onTentarDeNovo?: (() => void) | undefined
+  className?: string
 }
 
 /**
@@ -51,7 +50,11 @@ export interface IndicadorDeGravacaoProps {
  * precisão deixa de informar — "salvo há 4 min" responde a mesma pergunta que
  * "há 247 s" e não obriga a tela a repintar para sempre.
  */
-export function IndicadorDeGravacao({ estado, onTentarDeNovo }: IndicadorDeGravacaoProps) {
+export function IndicadorDeGravacao({
+  estado,
+  onTentarDeNovo,
+  className,
+}: IndicadorDeGravacaoProps) {
   const [agora, setAgora] = useState(() => Date.now())
 
   useEffect(() => {
@@ -65,7 +68,11 @@ export function IndicadorDeGravacao({ estado, onTentarDeNovo }: IndicadorDeGrava
 
   if (estado.fase === 'erro' || estado.fase === 'conflito') {
     return (
-      <span data-slot="autosave" data-fase={estado.fase} className="flex items-center gap-2">
+      <span
+        data-slot="autosave"
+        data-fase={estado.fase}
+        className={cn('flex items-center gap-2', className)}
+      >
         {/* `--bad` por `style`, e não por classe utilitária de cor arbitrária:
             §Hierarquia proíbe literal em componente e o token semântico é o que
             vira sozinho no tema escuro. */}
@@ -88,7 +95,11 @@ export function IndicadorDeGravacao({ estado, onTentarDeNovo }: IndicadorDeGrava
   return (
     // `<output>` porque a mensagem MUDA sozinha e sem ação de quem lê — é o
     // mesmo anúncio educado que a barra do cadastro usa.
-    <output data-slot="autosave" data-fase={estado.fase} className="flex items-center gap-2 t-meta">
+    <output
+      data-slot="autosave"
+      data-fase={estado.fase}
+      className={cn('flex items-center gap-2 t-meta', className)}
+    >
       <span
         aria-hidden="true"
         data-slot="autosave-ponto"
@@ -105,17 +116,24 @@ export interface CabecalhoDoRegistroProps {
   titulo: string
   /** O número do documento, em mono ao lado do título — `OC-5102`. */
   id?: string | number | undefined
-  /** Situação do registro. Uma, e a primeira coisa da linha de meta. */
+  /** Modo da tela (`Incluir`, `Consulta`) — rótulo ao lado do título. */
+  modo?: string | undefined
+  /** Situação do registro. Uma, e junto do id. */
   badge?: { tom: StampTom; label: string } | undefined
-  /** "criada em 20/08 por Henrique · reagendada 1×" — a procedência, em `.t-meta`. */
-  meta?: ReactNode
+  /** "Mister LED · criada 20/08 por Henrique · reagendada 1×" — a procedência. */
+  meta?: string | undefined
   /** Estado da fila de autosave; sem ele o cabeçalho não fala de gravação. */
   autosave?: EstadoDoAutosave | undefined
   onTentarDeNovo?: (() => void) | undefined
-  /** Ações fracas, à vista mas sem peso — Imprimir. */
-  ghost?: readonly AcaoDeCabecalho[]
-  /** Ações de contorno — Duplicar. */
-  secundarias?: readonly AcaoDeCabecalho[]
+  /**
+   * As ações fracas, à vista — Imprimir, Duplicar.
+   *
+   * O mockup desenha DOIS pesos aqui (ghost e contorno) e o `PageHeader` 2.0
+   * publica um só, de propósito: a D5 tentou o campo `tom` por ação e recusou,
+   * porque peso escolhido pela tela vira a barra Softlux de volta. Reabrir a
+   * distinção aqui seria a mesma deriva pela porta do documento.
+   */
+  acoes?: readonly AcaoDeCabecalho[]
   /** O que mora atrás do `···`: cancelar, excluir, o que é raro ou perigoso. */
   menu?: readonly AcaoDeCabecalho[]
   /**
@@ -137,9 +155,17 @@ export interface CabecalhoDoRegistroProps {
  * número numa caixa preta. Ela respondia "que tela é esta?", que é a pergunta
  * de quem está perdido — não a de quem abriu a ficha. Quem abre uma ficha já
  * sabe onde está e quer saber **em que pé o registro está e o que fazer com
- * ele**. É essa a informação que o cabeçalho novo carrega, nesta ordem: o nome
- * e o id (que se copia), a situação, a procedência, se está gravado, e a ação
- * que leva o registro ao estado seguinte.
+ * ele**. É essa a informação que o cabeçalho carrega, nesta ordem: o nome e o
+ * id (que se copia), a situação, a procedência, se está gravado, e a ação que
+ * leva o registro ao estado seguinte.
+ *
+ * ## Ele COMPÕE o `PageHeader`, não repete a faixa
+ *
+ * O `PageHeader` da D5 é a voz única do título no sistema — há guarda de rota
+ * (`toda-rota-tem-cabecalho.test.ts`) e guarda de `<h1>`. Uma segunda faixa
+ * aqui teria o mesmo desenho com outros valores, que é a deriva que aquelas
+ * guardas existem para impedir. O que este componente acrescenta é o que só o
+ * REGISTRO tem: o id em mono, a situação, e o estado da gravação.
  *
  * ## `Gravar` não está aqui, e a ausência é a decisão
  *
@@ -148,145 +174,72 @@ export interface CabecalhoDoRegistroProps {
  * `Gravar` ao lado de "Confirmar recebimento" ensinaria que gravar é opcional,
  * que é justamente o contrário do que o autosave promete.
  *
- * ## A saída não mora aqui
+ * ## A saída é a do `PageHeader`
  *
- * O mockup desenha uma tecla de voltar à esquerda do título; no repo ela já
- * existe uma vez por tela, na folha (`PageFrame` → `BotaoVoltar`, issue #235).
- * Repeti-la aqui daria duas saídas na mesma tela — e a regra da #235 é
- * exatamente que exista **uma**, sempre no mesmo canto.
+ * O mockup desenha a tecla de voltar colada no título, e é isso que a D5 faz —
+ * `voltar` ligado por padrão, e quem decide se há tecla é `rotaMaeDe`. Montar
+ * outra aqui daria duas saídas na mesma tela.
  */
 export function CabecalhoDoRegistro({
   titulo,
   id,
+  modo,
   badge,
   meta,
   autosave,
   onTentarDeNovo,
-  ghost = [],
-  secundarias = [],
+  acoes = [],
   menu = [],
   proximaAcao,
   className,
 }: CabecalhoDoRegistroProps) {
   return (
-    <div
-      data-slot="cabecalho-do-registro"
-      // Fronteira entre cabeçalho e conteúdo = ESPAÇO, sem linha (§Hierarquia,
-      // separação nº 1): a régua horizontal aqui seria a segunda ferramenta na
-      // mesma fronteira.
-      className={cn('flex flex-wrap items-center gap-x-3 gap-y-2', className)}
+    <PageHeader
+      titulo={titulo}
+      // Documento é REGISTRO, não página: o degrau de 24px da régua, com o id
+      // em mono ao lado. `escalaTitulo="documento"` subia o título para 36px —
+      // uma 12ª medida num sistema de 11 degraus.
+      variante="registro"
+      {...(modo ? { contexto: modo } : {})}
+      {...(meta ? { subtitulo: meta } : {})}
+      {...(acoes.length > 0 ? { acoes } : {})}
+      {...(menu.length > 0 ? { secundarias: menu } : {})}
+      {...(proximaAcao ? { primaria: proximaAcao } : {})}
+      {...(className ? { className } : {})}
     >
-      <div className="flex min-w-0 flex-col gap-1">
-        <h1 className="t-registro min-w-0 truncate">
-          {titulo}
-          {id !== undefined && id !== '' ? (
-            <span
-              data-slot="registro-id"
-              // Sem classe própria na fundação: `.t-registro` descreve o id
-              // mono 20 n-500 na tabela da §Hierarquia mas não o publica como
-              // degrau. Fallback declarado até D1 abrir `--t-registro-id`
-              // (comentado na #469).
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--t-registro-id, 20px)',
-                fontWeight: 500,
-                letterSpacing: 0,
-                color: 'var(--n-500)',
-                marginLeft: 'var(--s-2)',
-              }}
-            >
-              {id}
-            </span>
-          ) : null}
-        </h1>
+      {id !== undefined && id !== '' ? (
+        <span
+          data-slot="registro-id"
+          // Sem classe própria na fundação: `.t-registro` descreve o id mono 20
+          // n-500 na tabela da §Hierarquia mas não o publica como degrau.
+          // Fallback declarado até D1 abrir `--t-registro-id` (comentado na
+          // #469).
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--t-registro-id, 20px)',
+            fontWeight: 500,
+            letterSpacing: 0,
+            color: 'var(--n-500)',
+          }}
+        >
+          {id}
+        </span>
+      ) : null}
 
-        {badge || meta ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {badge ? <Stamp tom={badge.tom} label={badge.label} /> : null}
-            {meta ? <span className="t-meta">{meta}</span> : null}
-          </div>
-        ) : null}
-      </div>
+      {badge ? <Stamp tom={badge.tom} label={badge.label} /> : null}
 
-      {/* `ml-auto` no GRUPO: as ações formam um bloco só no canto, e o estado de
-          gravação entra nele porque é o que explica a ausência do `Gravar`. */}
-      <div className="ml-auto flex flex-wrap items-center gap-2">
-        {autosave ? (
-          <IndicadorDeGravacao estado={autosave} onTentarDeNovo={onTentarDeNovo} />
-        ) : null}
-
-        {ghost.map((acao) => (
-          <Button
-            key={acao.id}
-            type="button"
-            variant="ghost"
-            disabled={acao.disabled === true}
-            {...(acao.motivo ? { title: acao.motivo } : {})}
-            onClick={() => acao.onClick?.()}
-          >
-            {acao.icon ? <acao.icon aria-hidden="true" /> : null}
-            {acao.label}
-          </Button>
-        ))}
-
-        {secundarias.map((acao) => (
-          <Button
-            key={acao.id}
-            type="button"
-            variant="outline"
-            disabled={acao.disabled === true}
-            {...(acao.motivo ? { title: acao.motivo } : {})}
-            onClick={() => acao.onClick?.()}
-          >
-            {acao.icon ? <acao.icon aria-hidden="true" /> : null}
-            {acao.label}
-          </Button>
-        ))}
-
-        {menu.length > 0 ? (
-          <DropdownMenuTrigger>
-            <Button type="button" variant="outline" size="icon" aria-label="Mais ações">
-              <MoreHorizontal aria-hidden="true" />
-            </Button>
-            <DropdownMenu placement="bottom end" className="min-w-56">
-              {menu.map((acao) => (
-                <DropdownMenuItem
-                  key={acao.id}
-                  textValue={acao.label}
-                  isDisabled={acao.disabled === true}
-                  {...(acao.destrutiva ? { variant: 'destructive' as const } : {})}
-                  onAction={() => acao.onClick?.()}
-                >
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="flex items-center gap-1.5">
-                      {acao.icon ? <acao.icon aria-hidden="true" /> : null}
-                      {acao.label}
-                    </span>
-                    {/* Motivo VISÍVEL, e não no `title`: item de menu
-                        desabilitado não recebe evento de mouse em toda
-                        plataforma. */}
-                    {acao.motivo ? <span className="t-meta">{acao.motivo}</span> : null}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenu>
-          </DropdownMenuTrigger>
-        ) : null}
-
-        {proximaAcao ? (
-          <Button
-            type="button"
-            data-slot="proxima-acao"
-            disabled={proximaAcao.disabled === true}
-            {...(proximaAcao.motivo ? { title: proximaAcao.motivo } : {})}
-            onClick={() => proximaAcao.onClick?.()}
-          >
-            {proximaAcao.icon ? <proximaAcao.icon aria-hidden="true" /> : null}
-            {proximaAcao.label}
-          </Button>
-        ) : null}
-      </div>
-    </div>
+      {/* `ml-auto` empurra o estado da gravação para o fim da coluna do
+          título, encostado no grupo de ações — que é onde o mockup o põe. O
+          `PageHeader` não tem slot próprio para ele, e abrir um seria mexer na
+          zona da D5; se a rodada quiser o slot, ele é uma prop `estado` lá. */}
+      {autosave ? (
+        <IndicadorDeGravacao
+          estado={autosave}
+          className="ml-auto"
+          {...(onTentarDeNovo ? { onTentarDeNovo } : {})}
+        />
+      ) : null}
+    </PageHeader>
   )
 }
 

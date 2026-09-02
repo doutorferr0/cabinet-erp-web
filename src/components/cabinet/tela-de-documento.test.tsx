@@ -108,7 +108,10 @@ describe('TelaDeDocumento', () => {
       </TelaDeDocumento>,
     )
 
-    expect(await screen.findByRole('heading', { name: 'Orçamento 184' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Orçamento' })).toBeInTheDocument()
+    // O id é IRMÃO do `<h1>`, e não parte dele: quem ouve a tela ouve o nome
+    // do documento, não "Orçamento 184" como se fosse o nome.
+    expect(container.querySelector('[data-slot="registro-id"]')).toHaveTextContent('184')
     expect(screen.getByText('formulário do documento')).toBeInTheDocument()
     expect(container.querySelector('[data-slot="documento-frame"]')).toBeNull()
     expect(container.querySelector('[data-slot="documento-etiqueta"]')).toBeNull()

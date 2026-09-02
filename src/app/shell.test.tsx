@@ -57,10 +57,16 @@ function setup(initialUrl = '/') {
   return renderRoute(initialUrl, fetchStub)
 }
 
-/** A fileira de seções da topbar — escopo pelo `aria-label`, que é o contrato. */
+/**
+ * A fileira de seções — escopo pelo `aria-label`, que é o contrato.
+ *
+ * Ela desceu para a BARRA na 2.0 (D5): a appbar ficou com migalha e quatro
+ * ações globais, e nada mais. A casa definitiva da fileira é a barra única de
+ * D4 — até lá ela mora no `cinto-provisorio`, dentro do cabeçalho da barra.
+ */
 function fileira() {
   return within(
-    document.querySelector('[data-slot="appbar"] nav[aria-label="Seções"]') as HTMLElement,
+    document.querySelector('[data-slot="sidebar"] nav[aria-label="Seções"]') as HTMLElement,
   )
 }
 
@@ -91,7 +97,7 @@ describe('AppShell', () => {
     // O único caminho até ela: a engrenagem da topbar, que NAVEGA.
     const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
     expect(topo.getByRole('link', { name: 'Configurações' })).toHaveAttribute('href', '/config')
-    expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /alternar para o tema/i })).toBeInTheDocument()
   })
 
   /**
@@ -184,7 +190,7 @@ describe('AppShell', () => {
     // gatilho — um `querySelector` dentro dele devolvia `null`.
     const icones = [
       ...(
-        document.querySelector('[data-slot="appbar"] nav[aria-label="Seções"]') as HTMLElement
+        document.querySelector('[data-slot="sidebar"] nav[aria-label="Seções"]') as HTMLElement
       ).querySelectorAll<HTMLElement>('a,button'),
     ]
     // As sete seções operáveis — o teto subiu de seis para sete quando CRM
@@ -229,7 +235,9 @@ describe('AppShell', () => {
     expect(await barra().findByText('Contas a Receber')).toBeInTheDocument()
     expect(barra().queryByRole('link', { name: 'Contas a Receber' })).not.toBeInTheDocument()
     // O rastro conta a ROTA, que não mudou — o menu abriu, o operador não saiu.
-    expect(screen.getByRole('navigation', { name: 'Você está em' })).toHaveTextContent('Início')
+    expect(screen.getByRole('navigation', { name: 'Trilha de navegação' })).toHaveTextContent(
+      'Início',
+    )
   })
 
   /**
@@ -256,7 +264,7 @@ describe('AppShell', () => {
     const destacado = (nome: string) =>
       (
         (
-          document.querySelector('[data-slot="appbar"] nav[aria-label="Seções"]') as HTMLElement
+          document.querySelector('[data-slot="sidebar"] nav[aria-label="Seções"]') as HTMLElement
         ).querySelector(`[aria-label="${nome}"]`) as HTMLElement
       ).classList.contains('bg-modulo')
 
@@ -382,7 +390,9 @@ describe('AppShell', () => {
     ]
 
     for (const [url, modulo, shape] of esperado) {
-      const item = document.querySelector(`a[href="${url}"]`)?.closest('[data-sidebar="menu-item"]')
+      const item = document
+        .querySelector(`[data-sidebar="menu-item"] a[href="${url}"]`)
+        ?.closest('[data-sidebar="menu-item"]')
       // A cor emprestada vale para o ITEM e para no item: `moduloDaRota`
       // continua sem conhecer essas rotas, senão a folha inteira seria tingida.
       expect(item).toHaveAttribute('data-modulo', modulo)
@@ -393,7 +403,9 @@ describe('AppShell', () => {
     // coral fariam a fileira deixar de ser mapa. O Boletim também prova que a
     // entrada solta no topo entrou na fileira colorida — ela ficava de fora do
     // laço dos grupos e caía num lucide cinza.
-    const boletim = document.querySelector('a[href="/"]')?.closest('[data-sidebar="menu-item"]')
+    const boletim = document
+      .querySelector('[data-sidebar="menu-item"] a[href="/"]')
+      ?.closest('[data-sidebar="menu-item"]')
     expect(boletim).toHaveAttribute('data-modulo', 'boletim')
     expect(boletim?.querySelector('[data-slot="ornamento"]')).toHaveAttribute(
       'data-shape',
@@ -401,36 +413,58 @@ describe('AppShell', () => {
     )
   })
 
-  // POLARIS (2026-08-17): a MARCA mora na topbar, à esquerda — a posição do
-  // logo no admin Shopify — e a EMPRESA segue nos globais da direita, ao lado
-  // do operador. A navegação desceu pra sidebar; marca e navegação não
-  // disputam mais o mesmo painel.
-  it('marca na topbar, empresa nos globais', async () => {
+  /**
+   * A APPBAR 2.0 (D5) faz UMA coisa: dizer o lugar e oferecer o que vale em
+   * toda tela. Marca, fileira de seções, busca e empresa saíram dela — quem as
+   * carrega hoje é o `cinto-provisorio`, dentro da barra, até D4/D6 lhes darem
+   * a casa definitiva.
+   *
+   * A asserção é pelos DOIS lados de propósito: dizer só onde a peça está
+   * passaria verde com ela também na appbar, que é exatamente o defeito que
+   * esta issue foi corrigir (duas faixas dizendo a mesma coisa).
+   */
+  it('a appbar é migalha e quatro ações globais, e nada mais', async () => {
     setup()
     await waitFor(() => {
       expect(screen.getByText('VERTZ ILUMINAÇÃO')).toBeInTheDocument()
     })
 
-    const topo = document.querySelector('[data-slot="appbar"]')
+    const topo = document.querySelector('[data-slot="appbar"]') as HTMLElement
     expect(topo).toBeInTheDocument()
-    // O rodapé segue extinto: não sobrou nada para pousar lá.
-    expect(document.querySelector('[data-slot="sidebar-footer"]')).toBeNull()
 
-    // A marca mora na TOPBAR, e só lá.
-    const marca = topo?.querySelector('[data-slot="marca"]')
+    // Nada de marca, de fileira, de busca nem de empresa na faixa de cima.
+    expect(topo.querySelector('[data-slot="marca"]')).toBeNull()
+    expect(topo.querySelector('nav[aria-label="Seções"]')).toBeNull()
+    expect(topo.querySelector('[data-slot="ornamento"]')).toBeNull()
+    expect(topo).not.toHaveTextContent('VERTZ ILUMINAÇÃO')
+
+    // A migalha, e as quatro — nesta ordem, em toda rota.
+    expect(
+      within(topo).getByRole('navigation', { name: 'Trilha de navegação' }),
+    ).toBeInTheDocument()
+    const acoes = [...topo.querySelectorAll('a,button')].filter(
+      (peca) => !peca.closest('nav[aria-label="Trilha de navegação"]'),
+    )
+    expect(acoes.map((peca) => peca.getAttribute('aria-label'))).toEqual([
+      'Ajuda',
+      // O sino DIZ o número para quem ouve: o ponto vermelho só responde "há
+      // algo novo?" a quem vê.
+      'Notificações, 3 não lidas',
+      'Configurações',
+      'Alternar para o tema escuro',
+    ])
+    // Mesma MEDIDA nas quatro: fileira com dois tamanhos é o desalinho que a
+    // §Hierarquia proíbe, e ele nasce de uma delas usar o `size` do botão.
+    for (const acao of acoes) expect(acao.className).toContain('size-8')
+
+    // Marca e empresa moram na barra agora — as duas, e cada uma uma vez.
+    const barra = document.querySelector('[data-slot="sidebar"]') as HTMLElement
+    const marca = barra.querySelector('[data-slot="marca"]')
     expect(marca).toHaveAttribute('data-variante', 'assinatura')
     // O nome do produto é DESENHO, não texto — quem o anuncia é o rótulo.
     expect(marca).toHaveAttribute('aria-label', 'Cabinet')
-    expect(document.querySelector('[data-slot="sidebar-header"] [data-slot="marca"]')).toBeNull()
-
-    // A empresa mora na appbar: um ornamento só, o dela.
-    const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
-    expect(ornamentos).toHaveLength(1)
-    expect(ornamentos[0]).toHaveAttribute('data-shape', 'empresa')
-    expect(topo).toHaveTextContent('VERTZ ILUMINAÇÃO')
-
-    // E dentro do botão que abre a gaveta — a marca nunca é absorvida por ele.
-    expect(ornamentos[0]?.closest('button')).not.toBeNull()
+    expect(barra).toHaveTextContent('VERTZ ILUMINAÇÃO')
+    // A marca nunca é absorvida pelo botão que abre a gaveta de empresas.
     expect(marca?.closest('button')).toBeNull()
   })
 
@@ -501,9 +535,9 @@ describe('AppShell', () => {
     setup()
     const user = userEvent.setup()
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /alternar para o tema/i })).toBeInTheDocument()
     })
-    const toggle = screen.getByRole('button', { name: /alternar tema/i })
+    const toggle = screen.getByRole('button', { name: /alternar para o tema/i })
     expect(document.documentElement.classList.contains('light')).toBe(true)
     await user.click(toggle)
     expect(document.documentElement.classList.contains('dark')).toBe(true)
@@ -723,7 +757,11 @@ describe('AppShell', () => {
      */
     async function itemDaBarra(url: string): Promise<HTMLElement> {
       return await waitFor(() => {
-        const alvo = document.querySelector(`[data-slot="sidebar"] a[href="${url}"]`)
+        // `[data-sidebar="menu-item"]` e não a barra inteira: a fileira de
+        // seções mora dentro dela agora, e os links dela casariam primeiro.
+        const alvo = document.querySelector(
+          `[data-slot="sidebar"] [data-sidebar="menu-item"] a[href="${url}"]`,
+        )
         expect(alvo).toBeInTheDocument()
         return alvo as HTMLElement
       })
@@ -792,7 +830,7 @@ describe('AppShell', () => {
       await itemDaBarra('/')
 
       const acesa = document.querySelectorAll(
-        '[data-slot="appbar"] nav[aria-label="Seções"] [aria-current="page"]',
+        '[data-slot="sidebar"] nav[aria-label="Seções"] [aria-current="page"]',
       )
       // Uma seção acesa, e uma só: duas fariam o operador ler dois lugares.
       expect(acesa).toHaveLength(1)

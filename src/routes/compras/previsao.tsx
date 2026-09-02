@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/cabinet/page-header'
 import { PrevisaoDeChegada } from '@/features/ordem-compra/previsao-de-chegada'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -8,7 +9,7 @@ export const Route = createFileRoute('/compras/previsao')({
 function PrevisaoDeChegadaPage() {
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-extrabold text-xl">Previsão de Chegada</h1>
+      <PageHeader titulo="Previsão de Chegada" />
       <PrevisaoDeChegada />
     </div>
   )

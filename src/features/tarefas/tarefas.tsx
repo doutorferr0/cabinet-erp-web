@@ -1,5 +1,5 @@
 import type { TaskDtoStatus } from '@/api/gerado'
-import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Search } from 'lucide-react'
@@ -31,16 +31,15 @@ export function TarefasTela() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header
-        data-slot="tarefas-header"
-        className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3"
-      >
-        <h1 className="font-nome text-3xl font-bold">Tarefas</h1>
-        <Button onClick={() => setIncluindoEm('todo')}>
-          <Plus className="text-modulo" />
-          Nova tarefa
-        </Button>
-      </header>
+      <PageHeader
+        titulo="Tarefas"
+        primaria={{
+          id: 'nova-tarefa',
+          label: 'Nova tarefa',
+          icon: Plus,
+          onClick: () => setIncluindoEm('todo'),
+        }}
+      />
 
       <ProgressoDoQuadro />
 

@@ -25,14 +25,18 @@ import { type ReactNode, createContext, useContext } from 'react'
  * combinar um estado com a ação de outro.
  */
 export interface DadosDoCabecalho {
-  /** Situação do registro — a primeira coisa da linha de meta. */
+  /** Situação do registro — o carimbo ao lado do id. */
   badge?: { tom: StampTom; label: string }
-  /** Procedência: "Mister LED · criada 20/08/2026 por Henrique · reagendada 1×". */
-  meta?: ReactNode
-  /** Ações fracas, à vista — Imprimir. */
-  ghost?: readonly AcaoDeCabecalho[]
-  /** Ações de contorno — Duplicar. */
-  secundarias?: readonly AcaoDeCabecalho[]
+  /**
+   * Procedência: "Mister LED · criada 20/08/2026 por Henrique · reagendada 1×".
+   *
+   * Texto, e não nó: é o `subtitulo` do `PageHeader`, que a §Hierarquia define
+   * como uma linha de `.t-meta`. Aceitar marcação aqui abriria a porta para a
+   * segunda voz tipográfica dentro do cabeçalho que a D5 acabou de unificar.
+   */
+  meta?: string
+  /** Ações fracas, à vista — Imprimir, Duplicar. */
+  acoes?: readonly AcaoDeCabecalho[]
   /** Atrás do `···`: cancelar, excluir — o raro e o perigoso. */
   menu?: readonly AcaoDeCabecalho[]
   /**
@@ -205,13 +209,13 @@ export function TelaDeDocumento<T>({
         titulo={titulo}
         {...(numeroDoDocumento !== undefined ? { id: numeroDoDocumento } : {})}
         {...(dados.badge ? { badge: dados.badge } : {})}
-        // O modo (`Incluir`, `Consulta`) entra na linha de meta e não no
-        // `<h1>`: colados, o leitor de tela anunciava "Orçamento — Incluir"
-        // como se fosse o nome do documento.
-        meta={juntarMeta(modo, dados.meta)}
+        // O modo (`Incluir`, `Consulta`) é RÓTULO ao lado do título, não parte
+        // dele: colados, o leitor de tela anunciava "Orçamento — Incluir" como
+        // se fosse o nome do documento.
+        {...(modo ? { modo } : {})}
+        {...(dados.meta ? { meta: dados.meta } : {})}
         {...(autosave ? { autosave: fila.estado, onTentarDeNovo: fila.tentarDeNovo } : {})}
-        {...(dados.ghost ? { ghost: dados.ghost } : {})}
-        {...(dados.secundarias ? { secundarias: dados.secundarias } : {})}
+        {...(dados.acoes ? { acoes: dados.acoes } : {})}
         {...(dados.menu ? { menu: dados.menu } : {})}
         {...(dados.proximaAcao ? { proximaAcao: dados.proximaAcao } : {})}
       />
@@ -234,16 +238,5 @@ export function TelaDeDocumento<T>({
 
       {foraDaMoldura?.(doc)}
     </div>
-  )
-}
-
-/** Modo e procedência na mesma linha, separados por `·` só quando há os dois. */
-function juntarMeta(modo: string | undefined, meta: ReactNode): ReactNode {
-  if (modo === undefined || modo === '') return meta
-  if (meta === undefined || meta === null || meta === false) return modo
-  return (
-    <>
-      {modo} · {meta}
-    </>
   )
 }

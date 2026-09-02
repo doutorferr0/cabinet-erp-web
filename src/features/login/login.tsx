@@ -1,6 +1,6 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Marca } from '@/components/cabinet/marca'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useLogin } from '@/data/sessao'
@@ -74,7 +74,7 @@ export function LoginTela() {
               verdade. Só o símbolo, sem o nome: quem diz "Cabinet" aqui é a
               banda ao lado, e repetir o nome ao lado dele mesmo é ruído. */}
           <Marca tamanho={40} className="text-foreground" />
-          <BandaDeIdentidade titulo="Cabinet" contexto="Entrar" className="flex-1" />
+          <PageHeader variante="display" titulo="Cabinet" contexto="Entrar" className="flex-1" />
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(entrar)} className="flex flex-col gap-3">

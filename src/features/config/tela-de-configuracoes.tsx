@@ -1,6 +1,6 @@
 import type { NavGroup, NavItem } from '@/app/navigation'
 import { secoesVisiveis } from '@/app/navigation'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Painel } from '@/components/cabinet/painel'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { Link } from '@tanstack/react-router'
@@ -104,7 +104,7 @@ export function TelaDeConfiguracoes() {
 
   return (
     <div className="flex flex-col gap-5">
-      <BandaDeIdentidade titulo="Configurações" contexto="Como o sistema é montado" />
+      <PageHeader titulo="Configurações" contexto="Como o sistema é montado" />
       {!conhecido ? (
         <p className="text-muted-foreground text-sm" role="alert">
           Não foi possível saber quais recursos esta empresa tem. Recarregue a página.

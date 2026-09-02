@@ -3,6 +3,7 @@ import { LookupCombo } from '@/components/cabinet/lookup-combo'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -97,6 +98,19 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+/**
+ * Abre o cadastro rápido — que na 2.0 é um ITEM da lista, não um botão ao lado.
+ *
+ * O `...` saiu na D16: ele era um segundo alvo, fora do popover, para uma ação
+ * que só faz sentido depois de o operador procurar e não achar. Inline, a saída
+ * está onde a procura terminou — e o caminho do teste passa a ser o caminho da
+ * pessoa: abre o combo, não acha, cadastra.
+ */
+async function abrirCadastroRapido(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /Selecione marca/i }))
+  await user.click(await screen.findByText(/Cadastrar marca/i))
+}
+
 describe('LookupCombo', () => {
   it('pede ao backend o kind certo, dentro do teto do contrato', async () => {
     renderWithQuery(<Harness />)
@@ -188,8 +202,8 @@ describe('LookupCombo', () => {
       'http://api.teste',
     )
 
-    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
-    await user.type(screen.getByLabelText('Nome'), 'Marca Nova X')
+    await abrirCadastroRapido(user)
+    await user.type(screen.getByLabelText(/^Nome/), 'Marca Nova X')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
     const post = servidor.em('/api/catalog-lookups').find((c) => c.metodo === 'POST')
@@ -218,8 +232,8 @@ describe('LookupCombo', () => {
       'http://api.teste',
     )
 
-    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
-    await user.type(screen.getByLabelText('Nome'), 'Stella')
+    await abrirCadastroRapido(user)
+    await user.type(screen.getByLabelText(/^Nome/), 'Stella')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
     // O contrato diz que o 409 NÃO carrega o id: quem acha o item existente é o
@@ -245,8 +259,8 @@ describe('LookupCombo', () => {
       'http://api.teste',
     )
 
-    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
-    await user.type(screen.getByLabelText('Nome'), 'Marca Aposentada')
+    await abrirCadastroRapido(user)
+    await user.type(screen.getByLabelText(/^Nome/), 'Marca Aposentada')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
     // Item desativado, ou lista cortada no teto de 100. Escolher um id chutado
@@ -291,8 +305,8 @@ describe('LookupCombo', () => {
       'http://api.teste',
     )
 
-    await user.click(screen.getByRole('button', { name: 'Cadastrar Marca' }))
-    await user.type(screen.getByLabelText('Nome'), 'Stella')
+    await abrirCadastroRapido(user)
+    await user.type(screen.getByLabelText(/^Nome/), 'Stella')
     await user.click(screen.getByRole('button', { name: 'Gravar' }))
 
     // Falha de verdade: o diálogo continua aberto e nada foi escolhido. O que
@@ -361,10 +375,9 @@ describe('LookupCombo', () => {
       renderWithQuery(<Harness />)
 
       // O combo em si continua inteiro: LEITURA não é filtrada por papel.
-      expect(await screen.findByRole('button', { name: /Selecione marca/i })).toBeInTheDocument()
-      await waitFor(() =>
-        expect(screen.queryByRole('button', { name: /Cadastrar marca/i })).not.toBeInTheDocument(),
-      )
+      const gatilho = await screen.findByRole('button', { name: /Selecione marca/i })
+      await userEvent.setup().click(gatilho)
+      await waitFor(() => expect(screen.queryByText(/Cadastrar marca/i)).not.toBeInTheDocument())
     })
 
     it('fica para operator-full — a decisão da api#66', async () => {
@@ -372,7 +385,8 @@ describe('LookupCombo', () => {
 
       renderWithQuery(<Harness />)
 
-      expect(await screen.findByRole('button', { name: /Cadastrar marca/i })).toBeInTheDocument()
+      await userEvent.setup().click(await screen.findByRole('button', { name: /Selecione marca/i }))
+      expect(await screen.findByText(/Cadastrar marca/i)).toBeInTheDocument()
     })
 
     /**
@@ -395,7 +409,8 @@ describe('LookupCombo', () => {
 
       renderWithQuery(<Harness />)
 
-      expect(await screen.findByRole('button', { name: /Cadastrar marca/i })).toBeInTheDocument()
+      await userEvent.setup().click(await screen.findByRole('button', { name: /Selecione marca/i }))
+      expect(await screen.findByText(/Cadastrar marca/i)).toBeInTheDocument()
     })
   })
 })

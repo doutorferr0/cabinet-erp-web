@@ -61,21 +61,21 @@ describe('CadastroForm em modo consulta', () => {
 
     expect(screen.queryByRole('button', { name: /Gravar/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Fechar/ })).toBeInTheDocument()
-    // O modo é CONTEXTO da banda, não sufixo do título: o `<h1>` diz a tela, o
+    // O modo é CONTEXTO do cabeçalho, não sufixo do título: o `<h1>` diz a tela, o
     // Meta ao lado diz em que modo ela está.
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cadastro de Colaboradores')
     expect(screen.getByText('Consulta')).toBeInTheDocument()
   })
 
-  // A banda é identidade, não campo: `<fieldset disabled>` apaga o formulário
+  // O cabeçalho é identidade, não campo: `<fieldset disabled>` apaga o formulário
   // inteiro no modo consulta, e apagar junto o nome da tela deixaria o operador
   // sem saber onde está.
-  it('banda de identidade não é desabilitada com o formulário', async () => {
+  it('cabeçalho de página não é desabilitado com o formulário', async () => {
     renderWithQuery(<FormularioDeMentira readOnly />)
 
     await screen.findByLabelText('Nome completo')
-    const banda = screen.getByRole('heading', { level: 1 }).closest('div')
-    expect(banda?.closest('fieldset')).toBeNull()
+    const cabecalho = screen.getByRole('heading', { level: 1 }).closest('div')
+    expect(cabecalho?.closest('fieldset')).toBeNull()
   })
 
   it('desabilita também os botões de dentro do formulário', async () => {
@@ -203,13 +203,15 @@ describe('CadastroForm em modo consulta', () => {
     expect(screen.getByRole('button', { name: /Busca Alt\+T/ })).toBeDisabled()
   }, 30_000)
 
-  it('rodapé fixo usa régua forte na borda superior (DESIGN.md)', async () => {
+  it('rodapé fixo se separa por UMA hairline, não por régua de 3px', async () => {
     renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
 
     const gravar = await screen.findByRole('button', { name: /Gravar/ })
     const rodape = gravar.closest('div')
-    // A régua é utility (`rule-strong-top`), não `border-t` + cor na tela: a
-    // espessura de 3px é parte dela e muda num ponto só na recalibração.
-    expect(rodape?.className).toContain('rule-strong-top')
+    // D16: a régua forte de 3px competia com a borda dos cards logo acima —
+    // duas ferramentas de separação na mesma fronteira, que a §Hierarquia
+    // proíbe. Fica a mais barata que resolve: hairline `n-200`.
+    expect(rodape?.className).not.toContain('rule-strong-top')
+    expect(rodape?.className).toContain('[border-color:var(--n-200)]')
   })
 })

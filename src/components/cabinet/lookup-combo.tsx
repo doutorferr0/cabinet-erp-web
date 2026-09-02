@@ -1,8 +1,9 @@
+import { Campo } from '@/components/cabinet/campo'
+import { Monograma } from '@/components/cabinet/monograma'
 import { Button } from '@/components/ui/button'
 import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import {
   type CadastroDeApoio,
@@ -14,7 +15,7 @@ import {
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useEspecificadorOptions } from '@/data/parceiros-api'
 import { cn } from '@/lib/utils'
-import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus } from 'lucide-react'
 import { useId, useState } from 'react'
 
 /**
@@ -47,6 +48,12 @@ export interface ComboDeEscolhaProps {
 export interface OpcaoDeCombo {
   id: string
   nome: string
+  /**
+   * Linha de baixo do resultado (documento, cidade, código). Opcional porque a
+   * maior parte das listas de apoio é só nome — e quando não há segunda linha, a
+   * primeira não pode ficar pendurada num espaço reservado que ninguém preenche.
+   */
+  subtitulo?: string
 }
 
 /** Nome de um id entre as opções carregadas — `undefined` quando não está lá. */
@@ -68,6 +75,7 @@ export function ComboDeEscolha({
   id,
   open,
   onOpenChange,
+  aoCriar,
 }: ComboDeEscolhaProps) {
   // O que aparece no botão: o nome do id escolhido; se o id não está na lista,
   // o rótulo que o registro trouxe. Ver `rotulo` nas props do chamador.
@@ -88,7 +96,10 @@ export function ComboDeEscolha({
         <span className="truncate">{escolhido ?? `Selecione ${label.toLowerCase()}…`}</span>
         <ChevronsUpDown className="ml-2 size-4 shrink-0 text-foreground" />
       </Button>
-      <Popover className="w-(--trigger-width) p-0">
+      {/* Popover 2.0: folha, borda `n-300`, `--hard-soft`. A régua dá UMA sombra
+          dura de tinta por tela, e ela não é gasta aqui — peça que aparece leva a
+          sombra macia. */}
+      <Popover className="w-(--trigger-width) rounded-[var(--r-panel)] border p-0 [background:var(--n-0)] [border-color:var(--n-300)] shadow-[var(--hard-soft)]">
         <Command>
           <CommandInput placeholder={`Buscar ${label.toLowerCase()}…`} />
           <CommandList
@@ -115,12 +126,51 @@ export function ComboDeEscolha({
                   onOpenChange(false)
                 }}
               >
+                {/* Resultado 2.0 (Attio): monograma + nome + subtítulo. O
+                    monograma é âncora para o olho percorrer a coluna; o
+                    subtítulo é o que desempata dois nomes parecidos, e é onde o
+                    operador confere que escolheu o cadastro certo. */}
                 <Check
-                  className={cn('size-4', option.id === value ? 'opacity-100' : 'opacity-0')}
+                  className={cn(
+                    'size-4 shrink-0',
+                    option.id === value ? 'opacity-100' : 'opacity-0',
+                  )}
                 />
-                {option.nome}
+                <Monograma nome={option.nome} tamanho={22} />
+                <span className="min-w-0 flex-1">
+                  <span className="t-ui block truncate">{option.nome}</span>
+                  {option.subtitulo ? (
+                    <span className="t-meta block truncate">{option.subtitulo}</span>
+                  ) : null}
+                </span>
               </CommandItem>
             ))}
+            {/* Nada de "+ Novo" enquanto a lista CARREGA ou FALHOU: nos dois
+                casos a coleção está vazia por acidente, e um item de criação
+                ali seria a única coisa na lista — engolindo o
+                `renderEmptyState`, que é quem distingue "ainda não chegou" de
+                "não foi possível carregar" de "está vazia mesmo". O operador
+                cadastraria duplicata porque a busca não respondeu. */}
+            {aoCriar && !carregando && !erro ? (
+              <CommandItem
+                id="criar"
+                textValue={`Cadastrar ${label.toLowerCase()}`}
+                onAction={() => {
+                  onOpenChange(false)
+                  aoCriar()
+                }}
+              >
+                <Plus className="size-4 shrink-0" />
+                {/* "Cadastrar marca", não "Novo marca": o mockup escreve
+                    "+ Novo fornecedor" porque ali o substantivo é masculino, e o
+                    `label` aqui vem do `kind` — marca, condição, forma de
+                    pagamento são femininos. Um verbo resolve os dois gêneros sem
+                    tabela de artigos. */}
+                <span className="t-ui [color:var(--primary-text)]">
+                  Cadastrar {label.toLowerCase()}
+                </span>
+              </CommandItem>
+            ) : null}
           </CommandList>
           {/* A lista veio CORTADA no teto de 100 do contrato, e a busca deste
               campo filtra só o que chegou: o item procurado pode nem estar
@@ -128,7 +178,7 @@ export function ComboDeEscolha({
               mesma coisa — e o operador cadastraria duplicado pelo "...".
               Fora do Menu: a coleção da RAC só aceita itens. */}
           {truncada && (
-            <p className="border-rule-hair border-t px-2 py-1.5 text-[0.75rem] text-muted-foreground">
+            <p className="t-meta border-t px-2 py-1.5 [border-color:var(--n-200)]">
               Mostrando os primeiros {options.length}. A lista é maior — se não achar aqui, o item
               pode existir fora deste trecho.
             </p>
@@ -316,7 +366,7 @@ export function LookupCombo({
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex min-w-0 items-center gap-1">
       <ComboDeEscolha
         label={label}
         options={options}
@@ -330,75 +380,63 @@ export function LookupCombo({
         id={listId}
         open={open}
         onOpenChange={setOpen}
+        {...(mostrarCadastroRapido && disabled !== true ? { aoCriar: () => setAddOpen(true) } : {})}
       />
 
       {mostrarCadastroRapido && (
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label={`Cadastrar ${label}`}
-            disabled={disabled ?? false}
-            onClick={() => setAddOpen(true)}
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-          <Dialog
-            isOpen={addOpen}
-            onOpenChange={(aberto) => (aberto ? setAddOpen(true) : fecharCadastro())}
-            className="max-w-sm"
-          >
-            <DialogHeader>
-              <DialogTitle>Cadastrar {label}</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="lookup-quick-add-nome">Nome</Label>
-              <Input
-                id="lookup-quick-add-nome"
-                value={newItem}
-                autoFocus
-                onChange={(e) => {
-                  setNewItem(e.target.value)
-                  setDuplicadoForaDaLista(null)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    void confirmAdd()
-                  }
-                }}
-              />
-              {/* O 409 que o combo NÃO conseguiu resolver sozinho: o nome existe
+        <Dialog
+          isOpen={addOpen}
+          onOpenChange={(aberto) => (aberto ? setAddOpen(true) : fecharCadastro())}
+          className="max-w-sm"
+        >
+          <DialogHeader>
+            <DialogTitle>Cadastrar {label}</DialogTitle>
+          </DialogHeader>
+          <Campo label="Nome" obrigatorio htmlFor="lookup-quick-add-nome">
+            <Input
+              id="lookup-quick-add-nome"
+              value={newItem}
+              autoFocus
+              onChange={(e) => {
+                setNewItem(e.target.value)
+                setDuplicadoForaDaLista(null)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  void confirmAdd()
+                }
+              }}
+            />
+            {/* O 409 que o combo NÃO conseguiu resolver sozinho: o nome existe
                   no kind, mas fora do que esta lista carregou. Dizer só "já
                   existe" mandaria o operador procurar onde ele não vai achar. */}
-              {duplicadoForaDaLista && (
-                <p role="alert" className="text-[0.8rem] text-foreground">
-                  Já existe “{duplicadoForaDaLista}” em {label}, fora das opções carregadas aqui —
-                  item desativado, ou lista maior que o trecho exibido. Cadastrar de novo criaria a
-                  duplicata que o servidor recusou.
-                </p>
-              )}
-              {erroDoCadastro && (
-                <p role="alert" className="text-[0.8rem] text-foreground">
-                  Não foi possível cadastrar agora. O item não foi criado.
-                </p>
-              )}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={fecharCadastro}>
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={() => void confirmAdd()}
-                disabled={!newItem.trim() || gravando}
-              >
-                {gravando ? 'Gravando…' : 'Gravar'}
-              </Button>
-            </DialogFooter>
-          </Dialog>
-        </>
+            {duplicadoForaDaLista && (
+              <p role="alert" className="t-meta [color:var(--bad)]">
+                Já existe “{duplicadoForaDaLista}” em {label}, fora das opções carregadas aqui —
+                item desativado, ou lista maior que o trecho exibido. Cadastrar de novo criaria a
+                duplicata que o servidor recusou.
+              </p>
+            )}
+            {erroDoCadastro && (
+              <p role="alert" className="t-meta [color:var(--bad)]">
+                Não foi possível cadastrar agora. O item não foi criado.
+              </p>
+            )}
+          </Campo>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={fecharCadastro}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void confirmAdd()}
+              disabled={!newItem.trim() || gravando}
+            >
+              {gravando ? 'Gravando…' : 'Gravar'}
+            </Button>
+          </DialogFooter>
+        </Dialog>
       )}
     </div>
   )

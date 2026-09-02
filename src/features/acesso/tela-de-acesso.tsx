@@ -1,8 +1,8 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Nome } from '@/components/cabinet/nome'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -89,7 +89,7 @@ export function TelaDeAcesso() {
 
   return (
     <div className="flex flex-col gap-5">
-      <BandaDeIdentidade titulo="Usuários e Empresas" contexto="Quem entra, e com qual acesso" />
+      <PageHeader titulo="Usuários e Empresas" contexto="Quem entra, e com qual acesso" />
       <Tabs defaultValue="usuarios">
         <TabsList>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>

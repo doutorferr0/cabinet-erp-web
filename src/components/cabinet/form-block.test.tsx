@@ -4,59 +4,105 @@ import { describe, expect, it } from 'vitest'
 import { FormBlock } from './form-block'
 
 /**
- * FormBlock — DESIGN.md §Shapes: compartimento fechado (borda Régua, canto
- * 4px) com `<legend>` em Meta (mono 0.75rem, caixa alta) sobre a borda.
+ * FormBlock 2.0 (D16, issue #484) — CARD QUIET.
+ *
+ * O que estes casos vigiam mudou de mão. Até a 1.7 eles fixavam a MOLDURA
+ * (`rounded-lg`, `<legend>` em mono caixa alta sobre a borda, faixa pastel do
+ * módulo) — três ferramentas de separação na mesma fronteira, que é exatamente
+ * o que a §Hierarquia da rodada passou a proibir. Agora vigiam a única
+ * ferramenta que sobrou (borda `--n-300` + `--hard-soft`) e, sobretudo, o que
+ * nunca era decoração: o papel `group`, o colapso, e a invariante do
+ * obrigatório.
  */
 describe('FormBlock', () => {
-  it('renderiza fieldset com canto 4px e borda', () => {
-    render(<FormBlock legend="Transportadora">conteúdo</FormBlock>)
+  it('é um card quiet: borda n-300 e sombra macia, sem caixa preta', () => {
+    render(<FormBlock titulo="Transportadora">conteúdo</FormBlock>)
 
     const fieldset = screen.getByText('conteúdo').closest('fieldset')
-    expect(fieldset?.className).toContain('rounded-lg')
-    expect(fieldset?.className).toContain('border')
+    expect(fieldset?.className).toContain('[border-color:var(--n-300)]')
+    expect(fieldset?.className).toContain('shadow-[var(--hard-soft)]')
+    // A sombra dura de tinta é racionada — uma por tela, e não é aqui.
+    expect(fieldset?.className).not.toContain('--hard-1')
+    expect(fieldset?.className).not.toContain('--hard-2')
   })
 
-  it('legend usa tipografia Meta (mono, caixa alta, tracking)', () => {
-    render(<FormBlock legend="Transportadora">conteúdo</FormBlock>)
+  it('o título é `.t-bloco` e o `<legend>` continua nomeando o grupo', () => {
+    render(<FormBlock titulo="Transportadora">conteúdo</FormBlock>)
 
-    const legend = screen.getByText('Transportadora')
-    expect(legend.tagName).toBe('LEGEND')
-    expect(legend.className).toContain('font-mono')
-    expect(legend.className).toContain('text-[0.75rem]')
-    expect(legend.className).toContain('uppercase')
-    expect(legend.className).toContain('tracking-[0.06em]')
-    expect(legend.className).toContain('text-text-strong')
+    // Um nome, dois papéis: `<legend>` (sr-only) dá o nome acessível ao
+    // `<fieldset>`; o texto visível é o degrau tipográfico.
+    const grupo = screen.getByRole('group', { name: 'Transportadora' })
+    expect(grupo.querySelector('legend')?.className).toContain('sr-only')
+    const visivel = grupo.querySelector('[aria-hidden="true"]')
+    expect(visivel?.className).toContain('t-bloco')
+    // O nome do bloco perdeu a caixa: `--t-rotulo` (e o título) nunca tem
+    // borda, fundo nem contorno próprio.
+    expect(visivel?.className).not.toContain('border')
+    expect(visivel?.className).not.toContain('bg-')
+  })
+
+  it('`legend` continua aceito — vinte telas montam o bloco assim', () => {
+    render(<FormBlock legend="Transportadora">conteúdo</FormBlock>)
+    expect(screen.getByRole('group', { name: 'Transportadora' })).toBeInTheDocument()
   })
 
   // A transcrição §2 registra moldura sem nome ("Bloco separado por moldura"):
   // o compartimento existe mesmo quando não há legenda para citar.
-  it('sem legend, mantém o compartimento e não renderiza <legend> vazio', () => {
+  it('sem nome, mantém o card e não renderiza <legend> vazio', () => {
     render(<FormBlock>conteúdo</FormBlock>)
 
     const fieldset = screen.getByText('conteúdo').closest('fieldset')
-    expect(fieldset?.className).toContain('rounded-lg')
+    expect(fieldset?.className).toContain('[border-color:var(--n-300)]')
     expect(fieldset?.querySelector('legend')).toBeNull()
+  })
+
+  it('`acoes` entra à direita do título, em `.t-rotulo`', () => {
+    render(
+      <FormBlock titulo="Itens" acoes="Puxados de PV-21646">
+        conteúdo
+      </FormBlock>,
+    )
+
+    const acoes = screen.getByText('Puxados de PV-21646')
+    expect(acoes.className).toContain('t-rotulo')
+    expect(acoes.className).toContain('ml-auto')
+  })
+
+  it('`tint` separa o card por assunto, e só ele muda o fundo', () => {
+    const { rerender } = render(<FormBlock titulo="Identidade">conteúdo</FormBlock>)
+    expect(screen.getByText('conteúdo').closest('fieldset')?.className).toContain(
+      '[background:var(--n-0)]',
+    )
+
+    rerender(
+      <FormBlock titulo="Identidade" tint="lilac">
+        conteúdo
+      </FormBlock>,
+    )
+    expect(screen.getByText('conteúdo').closest('fieldset')?.className).toContain(
+      '[background:var(--tint-lilac)]',
+    )
   })
 })
 
 /**
- * HIERARQUIA (issue #99) — as três propriedades novas. A invariante que elas
- * servem: obrigatório mora em bloco SEMPRE ABERTO, opcional pode morar em bloco
+ * HIERARQUIA (issue #99) — as três propriedades. A invariante que elas servem:
+ * obrigatório mora em bloco SEMPRE ABERTO, opcional pode morar em bloco
  * recolhido, e bloco fechado NUNCA esconde campo obrigatório.
  */
 describe('FormBlock com hierarquia', () => {
   it('colapsável sem obrigatório nasce FECHADO', () => {
     render(
-      <FormBlock legend="Dados bancários" colapsavel>
-        <input aria-label="Agência" />
+      <FormBlock titulo="Dados bancários" colapsavel>
+        <input aria-label="CEP" />
       </FormBlock>,
     )
 
     const gatilho = screen.getByRole('button', { name: /Dados bancários/ })
     expect(gatilho).toHaveAttribute('aria-expanded', 'false')
-    // O campo continua NO DOM (o react-hook-form o mantém registrado) e fora da
-    // tela — desmontar apagaria o que o operador já digitou.
-    const campo = screen.getByLabelText('Agência')
+
+    // Escondido, não desmontado: o valor digitado sobrevive ao fecha-e-abre.
+    const campo = screen.getByLabelText('CEP')
     expect(campo).toBeInTheDocument()
     expect(campo.closest('[hidden]')).not.toBeNull()
   })
@@ -64,13 +110,14 @@ describe('FormBlock com hierarquia', () => {
   it('o gatilho abre e fecha, e aponta para o corpo que governa', async () => {
     const usuario = userEvent.setup()
     render(
-      <FormBlock legend="Endereço" colapsavel>
+      <FormBlock titulo="Dados bancários" colapsavel>
         <input aria-label="CEP" />
       </FormBlock>,
     )
 
-    const gatilho = screen.getByRole('button', { name: /Endereço/ })
-    const corpo = document.getElementById(gatilho.getAttribute('aria-controls') as string)
+    const gatilho = screen.getByRole('button', { name: /Dados bancários/ })
+    const idCorpo = gatilho.getAttribute('aria-controls') ?? ''
+    const corpo = document.getElementById(idCorpo)
     expect(corpo).toContainElement(screen.getByLabelText('CEP'))
 
     await usuario.click(gatilho)
@@ -84,7 +131,7 @@ describe('FormBlock com hierarquia', () => {
 
   it('obrigatório NÃO expõe gatilho de colapso, nem quando pedem colapsável', () => {
     render(
-      <FormBlock legend="Identificação" obrigatorio colapsavel>
+      <FormBlock titulo="Identificação" obrigatorio colapsavel>
         <input aria-label="Nome" />
       </FormBlock>,
     )
@@ -93,23 +140,27 @@ describe('FormBlock com hierarquia', () => {
     expect(screen.getByRole('group', { name: 'Identificação' })).toBeInTheDocument()
     expect(screen.getByText('Obrigatório')).toBeInTheDocument()
     expect(screen.getByLabelText('Nome').closest('[hidden]')).toBeNull()
-    // Sem colapso não há o que contar: contador é a promessa de "o que ficou
-    // escondido aqui dentro", e nada fica escondido num bloco que não fecha.
     expect(screen.queryByText('Opcional')).toBeNull()
   })
 
-  it('o contador conta campos preenchidos e fica verde quando há algum', async () => {
+  it('o carimbo é `.t-rotulo` sem caixa, e o contador é mono', async () => {
     const usuario = userEvent.setup()
     render(
-      <FormBlock legend="Documentos" colapsavel>
+      <FormBlock titulo="Documentos" colapsavel>
         <input aria-label="RG" defaultValue="12.345.678-9" />
         <input aria-label="PIS" />
         <textarea aria-label="Observação" />
       </FormBlock>,
     )
 
+    const carimbo = screen.getByText('Opcional')
+    expect(carimbo.className).toContain('t-rotulo')
+    // O verde de preenchimento saiu: verde tem dono, e é dinheiro. Contagem é
+    // número — o que a distingue do rótulo ao lado é a família mono.
+    expect(carimbo.className).not.toContain('bg-')
+
     const contador = screen.getByText('1/3')
-    expect(contador).toHaveClass('bg-fill-money')
+    expect(contador.className).toContain('t-dado-meta')
 
     await usuario.click(screen.getByRole('button', { name: /Documentos/ }))
     await usuario.type(screen.getByLabelText('PIS'), '123')
@@ -117,9 +168,7 @@ describe('FormBlock com hierarquia', () => {
 
     await usuario.clear(screen.getByLabelText('RG'))
     await usuario.clear(screen.getByLabelText('PIS'))
-    const vazio = screen.getByText('0/3')
-    expect(vazio).toHaveClass('bg-card')
-    expect(vazio).not.toHaveClass('bg-fill-money')
+    expect(screen.getByText('0/3')).toBeInTheDocument()
   })
 
   it('campo obrigatório fora de bloco obrigatório derruba o render', () => {
@@ -128,35 +177,27 @@ describe('FormBlock com hierarquia', () => {
     // pode disparar por acidente — ele existe para o dia em que marcar.
     expect(() =>
       render(
-        <FormBlock legend="Extras">
+        <FormBlock titulo="Extras">
           <input aria-label="CPF" required />
         </FormBlock>,
       ),
     ).toThrow(/campo obrigatório dentro de bloco que não é/)
   })
 
-  it('cor veste o módulo pelo data-modulo, sem cor escrita na tela', () => {
+  it('`cor` continua saindo como data-modulo, sem cor escrita na tela', () => {
     render(
-      <FormBlock legend="Fornecimento" cor="fornecedores">
+      <FormBlock titulo="Fornecimento" cor="fornecedores">
         <input aria-label="Prazo" />
       </FormBlock>,
     )
 
-    // `group` é o papel do `<fieldset>`: o nome vem do `<legend>`, que continua
-    // existindo mesmo com a faixa desenhada fora dele.
     const bloco = screen.getByRole('group', { name: 'Fornecimento' })
     expect(bloco).toHaveAttribute('data-modulo', 'fornecedores')
     expect(bloco.tagName).toBe('FIELDSET')
-    // FUSÃO v5 r4 (decisão do user, 2026-08-19): a cor INVERTEU de lugar —
-    // faixa na pastel /02, cheia /01 só na barra de 4px, corpo branco. Seis
-    // faixas neon na tela de Clientes foram o defeito fotografado que decidiu.
-    const barra = bloco.querySelector('.bg-modulo-cheia')
-    expect(barra).not.toBeNull()
-    const corpo = screen.getByLabelText('Prazo').parentElement
-    expect(corpo?.className).toContain('bg-card')
-    expect(corpo?.className).not.toContain('bg-modulo')
-    // A barra é decorativa (aria-hidden) e a tinta da faixa é a do tema sobre
-    // pastel — contraste folgado em todos os módulos por construção.
-    expect(barra?.getAttribute('aria-hidden')).toBe('true')
+    // A barra de 4px na cheia /01 e a faixa pastel MORRERAM na 2.0: card quiet
+    // é uma ferramenta de separação, e a faixa colorida era a segunda na mesma
+    // fronteira. O `data-modulo` fica porque é o gancho do tint em CSS.
+    expect(bloco.querySelector('.bg-modulo-cheia')).toBeNull()
+    expect(bloco.className).not.toContain('bg-modulo')
   })
 })

@@ -1,4 +1,4 @@
-import { FormGrid } from '@/components/cabinet/form-grid'
+import { FormGrid, FormRow } from '@/components/cabinet/form-grid'
 import { Form } from '@/components/ui/form'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -38,22 +38,24 @@ describe('FormGrid — faixa de seção', () => {
     render(<Harness />)
 
     const rotulo = screen.getByText('SALA DE ESTAR')
-    // Rótulo em Meta (mono 0.75rem, caixa alta, tracking 0.06em).
-    expect(rotulo.className).toContain('font-mono')
-    expect(rotulo.className).toContain('text-[0.75rem]')
-    expect(rotulo.className).toContain('uppercase')
-    expect(rotulo.className).toContain('tracking-[0.06em]')
+    // D16: os quatro utilitários soltos (mono, 0.75rem, uppercase, tracking)
+    // eram o degrau `--t-rotulo` escrito à mão em cada consumidor — que é
+    // exatamente o que a §Hierarquia proíbe ("proibido `font-size` literal em
+    // componente"). Agora é a classe, e o degrau tem um dono só.
+    expect(rotulo.className).toContain('t-rotulo')
 
     // Uma única célula cobre colunas + a coluna do botão de remover.
     const celula = rotulo.closest('td')
     expect(celula?.getAttribute('colspan')).toBe('2')
 
-    // Corte mais forte que a malha: réguas 2px pretas acima E abaixo (a malha é
-    // fio de 1px — a faixa precisa ser visivelmente outra coisa), fundo Bancada.
+    // D16: a linha de grupo se separa por TINT, não por régua dupla de 2px. A
+    // §Hierarquia nomeia o caso — "tint separa região por natureza (header de
+    // tabela, rodapé de totais, linha de grupo)" — e proíbe duas ferramentas na
+    // mesma fronteira: a hairline entre linhas já existe, então a faixa preta
+    // era a segunda.
     const linha = rotulo.closest('tr')
-    expect(linha?.className).toContain('border-y-2')
-    expect(linha?.className).toContain('border-border')
-    expect(linha?.className).toContain('bg-muted')
+    expect(linha?.className).not.toContain('border-y-2')
+    expect(linha?.className).toContain('[background:var(--n-50)]')
   })
 
   it('linha sem valor na sectionKey continua linha normal editável', () => {
@@ -127,12 +129,53 @@ describe('FormGrid — foco da célula editável', () => {
     }
   })
 
-  it('a grade mora na mesma caixa preta 2px da listagem, sem canto', () => {
+  // D16: a caixa preta de 2px saiu. A grade vive DENTRO de um `FormBlock`, que
+  // já é um card; card dentro de card é o terceiro nível que a §Hierarquia
+  // proíbe. Sobra a ferramenta mais barata que resolve — uma hairline em volta.
+  it('a grade se fecha por hairline, não por caixa preta', () => {
     const { container } = render(<HarnessFoco />)
 
     const caixa = container.querySelector('[data-slot="form-grid-box"]')
-    expect(caixa?.className).toContain('border-2')
-    expect(caixa?.className).not.toContain('rounded')
+    expect(caixa?.className).not.toContain('border-2')
+    expect(caixa?.className).toContain('[border-color:var(--n-200)]')
+  })
+})
+
+/**
+ * FormRow (D16) — a fileira de campos do mockup (`.fr.c2/.c3/.c4`).
+ *
+ * Ela é o que a espec da issue chama de "`FormGrid colunas={2|3|4}`"; o nome
+ * mudou porque `FormGrid` já era, neste arquivo, a grade de ITENS de doze telas.
+ * O comportamento é o pedido: gap `--s-3` e quebra por `auto-fit`.
+ */
+describe('FormRow', () => {
+  it('separa irmãos por gap, e o gap é um degrau da escala', () => {
+    const { container } = render(
+      <FormRow colunas={3}>
+        <input aria-label="A" />
+        <input aria-label="B" />
+      </FormRow>,
+    )
+
+    const fileira = container.querySelector('[data-slot="form-row"]')
+    expect(fileira?.className).toContain('gap-[var(--s-3)]')
+    // Regra 1 da §Hierarquia: irmãos = `gap`, nunca `margin` por elemento.
+    expect(screen.getByLabelText('A').className).not.toContain('m-')
+  })
+
+  it('quebra por `auto-fit`, nunca por media query', () => {
+    const { container } = render(
+      <FormRow colunas={4}>
+        <input aria-label="A" />
+      </FormRow>,
+    )
+
+    const fileira = container.querySelector('[data-slot="form-row"]') as HTMLElement
+    // `auto-fit` mede o CONTÊINER. Media query mediria a JANELA — e o campo vive
+    // dentro de uma coluna de 320px numa ficha de duas colunas.
+    expect(fileira.style.gridTemplateColumns).toContain('auto-fit')
+    expect(fileira.className).not.toMatch(/\bsm:|\bmd:|\blg:/)
+    expect(fileira).toHaveAttribute('data-colunas', '4')
   })
 })
 

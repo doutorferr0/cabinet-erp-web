@@ -1,3 +1,4 @@
+import type { DashboardSummaryDto } from '@/api/gerado'
 import type { Modulo } from '@/app/modulo'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
@@ -51,6 +52,48 @@ interface Indicador {
   href?: string
   /** Dinheiro leva a zona de valor e escreve em verde (DESIGN.md §Acentos). */
   dinheiro?: boolean
+}
+
+/**
+ * O CARTÃO DE `Pedidos a receber` — o único que pode não mostrar número.
+ *
+ * `incomingOrders` e `incomingOrdersToday` saem **sempre `0`** do servidor, e
+ * isso está escrito no próprio backend (`src/modules/dashboard/rotas.ts`, desde
+ * 2026-08-19): o DTO declara os dois como `integer` OBRIGATÓRIO, sem `null` para
+ * dizer "sem dado", então o zero ali não significa "nenhum pedido a receber" —
+ * significa "ninguém apurou". Enquanto os dois caminhos do dashboard ficaram no
+ * mock isso não aparecia, porque o mock devolvia ficção plausível; desde que a
+ * passagem abriu (`rotas-do-backend.ts`), o zero-stub chega à tela como se fosse
+ * contagem, e é a única mentira silenciosa da fileira.
+ *
+ * **A saída é travessão e a frase, não o zero.** O operador que lê `0` num
+ * sistema que TEM ordem de compra conclui que a operação está parada; o que lê
+ * `—` procura o número onde ele existe, e o cartão segue levando para lá.
+ *
+ * **Por que a condição é `=== 0` e não uma constante `false`.** Declaração de
+ * ausência escrita à mão não tem quem a invalide: o dia em que o backend passar
+ * a apurar, um `valor: '—'` fixo continuaria escondendo a contagem, verde e
+ * calado. Lendo o zero, o cartão volta a mostrar número sozinho, no primeiro
+ * pedido que o servidor contar. O preço é ficar `—` também quando a contagem é
+ * verdadeiramente zero — dizer "não sei" onde a resposta era "nenhum" subestima,
+ * mas não mente, e é o lado certo para errar.
+ */
+function pedidosAReceber(resumo: DashboardSummaryDto): Indicador {
+  const base = { modulo: 'compras', rotulo: 'Pedidos a receber', href: '/compras/pedidos' } as const
+
+  if (resumo.incomingOrders === 0) {
+    return { ...base, valor: '—', apoio: 'o servidor ainda não apura' }
+  }
+
+  return {
+    ...base,
+    valor: String(resumo.incomingOrders),
+    // Singular e plural são frases diferentes — "1 chegam hoje" é defeito visível.
+    apoio:
+      resumo.incomingOrdersToday === 1
+        ? '1 chega hoje'
+        : `${resumo.incomingOrdersToday} chegam hoje`,
+  }
 }
 
 function Cartao({ indicador }: { indicador: Indicador }) {
@@ -177,16 +220,7 @@ export function Indicadores() {
           : `${resumo.openQuotesDueThisWeek} vencem esta semana`,
       href: '/vendas/orcamentos',
     },
-    {
-      modulo: 'compras',
-      rotulo: 'Pedidos a receber',
-      valor: String(resumo.incomingOrders),
-      apoio:
-        resumo.incomingOrdersToday === 1
-          ? '1 chega hoje'
-          : `${resumo.incomingOrdersToday} chegam hoje`,
-      href: '/compras/pedidos',
-    },
+    pedidosAReceber(resumo),
     {
       modulo: 'estoque',
       rotulo: 'Estoque crítico',

@@ -14,6 +14,19 @@ export const SHORTCUTS = {
   transportadora: 'alt+t',
   /** Mostrar imagem do produto no orçamento — F4 no legado (§8.2). */
   imagemProduto: 'alt+i',
+  /**
+   * Recolher e reabrir a barra lateral (Reface 2.0, D4).
+   *
+   * Nasce aqui e não no legado. O CLAUDE.md veta atalho customizado NOVO, e a
+   * exceção está pedida por escrito na issue — mas ela também não fere o que
+   * aquele veto protege: o colapso tem botão próprio, visível, no rodapé da
+   * barra, e nenhum fluxo passa a depender da tecla. É a mesma natureza do
+   * `Ctrl+K`, conveniência e não requisito.
+   *
+   * `[` é a tecla que Linear, Notion e o VS Code usam para a mesma ação, e não
+   * consta da lista publicada de atalhos do Chrome nem do Edge.
+   */
+  barraLateral: '[',
 } as const
 
 export type NomeDeAtalho = keyof typeof SHORTCUTS
@@ -115,6 +128,13 @@ export const MAPA_DE_ATALHOS: readonly LinhaDoMapa[] = [
     atalho: 'imagemProduto',
     acao: 'Mostrar a imagem do produto',
     onde: 'Orçamento',
+    navegador: SEM_CONFLITO_PUBLICADO,
+  },
+  {
+    legado: null,
+    atalho: 'barraLateral',
+    acao: 'Recolher e reabrir a barra lateral (o mesmo que o botão no pé dela)',
+    onde: 'Em qualquer tela',
     navegador: SEM_CONFLITO_PUBLICADO,
   },
   {

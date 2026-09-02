@@ -928,6 +928,43 @@ export function VitraDataTable<T>({
     ) : null
 
   /**
+   * O repertório do módulo MENOS o que a grade já desenha.
+   *
+   * Sem o corte, a mesma coluna aparecia duas vezes no popover — uma em
+   * `Na grade` e outra na oferta do módulo —, com dois checkboxes respondendo a
+   * coisas diferentes: um esconde, o outro desliga.
+   */
+  const opcionaisForaDaGrade = useMemo(() => {
+    if (!entidade) return []
+    const naGrade = new Set(colunasDoMenu.map((coluna) => coluna.id))
+    return gruposDoModulo(entidade, colunasExtras, declaradas)
+      .map((grupo) => ({
+        ...grupo,
+        colunas: grupo.colunas.filter((coluna) => !naGrade.has(coluna.id)),
+      }))
+      .filter((grupo) => grupo.colunas.length > 0)
+  }, [entidade, colunasExtras, declaradas, colunasDoMenu])
+
+  /**
+   * Desmarcar uma coluna: a que veio do módulo DESLIGA, a que a tela declarou
+   * ESCONDE.
+   *
+   * São duas coisas diferentes com o mesmo gesto, e é assim que tem de ser: uma
+   * coluna extra desmarcada volta a ser oferta (e reaparece no grupo de onde
+   * veio); uma coluna da tela desmarcada continua existindo, só não é mostrada
+   * — e é ela que o rótulo conta como oculta.
+   */
+  function alternarColuna(id: string) {
+    if (colunasExtras.includes(id)) {
+      setColunasExtras((atuais) => atuais.filter((x) => x !== id))
+      return
+    }
+    setColunasOcultas((atuais) =>
+      atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+    )
+  }
+
+  /**
    * A ordenação como a barra a lê — o resumo do que o cabeçalho já mostra.
    *
    * Sai das colunas do menu, e não de uma tabela própria de rótulos: o `sort.id`
@@ -1095,15 +1132,11 @@ export function VitraDataTable<T>({
         }
         onLimparOrdenacao={() => updateState((s) => ({ ...s, sort: null, page: 1 }))}
         colunas={colunasDoMenu}
-        onAlternarColuna={(id) =>
-          setColunasOcultas((atuais) =>
-            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
-          )
-        }
+        onAlternarColuna={alternarColuna}
         onReordenarColunas={setOrdemDasColunas}
         {...(entidade
           ? {
-              colunasOpcionais: gruposDoModulo(entidade, colunasExtras, declaradas),
+              colunasOpcionais: opcionaisForaDaGrade,
               onAlternarColunaOpcional: (id: string) =>
                 setColunasExtras((atuais) =>
                   atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],

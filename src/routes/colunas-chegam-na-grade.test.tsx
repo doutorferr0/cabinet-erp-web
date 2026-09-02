@@ -1,7 +1,7 @@
 import { stubDeColaboradores } from '@/test/colaboradores'
 import { stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -67,17 +67,36 @@ describe('a coluna que o operador liga chega à grade', () => {
     expect(await grade().findByRole('columnheader', { name: 'E-mail' })).toBeInTheDocument()
   })
 
-  // O "fixa" sai da GRADE, não do `col: true` do schema. Setor é coluna
-  // declarada pela tela de Colaboradores, então não se desmarca.
-  it('coluna que a tela já desenha aparece travada no seletor', async () => {
+  /**
+   * INVERTIDO na Reface 2.0 (D9), e a inversão é o assunto do caso.
+   *
+   * Antes, TODA coluna que a tela declarava era fixa, e o seletor só servia
+   * para acrescentar — por isso nunca houve o que contar como oculta. O menu
+   * `Colunas · n ocultas` existe justamente para esconder a coluna que não
+   * interessa hoje, então só a IDENTIDADE da linha (a primeira) continua
+   * travada: sem ela a listagem vira um bloco de datas e valores sem sujeito.
+   */
+  it('só a identidade da linha trava; o resto da grade se esconde', async () => {
     const { user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
     await user.click(await screen.findByRole('button', { name: 'Colunas' }))
 
+    // Dentro do popover: com ele NÃO modal, os checkboxes de seleção de linha
+    // da grade também estão na árvore, e o primeiro da tela seria um deles.
+    const popover = document.querySelector('[data-slot="popover-content"]') as HTMLElement
+    const primeira = within(popover).getAllByRole('checkbox')[0] as HTMLElement
+    expect(primeira).toBeChecked()
+    expect(primeira).toBeDisabled()
+
     const setor = await screen.findByLabelText(/^Setor/)
     expect(setor).toBeChecked()
-    expect(setor).toBeDisabled()
+    expect(setor).not.toBeDisabled()
+
+    await user.click(setor)
+    await waitFor(() => {
+      expect(grade().queryByRole('columnheader', { name: /^Setor/ })).toBeNull()
+    })
   })
 
   // O ponto de cor faz a resposta do seletor ("de onde vem esta coluna")

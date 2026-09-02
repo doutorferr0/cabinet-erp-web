@@ -44,6 +44,19 @@ import { Button as ButtonAria } from 'react-aria-components'
  * A identidade da linha (código, nome) não se esconde: sem ela, a listagem vira
  * um bloco de datas e valores sem sujeito. A caixa fica marcada e travada, com a
  * palavra `fixa` ao lado — desabilitar sem dizer por quê se lê como defeito.
+ *
+ * **Só a identidade trava, e isso MUDOU na 2.0.** Antes toda coluna que a tela
+ * declarava era fixa, e o seletor só servia para ACRESCENTAR — daí não haver
+ * "n ocultas" para contar. Esconder a coluna que não interessa hoje é metade do
+ * que este menu existe para fazer.
+ *
+ * ## Uma coluna aparece em UMA lista só
+ *
+ * O que a grade já desenha fica em `Na grade`; o que ela pode desenhar fica nos
+ * grupos por módulo. Ligar uma opcional a MOVE de lá para cá, e desmarcá-la em
+ * `Na grade` a devolve. Sem essa migração, `Cargo` aparecia duas vezes no mesmo
+ * popover — uma como coluna e outra como oferta —, com dois checkboxes que
+ * respondiam a coisas diferentes.
  */
 
 export interface ColunaDoMenu {
@@ -119,7 +132,11 @@ export function MenuDeColunas({
         ) : null}
       </ButtonAria>
 
-      <Popover className="w-72 p-[var(--s-3)]" placement="bottom end">
+      {/* NÃO modal: o efeito de marcar uma coluna é a grade mudar ATRÁS do
+          popover, e um popover modal esconderia da árvore acessível exatamente
+          o que se está ajustando — quem usa leitor de tela marcaria a caixa sem
+          nenhuma confirmação de que a coluna entrou. */}
+      <Popover isNonModal className="w-72 p-[var(--s-3)]" placement="bottom end">
         <div className="flex flex-col gap-[var(--s-3)]">
           {colunas.length === 0 ? null : (
             <div className="flex flex-col gap-1">

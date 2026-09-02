@@ -8,7 +8,7 @@ import {
   oportunidadeParaContrato,
 } from '@/data/crm-api'
 import { corpoDeEscrita } from '@/data/parceiros-api'
-import { produtoDoContrato, produtoParaContrato } from '@/data/produtos-api'
+import { corpoDeDesativacao, produtoDoContrato, produtoParaContrato } from '@/data/produtos-api'
 import { clienteSchema } from '@/features/cliente/cliente-form'
 import { funilSchema } from '@/features/crm/funil-form'
 import { oportunidadeSchema } from '@/features/crm/oportunidade-form'
@@ -172,18 +172,47 @@ function editando(registro: Json, caminho: string, valor: unknown): Json {
   return copia
 }
 
+/**
+ * Uma linha de cada grade do produto, como o SERVIDOR a manda.
+ *
+ * Escritas à mão e não geradas: `valorDeTeste` não monta array, e os valores
+ * precisam ser reconhecíveis um a um para que a asserção de round-trip diga QUAL
+ * campo se perdeu quando quebrar.
+ */
+const FORNECEDOR_DO_SERVIDOR = {
+  id: '00000001-1111-4111-8111-111111111111',
+  supplierId: '00000002-1111-4111-8111-111111111111',
+  supplierName: 'FORNECEDOR LTDA',
+  supplierCode: 'COD-NO-FORNECEDOR',
+  supplierDescription: 'COMO ELE CHAMA A PECA',
+  isDefault: true,
+  active: true,
+}
+
+const RELACIONADO_DO_SERVIDOR = {
+  id: '00000003-1111-4111-8111-111111111111',
+  relatedProductId: '00000004-1111-4111-8111-111111111111',
+  relatedProductCode: 'COD-RELACIONADO',
+  relatedProductDescription: 'PECA QUE SAI JUNTO',
+  // Preenchida = KIT. `null` seria sugestão, e trocar um pelo outro aqui faria o
+  // teste medir o caso mais fácil.
+  quantity: '2.500',
+  sortOrder: 1,
+}
+
 describe('cobertura de escrita — o formulário não perde campo do contrato', () => {
   it('PRODUTO leva ao servidor tudo que o ProductWriteRequest tem', () => {
     // As três coleções vêm como `extras`: `valorDeTeste` deriva o valor do
     // `type` e não sabe montar `array`, então o genérico delas sairia string —
-    // e `produtoDoContrato` agora LÊ `suppliers`/`relatedProducts` para
-    // desenhar as grades do §6.1/§6.4, onde antes só `variants` era lida.
-    // Vazias basta: nenhuma das três está em `ProductWriteRequest`, e é o
-    // `WriteRequest` que esta guarda percorre.
+    // e `produtoDoContrato` LÊ `suppliers`/`relatedProducts` para desenhar as
+    // grades do §6.1/§6.4, onde antes só `variants` era lida.
     const dto = dtoCompleto('ProductDetailDto', {
       variants: [],
-      suppliers: [],
-      relatedProducts: [],
+      // `valorDeTeste` não sabe montar array (`type: 'array'` cai no fallback de
+      // texto), então as grades vêm daqui — e vêm PREENCHIDAS de propósito: com
+      // `[]` o teste passaria sem nunca exercitar a tradução de linha.
+      suppliers: [FORNECEDOR_DO_SERVIDOR],
+      relatedProducts: [RELACIONADO_DO_SERVIDOR],
     })
     // O caminho REAL: detalhe → registro do form → `parse` do Zod → corpo.
     const doForm = produtoSchema.parse(produtoDoContrato(dto as never))
@@ -195,8 +224,67 @@ describe('cobertura de escrita — o formulário não perde campo do contrato', 
         // contrato manda um objeto, o formulário é plano, e a volta remonta.
         // O round-trip dela tem teste próprio em `produtos-api.test.ts`.
         specs: 'objeto no contrato, campos planos no formulário',
+        // As grades MUDAM de forma no caminho, e é o contrato que manda: a
+        // leitura traz `id` e os nomes resolvidos (`supplierName`,
+        // `relatedProductCode`), a escrita não os aceita. A igualdade de valor
+        // não se aplica; o round-trip tem caso PRÓPRIO logo abaixo, porque
+        // exceção declarada sem asserção no lugar é buraco com justificativa.
+        suppliers: 'a leitura traz id e nome do fornecedor, a escrita não os aceita',
+        relatedProducts: 'a leitura traz id, código e descrição, a escrita não os aceita',
       })
     }
+  })
+
+  /**
+   * As duas grades do produto sobrevivem ao formulário — e a distinção
+   * ausente×vazio sobrevive junto.
+   *
+   * O defeito que este caso guarda é o mais caro do `PUT` integral: a tela de
+   * produto NÃO liga estas grades às que ela desenha (`fornecedores`,
+   * `gruposRelacionados` são as da transcrição, com fornecedor em texto livre — a
+   * reconciliação é a FASE C do G11, `api#117`). Sem carregar-e-devolver, gravar o
+   * NOME de um produto apagaria a grade de fornecedores criada por API, e nenhum
+   * campo visível da tela mudaria.
+   *
+   * A segunda metade é a que o `toHaveProperty` sozinho não vê: quando NÃO há
+   * grade carregada — a desativação pela listagem, que só tem a linha —, a chave
+   * tem de estar AUSENTE. `[]` ali é a instrução de apagar.
+   */
+  it('PRODUTO devolve as grades como vieram, e omite o que não carregou', () => {
+    const dto = dtoCompleto('ProductDetailDto', {
+      variants: [],
+      suppliers: [FORNECEDOR_DO_SERVIDOR],
+      relatedProducts: [RELACIONADO_DO_SERVIDOR],
+    })
+    const doForm = produtoSchema.parse(produtoDoContrato(dto as never))
+    const corpo = produtoParaContrato(doForm as never) as unknown as Json
+
+    expect(corpo.suppliers).toEqual([
+      {
+        supplierId: FORNECEDOR_DO_SERVIDOR.supplierId,
+        supplierCode: FORNECEDOR_DO_SERVIDOR.supplierCode,
+        supplierDescription: FORNECEDOR_DO_SERVIDOR.supplierDescription,
+        isDefault: FORNECEDOR_DO_SERVIDOR.isDefault,
+        active: FORNECEDOR_DO_SERVIDOR.active,
+      },
+    ])
+    expect(corpo.relatedProducts).toEqual([
+      {
+        relatedProductId: RELACIONADO_DO_SERVIDOR.relatedProductId,
+        // Nula é SUGESTÃO, preenchida é KIT. Um `0` aqui seria um kit de zero
+        // unidades — passa na tela e leva nada para o documento.
+        quantity: RELACIONADO_DO_SERVIDOR.quantity,
+        sortOrder: RELACIONADO_DO_SERVIDOR.sortOrder,
+      },
+    ])
+
+    // O caminho REAL de "sem grade": o `Excluir` da listagem, que monta o corpo a
+    // partir da LINHA — e `ProductDto` não tem grade nenhuma, de propósito.
+    const daListagem = corpoDeDesativacao(dtoCompleto('ProductDto') as never) as unknown as Json
+    expect(daListagem).not.toHaveProperty('suppliers')
+    expect(daListagem).not.toHaveProperty('relatedProducts')
+    // E a desativação continua sendo só isso: uma desativação.
+    expect(daListagem.active).toBe(false)
   })
 
   /**

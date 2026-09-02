@@ -15468,7 +15468,7 @@
         }
       },
       "ProductSupplierDto": {
-        "description": "Proposto. Uma linha da grade de fornecedores do produto (§6.1). O par código/descrição é o do FORNECEDOR — o que ele imprime no catálogo dele —, e é o que a linha do documento de compra carimba.\n\nO carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.\n\n**A ESCRITA não está publicada, e a ausência é deliberada.** O `PUT` do produto substitui o registro inteiro; publicar `suppliers` em `ProductWriteRequest` antes de a aba existir faria a primeira gravação da tela de produto APAGAR uma grade que o operador nunca viu. Ela entra junto com a aba.",
+        "description": "Proposto. Uma linha da grade de fornecedores do produto (§6.1). O par código/descrição é o do FORNECEDOR — o que ele imprime no catálogo dele —, e é o que a linha do documento de compra carimba.\n\nO carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.\n\n**A ESCRITA existe desde a FASE A do G11:** `ProductWriteRequest.suppliers` leva `ProductSupplierWriteRequest`. Omitir o campo conserva a grade gravada; `[]` a apaga. A assimetria é o que permitiu publicá-la antes de toda tela desenhar a aba.",
         "required": ["id", "supplierId", "supplierName", "isDefault", "active"],
         "type": "object",
         "properties": {
@@ -15823,6 +15823,20 @@
             "type": ["null", "string"],
             "format": "uuid",
             "description": "Proposto. Só o id — ver `productTypeId`."
+          },
+          "suppliers": {
+            "description": "Proposto. A grade multi-fornecedor (§6.1). SUBSTITUI a grade inteira — o `PUT` deste contrato troca o registro completo, e coleção embutida segue a mesma regra (`buyingCompanies`, `groupAdjustments`).\n\n**Omitir é diferente de mandar `[]`, e essa distinção é a razão de a escrita ter esperado:** ausente quer dizer \"não mexi nesta grade\" e conserva o que está gravado; `[]` quer dizer \"apague todas as linhas\". Sem ela, a tela de produto — que já grava o cadastro e ainda NÃO liga estas grades ao servidor — apagaria em silêncio, ao salvar o nome do produto, uma grade que o operador nunca viu. É a mesma assimetria de `groupAdjustments`, e pelo mesmo motivo: o campo nasce DEPOIS das telas que já gravam o registro.\n\nVer `ProductSupplierWriteRequest`. A leitura sai em `ProductDetailDto.suppliers`, com o nome do fornecedor resolvido.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSupplierWriteRequest"
+            }
+          },
+          "relatedProducts": {
+            "description": "Proposto. A grade de produtos relacionados — kit e sugestão (§6.4). SUBSTITUI a grade inteira — o `PUT` deste contrato troca o registro completo, e coleção embutida segue a mesma regra (`buyingCompanies`, `groupAdjustments`).\n\n**Omitir é diferente de mandar `[]`, e essa distinção é a razão de a escrita ter esperado:** ausente quer dizer \"não mexi nesta grade\" e conserva o que está gravado; `[]` quer dizer \"apague todas as linhas\". Sem ela, a tela de produto — que já grava o cadastro e ainda NÃO liga estas grades ao servidor — apagaria em silêncio, ao salvar o nome do produto, uma grade que o operador nunca viu. É a mesma assimetria de `groupAdjustments`, e pelo mesmo motivo: o campo nasce DEPOIS das telas que já gravam o registro.\n\nVer `ProductRelatedWriteRequest`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductRelatedWriteRequest"
+            }
           },
           "specs": {
             "oneOf": [
@@ -25094,6 +25108,55 @@
             }
           },
           "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProductSupplierWriteRequest": {
+        "description": "Proposto. Uma linha da grade de fornecedores, como a aba a grava (§6.1).\n\nNão tem `id`: a grade viaja INTEIRA e o servidor a substitui, então casar linha a linha por id não decide nada — a lista que chega É a lista que fica. Também não tem `supplierName`: o nome é do cadastro do parceiro, e aceitá-lo aqui deixaria a tela de produto renomear um fornecedor por engano, que é o mesmo motivo de `productTypeId` não aceitar `productTypeName`.",
+        "required": ["supplierId"],
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "description": "O PARCEIRO de papel fornecedor (`PartnerDto.id`) — o mesmo id que `GET /api/partners?role=supplier` devolve, nunca um id de `catalog-lookups`. O mesmo fornecedor duas vezes no mesmo produto é 400: seriam duas respostas para \"qual o código desta peça nele\".",
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierCode": {
+            "description": "`Cód. Prod. Fornecedor` (§6.1). `null` quando o fornecedor não tem código próprio — é o que a linha do documento de compra carimba, e vazio ali é melhor que um código inventado.",
+            "type": ["null", "string"]
+          },
+          "supplierDescription": {
+            "description": "`Descrição Fornecedor` (§6.1) — como a peça se chama no catálogo dele.",
+            "type": ["null", "string"]
+          },
+          "isDefault": {
+            "description": "`Padrão` (§6.1). No máximo UMA linha do produto pode marcá-lo, e a segunda é 400 — o padrão é quem o documento carimba sem perguntar, e dois padrões fariam o carimbo depender da ordem do `SELECT`. Omitido = `false`.",
+            "type": "boolean"
+          },
+          "active": {
+            "description": "`Ativo` — desativação lógica da linha (§9). Fornecedor que saiu perde o `Ativo` em vez de sumir da grade, e os documentos antigos continuam explicáveis. Omitido = `true`.",
+            "type": "boolean"
+          }
+        }
+      },
+      "ProductRelatedWriteRequest": {
+        "description": "Proposto. Uma linha da grade de relacionados, como a aba a grava (§6.4). Sem `id` e sem os campos de exibição (`relatedProductCode`/`relatedProductDescription`), pelo mesmo motivo de `ProductSupplierWriteRequest`: a grade viaja inteira, e código e descrição são do OUTRO produto.",
+        "required": ["relatedProductId"],
+        "type": "object",
+        "properties": {
+          "relatedProductId": {
+            "description": "O OUTRO produto (`ProductDto.id`). Três recusas com 400, e todas dizem qual linha: o próprio produto (kit de si mesmo é recursão infinita), produto que não existe, e o mesmo produto duas vezes (seriam duas quantidades para o mesmo item).",
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "description": "Decimal em string, até 3 casas — float perde centésimo, e num kit grande o erro aparece só no total.\n\n**É o DISCRIMINADOR:** preenchida = kit, omitida ou `null` = sugestão. Zero e negativo são 400, e o `0` é o que engana — um kit \"de zero unidades\" passa na tela e leva nada para o documento.",
+            "type": ["null", "string"]
+          },
+          "sortOrder": {
+            "description": "A ordem em que a grade mostra. Omitido = `0`, e aí a lista sai por descrição: sem ordem gravada, a tela precisa de ALGUMA ordem estável, senão a mesma grade abre diferente a cada consulta.",
             "type": "integer",
             "format": "int32"
           }

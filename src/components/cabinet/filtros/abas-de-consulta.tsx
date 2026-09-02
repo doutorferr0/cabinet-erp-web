@@ -193,7 +193,12 @@ function Aba({
 }: {
   ativa: boolean
   cor: string
-  contagem?: number
+  /**
+   * `| undefined` explícito: com `exactOptionalPropertyTypes` (ligado neste
+   * repo) "ausente" e "presente valendo undefined" são tipos diferentes, e quem
+   * chama passa `contagens?.get(id)`, que é o segundo caso.
+   */
+  contagem?: number | undefined
   /** O que o leitor de tela anuncia — o texto visível pode trazer contagem e estrela. */
   rotulo: string
   children: React.ReactNode

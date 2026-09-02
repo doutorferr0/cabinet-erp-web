@@ -120,7 +120,11 @@ describe('a consulta vive no endereço', () => {
     const { user, router } = montarEm(`/lista?filters=${encodeURIComponent(FILTRO_STELLA)}`)
     await screen.findByText('STELLA')
 
-    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    // Com UM filtro montado, `Limpar filtros` não existe: a barra da D9 só o
+    // desenha a partir do segundo chip, porque com um o `×` dele JÁ é o limpar
+    // e dois controles para o mesmo gesto seriam ruído fixo. O gesto que este
+    // caso mede — apagar a condição e, com ela, o parâmetro — é o mesmo.
+    await user.click(screen.getByRole('button', { name: /^Remover o filtro 1:/ }))
 
     await waitFor(() => {
       expect(router.state.location.search).not.toHaveProperty('filters')

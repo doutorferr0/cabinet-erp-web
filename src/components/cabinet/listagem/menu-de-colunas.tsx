@@ -90,8 +90,13 @@ export interface MenuDeColunasProps {
   onAlternar: (id: string) => void
   /** Recebe a ordem INTEIRA, já rearranjada — a tabela não deduz movimento. */
   onReordenar: (ids: string[]) => void
-  opcionais?: readonly GrupoDeColunasOpcionais[]
-  onAlternarOpcional?: (id: string) => void
+  /**
+   * `| undefined` explícito nas duas: com `exactOptionalPropertyTypes` a barra,
+   * que repassa props opcionais da tela, entrega "presente valendo undefined" —
+   * um tipo diferente de "ausente".
+   */
+  opcionais?: readonly GrupoDeColunasOpcionais[] | undefined
+  onAlternarOpcional?: ((id: string) => void) | undefined
   disabled?: boolean
 }
 

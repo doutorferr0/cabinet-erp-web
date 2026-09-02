@@ -680,7 +680,11 @@ function BarraDeSelecao<T>({
               disabled={morta}
               // Botão de contorno sobre tinta: a borda e o texto viram cor de
               // papel, senão o `outline` desenharia traço preto sobre preto.
-              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25 disabled:opacity-40"
+              // Sem `disabled:opacity-40`: o `Button` já carrega a receita
+              // `desabilitado` (index.css), que apaga FUNDO e TRAÇO e devolve a
+              // tinta do tema — opacidade no conteúdo é o que a regra proíbe, e
+              // `ui/desabilitado.test.tsx` varre as fontes atrás disso.
+              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25"
               title={
                 acao.disabled === true
                   ? acao.title

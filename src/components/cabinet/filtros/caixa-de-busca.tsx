@@ -38,7 +38,12 @@ export interface CaixaDeBuscaProps {
   onChange: (valor: string) => void
   /** Campos filtráveis da tela; é deles que saem os prefixos aceitos. */
   campos: readonly CampoFiltravel[]
-  placeholder?: string
+  /**
+   * `| undefined` explícito: com `exactOptionalPropertyTypes` a barra, que
+   * repassa a prop opcional da tela, entrega "presente valendo undefined" — que
+   * é um tipo diferente de "ausente".
+   */
+  placeholder?: string | undefined
   disabled?: boolean
 }
 

@@ -100,8 +100,14 @@ export function resumoDoFiltro(filtro: FiltroDaTabela, campo: CampoFiltravel): s
  */
 export interface PartesDoChip {
   rotulo: string
-  /** `undefined` quando é o operador padrão da variante — os dois-pontos bastam. */
-  operador?: string
+  /**
+   * `undefined` quando é o operador padrão da variante — os dois-pontos bastam.
+   *
+   * `| undefined` explícito porque `exactOptionalPropertyTypes` separa "chave
+   * ausente" de "chave presente valendo undefined", e é o segundo caso que sai
+   * de `partesDoChip`.
+   */
+  operador?: string | undefined
   /** `''` enquanto a pessoa ainda não digitou; o chip mostra `…` no lugar. */
   valor: string
 }

@@ -197,7 +197,10 @@ describe('CadastroForm em modo consulta', () => {
     renderRoute('/compras/ordens/oc-consulta?modo=consulta', stub as never)
 
     // O total continua sendo calculado e exibido…
-    expect(await screen.findByLabelText('SubTotal')).toHaveTextContent('309,81')
+    // `Subtotal` desde a D17 (#485): a grade do documento passou a usar a
+    // grafia do mockup. O `SubTotal` camelCase é da `fileirasTotais`, que
+    // segue servindo a `FormGrid` — e `form-grid.test.tsx` continua com ele.
+    expect(await screen.findByLabelText('Subtotal')).toHaveTextContent('309,81')
     // …mas nenhuma célula aceita digitação.
     expect(screen.getByLabelText('Quantidade linha 1')).toBeDisabled()
     expect(screen.getByRole('button', { name: /Busca Alt\+T/ })).toBeDisabled()

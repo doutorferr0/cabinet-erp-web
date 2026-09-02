@@ -194,11 +194,14 @@ export function EstrelaDeView({
         // gesto, não parte do rótulo. A fixada fica sempre visível — some seria
         // esconder o estado.
         'shrink-0 rounded-data p-0.5 text-muted-foreground opacity-0 transition-opacity',
-        // Duas variantes de grupo porque os dois consumidores nomeiam o grupo
-        // diferente: a aba da listagem usa `group` solto e o item da barra usa
-        // o `group/menu-item` do shadcn. Uma só deixaria a estrela invisível de
-        // um dos lados — e invisível sem estar desligada é o pior dos dois.
-        'focus-visible:opacity-100 group-hover:opacity-100 group-hover/menu-item:opacity-100',
+        // **Grupo NOMEADO nos dois casos, nunca o `group-hover:` solto** — medido
+        // no navegador: o `Sidebar` do shadcn já carrega a classe `group`, então
+        // `group-hover:` ali significa "o mouse está em algum lugar da barra", e
+        // TODAS as estrelas acendiam juntas ao entrar na sidebar. O consumidor
+        // marca o próprio escopo: `group/menu-item` é do shadcn, `group/view` é
+        // o que a aba da listagem põe na sua raiz.
+        'focus-visible:opacity-100 group-hover/menu-item:opacity-100 group-hover/view:opacity-100',
+        'group-focus-within/menu-item:opacity-100',
         favorita && 'text-warn opacity-100',
         className,
       )}

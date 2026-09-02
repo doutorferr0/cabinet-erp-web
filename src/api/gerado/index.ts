@@ -13447,7 +13447,7 @@ export const getCreateMyViewUrl = () => {
 }
 
 /**
- * Proposto. Salva a consulta que está na tela com um nome. Nasce fora dos Favoritos (`favorite: false`) — a estrela é um segundo gesto, e salvar tudo na barra lateral a encheria de consulta de uma vez só.
+ * Proposto. Salva a consulta que está na tela com um nome. **Quem cria decide a estrela**: "Salvar consulta" na listagem manda `favorite: false` (fixar é um segundo gesto, e salvar já fixado encheria a barra lateral de uma vez), e o ★ do item de nav manda `true`, porque ali o gesto É fixar. O servidor não força nenhum dos dois — forçar `false` obrigaria a estrela a fazer POST e PUT por um clique só, com uma janela entre os dois em que a view existe sem aparecer. O que é do servidor é a `position`: a view entra no fim da fila da tela dela.
  */
 export const createMyView = async (savedViewWriteRequest: SavedViewWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createMyViewResponse> => {
 

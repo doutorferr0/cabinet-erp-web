@@ -14790,7 +14790,7 @@
           "id",
           "code",
           "legalName",
-          "tradingName",
+          "tradeName",
           "document",
           "email",
           "isCustomer",
@@ -14812,7 +14812,7 @@
           "legalName": {
             "type": "string"
           },
-          "tradingName": {
+          "tradeName": {
             "type": ["null", "string"]
           },
           "document": {

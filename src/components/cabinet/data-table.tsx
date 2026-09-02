@@ -3,6 +3,14 @@ import { consultaDaUrl } from '@/components/cabinet/filtros/filtro-na-url'
 import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
 import { SincroniaComAUrl } from '@/components/cabinet/filtros/sincronia-com-a-url'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
+import { type AcaoDeLinha, AcoesDeLinha } from '@/components/cabinet/listagem/acoes-de-linha'
+import {
+  IconeDeTipo,
+  type TipoDeColuna,
+  classeDoTipo,
+  renderTipo,
+  tomDoValor,
+} from '@/components/cabinet/listagem/celulas-tipadas'
 import {
   PontoDoModulo,
   colunasDaGrade,
@@ -59,6 +67,7 @@ import {
   filtrosNormalizados,
   filtrosValidos,
 } from '@/lib/filtro-de-consulta'
+import { formatMoneyBRL } from '@/lib/formatters'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -79,6 +88,13 @@ declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
     /** Coluna de valor: numerais tabulares alinhados à direita (DESIGN.md, Regra do Número Tabular). */
     numeric?: boolean
+    /**
+     * O QUE aquele valor é — id, entidade, data, dinheiro, situação, progresso
+     * ou texto. Decide a moldura da célula (mono, alinhamento, truncagem), o
+     * ícone do cabeçalho e, na situação, se a linha inteira fica apagada.
+     * Ver `listagem/celulas-tipadas.tsx`.
+     */
+    tipo?: TipoDeColuna
   }
 }
 
@@ -146,20 +162,37 @@ export interface OpcaoDeAgrupamento {
 /**
  * DENSIDADE da linha — escolha do operador, não do designer.
  *
- * `padrao` é a célula de 52px do `DESIGN.md` §DataTable; `compacta` é 40px, o
- * piso da faixa consolidada (40–44px). Quem confere cinquenta linhas quer as
- * cinquenta na tela; quem lê uma a uma quer respiro. Fixar um dos dois é
- * escolher pelo outro.
+ * `confortavel` é a célula de 52px do mockup, com subtítulo da entidade;
+ * `compacta` é 40px, o piso da faixa consolidada (40–44px), sem subtítulo. Quem
+ * confere cinquenta linhas quer as cinquenta na tela; quem lê uma a uma quer
+ * respiro. Fixar um dos dois é escolher pelo outro.
  *
  * A troca é CSS puro sobre a mesma marcação — nada de reconsultar nem remontar
  * a tabela, porque densidade não muda o que a consulta trouxe.
  */
 export const DENSIDADES = [
-  { id: 'padrao', rotulo: 'Padrão' },
-  { id: 'compacta', rotulo: 'Compacta' },
+  { id: 'compacta', rotulo: 'Compacta', altura: 'Linha de 40px, sem subtítulo' },
+  { id: 'confortavel', rotulo: 'Confortável', altura: 'Linha de 52px, com subtítulo' },
 ] as const
 
 export type Densidade = (typeof DENSIDADES)[number]['id']
+
+/** A densidade com que toda listagem abre. */
+const DENSIDADE_PADRAO: Densidade = 'confortavel'
+
+/**
+ * Densidade vinda de FORA (consulta favorita gravada no navegador).
+ *
+ * `padrao` era o nome do confortável antes desta rodada, e há favoritos
+ * gravados com ele em máquina de operador. Descartá-los devolveria a tela à
+ * densidade inicial sem ninguém ter mexido no seletor — e o operador atribuiria
+ * o salto ao filtro que acabou de aplicar, não a uma renomeação.
+ */
+function densidadeLida(valor: unknown): Densidade | null {
+  if (valor === 'compacta') return 'compacta'
+  if (valor === 'confortavel' || valor === 'padrao') return 'confortavel'
+  return null
+}
 
 export interface VitraDataTableProps<T> {
   columns: ColumnDef<T>[]
@@ -264,6 +297,19 @@ export interface VitraDataTableProps<T> {
    * dia inteiro esperando um clique que quase nunca vem antes delas.
    */
   acoesDeSelecao?: readonly DataTableAction<T>[]
+  /**
+   * Ações que agem sobre UMA linha, no lugar onde o olho já está: aparecem no
+   * hover e no foco da própria linha, na última coluna.
+   *
+   * A barra de lote responde "o que faço com as marcadas"; estas respondem "o
+   * que faço com ESTA". Sem elas, imprimir um pedido custa marcar a linha,
+   * subir até a barra e voltar — três gestos para o que é um.
+   *
+   * `Abrir` NÃO entra aqui: a grade a deriva sozinha de `aoAbrirLinha`, porque
+   * toda listagem que abre registro tem a mesma, e repeti-la em oito telas é
+   * oito chances de escrever um rótulo diferente.
+   */
+  acoesDeLinha?: readonly AcaoDeLinha<T>[]
   /**
    * A saída do vazio de MÓDULO — "não há nada cadastrado aqui" com o botão que
    * resolve isso (#201).
@@ -450,24 +496,37 @@ function BarraDeSelecao<T>({
 }) {
   const varias = quantidade > 1
   return (
+    // TINTA CHEIA, e é a única peça escura da listagem. A barra aparece por
+    // cima da grade e some junto com a seleção: em papel claro, uma faixa
+    // invertida é lida como modo — "a tela está em outro estado agora" —, que é
+    // exatamente o que ela é. Fosse mais uma caixa clara, passaria por
+    // cabeçalho e o operador agiria em lote achando que agia em uma.
     <div
       data-slot="barra-de-selecao"
-      className="flex flex-wrap items-center gap-2 rounded-card border-2 border-border bg-muted px-3 py-2"
+      className="flex flex-wrap items-center gap-2.5 rounded-data bg-foreground px-3 py-2"
     >
       {/* `<output>`: o número muda a cada checkbox e quem não vê a tela precisa
-          ouvir o total, não o evento. */}
-      <output className="font-semibold text-sm">
-        {quantidade === 1 ? '1 linha marcada' : `${quantidade} linhas marcadas`}
+          ouvir o total, não o evento. O NÚMERO em mono, a palavra em Inter — é
+          contagem, e contagem se compara.
+          As classes `t-*` trazem a cor do degrau (tinta sobre papel); aqui o
+          papel é a tinta, então a cor é sobrescrita com `!` — sem isso o texto
+          sairia preto sobre preto conforme a ordem de carga do CSS. */}
+      <output className="t-ui text-card!">
+        <span className="t-dado text-card!">{quantidade}</span>{' '}
+        {quantidade === 1 ? 'selecionada' : 'selecionadas'}
       </output>
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {acoes.map((acao) => {
           const morta = acao.disabled === true || varias
           return (
             <Button
               key={acao.id}
-              variant={acao.variant ?? 'outline'}
+              variant="outline"
               size="sm"
               disabled={morta}
+              // Botão de contorno sobre tinta: a borda e o texto viram cor de
+              // papel, senão o `outline` desenharia traço preto sobre preto.
+              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25 disabled:opacity-40"
               title={
                 acao.disabled === true
                   ? acao.title
@@ -477,15 +536,26 @@ function BarraDeSelecao<T>({
               }
               onClick={() => acao.onClick?.(linhas[0] ?? null)}
             >
-              {acao.icon ? <acao.icon aria-hidden="true" className="text-modulo" /> : null}
+              {acao.icon ? <acao.icon aria-hidden="true" /> : null}
               {acao.label}
             </Button>
           )
         })}
-        <Button type="button" variant="ghost" size="sm" onClick={aoLimpar}>
-          Limpar seleção
-        </Button>
       </div>
+      {/* A saída fica na PONTA, e diz a tecla que já funciona. `esc` limpando a
+          seleção é o gesto que quem usa lista espera; anunciá-lo aqui é o que
+          impede que ele seja atalho secreto — o botão continua existindo para
+          quem usa o mouse. */}
+      <button
+        type="button"
+        onClick={aoLimpar}
+        className="ml-auto inline-flex items-center gap-2 rounded-item px-2 py-1 t-meta text-card/75! hover:text-card! focus-visible:focus-ring"
+      >
+        Limpar seleção
+        <kbd className="rounded-item border border-muted-foreground px-1 t-dado-meta text-card/75!">
+          esc
+        </kbd>
+      </button>
     </div>
   )
 }
@@ -508,6 +578,7 @@ export function VitraDataTable<T>({
   entidade,
   aoAbrirLinha,
   acoesDeSelecao,
+  acoesDeLinha,
   acaoDoVazio,
 }: VitraDataTableProps<T>) {
   /**
@@ -555,6 +626,27 @@ export function VitraDataTable<T>({
       atuais.includes(linha) ? atuais.filter((l) => l !== linha) : [...atuais, linha],
     )
   }
+
+  /**
+   * `esc` desfaz a seleção — e a barra de lote DIZ isso, em vez de escondê-lo.
+   *
+   * Não é atalho novo no sentido que o CLAUDE.md proíbe: a mesma saída existe
+   * como botão na barra, e nenhum fluxo depende da tecla. É o gesto que quem
+   * usa lista já tem no dedo, e o custo de não tê-lo é o operador com trinta
+   * linhas marcadas por engano procurando onde desfazer.
+   *
+   * Só escuta enquanto HÁ seleção: fora disso a tecla é de quem estiver por
+   * cima (dialog, popover), e um ouvinte permanente no documento roubaria o
+   * `esc` de todos eles.
+   */
+  useEffect(() => {
+    if (selecionadas.length === 0) return
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSelecionadas([])
+    }
+    document.addEventListener('keydown', aoTeclar)
+    return () => document.removeEventListener('keydown', aoTeclar)
+  }, [selecionadas.length])
   // Rascunho do filtro, como `qInput` é o rascunho da busca: o painel responde
   // à tecla na hora e só a frase COMPLETA vira consulta, depois do debounce.
   // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
@@ -569,7 +661,7 @@ export function VitraDataTable<T>({
   // muda o CONJUNTO de registros, só o desenho. Somá-los à chave de cache faria
   // alternar quadro ⇄ lista refazer uma consulta cuja resposta é a mesma.
   const [visaoId, setVisaoId] = useState(visaoInicial)
-  const [densidade, setDensidade] = useState<Densidade>('padrao')
+  const [densidade, setDensidade] = useState<Densidade>(DENSIDADE_PADRAO)
   // O `name` agrupa os rádios, e precisa ser único por INSTÂNCIA: duas
   // listagens na mesma página (a janela de busca sobre a tela) dividiriam o
   // grupo e uma desmarcaria a visão da outra.
@@ -641,9 +733,8 @@ export function VitraDataTable<T>({
     // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
     if (consulta.visao) setVisaoId(consulta.visao)
     if (consulta.agruparPor) setAgruparPor(consulta.agruparPor)
-    if (consulta.densidade === 'padrao' || consulta.densidade === 'compacta') {
-      setDensidade(consulta.densidade)
-    }
+    const gravada = densidadeLida(consulta.densidade)
+    if (gravada) setDensidade(gravada)
     // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
     // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
     setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
@@ -682,7 +773,7 @@ export function VitraDataTable<T>({
     setJuncao('and')
     setVisaoId(visaoInicial)
     setAgruparPor(agrupamentoInicial)
-    setDensidade('padrao')
+    setDensidade(DENSIDADE_PADRAO)
     updateState((s) => ({ ...s, sort: null, page: 1 }))
   }
 
@@ -714,7 +805,7 @@ export function VitraDataTable<T>({
     state.sort !== null ||
     visaoId !== visaoInicial ||
     agruparPor !== agrupamentoInicial ||
-    densidade !== 'padrao'
+    densidade !== DENSIDADE_PADRAO
 
   /**
    * A visão que desenha colunas pede o conjunto INTEIRO, não uma página.
@@ -758,8 +849,70 @@ export function VitraDataTable<T>({
     manualPagination: true,
   })
 
-  // Folha total de colunas (grupos contam as folhas) + a numeração opcional.
-  const totalColSpan = table.getAllLeafColumns().length + (rowNumbers ? 1 : 0) + (marcavel ? 1 : 0)
+  /**
+   * As ações de linha, com `Abrir` na frente quando a tela abre registro.
+   *
+   * Derivada, e não pedida à tela: toda listagem que abre tem a mesma ação com
+   * o mesmo rótulo, e declará-la em oito lugares é oito chances de divergir. A
+   * tela acrescenta o que é dela (imprimir, duplicar, ···).
+   */
+  const acoesDaLinha = useMemo<readonly AcaoDeLinha<T>[]>(() => {
+    const abrir: AcaoDeLinha<T>[] = aoAbrirLinha
+      ? [{ id: 'abrir', label: 'Abrir', icon: ChevronRight, onClick: aoAbrirLinha }]
+      : []
+    return [...abrir, ...(acoesDeLinha ?? [])]
+  }, [aoAbrirLinha, acoesDeLinha])
+  const temAcoesDeLinha = acoesDaLinha.length > 0
+
+  const compacta = densidade === 'compacta'
+
+  /**
+   * Colunas que desenham o próprio conteúdo — as que o TIPO não sobrescreve.
+   *
+   * Medido AQUI e não na hora de desenhar a célula: o TanStack completa toda
+   * coluna com um `cell` padrão no `useReactTable`, então perguntar à coluna
+   * montada se ela declarou `cell` responde "sim" para todas, e o tipo nunca
+   * desenharia nada. A pergunta só tem resposta antes do merge.
+   */
+  const comCelulaPropria = useMemo(() => {
+    const ids = new Set<string>()
+    for (const coluna of colunasDaTabela) {
+      if (coluna.cell === undefined) continue
+      const id = coluna.id ?? ('accessorKey' in coluna ? String(coluna.accessorKey) : undefined)
+      if (id) ids.add(id)
+    }
+    return ids
+  }, [colunasDaTabela])
+
+  /**
+   * A SOMA da coluna de dinheiro, no rodapé, ao lado da contagem.
+   *
+   * Sai da coluna que declarou `tipo: 'dinheiro'` — perguntar à tela por uma
+   * prop `somar` repetiria em cada listagem o que a coluna já diz. Soma o que
+   * está NA TELA, e o rótulo muda conforme isso: com paginação é a soma da
+   * PÁGINA, e chamá-la de "soma filtrada" seria afirmar sobre registros que
+   * esta consulta nem trouxe. Duas páginas somando errado no relatório de
+   * alguém começa exatamente assim.
+   */
+  const colunaDeDinheiro = colunasDaTabela.find((c) => c.meta?.tipo === 'dinheiro')
+  const soma = useMemo(() => {
+    if (!colunaDeDinheiro) return null
+    const chave = (colunaDeDinheiro as { accessorKey?: string }).accessorKey
+    if (!chave) return null
+    let total = 0
+    for (const linha of rows) {
+      const valor = (linha as Record<string, unknown>)[chave]
+      if (typeof valor === 'number') total += valor
+    }
+    return total
+  }, [colunaDeDinheiro, rows])
+
+  // Folha total de colunas (grupos contam as folhas) + as colunas de serviço.
+  const totalColSpan =
+    table.getAllLeafColumns().length +
+    (rowNumbers ? 1 : 0) +
+    (marcavel ? 1 : 0) +
+    (temAcoesDeLinha ? 1 : 0)
 
   const temFiltro = (state.filtros?.length ?? 0) > 0
   // "Todas" é sempre "todas as DESTA PÁGINA" — ver o rótulo do checkbox do
@@ -925,8 +1078,39 @@ export function VitraDataTable<T>({
           )
         })}
 
+        {/* DENSIDADE na barra da consulta, e não mais no rodapé como
+            `Linha: Padrão`. Ali embaixo ela ficava ao lado da paginação, longe
+            da grade que muda, e escrita como se fosse mais um parâmetro da
+            consulta — não é: não muda o que o servidor traz, muda quanto cabe
+            na tela. Dois botões em vez de um `<select>` porque são duas
+            opções, e um menu para duas opções cobra um clique a mais para
+            mostrar o que já caberia à vista. Só na visão TABELA: é a altura da
+            LINHA que ela muda, e num quadro não há o que encolher. */}
+        {visaoAtiva ? null : (
+          <div className="ml-auto flex items-center rounded-control border border-input p-0.5">
+            {DENSIDADES.map((opcao) => {
+              const ativa = opcao.id === densidade
+              return (
+                <button
+                  key={opcao.id}
+                  type="button"
+                  title={opcao.altura}
+                  aria-pressed={ativa}
+                  onClick={() => setDensidade(opcao.id)}
+                  className={cn(
+                    'rounded-item px-2.5 py-1 t-ui focus-visible:focus-ring',
+                    ativa ? 'bg-surface-sunken' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {opcao.rotulo}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {visoes && visoes.length > 0 ? (
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className={cn('flex flex-wrap items-center gap-2', visaoAtiva && 'ml-auto')}>
             {/* `Agrupar por` fica ANTES do alternador porque descreve a visão
                 que está à direita dele — e some quando a visão ativa não agrupa,
                 em vez de virar controle sem efeito. */}
@@ -937,7 +1121,7 @@ export function VitraDataTable<T>({
                   id="vitra-agrupar-por"
                   // Mesma caixa preta 2px do seletor de tamanho de página: os
                   // dois são escolhas sobre COMO a listagem se apresenta.
-                  className="h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring"
+                  className="h-8 rounded-control border border-input bg-card px-2 t-ui outline-none focus-visible:focus-ring"
                   value={agruparPor}
                   onChange={(e) => setAgruparPor(e.target.value)}
                 >
@@ -1014,11 +1198,11 @@ export function VitraDataTable<T>({
               ))}
             </div>
           ) : query.isError ? (
-            <div className="rounded-data border-2 border-border py-8 shadow-el3">
+            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
               <FalhaDaConsulta erro={query.error} aoTentar={() => query.refetch()} />
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-data border-2 border-border py-8 shadow-el3">
+            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
               <VazioDaConsulta
                 q={state.q}
                 temFiltro={temFiltro}
@@ -1031,16 +1215,24 @@ export function VitraDataTable<T>({
           )}
         </div>
       ) : (
-        /* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e recorte —
-          sem ele, o canto arredondado do contêiner apareceria por baixo do
-          cabeçalho quadrado da primeira fileira.
+        /* Caixa de DADO: UM traço fino em `n-300` e a sombra quieta — a
+          listagem é o objeto sobre o plano, e por isso a moldura aparece uma
+          vez, aqui. Enquanto a borda era 2px de tinta e cada linha também, a
+          tela tinha vinte caixas empilhadas e nenhuma hierarquia entre elas
+          (§Separação: card por fora, hairline por dentro).
+          O recorte continua: sem ele, o canto arredondado do contêiner
+          apareceria por baixo do cabeçalho quadrado da primeira fileira.
           `overflow-clip` e NÃO `overflow-hidden`, e a diferença é medida:
            `hidden` cria um scroll container, e `position: sticky` se prende ao
            scrollport mais próximo — o cabeçalho ficaria "fixo" dentro de uma
            caixa que não rola, ou seja, parado. `clip` recorta igual e não cria
            scrollport, então a fixação passa a valer contra a rolagem da PÁGINA,
            que é onde a listagem rola de verdade. */
-        <div className="overflow-clip rounded-data border-2 border-border shadow-el3">
+        <div
+          data-slot="grade"
+          data-densidade={densidade}
+          className="overflow-clip rounded-data border border-input bg-card shadow-macia"
+        >
           {/* `tabular-nums` na TABELA inteira, e não coluna a coluna.
               Medido em `docs/design/medir-tabular.py`: no Inter do corpo o `1`
               avança 833/2048 de em e o `4`, 1323 — numa coluna de valores isso
@@ -1058,15 +1250,19 @@ export function VitraDataTable<T>({
               // A célula do shadcn traz `h-[52px]`; o seletor de descendente
               // ganha dela por especificidade, sem `!important` e sem tocar no
               // componente compartilhado — outras tabelas do app não mudam.
-              densidade === 'compacta' && '[&_td]:h-10',
+              compacta && '[&_td]:h-10',
             )}
           >
             {/* Cabeçalho FIXO na rolagem (#198): numa listagem de cinquenta
                 linhas o operador perde o nome da coluna antes da décima, e passa
-                a contar posição no olho. `bg-card` é obrigatório junto do
+                a contar posição no olho. O tint `n-50` é obrigatório junto do
                 `sticky` — sem fundo opaco as linhas passam por baixo e o texto
-                do cabeçalho se mistura ao dado. */}
-            <TableHeader className="sticky top-0 z-10 bg-card">
+                do cabeçalho se mistura ao dado —, e é também a separação entre
+                header e corpo. §Separação: UMA ferramenta por fronteira — o
+                tint separa, então não há borda por baixo dele. O mockup desenha
+                as duas (tint + hairline); a régua da rodada é explícita
+                ("header separado por tint n-50, não por borda") e vence. */}
+            <TableHeader className="sticky top-0 z-10 bg-surface-sunken">
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
                 // por Fio (a sublinha forte fica na fileira das folhas).
@@ -1096,7 +1292,11 @@ export function VitraDataTable<T>({
                       header.column.columnDef.enableSorting !== false &&
                       'accessorKey' in header.column.columnDef
                     const active = state.sort?.id === header.column.id
-                    const numeric = header.column.columnDef.meta?.numeric === true
+                    const tipo = header.column.columnDef.meta?.tipo
+                    const numeric =
+                      header.column.columnDef.meta?.numeric === true ||
+                      tipo === 'dinheiro' ||
+                      tipo === 'progresso'
                     // A origem da coluna só existe onde a tela declarou a
                     // entidade do schema — nas outras a grade segue sem ponto,
                     // em vez de inventar um módulo para caber no desenho.
@@ -1118,27 +1318,65 @@ export function VitraDataTable<T>({
                         }
                         className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
                       >
-                        {header.isPlaceholder ? null : <PontoDoModulo cor={modulo?.cor} />}
-                        {header.isPlaceholder ? null : sortable ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 uppercase hover:text-foreground"
-                            onClick={() => toggleSort(header.column.id)}
+                        {/* Cabeçalho = ícone de TIPO + rótulo + seta. O ícone
+                            diz a natureza da coluna antes de o olho ler a
+                            palavra; à direita ele vem depois do rótulo, senão
+                            ficaria colado no dado da coluna vizinha.
+                            Sem caixa por célula: o `--t-rotulo` da §Hierarquia
+                            não tem fundo nem borda próprios. */}
+                        {header.isPlaceholder ? null : (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1.5',
+                              numeric && 'flex-row-reverse',
+                            )}
                           >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {active &&
-                              (state.sort?.desc ? (
-                                <ArrowDown className="size-3.5" />
-                              ) : (
-                                <ArrowUp className="size-3.5" />
-                              ))}
-                          </button>
-                        ) : (
-                          flexRender(header.column.columnDef.header, header.getContext())
+                            {tipo ? (
+                              <IconeDeTipo tipo={tipo} />
+                            ) : (
+                              <PontoDoModulo cor={modulo?.cor} />
+                            )}
+                            {sortable ? (
+                              <button
+                                type="button"
+                                // `uppercase` REPETIDO aqui de propósito: o
+                                // `text-transform` do `.t-rotulo` mora no `<th>`
+                                // e seria herdado, não fosse o UA stylesheet
+                                // declarar `text-transform: none` em `button` —
+                                // o resultado media na tela como meia grade em
+                                // caixa alta (as colunas sem ordenação) e meia
+                                // em caixa mista (as com), sem nada no código
+                                // dizendo por quê.
+                                className="inline-flex items-center gap-1 uppercase hover:text-foreground focus-visible:focus-ring"
+                                onClick={() => toggleSort(header.column.id)}
+                              >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                {active &&
+                                  (state.sort?.desc ? (
+                                    <ArrowDown className="size-3 text-foreground" />
+                                  ) : (
+                                    <ArrowUp className="size-3 text-foreground" />
+                                  ))}
+                              </button>
+                            ) : (
+                              flexRender(header.column.columnDef.header, header.getContext())
+                            )}
+                          </span>
                         )}
                       </TableHead>
                     )
                   })}
+                  {/* A coluna das ações de linha não tem rótulo: o que ela
+                      contém aparece no hover, e um cabeçalho "Ações" ocuparia
+                      permanentemente a largura para nomear o óbvio. Ela existe
+                      no cabeçalho só para reservar a largura desde o primeiro
+                      quadro — sem isso a grade se reorganiza quando o mouse
+                      entra na primeira linha. */}
+                  {temAcoesDeLinha && hgIndex === 0 ? (
+                    <TableHead className="w-[90px]" rowSpan={headerGroups.length}>
+                      <span className="sr-only">Ações da linha</span>
+                    </TableHead>
+                  ) : null}
                 </TableRow>
               ))}
             </TableHeader>
@@ -1171,6 +1409,10 @@ export function VitraDataTable<T>({
                         <Skeleton className={LARGURAS_DE_ESQUELETO[(linha + indice) % 3]} />
                       </TableCell>
                     ))}
+                    {/* A coluna das ações entra no esqueleto vazia: elas só
+                        aparecem no hover, e uma barra cinza ali prometeria
+                        conteúdo que nunca fica visível parado. */}
+                    {temAcoesDeLinha ? <TableCell className="w-[90px]" /> : null}
                   </TableRow>
                 ))
               ) : query.isError ? (
@@ -1193,12 +1435,28 @@ export function VitraDataTable<T>({
               ) : (
                 table.getRowModel().rows.map((row, rowIndex) => {
                   const isSelected = selecionadas.includes(row.original)
+                  /**
+                   * Linha CONCLUÍDA ou CANCELADA fica apagada, e quem sabe
+                   * disso é a coluna de situação — não uma prop que cada tela
+                   * teria de passar certo. Recebida e cancelada continuam
+                   * legíveis e param de disputar o olho com as que ainda pedem
+                   * alguma coisa, que é o trabalho de quem abre a listagem.
+                   */
+                  const apagada = row
+                    .getVisibleCells()
+                    .some(
+                      (cell) =>
+                        cell.column.columnDef.meta?.tipo === 'status' &&
+                        (tomDoValor(cell.getValue()) === 'done' ||
+                          tomDoValor(cell.getValue()) === 'void'),
+                    )
                   return (
-                    // Seleção = VIOLETA cheio com texto branco (§DataTable): o
-                    // violeta é a cor da AÇÃO, e a linha selecionada é sobre o
-                    // que as ações da barra vão agir. O marcador amarelo saiu com
-                    // ele — amarelo agora é foco, e foco e seleção são estados
-                    // diferentes que precisam de sinais diferentes.
+                    // Seleção = `--primary-soft` com FAIXA de 3px em chartreuse
+                    // na borda esquerda (mockup 2.0, supersede o violeta cheio
+                    // da 1.x). O fundo cheio de cor de ação lavava o dado da
+                    // linha justo quando o operador confere o que marcou; a
+                    // faixa é o sinal, o tint é o estado, e o texto continua
+                    // sendo o texto. Chartreuse aqui é ÁREA, nunca letra.
                     <TableRow
                       key={row.id}
                       data-state={isSelected ? 'selected' : undefined}
@@ -1210,17 +1468,23 @@ export function VitraDataTable<T>({
                       // controle, e nenhuma tecla precisa ser memorizada.
                       tabIndex={0}
                       aria-selected={isSelected}
+                      data-apagada={apagada ? '' : undefined}
                       className={cn(
                         // O anel de foco é de LINHA, montado nas células: sob
                         // `border-collapse` o `<tr>` não pinta box-shadow, e um
                         // anel por célula viraria uma moldura por coluna.
-                        'cursor-pointer outline-none hover:bg-muted focus-visible:focus-ring-row',
-                        // Seleção não depende só de cor: além do violeta, a linha
-                        // fica em negrito e `aria-selected` diz o estado a quem
-                        // ouve. Dinheiro perde a zona aqui — verde sobre violeta
-                        // não se lê, e a linha inteira já está marcada.
+                        // `group/linha` é o que faz as ações aparecerem no hover
+                        // E no foco de teclado — nomeado, porque a célula tem
+                        // grupos próprios e um `group` anônimo casaria com o de
+                        // dentro.
+                        'group/linha cursor-pointer outline-none hover:bg-surface-sunken focus-visible:focus-ring-row',
+                        // Seleção não depende só de cor: o tint, a faixa e o
+                        // `aria-selected` dizem a mesma coisa por três canais.
                         isSelected &&
-                          'font-semibold [&>td]:bg-primary [&>td]:text-primary-foreground [&>td_.bg-zone-money]:bg-transparent',
+                          '[&>td]:bg-[var(--primary-soft,hsl(var(--muted)))] [&>td:first-child]:shadow-[inset_3px_0_0_0_hsl(var(--primary))]',
+                        // Concluída/cancelada: texto em `n-500`. A linha
+                        // continua ali, conferível, e para de puxar o olho.
+                        apagada && 'text-muted-foreground',
                       )}
                       onClick={() => {
                         if (linhaAbre) aoAbrirLinha(row.original)
@@ -1249,7 +1513,15 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-10"
                           onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
+                          // Barra só as teclas que a LINHA trata. Barrar tudo
+                          // custou caro: o React chama `stopPropagation` no
+                          // evento NATIVO, e o ouvinte do `esc` vive no
+                          // document — a saída da barra de lote morria calada
+                          // sempre que o foco estivesse no checkbox, que é
+                          // justamente onde ele está depois de marcar.
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+                          }}
                         >
                           <Checkbox
                             isSelected={isSelected}
@@ -1260,21 +1532,51 @@ export function VitraDataTable<T>({
                       ) : null}
                       {rowNumbers ? (
                         // Numeração em Meta, sequencial global da consulta.
-                        <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">
+                        <TableCell className="w-10 text-right t-dado-meta">
                           {(state.page - 1) * state.pageSize + rowIndex + 1}
                         </TableCell>
                       ) : null}
-                      {row.getVisibleCells().map((cell) => (
+                      {row.getVisibleCells().map((cell) => {
+                        const tipo = cell.column.columnDef.meta?.tipo
+                        // Coluna que declara `cell` próprio manda no CONTEÚDO;
+                        // o tipo só lhe dá a moldura. É o caso que existe hoje
+                        // em oito telas — célula que já formata e só quer
+                        // alinhar como as irmãs —, e reescrever o conteúdo dela
+                        // aqui apagaria formatação que a tela escolheu.
+                        const proprio = comCelulaPropria.has(cell.column.id)
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            data-tipo={tipo}
+                            className={cn(
+                              cell.column.columnDef.meta?.numeric === true &&
+                                'text-right tabular-nums',
+                              classeDoTipo(tipo),
+                            )}
+                          >
+                            {tipo && !proprio
+                              ? renderTipo(tipo, cell.getValue(), { compacta })
+                              : flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        )
+                      })}
+                      {temAcoesDeLinha ? (
+                        // As ações não propagam o clique da linha (o botão
+                        // barra), mas a CÉLULA também não: sobrar 20px de
+                        // padding clicável que abre o registro, ao lado de três
+                        // botões que fazem outra coisa, é alvo traiçoeiro.
                         <TableCell
-                          key={cell.id}
-                          className={cn(
-                            cell.column.columnDef.meta?.numeric === true &&
-                              'text-right tabular-nums',
-                          )}
+                          className="w-[90px]"
+                          onClick={(e) => e.stopPropagation()}
+                          // Mesma regra da célula do checkbox: só as teclas da
+                          // linha. `esc` tem de chegar ao document.
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+                          }}
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          <AcoesDeLinha acoes={acoesDaLinha} linha={row.original} />
                         </TableCell>
-                      ))}
+                      ) : null}
                     </TableRow>
                   )
                 })
@@ -1284,12 +1586,34 @@ export function VitraDataTable<T>({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-        {/* Contagem em Meta (rótulo de rodapé de tabela); paginação em tabular. */}
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em]">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* O rodapé responde DUAS perguntas, e por isso tem dois lados: à
+            esquerda "o que estou vendo e quanto isso soma"; à direita "como
+            ando por dentro disso". Antes havia só a contagem, e a soma da
+            coluna de dinheiro — o número que o operador confere contra o
+            fornecedor — não existia em tela nenhuma. */}
+        <span className="t-meta" data-testid="contagem-da-grade">
           {/* Consulta que falhou não tem contagem: "0 registros" seria afirmar
               que a consulta voltou vazia, que é exatamente o que não se sabe. */}
-          {query.isError ? '— registros' : `${total} registro${total === 1 ? '' : 's'}`}
+          {query.isError ? (
+            '— registros'
+          ) : (
+            <>
+              <span className="t-dado">{rows.length}</span> de{' '}
+              <span className="t-dado">{total}</span> registro{total === 1 ? '' : 's'}
+              {soma !== null ? (
+                <>
+                  {' · '}
+                  {/* "da página" quando há mais do que coube: chamar de "soma
+                      filtrada" o total de vinte linhas de uma consulta de mil
+                      seria um número certo com o nome errado — e ele acabaria
+                      copiado para um relatório. */}
+                  {total > rows.length ? 'soma da página ' : 'soma filtrada '}
+                  <span className="t-dado">{formatMoneyBRL(soma)}</span>
+                </>
+              ) : null}
+            </>
+          )}
         </span>
 
         {visaoAtiva ? (
@@ -1305,30 +1629,13 @@ export function VitraDataTable<T>({
             </output>
           ) : null
         ) : (
-          <div className="ml-auto flex items-center gap-2">
-            {/* Densidade ao lado do tamanho de página: os dois respondem à
-                mesma pergunta — quanto cabe na tela — e separá-los mandaria o
-                operador procurar em dois cantos. Só na visão TABELA, porque é
-                a altura da LINHA que ela muda; num quadro não haveria o que
-                encolher. */}
-            <label htmlFor="vitra-densidade">Linha:</label>
-            <select
-              id="vitra-densidade"
-              className="h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring"
-              value={densidade}
-              onChange={(e) => setDensidade(e.target.value as Densidade)}
-            >
-              {DENSIDADES.map((opcao) => (
-                <option key={opcao.id} value={opcao.id}>
-                  {opcao.rotulo}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="vitra-page-size">Por página:</label>
+          <div className="ml-auto flex items-center gap-3">
+            <label htmlFor="vitra-page-size" className="t-meta">
+              Por página
+            </label>
             <select
               id="vitra-page-size"
-              // Mesma caixa preta 2px dos selects do formulário (radius 0 é lei).
-              className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:focus-ring"
+              className="h-8 rounded-control border border-input bg-card px-2 t-ui tabular-nums outline-none focus-visible:focus-ring"
               value={state.pageSize}
               onChange={(e) =>
                 updateState((s) => ({ ...s, pageSize: Number(e.target.value), page: 1 }))
@@ -1340,30 +1647,47 @@ export function VitraDataTable<T>({
                 </option>
               ))}
             </select>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={state.page <= 1}
-              onClick={() => updateState((s) => ({ ...s, page: s.page - 1 }))}
-            >
-              {/* A seta é a DIREÇÃO, e vem do lado para onde ela leva: à esquerda
-                no Anterior, à direita no Próxima. O rótulo continua escrito —
-                paginação por seta muda é o clássico que obriga a adivinhar. */}
-              <ChevronLeft aria-hidden="true" />
-              Anterior
-            </Button>
-            <span className="tabular-nums">
-              Página {state.page} de {pageCount}
+            {/* A FAIXA, não o número da página: "1–20 de 340" diz onde o
+                operador está dentro do conjunto; "Página 2 de 17" o obriga a
+                multiplicar para saber a mesma coisa. */}
+            <span className="t-dado-meta" data-testid="faixa-da-pagina">
+              {total === 0
+                ? '0 de 0'
+                : `${(state.page - 1) * state.pageSize + 1}–${Math.min(
+                    state.page * state.pageSize,
+                    total,
+                  )} de ${total}`}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={state.page >= pageCount}
-              onClick={() => updateState((s) => ({ ...s, page: s.page + 1 }))}
-            >
-              Próxima
-              <ChevronRight aria-hidden="true" />
-            </Button>
+            {/* Seta SEM rótulo, e a mudança é deliberada: `Anterior`/`Próxima`
+                escritos ocupavam metade do rodapé para dizer o que a direção já
+                diz, e o par de setas encostado é o padrão que todo operador
+                reconhece. O nome continua existindo para quem ouve
+                (`aria-label`) e para quem para o mouse em cima (`title`) — o
+                que não pode existir é seta MUDA. */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                aria-label="Página anterior"
+                title="Página anterior"
+                disabled={state.page <= 1}
+                onClick={() => updateState((s) => ({ ...s, page: s.page - 1 }))}
+              >
+                <ChevronLeft aria-hidden="true" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                aria-label="Próxima página"
+                title="Próxima página"
+                disabled={state.page >= pageCount}
+                onClick={() => updateState((s) => ({ ...s, page: s.page + 1 }))}
+              >
+                <ChevronRight aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

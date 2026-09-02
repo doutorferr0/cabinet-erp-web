@@ -925,6 +925,64 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 ]
 
 /**
+ * NA PASSAGEM SABENDO QUE O API AINDA NÃO SERVE — a dívida que o repo ESCOLHE.
+ *
+ * Parece contradizer o "rota adiantada é pior que ausente" do topo, e não
+ * contradiz: quando não existe handler de MOCK, as duas opções são ruins e esta
+ * é a menos ruim. Rota declarada mockada sem handler de mock não é respondida
+ * por ninguém — cai no fallback da SPA e devolve `index.html` com **200**,
+ * que a tela lê como resposta. Na passagem ela responde **501**, que é honesto.
+ * É o mesmo raciocínio com que a `#341` recusou-se a mover `cost-profiles` para
+ * o mock, e o que pôs a impressão de pedido e o timbre aqui na `#373`.
+ *
+ * **A constante existe para que a escolha tenha PRAZO.** Enquanto ela vivia só
+ * em comentário, era indistinguível de engano: `fonte-do-api.test.ts` não tinha
+ * como separar "puseram aqui de propósito" de "puseram aqui por descuido", e a
+ * única saída seria não cobrar o sentido — que é como as 27 de compras e
+ * comissões envelheceram verdes por 48h. Declarada, ela vira o contrário: a
+ * guarda reprova quem entrar aqui sem declarar E reprova a linha que já não
+ * precisa da exceção, no dia em que o api implementar.
+ *
+ * A dívida some quando UMA das duas coisas acontecer: o api ganhar o handler
+ * (a linha sai daqui e fica só na passagem) ou o mock ganhar handler próprio
+ * (a linha vai para `ROTAS_NO_MOCK`, com natureza).
+ */
+export const PASSAGEM_ADIANTADA: readonly RotaNoMock[] = [
+  // LAYOUT DE ETIQUETA (5) — na passagem desde a #333, `a87bd56`
+  // (*feat(contrato): imprimir nao tinha caminho*), que publicou o módulo de
+  // impressão inteiro e ligou tudo junto. As outras da #333 ganharam handler
+  // no api desde; estas cinco não.
+  //
+  // **MEDIDO em 2026-08-28 pelo FONTE**, contra `cabinet-erp-api` `ac00bb9`
+  // (`main`, e o topo real conferido pela API do GitHub — o checkout local
+  // estava 57 commits atrás): das 199 operações do contrato de lá, 163 têm
+  // chave no mapa que `src/core/http/servidor.ts` compõe. Nenhuma destas cinco
+  // está entre elas, e o `CLAUDE.md` já dizia o mesmo na conferência de 25/08
+  // ("as 12 sem handler são recebimento (6), layout de etiqueta (5) e
+  // `ResetEmployeePassword`") — a nota estava certa e a lista não a seguiu.
+  //
+  // **Nenhuma tela as consome hoje**, então o dano é zero e a escolha é barata:
+  // não há operador vendo 501. Quem escrever a primeira tela de etiqueta
+  // remede antes — se o api servir, a linha sai daqui; se não servir, o
+  // caminho é o handler de mock, e aí ela vai para `ROTAS_NO_MOCK`. Escrever a
+  // tela sem fazer nem uma coisa nem outra é entregar tela que nasce em 501.
+  ...(
+    [
+      ['get', '/api/label-layouts'],
+      ['post', '/api/label-layouts'],
+      ['get', '/api/label-layouts/{id}'],
+      ['put', '/api/label-layouts/{id}'],
+      ['get', '/api/labels/products/print'],
+    ] as const
+  ).map(([metodo, caminho]) => ({
+    metodo,
+    caminho,
+    motivo: '501 no api — sem handler em servidor.ts, e sem handler de mock que a substitua',
+    natureza: 'sem-handler' as const,
+  })),
+]
+
+/**
  * O QUE CONTINUA NO MOCK — a outra metade, nomeada, e a FONTE ÚNICA dela.
  *
  * Esta constante existe por dois motivos, e o segundo é o que a tira de dentro

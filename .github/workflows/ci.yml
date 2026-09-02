@@ -197,6 +197,34 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: api
 
+      # A CONFERÊNCIA ESTÁTICA, e ela roda AQUI de propósito: antes do banco,
+      # antes do par, antes do Playwright. Ela só precisa dos dois checkouts.
+      #
+      # Duas razões para não deixá-la junto do `ao-vivo`, lá embaixo. A primeira
+      # é custo: é leitura de arquivo, e pendurá-la no fim faria uma conferência
+      # de milissegundos esperar Postgres, semente e Chromium. A segunda é a que
+      # importa — **quando o par NÃO sobe, tudo abaixo daqui morre junto**, e
+      # justamente o diagnóstico mais provável ("o api não serve mais esta rota"
+      # / "o contrato de lá não sincronizou") é o que deixaria de ser impresso.
+      #
+      # O que ela cobre é o ponto cego da sonda: `ao-vivo` bate com uuid zerado
+      # e sem corpo, então 400 (validação), 403 (papel) e o 404 do handler saem
+      # como INCONCLUSIVAS — e uma rota que voltou a ser servida por trás de um
+      # desses três fica verde. Pelo fonte não há ambiguidade: ou a chave está no
+      # mapa de `servidor.ts`, ou não está.
+      - name: A passagem contra o fonte do api (conferência estática)
+        run: npx vitest run src/mocks/fonte-do-api.test.ts
+        env:
+          # A bateria é `skipIf(!CABINET_API_DIR)` — sem a variável ela PULA, e
+          # um passo que pula é um passo verde. Seria o mesmo silêncio que ela
+          # existe para acabar, agora um andar acima: alguém mexe no `env:` do
+          # job, a conferência para de rodar e nada fica vermelho.
+          #
+          # Esta chave inverte o padrão AQUI, e só aqui: com ela, faltar
+          # `CABINET_API_DIR` é falha em vez de skip. Fora do CI a bateria segue
+          # opcional, que é o certo para quem não tem o api no disco.
+          CABINET_FONTE_OBRIGATORIA: '1'
+
       # O comando ÚNICO de semeadura: bootstrap de superusuário (papel dono +
       # `unaccent`) + migrações + papel de runtime + semente. O primeiro passo
       # existe porque *service container do Actions não monta volume* — em dev

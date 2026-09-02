@@ -15,14 +15,23 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   do que é pedido. **O `Proposto` continua sendo marca de INTENÇÃO, não de ausência de backend:**
   o `cabinet-erp-api` existe e implementa por partes, e operação do contrato que ele ainda não
   serve responde **501** (não 404), justamente para a diferença ficar visível.
-- **Já é HTTP quase tudo, e o "quase" é a parte que muda toda semana:** o contrato tem **171
-  operações em 122 caminhos** (25/08) e `ROTAS_DO_BACKEND` liga **138** — sessão (`/auth/*`),
+- **Já é HTTP quase tudo, e o "quase" é a parte que muda toda semana:** o contrato tem **205
+  operações** (28/08) e `ROTAS_DO_BACKEND` liga **168** — sessão (`/auth/*`),
   listas de apoio (leitura e escrita), produto com variantes e kardex, os três papéis de
   parceiro (`/api/partners`, filtro `role`) e seus contatos, orçamento, pedido de venda com
   separação e entrega, obra, colaborador, atividades, tarefas e A fazer, planner, dashboard,
-  o CRM inteiro, preços, impressão e relatórios. **As outras 33 estão em `ROTAS_NO_MOCK`** —
-  compras (14), comissões (13), recebimento (6). Ver `docs/integracao.md` e
-  `src/mocks/rotas-do-backend.ts`, que é a lista que o CI confere.
+  o CRM inteiro, preços, impressão, relatórios, **compras (14) e comissões (13)** — estas duas
+  saíram do mock e a nota abaixo, que as dava por vencidas, é que estava vencida. **As outras
+  37 estão em `ROTAS_NO_MOCK`** — financeiro/tesouraria (15), recebimento (6), suporte da
+  plataforma (5), ciclo da credencial (4), `tenants` (4), e mais três avulsas. Ver
+  `docs/integracao.md` e `src/mocks/rotas-do-backend.ts`, que é a lista que o CI confere.
+- **Números conferidos em 2026-08-28 contra `cabinet-erp-api` `ac00bb9`, e o que os conferiu
+  agora é o CI:** `src/mocks/fonte-do-api.test.ts` lê o contrato de lá e as chaves do mapa de
+  `src/core/http/servidor.ts`, e roda no job `ao-vivo` **antes** de o par subir. Ele existe
+  porque a sonda de `ao-vivo.test.ts` conclui menos do que parece — batendo com uuid zerado e
+  sem corpo, 400 (validação), 403 (papel) e o 404 do handler saem como *inconclusivas*, e uma
+  rota que voltou a ser servida por trás de um desses três ficava verde. Pelo fonte não há
+  ambiguidade. **Ele não promove nada:** quem move linha para a passagem continua sendo a sonda.
 - **O que o `Proposto` marca continua sendo INTENÇÃO, não ausência de servidor.** Dashboard e
   planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
   respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
@@ -187,6 +196,16 @@ Isto é leitura de código, não sonda: só o `ao-vivo.test.ts` contra servidor 
 uma linha para a passagem, e é ele que continua mandando. O que a conferência estática faz é
 apontar ONDE remedir primeiro, em vez de deixar a declaração envelhecendo verde — que é
 exatamente a falha que este arquivo descreve dois parágrafos acima.
+
+**2026-08-28 — a conferência acima virou BATERIA (`src/mocks/fonte-do-api.test.ts`), e o motivo
+está no destino das duas notas que ela deixou.** A de comissões foi paga: as 13 (e as 14 de
+compras) estão na passagem. A de **layout de etiqueta (5) não foi** — e as cinco seguiram em
+`ROTAS_DO_BACKEND`, ou seja, saindo do mock para tomar 501, desde a #333. Uma conferência que se
+escreve em prosa depende de alguém reler a prosa; foi o que não aconteceu em três dias. Rodando
+no CI, o mesmo cruzamento reprova sozinho. As cinco agora estão declaradas em
+`PASSAGEM_ADIANTADA` — a escolha é deliberada (sem handler de mock, o 501 é melhor que o
+`index.html` com 200), e o que mudou é ela ter prazo: a guarda reprova no dia em que o api
+implementar.
 
 **Duas armadilhas da conferência estática, as duas mordidas:** (1) o checkout local do api estava
 **74 commits atrás** do `origin/main` — medir por ele apontou 85 operações "sem handler" que

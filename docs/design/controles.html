@@ -19,6 +19,29 @@
   PR — como o §Hierarquia manda para o DESIGN.md.
 
   Abrir direto do disco (file://) funciona; `?grid` liga o overlay de 8px.
+
+  ARMADILHA DE PÁGINA DE DOIS TEMAS LADO A LADO — vale para a `hierarquia.html`
+  da D1, que tem este mesmo formato.
+
+  Mostrar claro e escuro na MESMA página obriga a pôr `data-theme="dark"` num
+  DESCENDENTE, e aí os APELIDOS de `tokens-2.0.css` (`--folha`, `--bancada`,
+  `--ink*`, `--hairline*`, `--hover`, `--money`, `--tint-*`) param de inverter.
+  Eles são declarados no `:root` como `var(--n-X)`, e `var()` é substituído no
+  elemento onde a variável é DECLARADA — o bloco `.dark` redefine os `--n-*` no
+  descendente, mas `--folha` já foi herdado do `:root` resolvido com a cor
+  clara. A primeira versão desta página usava os apelidos: a coluna escura saiu
+  com fundo CLARO e texto quase invisível.
+
+  **Isto NÃO é defeito da fundação.** Medido nas três situações: com o tema na
+  RAIZ — que é como o app faz, o `mode-toggle` põe a classe no `<html>` — os
+  dois blocos declaram no mesmo elemento e o apelido inverte certo
+  (`--folha` → `#171613`, `--hover` → tinta clara, `--money` → mint-400). Os
+  componentes podem usar apelido à vontade; quem não pode é uma página como
+  esta.
+
+  Por isso, aqui: degrau direto (`var(--n-0)`) e `color` explícito nas seções —
+  a HERANÇA de `color` do `body` tem o mesmo problema, e sem isso os títulos dos
+  cards somem no escuro.
 -->
 <link rel="stylesheet" href="../../src/styles/tokens-2.0.css">
 <link rel="stylesheet" href="./grid.css">
@@ -29,7 +52,7 @@
   body {
     margin: 0;
     padding: var(--s-6);
-    background: var(--bancada);
+    background: var(--n-100);
     color: var(--n-900);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -37,16 +60,18 @@
   h1 { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.1; margin: 0 0 var(--s-2); }
   .sub { font-size: 12px; color: var(--n-500); margin: 0 0 var(--s-5); max-width: 70ch; line-height: 1.45; }
   .temas { display: grid; gap: var(--s-5); grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); align-items: start; }
-  .tema { background: var(--bancada); border-radius: var(--r-panel); padding: var(--s-4); }
+  /* `color` explícito: a herança do `body` traz a tinta JÁ resolvida no tema
+     claro, e sem isto os títulos dos cards somem na coluna escura. */
+  .tema { background: var(--n-100); color: var(--n-900); border-radius: var(--r-panel); padding: var(--s-4); }
   .tema > h2 {
     font-family: var(--font-sans); font-weight: 600; font-size: 10.5px; letter-spacing: .12em;
     text-transform: uppercase; color: var(--n-500); margin: 0 0 var(--s-4);
   }
   .card {
-    background: var(--folha); border: 1px solid var(--n-300); border-radius: var(--r-card);
+    background: var(--n-0); border: 1px solid var(--n-300); border-radius: var(--r-card);
     box-shadow: var(--hard-soft); padding: var(--s-4); margin-bottom: var(--s-4);
   }
-  .card > h3 { font-family: var(--font-sans); font-weight: 600; font-size: 13.5px; line-height: 1.3; margin: 0 0 var(--s-3); }
+  .card > h3 { font-family: var(--font-sans); font-weight: 600; font-size: 13.5px; line-height: 1.3; color: var(--n-900); margin: 0 0 var(--s-3); }
   .linha { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
   .linha + .linha { margin-top: var(--s-3); }
   .nota { font-size: 12px; color: var(--n-500); margin: var(--s-2) 0 0; line-height: 1.35; }
@@ -77,16 +102,16 @@
   .btn.pri:hover { background: var(--main-hover); transform: translateY(-1px); box-shadow: 0 4px 0 0 var(--n-900); }
   .btn.pri:active { transform: translateY(3px); box-shadow: none; }
 
-  .btn.sec { background: var(--folha); border-color: var(--n-900); box-shadow: var(--key-1); }
+  .btn.sec { background: var(--n-0); border-color: var(--n-900); box-shadow: var(--key-1); }
   .btn.sec:hover { transform: translateY(-1px); box-shadow: 0 3px 0 0 var(--n-900); }
   .btn.sec:active { transform: translateY(2px); box-shadow: none; }
 
-  .btn.icone { background: var(--folha); border: 1px solid var(--n-300); box-shadow: var(--hard-soft); }
-  .btn.icone:hover { background: var(--hover); }
+  .btn.icone { background: var(--n-0); border: 1px solid var(--n-300); box-shadow: var(--hard-soft); }
+  .btn.icone:hover { background: color-mix(in oklab, var(--n-900) 5%, transparent); }
   .btn.icone:active { transform: translateY(2px); box-shadow: none; }
 
   .btn.ghost { color: var(--n-700); }
-  .btn.ghost:hover { border-color: var(--n-300); background: var(--hover); }
+  .btn.ghost:hover { border-color: var(--n-300); background: color-mix(in oklab, var(--n-900) 5%, transparent); }
 
   .btn.danger { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); box-shadow: 0 2px 0 0 var(--bad); }
   .btn.danger:hover { transform: translateY(-1px); box-shadow: 0 3px 0 0 var(--bad); }
@@ -110,13 +135,13 @@
   .campo > label .hint { font-weight: 400; color: var(--n-500); }
   .in {
     height: 34px; width: 100%; border: 1px solid var(--n-300); border-radius: var(--r-ctrl);
-    background: var(--folha); padding: 0 10px; box-shadow: var(--inset);
+    background: var(--n-0); padding: 0 10px; box-shadow: var(--inset);
     font-family: var(--font-sans); font-size: 13.5px; color: var(--n-900);
     display: flex; align-items: center; gap: 8px;
   }
   .in::placeholder, .in .ph { color: var(--n-400); }
   .in.foco { border-color: var(--n-900); outline: 3px solid var(--ring); box-shadow: 0 0 0 4px var(--n-900); }
-  .in.ro { background: var(--folha-2); box-shadow: none; color: var(--n-700); }
+  .in.ro { background: var(--n-50); box-shadow: none; color: var(--n-700); }
   .in.bad { border-color: var(--bad); }
   .in.num { font-family: var(--font-mono); font-weight: 500; font-size: 12.5px; font-variant-numeric: tabular-nums; justify-content: flex-end; }
   .in.ta { height: auto; min-height: 70px; padding: 8px 10px; align-items: flex-start; }
@@ -125,12 +150,12 @@
 
   /* ---------- MARCA (checkbox / radio) ---------- */
   .marca { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 13.5px; color: var(--n-900); }
-  .cb { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--n-300); border-radius: var(--r-data); background: var(--folha); display: grid; place-content: center; }
+  .cb { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--n-300); border-radius: var(--r-data); background: var(--n-0); display: grid; place-content: center; }
   .cb.on { background: var(--n-900); border-color: var(--n-900); }
   .cb.on::after { content: ""; width: 4px; height: 8px; border: solid var(--n-0); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); }
   .cb.meio { background: var(--n-900); border-color: var(--n-900); }
   .cb.meio::after { content: ""; width: 7px; height: 2.5px; background: var(--n-0); }
-  .rd { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--n-300); border-radius: 999px; background: var(--folha); display: grid; place-content: center; }
+  .rd { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--n-300); border-radius: 999px; background: var(--n-0); display: grid; place-content: center; }
   .rd.on { border-color: var(--n-900); }
   .rd.on::after { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--n-900); }
 
@@ -147,14 +172,14 @@
   .abas button[aria-selected="true"] .c { background: var(--n-900); color: var(--n-0); }
 
   /* ---------- SEGMENTED (espelho de ui/segmented.tsx) ---------- */
-  .seg { display: inline-flex; width: fit-content; overflow: hidden; border: 1px solid var(--n-300); border-radius: var(--r-ctrl); background: var(--folha); }
+  .seg { display: inline-flex; width: fit-content; overflow: hidden; border: 1px solid var(--n-300); border-radius: var(--r-ctrl); background: var(--n-0); }
   .seg button {
     height: 28px; padding: 0 10px; border: 0; background: none; cursor: pointer; white-space: nowrap;
     font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--n-500);
     display: inline-flex; align-items: center; gap: 6px;
   }
   .seg button + button { border-left: 1px solid var(--n-300); }
-  .seg button:hover { background: var(--hover); }
+  .seg button:hover { background: color-mix(in oklab, var(--n-900) 5%, transparent); }
   .seg button[aria-checked="true"] { background: var(--n-900); color: var(--n-0); }
 
   /* ---------- SEPARADOR ---------- */

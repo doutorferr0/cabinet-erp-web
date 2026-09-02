@@ -26,7 +26,43 @@
     color: var(--n-900);
     font: var(--t-corpo);
   }
-  .tema { background: var(--n-100); padding: var(--s-6) var(--s-5); }
+  /* A COR DA TINTA MORA AQUI, e não só no `body`. `color` é herdado: declarado
+     uma vez no `body`, ele resolve `var(--n-900)` no ESCOPO do body — que é o
+     claro — e desce computado para dentro da seção escura. Os tokens cascatam,
+     o valor já computado não. Sem esta linha, metade do tema escuro desta
+     página some (foi o que a primeira captura mostrou). */
+  .tema { background: var(--n-100); color: var(--n-900); padding: var(--s-6) var(--s-5); }
+  /* TOKEN DERIVADO COMPUTA ONDE É DECLARADO, e esta página é o único lugar do
+     projeto onde isso aparece. `--tint-*` e `--*-bg` são
+     `color-mix(…, var(--folha))`, declarados no `:root` de `tokens-2.0.css`: a
+     substituição do `var()` de dentro acontece no elemento em que a DECLARAÇÃO
+     se aplica — o `<html>` —, e os descendentes herdam o valor já resolvido.
+     No app isso funciona porque `.dark` também mora no `<html>`: os dois
+     seletores casam o MESMO elemento. Aqui o `.dark` está numa `<section>`, e a
+     seção herda os tints já computados com a folha CLARA — o card lateral saía
+     azul-claro no meio do tema escuro.
+     Redeclarar as mesmas expressões dentro da seção as faz recomputar no
+     escopo dela. É artefato da página, não do sistema — mas quem puser
+     `data-theme="dark"` num elemento que não seja a raiz (um previsualizador de
+     tema, por exemplo) vai encontrar exatamente isto. */
+  .tema.dark {
+    /* `--folha` primeiro, e pelo MESMO motivo: ele é `var(--n-0)` declarado no
+       `:root`, então chega aqui já resolvido com a folha clara. Redeclarar os
+       tints sem redeclarar a folha reproduz o defeito um nível acima. */
+    --folha: var(--n-0);
+    --folha-2: var(--n-50);
+    --bancada: var(--n-100);
+    --tint-lilac: color-mix(in oklab, var(--indigo-400) 12%, var(--folha));
+    --tint-mint: color-mix(in oklab, var(--mint-400) 12%, var(--folha));
+    --tint-sky: color-mix(in oklab, var(--sky-400) 12%, var(--folha));
+    --tint-sand: color-mix(in oklab, var(--amber-400) 14%, var(--folha));
+    --tint-rose: color-mix(in oklab, var(--rose-400) 12%, var(--folha));
+    --ok-bg: color-mix(in oklab, var(--mint-400) 18%, var(--folha));
+    --info-bg: color-mix(in oklab, var(--sky-400) 18%, var(--folha));
+    --warn-bg: color-mix(in oklab, var(--amber-400) 22%, var(--folha));
+    --bad-bg: color-mix(in oklab, var(--rose-400) 18%, var(--folha));
+    --mut-bg: color-mix(in oklab, var(--n-500) 10%, var(--folha));
+  }
   .largura { max-width: 980px; margin: 0 auto; }
   .capa { display: flex; align-items: baseline; gap: var(--s-3); margin-bottom: var(--s-5); }
   .capa h1 { font: var(--t-pagina); margin: 0; }

@@ -132,7 +132,14 @@
   --money: var(--ok);
   --money-neg: var(--bad);
 
-  /* ---------- tints por assunto (12% do matiz sobre folha) ---------- */
+  /* ---------- tints por assunto (12% do matiz sobre folha) ----------
+     `var(--folha)` de dentro é substituído no elemento em que ESTA declaração
+     se aplica — o `<html>` —, e os descendentes herdam o valor já resolvido.
+     Funciona porque `.dark` também mora no `<html>`: os dois seletores casam o
+     mesmo elemento. Pôr `data-theme="dark"` num elemento que NÃO seja a raiz
+     (um previsualizador de tema numa parte da página) deixa os tints com a
+     folha do tema de fora — a seção fica escura e os tints, claros. Nesse caso
+     redeclare estas linhas no escopo, como `docs/design/hierarquia.html` faz. */
   --tint-lilac: color-mix(in oklab, var(--indigo-400) 12%, var(--folha));
   --tint-mint: color-mix(in oklab, var(--mint-400) 12%, var(--folha));
   --tint-sky: color-mix(in oklab, var(--sky-400) 12%, var(--folha));

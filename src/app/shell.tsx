@@ -1,6 +1,7 @@
 import { Appbar, secaoDaRota } from '@/app/appbar'
 import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
+import { EstrelaDaTela, GrupoFavoritos } from '@/app/nav/favoritos'
 import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
@@ -226,6 +227,11 @@ function ItemDaBarra({
           </Link>
         )}
       </SidebarMenuButton>
+      {/* A estrela fica FORA do botão de navegação: dentro, ela seria um clique
+          dentro de outro clique, e quem quisesse fixar acabaria navegando. Só
+          tela interna a tem — favoritar um arquivo estático que abre em aba nova
+          não é consulta que se refaz. */}
+      {item.externo ? null : <EstrelaDaTela titulo={item.title} url={item.url} />}
     </SidebarMenuItem>
   )
 }
@@ -315,6 +321,11 @@ function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {/* FAVORITOS vem ANTES dos grupos da seção e não muda com ela: as views
+            salvas são do usuário, não do módulo em que ele está agora. Fora do
+            filtro "Filtrar telas" pelo mesmo motivo — ele procura TELA, e um
+            favorito é uma consulta dentro de uma. */}
+        <GrupoFavoritos />
         {grupos.length === 0 ? (
           // Busca sem resultado DIZ que não achou. Painel em branco faria o
           // operador achar que o sistema está vazio — e uma seção que só tem

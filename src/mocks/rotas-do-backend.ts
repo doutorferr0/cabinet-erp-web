@@ -1409,6 +1409,41 @@ const REAGENDAR_SEM_CONTRATO_LA =
   'PATCH do item do plano publicado neste PR: a cópia do contrato do api ainda não o conhece. ' +
   'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
 
+/**
+ * As VIEWS SALVAS do usuário (`/api/me/views`), publicadas NESTE PR pela #481 (D13).
+ *
+ * `sem-contrato`, e sem precisar de par local para afirmá-lo — o caminho nasce
+ * aqui e a cópia do contrato do api vem da `main` deste repo. Quem vai servi-lo
+ * é o Spring: o Node foi congelado em 28/08 e não fecha mais lacuna nenhuma.
+ *
+ * **Têm handler de mock** (`src/mocks/api/views.ts`), que é a condição escrita
+ * no bloco de `cost-profiles`: sem handler, a rota cairia no fallback da SPA e
+ * devolveria `index.html` com 200 — pior que o 404 honesto.
+ *
+ * **O preço, sabido:** este é o único mock que grava em `localStorage`, porque a
+ * view precisa durar mais que a sessão. No par local isso significa que as views
+ * ficam no navegador enquanto o servidor não as conhece — e no dia em que o
+ * Spring servir a família, a lista do operador estará vazia do lado de lá. É
+ * migração de dado pessoal, não perda de registro de negócio, e o passo é o
+ * mesmo das outras: `sync:contract` + `codegen` lá, depois o handler, e então
+ * estas quatro linhas migram para `ROTAS_DO_BACKEND`.
+ */
+const VIEWS_SALVAS: readonly RotaNoMock[] = (
+  [
+    { metodo: 'get', caminho: '/api/me/views' },
+    { metodo: 'post', caminho: '/api/me/views' },
+    { metodo: 'put', caminho: '/api/me/views/{id}' },
+    { metodo: 'delete', caminho: '/api/me/views/{id}' },
+  ] as const
+).map(({ metodo, caminho }) => ({
+  metodo,
+  caminho,
+  motivo:
+    'views salvas por usuário publicadas NESTE repo pela #481 (D13) — a cópia do contrato do api ainda não conhece o caminho, e quem vai servi-lo é o Spring, não o Node parado',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
+}))
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   ...RECEBIMENTO,
   ...TESOURARIA,
@@ -1499,6 +1534,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     servidor: 'node-congelado',
   },
   ...AGREGADOS_DE_KPI,
+  ...VIEWS_SALVAS,
 ]
 
 /**

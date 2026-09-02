@@ -99,6 +99,7 @@ import type {
   ListFinancialTitlesParams,
   ListGoodsReceiptsParams,
   ListLabelLayoutsParams,
+  ListMyViewsParams,
   ListOrderParticipantsParams,
   ListOrderProfessionalHistoryParams,
   ListOrdersParams,
@@ -220,6 +221,8 @@ import type {
   RoleWriteRequest,
   SalesComparisonReportDto,
   SalespersonReportDto,
+  SavedViewDto,
+  SavedViewWriteRequest,
   SemPermissaoResponse,
   ServiceDto,
   ServiceWriteRequest,
@@ -13339,6 +13342,241 @@ export const getNavCounters = async ( options?: Parameters<typeof apiFetch>[1]):
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listMyViewsResponse200 = {
+  data: SavedViewDto[]
+  status: 200
+}
+
+export type listMyViewsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listMyViewsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listMyViewsResponseSuccess = (listMyViewsResponse200) & {
+  headers: Headers;
+};
+export type listMyViewsResponseError = (listMyViewsResponse401 | listMyViewsResponse403) & {
+  headers: Headers;
+};
+
+export type listMyViewsResponse = (listMyViewsResponseSuccess | listMyViewsResponseError)
+
+export const getListMyViewsUrl = (params?: ListMyViewsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/me/views?${stringifiedParams}` : `/api/me/views`
+}
+
+/**
+ * Proposto. Views salvas do USUÁRIO da sessão — nenhuma outra. O grupo FAVORITOS da barra lateral se alimenta daqui, e por isso a leitura é a lista inteira e não uma página: são unidades por tela, e paginar preferência pessoal daria uma barra lateral que continua na página 2.
+ */
+export const listMyViews = async (params?: ListMyViewsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listMyViewsResponse> => {
+
+  return apiFetch<listMyViewsResponse>(getListMyViewsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createMyViewResponse201 = {
+  data: SavedViewDto
+  status: 201
+}
+
+export type createMyViewResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createMyViewResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createMyViewResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createMyViewResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createMyViewResponseSuccess = (createMyViewResponse201) & {
+  headers: Headers;
+};
+export type createMyViewResponseError = (createMyViewResponse400 | createMyViewResponse401 | createMyViewResponse403 | createMyViewResponse409) & {
+  headers: Headers;
+};
+
+export type createMyViewResponse = (createMyViewResponseSuccess | createMyViewResponseError)
+
+export const getCreateMyViewUrl = () => {
+
+
+
+
+  return `/api/me/views`
+}
+
+/**
+ * Proposto. Salva a consulta que está na tela com um nome. Nasce fora dos Favoritos (`favorite: false`) — a estrela é um segundo gesto, e salvar tudo na barra lateral a encheria de consulta de uma vez só.
+ */
+export const createMyView = async (savedViewWriteRequest: SavedViewWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createMyViewResponse> => {
+
+  return apiFetch<createMyViewResponse>(getCreateMyViewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(savedViewWriteRequest)
+  }
+);}
+
+
+
+export type updateMyViewResponse200 = {
+  data: SavedViewDto
+  status: 200
+}
+
+export type updateMyViewResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateMyViewResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateMyViewResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateMyViewResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateMyViewResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateMyViewResponseSuccess = (updateMyViewResponse200) & {
+  headers: Headers;
+};
+export type updateMyViewResponseError = (updateMyViewResponse400 | updateMyViewResponse401 | updateMyViewResponse403 | updateMyViewResponse404 | updateMyViewResponse409) & {
+  headers: Headers;
+};
+
+export type updateMyViewResponse = (updateMyViewResponseSuccess | updateMyViewResponseError)
+
+export const getUpdateMyViewUrl = (id: string,) => {
+
+
+
+
+  return `/api/me/views/${id}`
+}
+
+/**
+ * Proposto. Substitui a view INTEIRA — é por aqui que ela é renomeada, muda de cor, ganha ou perde a estrela. **Uma operação só para os quatro gestos**: um `PATCH` de `favorite` pareceria mais barato e criaria uma segunda porta de escrita sobre o mesmo registro, com regra de validação própria para manter em dia.
+ */
+export const updateMyView = async (id: string,
+    savedViewWriteRequest: SavedViewWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateMyViewResponse> => {
+
+  return apiFetch<updateMyViewResponse>(getUpdateMyViewUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(savedViewWriteRequest)
+  }
+);}
+
+
+
+export type deleteMyViewResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteMyViewResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type deleteMyViewResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type deleteMyViewResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type deleteMyViewResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type deleteMyViewResponseSuccess = (deleteMyViewResponse204) & {
+  headers: Headers;
+};
+export type deleteMyViewResponseError = (deleteMyViewResponse401 | deleteMyViewResponse403 | deleteMyViewResponse404 | deleteMyViewResponse409) & {
+  headers: Headers;
+};
+
+export type deleteMyViewResponse = (deleteMyViewResponseSuccess | deleteMyViewResponseError)
+
+export const getDeleteMyViewUrl = (id: string,) => {
+
+
+
+
+  return `/api/me/views/${id}`
+}
+
+/**
+ * Proposto. Apaga a view. **É o único DELETE do contrato, e a exceção tem motivo:** a regra do produto é desativar em vez de excluir porque cadastro tem histórico e é referenciado por documento. View salva não é referenciada por nada e é do próprio usuário — desativada, ela viraria lixo permanente na barra lateral de quem pediu para tirá-la de lá.
+ */
+export const deleteMyView = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteMyViewResponse> => {
+
+  return apiFetch<deleteMyViewResponse>(getDeleteMyViewUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
 
 
   }

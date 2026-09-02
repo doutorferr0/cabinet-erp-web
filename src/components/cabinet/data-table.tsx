@@ -1397,7 +1397,15 @@ export function VitraDataTable<T>({
                             {sortable ? (
                               <button
                                 type="button"
-                                className="inline-flex items-center gap-1 hover:text-foreground focus-visible:focus-ring"
+                                // `uppercase` REPETIDO aqui de propósito: o
+                                // `text-transform` do `.t-rotulo` mora no `<th>`
+                                // e seria herdado, não fosse o UA stylesheet
+                                // declarar `text-transform: none` em `button` —
+                                // o resultado media na tela como meia grade em
+                                // caixa alta (as colunas sem ordenação) e meia
+                                // em caixa mista (as com), sem nada no código
+                                // dizendo por quê.
+                                className="inline-flex items-center gap-1 uppercase hover:text-foreground focus-visible:focus-ring"
                                 onClick={() => toggleSort(header.column.id)}
                               >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
@@ -1563,13 +1571,14 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-10"
                           onClick={(e) => e.stopPropagation()}
-                          // `Escape` PASSA: ele é a saída da barra de lote, e
-                          // fica ouvido no documento. Barrar a tecla inteira
-                          // aqui deixava `esc` sem efeito exatamente onde ele
-                          // serve — depois de marcar linhas, com o foco no
-                          // checkbox que as marcou.
+                          // Barra só as teclas que a LINHA trata. Barrar tudo
+                          // custou caro: o React chama `stopPropagation` no
+                          // evento NATIVO, e o ouvinte do `esc` vive no
+                          // document — a saída da barra de lote morria calada
+                          // sempre que o foco estivesse no checkbox, que é
+                          // justamente onde ele está depois de marcar.
                           onKeyDown={(e) => {
-                            if (e.key !== 'Escape') e.stopPropagation()
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
                           }}
                         >
                           <Checkbox
@@ -1581,7 +1590,7 @@ export function VitraDataTable<T>({
                       ) : null}
                       {rowNumbers ? (
                         // Numeração em Meta, sequencial global da consulta.
-                        <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">
+                        <TableCell className="w-10 text-right t-dado-meta">
                           {(state.page - 1) * state.pageSize + rowIndex + 1}
                         </TableCell>
                       ) : null}
@@ -1617,13 +1626,10 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-[90px]"
                           onClick={(e) => e.stopPropagation()}
-                          // `Escape` PASSA: ele é a saída da barra de lote, e
-                          // fica ouvido no documento. Barrar a tecla inteira
-                          // aqui deixava `esc` sem efeito exatamente onde ele
-                          // serve — depois de marcar linhas, com o foco no
-                          // checkbox que as marcou.
+                          // Mesma regra da célula do checkbox: só as teclas da
+                          // linha. `esc` tem de chegar ao document.
                           onKeyDown={(e) => {
-                            if (e.key !== 'Escape') e.stopPropagation()
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
                           }}
                         >
                           <AcoesDeLinha acoes={acoesDaLinha} linha={row.original} />

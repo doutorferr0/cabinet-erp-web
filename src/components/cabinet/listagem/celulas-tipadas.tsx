@@ -199,11 +199,10 @@ export function CelulaDeProgresso({ valor }: { valor: ValorDeProgresso }) {
   const pct = total === 0 ? 0 : Math.round((feito / total) * 100)
   return (
     <span className="inline-flex items-center justify-end gap-2" data-slot="celula-progresso">
-      {/* A barra é o DESENHO do número que vem ao lado, e por isso sai da
-          árvore acessível: com `role="progressbar"` ela obrigava um `tabIndex`
-          (o lint cobra, e o CI com ele) para virar parada de teclado numa
-          célula de listagem — e quem ouve passaria a escutar "0 de 4" duas
-          vezes por linha, uma na barra e outra no `0 / 4`. */}
+      {/* A barra é `aria-hidden` porque o dado está ESCRITO ao lado: `2 / 5` é
+          o número que o operador confere, e a barra é a leitura de relance do
+          mesmo fato. Um `role="progressbar"` aqui anunciaria duas vezes a mesma
+          informação — e pediria foco num elemento que não faz nada. */}
       <span
         aria-hidden="true"
         className="inline-block h-[5px] w-14 shrink-0 overflow-hidden rounded-full bg-rule-hair"

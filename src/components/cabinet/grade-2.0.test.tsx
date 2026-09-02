@@ -66,6 +66,7 @@ async function primeiraLinha(over: Parameters<typeof montar>[0] = {}) {
 
 describe('grade 2.0: separação', () => {
   it('a régua entre linhas é HAIRLINE — nenhuma linha de 2px', async () => {
+    montar()
     const linha = await primeiraLinha()
 
     // §Separação: hairline separa itens do MESMO tipo; a caixa (borda + sombra)
@@ -79,6 +80,7 @@ describe('grade 2.0: separação', () => {
   })
 
   it('a caixa da grade tem UM traço fino, não a borda de 2px', async () => {
+    montar()
     await primeiraLinha()
     const caixa = document.querySelector('[data-slot="grade"]')
     expect(caixa?.className).toContain('border-input')
@@ -88,10 +90,10 @@ describe('grade 2.0: separação', () => {
 
 describe('grade 2.0: célula tipada', () => {
   it('o cabeçalho anuncia o TIPO da coluna com um ícone', async () => {
+    montar()
     await primeiraLinha()
 
     const total = screen.getByRole('columnheader', { name: /Total/ })
-    expect(within(total).getByTestId ?? true).toBeTruthy()
     expect(total.querySelector('[data-slot="icone-de-tipo"]')?.getAttribute('data-tipo')).toBe(
       'dinheiro',
     )
@@ -102,6 +104,7 @@ describe('grade 2.0: célula tipada', () => {
   })
 
   it('id vem em mono e na cor de acento; dinheiro vai para a direita', async () => {
+    montar()
     const linha = await primeiraLinha()
     const celulas = within(linha).getAllByRole('cell')
 
@@ -118,6 +121,7 @@ describe('grade 2.0: célula tipada', () => {
   })
 
   it('entidade traz monograma e nome — sem a tela desenhar nada', async () => {
+    montar()
     const linha = await primeiraLinha()
     const entidade = within(linha)
       .getAllByRole('cell')
@@ -184,22 +188,30 @@ describe('grade 2.0: densidade', () => {
     })
   })
 
-  it('favorito gravado como `padrao` ainda abre em confortável', async () => {
+  it('favorito gravado como `padrao` volta para confortável, não é descartado', async () => {
     // A densidade se chamava `padrao` antes desta rodada, e há favoritos com
-    // esse valor em máquina de operador. Descartá-los mudaria a tela sem
-    // ninguém ter mexido no seletor.
+    // esse valor em máquina de operador. Ignorá-los deixaria a tela na
+    // densidade em que estava, e o operador atribuiria isso ao filtro que
+    // acabou de aplicar — não a uma renomeação que ninguém lhe contou.
     localStorage.setItem(
       'cabinet.consultas-favoritas.v1',
       JSON.stringify({
-        'grade-densidade-velha': [
-          { id: 'f1', nome: 'De antes', filtros: [], densidade: 'padrao', padrao: true },
-        ],
+        'grade-densidade-velha': [{ id: 'f1', nome: 'De antes', filtros: [], densidade: 'padrao' }],
       }),
     )
-    montar({ queryKey: ['grade-densidade-velha'], filtros: [] })
+    const { user } = montar({
+      queryKey: ['grade-densidade-velha'],
+      filtros: [{ id: 'marca', rotulo: 'Marca', variante: 'text' }],
+    })
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
 
-    expect(screen.getByRole('table').className).not.toContain('[&_td]:h-10')
+    await user.click(screen.getByRole('button', { name: 'Compacta' }))
+    expect(tabela().className).toContain('[&_td]:h-10')
+
+    await user.click(screen.getByRole('tab', { name: 'De antes' }))
+    await waitFor(() => {
+      expect(tabela().className).not.toContain('[&_td]:h-10')
+    })
   })
 })
 
@@ -267,6 +279,7 @@ describe('grade 2.0: lote e ações de linha', () => {
   })
 
   it('sem `aoAbrirLinha` e sem ações, a coluna de ações não existe', async () => {
+    montar()
     const linha = await primeiraLinha()
     expect(linha.querySelector('[data-slot="acoes-de-linha"]')).toBeNull()
   })

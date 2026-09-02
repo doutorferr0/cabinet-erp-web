@@ -293,8 +293,9 @@ describe('VitraDataTable', () => {
     const numero = primeiraLinha?.querySelector('td')
     expect(numero?.textContent).toBe('1')
     expect(numero?.className).toContain('w-10')
-    expect(numero?.className).toContain('font-mono')
-    expect(numero?.className).toContain('text-[11px]')
+    // A numeração é DADO-META (mono 400 · 11 · tabular), pela classe da
+    // §Hierarquia — literal de tamanho em componente é proibido na 2.0.
+    expect(numero?.className).toContain('t-dado-meta')
     expect(numero?.className).toContain('text-right')
 
     // A numeração é da consulta, não da página: "linha 4" na página 2.

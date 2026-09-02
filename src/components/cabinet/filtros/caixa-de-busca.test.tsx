@@ -22,9 +22,7 @@ const CAMPOS = [
 
 function montar(valor: string) {
   const onChange = vi.fn()
-  const render = renderWithQuery(
-    <CaixaDeBusca valor={valor} onChange={onChange} campos={CAMPOS} />,
-  )
+  const render = renderWithQuery(<CaixaDeBusca valor={valor} onChange={onChange} campos={CAMPOS} />)
   return { ...render, onChange }
 }
 

@@ -1,7 +1,4 @@
-import {
-  type ColunaDoMenu,
-  MenuDeColunas,
-} from '@/components/cabinet/listagem/menu-de-colunas'
+import { type ColunaDoMenu, MenuDeColunas } from '@/components/cabinet/listagem/menu-de-colunas'
 import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'

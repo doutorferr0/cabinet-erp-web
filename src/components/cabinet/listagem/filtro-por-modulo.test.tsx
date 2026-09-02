@@ -1,6 +1,6 @@
 import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
-import { MenuDeColunas } from '@/components/cabinet/listagem/menu-de-colunas'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { MenuDeColunas } from '@/components/cabinet/listagem/menu-de-colunas'
 import {
   ativosDoModulo,
   filtroDoCampo,

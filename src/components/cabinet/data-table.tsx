@@ -1530,7 +1530,14 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-10"
                           onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
+                          // `Escape` PASSA: ele é a saída da barra de lote, e
+                          // fica ouvido no documento. Barrar a tecla inteira
+                          // aqui deixava `esc` sem efeito exatamente onde ele
+                          // serve — depois de marcar linhas, com o foco no
+                          // checkbox que as marcou.
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Escape') e.stopPropagation()
+                          }}
                         >
                           <Checkbox
                             isSelected={isSelected}
@@ -1577,7 +1584,14 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-[90px]"
                           onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
+                          // `Escape` PASSA: ele é a saída da barra de lote, e
+                          // fica ouvido no documento. Barrar a tecla inteira
+                          // aqui deixava `esc` sem efeito exatamente onde ele
+                          // serve — depois de marcar linhas, com o foco no
+                          // checkbox que as marcou.
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Escape') e.stopPropagation()
+                          }}
                         >
                           <AcoesDeLinha acoes={acoesDaLinha} linha={row.original} />
                         </TableCell>

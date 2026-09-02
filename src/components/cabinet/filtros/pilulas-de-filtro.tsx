@@ -13,8 +13,8 @@ import {
 } from '@/lib/filtro-de-consulta'
 import { cn } from '@/lib/utils'
 import { Plus, X } from 'lucide-react'
-import { Button as ButtonAria } from 'react-aria-components'
 import { useRef, useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
 
 /**
  * CHIPS DE FILTRO ATIVO (#199; redesenhados na Reface 2.0) — a pergunta em
@@ -141,12 +141,7 @@ export function PilulasDeFiltro({
             {/* O chip é UMA peça de dois alvos: a frase abre a edição, o `×`
                 remove. A borda sólida em volta é o que os junta; bordas
                 próprias dariam a impressão de dois filtros soltos. */}
-            <div
-              className={cn(
-                CHIP,
-                'border border-rule-hair bg-surface-sunken pr-[5px] pl-2.5',
-              )}
-            >
+            <div className={cn(CHIP, 'border border-rule-hair bg-surface-sunken pr-[5px] pl-2.5')}>
               <PopoverTrigger
                 isOpen={emEdicao === filtro.filtroId}
                 onOpenChange={(aberto) => setEmEdicao(aberto ? filtro.filtroId : null)}

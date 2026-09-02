@@ -45,7 +45,19 @@ function montar(over: Partial<Parameters<typeof VitraDataTable<Produto>>[0]> = {
   )
 }
 
-async function primeiraLinha() {
+/**
+ * MONTA e devolve a primeira linha de dado.
+ *
+ * O `montar()` estava faltando aqui, e a suíte da D8 chegou vermelha com sete
+ * casos falhando contra um `<body />` vazio — o helper esperava por um texto
+ * que nada tinha renderizado. Achado ao ligar a barra 2.0 (D9) e conferido
+ * contra a base: falha herdada, não regressão.
+ */
+async function primeiraLinha(over: Parameters<typeof montar>[0] = {}) {
+  // Monta só se ninguém montou: metade dos casos precisa passar props próprias
+  // e já chamou `montar` antes: montar de novo poria DUAS grades no documento,
+  // e `getAllByRole('row')[1]` passaria a ler a linha da tabela errada.
+  if (document.body.childElementCount === 0) montar(over)
   await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
   const linha = screen.getAllByRole('row')[1]
   if (!linha) throw new Error('a grade não tem linha de dado')

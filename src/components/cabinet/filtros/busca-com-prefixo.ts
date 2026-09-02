@@ -131,11 +131,7 @@ function valorDaOpcao(campo: CampoFiltravel, escrito: string): string | null {
  * O filtro que este par prefixo/valor descreve — `null` quando o valor não diz
  * nada que o campo saiba responder.
  */
-function filtroDoPar(
-  campo: CampoFiltravel,
-  escrito: string,
-  ordem: number,
-): FiltroDaTabela | null {
+function filtroDoPar(campo: CampoFiltravel, escrito: string, ordem: number): FiltroDaTabela | null {
   const valor = escrito.trim()
   if (!valor) return null
   const base = { filtroId: `busca-${ordem}-${campo.id}`, id: campo.id, variante: campo.variante }

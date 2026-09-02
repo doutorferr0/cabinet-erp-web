@@ -1,8 +1,8 @@
 import type { StockMovementDto } from '@/api/gerado'
+import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
 import { useReposicaoDeEstoque } from '@/data/compras-api'
 import { CHAVES_ESTOQUE, fetcherDoKardex } from '@/data/estoque-api'
 import { formatInstanteBR, formatQuantidade } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 
 /**
@@ -42,73 +42,47 @@ import { useQuery } from '@tanstack/react-query'
  */
 
 /**
- * ## O CARTÃO 2.0, e os dois tokens que ele teve de pedir emprestado
+ * ## O cartão é o `KpiTile` do D11 — este arquivo só sabe o que "sem dado" quer dizer
  *
- * A régua §Hierarquia da rodada tem 11 degraus e nenhum deles é o número de um
- * KPI: `--t-dado` é 12,5px, a medida de uma célula de grade, e a auditoria §2.4
- * pede **mono 24px** aqui. O caminho que a issue-mãe manda seguir quando o
- * token falta é `var(--x, <fallback>)` mais um recado na #469 — e é o que estas
- * duas linhas fazem, apontando para `--t-kpi-valor` (que D1/D11 ainda vão
- * criar) com o 24px do mockup como fallback. Escrever `text-[24px]` fixaria a
- * medida em vinte telas e faria o D30 reprovar o grep.
+ * A faixa nasceu aqui com cartão próprio porque o `KpiTile` ainda não existia
+ * na base; ele chegou (`design/d11-kpi`), e a tela passou a COMPOR. O que
+ * sobrou de local é a única regra que a peça compartilhada não pode ter:
+ * **ausência vira frase, nunca zero.** Zero é uma afirmação — "nada está
+ * reservado" —, e é a afirmação que faz o operador vender o que já está
+ * prometido. Um `KpiTile` com `valor={0}` diria exatamente isso.
  *
- * O `NumeroHeroi` saiu daqui por outro motivo: ele é `text-[2.375rem]` na face
- * **display condensada**, que é a voz da 1.x — a 2.0 diz que número é mono, sem
- * exceção, e D11 vai reescrevê-lo como `KpiTile`. Compor um componente que está
- * marcado para virar outra coisa é herdar a versão errada.
+ * O `valor` do tile é `ReactNode`, então o "sem dado" entra como texto no
+ * degrau `.t-meta`: frase é Inter, e um traço em mono 20px se leria como
+ * número.
  *
- * O tint NÃO é decoração: ele diz de que natureza é o número. Saldo é
- * informação (sky), reserva é compromisso já assumido (sand), disponível é o
- * que se pode vender (mint) e o último movimento é identidade de um registro
- * (lilac). Por isso a cor vem por ASSUNTO e não por posição, ao contrário do
- * `nth-child` do mockup, que é conveniência de página estática.
+ * O tint vem por ASSUNTO — saldo é informação (sky), reserva é compromisso já
+ * assumido (sand), disponível é o que se pode vender (mint) e o último
+ * movimento é identidade de um registro (lilac). O `nth-child` do mockup é
+ * conveniência de página estática; cor por posição deixa de significar no dia
+ * em que um cartão muda de lugar.
  */
-type TintaDoCartao = 'sky' | 'sand' | 'mint' | 'lilac'
-
-const FUNDO: Record<TintaDoCartao, string> = {
-  sky: 'bg-[var(--tint-sky)]',
-  sand: 'bg-[var(--tint-sand)]',
-  mint: 'bg-[var(--tint-mint)]',
-  lilac: 'bg-[var(--tint-lilac)]',
-}
-
 function Cartao({
   rotulo,
   valor,
   apoio,
-  tinta,
+  tint,
 }: {
   rotulo: string
   /** Já formatado, ou `null` para “sem dado” — que NUNCA é zero. */
   valor: string | null
   apoio: string
-  tinta: TintaDoCartao
+  tint: 'sky' | 'sand' | 'mint' | 'lilac'
 }) {
   return (
-    <div
-      data-slot="kpi-da-peca"
-      // Borda de tinta + `--hard-1` + tint: as três marcas do KPI no mockup. A
-      // faixa é o ÚNICO lugar da tela com sombra dura (§Hierarquia) — os
-      // painéis abaixo ficam com a quieta, senão nada tem prioridade.
-      className={cn(
-        'flex min-w-40 flex-1 flex-col gap-1 rounded-card border-[1.5px] border-[var(--n-900)] p-4 shadow-[var(--hard-1)]',
-        FUNDO[tinta],
-      )}
-    >
-      {/* n-700 em vez de n-500: a régua abre essa exceção só no KPI, onde o
-          rótulo está sobre tint e o contraste do n-500 cairia abaixo de 4,5:1. */}
-      <span className="t-rotulo text-[var(--n-700)]">{rotulo}</span>
-      {valor === null ? (
-        // "Sem dado" não é um número apagado: é uma frase, e frase é Inter.
-        // Um traço em mono 24px se leria como valor.
-        <span className="t-meta">sem dado</span>
-      ) : (
-        <span className="t-dado" style={{ fontSize: 'var(--t-kpi-valor, 24px)' }}>
-          {valor}
-        </span>
-      )}
-      <span className="t-meta">{apoio}</span>
-    </div>
+    // Sem `data-slot` próprio: o `{...props}` do tile vem DEPOIS do dele, e um
+    // valor daqui apagaria a marca `kpi-tile` que a peça usa para se
+    // identificar. Quem marca a região desta tela é a faixa, e ela é minha.
+    <KpiTile
+      rotulo={rotulo}
+      tint={tint}
+      valor={valor === null ? <span className="t-meta">sem dado</span> : valor}
+      nota={apoio}
+    />
   )
 }
 
@@ -170,12 +144,14 @@ export function KpisDaPeca({
   const ondeAgora = nomeDoDepositoEscolhido ?? 'na empresa'
 
   return (
-    // Quatro é o teto da faixa (Mercury), e `auto-fit` é o que faz os cartões
-    // reflowarem sem `@media` — regra da rodada. `gap-4` é `--s-4`.
-    <div data-slot="kpis-da-peca" className="flex flex-wrap gap-4">
+    // A faixa é a `FaixaDeKpi` do D11: o teto de quatro, o `auto-fit` e o
+    // `--s-3` entre tiles moram nela, não aqui. Uma tela que reimplementasse a
+    // fileira teria o quinto KPI passando calado no dia em que alguém o
+    // acrescentasse.
+    <FaixaDeKpi data-slot="kpis-da-peca">
       <Cartao
         rotulo="Saldo"
-        tinta="sky"
+        tint="sky"
         valor={saldoConhecido ? formatQuantidade(saldoVisivel) : null}
         apoio={nomeDoDepositoEscolhido ? `em ${ondeAgora}` : 'somando os depósitos'}
       />
@@ -183,19 +159,19 @@ export function KpisDaPeca({
         rotulo="Reservado"
         // Reserva é compromisso já assumido com um cliente: não é erro — ninguém
         // errou —, é o pedaço do saldo que já tem dono.
-        tinta="sand"
+        tint="sand"
         valor={linha ? formatQuantidade(linha.qtyAllocated) : null}
         apoio={linha ? 'prometido em pedido' : 'a peça não está na reposição'}
       />
       <Cartao
         rotulo="Disponível"
-        tinta="mint"
+        tint="mint"
         valor={linha ? formatQuantidade(linha.qtyAvailable) : null}
         apoio={linha ? 'físico menos reserva' : 'depende da reserva'}
       />
       <Cartao
         rotulo="Último movimento"
-        tinta="lilac"
+        tint="lilac"
         valor={
           movimento ? `${movimento.delta > 0 ? '+' : ''}${formatQuantidade(movimento.delta)}` : null
         }
@@ -207,6 +183,6 @@ export function KpisDaPeca({
               : 'esta peça nunca se moveu'
         }
       />
-    </div>
+    </FaixaDeKpi>
   )
 }

@@ -1,7 +1,8 @@
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { ModuloCor } from '@/components/cabinet/modulo-cores'
+import { Money } from '@/components/cabinet/money'
 import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulos'
-import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { idDoFiltro, moduloDoFiltro } from './modulos-da-consulta'
@@ -110,7 +111,11 @@ export function PontoDoModulo({ cor }: { cor: ModuloCor | undefined }) {
 function celula(campo: CampoCadastro, valor: unknown): ReactNode {
   if (valor === null || valor === undefined || valor === '') return '—'
   if (typeof valor === 'boolean') return <CelulaAtivo ativo={valor} />
-  if (campo.grana && typeof valor === 'number') return formatMoneyBRL(valor)
+  // `<Money>` no lugar da string do `Intl` (#471, D3): o `R$` recua para peso
+  // 400 e tinta secundária, e o número fica em mono tabular — sem isso a coluna
+  // de valores não alinha na vertical, que é o único motivo de ela existir.
+  if (campo.grana && typeof valor === 'number') return <Money valor={valor} />
+
   if (campo.t === 'data' && typeof valor === 'string') return formatDateBR(valor)
   return String(valor)
 }

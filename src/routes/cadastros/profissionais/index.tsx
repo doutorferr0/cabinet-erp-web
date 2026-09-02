@@ -37,6 +37,7 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'code',
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    meta: { tipo: 'id' },
   },
   {
     accessorKey: 'tradeName',
@@ -49,8 +50,11 @@ const columns: ColumnDef<PartnerDto>[] = [
   {
     accessorKey: 'registration',
     header: 'Registro Profissional',
-    // Mono: é IDENTIFICADOR (CREA/CAU/CFT), a mesma voz do código e do CNPJ.
-    cell: ({ getValue }) => <span className="font-mono">{getValue<string | null>() ?? '—'}</span>,
+    // IDENTIFICADOR (CREA/CAU/CFT): a mesma voz do código e do CNPJ. A mono
+    // vem do TIPO desde a D8 — `font-mono` na célula seria a segunda
+    // autoridade sobre a mesma decisão.
+    cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    meta: { tipo: 'id' },
   },
   {
     accessorKey: 'legalName',

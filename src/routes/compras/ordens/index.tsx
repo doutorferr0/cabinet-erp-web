@@ -1,12 +1,15 @@
 import type { PurchaseOrderDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
+import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { useResumoDeOrdensDeCompra, variacao } from '@/data/agregados-api'
 import { SITUACAO_DA_ORDEM } from '@/data/compras-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CalendarClock, CalendarDays, CircleDot, Coins, Hash } from 'lucide-react'
@@ -28,22 +31,31 @@ export const Route = createFileRoute('/compras/ordens/')({
  * atraso que a coluna existe para revelar.
  */
 const columns: ColumnDef<PurchaseOrderDto>[] = [
-  { accessorKey: 'number', header: 'Número' },
+  { accessorKey: 'number', header: 'Número', meta: { tipo: 'id' } },
   {
     id: 'supplierName',
     header: 'Fornecedor',
-    accessorFn: (row) => row.supplierName,
+    // A CONDIÇÃO vira subtítulo do fornecedor, e não coluna: ela só se lê
+    // junto com o nome ("Mister LED, 28 dias") e sozinha seria uma coluna de
+    // números soltos que ninguém ordena.
+    accessorFn: (row) => ({
+      nome: row.supplierName ?? '—',
+      ...(row.paymentTermName ? { subtitulo: row.paymentTermName } : {}),
+    }),
     enableSorting: false,
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'orderedAt',
     header: 'Data Ordem',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
+    meta: { tipo: 'data' },
   },
   {
     accessorKey: 'sentAt',
     header: 'Envio',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()) || '—',
+    meta: { tipo: 'data' },
   },
   {
     accessorKey: 'expectedAt',
@@ -70,16 +82,48 @@ const columns: ColumnDef<PurchaseOrderDto>[] = [
     },
   },
   {
-    accessorKey: 'status',
+    id: 'status',
     header: 'Situação',
-    cell: ({ getValue }) => SITUACAO_DA_ORDEM[getValue<PurchaseOrderDto['status']>()] ?? '—',
+    // O TOM viaja com a palavra: é ele que faz a linha recebida e a cancelada
+    // ficarem apagadas sem nenhuma tela passar uma prop a mais (§D8).
+    accessorFn: (row) => ({
+      tom: TOM_DA_SITUACAO[row.status],
+      label: SITUACAO_DA_ORDEM[row.status] ?? '—',
+    }),
+    meta: { tipo: 'status' },
+  },
+  {
+    id: 'recebimento',
+    header: 'Recebimento',
+    enableSorting: false,
+    /**
+     * Quantas LINHAS já chegaram inteiras, de quantas — não quantas peças.
+     *
+     * O comprador cobra por linha ("faltam duas do pedido"), e a soma de
+     * quantidades misturaria metro com unidade. Linha parcial conta como não
+     * recebida: meia luminária não chegou.
+     */
+    accessorFn: (row) => {
+      const itens = row.items ?? []
+      if (itens.length === 0) return null
+      const feito = itens.filter((i) => (i.quantityReceived ?? 0) >= (i.quantity ?? 0)).length
+      return { feito, total: itens.length }
+    },
+    meta: { tipo: 'progresso' },
   },
   {
     accessorKey: 'totalCents',
     header: 'Total',
-    cell: ({ getValue }) => formatMoneyBRL(getValue<number>() ?? 0),
+    meta: { tipo: 'dinheiro' },
   },
 ]
+
+/** O peso de cada situação — as três que o contrato publica, e mais nenhuma. */
+const TOM_DA_SITUACAO: Record<PurchaseOrderDto['status'], StampTom> = {
+  draft: 'neutral',
+  sent: 'open',
+  cancelled: 'void',
+}
 
 const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'number', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: OC-0012' },
@@ -167,6 +211,50 @@ const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<PurchaseOrderDto>[] = [
   },
 ]
 
+/**
+ * Resumo antes do detalhe (mockup §Listagem).
+ *
+ * Os quatro respondem o que o comprador pergunta antes de olhar linha: quanto
+ * está comprometido, o que chega esta semana, o que já furou o prazo e quanto
+ * entrou no mês. Vêm de `GET /api/compras/ordens/resumo` — a soma é do
+ * SERVIDOR, sobre a base inteira; somar a página traria um total que muda ao
+ * virar de página e tem a cara de um total conferido.
+ *
+ * Enquanto o resumo não chega, a faixa não desenha: quatro zeros são um número
+ * errado, e a grade abaixo já responde sozinha.
+ */
+function KpisDeOrdens() {
+  const { data: resumo } = useResumoDeOrdensDeCompra()
+  if (!resumo) return null
+
+  return (
+    <FaixaDeKpi>
+      <KpiTile
+        rotulo="Em aberto"
+        valorCentavos={resumo.openOrdersValueCents}
+        nota={`${resumo.openOrders} ${resumo.openOrders === 1 ? 'ordem' : 'ordens'}`}
+        tint="lilac"
+      />
+      <KpiTile
+        rotulo="Chegando esta semana"
+        valor={resumo.arrivingThisWeek}
+        unidade={resumo.arrivingThisWeek === 1 ? 'ordem' : 'ordens'}
+        tint="sky"
+      />
+      {/* `alerta` e não um tint vermelho: a tinta do tile é do ASSUNTO, e o que
+          muda quando o número é problema é o número. */}
+      <KpiTile rotulo="Atrasadas" valor={resumo.lateOrders} alerta tint="sand" />
+      <KpiTile
+        rotulo="Recebido no mês"
+        valorCentavos={resumo.monthValueCents}
+        delta={variacao(resumo.monthValueCents, resumo.previousMonthValueCents)}
+        serie={resumo.monthlyValueSeries}
+        tint="mint"
+      />
+    </FaixaDeKpi>
+  )
+}
+
 function OrdensCompraPage() {
   const navigate = useNavigate()
   const { readOnly } = useReadOnlyPorPapel('purchases')
@@ -196,6 +284,7 @@ function OrdensCompraPage() {
       actions={actions}
       filtros={camposFiltraveis}
       origem={data.ordensCompra.origem}
+      resumo={<KpisDeOrdens />}
       decoracao={decoracaoDaOrdem}
       agrupamentos={AGRUPAMENTOS}
       subtotalDoGrupo={(o) => o.totalCents ?? 0}

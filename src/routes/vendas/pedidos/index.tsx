@@ -1,13 +1,14 @@
 import type { OrderDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarPedidoDeVenda } from '@/data/pedidos-venda-api'
 import { ROTULO_DA_SITUACAO } from '@/features/vendas/pedido-venda-form'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CalendarDays, CircleDot, HardHat, Hash, Tag, User } from 'lucide-react'
@@ -29,40 +30,58 @@ export const Route = createFileRoute('/vendas/pedidos/')({
  * clique no cabeçalho (padrão 1).
  */
 const columns: ColumnDef<OrderDto>[] = [
-  { accessorKey: 'number', header: 'Número' },
+  { accessorKey: 'number', header: 'Número', meta: { tipo: 'id' } },
   // Fora da whitelist do contrato: a coluna aparece e não ordena, o que é
   // melhor que um cabeçalho clicável que responde 400.
-  { accessorKey: 'series', header: 'Série', enableSorting: false },
-  { accessorKey: 'customerName', header: 'Cliente' },
+  { accessorKey: 'series', header: 'Série', enableSorting: false, meta: { tipo: 'texto' } },
   {
-    accessorKey: 'projectName',
-    header: 'Descrição da Obra',
-    cell: ({ getValue }) => getValue<string | null>() || '—',
+    id: 'customerName',
+    header: 'Cliente',
+    // A obra sobe para subtítulo do cliente pelo mesmo motivo do orçamento:
+    // as duas se leem juntas, e sozinha a coluna era `—` na maioria das linhas.
+    accessorFn: (row) => ({
+      nome: row.customerName ?? '—',
+      ...(row.projectName ? { subtitulo: row.projectName } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'issuedAt',
     header: 'Data Emissão',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
+    meta: { tipo: 'data' },
   },
   {
-    accessorKey: 'status',
+    id: 'status',
     header: 'Situação',
     enableSorting: false,
-    cell: ({ getValue }) => ROTULO_DA_SITUACAO[getValue<OrderDto['status']>()] ?? '—',
+    accessorFn: (row) => ({
+      tom: TOM_DA_SITUACAO[row.status],
+      label: ROTULO_DA_SITUACAO[row.status] ?? '—',
+    }),
+    meta: { tipo: 'status' },
   },
   {
     accessorKey: 'type',
     header: 'Tipo',
     enableSorting: false,
     cell: ({ getValue }) => (getValue<string | null>() === 'demo' ? 'Demonstração' : 'Venda'),
+    meta: { tipo: 'texto' },
   },
   {
     accessorKey: 'totalCents',
     header: 'Total',
     enableSorting: false,
-    cell: ({ getValue }) => formatMoneyBRL(getValue<number>()),
+    meta: { tipo: 'dinheiro' },
   },
 ]
+
+/** O peso de cada situação do pedido — as três do contrato. */
+const TOM_DA_SITUACAO: Record<OrderDto['status'], StampTom> = {
+  active: 'open',
+  concluded: 'done',
+  cancelled: 'void',
+}
 
 /**
  * Campos filtráveis — a whitelist do contrato, menos o que não estreita nada.

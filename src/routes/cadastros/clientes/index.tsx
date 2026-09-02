@@ -2,7 +2,6 @@ import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
-import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
@@ -32,11 +31,18 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'code',
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    meta: { tipo: 'id' },
   },
   {
-    accessorKey: 'legalName',
+    id: 'legalName',
     header: 'Nome',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+    // O NOME FANTASIA vira subtítulo: é como o operador chama o cliente ao
+    // telefone, e sozinho seria mais uma coluna repetindo meia razão social.
+    accessorFn: (row) => ({
+      nome: row.legalName,
+      ...(row.tradeName && row.tradeName !== row.legalName ? { subtitulo: row.tradeName } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'active',

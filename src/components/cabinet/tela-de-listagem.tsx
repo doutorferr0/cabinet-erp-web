@@ -103,6 +103,16 @@ export interface TelaDeListagemProps<T> {
    * um `R$ 0,00` com a forma de total conferido seria pior que a ausência.
    */
   subtotalDoGrupo?: (linha: T) => number
+  /**
+   * A faixa de KPIs, entre o cabeçalho e a grade (mockup §Listagem).
+   *
+   * Chega montada pela ROTA, e não como uma lista de números: quem sabe de que
+   * agregado o resumo vem, o que cada tile qualifica e qual deles é problema é
+   * a tela, não o esqueleto. Só as listagens cujo recurso publica `/resumo` a
+   * declaram — faixa de zeros enquanto o contrato não soma seria um total com
+   * a forma de total conferido.
+   */
+  resumo?: ReactNode
 }
 
 /** Id da ação que ABRE o filtro — fica na tabela, com colunas e consultas salvas. */
@@ -170,6 +180,7 @@ export function TelaDeListagem<T>({
   decoracao,
   agrupamentos,
   subtotalDoGrupo,
+  resumo,
 }: TelaDeListagemProps<T>) {
   const acoesDaTabela = actions.filter((a) => a.id === ACAO_FILTRO)
   const primaria = actions.find((a) => a.id === ACAO_PRIMARIA)
@@ -195,6 +206,10 @@ export function TelaDeListagem<T>({
         {...(primaria ? { primaria: paraCabecalho(primaria) } : {})}
         secundarias={secundarias.map(paraCabecalho)}
       />
+      {/* Resumo antes do detalhe (mockup §Listagem): a faixa responde antes de
+          o operador filtrar, e some da leitura assim que ele começa a varrer a
+          grade. Fronteira com o resto = espaço, sem linha (§Hierarquia). */}
+      {resumo}
       {/* Entre o cabeçalho e a tabela: depois do título, que diz de que tela se
           trata, e antes da primeira linha de dado, que é o que ele desmente. */}
       <AvisoDadosDeExemplo origem={origem} />

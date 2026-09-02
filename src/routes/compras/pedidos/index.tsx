@@ -1,6 +1,7 @@
 import type { PurchaseRequestDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { SITUACAO_DO_PEDIDO } from '@/data/compras-api'
@@ -31,32 +32,47 @@ export const Route = createFileRoute('/compras/pedidos/')({
  * junção obrigatória"). Quem procura pelo fornecedor filtra por `supplierId`.
  */
 const columns: ColumnDef<PurchaseRequestDto>[] = [
-  { accessorKey: 'number', header: 'Número' },
+  { accessorKey: 'number', header: 'Número', meta: { tipo: 'id' } },
   {
     accessorKey: 'issuedAt',
     header: 'Emissão',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
+    meta: { tipo: 'data' },
   },
   {
-    accessorKey: 'status',
+    id: 'status',
     header: 'Situação',
-    cell: ({ getValue }) => SITUACAO_DO_PEDIDO[getValue<PurchaseRequestDto['status']>()] ?? '—',
+    accessorFn: (row) => ({
+      tom: TOM_DA_SITUACAO[row.status],
+      label: SITUACAO_DO_PEDIDO[row.status] ?? '—',
+    }),
+    meta: { tipo: 'status' },
   },
-  { accessorKey: 'itemCount', header: 'Itens' },
+  { accessorKey: 'itemCount', header: 'Itens', meta: { numeric: true } },
   {
     id: 'orderNumber',
     header: 'Pedido de Venda',
     // Vazio significa compra para ESTOQUE (§7.3, observação) — a frase é o dado.
     accessorFn: (row) => row.orderNumber ?? '— estoque',
     enableSorting: false,
+    meta: { tipo: 'id' },
   },
   {
     id: 'customerName',
     header: 'Cliente',
     accessorFn: (row) => row.customerName ?? '—',
     enableSorting: false,
+    meta: { tipo: 'entidade' },
   },
 ]
+
+/** O peso de cada situação — as quatro que o contrato publica. */
+const TOM_DA_SITUACAO: Record<PurchaseRequestDto['status'], StampTom> = {
+  open: 'open',
+  partially_ordered: 'open',
+  ordered: 'done',
+  cancelled: 'void',
+}
 
 const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'number', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: PC-0007' },

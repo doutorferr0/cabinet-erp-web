@@ -2,9 +2,11 @@ import type { ProductDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
 import { Produto } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
+import { useResumoDeEstoque, variacao } from '@/data/agregados-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useDesativarProduto } from '@/data/produtos-api'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
@@ -36,12 +38,13 @@ export const Route = createFileRoute('/cadastros/produtos/')({
  * clique, não na carga.
  */
 const columns: ColumnDef<ProductDto>[] = [
-  { accessorKey: 'code', header: 'Nosso Código' },
+  { accessorKey: 'code', header: 'Nosso Código', meta: { tipo: 'id' } },
   {
     accessorKey: 'description',
     header: 'Nossa Descrição',
     // Voz de O QUÊ, e recuada: na listagem o produto é coadjuvante do nome.
     cell: ({ getValue }) => <Produto>{getValue<string>()}</Produto>,
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'productTypeName',
@@ -117,6 +120,40 @@ const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<ProductDto>[] = [
   { id: 'factoryName', rotulo: 'Fábrica', valorDaLinha: (p) => p.factoryName ?? '—' },
 ]
 
+/**
+ * Os quatro do ESTOQUE sobre a listagem de produtos, e não quatro campos do
+ * produto: `ProductDto` não publica quantidade, mínimo nem preço — quem soma é
+ * `GET /api/estoque/resumo`. Pôr a quantidade como COLUNA seria dado de outra
+ * consulta com cara de campo do produto (ver a nota da PR).
+ *
+ * `Críticos` é o problema da tela: item abaixo do mínimo é o que faz alguém
+ * abrir esta listagem com pressa.
+ */
+function KpisDeEstoque() {
+  const { data: resumo } = useResumoDeEstoque()
+  if (!resumo) return null
+
+  return (
+    <FaixaDeKpi>
+      <KpiTile rotulo="Variantes" valor={resumo.variantCount} unidade="SKUs" tint="lilac" />
+      <KpiTile rotulo="Abaixo do mínimo" valor={resumo.criticalItems} alerta tint="sand" />
+      <KpiTile
+        rotulo="Valor em estoque"
+        valorCentavos={resumo.stockValueCents}
+        delta={variacao(resumo.stockValueCents, resumo.previousMonthStockValueCents)}
+        serie={resumo.monthlyValueSeries}
+        tint="mint"
+      />
+      <KpiTile
+        rotulo="Sem preço"
+        valor={resumo.unpricedVariants}
+        nota="não entram na valorização"
+        tint="sky"
+      />
+    </FaixaDeKpi>
+  )
+}
+
 function ProdutosPage() {
   const navigate = useNavigate()
   const { readOnly } = useReadOnlyPorPapel('products')
@@ -157,6 +194,7 @@ function ProdutosPage() {
       columns={columns}
       queryKey={['produtos']}
       fetcher={data.produtos.list}
+      resumo={<KpisDeEstoque />}
       decoracao={decoracaoDoProduto}
       agrupamentos={AGRUPAMENTOS}
       actions={actions}

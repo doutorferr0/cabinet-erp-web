@@ -23,6 +23,7 @@ const columns: ColumnDef<CrmLostReasonDto>[] = [
   {
     accessorKey: 'name',
     header: 'Motivo',
+    meta: { tipo: 'entidade' },
     cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
   },
   {

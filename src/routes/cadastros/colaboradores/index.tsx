@@ -2,7 +2,6 @@ import type { EmployeeDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
-import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
@@ -33,18 +32,19 @@ export const Route = createFileRoute('/cadastros/colaboradores/')({
  */
 const columns: ColumnDef<EmployeeDto>[] = [
   {
-    accessorKey: 'name',
+    id: 'name',
     header: 'Nome',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+    // O CARGO vira subtítulo da pessoa — é como ela é apresentada ("Ana, do
+    // financeiro") — e a coluna própria some da grade em vez de repetir.
+    accessorFn: (row) => ({
+      nome: row.name,
+      ...(row.jobTitle ? { subtitulo: row.jobTitle } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'sector',
     header: 'Setor',
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-  },
-  {
-    accessorKey: 'jobTitle',
-    header: 'Cargo',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
   {

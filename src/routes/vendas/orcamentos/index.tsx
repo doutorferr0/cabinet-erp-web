@@ -1,9 +1,11 @@
 import type { QuoteDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
+import { useResumoDeOrcamentos, variacao } from '@/data/agregados-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarOrcamento } from '@/data/quotes-api'
 import { RevisarOrcamento } from '@/features/orcamento/revisar-orcamento'
@@ -30,6 +32,7 @@ const columns: ColumnDef<QuoteDto>[] = [
   {
     accessorKey: 'number',
     header: 'Número',
+    meta: { tipo: 'id' },
     /**
      * A REVISÃO viaja no número, e não numa coluna própria.
      *
@@ -57,23 +60,40 @@ const columns: ColumnDef<QuoteDto>[] = [
   },
   // `series` não está na whitelist do contrato: a coluna aparece e não ordena,
   // o que é melhor que um cabeçalho clicável que responde 400.
-  { accessorKey: 'series', header: 'Série', enableSorting: false },
-  { accessorKey: 'customerName', header: 'Cliente' },
+  { accessorKey: 'series', header: 'Série', enableSorting: false, meta: { tipo: 'texto' } },
   {
-    accessorKey: 'projectName',
-    header: 'Descrição da Obra',
-    cell: ({ getValue }) => getValue<string | null>() || '—',
+    id: 'customerName',
+    header: 'Cliente',
+    // A obra vira subtítulo do cliente: as duas se leem juntas ("Alphaville,
+    // da Construtora X") e a coluna própria mostrava `—` na maioria das linhas.
+    accessorFn: (row) => ({
+      nome: row.customerName ?? '—',
+      ...(row.projectName ? { subtitulo: row.projectName } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'issuedAt',
     header: 'Data Emissão',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
+    meta: { tipo: 'data' },
   },
   {
     accessorKey: 'expiresAt',
     header: 'Data Validade',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
+    meta: { tipo: 'data' },
   },
+  {
+    id: 'status',
+    header: 'Situação',
+    accessorFn: (row) => ({
+      tom: row.status === 'cancelled' ? ('void' as const) : ('open' as const),
+      label: row.status === 'cancelled' ? 'Cancelado' : 'Em aberto',
+    }),
+    meta: { tipo: 'status' },
+  },
+  { accessorKey: 'totalCents', header: 'Total', meta: { tipo: 'dinheiro' } },
 ]
 
 /** Botões do rodapé da listagem — §8.1 (telas próprias ainda não capturadas). */
@@ -181,6 +201,44 @@ const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<QuoteDto>[] = [
   { id: 'customerName', rotulo: 'Cliente', valorDaLinha: (o) => o.customerName ?? '—' },
 ]
 
+/**
+ * O que o vendedor pergunta antes de abrir orçamento nenhum: quanto está na
+ * mesa, o que vence esta semana, quantos fecharam no mês e quanto isso deu.
+ *
+ * `Vence esta semana` é o KPI-problema desta tela — é o único dos quatro cujo
+ * número alto pede ação hoje, e é a mesma pergunta que a decoração `warn` da
+ * linha responde uma linha por vez.
+ */
+function KpisDeOrcamentos() {
+  const { data: resumo } = useResumoDeOrcamentos()
+  if (!resumo) return null
+
+  return (
+    <FaixaDeKpi>
+      <KpiTile
+        rotulo="Em aberto"
+        valorCentavos={resumo.openQuotesValueCents}
+        nota={`${resumo.openQuotes} ${resumo.openQuotes === 1 ? 'orçamento' : 'orçamentos'}`}
+        tint="lilac"
+      />
+      <KpiTile rotulo="Vencem esta semana" valor={resumo.expiringThisWeek} alerta tint="sand" />
+      <KpiTile
+        rotulo="Fechados no mês"
+        valor={resumo.wonThisMonth}
+        unidade={resumo.wonThisMonth === 1 ? 'orçamento' : 'orçamentos'}
+        tint="sky"
+      />
+      <KpiTile
+        rotulo="Valor fechado no mês"
+        valorCentavos={resumo.monthValueCents}
+        delta={variacao(resumo.monthValueCents, resumo.previousMonthValueCents)}
+        serie={resumo.monthlyValueSeries}
+        tint="mint"
+      />
+    </FaixaDeKpi>
+  )
+}
+
 function OrcamentosPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<QuoteDto | null>(null)
@@ -283,6 +341,7 @@ function OrcamentosPage() {
         actions={acoesDaTela}
         filtros={camposFiltraveis}
         rodape={<RodapeDeOrcamento />}
+        resumo={<KpisDeOrcamentos />}
         decoracao={decoracaoDoOrcamento}
         agrupamentos={AGRUPAMENTOS}
         subtotalDoGrupo={(o) => o.totalCents ?? 0}

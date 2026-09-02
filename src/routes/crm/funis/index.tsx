@@ -29,6 +29,7 @@ const columns: ColumnDef<CrmPipelineDto>[] = [
   {
     accessorKey: 'name',
     header: 'Funil',
+    meta: { tipo: 'entidade' },
     cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
   },
   {

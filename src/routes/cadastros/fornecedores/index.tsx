@@ -35,6 +35,7 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'code',
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    meta: { tipo: 'id' },
   },
   {
     accessorKey: 'tradeName',
@@ -48,6 +49,7 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'legalName',
     header: 'Razão Social',
     cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'active',

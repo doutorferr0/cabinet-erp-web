@@ -99,26 +99,53 @@ describe('a coluna que o operador liga chega à grade', () => {
     })
   })
 
-  // O ponto de cor faz a resposta do seletor ("de onde vem esta coluna")
-  // sobreviver ao fechamento dele. Vale para a coluna que a TELA declara, e não
-  // só para a que o operador ligou.
-  it('Clientes — o cabeçalho marca a coluna com a cor do módulo de origem', async () => {
+  /**
+   * O ponto de cor faz a resposta do seletor ("de onde vem esta coluna")
+   * sobreviver ao fechamento dele — e desde a D8 ele divide o lugar com o
+   * ÍCONE DE TIPO, que é excludente: um cabeçalho mostra um ou outro.
+   *
+   * **A coluna TIPADA fica com o ícone** (mockup §Listagem: a grade se lê pela
+   * forma da coluna antes do rótulo). O ponto continua onde ele responde a
+   * pergunta que ninguém mais responde: a coluna que o operador LIGOU, que não
+   * tem tipo e cuja origem só o seletor sabia. Foi por isso que os dois casos
+   * abaixo trocaram de coluna quando a D14 tipou `Nome` — não por o ponto ter
+   * saído da grade.
+   */
+  it('Clientes — a coluna ligada carrega a cor do módulo de origem', async () => {
+    const { user } = renderRoute('/cadastros/clientes', stubDeParceiros())
+
+    await screen.findByText('Cadastro de Clientes')
+    await user.click(await screen.findByRole('button', { name: 'Colunas' }))
+    await user.click(await screen.findByLabelText(/^E-mail/))
+
+    const email = await grade().findByRole('columnheader', { name: /E-mail/ })
+    expect(email.querySelector('[data-modulo="clientes"]')).not.toBeNull()
+  })
+
+  it('Clientes — a coluna tipada troca o ponto pelo ícone do tipo', async () => {
     renderRoute('/cadastros/clientes', stubDeParceiros())
 
     await screen.findByText('Cadastro de Clientes')
     const nome = await grade().findByRole('columnheader', { name: /Nome/ })
-    expect(nome.querySelector('[data-modulo="clientes"]')).not.toBeNull()
+    expect(nome.querySelector('[data-slot="icone-de-tipo"]')).not.toBeNull()
+    expect(nome.querySelector('[data-modulo]')).toBeNull()
   })
 
   // Colaborador GANHOU cor em 2026-08-17 (PR #188, decisão do user: cor forte
   // em todas as opções de cadastro) — veste o púrpura de Pessoas
   // (`profissionais`). O ponto do cabeçalho acompanha o schema.
-  it('Colaboradores — com a cor de Pessoas, o cabeçalho ganha ponto', async () => {
-    renderRoute('/cadastros/colaboradores', stubDeColaboradores())
+  it('Colaboradores — com a cor de Pessoas, a coluna ligada ganha ponto', async () => {
+    const { user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
-    const nome = await grade().findByRole('columnheader', { name: /Nome/ })
-    expect(nome.querySelector('[data-modulo="profissionais"]')).not.toBeNull()
+    await user.click(await screen.findByRole('button', { name: 'Colunas' }))
+    // `Cargo` saiu da grade na D14 — virou subtítulo da pessoa na célula de
+    // entidade —, então voltou a ser coluna que o operador LIGA, que é
+    // exatamente onde o ponto de módulo ainda responde alguma coisa.
+    await user.click(await screen.findByLabelText(/^Cargo/))
+
+    const cargo = await grade().findByRole('columnheader', { name: /Cargo/ })
+    expect(cargo.querySelector('[data-modulo="profissionais"]')).not.toBeNull()
   })
 
   // `CPF / CNPJ` é `col: true` no schema do cliente e a listagem NÃO o desenha.

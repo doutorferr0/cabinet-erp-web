@@ -38,7 +38,9 @@ describe('Listagem 2.0 — cadastro', () => {
     renderRoute('/cadastros/clientes', stubDeParceiros([parceiro({ legalName: 'ALPHA' })]))
     await screen.findByText('ALPHA')
 
-    expect(screen.getByRole('button', { name: /nenhum agrupamento aplicado/ })).toBeInTheDocument()
+    // O rótulo é o do chip da D9 (`listagem/barra-de-filtros.tsx`); a listagem
+    // só o mostra quando a TELA declara `agrupamentos`.
+    expect(screen.getByRole('button', { name: 'Agrupar por um campo' })).toBeInTheDocument()
   })
 })
 

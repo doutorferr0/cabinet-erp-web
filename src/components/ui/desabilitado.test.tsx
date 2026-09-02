@@ -157,12 +157,37 @@ describe('a regra do desabilitado — no DOM', () => {
     expect(botao).toHaveAttribute('title', 'Selecione uma linha')
   })
 
+  it('a TECLA morta perde o relevo — botão sem sombra fica rente ao papel', () => {
+    // A §Desabilitado devolve a tinta cheia e apaga fundo e traço, mas a
+    // utility `desabilitado` não mexe em `box-shadow` nem em `transform`: sem
+    // as duas linhas na BASE do `buttonVariants`, o botão morto continuaria
+    // repousando sobre a borda inferior de 2px/3px — uma tecla pronta para ser
+    // apertada, que é exatamente a leitura errada.
+    //
+    // A guarda é de CLASSE e não de pixel porque jsdom não roda o Tailwind:
+    // `getComputedStyle` num `disabled:shadow-none` devolve string vazia, e
+    // medir sombra aqui daria verde para o defeito.
+    renderWithQuery(
+      <Button disabled title="Selecione uma linha">
+        Alterar
+      </Button>,
+    )
+    const botao = screen.getByRole('button', { name: 'Alterar' })
+
+    expect(botao.className).toContain('disabled:shadow-none')
+    expect(botao.className).toContain('disabled:translate-y-0')
+    // `data-[disabled]` cobre o `LinkButton`, que é <a> e não tem `:disabled`.
+    expect(botao.className).toContain('data-[disabled]:shadow-none')
+  })
+
   it('campo morto não clareia o valor que o operador precisa ler', () => {
     renderWithQuery(<Input aria-label="CNPJ" defaultValue="12.345.678/0001-90" disabled />)
     const campo = screen.getByLabelText('CNPJ')
     expect(campo).toBeDisabled()
     expect(campo.className).toContain('desabilitado')
     expect(campo.className).not.toMatch(/opacity-\d/)
+    // Superfície apagada não é sulco: o `--inset` sai junto com o fundo.
+    expect(campo.className).toContain('disabled:shadow-none')
   })
 
   it('checkbox morto apaga o quadrado, não o rótulo', () => {
